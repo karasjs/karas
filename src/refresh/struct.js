@@ -40,6 +40,7 @@ const {
     NODE_REFRESH_LV,
     NODE_HAS_CONTENT,
     NODE_CACHE_STYLE,
+    NODE_DEFS_CACHE,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -1221,6 +1222,7 @@ function renderSvg(renderMode, ctx, defs, root) {
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_REFRESH_LV]: __refreshLevel,
+      [NODE_DEFS_CACHE]: defsCache,
     } = __config;
     if(hasMask) {
       let start = i + (total || 0) + 1;
@@ -1250,6 +1252,9 @@ function renderSvg(renderMode, ctx, defs, root) {
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(__refreshLevel < REPAINT && !(node instanceof Text)) {
       virtualDom = node.virtualDom;
+      defsCache.forEach(item => {
+        defs.add(item);
+      });
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
@@ -1318,6 +1323,14 @@ function renderSvg(renderMode, ctx, defs, root) {
       if(contain(__refreshLevel, FT)) {
         let filter = computedStyle[FILTER] = currentStyle[FILTER];
         delete virtualDom.filter;
+        // 移除老缓存，防止无线增长
+        for(let i = defsCache.length - 1; i >= 0; i--) {
+          let item = defsCache[i];
+          if(item.tagName === 'filter') {
+            defs.removeCache(item);
+            defsCache.splice(i, 1);
+          }
+        }
         if(Array.isArray(filter)) {
           filter.forEach(item => {
             let [k, v] = item;
@@ -1325,7 +1338,7 @@ function renderSvg(renderMode, ctx, defs, root) {
               if(v > 0) {
                 let d = mx.int2convolution(v);
                 let { outerWidth, outerHeight } = node;
-                let id = defs.add({
+                let o = {
                   tagName: 'filter',
                   props: [
                     ['x', -d / outerWidth],
@@ -1341,7 +1354,9 @@ function renderSvg(renderMode, ctx, defs, root) {
                       ],
                     }
                   ],
-                });
+                };
+                let id = defs.add(o);
+                __config[NODE_DEFS_CACHE].push(o);
                 virtualDom.filter = 'url(#' + id + ')';
               }
             }
@@ -1360,6 +1375,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       virtualDom.lv = __refreshLevel;
     }
     else {
+      __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
       if(node instanceof Geom) {
         node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
       }
@@ -1417,11 +1433,21 @@ function renderSvg(renderMode, ctx, defs, root) {
             }
           }
         }
-        let id = defs.add({
+        defsCache = dom.__config[NODE_DEFS_CACHE];
+        for(let i = defsCache.length - 1; i >= 0; i--) {
+          let item = defsCache[i];
+          if(item.tagName === 'mask') {
+            defs.removeCache(item);
+            defsCache.splice(i, 1);
+          }
+        }
+        let o = {
           tagName: 'mask',
           props: [],
           children: mChildren,
-        });
+        };
+        let id = defs.add(o);
+        defsCache.push(o);
         id = 'url(#' + id + ')';
         dom.virtualDom.mask = id;
       }

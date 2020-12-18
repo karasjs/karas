@@ -395,7 +395,8 @@
     NODE_IS_DESTROYED: 21,
     NODE_STYLE: 22,
     NODE_UPDATE_HASH: 23,
-    NODE_UNIQUE_UPDATE_ID: 24
+    NODE_UNIQUE_UPDATE_ID: 24,
+    NODE_DEFS_CACHE: 25
   }; // struct用
 
   var STRUCT_KEY = {
@@ -12296,7 +12297,8 @@
       NODE_CACHE_FILTER$1 = _enums$NODE_KEY$2.NODE_CACHE_FILTER,
       NODE_CACHE_MASK = _enums$NODE_KEY$2.NODE_CACHE_MASK,
       NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW,
-      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$2.NODE_IS_DESTROYED;
+      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$2.NODE_IS_DESTROYED,
+      NODE_DEFS_CACHE = _enums$NODE_KEY$2.NODE_DEFS_CACHE;
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
@@ -12450,13 +12452,17 @@
       ctx.restore();
       ctx.globalAlpha = alpha;
     } else if (renderMode === mode.SVG) {
-      var clip = defs.add({
+      var v = {
         tagName: 'clipPath',
         children: [{
           tagName: 'path',
           props: [['d', svgPolygon$1(list)], ['fill', '#FFF']]
         }]
-      });
+      };
+
+      xom.__config[NODE_DEFS_CACHE].push(v);
+
+      var clip = defs.add(v);
       color.forEach(function (item) {
         xom.virtualDom.bb.push({
           type: 'item',
@@ -12718,14 +12724,18 @@
           _cross2 = [[_cross2[0], _cross2[1]], [_cross2[2], _cross2[1]], [_cross2[2], _cross2[3]], [_cross2[0], _cross2[3]], [_cross2[0], _cross2[1]]];
 
           if (spread) {
-            var filter = defs.add({
+            var v = {
               tagName: 'filter',
               props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
               children: [{
                 tagName: 'feDropShadow',
                 props: [['dx', 0], ['dy', 0], ['stdDeviation', blur * 0.5], ['flood-color', c]]
               }]
-            });
+            };
+
+            xom.__config[NODE_DEFS_CACHE].push(v);
+
+            var filter = defs.add(v);
             var clip = defs.add({
               tagName: 'clipPath',
               children: [{
@@ -12738,35 +12748,47 @@
               tagName: 'path',
               props: [['d', svgPolygon$1(box)], ['fill', c], ['clip-path', 'url(#' + clip + ')']]
             });
-            clip = defs.add({
+            v = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', svgPolygon$1(_cross2)], ['fill', '#FFF']]
               }]
-            });
+            };
+            clip = defs.add(v);
+
+            xom.__config[NODE_DEFS_CACHE].push(v);
+
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
               props: [['d', svgPolygon$1([[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [x1 - n, _yb2], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, _yb2], [_xa2, _yb2], [_xa2, _ya2]])], ['fill', '#FFF'], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
             });
           } else {
-            var _filter = defs.add({
+            var _v = {
               tagName: 'filter',
               props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
               children: [{
                 tagName: 'feDropShadow',
                 props: [['dx', x], ['dy', y], ['stdDeviation', blur * 0.5], ['flood-color', c]]
               }]
-            });
+            };
 
-            var _clip = defs.add({
+            var _filter = defs.add(_v);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v);
+
+            _v = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', svgPolygon$1(box)], ['fill', '#FFF']]
               }]
-            });
+            };
+
+            var _clip = defs.add(_v);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -12788,57 +12810,77 @@
           var _cross3 = geom.getRectsIntersection([box[0][0], box[0][1], box[2][0], box[2][1]], [_blurBox[0][0], _blurBox[0][1], _blurBox[2][0], _blurBox[2][1]]);
 
           if (spread) {
-            var _filter2 = defs.add({
+            var _v2 = {
               tagName: 'filter',
               props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
               children: [{
                 tagName: 'feDropShadow',
                 props: [['dx', 0], ['dy', 0], ['stdDeviation', blur * 0.5], ['flood-color', c]]
               }]
-            });
+            };
 
-            var _clip2 = defs.add({
+            var _filter2 = defs.add(_v2);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v2);
+
+            _v2 = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', svgPolygon$1(box) + svgPolygon$1(_blurBox.slice(0).reverse())], ['fill', '#FFF']]
               }]
-            });
+            };
+
+            var _clip2 = defs.add(_v2);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
               props: [['d', svgPolygon$1(_blurBox)], ['fill', c], ['clip-path', 'url(#' + _clip2 + ')']]
             });
-            _clip2 = defs.add({
+            _v2 = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', (_cross3 ? svgPolygon$1([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$1(box) + svgPolygon$1(_blurBox) + svgPolygon$1(outer)], ['fill', '#FFF']]
               }]
-            });
+            };
+            _clip2 = defs.add(_v2);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v2);
+
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
               props: [['d', svgPolygon$1(_blurBox)], ['fill', '#FFF'], ['filter', 'url(#' + _filter2 + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
             });
           } else {
-            var _filter3 = defs.add({
+            var _v3 = {
               tagName: 'filter',
               props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
               children: [{
                 tagName: 'feDropShadow',
                 props: [['dx', x], ['dy', y], ['stdDeviation', blur * 0.5], ['flood-color', c]]
               }]
-            });
+            };
 
-            var _clip3 = defs.add({
+            var _filter3 = defs.add(_v3);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v3);
+
+            _v3 = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', svgPolygon$1(box) + svgPolygon$1(outer)], ['fill', '#FFF']]
               }]
-            });
+            };
+
+            var _clip3 = defs.add(_v3);
+
+            xom.__config[NODE_DEFS_CACHE].push(_v3);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -12894,6 +12936,8 @@
       };
       _this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
 
+      _this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
+
       var config = _this.__config;
       config[NODE_TAG_NAME] = tagName;
       config[NODE_CACHE_STYLE] = _this.__cacheStyle;
@@ -12902,6 +12946,7 @@
       config[NODE_REFRESH_LV] = REFLOW;
       config[NODE_STYLE] = _this.__style;
       config[NODE_MATRIX_EVENT] = [];
+      config[NODE_DEFS_CACHE] = _this.__cacheDefs;
       return _this;
     }
 
@@ -13244,18 +13289,18 @@
           }
 
           if (contain(lv, TY)) {
-            var _v = currentStyle[TRANSLATE_Y$3];
+            var _v4 = currentStyle[TRANSLATE_Y$3];
 
-            if (isNil$5(_v)) {
-              _v = 0;
-            } else if (_v[1] === PERCENT$5) {
-              _v = _v[0] * this.outerHeight * 0.01;
+            if (isNil$5(_v4)) {
+              _v4 = 0;
+            } else if (_v4[1] === PERCENT$5) {
+              _v4 = _v4[0] * this.outerHeight * 0.01;
             } else {
-              _v = _v[0];
+              _v4 = _v4[0];
             }
 
-            y = _v - (computedStyle[TRANSLATE_Y$3] || 0);
-            computedStyle[TRANSLATE_Y$3] = _v;
+            y = _v4 - (computedStyle[TRANSLATE_Y$3] || 0);
+            computedStyle[TRANSLATE_Y$3] = _v4;
             computedStyle[TRANSFORM$4][5] += y;
             matrixCache[5] += y;
           }
@@ -13885,14 +13930,18 @@
                 // 模糊框卷积尺寸 #66
                 if (v > 0) {
                   var d = mx.int2convolution(v);
-                  var id = defs.add({
+                  var o = {
                     tagName: 'filter',
                     props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
                     children: [{
                       tagName: 'feGaussianBlur',
                       props: [['stdDeviation', v]]
                     }]
-                  });
+                  };
+                  var id = defs.add(o);
+
+                  __config[NODE_DEFS_CACHE].push(o);
+
                   virtualDom.filter = 'url(#' + id + ')';
                 } else {
                   delete virtualDom.filter;
@@ -13951,14 +14000,18 @@
             offScreenOverflow.outerWidth = outerWidth;
             offScreenOverflow.outerHeight = outerHeight;
           } else if (renderMode === mode.SVG) {
-            var id = defs.add({
+            var v = {
               tagName: 'clipPath',
               props: [],
               children: [{
                 tagName: 'path',
                 props: [['d', "M".concat(x, ",").concat(y, "L").concat(x + outerWidth, ",").concat(y, "L").concat(x + outerWidth, ",").concat(y + outerHeight, "L").concat(x, ",").concat(y + outerHeight, ",L").concat(x, ",").concat(y)]]
               }]
-            });
+            };
+            var id = defs.add(v);
+
+            __config[NODE_DEFS_CACHE].push(v);
+
             virtualDom.overflow = 'url(#' + id + ')';
           }
         } else if (renderMode === mode.SVG) {
@@ -14225,13 +14278,17 @@
                   }
 
                   if (needMask) {
-                    var _id = defs.add({
+                    var _v5 = {
                       tagName: 'clipPath',
                       children: [{
                         tagName: 'rect',
                         props: [['x', x2], ['y', y2], ['width', clientWidth], ['height', clientHeight], ['fill', '#FFF']]
                       }]
-                    });
+                    };
+
+                    var _id = defs.add(_v5);
+
+                    __config[NODE_DEFS_CACHE].push(_v5);
 
                     this.virtualDom.bbClip = 'url(#' + _id + ')';
                   } // 先画不考虑repeat的中心声明的
@@ -14470,7 +14527,7 @@
           });
           return lg;
         } else if (renderMode === mode.SVG) {
-          var uuid = defs.add({
+          var v = {
             tagName: 'linearGradient',
             props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
             children: gd.stop.map(function (item) {
@@ -14479,7 +14536,11 @@
                 props: [['stop-color', int2rgba$1(item[0])], ['offset', item[1] * 100 + '%']]
               };
             })
-          });
+          };
+          var uuid = defs.add(v);
+
+          this.__config[NODE_DEFS_CACHE].push(v);
+
           return 'url(#' + uuid + ')';
         }
       }
@@ -14493,7 +14554,7 @@
           });
           return rg;
         } else if (renderMode === mode.SVG) {
-          var uuid = defs.add({
+          var v = {
             tagName: 'radialGradient',
             props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
             children: gd.stop.map(function (item) {
@@ -14502,7 +14563,11 @@
                 props: [['stop-color', int2rgba$1(item[0])], ['offset', item[1] * 100 + '%']]
               };
             })
-          });
+          };
+          var uuid = defs.add(v);
+
+          this.__config[NODE_DEFS_CACHE].push(v);
+
           return 'url(#' + uuid + ')';
         }
       }
@@ -14594,7 +14659,7 @@
             var _cur = list[_i11];
 
             if (prev) {
-              var uuid = defs.add({
+              var v = {
                 tagName: 'linearGradient',
                 props: [['x1', prev[0]], ['y1', prev[1]], ['x2', _cur[2]], ['y2', _cur[3]]],
                 children: [{
@@ -14604,7 +14669,11 @@
                   tagName: 'stop',
                   props: [['stop-color', int2rgba$1([_cur[4], _cur[5], _cur[6], _cur[7]])], ['offset', '100%']]
                 }]
-              });
+              };
+              var uuid = defs.add(v);
+
+              this.__config[NODE_DEFS_CACHE].push(v);
+
               res.push([[[cx, cy], [prev[0], prev[1]], [_cur[2], _cur[3]]], 'url(#' + uuid + ')']);
             }
 
@@ -17640,7 +17709,8 @@
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
-      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL;
+      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
+      NODE_DEFS_CACHE$1 = _enums$NODE_KEY$4.NODE_DEFS_CACHE;
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
@@ -17981,7 +18051,7 @@
 
                 if (!virtualDom.cache && list) {
                   var d = svgPolygon$2(list);
-                  var id = defs.add({
+                  var v = {
                     tagName: 'clipPath',
                     props: [],
                     children: [{
@@ -17989,7 +18059,11 @@
                       tagName: 'path',
                       props: [['d', d], ['fill', '#FFF']]
                     }]
-                  });
+                  };
+                  var id = defs.add(v);
+
+                  __config[NODE_DEFS_CACHE$1].push(v);
+
                   virtualDom.conClip = 'url(#' + id + ')';
                 }
 
@@ -18008,7 +18082,7 @@
               if (list) {
                 var _d = svgPolygon$2(list);
 
-                var _id = defs.add({
+                var _v = {
                   tagName: 'clipPath',
                   props: [],
                   children: [{
@@ -18016,7 +18090,11 @@
                     tagName: 'path',
                     props: [['d', _d], ['fill', '#FFF']]
                   }]
-                });
+                };
+
+                var _id = defs.add(_v);
+
+                __config[NODE_DEFS_CACHE$1].push(_v);
 
                 virtualDom.conClip = 'url(#' + _id + ')';
                 delete virtualDom.cache;
@@ -18072,6 +18150,7 @@
       key: "add",
       value: function add(data) {
         data.uuid = 'karas-defs-' + this.id + '-' + this.count++;
+        data.index = this.list.length;
         this.list.push(data);
         return data.uuid;
       }
@@ -18080,6 +18159,19 @@
       value: function clear() {
         this.list = [];
         this.count = 0;
+      }
+    }, {
+      key: "removeCache",
+      value: function removeCache(data) {
+        var list = this.list;
+        var i = data.index; // 一般情况index即位置，但每次渲染过程中，可能会删掉一些，此时位置会往前，但index不变，因此遍历
+
+        for (; i >= 0; i--) {
+          if (list[i] === data) {
+            list.splice(i, 1);
+            return;
+          }
+        }
       }
     }, {
       key: "value",
@@ -18128,7 +18220,8 @@
       NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$5.NODE_CACHE_TOTAL,
       NODE_CACHE_FILTER$2 = _enums$NODE_KEY$5.NODE_CACHE_FILTER,
       NODE_CACHE_MASK$1 = _enums$NODE_KEY$5.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW;
+      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW,
+      NODE_DEFS_CACHE$2 = _enums$NODE_KEY$5.NODE_DEFS_CACHE;
   var AUTO$5 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$7 = unit.PERCENT;
@@ -18767,13 +18860,17 @@
         } else if (renderMode === mode.SVG) {
           if (isMulti) {
             list.forEach(function (item) {
-              var clip = defs.add({
+              var v = {
                 tagName: 'clipPath',
                 children: [{
                   tagName: 'path',
                   props: [['d', svgPolygon$3(item)], ['fill', '#FFF']]
                 }]
-              });
+              };
+              var clip = defs.add(v);
+
+              _this3.__config[NODE_DEFS_CACHE$2].push(v);
+
               color.forEach(function (item) {
                 _this3.virtualDom.bb.push({
                   type: 'item',
@@ -18783,13 +18880,17 @@
               });
             });
           } else {
-            var clip = defs.add({
+            var v = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', svgPolygon$3(list)], ['fill', '#FFF']]
               }]
-            });
+            };
+            var clip = defs.add(v);
+
+            this.__config[NODE_DEFS_CACHE$2].push(v);
+
             color.forEach(function (item) {
               _this3.virtualDom.bb.push({
                 type: 'item',
@@ -20115,6 +20216,7 @@
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
+      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
@@ -21501,7 +21603,8 @@
           lv = _structs$_i4[STRUCT_LV$2];
       var __config = node.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-          __refreshLevel = __config[NODE_REFRESH_LV$1];
+          __refreshLevel = __config[NODE_REFRESH_LV$1],
+          defsCache = __config[NODE_DEFS_CACHE$3];
 
       if (hasMask) {
         var start = _i8 + (total || 0) + 1;
@@ -21531,7 +21634,10 @@
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
       if (__refreshLevel < REPAINT$2 && !(node instanceof Text)) {
-        virtualDom = node.virtualDom; // total可以跳过所有孩子节点省略循环
+        virtualDom = node.virtualDom;
+        defsCache.forEach(function (item) {
+          defs.add(item);
+        }); // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
           _i8 += total || 0;
@@ -21607,7 +21713,16 @@
 
         if (contain$2(__refreshLevel, FT$1)) {
           var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
-          delete virtualDom.filter;
+          delete virtualDom.filter; // 移除老缓存，防止无线增长
+
+          for (var _i9 = defsCache.length - 1; _i9 >= 0; _i9--) {
+            var item = defsCache[_i9];
+
+            if (item.tagName === 'filter') {
+              defs.removeCache(item);
+              defsCache.splice(_i9, 1);
+            }
+          }
 
           if (Array.isArray(filter)) {
             filter.forEach(function (item) {
@@ -21620,14 +21735,18 @@
                   var d = mx.int2convolution(v);
                   var outerWidth = node.outerWidth,
                       outerHeight = node.outerHeight;
-                  var id = defs.add({
+                  var o = {
                     tagName: 'filter',
                     props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
                     children: [{
                       tagName: 'feGaussianBlur',
                       props: [['stdDeviation', v]]
                     }]
-                  });
+                  };
+                  var id = defs.add(o);
+
+                  __config[NODE_DEFS_CACHE$3].push(o);
+
                   virtualDom.filter = 'url(#' + id + ')';
                 }
               }
@@ -21647,6 +21766,8 @@
 
         virtualDom.lv = __refreshLevel;
       } else {
+        __config[NODE_DEFS_CACHE$3] && __config[NODE_DEFS_CACHE$3].splice(0);
+
         if (node instanceof Geom$1) {
           node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
         }
@@ -21697,10 +21818,10 @@
               if (tagName === 'path') {
                 if (isClip) {
                   for (var _j9 = 0, _len5 = props.length; _j9 < _len5; _j9++) {
-                    var item = props[_j9];
+                    var _item3 = props[_j9];
 
-                    if (item[0] === 'fill') {
-                      item[1] = util.int2invert(fill);
+                    if (_item3[0] === 'fill') {
+                      _item3[1] = util.int2invert(fill);
                     }
                   }
                 }
@@ -21719,11 +21840,24 @@
             }
           }
 
-          var id = defs.add({
+          defsCache = dom.__config[NODE_DEFS_CACHE$3];
+
+          for (var _i10 = defsCache.length - 1; _i10 >= 0; _i10--) {
+            var _item4 = defsCache[_i10];
+
+            if (_item4.tagName === 'mask') {
+              defs.removeCache(_item4);
+              defsCache.splice(_i10, 1);
+            }
+          }
+
+          var o = {
             tagName: 'mask',
             props: [],
             children: mChildren
-          });
+          };
+          var id = defs.add(o);
+          defsCache.push(o);
           id = 'url(#' + id + ')';
           dom.virtualDom.mask = id;
         }

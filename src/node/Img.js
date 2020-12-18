@@ -35,6 +35,7 @@ const {
   NODE_KEY: {
     NODE_CACHE,
     NODE_CACHE_TOTAL,
+    NODE_DEFS_CACHE,
   },
 } = enums;
 const { AUTO } = unit;
@@ -362,7 +363,7 @@ class Img extends Dom {
             // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
             if(!virtualDom.cache && list) {
               let d = svgPolygon(list);
-              let id = defs.add({
+              let v = {
                 tagName: 'clipPath',
                 props: [],
                 children: [
@@ -375,7 +376,9 @@ class Img extends Dom {
                     ],
                   }
                 ],
-              });
+              };
+              let id = defs.add(v);
+              __config[NODE_DEFS_CACHE].push(v);
               virtualDom.conClip = 'url(#' + id + ')';
             }
             return;
@@ -394,7 +397,7 @@ class Img extends Dom {
           ];
           if(list) {
             let d = svgPolygon(list);
-            let id = defs.add({
+            let v = {
               tagName: 'clipPath',
               props: [],
               children: [
@@ -407,7 +410,9 @@ class Img extends Dom {
                   ],
                 }
               ],
-            });
+            };
+            let id = defs.add(v);
+            __config[NODE_DEFS_CACHE].push(v);
             virtualDom.conClip = 'url(#' + id + ')';
             delete virtualDom.cache;
           }

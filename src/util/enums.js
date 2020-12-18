@@ -159,6 +159,7 @@ const NODE_KEY = {
   NODE_STYLE: 22,
   NODE_UPDATE_HASH: 23,
   NODE_UNIQUE_UPDATE_ID: 24,
+  NODE_DEFS_CACHE: 25,
 };
 
 // struct用

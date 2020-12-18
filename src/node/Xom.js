@@ -118,6 +118,7 @@ const {
     NODE_CACHE_MASK,
     NODE_CACHE_OVERFLOW,
     NODE_IS_DESTROYED,
+    NODE_DEFS_CACHE,
   }
 } = enums;
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
@@ -270,7 +271,7 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bb
     ctx.globalAlpha = alpha;
   }
   else if(renderMode === mode.SVG) {
-    let clip = defs.add({
+    let v = {
       tagName: 'clipPath',
       children: [{
         tagName: 'path',
@@ -279,7 +280,9 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bb
           ['fill', '#FFF'],
         ],
       }],
-    });
+    };
+    xom.__config[NODE_DEFS_CACHE].push(v);
+    let clip = defs.add(v);
     color.forEach(item => {
       xom.virtualDom.bb.push({
         type: 'item',
@@ -589,7 +592,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
           [cross[0], cross[1]],
         ];
         if(spread) {
-          let filter = defs.add({
+          let v = {
             tagName: 'filter',
             props: [
               ['x', -d / outerWidth],
@@ -608,7 +611,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ],
               },
             ],
-          });
+          }
+          xom.__config[NODE_DEFS_CACHE].push(v);
+          let filter = defs.add(v);
           let clip = defs.add({
             tagName: 'clipPath',
             children: [{
@@ -628,7 +633,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
               ['clip-path', 'url(#' + clip + ')'],
             ],
           });
-          clip = defs.add({
+          v = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -637,7 +642,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          clip = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -662,7 +669,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
           });
         }
         else {
-          let filter = defs.add({
+          let v = {
             tagName: 'filter',
             props: [
               ['x', -d / outerWidth],
@@ -681,8 +688,10 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ],
               },
             ],
-          });
-          let clip = defs.add({
+          }
+          let filter = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
+          v = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -691,7 +700,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          let clip = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -731,7 +742,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
           [box[0][0], box[0][1], box[2][0], box[2][1]],
           [blurBox[0][0], blurBox[0][1], blurBox[2][0], blurBox[2][1]]);
         if(spread) {
-          let filter = defs.add({
+          let v = {
             tagName: 'filter',
             props: [
               ['x', -d / outerWidth],
@@ -750,8 +761,10 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ],
               },
             ],
-          });
-          let clip = defs.add({
+          };
+          let filter = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
+          v = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -760,7 +773,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          let clip = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -770,23 +785,25 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
               ['clip-path', 'url(#' + clip + ')'],
             ],
           });
-          clip = defs.add({
+          v = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
               props: [
                 ['d', (cross ? svgPolygon([
-                    [cross[0], cross[1]],
-                    [cross[2], cross[1]],
-                    [cross[2], cross[3]],
-                    [cross[0], cross[3]],
-                    [cross[0], cross[1]],
-                  ].reverse()) : '')
-                  + svgPolygon(box) + svgPolygon(blurBox) + svgPolygon(outer)],
+                  [cross[0], cross[1]],
+                  [cross[2], cross[1]],
+                  [cross[2], cross[3]],
+                  [cross[0], cross[3]],
+                  [cross[0], cross[1]],
+                ].reverse()) : '')
+                + svgPolygon(box) + svgPolygon(blurBox) + svgPolygon(outer)],
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          clip = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -799,7 +816,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
           });
         }
         else {
-          let filter = defs.add({
+          let v = {
             tagName: 'filter',
             props: [
               ['x', -d / outerWidth],
@@ -818,8 +835,10 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ],
               },
             ],
-          });
-          let clip = defs.add({
+          };
+          let filter = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
+          v = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -828,7 +847,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          let clip = defs.add(v);
+          xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -874,6 +895,7 @@ class Xom extends Node {
       },
     };
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
+    this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
     let config = this.__config;
     config[NODE_TAG_NAME] = tagName;
     config[NODE_CACHE_STYLE] = this.__cacheStyle;
@@ -882,6 +904,7 @@ class Xom extends Node {
     config[NODE_REFRESH_LV] = REFLOW;
     config[NODE_STYLE] = this.__style;
     config[NODE_MATRIX_EVENT] = [];
+    config[NODE_DEFS_CACHE] = this.__cacheDefs;
   }
 
   __structure(i, lv, j) {
@@ -1816,7 +1839,7 @@ class Xom extends Node {
             // 模糊框卷积尺寸 #66
             if(v > 0) {
               let d = mx.int2convolution(v);
-              let id = defs.add({
+              let o = {
                 tagName: 'filter',
                 props: [
                   ['x', -d / outerWidth],
@@ -1832,7 +1855,9 @@ class Xom extends Node {
                     ],
                   }
                 ],
-              });
+              };
+              let id = defs.add(o);
+              __config[NODE_DEFS_CACHE].push(o);
               virtualDom.filter = 'url(#' + id + ')';
             }
             else {
@@ -1885,7 +1910,7 @@ class Xom extends Node {
         offScreenOverflow.outerHeight = outerHeight;
       }
       else if(renderMode === mode.SVG) {
-        let id = defs.add({
+        let v = {
           tagName: 'clipPath',
           props: [],
           children: [
@@ -1896,7 +1921,9 @@ class Xom extends Node {
               ],
             }
           ],
-        });
+        };
+        let id = defs.add(v);
+        __config[NODE_DEFS_CACHE].push(v);
         virtualDom.overflow = 'url(#' + id + ')';
       }
     }
@@ -2145,7 +2172,7 @@ class Xom extends Node {
                 props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
               }
               if(needMask) {
-                let id = defs.add({
+                let v = {
                   tagName: 'clipPath',
                   children: [{
                     tagName: 'rect',
@@ -2157,7 +2184,9 @@ class Xom extends Node {
                       ['fill', '#FFF']
                     ],
                   }],
-                });
+                };
+                let id = defs.add(v);
+                __config[NODE_DEFS_CACHE].push(v);
                 this.virtualDom.bbClip = 'url(#' + id + ')';
               }
               // 先画不考虑repeat的中心声明的
@@ -2351,7 +2380,7 @@ class Xom extends Node {
       return lg;
     }
     else if(renderMode === mode.SVG) {
-      let uuid = defs.add({
+      let v = {
         tagName: 'linearGradient',
         props: [
           ['x1', gd.x1],
@@ -2368,7 +2397,9 @@ class Xom extends Node {
             ],
           };
         }),
-      });
+      };
+      let uuid = defs.add(v);
+      this.__config[NODE_DEFS_CACHE].push(v);
       return 'url(#' + uuid + ')';
     }
   }
@@ -2382,7 +2413,7 @@ class Xom extends Node {
       return rg;
     }
     else if(renderMode === mode.SVG) {
-      let uuid = defs.add({
+      let v = {
         tagName: 'radialGradient',
         props: [
           ['cx', gd.cx],
@@ -2398,7 +2429,9 @@ class Xom extends Node {
             ],
           };
         }),
-      });
+      };
+      let uuid = defs.add(v);
+      this.__config[NODE_DEFS_CACHE].push(v);
       return 'url(#' + uuid + ')';
     }
   }
@@ -2467,7 +2500,7 @@ class Xom extends Node {
       for(let i = 0, len = list.length; i < len; i++) {
         let cur = list[i];
         if(prev) {
-          let uuid = defs.add({
+          let v = {
             tagName: 'linearGradient',
             props: [
               ['x1', prev[0]],
@@ -2491,7 +2524,9 @@ class Xom extends Node {
                 ],
               },
             ],
-          });
+          };
+          let uuid = defs.add(v);
+          this.__config[NODE_DEFS_CACHE].push(v);
           res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], 'url(#' + uuid + ')']);
         }
         prev = cur;

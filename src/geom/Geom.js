@@ -45,6 +45,7 @@ const {
     NODE_CACHE_FILTER,
     NODE_CACHE_MASK,
     NODE_CACHE_OVERFLOW,
+    NODE_DEFS_CACHE,
   }
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
@@ -622,7 +623,7 @@ class Geom extends Xom {
     else if(renderMode === mode.SVG) {
       if(isMulti) {
         list.forEach(item => {
-          let clip = defs.add({
+          let v = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -631,7 +632,9 @@ class Geom extends Xom {
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          let clip = defs.add(v);
+          this.__config[NODE_DEFS_CACHE].push(v);
           color.forEach(item => {
             this.virtualDom.bb.push({
               type: 'item',
@@ -646,7 +649,7 @@ class Geom extends Xom {
         });
       }
       else {
-        let clip = defs.add({
+        let v = {
           tagName: 'clipPath',
           children: [{
             tagName: 'path',
@@ -655,7 +658,9 @@ class Geom extends Xom {
               ['fill', '#FFF'],
             ],
           }],
-        });
+        };
+        let clip = defs.add(v);
+        this.__config[NODE_DEFS_CACHE].push(v);
         color.forEach(item => {
           this.virtualDom.bb.push({
             type: 'item',

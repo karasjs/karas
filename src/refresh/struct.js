@@ -1433,7 +1433,6 @@ function renderSvg(renderMode, ctx, defs, root) {
             }
           }
         }
-        defsCache = dom.__config[NODE_DEFS_CACHE];
         for(let i = defsCache.length - 1; i >= 0; i--) {
           let item = defsCache[i];
           if(item.tagName === 'mask') {

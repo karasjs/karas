@@ -21840,8 +21840,6 @@
             }
           }
 
-          defsCache = dom.__config[NODE_DEFS_CACHE$3];
-
           for (var _i10 = defsCache.length - 1; _i10 >= 0; _i10--) {
             var _item4 = defsCache[_i10];
 

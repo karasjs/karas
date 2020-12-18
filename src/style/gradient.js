@@ -448,7 +448,7 @@ function parseGradient(s) {
     o.v = v.map(item => {
       let color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       let arr = [rgba2int(color[1])];
-      let percent = /\b-?[\d.]+(?:px|%)/.exec(item);
+      let percent = /-?[\d.]+(?:px|%)/.exec(item);
       if(percent) {
         arr[1] = [parseFloat(percent[0])];
         if(/%$/.test(percent[0])) {

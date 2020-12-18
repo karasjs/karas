@@ -2838,7 +2838,7 @@
       o.v = v.map(function (item) {
         var color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
         var arr = [rgba2int$1(color[1])];
-        var percent = /\b-?[\d.]+(?:px|%)/.exec(item);
+        var percent = /-?[\d.]+(?:px|%)/.exec(item);
 
         if (percent) {
           arr[1] = [parseFloat(percent[0])];

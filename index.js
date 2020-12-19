@@ -26324,7 +26324,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.2";
+  var version = "0.46.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

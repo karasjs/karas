@@ -10528,7 +10528,13 @@
         var target = __config[I_TARGET];
 
         if (isFinish) {
-          __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY]; // cancel需要清除finish根据情况保留
+          __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
+
+          if (__config[I_PLAY_STATE] === 'finish') {
+            return;
+          }
+
+          __config[I_PLAY_STATE] = 'finish'; // cancel需要清除finish根据情况保留
 
           if (!__config[I_STAY_END]) {
             __config[I_STYLE] = {};
@@ -10536,6 +10542,11 @@
           }
         } else {
           __config[I_PLAY_COUNT] = __config[I_CURRENT_TIME] = 0;
+
+          if (__config[I_PLAY_STATE] === 'idle') {
+            return;
+          }
+
           __config[I_PLAY_STATE] = 'idle';
           __config[I_STYLE] = {};
           restore = true;
@@ -10913,7 +10924,6 @@
               if (!self.__hasFin) {
                 self.__hasFin = true;
                 __config[I_ASSIGNING] = false;
-                __config[I_PLAY_STATE] = 'finished';
 
                 __config[I_FRAME_CB].call(self, __config, diff);
 
@@ -10961,7 +10971,6 @@
               if (!self.__hasCancel) {
                 self.__hasCancel = true;
                 __config[I_ASSIGNING] = false;
-                __config[I_PLAY_STATE] = 'idle';
 
                 __config[I_FRAME_CB].call(self, __config, diff);
 

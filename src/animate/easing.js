@@ -124,4 +124,8 @@ let easing = {
   cubicBezier: bezier,
 };
 
+easing['ease-in'] = easing.easeIn;
+easing['ease-out'] = easing.easeOut;
+easing['ease-in-out'] = easing.easeInOut;
+
 export default easing;

@@ -9102,6 +9102,9 @@
     easeInOut: bezier(0.42, 0, 0.58, 1),
     cubicBezier: bezier
   };
+  easing['ease-in'] = easing.easeIn;
+  easing['ease-out'] = easing.easeOut;
+  easing['ease-in-out'] = easing.easeInOut;
 
   var _NUM_CAL_HASH;
   var _enums$STYLE_KEY$7 = enums.STYLE_KEY,

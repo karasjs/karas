@@ -2,7 +2,7 @@
 A flexible JavaScript framework for RIA on Canvas/Svg.
 
 ---
-karas实现了一个微型浏览器引擎，同时扩充CSS/WAA在样式/动画上的标准，增强类似SVG的矢量标签描述语法。综合起来并借鉴JSX/React的开发方式，形成一个对前端友好的灵活RIA框架。
+karas实现了一个微型浏览器引擎，同时扩充CSS/WAA在样式/动画上的标准，增强类似SVG的矢量标签描述语法，结合JSX/React的开发方式，形成一个对前端友好的RIA框架。
 
 [![NPM version](https://img.shields.io/npm/v/karas.svg)](https://npmjs.org/package/karas)
 ![CI](https://github.com/karasjs/karas/workflows/CI/badge.svg)

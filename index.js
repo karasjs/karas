@@ -3247,7 +3247,6 @@
     borderStyle: ['borderStyleTop', 'borderStyleRight', 'borderStyleBottom', 'borderStyleLeft'],
     borderRadius: ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'],
     background: ['backgroundColor', 'backgroundImage', 'backgroundRepeat', 'backgroundPosition'],
-    // backgroundRepeat: ['backgroundRepeatX', 'backgroundRepeatY'],
     backgroundPosition: ['backgroundPositionX', 'backgroundPositionY'],
     flex: ['flexGrow', 'flexShrink', 'flexBasis'],
     translate: ['translateX', 'translateY'],
@@ -3279,7 +3278,6 @@
 
           if (repeat) {
             style.backgroundRepeat = repeat[0].toLowerCase();
-            this.toFull(style, 'backgroundRepeat');
           }
         }
 

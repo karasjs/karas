@@ -81,7 +81,6 @@ export default {
   borderStyle: ['borderStyleTop', 'borderStyleRight', 'borderStyleBottom', 'borderStyleLeft'],
   borderRadius: ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'],
   background: ['backgroundColor', 'backgroundImage', 'backgroundRepeat', 'backgroundPosition'],
-  // backgroundRepeat: ['backgroundRepeatX', 'backgroundRepeatY'],
   backgroundPosition: ['backgroundPositionX', 'backgroundPositionY'],
   flex: ['flexGrow', 'flexShrink', 'flexBasis'],
   translate: ['translateX', 'translateY'],
@@ -110,7 +109,6 @@ export default {
         let repeat = /(no-)?repeat(-[xy])?/i.exec(v);
         if(repeat) {
           style.backgroundRepeat = repeat[0].toLowerCase();
-          this.toFull(style, 'backgroundRepeat');
         }
       }
       if(isNil(style.backgroundColor)) {

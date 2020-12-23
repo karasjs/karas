@@ -13605,9 +13605,13 @@
 
             if (computedStyle[BACKGROUND_COLOR$1][3] > 0) {
               var width = computedStyle[WIDTH$3],
-                  height = computedStyle[HEIGHT$3];
+                  height = computedStyle[HEIGHT$3],
+                  _paddingTop = computedStyle[PADDING_TOP$1],
+                  _paddingRight = computedStyle[PADDING_RIGHT$1],
+                  _paddingBottom = computedStyle[PADDING_BOTTOM$1],
+                  _paddingLeft = computedStyle[PADDING_LEFT$1];
 
-              if (width && height) {
+              if (width && height || _paddingTop || _paddingRight || _paddingBottom || _paddingLeft) {
                 return true;
               }
             }
@@ -13925,7 +13929,8 @@
                   offScreenFilter = {
                     ctx: ctx,
                     blur: v,
-                    target: c
+                    target: c,
+                    matrix: matrix
                   };
                   ctx = c.ctx;
                 }
@@ -13968,7 +13973,8 @@
               if (c.ctx) {
                 offScreenMask = {
                   ctx: ctx,
-                  target: c
+                  target: c,
+                  matrix: matrix
                 };
                 ctx = c.ctx;
               }
@@ -13992,7 +13998,8 @@
               if (_c.ctx) {
                 offScreenOverflow = {
                   ctx: ctx,
-                  target: _c
+                  target: _c,
+                  matrix: matrix
                 };
                 ctx = _c.ctx;
               }
@@ -14035,7 +14042,8 @@
             offScreenBlend = {
               ctx: ctx,
               target: _c2,
-              mixBlendMode: mixBlendMode
+              mixBlendMode: mixBlendMode,
+              matrix: matrix
             };
             ctx = _c2.ctx;
           }
@@ -21471,7 +21479,8 @@
         var _list9 = overflowHash[_i6];
 
         _list9.forEach(function (offScreenOverflow) {
-          var target = offScreenOverflow.target,
+          var matrix = offScreenOverflow.matrix,
+              target = offScreenOverflow.target,
               origin = offScreenOverflow.ctx,
               x = offScreenOverflow.x,
               y = offScreenOverflow.y,
@@ -21479,7 +21488,7 @@
               outerHeight = offScreenOverflow.outerHeight;
           ctx.globalCompositeOperation = 'destination-in';
           ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
           ctx.fillStyle = '#FFF';
           ctx.beginPath();
           ctx.rect(x, y, outerWidth, outerHeight);

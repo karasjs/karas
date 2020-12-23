@@ -1119,10 +1119,10 @@ function renderCanvas(renderMode, ctx, defs, root) {
     if(overflowHash.hasOwnProperty(i)) {
       let list = overflowHash[i];
       list.forEach(offScreenOverflow => {
-        let { target, ctx: origin, x, y, outerWidth, outerHeight } = offScreenOverflow;
+        let { matrix, target, ctx: origin, x, y, outerWidth, outerHeight } = offScreenOverflow;
         ctx.globalCompositeOperation = 'destination-in';
         ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         ctx.fillStyle = '#FFF';
         ctx.beginPath();
         ctx.rect(x, y, outerWidth, outerHeight);

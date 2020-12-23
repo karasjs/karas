@@ -1549,8 +1549,10 @@ class Xom extends Node {
           }
         }
         if(computedStyle[BACKGROUND_COLOR][3] > 0) {
-          let width = computedStyle[WIDTH], height = computedStyle[HEIGHT];
-          if(width && height) {
+          let width = computedStyle[WIDTH], height = computedStyle[HEIGHT],
+            paddingTop = computedStyle[PADDING_TOP], paddingRight = computedStyle[PADDING_RIGHT],
+            paddingBottom = computedStyle[PADDING_BOTTOM], paddingLeft = computedStyle[PADDING_LEFT];
+          if(width && height || paddingTop || paddingRight || paddingBottom || paddingLeft) {
             return true;
           }
         }
@@ -1830,6 +1832,7 @@ class Xom extends Node {
                 ctx,
                 blur: v,
                 target: c,
+                matrix,
               };
               ctx = c.ctx;
             }
@@ -1880,6 +1883,7 @@ class Xom extends Node {
             offScreenMask = {
               ctx,
               target: c,
+              matrix,
             };
             ctx = c.ctx;
           }
@@ -1900,6 +1904,7 @@ class Xom extends Node {
             offScreenOverflow = {
               ctx,
               target: c,
+              matrix,
             };
             ctx = c.ctx;
           }
@@ -1942,6 +1947,7 @@ class Xom extends Node {
           ctx,
           target: c,
           mixBlendMode,
+          matrix,
         };
         ctx = c.ctx;
       }

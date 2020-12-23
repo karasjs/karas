@@ -1130,6 +1130,8 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.closePath();
         ctx.globalCompositeOperation = 'source-over';
         if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
+          origin.setTransform(1, 0, 0, 1, 0, 0);
+          origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
           ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);

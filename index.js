@@ -21497,6 +21497,8 @@
           ctx.globalCompositeOperation = 'source-over';
 
           if (!maskStartHash.hasOwnProperty(_i6 + 1) && !blendHash.hasOwnProperty(_i6)) {
+            origin.setTransform(1, 0, 0, 1, 0, 0);
+            origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
             ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
@@ -26336,7 +26338,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.3";
+  var version = "0.46.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

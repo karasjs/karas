@@ -4305,8 +4305,8 @@
             var _k = STYLE_KEY$4[style2Upper$1(k + 'Y')];
             var arr1 = calUnit([k1, _arr2[0]], 1, _arr2[0]);
             var arr2 = calUnit([_k, _arr2[1]], 1, _arr2[1]);
-            compatibleTransform(k1, arr1);
-            compatibleTransform(_k, arr2);
+            compatibleTransform(k1, arr1[1]);
+            compatibleTransform(_k, arr2[1]);
             transform.push(arr1);
             transform.push(arr2);
           }

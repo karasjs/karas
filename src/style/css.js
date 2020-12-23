@@ -390,8 +390,8 @@ function normalize(style, reset = []) {
           let k2 = STYLE_KEY[style2Upper(k + 'Y')];
           let arr1 = calUnit([k1, arr[0]], 1, arr[0]);
           let arr2 = calUnit([k2, arr[1]], 1, arr[1]);
-          compatibleTransform(k1, arr1);
-          compatibleTransform(k2, arr2);
+          compatibleTransform(k1, arr1[1]);
+          compatibleTransform(k2, arr2[1]);
           transform.push(arr1);
           transform.push(arr2);
         }

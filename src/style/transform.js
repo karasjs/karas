@@ -71,7 +71,7 @@ function calMatrix(transform, ow, oh) {
 function calMatrixByOrigin(m, transformOrigin) {
   let [ox, oy] = transformOrigin;
   if(ox === 0 && oy === 0) {
-    return m;
+    return m.slice(0);
   }
   let t = identity();
   t[4] = ox;

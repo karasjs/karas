@@ -1735,7 +1735,7 @@ class Xom extends Node {
     if(p) {
       matrix = mx.multiply(p.matrixEvent, matrix);
     }
-    // 为了引用不变，防止变化后text获取不到，恶心的v8优化
+    // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
     let m = this.__matrixEvent = __config[NODE_MATRIX_EVENT];
     m[0] = matrix[0];
     m[1] = matrix[1];

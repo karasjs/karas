@@ -5960,7 +5960,7 @@
         oy = _transformOrigin[1];
 
     if (ox === 0 && oy === 0) {
-      return m;
+      return m.slice(0);
     }
 
     var t = identity$1();
@@ -13814,7 +13814,7 @@
 
         if (p) {
           matrix = mx.multiply(p.matrixEvent, matrix);
-        } // 为了引用不变，防止变化后text获取不到，恶心的v8优化
+        } // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
 
 
         var m = this.__matrixEvent = __config[NODE_MATRIX_EVENT];

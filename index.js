@@ -23405,6 +23405,13 @@
                           cleanSvgCache(node.domParent);
                         }
                       }
+                    } else if (isLastNone || isNowNone) {
+                      node.__zIndexChildren = null;
+
+                      var _arr = node.__modifyStruct(root, diffI);
+
+                      diffI += _arr[1];
+                      diffList.push(_arr);
                     }
 
                     return;
@@ -23566,10 +23573,10 @@
 
 
                 if (component) {
-                  var _arr = node.__modifyStruct(root, diffI);
+                  var _arr2 = node.__modifyStruct(root, diffI);
 
-                  diffI += _arr[1];
-                  diffList.push(_arr);
+                  diffI += _arr2[1];
+                  diffList.push(_arr2);
 
                   if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                     node.domParent.__updateStruct(root.__structs);
@@ -23582,10 +23589,10 @@
                 else if (isLastNone || isNowNone) {
                     node.__zIndexChildren = null;
 
-                    var _arr2 = node.__modifyStruct(root, diffI);
+                    var _arr3 = node.__modifyStruct(root, diffI);
 
-                    diffI += _arr2[1];
-                    diffList.push(_arr2);
+                    diffI += _arr3[1];
+                    diffList.push(_arr3);
                   }
               } // OFFSET操作的节点都是relative，要考虑auto变化
               else {

@@ -1276,6 +1276,12 @@ class Root extends Dom {
                   }
                 }
               }
+              else if(isLastNone || isNowNone) {
+                node.__zIndexChildren = null;
+                let arr = node.__modifyStruct(root, diffI);
+                diffI += arr[1];
+                diffList.push(arr);
+              }
               return;
             }
             change2Abs = true;

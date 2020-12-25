@@ -13,6 +13,12 @@
 <body>
 <div class="pre">直接输入json，生成动画，这是动态加载的更加直观的演示。</div>
 <div>
+<label>
+  <input type="number" value="360" id="w"/>width
+</label>
+<label>
+  <input type="number" value="360" id="h"/>height
+</label>
 <textarea id="ta" autocomplete="off">{
   "tagName": "$rect",
   "props": {
@@ -65,12 +71,14 @@
   var ta = document.getElementById('ta');
   var input = document.getElementById('btn');
   function exec(s) {
-    let json = JSON.parse(s);
+    var w = parseInt(document.querySelector('#w').value) || 360;
+    var h = parseInt(document.querySelector('#h').value) || 360;
+    var json = JSON.parse(s);
     karas.parse({
       tagName: 'canvas',
       props: {
-        width: 360,
-        height: 360,
+        width: w,
+        height: h,
       },
       children: Array.isArray(json) ? json : [
         json,
@@ -79,13 +87,21 @@
     karas.parse({
       tagName: 'svg',
       props: {
-        width: 360,
-        height: 360,
+        width: w,
+        height: h,
       },
       children: Array.isArray(json) ? json : [
         json,
       ],
     }, '#example2');
+    var canvas = document.querySelector('canvas');
+    var svg = document.querySelector('svg');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    svg.style.width = w + 'px';
+    svg.style.height = h + 'px';
   }
   input.onclick = function() {
     exec(ta.value);

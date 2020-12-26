@@ -7,7 +7,7 @@
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">线性渐变和径向渐变可以丰富图形表现，css、canvas、svg写法定义均不相同，统一至css标准。</div>
+<div class="pre">线性渐变、径向渐变、锥形渐变可以丰富图形表现，css、canvas、svg写法定义均不相同，统一至css标准。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
@@ -16,6 +16,7 @@
     <canvas width="360" height="360">
       <div style={{width:100,height:100,background:'linear-gradient(#F00,#00F)'}}/>
       <div style={{marginTop:10,width:100,height:100,background:'radial-gradient(#F00,#00F)'}}/>
+      <div style={{marginTop:10,width:100,height:100,background:'conic-gradient(#F00,#00F)'}}/>
     </canvas>,
     '#example'
   );
@@ -23,6 +24,7 @@
     <svg width="360" height="360">
       <div style={{width:100,height:100,background:'linear-gradient(#F00,#00F)'}}/>
       <div style={{marginTop:10,width:100,height:100,background:'radial-gradient(#F00,#00F)'}}/>
+      <div style={{marginTop:10,width:100,height:100,background:'conic-gradient(#F00,#00F)'}}/>
     </svg>,
     '#example2'
   );

@@ -12404,6 +12404,8 @@
     if (renderMode === mode.CANVAS) {
       if (matrix) {
         ctx.save();
+        var me = xom.matrixEvent;
+        matrix = mx.multiply(me, matrix);
         ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
       }
 
@@ -18602,7 +18604,8 @@
             isMulti = this.isMulti;
         var isFillCE = fill.k === 'conic';
         var isStrokeCE = stroke.k === 'conic';
-        var isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
+        var isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
+
         var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
 
         if (isFillCE || isStrokeCE) {
@@ -18777,6 +18780,8 @@
         if (renderMode === mode.CANVAS) {
           if (matrix) {
             ctx.save();
+            var me = this.matrixEvent;
+            matrix = mx.multiply(me, matrix);
             ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
           }
 

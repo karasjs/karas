@@ -209,6 +209,8 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw,
   if(renderMode === mode.CANVAS) {
     if(matrix) {
       ctx.save();
+      let me = xom.matrixEvent;
+      matrix = mx.multiply(me, matrix);
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     ctx.beginPath();

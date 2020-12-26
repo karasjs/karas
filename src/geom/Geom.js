@@ -374,7 +374,7 @@ class Geom extends Xom {
     let { __cacheProps: { list }, isMulti } = this;
     let isFillCE = fill.k === 'conic';
     let isStrokeCE = stroke.k === 'conic';
-    let isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
+    let isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
     let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
     if(isFillCE || isStrokeCE) {
       if(isFillCE) {
@@ -532,6 +532,8 @@ class Geom extends Xom {
     if(renderMode === mode.CANVAS) {
       if(matrix) {
         ctx.save();
+        let me = this.matrixEvent;
+        matrix = mx.multiply(me, matrix);
         ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
       }
       ctx.beginPath();

@@ -1566,7 +1566,7 @@ class Animation extends Event {
       }
       // 非尾每轮次放完增加次数和计算下轮准备
       if(!isLastCount) {
-        __config[I_NEXT_TIME] = currentTime - duration;
+        __config[I_NEXT_TIME] = currentTime - duration + diff;
         playCount = ++__config[I_PLAY_COUNT];
         __config[I_NEXT_BEGIN] = true;
       }

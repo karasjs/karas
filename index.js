@@ -10763,7 +10763,7 @@
 
 
           if (!isLastCount) {
-            __config[I_NEXT_TIME] = currentTime - duration;
+            __config[I_NEXT_TIME] = currentTime - duration + diff;
             playCount = ++__config[I_PLAY_COUNT];
             __config[I_NEXT_BEGIN] = true;
           } // 尾次考虑endDelay
@@ -26357,7 +26357,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.6";
+  var version = "0.46.7";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

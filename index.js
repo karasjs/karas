@@ -13825,12 +13825,7 @@
         m[2] = matrix[2];
         m[3] = matrix[3];
         m[4] = matrix[4];
-        m[5] = matrix[5]; // 无法使用缓存时主画布直接绘制需设置
-
-        if (renderMode === mode.CANVAS && !cache) {
-          ctx.globalAlpha = opacity;
-          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-        }
+        m[5] = matrix[5];
 
         if (renderMode === mode.SVG) {
           // svg可以没变化省略计算，因为只相对于自身
@@ -13844,6 +13839,12 @@
 
         if (visibility === 'hidden') {
           if (renderMode === mode.CANVAS) {
+            // 无法使用缓存时主画布直接绘制需设置
+            if (!cache) {
+              ctx.globalAlpha = opacity;
+              ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+            }
+
             res["break"] = true;
             return res;
           }
@@ -14061,6 +14062,12 @@
             };
             ctx = _c2.ctx;
           }
+        } // 无法使用缓存时主画布直接绘制需设置
+
+
+        if (renderMode === mode.CANVAS && !cache) {
+          ctx.globalAlpha = opacity;
+          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         } // 背景色垫底
 
 

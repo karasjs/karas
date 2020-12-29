@@ -89,6 +89,7 @@ class Component extends Event {
    * @private
    */
   __init(json) {
+    this.__ref = {};
     let root = this.root;
     let cd = json || builder.flattenJson(this.render());
     let sr = builder.initCp(cd, root, this);

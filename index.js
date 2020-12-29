@@ -14413,18 +14413,7 @@
 
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
-        var host = this.host,
-            root = this.root;
-        var ref = this.props.ref;
-
-        if (ref) {
-          var owner = host || root;
-
-          if (owner && owner.ref[ref] && owner.ref[ref] === this) {
-            delete owner.ref[ref];
-          }
-        }
-
+        var root = this.root;
         this.animationList.forEach(function (item) {
           return item.__destroy();
         });
@@ -15652,6 +15641,7 @@
       value: function __init(json) {
         var _this3 = this;
 
+        this.__ref = {};
         var root = this.root;
         var cd = json || builder.flattenJson(this.render());
         var sr = builder.initCp(cd, root, this);
@@ -19086,6 +19076,7 @@
         updateCp(cp, nextProps, cp.__nextState || cp.state);
       } // 不更新则递归检查子tree的cp
       else {
+          cp.props = nextProps;
           cp.state = cp.__nextState || cp.state;
           check(cp.shadowRoot);
         }

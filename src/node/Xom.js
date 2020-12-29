@@ -2285,14 +2285,7 @@ class Xom extends Node {
       return;
     }
     super.__destroy();
-    let { host, root } = this;
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = host || root;
-      if(owner && owner.ref[ref] && owner.ref[ref] === this) {
-        delete owner.ref[ref];
-      }
-    }
+    let { root } = this;
     this.animationList.forEach(item => item.__destroy());
     root.delRefreshTask(this.__loadBgi.cb);
     root.delRefreshTask(this.__task);

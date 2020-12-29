@@ -60,6 +60,7 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
     }
     // 不更新则递归检查子tree的cp
     else {
+      cp.state = cp.__nextState || cp.state;
       check(cp.shadowRoot);
     }
   }

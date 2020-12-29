@@ -22020,15 +22020,17 @@
     return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
   }
 
-  function initEvent(dom) {
+  function initEvent(dom, Root) {
     ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
       dom.addEventListener(type, function (e) {
         var root = dom.__root;
 
-        if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-          root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
-        } else {
-          root.__cb(e);
+        if (root && root instanceof Root) {
+          if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
+            root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+          } else {
+            root.__cb(e);
+          }
         }
       });
     });
@@ -22642,7 +22644,7 @@
         if (this.dom.__root) {
           this.dom.__root.destroy();
         } else {
-          initEvent(this.dom);
+          initEvent(this.dom, Root);
           this.dom.__uuid = this.__uuid;
         }
 
@@ -26358,7 +26360,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.7";
+  var version = "0.46.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

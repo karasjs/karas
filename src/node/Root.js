@@ -116,15 +116,17 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
-function initEvent(dom) {
+function initEvent(dom, Root) {
   ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
     dom.addEventListener(type, e => {
       let root = dom.__root;
-      if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-        root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
-      }
-      else {
-        root.__cb(e);
+      if(root && root instanceof Root) {
+        if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
+          root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+        }
+        else {
+          root.__cb(e);
+        }
       }
     });
   });
@@ -628,7 +630,7 @@ class Root extends Dom {
       this.dom.__root.destroy();
     }
     else {
-      initEvent(this.dom);
+      initEvent(this.dom, Root);
       this.dom.__uuid = this.__uuid;
     }
     this.dom.__root = this;

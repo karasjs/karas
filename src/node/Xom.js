@@ -2344,7 +2344,7 @@ class Xom extends Node {
         e.target = this;
         // 缓存target给move用
         if(e.event.type === 'touchstart') {
-          this.root.__touchstartTarget = this;
+          this.root && (this.root.__touchstartTarget = this);
         }
       }
       return true;

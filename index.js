@@ -609,21 +609,38 @@
   };
 
   var font = {
-    arial: {
-      lhr: 1.14990234375,
-      // 默认line-height ratio，(67+1854+434)/2048
-      car: 1.1171875,
-      // content-area ratio，(1854+434)/2048
-      blr: 0.9052734375 // base-line ratio，1854/2048
-      // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-      // lgr: 0.03271484375, // line-gap ratio，67/2048
+    info: {
+      arial: {
+        lhr: 1.14990234375,
+        // 默认line-height ratio，(67+1854+434)/2048
+        // car: 1.1171875, // content-area ratio，(1854+434)/2048
+        blr: 0.9052734375 // base-line ratio，1854/2048
+        // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
+        // lgr: 0.03271484375, // line-gap ratio，67/2048
 
-    } // 'pingfang sc': {
-    //   lhr: 1.4, // (0+1060+340)/1000
-    //   car: 1.4, // (1060+340)/1000
-    //   blr: 1.06, // 1060/1000
-    // },
+      },
+      'pingfang sc': {
+        lhr: 1.4,
+        // (0+1060+340)/1000
+        // car: 1.4, // (1060+340)/1000
+        blr: 1.06 // 1060/1000
 
+      }
+    },
+    register: function register(name, info) {
+      var _info$emSquare = info.emSquare,
+          emSquare = _info$emSquare === void 0 ? 2048 : _info$emSquare,
+          _info$ascent = info.ascent,
+          ascent = _info$ascent === void 0 ? 1854 : _info$ascent,
+          _info$descent = info.descent,
+          descent = _info$descent === void 0 ? 434 : _info$descent,
+          _info$lineGap = info.lineGap,
+          lineGap = _info$lineGap === void 0 ? 67 : _info$lineGap;
+      this.info[name] = {
+        lhr: (ascent + descent + lineGap) / emSquare,
+        blr: ascent / emSquare
+      };
+    }
   };
 
   // 类型为引用防止json仿造
@@ -4711,12 +4728,14 @@
 
   function getBaseLine(style) {
     var fontSize = style[FONT_SIZE$1];
-    var normal = fontSize * font.arial.lhr;
-    return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * font.arial.blr;
+    var ff = style[FONT_FAMILY$1];
+    var normal = fontSize * (font.info[ff] || font.info.arial).lhr;
+    return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
   }
 
   function calNormalLineHeight(computedStyle) {
-    return computedStyle[FONT_SIZE$1] * font.arial.lhr;
+    var ff = computedStyle[FONT_FAMILY$1];
+    return computedStyle[FONT_SIZE$1] * (font.info[ff] || font.info.arial).lhr;
   }
 
   function calRelativePercent(n, parent, k) {

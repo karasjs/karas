@@ -826,12 +826,14 @@ function setFontStyle(style) {
 
 function getBaseLine(style) {
   let fontSize = style[FONT_SIZE];
-  let normal = fontSize * font.arial.lhr;
-  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * font.arial.blr;
+  let ff = style[FONT_FAMILY];
+  let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
+  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
 }
 
 function calNormalLineHeight(computedStyle) {
-  return computedStyle[FONT_SIZE] * font.arial.lhr;
+  let ff = computedStyle[FONT_FAMILY];
+  return computedStyle[FONT_SIZE] * (font.info[ff] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {

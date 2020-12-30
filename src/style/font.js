@@ -16,8 +16,8 @@ export default {
     },
   },
   register(name, info) {
-    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 67 } = info;
-    this.info[name] = {
+    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 67 } = info || {};
+    this.info[name.toLowerCase()] = {
       lhr: (ascent + descent + lineGap) / emSquare,
       blr: ascent / emSquare,
     };

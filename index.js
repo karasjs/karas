@@ -628,15 +628,17 @@
       }
     },
     register: function register(name, info) {
-      var _info$emSquare = info.emSquare,
-          emSquare = _info$emSquare === void 0 ? 2048 : _info$emSquare,
-          _info$ascent = info.ascent,
-          ascent = _info$ascent === void 0 ? 1854 : _info$ascent,
-          _info$descent = info.descent,
-          descent = _info$descent === void 0 ? 434 : _info$descent,
-          _info$lineGap = info.lineGap,
-          lineGap = _info$lineGap === void 0 ? 67 : _info$lineGap;
-      this.info[name] = {
+      var _ref = info || {},
+          _ref$emSquare = _ref.emSquare,
+          emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
+          _ref$ascent = _ref.ascent,
+          ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
+          _ref$descent = _ref.descent,
+          descent = _ref$descent === void 0 ? 434 : _ref$descent,
+          _ref$lineGap = _ref.lineGap,
+          lineGap = _ref$lineGap === void 0 ? 67 : _ref$lineGap;
+
+      this.info[name.toLowerCase()] = {
         lhr: (ascent + descent + lineGap) / emSquare,
         blr: ascent / emSquare
       };

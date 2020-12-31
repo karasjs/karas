@@ -4540,7 +4540,7 @@
       } else if (reg.gradient.test(temp)) {
         res[FILL] = [gradient.parseGradient(temp)];
       } else {
-        res[FILL] = rgba2int$2(temp);
+        res[FILL] = [rgba2int$2(temp)];
       }
     }
 
@@ -4999,11 +4999,15 @@
           n[0] = n[0].slice(0);
         }
       } else if (k === FILL || k === STROKE) {
-        if (v.k) {
-          res[k] = util.clone(v);
-        } else {
-          res[k] = v.slice(0);
-        }
+        res[k] = v.map(function (item) {
+          // 渐变
+          if (item.k) {
+            return util.clone(item);
+          } // 颜色
+          else {
+              return item.slice(0);
+            }
+        });
       } // else if(k === FILTER) {
       //   if(v) {
       //     v = v.slice(0);
@@ -9581,152 +9585,198 @@
       }
     } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
-      if (p.k !== n.k) {
-        return;
-      } // 渐变
+      var temp1 = res[1] = [];
+      var length = Math.min(p.length, n.length);
 
+      for (var _i3 = 0; _i3 < length; _i3++) {
+        var _pi2 = p[_i3],
+            _ni2 = n[_i3];
 
-      if (p.k === 'linear' || p.k === 'radial' || p.k === 'conic') {
-        var pv = p.v;
-        var nv = n.v;
-        res[1] = [];
-        var clientWidth = target.clientWidth;
-        var eq = equalArr$2(pv, nv);
-
-        for (var _i3 = 0, _len = Math.min(pv.length, nv.length); _i3 < _len; _i3++) {
-          var _a = pv[_i3];
-          var _b = nv[_i3];
-          var t = [];
-          t.push([_b[0][0] - _a[0][0], _b[0][1] - _a[0][1], _b[0][2] - _a[0][2], _b[0][3] - _a[0][3]]);
-
-          if (_a[1] && _b[1]) {
-            if (_a[1][1] === _b[1][1]) {
-              t.push(_b[1][0] - _a[1][0]);
-            } else if (_a[1][1] === PX$3 && _b[1][1] === PERCENT$4) {
-              t.push(_b[1][0] * clientWidth * 0.01 - _a[1][0]);
-            } else if (_a[1][1] === PERCENT$4 && _b[1][1] === PX$3) {
-              t.push(_b[1][0] * 100 / clientWidth - _a[1][0]);
-            }
-          }
-
-          res[1].push(t);
-        } // 线性渐变有角度差值变化
-
-
-        if (p.k === 'linear') {
-          var isArrP = Array.isArray(p.d);
-          var isArrN = Array.isArray(n.d);
-
-          if (isArrN !== isArrP) {
-            return;
-          }
-
-          if (isArrP) {
-            var _v11 = [n.d[0] - p.d[0], n.d[1] - p.d[1], n.d[2] - p.d[2], n.d[3] - p.d[3]];
-
-            if (eq && equalArr$2(_v11, [0, 0, 0, 0])) {
-              return;
-            }
-
-            res[2] = _v11;
-          } else {
-            var _v12 = n.d - p.d;
-
-            if (eq && _v12 === 0) {
-              return;
-            }
-
-            res[2] = _v12;
-          }
-        } // 径向渐变的位置
-        else if (p.k === 'radial') {
-            var _isArrP = Array.isArray(p.z);
-
-            var _isArrN = Array.isArray(n.z);
-
-            if (_isArrN !== _isArrP) {
-              return;
-            }
-
-            if (_isArrP) {
-              res[4] = [];
-
-              for (var _i4 = 0; _i4 < 5; _i4++) {
-                var pz = p.z[_i4]; // 半径比例省略为1
-
-                if (pz === undefined) {
-                  pz = 1;
-                }
-
-                var nz = n.z[_i4];
-
-                if (nz === undefined) {
-                  nz = 1;
-                }
-
-                res[4].push(nz - pz);
-              }
-
-              if (eq && equalArr$2(res[4], [0, 0, 0, 0, 0])) {
-                return;
-              }
-            } else {
-              res[3] = [];
-
-              for (var _i5 = 0; _i5 < 2; _i5++) {
-                var pp = p.p[_i5];
-                var np = n.p[_i5];
-
-                if (pp[1] === np[1]) {
-                  res[3].push(np[0] - pp[0]);
-                } else if (pp[1] === PX$3 && np[1] === PERCENT$4) {
-                  var _v13 = np[0] * 0.01 * target[_i5 ? 'clientWidth' : 'clientHeight'];
-
-                  res[3].push(_v13 - pp[0]);
-                } else if (pp[1] === PERCENT$4 && np[1] === PX$3) {
-                  var _v14 = np[0] * 100 / target[_i5 ? 'clientWidth' : 'clientHeight'];
-
-                  res[3].push(_v14 - pp[0]);
-                }
-              }
-
-              if (eq && equalArr$2(res[3], [0, 0])) {
-                return;
-              }
-            }
-          } else if (p.k === 'conic') {
-            res[2] = n.d - p.d;
-            res[3] = [];
-
-            for (var _i6 = 0; _i6 < 2; _i6++) {
-              var _pp = p.p[_i6];
-              var _np = n.p[_i6];
-
-              if (_pp[1] === _np[1]) {
-                res[3].push(_np[0] - _pp[0]);
-              } else if (_pp[1] === PX$3 && _np[1] === PERCENT$4) {
-                var _v15 = _np[0] * 0.01 * target[_i6 ? 'clientWidth' : 'clientHeight'];
-
-                res[3].push(_v15 - _pp[0]);
-              } else if (_pp[1] === PERCENT$4 && _np[1] === PX$3) {
-                var _v16 = _np[0] * 100 / target[_i6 ? 'clientWidth' : 'clientHeight'];
-
-                res[3].push(_v16 - _pp[0]);
-              }
-            }
-
-            if (eq && res[2] !== 0 && equalArr$2(res[3], [0, 0])) {
-              return;
-            }
-          }
-      } // 纯色
-      else {
-          if (equalArr$2(n, p)) {
-            return;
-          }
-
-          res[1] = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
+        if (_pi2.k !== _ni2.k) {
+          // return;
+          res[1].push(null);
+          continue;
         }
+
+        var temp = []; // 渐变
+
+        if (_pi2.k === 'linear' || _pi2.k === 'radial' || _pi2.k === 'conic') {
+          var pv = _pi2.v;
+          var nv = _ni2.v; // res[1] = [];
+
+          temp[0] = [];
+          var clientWidth = target.clientWidth;
+          var eq = equalArr$2(pv, nv);
+
+          for (var _i4 = 0, _len = Math.min(pv.length, nv.length); _i4 < _len; _i4++) {
+            var _a = pv[_i4];
+            var _b = nv[_i4];
+            var t = [];
+            t.push([_b[0][0] - _a[0][0], _b[0][1] - _a[0][1], _b[0][2] - _a[0][2], _b[0][3] - _a[0][3]]);
+
+            if (_a[1] && _b[1]) {
+              if (_a[1][1] === _b[1][1]) {
+                t.push(_b[1][0] - _a[1][0]);
+              } else if (_a[1][1] === PX$3 && _b[1][1] === PERCENT$4) {
+                t.push(_b[1][0] * clientWidth * 0.01 - _a[1][0]);
+              } else if (_a[1][1] === PERCENT$4 && _b[1][1] === PX$3) {
+                t.push(_b[1][0] * 100 / clientWidth - _a[1][0]);
+              }
+            } // res[1].push(t);
+
+
+            temp[0].push(t);
+          } // 线性渐变有角度差值变化
+
+
+          if (_pi2.k === 'linear') {
+            var isArrP = Array.isArray(_pi2.d);
+            var isArrN = Array.isArray(_ni2.d);
+
+            if (isArrN !== isArrP) {
+              // return;
+              res[1].push(null);
+              continue;
+            }
+
+            if (isArrP) {
+              var _v11 = [_ni2.d[0] - _pi2.d[0], _ni2.d[1] - _pi2.d[1], _ni2.d[2] - _pi2.d[2], _ni2.d[3] - _pi2.d[3]];
+
+              if (eq && equalArr$2(_v11, [0, 0, 0, 0])) {
+                // return;
+                res[1].push(null);
+                continue;
+              } // res[2] = v;
+
+
+              temp[1] = _v11;
+            } else {
+              var _v12 = _ni2.d - _pi2.d;
+
+              if (eq && _v12 === 0) {
+                // return;
+                res[1].push(null);
+                continue;
+              } // res[2] = v;
+
+
+              temp[1] = _v12;
+            }
+          } // 径向渐变的位置
+          else if (_pi2.k === 'radial') {
+              var _isArrP = Array.isArray(_pi2.z);
+
+              var _isArrN = Array.isArray(_ni2.z);
+
+              if (_isArrN !== _isArrP) {
+                // return;
+                res[1].push(null);
+                continue;
+              }
+
+              if (_isArrP) {
+                // res[4] = [];
+                temp1[3] = [];
+
+                for (var _i5 = 0; _i5 < 5; _i5++) {
+                  var pz = _pi2.z[_i5]; // 半径比例省略为1
+
+                  if (pz === undefined) {
+                    pz = 1;
+                  }
+
+                  var nz = _ni2.z[_i5];
+
+                  if (nz === undefined) {
+                    nz = 1;
+                  } // res[4].push(nz - pz);
+
+
+                  temp1[3].push(nz - pz);
+                }
+
+                if (eq && equalArr$2(res[4], [0, 0, 0, 0, 0])) {
+                  // return;
+                  res[1].push(null);
+                }
+              } else {
+                // res[3] = [];
+                temp[2] = [];
+
+                for (var _i6 = 0; _i6 < 2; _i6++) {
+                  var pp = _pi2.p[_i6];
+                  var np = _ni2.p[_i6];
+
+                  if (pp[1] === np[1]) {
+                    // res[3].push(np[0] - pp[0]);
+                    temp[2].push(np[0] - pp[0]);
+                  } else if (pp[1] === PX$3 && np[1] === PERCENT$4) {
+                    var _v13 = np[0] * 0.01 * target[_i6 ? 'clientWidth' : 'clientHeight']; // res[3].push(v - pp[0]);
+
+
+                    temp[2].push(_v13 - pp[0]);
+                  } else if (pp[1] === PERCENT$4 && np[1] === PX$3) {
+                    var _v14 = np[0] * 100 / target[_i6 ? 'clientWidth' : 'clientHeight']; // res[3].push(v - pp[0]);
+
+
+                    temp[2].push(_v14 - pp[0]);
+                  }
+                }
+
+                if (eq && equalArr$2(res[3], [0, 0])) {
+                  // return;
+                  res[1].push(null);
+                }
+              }
+            } else if (_pi2.k === 'conic') {
+              // res[2] = n.d - p.d;
+              temp[1].push(n.d - p.d); // res[3] = [];
+
+              temp[2] = [];
+
+              for (var _i7 = 0; _i7 < 2; _i7++) {
+                var _pp = p.p[_i7];
+                var _np = n.p[_i7];
+
+                if (_pp[1] === _np[1]) {
+                  // res[3].push(np[0] - pp[0]);
+                  temp[2].push(_np[0] - _pp[0]);
+                } else if (_pp[1] === PX$3 && _np[1] === PERCENT$4) {
+                  var _v15 = _np[0] * 0.01 * target[_i7 ? 'clientWidth' : 'clientHeight']; // res[3].push(v - pp[0]);
+
+
+                  temp[2].push(_v15 - _pp[0]);
+                } else if (_pp[1] === PERCENT$4 && _np[1] === PX$3) {
+                  var _v16 = _np[0] * 100 / target[_i7 ? 'clientWidth' : 'clientHeight']; // res[3].push(v - pp[0]);
+
+
+                  temp[2].push(_v16 - _pp[0]);
+                }
+              }
+
+              if (eq && res[2] !== 0 && equalArr$2(res[3], [0, 0])) {
+                // return;
+                res[1].push(null);
+              }
+            }
+        } // 纯色
+        else {
+            if (equalArr$2(n, _pi2)) {
+              // return;
+              res[1].push(null);
+            } // res[1] = [
+            //   n[0] - p[0],
+            //   n[1] - p[1],
+            //   n[2] - p[2],
+            //   n[3] - p[3]
+            // ];
+
+
+            temp[0] = [_ni2[0] - _pi2[0], _ni2[1] - _pi2[1], _ni2[2] - _pi2[2], _ni2[3] - _pi2[3]];
+          }
+
+        res[1].push(temp);
+      }
     } else if (COLOR_HASH$2.hasOwnProperty(k)) {
       n = n[0];
       p = p[0];
@@ -9744,13 +9794,13 @@
 
       res[1] = [];
 
-      for (var _i7 = 0; _i7 < 2; _i7++) {
-        if (n[_i7][1] === p[_i7][1]) {
-          res[1].push(n[_i7][0] - p[_i7][0]);
-        } else if (p[_i7][1] === PX$3 && n[_i7][1] === PERCENT$4) {
-          res[1].push(n[_i7][0] * 0.01 * target[_i7 ? 'outerHeight' : 'outerWidth'] - p[_i7][0]);
-        } else if (p[_i7][1] === PERCENT$4 && n[_i7][1] === PX$3) {
-          res[1].push(n[_i7][0] * 100 / target[_i7 ? 'outerHeight' : 'outerWidth'] - p[_i7][0]);
+      for (var _i8 = 0; _i8 < 2; _i8++) {
+        if (n[_i8][1] === p[_i8][1]) {
+          res[1].push(n[_i8][0] - p[_i8][0]);
+        } else if (p[_i8][1] === PX$3 && n[_i8][1] === PERCENT$4) {
+          res[1].push(n[_i8][0] * 0.01 * target[_i8 ? 'outerHeight' : 'outerWidth'] - p[_i8][0]);
+        } else if (p[_i8][1] === PERCENT$4 && n[_i8][1] === PX$3) {
+          res[1].push(n[_i8][0] * 100 / target[_i8 ? 'outerHeight' : 'outerWidth'] - p[_i8][0]);
         } else {
           res[1].push(0);
         }
@@ -9816,8 +9866,8 @@
         if (target.isMulti) {
           var arr = [];
 
-          for (var _i8 = 0, _len2 = Math.min(p.length, n.length); _i8 < _len2; _i8++) {
-            arr.push(fn(p[_i8], n[_i8]));
+          for (var _i9 = 0, _len2 = Math.min(p.length, n.length); _i9 < _len2; _i9++) {
+            arr.push(fn(p[_i9], n[_i9]));
           }
 
           return arr;
@@ -9833,9 +9883,9 @@
 
             res[1] = [];
 
-            for (var _i9 = 0, _len3 = Math.min(p.length, n.length); _i9 < _len3; _i9++) {
-              var _pv = p[_i9];
-              var _nv = n[_i9];
+            for (var _i10 = 0, _len3 = Math.min(p.length, n.length); _i10 < _len3; _i10++) {
+              var _pv = p[_i10];
+              var _nv = n[_i10];
 
               if (isNil$4(_pv) || isNil$4(_nv)) {
                 res[1].push(null);
@@ -9876,9 +9926,9 @@
 
             res[1] = [];
 
-            for (var _i10 = 0, _len4 = Math.min(p.length, n.length); _i10 < _len4; _i10++) {
-              var _pv2 = p[_i10];
-              var _nv2 = n[_i10];
+            for (var _i11 = 0, _len4 = Math.min(p.length, n.length); _i11 < _len4; _i11++) {
+              var _pv2 = p[_i11];
+              var _nv2 = n[_i11];
 
               if (isNil$4(_pv2) || isNil$4(_nv2)) {
                 res[1].push(null);
@@ -9893,9 +9943,9 @@
 
             var _v19 = [];
 
-            for (var _i11 = 0, _len5 = Math.min(p.length, n.length); _i11 < _len5; _i11++) {
-              var _pv3 = p[_i11];
-              var _nv3 = n[_i11];
+            for (var _i12 = 0, _len5 = Math.min(p.length, n.length); _i12 < _len5; _i12++) {
+              var _pv3 = p[_i12];
+              var _nv3 = n[_i12];
 
               if (isNil$4(_pv3) || isNil$4(_nv3)) {
                 _v19.push(0);
@@ -9914,9 +9964,9 @@
 
             res[1] = [];
 
-            for (var _i12 = 0, _len6 = Math.min(p.length, n.length); _i12 < _len6; _i12++) {
-              var _pv4 = p[_i12];
-              var _nv4 = n[_i12];
+            for (var _i13 = 0, _len6 = Math.min(p.length, n.length); _i13 < _len6; _i13++) {
+              var _pv4 = p[_i13];
+              var _nv4 = n[_i13];
 
               if (isNil$4(_pv4) || isNil$4(_nv4)) {
                 res[1].push(null);
@@ -10051,12 +10101,9 @@
     var tagName = target.tagName;
 
     var _loop = function _loop(i, len) {
-      var _transition$i = _slicedToArray(transition[i], 5),
+      var _transition$i = _slicedToArray(transition[i], 2),
           k = _transition$i[0],
-          v = _transition$i[1],
-          d = _transition$i[2],
-          p = _transition$i[3],
-          z = _transition$i[4];
+          v = _transition$i[1];
 
       var st = style[k]; // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
 
@@ -10065,8 +10112,8 @@
           st = style[k] = [[MATRIX$2, [1, 0, 0, 1, 0, 0]]];
         }
 
-        for (var _i13 = 0; _i13 < 6; _i13++) {
-          st[0][1][_i13] += v[_i13] * percent;
+        for (var _i14 = 0; _i14 < 6; _i14++) {
+          st[0][1][_i14] += v[_i14] * percent;
         }
       } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
         if (v) {
@@ -10080,8 +10127,8 @@
 
         st[0][1] += v * percent;
       } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
-        for (var _i14 = 0; _i14 < 2; _i14++) {
-          st[_i14][0] += v[_i14] * percent;
+        for (var _i15 = 0; _i15 < 2; _i15++) {
+          st[_i15][0] += v[_i15] * percent;
         }
       } else if (k === TRANSFORM_ORIGIN$2 || k === BACKGROUND_SIZE$1) {
         if (v[0] !== 0) {
@@ -10092,66 +10139,80 @@
           st[1][0] += v[1] * percent;
         }
       } else if (k === BOX_SHADOW$1) {
-        for (var _i15 = 0, _len8 = Math.min(st.length, v.length); _i15 < _len8; _i15++) {
+        for (var _i16 = 0, _len8 = Math.min(st.length, v.length); _i16 < _len8; _i16++) {
           // x/y/blur/spread
           for (var j = 0; j < 4; j++) {
-            st[_i15][j] += v[_i15][j] * percent;
+            st[_i16][j] += v[_i16][j] * percent;
           } // rgba
 
 
           for (var _j4 = 0; _j4 < 4; _j4++) {
-            st[_i15][4][_j4] += v[_i15][4][_j4] * percent;
+            st[_i16][4][_j4] += v[_i16][4][_j4] * percent;
           }
         }
       } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
-        if (GRADIENT_TYPE$2.hasOwnProperty(st.k)) {
-          for (var _i16 = 0, _len9 = Math.min(st.v.length, v.length); _i16 < _len9; _i16++) {
-            var a = st.v[_i16];
-            var b = v[_i16];
-            a[0][0] += b[0][0] * percent;
-            a[0][1] += b[0][1] * percent;
-            a[0][2] += b[0][2] * percent;
-            a[0][3] += b[0][3] * percent;
+        st.forEach(function (st2, i) {
+          var v2 = v[i];
 
-            if (a[1] && b[1]) {
-              a[1][0] += b[1] * percent;
-            }
+          if (!v2) {
+            return;
           }
 
-          if (st.k === 'linear' && st.d !== undefined && d !== undefined) {
-            if (Array.isArray(d)) {
-              st.d[0] += d[0] * percent;
-              st.d[1] += d[1] * percent;
-              st.d[2] += d[2] * percent;
-              st.d[3] += d[3] * percent;
-            } else {
-              st.d += d * percent;
-            }
-          }
+          var _v21 = _slicedToArray(v2, 4),
+              c = _v21[0],
+              d = _v21[1],
+              p = _v21[2],
+              z = _v21[3];
 
-          if (st.k === 'radial') {
-            if (st.z !== undefined && z !== undefined) {
-              st.z[0] += z[0] * percent;
-              st.z[1] += z[1] * percent;
-              st.z[2] += z[2] * percent;
-              st.z[3] += z[3] * percent;
-              st.z[4] += z[4] * percent;
-            } else if (st.p !== undefined && p !== undefined) {
-              st.p[0][0] += p[0] * percent;
-              st.p[1][0] += p[1] * percent;
+          if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
+            for (var _i17 = 0, _len9 = Math.min(st2.v.length, c.length); _i17 < _len9; _i17++) {
+              var a = st2.v[_i17];
+              var b = c[_i17];
+              a[0][0] += b[0][0] * percent;
+              a[0][1] += b[0][1] * percent;
+              a[0][2] += b[0][2] * percent;
+              a[0][3] += b[0][3] * percent;
+
+              if (a[1] && b[1]) {
+                a[1][0] += b[1] * percent;
+              }
             }
-          } else if (st.k === 'conic' && st.d !== undefined && d !== undefined) {
-            st.d += d * percent;
-            st.p[0][0] += p[0] * percent;
-            st.p[1][0] += p[1] * percent;
-          }
-        } // fill纯色
-        else {
-            st[0] += v[0] * percent;
-            st[1] += v[1] * percent;
-            st[2] += v[2] * percent;
-            st[3] += v[3] * percent;
-          }
+
+            if (st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
+              if (Array.isArray(d)) {
+                st2.d[0] += d[0] * percent;
+                st2.d[1] += d[1] * percent;
+                st2.d[2] += d[2] * percent;
+                st2.d[3] += d[3] * percent;
+              } else {
+                st2.d += d * percent;
+              }
+            }
+
+            if (st2.k === 'radial') {
+              if (st2.z !== undefined && z !== undefined) {
+                st2.z[0] += z[0] * percent;
+                st2.z[1] += z[1] * percent;
+                st2.z[2] += z[2] * percent;
+                st2.z[3] += z[3] * percent;
+                st2.z[4] += z[4] * percent;
+              } else if (st2.p !== undefined && p !== undefined) {
+                st2.p[0][0] += p[0] * percent;
+                st2.p[1][0] += p[1] * percent;
+              }
+            } else if (st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
+              st2.d += d * percent;
+              st2.p[0][0] += p[0] * percent;
+              st2.p[1][0] += p[1] * percent;
+            }
+          } // fill纯色
+          else {
+              st2[0] += v2[0] * percent;
+              st2[1] += v2[1] * percent;
+              st2[2] += v2[2] * percent;
+              st2[3] += v2[3] * percent;
+            }
+        });
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH$2.hasOwnProperty(k)) {
           st = st[0];
@@ -10174,9 +10235,9 @@
             }
           } else if (target.isMulti) {
             if (k === 'points' || k === 'controls') {
-              for (var _i17 = 0, _len10 = Math.min(_st.length, v.length); _i17 < _len10; _i17++) {
-                var o = _st[_i17];
-                var n = v[_i17];
+              for (var _i18 = 0, _len10 = Math.min(_st.length, v.length); _i18 < _len10; _i18++) {
+                var o = _st[_i18];
+                var n = v[_i18];
 
                 if (!isNil$4(o) && !isNil$4(n)) {
                   for (var _j5 = 0, len2 = Math.min(o.length, n.length); _j5 < len2; _j5++) {
@@ -10198,12 +10259,12 @@
                 var st2 = _st[i];
 
                 if (!isNil$4(item) && !isNil$4(st2)) {
-                  for (var _i18 = 0, _len11 = Math.min(st2.length, item.length); _i18 < _len11; _i18++) {
-                    var _o = st2[_i18];
-                    var _n = item[_i18];
+                  for (var _i19 = 0, _len11 = Math.min(st2.length, item.length); _i19 < _len11; _i19++) {
+                    var _o = st2[_i19];
+                    var _n = item[_i19];
 
                     if (!isNil$4(_o) && !isNil$4(_n)) {
-                      st2[_i18] += _n * percent;
+                      st2[_i19] += _n * percent;
                     }
                   }
                 }
@@ -10217,9 +10278,9 @@
             }
           } else {
             if (k === 'points' || k === 'controls') {
-              for (var _i19 = 0, _len12 = Math.min(_st.length, v.length); _i19 < _len12; _i19++) {
-                var _o2 = _st[_i19];
-                var _n2 = v[_i19];
+              for (var _i20 = 0, _len12 = Math.min(_st.length, v.length); _i20 < _len12; _i20++) {
+                var _o2 = _st[_i20];
+                var _n2 = v[_i20];
 
                 if (!isNil$4(_o2) && !isNil$4(_n2)) {
                   for (var _j6 = 0, _len13 = Math.min(_o2.length, _n2.length); _j6 < _len13; _j6++) {
@@ -10450,8 +10511,8 @@
         var offset = -1;
         var tagName = target.tagName;
 
-        var _loop2 = function _loop2(_i20, _len14) {
-          var current = list[_i20];
+        var _loop2 = function _loop2(_i21, _len14) {
+          var current = list[_i21];
 
           if (current.hasOwnProperty('offset')) {
             current.offset = parseFloat(current.offset) || 0;
@@ -10459,18 +10520,18 @@
             current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-              list.splice(_i20, 1);
-              _i20--;
+              list.splice(_i21, 1);
+              _i21--;
               _len14--;
-              i = _i20;
+              i = _i21;
               len = _len14;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
-                list.splice(_i20, 1);
-                _i20--;
+                list.splice(_i21, 1);
+                _i21--;
                 _len14--;
-                i = _i20;
+                i = _i21;
                 len = _len14;
                 return "continue";
               }
@@ -10487,7 +10548,7 @@
               delete current[k];
             }
           });
-          i = _i20;
+          i = _i21;
           len = _len14;
         };
 
@@ -10541,12 +10602,12 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i21 = 1, _len15 = list.length; _i21 < _len15; _i21++) {
-          var start = list[_i21]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i22 = 1, _len15 = list.length; _i22 < _len15; _i22++) {
+          var start = list[_i22]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i21 + 1;
+            var j = _i22 + 1;
 
             for (; j < _len15; j++) {
               end = list[j];
@@ -10556,16 +10617,16 @@
               }
             }
 
-            var num = j - _i21 + 1;
-            start = list[_i21 - 1];
+            var num = j - _i22 + 1;
+            start = list[_i22 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i21; k < j; k++) {
+            for (var k = _i22; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i21);
+              item.offset = start.offset + per * (k + 1 - _i22);
             }
 
-            _i21 = j;
+            _i22 = j;
           }
         }
 
@@ -10592,8 +10653,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i22 = 1; _i22 < length; _i22++) {
-          var next = frames[_i22];
+        for (var _i23 = 1; _i23 < length; _i23++) {
+          var next = frames[_i23];
           prev = calFrame(prev, next, keys, target, tagName);
         } // 反向存储帧的倒排结果
 
@@ -10605,8 +10666,8 @@
         });
         prev = framesR[0];
 
-        for (var _i23 = 1; _i23 < length; _i23++) {
-          var _next = framesR[_i23];
+        for (var _i24 = 1; _i24 < length; _i24++) {
+          var _next = framesR[_i24];
           prev = calFrame(prev, _next, keys, target, tagName);
         }
 
@@ -18765,7 +18826,6 @@
                   dx: dx,
                   dy: dy
                 };
-                console.log(_o2);
 
                 this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, _o2);
               }

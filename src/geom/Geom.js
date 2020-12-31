@@ -434,7 +434,7 @@ class Geom extends Xom {
             strokeMiterlimit: strokeMiterlimits[i],
             dx,
             dy,
-          };console.log(o);
+          };
           this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
         }
       }

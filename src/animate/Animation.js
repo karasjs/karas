@@ -373,142 +373,184 @@ function calDiff(prev, next, k, target, tagName) {
   }
   else if(GRADIENT_HASH.hasOwnProperty(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
-    if(p.k !== n.k) {
-      return;
-    }
-    // 渐变
-    if(p.k === 'linear' || p.k === 'radial' || p.k === 'conic') {
-      let pv = p.v;
-      let nv = n.v;
-      res[1] = [];
-      let { clientWidth } = target;
-      let eq = equalArr(pv, nv);
-      for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
-        let a = pv[i];
-        let b = nv[i];
-        let t = [];
-        t.push([
-          b[0][0] - a[0][0],
-          b[0][1] - a[0][1],
-          b[0][2] - a[0][2],
-          b[0][3] - a[0][3],
-        ]);
-        if(a[1] && b[1]) {
-          if(a[1][1] === b[1][1]) {
-            t.push(b[1][0] - a[1][0]);
-          }
-          else if(a[1][1] === PX && b[1][1] === PERCENT) {
-            t.push(b[1][0] * clientWidth * 0.01 - a[1][0]);
-          }
-          else if(a[1][1] === PERCENT && b[1][1] === PX) {
-            t.push(b[1][0] * 100 / clientWidth - a[1][0]);
-          }
-        }
-        res[1].push(t);
+    let temp1 = res[1] = [];
+    let length = Math.min(p.length, n.length);
+    for(let i = 0; i < length; i++) {
+      let pi = p[i], ni = n[i];
+      if(pi.k !== ni.k) {
+        // return;
+        res[1].push(null);
+        continue;
       }
-      // 线性渐变有角度差值变化
-      if(p.k === 'linear') {
-        let isArrP = Array.isArray(p.d);
-        let isArrN = Array.isArray(n.d);
-        if(isArrN !== isArrP) {
-          return;
-        }
-        if(isArrP) {
-          let v = [n.d[0] - p.d[0], n.d[1] - p.d[1], n.d[2] - p.d[2], n.d[3] - p.d[3]];
-          if(eq && equalArr(v, [0, 0, 0, 0])) {
-            return;
-          }
-          res[2] = v;
-        }
-        else {
-          let v = n.d - p.d;
-          if(eq && v === 0) {
-            return;
-          }
-          res[2] = v;
-        }
-      }
-      // 径向渐变的位置
-      else if(p.k === 'radial') {
-        let isArrP = Array.isArray(p.z);
-        let isArrN = Array.isArray(n.z);
-        if(isArrN !== isArrP) {
-          return;
-        }
-        if(isArrP) {
-          res[4] = [];
-          for(let i = 0; i < 5; i++) {
-            let pz = p.z[i];
-            // 半径比例省略为1
-            if(pz === undefined) {
-              pz = 1;
+      let temp = [];
+      // 渐变
+      if(pi.k === 'linear' || pi.k === 'radial' || pi.k === 'conic') {
+        let pv = pi.v;
+        let nv = ni.v;
+        // res[1] = [];
+        temp[0] = [];
+        let { clientWidth } = target;
+        let eq = equalArr(pv, nv);
+        for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
+          let a = pv[i];
+          let b = nv[i];
+          let t = [];
+          t.push([
+            b[0][0] - a[0][0],
+            b[0][1] - a[0][1],
+            b[0][2] - a[0][2],
+            b[0][3] - a[0][3],
+          ]);
+          if(a[1] && b[1]) {
+            if(a[1][1] === b[1][1]) {
+              t.push(b[1][0] - a[1][0]);
             }
-            let nz = n.z[i];
-            if(nz === undefined) {
-              nz = 1;
+            else if(a[1][1] === PX && b[1][1] === PERCENT) {
+              t.push(b[1][0] * clientWidth * 0.01 - a[1][0]);
             }
-            res[4].push(nz - pz);
+            else if(a[1][1] === PERCENT && b[1][1] === PX) {
+              t.push(b[1][0] * 100 / clientWidth - a[1][0]);
+            }
           }
-          if(eq && equalArr(res[4], [0, 0, 0, 0, 0])) {
-            return;
+          // res[1].push(t);
+          temp[0].push(t);
+        }
+        // 线性渐变有角度差值变化
+        if(pi.k === 'linear') {
+          let isArrP = Array.isArray(pi.d);
+          let isArrN = Array.isArray(ni.d);
+          if(isArrN !== isArrP) {
+            // return;
+            res[1].push(null);
+            continue;
+          }
+          if(isArrP) {
+            let v = [ni.d[0] - pi.d[0], ni.d[1] - pi.d[1], ni.d[2] - pi.d[2], ni.d[3] - pi.d[3]];
+            if(eq && equalArr(v, [0, 0, 0, 0])) {
+              // return;
+              res[1].push(null);
+              continue;
+            }
+            // res[2] = v;
+            temp[1] = v;
+          }
+          else {
+            let v = ni.d - pi.d;
+            if(eq && v === 0) {
+              // return;
+              res[1].push(null);
+              continue;
+            }
+            // res[2] = v;
+            temp[1] = v;
           }
         }
-        else {
-          res[3] = [];
+        // 径向渐变的位置
+        else if(pi.k === 'radial') {
+          let isArrP = Array.isArray(pi.z);
+          let isArrN = Array.isArray(ni.z);
+          if(isArrN !== isArrP) {
+            // return;
+            res[1].push(null);
+            continue;
+          }
+          if(isArrP) {
+            // res[4] = [];
+            temp1[3] = [];
+            for(let i = 0; i < 5; i++) {
+              let pz = pi.z[i];
+              // 半径比例省略为1
+              if(pz === undefined) {
+                pz = 1;
+              }
+              let nz = ni.z[i];
+              if(nz === undefined) {
+                nz = 1;
+              }
+              // res[4].push(nz - pz);
+              temp1[3].push(nz - pz);
+            }
+            if(eq && equalArr(res[4], [0, 0, 0, 0, 0])) {
+              // return;
+              res[1].push(null);
+            }
+          }
+          else {
+            // res[3] = [];
+            temp[2] = [];
+            for(let i = 0; i < 2; i++) {
+              let pp = pi.p[i];
+              let np = ni.p[i];
+              if(pp[1] === np[1]) {
+                // res[3].push(np[0] - pp[0]);
+                temp[2].push(np[0] - pp[0]);
+              }
+              else if(pp[1] === PX && np[1] === PERCENT) {
+                let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
+                // res[3].push(v - pp[0]);
+                temp[2].push(v - pp[0]);
+              }
+              else if(pp[1] === PERCENT && np[1] === PX) {
+                let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
+                // res[3].push(v - pp[0]);
+                temp[2].push(v - pp[0]);
+              }
+            }
+            if(eq && equalArr(res[3], [0, 0])) {
+              // return;
+              res[1].push(null);
+            }
+          }
+        }
+        else if(pi.k === 'conic') {
+          // res[2] = n.d - p.d;
+          temp[1].push(n.d - p.d);
+          // res[3] = [];
+          temp[2] = [];
           for(let i = 0; i < 2; i++) {
             let pp = p.p[i];
             let np = n.p[i];
             if(pp[1] === np[1]) {
-              res[3].push(np[0] - pp[0]);
+              // res[3].push(np[0] - pp[0]);
+              temp[2].push(np[0] - pp[0]);
             }
             else if(pp[1] === PX && np[1] === PERCENT) {
               let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-              res[3].push(v - pp[0]);
+              // res[3].push(v - pp[0]);
+              temp[2].push(v - pp[0]);
             }
             else if(pp[1] === PERCENT && np[1] === PX) {
               let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-              res[3].push(v - pp[0]);
+              // res[3].push(v - pp[0]);
+              temp[2].push(v - pp[0]);
             }
           }
-          if(eq && equalArr(res[3], [0, 0])) {
-            return;
+          if(eq && res[2] !== 0 && equalArr(res[3], [0, 0])) {
+            // return;
+            res[1].push(null);
           }
         }
       }
-      else if(p.k === 'conic') {
-        res[2] = n.d - p.d;
-        res[3] = [];
-        for(let i = 0; i < 2; i++) {
-          let pp = p.p[i];
-          let np = n.p[i];
-          if(pp[1] === np[1]) {
-            res[3].push(np[0] - pp[0]);
-          }
-          else if(pp[1] === PX && np[1] === PERCENT) {
-            let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-            res[3].push(v - pp[0]);
-          }
-          else if(pp[1] === PERCENT && np[1] === PX) {
-            let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-            res[3].push(v - pp[0]);
-          }
+      // 纯色
+      else {
+        if(equalArr(n, pi)) {
+          // return;
+          res[1].push(null);
         }
-        if(eq && res[2] !== 0 && equalArr(res[3], [0, 0])) {
-          return;
-        }
+        // res[1] = [
+        //   n[0] - p[0],
+        //   n[1] - p[1],
+        //   n[2] - p[2],
+        //   n[3] - p[3]
+        // ];
+        temp[0] = [
+          ni[0] - pi[0],
+          ni[1] - pi[1],
+          ni[2] - pi[2],
+          ni[3] - pi[3]
+        ];
       }
-    }
-    // 纯色
-    else {
-      if(equalArr(n, p)) {
-        return;
-      }
-      res[1] = [
-        n[0] - p[0],
-        n[1] - p[1],
-        n[2] - p[2],
-        n[3] - p[3]
-      ];
+      res[1].push(temp);
     }
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
@@ -837,7 +879,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
   let transition = frame[FRAME_TRANSITION];
   let tagName = target.tagName;
   for(let i = 0, len = transition.length; i < len; i++) {
-    let [k, v, d, p, z] = transition[i];
+    let [k, v] = transition[i];
     let st = style[k];
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === TRANSFORM) {
@@ -886,55 +928,62 @@ function calIntermediateStyle(frame, keys, percent, target) {
       }
     }
     else if(GRADIENT_HASH.hasOwnProperty(k)) {
-      if(GRADIENT_TYPE.hasOwnProperty(st.k)) {
-        for(let i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
-          let a = st.v[i];
-          let b = v[i];
-          a[0][0] += b[0][0] * percent;
-          a[0][1] += b[0][1] * percent;
-          a[0][2] += b[0][2] * percent;
-          a[0][3] += b[0][3] * percent;
-          if(a[1] && b[1]) {
-            a[1][0] += b[1] * percent;
+      st.forEach((st2, i) => {
+        let v2 = v[i];
+        if(!v2) {
+          return;
+        }
+        let [c, d, p, z] = v2;
+        if(GRADIENT_TYPE.hasOwnProperty(st2.k)) {
+          for(let i = 0, len = Math.min(st2.v.length, c.length); i < len; i++) {
+            let a = st2.v[i];
+            let b = c[i];
+            a[0][0] += b[0][0] * percent;
+            a[0][1] += b[0][1] * percent;
+            a[0][2] += b[0][2] * percent;
+            a[0][3] += b[0][3] * percent;
+            if(a[1] && b[1]) {
+              a[1][0] += b[1] * percent;
+            }
+          }
+          if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
+            if(Array.isArray(d)) {
+              st2.d[0] += d[0] * percent;
+              st2.d[1] += d[1] * percent;
+              st2.d[2] += d[2] * percent;
+              st2.d[3] += d[3] * percent;
+            }
+            else {
+              st2.d += d * percent;
+            }
+          }
+          if(st2.k === 'radial') {
+            if(st2.z !== undefined && z !== undefined) {
+              st2.z[0] += z[0] * percent;
+              st2.z[1] += z[1] * percent;
+              st2.z[2] += z[2] * percent;
+              st2.z[3] += z[3] * percent;
+              st2.z[4] += z[4] * percent;
+            }
+            else if(st2.p !== undefined && p !== undefined) {
+              st2.p[0][0] += p[0] * percent;
+              st2.p[1][0] += p[1] * percent;
+            }
+          }
+          else if(st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
+            st2.d += d * percent;
+            st2.p[0][0] += p[0] * percent;
+            st2.p[1][0] += p[1] * percent;
           }
         }
-        if(st.k === 'linear' && st.d !== undefined && d !== undefined) {
-          if(Array.isArray(d)) {
-            st.d[0] += d[0] * percent;
-            st.d[1] += d[1] * percent;
-            st.d[2] += d[2] * percent;
-            st.d[3] += d[3] * percent;
-          }
-          else {
-            st.d += d * percent;
-          }
+        // fill纯色
+        else {
+          st2[0] += v2[0] * percent;
+          st2[1] += v2[1] * percent;
+          st2[2] += v2[2] * percent;
+          st2[3] += v2[3] * percent;
         }
-        if(st.k === 'radial') {
-          if(st.z !== undefined && z !== undefined) {
-            st.z[0] += z[0] * percent;
-            st.z[1] += z[1] * percent;
-            st.z[2] += z[2] * percent;
-            st.z[3] += z[3] * percent;
-            st.z[4] += z[4] * percent;
-          }
-          else if(st.p !== undefined && p !== undefined) {
-            st.p[0][0] += p[0] * percent;
-            st.p[1][0] += p[1] * percent;
-          }
-        }
-        else if(st.k === 'conic' && st.d !== undefined && d !== undefined) {
-          st.d += d * percent;
-          st.p[0][0] += p[0] * percent;
-          st.p[1][0] += p[1] * percent;
-        }
-      }
-      // fill纯色
-      else {
-        st[0] += v[0] * percent;
-        st[1] += v[1] * percent;
-        st[2] += v[2] * percent;
-        st[3] += v[3] * percent;
-      }
+      });
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {

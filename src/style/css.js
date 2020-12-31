@@ -631,7 +631,7 @@ function normalize(style, reset = []) {
       res[FILL] = [gradient.parseGradient(temp)];
     }
     else {
-      res[FILL] = rgba2int(temp);
+      res[FILL] = [rgba2int(temp)];
     }
   }
   temp = style.stroke;
@@ -1109,12 +1109,16 @@ function cloneStyle(style, keys) {
       }
     }
     else if(k === FILL || k === STROKE) {
-      if(v.k) {
-        res[k] = util.clone(v);
-      }
-      else {
-        res[k] = v.slice(0);
-      }
+      res[k] = v.map(item => {
+        // 渐变
+        if(item.k) {
+          return util.clone(item);
+        }
+        // 颜色
+        else {
+          return item.slice(0);
+        }
+      });
     }
     // else if(k === FILTER) {
     //   if(v) {

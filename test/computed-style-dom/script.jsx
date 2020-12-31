@@ -6,4 +6,4 @@ let o = karas.render(
 );
 let t = o.ref.t;
 let input = document.querySelector('input');
-input.value = t.getComputedStyle().width + ',' + t.getComputedStyle().fill;
+input.value = t.getComputedStyle().width + ',' + t.getComputedStyle().fill[0];

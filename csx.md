@@ -344,7 +344,33 @@ y轴半径，相对于height百分比，取值[0, ∞)，默认1
 是否直接相连扇形两侧闭合两个端点，而不是经过圆心，默认false
 
 # 动态json格式
-json和代码其实是一一对应的，只是json可以动态加载，但无法用函数和编程。
+json和代码其实是一一对应的，二者完全等价，只是json可以动态加载，但无法用函数和编程。
+```tsx
+// csx写法
+karas.render(
+  <canvas width={100} height={100}>
+    <div style={{color:'#F00'}}>Hello World</div>
+  </canvas>,
+  '#selector'
+);
+// json写法
+karas.parse({
+  tagName: 'canvas',
+  props: {
+    width: 100,
+    height: 100,
+  },
+  children: [{
+    tagName: 'div',
+    props: {
+      style: {
+        color: '#F00',
+      },
+    },
+    children: ['Hello World'],
+  }],
+}, '#selector');
+```
 json有压缩格式，即把常见的样式/动画的key简写别名，使得整体内容大小更短，但不易于阅读。
 ```ts
 {

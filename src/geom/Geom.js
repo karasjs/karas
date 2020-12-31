@@ -163,21 +163,24 @@ class Geom extends Xom {
       x1, x2, x3, x4, y1, y2, y3, y4);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
-      let strokeWidth = currentStyle[STROKE_WIDTH];
-      // if(strokeWidth[1] === PX) {
-      //   computedStyle[STROKE_WIDTH] = strokeWidth[0];
-      // }
-      // else if(strokeWidth[1] === PERCENT) {
-      //   computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
-      // }
-      // else {
-      //   computedStyle[STROKE_WIDTH] = 0;
-      // }
+      let strokeWidth = currentStyle[STROKE_WIDTH] || [];
+      let w = this.width;
+      computedStyle[STROKE_WIDTH] = strokeWidth.map(item => {
+        if(item[1] === PX) {
+          return item[0];
+        }
+        else if(item[1] === PERCENT) {
+          return item[0] * w * 0.01;
+        }
+        else {
+          return 0;
+        }
+      });
     }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
-      computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY];
-      __cacheStyle[STROKE_DASHARRAY_STR] = joinArr(currentStyle[STROKE_DASHARRAY], ',');
+      computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY] || [];
+      __cacheStyle[STROKE_DASHARRAY_STR] = computedStyle[STROKE_DASHARRAY].map(item => joinArr(item, ','));
     }
     // 直接赋值的
     [
@@ -192,7 +195,6 @@ class Geom extends Xom {
     [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
-        console.log(k, v);
         computedStyle[k] = v;
         let res = [];
         if(Array.isArray(v)) {
@@ -200,7 +202,7 @@ class Geom extends Xom {
             if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
               res.push(this.__gradient(renderMode, ctx, defs,
                 x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
-                clientWidth, clientHeight, v));
+                clientWidth, clientHeight, item));
             }
             else if(item[3] > 0) {
               res.push(int2rgba(item));
@@ -211,18 +213,6 @@ class Geom extends Xom {
           });
         }
         __cacheStyle[k] = res;
-        console.log(res);
-        // if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
-        //   __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
-        //     x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
-        //     clientWidth, clientHeight, v);
-        // }
-        // else if(currentStyle[k][3] > 0) {
-        //   __cacheStyle[k] = int2rgba(currentStyle[k]);
-        // }
-        // else {
-        //   __cacheStyle[k] = 'none';
-        // }
       }
     });
     // Geom强制有内容
@@ -292,49 +282,53 @@ class Geom extends Xom {
       fill,
     } = res;
     if(renderMode === mode.CANVAS) {
-      if(fill.k === 'linear') {
-        ctx.fillStyle = fill.v;
+      if(fill) {
+        if(fill.k === 'linear') {
+          ctx.fillStyle = fill.v;
+        }
+        else if(fill.k === 'radial' && !Array.isArray(fill.v)) {
+          ctx.fillStyle = fill.v;
+        }
+        else if(fill.k === 'conic') {
+          //
+        }
+        else if(!fill.k && ctx.fillStyle !== fill) {
+          ctx.fillStyle = fill;
+        }
       }
-      else if(fill.k === 'radial' && !Array.isArray(fill.v)) {
-        ctx.fillStyle = fill.v;
+      if(stroke) {
+        if(stroke.k === 'linear') {
+          ctx.strokeStyle = stroke.v;
+        }
+        else if(stroke.k === 'radial' && !Array.isArray(stroke.v)) {
+          ctx.strokeStyle = stroke.v;
+        }
+        else if(stroke.k === 'conic') {
+          //
+        }
+        else if(!stroke.k && ctx.strokeStyle !== stroke) {
+          ctx.strokeStyle = stroke;
+        }
       }
-      else if(fill.k === 'conic') {
-        //
-      }
-      else if(!fill.k && ctx.fillStyle !== fill) {
-        ctx.fillStyle = fill;
-      }
-      if(stroke.k === 'linear') {
-        ctx.strokeStyle = stroke.v;
-      }
-      else if(stroke.k === 'radial' && !Array.isArray(stroke.v)) {
-        ctx.strokeStyle = stroke.v;
-      }
-      else if(stroke.k === 'conic') {
-        //
-      }
-      else if(!stroke.k && ctx.strokeStyle !== stroke) {
-        ctx.strokeStyle = stroke;
-      }
-      if(ctx.lineWidth !== strokeWidth) {
+      if(strokeWidth !== undefined && ctx.lineWidth !== strokeWidth) {
         ctx.lineWidth = strokeWidth;
       }
-      if(ctx.lineCap !== strokeLinecap) {
+      if(strokeLinecap !== undefined && ctx.lineCap !== strokeLinecap) {
         ctx.lineCap = strokeLinecap;
       }
-      if(ctx.lineJoin !== strokeLinejoin) {
+      if(strokeLinejoin !== undefined && ctx.lineJoin !== strokeLinejoin) {
         ctx.lineJoin = strokeLinejoin;
       }
-      if(ctx.miterLimit !== strokeMiterlimit) {
+      if(strokeMiterlimit !== undefined && ctx.miterLimit !== strokeMiterlimit) {
         ctx.miterLimit = strokeMiterlimit;
       }
       // 小程序没这个方法
       if(util.isFunction(ctx.getLineDash)) {
-        if(!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+        if(strokeDasharray && !util.equalArr(ctx.getLineDash(), strokeDasharray)) {
           ctx.setLineDash(strokeDasharray);
         }
       }
-      else {
+      else if(strokeDasharray) {
         ctx.setLineDash(strokeDasharray);
       }
     }
@@ -378,72 +372,137 @@ class Geom extends Xom {
     y2 += paddingTop;
     preData.dx = x2 - originX;
     preData.dy = y2 - originY;
-    this.__preSetCanvas(renderMode, ctx, preData);
     return Object.assign(res, preData);
   }
 
   __renderPolygon(renderMode, ctx, defs, res) {
     let {
       fill: fills,
+      fillRule: fillRules,
       stroke: strokes,
       strokeWidth: strokeWidths,
+      strokeDasharray: strokeDasharrays,
+      strokeDasharrayStr: strokeDasharrayStrs,
+      strokeLinecap: strokeLinecaps,
+      strokeLinejoin: strokeLinejoins,
+      strokeMiterlimit: strokeMiterlimits,
       dx,
       dy,
     } = res;
     let { __cacheProps: { list }, isMulti } = this;
-    console.log(fills, strokes, strokeWidths);
-    let len = Math.max(fills.length, strokes.length);
-    for(let i = 0; i < len; i++) {
-      // let f
+    // 普通情况下只有1个，按普通情况走
+    if(fills.length <= 1 && strokes.length <= 1) {
+      let o = {
+        fill: fills[0],
+        fillRule: fillRules[0],
+        stroke: strokes[0],
+        strokeWidth: strokeWidths[0],
+        strokeDasharray: strokeDasharrays[0],
+        strokeDasharrayStr: strokeDasharrayStrs[0],
+        strokeLinecap: strokeLinecaps[0],
+        strokeLinejoin: strokeLinejoins[0],
+        strokeMiterlimit: strokeMiterlimits[0],
+        dx,
+        dy,
+      };
+      this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
     }
-    // let isFillCE = fill.k === 'conic';
-    // let isStrokeCE = stroke.k === 'conic';
-    // let isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
-    // let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-    // if(isFillCE || isStrokeCE) {
-    //   if(isFillCE) {
-    //     this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
-    //   }
-    //   else if(fill !== 'none') {
-    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-    //   }
-    //   if(strokeWidth > 0 && isStrokeCE) {
-    //     inject.warn('Stroke style can not use conic-gradient');
-    //   }
-    //   else if(strokeWidth > 0 && stroke !== 'none') {
-    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-    //   }
-    // }
-    // else if(isFillRE || isStrokeRE) {
-    //   if(isFillRE) {
-    //     this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
-    //   }
-    //   else if(fill !== 'none') {
-    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-    //   }
-    //   // stroke椭圆渐变matrix会变形，降级为圆
-    //   if(strokeWidth > 0 && isStrokeRE) {
-    //     inject.warn('Stroke style can not use radial-gradient for ellipse');
-    //     res.stroke.v = res.stroke.v[0];
-    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-    //   }
-    //   else if(strokeWidth > 0 && stroke !== 'none') {
-    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-    //   }
-    // }
-    // else {
-    //   this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
-    // }
+    // 多个需要fill在下面，stroke在上面，依次循环
+    else {
+      for(let i = 0, len = fills.length; i < len; i++) {
+        let fill = fills[i];
+        if(fill) {
+          let o = {
+            fill,
+            fillRule: fillRules[i],
+            dx,
+            dy,
+          };
+          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+        }
+      }
+      for(let i = 0, len = strokes.length; i < len; i++) {
+        let stroke = strokes[i];
+        if(stroke) {
+          let o = {
+            stroke,
+            strokeWidth: strokeWidths[i],
+            strokeDasharray: strokeDasharrays[i],
+            strokeDasharrayStr: strokeDasharrayStrs[i],
+            strokeLinecap: strokeLinecaps[i],
+            strokeLinejoin: strokeLinejoins[i],
+            strokeMiterlimit: strokeMiterlimits[i],
+            dx,
+            dy,
+          };console.log(o);
+          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+        }
+      }
+    }
   }
 
-  __drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, isFill, isStroke) {
+  __renderOnePolygon(renderMode, ctx, defs, isMulti, list, res) {
+    let {
+      fill,
+      stroke,
+      strokeWidth,
+    } = res;
+    let isFillCE = fill && fill.k === 'conic';
+    let isStrokeCE = stroke && stroke.k === 'conic';
+    // 椭圆是array
+    let isFillRE = fill && fill.k === 'radial' && Array.isArray(fill.v);
+    let isStrokeRE = strokeWidth && strokeWidth > 0 && stroke && stroke.k === 'radial' && Array.isArray(stroke.v);
+    if(isFillCE || isStrokeCE) {
+      if(isFillCE) {
+        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+      }
+      else if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+      }
+      if(strokeWidth && strokeWidth > 0 && isStrokeCE) {
+        inject.warn('Stroke style can not use conic-gradient');
+      }
+      else if(strokeWidth && strokeWidth > 0 && stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+      }
+    }
+    else if(isFillRE || isStrokeRE) {
+      if(isFillRE) {
+        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+      }
+      else if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+      }
+      // stroke椭圆渐变matrix会变形，降级为圆
+      if(strokeWidth && strokeWidth > 0 && isStrokeRE) {
+        inject.warn('Stroke style can not use radial-gradient for ellipse');
+        res.stroke.v = res.stroke.v[0];
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+      }
+      else if(strokeWidth && strokeWidth > 0 && stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+      }
+    }
+    else {
+      this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, true);
+    }
+  }
+
+  __drawPolygon(renderMode, ctx, defs, isMulti, list, res, isFill, isStroke) {
     let {
       fill,
       stroke,
       strokeWidth,
       fillRule,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     if(renderMode === mode.CANVAS) {
+      this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
         list.forEach(item => canvasPolygon(ctx, item, dx, dy));
@@ -454,18 +513,12 @@ class Geom extends Xom {
       if(isFill && fill && fill !== 'none') {
         ctx.fill(fillRule);
       }
-      if(isStroke && stroke !== 'none' && strokeWidth > 0) {
+      if(isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
         ctx.stroke();
       }
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      let {
-        strokeDasharrayStr,
-        strokeLinecap,
-        strokeLinejoin,
-        strokeMiterlimit,
-      } = res;
       let d = '';
       if(isMulti) {
         list.forEach(item => d += svgPolygon(item));
@@ -476,7 +529,8 @@ class Geom extends Xom {
       let props = [
         ['d', d],
       ];
-      if(!fill || fill === 'none' && !stroke || stroke === 'none') {
+      // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
+      if((!fill || fill === 'none') && (!stroke || stroke === 'none')) {
         return;
       }
       if(isFill && fill && fill !== 'none') {
@@ -488,7 +542,7 @@ class Geom extends Xom {
       else {
         props.push(['fill', 'none']);
       }
-      if(isStroke && stroke !== 'none' && strokeWidth > 0) {
+      if(isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
         props.push(['stroke', stroke.v || stroke]);
         props.push(['stroke-width', strokeWidth]);
         this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);

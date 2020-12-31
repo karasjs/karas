@@ -603,20 +603,6 @@ function normalize(style, reset = []) {
       }
     }
   }
-  temp = style.strokeDasharray;
-  if(!isNil(temp)) {
-    let match = temp.toString().match(/[\d.]+/g);
-    if(match) {
-      match = match.map(item => parseFloat(item));
-      if(match.length % 2 === 1) {
-        match.push(match[match.length - 1]);
-      }
-      res[STROKE_DASHARRAY] = match;
-    }
-    else {
-      res[STROKE_DASHARRAY] = [];
-    }
-  }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;
   if(temp !== undefined) {
@@ -680,15 +666,57 @@ function normalize(style, reset = []) {
   }
   temp = style.strokeWidth;
   if(!isNil(temp)) {
-    if(Array.isArray(temp)) {}
+    if(Array.isArray(temp)) {
+      if(temp.length) {
+        res[STROKE_WIDTH] = temp.map(item => {
+          let v = [];
+          calUnit(v, 0,  item);
+          if(v[0][1] === NUMBER) {
+            v[0][1] = PX;
+          }
+          return v[0];
+        });
+      }
+      else {
+        res[STROKE_WIDTH] = [0, PX];
+      }
+    }
     else {
       let v = res[STROKE_WIDTH] = [];
       calUnit(v, 0,  temp);
-      if(v[1] === NUMBER) {
-        v[1] = PX;
+      if(v[0][1] === NUMBER) {
+        v[0][1] = PX;
       }
     }
-    console.log(res[STROKE_WIDTH])
+  }
+  temp = style.strokeDasharray;
+  if(!isNil(temp)) {
+    if(Array.isArray(temp)) {
+      res[STROKE_DASHARRAY] = temp.map(item => {
+        let match = item.toString().match(/[\d.]+/g);
+        if(match) {
+          match = match.map(item => parseFloat(item));
+          if(match.length % 2 === 1) {
+            match.push(match[match.length - 1]);
+          }
+          return match;
+        }
+        return [];
+      });
+    }
+    else {
+      let match = temp.toString().match(/[\d.]+/g);
+      if(match) {
+        match = match.map(item => parseFloat(item));
+        if(match.length % 2 === 1) {
+          match.push(match[match.length - 1]);
+        }
+        res[STROKE_DASHARRAY] = [match];
+      }
+      else {
+        res[STROKE_DASHARRAY] = [[]];
+      }
+    }
   }
   temp = style.filter;
   if(temp !== undefined) {
@@ -758,10 +786,6 @@ function normalize(style, reset = []) {
     'alignSelf',
     'overflow',
     'mixBlendMode',
-    'strokeLinecap',
-    'strokeLinejoin',
-    'strokeMiterlimit',
-    'fillRule',
     'borderTopStyle',
     'borderRightStyle',
     'borderBottomStyle',
@@ -774,17 +798,22 @@ function normalize(style, reset = []) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
     }
   });
+  [
+    'strokeLinecap',
+    'strokeLinejoin',
+    'strokeMiterlimit',
+    'fillRule',
+  ].forEach(k => {
+    if(style.hasOwnProperty(k)) {
+      let v = style[k];
+      res[STYLE_KEY[style2Upper(k)]] = Array.isArray(v) ? v : [v];
+    }
+  });
   GEOM_KEY_SET.forEach(k => {
     if(style.hasOwnProperty(k)) {
       res[k] = style[k];
     }
   });
-  // for(let i = CUSTOM_STYLE_INDEX[0], len = CUSTOM_STYLE_INDEX[1]; i < len; i++) {
-  //   let k = STYLE_RV_KEY[i];
-  //   if(style.hasOwnProperty(k)) {
-  //     res[i] = style[k];
-  //   }
-  // }
   return res;
 }
 

@@ -4515,26 +4515,6 @@
             res[LINE_HEIGHT] = [n, NUMBER];
           }
         }
-    }
-
-    temp = style.strokeDasharray;
-
-    if (!isNil$3(temp)) {
-      var _match3 = temp.toString().match(/[\d.]+/g);
-
-      if (_match3) {
-        _match3 = _match3.map(function (item) {
-          return parseFloat(item);
-        });
-
-        if (_match3.length % 2 === 1) {
-          _match3.push(_match3[_match3.length - 1]);
-        }
-
-        res[STROKE_DASHARRAY] = _match3;
-      } else {
-        res[STROKE_DASHARRAY] = [];
-      }
     } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
@@ -4593,17 +4573,70 @@
     temp = style.strokeWidth;
 
     if (!isNil$3(temp)) {
-      if (Array.isArray(temp)) ; else {
+      if (Array.isArray(temp)) {
+        if (temp.length) {
+          res[STROKE_WIDTH] = temp.map(function (item) {
+            var v = [];
+            calUnit(v, 0, item);
+
+            if (v[0][1] === NUMBER) {
+              v[0][1] = PX$1;
+            }
+
+            return v[0];
+          });
+        } else {
+          res[STROKE_WIDTH] = [0, PX$1];
+        }
+      } else {
         var _v = res[STROKE_WIDTH] = [];
 
         calUnit(_v, 0, temp);
 
-        if (_v[1] === NUMBER) {
-          _v[1] = PX$1;
+        if (_v[0][1] === NUMBER) {
+          _v[0][1] = PX$1;
         }
       }
+    }
 
-      console.log(res[STROKE_WIDTH]);
+    temp = style.strokeDasharray;
+
+    if (!isNil$3(temp)) {
+      if (Array.isArray(temp)) {
+        res[STROKE_DASHARRAY] = temp.map(function (item) {
+          var match = item.toString().match(/[\d.]+/g);
+
+          if (match) {
+            match = match.map(function (item) {
+              return parseFloat(item);
+            });
+
+            if (match.length % 2 === 1) {
+              match.push(match[match.length - 1]);
+            }
+
+            return match;
+          }
+
+          return [];
+        });
+      } else {
+        var _match3 = temp.toString().match(/[\d.]+/g);
+
+        if (_match3) {
+          _match3 = _match3.map(function (item) {
+            return parseFloat(item);
+          });
+
+          if (_match3.length % 2 === 1) {
+            _match3.push(_match3[_match3.length - 1]);
+          }
+
+          res[STROKE_DASHARRAY] = [_match3];
+        } else {
+          res[STROKE_DASHARRAY] = [[]];
+        }
+      }
     }
 
     temp = style.filter;
@@ -4681,22 +4714,22 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'backgroundRepeat', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex'].forEach(function (k) {
+    ['position', 'display', 'backgroundRepeat', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
+      }
+    });
+    ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
+      if (style.hasOwnProperty(k)) {
+        var _v3 = style[k];
+        res[STYLE_KEY$4[style2Upper$1(k)]] = Array.isArray(_v3) ? _v3 : [_v3];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[k] = style[k];
       }
-    }); // for(let i = CUSTOM_STYLE_INDEX[0], len = CUSTOM_STYLE_INDEX[1]; i < len; i++) {
-    //   let k = STYLE_RV_KEY[i];
-    //   if(style.hasOwnProperty(k)) {
-    //     res[i] = style[k];
-    //   }
-    // }
-
+    });
     return res;
   }
   /**
@@ -18465,21 +18498,25 @@
 
         if (isNil$7(__cacheStyle[STROKE_WIDTH$1])) {
           __cacheStyle[STROKE_WIDTH$1] = true;
-          var strokeWidth = currentStyle[STROKE_WIDTH$1]; // if(strokeWidth[1] === PX) {
-          //   computedStyle[STROKE_WIDTH] = strokeWidth[0];
-          // }
-          // else if(strokeWidth[1] === PERCENT) {
-          //   computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
-          // }
-          // else {
-          //   computedStyle[STROKE_WIDTH] = 0;
-          // }
+          var strokeWidth = currentStyle[STROKE_WIDTH$1] || [];
+          var w = this.width;
+          computedStyle[STROKE_WIDTH$1] = strokeWidth.map(function (item) {
+            if (item[1] === PX$6) {
+              return item[0];
+            } else if (item[1] === PERCENT$7) {
+              return item[0] * w * 0.01;
+            } else {
+              return 0;
+            }
+          });
         }
 
         if (isNil$7(__cacheStyle[STROKE_DASHARRAY$1])) {
           __cacheStyle[STROKE_DASHARRAY$1] = true;
-          computedStyle[STROKE_DASHARRAY$1] = currentStyle[STROKE_DASHARRAY$1];
-          __cacheStyle[STROKE_DASHARRAY_STR] = joinArr$2(currentStyle[STROKE_DASHARRAY$1], ',');
+          computedStyle[STROKE_DASHARRAY$1] = currentStyle[STROKE_DASHARRAY$1] || [];
+          __cacheStyle[STROKE_DASHARRAY_STR] = computedStyle[STROKE_DASHARRAY$1].map(function (item) {
+            return joinArr$2(item, ',');
+          });
         } // 直接赋值的
 
 
@@ -18490,14 +18527,13 @@
         [STROKE$1, FILL$1].forEach(function (k) {
           if (isNil$7(__cacheStyle[k])) {
             var v = currentStyle[k];
-            console.log(k, v);
             computedStyle[k] = v;
             var res = [];
 
             if (Array.isArray(v)) {
               v.forEach(function (item) {
                 if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-                  res.push(_this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, v));
+                  res.push(_this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, item));
                 } else if (item[3] > 0) {
                   res.push(int2rgba$2(item));
                 } else {
@@ -18507,17 +18543,6 @@
             }
 
             __cacheStyle[k] = res;
-            console.log(res); // if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
-            //   __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
-            //     x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
-            //     clientWidth, clientHeight, v);
-            // }
-            // else if(currentStyle[k][3] > 0) {
-            //   __cacheStyle[k] = int2rgba(currentStyle[k]);
-            // }
-            // else {
-            //   __cacheStyle[k] = 'none';
-            // }
           }
         }); // Geom强制有内容
 
@@ -18587,44 +18612,48 @@
             fill = res.fill;
 
         if (renderMode === mode.CANVAS) {
-          if (fill.k === 'linear') {
-            ctx.fillStyle = fill.v;
-          } else if (fill.k === 'radial' && !Array.isArray(fill.v)) {
-            ctx.fillStyle = fill.v;
-          } else if (fill.k === 'conic') ; else if (!fill.k && ctx.fillStyle !== fill) {
-            ctx.fillStyle = fill;
+          if (fill) {
+            if (fill.k === 'linear') {
+              ctx.fillStyle = fill.v;
+            } else if (fill.k === 'radial' && !Array.isArray(fill.v)) {
+              ctx.fillStyle = fill.v;
+            } else if (fill.k === 'conic') ; else if (!fill.k && ctx.fillStyle !== fill) {
+              ctx.fillStyle = fill;
+            }
           }
 
-          if (stroke.k === 'linear') {
-            ctx.strokeStyle = stroke.v;
-          } else if (stroke.k === 'radial' && !Array.isArray(stroke.v)) {
-            ctx.strokeStyle = stroke.v;
-          } else if (stroke.k === 'conic') ; else if (!stroke.k && ctx.strokeStyle !== stroke) {
-            ctx.strokeStyle = stroke;
+          if (stroke) {
+            if (stroke.k === 'linear') {
+              ctx.strokeStyle = stroke.v;
+            } else if (stroke.k === 'radial' && !Array.isArray(stroke.v)) {
+              ctx.strokeStyle = stroke.v;
+            } else if (stroke.k === 'conic') ; else if (!stroke.k && ctx.strokeStyle !== stroke) {
+              ctx.strokeStyle = stroke;
+            }
           }
 
-          if (ctx.lineWidth !== strokeWidth) {
+          if (strokeWidth !== undefined && ctx.lineWidth !== strokeWidth) {
             ctx.lineWidth = strokeWidth;
           }
 
-          if (ctx.lineCap !== strokeLinecap) {
+          if (strokeLinecap !== undefined && ctx.lineCap !== strokeLinecap) {
             ctx.lineCap = strokeLinecap;
           }
 
-          if (ctx.lineJoin !== strokeLinejoin) {
+          if (strokeLinejoin !== undefined && ctx.lineJoin !== strokeLinejoin) {
             ctx.lineJoin = strokeLinejoin;
           }
 
-          if (ctx.miterLimit !== strokeMiterlimit) {
+          if (strokeMiterlimit !== undefined && ctx.miterLimit !== strokeMiterlimit) {
             ctx.miterLimit = strokeMiterlimit;
           } // 小程序没这个方法
 
 
           if (util.isFunction(ctx.getLineDash)) {
-            if (!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+            if (strokeDasharray && !util.equalArr(ctx.getLineDash(), strokeDasharray)) {
               ctx.setLineDash(strokeDasharray);
             }
-          } else {
+          } else if (strokeDasharray) {
             ctx.setLineDash(strokeDasharray);
           }
         }
@@ -18669,71 +18698,141 @@
         y2 += paddingTop;
         preData.dx = x2 - originX;
         preData.dy = y2 - originY;
-
-        this.__preSetCanvas(renderMode, ctx, preData);
-
         return Object.assign(res, preData);
       }
     }, {
       key: "__renderPolygon",
       value: function __renderPolygon(renderMode, ctx, defs, res) {
         var fills = res.fill,
+            fillRules = res.fillRule,
             strokes = res.stroke,
             strokeWidths = res.strokeWidth,
+            strokeDasharrays = res.strokeDasharray,
+            strokeDasharrayStrs = res.strokeDasharrayStr,
+            strokeLinecaps = res.strokeLinecap,
+            strokeLinejoins = res.strokeLinejoin,
+            strokeMiterlimits = res.strokeMiterlimit,
             dx = res.dx,
             dy = res.dy;
         var list = this.__cacheProps.list,
-            isMulti = this.isMulti;
-        console.log(fills, strokes, strokeWidths);
-        var len = Math.max(fills.length, strokes.length);
-        // let isStrokeCE = stroke.k === 'conic';
-        // let isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
-        // let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-        // if(isFillCE || isStrokeCE) {
-        //   if(isFillCE) {
-        //     this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
-        //   }
-        //   else if(fill !== 'none') {
-        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-        //   }
-        //   if(strokeWidth > 0 && isStrokeCE) {
-        //     inject.warn('Stroke style can not use conic-gradient');
-        //   }
-        //   else if(strokeWidth > 0 && stroke !== 'none') {
-        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-        //   }
-        // }
-        // else if(isFillRE || isStrokeRE) {
-        //   if(isFillRE) {
-        //     this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
-        //   }
-        //   else if(fill !== 'none') {
-        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-        //   }
-        //   // stroke椭圆渐变matrix会变形，降级为圆
-        //   if(strokeWidth > 0 && isStrokeRE) {
-        //     inject.warn('Stroke style can not use radial-gradient for ellipse');
-        //     res.stroke.v = res.stroke.v[0];
-        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-        //   }
-        //   else if(strokeWidth > 0 && stroke !== 'none') {
-        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-        //   }
-        // }
-        // else {
-        //   this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
-        // }
+            isMulti = this.isMulti; // 普通情况下只有1个，按普通情况走
 
+        if (fills.length <= 1 && strokes.length <= 1) {
+          var o = {
+            fill: fills[0],
+            fillRule: fillRules[0],
+            stroke: strokes[0],
+            strokeWidth: strokeWidths[0],
+            strokeDasharray: strokeDasharrays[0],
+            strokeDasharrayStr: strokeDasharrayStrs[0],
+            strokeLinecap: strokeLinecaps[0],
+            strokeLinejoin: strokeLinejoins[0],
+            strokeMiterlimit: strokeMiterlimits[0],
+            dx: dx,
+            dy: dy
+          };
+
+          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+        } // 多个需要fill在下面，stroke在上面，依次循环
+        else {
+            for (var i = 0, len = fills.length; i < len; i++) {
+              var fill = fills[i];
+
+              if (fill) {
+                var _o = {
+                  fill: fill,
+                  fillRule: fillRules[i],
+                  dx: dx,
+                  dy: dy
+                };
+
+                this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, _o);
+              }
+            }
+
+            for (var _i = 0, _len = strokes.length; _i < _len; _i++) {
+              var stroke = strokes[_i];
+
+              if (stroke) {
+                var _o2 = {
+                  stroke: stroke,
+                  strokeWidth: strokeWidths[_i],
+                  strokeDasharray: strokeDasharrays[_i],
+                  strokeDasharrayStr: strokeDasharrayStrs[_i],
+                  strokeLinecap: strokeLinecaps[_i],
+                  strokeLinejoin: strokeLinejoins[_i],
+                  strokeMiterlimit: strokeMiterlimits[_i],
+                  dx: dx,
+                  dy: dy
+                };
+                console.log(_o2);
+
+                this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, _o2);
+              }
+            }
+          }
+      }
+    }, {
+      key: "__renderOnePolygon",
+      value: function __renderOnePolygon(renderMode, ctx, defs, isMulti, list, res) {
+        var fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth;
+        var isFillCE = fill && fill.k === 'conic';
+        var isStrokeCE = stroke && stroke.k === 'conic'; // 椭圆是array
+
+        var isFillRE = fill && fill.k === 'radial' && Array.isArray(fill.v);
+        var isStrokeRE = strokeWidth && strokeWidth > 0 && stroke && stroke.k === 'radial' && Array.isArray(stroke.v);
+
+        if (isFillCE || isStrokeCE) {
+          if (isFillCE) {
+            this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+          } else if (fill !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+          }
+
+          if (strokeWidth && strokeWidth > 0 && isStrokeCE) {
+            inject.warn('Stroke style can not use conic-gradient');
+          } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+          }
+        } else if (isFillRE || isStrokeRE) {
+          if (isFillRE) {
+            this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+          } else if (fill !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+          } // stroke椭圆渐变matrix会变形，降级为圆
+
+
+          if (strokeWidth && strokeWidth > 0 && isStrokeRE) {
+            inject.warn('Stroke style can not use radial-gradient for ellipse');
+            res.stroke.v = res.stroke.v[0];
+
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+          } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+          }
+        } else {
+          this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, true);
+        }
       }
     }, {
       key: "__drawPolygon",
-      value: function __drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, isFill, isStroke) {
+      value: function __drawPolygon(renderMode, ctx, defs, isMulti, list, res, isFill, isStroke) {
         var fill = res.fill,
             stroke = res.stroke,
             strokeWidth = res.strokeWidth,
-            fillRule = res.fillRule;
+            fillRule = res.fillRule,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
 
         if (renderMode === mode.CANVAS) {
+          this.__preSetCanvas(renderMode, ctx, res);
+
           ctx.beginPath();
 
           if (isMulti) {
@@ -18748,16 +18847,12 @@
             ctx.fill(fillRule);
           }
 
-          if (isStroke && stroke !== 'none' && strokeWidth > 0) {
+          if (isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
             ctx.stroke();
           }
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var strokeDasharrayStr = res.strokeDasharrayStr,
-              strokeLinecap = res.strokeLinecap,
-              strokeLinejoin = res.strokeLinejoin,
-              strokeMiterlimit = res.strokeMiterlimit;
           var d = '';
 
           if (isMulti) {
@@ -18768,9 +18863,9 @@
             d = svgPolygon$3(list);
           }
 
-          var props = [['d', d]];
+          var props = [['d', d]]; // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
 
-          if (!fill || fill === 'none' && !stroke || stroke === 'none') {
+          if ((!fill || fill === 'none') && (!stroke || stroke === 'none')) {
             return;
           }
 
@@ -18784,7 +18879,7 @@
             props.push(['fill', 'none']);
           }
 
-          if (isStroke && stroke !== 'none' && strokeWidth > 0) {
+          if (isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
             props.push(['stroke', stroke.v || stroke]);
             props.push(['stroke-width', strokeWidth]);
 

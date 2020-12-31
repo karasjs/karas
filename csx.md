@@ -152,7 +152,8 @@
   * px
   * %
 * visibility
-  * visible 默认
+  * inherit 默认
+  * visible
   * hidden
 * opacity
   * 1 默认

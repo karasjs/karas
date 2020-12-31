@@ -164,15 +164,15 @@ class Geom extends Xom {
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
       let strokeWidth = currentStyle[STROKE_WIDTH];
-      if(strokeWidth[1] === PX) {
-        computedStyle[STROKE_WIDTH] = strokeWidth[0];
-      }
-      else if(strokeWidth[1] === PERCENT) {
-        computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
-      }
-      else {
-        computedStyle[STROKE_WIDTH] = 0;
-      }
+      // if(strokeWidth[1] === PX) {
+      //   computedStyle[STROKE_WIDTH] = strokeWidth[0];
+      // }
+      // else if(strokeWidth[1] === PERCENT) {
+      //   computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
+      // }
+      // else {
+      //   computedStyle[STROKE_WIDTH] = 0;
+      // }
     }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
@@ -192,18 +192,37 @@ class Geom extends Xom {
     [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
+        console.log(k, v);
         computedStyle[k] = v;
-        if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
-          __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
-            x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
-            clientWidth, clientHeight, v);
+        let res = [];
+        if(Array.isArray(v)) {
+          v.forEach(item => {
+            if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+              res.push(this.__gradient(renderMode, ctx, defs,
+                x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
+                clientWidth, clientHeight, v));
+            }
+            else if(item[3] > 0) {
+              res.push(int2rgba(item));
+            }
+            else {
+              res.push('none');
+            }
+          });
         }
-        else if(currentStyle[k][3] > 0) {
-          __cacheStyle[k] = int2rgba(currentStyle[k]);
-        }
-        else {
-          __cacheStyle[k] = 'none';
-        }
+        __cacheStyle[k] = res;
+        console.log(res);
+        // if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
+        //   __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
+        //     x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
+        //     clientWidth, clientHeight, v);
+        // }
+        // else if(currentStyle[k][3] > 0) {
+        //   __cacheStyle[k] = int2rgba(currentStyle[k]);
+        // }
+        // else {
+        //   __cacheStyle[k] = 'none';
+        // }
       }
     });
     // Geom强制有内容
@@ -365,51 +384,56 @@ class Geom extends Xom {
 
   __renderPolygon(renderMode, ctx, defs, res) {
     let {
-      fill,
-      stroke,
-      strokeWidth,
+      fill: fills,
+      stroke: strokes,
+      strokeWidth: strokeWidths,
       dx,
       dy,
     } = res;
     let { __cacheProps: { list }, isMulti } = this;
-    let isFillCE = fill.k === 'conic';
-    let isStrokeCE = stroke.k === 'conic';
-    let isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
-    let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-    if(isFillCE || isStrokeCE) {
-      if(isFillCE) {
-        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
-      }
-      else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-      }
-      if(strokeWidth > 0 && isStrokeCE) {
-        inject.warn('Stroke style can not use conic-gradient');
-      }
-      else if(strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-      }
+    console.log(fills, strokes, strokeWidths);
+    let len = Math.max(fills.length, strokes.length);
+    for(let i = 0; i < len; i++) {
+      // let f
     }
-    else if(isFillRE || isStrokeRE) {
-      if(isFillRE) {
-        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
-      }
-      else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-      }
-      // stroke椭圆渐变matrix会变形，降级为圆
-      if(strokeWidth > 0 && isStrokeRE) {
-        inject.warn('Stroke style can not use radial-gradient for ellipse');
-        res.stroke.v = res.stroke.v[0];
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-      }
-      else if(strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-      }
-    }
-    else {
-      this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
-    }
+    // let isFillCE = fill.k === 'conic';
+    // let isStrokeCE = stroke.k === 'conic';
+    // let isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
+    // let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+    // if(isFillCE || isStrokeCE) {
+    //   if(isFillCE) {
+    //     this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+    //   }
+    //   else if(fill !== 'none') {
+    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+    //   }
+    //   if(strokeWidth > 0 && isStrokeCE) {
+    //     inject.warn('Stroke style can not use conic-gradient');
+    //   }
+    //   else if(strokeWidth > 0 && stroke !== 'none') {
+    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+    //   }
+    // }
+    // else if(isFillRE || isStrokeRE) {
+    //   if(isFillRE) {
+    //     this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+    //   }
+    //   else if(fill !== 'none') {
+    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+    //   }
+    //   // stroke椭圆渐变matrix会变形，降级为圆
+    //   if(strokeWidth > 0 && isStrokeRE) {
+    //     inject.warn('Stroke style can not use radial-gradient for ellipse');
+    //     res.stroke.v = res.stroke.v[0];
+    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+    //   }
+    //   else if(strokeWidth > 0 && stroke !== 'none') {
+    //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+    //   }
+    // }
+    // else {
+    //   this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
+    // }
   }
 
   __drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, isFill, isStroke) {

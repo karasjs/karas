@@ -3930,6 +3930,7 @@
       POINTER_EVENTS = _enums$STYLE_KEY$2.POINTER_EVENTS,
       FILL = _enums$STYLE_KEY$2.FILL,
       STROKE = _enums$STYLE_KEY$2.STROKE,
+      STROKE_WIDTH = _enums$STYLE_KEY$2.STROKE_WIDTH,
       STROKE_DASHARRAY = _enums$STYLE_KEY$2.STROKE_DASHARRAY,
       BORDER_TOP_WIDTH = _enums$STYLE_KEY$2.BORDER_TOP_WIDTH,
       BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$2.BORDER_RIGHT_WIDTH,
@@ -4405,7 +4406,8 @@
     } // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis' // 'strokeWidth',
+    ].forEach(function (k) {
       var v = style[k];
 
       if (isNil$3(v)) {
@@ -4540,9 +4542,23 @@
 
     if (temp !== undefined) {
       if (!temp) {
-        res[FILL] = 'none';
+        res[FILL] = ['none'];
+      } else if (Array.isArray(temp)) {
+        if (temp.length) {
+          res[FILL] = temp.map(function (item) {
+            if (!item) {
+              return 'none';
+            } else if (reg.gradient.test(item)) {
+              return gradient.parseGradient(item);
+            } else {
+              return rgba2int$2(item);
+            }
+          });
+        } else {
+          res[FILL] = ['none'];
+        }
       } else if (reg.gradient.test(temp)) {
-        res[FILL] = gradient.parseGradient(temp);
+        res[FILL] = [gradient.parseGradient(temp)];
       } else {
         res[FILL] = rgba2int$2(temp);
       }
@@ -4552,12 +4568,42 @@
 
     if (temp !== undefined) {
       if (!temp) {
-        res[STROKE] = 'none';
+        res[STROKE] = ['none'];
+      } else if (Array.isArray(temp)) {
+        if (temp.length) {
+          res[STROKE] = temp.map(function (item) {
+            if (!item) {
+              return 'none';
+            } else if (reg.gradient.test(item)) {
+              return gradient.parseGradient(item);
+            } else {
+              return rgba2int$2(item);
+            }
+          });
+        } else {
+          res[STROKE] = ['none'];
+        }
       } else if (reg.gradient.test(temp)) {
-        res[STROKE] = gradient.parseGradient(temp);
+        res[STROKE] = [gradient.parseGradient(temp)];
       } else {
-        res[STROKE] = rgba2int$2(temp);
+        res[STROKE] = [rgba2int$2(temp)];
       }
+    }
+
+    temp = style.strokeWidth;
+
+    if (!isNil$3(temp)) {
+      if (Array.isArray(temp)) ; else {
+        var _v = res[STROKE_WIDTH] = [];
+
+        calUnit(_v, 0, temp);
+
+        if (_v[1] === NUMBER) {
+          _v[1] = PX$1;
+        }
+      }
+
+      console.log(res[STROKE_WIDTH]);
     }
 
     temp = style.filter;
@@ -4567,10 +4613,10 @@
       var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
 
       if (blur) {
-        var _v = parseFloat(blur[1]) || 0;
+        var _v2 = parseFloat(blur[1]) || 0;
 
-        if (_v) {
-          f = [['blur', _v]];
+        if (_v2) {
+          f = [['blur', _v2]];
         }
       }
 
@@ -18240,7 +18286,7 @@
       FILL$1 = _enums$STYLE_KEY$d.FILL,
       STROKE$1 = _enums$STYLE_KEY$d.STROKE,
       STROKE_MITERLIMIT = _enums$STYLE_KEY$d.STROKE_MITERLIMIT,
-      STROKE_WIDTH = _enums$STYLE_KEY$d.STROKE_WIDTH,
+      STROKE_WIDTH$1 = _enums$STYLE_KEY$d.STROKE_WIDTH,
       STROKE_LINECAP = _enums$STYLE_KEY$d.STROKE_LINECAP,
       STROKE_LINEJOIN = _enums$STYLE_KEY$d.STROKE_LINEJOIN,
       STROKE_DASHARRAY$1 = _enums$STYLE_KEY$d.STROKE_DASHARRAY,
@@ -18417,17 +18463,17 @@
 
         _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
 
-        if (isNil$7(__cacheStyle[STROKE_WIDTH])) {
-          __cacheStyle[STROKE_WIDTH] = true;
-          var strokeWidth = currentStyle[STROKE_WIDTH];
-
-          if (strokeWidth[1] === PX$6) {
-            computedStyle[STROKE_WIDTH] = strokeWidth[0];
-          } else if (strokeWidth[1] === PERCENT$7) {
-            computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
-          } else {
-            computedStyle[STROKE_WIDTH] = 0;
-          }
+        if (isNil$7(__cacheStyle[STROKE_WIDTH$1])) {
+          __cacheStyle[STROKE_WIDTH$1] = true;
+          var strokeWidth = currentStyle[STROKE_WIDTH$1]; // if(strokeWidth[1] === PX) {
+          //   computedStyle[STROKE_WIDTH] = strokeWidth[0];
+          // }
+          // else if(strokeWidth[1] === PERCENT) {
+          //   computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
+          // }
+          // else {
+          //   computedStyle[STROKE_WIDTH] = 0;
+          // }
         }
 
         if (isNil$7(__cacheStyle[STROKE_DASHARRAY$1])) {
@@ -18444,15 +18490,34 @@
         [STROKE$1, FILL$1].forEach(function (k) {
           if (isNil$7(__cacheStyle[k])) {
             var v = currentStyle[k];
+            console.log(k, v);
             computedStyle[k] = v;
+            var res = [];
 
-            if (v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
-              __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, v);
-            } else if (currentStyle[k][3] > 0) {
-              __cacheStyle[k] = int2rgba$2(currentStyle[k]);
-            } else {
-              __cacheStyle[k] = 'none';
+            if (Array.isArray(v)) {
+              v.forEach(function (item) {
+                if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+                  res.push(_this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, v));
+                } else if (item[3] > 0) {
+                  res.push(int2rgba$2(item));
+                } else {
+                  res.push('none');
+                }
+              });
             }
+
+            __cacheStyle[k] = res;
+            console.log(res); // if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
+            //   __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
+            //     x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
+            //     clientWidth, clientHeight, v);
+            // }
+            // else if(currentStyle[k][3] > 0) {
+            //   __cacheStyle[k] = int2rgba(currentStyle[k]);
+            // }
+            // else {
+            //   __cacheStyle[k] = 'none';
+            // }
           }
         }); // Geom强制有内容
 
@@ -18482,7 +18547,7 @@
         var fill = __cacheStyle[FILL$1],
             stroke = __cacheStyle[STROKE$1],
             strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
-        var strokeWidth = computedStyle[STROKE_WIDTH],
+        var strokeWidth = computedStyle[STROKE_WIDTH$1],
             strokeLinecap = computedStyle[STROKE_LINECAP],
             strokeLinejoin = computedStyle[STROKE_LINEJOIN],
             strokeMiterlimit = computedStyle[STROKE_MITERLIMIT],
@@ -18612,50 +18677,53 @@
     }, {
       key: "__renderPolygon",
       value: function __renderPolygon(renderMode, ctx, defs, res) {
-        var fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
+        var fills = res.fill,
+            strokes = res.stroke,
+            strokeWidths = res.strokeWidth,
             dx = res.dx,
             dy = res.dy;
         var list = this.__cacheProps.list,
             isMulti = this.isMulti;
-        var isFillCE = fill.k === 'conic';
-        var isStrokeCE = stroke.k === 'conic';
-        var isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
+        console.log(fills, strokes, strokeWidths);
+        var len = Math.max(fills.length, strokes.length);
+        // let isStrokeCE = stroke.k === 'conic';
+        // let isFillRE = fill.k === 'radial' && Array.isArray(fill.v); // 椭圆是array
+        // let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+        // if(isFillCE || isStrokeCE) {
+        //   if(isFillCE) {
+        //     this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+        //   }
+        //   else if(fill !== 'none') {
+        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+        //   }
+        //   if(strokeWidth > 0 && isStrokeCE) {
+        //     inject.warn('Stroke style can not use conic-gradient');
+        //   }
+        //   else if(strokeWidth > 0 && stroke !== 'none') {
+        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+        //   }
+        // }
+        // else if(isFillRE || isStrokeRE) {
+        //   if(isFillRE) {
+        //     this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+        //   }
+        //   else if(fill !== 'none') {
+        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+        //   }
+        //   // stroke椭圆渐变matrix会变形，降级为圆
+        //   if(strokeWidth > 0 && isStrokeRE) {
+        //     inject.warn('Stroke style can not use radial-gradient for ellipse');
+        //     res.stroke.v = res.stroke.v[0];
+        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+        //   }
+        //   else if(strokeWidth > 0 && stroke !== 'none') {
+        //     this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+        //   }
+        // }
+        // else {
+        //   this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
+        // }
 
-        var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-
-        if (isFillCE || isStrokeCE) {
-          if (isFillCE) {
-            this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
-          } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-          }
-
-          if (strokeWidth > 0 && isStrokeCE) {
-            inject.warn('Stroke style can not use conic-gradient');
-          } else if (strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-          }
-        } else if (isFillRE || isStrokeRE) {
-          if (isFillRE) {
-            this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
-          } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
-          } // stroke椭圆渐变matrix会变形，降级为圆
-
-
-          if (strokeWidth > 0 && isStrokeRE) {
-            inject.warn('Stroke style can not use radial-gradient for ellipse');
-            res.stroke.v = res.stroke.v[0];
-
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-          } else if (strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
-          }
-        } else {
-          this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
-        }
       }
     }, {
       key: "__drawPolygon",
@@ -23813,7 +23881,7 @@
   var _enums$STYLE_KEY$g = enums.STYLE_KEY,
       PADDING_TOP$6 = _enums$STYLE_KEY$g.PADDING_TOP,
       PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
-      STROKE_WIDTH$1 = _enums$STYLE_KEY$g.STROKE_WIDTH,
+      STROKE_WIDTH$2 = _enums$STYLE_KEY$g.STROKE_WIDTH,
       BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
       FILTER$7 = _enums$STYLE_KEY$g.FILTER;
   var isNil$9 = util.isNil;
@@ -24338,7 +24406,7 @@
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle[PADDING_TOP$6],
             paddingLeft = _this$computedStyle[PADDING_LEFT$6],
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$1],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
             boxShadow = _this$computedStyle[BOX_SHADOW$3],
             filter = _this$computedStyle[FILTER$7],
             isMulti = this.isMulti,
@@ -24434,7 +24502,7 @@
   var _enums$STYLE_KEY$h = enums.STYLE_KEY,
       PADDING_TOP$7 = _enums$STYLE_KEY$h.PADDING_TOP,
       PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
-      STROKE_WIDTH$2 = _enums$STYLE_KEY$h.STROKE_WIDTH,
+      STROKE_WIDTH$3 = _enums$STYLE_KEY$h.STROKE_WIDTH,
       BOX_SHADOW$4 = _enums$STYLE_KEY$h.BOX_SHADOW,
       FILTER$8 = _enums$STYLE_KEY$h.FILTER;
   var isNil$a = util.isNil;
@@ -24920,7 +24988,7 @@
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle[PADDING_TOP$7],
             paddingLeft = _this$computedStyle[PADDING_LEFT$7],
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
             boxShadow = _this$computedStyle[BOX_SHADOW$4],
             filter = _this$computedStyle[FILTER$8],
             isMulti = this.isMulti,
@@ -25027,7 +25095,7 @@
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       PADDING_TOP$8 = _enums$STYLE_KEY$i.PADDING_TOP,
       PADDING_LEFT$8 = _enums$STYLE_KEY$i.PADDING_LEFT,
-      STROKE_WIDTH$3 = _enums$STYLE_KEY$i.STROKE_WIDTH,
+      STROKE_WIDTH$4 = _enums$STYLE_KEY$i.STROKE_WIDTH,
       BOX_SHADOW$5 = _enums$STYLE_KEY$i.BOX_SHADOW,
       FILTER$9 = _enums$STYLE_KEY$i.FILTER;
   var isNil$b = util.isNil;
@@ -25348,7 +25416,7 @@
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle[PADDING_TOP$8],
             paddingLeft = _this$computedStyle[PADDING_LEFT$8],
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
             boxShadow = _this$computedStyle[BOX_SHADOW$5],
             filter = _this$computedStyle[FILTER$9];
         var originX = __sx2 + paddingLeft;
@@ -25399,7 +25467,7 @@
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
       PADDING_TOP$9 = _enums$STYLE_KEY$j.PADDING_TOP,
       PADDING_LEFT$9 = _enums$STYLE_KEY$j.PADDING_LEFT,
-      STROKE_WIDTH$4 = _enums$STYLE_KEY$j.STROKE_WIDTH,
+      STROKE_WIDTH$5 = _enums$STYLE_KEY$j.STROKE_WIDTH,
       BOX_SHADOW$6 = _enums$STYLE_KEY$j.BOX_SHADOW,
       FILTER$a = _enums$STYLE_KEY$j.FILTER;
   var isNil$c = util.isNil;
@@ -25554,7 +25622,7 @@
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle[PADDING_TOP$9],
             paddingLeft = _this$computedStyle[PADDING_LEFT$9],
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
             boxShadow = _this$computedStyle[BOX_SHADOW$6],
             filter = _this$computedStyle[FILTER$a];
         var originX = __sx2 + paddingLeft;
@@ -25586,7 +25654,7 @@
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
       PADDING_TOP$a = _enums$STYLE_KEY$k.PADDING_TOP,
       PADDING_LEFT$a = _enums$STYLE_KEY$k.PADDING_LEFT,
-      STROKE_WIDTH$5 = _enums$STYLE_KEY$k.STROKE_WIDTH,
+      STROKE_WIDTH$6 = _enums$STYLE_KEY$k.STROKE_WIDTH,
       BOX_SHADOW$7 = _enums$STYLE_KEY$k.BOX_SHADOW,
       FILTER$b = _enums$STYLE_KEY$k.FILTER;
   var isNil$d = util.isNil;
@@ -25688,7 +25756,7 @@
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle[PADDING_TOP$a],
             paddingLeft = _this$computedStyle[PADDING_LEFT$a],
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
             boxShadow = _this$computedStyle[BOX_SHADOW$7],
             filter = _this$computedStyle[FILTER$b];
         var originX = __sx2 + paddingLeft;
@@ -25739,7 +25807,7 @@
   var _enums$STYLE_KEY$l = enums.STYLE_KEY,
       PADDING_TOP$b = _enums$STYLE_KEY$l.PADDING_TOP,
       PADDING_LEFT$b = _enums$STYLE_KEY$l.PADDING_LEFT,
-      STROKE_WIDTH$6 = _enums$STYLE_KEY$l.STROKE_WIDTH,
+      STROKE_WIDTH$7 = _enums$STYLE_KEY$l.STROKE_WIDTH,
       BOX_SHADOW$8 = _enums$STYLE_KEY$l.BOX_SHADOW,
       FILTER$c = _enums$STYLE_KEY$l.FILTER;
   var isNil$e = util.isNil;
@@ -25889,7 +25957,7 @@
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle[PADDING_TOP$b],
             paddingLeft = _this$computedStyle[PADDING_LEFT$b],
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
             boxShadow = _this$computedStyle[BOX_SHADOW$8],
             filter = _this$computedStyle[FILTER$c];
         var originX = __sx2 + paddingLeft;

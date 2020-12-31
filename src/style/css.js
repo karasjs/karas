@@ -43,6 +43,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   POINTER_EVENTS,
   FILL,
   STROKE,
+  STROKE_WIDTH,
   STROKE_DASHARRAY,
   BORDER_TOP_WIDTH,
   BORDER_RIGHT_WIDTH,
@@ -493,7 +494,7 @@ function normalize(style, reset = []) {
     'width',
     'height',
     'flexBasis',
-    'strokeWidth',
+    // 'strokeWidth',
   ].forEach(k => {
     let v = style[k];
     if(isNil(v)) {
@@ -620,10 +621,28 @@ function normalize(style, reset = []) {
   temp = style.fill;
   if(temp !== undefined) {
     if(!temp) {
-      res[FILL] = 'none';
+      res[FILL] = ['none'];
+    }
+    else if(Array.isArray(temp)) {
+      if(temp.length) {
+        res[FILL] = temp.map(item => {
+          if(!item) {
+            return 'none';
+          }
+          else if(reg.gradient.test(item)) {
+            return gradient.parseGradient(item);
+          }
+          else {
+            return rgba2int(item);
+          }
+        });
+      }
+      else {
+        res[FILL] = ['none'];
+      }
     }
     else if(reg.gradient.test(temp)) {
-      res[FILL] = gradient.parseGradient(temp);
+      res[FILL] = [gradient.parseGradient(temp)];
     }
     else {
       res[FILL] = rgba2int(temp);
@@ -632,14 +651,44 @@ function normalize(style, reset = []) {
   temp = style.stroke;
   if(temp !== undefined) {
     if(!temp) {
-      res[STROKE] = 'none';
+      res[STROKE] = ['none'];
+    }
+    else if(Array.isArray(temp)) {
+      if(temp.length) {
+        res[STROKE] = temp.map(item => {
+          if(!item) {
+            return 'none';
+          }
+          else if(reg.gradient.test(item)) {
+            return gradient.parseGradient(item);
+          }
+          else {
+            return rgba2int(item);
+          }
+        });
+      }
+      else {
+        res[STROKE] = ['none'];
+      }
     }
     else if(reg.gradient.test(temp)) {
-      res[STROKE] = gradient.parseGradient(temp);
+      res[STROKE] = [gradient.parseGradient(temp)];
     }
     else {
-      res[STROKE] = rgba2int(temp);
+      res[STROKE] = [rgba2int(temp)];
     }
+  }
+  temp = style.strokeWidth;
+  if(!isNil(temp)) {
+    if(Array.isArray(temp)) {}
+    else {
+      let v = res[STROKE_WIDTH] = [];
+      calUnit(v, 0,  temp);
+      if(v[1] === NUMBER) {
+        v[1] = PX;
+      }
+    }
+    console.log(res[STROKE_WIDTH])
   }
   temp = style.filter;
   if(temp !== undefined) {

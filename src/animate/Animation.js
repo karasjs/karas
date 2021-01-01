@@ -978,10 +978,10 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
         // fill纯色
         else {
-          st2[0] += v2[0] * percent;
-          st2[1] += v2[1] * percent;
-          st2[2] += v2[2] * percent;
-          st2[3] += v2[3] * percent;
+          st2[0] += c[0] * percent;
+          st2[1] += c[1] * percent;
+          st2[2] += c[2] * percent;
+          st2[3] += c[3] * percent;
         }
       });
     }

@@ -43,6 +43,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   POINTER_EVENTS,
   FILL,
   STROKE,
+  STROKE_WIDTH,
   STROKE_DASHARRAY,
   BORDER_TOP_WIDTH,
   BORDER_RIGHT_WIDTH,
@@ -198,10 +199,6 @@ function normalize(style, reset = []) {
   if(!isNil(temp)) {
     abbr.toFull(style, 'padding');
   }
-  temp = style.backgroundRepeat;
-  if(!isNil(temp)) {
-    abbr.toFull(style, 'backgroundRepeat');
-  }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
   ['translate', 'scale', 'skew'].forEach(k => {
     temp = style[k];
@@ -239,14 +236,31 @@ function normalize(style, reset = []) {
   temp = style.backgroundImage;
   if(temp !== undefined) {
     if(!temp) {
-      res[BACKGROUND_IMAGE] = null;
+      res[BACKGROUND_IMAGE] = [null];
+    }
+    else if(Array.isArray(temp)) {
+      res[BACKGROUND_IMAGE] = temp.map(item => {
+        if(!item) {
+          return null;
+        }
+        if(reg.gradient.test(item)) {
+          return gradient.parseGradient(item);
+        }
+        if(reg.img.test(item)) {
+          return reg.img.exec(item)[2];
+        }
+        return null;
+      });
     }
     // 区分是渐变色还是图
     else if(reg.gradient.test(temp)) {
-      res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
+      res[BACKGROUND_IMAGE] = [gradient.parseGradient(temp)];
     }
     else if(reg.img.test(temp)) {
-      res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
+      res[BACKGROUND_IMAGE] = [reg.img.exec(temp)[2]];
+    }
+    else {
+      res[BACKGROUND_IMAGE] = [null];
     }
   }
   temp = style.backgroundColor;
@@ -265,15 +279,45 @@ function normalize(style, reset = []) {
     temp = style[k];
     if(!isNil(temp)) {
       k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
-      if(/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
+      if(Array.isArray(temp)) {
+        if(temp.length) {
+          res[k] = temp.map(item => {
+            if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+              let v = [];
+              calUnit(v, 0, item);
+              if(v[0][1] === NUMBER) {
+                v[0][1] = PX;
+              }
+              return v[0];
+            }
+            else {
+              return [
+                {
+                  top: 0,
+                  left: 0,
+                  center: 50,
+                  right: 100,
+                  bottom: 100,
+                }[item] || 0,
+                PERCENT,
+              ];
+            }
+          });
+        }
+        else {
+          res[k] = [0, PERCENT];
+        }
+      }
+      else if(/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
         calUnit(res, k, temp);
         temp = res[k];
         if(temp[1] === NUMBER) {
           temp[1] = PX;
         }
+        res[k] = [temp];
       }
       else {
-        res[k] = [
+        res[k] = [[
           {
             top: 0,
             left: 0,
@@ -282,7 +326,7 @@ function normalize(style, reset = []) {
             bottom: 100,
           }[temp] || 0,
           PERCENT,
-        ];
+        ]];
       }
     }
   });
@@ -290,38 +334,99 @@ function normalize(style, reset = []) {
   temp = style.backgroundSize;
   if(temp) {
     let bs = res[BACKGROUND_SIZE] = [];
-    let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
-    if(match) {
-      if(match.length === 1) {
-        if(match[0] === 'contain' || match[0] === 'cover') {
-          match[1] = match[0];
-        }
-        else {
-          match[1] = 'auto';
-        }
-      }
-      for(let i = 0; i < 2; i++) {
-        let item = match[i];
-        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-          calUnit(bs, i, item);
-          if(bs[i][1] === NUMBER) {
-            bs[i][1] = PX;
+    if(Array.isArray(temp)) {
+      if(temp.length) {
+        bs = temp.map(item => {
+          if(!item) {
+            return [
+              [0, AUTO],
+              [0, AUTO],
+            ];
           }
-        }
-        else if(item === '0' || item === 0) {
-          bs.push([0, PX]);
-        }
-        else if(item === 'contain' || item === 'cover') {
-          bs.push([item, STRING]);
-        }
-        else {
-          bs.push([0, AUTO]);
-        }
+          let match = item.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+          if(match) {
+            if(match.length === 1) {
+              if(match[0] === 'contain' || match[0] === 'cover') {
+                match[1] = match[0];
+              }
+              else {
+                match[1] = 'auto';
+              }
+            }
+            let v = [];
+            for(let i = 0; i < 2; i++) {
+              let item = match[i];
+              if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+                calUnit(v, i, item);
+                if(v[i][1] === NUMBER) {
+                  v[i][1] = PX;
+                }
+              }
+              else if(item === '0' || item === 0) {
+                v.push([0, PX]);
+              }
+              else if(item === 'contain' || item === 'cover') {
+                v.push([item, STRING]);
+              }
+              else {
+                v.push([0, AUTO]);
+              }
+            }
+            return v;
+          }
+          else {
+            return [
+              [0, AUTO],
+              [0, AUTO],
+            ];
+          }
+        });
+      }
+      else {
+        bs.push([
+          [0, AUTO],
+          [0, AUTO],
+        ]);
       }
     }
     else {
-      bs.push([0, AUTO]);
-      bs.push([0, AUTO]);
+      let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+      if(match) {
+        if(match.length === 1) {
+          if(match[0] === 'contain' || match[0] === 'cover') {
+            match[1] = match[0];
+          }
+          else {
+            match[1] = 'auto';
+          }
+        }
+        let v = [];
+        for(let i = 0; i < 2; i++) {
+          let item = match[i];
+          if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+            calUnit(v, i, item);
+            if(v[i][1] === NUMBER) {
+              v[i][1] = PX;
+            }
+          }
+          else if(item === '0' || item === 0) {
+            v.push([0, PX]);
+          }
+          else if(item === 'contain' || item === 'cover') {
+            v.push([item, STRING]);
+          }
+          else {
+            v.push([0, AUTO]);
+          }
+        }
+        bs.push(v);
+      }
+      else {
+        bs.push([
+          [0, AUTO],
+          [0, AUTO],
+        ]);
+      }
     }
   }
   // border-color
@@ -493,7 +598,7 @@ function normalize(style, reset = []) {
     'width',
     'height',
     'flexBasis',
-    'strokeWidth',
+    // 'strokeWidth',
   ].forEach(k => {
     let v = style[k];
     if(isNil(v)) {
@@ -602,43 +707,119 @@ function normalize(style, reset = []) {
       }
     }
   }
-  temp = style.strokeDasharray;
-  if(!isNil(temp)) {
-    let match = temp.toString().match(/[\d.]+/g);
-    if(match) {
-      match = match.map(item => parseFloat(item));
-      if(match.length % 2 === 1) {
-        match.push(match[match.length - 1]);
-      }
-      res[STROKE_DASHARRAY] = match;
-    }
-    else {
-      res[STROKE_DASHARRAY] = [];
-    }
-  }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;
   if(temp !== undefined) {
     if(!temp) {
-      res[FILL] = 'none';
+      res[FILL] = ['none'];
+    }
+    else if(Array.isArray(temp)) {
+      if(temp.length) {
+        res[FILL] = temp.map(item => {
+          if(!item) {
+            return 'none';
+          }
+          else if(reg.gradient.test(item)) {
+            return gradient.parseGradient(item);
+          }
+          else {
+            return rgba2int(item);
+          }
+        });
+      }
+      else {
+        res[FILL] = ['none'];
+      }
     }
     else if(reg.gradient.test(temp)) {
-      res[FILL] = gradient.parseGradient(temp);
+      res[FILL] = [gradient.parseGradient(temp)];
     }
     else {
-      res[FILL] = rgba2int(temp);
+      res[FILL] = [rgba2int(temp)];
     }
   }
   temp = style.stroke;
   if(temp !== undefined) {
     if(!temp) {
-      res[STROKE] = 'none';
+      res[STROKE] = ['none'];
+    }
+    else if(Array.isArray(temp)) {
+      if(temp.length) {
+        res[STROKE] = temp.map(item => {
+          if(!item) {
+            return 'none';
+          }
+          else if(reg.gradient.test(item)) {
+            return gradient.parseGradient(item);
+          }
+          else {
+            return rgba2int(item);
+          }
+        });
+      }
+      else {
+        res[STROKE] = ['none'];
+      }
     }
     else if(reg.gradient.test(temp)) {
-      res[STROKE] = gradient.parseGradient(temp);
+      res[STROKE] = [gradient.parseGradient(temp)];
     }
     else {
-      res[STROKE] = rgba2int(temp);
+      res[STROKE] = [rgba2int(temp)];
+    }
+  }
+  temp = style.strokeWidth;
+  if(!isNil(temp)) {
+    if(Array.isArray(temp)) {
+      if(temp.length) {
+        res[STROKE_WIDTH] = temp.map(item => {
+          let v = [];
+          calUnit(v, 0,  item);
+          if(v[0][1] === NUMBER) {
+            v[0][1] = PX;
+          }
+          return v[0];
+        });
+      }
+      else {
+        res[STROKE_WIDTH] = [0, PX];
+      }
+    }
+    else {
+      let v = res[STROKE_WIDTH] = [];
+      calUnit(v, 0,  temp);
+      if(v[0][1] === NUMBER) {
+        v[0][1] = PX;
+      }
+    }
+  }
+  temp = style.strokeDasharray;
+  if(!isNil(temp)) {
+    if(Array.isArray(temp)) {
+      res[STROKE_DASHARRAY] = temp.map(item => {
+        let match = item.toString().match(/[\d.]+/g);
+        if(match) {
+          match = match.map(item => parseFloat(item));
+          if(match.length % 2 === 1) {
+            match.push(match[match.length - 1]);
+          }
+          return match;
+        }
+        return [];
+      });
+    }
+    else {
+      let match = temp.toString().match(/[\d.]+/g);
+      if(match) {
+        match = match.map(item => parseFloat(item));
+        if(match.length % 2 === 1) {
+          match.push(match[match.length - 1]);
+        }
+        res[STROKE_DASHARRAY] = [match];
+      }
+      else {
+        res[STROKE_DASHARRAY] = [[]];
+      }
     }
   }
   temp = style.filter;
@@ -702,17 +883,12 @@ function normalize(style, reset = []) {
   [
     'position',
     'display',
-    'backgroundRepeat',
     'flexDirection',
     'justifyContent',
     'alignItems',
     'alignSelf',
     'overflow',
     'mixBlendMode',
-    'strokeLinecap',
-    'strokeLinejoin',
-    'strokeMiterlimit',
-    'fillRule',
     'borderTopStyle',
     'borderRightStyle',
     'borderBottomStyle',
@@ -725,17 +901,24 @@ function normalize(style, reset = []) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
     }
   });
+  // 这些支持多个的用数组表示
+  [
+    'backgroundRepeat',
+    'strokeLinecap',
+    'strokeLinejoin',
+    'strokeMiterlimit',
+    'fillRule',
+  ].forEach(k => {
+    if(style.hasOwnProperty(k)) {
+      let v = style[k];
+      res[STYLE_KEY[style2Upper(k)]] = Array.isArray(v) ? v : [v];
+    }
+  });
   GEOM_KEY_SET.forEach(k => {
     if(style.hasOwnProperty(k)) {
       res[k] = style[k];
     }
   });
-  // for(let i = CUSTOM_STYLE_INDEX[0], len = CUSTOM_STYLE_INDEX[1]; i < len; i++) {
-  //   let k = STYLE_RV_KEY[i];
-  //   if(style.hasOwnProperty(k)) {
-  //     res[i] = style[k];
-  //   }
-  // }
   return res;
 }
 
@@ -826,12 +1009,14 @@ function setFontStyle(style) {
 
 function getBaseLine(style) {
   let fontSize = style[FONT_SIZE];
-  let normal = fontSize * font.arial.lhr;
-  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * font.arial.blr;
+  let ff = style[FONT_FAMILY];
+  let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
+  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
 }
 
 function calNormalLineHeight(computedStyle) {
-  return computedStyle[FONT_SIZE] * font.arial.lhr;
+  let ff = computedStyle[FONT_FAMILY];
+  return computedStyle[FONT_SIZE] * (font.info[ff] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {
@@ -919,7 +1104,19 @@ function equalStyle(k, a, b, target) {
       }
     }
   }
-  if(k === TRANSFORM_ORIGIN || k === BACKGROUND_SIZE || RADIUS_HASH.hasOwnProperty(k)) {
+  if(k === BACKGROUND_SIZE) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let aa = a[i], bb = b[i];
+      if(aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if(k === TRANSFORM_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
     return a[0][0] === b[0][0] && a[0][1] === b[0][1]
       && a[1][0] === b[1][0] && a[1][1] === b[1][1];
   }
@@ -1020,28 +1217,27 @@ function cloneStyle(style, keys) {
     let v = style[k];
     // 渐变特殊处理
     if(k === BACKGROUND_IMAGE) {
-      if(v.k) {
-        res[k] = util.clone(v);
-      }
-      else {
-        let n = res[k] = v.slice(0);
-        n[0] = n[0].slice(0);
-      }
+      res[k] = v.map(item => {
+        if(item.k) {
+          return util.clone(item);
+        }
+        else {
+          return item;
+        }
+      });
     }
     else if(k === FILL || k === STROKE) {
-      if(v.k) {
-        res[k] = util.clone(v);
-      }
-      else {
-        res[k] = v.slice(0);
-      }
+      res[k] = v.map(item => {
+        // 渐变
+        if(item.k) {
+          return util.clone(item);
+        }
+        // 颜色
+        else {
+          return item.slice(0);
+        }
+      });
     }
-    // else if(k === FILTER) {
-    //   if(v) {
-    //     v = v.slice(0);
-    //     res[k] = v;
-    //   }
-    // }
     else if(k === TRANSFORM) {
       if(v) {
         let n = v.slice(0);

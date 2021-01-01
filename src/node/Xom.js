@@ -1325,65 +1325,80 @@ class Xom extends Node {
         let {
           [BACKGROUND_POSITION_X]: bgX,
         } = currentStyle;
-        computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
+        // computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
+        computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
+          return item[1] === PX ? item[0] : (item[0] + '%');
+        });
       }
       if(__cacheStyle[BACKGROUND_POSITION_Y] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_Y] = true;
         let {
           [BACKGROUND_POSITION_Y]: bgY,
         } = currentStyle;
-        computedStyle[BACKGROUND_POSITION_Y] = bgY[1] === PX ? bgY[0] : (bgY[0] + '%');
+        // computedStyle[BACKGROUND_POSITION_Y] = bgY[1] === PX ? bgY[0] : (bgY[0] + '%');
+        computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
+          return item[1] === PX ? item[0] : (item[0] + '%');
+        });
       }
       if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
         __cacheStyle[BACKGROUND_SIZE] = true;
-        computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], clientWidth, clientHeight);
+        // computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], clientWidth, clientHeight);
+        computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
+          return calBackgroundSize(item, clientWidth, clientHeight);
+        });
       }
       if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {
         let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE];
-        // 防止隐藏不加载背景图
-        if(util.isString(bgI)) {
-          __cacheStyle[BACKGROUND_IMAGE] = true;
-          let loadBgi = this.__loadBgi;
-          let cache = inject.IMG[BACKGROUND_IMAGE];
-          if(cache && cache.state === inject.LOADED) {
-            loadBgi.url = BACKGROUND_IMAGE;
-            loadBgi.source = cache.source;
-            loadBgi.width = cache.width;
-            loadBgi.height = cache.height;
+        __cacheStyle[BACKGROUND_IMAGE] = bgI.map((bgi, i) => {
+          if(!bgi) {
+            return null;
           }
-          else if(loadBgi.url !== bgI) {
-            // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-            loadBgi.url = bgI;
-            loadBgi.source = null;
-            inject.measureImg(bgI, data => {
-              // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-              if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
-                loadBgi.source = data.source;
-                loadBgi.width = data.width;
-                loadBgi.height = data.height;
-                let node = this;
-                let root = node.root;
-                root.delRefreshTask(loadBgi.cb);
-                root.addRefreshTask(loadBgi.cb = {
-                  __before() {
-                    __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                    let res = {};
-                    res[UPDATE_NODE] = node;
-                    res[UPDATE_FOCUS] = REPAINT;
-                    res[UPDATE_CONFIG] = node.__config;
-                    root.__addUpdate(node, node.__config, root, root.__config, res);
-                  },
-                });
-              }
-            }, {
-              width: clientWidth,
-              height: clientHeight,
-            });
+          // 防止隐藏不加载背景图
+          if(util.isString(bgi)) {
+            // __cacheStyle[BACKGROUND_IMAGE] = true;
+            let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
+            let cache = inject.IMG[BACKGROUND_IMAGE];
+            if(cache && cache.state === inject.LOADED) {
+              loadBgi.url = BACKGROUND_IMAGE;
+              loadBgi.source = cache.source;
+              loadBgi.width = cache.width;
+              loadBgi.height = cache.height;
+            }
+            else if(loadBgi.url !== bgi) {
+              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+              loadBgi.url = bgi;
+              loadBgi.source = null;
+              inject.measureImg(bgi, data => {
+                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+                if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
+                  loadBgi.source = data.source;
+                  loadBgi.width = data.width;
+                  loadBgi.height = data.height;
+                  let node = this;
+                  let root = node.root;
+                  root.delRefreshTask(loadBgi.cb);
+                  root.addRefreshTask(loadBgi.cb = {
+                    __before() {
+                      __cacheStyle[BACKGROUND_IMAGE] = undefined;
+                      let res = {};
+                      res[UPDATE_NODE] = node;
+                      res[UPDATE_FOCUS] = REPAINT;
+                      res[UPDATE_CONFIG] = node.__config;
+                      root.__addUpdate(node, node.__config, root, root.__config, res);
+                    },
+                  });
+                }
+              }, {
+                width: clientWidth,
+                height: clientHeight,
+              });
+            }
+            return true;
           }
-        }
-        else if(bgI && bgI.k) {
-          __cacheStyle[BACKGROUND_IMAGE] = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgI);
-        }
+          else if(bgi && bgi.k) {
+            return this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgi);
+          }
+        });
       }
       if(__cacheStyle[BOX_SHADOW] === undefined) {
         __cacheStyle[BOX_SHADOW] = true;
@@ -1972,278 +1987,283 @@ class Xom extends Node {
     }
     // 渐变或图片叠加
     if(backgroundImage) {
-      if(util.isString(backgroundImage)) {
-        let loadBgi = this.__loadBgi;
-        if(loadBgi.url === backgroundImage) {
-          let source = loadBgi.source;
-          // 无source不绘制
-          if(source) {
-            let { width, height } = loadBgi;
-            let [w, h] = backgroundSize;
-            // -1为auto，-2为contain，-3为cover
-            if(w === -1 && h === -1) {
-              w = width;
-              h = height;
-            }
-            else if(w === -2) {
-              if(width > clientWidth && height > clientHeight) {
-                w = width / clientWidth;
-                h = height / clientHeight;
-                if(w >= h) {
-                  w = clientWidth;
-                  h = w * height / width;
-                }
-                else {
-                  h = clientHeight;
-                  w = h * width / height;
-                }
-              }
-              else if(width > clientWidth) {
-                w = clientWidth;
-                h = w * height / width;
-              }
-              else if(height > clientHeight) {
-                h = clientHeight;
-                w = h * width / height;
-              }
-              else {
+      backgroundImage.forEach((bgi, i) => {
+        if(!bgi) {
+          return;
+        }
+        if(util.isString(bgi)) {
+          let loadBgi = this.__loadBgi[i];
+          if(loadBgi.url === backgroundImage[i]) {
+            let source = loadBgi.source;
+            // 无source不绘制
+            if(source) {
+              let { width, height } = loadBgi;
+              let [w, h] = backgroundSize[i];
+              // -1为auto，-2为contain，-3为cover
+              if(w === -1 && h === -1) {
                 w = width;
                 h = height;
               }
-            }
-            else if(w === -3) {
-              if(clientWidth > width && clientHeight > height) {
-                w = width / clientWidth;
-                h = height / clientHeight;
-                if(w <= h) {
-                  w = clientWidth;
-                  h = w * height / width;
-                }
-                else {
-                  h = clientHeight;
-                  w = h * width / height;
-                }
-              }
-              else if(clientWidth > width) {
-                w = clientWidth;
-                h = w * height / width;
-              }
-              else if(clientHeight > height) {
-                h = clientHeight;
-                w = h * width / height;
-              }
-              else {
-                w = width / clientWidth;
-                h = height / clientHeight;
-                if(w <= h) {
-                  w = clientWidth;
-                  h = w * height / width;
-                }
-                else {
-                  h = clientHeight;
-                  w = h * width / height;
-                }
-              }
-            }
-            else if(w === -1) {
-              w = h * width / height;
-            }
-            else if(h === -1) {
-              h = w * height / width;
-            }
-            let bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X], clientWidth, w);
-            let bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y], clientHeight, h);
-            // 超出尺寸模拟mask截取
-            let needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight;
-            // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
-            let xnl = 0;
-            let xnr = 0;
-            let ynt = 0;
-            let ynb = 0;
-            // repeat-x
-            if(['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
-              let diff = bgX - x2;
-              if(diff > 0) {
-                xnl = Math.ceil(diff / w);
-              }
-              diff = x2 + clientWidth - bgX - w;
-              if(diff > 0) {
-                xnr = Math.ceil(diff / w);
-              }
-            }
-            // repeat-y
-            if(['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
-              let diff = bgY - y2;
-              if(diff > 0) {
-                ynt = Math.ceil(diff / h);
-              }
-              diff = y2 + clientHeight - bgY - h;
-              if(diff > 0) {
-                ynb = Math.ceil(diff / h);
-              }
-            }
-            // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
-            let repeat = [];
-            if(xnl > 0) {
-              for(let i = 0; i < xnl; i++) {
-                let x = bgX - (i + 1) * w;
-                repeat.push([x, bgY]);
-                // 看最左边超过没有
-                if(!needMask && i === 0 && x < x2) {
-                  needMask = true;
-                }
-              }
-            }
-            if(xnr > 0) {
-              for(let i = 0; i < xnr; i++) {
-                let x = bgX + (i + 1) * w;
-                repeat.push([x, bgY]);
-                // 看最右边超过没有
-                if(!needMask && i === xnr - 1 && x + w > x2 + clientWidth) {
-                  needMask = true;
-                }
-              }
-            }
-            if(ynt > 0) {
-              for(let i = 0; i < ynt; i++) {
-                let y = bgY - (i + 1) * h;
-                repeat.push([bgX, y]);
-                // 看最上边超过没有
-                if(!needMask && i === 0 && y < y2) {
-                  needMask = true;
-                }
-              }
-            }
-            if(ynb > 0) {
-              for(let i = 0; i < ynb; i++) {
-                let y = bgY + (i + 1) * h;
-                repeat.push([bgX, y]);
-                // 看最下边超过没有
-                if(!needMask && i === ynb - 1 && y + w > y2 + clientHeight) {
-                  needMask = true;
-                }
-              }
-            }
-            // 原点和同行列十字画完，看4个角的情况
-            if(xnl > 0 && ynt > 0) {
-              for(let i = 0; i < xnl; i++) {
-                for(let j = 0; j < ynt; j++) {
-                  repeat.push([bgX - (i + 1) * w, bgY - (j + 1) * h]);
-                }
-              }
-            }
-            if(xnr > 0 && ynt > 0) {
-              for(let i = 0; i < xnr; i++) {
-                for(let j = 0; j < ynt; j++) {
-                  repeat.push([bgX + (i + 1) * w, bgY - (j + 1) * h]);
-                }
-              }
-            }
-            if(xnl > 0 && ynb > 0) {
-              for(let i = 0; i < xnl; i++) {
-                for(let j = 0; j < ynb; j++) {
-                  repeat.push([bgX - (i + 1) * w, bgY + (j + 1) * h]);
-                }
-              }
-            }
-            if(xnr > 0 && ynb > 0) {
-              for(let i = 0; i < xnr; i++) {
-                for(let j = 0; j < ynb; j++) {
-                  repeat.push([bgX + (i + 1) * w, bgY + (j + 1) * h]);
-                }
-              }
-            }
-            if(renderMode === mode.CANVAS) {
-              if(needMask) {
-                ctx.save();
-                renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, this,
-                  borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-                  borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
-              }
-              // 先画不考虑repeat的中心声明的
-              ctx.drawImage(source, bgX, bgY, w, h);
-              // 再画重复的十字和4角象限
-              repeat.forEach(item => {
-                ctx.drawImage(source, item[0], item[1], w, h);
-              });
-              if(needMask) {
-                ctx.restore();
-              }
-            }
-            else if(renderMode === mode.SVG) {
-              let matrix = image.matrixResize(width, height, w, h, bgX, bgY, clientWidth, clientHeight);
-              let props = [
-                ['xlink:href', backgroundImage],
-                ['x', bgX],
-                ['y', bgY],
-                ['width', width],
-                ['height', height]
-              ];
-              let needResize;
-              if(matrix && !mx.isE(matrix)) {
-                needResize = true;
-                props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
-              }
-              if(needMask) {
-                let v = {
-                  tagName: 'clipPath',
-                  children: [{
-                    tagName: 'rect',
-                    props: [
-                      ['x', x2],
-                      ['y', y2],
-                      ['width', clientWidth],
-                      ['height', clientHeight],
-                      ['fill', '#FFF']
-                    ],
-                  }],
-                };
-                let id = defs.add(v);
-                __config[NODE_DEFS_CACHE].push(v);
-                this.virtualDom.bbClip = 'url(#' + id + ')';
-              }
-              // 先画不考虑repeat的中心声明的
-              this.virtualDom.bb.push({
-                type: 'img',
-                tagName: 'image',
-                props,
-              });
-              // 再画重复的十字和4角象限
-              repeat.forEach(item => {
-                let copy = clone(props);
-                if(needResize) {
-                  let matrix = image.matrixResize(width, height, w, h, item[0], item[1], clientWidth, clientHeight);
-                  if(matrix && !mx.isE(matrix)) {
-                    copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+              else if(w === -2) {
+                if(width > clientWidth && height > clientHeight) {
+                  w = width / clientWidth;
+                  h = height / clientHeight;
+                  if(w >= h) {
+                    w = clientWidth;
+                    h = w * height / width;
+                  }
+                  else {
+                    h = clientHeight;
+                    w = h * width / height;
                   }
                 }
-                copy[1][1] = item[0];
-                copy[2][1] = item[1];
+                else if(width > clientWidth) {
+                  w = clientWidth;
+                  h = w * height / width;
+                }
+                else if(height > clientHeight) {
+                  h = clientHeight;
+                  w = h * width / height;
+                }
+                else {
+                  w = width;
+                  h = height;
+                }
+              }
+              else if(w === -3) {
+                if(clientWidth > width && clientHeight > height) {
+                  w = width / clientWidth;
+                  h = height / clientHeight;
+                  if(w <= h) {
+                    w = clientWidth;
+                    h = w * height / width;
+                  }
+                  else {
+                    h = clientHeight;
+                    w = h * width / height;
+                  }
+                }
+                else if(clientWidth > width) {
+                  w = clientWidth;
+                  h = w * height / width;
+                }
+                else if(clientHeight > height) {
+                  h = clientHeight;
+                  w = h * width / height;
+                }
+                else {
+                  w = width / clientWidth;
+                  h = height / clientHeight;
+                  if(w <= h) {
+                    w = clientWidth;
+                    h = w * height / width;
+                  }
+                  else {
+                    h = clientHeight;
+                    w = h * width / height;
+                  }
+                }
+              }
+              else if(w === -1) {
+                w = h * width / height;
+              }
+              else if(h === -1) {
+                h = w * height / width;
+              }
+              let bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], clientWidth, w);
+              let bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], clientHeight, h);
+              // 超出尺寸模拟mask截取
+              let needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight;
+              // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+              let xnl = 0;
+              let xnr = 0;
+              let ynt = 0;
+              let ynb = 0;
+              // repeat-x
+              if(['repeat-x', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+                let diff = bgX - x2;
+                if(diff > 0) {
+                  xnl = Math.ceil(diff / w);
+                }
+                diff = x2 + clientWidth - bgX - w;
+                if(diff > 0) {
+                  xnr = Math.ceil(diff / w);
+                }
+              }
+              // repeat-y
+              if(['repeat-y', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+                let diff = bgY - y2;
+                if(diff > 0) {
+                  ynt = Math.ceil(diff / h);
+                }
+                diff = y2 + clientHeight - bgY - h;
+                if(diff > 0) {
+                  ynb = Math.ceil(diff / h);
+                }
+              }
+              // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
+              let repeat = [];
+              if(xnl > 0) {
+                for(let i = 0; i < xnl; i++) {
+                  let x = bgX - (i + 1) * w;
+                  repeat.push([x, bgY]);
+                  // 看最左边超过没有
+                  if(!needMask && i === 0 && x < x2) {
+                    needMask = true;
+                  }
+                }
+              }
+              if(xnr > 0) {
+                for(let i = 0; i < xnr; i++) {
+                  let x = bgX + (i + 1) * w;
+                  repeat.push([x, bgY]);
+                  // 看最右边超过没有
+                  if(!needMask && i === xnr - 1 && x + w > x2 + clientWidth) {
+                    needMask = true;
+                  }
+                }
+              }
+              if(ynt > 0) {
+                for(let i = 0; i < ynt; i++) {
+                  let y = bgY - (i + 1) * h;
+                  repeat.push([bgX, y]);
+                  // 看最上边超过没有
+                  if(!needMask && i === 0 && y < y2) {
+                    needMask = true;
+                  }
+                }
+              }
+              if(ynb > 0) {
+                for(let i = 0; i < ynb; i++) {
+                  let y = bgY + (i + 1) * h;
+                  repeat.push([bgX, y]);
+                  // 看最下边超过没有
+                  if(!needMask && i === ynb - 1 && y + w > y2 + clientHeight) {
+                    needMask = true;
+                  }
+                }
+              }
+              // 原点和同行列十字画完，看4个角的情况
+              if(xnl > 0 && ynt > 0) {
+                for(let i = 0; i < xnl; i++) {
+                  for(let j = 0; j < ynt; j++) {
+                    repeat.push([bgX - (i + 1) * w, bgY - (j + 1) * h]);
+                  }
+                }
+              }
+              if(xnr > 0 && ynt > 0) {
+                for(let i = 0; i < xnr; i++) {
+                  for(let j = 0; j < ynt; j++) {
+                    repeat.push([bgX + (i + 1) * w, bgY - (j + 1) * h]);
+                  }
+                }
+              }
+              if(xnl > 0 && ynb > 0) {
+                for(let i = 0; i < xnl; i++) {
+                  for(let j = 0; j < ynb; j++) {
+                    repeat.push([bgX - (i + 1) * w, bgY + (j + 1) * h]);
+                  }
+                }
+              }
+              if(xnr > 0 && ynb > 0) {
+                for(let i = 0; i < xnr; i++) {
+                  for(let j = 0; j < ynb; j++) {
+                    repeat.push([bgX + (i + 1) * w, bgY + (j + 1) * h]);
+                  }
+                }
+              }
+              if(renderMode === mode.CANVAS) {
+                if(needMask) {
+                  ctx.save();
+                  renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, this,
+                    borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+                    borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
+                }
+                // 先画不考虑repeat的中心声明的
+                ctx.drawImage(source, bgX, bgY, w, h);
+                // 再画重复的十字和4角象限
+                repeat.forEach(item => {
+                  ctx.drawImage(source, item[0], item[1], w, h);
+                });
+                if(needMask) {
+                  ctx.restore();
+                }
+              }
+              else if(renderMode === mode.SVG) {
+                let matrix = image.matrixResize(width, height, w, h, bgX, bgY, clientWidth, clientHeight);
+                let props = [
+                  ['xlink:href', bgi],
+                  ['x', bgX],
+                  ['y', bgY],
+                  ['width', width],
+                  ['height', height]
+                ];
+                let needResize;
+                if(matrix && !mx.isE(matrix)) {
+                  needResize = true;
+                  props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
+                }
+                if(needMask) {
+                  let v = {
+                    tagName: 'clipPath',
+                    children: [{
+                      tagName: 'rect',
+                      props: [
+                        ['x', x2],
+                        ['y', y2],
+                        ['width', clientWidth],
+                        ['height', clientHeight],
+                        ['fill', '#FFF']
+                      ],
+                    }],
+                  };
+                  let id = defs.add(v);
+                  __config[NODE_DEFS_CACHE].push(v);
+                  this.virtualDom.bbClip = 'url(#' + id + ')';
+                }
+                // 先画不考虑repeat的中心声明的
                 this.virtualDom.bb.push({
                   type: 'img',
                   tagName: 'image',
-                  props: copy,
+                  props,
                 });
-              });
+                // 再画重复的十字和4角象限
+                repeat.forEach(item => {
+                  let copy = clone(props);
+                  if(needResize) {
+                    let matrix = image.matrixResize(width, height, w, h, item[0], item[1], clientWidth, clientHeight);
+                    if(matrix && !mx.isE(matrix)) {
+                      copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+                    }
+                  }
+                  copy[1][1] = item[0];
+                  copy[2][1] = item[1];
+                  this.virtualDom.bb.push({
+                    type: 'img',
+                    tagName: 'image',
+                    props: copy,
+                  });
+                });
+              }
             }
           }
         }
-      }
-      else if(backgroundImage.k) {
-        let gd = __cacheStyle[BACKGROUND_IMAGE];
-        if(gd) {
-          if(gd.k === 'conic') {
-            renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
-              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-              borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-          }
-          else {
-            renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
-              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-              borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        else if(bgi.k) {
+          let gd = __cacheStyle[BACKGROUND_IMAGE][i];
+          if(gd) {
+            if(gd.k === 'conic') {
+              renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
+                borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+                borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            }
+            else {
+              renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
+                borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+                borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            }
           }
         }
-      }
+      });
     }
     // boxShadow可能会有多个
     if(boxShadow) {

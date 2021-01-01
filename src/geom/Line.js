@@ -242,12 +242,13 @@ class Line extends Geom {
     let {
       originX,
       originY,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
+      stroke: strokes,
+      strokeWidth: strokeWidths,
+      strokeDasharray: strokeDasharrays,
+      strokeDasharrayStr: strokeDasharrayStrs,
+      strokeLinecap: strokeLinecaps,
+      strokeLinejoin: strokeLinejoins,
+      strokeMiterlimit: strokeMiterlimits,
       dx,
       dy,
     } = res;
@@ -281,50 +282,65 @@ class Line extends Geom {
       }
       __cacheProps.d = d;
     }
-    let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
     if(renderMode === mode.CANVAS) {
-      if(strokeWidth > 0 && stroke !== 'none') {
-        if(isStrokeRE) {
-          ctx.strokeStyle = stroke.v[0];
-        }
-        ctx.beginPath();
-        if(isMulti) {
-          __cacheProps.x1.forEach((xa, i) => {
-            let xb = __cacheProps.x2[i];
-            let ya = __cacheProps.y1[i];
-            let yb = __cacheProps.y2[i];
-            let ca = __cacheProps.controlA[i];
-            let cb = __cacheProps.controlB[i];
-            let start = __cacheProps.start[i];
-            let end = __cacheProps.end[i];
-            let curve = curveNum(ca, cb);
-            if(start !== 0 || end !== 1) {
-              [xa, ya, xb, ya, ca, cb] = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
-            }
-            painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
+      strokes.forEach((stroke, i) => {
+        let strokeWidth = strokeWidths[i];
+        let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+        if(strokeWidth > 0 && stroke !== 'none') {
+          this.__preSetCanvas(renderMode, ctx, {
+            stroke,
+            strokeWidth,
+            strokeDasharray: strokeDasharrays[i],
+            strokeLinecap: strokeLinecaps[i],
+            strokeLinejoin: strokeLinejoins[i],
+            strokeMiterlimit: strokeMiterlimits[i],
           });
-        }
-        else {
-          let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
-          let { x1, y1, x2, y2, controlA, controlB, start, end } = __cacheProps;
-          if(start !== 0 || end !== 1) {
-            [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+          if(isStrokeRE) {
+            ctx.strokeStyle = stroke.v[0];
           }
-          painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve, dx, dy);
+          ctx.beginPath();
+          if(isMulti) {
+            __cacheProps.x1.forEach((xa, i) => {
+              let xb = __cacheProps.x2[i];
+              let ya = __cacheProps.y1[i];
+              let yb = __cacheProps.y2[i];
+              let ca = __cacheProps.controlA[i];
+              let cb = __cacheProps.controlB[i];
+              let start = __cacheProps.start[i];
+              let end = __cacheProps.end[i];
+              let curve = curveNum(ca, cb);
+              if(start !== 0 || end !== 1) {
+                [xa, ya, xb, ya, ca, cb] = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
+              }
+              painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
+            });
+          }
+          else {
+            let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
+            let { x1, y1, x2, y2, controlA, controlB, start, end } = __cacheProps;
+            if(start !== 0 || end !== 1) {
+              [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+            }
+            painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve, dx, dy);
+          }
+          ctx.stroke();
+          ctx.closePath();
         }
-        ctx.stroke();
-        ctx.closePath();
-      }
+      });
     }
     else if(renderMode === mode.SVG) {
-      let props = [
-        ['d', __cacheProps.d],
-        ['fill', 'none'],
-        ['stroke', isStrokeRE ? stroke.v[0] : (stroke.v || stroke)],
-        ['stroke-width', strokeWidth]
-      ];
-      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
-      this.addGeom('path', props);
+      strokes.forEach((stroke, i) => {
+        let strokeWidth = strokeWidths[i];
+        let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+        let props = [
+          ['d', __cacheProps.d],
+          ['fill', 'none'],
+          ['stroke', isStrokeRE ? stroke.v[0] : (stroke.v || stroke)],
+          ['stroke-width', strokeWidth]
+        ];
+        this.__propsStrokeStyle(props, strokeDasharrayStrs[i], strokeLinecaps[i], strokeLinejoins[i], strokeMiterlimits[i]);
+        this.addGeom('path', props);
+      });
     }
     return res;
   }

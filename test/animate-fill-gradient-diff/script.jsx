@@ -20,9 +20,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value = JSON.stringify(t.getComputedStyle().fill);
+    input.value = JSON.stringify(t.getComputedStyle().fill[0]);
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + JSON.stringify(t.getComputedStyle().fill);
+  input.value += '/' + JSON.stringify(t.getComputedStyle().fill[0]);
 });

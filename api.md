@@ -2035,6 +2035,28 @@ Geom矢量几何图形的样式键值对列表。
 ### font
 定义字体相关的信息，目前只有arial一种。此举是面向框架开发维护人员的，普通开发者无需关注。
 
+#### info
+存储字体信息的hash，key是fontFamily。已有列表：https://github.com/karasjs/karas/blob/master/src/style/font.js#L3
+
+#### register
+* **类型** `Function`
+* **参数**
+  * name `String`
+    注册的字体名。
+  * data `Object`
+    字体信息，需包含`emSquare`、`ascent`、`descent`、`lineGap`。
+* **说明**  
+  注册使用的新字体。
+* **示例**
+```jsx
+karas.style.font.register('newFont', {
+  emSquare: 2048,
+  ascent: 1854,
+  descent: 434,
+  lineGap: 67,
+});
+```
+
 <a name="parser包"></a>
 ## parser包
 包含解析动态json的方法，和简写信息。

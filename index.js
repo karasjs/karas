@@ -10904,7 +10904,7 @@
         }
 
         __config[I_NEXT_TIME] += diff;
-        return v;
+        return [v, diff];
       }
     }, {
       key: "play",
@@ -10970,8 +10970,12 @@
         var endDelay = __config[I_END_DELAY];
         var length = currentFrames.length; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
-        var currentTime = __config[I_CAL_DIFF_TIME](__config, diff); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
+        var _config$I_CAL_DIFF_T = __config[I_CAL_DIFF_TIME](__config, diff),
+            _config$I_CAL_DIFF_T2 = _slicedToArray(_config$I_CAL_DIFF_T, 2),
+            currentTime = _config$I_CAL_DIFF_T2[0],
+            d = _config$I_CAL_DIFF_T2[1];
 
+        diff = d; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
         if (!__config[I_FIRST_ENTER] && fps < 60) {
           diff = __config[I_FPS_TIME] += diff;

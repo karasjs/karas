@@ -1474,7 +1474,7 @@ class Animation extends Event {
       diff *= playbackRate;
     }
     __config[I_NEXT_TIME] += diff;
-    return v;
+    return [v, diff];
   }
 
   play(cb) {
@@ -1533,7 +1533,8 @@ class Animation extends Event {
     let endDelay = __config[I_END_DELAY];
     let length = currentFrames.length;
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-    let currentTime = __config[I_CAL_DIFF_TIME](__config, diff);
+    let [currentTime, d] = __config[I_CAL_DIFF_TIME](__config, diff);
+    diff = d;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
     if(!__config[I_FIRST_ENTER] && fps < 60) {
       diff = __config[I_FPS_TIME] += diff;

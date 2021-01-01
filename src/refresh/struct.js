@@ -1417,7 +1417,7 @@ function renderSvg(renderMode, ctx, defs, root) {
                 for(let j = 0, len = props.length; j < len; j++) {
                   let item = props[j];
                   if(item[0] === 'fill') {
-                    item[1] = util.int2invert(fill);
+                    item[1] = util.int2invert(fill[0]);
                   }
                 }
               }

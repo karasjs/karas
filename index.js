@@ -22247,7 +22247,7 @@
                     var _item3 = props[_j9];
 
                     if (_item3[0] === 'fill') {
-                      _item3[1] = util.int2invert(fill);
+                      _item3[1] = util.int2invert(fill[0]);
                     }
                   }
                 }

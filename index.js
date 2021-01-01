@@ -3273,6 +3273,8 @@
     rotate: ['rotateZ'],
     skew: ['skewX', 'skewY'],
     toFull: function toFull(style, k) {
+      var _this = this;
+
       var v = style[k];
 
       if (k === 'background') {
@@ -3368,17 +3370,40 @@
           }
         });
       } else if (k === 'backgroundPosition') {
-        v = v.toString().split(/\s+/);
-
-        if (v.length === 1) {
-          v[1] = '50%';
+        if (!Array.isArray(v)) {
+          v = [v];
         }
 
-        this[k].forEach(function (k, i) {
-          if (isNil$2(style[k])) {
-            style[k] = v[i];
-          }
+        var isEmpty = this[k].map(function (k2) {
+          return isNil$2(style[k2]);
         });
+        v.forEach(function (v2) {
+          v2 = v2.toString().split(/\s+/);
+
+          if (v2.length === 1) {
+            v2[1] = '50%';
+          }
+
+          _this[k].forEach(function (k2, i) {
+            if (isEmpty[i]) {
+              style[k2] = style[k2] || [];
+              style[k2].push(v2[i]);
+            } // if(isNil(style[k])) {
+            //   style[k] = v[i];
+            // }
+
+          });
+        }); // else {
+        //   v = v.toString().split(/\s+/);
+        //   if(v.length === 1) {
+        //     v[1] = '50%';
+        //   }
+        //   this[k].forEach((k, i) => {
+        //     if(isNil(style[k])) {
+        //       style[k] = v[i];
+        //     }
+        //   });
+        // }
       } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
         var _arr2 = v.toString().split(/\s*,\s*/);
 
@@ -4107,12 +4132,6 @@
 
     if (!isNil$3(temp)) {
       abbr.toFull(style, 'padding');
-    }
-
-    temp = style.backgroundRepeat;
-
-    if (!isNil$3(temp)) {
-      abbr.toFull(style, 'backgroundRepeat');
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
 
@@ -4151,12 +4170,30 @@
 
     if (temp !== undefined) {
       if (!temp) {
-        res[BACKGROUND_IMAGE] = null;
+        res[BACKGROUND_IMAGE] = [null];
+      } else if (Array.isArray(temp)) {
+        res[BACKGROUND_IMAGE] = temp.map(function (item) {
+          if (!item) {
+            return null;
+          }
+
+          if (reg.gradient.test(item)) {
+            return gradient.parseGradient(item);
+          }
+
+          if (reg.img.test(temp)) {
+            return reg.img.exec(temp)[2];
+          }
+
+          return null;
+        });
       } // 区分是渐变色还是图
       else if (reg.gradient.test(temp)) {
-          res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
+          res[BACKGROUND_IMAGE] = [gradient.parseGradient(temp)];
         } else if (reg.img.test(temp)) {
-          res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
+          res[BACKGROUND_IMAGE] = [reg.img.exec(temp)[2]];
+        } else {
+          res[BACKGROUND_IMAGE] = [null];
         }
     }
 
@@ -4180,21 +4217,48 @@
       if (!isNil$3(temp)) {
         k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
 
-        if (/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
+        if (Array.isArray(temp)) {
+          if (temp.length) {
+            res[k] = temp.map(function (item) {
+              if (/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+                var v = [];
+                calUnit(v, 0, item);
+
+                if (v[0][1] === NUMBER) {
+                  v[0][1] = PX$1;
+                }
+
+                return v[0];
+              } else {
+                return [{
+                  top: 0,
+                  left: 0,
+                  center: 50,
+                  right: 100,
+                  bottom: 100
+                }[item] || 0, PERCENT$1];
+              }
+            });
+          } else {
+            res[k] = [0, PERCENT$1];
+          }
+        } else if (/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
           calUnit(res, k, temp);
           temp = res[k];
 
           if (temp[1] === NUMBER) {
             temp[1] = PX$1;
           }
+
+          res[k] = [temp];
         } else {
-          res[k] = [{
+          res[k] = [[{
             top: 0,
             left: 0,
             center: 50,
             right: 100,
             bottom: 100
-          }[temp] || 0, PERCENT$1];
+          }[temp] || 0, PERCENT$1]];
         }
       }
     }); // 背景尺寸
@@ -4203,37 +4267,89 @@
 
     if (temp) {
       var bs = res[BACKGROUND_SIZE] = [];
-      var match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
 
-      if (match) {
-        if (match.length === 1) {
-          if (match[0] === 'contain' || match[0] === 'cover') {
-            match[1] = match[0];
-          } else {
-            match[1] = 'auto';
-          }
-        }
-
-        for (var i = 0; i < 2; i++) {
-          var item = match[i];
-
-          if (/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-            calUnit(bs, i, item);
-
-            if (bs[i][1] === NUMBER) {
-              bs[i][1] = PX$1;
+      if (Array.isArray(temp)) {
+        if (temp.length) {
+          bs = temp.map(function (item) {
+            if (!item) {
+              return [[0, AUTO], [0, AUTO]];
             }
-          } else if (item === '0' || item === 0) {
-            bs.push([0, PX$1]);
-          } else if (item === 'contain' || item === 'cover') {
-            bs.push([item, STRING]);
-          } else {
-            bs.push([0, AUTO]);
-          }
+
+            var match = item.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+
+            if (match) {
+              if (match.length === 1) {
+                if (match[0] === 'contain' || match[0] === 'cover') {
+                  match[1] = match[0];
+                } else {
+                  match[1] = 'auto';
+                }
+              }
+
+              var v = [];
+
+              for (var i = 0; i < 2; i++) {
+                var _item = match[i];
+
+                if (/%$/.test(_item) || /px$/i.test(_item) || /^-?[\d.]+$/.test(_item)) {
+                  calUnit(v, i, _item);
+
+                  if (v[i][1] === NUMBER) {
+                    v[i][1] = PX$1;
+                  }
+                } else if (_item === '0' || _item === 0) {
+                  v.push([0, PX$1]);
+                } else if (_item === 'contain' || _item === 'cover') {
+                  v.push([_item, STRING]);
+                } else {
+                  v.push([0, AUTO]);
+                }
+              }
+
+              return v;
+            } else {
+              return [[0, AUTO], [0, AUTO]];
+            }
+          });
+        } else {
+          bs.push([[0, AUTO], [0, AUTO]]);
         }
       } else {
-        bs.push([0, AUTO]);
-        bs.push([0, AUTO]);
+        var match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+
+        if (match) {
+          if (match.length === 1) {
+            if (match[0] === 'contain' || match[0] === 'cover') {
+              match[1] = match[0];
+            } else {
+              match[1] = 'auto';
+            }
+          }
+
+          var v = [];
+
+          for (var i = 0; i < 2; i++) {
+            var item = match[i];
+
+            if (/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+              calUnit(v, i, item);
+
+              if (v[i][1] === NUMBER) {
+                v[i][1] = PX$1;
+              }
+            } else if (item === '0' || item === 0) {
+              v.push([0, PX$1]);
+            } else if (item === 'contain' || item === 'cover') {
+              v.push([item, STRING]);
+            } else {
+              v.push([0, AUTO]);
+            }
+          }
+
+          bs.push(v);
+        } else {
+          bs.push([[0, AUTO], [0, AUTO]]);
+        }
       }
     } // border-color
 
@@ -4259,10 +4375,10 @@
         }
 
         for (var _i = 0; _i < 2; _i++) {
-          var _item = arr[_i];
+          var _item2 = arr[_i];
 
-          if (/%$/.test(_item) || /px$/i.test(_item) || /^-?[\d.]+$/.test(_item)) {
-            calUnit(arr, _i, _item);
+          if (/%$/.test(_item2) || /px$/i.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
+            calUnit(arr, _i, _item2);
 
             if (arr[_i][1] === NUMBER) {
               arr[_i][1] = PX$1;
@@ -4345,10 +4461,10 @@
         }
 
         for (var _i2 = 0; _i2 < 2; _i2++) {
-          var _item2 = _match2[_i2];
+          var _item3 = _match2[_i2];
 
-          if (/%$/.test(_item2) || /px$/i.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
-            calUnit(tfo, _i2, _item2);
+          if (/%$/.test(_item3) || /px$/i.test(_item3) || /^-?[\d.]+$/.test(_item3)) {
+            calUnit(tfo, _i2, _item3);
 
             if (tfo[_i2][1] === NUMBER) {
               tfo[_i2][1] = PX$1;
@@ -4360,7 +4476,7 @@
               center: 50,
               right: 100,
               bottom: 100
-            }[_item2], PERCENT$1]); // 不规范的写法变默认值50%
+            }[_item3], PERCENT$1]); // 不规范的写法变默认值50%
 
             if (isNil$3(tfo[_i2][0])) {
               tfo[_i2][0] = 50;
@@ -4438,10 +4554,10 @@
       if (temp === 'inherit') {
         res[FONT_SIZE$1] = [0, INHERIT$2];
       } else if (/%$/.test(temp)) {
-        var v = Math.max(0, parseFloat(temp));
+        var _v = Math.max(0, parseFloat(temp));
 
-        if (v) {
-          res[FONT_SIZE$1] = [v, PERCENT$1];
+        if (_v) {
+          res[FONT_SIZE$1] = [_v, PERCENT$1];
         } else {
           res[FONT_SIZE$1] = [DEFAULT_FONT_SIZE, PX$1];
         }
@@ -4589,12 +4705,12 @@
           res[STROKE_WIDTH] = [0, PX$1];
         }
       } else {
-        var _v = res[STROKE_WIDTH] = [];
+        var _v2 = res[STROKE_WIDTH] = [];
 
-        calUnit(_v, 0, temp);
+        calUnit(_v2, 0, temp);
 
-        if (_v[0][1] === NUMBER) {
-          _v[0][1] = PX$1;
+        if (_v2[0][1] === NUMBER) {
+          _v2[0][1] = PX$1;
         }
       }
     }
@@ -4646,10 +4762,10 @@
       var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
 
       if (blur) {
-        var _v2 = parseFloat(blur[1]) || 0;
+        var _v3 = parseFloat(blur[1]) || 0;
 
-        if (_v2) {
-          f = [['blur', _v2]];
+        if (_v3) {
+          f = [['blur', _v3]];
         }
       }
 
@@ -4714,15 +4830,16 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'backgroundRepeat', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
       }
-    });
-    ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
+    }); // 这些支持多个的用数组表示
+
+    ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        var _v3 = style[k];
-        res[STYLE_KEY$4[style2Upper$1(k)]] = Array.isArray(_v3) ? _v3 : [_v3];
+        var _v4 = style[k];
+        res[STYLE_KEY$4[style2Upper$1(k)]] = Array.isArray(_v4) ? _v4 : [_v4];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -13560,67 +13677,84 @@
         if (lv >= REPAINT$1) {
           if (__cacheStyle[BACKGROUND_POSITION_X$2] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_X$2] = true;
-            var bgX = currentStyle[BACKGROUND_POSITION_X$2];
-            computedStyle[BACKGROUND_POSITION_X$2] = bgX[1] === PX$4 ? bgX[0] : bgX[0] + '%';
+            var bgX = currentStyle[BACKGROUND_POSITION_X$2]; // computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
+
+            computedStyle[BACKGROUND_POSITION_X$2] = (bgX || []).map(function (item) {
+              return item[1] === PX$4 ? item[0] : item[0] + '%';
+            });
           }
 
           if (__cacheStyle[BACKGROUND_POSITION_Y$2] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_Y$2] = true;
-            var bgY = currentStyle[BACKGROUND_POSITION_Y$2];
-            computedStyle[BACKGROUND_POSITION_Y$2] = bgY[1] === PX$4 ? bgY[0] : bgY[0] + '%';
+            var bgY = currentStyle[BACKGROUND_POSITION_Y$2]; // computedStyle[BACKGROUND_POSITION_Y] = bgY[1] === PX ? bgY[0] : (bgY[0] + '%');
+
+            computedStyle[BACKGROUND_POSITION_Y$2] = (bgY || []).map(function (item) {
+              return item[1] === PX$4 ? item[0] : item[0] + '%';
+            });
           }
 
           if (__cacheStyle[BACKGROUND_SIZE$2] === undefined) {
-            __cacheStyle[BACKGROUND_SIZE$2] = true;
-            computedStyle[BACKGROUND_SIZE$2] = calBackgroundSize(currentStyle[BACKGROUND_SIZE$2], clientWidth, clientHeight);
+            __cacheStyle[BACKGROUND_SIZE$2] = true; // computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], clientWidth, clientHeight);
+
+            computedStyle[BACKGROUND_SIZE$2] = (currentStyle[BACKGROUND_SIZE$2] || []).map(function (item) {
+              return calBackgroundSize(item, clientWidth, clientHeight);
+            });
           }
 
           if (__cacheStyle[BACKGROUND_IMAGE$1] === undefined) {
-            var bgI = computedStyle[BACKGROUND_IMAGE$1] = currentStyle[BACKGROUND_IMAGE$1]; // 防止隐藏不加载背景图
+            var bgI = computedStyle[BACKGROUND_IMAGE$1] = currentStyle[BACKGROUND_IMAGE$1];
+            __cacheStyle[BACKGROUND_IMAGE$1] = bgI.map(function (bgi, i) {
+              if (!bgi) {
+                return null;
+              } // 防止隐藏不加载背景图
 
-            if (util.isString(bgI)) {
-              __cacheStyle[BACKGROUND_IMAGE$1] = true;
-              var loadBgi = this.__loadBgi;
-              var cache = inject.IMG[BACKGROUND_IMAGE$1];
 
-              if (cache && cache.state === inject.LOADED) {
-                loadBgi.url = BACKGROUND_IMAGE$1;
-                loadBgi.source = cache.source;
-                loadBgi.width = cache.width;
-                loadBgi.height = cache.height;
-              } else if (loadBgi.url !== bgI) {
-                // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-                loadBgi.url = bgI;
-                loadBgi.source = null;
-                inject.measureImg(bgI, function (data) {
-                  // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                  if (data.success && data.url === loadBgi.url && !_this3.isDestroyed) {
-                    loadBgi.source = data.source;
-                    loadBgi.width = data.width;
-                    loadBgi.height = data.height;
-                    var node = _this3;
-                    var root = node.root;
-                    root.delRefreshTask(loadBgi.cb);
-                    root.addRefreshTask(loadBgi.cb = {
-                      __before: function __before() {
-                        __cacheStyle[BACKGROUND_IMAGE$1] = undefined;
-                        var res = {};
-                        res[UPDATE_NODE$1] = node;
-                        res[UPDATE_FOCUS] = REPAINT$1;
-                        res[UPDATE_CONFIG$1] = node.__config;
+              if (util.isString(bgi)) {
+                // __cacheStyle[BACKGROUND_IMAGE] = true;
+                var loadBgi = _this3.__loadBgi[i] = _this3.__loadBgi[i] || {};
+                var cache = inject.IMG[BACKGROUND_IMAGE$1];
 
-                        root.__addUpdate(node, node.__config, root, root.__config, res);
-                      }
-                    });
-                  }
-                }, {
-                  width: clientWidth,
-                  height: clientHeight
-                });
+                if (cache && cache.state === inject.LOADED) {
+                  loadBgi.url = BACKGROUND_IMAGE$1;
+                  loadBgi.source = cache.source;
+                  loadBgi.width = cache.width;
+                  loadBgi.height = cache.height;
+                } else if (loadBgi.url !== bgi) {
+                  // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+                  loadBgi.url = bgi;
+                  loadBgi.source = null;
+                  inject.measureImg(bgi, function (data) {
+                    // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+                    if (data.success && data.url === loadBgi.url && !_this3.isDestroyed) {
+                      loadBgi.source = data.source;
+                      loadBgi.width = data.width;
+                      loadBgi.height = data.height;
+                      var node = _this3;
+                      var root = node.root;
+                      root.delRefreshTask(loadBgi.cb);
+                      root.addRefreshTask(loadBgi.cb = {
+                        __before: function __before() {
+                          __cacheStyle[BACKGROUND_IMAGE$1] = undefined;
+                          var res = {};
+                          res[UPDATE_NODE$1] = node;
+                          res[UPDATE_FOCUS] = REPAINT$1;
+                          res[UPDATE_CONFIG$1] = node.__config;
+
+                          root.__addUpdate(node, node.__config, root, root.__config, res);
+                        }
+                      });
+                    }
+                  }, {
+                    width: clientWidth,
+                    height: clientHeight
+                  });
+                }
+
+                return true;
+              } else if (bgi && bgi.k) {
+                return _this3.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgi);
               }
-            } else if (bgI && bgI.k) {
-              __cacheStyle[BACKGROUND_IMAGE$1] = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgI);
-            }
+            });
           }
 
           if (__cacheStyle[BOX_SHADOW$2] === undefined) {
@@ -13766,9 +13900,9 @@
                 return true;
               }
 
-              var _loadBgi = this.__loadBgi;
+              var loadBgi = this.__loadBgi;
 
-              if (_bgI === _loadBgi.url && _loadBgi.source) {
+              if (_bgI === loadBgi.url && loadBgi.source) {
                 return true;
               }
             }
@@ -14238,289 +14372,296 @@
 
 
         if (backgroundImage) {
-          if (util.isString(backgroundImage)) {
-            var loadBgi = this.__loadBgi;
+          backgroundImage.forEach(function (bgi, i) {
+            if (!bgi) {
+              return;
+            }
 
-            if (loadBgi.url === backgroundImage) {
-              var source = loadBgi.source; // 无source不绘制
+            if (util.isString(bgi)) {
+              var loadBgi = _this4.__loadBgi[i];
 
-              if (source) {
-                var _width5 = loadBgi.width,
-                    _height5 = loadBgi.height;
+              if (loadBgi.url === backgroundImage[i]) {
+                var source = loadBgi.source; // 无source不绘制
 
-                var _backgroundSize = _slicedToArray(backgroundSize, 2),
-                    w = _backgroundSize[0],
-                    h = _backgroundSize[1]; // -1为auto，-2为contain，-3为cover
+                if (source) {
+                  var _width5 = loadBgi.width,
+                      _height5 = loadBgi.height;
+
+                  var _backgroundSize$i = _slicedToArray(backgroundSize[i], 2),
+                      w = _backgroundSize$i[0],
+                      h = _backgroundSize$i[1]; // -1为auto，-2为contain，-3为cover
 
 
-                if (w === -1 && h === -1) {
-                  w = _width5;
-                  h = _height5;
-                } else if (w === -2) {
-                  if (_width5 > clientWidth && _height5 > clientHeight) {
-                    w = _width5 / clientWidth;
-                    h = _height5 / clientHeight;
-
-                    if (w >= h) {
-                      w = clientWidth;
-                      h = w * _height5 / _width5;
-                    } else {
-                      h = clientHeight;
-                      w = h * _width5 / _height5;
-                    }
-                  } else if (_width5 > clientWidth) {
-                    w = clientWidth;
-                    h = w * _height5 / _width5;
-                  } else if (_height5 > clientHeight) {
-                    h = clientHeight;
-                    w = h * _width5 / _height5;
-                  } else {
+                  if (w === -1 && h === -1) {
                     w = _width5;
                     h = _height5;
-                  }
-                } else if (w === -3) {
-                  if (clientWidth > _width5 && clientHeight > _height5) {
-                    w = _width5 / clientWidth;
-                    h = _height5 / clientHeight;
+                  } else if (w === -2) {
+                    if (_width5 > clientWidth && _height5 > clientHeight) {
+                      w = _width5 / clientWidth;
+                      h = _height5 / clientHeight;
 
-                    if (w <= h) {
+                      if (w >= h) {
+                        w = clientWidth;
+                        h = w * _height5 / _width5;
+                      } else {
+                        h = clientHeight;
+                        w = h * _width5 / _height5;
+                      }
+                    } else if (_width5 > clientWidth) {
                       w = clientWidth;
                       h = w * _height5 / _width5;
-                    } else {
+                    } else if (_height5 > clientHeight) {
                       h = clientHeight;
                       w = h * _width5 / _height5;
+                    } else {
+                      w = _width5;
+                      h = _height5;
                     }
-                  } else if (clientWidth > _width5) {
-                    w = clientWidth;
-                    h = w * _height5 / _width5;
-                  } else if (clientHeight > _height5) {
-                    h = clientHeight;
-                    w = h * _width5 / _height5;
-                  } else {
-                    w = _width5 / clientWidth;
-                    h = _height5 / clientHeight;
+                  } else if (w === -3) {
+                    if (clientWidth > _width5 && clientHeight > _height5) {
+                      w = _width5 / clientWidth;
+                      h = _height5 / clientHeight;
 
-                    if (w <= h) {
+                      if (w <= h) {
+                        w = clientWidth;
+                        h = w * _height5 / _width5;
+                      } else {
+                        h = clientHeight;
+                        w = h * _width5 / _height5;
+                      }
+                    } else if (clientWidth > _width5) {
                       w = clientWidth;
                       h = w * _height5 / _width5;
-                    } else {
+                    } else if (clientHeight > _height5) {
                       h = clientHeight;
                       w = h * _width5 / _height5;
-                    }
-                  }
-                } else if (w === -1) {
-                  w = h * _width5 / _height5;
-                } else if (h === -1) {
-                  h = w * _height5 / _width5;
-                }
+                    } else {
+                      w = _width5 / clientWidth;
+                      h = _height5 / clientHeight;
 
-                var bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2], clientWidth, w);
-                var bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2], clientHeight, h); // 超出尺寸模拟mask截取
-
-                var needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
-
-                var xnl = 0;
-                var xnr = 0;
-                var ynt = 0;
-                var ynb = 0; // repeat-x
-
-                if (['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
-                  var diff = bgX - x2;
-
-                  if (diff > 0) {
-                    xnl = Math.ceil(diff / w);
-                  }
-
-                  diff = x2 + clientWidth - bgX - w;
-
-                  if (diff > 0) {
-                    xnr = Math.ceil(diff / w);
-                  }
-                } // repeat-y
-
-
-                if (['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
-                  var _diff = bgY - y2;
-
-                  if (_diff > 0) {
-                    ynt = Math.ceil(_diff / h);
-                  }
-
-                  _diff = y2 + clientHeight - bgY - h;
-
-                  if (_diff > 0) {
-                    ynb = Math.ceil(_diff / h);
-                  }
-                } // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
-
-
-                var repeat = [];
-
-                if (xnl > 0) {
-                  for (var i = 0; i < xnl; i++) {
-                    var _x = bgX - (i + 1) * w;
-
-                    repeat.push([_x, bgY]); // 看最左边超过没有
-
-                    if (!needMask && i === 0 && _x < x2) {
-                      needMask = true;
-                    }
-                  }
-                }
-
-                if (xnr > 0) {
-                  for (var _i3 = 0; _i3 < xnr; _i3++) {
-                    var _x2 = bgX + (_i3 + 1) * w;
-
-                    repeat.push([_x2, bgY]); // 看最右边超过没有
-
-                    if (!needMask && _i3 === xnr - 1 && _x2 + w > x2 + clientWidth) {
-                      needMask = true;
-                    }
-                  }
-                }
-
-                if (ynt > 0) {
-                  for (var _i4 = 0; _i4 < ynt; _i4++) {
-                    var _y = bgY - (_i4 + 1) * h;
-
-                    repeat.push([bgX, _y]); // 看最上边超过没有
-
-                    if (!needMask && _i4 === 0 && _y < y2) {
-                      needMask = true;
-                    }
-                  }
-                }
-
-                if (ynb > 0) {
-                  for (var _i5 = 0; _i5 < ynb; _i5++) {
-                    var _y2 = bgY + (_i5 + 1) * h;
-
-                    repeat.push([bgX, _y2]); // 看最下边超过没有
-
-                    if (!needMask && _i5 === ynb - 1 && _y2 + w > y2 + clientHeight) {
-                      needMask = true;
-                    }
-                  }
-                } // 原点和同行列十字画完，看4个角的情况
-
-
-                if (xnl > 0 && ynt > 0) {
-                  for (var _i6 = 0; _i6 < xnl; _i6++) {
-                    for (var j = 0; j < ynt; j++) {
-                      repeat.push([bgX - (_i6 + 1) * w, bgY - (j + 1) * h]);
-                    }
-                  }
-                }
-
-                if (xnr > 0 && ynt > 0) {
-                  for (var _i7 = 0; _i7 < xnr; _i7++) {
-                    for (var _j = 0; _j < ynt; _j++) {
-                      repeat.push([bgX + (_i7 + 1) * w, bgY - (_j + 1) * h]);
-                    }
-                  }
-                }
-
-                if (xnl > 0 && ynb > 0) {
-                  for (var _i8 = 0; _i8 < xnl; _i8++) {
-                    for (var _j2 = 0; _j2 < ynb; _j2++) {
-                      repeat.push([bgX - (_i8 + 1) * w, bgY + (_j2 + 1) * h]);
-                    }
-                  }
-                }
-
-                if (xnr > 0 && ynb > 0) {
-                  for (var _i9 = 0; _i9 < xnr; _i9++) {
-                    for (var _j3 = 0; _j3 < ynb; _j3++) {
-                      repeat.push([bgX + (_i9 + 1) * w, bgY + (_j3 + 1) * h]);
-                    }
-                  }
-                }
-
-                if (renderMode === mode.CANVAS) {
-                  if (needMask) {
-                    ctx.save();
-                    renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
-                  } // 先画不考虑repeat的中心声明的
-
-
-                  ctx.drawImage(source, bgX, bgY, w, h); // 再画重复的十字和4角象限
-
-                  repeat.forEach(function (item) {
-                    ctx.drawImage(source, item[0], item[1], w, h);
-                  });
-
-                  if (needMask) {
-                    ctx.restore();
-                  }
-                } else if (renderMode === mode.SVG) {
-                  var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, clientWidth, clientHeight);
-
-                  var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width5], ['height', _height5]];
-                  var needResize;
-
-                  if (_matrix && !mx.isE(_matrix)) {
-                    needResize = true;
-                    props.push(['transform', 'matrix(' + joinArr$1(_matrix, ',') + ')']);
-                  }
-
-                  if (needMask) {
-                    var _v5 = {
-                      tagName: 'clipPath',
-                      children: [{
-                        tagName: 'rect',
-                        props: [['x', x2], ['y', y2], ['width', clientWidth], ['height', clientHeight], ['fill', '#FFF']]
-                      }]
-                    };
-
-                    var _id = defs.add(_v5);
-
-                    __config[NODE_DEFS_CACHE].push(_v5);
-
-                    this.virtualDom.bbClip = 'url(#' + _id + ')';
-                  } // 先画不考虑repeat的中心声明的
-
-
-                  this.virtualDom.bb.push({
-                    type: 'img',
-                    tagName: 'image',
-                    props: props
-                  }); // 再画重复的十字和4角象限
-
-                  repeat.forEach(function (item) {
-                    var copy = clone$2(props);
-
-                    if (needResize) {
-                      var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], clientWidth, clientHeight);
-
-                      if (_matrix2 && !mx.isE(_matrix2)) {
-                        copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
+                      if (w <= h) {
+                        w = clientWidth;
+                        h = w * _height5 / _width5;
+                      } else {
+                        h = clientHeight;
+                        w = h * _width5 / _height5;
                       }
                     }
+                  } else if (w === -1) {
+                    w = h * _width5 / _height5;
+                  } else if (h === -1) {
+                    h = w * _height5 / _width5;
+                  }
 
-                    copy[1][1] = item[0];
-                    copy[2][1] = item[1];
+                  var bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2][i], clientWidth, w);
+                  var bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2][i], clientHeight, h); // 超出尺寸模拟mask截取
+
+                  var needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+
+                  var xnl = 0;
+                  var xnr = 0;
+                  var ynt = 0;
+                  var ynb = 0; // repeat-x
+
+                  if (['repeat-x', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+                    var diff = bgX - x2;
+
+                    if (diff > 0) {
+                      xnl = Math.ceil(diff / w);
+                    }
+
+                    diff = x2 + clientWidth - bgX - w;
+
+                    if (diff > 0) {
+                      xnr = Math.ceil(diff / w);
+                    }
+                  } // repeat-y
+
+
+                  if (['repeat-y', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+                    var _diff = bgY - y2;
+
+                    if (_diff > 0) {
+                      ynt = Math.ceil(_diff / h);
+                    }
+
+                    _diff = y2 + clientHeight - bgY - h;
+
+                    if (_diff > 0) {
+                      ynb = Math.ceil(_diff / h);
+                    }
+                  } // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
+
+
+                  var repeat = [];
+
+                  if (xnl > 0) {
+                    for (var _i3 = 0; _i3 < xnl; _i3++) {
+                      var _x = bgX - (_i3 + 1) * w;
+
+                      repeat.push([_x, bgY]); // 看最左边超过没有
+
+                      if (!needMask && _i3 === 0 && _x < x2) {
+                        needMask = true;
+                      }
+                    }
+                  }
+
+                  if (xnr > 0) {
+                    for (var _i4 = 0; _i4 < xnr; _i4++) {
+                      var _x2 = bgX + (_i4 + 1) * w;
+
+                      repeat.push([_x2, bgY]); // 看最右边超过没有
+
+                      if (!needMask && _i4 === xnr - 1 && _x2 + w > x2 + clientWidth) {
+                        needMask = true;
+                      }
+                    }
+                  }
+
+                  if (ynt > 0) {
+                    for (var _i5 = 0; _i5 < ynt; _i5++) {
+                      var _y = bgY - (_i5 + 1) * h;
+
+                      repeat.push([bgX, _y]); // 看最上边超过没有
+
+                      if (!needMask && _i5 === 0 && _y < y2) {
+                        needMask = true;
+                      }
+                    }
+                  }
+
+                  if (ynb > 0) {
+                    for (var _i6 = 0; _i6 < ynb; _i6++) {
+                      var _y2 = bgY + (_i6 + 1) * h;
+
+                      repeat.push([bgX, _y2]); // 看最下边超过没有
+
+                      if (!needMask && _i6 === ynb - 1 && _y2 + w > y2 + clientHeight) {
+                        needMask = true;
+                      }
+                    }
+                  } // 原点和同行列十字画完，看4个角的情况
+
+
+                  if (xnl > 0 && ynt > 0) {
+                    for (var _i7 = 0; _i7 < xnl; _i7++) {
+                      for (var j = 0; j < ynt; j++) {
+                        repeat.push([bgX - (_i7 + 1) * w, bgY - (j + 1) * h]);
+                      }
+                    }
+                  }
+
+                  if (xnr > 0 && ynt > 0) {
+                    for (var _i8 = 0; _i8 < xnr; _i8++) {
+                      for (var _j = 0; _j < ynt; _j++) {
+                        repeat.push([bgX + (_i8 + 1) * w, bgY - (_j + 1) * h]);
+                      }
+                    }
+                  }
+
+                  if (xnl > 0 && ynb > 0) {
+                    for (var _i9 = 0; _i9 < xnl; _i9++) {
+                      for (var _j2 = 0; _j2 < ynb; _j2++) {
+                        repeat.push([bgX - (_i9 + 1) * w, bgY + (_j2 + 1) * h]);
+                      }
+                    }
+                  }
+
+                  if (xnr > 0 && ynb > 0) {
+                    for (var _i10 = 0; _i10 < xnr; _i10++) {
+                      for (var _j3 = 0; _j3 < ynb; _j3++) {
+                        repeat.push([bgX + (_i10 + 1) * w, bgY + (_j3 + 1) * h]);
+                      }
+                    }
+                  }
+
+                  if (renderMode === mode.CANVAS) {
+                    if (needMask) {
+                      ctx.save();
+                      renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, _this4, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
+                    } // 先画不考虑repeat的中心声明的
+
+
+                    ctx.drawImage(source, bgX, bgY, w, h); // 再画重复的十字和4角象限
+
+                    repeat.forEach(function (item) {
+                      ctx.drawImage(source, item[0], item[1], w, h);
+                    });
+
+                    if (needMask) {
+                      ctx.restore();
+                    }
+                  } else if (renderMode === mode.SVG) {
+                    var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, clientWidth, clientHeight);
+
+                    var props = [['xlink:href', bgi], ['x', bgX], ['y', bgY], ['width', _width5], ['height', _height5]];
+                    var needResize;
+
+                    if (_matrix && !mx.isE(_matrix)) {
+                      needResize = true;
+                      props.push(['transform', 'matrix(' + joinArr$1(_matrix, ',') + ')']);
+                    }
+
+                    if (needMask) {
+                      var _v5 = {
+                        tagName: 'clipPath',
+                        children: [{
+                          tagName: 'rect',
+                          props: [['x', x2], ['y', y2], ['width', clientWidth], ['height', clientHeight], ['fill', '#FFF']]
+                        }]
+                      };
+
+                      var _id = defs.add(_v5);
+
+                      __config[NODE_DEFS_CACHE].push(_v5);
+
+                      _this4.virtualDom.bbClip = 'url(#' + _id + ')';
+                    } // 先画不考虑repeat的中心声明的
+
 
                     _this4.virtualDom.bb.push({
                       type: 'img',
                       tagName: 'image',
-                      props: copy
+                      props: props
+                    }); // 再画重复的十字和4角象限
+
+
+                    repeat.forEach(function (item) {
+                      var copy = clone$2(props);
+
+                      if (needResize) {
+                        var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], clientWidth, clientHeight);
+
+                        if (_matrix2 && !mx.isE(_matrix2)) {
+                          copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
+                        }
+                      }
+
+                      copy[1][1] = item[0];
+                      copy[2][1] = item[1];
+
+                      _this4.virtualDom.bb.push({
+                        type: 'img',
+                        tagName: 'image',
+                        props: copy
+                      });
                     });
-                  });
+                  }
+                }
+              }
+            } else if (bgi.k) {
+              var gd = __cacheStyle[BACKGROUND_IMAGE$1][i];
+
+              if (gd) {
+                if (gd.k === 'conic') {
+                  renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, _this4, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+                } else {
+                  renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, _this4, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
                 }
               }
             }
-          } else if (backgroundImage.k) {
-            var gd = __cacheStyle[BACKGROUND_IMAGE$1];
-
-            if (gd) {
-              if (gd.k === 'conic') {
-                renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-              } else {
-                renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-              }
-            }
-          }
+          });
         } // boxShadow可能会有多个
 
 
@@ -14818,8 +14959,8 @@
             res = [];
 
         if (renderMode === mode.CANVAS) {
-          for (var _i10 = 0, _len4 = list.length; _i10 < _len4; _i10++) {
-            var cur = list[_i10];
+          for (var _i11 = 0, _len4 = list.length; _i11 < _len4; _i11++) {
+            var cur = list[_i11];
 
             if (prev) {
               var lg = ctx.createLinearGradient(prev[0], prev[1], cur[2], cur[3]);
@@ -14831,8 +14972,8 @@
             prev = cur;
           }
         } else if (renderMode === mode.SVG) {
-          for (var _i11 = 0, _len5 = list.length; _i11 < _len5; _i11++) {
-            var _cur = list[_i11];
+          for (var _i12 = 0, _len5 = list.length; _i12 < _len5; _i12++) {
+            var _cur = list[_i12];
 
             if (prev) {
               var v = {

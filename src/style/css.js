@@ -199,10 +199,6 @@ function normalize(style, reset = []) {
   if(!isNil(temp)) {
     abbr.toFull(style, 'padding');
   }
-  temp = style.backgroundRepeat;
-  if(!isNil(temp)) {
-    abbr.toFull(style, 'backgroundRepeat');
-  }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
   ['translate', 'scale', 'skew'].forEach(k => {
     temp = style[k];
@@ -240,14 +236,31 @@ function normalize(style, reset = []) {
   temp = style.backgroundImage;
   if(temp !== undefined) {
     if(!temp) {
-      res[BACKGROUND_IMAGE] = null;
+      res[BACKGROUND_IMAGE] = [null];
+    }
+    else if(Array.isArray(temp)) {
+      res[BACKGROUND_IMAGE] = temp.map(item => {
+        if(!item) {
+          return null;
+        }
+        if(reg.gradient.test(item)) {
+          return gradient.parseGradient(item);
+        }
+        if(reg.img.test(temp)) {
+          return reg.img.exec(temp)[2];
+        }
+        return null;
+      });
     }
     // 区分是渐变色还是图
     else if(reg.gradient.test(temp)) {
-      res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
+      res[BACKGROUND_IMAGE] = [gradient.parseGradient(temp)];
     }
     else if(reg.img.test(temp)) {
-      res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
+      res[BACKGROUND_IMAGE] = [reg.img.exec(temp)[2]];
+    }
+    else {
+      res[BACKGROUND_IMAGE] = [null];
     }
   }
   temp = style.backgroundColor;
@@ -266,15 +279,45 @@ function normalize(style, reset = []) {
     temp = style[k];
     if(!isNil(temp)) {
       k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
-      if(/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
+      if(Array.isArray(temp)) {
+        if(temp.length) {
+          res[k] = temp.map(item => {
+            if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+              let v = [];
+              calUnit(v, 0, item);
+              if(v[0][1] === NUMBER) {
+                v[0][1] = PX;
+              }
+              return v[0];
+            }
+            else {
+              return [
+                {
+                  top: 0,
+                  left: 0,
+                  center: 50,
+                  right: 100,
+                  bottom: 100,
+                }[item] || 0,
+                PERCENT,
+              ];
+            }
+          });
+        }
+        else {
+          res[k] = [0, PERCENT];
+        }
+      }
+      else if(/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
         calUnit(res, k, temp);
         temp = res[k];
         if(temp[1] === NUMBER) {
           temp[1] = PX;
         }
+        res[k] = [temp];
       }
       else {
-        res[k] = [
+        res[k] = [[
           {
             top: 0,
             left: 0,
@@ -283,7 +326,7 @@ function normalize(style, reset = []) {
             bottom: 100,
           }[temp] || 0,
           PERCENT,
-        ];
+        ]];
       }
     }
   });
@@ -291,38 +334,99 @@ function normalize(style, reset = []) {
   temp = style.backgroundSize;
   if(temp) {
     let bs = res[BACKGROUND_SIZE] = [];
-    let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
-    if(match) {
-      if(match.length === 1) {
-        if(match[0] === 'contain' || match[0] === 'cover') {
-          match[1] = match[0];
-        }
-        else {
-          match[1] = 'auto';
-        }
-      }
-      for(let i = 0; i < 2; i++) {
-        let item = match[i];
-        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-          calUnit(bs, i, item);
-          if(bs[i][1] === NUMBER) {
-            bs[i][1] = PX;
+    if(Array.isArray(temp)) {
+      if(temp.length) {
+        bs = temp.map(item => {
+          if(!item) {
+            return [
+              [0, AUTO],
+              [0, AUTO],
+            ];
           }
-        }
-        else if(item === '0' || item === 0) {
-          bs.push([0, PX]);
-        }
-        else if(item === 'contain' || item === 'cover') {
-          bs.push([item, STRING]);
-        }
-        else {
-          bs.push([0, AUTO]);
-        }
+          let match = item.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+          if(match) {
+            if(match.length === 1) {
+              if(match[0] === 'contain' || match[0] === 'cover') {
+                match[1] = match[0];
+              }
+              else {
+                match[1] = 'auto';
+              }
+            }
+            let v = [];
+            for(let i = 0; i < 2; i++) {
+              let item = match[i];
+              if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+                calUnit(v, i, item);
+                if(v[i][1] === NUMBER) {
+                  v[i][1] = PX;
+                }
+              }
+              else if(item === '0' || item === 0) {
+                v.push([0, PX]);
+              }
+              else if(item === 'contain' || item === 'cover') {
+                v.push([item, STRING]);
+              }
+              else {
+                v.push([0, AUTO]);
+              }
+            }
+            return v;
+          }
+          else {
+            return [
+              [0, AUTO],
+              [0, AUTO],
+            ];
+          }
+        });
+      }
+      else {
+        bs.push([
+          [0, AUTO],
+          [0, AUTO],
+        ]);
       }
     }
     else {
-      bs.push([0, AUTO]);
-      bs.push([0, AUTO]);
+      let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+      if(match) {
+        if(match.length === 1) {
+          if(match[0] === 'contain' || match[0] === 'cover') {
+            match[1] = match[0];
+          }
+          else {
+            match[1] = 'auto';
+          }
+        }
+        let v = [];
+        for(let i = 0; i < 2; i++) {
+          let item = match[i];
+          if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
+            calUnit(v, i, item);
+            if(v[i][1] === NUMBER) {
+              v[i][1] = PX;
+            }
+          }
+          else if(item === '0' || item === 0) {
+            v.push([0, PX]);
+          }
+          else if(item === 'contain' || item === 'cover') {
+            v.push([item, STRING]);
+          }
+          else {
+            v.push([0, AUTO]);
+          }
+        }
+        bs.push(v);
+      }
+      else {
+        bs.push([
+          [0, AUTO],
+          [0, AUTO],
+        ]);
+      }
     }
   }
   // border-color
@@ -779,7 +883,6 @@ function normalize(style, reset = []) {
   [
     'position',
     'display',
-    'backgroundRepeat',
     'flexDirection',
     'justifyContent',
     'alignItems',
@@ -798,7 +901,9 @@ function normalize(style, reset = []) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
     }
   });
+  // 这些支持多个的用数组表示
   [
+    'backgroundRepeat',
     'strokeLinecap',
     'strokeLinejoin',
     'strokeMiterlimit',

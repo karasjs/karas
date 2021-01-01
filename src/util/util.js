@@ -198,7 +198,7 @@ function rgba2int(color) {
     }
   }
   else {
-    let c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+    let c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
     if(c) {
       res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
       if(!isNil(c[4])) {
@@ -218,9 +218,11 @@ function rgba2int(color) {
 function int2rgba(color) {
   if(Array.isArray(color)) {
     if(color.length === 4) {
+      color = color.map((c, i) => i === 3 ? c : Math.floor(c));
       return 'rgba(' + joinArr(color, ',') + ')';
     }
     else if(color.length === 3) {
+      color = color.map(c => Math.floor(c));
       return 'rgba(' + joinArr(color, ',') + ',1)';
     }
   }

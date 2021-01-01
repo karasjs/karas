@@ -24515,6 +24515,8 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
+        var _this3 = this;
+
         var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         if (res["break"]) {
@@ -24523,12 +24525,13 @@
 
         var originX = res.originX,
             originY = res.originY,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
-            strokeDasharrayStr = res.strokeDasharrayStr,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
+            strokes = res.stroke,
+            strokeWidths = res.strokeWidth,
+            strokeDasharrays = res.strokeDasharray,
+            strokeDasharrayStrs = res.strokeDasharrayStr,
+            strokeLinecaps = res.strokeLinecap,
+            strokeLinejoins = res.strokeLinejoin,
+            strokeMiterlimits = res.strokeMiterlimit,
             dx = res.dx,
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
@@ -24594,79 +24597,95 @@
           __cacheProps.d = d;
         }
 
-        var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-
         if (renderMode === mode.CANVAS) {
-          if (strokeWidth > 0 && stroke !== 'none') {
-            if (isStrokeRE) {
-              ctx.strokeStyle = stroke.v[0];
-            }
+          strokes.forEach(function (stroke, i) {
+            var strokeWidth = strokeWidths[i];
+            var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
 
-            ctx.beginPath();
-
-            if (isMulti) {
-              __cacheProps.x1.forEach(function (xa, i) {
-                var xb = __cacheProps.x2[i];
-                var ya = __cacheProps.y1[i];
-                var yb = __cacheProps.y2[i];
-                var ca = __cacheProps.controlA[i];
-                var cb = __cacheProps.controlB[i];
-                var start = __cacheProps.start[i];
-                var end = __cacheProps.end[i];
-                var curve = curveNum(ca, cb);
-
-                if (start !== 0 || end !== 1) {
-                  var _getNewPoint5 = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
-
-                  var _getNewPoint6 = _slicedToArray(_getNewPoint5, 6);
-
-                  xa = _getNewPoint6[0];
-                  ya = _getNewPoint6[1];
-                  xb = _getNewPoint6[2];
-                  ya = _getNewPoint6[3];
-                  ca = _getNewPoint6[4];
-                  cb = _getNewPoint6[5];
-                }
-
-                painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
+            if (strokeWidth > 0 && stroke !== 'none') {
+              _this3.__preSetCanvas(renderMode, ctx, {
+                stroke: stroke,
+                strokeWidth: strokeWidth,
+                strokeDasharray: strokeDasharrays[i],
+                strokeLinecap: strokeLinecaps[i],
+                strokeLinejoin: strokeLinejoins[i],
+                strokeMiterlimit: strokeMiterlimits[i]
               });
-            } else {
-              var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
 
-              var _x = __cacheProps.x1,
-                  _y = __cacheProps.y1,
-                  _x2 = __cacheProps.x2,
-                  _y2 = __cacheProps.y2,
-                  _controlA = __cacheProps.controlA,
-                  _controlB = __cacheProps.controlB,
-                  _start = __cacheProps.start,
-                  _end = __cacheProps.end;
-
-              if (_start !== 0 || _end !== 1) {
-                var _getNewPoint7 = getNewPoint(_x, _y, _x2, _y2, _controlA, _controlB, _curve, _start, _end, __cacheProps.len);
-
-                var _getNewPoint8 = _slicedToArray(_getNewPoint7, 6);
-
-                _x = _getNewPoint8[0];
-                _y = _getNewPoint8[1];
-                _x2 = _getNewPoint8[2];
-                _y2 = _getNewPoint8[3];
-                _controlA = _getNewPoint8[4];
-                _controlB = _getNewPoint8[5];
+              if (isStrokeRE) {
+                ctx.strokeStyle = stroke.v[0];
               }
 
-              painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
+              ctx.beginPath();
+
+              if (isMulti) {
+                __cacheProps.x1.forEach(function (xa, i) {
+                  var xb = __cacheProps.x2[i];
+                  var ya = __cacheProps.y1[i];
+                  var yb = __cacheProps.y2[i];
+                  var ca = __cacheProps.controlA[i];
+                  var cb = __cacheProps.controlB[i];
+                  var start = __cacheProps.start[i];
+                  var end = __cacheProps.end[i];
+                  var curve = curveNum(ca, cb);
+
+                  if (start !== 0 || end !== 1) {
+                    var _getNewPoint5 = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
+
+                    var _getNewPoint6 = _slicedToArray(_getNewPoint5, 6);
+
+                    xa = _getNewPoint6[0];
+                    ya = _getNewPoint6[1];
+                    xb = _getNewPoint6[2];
+                    ya = _getNewPoint6[3];
+                    ca = _getNewPoint6[4];
+                    cb = _getNewPoint6[5];
+                  }
+
+                  painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
+                });
+              } else {
+                var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
+
+                var _x = __cacheProps.x1,
+                    _y = __cacheProps.y1,
+                    _x2 = __cacheProps.x2,
+                    _y2 = __cacheProps.y2,
+                    _controlA = __cacheProps.controlA,
+                    _controlB = __cacheProps.controlB,
+                    _start = __cacheProps.start,
+                    _end = __cacheProps.end;
+
+                if (_start !== 0 || _end !== 1) {
+                  var _getNewPoint7 = getNewPoint(_x, _y, _x2, _y2, _controlA, _controlB, _curve, _start, _end, __cacheProps.len);
+
+                  var _getNewPoint8 = _slicedToArray(_getNewPoint7, 6);
+
+                  _x = _getNewPoint8[0];
+                  _y = _getNewPoint8[1];
+                  _x2 = _getNewPoint8[2];
+                  _y2 = _getNewPoint8[3];
+                  _controlA = _getNewPoint8[4];
+                  _controlB = _getNewPoint8[5];
+                }
+
+                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
+              }
+
+              ctx.stroke();
+              ctx.closePath();
             }
-
-            ctx.stroke();
-            ctx.closePath();
-          }
+          });
         } else if (renderMode === mode.SVG) {
-          var props = [['d', __cacheProps.d], ['fill', 'none'], ['stroke', isStrokeRE ? stroke.v[0] : stroke.v || stroke], ['stroke-width', strokeWidth]];
+          strokes.forEach(function (stroke, i) {
+            var strokeWidth = strokeWidths[i];
+            var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+            var props = [['d', __cacheProps.d], ['fill', 'none'], ['stroke', isStrokeRE ? stroke.v[0] : stroke.v || stroke], ['stroke-width', strokeWidth]];
 
-          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+            _this3.__propsStrokeStyle(props, strokeDasharrayStrs[i], strokeLinecaps[i], strokeLinejoins[i], strokeMiterlimits[i]);
 
-          this.addGeom('path', props);
+            _this3.addGeom('path', props);
+          });
         }
 
         return res;

@@ -158,13 +158,77 @@ class Sector extends Geom {
     }
     this.buildCache(res.cx, res.cy);
     let {
-      fill,
-      stroke,
-      strokeWidth,
+      fill: fills,
+      fillRule: fillRules,
+      stroke: strokes,
+      strokeWidth: strokeWidths,
+      strokeDasharray: strokeDasharrays,
+      strokeDasharrayStr: strokeDasharrayStrs,
+      strokeLinecap: strokeLinecaps,
+      strokeLinejoin: strokeLinejoins,
+      strokeMiterlimit: strokeMiterlimits,
       dx,
       dy,
     } = res;
     let { __cacheProps: { list, sList }, isMulti } = this;
+    // 普通情况下只有1个，按普通情况走
+    if(fills.length <= 1 && strokes.length <= 1) {
+      let o = {
+        fill: fills[0],
+        fillRule: fillRules[0],
+        stroke: strokes[0],
+        strokeWidth: strokeWidths[0],
+        strokeDasharray: strokeDasharrays[0],
+        strokeDasharrayStr: strokeDasharrayStrs[0],
+        strokeLinecap: strokeLinecaps[0],
+        strokeLinejoin: strokeLinejoins[0],
+        strokeMiterlimit: strokeMiterlimits[0],
+        dx,
+        dy,
+      };
+      this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, o);
+    }
+    // 多个需要fill在下面，stroke在上面，依次循环
+    else {
+      for(let i = 0, len = fills.length; i < len; i++) {
+        let fill = fills[i];
+        if(fill) {
+          let o = {
+            fill,
+            fillRule: fillRules[i],
+            dx,
+            dy,
+          };
+          this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, o);
+        }
+      }
+      for(let i = 0, len = strokes.length; i < len; i++) {
+        let stroke = strokes[i];
+        if(stroke) {
+          let o = {
+            stroke,
+            strokeWidth: strokeWidths[i],
+            strokeDasharray: strokeDasharrays[i],
+            strokeDasharrayStr: strokeDasharrayStrs[i],
+            strokeLinecap: strokeLinecaps[i],
+            strokeLinejoin: strokeLinejoins[i],
+            strokeMiterlimit: strokeMiterlimits[i],
+            dx,
+            dy,
+          };
+          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, sList, o);
+        }
+      }
+    }
+    return res;
+  }
+
+  __renderOneSector(renderMode, ctx, defs, isMulti, list, sList, res) {
+    let {
+      fill,
+      stroke,
+      strokeWidth,
+    } = res;
     let isFillCE = fill.k === 'conic';
     let isStrokeCE = stroke.k === 'conic';
     let isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
@@ -174,13 +238,13 @@ class Sector extends Geom {
         this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
       }
       else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
       }
       if(strokeWidth > 0 && isStrokeCE) {
         inject.warn('Stroke style can not use conic-gradient');
       }
       else if(strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
       }
     }
     else if(isFillRE || isStrokeRE) {
@@ -188,27 +252,26 @@ class Sector extends Geom {
         this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
       }
       else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
       }
       // stroke椭圆渐变matrix会变形，降级为圆
       if(strokeWidth > 0 && isStrokeRE) {
         inject.warn('Stroke style can not use radial-gradient for ellipse');
         res.stroke = res.stroke.v[0];
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
       }
       else if(strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
       }
     }
     else {
       if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, false);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, false);
       }
       if(stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
       }
     }
-    return res;
   }
 
   __genSector(edge, d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {

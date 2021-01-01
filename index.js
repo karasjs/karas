@@ -25635,15 +25635,84 @@
         }
 
         this.buildCache(res.cx, res.cy);
-        var fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
+        var fills = res.fill,
+            fillRules = res.fillRule,
+            strokes = res.stroke,
+            strokeWidths = res.strokeWidth,
+            strokeDasharrays = res.strokeDasharray,
+            strokeDasharrayStrs = res.strokeDasharrayStr,
+            strokeLinecaps = res.strokeLinecap,
+            strokeLinejoins = res.strokeLinejoin,
+            strokeMiterlimits = res.strokeMiterlimit,
             dx = res.dx,
             dy = res.dy;
         var _this$__cacheProps = this.__cacheProps,
             list = _this$__cacheProps.list,
             sList = _this$__cacheProps.sList,
-            isMulti = this.isMulti;
+            isMulti = this.isMulti; // 普通情况下只有1个，按普通情况走
+
+        if (fills.length <= 1 && strokes.length <= 1) {
+          var o = {
+            fill: fills[0],
+            fillRule: fillRules[0],
+            stroke: strokes[0],
+            strokeWidth: strokeWidths[0],
+            strokeDasharray: strokeDasharrays[0],
+            strokeDasharrayStr: strokeDasharrayStrs[0],
+            strokeLinecap: strokeLinecaps[0],
+            strokeLinejoin: strokeLinejoins[0],
+            strokeMiterlimit: strokeMiterlimits[0],
+            dx: dx,
+            dy: dy
+          };
+
+          this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, o);
+        } // 多个需要fill在下面，stroke在上面，依次循环
+        else {
+            for (var i = 0, len = fills.length; i < len; i++) {
+              var fill = fills[i];
+
+              if (fill) {
+                var _o = {
+                  fill: fill,
+                  fillRule: fillRules[i],
+                  dx: dx,
+                  dy: dy
+                };
+
+                this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, _o);
+              }
+            }
+
+            for (var _i = 0, _len = strokes.length; _i < _len; _i++) {
+              var stroke = strokes[_i];
+
+              if (stroke) {
+                var _o2 = {
+                  stroke: stroke,
+                  strokeWidth: strokeWidths[_i],
+                  strokeDasharray: strokeDasharrays[_i],
+                  strokeDasharrayStr: strokeDasharrayStrs[_i],
+                  strokeLinecap: strokeLinecaps[_i],
+                  strokeLinejoin: strokeLinejoins[_i],
+                  strokeMiterlimit: strokeMiterlimits[_i],
+                  dx: dx,
+                  dy: dy
+                };
+
+                this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, sList, _o2);
+              }
+            }
+          }
+
+        return res;
+      }
+    }, {
+      key: "__renderOneSector",
+      value: function __renderOneSector(renderMode, ctx, defs, isMulti, list, sList, res) {
+        var fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth;
         var isFillCE = fill.k === 'conic';
         var isStrokeCE = stroke.k === 'conic';
         var isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
@@ -25653,19 +25722,19 @@
           if (isFillCE) {
             this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
           } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
           }
 
           if (strokeWidth > 0 && isStrokeCE) {
             inject.warn('Stroke style can not use conic-gradient');
           } else if (strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           }
         } else if (isFillRE || isStrokeRE) {
           if (isFillRE) {
             this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
           } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
           } // stroke椭圆渐变matrix会变形，降级为圆
 
 
@@ -25673,21 +25742,19 @@
             inject.warn('Stroke style can not use radial-gradient for ellipse');
             res.stroke = res.stroke.v[0];
 
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           } else if (strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           }
         } else {
           if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, false);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, false);
           }
 
           if (stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           }
         }
-
-        return res;
       }
     }, {
       key: "__genSector",

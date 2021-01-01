@@ -5130,17 +5130,9 @@
           if (item.k) {
             return util.clone(item);
           } else {
-            var n = item.slice(0);
-            n[0] = n[0].slice(0);
-            return n;
+            return item;
           }
-        }); // if(v.k) {
-        //   res[k] = util.clone(v);
-        // }
-        // else {
-        //   let n = res[k] = v.slice(0);
-        //   n[0] = n[0].slice(0);
-        // }
+        });
       } else if (k === FILL || k === STROKE) {
         res[k] = v.map(function (item) {
           // 渐变
@@ -5151,45 +5143,39 @@
               return item.slice(0);
             }
         });
-      } // else if(k === FILTER) {
-      //   if(v) {
-      //     v = v.slice(0);
-      //     res[k] = v;
-      //   }
-      // }
-      else if (k === TRANSFORM$1) {
-          if (v) {
-            var n = v.slice(0);
+      } else if (k === TRANSFORM$1) {
+        if (v) {
+          var n = v.slice(0);
 
-            for (var _i7 = 0, _len4 = n.length; _i7 < _len4; _i7++) {
-              n[_i7] = n[_i7].slice(0);
-              n[_i7][1] = n[_i7][1].slice(0);
-            }
-
-            res[k] = n;
+          for (var _i7 = 0, _len4 = n.length; _i7 < _len4; _i7++) {
+            n[_i7] = n[_i7].slice(0);
+            n[_i7][1] = n[_i7][1].slice(0);
           }
-        } // position等直接值类型赋值
-        else if (VALUE$1.hasOwnProperty(k)) {
-            res[k] = v;
-          } // geom自定义属性
-          else if (GEOM$2.hasOwnProperty(k)) {
-              res[k] = util.clone(v);
-            } // 其余皆是数组或空
-            else if (v) {
-                var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+
+          res[k] = n;
+        }
+      } // position等直接值类型赋值
+      else if (VALUE$1.hasOwnProperty(k)) {
+          res[k] = v;
+        } // geom自定义属性
+        else if (GEOM$2.hasOwnProperty(k)) {
+            res[k] = util.clone(v);
+          } // 其余皆是数组或空
+          else if (v) {
+              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
-                if (ARRAY_0$1.hasOwnProperty(k)) {
-                  _n[0] = _n[0].slice(0);
-                } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
-                  _n[0] = _n[0].slice(0);
-                  _n[1] = _n[1].slice(0);
-                } else if (k === TRANSFORM$1) {
-                  for (var _i8 = 0, _len5 = _n.length; _i8 < _len5; _i8++) {
-                    _n[_i8] = _n[_i8].slice(0);
-                  }
+              if (ARRAY_0$1.hasOwnProperty(k)) {
+                _n[0] = _n[0].slice(0);
+              } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
+                _n[0] = _n[0].slice(0);
+                _n[1] = _n[1].slice(0);
+              } else if (k === TRANSFORM$1) {
+                for (var _i8 = 0, _len5 = _n.length; _i8 < _len5; _i8++) {
+                  _n[_i8] = _n[_i8].slice(0);
                 }
               }
+            }
     }
 
     return res;
@@ -9408,6 +9394,7 @@
       isFunction$3 = util.isFunction,
       isNumber$1 = util.isNumber,
       isObject$1 = util.isObject,
+      isString$1 = util.isString,
       clone$1 = util.clone,
       equalArr$2 = util.equalArr;
   var linear = easing.linear;
@@ -9734,6 +9721,10 @@
       for (var _i3 = 0; _i3 < length; _i3++) {
         var _pi2 = p[_i3],
             _ni2 = n[_i3];
+
+        if (!_pi2 || !_ni2 || isString$1(_pi2) || isString$1(_ni2)) {
+          return;
+        }
 
         if (_pi2.k !== _ni2.k) {
           // return;

@@ -15,6 +15,7 @@ const {
   STYLE_KEY: {
     FILTER,
     TRANSFORM_ORIGIN,
+    // BACKGROUND_IMAGE,
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
     BOX_SHADOW,
@@ -62,7 +63,7 @@ const {
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
-const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
+const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
 const { isGeom, GEOM } = change;
@@ -377,6 +378,9 @@ function calDiff(prev, next, k, target, tagName) {
     let length = Math.min(p.length, n.length);
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
+      if(!pi || !ni || isString(pi) || isString(ni)) {
+        return;
+      }
       if(pi.k !== ni.k) {
         // return;
         res[1].push(null);

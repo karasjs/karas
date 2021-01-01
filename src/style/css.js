@@ -1222,18 +1222,9 @@ function cloneStyle(style, keys) {
           return util.clone(item);
         }
         else {
-          let n = item.slice(0);
-          n[0] = n[0].slice(0);
-          return n;
+          return item;
         }
       });
-      // if(v.k) {
-      //   res[k] = util.clone(v);
-      // }
-      // else {
-      //   let n = res[k] = v.slice(0);
-      //   n[0] = n[0].slice(0);
-      // }
     }
     else if(k === FILL || k === STROKE) {
       res[k] = v.map(item => {
@@ -1247,12 +1238,6 @@ function cloneStyle(style, keys) {
         }
       });
     }
-    // else if(k === FILTER) {
-    //   if(v) {
-    //     v = v.slice(0);
-    //     res[k] = v;
-    //   }
-    // }
     else if(k === TRANSFORM) {
       if(v) {
         let n = v.slice(0);

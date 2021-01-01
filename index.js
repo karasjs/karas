@@ -4181,8 +4181,8 @@
             return gradient.parseGradient(item);
           }
 
-          if (reg.img.test(temp)) {
-            return reg.img.exec(temp)[2];
+          if (reg.img.test(item)) {
+            return reg.img.exec(item)[2];
           }
 
           return null;
@@ -5026,7 +5026,24 @@
       }
     }
 
-    if (k === TRANSFORM_ORIGIN$1 || k === BACKGROUND_SIZE || RADIUS_HASH$1.hasOwnProperty(k)) {
+    if (k === BACKGROUND_SIZE) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i5 = 0, _len2 = a.length; _i5 < _len2; _i5++) {
+        var aa = a[_i5],
+            bb = b[_i5];
+
+        if (aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    if (k === TRANSFORM_ORIGIN$1 || RADIUS_HASH$1.hasOwnProperty(k)) {
       return a[0][0] === b[0][0] && a[0][1] === b[0][1] && a[1][0] === b[1][0] && a[1][1] === b[1][1];
     }
 
@@ -5050,9 +5067,9 @@
         return false;
       }
 
-      for (var _i5 = 0, _len2 = av.length; _i5 < _len2; _i5++) {
-        var ai = av[_i5];
-        var bi = bv[_i5];
+      for (var _i6 = 0, _len3 = av.length; _i6 < _len3; _i6++) {
+        var ai = av[_i6];
+        var bi = bv[_i6];
 
         if (ai.length !== bi.length) {
           return false;
@@ -5109,12 +5126,21 @@
       var v = style[k]; // 渐变特殊处理
 
       if (k === BACKGROUND_IMAGE) {
-        if (v.k) {
-          res[k] = util.clone(v);
-        } else {
-          var n = res[k] = v.slice(0);
-          n[0] = n[0].slice(0);
-        }
+        res[k] = v.map(function (item) {
+          if (item.k) {
+            return util.clone(item);
+          } else {
+            var n = item.slice(0);
+            n[0] = n[0].slice(0);
+            return n;
+          }
+        }); // if(v.k) {
+        //   res[k] = util.clone(v);
+        // }
+        // else {
+        //   let n = res[k] = v.slice(0);
+        //   n[0] = n[0].slice(0);
+        // }
       } else if (k === FILL || k === STROKE) {
         res[k] = v.map(function (item) {
           // 渐变
@@ -5133,14 +5159,14 @@
       // }
       else if (k === TRANSFORM$1) {
           if (v) {
-            var _n = v.slice(0);
+            var n = v.slice(0);
 
-            for (var _i6 = 0, _len3 = _n.length; _i6 < _len3; _i6++) {
-              _n[_i6] = _n[_i6].slice(0);
-              _n[_i6][1] = _n[_i6][1].slice(0);
+            for (var _i7 = 0, _len4 = n.length; _i7 < _len4; _i7++) {
+              n[_i7] = n[_i7].slice(0);
+              n[_i7][1] = n[_i7][1].slice(0);
             }
 
-            res[k] = _n;
+            res[k] = n;
           }
         } // position等直接值类型赋值
         else if (VALUE$1.hasOwnProperty(k)) {
@@ -5150,17 +5176,17 @@
               res[k] = util.clone(v);
             } // 其余皆是数组或空
             else if (v) {
-                var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+                var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
                 if (ARRAY_0$1.hasOwnProperty(k)) {
-                  _n2[0] = _n2[0].slice(0);
+                  _n[0] = _n[0].slice(0);
                 } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
-                  _n2[0] = _n2[0].slice(0);
-                  _n2[1] = _n2[1].slice(0);
+                  _n[0] = _n[0].slice(0);
+                  _n[1] = _n[1].slice(0);
                 } else if (k === TRANSFORM$1) {
-                  for (var _i7 = 0, _len4 = _n2.length; _i7 < _len4; _i7++) {
-                    _n2[_i7] = _n2[_i7].slice(0);
+                  for (var _i8 = 0, _len5 = _n.length; _i8 < _len5; _i8++) {
+                    _n[_i8] = _n[_i8].slice(0);
                   }
                 }
               }

@@ -246,8 +246,8 @@ function normalize(style, reset = []) {
         if(reg.gradient.test(item)) {
           return gradient.parseGradient(item);
         }
-        if(reg.img.test(temp)) {
-          return reg.img.exec(temp)[2];
+        if(reg.img.test(item)) {
+          return reg.img.exec(item)[2];
         }
         return null;
       });
@@ -1104,7 +1104,19 @@ function equalStyle(k, a, b, target) {
       }
     }
   }
-  if(k === TRANSFORM_ORIGIN || k === BACKGROUND_SIZE || RADIUS_HASH.hasOwnProperty(k)) {
+  if(k === BACKGROUND_SIZE) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let aa = a[i], bb = b[i];
+      if(aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if(k === TRANSFORM_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
     return a[0][0] === b[0][0] && a[0][1] === b[0][1]
       && a[1][0] === b[1][0] && a[1][1] === b[1][1];
   }
@@ -1205,13 +1217,23 @@ function cloneStyle(style, keys) {
     let v = style[k];
     // 渐变特殊处理
     if(k === BACKGROUND_IMAGE) {
-      if(v.k) {
-        res[k] = util.clone(v);
-      }
-      else {
-        let n = res[k] = v.slice(0);
-        n[0] = n[0].slice(0);
-      }
+      res[k] = v.map(item => {
+        if(item.k) {
+          return util.clone(item);
+        }
+        else {
+          let n = item.slice(0);
+          n[0] = n[0].slice(0);
+          return n;
+        }
+      });
+      // if(v.k) {
+      //   res[k] = util.clone(v);
+      // }
+      // else {
+      //   let n = res[k] = v.slice(0);
+      //   n[0] = n[0].slice(0);
+      // }
     }
     else if(k === FILL || k === STROKE) {
       res[k] = v.map(item => {

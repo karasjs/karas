@@ -25721,19 +25721,19 @@
         if (isFillCE || isStrokeCE) {
           if (isFillCE) {
             this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
-          } else if (fill !== 'none') {
+          } else if (fill && fill !== 'none') {
             this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
           }
 
           if (strokeWidth > 0 && isStrokeCE) {
             inject.warn('Stroke style can not use conic-gradient');
-          } else if (strokeWidth > 0 && stroke !== 'none') {
+          } else if (strokeWidth > 0 && stroke && stroke !== 'none') {
             this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           }
         } else if (isFillRE || isStrokeRE) {
           if (isFillRE) {
             this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
-          } else if (fill !== 'none') {
+          } else if (fill && fill !== 'none') {
             this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
           } // stroke椭圆渐变matrix会变形，降级为圆
 
@@ -25743,15 +25743,15 @@
             res.stroke = res.stroke.v[0];
 
             this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
-          } else if (strokeWidth > 0 && stroke !== 'none') {
+          } else if (strokeWidth > 0 && stroke && stroke !== 'none') {
             this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           }
         } else {
-          if (fill !== 'none') {
+          if (fill && fill !== 'none') {
             this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, false);
           }
 
-          if (stroke !== 'none') {
+          if (stroke && stroke !== 'none') {
             this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
           }
         }

@@ -218,7 +218,7 @@ function rgba2int(color) {
 function int2rgba(color) {
   if(Array.isArray(color)) {
     if(color.length === 4) {
-      color = color.map((c, i) => i === 3 ? c : Math.floor(c));
+      color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
       return 'rgba(' + joinArr(color, ',') + ')';
     }
     else if(color.length === 3) {

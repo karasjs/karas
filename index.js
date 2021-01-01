@@ -1089,7 +1089,7 @@
     if (Array.isArray(color)) {
       if (color.length === 4) {
         color = color.map(function (c, i) {
-          return i === 3 ? c : Math.floor(c);
+          return i === 3 ? c : Math.floor(Math.max(0, c));
         });
         return 'rgba(' + joinArr(color, ',') + ')';
       } else if (color.length === 3) {

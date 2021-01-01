@@ -1611,8 +1611,18 @@ class Animation extends Event {
       inEndDelay = currentTime < duration + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       // 多次播放时到达最后一帧也会显示
-      if(stayEnd || !isLastCount) {
+      if(stayEnd && isLastCount) {
         current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
+      }
+      // 非最后一遍的最后一帧，根据差值视为第1帧
+      else if(!isLastCount) {
+        let t = __config[I_NEXT_TIME] = currentTime - duration + diff;
+        playCount = ++__config[I_PLAY_COUNT];
+        __config[I_NEXT_BEGIN] = true;
+        currentFrame = currentFrames[0];
+        let total = currentFrames[1][FRAME_TIME] - currentFrame[FRAME_TIME];
+        percent = t / total;
+        current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
@@ -1620,9 +1630,9 @@ class Animation extends Event {
       }
       // 非尾每轮次放完增加次数和计算下轮准备
       if(!isLastCount) {
-        __config[I_NEXT_TIME] = currentTime - duration + diff;
-        playCount = ++__config[I_PLAY_COUNT];
-        __config[I_NEXT_BEGIN] = true;
+        // __config[I_NEXT_TIME] = currentTime - duration + diff;
+        // playCount = ++__config[I_PLAY_COUNT];
+        // __config[I_NEXT_BEGIN] = true;
       }
       // 尾次考虑endDelay
       else if(!inEndDelay) {

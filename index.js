@@ -11063,7 +11063,8 @@
             current = cloneStyle$2(currentFrame[FRAME_STYLE], __config[I_KEYS]);
           } // 非最后一遍的最后一帧，根据差值视为第1帧
           else if (!isLastCount) {
-              var t = __config[I_NEXT_TIME] = currentTime - duration + diff;
+              var t = currentTime - duration;
+              __config[I_NEXT_TIME] = t + diff;
               playCount = ++__config[I_PLAY_COUNT];
               __config[I_NEXT_BEGIN] = true;
               currentFrame = currentFrames[0];
@@ -26862,7 +26863,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.8";
+  var version = "0.47";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

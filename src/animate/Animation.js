@@ -1616,7 +1616,8 @@ class Animation extends Event {
       }
       // 非最后一遍的最后一帧，根据差值视为第1帧
       else if(!isLastCount) {
-        let t = __config[I_NEXT_TIME] = currentTime - duration + diff;
+        let t = currentTime - duration;
+        __config[I_NEXT_TIME] = t + diff;
         playCount = ++__config[I_PLAY_COUNT];
         __config[I_NEXT_BEGIN] = true;
         currentFrame = currentFrames[0];

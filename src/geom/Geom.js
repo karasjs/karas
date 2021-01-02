@@ -535,7 +535,7 @@ class Geom extends Xom {
       }
       if(isFill && fill && fill !== 'none') {
         props.push(['fill', fill.v || fill]);
-        if(fillRule !== 'nonzero') {
+        if(fillRule && fillRule !== 'nonzero') {
           props.push(['fill-rule', fillRule]);
         }
       }
@@ -760,13 +760,13 @@ class Geom extends Xom {
     if(strokeDasharrayStr) {
       props.push(['stroke-dasharray', strokeDasharrayStr]);
     }
-    if(strokeLinecap !== 'butt') {
+    if(strokeLinecap && strokeLinecap !== 'butt') {
       props.push(['stroke-linecap', strokeLinecap]);
     }
-    if(strokeLinejoin !== 'miter') {
+    if(strokeLinejoin && strokeLinejoin !== 'miter') {
       props.push(['stroke-linejoin', strokeLinejoin]);
     }
-    if(strokeMiterlimit !== 4) {
+    if(strokeMiterlimit && strokeMiterlimit !== 4) {
       props.push(['stroke-miterlimit', strokeMiterlimit]);
     }
   }

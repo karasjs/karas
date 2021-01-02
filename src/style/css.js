@@ -58,6 +58,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   ALIGN_SELF,
   ALIGN_ITEMS,
   MATRIX,
+  LETTER_SPACING,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -685,7 +686,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.lineHeight;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'inherit') {
       res[LINE_HEIGHT] = [0, INHERIT];
     }
@@ -705,6 +706,22 @@ function normalize(style, reset = []) {
       else {
         res[LINE_HEIGHT] = [n, NUMBER];
       }
+    }
+  }
+  temp = style.letterSpacing;
+  if(temp !== undefined) {
+    if(temp === 'inherit') {
+      res[LETTER_SPACING] = [0, INHERIT];
+    }
+    else if(temp === 'normal') {
+      res[LETTER_SPACING] = [0, PX];
+    }
+    else if(/px$/i.test(temp)) {
+      res[LETTER_SPACING] = [parseFloat(temp), PX];
+    }
+    else {
+      let n = Math.max(0, parseFloat(temp)) || 0;
+      res[LETTER_SPACING] = [n, PX];
     }
   }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
@@ -982,7 +999,7 @@ function computeReflow(node, isHost) {
     computedStyle[TEXT_ALIGN] = isRoot ? 'left' : parentComputedStyle[TEXT_ALIGN];
   }
   else {
-    computedStyle[TEXT_ALIGN] = isRoot ? 'left' : textAlign[0];
+    computedStyle[TEXT_ALIGN] = textAlign[0];
   }
   let lineHeight = currentStyle[LINE_HEIGHT];
   if(lineHeight[1] === INHERIT) {
@@ -998,6 +1015,13 @@ function computeReflow(node, isHost) {
   // normal
   else {
     computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+  }
+  let letterSpacing = currentStyle[LETTER_SPACING];
+  if(letterSpacing[1] === INHERIT) {
+    computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
+  }
+  else {
+    computedStyle[LETTER_SPACING] = letterSpacing[0];
   }
 }
 

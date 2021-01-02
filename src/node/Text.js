@@ -16,6 +16,7 @@ const {
     COLOR,
     VISIBILITY,
     TEXT_ALIGN,
+    LETTER_SPACING,
   },
 } = enums;
 
@@ -109,13 +110,14 @@ class Text extends Node {
     let count = 0;
     let length = content.length;
     let maxW = 0;
+    let { [LINE_HEIGHT]: lineHeight, [LETTER_SPACING]: letterSpacing } = computedStyle;
     while(i < length) {
-      count += charWidthList[i];
+      count += charWidthList[i] + letterSpacing;
       if(count === w) {
         let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
         lineBoxes.push(lineBox);
         maxW = Math.max(maxW, count);
-        y += computedStyle[LINE_HEIGHT];
+        y += lineHeight;
         begin = i + 1;
         i = begin;
         count = 0;
@@ -133,7 +135,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
         lineBoxes.push(lineBox);
         maxW = Math.max(maxW, width);
-        y += computedStyle[LINE_HEIGHT];
+        y += lineHeight;
         begin = i;
         count = 0;
       }
@@ -145,12 +147,12 @@ class Text extends Node {
     if(begin < length && begin < i) {
       count = 0;
       for(i = begin; i < length; i++) {
-        count += charWidthList[i];
+        count += charWidthList[i] + letterSpacing;
       }
       let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
       lineBoxes.push(lineBox);
       maxW = Math.max(maxW, count);
-      y += computedStyle[LINE_HEIGHT];
+      y += lineHeight;
     }
     this.__width = maxW;
     this.__height = y - data.y;
@@ -216,7 +218,7 @@ class Text extends Node {
         children: [],
       };
     }
-    let { isDestroyed, computedStyle, lineBoxes, cacheStyle } = this;
+    let { isDestroyed, computedStyle, lineBoxes, cacheStyle, charWidthList } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden') {
       return false;
     }
@@ -230,8 +232,10 @@ class Text extends Node {
         ctx.fillStyle = color;
       }
     }
+    let index = 0;
     lineBoxes.forEach(item => {
-      item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
+      item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList);
+      index += item.content.length;
     });
     if(renderMode === mode.SVG) {
       this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);

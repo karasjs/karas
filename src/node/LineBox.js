@@ -9,6 +9,7 @@ const { STYLE_KEY: {
   FONT_FAMILY,
   FONT_SIZE,
   FONT_STYLE,
+  LETTER_SPACING,
 } } = enums;
 
 class LineBox {
@@ -21,14 +22,24 @@ class LineBox {
     this.__virtualDom = {};
   }
 
-  render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
+  render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList) {
     let { content, x, y, parent } = this;
     let { ox, oy } = parent;
     y += css.getBaseLine(computedStyle);
     x += ox + dx;
     y += oy + dy;
+    let { [LETTER_SPACING]: letterSpacing } = computedStyle;
+    let i = 0, length = content.length;
     if(renderMode === mode.CANVAS) {
-      ctx.fillText(content, x, y);
+      if(letterSpacing) {
+        for(; i < length; i++) {
+          ctx.fillText(content.charAt(i), x, y);
+          x += charWidthList[index + i] + letterSpacing;
+        }
+      }
+      else {
+        ctx.fillText(content, x, y);
+      }
     }
     else if(renderMode === mode.SVG) {
       this.__virtualDom = {
@@ -41,7 +52,8 @@ class LineBox {
           ['font-family', computedStyle[FONT_FAMILY]],
           ['font-weight', computedStyle[FONT_WEIGHT]],
           ['font-style', computedStyle[FONT_STYLE]],
-          ['font-size', computedStyle[FONT_SIZE] + 'px']
+          ['font-size', computedStyle[FONT_SIZE] + 'px'],
+          ['letter-spacing', letterSpacing],
         ],
         content: util.encodeHtml(content),
       };

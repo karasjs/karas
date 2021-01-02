@@ -51,6 +51,7 @@ const DOM = {
   alignItems: 'stretch',
   alignSelf: 'auto',
   textAlign: 'inherit',
+  letterSpacing: 'inherit',
   transformOrigin: 'center',
   visibility: 'inherit',
   opacity: 1,

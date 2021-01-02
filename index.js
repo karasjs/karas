@@ -323,7 +323,8 @@
     BORDER_TOP: 79,
     BORDER_RIGHT: 80,
     BORDER_BOTTOM: 81,
-    BORDER_LEFT: 82
+    BORDER_LEFT: 82,
+    LETTER_SPACING: 83
   };
 
   function style2Lower(s) {
@@ -3110,6 +3111,7 @@
     alignItems: 'stretch',
     alignSelf: 'auto',
     textAlign: 'inherit',
+    letterSpacing: 'inherit',
     transformOrigin: 'center',
     visibility: 'inherit',
     opacity: 1,
@@ -3975,7 +3977,8 @@
       JUSTIFY_CONTENT = _enums$STYLE_KEY$2.JUSTIFY_CONTENT,
       ALIGN_SELF = _enums$STYLE_KEY$2.ALIGN_SELF,
       ALIGN_ITEMS = _enums$STYLE_KEY$2.ALIGN_ITEMS,
-      MATRIX = _enums$STYLE_KEY$2.MATRIX;
+      MATRIX = _enums$STYLE_KEY$2.MATRIX,
+      LETTER_SPACING = _enums$STYLE_KEY$2.LETTER_SPACING;
   var AUTO = unit.AUTO,
       PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -4620,7 +4623,7 @@
 
     temp = style.lineHeight;
 
-    if (!isNil$3(temp)) {
+    if (temp !== undefined) {
       if (temp === 'inherit') {
         res[LINE_HEIGHT] = [0, INHERIT$2];
       } else if (temp === 'normal') {
@@ -4637,6 +4640,22 @@
             res[LINE_HEIGHT] = [n, NUMBER];
           }
         }
+    }
+
+    temp = style.letterSpacing;
+
+    if (temp !== undefined) {
+      if (temp === 'inherit') {
+        res[LETTER_SPACING] = [0, INHERIT$2];
+      } else if (temp === 'normal') {
+        res[LETTER_SPACING] = [0, PX$1];
+      } else if (/px$/i.test(temp)) {
+        res[LETTER_SPACING] = [parseFloat(temp), PX$1];
+      } else {
+        var _n = Math.max(0, parseFloat(temp)) || 0;
+
+        res[LETTER_SPACING] = [_n, PX$1];
+      }
     } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
@@ -4907,7 +4926,7 @@
     if (textAlign[1] === INHERIT$2) {
       computedStyle[TEXT_ALIGN] = isRoot ? 'left' : parentComputedStyle[TEXT_ALIGN];
     } else {
-      computedStyle[TEXT_ALIGN] = isRoot ? 'left' : textAlign[0];
+      computedStyle[TEXT_ALIGN] = textAlign[0];
     }
 
     var lineHeight = currentStyle[LINE_HEIGHT];
@@ -4923,6 +4942,14 @@
       else {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
         }
+
+    var letterSpacing = currentStyle[LETTER_SPACING];
+
+    if (letterSpacing[1] === INHERIT$2) {
+      computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
+    } else {
+      computedStyle[LETTER_SPACING] = letterSpacing[0];
+    }
   }
 
   function setFontStyle(style) {
@@ -5168,17 +5195,17 @@
             res[k] = util.clone(v);
           } // 其余皆是数组或空
           else if (v) {
-              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+              var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
               if (ARRAY_0$1.hasOwnProperty(k)) {
-                _n[0] = _n[0].slice(0);
+                _n2[0] = _n2[0].slice(0);
               } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
-                _n[0] = _n[0].slice(0);
-                _n[1] = _n[1].slice(0);
+                _n2[0] = _n2[0].slice(0);
+                _n2[1] = _n2[1].slice(0);
               } else if (k === TRANSFORM$1) {
-                for (var _i8 = 0, _len5 = _n.length; _i8 < _len5; _i8++) {
-                  _n[_i8] = _n[_i8].slice(0);
+                for (var _i8 = 0, _len5 = _n2.length; _i8 < _len5; _i8++) {
+                  _n2[_i8] = _n2[_i8].slice(0);
                 }
               }
             }
@@ -5205,7 +5232,8 @@
       FONT_WEIGHT$2 = _enums$STYLE_KEY$3.FONT_WEIGHT,
       FONT_FAMILY$2 = _enums$STYLE_KEY$3.FONT_FAMILY,
       FONT_SIZE$2 = _enums$STYLE_KEY$3.FONT_SIZE,
-      FONT_STYLE$1 = _enums$STYLE_KEY$3.FONT_STYLE;
+      FONT_STYLE$1 = _enums$STYLE_KEY$3.FONT_STYLE,
+      LETTER_SPACING$1 = _enums$STYLE_KEY$3.LETTER_SPACING;
 
   var LineBox = /*#__PURE__*/function () {
     function LineBox(parent, x, y, w, content) {
@@ -5221,7 +5249,7 @@
 
     _createClass(LineBox, [{
       key: "render",
-      value: function render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
+      value: function render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList) {
         var content = this.content,
             x = this.x,
             y = this.y,
@@ -5231,14 +5259,24 @@
         y += css.getBaseLine(computedStyle);
         x += ox + dx;
         y += oy + dy;
+        var letterSpacing = computedStyle[LETTER_SPACING$1];
+        var i = 0,
+            length = content.length;
 
         if (renderMode === mode.CANVAS) {
-          ctx.fillText(content, x, y);
+          if (letterSpacing) {
+            for (; i < length; i++) {
+              ctx.fillText(content.charAt(i), x, y);
+              x += charWidthList[index + i] + letterSpacing;
+            }
+          } else {
+            ctx.fillText(content, x, y);
+          }
         } else if (renderMode === mode.SVG) {
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$2] + 'px']],
+            props: [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$2] + 'px'], ['letter-spacing', letterSpacing]],
             content: util.encodeHtml(content)
           };
         }
@@ -5301,7 +5339,8 @@
       FONT_WEIGHT$3 = _enums$STYLE_KEY$4.FONT_WEIGHT,
       COLOR$2 = _enums$STYLE_KEY$4.COLOR,
       VISIBILITY$1 = _enums$STYLE_KEY$4.VISIBILITY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$4.TEXT_ALIGN;
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$4.TEXT_ALIGN,
+      LETTER_SPACING$2 = _enums$STYLE_KEY$4.LETTER_SPACING;
 
   var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
@@ -5427,15 +5466,17 @@
         var count = 0;
         var length = content.length;
         var maxW = 0;
+        var lineHeight = computedStyle[LINE_HEIGHT$1],
+            letterSpacing = computedStyle[LETTER_SPACING$2];
 
         while (i < length) {
-          count += charWidthList[i];
+          count += charWidthList[i] + letterSpacing;
 
           if (count === w) {
             var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
             lineBoxes.push(lineBox);
             maxW = Math.max(maxW, count);
-            y += computedStyle[LINE_HEIGHT$1];
+            y += lineHeight;
             begin = i + 1;
             i = begin;
             count = 0;
@@ -5453,7 +5494,7 @@
 
             lineBoxes.push(_lineBox);
             maxW = Math.max(maxW, width);
-            y += computedStyle[LINE_HEIGHT$1];
+            y += lineHeight;
             begin = i;
             count = 0;
           } else {
@@ -5466,14 +5507,14 @@
           count = 0;
 
           for (i = begin; i < length; i++) {
-            count += charWidthList[i];
+            count += charWidthList[i] + letterSpacing;
           }
 
           var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length));
 
           lineBoxes.push(_lineBox2);
           maxW = Math.max(maxW, count);
-          y += computedStyle[LINE_HEIGHT$1];
+          y += lineHeight;
         }
 
         this.__width = maxW;
@@ -5563,7 +5604,8 @@
         var isDestroyed = this.isDestroyed,
             computedStyle = this.computedStyle,
             lineBoxes = this.lineBoxes,
-            cacheStyle = this.cacheStyle;
+            cacheStyle = this.cacheStyle,
+            charWidthList = this.charWidthList;
 
         if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden') {
           return false;
@@ -5583,8 +5625,10 @@
           }
         }
 
+        var index = 0;
         lineBoxes.forEach(function (item) {
-          item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
+          item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList);
+          index += item.content.length;
         });
 
         if (renderMode === mode.SVG) {
@@ -19108,7 +19152,7 @@
           if (isFill && fill && fill !== 'none') {
             props.push(['fill', fill.v || fill]);
 
-            if (fillRule !== 'nonzero') {
+            if (fillRule && fillRule !== 'nonzero') {
               props.push(['fill-rule', fillRule]);
             }
           } else {
@@ -19347,15 +19391,15 @@
           props.push(['stroke-dasharray', strokeDasharrayStr]);
         }
 
-        if (strokeLinecap !== 'butt') {
+        if (strokeLinecap && strokeLinecap !== 'butt') {
           props.push(['stroke-linecap', strokeLinecap]);
         }
 
-        if (strokeLinejoin !== 'miter') {
+        if (strokeLinejoin && strokeLinejoin !== 'miter') {
           props.push(['stroke-linejoin', strokeLinejoin]);
         }
 
-        if (strokeMiterlimit !== 4) {
+        if (strokeMiterlimit && strokeMiterlimit !== 4) {
           props.push(['stroke-miterlimit', strokeMiterlimit]);
         }
       }

@@ -102,6 +102,9 @@
   * left 默认
   * right
   * center
+* letterSpacing
+  * inherit 默认，根元素为0
+  * px
 * backgroundColor
   * transparent 默认
   * #rgb/rgb/rgba

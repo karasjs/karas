@@ -42,19 +42,22 @@ class LineBox {
       }
     }
     else if(renderMode === mode.SVG) {
+      let props = [
+        ['x', x],
+        ['y', y],
+        ['fill', cacheStyle[COLOR]],
+        ['font-family', computedStyle[FONT_FAMILY]],
+        ['font-weight', computedStyle[FONT_WEIGHT]],
+        ['font-style', computedStyle[FONT_STYLE]],
+        ['font-size', computedStyle[FONT_SIZE] + 'px'],
+      ];
+      if(letterSpacing) {
+        props.push(['letter-spacing', letterSpacing]);
+      }
       this.__virtualDom = {
         type: 'item',
         tagName: 'text',
-        props: [
-          ['x', x],
-          ['y', y],
-          ['fill', cacheStyle[COLOR]],
-          ['font-family', computedStyle[FONT_FAMILY]],
-          ['font-weight', computedStyle[FONT_WEIGHT]],
-          ['font-style', computedStyle[FONT_STYLE]],
-          ['font-size', computedStyle[FONT_SIZE] + 'px'],
-          ['letter-spacing', letterSpacing],
-        ],
+        props,
         content: util.encodeHtml(content),
       };
     }

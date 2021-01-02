@@ -9472,9 +9472,7 @@
       GRADIENT_HASH$2 = key.GRADIENT_HASH,
       EXPAND_HASH$2 = key.EXPAND_HASH,
       GRADIENT_TYPE$2 = key.GRADIENT_TYPE;
-  var NUM_CAL_HASH = {// [BACKGROUND_POSITION_X]: true,
-    // [BACKGROUND_POSITION_Y]: true,
-  };
+  var NUM_CAL_HASH = {};
   Object.assign(NUM_CAL_HASH, LENGTH_HASH$2);
   Object.assign(NUM_CAL_HASH, EXPAND_HASH$2);
 
@@ -26955,7 +26953,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.1";
+  var version = "0.47.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

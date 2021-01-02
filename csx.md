@@ -106,7 +106,7 @@
   * transparent 默认
   * #rgb/rgb/rgba
 * backgroundImage
-  * none 默认
+  * none 默认，可以是数组形式设置多个
   * url() 图片
   * linear-gradient
     * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
@@ -114,12 +114,20 @@
     * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
   * conic-gradient
 * backgroundPositionX
-  * 0 默认
+  * 0 默认，可以是数组形式设置多个
+  * px
+  * %
+* backgroundPositionY
+  * 0 默认，可以是数组形式设置多个
   * px
   * %
   * contain/cover
-* backgroundPositionY
-  * 0 默认
+* backgroundRepeat
+  * no-repeat 默认，可以是数组形式设置多个
+  * repeat-x
+  * repeat-y
+* backgroundSize
+  * auto 默认，可以是数组形式设置多个
   * px
   * %
   * contain/cover
@@ -192,7 +200,7 @@
   * color
   * luminosity
 * fill
-  * transparent 默认
+  * transparent 默认，可以是数组形式设置多个
   * #rgb/rgb/rgba
   * linear-gradient
     * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
@@ -200,7 +208,7 @@
     * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
   * conic-gradient
 * stroke
-  * #000 默认
+  * #000 默认，可以是数组形式设置多个
   * transparent
   * #rgb/rgb/rgba
   * linear-gradient
@@ -209,22 +217,22 @@
     * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
   * conic-gradient
 * strokeWidth
-  * 1 默认
+  * 1 默认，可以是数组形式设置多个
   * px
   * %
 * strokeDasharray
-  * null 默认
+  * null 默认，可以是数组形式设置多个
   * Array\<Number>
 * strokeLinecap
-  * butt 默认
+  * butt 默认，可以是数组形式设置多个
   * round
   * square
 * strokeLinejoin
-  * miter 默认
+  * miter 默认，可以是数组形式设置多个
   * round
   * bevel
 * strokeMiterlimit
-  * 4 默认
+  * 4 默认，可以是数组形式设置多个
   * number
 * fillRule
   * nonzero 默认

@@ -1212,7 +1212,7 @@ const VALUE = {
 };
 const ARRAY_0 = {
   [STYLE_KEY.COLOR]: true,
-  [STYLE_KEY.BACKGROUND_SIZE]: true,
+  // [STYLE_KEY.BACKGROUND_SIZE]: true,
   [STYLE_KEY.BACKGROUND_COLOR]: true,
   [STYLE_KEY.BORDER_TOP_COLOR]: true,
   [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
@@ -1284,7 +1284,19 @@ function cloneStyle(style, keys) {
     else if(v) {
       let n = res[k] = v.slice(0);
       // 特殊引用里数组某项再次clone
-      if(ARRAY_0.hasOwnProperty(k)) {
+      if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+        for(let i = 0, len = n.length; i < len; i++) {
+          n[i] = n[i].slice(0);
+        }
+      }
+      else if(k === BACKGROUND_SIZE) {
+        for(let i = 0, len = n.length; i < len; i++) {
+          n[i] = n[i].slice(0);
+          n[i][0] = n[i][0].slice(0);
+          n[i][1] = n[i][1].slice(0);
+        }
+      }
+      else if(ARRAY_0.hasOwnProperty(k)) {
         n[0] = n[0].slice(0);
       }
       else if(ARRAY_0_1.hasOwnProperty(k)) {

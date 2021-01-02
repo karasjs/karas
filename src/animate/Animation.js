@@ -78,8 +78,6 @@ const {
 } = key;
 
 const NUM_CAL_HASH = {
-  [BACKGROUND_POSITION_X]: true,
-  [BACKGROUND_POSITION_Y]: true,
 };
 Object.assign(NUM_CAL_HASH, LENGTH_HASH);
 Object.assign(NUM_CAL_HASH, EXPAND_HASH);
@@ -280,28 +278,40 @@ function calDiff(prev, next, k, target, tagName) {
     }
   }
   else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-    if(p[1] === n[1] && [PX, PERCENT].indexOf(p[1]) > -1) {
-      let v = n[0] - p[0];
-      if(v === 0) {
-        return;
+    res[1] = [];
+    let length = Math.min(p.length, n.length);
+    for(let i = 0; i < length; i++) {
+      let pi = p[i], ni = n[i];
+      if(!pi || !ni) {
+        res[1].push(null);
+        continue;
       }
-      res[1] = v;
-    }
-    else if(p[1] === PX && n[1] === PERCENT) {
-      let v = n[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-      v = v - p[0];
-      if(v === 0) {
-        return;
+      if(pi[1] === ni[1] && [PX, PERCENT].indexOf(pi[1]) > -1) {
+        let v = ni[0] - pi[0];
+        if(v === 0) {
+          return;
+        }
+        res[1].push(v);
       }
-      res[1] = v;
-    }
-    else if(p[1] === PERCENT && n[1] === PX) {
-      let v = n[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-      v = v - p[0];
-      if(v === 0) {
-        return;
+      else if(p[1] === PX && n[1] === PERCENT) {
+        let v = ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
+        v = v - pi[0];
+        if(v === 0) {
+          return;
+        }
+        res[1].push(v);
       }
-      res[1] = v;
+      else if(p[1] === PERCENT && n[1] === PX) {
+        let v = ni[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
+        v = v - pi[0];
+        if(v === 0) {
+          return;
+        }
+        res[1].push(v);
+      }
+      else {
+        res[1].push(null);
+      }
     }
   }
   else if(k === BOX_SHADOW) {
@@ -350,39 +360,56 @@ function calDiff(prev, next, k, target, tagName) {
   }
   else if(k === BACKGROUND_SIZE) {
     res[1] = [];
-    for(let i = 0; i < 2; i++) {
-      let pi = p[i];
-      let ni = n[i];
-      if(pi[1] === ni[1] && [PX, PERCENT].indexOf(pi[1]) > -1) {
-        res[1].push(ni[0] - pi[0]);
+    let length = Math.min(p.length, n.length);
+    let has;
+    for(let i = 0; i < length; i++) {
+      let pi = p[i], ni = n[i];
+      if(!pi || !ni) {
+        res[1].push(null);
+        continue;
       }
-      else if(pi[1] === PX && ni[1] === PERCENT) {
-        let v = ni[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-        res[1].push(v - pi[0]);
+      let temp = [];
+      for(let j = 0; j < 2; j++) {
+        let pp = pi[j], nn = ni[j];
+        if(pp[1] === nn[1] && [PX, PERCENT].indexOf(pp[1]) > -1) {
+          temp.push(nn[0] - pp[0]);
+        }
+        else if(pp[1] === PX && nn[1] === PERCENT) {
+          let v = nn[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
+          temp.push(v - pp[0]);
+        }
+        else if(pp[1] === PERCENT && nn[1] === PX) {
+          let v = nn[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
+          temp.push(v - pp[0]);
+        }
+        // 兜底异常情况
+        else {
+          temp.push(0);
+        }
       }
-      else if(pi[1] === PERCENT && ni[1] === PX) {
-        let v = ni[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-        res[1].push(v - pi[0]);
+      if(equalArr(temp, [0, 0])) {
+        res[1].push(null);
       }
       else {
-        return;
+        res[1].push(temp);
+        has = true;
       }
     }
-    if(equalArr(res[1], [0, 0])) {
+    if(!has) {
       return;
     }
   }
   else if(GRADIENT_HASH.hasOwnProperty(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
-    let temp1 = res[1] = [];
+    res[1] = [];
     let length = Math.min(p.length, n.length);
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
       if(!pi || !ni || isString(pi) || isString(ni)) {
-        return;
+        res[1].push(null);
+        continue;
       }
       if(pi.k !== ni.k) {
-        // return;
         res[1].push(null);
         continue;
       }
@@ -391,7 +418,6 @@ function calDiff(prev, next, k, target, tagName) {
       if(pi.k === 'linear' || pi.k === 'radial' || pi.k === 'conic') {
         let pv = pi.v;
         let nv = ni.v;
-        // res[1] = [];
         temp[0] = [];
         let { clientWidth } = target;
         let eq = equalArr(pv, nv);
@@ -416,7 +442,6 @@ function calDiff(prev, next, k, target, tagName) {
               t.push(b[1][0] * 100 / clientWidth - a[1][0]);
             }
           }
-          // res[1].push(t);
           temp[0].push(t);
         }
         // 线性渐变有角度差值变化
@@ -424,28 +449,23 @@ function calDiff(prev, next, k, target, tagName) {
           let isArrP = Array.isArray(pi.d);
           let isArrN = Array.isArray(ni.d);
           if(isArrN !== isArrP) {
-            // return;
             res[1].push(null);
             continue;
           }
           if(isArrP) {
             let v = [ni.d[0] - pi.d[0], ni.d[1] - pi.d[1], ni.d[2] - pi.d[2], ni.d[3] - pi.d[3]];
             if(eq && equalArr(v, [0, 0, 0, 0])) {
-              // return;
               res[1].push(null);
               continue;
             }
-            // res[2] = v;
             temp[1] = v;
           }
           else {
             let v = ni.d - pi.d;
             if(eq && v === 0) {
-              // return;
               res[1].push(null);
               continue;
             }
-            // res[2] = v;
             temp[1] = v;
           }
         }
@@ -454,13 +474,11 @@ function calDiff(prev, next, k, target, tagName) {
           let isArrP = Array.isArray(pi.z);
           let isArrN = Array.isArray(ni.z);
           if(isArrN !== isArrP) {
-            // return;
             res[1].push(null);
             continue;
           }
           if(isArrP) {
-            // res[4] = [];
-            temp1[3] = [];
+            temp[2] = [];
             for(let i = 0; i < 5; i++) {
               let pz = pi.z[i];
               // 半径比例省略为1
@@ -471,66 +489,53 @@ function calDiff(prev, next, k, target, tagName) {
               if(nz === undefined) {
                 nz = 1;
               }
-              // res[4].push(nz - pz);
-              temp1[3].push(nz - pz);
+              temp[2].push(nz - pz);
             }
             if(eq && equalArr(res[4], [0, 0, 0, 0, 0])) {
-              // return;
               res[1].push(null);
             }
           }
           else {
-            // res[3] = [];
             temp[2] = [];
             for(let i = 0; i < 2; i++) {
               let pp = pi.p[i];
               let np = ni.p[i];
               if(pp[1] === np[1]) {
-                // res[3].push(np[0] - pp[0]);
                 temp[2].push(np[0] - pp[0]);
               }
               else if(pp[1] === PX && np[1] === PERCENT) {
                 let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-                // res[3].push(v - pp[0]);
                 temp[2].push(v - pp[0]);
               }
               else if(pp[1] === PERCENT && np[1] === PX) {
                 let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-                // res[3].push(v - pp[0]);
                 temp[2].push(v - pp[0]);
               }
             }
             if(eq && equalArr(res[3], [0, 0])) {
-              // return;
               res[1].push(null);
             }
           }
         }
         else if(pi.k === 'conic') {
-          // res[2] = n.d - p.d;
           temp[1].push(n.d - p.d);
-          // res[3] = [];
           temp[2] = [];
           for(let i = 0; i < 2; i++) {
             let pp = p.p[i];
             let np = n.p[i];
             if(pp[1] === np[1]) {
-              // res[3].push(np[0] - pp[0]);
               temp[2].push(np[0] - pp[0]);
             }
             else if(pp[1] === PX && np[1] === PERCENT) {
               let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-              // res[3].push(v - pp[0]);
               temp[2].push(v - pp[0]);
             }
             else if(pp[1] === PERCENT && np[1] === PX) {
               let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-              // res[3].push(v - pp[0]);
               temp[2].push(v - pp[0]);
             }
           }
           if(eq && res[2] !== 0 && equalArr(res[3], [0, 0])) {
-            // return;
             res[1].push(null);
           }
         }
@@ -538,15 +543,8 @@ function calDiff(prev, next, k, target, tagName) {
       // 纯色
       else {
         if(equalArr(n, pi)) {
-          // return;
           res[1].push(null);
         }
-        // res[1] = [
-        //   n[0] - p[0],
-        //   n[1] - p[1],
-        //   n[2] - p[2],
-        //   n[3] - p[3]
-        // ];
         temp[0] = [
           ni[0] - pi[0],
           ni[1] - pi[1],
@@ -911,7 +909,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[i][0] += v[i] * percent;
       }
     }
-    else if(k === TRANSFORM_ORIGIN || k === BACKGROUND_SIZE) {
+    else if(k === TRANSFORM_ORIGIN) {
       if(v[0] !== 0) {
         st[0][0] += v[0] * percent;
       }
@@ -930,6 +928,21 @@ function calIntermediateStyle(frame, keys, percent, target) {
           st[i][4][j] += v[i][4][j] * percent;
         }
       }
+    }
+    else if(k === BACKGROUND_SIZE) {
+      st.forEach((item, i) => {
+        if(v[i]) {
+          item[0][0] += v[i][0] * percent;
+          item[1][0] += v[i][1] * percent;
+        }
+      });
+    }
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+      st.forEach((item, i) => {
+        if(v[i]) {
+          item[0] += v[i] * percent;
+        }
+      });
     }
     else if(GRADIENT_HASH.hasOwnProperty(k)) {
       st.forEach((st2, i) => {
@@ -1522,6 +1535,7 @@ class Animation extends Event {
     let fps = __config[I_FPS];
     let playCount = __config[I_PLAY_COUNT];
     let currentFrames = __config[I_CURRENT_FRAMES];
+    let direction = __config[I_DIRECTION];
     let iterations = __config[I_ITERATIONS];
     let stayBegin = __config[I_STAY_BEGIN];
     let stayEnd = __config[I_STAY_END];
@@ -1620,10 +1634,15 @@ class Animation extends Event {
         __config[I_NEXT_TIME] = t + diff;
         playCount = ++__config[I_PLAY_COUNT];
         __config[I_NEXT_BEGIN] = true;
-        currentFrame = currentFrames[0];
-        let total = currentFrames[1][FRAME_TIME] - currentFrame[FRAME_TIME];
-        percent = t / total;
-        current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
+        // 要排除非来回播放，来回的话视为最后1帧
+        if(direction !== 'alternate' && direction !== 'alternate-reverse') {          currentFrame = currentFrames[0];
+          let total = currentFrames[1][FRAME_TIME] - currentFrame[FRAME_TIME];
+          percent = t / total;
+          current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
+        }
+        else {
+          current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
+        }
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {

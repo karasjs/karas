@@ -99,7 +99,7 @@ function build(json, root, owner, host, hasP) {
       });
     }
     // 更新过程中key相同的vd继承动画
-    if(inherit) {
+    if(inherit) {console.log('inherit',inherit.tagName,inherit.props.ref, vd.props.ref);
       util.extendAnimate(inherit, vd);
     }
     vd.__root = root;

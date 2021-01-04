@@ -1298,8 +1298,9 @@
   function extendAnimate(ovd, nvd) {
     var list = nvd.__animationList = ovd.animationList.splice(0);
     list.forEach(function (item) {
-      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
+      item.__setTarget(nvd);
 
+      console.warn(item.target.tagName, item.target.props.ref, item.assigning); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
 
       if (item.assigning || item.finished && item.__stayEnd()) {
         item.assignCurrentStyle();
@@ -9122,6 +9123,8 @@
       this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
 
       this.__task = [];
+      this.__taskCp = []; // 区别于task，component专用，和animate等其它不同流水线，在最后执行，防止混了 #122
+
       this.__now = null;
     }
 
@@ -9129,7 +9132,8 @@
       key: "__init",
       value: function __init() {
         var self = this;
-        var task = self.task;
+        var task = self.task,
+            taskCp = self.taskCp;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
 
@@ -9137,7 +9141,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            if (isPause || !task.length) {
+            if (isPause || !task.length && !taskCp.length) {
               return;
             }
 
@@ -9148,8 +9152,12 @@
             last = now; // 优先动画计算
 
             var clone = task.slice(0);
+            var cloneCp = taskCp.splice(0); // task要常驻，taskCp只1次直接splice清空
+
             var length = clone.length;
-            traversal(clone, length, diff); // 执行动画造成的每个Root的刷新并清空
+            var lengthCp = cloneCp.length;
+            traversal(clone, length, diff);
+            traversal(cloneCp, lengthCp, diff); // 执行动画造成的每个Root的刷新并清空
 
             var list = self.__hookTask.splice(0);
 
@@ -9159,9 +9167,10 @@
             } // 普通的before/after
 
 
-            traversal(clone, length, diff, true); // 还有则继续，没有则停止节省性能
+            traversal(clone, length, diff, true);
+            traversal(cloneCp, lengthCp, diff, true); // 还有则继续，没有则停止节省性能
 
-            if (task.length) {
+            if (task.length || taskCp.length) {
               cb();
             }
           });
@@ -9242,6 +9251,18 @@
         this.onFrame(cb);
       }
     }, {
+      key: "__nextFrameCp",
+      value: function __nextFrameCp(handle) {
+        var task = this.task,
+            taskCp = this.taskCp;
+
+        if (!task.length && !taskCp.length) {
+          this.__init();
+        }
+
+        taskCp.push(handle);
+      }
+    }, {
       key: "pause",
       value: function pause() {
         isPause = true;
@@ -9259,6 +9280,11 @@
       key: "task",
       get: function get() {
         return this.__task;
+      }
+    }, {
+      key: "taskCp",
+      get: function get() {
+        return this.__taskCp;
       }
     }]);
 
@@ -15813,6 +15839,7 @@
 
 
       if (inherit) {
+        console.log('inherit', inherit.tagName, inherit.props.ref, vd.props.ref);
         util.extendAnimate(inherit, vd);
       }
 
@@ -15970,6 +15997,11 @@
    */
 
   function setUpdateFlag(cp) {
+    // 去重
+    if (cp.__hasUpdate) {
+      return;
+    }
+
     cp.__hasUpdate = true;
     var host = cp.host;
 
@@ -16004,6 +16036,7 @@
       _this.__ref = {};
       _this.__state = {};
       _this.__isMounted = false;
+      _this.__taskList = [];
       return _this;
     }
 
@@ -16035,22 +16068,29 @@
         var root = self.root;
 
         if (root && self.__isMounted) {
-          root.delRefreshTask(self.__task);
-          this.__task = {
-            __before: function __before() {
-              // 标识更新
-              self.__nextState = n;
-              setUpdateFlag(_this2);
-            },
-            __after: function __after() {
-              if (isFunction$4(cb)) {
-                cb.call(self);
-              }
-            },
-            __state: true // 特殊标识来源让root刷新时识别
+          // 一帧之内多次调用，需合并
+          if (self.__nextState) {
+            Object.assign(self.__nextState, n);
 
-          };
-          root.addRefreshTask(self.__task);
+            self.__taskList.push(cb);
+          } else {
+            self.__nextState = n;
+            self.__taskList = [cb];
+            var t = self.__task = {
+              __before: function __before() {
+                // 标识更新
+                setUpdateFlag(_this2);
+              },
+              __after: function __after() {
+                self.__taskList.splice(0).forEach(function (cb) {
+                  if (isFunction$4(cb)) {
+                    cb.call(self);
+                  }
+                });
+              }
+            };
+            root.addRefreshCp(t);
+          }
         } // 构造函数中调用还未render，
         else if (isFunction$4(cb)) {
             self.__state = n;
@@ -22964,6 +23004,7 @@
       // this.__scy = 1;
 
       _this.__task = [];
+      _this.__taskCp = [];
       _this.__ref = {};
       _this.__updateHash = {};
       _this.__reflowList = [{
@@ -23227,7 +23268,6 @@
       value: function destroy() {
         this.__destroy();
 
-        frame.offFrame(this.__rTask);
         var n = this.dom;
 
         if (n) {
@@ -23254,8 +23294,6 @@
     }, {
       key: "addRefreshTask",
       value: function addRefreshTask(cb) {
-        var _this3 = this;
-
         if (!cb) {
           return;
         }
@@ -23264,49 +23302,16 @@
 
         if (!task.length) {
           var clone;
-          frame.nextFrame(this.__rTask = {
+          frame.nextFrame({
             __before: function __before(diff) {
               clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
               if (clone.length) {
-                var setStateList = [];
                 clone.forEach(function (item, i) {
                   if (isObject$2(item) && isFunction$6(item.__before)) {
-                    // 收集组件setState的更新，特殊处理
-                    if (item.__state) {
-                      setStateList.push(i);
-                    }
-
                     item.__before(diff);
                   }
-                }); // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
-
-                if (setStateList.length) {
-                  updater.check(_this3);
-                } // 有组件更新，则需要重新布局
-
-
-                var len = updater.updateList.length;
-
-                if (len) {
-                  updater.updateList.forEach(function (cp) {
-                    var sr = cp.shadowRoot; // 可能返回text，需视为其parentNode
-
-                    if (sr instanceof Text) {
-                      sr = sr.domParent;
-                    }
-
-                    var res = {};
-                    res[UPDATE_NODE$3] = sr;
-                    res[UPDATE_STYLE$2] = sr.currentStyle;
-                    res[UPDATE_FOCUS$2] = REFLOW$2;
-                    res[UPDATE_MEASURE] = true;
-                    res[UPDATE_COMPONENT] = cp;
-                    res[UPDATE_CONFIG$3] = sr.__config;
-
-                    _this3.__addUpdate(sr, sr.__config, _this3, _this3.__config, res);
-                  });
-                }
+                });
               }
             },
             __after: function __after(diff) {
@@ -23316,9 +23321,7 @@
                 } else if (isFunction$6(item)) {
                   item(diff);
                 }
-              }); // 触发didUpdate
-
-              updater.did();
+              });
             }
           });
 
@@ -23344,9 +23347,74 @@
             break;
           }
         }
+      }
+      /**
+       * 为component的setState更新专门开辟个独立的流水线，root/frame中以taskCp存储更新列表
+       * 普通的动画、img加载等都走普通的refresh的task，component走这里，frame中的结构同样
+       * 在frame的每帧调用中，先执行普通的动画task，再执行component的task
+       * 这样动画执行完后，某个cp的sr及子节点依旧先进行了动画变更，进入__addUpdate()环节
+       * 然后此cp再更新sr及子节点，这样会被__addUpdate()添加到尾部，依赖目前浏览器默认实现
+       * 上一行cp更新过程中是updater.check()进行的，如果有新老交换且有动画，动画的assigning是true，进行继承
+       * root刷新parseUpdate()时，老的sr及子节点先进行，随后新的sr后进行且有component标识，sr子节点不会有更新
+       * @param cb
+       */
 
-        if (!task.length) {
-          frame.offFrame(this.__rTask);
+    }, {
+      key: "addRefreshCp",
+      value: function addRefreshCp(cb) {
+        var _this3 = this;
+
+        var taskCp = this.taskCp;
+
+        if (!taskCp.length) {
+          var clone;
+
+          frame.__nextFrameCp({
+            __before: function __before(diff) {
+              clone = taskCp.splice(0);
+
+              if (clone.length) {
+                clone.forEach(function (item) {
+                  item.__before(diff);
+                });
+                updater.check(_this3);
+                var len = updater.updateList.length;
+
+                if (len) {
+                  updater.updateList.forEach(function (cp) {
+                    var sr = cp.shadowRoot; // 可能返回text，需视为其parentNode
+
+                    if (sr instanceof Text) {
+                      sr = sr.domParent;
+                    }
+
+                    var res = {};
+                    res[UPDATE_NODE$3] = sr;
+                    res[UPDATE_STYLE$2] = sr.currentStyle;
+                    res[UPDATE_FOCUS$2] = REFLOW$2;
+                    res[UPDATE_MEASURE] = true;
+                    res[UPDATE_COMPONENT] = cp;
+                    res[UPDATE_CONFIG$3] = sr.__config;
+
+                    _this3.__addUpdate(sr, sr.__config, _this3, _this3.__config, res);
+                  });
+                }
+              }
+            },
+            __after: function __after(diff) {
+              clone.forEach(function (item) {
+                item.__after(diff);
+              }); // 触发didUpdate
+
+              updater.did();
+            }
+          });
+
+          this.__frameHook();
+        }
+
+        if (taskCp.indexOf(cb) === -1) {
+          taskCp.push(cb);
         }
       }
       /**
@@ -23375,8 +23443,7 @@
         currentStyle[WIDTH$7] = [width, PX$7];
         currentStyle[HEIGHT$7] = [height, PX$7];
         computedStyle[WIDTH$7] = width;
-        computedStyle[HEIGHT$7] = height; // 继承值变默认，提前处理以便子节点根据parent计算
-        // css.computeMeasure(this, true);
+        computedStyle[HEIGHT$7] = height;
       }
       /**
        * 添加更新入口，按节点汇总更新信息
@@ -24283,6 +24350,11 @@
       key: "task",
       get: function get() {
         return this.__task;
+      }
+    }, {
+      key: "taskCp",
+      get: function get() {
+        return this.__taskCp;
       }
     }, {
       key: "ref",

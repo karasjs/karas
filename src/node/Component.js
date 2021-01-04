@@ -73,13 +73,15 @@ class Component extends Event {
       else {
         self.__nextState = n;
         self.__taskList = [cb];
+        let list = [];
         let t = self.__task = {
           __before: () => {
+            list = self.__taskList.splice(0);
             // 标识更新
             setUpdateFlag(this);
           },
           __after: () => {
-            self.__taskList.splice(0).forEach(cb => {
+            list.forEach(cb => {
               if(isFunction(cb)) {
                 cb.call(self);
               }

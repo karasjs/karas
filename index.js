@@ -16074,13 +16074,15 @@
           } else {
             self.__nextState = n;
             self.__taskList = [cb];
+            var list = [];
             var t = self.__task = {
               __before: function __before() {
-                // 标识更新
+                list = self.__taskList.splice(0); // 标识更新
+
                 setUpdateFlag(_this2);
               },
               __after: function __after() {
-                self.__taskList.splice(0).forEach(function (cb) {
+                list.forEach(function (cb) {
                   if (isFunction$4(cb)) {
                     cb.call(self);
                   }

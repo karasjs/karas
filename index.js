@@ -1298,9 +1298,8 @@
   function extendAnimate(ovd, nvd) {
     var list = nvd.__animationList = ovd.animationList.splice(0);
     list.forEach(function (item) {
-      item.__setTarget(nvd);
+      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
 
-      console.warn(item.target.tagName, item.target.props.ref, item.assigning); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
 
       if (item.assigning || item.finished && item.__stayEnd()) {
         item.assignCurrentStyle();
@@ -15839,7 +15838,6 @@
 
 
       if (inherit) {
-        console.log('inherit', inherit.tagName, inherit.props.ref, vd.props.ref);
         util.extendAnimate(inherit, vd);
       }
 

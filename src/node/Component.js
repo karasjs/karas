@@ -14,6 +14,10 @@ const { isNil, isFunction, clone, extend } = util;
  * @param cp
  */
 function setUpdateFlag(cp) {
+  // 去重
+  if(cp.__hasUpdate) {
+    return;
+  }
   cp.__hasUpdate = true;
   let host = cp.host;
   if(host) {
@@ -37,6 +41,7 @@ class Component extends Event {
     this.__ref = {};
     this.__state = {};
     this.__isMounted = false;
+    this.__taskList = [];
   }
 
   setState(n, cb) {
@@ -60,21 +65,29 @@ class Component extends Event {
     }
     let root = self.root;
     if(root && self.__isMounted) {
-      root.delRefreshTask(self.__task);
-      this.__task = {
-        __before: () => {
-          // 标识更新
-          self.__nextState = n;
-          setUpdateFlag(this);
-        },
-        __after: () => {
-          if(isFunction(cb)) {
-            cb.call(self);
-          }
-        },
-        __state: true, // 特殊标识来源让root刷新时识别
-      };
-      root.addRefreshTask(self.__task);
+      // 一帧之内多次调用，需合并
+      if(self.__nextState) {
+        Object.assign(self.__nextState, n);
+        self.__taskList.push(cb);
+      }
+      else {
+        self.__nextState = n;
+        self.__taskList = [cb];
+        let t = self.__task = {
+          __before: () => {
+            // 标识更新
+            setUpdateFlag(this);
+          },
+          __after: () => {
+            self.__taskList.splice(0).forEach(cb => {
+              if(isFunction(cb)) {
+                cb.call(self);
+              }
+            });
+          },
+        };
+        root.addRefreshCp(t);
+      }
     }
     // 构造函数中调用还未render，
     else if(isFunction(cb)) {

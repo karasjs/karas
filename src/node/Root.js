@@ -484,6 +484,7 @@ class Root extends Dom {
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
     this.__task = [];
+    this.__taskCp = [];
     this.__ref = {};
     this.__updateHash = {};
     this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
@@ -690,7 +691,6 @@ class Root extends Dom {
 
   destroy() {
     this.__destroy();
-    frame.offFrame(this.__rTask);
     let n = this.dom;
     if(n) {
       n.__root = null;
@@ -718,26 +718,71 @@ class Root extends Dom {
     // 第一个添加延迟侦听，后续放队列等待一并执行
     if(!task.length) {
       let clone;
-      frame.nextFrame(this.__rTask = {
+      frame.nextFrame({
         __before: diff => {
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
-            let setStateList = [];
             clone.forEach((item, i) => {
               if(isObject(item) && isFunction(item.__before)) {
-                // 收集组件setState的更新，特殊处理
-                if(item.__state) {
-                  setStateList.push(i);
-                }
                 item.__before(diff);
               }
             });
-            // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
-            if(setStateList.length) {
-              updater.check(this);
+          }
+        },
+        __after: diff => {
+          clone.forEach(item => {
+            if(isObject(item) && isFunction(item.__after)) {
+              item.__after(diff);
             }
-            // 有组件更新，则需要重新布局
+            else if(isFunction(item)) {
+              item(diff);
+            }
+          });
+        }
+      });
+      this.__frameHook();
+    }
+    if(task.indexOf(cb) === -1) {
+      task.push(cb);
+    }
+  }
+
+  delRefreshTask(cb) {
+    if(!cb) {
+      return;
+    }
+    let { task } = this;
+    for(let i = 0, len = task.length; i < len; i++) {
+      if(task[i] === cb) {
+        task.splice(i, 1);
+        break;
+      }
+    }
+  }
+
+  /**
+   * 为component的setState更新专门开辟个独立的流水线，root/frame中以taskCp存储更新列表
+   * 普通的动画、img加载等都走普通的refresh的task，component走这里，frame中的结构同样
+   * 在frame的每帧调用中，先执行普通的动画task，再执行component的task
+   * 这样动画执行完后，某个cp的sr及子节点依旧先进行了动画变更，进入__addUpdate()环节
+   * 然后此cp再更新sr及子节点，这样会被__addUpdate()添加到尾部，依赖目前浏览器默认实现
+   * 上一行cp更新过程中是updater.check()进行的，如果有新老交换且有动画，动画的assigning是true，进行继承
+   * root刷新parseUpdate()时，老的sr及子节点先进行，随后新的sr后进行且有component标识，sr子节点不会有更新
+   * @param cb
+   */
+  addRefreshCp(cb) {
+    let { taskCp } = this;
+    if(!taskCp.length) {
+      let clone;
+      frame.__nextFrameCp({
+        __before: diff => {
+          clone = taskCp.splice(0);
+          if(clone.length) {
+            clone.forEach(item => {
+              item.__before(diff);
+            });
+            updater.check(this);
             let len = updater.updateList.length;
             if(len) {
               updater.updateList.forEach(cp => {
@@ -760,37 +805,16 @@ class Root extends Dom {
         },
         __after: diff => {
           clone.forEach(item => {
-            if(isObject(item) && isFunction(item.__after)) {
-              item.__after(diff);
-            }
-            else if(isFunction(item)) {
-              item(diff);
-            }
+            item.__after(diff);
           });
           // 触发didUpdate
           updater.did();
-        }
+        },
       });
       this.__frameHook();
     }
-    if(task.indexOf(cb) === -1) {
-      task.push(cb);
-    }
-  }
-
-  delRefreshTask(cb) {
-    if(!cb) {
-      return;
-    }
-    let { task } = this;
-    for(let i = 0, len = task.length; i < len; i++) {
-      if(task[i] === cb) {
-        task.splice(i, 1);
-        break;
-      }
-    }
-    if(!task.length) {
-      frame.offFrame(this.__rTask);
+    if(taskCp.indexOf(cb) === -1) {
+      taskCp.push(cb);
     }
   }
 
@@ -815,8 +839,6 @@ class Root extends Dom {
     currentStyle[HEIGHT] = [height, PX];
     computedStyle[WIDTH] = width;
     computedStyle[HEIGHT] = height;
-    // 继承值变默认，提前处理以便子节点根据parent计算
-    // css.computeMeasure(this, true);
   }
 
   /**
@@ -1575,6 +1597,10 @@ class Root extends Dom {
 
   get task() {
     return this.__task;
+  }
+
+  get taskCp() {
+    return this.__taskCp;
   }
 
   get ref() {

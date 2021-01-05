@@ -22848,9 +22848,9 @@
         }
       }
 
-    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
+    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg比较特殊，任何改变都失效，要清除vd的cache以及子节点需要重设defs
 
-    var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
+    var need = lv >= REPAINT$3 || renderMode === mode.SVG;
 
     if (need) {
       if (__config[NODE_CACHE$5]) {

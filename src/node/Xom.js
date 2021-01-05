@@ -2204,22 +2204,31 @@ class Xom extends Node {
                   props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
                 }
                 if(needMask) {
+                  let p1 = [x2, y2];
+                  let p2 = [x2 + clientWidth, y2 + clientHeight];
+                  if(needResize) {
+                    let inverse = mx.inverse(matrix);
+                    p1 = mx.calPoint(p1, inverse);
+                    p2 = mx.calPoint(p2, inverse);
+                    console.log(p1, p2);
+                  }
                   let v = {
                     tagName: 'clipPath',
                     children: [{
-                      tagName: 'rect',
+                      tagName: 'path',
                       props: [
-                        ['x', x2],
-                        ['y', y2],
-                        ['width', clientWidth],
-                        ['height', clientHeight],
+                        ['d', `M${p1[0]},${p1[1]} L${p2[0]},${p1[1]} L${p2[0]},${p2[1]} L${p1[0]},${p2[1]} L${p1[0]},${p1[1]}`],
+                        // ['x', p1[0]],
+                        // ['y', p1[1]],
+                        // ['width', clientWidth],
+                        // ['height', clientHeight],
                         ['fill', '#FFF']
                       ],
                     }],
                   };
                   let id = defs.add(v);
                   __config[NODE_DEFS_CACHE].push(v);
-                  this.virtualDom.bbClip = 'url(#' + id + ')';
+                  props.push(['clip-path', 'url(#' + id + ')']);
                 }
                 // 先画不考虑repeat的中心声明的
                 this.virtualDom.bb.push({

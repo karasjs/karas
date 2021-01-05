@@ -56,11 +56,7 @@ function joinVirtualDom(vd) {
   vd.defs.forEach(item => {
     s += joinDef(item);
   });
-  s += '</defs><g';
-  if(vd.bbClip) {
-    s += ' clip-path="' + vd.bbClip + '"';
-  }
-  s += '>';
+  s += '</defs><g>';
   vd.bb.forEach(item => {
     s += joinVd(item);
   });
@@ -100,11 +96,7 @@ function joinVd(vd) {
     return '<g>' + s + '</g>';
   }
   else if(vd.type === 'dom' || vd.type === 'geom') {
-    let s = '<g';
-    if(vd.bbClip) {
-      s += ' clip-path="' + vd.bbClip + '"';
-    }
-    s += '>';
+    let s = '<g>';
     vd.bb.forEach(item => {
       s += joinVd(item);
     });

@@ -924,13 +924,7 @@
     vd.defs.forEach(function (item) {
       s += joinDef(item);
     });
-    s += '</defs><g';
-
-    if (vd.bbClip) {
-      s += ' clip-path="' + vd.bbClip + '"';
-    }
-
-    s += '>';
+    s += '</defs><g>';
     vd.bb.forEach(function (item) {
       s += joinVd(item);
     });
@@ -973,13 +967,7 @@
       });
       return '<g>' + _s + '</g>';
     } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g';
-
-      if (vd.bbClip) {
-        _s2 += ' clip-path="' + vd.bbClip + '"';
-      }
-
-      _s2 += '>';
+      var _s2 = '<g>';
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
@@ -14754,11 +14742,25 @@
                     }
 
                     if (needMask) {
+                      var p1 = [x2, y2];
+                      var p2 = [x2 + clientWidth, y2 + clientHeight];
+
+                      if (needResize) {
+                        var inverse = mx.inverse(_matrix);
+                        p1 = mx.calPoint(p1, inverse);
+                        p2 = mx.calPoint(p2, inverse);
+                        console.log(p1, p2);
+                      }
+
                       var _v5 = {
                         tagName: 'clipPath',
                         children: [{
-                          tagName: 'rect',
-                          props: [['x', x2], ['y', y2], ['width', clientWidth], ['height', clientHeight], ['fill', '#FFF']]
+                          tagName: 'path',
+                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p1[1])], // ['x', p1[0]],
+                          // ['y', p1[1]],
+                          // ['width', clientWidth],
+                          // ['height', clientHeight],
+                          ['fill', '#FFF']]
                         }]
                       };
 
@@ -14766,7 +14768,7 @@
 
                       __config[NODE_DEFS_CACHE].push(_v5);
 
-                      _this4.virtualDom.bbClip = 'url(#' + _id + ')';
+                      props.push(['clip-path', 'url(#' + _id + ')']);
                     } // 先画不考虑repeat的中心声明的
 
 
@@ -20012,7 +20014,7 @@
     diffDefs(cns[0], ovd.defs, nvd.defs); // <REPAINT不会有lv属性，无需对比
 
     if (!nvd.hasOwnProperty('lv')) {
-      diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      diffBb(cns[1], ovd.bb, nvd.bb);
     }
 
     diffD2D(elem, ovd, nvd, true);
@@ -20263,7 +20265,7 @@
       diffX2X(elem, ovd, nvd);
 
       if (!root) {
-        diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+        diffBb(elem.firstChild, ovd.bb, nvd.bb);
       }
     }
 
@@ -20290,7 +20292,7 @@
 
   function diffD2G(elem, ovd, nvd) {
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -20352,7 +20354,7 @@
       diffByLessLv(elem, ovd, nvd, nvd.lv);
     } else {
       diffX2X(elem, ovd, nvd);
-      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      diffBb(elem.firstChild, ovd.bb, nvd.bb);
       var ol = ovd.children.length;
       var nl = nvd.children.length;
       var i = 0;
@@ -20375,18 +20377,9 @@
     }
   }
 
-  function diffBb(elem, obb, nbb, oClip, nClip) {
+  function diffBb(elem, obb, nbb) {
     var ol = obb.length;
     var nl = nbb.length;
-
-    if (oClip !== nClip) {
-      if (!nClip) {
-        elem.removeAttribute('clip-path');
-      } else {
-        elem.setAttribute('clip-path', nClip);
-      }
-    }
-
     var i = 0;
 
     for (; i < Math.min(ol, nl); i++) {

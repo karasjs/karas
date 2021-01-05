@@ -9,7 +9,7 @@ function diff(elem, ovd, nvd) {
   diffDefs(cns[0], ovd.defs, nvd.defs);
   // <REPAINT不会有lv属性，无需对比
   if(!nvd.hasOwnProperty('lv')) {
-    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffBb(cns[1], ovd.bb, nvd.bb);
   }
   diffD2D(elem, ovd, nvd, true);
 }
@@ -242,7 +242,7 @@ function diffD2D(elem, ovd, nvd, root) {
   else {
     diffX2X(elem, ovd, nvd);
     if(!root) {
-      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      diffBb(elem.firstChild, ovd.bb, nvd.bb);
     }
   }
   let ol = ovd.children.length;
@@ -267,7 +267,7 @@ function diffD2D(elem, ovd, nvd, root) {
 
 function diffD2G(elem, ovd, nvd) {
   diffX2X(elem, ovd, nvd);
-  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb);
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -325,7 +325,7 @@ function diffG2G(elem, ovd, nvd) {
   }
   else {
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
     let ol = ovd.children.length;
     let nl = nvd.children.length;
     let i = 0;
@@ -347,17 +347,9 @@ function diffG2G(elem, ovd, nvd) {
   }
 }
 
-function diffBb(elem, obb, nbb, oClip, nClip) {
+function diffBb(elem, obb, nbb) {
   let ol = obb.length;
   let nl = nbb.length;
-  if(oClip !== nClip) {
-    if(!nClip) {
-      elem.removeAttribute('clip-path');
-    }
-    else {
-      elem.setAttribute('clip-path', nClip);
-    }
-  }
   let i = 0;
   for(; i < Math.min(ol, nl); i++) {
     diffItem(elem, i, obb[i], nbb[i]);

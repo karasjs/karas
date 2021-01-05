@@ -15832,7 +15832,7 @@
         vd.__animateRecords = __animateRecords;
 
         __animateRecords.list.forEach(function (item) {
-          item.target = vd;
+          item.target = item.target.vd;
         });
       } // 更新过程中key相同的vd继承动画
 

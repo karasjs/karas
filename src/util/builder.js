@@ -95,7 +95,7 @@ function build(json, root, owner, host, hasP) {
     if(__animateRecords) {
       vd.__animateRecords = __animateRecords;
       __animateRecords.list.forEach(item => {
-        item.target = vd;
+        item.target = item.target.vd;
       });
     }
     // 更新过程中key相同的vd继承动画

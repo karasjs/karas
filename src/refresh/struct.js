@@ -1203,31 +1203,57 @@ function renderCanvas(renderMode, ctx, defs, root) {
   }
 }
 
-function renderSvg(renderMode, ctx, defs, root) {
+function renderSvg(renderMode, ctx, defs, root, isFirst) {
   let { __structs, width, height } = root;
   // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
-  // let defsCacheList = [];
-  // let defsCacheHash = {};
-  // for(let i = 0, len = __structs.length; i < len; i++) {
-  //   let {
-  //     [STRUCT_NODE]: node,
-  //   } = __structs[i];
-  //   let {
-  //     [NODE_REFRESH_LV]: __refreshLevel,
-  //     [NODE_DEFS_CACHE]: defsCache,
-  //   } = node.__config;
-  //   if(__refreshLevel < REPAINT) {
-  //     // 去除特殊的filter和mask
-  //     let hasFilter = contain(__refreshLevel, FT);
-  //     defsCache.forEach(item => {
-  //       if(hasFilter) {}
-  //       else {
-  //         defsCacheList.push(item);
-  //         defsCacheHash[item.id] = item;
-  //       }
-  //     });
-  //   }
-  // }
+  let defsCacheHash = {};
+  defs.cacheHash = defsCacheHash;
+  // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
+  let maskEffectHash = {};
+  if(!isFirst) {
+    for(let i = 0, len = __structs.length; i < len; i++) {
+      let {
+        [STRUCT_NODE]: node,
+        [STRUCT_TOTAL]: total,
+        [STRUCT_HAS_MASK]: hasMask,
+      } = __structs[i];
+      let {
+        [NODE_REFRESH_LV]: __refreshLevel,
+        [NODE_DEFS_CACHE]: defsCache,
+      } = node.__config;
+      // 只要涉及到matrix就影响mask
+      let hasEffectMask = hasMask && (__refreshLevel > REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP));
+      if(hasEffectMask) {
+        let start = i + (total || 0) + 1;
+        let end = start + hasMask;
+        maskEffectHash[end - 1] = true;
+      }
+      // >=REPAINT重绘生成走render()跳过这里
+      if(__refreshLevel < REPAINT) {
+        let hasFilter = contain(__refreshLevel, FT);
+        // 特殊的mask判断，除去filter外都可缓存
+        if(maskEffectHash.hasOwnProperty(i)) {
+          if(!contain(__refreshLevel, TRANSFORM_ALL)) {
+            defsCache.forEach(item => {
+              if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
+                defs.addCache(item);
+                defsCacheHash[item.id] = item;
+              }
+            });
+          }
+        }
+        // 去除特殊的filter，普通节点在<REPAINT下其它都可缓存
+        else {
+          defsCache.forEach(item => {
+            if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
+              defs.addCache(item);
+              defsCacheHash[item.id] = item;
+            }
+          });
+        }
+      }
+    }
+  }
   let maskHash = {};
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let parentMatrixList = [];
@@ -1249,15 +1275,16 @@ function renderSvg(renderMode, ctx, defs, root) {
       [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_DEFS_CACHE]: defsCache,
     } = __config;
+    // 将随后的若干个mask节点范围存下来
     if(hasMask) {
       let start = i + (total || 0) + 1;
       let end = start + hasMask;
-      // svg限制了只能Geom单节点，不可能是Dom
+      // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
       maskHash[end - 1] = {
         index: i,
         start,
         end,
-        isClip: __structs[start][STRUCT_NODE].isClip,
+        isClip: __structs[start][STRUCT_NODE].isClip, // 第一个节点是clip为准
       };
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
@@ -1277,15 +1304,8 @@ function renderSvg(renderMode, ctx, defs, root) {
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(__refreshLevel < REPAINT && !(node instanceof Text)) {
       virtualDom = node.virtualDom;
-      defsCache.forEach(item => {
-        defs.addCache(item);
-      });
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
-        // 子节点中的defs的cache要被引入
-        if(total) {
-          svgDefsCache(defs, __structs, i + 1, total);
-        }
         i += (total || 0);
         virtualDom.cache = true;
       }
@@ -1355,9 +1375,9 @@ function renderSvg(renderMode, ctx, defs, root) {
         // 移除老缓存，防止无限增长
         for(let i = defsCache.length - 1; i >= 0; i--) {
           let item = defsCache[i];
-          if(item.tagName === 'filter') {
+          if(item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
             defs.removeCache(item);
-            defsCache.splice(i, 1);
+            break;
           }
         }
         if(Array.isArray(filter)) {
@@ -1404,6 +1424,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       virtualDom.lv = __refreshLevel;
     }
     else {
+      // >=REPAINT会调用render，重新生成defsCache
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
       if(node instanceof Geom) {
         node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
@@ -1415,7 +1436,12 @@ function renderSvg(renderMode, ctx, defs, root) {
         i += (total || 0);
       }
     }
-    if(maskHash.hasOwnProperty(i)) {
+    /**
+     * mask会在join时过滤掉，这里将假设正常渲染的vd的内容获取出来组成defs的mask内容
+     * 另外最初遍历时记录了会影响的mask，在<REPAINT时比较，>=REPAINT始终重新设置
+     * 本身有matrix也需要重设
+     */
+    if(maskHash.hasOwnProperty(i) && (maskEffectHash.hasOwnProperty(i) || __refreshLevel >= REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP))) {
       let { index, start, end, isClip } = maskHash[i];
       let target = __structs[index];
       let dom = target[STRUCT_NODE];
@@ -1434,8 +1460,11 @@ function renderSvg(renderMode, ctx, defs, root) {
       }
       for(let j = start; j < end; j++) {
         let node = __structs[j][STRUCT_NODE];
-        let { computedStyle: { [DISPLAY]: display, [VISIBILITY]: visibility, [FILL]: fill }, virtualDom: { children } } = node;
+        let { computedStyle: { [DISPLAY]: display, [VISIBILITY]: visibility, [FILL]: fill },
+          virtualDom: { children, opacity } } = node;
         if(display !== 'none' && visibility !== 'hidden') {
+          // 引用相同无法diff，需要clone
+          children = util.clone(children);
           mChildren = mChildren.concat(children);
           for(let k = 0, len = children.length; k < len; k++) {
             let { tagName, props } = children[k];
@@ -1451,21 +1480,19 @@ function renderSvg(renderMode, ctx, defs, root) {
               let matrix = node.renderMatrix;
               let inverse = mx.inverse(dom.renderMatrix);
               matrix = mx.multiply(matrix, inverse);
-              let len = props.length;
-              // transform属性放在最后一个省去循环
-              if(!len || props[len - 1][0] !== 'transform') {
-                props.push(['transform', `matrix(${matrix})`]);
-              }
-              else {
-                props[len - 1][1] = `matrix(${matrix})`;
+              // path没有transform属性，在vd上，需要弥补
+              props.push(['transform', `matrix(${matrix.join(',')})`]);
+              // path没有opacity属性，在vd上，需要弥补
+              if(!util.isNil(opacity) && opacity !== 1) {
+                props.push(['opacity', opacity]);
               }
             }
           }
         }
+        // 清掉上次的
         for(let i = defsCache.length - 1; i >= 0; i--) {
           let item = defsCache[i];
           if(item.tagName === 'mask') {
-            defs.removeCache(item);
             defsCache.splice(i, 1);
           }
         }
@@ -1490,20 +1517,6 @@ function renderSvg(renderMode, ctx, defs, root) {
     }
     lastLv = lv;
     last = node;
-  }
-}
-
-function svgDefsCache(defs, __structs, i, total) {
-  for(let len = i + total; i < len; i++) {
-    let {
-      [STRUCT_NODE]: node,
-    } = __structs[i];
-    let {
-      [NODE_DEFS_CACHE]: defsCache,
-    } = node.__config;
-    defsCache.forEach(item => {
-      defs.addCache(item);
-    });
   }
 }
 

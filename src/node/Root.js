@@ -669,12 +669,9 @@ class Root extends Dom {
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG) {
-      struct.renderSvg(renderMode, ctx, defs, this);
+      struct.renderSvg(renderMode, ctx, defs, this, isFirst);
       let nvd = this.virtualDom;
-      // defs按id排序，这样cache的id不变在前，新增的在后加快diff
-      nvd.defs = defs.value.sort(function(a, b) {
-        return a.id - b.id;
-      });
+      nvd.defs = defs.value;
       if(this.dom.__root) {
         // console.log(this.dom.__vd);
         // console.log(nvd);

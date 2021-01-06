@@ -22198,10 +22198,12 @@
         parentVd = vd;
       }
 
-      var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
+      var virtualDom = void 0; // console.log(node.tagName, node.props.ref, __refreshLevel,defsCache);
+      // svg小刷新等级时直接修改vd，这样Geom不再感知
 
       if (__refreshLevel < REPAINT$2 && !(node instanceof Text)) {
-        virtualDom = node.virtualDom;
+        virtualDom = node.virtualDom; // console.log(node.tagName, __cacheTotal.available, total);
+
         defsCache.forEach(function (item) {
           defs.add(item);
         }); // total可以跳过所有孩子节点省略循环
@@ -22280,7 +22282,7 @@
 
         if (contain$2(__refreshLevel, FT$1)) {
           var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
-          delete virtualDom.filter; // 移除老缓存，防止无线增长
+          delete virtualDom.filter; // 移除老缓存，防止无限增长
 
           for (var _i9 = defsCache.length - 1; _i9 >= 0; _i9--) {
             var item = defsCache[_i9];
@@ -22841,9 +22843,9 @@
         }
       }
 
-    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg比较特殊，任何改变都失效，要清除vd的cache以及子节点需要重设defs
+    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
 
-    var need = lv >= REPAINT$3 || renderMode === mode.SVG;
+    var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
     if (need) {
       if (__config[NODE_CACHE$5]) {

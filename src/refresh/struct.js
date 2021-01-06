@@ -1251,14 +1251,17 @@ function renderSvg(renderMode, ctx, defs, root) {
       parentVd = vd;
     }
     let virtualDom;
+    // console.log(node.tagName, node.props.ref, __refreshLevel,defsCache);
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(__refreshLevel < REPAINT && !(node instanceof Text)) {
       virtualDom = node.virtualDom;
+      // console.log(node.tagName, __cacheTotal.available, total);
       defsCache.forEach(item => {
         defs.add(item);
       });
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
+        svgDefsCache()
         i += (total || 0);
         virtualDom.cache = true;
       }
@@ -1325,7 +1328,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       if(contain(__refreshLevel, FT)) {
         let filter = computedStyle[FILTER] = currentStyle[FILTER];
         delete virtualDom.filter;
-        // 移除老缓存，防止无线增长
+        // 移除老缓存，防止无限增长
         for(let i = defsCache.length - 1; i >= 0; i--) {
           let item = defsCache[i];
           if(item.tagName === 'filter') {
@@ -1465,6 +1468,8 @@ function renderSvg(renderMode, ctx, defs, root) {
     last = node;
   }
 }
+
+function svgDefsCache() {}
 
 export default {
   renderCacheCanvas,

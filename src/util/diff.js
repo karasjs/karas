@@ -185,10 +185,16 @@ function diffX2X(elem, ovd, nvd) {
 }
 
 function diffByLessLv(elem, ovd, nvd, lv) {
+  let { transform, opacity, mask, filter, mixBlendMode } = nvd;
+  if(mask) {
+    elem.setAttribute('mask', mask);
+  }
+  else {
+    elem.removeAttribute('mask');
+  }
   if(lv === NONE) {
     return;
   }
-  let { transform, opacity, mask, filter, mixBlendMode } = nvd;
   if(contain(lv, TRANSFORM_ALL)) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -221,16 +227,10 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('style');
     }
   }
-  if(mask) {
-    elem.setAttribute('mask', mask);
-  }
-  else {
-    elem.removeAttribute('mask');
-  }
 }
 
 function diffD2D(elem, ovd, nvd, root) {
-  // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv
+  // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv以及mask
   if(nvd.cache) {
     diffByLessLv(elem, ovd, nvd, nvd.lv);
     return;
@@ -317,6 +317,7 @@ function diffG2D(elem, ovd, nvd) {
 
 function diffG2G(elem, ovd, nvd) {
   if(nvd.cache) {
+    diffByLessLv(elem, ovd, nvd, nvd.lv);
     return;
   }
   // 无cache且<REPAINT的情况快速对比且继续对比children

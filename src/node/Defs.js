@@ -5,6 +5,7 @@ class Defs {
     this.list = [];
   }
   add(data) {
+    data.id = this.count;
     data.uuid = 'karas-defs-' + this.id + '-' + this.count++;
     data.index = this.list.length;
     this.list.push(data);

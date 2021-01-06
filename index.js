@@ -18629,6 +18629,7 @@
     _createClass(Defs, [{
       key: "add",
       value: function add(data) {
+        data.id = this.count;
         data.uuid = 'karas-defs-' + this.id + '-' + this.count++;
         data.index = this.list.length;
         this.list.push(data);
@@ -20207,15 +20208,21 @@
   }
 
   function diffByLessLv(elem, ovd, nvd, lv) {
-    if (lv === NONE$1) {
-      return;
-    }
-
     var transform = nvd.transform,
         opacity = nvd.opacity,
         mask = nvd.mask,
         filter = nvd.filter,
         mixBlendMode = nvd.mixBlendMode;
+
+    if (mask) {
+      elem.setAttribute('mask', mask);
+    } else {
+      elem.removeAttribute('mask');
+    }
+
+    if (lv === NONE$1) {
+      return;
+    }
 
     if (contain$1(lv, TRANSFORM_ALL$1)) {
       if (transform) {
@@ -20248,16 +20255,10 @@
         elem.removeAttribute('style');
       }
     }
-
-    if (mask) {
-      elem.setAttribute('mask', mask);
-    } else {
-      elem.removeAttribute('mask');
-    }
   }
 
   function diffD2D(elem, ovd, nvd, root) {
-    // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv
+    // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv以及mask
     if (nvd.cache) {
       diffByLessLv(elem, ovd, nvd, nvd.lv);
       return;
@@ -20351,6 +20352,7 @@
 
   function diffG2G(elem, ovd, nvd) {
     if (nvd.cache) {
+      diffByLessLv(elem, ovd, nvd, nvd.lv);
       return;
     } // 无cache且<REPAINT的情况快速对比且继续对比children
 
@@ -23255,8 +23257,11 @@
         } // svg的特殊diff需要
         else if (renderMode === mode.SVG) {
             struct.renderSvg(renderMode, ctx, defs, this);
-            var nvd = this.virtualDom;
-            nvd.defs = defs.value;
+            var nvd = this.virtualDom; // defs按id排序，这样cache的id不变在前，新增的在后加快diff
+
+            nvd.defs = defs.value.sort(function (a, b) {
+              return a.id - b.id;
+            });
 
             if (this.dom.__root) {
               // console.log(this.dom.__vd);

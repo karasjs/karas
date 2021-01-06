@@ -1257,11 +1257,14 @@ function renderSvg(renderMode, ctx, defs, root) {
       virtualDom = node.virtualDom;
       // console.log(node.tagName, __cacheTotal.available, total);
       defsCache.forEach(item => {
-        defs.add(item);
+        defs.addCache(item);
       });
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
-        svgDefsCache()
+        // 子节点中的defs的cache要被引入
+        if(total) {
+          svgDefsCache(defs, __structs, i + 1, total);
+        }
         i += (total || 0);
         virtualDom.cache = true;
       }
@@ -1469,7 +1472,19 @@ function renderSvg(renderMode, ctx, defs, root) {
   }
 }
 
-function svgDefsCache() {}
+function svgDefsCache(defs, __structs, i, total) {
+  for(let len = i + total; i < len; i++) {
+    let {
+      [STRUCT_NODE]: node,
+    } = __structs[i];
+    let {
+      [NODE_DEFS_CACHE]: defsCache,
+    } = node.__config;
+    defsCache.forEach(item => {
+      defs.addCache(item);
+    });
+  }
+}
 
 export default {
   renderCacheCanvas,

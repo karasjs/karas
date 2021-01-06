@@ -10,9 +10,16 @@ class Defs {
     this.list.push(data);
     return data.uuid;
   }
-  clear() {
+  addCache(data) {
+    data.index = this.list.length;
+    this.list.push(data);
+    return data.uuid;
+  }
+  clear(includeCount) {
     this.list = [];
-    this.count = 0;
+    if(includeCount) {
+      this.count = 0;
+    }
   }
   removeCache(data) {
     let list = this.list;

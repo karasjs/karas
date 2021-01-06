@@ -2210,7 +2210,6 @@ class Xom extends Node {
                     let inverse = mx.inverse(matrix);
                     p1 = mx.calPoint(p1, inverse);
                     p2 = mx.calPoint(p2, inverse);
-                    console.log(p1, p2);
                   }
                   let v = {
                     tagName: 'clipPath',
@@ -2218,10 +2217,6 @@ class Xom extends Node {
                       tagName: 'path',
                       props: [
                         ['d', `M${p1[0]},${p1[1]} L${p2[0]},${p1[1]} L${p2[0]},${p2[1]} L${p1[0]},${p2[1]} L${p1[0]},${p1[1]}`],
-                        // ['x', p1[0]],
-                        // ['y', p1[1]],
-                        // ['width', clientWidth],
-                        // ['height', clientHeight],
                         ['fill', '#FFF']
                       ],
                     }],

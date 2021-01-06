@@ -14749,18 +14749,13 @@
                         var inverse = mx.inverse(_matrix);
                         p1 = mx.calPoint(p1, inverse);
                         p2 = mx.calPoint(p2, inverse);
-                        console.log(p1, p2);
                       }
 
                       var _v5 = {
                         tagName: 'clipPath',
                         children: [{
                           tagName: 'path',
-                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p1[1])], // ['x', p1[0]],
-                          // ['y', p1[1]],
-                          // ['width', clientWidth],
-                          // ['height', clientHeight],
-                          ['fill', '#FFF']]
+                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
                         }]
                       };
 
@@ -18640,10 +18635,20 @@
         return data.uuid;
       }
     }, {
+      key: "addCache",
+      value: function addCache(data) {
+        data.index = this.list.length;
+        this.list.push(data);
+        return data.uuid;
+      }
+    }, {
       key: "clear",
-      value: function clear() {
+      value: function clear(includeCount) {
         this.list = [];
-        this.count = 0;
+
+        if (includeCount) {
+          this.count = 0;
+        }
       }
     }, {
       key: "removeCache",
@@ -22205,10 +22210,15 @@
         virtualDom = node.virtualDom; // console.log(node.tagName, __cacheTotal.available, total);
 
         defsCache.forEach(function (item) {
-          defs.add(item);
+          defs.addCache(item);
         }); // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
+          // 子节点中的defs的cache要被引入
+          if (total) {
+            svgDefsCache(defs, __structs, _i8 + 1, total);
+          }
+
           _i8 += total || 0;
           virtualDom.cache = true;
         } else {
@@ -22447,6 +22457,16 @@
 
     for (var _i7 = 0, len = __structs.length; _i7 < len; _i7++) {
       _loop4(len, _i7);
+    }
+  }
+
+  function svgDefsCache(defs, __structs, i, total) {
+    for (var len = i + total; i < len; i++) {
+      var node = __structs[i][STRUCT_NODE$1];
+      var defsCache = node.__config[NODE_DEFS_CACHE$3];
+      defsCache.forEach(function (item) {
+        defs.addCache(item);
+      });
     }
   }
 

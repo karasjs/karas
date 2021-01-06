@@ -198,7 +198,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
     }
   }
   if(contain(lv, OPACITY)) {
-    if(opacity !== 1) {
+    if(opacity !== 1 && opacity !== undefined) {
       elem.setAttribute('opacity', opacity);
     }
     else {

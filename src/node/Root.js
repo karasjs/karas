@@ -369,7 +369,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       measureList.push(node);
     }
   }
-  __config[NODE_REFRESH_LV] = lv;
+  // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
+  __config[NODE_REFRESH_LV] |= lv;
   // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
   let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {

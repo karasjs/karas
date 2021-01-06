@@ -14755,7 +14755,7 @@
                         tagName: 'clipPath',
                         children: [{
                           tagName: 'path',
-                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p1[1], " L").concat(p2[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p2[1], " L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
+                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
                         }]
                       };
 
@@ -20226,7 +20226,7 @@
     }
 
     if (contain$1(lv, OPACITY$4)) {
-      if (opacity !== 1) {
+      if (opacity !== 1 && opacity !== undefined) {
         elem.setAttribute('opacity', opacity);
       } else {
         elem.removeAttribute('opacity');
@@ -22203,12 +22203,10 @@
         parentVd = vd;
       }
 
-      var virtualDom = void 0; // console.log(node.tagName, node.props.ref, __refreshLevel,defsCache);
-      // svg小刷新等级时直接修改vd，这样Geom不再感知
+      var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
       if (__refreshLevel < REPAINT$2 && !(node instanceof Text)) {
-        virtualDom = node.virtualDom; // console.log(node.tagName, __cacheTotal.available, total);
-
+        virtualDom = node.virtualDom;
         defsCache.forEach(function (item) {
           defs.addCache(item);
         }); // total可以跳过所有孩子节点省略循环
@@ -22861,9 +22859,10 @@
         if (hasMeasure) {
           measureList.push(node);
         }
-      }
+      } // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
 
-    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
+
+    __config[NODE_REFRESH_LV$2] |= lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 

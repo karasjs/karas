@@ -1251,11 +1251,9 @@ function renderSvg(renderMode, ctx, defs, root) {
       parentVd = vd;
     }
     let virtualDom;
-    // console.log(node.tagName, node.props.ref, __refreshLevel,defsCache);
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(__refreshLevel < REPAINT && !(node instanceof Text)) {
       virtualDom = node.virtualDom;
-      // console.log(node.tagName, __cacheTotal.available, total);
       defsCache.forEach(item => {
         defs.addCache(item);
       });

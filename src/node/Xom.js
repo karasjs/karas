@@ -616,7 +616,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
           }
           xom.__config[NODE_DEFS_CACHE].push(v);
           let filter = defs.add(v);
-          let clip = defs.add({
+          let v2 = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -625,7 +625,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          let clip = defs.add(v2);
+          xom.__config[NODE_DEFS_CACHE].push(v2);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',

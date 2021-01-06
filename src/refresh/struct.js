@@ -1205,6 +1205,29 @@ function renderCanvas(renderMode, ctx, defs, root) {
 
 function renderSvg(renderMode, ctx, defs, root) {
   let { __structs, width, height } = root;
+  // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
+  // let defsCacheList = [];
+  // let defsCacheHash = {};
+  // for(let i = 0, len = __structs.length; i < len; i++) {
+  //   let {
+  //     [STRUCT_NODE]: node,
+  //   } = __structs[i];
+  //   let {
+  //     [NODE_REFRESH_LV]: __refreshLevel,
+  //     [NODE_DEFS_CACHE]: defsCache,
+  //   } = node.__config;
+  //   if(__refreshLevel < REPAINT) {
+  //     // 去除特殊的filter和mask
+  //     let hasFilter = contain(__refreshLevel, FT);
+  //     defsCache.forEach(item => {
+  //       if(hasFilter) {}
+  //       else {
+  //         defsCacheList.push(item);
+  //         defsCacheHash[item.id] = item;
+  //       }
+  //     });
+  //   }
+  // }
   let maskHash = {};
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let parentMatrixList = [];

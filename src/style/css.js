@@ -1272,6 +1272,16 @@ function cloneStyle(style, keys) {
         res[k] = n;
       }
     }
+    else if(k === BOX_SHADOW) {
+      if(v) {
+        v = v.map(item => {
+          let n = item.slice(0);
+          n[4] = n[4].slice(0);
+          return n;
+        });
+        res[k] = v;
+      }
+    }
     // position等直接值类型赋值
     else if(VALUE.hasOwnProperty(k)) {
       res[k] = v;

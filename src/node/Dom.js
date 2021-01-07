@@ -61,7 +61,6 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
-const { REFLOW } = level;
 
 function genZIndexChildren(dom) {
   let flow = [];

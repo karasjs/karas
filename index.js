@@ -924,13 +924,7 @@
     vd.defs.forEach(function (item) {
       s += joinDef(item);
     });
-    s += '</defs><g';
-
-    if (vd.bbClip) {
-      s += ' clip-path="' + vd.bbClip + '"';
-    }
-
-    s += '>';
+    s += '</defs><g>';
     vd.bb.forEach(function (item) {
       s += joinVd(item);
     });
@@ -973,13 +967,7 @@
       });
       return '<g>' + _s + '</g>';
     } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g';
-
-      if (vd.bbClip) {
-        _s2 += ' clip-path="' + vd.bbClip + '"';
-      }
-
-      _s2 += '>';
+      var _s2 = '<g>';
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
@@ -5186,6 +5174,15 @@
           }
 
           res[k] = n;
+        }
+      } else if (k === BOX_SHADOW) {
+        if (v) {
+          v = v.map(function (item) {
+            var n = item.slice(0);
+            n[4] = n[4].slice(0);
+            return n;
+          });
+          res[k] = v;
         }
       } // position等直接值类型赋值
       else if (VALUE$1.hasOwnProperty(k)) {
@@ -13176,13 +13173,17 @@
             xom.__config[NODE_DEFS_CACHE].push(v);
 
             var filter = defs.add(v);
-            var clip = defs.add({
+            var v2 = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
                 props: [['d', svgPolygon$1(_cross2) + svgPolygon$1(box.slice(0).reverse())], ['fill', '#FFF']]
               }]
-            });
+            };
+            var clip = defs.add(v2);
+
+            xom.__config[NODE_DEFS_CACHE].push(v2);
+
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
@@ -14394,9 +14395,9 @@
                   };
                   ctx = c.ctx;
                 }
-              } else if (renderMode === mode.SVG && (lv >= REFLOW || contain(lv, FT))) {
+              } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
                 // 模糊框卷积尺寸 #66
-                if (v > 0) {
+                if (v > 0 && width > 0 && height > 0) {
                   var d = mx.int2convolution(v);
                   var o = {
                     tagName: 'filter',
@@ -14754,11 +14755,20 @@
                     }
 
                     if (needMask) {
+                      var p1 = [x2, y2];
+                      var p2 = [x2 + clientWidth, y2 + clientHeight];
+
+                      if (needResize) {
+                        var inverse = mx.inverse(_matrix);
+                        p1 = mx.calPoint(p1, inverse);
+                        p2 = mx.calPoint(p2, inverse);
+                      }
+
                       var _v5 = {
                         tagName: 'clipPath',
                         children: [{
-                          tagName: 'rect',
-                          props: [['x', x2], ['y', y2], ['width', clientWidth], ['height', clientHeight], ['fill', '#FFF']]
+                          tagName: 'path',
+                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
                         }]
                       };
 
@@ -14766,7 +14776,7 @@
 
                       __config[NODE_DEFS_CACHE].push(_v5);
 
-                      _this4.virtualDom.bbClip = 'url(#' + _id + ')';
+                      props.push(['clip-path', 'url(#' + _id + ')']);
                     } // 先画不考虑repeat的中心声明的
 
 
@@ -15832,7 +15842,7 @@
         vd.__animateRecords = __animateRecords;
 
         __animateRecords.list.forEach(function (item) {
-          item.target = vd;
+          item.target = item.target.vd;
         });
       } // 更新过程中key相同的vd继承动画
 
@@ -16377,7 +16387,6 @@
       PERCENT$6 = unit.PERCENT;
   var calAbsolute$1 = css.calAbsolute,
       isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
-  var REFLOW$1 = o$1.REFLOW;
 
   function genZIndexChildren(dom) {
     var flow = [];
@@ -18627,14 +18636,32 @@
       this.id = uuid;
       this.count = 0;
       this.list = [];
+      this.cacheHash = {}; // 每次svg渲染前重置，存储前次渲染不变的缓存id
     }
 
     _createClass(Defs, [{
       key: "add",
       value: function add(data) {
-        data.uuid = 'karas-defs-' + this.id + '-' + this.count++;
+        var uuid = this.count;
+        var hash = this.cacheHash;
+
+        while (hash.hasOwnProperty(uuid)) {
+          uuid++;
+        }
+
+        this.count = uuid + 1;
+        data.id = uuid;
+        data.uuid = 'karas-defs-' + this.id + '-' + uuid;
         data.index = this.list.length;
         this.list.push(data);
+        return data.uuid;
+      }
+    }, {
+      key: "addCache",
+      value: function addCache(data) {
+        data.index = this.list.length;
+        this.list.push(data);
+        this.cacheHash[data.id] = true;
         return data.uuid;
       }
     }, {
@@ -18642,6 +18669,7 @@
       value: function clear() {
         this.list = [];
         this.count = 0;
+        this.cacheHash = {};
       }
     }, {
       key: "removeCache",
@@ -20012,7 +20040,7 @@
     diffDefs(cns[0], ovd.defs, nvd.defs); // <REPAINT不会有lv属性，无需对比
 
     if (!nvd.hasOwnProperty('lv')) {
-      diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      diffBb(cns[1], ovd.bb, nvd.bb);
     }
 
     diffD2D(elem, ovd, nvd, true);
@@ -20200,15 +20228,21 @@
   }
 
   function diffByLessLv(elem, ovd, nvd, lv) {
-    if (lv === NONE$1) {
-      return;
-    }
-
     var transform = nvd.transform,
         opacity = nvd.opacity,
         mask = nvd.mask,
         filter = nvd.filter,
         mixBlendMode = nvd.mixBlendMode;
+
+    if (mask) {
+      elem.setAttribute('mask', mask);
+    } else {
+      elem.removeAttribute('mask');
+    }
+
+    if (lv === NONE$1) {
+      return;
+    }
 
     if (contain$1(lv, TRANSFORM_ALL$1)) {
       if (transform) {
@@ -20219,7 +20253,7 @@
     }
 
     if (contain$1(lv, OPACITY$4)) {
-      if (opacity !== 1) {
+      if (opacity !== 1 && opacity !== undefined) {
         elem.setAttribute('opacity', opacity);
       } else {
         elem.removeAttribute('opacity');
@@ -20241,16 +20275,10 @@
         elem.removeAttribute('style');
       }
     }
-
-    if (mask) {
-      elem.setAttribute('mask', mask);
-    } else {
-      elem.removeAttribute('mask');
-    }
   }
 
   function diffD2D(elem, ovd, nvd, root) {
-    // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv
+    // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv以及mask
     if (nvd.cache) {
       diffByLessLv(elem, ovd, nvd, nvd.lv);
       return;
@@ -20263,7 +20291,7 @@
       diffX2X(elem, ovd, nvd);
 
       if (!root) {
-        diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+        diffBb(elem.firstChild, ovd.bb, nvd.bb);
       }
     }
 
@@ -20290,7 +20318,7 @@
 
   function diffD2G(elem, ovd, nvd) {
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -20344,6 +20372,7 @@
 
   function diffG2G(elem, ovd, nvd) {
     if (nvd.cache) {
+      diffByLessLv(elem, ovd, nvd, nvd.lv);
       return;
     } // 无cache且<REPAINT的情况快速对比且继续对比children
 
@@ -20352,7 +20381,7 @@
       diffByLessLv(elem, ovd, nvd, nvd.lv);
     } else {
       diffX2X(elem, ovd, nvd);
-      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      diffBb(elem.firstChild, ovd.bb, nvd.bb);
       var ol = ovd.children.length;
       var nl = nvd.children.length;
       var i = 0;
@@ -20375,18 +20404,9 @@
     }
   }
 
-  function diffBb(elem, obb, nbb, oClip, nClip) {
+  function diffBb(elem, obb, nbb) {
     var ol = obb.length;
     var nl = nbb.length;
-
-    if (oClip !== nClip) {
-      if (!nClip) {
-        elem.removeAttribute('clip-path');
-      } else {
-        elem.setAttribute('clip-path', nClip);
-      }
-    }
-
     var i = 0;
 
     for (; i < Math.min(ol, nl); i++) {
@@ -22156,10 +22176,58 @@
     }
   }
 
-  function renderSvg(renderMode, ctx, defs, root) {
+  function renderSvg(renderMode, ctx, defs, root, isFirst) {
     var __structs = root.__structs,
         width = root.width,
-        height = root.height;
+        height = root.height; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
+
+    var maskEffectHash = {};
+
+    if (!isFirst) {
+      // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
+      for (var _i7 = 0, len = __structs.length; _i7 < len; _i7++) {
+        var _structs$_i4 = __structs[_i7],
+            node = _structs$_i4[STRUCT_NODE$1],
+            total = _structs$_i4[STRUCT_TOTAL$1],
+            hasMask = _structs$_i4[STRUCT_HAS_MASK$1];
+        var _node$__config5 = node.__config,
+            __refreshLevel = _node$__config5[NODE_REFRESH_LV$1],
+            defsCache = _node$__config5[NODE_DEFS_CACHE$3]; // 只要涉及到matrix就影响mask
+
+        var hasEffectMask = hasMask && (__refreshLevel > REPAINT$2 || contain$2(__refreshLevel, TRANSFORM_ALL$2 | OP$1));
+
+        if (hasEffectMask) {
+          var start = _i7 + (total || 0) + 1;
+          var end = start + hasMask;
+          maskEffectHash[end - 1] = true;
+        } // >=REPAINT重绘生成走render()跳过这里
+
+
+        if (__refreshLevel < REPAINT$2) {
+          (function () {
+            var hasFilter = contain$2(__refreshLevel, FT$1); // 特殊的mask判断，除去filter外都可缓存
+
+            if (maskEffectHash.hasOwnProperty(_i7)) {
+              if (!contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
+                defsCache.forEach(function (item) {
+                  if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
+                    defs.addCache(item);
+                  }
+                });
+              }
+            } // 去除特殊的filter，普通节点在<REPAINT下其它都可缓存
+            else {
+                defsCache.forEach(function (item) {
+                  if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
+                    defs.addCache(item);
+                  }
+                });
+              }
+          })();
+        }
+      }
+    }
+
     var maskHash = {}; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 
     var parentMatrixList = [];
@@ -22169,26 +22237,29 @@
     var lastLv = 0;
     var last;
 
-    var _loop4 = function _loop4(len, _i8) {
-      var _structs$_i4 = __structs[_i8],
-          node = _structs$_i4[STRUCT_NODE$1],
-          total = _structs$_i4[STRUCT_TOTAL$1],
-          hasMask = _structs$_i4[STRUCT_HAS_MASK$1],
-          lv = _structs$_i4[STRUCT_LV$2];
+    var _loop4 = function _loop4(_i9, _len3) {
+      var _structs$_i5 = __structs[_i9],
+          node = _structs$_i5[STRUCT_NODE$1],
+          total = _structs$_i5[STRUCT_TOTAL$1],
+          hasMask = _structs$_i5[STRUCT_HAS_MASK$1],
+          lv = _structs$_i5[STRUCT_LV$2];
       var __config = node.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           __refreshLevel = __config[NODE_REFRESH_LV$1],
-          defsCache = __config[NODE_DEFS_CACHE$3];
+          defsCache = __config[NODE_DEFS_CACHE$3]; // 将随后的若干个mask节点范围存下来
 
       if (hasMask) {
-        var start = _i8 + (total || 0) + 1;
-        var end = start + hasMask; // svg限制了只能Geom单节点，不可能是Dom
+        var _start = _i9 + (total || 0) + 1;
 
-        maskHash[end - 1] = {
-          index: _i8,
-          start: start,
-          end: end,
-          isClip: __structs[start][STRUCT_NODE$1].isClip
+        var _end = _start + hasMask; // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
+
+
+        maskHash[_end - 1] = {
+          index: _i9,
+          start: _start,
+          end: _end,
+          isClip: __structs[_start][STRUCT_NODE$1].isClip // 第一个节点是clip为准
+
         };
       } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
 
@@ -22208,13 +22279,10 @@
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
       if (__refreshLevel < REPAINT$2 && !(node instanceof Text)) {
-        virtualDom = node.virtualDom;
-        defsCache.forEach(function (item) {
-          defs.add(item);
-        }); // total可以跳过所有孩子节点省略循环
+        virtualDom = node.virtualDom; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
-          _i8 += total || 0;
+          _i9 += total || 0;
           virtualDom.cache = true;
         } else {
           __cacheTotal && (__cacheTotal.available = true);
@@ -22229,7 +22297,7 @@
           var display = node.computedStyle[DISPLAY$6];
 
           if (display === 'none') {
-            _i8 += total || 0;
+            _i9 += total || 0;
           }
         }
 
@@ -22287,14 +22355,14 @@
 
         if (contain$2(__refreshLevel, FT$1)) {
           var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
-          delete virtualDom.filter; // 移除老缓存，防止无线增长
+          delete virtualDom.filter; // 移除老缓存，防止无限增长
 
-          for (var _i9 = defsCache.length - 1; _i9 >= 0; _i9--) {
-            var item = defsCache[_i9];
+          for (var _i10 = defsCache.length - 1; _i10 >= 0; _i10--) {
+            var item = defsCache[_i10];
 
-            if (item.tagName === 'filter') {
+            if (item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
               defs.removeCache(item);
-              defsCache.splice(_i9, 1);
+              break;
             }
           }
 
@@ -22340,6 +22408,7 @@
 
         virtualDom.lv = __refreshLevel;
       } else {
+        // >=REPAINT会调用render，重新生成defsCache
         __config[NODE_DEFS_CACHE$3] && __config[NODE_DEFS_CACHE$3].splice(0);
 
         if (node instanceof Geom$1) {
@@ -22351,15 +22420,21 @@
         var _display2 = node.computedStyle[DISPLAY$6];
 
         if (_display2 === 'none') {
-          _i8 += total || 0;
+          _i9 += total || 0;
         }
       }
+      /**
+       * mask会在join时过滤掉，这里将假设正常渲染的vd的内容获取出来组成defs的mask内容
+       * 另外最初遍历时记录了会影响的mask，在<REPAINT时比较，>=REPAINT始终重新设置
+       * 本身有matrix也需要重设
+       */
 
-      if (maskHash.hasOwnProperty(_i8)) {
-        var _maskHash$_i = maskHash[_i8],
+
+      if (maskHash.hasOwnProperty(_i9) && (maskEffectHash.hasOwnProperty(_i9) || __refreshLevel >= REPAINT$2 || contain$2(__refreshLevel, TRANSFORM_ALL$2 | OP$1))) {
+        var _maskHash$_i = maskHash[_i9],
             index = _maskHash$_i.index,
-            _start = _maskHash$_i.start,
-            _end = _maskHash$_i.end,
+            _start2 = _maskHash$_i.start,
+            _end2 = _maskHash$_i.end,
             isClip = _maskHash$_i.isClip;
         var target = __structs[index];
         var dom = target[STRUCT_NODE$1];
@@ -22373,18 +22448,22 @@
           });
         }
 
-        for (var j = _start; j < _end; j++) {
+        for (var j = _start2; j < _end2; j++) {
           var _node3 = __structs[j][STRUCT_NODE$1];
           var _node3$computedStyle = _node3.computedStyle,
               _display3 = _node3$computedStyle[DISPLAY$6],
               visibility = _node3$computedStyle[VISIBILITY$5],
               fill = _node3$computedStyle[FILL$2],
-              children = _node3.virtualDom.children;
+              _node3$virtualDom = _node3.virtualDom,
+              children = _node3$virtualDom.children,
+              _opacity = _node3$virtualDom.opacity;
 
           if (_display3 !== 'none' && visibility !== 'hidden') {
+            // 引用相同无法diff，需要clone
+            children = util.clone(children);
             mChildren = mChildren.concat(children);
 
-            for (var k = 0, _len3 = children.length; k < _len3; k++) {
+            for (var k = 0, _len4 = children.length; k < _len4; k++) {
               var _children$k = children[k],
                   tagName = _children$k.tagName,
                   props = _children$k.props;
@@ -22402,24 +22481,23 @@
 
                 var _matrix2 = _node3.renderMatrix;
                 var inverse = mx.inverse(dom.renderMatrix);
-                _matrix2 = mx.multiply(_matrix2, inverse);
-                var _len4 = props.length; // transform属性放在最后一个省去循环
+                _matrix2 = mx.multiply(_matrix2, inverse); // path没有transform属性，在vd上，需要弥补
 
-                if (!_len4 || props[_len4 - 1][0] !== 'transform') {
-                  props.push(['transform', "matrix(".concat(_matrix2, ")")]);
-                } else {
-                  props[_len4 - 1][1] = "matrix(".concat(_matrix2, ")");
+                props.push(['transform', "matrix(".concat(_matrix2.join(','), ")")]); // path没有opacity属性，在vd上，需要弥补
+
+                if (!util.isNil(_opacity) && _opacity !== 1) {
+                  props.push(['opacity', _opacity]);
                 }
               }
             }
-          }
+          } // 清掉上次的
 
-          for (var _i10 = defsCache.length - 1; _i10 >= 0; _i10--) {
-            var _item4 = defsCache[_i10];
+
+          for (var _i11 = defsCache.length - 1; _i11 >= 0; _i11--) {
+            var _item4 = defsCache[_i11];
 
             if (_item4.tagName === 'mask') {
-              defs.removeCache(_item4);
-              defsCache.splice(_i10, 1);
+              defsCache.splice(_i11, 1);
             }
           }
 
@@ -22440,18 +22518,18 @@
         parentVd.children.push(virtualDom);
       }
 
-      if (_i8 === 0) {
+      if (_i9 === 0) {
         parentMatrix = __config[NODE_MATRIX$1];
         parentVd = virtualDom;
       }
 
       lastLv = lv;
       last = node;
-      _i7 = _i8;
+      _i8 = _i9;
     };
 
-    for (var _i7 = 0, len = __structs.length; _i7 < len; _i7++) {
-      _loop4(len, _i7);
+    for (var _i8 = 0, _len3 = __structs.length; _i8 < _len3; _i8++) {
+      _loop4(_i8);
     }
   }
 
@@ -22532,7 +22610,7 @@
       NONE$2 = o$1.NONE,
       FILTER$6 = o$1.FILTER,
       REPAINT$3 = o$1.REPAINT,
-      REFLOW$2 = o$1.REFLOW;
+      REFLOW$1 = o$1.REFLOW;
   var isIgnore = o.isIgnore,
       isGeom$3 = o.isGeom,
       isMeasure = o.isMeasure;
@@ -22846,9 +22924,10 @@
         if (hasMeasure) {
           measureList.push(node);
         }
-      }
+      } // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
 
-    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
+
+    __config[NODE_REFRESH_LV$2] |= lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
@@ -22881,7 +22960,7 @@
     } // 由于父节点中有display:none，一些子节点也为none，执行普通动画是无效的，此时lv<REFLOW
 
 
-    if (computedStyle[DISPLAY$7] === 'none' && lv < REFLOW$2) {
+    if (computedStyle[DISPLAY$7] === 'none' && lv < REFLOW$1) {
       return false;
     } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
 
@@ -23240,7 +23319,7 @@
           }
         } // svg的特殊diff需要
         else if (renderMode === mode.SVG) {
-            struct.renderSvg(renderMode, ctx, defs, this);
+            struct.renderSvg(renderMode, ctx, defs, this, isFirst);
             var nvd = this.virtualDom;
             nvd.defs = defs.value;
 
@@ -23391,7 +23470,7 @@
                     var res = {};
                     res[UPDATE_NODE$3] = sr;
                     res[UPDATE_STYLE$2] = sr.currentStyle;
-                    res[UPDATE_FOCUS$2] = REFLOW$2;
+                    res[UPDATE_FOCUS$2] = REFLOW$1;
                     res[UPDATE_MEASURE] = true;
                     res[UPDATE_COMPONENT] = cp;
                     res[UPDATE_CONFIG$3] = sr.__config;
@@ -24077,12 +24156,12 @@
                     while (next) {
                       if (next.currentStyle[POSITION$4] === 'absolute') {
                         if (next.currentStyle[TOP$3][1] === AUTO$6 && next.currentStyle[BOTTOM$3][1] === AUTO$6) {
-                          next.__offsetY(dy, true, REFLOW$2);
+                          next.__offsetY(dy, true, REFLOW$1);
 
                           next.__cancelCache();
                         }
                       } else if (!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
-                        next.__offsetY(dy, true, REFLOW$2);
+                        next.__offsetY(dy, true, REFLOW$1);
 
                         next.__cancelCache();
                       }
@@ -24116,7 +24195,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$2;
+                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                       }
                     }
 
@@ -24137,7 +24216,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$2;
+                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                       } // 高度不需要调整提前跳出
                       else {
                           break;
@@ -24222,7 +24301,7 @@
                   }
 
                   if (newY !== oldY) {
-                    node.__offsetY(newY - oldY, false, REFLOW$2);
+                    node.__offsetY(newY - oldY, false, REFLOW$1);
                   }
 
                   var newX = 0;
@@ -24248,7 +24327,7 @@
                   }
 
                   if (newX !== oldX) {
-                    node.__offsetX(newX - oldX, false, REFLOW$2);
+                    node.__offsetX(newX - oldX, false, REFLOW$1);
                   }
                 }
             }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了

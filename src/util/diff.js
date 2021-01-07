@@ -9,7 +9,7 @@ function diff(elem, ovd, nvd) {
   diffDefs(cns[0], ovd.defs, nvd.defs);
   // <REPAINT不会有lv属性，无需对比
   if(!nvd.hasOwnProperty('lv')) {
-    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffBb(cns[1], ovd.bb, nvd.bb);
   }
   diffD2D(elem, ovd, nvd, true);
 }
@@ -185,10 +185,16 @@ function diffX2X(elem, ovd, nvd) {
 }
 
 function diffByLessLv(elem, ovd, nvd, lv) {
+  let { transform, opacity, mask, filter, mixBlendMode } = nvd;
+  if(mask) {
+    elem.setAttribute('mask', mask);
+  }
+  else {
+    elem.removeAttribute('mask');
+  }
   if(lv === NONE) {
     return;
   }
-  let { transform, opacity, mask, filter, mixBlendMode } = nvd;
   if(contain(lv, TRANSFORM_ALL)) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -198,7 +204,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
     }
   }
   if(contain(lv, OPACITY)) {
-    if(opacity !== 1) {
+    if(opacity !== 1 && opacity !== undefined) {
       elem.setAttribute('opacity', opacity);
     }
     else {
@@ -221,16 +227,10 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('style');
     }
   }
-  if(mask) {
-    elem.setAttribute('mask', mask);
-  }
-  else {
-    elem.removeAttribute('mask');
-  }
 }
 
 function diffD2D(elem, ovd, nvd, root) {
-  // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv
+  // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv以及mask
   if(nvd.cache) {
     diffByLessLv(elem, ovd, nvd, nvd.lv);
     return;
@@ -242,7 +242,7 @@ function diffD2D(elem, ovd, nvd, root) {
   else {
     diffX2X(elem, ovd, nvd);
     if(!root) {
-      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      diffBb(elem.firstChild, ovd.bb, nvd.bb);
     }
   }
   let ol = ovd.children.length;
@@ -267,7 +267,7 @@ function diffD2D(elem, ovd, nvd, root) {
 
 function diffD2G(elem, ovd, nvd) {
   diffX2X(elem, ovd, nvd);
-  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb);
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -317,6 +317,7 @@ function diffG2D(elem, ovd, nvd) {
 
 function diffG2G(elem, ovd, nvd) {
   if(nvd.cache) {
+    diffByLessLv(elem, ovd, nvd, nvd.lv);
     return;
   }
   // 无cache且<REPAINT的情况快速对比且继续对比children
@@ -325,7 +326,7 @@ function diffG2G(elem, ovd, nvd) {
   }
   else {
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
     let ol = ovd.children.length;
     let nl = nvd.children.length;
     let i = 0;
@@ -347,17 +348,9 @@ function diffG2G(elem, ovd, nvd) {
   }
 }
 
-function diffBb(elem, obb, nbb, oClip, nClip) {
+function diffBb(elem, obb, nbb) {
   let ol = obb.length;
   let nl = nbb.length;
-  if(oClip !== nClip) {
-    if(!nClip) {
-      elem.removeAttribute('clip-path');
-    }
-    else {
-      elem.setAttribute('clip-path', nClip);
-    }
-  }
   let i = 0;
   for(; i < Math.min(ol, nl); i++) {
     diffItem(elem, i, obb[i], nbb[i]);

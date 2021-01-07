@@ -3,16 +3,31 @@ class Defs {
     this.id = uuid;
     this.count = 0;
     this.list = [];
+    this.cacheHash = {}; // 每次svg渲染前重置，存储前次渲染不变的缓存id
   }
   add(data) {
-    data.uuid = 'karas-defs-' + this.id + '-' + this.count++;
+    let uuid = this.count;
+    let hash = this.cacheHash;
+    while(hash.hasOwnProperty(uuid)) {
+      uuid++;
+    }
+    this.count = uuid + 1;
+    data.id = uuid;
+    data.uuid = 'karas-defs-' + this.id + '-' + uuid;
     data.index = this.list.length;
     this.list.push(data);
+    return data.uuid;
+  }
+  addCache(data) {
+    data.index = this.list.length;
+    this.list.push(data);
+    this.cacheHash[data.id] = true;
     return data.uuid;
   }
   clear() {
     this.list = [];
     this.count = 0;
+    this.cacheHash = {};
   }
   removeCache(data) {
     let list = this.list;

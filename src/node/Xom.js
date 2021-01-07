@@ -616,7 +616,7 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
           }
           xom.__config[NODE_DEFS_CACHE].push(v);
           let filter = defs.add(v);
-          let clip = defs.add({
+          let v2 = {
             tagName: 'clipPath',
             children: [{
               tagName: 'path',
@@ -625,7 +625,9 @@ function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y
                 ['fill', '#FFF'],
               ],
             }],
-          });
+          };
+          let clip = defs.add(v2);
+          xom.__config[NODE_DEFS_CACHE].push(v2);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -1860,9 +1862,9 @@ class Xom extends Node {
             }
           }
           else if(renderMode === mode.SVG
-            && (lv >= REFLOW || contain(lv, FT))) {
+            && (lv >= REPAINT || contain(lv, FT))) {
             // 模糊框卷积尺寸 #66
-            if(v > 0) {
+            if(v > 0 && width > 0 && height > 0) {
               let d = mx.int2convolution(v);
               let o = {
                 tagName: 'filter',
@@ -2204,22 +2206,26 @@ class Xom extends Node {
                   props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
                 }
                 if(needMask) {
+                  let p1 = [x2, y2];
+                  let p2 = [x2 + clientWidth, y2 + clientHeight];
+                  if(needResize) {
+                    let inverse = mx.inverse(matrix);
+                    p1 = mx.calPoint(p1, inverse);
+                    p2 = mx.calPoint(p2, inverse);
+                  }
                   let v = {
                     tagName: 'clipPath',
                     children: [{
-                      tagName: 'rect',
+                      tagName: 'path',
                       props: [
-                        ['x', x2],
-                        ['y', y2],
-                        ['width', clientWidth],
-                        ['height', clientHeight],
+                        ['d', `M${p1[0]},${p1[1]}L${p2[0]},${p1[1]}L${p2[0]},${p2[1]}L${p1[0]},${p2[1]}L${p1[0]},${p1[1]}`],
                         ['fill', '#FFF']
                       ],
                     }],
                   };
                   let id = defs.add(v);
                   __config[NODE_DEFS_CACHE].push(v);
-                  this.virtualDom.bbClip = 'url(#' + id + ')';
+                  props.push(['clip-path', 'url(#' + id + ')']);
                 }
                 // 先画不考虑repeat的中心声明的
                 this.virtualDom.bb.push({

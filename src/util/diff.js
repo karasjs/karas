@@ -67,7 +67,7 @@ function diffDef(elem, od, nd) {
     // 多余的删除
     Object.keys(op).forEach(i => {
       elem.removeAttribute(i);
-    });console.log(elem);
+    });
     let cns = elem.childNodes;
     let ol = od.children.length;
     let nl = nd.children.length;

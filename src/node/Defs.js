@@ -11,7 +11,7 @@ class Defs {
     while(hash.hasOwnProperty(uuid)) {
       uuid++;
     }
-    this.count = uuid;
+    this.count = uuid + 1;
     data.id = uuid;
     data.uuid = 'karas-defs-' + this.id + '-' + uuid;
     data.index = this.list.length;
@@ -21,11 +21,13 @@ class Defs {
   addCache(data) {
     data.index = this.list.length;
     this.list.push(data);
+    this.cacheHash[data.id] = true;
     return data.uuid;
   }
   clear() {
     this.list = [];
     this.count = 0;
+    this.cacheHash = {};
   }
   removeCache(data) {
     let list = this.list;

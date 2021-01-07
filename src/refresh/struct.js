@@ -1205,12 +1205,10 @@ function renderCanvas(renderMode, ctx, defs, root) {
 
 function renderSvg(renderMode, ctx, defs, root, isFirst) {
   let { __structs, width, height } = root;
-  // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
-  let defsCacheHash = {};
-  defs.cacheHash = defsCacheHash;
   // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
   let maskEffectHash = {};
   if(!isFirst) {
+    // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
@@ -1237,7 +1235,6 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
             defsCache.forEach(item => {
               if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
                 defs.addCache(item);
-                defsCacheHash[item.id] = item;
               }
             });
           }
@@ -1247,7 +1244,6 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
           defsCache.forEach(item => {
             if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
               defs.addCache(item);
-              defsCacheHash[item.id] = item;
             }
           });
         }

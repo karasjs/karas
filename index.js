@@ -18649,7 +18649,7 @@
           uuid++;
         }
 
-        this.count = uuid;
+        this.count = uuid + 1;
         data.id = uuid;
         data.uuid = 'karas-defs-' + this.id + '-' + uuid;
         data.index = this.list.length;
@@ -18661,6 +18661,7 @@
       value: function addCache(data) {
         data.index = this.list.length;
         this.list.push(data);
+        this.cacheHash[data.id] = true;
         return data.uuid;
       }
     }, {
@@ -18668,6 +18669,7 @@
       value: function clear() {
         this.list = [];
         this.count = 0;
+        this.cacheHash = {};
       }
     }, {
       key: "removeCache",
@@ -20110,7 +20112,6 @@
       Object.keys(op).forEach(function (i) {
         elem.removeAttribute(i);
       });
-      console.log(elem);
       var cns = elem.childNodes;
       var ol = od.children.length;
       var nl = nd.children.length;
@@ -22178,14 +22179,12 @@
   function renderSvg(renderMode, ctx, defs, root, isFirst) {
     var __structs = root.__structs,
         width = root.width,
-        height = root.height; // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
-
-    var defsCacheHash = {};
-    defs.cacheHash = defsCacheHash; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
+        height = root.height; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
 
     var maskEffectHash = {};
 
     if (!isFirst) {
+      // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
       for (var _i7 = 0, len = __structs.length; _i7 < len; _i7++) {
         var _structs$_i4 = __structs[_i7],
             node = _structs$_i4[STRUCT_NODE$1],
@@ -22213,7 +22212,6 @@
                 defsCache.forEach(function (item) {
                   if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
                     defs.addCache(item);
-                    defsCacheHash[item.id] = item;
                   }
                 });
               }
@@ -22222,7 +22220,6 @@
                 defsCache.forEach(function (item) {
                   if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
                     defs.addCache(item);
-                    defsCacheHash[item.id] = item;
                   }
                 });
               }

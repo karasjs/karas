@@ -1862,9 +1862,9 @@ class Xom extends Node {
             }
           }
           else if(renderMode === mode.SVG
-            && (lv >= REFLOW || contain(lv, FT))) {
+            && (lv >= REPAINT || contain(lv, FT))) {
             // 模糊框卷积尺寸 #66
-            if(v > 0) {
+            if(v > 0 && width > 0 && height > 0) {
               let d = mx.int2convolution(v);
               let o = {
                 tagName: 'filter',

@@ -14395,9 +14395,9 @@
                   };
                   ctx = c.ctx;
                 }
-              } else if (renderMode === mode.SVG && (lv >= REFLOW || contain(lv, FT))) {
+              } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
                 // 模糊框卷积尺寸 #66
-                if (v > 0) {
+                if (v > 0 && width > 0 && height > 0) {
                   var d = mx.int2convolution(v);
                   var o = {
                     tagName: 'filter',

@@ -11658,6 +11658,7 @@
 
         if (__config[I_DURATION] !== v) {
           __config[I_DURATION] = v;
+          __config[I_END_TIME] = v;
 
           this.__checkModify();
         }
@@ -11839,6 +11840,21 @@
 
         if (__config[I_CURRENT_TIME] !== v) {
           __config[I_CURRENT_TIME] = v;
+          __config[I_NEXT_TIME] = v;
+        }
+
+        return v;
+      }
+    }, {
+      key: "nextTime",
+      get: function get() {
+        return this.__config[I_NEXT_TIME];
+      },
+      set: function set(v) {
+        v = Math.max(0, parseFloat(v) || 0);
+        var __config = this.__config;
+
+        if (__config[I_NEXT_TIME] !== v) {
           __config[I_NEXT_TIME] = v;
         }
 
@@ -27104,7 +27120,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.4";
+  var version = "0.47.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

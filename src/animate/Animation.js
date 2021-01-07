@@ -2031,6 +2031,7 @@ class Animation extends Event {
     let __config = this.__config;
     if(__config[I_DURATION] !== v) {
       __config[I_DURATION] = v;
+      __config[I_END_TIME] = v;
       this.__checkModify();
     }
     return v;
@@ -2182,6 +2183,19 @@ class Animation extends Event {
     let __config = this.__config;
     if(__config[I_CURRENT_TIME] !== v) {
       __config[I_CURRENT_TIME] = v;
+      __config[I_NEXT_TIME] = v;
+    }
+    return v;
+  }
+
+  get nextTime() {
+    return this.__config[I_NEXT_TIME];
+  }
+
+  set nextTime(v) {
+    v = Math.max(0, parseFloat(v) || 0);
+    let __config = this.__config;
+    if(__config[I_NEXT_TIME] !== v) {
       __config[I_NEXT_TIME] = v;
     }
     return v;

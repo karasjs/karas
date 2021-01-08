@@ -13478,7 +13478,27 @@
 
         this.__layoutData = clone$2(data);
         __config[NODE_REFRESH_LV] = REFLOW;
-        __config[NODE_LIMIT_CACHE] = false;
+        __config[NODE_LIMIT_CACHE] = false; // 防止display:none不统计mask，virtual也忽略
+
+        if (!isVirtual) {
+          var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变
+
+          if (!this.isMask && next && next.isMask) {
+            var count = 0;
+
+            while (next) {
+              if (next.isMask) {
+                count++;
+              } else {
+                break;
+              }
+
+              next = next.next;
+            }
+
+            this.__hasMask = count;
+          }
+        }
 
         if (isDestroyed || display === 'none') {
           this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$3] = computedStyle[HEIGHT$3] = 0;
@@ -13570,24 +13590,6 @@
 
         if (isVirtual) {
           this.__ioSize(tw, th);
-        }
-
-        var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变
-
-        if (!this.isMask && next && next.isMask) {
-          var count = 0;
-
-          while (next) {
-            if (next.isMask) {
-              count++;
-            } else {
-              break;
-            }
-
-            next = next.next;
-          }
-
-          this.__hasMask = count;
         } // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
 
@@ -20879,13 +20881,19 @@
         for (var i = index + 1, len = i + (top[STRUCT_TOTAL$1] || 0); i < len; i++) {
           var _structs$i = structs[i],
               node = _structs$i[STRUCT_NODE$1],
-              total = _structs$i[STRUCT_TOTAL$1];
+              total = _structs$i[STRUCT_TOTAL$1],
+              hasMask = _structs$i[STRUCT_HAS_MASK$1];
           var _node$__config = node.__config,
               __cacheTotal = _node$__config[NODE_CACHE_TOTAL$3],
               display = _node$__config[NODE_COMPUTED_STYLE$2][DISPLAY$6]; // 不可见整个跳过视作不存在
 
           if (display === 'none') {
             i += total || 0;
+
+            if (hasMask) {
+              i += hasMask;
+            }
+
             continue;
           } // 子节点从开始到最后形成单链表
 
@@ -21130,7 +21138,8 @@
     for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i3 = __structs[i],
           _node2 = _structs$i3[STRUCT_NODE$1],
-          _total2 = _structs$i3[STRUCT_TOTAL$1];
+          _total2 = _structs$i3[STRUCT_TOTAL$1],
+          hasMask = _structs$i3[STRUCT_HAS_MASK$1];
       var _node2$__config = _node2.__config,
           __cache = _node2$__config[NODE_CACHE$4],
           __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$3],
@@ -21146,6 +21155,11 @@
 
       if (display === 'none') {
         i += _total2 || 0;
+
+        if (hasMask) {
+          i += hasMask;
+        }
+
         continue;
       }
 
@@ -21225,6 +21239,10 @@
             }
 
             Cache.drawCache(target, cacheTop);
+
+            if (target === __cacheMask) {
+              i += hasMask;
+            }
           }
         }
     }
@@ -21264,7 +21282,8 @@
       var _structs$_i = __structs[_i],
           node = _structs$_i[STRUCT_NODE$1],
           lv = _structs$_i[STRUCT_LV$2],
-          total = _structs$_i[STRUCT_TOTAL$1];
+          total = _structs$_i[STRUCT_TOTAL$1],
+          hasMask = _structs$_i[STRUCT_HAS_MASK$1];
       var __config = node.__config;
       var __refreshLevel = __config[NODE_REFRESH_LV$1],
           __cache = __config[NODE_CACHE$4],
@@ -21301,7 +21320,8 @@
       }
 
       if (computedStyle[DISPLAY$6] === 'none') {
-        _i += total || 0;
+        _i += total || 0; // display:none不能跳过后面的mask，其渲染自身缓存cache，以备对象切换block用
+
         i = _i;
         return "continue";
       } // lv<REPAINT，肯定有__cache，跳过渲染过程，快速运算
@@ -21533,7 +21553,7 @@
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
             // 等next的最后一个mask节点渲染完再生成cache，有可能next节点没有改变，这样就进不到lrd的循环了，需判断
             var needWaitIndex = void 0;
-            var j = index;
+            var j = index + total;
 
             while (hasMask--) {
               j++;
@@ -22020,7 +22040,12 @@
 
 
       if (computedStyle[DISPLAY$6] === 'none') {
-        _i7 += total || 0;
+        _i7 += total || 0; // display:none要跳过后面的mask
+
+        if (hasMask) {
+          _i7 += hasMask;
+        }
+
         _i6 = _i7;
         return "continue";
       }
@@ -22041,7 +22066,7 @@
       } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
 
 
-      if (offScreenMask) {
+      if (offScreenMask || hasMask) {
         var _j7 = _i7 + (total || 0) + 1;
 
         var startIndex, endIndex;
@@ -22323,11 +22348,12 @@
           hasMask = _structs$_i5[STRUCT_HAS_MASK$1],
           lv = _structs$_i5[STRUCT_LV$2];
       var __config = node.__config;
+      var display = node.computedStyle[DISPLAY$6];
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           __refreshLevel = __config[NODE_REFRESH_LV$1],
           defsCache = __config[NODE_DEFS_CACHE$3]; // 将随后的若干个mask节点范围存下来
 
-      if (hasMask) {
+      if (hasMask && display !== 'none') {
         var _start = _i10 + (total || 0) + 1;
 
         var _end = _start + hasMask; // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
@@ -22373,9 +22399,9 @@
 
           delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
-          var display = node.computedStyle[DISPLAY$6];
+          var _display2 = node.computedStyle[DISPLAY$6];
 
-          if (display === 'none') {
+          if (_display2 === 'none') {
             _i10 += total || 0;
           }
         }
@@ -22496,10 +22522,13 @@
 
         node.render(renderMode, __refreshLevel, ctx, defs);
         virtualDom = node.virtualDom;
-        var _display2 = node.computedStyle[DISPLAY$6];
 
-        if (_display2 === 'none') {
+        if (display === 'none') {
           _i10 += total || 0;
+
+          if (hasMask) {
+            _i10 += hasMask;
+          }
         }
       }
       /**

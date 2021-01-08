@@ -79,6 +79,7 @@ function genLRD(structs) {
         let {
           [STRUCT_NODE]: node,
           [STRUCT_TOTAL]: total,
+          [STRUCT_HAS_MASK]: hasMask,
         } = structs[i];
         let {
           [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -89,6 +90,9 @@ function genLRD(structs) {
         // 不可见整个跳过视作不存在
         if(display === 'none') {
           i += (total || 0);
+          if(hasMask) {
+            i += hasMask;
+          }
           continue;
         }
         // 子节点从开始到最后形成单链表
@@ -295,6 +299,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
+      [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let {
       [NODE_CACHE]: __cache,
@@ -312,6 +317,9 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
     } = node.__config;
     if(display === 'none') {
       i += (total || 0);
+      if(hasMask) {
+        i += hasMask;
+      }
       continue;
     }
     if(visibility === 'hidden') {
@@ -382,6 +390,9 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
           ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
         Cache.drawCache(target, cacheTop);
+        if(target === __cacheMask) {
+          i += hasMask;
+        }
       }
     }
   }
@@ -417,6 +428,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       [STRUCT_NODE]: node,
       [STRUCT_LV]: lv,
       [STRUCT_TOTAL]: total,
+      [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
     let {
@@ -454,6 +466,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     }
     if(computedStyle[DISPLAY] === 'none') {
       i += (total || 0);
+      // display:none不能跳过后面的mask，其渲染自身缓存cache，以备对象切换block用
       continue;
     }
     // lv<REPAINT，肯定有__cache，跳过渲染过程，快速运算
@@ -663,7 +676,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           // 等next的最后一个mask节点渲染完再生成cache，有可能next节点没有改变，这样就进不到lrd的循环了，需判断
           let needWaitIndex;
-          let j = index;
+          let j = index + total;
           while(hasMask--) {
             j++;
             if(indexHash.hasOwnProperty(j)) {
@@ -1060,6 +1073,10 @@ function renderCanvas(renderMode, ctx, defs, root) {
     // render后判断可见状态，此时computedStyle才有值，以及svg的virtualDom也要生成
     if(computedStyle[DISPLAY] === 'none') {
       i += (total || 0);
+      // display:none要跳过后面的mask
+      if(hasMask) {
+        i += hasMask;
+      }
       continue;
     }
     let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res || {};
@@ -1072,7 +1089,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       ctx = offScreenFilter.target.ctx;
     }
     // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
-    if(offScreenMask) {
+    if(offScreenMask || hasMask) {
       let j = i + (total || 0) + 1;
       let startIndex, endIndex;
       while(hasMask--) {
@@ -1299,13 +1316,14 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
       [STRUCT_LV]: lv,
     } = __structs[i];
     let __config = node.__config;
+    let { computedStyle: { [DISPLAY]: display } } = node;
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_DEFS_CACHE]: defsCache,
     } = __config;
     // 将随后的若干个mask节点范围存下来
-    if(hasMask) {
+    if(hasMask && display !== 'none') {
       let start = i + (total || 0) + 1;
       let end = start + hasMask;
       // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
@@ -1460,9 +1478,11 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
       }
       node.render(renderMode, __refreshLevel, ctx, defs);
       virtualDom = node.virtualDom;
-      let { computedStyle: { [DISPLAY]: display } } = node;
       if(display === 'none') {
         i += (total || 0);
+        if(hasMask) {
+          i += hasMask;
+        }
       }
     }
     /**

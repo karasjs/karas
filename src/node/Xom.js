@@ -971,6 +971,24 @@ class Xom extends Node {
     this.__layoutData = clone(data);
     __config[NODE_REFRESH_LV] = REFLOW;
     __config[NODE_LIMIT_CACHE] = false;
+    // 防止display:none不统计mask，virtual也忽略
+    if(!isVirtual) {
+      let { next } = this;
+      // mask关系只有布局才会变更，普通渲染关系不会改变
+      if(!this.isMask && next && (next.isMask)) {
+        let count = 0;
+        while(next) {
+          if(next.isMask) {
+            count++;
+          }
+          else {
+            break;
+          }
+          next = next.next;
+        }
+        this.__hasMask = count;
+      }
+    }
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
         = this.__clientWidth = this.__clientHeight
@@ -1051,21 +1069,6 @@ class Xom extends Node {
     // virtual时计算返回给abs布局用，普通的在各自layout做
     if(isVirtual) {
       this.__ioSize(tw, th);
-    }
-    let { next } = this;
-    // mask关系只有布局才会变更，普通渲染关系不会改变
-    if(!this.isMask && next && (next.isMask)) {
-      let count = 0;
-      while(next) {
-        if(next.isMask) {
-          count++;
-        }
-        else {
-          break;
-        }
-        next = next.next;
-      }
-      this.__hasMask = count;
     }
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;

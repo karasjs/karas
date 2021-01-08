@@ -10,7 +10,6 @@ import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
-import level from '../refresh/level';
 
 const {
   STYLE_KEY: {

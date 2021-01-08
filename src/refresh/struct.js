@@ -1252,18 +1252,19 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
         [NODE_DEFS_CACHE]: defsCache,
       } = node.__config;
       // 只要涉及到matrix就影响mask
-      let hasEffectMask = hasMask && (__refreshLevel > REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP));
+      let hasEffectMask = hasMask && (__refreshLevel >= REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP));
       if(hasEffectMask) {
         let start = i + (total || 0) + 1;
         let end = start + hasMask;
-        maskEffectHash[end - 1] = true;
+        maskEffectHash[end - 1] = __refreshLevel;
       }
       // >=REPAINT重绘生成走render()跳过这里
       if(__refreshLevel < REPAINT) {
         let hasFilter = contain(__refreshLevel, FT);
-        // 特殊的mask判断，除去filter外都可缓存
+        // 特殊的mask判断，除去filter、遮罩对象无TRANSFORM变化外都可缓存
         if(maskEffectHash.hasOwnProperty(i)) {
-          if(!contain(__refreshLevel, TRANSFORM_ALL)) {
+          let v = maskEffectHash[i];
+          if(!contain(__refreshLevel, TRANSFORM_ALL) && v < REPAINT && !contain(v, TRANSFORM_ALL)) {
             defsCache.forEach(item => {
               if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
                 defs.addCache(item);
@@ -1507,7 +1508,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
               }
               let matrix = node.renderMatrix;
               let inverse = mx.inverse(dom.renderMatrix);
-              matrix = mx.multiply(matrix, inverse);
+              matrix = mx.multiply(inverse, matrix);
               // path没有transform属性，在vd上，需要弥补
               props.push(['transform', `matrix(${matrix.join(',')})`]);
               // path没有opacity属性，在vd上，需要弥补
@@ -1517,23 +1518,23 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
             }
           }
         }
-        // 清掉上次的
-        for(let i = defsCache.length - 1; i >= 0; i--) {
-          let item = defsCache[i];
-          if(item.tagName === 'mask') {
-            defsCache.splice(i, 1);
-          }
-        }
-        let o = {
-          tagName: 'mask',
-          props: [],
-          children: mChildren,
-        };
-        let id = defs.add(o);
-        defsCache.push(o);
-        id = 'url(#' + id + ')';
-        dom.virtualDom.mask = id;
       }
+      // 清掉上次的
+      for(let i = defsCache.length - 1; i >= 0; i--) {
+        let item = defsCache[i];
+        if(item.tagName === 'mask') {
+          defsCache.splice(i, 1);
+        }
+      }
+      let o = {
+        tagName: 'mask',
+        props: [],
+        children: mChildren,
+      };
+      let id = defs.add(o);
+      defsCache.push(o);
+      id = 'url(#' + id + ')';
+      dom.virtualDom.mask = id;
     }
     // mask不入children
     if(parentVd && !node.isMask) {

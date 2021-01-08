@@ -21282,8 +21282,7 @@
       var _structs$_i = __structs[_i],
           node = _structs$_i[STRUCT_NODE$1],
           lv = _structs$_i[STRUCT_LV$2],
-          total = _structs$_i[STRUCT_TOTAL$1],
-          hasMask = _structs$_i[STRUCT_HAS_MASK$1];
+          total = _structs$_i[STRUCT_TOTAL$1];
       var __config = node.__config;
       var __refreshLevel = __config[NODE_REFRESH_LV$1],
           __cache = __config[NODE_CACHE$4],
@@ -21586,9 +21585,9 @@
               _node3 = _maskGenHash$index.node,
               _isClip = _maskGenHash$index.isClip,
               _config = _maskGenHash$index.__config,
-              _hasContent = _maskGenHash$index.__hasContent; // 图片未加载时无内容，无需生成会报错
+              _hasContent = _maskGenHash$index.__hasContent; // 图片未加载时无内容，无需生成会报错，其它Dom类型一律生成
 
-          if (_hasContent) {
+          if (!(_node3 instanceof Img$1) || _hasContent) {
             _config[NODE_CACHE_MASK$2] = genMask(_node3, _target, _isClip);
           }
         }
@@ -22794,7 +22793,7 @@
   } // 提取出对比节点尺寸是否修改，用currentStyle的对比computedStyle的
 
 
-  function isFixedWidthOrHeight(node, root, k) {
+  function isFixedWidthOrHeight(node, k) {
     var c = node.currentStyle[k];
     var v = node.computedStyle[k];
 
@@ -22811,8 +22810,8 @@
     return false;
   }
 
-  function isFixedSize(node, root) {
-    return isFixedWidthOrHeight(node, root, WIDTH$7) && isFixedWidthOrHeight(node, root, HEIGHT$7);
+  function isFixedSize(node) {
+    return isFixedWidthOrHeight(node, WIDTH$7) && isFixedWidthOrHeight(node, HEIGHT$7);
   }
 
   var OFFSET = 0;
@@ -23865,10 +23864,11 @@
         var hasRoot;
         __uniqueReflowId = 0;
         var reflowHash = {}; // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
+        // 如果最终是root，则返回true标识，直接整个重新开始布局
 
         function checkInfluence(node, component, focus) {
-          // 自身尺寸固定且无变化，无需向上查找，但position发生变化的除外
-          if (isFixedSize(node, root) && !focus) {
+          // 自身尺寸固定且无变化，无需向上查找，但position/absolute发生变化的除外，focus会强制
+          if (isFixedSize(node) && !focus) {
             return;
           }
 
@@ -24234,7 +24234,7 @@
                 } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
 
 
-                var fromAbs = node.computedStyle[position] === 'absolute';
+                var fromAbs = node.computedStyle[POSITION$4] === 'absolute';
                 var dx, dy;
 
                 if (change2Abs) {
@@ -24260,7 +24260,7 @@
                   p = p.domParent;
                   _computedStyle = p.computedStyle;
 
-                  if (_computedStyle[position] === 'relative') {
+                  if (_computedStyle[POSITION$4] === 'relative') {
                     var _p = p,
                         ox = _p.ox,
                         oy = _p.oy;
@@ -24360,6 +24360,7 @@
                   while (last) {
                     last.__cancelCache();
 
+                    last.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                     last = last.domParent;
                   }
                 } // component未知dom变化，所以强制重新struct，同时防止zIndex变更影响父节点

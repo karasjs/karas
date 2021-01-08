@@ -6,7 +6,7 @@ let o = karas.render(
       height: 100,
       background: '#00F',
     }}>
-      <span ref="t" style={{display:'none'}}>123456</span>
+      <span ref="t" style={{display:'none',background:'rgba(255,0,0,0.1)'}}>123456</span>
       <$rect mask="1" style={{
         position:'absolute',
         left: 0,

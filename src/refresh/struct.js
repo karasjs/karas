@@ -428,7 +428,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       [STRUCT_NODE]: node,
       [STRUCT_LV]: lv,
       [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      // [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
     let {
@@ -703,8 +703,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       // 如果mask有改变，则前面prev节点会存入一个标识索引，等最后一个改变的mask渲染完成后调用生成mask
       if(maskGenHash.hasOwnProperty(index)) {
         let { target, node, isClip, __config, __hasContent } = maskGenHash[index];
-        // 图片未加载时无内容，无需生成会报错
-        if(__hasContent) {
+        // 图片未加载时无内容，无需生成会报错，其它Dom类型一律生成
+        if(!(node instanceof Img) || __hasContent) {
           __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
         }
       }

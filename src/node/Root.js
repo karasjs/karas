@@ -133,7 +133,7 @@ function initEvent(dom, Root) {
 }
 
 // 提取出对比节点尺寸是否修改，用currentStyle的对比computedStyle的
-function isFixedWidthOrHeight(node, root, k) {
+function isFixedWidthOrHeight(node, k) {
   let c = node.currentStyle[k];
   let v = node.computedStyle[k];
   if(c[1] === PX) {
@@ -146,8 +146,8 @@ function isFixedWidthOrHeight(node, root, k) {
   }
   return false;
 }
-function isFixedSize(node, root) {
-  return isFixedWidthOrHeight(node, root, WIDTH) && isFixedWidthOrHeight(node, root, HEIGHT);
+function isFixedSize(node) {
+  return isFixedWidthOrHeight(node, WIDTH) && isFixedWidthOrHeight(node, HEIGHT);
 }
 
 const OFFSET = 0;
@@ -1029,9 +1029,10 @@ class Root extends Dom {
     let reflowHash = {};
 
     // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
+    // 如果最终是root，则返回true标识，直接整个重新开始布局
     function checkInfluence(node, component, focus) {
-      // 自身尺寸固定且无变化，无需向上查找，但position发生变化的除外
-      if(isFixedSize(node, root) && !focus) {
+      // 自身尺寸固定且无变化，无需向上查找，但position/absolute发生变化的除外，focus会强制
+      if(isFixedSize(node) && !focus) {
         return;
       }
       let target = node;
@@ -1331,7 +1332,7 @@ class Root extends Dom {
             }
           }
           // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
-          let fromAbs = node.computedStyle[position] === 'absolute';
+          let fromAbs = node.computedStyle[POSITION] === 'absolute';
           let dx, dy;
           if(change2Abs) {
             dx = -outerWidth;
@@ -1353,7 +1354,7 @@ class Root extends Dom {
           while(p && p !== root) {
             p = p.domParent;
             computedStyle = p.computedStyle;
-            if(computedStyle[position] === 'relative') {
+            if(computedStyle[POSITION] === 'relative') {
               let { ox, oy } = p;
               ox && node.__offsetX(ox);
               oy && node.__offsetY(oy);
@@ -1435,6 +1436,7 @@ class Root extends Dom {
             // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
             while(last) {
               last.__cancelCache();
+              last.__config[NODE_REFRESH_LV] |= REFLOW;
               last = last.domParent;
             }
           }

@@ -148,14 +148,14 @@ let inject = {
       task: [],
     };
     if(cache.state === LOADED) {
-      cb(cache);
+      cb && cb(cache);
     }
     else if(cache.state === LOADING) {
-      cache.task.push(cb);
+      cb && cache.task.push(cb);
     }
     else {
       cache.state = LOADING;
-      cache.task.push(cb);
+      cb && cache.task.push(cb);
       let img = new Image();
       img.onload = function() {
         cache.state = LOADED;
@@ -196,6 +196,9 @@ let inject = {
     console.error(s);
   },
   requestAnimationFrame(cb) {
+    if(!cb) {
+      return;
+    }
     let res;
     if(typeof requestAnimationFrame !== 'undefined') {
       inject.requestAnimationFrame = requestAnimationFrame.bind(window);

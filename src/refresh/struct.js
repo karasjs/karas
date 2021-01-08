@@ -409,7 +409,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   let opacityList = [];
   let parentOpacity = 1;
   let lastList = [];
-  // let last;
   let lastConfig;
   let lastLv = 0;
   // 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和缓存和局部根缓存，lv的变化根据大小相等进行出入栈parent操作
@@ -423,7 +422,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     let {
       [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_CACHE]: __cache,
-      [NODE_CACHE_TOTAL]: __cacheTotal,
+      [NODE_CACHE_TOTAL]: __cacheTotal, // img和$geom的__cacheTotal等同__cache本身，在render()时生成，注意引用
       [NODE_COMPUTED_STYLE]: computedStyle,
     } = __config;
     // 排除Text
@@ -556,7 +555,12 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
    */
   if(lrd.length) {
     const NUM = Math.max(1, Cache.NUM);
-    let prevLv = __structs[lrd[0]][STRUCT_LV], hash = {};
+    let prevLv = __structs[lrd[0]][STRUCT_LV], hash = {}, indexHash = {}, maskGenHash = {};
+    // mask渲染缓存的索引hash，key为struct的索引，value为lrd的索引
+    for(let i = 0, len = lrd.length - 1; i < len; i++) {
+      indexHash[lrd[i]] = i;
+    }
+    // 最后一个一定是Root不遍历
     for(let i = 0, len = lrd.length - 1; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
@@ -588,9 +592,12 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         [NODE_BLUR_VALUE]: __blurValue,
         [NODE_LIMIT_CACHE]: __limitCache,
         [NODE_CACHE_TOTAL]: __cacheTotal,
+        [NODE_CACHE_FILTER]: __cacheFilter,
+        [NODE_CACHE_MASK]: __cacheMask,
+        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
         [NODE_CACHE]: __cache,
       } = __config;
-      let need;
+      let needGenTotal;
       // <是父节点
       if(lv < prevLv) {
         // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
@@ -611,7 +618,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               && (__hasContent || count))
           )) {
           hash[lv - 1]++;
-          need = true;
+          needGenTotal = true;
         }
         else {
           hash[lv - 1] += count;
@@ -629,34 +636,59 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
           )) {
           hash[lv - 1]++;
-          need = true;
+          needGenTotal = true;
         }
         else if(__hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available) {
           hash[lv - 1]++;
         }
       }
       prevLv = lv;
-      if(need) {
-        // 有老的直接使用，没有才重新生成
-        if(__cacheTotal && __cacheTotal.available) {
-          continue;
+      if(needGenTotal) {
+        // 有老的直接使用，没有才重新生成，注意还需判断blur,mask,overflow
+        if(!__cacheTotal || !__cacheTotal.available) {
+          __cacheTotal = __config[NODE_CACHE_TOTAL]
+            = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache);
         }
-        __cacheTotal = __config[NODE_CACHE_TOTAL]
-          = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache);
         // 超限降级继续
-        if(!__cacheTotal) {
+        if(!__cacheTotal || !__cacheTotal.available) {
           continue;
         }
         let target = __cacheTotal;
-        if(__blurValue > 0) {
-          target = genFilter(node, __cacheTotal, __blurValue);
+        if(__blurValue > 0 && (!__cacheFilter || !__cacheFilter.available)) {
+          target = __config[NODE_CACHE_FILTER] = genFilter(node, __cacheTotal, __blurValue);
         }
-        if(hasMask) {
-          target = genMask(node, target, node.next.isClip);
+        if(overflow === 'hidden' && (!__cacheOverflow || !__cacheOverflow.available)) {
+          target = __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
         }
-        if(overflow === 'hidden') {
-          genOverflow(node, target);
+        if(hasMask && (!__cacheMask || !__cacheMask.available)) {
+          // 等next的最后一个mask节点渲染完再生成cache，有可能next节点没有改变，这样就进不到lrd的循环了，需判断
+          let needWaitIndex;
+          let j = index;
+          while(hasMask--) {
+            j++;
+            if(indexHash.hasOwnProperty(j)) {
+              needWaitIndex = j;
+            }
+          }
+          let isClip = node.next.isClip;
+          // mask一定不会是0，所以可以直接判断，有则等待最后一个改变的next的mask，否则直接生成
+          if(needWaitIndex) {
+            maskGenHash[needWaitIndex] = {
+              target,
+              node,
+              isClip,
+              __config,
+            };
+          }
+          else {
+            __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
+          }
         }
+      }
+      // 如果mask有改变，则前面prev节点会存入一个标识索引，等最后一个改变的mask渲染完成后调用生成mask
+      if(maskGenHash.hasOwnProperty(index)) {
+        let { target, node, isClip, __config } = maskGenHash[index];
+        __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
       }
     }
   }

@@ -19,6 +19,7 @@ const {
   },
 } = enums;
 
+// 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
 function genSingle(cache) {
   let { size, sx1, sy1, width, height, bbox } = cache;
   let offScreen = inject.getCacheCanvas(width, height);
@@ -27,6 +28,8 @@ function genSingle(cache) {
   offScreen.size = size;
   offScreen.sx1 = sx1;
   offScreen.sy1 = sy1;
+  offScreen.dx = cache.dx;
+  offScreen.dy = cache.dy;
   offScreen.dbx = cache.dbx;
   offScreen.dby = cache.dby;
   offScreen.width = width;
@@ -314,11 +317,11 @@ class Cache {
   static drawCache(source, target, transform, matrix, tfo, inverse) {
     let { coords: [tx, ty], sx1, sy1, ctx, dbx, dby } = target;
     let { coords: [x, y], canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
-    let dx = tx + sx2 - sx1 + dbx - dbx2;
-    let dy = ty + sy2 - sy1 + dby - dby2;
+    let ox = tx + sx2 - sx1 + dbx - dbx2;
+    let oy = ty + sy2 - sy1 + dby - dby2;
     if(transform && matrix && tfo) {
-      tfo[0] += dx;
-      tfo[1] += dy;
+      tfo[0] += ox;
+      tfo[1] += oy;
       let m = tf.calMatrixByOrigin(transform, tfo);
       matrix = mx.multiply(matrix, m);
       if(inverse) {
@@ -328,12 +331,15 @@ class Cache {
         }
         else {
           inverse = mx.inverse(inverse);
-          matrix = mx.multiply(matrix, inverse);
+          matrix = mx.multiply(inverse, matrix);
         }
       }
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
-    ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
+    else {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
   }
 
   static draw(ctx, opacity, matrix, cache) {

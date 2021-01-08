@@ -148,6 +148,9 @@ class Img extends Dom {
   render(renderMode, lv, ctx, defs, cache) {
     let res = super.render(renderMode, lv, ctx, defs, cache);
     let {
+      offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend,
+    } = res;
+    let {
       width, height, isDestroyed,
       props: {
         src,
@@ -172,6 +175,9 @@ class Img extends Dom {
       __config,
       __loadImg: loadImg,
     } = this;
+    if(!cache && (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend)) {
+      ctx = (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend).target.ctx;
+    }
     // img无children所以total就是cache避免多余生成
     if(renderMode === mode.CANVAS && cache) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];

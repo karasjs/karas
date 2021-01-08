@@ -22,4 +22,7 @@ let o = karas.render(
 
 o.ref.t.updateStyle({
   display: 'block',
+}, function() {
+  let input = document.querySelector('#base64');
+  input.value = document.querySelector('canvas').toDataURL();
 });

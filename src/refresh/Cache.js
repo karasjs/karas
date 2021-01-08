@@ -336,9 +336,6 @@ class Cache {
       }
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
-    else {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
     ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
   }
 

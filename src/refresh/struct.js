@@ -645,7 +645,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           && (
             ((position === 'relative' || position === 'absolute')
               && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
-            || ((hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
+            || hasMask
+            || ((__blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
               && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
           )) {
           hash[lv - 1]++;
@@ -662,8 +663,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           __cacheTotal = __config[NODE_CACHE_TOTAL]
             = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache);
         }
-        // 超限降级继续
-        if(!__cacheTotal || !__cacheTotal.available) {
+        // 超限降级继续，注意img可能没有加载此时__hasContent为空所以没有__cache
+        if((!__cacheTotal || !__cacheTotal.available) && __hasContent) {
           continue;
         }
         let target = __cacheTotal;
@@ -691,17 +692,21 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               node,
               isClip,
               __config,
+              __hasContent,
             };
           }
-          else {
+          else if(__hasContent) {
             __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
           }
         }
       }
       // 如果mask有改变，则前面prev节点会存入一个标识索引，等最后一个改变的mask渲染完成后调用生成mask
       if(maskGenHash.hasOwnProperty(index)) {
-        let { target, node, isClip, __config } = maskGenHash[index];
-        __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
+        let { target, node, isClip, __config, __hasContent } = maskGenHash[index];
+        // 图片未加载时无内容，无需生成会报错
+        if(__hasContent) {
+          __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
+        }
       }
     }
   }
@@ -752,6 +757,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       if(target) {
         if(display === 'none') {
           i += (total || 0);
+          if(hasMask) {
+            i += hasMask;
+          }
           continue;
         }
         if(mixBlendMode === 'normal') {
@@ -784,6 +792,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(__cache && __cache.available) {
           if(display === 'none') {
             i += (total || 0);
+            if(hasMask) {
+              i += hasMask;
+            }
             continue;
           }
           res = {};
@@ -866,6 +877,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           }
           if(display === 'none') {
             i += (total || 0);
+            if(hasMask) {
+              i += hasMask;
+            }
             continue;
           }
           let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res || {};
@@ -936,6 +950,11 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           if(node instanceof Geom) {
             node.render(renderMode, node.__refreshLevel, ctx, defs);
           }
+        }
+        // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
+        else if(hasMask) {
+          i += total || 0;
+          i += hasMask;
         }
         // 最后一个节点检查filter，有则应用，可能有多个包含自己
         if(filterHash.hasOwnProperty(i)) {

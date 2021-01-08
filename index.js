@@ -21519,7 +21519,7 @@
         else {
             hash[lv - 1] = hash[lv - 1] || 0;
 
-            if (!__limitCache && ((position === 'relative' || position === 'absolute') && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available || (hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal') && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)) {
+            if (!__limitCache && ((position === 'relative' || position === 'absolute') && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available || hasMask || (__blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal') && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)) {
               hash[lv - 1]++;
               needGenTotal = true;
             } else if (__hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available) {
@@ -21533,10 +21533,10 @@
           // 有老的直接使用，没有才重新生成，注意还需判断blur,mask,overflow
           if (!__cacheTotal || !__cacheTotal.available) {
             __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache);
-          } // 超限降级继续
+          } // 超限降级继续，注意img可能没有加载此时__hasContent为空所以没有__cache
 
 
-          if (!__cacheTotal || !__cacheTotal.available) {
+          if ((!__cacheTotal || !__cacheTotal.available) && __hasContent) {
             continue;
           }
 
@@ -21570,9 +21570,10 @@
                 target: target,
                 node: node,
                 isClip: isClip,
-                __config: __config
+                __config: __config,
+                __hasContent: __hasContent
               };
-            } else {
+            } else if (__hasContent) {
               __config[NODE_CACHE_MASK$2] = genMask(node, target, isClip);
             }
           }
@@ -21584,8 +21585,12 @@
               _target = _maskGenHash$index.target,
               _node3 = _maskGenHash$index.node,
               _isClip = _maskGenHash$index.isClip,
-              _config = _maskGenHash$index.__config;
-          _config[NODE_CACHE_MASK$2] = genMask(_node3, _target, _isClip);
+              _config = _maskGenHash$index.__config,
+              _hasContent = _maskGenHash$index.__hasContent; // 图片未加载时无内容，无需生成会报错
+
+          if (_hasContent) {
+            _config[NODE_CACHE_MASK$2] = genMask(_node3, _target, _isClip);
+          }
         }
       }
     } // 超尺寸的依旧要走无cache逻辑render
@@ -21635,6 +21640,11 @@
         if (_target2) {
           if (display === 'none') {
             _i5 += total || 0;
+
+            if (hasMask) {
+              _i5 += hasMask;
+            }
+
             _i4 = _i5;
             return "continue";
           }
@@ -21673,6 +21683,11 @@
             if (__cache && __cache.available) {
               if (display === 'none') {
                 _i5 += total || 0;
+
+                if (hasMask) {
+                  _i5 += hasMask;
+                }
+
                 _i4 = _i5;
                 return "continue";
               }
@@ -21768,6 +21783,11 @@
 
                 if (display === 'none') {
                   _i5 += total || 0;
+
+                  if (hasMask) {
+                    _i5 += hasMask;
+                  }
+
                   _i4 = _i5;
                   return "continue";
                 }
@@ -21858,7 +21878,11 @@
                 if (node instanceof Geom$1) {
                   node.render(renderMode, node.__refreshLevel, ctx, defs);
                 }
-              } // 最后一个节点检查filter，有则应用，可能有多个包含自己
+              } // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
+              else if (hasMask) {
+                  _i5 += total || 0;
+                  _i5 += hasMask;
+                } // 最后一个节点检查filter，有则应用，可能有多个包含自己
 
 
             if (filterHash.hasOwnProperty(_i5)) {

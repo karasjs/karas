@@ -20,9 +20,11 @@ let o = karas.render(
   </canvas>,
   '#test'
 );
-o.ref.tank.updateStyle({
-  visibility: 'inherit',
-}, function() {
-  let input = document.querySelector('#base64');
-  input.value = document.querySelector('canvas').toDataURL();
-});
+setTimeout(function() {
+  o.ref.tank.updateStyle({
+    visibility: 'inherit',
+  }, function() {
+    let input = document.querySelector('#base64');
+    input.value = document.querySelector('canvas').toDataURL();
+  });
+}, 50);

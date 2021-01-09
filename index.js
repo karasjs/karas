@@ -14071,14 +14071,22 @@
             var _bgI = computedStyle[BACKGROUND_IMAGE$1];
 
             if (_bgI) {
-              if (_bgI.k) {
-                return true;
-              }
+              for (var i = 0, len = _bgI.length; i < len; i++) {
+                var item = _bgI[i];
 
-              var loadBgi = this.__loadBgi;
+                if (!item) {
+                  continue;
+                }
 
-              if (_bgI === loadBgi.url && loadBgi.source) {
-                return true;
+                if (item.k) {
+                  return true;
+                }
+
+                var loadBgi = this.__loadBgi[i];
+
+                if (item === loadBgi.url && loadBgi.source) {
+                  return true;
+                }
               }
             }
 
@@ -14095,8 +14103,8 @@
               }
             }
 
-            for (var list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
-              var k = list[i];
+            for (var list = ['Top', 'Right', 'Bottom', 'Left'], _i = 0, _len = list.length; _i < _len; _i++) {
+              var k = list[_i];
 
               if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
                 return true;
@@ -14106,18 +14114,18 @@
             var bs = computedStyle[BOX_SHADOW$2];
 
             if (Array.isArray(bs)) {
-              for (var _i = 0, _len = bs.length; _i < _len; _i++) {
-                var item = bs[_i];
+              for (var _i2 = 0, _len2 = bs.length; _i2 < _len2; _i2++) {
+                var _item = bs[_i2];
 
-                if (item && (item[2] > 0 || item[3] > 0)) {
+                if (_item && (_item[2] > 0 || _item[3] > 0)) {
                   return true;
                 }
               }
             } // borderRadius用5，只要有bgc或border就会超过
 
 
-            for (var _i2 = 0, _len2 = borderRadiusKs.length; _i2 < _len2; _i2++) {
-              var v = computedStyle[borderRadiusKs[_i2]];
+            for (var _i3 = 0, _len3 = borderRadiusKs.length; _i3 < _len3; _i3++) {
+              var v = computedStyle[borderRadiusKs[_i3]];
 
               if (v[0] > 0 && v[1] > 0) {
                 return true;
@@ -14398,9 +14406,9 @@
 
         if (Array.isArray(filter)) {
           filter.forEach(function (item) {
-            var _item = _slicedToArray(item, 2),
-                k = _item[0],
-                v = _item[1];
+            var _item2 = _slicedToArray(item, 2),
+                k = _item2[0],
+                v = _item2[1];
 
             if (k === 'blur') {
               __config[NODE_BLUR_VALUE] = v; // 非cache模式返回offScreen，cache模式会生成cacheFilter识别
@@ -14671,48 +14679,48 @@
                   var repeat = [];
 
                   if (xnl > 0) {
-                    for (var _i3 = 0; _i3 < xnl; _i3++) {
-                      var _x = bgX - (_i3 + 1) * w;
+                    for (var _i4 = 0; _i4 < xnl; _i4++) {
+                      var _x = bgX - (_i4 + 1) * w;
 
                       repeat.push([_x, bgY]); // 看最左边超过没有
 
-                      if (!needMask && _i3 === 0 && _x < x2) {
+                      if (!needMask && _i4 === 0 && _x < x2) {
                         needMask = true;
                       }
                     }
                   }
 
                   if (xnr > 0) {
-                    for (var _i4 = 0; _i4 < xnr; _i4++) {
-                      var _x2 = bgX + (_i4 + 1) * w;
+                    for (var _i5 = 0; _i5 < xnr; _i5++) {
+                      var _x2 = bgX + (_i5 + 1) * w;
 
                       repeat.push([_x2, bgY]); // 看最右边超过没有
 
-                      if (!needMask && _i4 === xnr - 1 && _x2 + w > x2 + clientWidth) {
+                      if (!needMask && _i5 === xnr - 1 && _x2 + w > x2 + clientWidth) {
                         needMask = true;
                       }
                     }
                   }
 
                   if (ynt > 0) {
-                    for (var _i5 = 0; _i5 < ynt; _i5++) {
-                      var _y = bgY - (_i5 + 1) * h;
+                    for (var _i6 = 0; _i6 < ynt; _i6++) {
+                      var _y = bgY - (_i6 + 1) * h;
 
                       repeat.push([bgX, _y]); // 看最上边超过没有
 
-                      if (!needMask && _i5 === 0 && _y < y2) {
+                      if (!needMask && _i6 === 0 && _y < y2) {
                         needMask = true;
                       }
                     }
                   }
 
                   if (ynb > 0) {
-                    for (var _i6 = 0; _i6 < ynb; _i6++) {
-                      var _y2 = bgY + (_i6 + 1) * h;
+                    for (var _i7 = 0; _i7 < ynb; _i7++) {
+                      var _y2 = bgY + (_i7 + 1) * h;
 
                       repeat.push([bgX, _y2]); // 看最下边超过没有
 
-                      if (!needMask && _i6 === ynb - 1 && _y2 + w > y2 + clientHeight) {
+                      if (!needMask && _i7 === ynb - 1 && _y2 + w > y2 + clientHeight) {
                         needMask = true;
                       }
                     }
@@ -14720,33 +14728,33 @@
 
 
                   if (xnl > 0 && ynt > 0) {
-                    for (var _i7 = 0; _i7 < xnl; _i7++) {
+                    for (var _i8 = 0; _i8 < xnl; _i8++) {
                       for (var j = 0; j < ynt; j++) {
-                        repeat.push([bgX - (_i7 + 1) * w, bgY - (j + 1) * h]);
+                        repeat.push([bgX - (_i8 + 1) * w, bgY - (j + 1) * h]);
                       }
                     }
                   }
 
                   if (xnr > 0 && ynt > 0) {
-                    for (var _i8 = 0; _i8 < xnr; _i8++) {
+                    for (var _i9 = 0; _i9 < xnr; _i9++) {
                       for (var _j = 0; _j < ynt; _j++) {
-                        repeat.push([bgX + (_i8 + 1) * w, bgY - (_j + 1) * h]);
+                        repeat.push([bgX + (_i9 + 1) * w, bgY - (_j + 1) * h]);
                       }
                     }
                   }
 
                   if (xnl > 0 && ynb > 0) {
-                    for (var _i9 = 0; _i9 < xnl; _i9++) {
+                    for (var _i10 = 0; _i10 < xnl; _i10++) {
                       for (var _j2 = 0; _j2 < ynb; _j2++) {
-                        repeat.push([bgX - (_i9 + 1) * w, bgY + (_j2 + 1) * h]);
+                        repeat.push([bgX - (_i10 + 1) * w, bgY + (_j2 + 1) * h]);
                       }
                     }
                   }
 
                   if (xnr > 0 && ynb > 0) {
-                    for (var _i10 = 0; _i10 < xnr; _i10++) {
+                    for (var _i11 = 0; _i11 < xnr; _i11++) {
                       for (var _j3 = 0; _j3 < ynb; _j3++) {
-                        repeat.push([bgX + (_i10 + 1) * w, bgY + (_j3 + 1) * h]);
+                        repeat.push([bgX + (_i11 + 1) * w, bgY + (_j3 + 1) * h]);
                       }
                     }
                   }
@@ -15094,7 +15102,7 @@
 
         var list = [];
 
-        for (var i = 0, _len3 = stop.length; i < _len3 - 1; i++) {
+        for (var i = 0, _len4 = stop.length; i < _len4 - 1; i++) {
           var begin = stop[i][1] * 360;
 
           var _end = stop[i + 1][1] * 360;
@@ -15143,8 +15151,8 @@
             res = [];
 
         if (renderMode === mode.CANVAS) {
-          for (var _i11 = 0, _len4 = list.length; _i11 < _len4; _i11++) {
-            var cur = list[_i11];
+          for (var _i12 = 0, _len5 = list.length; _i12 < _len5; _i12++) {
+            var cur = list[_i12];
 
             if (prev) {
               var lg = ctx.createLinearGradient(prev[0], prev[1], cur[2], cur[3]);
@@ -15156,8 +15164,8 @@
             prev = cur;
           }
         } else if (renderMode === mode.SVG) {
-          for (var _i12 = 0, _len5 = list.length; _i12 < _len5; _i12++) {
-            var _cur = list[_i12];
+          for (var _i13 = 0, _len6 = list.length; _i13 < _len6; _i13++) {
+            var _cur = list[_i13];
 
             if (prev) {
               var v = {
@@ -15443,12 +15451,12 @@
 
         if (Array.isArray(boxShadow)) {
           boxShadow.forEach(function (item) {
-            var _item2 = _slicedToArray(item, 6),
-                x = _item2[0],
-                y = _item2[1],
-                blur = _item2[2],
-                spread = _item2[3],
-                inset = _item2[5];
+            var _item3 = _slicedToArray(item, 6),
+                x = _item3[0],
+                y = _item3[1],
+                blur = _item3[2],
+                spread = _item3[3],
+                inset = _item3[5];
 
             if (inset !== 'inset') {
               var d = mx.int2convolution(blur);

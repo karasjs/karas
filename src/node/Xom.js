@@ -1562,12 +1562,18 @@ class Xom extends Node {
       if(visibility !== 'hidden') {
         let bgI = computedStyle[BACKGROUND_IMAGE];
         if(bgI) {
-          if(bgI.k) {
-            return true;
-          }
-          let loadBgi = this.__loadBgi;
-          if(bgI === loadBgi.url && loadBgi.source) {
-            return true;
+          for(let i = 0, len = bgI.length; i < len; i++) {
+            let item = bgI[i];
+            if(!item) {
+              continue;
+            }
+            if(item.k) {
+              return true;
+            }
+            let loadBgi = this.__loadBgi[i];
+            if(item === loadBgi.url && loadBgi.source) {
+              return true;
+            }
           }
         }
         if(computedStyle[BACKGROUND_COLOR][3] > 0) {

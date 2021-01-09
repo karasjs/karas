@@ -54,7 +54,7 @@ class Cache {
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
-      ctx.setTransform([1, 0, 0, 1, 0, 0]);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
       if(typeof karas !== 'undefined' && karas.debug) {
         page.canvas.setAttribute('size', page.size);
@@ -81,7 +81,7 @@ class Cache {
   clear() {
     let ctx = this.ctx;
     if(this.enabled && ctx && this.available) {
-      ctx.setTransform([1, 0, 0, 1, 0, 0]);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       let [x, y] = this.coords;
       let size = this.page.size;
       ctx.clearRect(x - 1, y - 1, size, size);

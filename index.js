@@ -12253,7 +12253,7 @@
         if (page.canvas) {
           this.__enabled = true;
           var ctx = page.ctx;
-          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
 
           if (typeof karas !== 'undefined' && karas.debug) {
@@ -12291,7 +12291,7 @@
         var ctx = this.ctx;
 
         if (this.enabled && ctx && this.available) {
-          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
 
           var _this$coords2 = _slicedToArray(this.coords, 2),
               x = _this$coords2[0],
@@ -27245,7 +27245,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.7";
+  var version = "0.47.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

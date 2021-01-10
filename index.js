@@ -16614,26 +16614,30 @@
         }); // 按直接子节点划分为相同数量的若干段进行排序
 
         var arr = [];
+        var source = [];
 
         for (var i = index + 1; i <= total; i++) {
           var child = structs[i];
-          arr.push({
+          var o = {
             child: child,
             list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + child[STRUCT_TOTAL] + 1)
-          });
+          };
+          arr.push(o);
+          source.push(o);
           i += child[STRUCT_TOTAL] || 0;
         }
 
-        var needSort;
         arr.sort(function (a, b) {
-          var res = a.child[STRUCT_CHILD_INDEX$1] - b.child[STRUCT_CHILD_INDEX$1];
-
-          if (res < 0) {
-            needSort = true;
-          }
-
-          return res;
+          return a.child[STRUCT_CHILD_INDEX$1] - b.child[STRUCT_CHILD_INDEX$1];
         });
+        var needSort;
+
+        for (var _i = 0, len = source.length; _i < len; _i++) {
+          if (source[_i] !== arr[_i]) {
+            needSort = true;
+            break;
+          }
+        }
 
         if (needSort) {
           var list = [];
@@ -17282,23 +17286,23 @@
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
-            for (var _i = 0; _i < len; _i++) {
-              var _child = flowChildren[_i];
+            for (var _i2 = 0; _i2 < len; _i2++) {
+              var _child = flowChildren[_i2];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
-            for (var _i2 = 1; _i2 < len; _i2++) {
-              var _child2 = flowChildren[_i2];
-              isDirectionRow ? _child2.__offsetX(between * _i2, true) : _child2.__offsetY(between * _i2, true);
+            for (var _i3 = 1; _i3 < len; _i3++) {
+              var _child2 = flowChildren[_i3];
+              isDirectionRow ? _child2.__offsetX(between * _i3, true) : _child2.__offsetY(between * _i3, true);
             }
           } else if (justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
-            for (var _i3 = 0; _i3 < len; _i3++) {
-              var _child3 = flowChildren[_i3];
-              isDirectionRow ? _child3.__offsetX(around * (_i3 + 1), true) : _child3.__offsetY(around * (_i3 + 1), true);
+            for (var _i4 = 0; _i4 < len; _i4++) {
+              var _child3 = flowChildren[_i4];
+              isDirectionRow ? _child3.__offsetX(around * (_i4 + 1), true) : _child3.__offsetY(around * (_i4 + 1), true);
             }
           }
         } // 子元素侧轴伸展
@@ -17840,7 +17844,8 @@
               computedStyle = item.computedStyle;
 
           if (currentStyle[DISPLAY$3] === 'none') {
-            computedStyle[DISPLAY$3] = 'none';
+            item.__layoutNone();
+
             return;
           } // 先根据容器宽度计算margin/padding
 
@@ -27251,7 +27256,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.9";
+  var version = "0.47.10";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

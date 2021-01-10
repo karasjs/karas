@@ -221,22 +221,27 @@ class Dom extends Xom {
     });
     // 按直接子节点划分为相同数量的若干段进行排序
     let arr = [];
+    let source = [];
     for(let i = index + 1; i <= total; i++) {
       let child = structs[i];
-      arr.push({
+      let o = {
         child,
         list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + child[STRUCT_TOTAL] + 1),
-      });
+      };
+      arr.push(o);
+      source.push(o);
       i += child[STRUCT_TOTAL] || 0;
     }
-    let needSort;
     arr.sort(function(a, b) {
-      let res = a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
-      if(res < 0) {
-        needSort = true;
-      }
-      return res;
+      return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
     });
+    let needSort;
+    for(let i = 0, len = source.length; i < len; i++) {
+      if(source[i] !== arr[i]) {
+        needSort = true;
+        break;
+      }
+    }
     if(needSort) {
       let list = [];
       arr.forEach(item => {
@@ -1315,7 +1320,7 @@ class Dom extends Xom {
       }
       let { currentStyle, computedStyle } = item;
       if(currentStyle[DISPLAY] === 'none') {
-        computedStyle[DISPLAY] = 'none';
+        item.__layoutNone();
         return;
       }
       // 先根据容器宽度计算margin/padding

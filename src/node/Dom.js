@@ -1638,7 +1638,7 @@ class Dom extends Xom {
       let last = this.lineGroups[len - 1];
       return last.y - this.y + last.baseLine;
     }
-    return this.y;
+    return this.height;
   }
 }
 

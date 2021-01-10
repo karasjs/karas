@@ -15691,13 +15691,12 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        var n = this.__baseLine = this.__calBaseLine(); // console.log(n);
-        // 仅当有2个和以上时才需要vertical对齐调整
+        var n = this.__baseLine = this.__calBaseLine(); // 仅当有2个和以上时才需要vertical对齐调整
 
 
         if (this.list.length > 1) {
-          this.list.forEach(function (item, i) {
-            var m = item.baseLine; // console.log(i,m);
+          this.list.forEach(function (item) {
+            var m = item.baseLine;
 
             if (m !== n) {
               item.__offsetY(n - m);
@@ -18211,7 +18210,7 @@
           return last.y - this.y + last.baseLine;
         }
 
-        return this.y;
+        return this.height;
       }
     }]);
 
@@ -27252,7 +27251,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.8";
+  var version = "0.47.9";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

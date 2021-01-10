@@ -26,12 +26,10 @@ class LineGroup {
 
   verticalAlign() {
     let n = this.__baseLine = this.__calBaseLine();
-    // console.log(n);
     // 仅当有2个和以上时才需要vertical对齐调整
     if(this.list.length > 1) {
-      this.list.forEach((item, i) => {
+      this.list.forEach(item => {
         let m = item.baseLine;
-        // console.log(i,m);
         if(m !== n) {
           item.__offsetY(n - m);
         }

@@ -1314,6 +1314,10 @@ class Dom extends Xom {
         }
       }
       let { currentStyle, computedStyle } = item;
+      if(currentStyle[DISPLAY] === 'none') {
+        computedStyle[DISPLAY] = 'none';
+        return;
+      }
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, clientWidth);
       if(currentStyle[DISPLAY] === 'inline') {

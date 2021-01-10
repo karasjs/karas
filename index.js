@@ -15691,12 +15691,13 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        var n = this.__baseLine = this.__calBaseLine(); // 仅当有2个和以上时才需要vertical对齐调整
+        var n = this.__baseLine = this.__calBaseLine(); // console.log(n);
+        // 仅当有2个和以上时才需要vertical对齐调整
 
 
         if (this.list.length > 1) {
-          this.list.forEach(function (item) {
-            var m = item.baseLine;
+          this.list.forEach(function (item, i) {
+            var m = item.baseLine; // console.log(i,m);
 
             if (m !== n) {
               item.__offsetY(n - m);
@@ -17837,7 +17838,13 @@
           }
 
           var currentStyle = item.currentStyle,
-              computedStyle = item.computedStyle; // 先根据容器宽度计算margin/padding
+              computedStyle = item.computedStyle;
+
+          if (currentStyle[DISPLAY$3] === 'none') {
+            computedStyle[DISPLAY$3] = 'none';
+            return;
+          } // 先根据容器宽度计算margin/padding
+
 
           item.__mp(currentStyle, computedStyle, clientWidth);
 

@@ -24513,10 +24513,12 @@
                   lastIndex = j;
                   diff += d;
                 }
-            });
+            }); // 后面的要根据偏移量校正索引
 
-            for (var _i5 = lastIndex, _len4 = structs.length; _i5 < _len4; _i5++) {
-              structs[_i5][STRUCT_INDEX$3] += diff;
+            if (diff) {
+              for (var _i5 = lastIndex, _len4 = structs.length; _i5 < _len4; _i5++) {
+                structs[_i5][STRUCT_INDEX$3] += diff;
+              }
             } // 清除id
 
 

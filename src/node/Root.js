@@ -1547,8 +1547,11 @@ class Root extends Dom {
           diff += d;
         }
       });
-      for(let i = lastIndex, len = structs.length; i < len; i++) {
-        structs[i][STRUCT_INDEX] += diff;
+      // 后面的要根据偏移量校正索引
+      if(diff) {
+        for(let i = lastIndex, len = structs.length; i < len; i++) {
+          structs[i][STRUCT_INDEX] += diff;
+        }
       }
       // 清除id
       reflowList.forEach(item => delete item.node.__uniqueReflowId);

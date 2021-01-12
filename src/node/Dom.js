@@ -235,6 +235,7 @@ class Dom extends Xom {
     arr.sort(function(a, b) {
       return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
     });
+    // 是否有变更，有才进行重新计算
     let needSort;
     for(let i = 0, len = source.length; i < len; i++) {
       if(source[i] !== arr[i]) {

@@ -16629,7 +16629,8 @@
 
         arr.sort(function (a, b) {
           return a.child[STRUCT_CHILD_INDEX$1] - b.child[STRUCT_CHILD_INDEX$1];
-        });
+        }); // 是否有变更，有才进行重新计算
+
         var needSort;
 
         for (var _i = 0, len = source.length; _i < len; _i++) {
@@ -24270,7 +24271,8 @@
                     dx = ow - outerWidth;
                     dy = oh - outerHeight;
                   }
-                } // 向上查找最近的parent是relative，需再次累加ox/oy，无需递归，因为已经包含了
+                } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经包含了
+                // 这样node重新布局后再次设置parent的偏移
 
 
                 var p = node;

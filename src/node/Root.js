@@ -989,7 +989,7 @@ class Root extends Dom {
           parent = parent.domParent;
         }
       }
-      // 自顶向下查找inherit的，利用已有的方法+回调
+      // 自顶向下查找inherit的，利用已有的方法+回调，当递归包含重复时标记防止重复
       last.__computeMeasure(renderMode, ctx, function(target) {
         if(target.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
           measureHash[target.__config[NODE_UNIQUE_UPDATE_ID]] = true;

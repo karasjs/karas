@@ -15,6 +15,9 @@ export default {
       blr: 1.06, // 1060/1000
     },
   },
+  support(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily);
+  },
   register(name, info) {
     let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 67 } = info || {};
     this.info[name.toLowerCase()] = {

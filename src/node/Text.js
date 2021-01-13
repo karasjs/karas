@@ -30,7 +30,12 @@ class Text extends Node {
     this.__textWidth = 0;
   }
 
-  // 预先计算每个字的宽度
+  /**
+   * 预先计算每个字的宽度，在每次渲染前做
+   * @param renderMode
+   * @param ctx
+   * @private
+   */
   __computeMeasure(renderMode, ctx) {
     let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存

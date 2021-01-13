@@ -628,6 +628,9 @@
 
       }
     },
+    support: function support(fontFamily) {
+      return this.info.hasOwnProperty(fontFamily);
+    },
     register: function register(name, info) {
       var _ref = info || {},
           _ref$emSquare = _ref.emSquare,
@@ -3428,8 +3431,11 @@
 
   var textCache = {
     list: [],
+    // 每次渲染前的更新后，等待测量的文字对象列表
     data: {},
-    charWidth: {}
+    // Text中存入的特殊等待测量的信息，字体+字号+粗细为key
+    charWidth: {} // key的文字宽度hash
+
   };
 
   var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
@@ -4599,7 +4605,8 @@
       if (temp === 'inherit') {
         res[FONT_FAMILY$1] = [0, INHERIT$2];
       } else {
-        res[FONT_FAMILY$1] = [temp, STRING];
+        // 统一文字声明格式
+        res[FONT_FAMILY$1] = [temp.replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
       }
     }
 
@@ -4951,14 +4958,32 @@
 
   function getBaseLine(style) {
     var fontSize = style[FONT_SIZE$1];
-    var ff = style[FONT_FAMILY$1];
-    var normal = fontSize * (font.info[ff] || font.info.arial).lhr;
+    var ff = style[FONT_FAMILY$1].split(',');
+    var f = 'arial';
+
+    for (var i = 0, len = ff.length; i < len; i++) {
+      if (font.support(ff[i])) {
+        f = ff[i];
+        break;
+      }
+    }
+
+    var normal = fontSize * (font.info[f] || font.info.arial).lhr;
     return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
   }
 
-  function calNormalLineHeight(computedStyle) {
-    var ff = computedStyle[FONT_FAMILY$1];
-    return computedStyle[FONT_SIZE$1] * (font.info[ff] || font.info.arial).lhr;
+  function calNormalLineHeight(style) {
+    var ff = style[FONT_FAMILY$1].split(',');
+    var f = 'arial';
+
+    for (var i = 0, len = ff.length; i < len; i++) {
+      if (font.support(ff[i])) {
+        f = ff[i];
+        break;
+      }
+    }
+
+    return style[FONT_SIZE$1] * (font.info[f] || font.info.arial).lhr;
   }
 
   function calRelativePercent(n, parent, k) {
@@ -5376,7 +5401,13 @@
       _this.__charWidth = 0;
       _this.__textWidth = 0;
       return _this;
-    } // 预先计算每个字的宽度
+    }
+    /**
+     * 预先计算每个字的宽度，在每次渲染前做
+     * @param renderMode
+     * @param ctx
+     * @private
+     */
 
 
     _createClass(Text, [{
@@ -23837,7 +23868,7 @@
 
               parent = parent.domParent;
             }
-          } // 自顶向下查找inherit的，利用已有的方法+回调
+          } // 自顶向下查找inherit的，利用已有的方法+回调，当递归包含重复时标记防止重复
 
 
           last.__computeMeasure(renderMode, ctx, function (target) {

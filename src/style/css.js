@@ -673,7 +673,8 @@ function normalize(style, reset = []) {
       res[FONT_FAMILY] = [0, INHERIT];
     }
     else {
-      res[FONT_FAMILY] = [temp, STRING];
+      // 统一文字声明格式
+      res[FONT_FAMILY] = [temp.replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
     }
   }
   temp = style.textAlign;
@@ -1033,14 +1034,28 @@ function setFontStyle(style) {
 
 function getBaseLine(style) {
   let fontSize = style[FONT_SIZE];
-  let ff = style[FONT_FAMILY];
-  let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
+  let ff = style[FONT_FAMILY].split(',');
+  let f = 'arial';
+  for(let i = 0, len = ff.length; i < len; i++) {
+    if(font.support(ff[i])) {
+      f = ff[i];
+      break;
+    }
+  }
+  let normal = fontSize * (font.info[f] || font.info.arial).lhr;
   return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
 }
 
-function calNormalLineHeight(computedStyle) {
-  let ff = computedStyle[FONT_FAMILY];
-  return computedStyle[FONT_SIZE] * (font.info[ff] || font.info.arial).lhr;
+function calNormalLineHeight(style) {
+  let ff = style[FONT_FAMILY].split(',');
+  let f = 'arial';
+  for(let i = 0, len = ff.length; i < len; i++) {
+    if(font.support(ff[i])) {
+      f = ff[i];
+      break;
+    }
+  }
+  return style[FONT_SIZE] * (font.info[f] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {

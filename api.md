@@ -511,6 +511,47 @@ root.ref.rect.removeAnimate(animate);
   动画对象
 * **说明**  
 取消所有动画并清空animateList。
+  
+#### frameAnimate
+* **类型** `Function`
+* **参数**
+  * cb `Function`
+    动画回调。
+* **说明**  
+  开始执行一段帧动画并将结果存入frameAnimateList中。在节点销毁时自动停止。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <$rect style={{width: 100, height:100}} ref="rect"/>
+  </canvas>,
+  '#selector'
+);
+root.ref.rect.frameAnimate(function(delta) {
+  console.log(delta);
+});
+```
+
+#### removeFrameAnimate
+* **类型** `Function`
+* **参数**
+  * cb `Function`
+    动画回调。
+* **说明**  
+  手动移除一个帧动画。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <$rect style={{width: 100, height:100}} ref="rect"/>
+  </canvas>,
+  '#selector'
+);
+let cb = root.ref.rect.frameAnimate(function(delta) {
+  console.log(delta);
+});
+root.rect.removeFrameAnimate(cb);
+```
 
 #### updateStyle
 * **类型** `Function`
@@ -2055,6 +2096,18 @@ karas.style.font.register('newFont', {
   descent: 434,
   lineGap: 67,
 });
+```
+
+#### support
+* **类型** `Function`
+* **参数**
+  * name `String`
+    字体名。
+* **说明**  
+  返回是否支持字体。
+* **示例**
+```jsx
+karas.style.font.support('tahoma');
 ```
 
 <a name="parser包"></a>

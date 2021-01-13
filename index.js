@@ -15447,7 +15447,8 @@
 
           this.__frameAnimateList.push(enter);
 
-          return frame.onFrame(enter);
+          frame.onFrame(enter);
+          return cb;
         }
       }
     }, {
@@ -15456,7 +15457,7 @@
         for (var i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
           if (list[i].__karasFramecb === cb) {
             list.splice(i, 1);
-            return frame.offFrame(cb);
+            frame.offFrame(cb);
           }
         }
       }
@@ -27354,7 +27355,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.11";
+  var version = "0.48.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -2730,7 +2730,8 @@ class Xom extends Node {
         __karasFramecb: cb,
       };
       this.__frameAnimateList.push(enter);
-      return frame.onFrame(enter);
+      frame.onFrame(enter);
+      return cb;
     }
   }
 
@@ -2738,7 +2739,7 @@ class Xom extends Node {
     for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
       if(list[i].__karasFramecb === cb) {
         list.splice(i, 1);
-        return frame.offFrame(cb);
+        frame.offFrame(cb);
       }
     }
   }

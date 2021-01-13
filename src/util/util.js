@@ -399,6 +399,8 @@ function extendAnimate(ovd, nvd) {
       item.assignCurrentStyle();
     }
   });
+  // 帧动画继承
+  nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
 }
 
 function transformBbox(bbox, matrix, dx = 0, dy = 0) {

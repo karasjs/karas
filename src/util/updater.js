@@ -182,7 +182,7 @@ function diffSr(vd, oj, nj) {
     else if(oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
       // 需判断矢量标签mutil是否相等
       if(nj.$$type !== TYPE_GM || oj.props.multi === nj.props.multi) {
-        nj.inherit = vd;
+        nj.inheritAnimate = vd;
       }
       oj.key = nj.key = KEY_FLAG;
       // key相同的dom暂存下来
@@ -230,13 +230,13 @@ function diffChild(vd, oj, nj) {
     else if(nj.$$type === TYPE_GM && oj.$$type === TYPE_GM) {
       // $geom的multi必须一致
       if(oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
-        nj.inherit = vd;
+        nj.inheritAnimate = vd;
       }
     }
     // dom类型递归children
     else if(nj.$$type === TYPE_VD && oj.$$type === TYPE_VD) {
       if(oj.tagName === nj.tagName) {
-        nj.inherit = vd;
+        nj.inheritAnimate = vd;
       }
       diffChildren(vd, oj, nj);
     }

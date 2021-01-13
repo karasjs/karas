@@ -1324,7 +1324,9 @@
       if (item.assigning || item.finished && item.__stayEnd()) {
         item.assignCurrentStyle();
       }
-    });
+    }); // 帧动画继承
+
+    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
   }
 
   function transformBbox(bbox, matrix) {
@@ -13470,6 +13472,7 @@
       config[NODE_STYLE] = _this.__style;
       config[NODE_MATRIX_EVENT] = [];
       config[NODE_DEFS_CACHE] = _this.__cacheDefs;
+      _this.__frameAnimateList = [];
       return _this;
     }
 
@@ -14971,6 +14974,11 @@
         this.animationList.forEach(function (item) {
           return item.__destroy();
         });
+
+        this.__frameAnimateList.splice(0).forEach(function (item) {
+          frame.offFrame(item);
+        });
+
         root.delRefreshTask(this.__loadBgi.cb);
         root.delRefreshTask(this.__task);
         this.__matrix = this.__matrixEvent = this.__root = null;
@@ -15425,6 +15433,32 @@
 
           o.__destroy();
         });
+      }
+    }, {
+      key: "frameAnimate",
+      value: function frameAnimate(cb) {
+        if (util.isFunction(cb)) {
+          var enter = {
+            __after: function __after(diff) {
+              cb(diff);
+            },
+            __karasFramecb: cb
+          };
+
+          this.__frameAnimateList.push(enter);
+
+          return frame.onFrame(enter);
+        }
+      }
+    }, {
+      key: "removeFrameAnimate",
+      value: function removeFrameAnimate(cb) {
+        for (var i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
+          if (list[i].__karasFramecb === cb) {
+            list.splice(i, 1);
+            return frame.offFrame(cb);
+          }
+        }
       }
     }, {
       key: "__computeMeasure",
@@ -15884,7 +15918,7 @@
           children = json.children,
           klass = json.klass,
           _$$type = json.$$type,
-          inherit = json.inherit,
+          inheritAnimate = json.inheritAnimate,
           __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
 
       if (_$$type === TYPE_CP$1 && json.placeholder) {
@@ -15936,11 +15970,11 @@
         __animateRecords.list.forEach(function (item) {
           item.target = item.target.vd;
         });
-      } // 更新过程中key相同的vd继承动画
+      } // 更新过程中key相同或者普通相同的vd继承动画
 
 
-      if (inherit) {
-        util.extendAnimate(inherit, vd);
+      if (inheritAnimate) {
+        util.extendAnimate(inheritAnimate, vd);
       }
 
       vd.__root = root;
@@ -19878,7 +19912,7 @@
       else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
           // 需判断矢量标签mutil是否相等
           if (nj.$$type !== TYPE_GM$2 || oj.props.multi === nj.props.multi) {
-            nj.inherit = vd;
+            nj.inheritAnimate = vd;
           }
 
           oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
@@ -19928,12 +19962,12 @@
       } else if (nj.$$type === TYPE_GM$2 && oj.$$type === TYPE_GM$2) {
         // $geom的multi必须一致
         if (oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
-          nj.inherit = vd;
+          nj.inheritAnimate = vd;
         }
       } // dom类型递归children
       else if (nj.$$type === TYPE_VD$2 && oj.$$type === TYPE_VD$2) {
           if (oj.tagName === nj.tagName) {
-            nj.inherit = vd;
+            nj.inheritAnimate = vd;
           }
 
           diffChildren(vd, oj, nj);

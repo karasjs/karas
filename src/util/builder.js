@@ -48,7 +48,7 @@ function build(json, root, owner, host, hasP) {
   }
   let vd;
   if(util.isObject(json) && json.$$type) {
-    let { tagName, props, children, klass, $$type, inherit, __animateRecords } = json;
+    let { tagName, props, children, klass, $$type, inheritAnimate, __animateRecords } = json;
     // 更新过程中无变化的cp直接使用原来生成的
     if($$type === TYPE_CP && json.placeholder) {
       return json.value;
@@ -98,9 +98,9 @@ function build(json, root, owner, host, hasP) {
         item.target = item.target.vd;
       });
     }
-    // 更新过程中key相同的vd继承动画
-    if(inherit) {
-      util.extendAnimate(inherit, vd);
+    // 更新过程中key相同或者普通相同的vd继承动画
+    if(inheritAnimate) {
+      util.extendAnimate(inheritAnimate, vd);
     }
     vd.__root = root;
     if(host) {

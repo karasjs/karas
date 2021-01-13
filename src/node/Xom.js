@@ -12,6 +12,7 @@ import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
 import Animation from '../animate/Animation';
+import frame from '../animate/frame';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import change from '../refresh/change';
@@ -909,6 +910,7 @@ class Xom extends Node {
     config[NODE_STYLE] = this.__style;
     config[NODE_MATRIX_EVENT] = [];
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
+    this.__frameAnimateList = [];
   }
 
   __structure(i, lv, j) {
@@ -2322,6 +2324,9 @@ class Xom extends Node {
     super.__destroy();
     let { root } = this;
     this.animationList.forEach(item => item.__destroy());
+    this.__frameAnimateList.splice(0).forEach(item => {
+      frame.offFrame(item);
+    });
     root.delRefreshTask(this.__loadBgi.cb);
     root.delRefreshTask(this.__task);
     this.__matrix = this.__matrixEvent = this.__root = null;
@@ -2714,6 +2719,28 @@ class Xom extends Node {
       o.cancel();
       o.__destroy();
     });
+  }
+
+  frameAnimate(cb) {
+    if(util.isFunction(cb)) {
+      let enter = {
+        __after(diff) {
+          cb(diff);
+        },
+        __karasFramecb: cb,
+      };
+      this.__frameAnimateList.push(enter);
+      return frame.onFrame(enter);
+    }
+  }
+
+  removeFrameAnimate(cb) {
+    for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
+      if(list[i].__karasFramecb === cb) {
+        list.splice(i, 1);
+        return frame.offFrame(cb);
+      }
+    }
   }
 
   __computeMeasure(renderMode, ctx, isHost, cb) {

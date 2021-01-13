@@ -1973,7 +1973,7 @@
 
     if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
       var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
-      var ty = (y0 - y1) / (y0 - x * y1 + y2);
+      var ty = (y0 - y1) / (y0 - 2 * y1 + y2);
       var sx = 1 - tx;
       var sy = 1 - ty;
       var qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
@@ -27260,7 +27260,7 @@
     Cache: Cache
   };
 
-  var version = "0.47.10";
+  var version = "0.47.11";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

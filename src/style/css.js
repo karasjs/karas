@@ -614,7 +614,7 @@ function normalize(style, reset = []) {
     }
   });
   temp = style.color;
-  if(temp) {
+  if(!isNil(temp)) {
     if(temp === 'inherit') {
       res[COLOR] = [[], INHERIT];
     }

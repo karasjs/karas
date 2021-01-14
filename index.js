@@ -4578,7 +4578,7 @@
     });
     temp = style.color;
 
-    if (temp) {
+    if (!isNil$3(temp)) {
       if (temp === 'inherit') {
         res[COLOR] = [[], INHERIT$2];
       } else {
@@ -27355,7 +27355,7 @@
     Cache: Cache
   };
 
-  var version = "0.48.0";
+  var version = "0.48.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

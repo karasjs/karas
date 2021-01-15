@@ -51,6 +51,7 @@ const {
   },
 } = enums;
 const {
+  NONE,
   TRANSFORM_ALL,
   OPACITY: OP,
   FILTER: FT,
@@ -471,6 +472,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     }
     // lv<REPAINT，肯定有__cache，跳过渲染过程，快速运算
     if(__refreshLevel < REPAINT) {
+      __config[NODE_REFRESH_LV] = NONE;
       let {
         [NODE_CURRENT_STYLE]: currentStyle,
         [NODE_COMPUTED_STYLE]: computedStyle,
@@ -1287,17 +1289,18 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
         [NODE_REFRESH_LV]: __refreshLevel,
         [NODE_DEFS_CACHE]: defsCache,
       } = node.__config;
-      // 只要涉及到matrix就影响mask
+      // 只要涉及到matrix和opacity就影响mask
       let hasEffectMask = hasMask && (__refreshLevel >= REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP));
       if(hasEffectMask) {
         let start = i + (total || 0) + 1;
         let end = start + hasMask;
+        // mask索引遍历时处理，暂存遮罩对象的刷新lv
         maskEffectHash[end - 1] = __refreshLevel;
       }
       // >=REPAINT重绘生成走render()跳过这里
       if(__refreshLevel < REPAINT) {
         let hasFilter = contain(__refreshLevel, FT);
-        // 特殊的mask判断，除去filter、遮罩对象无TRANSFORM变化外都可缓存
+        // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
         if(maskEffectHash.hasOwnProperty(i)) {
           let v = maskEffectHash[i];
           if(!contain(__refreshLevel, TRANSFORM_ALL) && v < REPAINT && !contain(v, TRANSFORM_ALL)) {
@@ -1308,7 +1311,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
             });
           }
         }
-        // 去除特殊的filter，普通节点在<REPAINT下其它都可缓存
+        // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
         else {
           defsCache.forEach(item => {
             if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
@@ -1369,6 +1372,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(__refreshLevel < REPAINT && !(node instanceof Text)) {
+      __config[NODE_REFRESH_LV] = NONE;
       virtualDom = node.virtualDom;
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {

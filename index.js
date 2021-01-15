@@ -20967,7 +20967,8 @@
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
       STRUCT_HAS_MASK$1 = _enums$STRUCT_KEY$2.STRUCT_HAS_MASK,
       STRUCT_LV$2 = _enums$STRUCT_KEY$2.STRUCT_LV;
-  var TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
+  var NONE$2 = o$1.NONE,
+      TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
       OP$1 = o$1.OPACITY,
       FT$1 = o$1.FILTER,
       REPAINT$2 = o$1.REPAINT,
@@ -21442,6 +21443,7 @@
 
 
       if (__refreshLevel < REPAINT$2) {
+        __config[NODE_REFRESH_LV$1] = NONE$2;
         var currentStyle = __config[NODE_CURRENT_STYLE$3],
             _computedStyle = __config[NODE_COMPUTED_STYLE$2],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
@@ -22432,20 +22434,21 @@
             hasMask = _structs$_i4[STRUCT_HAS_MASK$1];
         var _node$__config5 = node.__config,
             __refreshLevel = _node$__config5[NODE_REFRESH_LV$1],
-            defsCache = _node$__config5[NODE_DEFS_CACHE$3]; // 只要涉及到matrix就影响mask
+            defsCache = _node$__config5[NODE_DEFS_CACHE$3]; // 只要涉及到matrix和opacity就影响mask
 
         var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$2 || contain$2(__refreshLevel, TRANSFORM_ALL$2 | OP$1));
 
         if (hasEffectMask) {
           var start = _i8 + (total || 0) + 1;
-          var end = start + hasMask;
+          var end = start + hasMask; // mask索引遍历时处理，暂存遮罩对象的刷新lv
+
           maskEffectHash[end - 1] = __refreshLevel;
         } // >=REPAINT重绘生成走render()跳过这里
 
 
         if (__refreshLevel < REPAINT$2) {
           (function () {
-            var hasFilter = contain$2(__refreshLevel, FT$1); // 特殊的mask判断，除去filter、遮罩对象无TRANSFORM变化外都可缓存
+            var hasFilter = contain$2(__refreshLevel, FT$1); // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
 
             if (maskEffectHash.hasOwnProperty(_i8)) {
               var v = maskEffectHash[_i8];
@@ -22457,7 +22460,7 @@
                   }
                 });
               }
-            } // 去除特殊的filter，普通节点在<REPAINT下其它都可缓存
+            } // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
             else {
                 defsCache.forEach(function (item) {
                   if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
@@ -22522,6 +22525,7 @@
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
       if (__refreshLevel < REPAINT$2 && !(node instanceof Text)) {
+        __config[NODE_REFRESH_LV$1] = NONE$2;
         virtualDom = node.virtualDom; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
@@ -22853,7 +22857,7 @@
   var contain$3 = o$1.contain,
       getLevel = o$1.getLevel,
       isRepaint = o$1.isRepaint,
-      NONE$2 = o$1.NONE,
+      NONE$3 = o$1.NONE,
       FILTER$6 = o$1.FILTER,
       REPAINT$3 = o$1.REPAINT,
       REFLOW$1 = o$1.REFLOW;
@@ -23019,7 +23023,7 @@
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$3],
         isMask = __config[NODE_IS_MASK$1];
-    var lv = focus || NONE$2;
+    var lv = focus || NONE$3;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
@@ -23083,7 +23087,7 @@
     } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 
-    if (lv === NONE$2 && !component) {
+    if (lv === NONE$3 && !component) {
       delete __config[NODE_UNIQUE_UPDATE_ID];
       return;
     } // 记录下来清除parent的zIndexChildren缓存

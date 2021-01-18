@@ -14375,20 +14375,6 @@
           } else {
             delete virtualDom.transform;
           }
-        } // 隐藏不渲染
-
-
-        if (visibility === 'hidden') {
-          if (renderMode === mode.CANVAS) {
-            // 无法使用缓存时主画布直接绘制需设置
-            if (!cache) {
-              ctx.globalAlpha = opacity;
-              ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-            }
-
-            res["break"] = true;
-            return res;
-          }
         }
 
         if (renderMode === mode.SVG) {
@@ -14607,8 +14593,18 @@
 
 
         if (renderMode === mode.CANVAS && !cache) {
+          res.offScreenFilter = offScreenFilter;
+          res.offScreenMask = offScreenMask;
+          res.offScreenOverflow = offScreenOverflow;
+          res.offScreenBlend = offScreenBlend;
           ctx.globalAlpha = opacity;
           ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        } // 隐藏不渲染
+
+
+        if (visibility === 'hidden' && renderMode === mode.CANVAS) {
+          res["break"] = true;
+          return res;
         } // 背景色垫底
 
 
@@ -14945,13 +14941,6 @@
 
         if (__cache && __cache.enabled) {
           __cache.__available = true;
-        }
-
-        if (renderMode === mode.CANVAS && !cache) {
-          res.offScreenFilter = offScreenFilter;
-          res.offScreenMask = offScreenMask;
-          res.offScreenOverflow = offScreenOverflow;
-          res.offScreenBlend = offScreenBlend;
         }
 
         return res;

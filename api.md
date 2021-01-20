@@ -709,6 +709,18 @@ karas.render(
 );
 ```
 
+### html属性attribute
+
+#### mask
+* **类型** `boolean` 只读
+* **说明**  
+  是否作为遮罩影响前面兄弟节点。
+
+#### clip
+* **类型** `boolean` 只读
+* **说明**  
+  是否作为反向遮罩影响前面兄弟节点。优先级比mask高。
+
 ### 类属性property
 
 #### isMulti
@@ -805,17 +817,21 @@ karas.render(
 
 ### 类属性property
 
-#### src
-* **类型** `String` 只读
+#### isMask
+* **类型** `boolean` 只读
+* **说明** 当前标签属性是否传入了`mask`，表明位图是半透明遮罩。同[Geom](#Geom)。
+
+#### isClip
+* **类型** `boolean` 只读
 * **说明**  
-图片的url。
+当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。同[Geom](#Geom)。
 
 ### 静态属性
+
+#### showError
 * **类型** `boolean` 读写
 * **说明**  
 当图片加载失败时，是否显示默认的错误占位提示。默认true。
-
-#### showError
 
 ### html属性attribute
 
@@ -823,6 +839,21 @@ karas.render(
 * **类型** `String`
 * **说明**  
 当图片加载失败时，是否显示设置的占位图。占位图如果再次加载失败，则不展示。
+
+#### src
+* **类型** `String` 只读
+* **说明**  
+图片的url。
+
+#### mask
+* **类型** `boolean` 只读
+* **说明**  
+是否作为遮罩影响前面兄弟节点。
+
+#### clip
+* **类型** `boolean` 只读
+* **说明**  
+是否作为反向遮罩影响前面兄弟节点。优先级比mask高。
 
 <a name="Component"></a>
 ## Component

@@ -39,7 +39,8 @@ const {
     NODE_CACHE_PROPS,
     NODE_CURRENT_PROPS,
     NODE_CURRENT_STYLE,
-    NODE_IS_MASK, NODE_STYLE,
+    NODE_IS_MASK,
+    NODE_STYLE,
     NODE_CACHE,
     NODE_CACHE_TOTAL,
     NODE_CACHE_FILTER,
@@ -59,8 +60,8 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
     this.__isClip = !!this.props.clip;
-    this.__isMask = this.__isClip || !!this.props.mask;
-    let { style, isMask } = this;
+    let isMask = this.__isMask = this.__isClip || !!this.props.mask;
+    let { style } = this;
     if(isMask) {
       style.background = null;
       style.border = null;

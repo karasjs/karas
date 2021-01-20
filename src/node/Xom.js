@@ -976,7 +976,7 @@ class Xom extends Node {
     // 防止display:none不统计mask，virtual也忽略
     if(!isVirtual) {
       let { next } = this;
-      // mask关系只有布局才会变更，普通渲染关系不会改变
+      // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
       if(!this.isMask && next && (next.isMask)) {
         let count = 0;
         while(next) {

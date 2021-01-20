@@ -244,7 +244,8 @@ class Cache {
           inverse
         );
       }
-      else {
+      // 没有内容或者img没加载成功导致没有内容，不要报错
+      else if(item.__hasContent) {
         inject.error('CacheMask is oversize');
       }
     });

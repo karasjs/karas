@@ -36,6 +36,7 @@ const {
     NODE_CACHE,
     NODE_CACHE_TOTAL,
     NODE_DEFS_CACHE,
+    NODE_IS_MASK,
   },
 } = enums;
 const { AUTO } = unit;
@@ -50,6 +51,10 @@ class Img extends Dom {
     if(!src) {
       loadImg.error = true;
     }
+    this.__isClip = !!this.props.clip;
+    let isMask = this.__isMask = this.__isClip || !!this.props.mask;
+    let config = this.__config;
+    config[NODE_IS_MASK] = isMask;
   }
 
   /**
@@ -378,7 +383,7 @@ class Img extends Dom {
                     tagName: 'path',
                     props: [
                       ['d', d],
-                      ['fill', '#FFF']
+                      ['fill', '#FFF'],
                     ],
                   }
                 ],
@@ -447,6 +452,14 @@ class Img extends Dom {
 
   get baseLine() {
     return this.height;
+  }
+
+  get isMask() {
+    return this.__isMask;
+  }
+
+  get isClip() {
+    return this.__isClip;
   }
 
   static showError = true;

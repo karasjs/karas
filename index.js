@@ -12558,9 +12558,10 @@
           if (source) {
             ctx.globalAlpha = __config[NODE_OPACITY];
             Cache.drawCache(source, cacheMask, item.computedStyle[TRANSFORM$3], [1, 0, 0, 1, 0, 0], item.computedStyle[TRANSFORM_ORIGIN$3].slice(0), inverse);
-          } else {
-            inject.error('CacheMask is oversize');
-          }
+          } // 没有内容或者img没加载成功导致没有内容，不要报错
+          else if (item.__hasContent) {
+              inject.error('CacheMask is oversize');
+            }
         });
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
@@ -13544,7 +13545,7 @@
         __config[NODE_LIMIT_CACHE] = false; // 防止display:none不统计mask，virtual也忽略
 
         if (!isVirtual) {
-          var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变
+          var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
 
           if (!this.isMask && next && next.isMask) {
             var count = 0;
@@ -18330,7 +18331,8 @@
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
       NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
-      NODE_DEFS_CACHE$1 = _enums$NODE_KEY$4.NODE_DEFS_CACHE;
+      NODE_DEFS_CACHE$1 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
+      NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK;
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
@@ -18353,6 +18355,10 @@
         loadImg.error = true;
       }
 
+      _this.__isClip = !!_this.props.clip;
+      var isMask = _this.__isMask = _this.__isClip || !!_this.props.mask;
+      var config = _this.__config;
+      config[NODE_IS_MASK] = isMask;
       return _this;
     }
     /**
@@ -18759,6 +18765,16 @@
       get: function get() {
         return this.height;
       }
+    }, {
+      key: "isMask",
+      get: function get() {
+        return this.__isMask;
+      }
+    }, {
+      key: "isClip",
+      get: function get() {
+        return this.__isClip;
+      }
     }]);
 
     return Img;
@@ -18862,7 +18878,7 @@
       NODE_CACHE_PROPS = _enums$NODE_KEY$5.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$5.NODE_CURRENT_PROPS,
       NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$5.NODE_CURRENT_STYLE,
-      NODE_IS_MASK = _enums$NODE_KEY$5.NODE_IS_MASK,
+      NODE_IS_MASK$1 = _enums$NODE_KEY$5.NODE_IS_MASK,
       NODE_STYLE$2 = _enums$NODE_KEY$5.NODE_STYLE,
       NODE_CACHE$3 = _enums$NODE_KEY$5.NODE_CACHE,
       NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$5.NODE_CACHE_TOTAL,
@@ -18893,11 +18909,10 @@
       _this = _super.call(this, tagName, props);
       _this.__isMulti = !!_this.props.multi;
       _this.__isClip = !!_this.props.clip;
-      _this.__isMask = _this.__isClip || !!_this.props.mask;
+      var isMask = _this.__isMask = _this.__isClip || !!_this.props.mask;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
-          style = _assertThisInitialize.style,
-          isMask = _assertThisInitialize.isMask;
+          style = _assertThisInitialize.style;
 
       if (isMask) {
         style.background = null;
@@ -18913,7 +18928,7 @@
       config[NODE_CACHE_PROPS] = _this.__cacheProps = {};
       config[NODE_CURRENT_PROPS] = _this.__currentProps;
       config[NODE_CURRENT_STYLE$2] = _this.__currentStyle;
-      config[NODE_IS_MASK] = isMask;
+      config[NODE_IS_MASK$1] = isMask;
       config[NODE_STYLE$2] = _this.__style;
       return _this;
     }
@@ -22816,7 +22831,7 @@
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
-      NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
       NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
@@ -23011,7 +23026,7 @@
         computedStyle = __config[NODE_COMPUTED_STYLE$3],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$3],
-        isMask = __config[NODE_IS_MASK$1];
+        isMask = __config[NODE_IS_MASK$2];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新

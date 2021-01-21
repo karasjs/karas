@@ -1576,7 +1576,9 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
               }
               if(hasTransform === -1) {
                 let inverse = mx.inverse(dom.renderMatrix);
-                props.push(['transform', `matrix(${inverse.join(',')})`]);
+                if(!mx.isE(inverse)) {
+                  props.push(['transform', `matrix(${inverse.join(',')})`]);
+                }
               }
               else {
                 let matrix = props[hasTransform][1].match(/[\d.]+/g).map(i => parseFloat(i));

@@ -22762,7 +22762,9 @@
                   if (hasTransform === -1) {
                     var _inverse = mx.inverse(dom.renderMatrix);
 
-                    props.push(['transform', "matrix(".concat(_inverse.join(','), ")")]);
+                    if (!mx.isE(_inverse)) {
+                      props.push(['transform', "matrix(".concat(_inverse.join(','), ")")]);
+                    }
                   } else {
                     var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                       return parseFloat(i);
@@ -27394,7 +27396,7 @@
     Cache: Cache
   };
 
-  var version = "0.49.0";
+  var version = "0.49.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

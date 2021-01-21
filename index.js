@@ -21099,21 +21099,21 @@
 
         for (var i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
           var _structs$i2 = __structs[i],
-              _node = _structs$i2[STRUCT_NODE$1],
+              node2 = _structs$i2[STRUCT_NODE$1],
               _total = _structs$i2[STRUCT_TOTAL$1];
-          var __sx1 = _node.__sx1,
-              __sy1 = _node.__sy1,
-              _node$__config2 = _node.__config,
-              __blurValue = _node$__config2[NODE_BLUR_VALUE$1],
-              __limitCache = _node$__config2[NODE_LIMIT_CACHE$1],
-              __cache = _node$__config2[NODE_CACHE$4],
-              __cacheTotal = _node$__config2[NODE_CACHE_TOTAL$3],
-              _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
-              display = _node$__config2$NODE_[DISPLAY$6],
-              visibility = _node$__config2$NODE_[VISIBILITY$5],
-              transform = _node$__config2$NODE_[TRANSFORM$5],
-              transformOrigin = _node$__config2$NODE_[TRANSFORM_ORIGIN$5],
-              opacity = _node$__config2$NODE_[OPACITY$5];
+          var __sx1 = node2.__sx1,
+              __sy1 = node2.__sy1,
+              _node2$__config = node2.__config,
+              __blurValue = _node2$__config[NODE_BLUR_VALUE$1],
+              __limitCache = _node2$__config[NODE_LIMIT_CACHE$1],
+              __cache = _node2$__config[NODE_CACHE$4],
+              __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$3],
+              _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$2],
+              display = _node2$__config$NODE_[DISPLAY$6],
+              visibility = _node2$__config$NODE_[VISIBILITY$5],
+              transform = _node2$__config$NODE_[TRANSFORM$5],
+              transformOrigin = _node2$__config$NODE_[TRANSFORM_ORIGIN$5],
+              opacity = _node2$__config$NODE_[OPACITY$5];
 
           if (__limitCache) {
             return;
@@ -21145,27 +21145,33 @@
             dx = __cache.dbx;
             dy = __cache.dby;
           } else {
-            bbox = _node.bbox;
+            bbox = node2.bbox;
           } // 可能Text或Xom没有内容
 
 
           if (bbox) {
             var matrix = matrixHash[parentIndex];
 
-            var _blur = (blurHash[parentIndex] || 0) + (__blurValue || 0); // 父级matrix初始化E为null，自身不为E时才运算加速
+            var _blur = (blurHash[parentIndex] || 0) + (__blurValue || 0); // 父级matrix初始化E为null，自身不为E时才运算，可以加速，但要防止text作为top的孩子的情况，不应该计算
 
 
             if (transform && !mx.isE(transform)) {
-              var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+              var isDirectText = node2 instanceof Text && node2.domParent === node;
 
-              tfo[0] += __sx1 - sx1 + dx;
-              tfo[1] += __sy1 - sy1 + dy;
-              var m = tf.calMatrixByOrigin(transform, tfo);
+              if (!isDirectText) {
+                var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              if (matrix) {
-                matrix = mx.multiply(matrix, m);
+                tfo[0] += __sx1 - sx1 + dx;
+                tfo[1] += __sy1 - sy1 + dy;
+                var m = tf.calMatrixByOrigin(transform, tfo);
+
+                if (matrix) {
+                  matrix = mx.multiply(matrix, m);
+                } else {
+                  matrix = m;
+                }
               } else {
-                matrix = m;
+                matrix = null;
               }
             }
 
@@ -21257,21 +21263,21 @@
 
     for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i3 = __structs[i],
-          _node2 = _structs$i3[STRUCT_NODE$1],
+          _node = _structs$i3[STRUCT_NODE$1],
           _total2 = _structs$i3[STRUCT_TOTAL$1],
           hasMask = _structs$i3[STRUCT_HAS_MASK$1];
-      var _node2$__config = _node2.__config,
-          __cache = _node2$__config[NODE_CACHE$4],
-          __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$3],
-          __cacheFilter = _node2$__config[NODE_CACHE_FILTER$3],
-          __cacheMask = _node2$__config[NODE_CACHE_MASK$2],
-          __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$3],
-          _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$2],
-          display = _node2$__config$NODE_[DISPLAY$6],
-          visibility = _node2$__config$NODE_[VISIBILITY$5],
-          transform = _node2$__config$NODE_[TRANSFORM$5],
-          transformOrigin = _node2$__config$NODE_[TRANSFORM_ORIGIN$5],
-          mixBlendMode = _node2$__config$NODE_[MIX_BLEND_MODE$2];
+      var _node$__config2 = _node.__config,
+          __cache = _node$__config2[NODE_CACHE$4],
+          __cacheTotal = _node$__config2[NODE_CACHE_TOTAL$3],
+          __cacheFilter = _node$__config2[NODE_CACHE_FILTER$3],
+          __cacheMask = _node$__config2[NODE_CACHE_MASK$2],
+          __cacheOverflow = _node$__config2[NODE_CACHE_OVERFLOW$3],
+          _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
+          display = _node$__config2$NODE_[DISPLAY$6],
+          visibility = _node$__config2$NODE_[VISIBILITY$5],
+          transform = _node$__config2$NODE_[TRANSFORM$5],
+          transformOrigin = _node$__config2$NODE_[TRANSFORM_ORIGIN$5],
+          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$2];
 
       if (display === 'none') {
         i += _total2 || 0;
@@ -21291,14 +21297,14 @@
       var matrix = matrixHash[parentIndex];
       var opacity = opacityHash[i]; // 先看text
 
-      if (_node2 instanceof Text) {
+      if (_node instanceof Text) {
         ctx.globalAlpha = opacityHash[parentIndex];
 
         var _matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
 
         ctx.setTransform(_matrix[0], _matrix[1], _matrix[2], _matrix[3], _matrix[4], _matrix[5]);
 
-        _node2.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
+        _node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
           if (transform && !mx.isE(transform)) {
@@ -21308,8 +21314,8 @@
               tfo[0] += __cache.sx1;
               tfo[1] += __cache.sy1;
             } else {
-              tfo[0] += _node2.__sx1;
-              tfo[1] += _node2.__sy1;
+              tfo[0] += _node.__sx1;
+              tfo[1] += _node.__sy1;
             }
 
             var dx = -sx1 + dbx + tx;
@@ -21703,13 +21709,13 @@
         if (maskGenHash.hasOwnProperty(index)) {
           var _maskGenHash$index = maskGenHash[index],
               _target = _maskGenHash$index.target,
-              _node3 = _maskGenHash$index.node,
+              _node2 = _maskGenHash$index.node,
               _isClip = _maskGenHash$index.isClip,
               _config = _maskGenHash$index.__config,
               _hasContent = _maskGenHash$index.__hasContent; // 图片未加载时无内容，无需生成会报错，其它Dom类型一律生成
 
-          if (!(_node3 instanceof Img$1) || _hasContent) {
-            _config[NODE_CACHE_MASK$2] = genMask(_node3, _target, _isClip);
+          if (!(_node2 instanceof Img$1) || _hasContent) {
+            _config[NODE_CACHE_MASK$2] = genMask(_node2, _target, _isClip);
           }
         }
       }
@@ -22703,14 +22709,14 @@
         }
 
         for (var j = _start2; j < _end2; j++) {
-          var _node4 = __structs[j][STRUCT_NODE$1];
-          var _node4$computedStyle = _node4.computedStyle,
-              _display3 = _node4$computedStyle[DISPLAY$6],
-              visibility = _node4$computedStyle[VISIBILITY$5],
-              fill = _node4$computedStyle[FILL$2],
-              _node4$virtualDom = _node4.virtualDom,
-              children = _node4$virtualDom.children,
-              _opacity = _node4$virtualDom.opacity;
+          var _node3 = __structs[j][STRUCT_NODE$1];
+          var _node3$computedStyle = _node3.computedStyle,
+              _display3 = _node3$computedStyle[DISPLAY$6],
+              visibility = _node3$computedStyle[VISIBILITY$5],
+              fill = _node3$computedStyle[FILL$2],
+              _node3$virtualDom = _node3.virtualDom,
+              children = _node3$virtualDom.children,
+              _opacity = _node3$virtualDom.opacity;
 
           if (_display3 !== 'none' && visibility !== 'hidden') {
             // 引用相同无法diff，需要clone
@@ -22733,7 +22739,7 @@
                   }
                 }
 
-                var _matrix2 = _node4.renderMatrix;
+                var _matrix2 = _node3.renderMatrix;
                 var inverse = mx.inverse(dom.renderMatrix);
                 _matrix2 = mx.multiply(inverse, _matrix2); // path没有transform属性，在vd上，需要弥补
 

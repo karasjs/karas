@@ -163,7 +163,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
       let total = __structs[parentIndex][STRUCT_TOTAL];
       for(let i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
         let {
-          [STRUCT_NODE]: node,
+          [STRUCT_NODE]: node2,
           [STRUCT_TOTAL]: total,
         } = __structs[i];
         let {
@@ -182,7 +182,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
               [OPACITY]: opacity,
             },
           },
-        } = node;
+        } = node2;
         if(__limitCache) {
           return;
         }
@@ -209,24 +209,30 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           dy = __cache.dby;
         }
         else {
-          bbox = node.bbox;
+          bbox = node2.bbox;
         }
         // 可能Text或Xom没有内容
         if(bbox) {
           let matrix = matrixHash[parentIndex];
           let blur = (blurHash[parentIndex] || 0) + (__blurValue || 0);
-          // 父级matrix初始化E为null，自身不为E时才运算加速
+          // 父级matrix初始化E为null，自身不为E时才运算，可以加速，但要防止text作为top的孩子的情况，不应该计算
           if(transform && !mx.isE(transform)) {
-            let tfo = transformOrigin.slice(0);
-            // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-            tfo[0] += __sx1 - sx1 + dx;
-            tfo[1] += __sy1 - sy1 + dy;
-            let m = tf.calMatrixByOrigin(transform, tfo);
-            if(matrix) {
-              matrix = mx.multiply(matrix, m);
+            let isDirectText = node2 instanceof Text && node2.domParent === node;
+            if(!isDirectText) {
+              let tfo = transformOrigin.slice(0);
+              // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+              tfo[0] += __sx1 - sx1 + dx;
+              tfo[1] += __sy1 - sy1 + dy;
+              let m = tf.calMatrixByOrigin(transform, tfo);
+              if(matrix) {
+                matrix = mx.multiply(matrix, m);
+              }
+              else {
+                matrix = m;
+              }
             }
             else {
-              matrix = m;
+              matrix = null;
             }
           }
           if(matrix) {

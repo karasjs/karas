@@ -2206,7 +2206,7 @@ class Xom extends Node {
                   ['x', bgX],
                   ['y', bgY],
                   ['width', width],
-                  ['height', height]
+                  ['height', height],
                 ];
                 let needResize;
                 if(matrix && !mx.isE(matrix)) {
@@ -2227,7 +2227,7 @@ class Xom extends Node {
                       tagName: 'path',
                       props: [
                         ['d', `M${p1[0]},${p1[1]}L${p2[0]},${p1[1]}L${p2[0]},${p2[1]}L${p1[0]},${p2[1]}L${p1[0]},${p1[1]}`],
-                        ['fill', '#FFF']
+                        ['fill', '#FFF'],
                       ],
                     }],
                   };
@@ -2423,7 +2423,7 @@ class Xom extends Node {
           ['x1', gd.x1],
           ['y1', gd.y1],
           ['x2', gd.x2],
-          ['y2', gd.y2]
+          ['y2', gd.y2],
         ],
         children: gd.stop.map(item => {
           return {

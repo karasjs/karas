@@ -22742,7 +22742,32 @@
                 if (!util.isNil(_opacity) && _opacity !== 1) {
                   props.push(['opacity', _opacity]);
                 }
-              }
+              } // img可能有matrix属性，需判断
+              else if (tagName === 'image') {
+                  var hasTransform = -1;
+
+                  for (var _m = 0, _len7 = props.length; _m < _len7; _m++) {
+                    if (props[_m][0] === 'transform') {
+                      hasTransform = _m;
+                      break;
+                    }
+                  }
+
+                  if (hasTransform === -1) {
+                    var _inverse = mx.inverse(dom.renderMatrix);
+
+                    props.push(['transform', "matrix(".concat(_inverse.join(','), ")")]);
+                  } else {
+                    var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                      return parseFloat(i);
+                    });
+
+                    var _inverse2 = mx.inverse(dom.renderMatrix);
+
+                    _matrix3 = mx.multiply(_inverse2, _matrix3);
+                    props[hasTransform][1] = "matrix(".concat(_matrix3.join(','), ")");
+                  }
+                }
             }
           }
         } // 清掉上次的

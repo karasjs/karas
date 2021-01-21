@@ -1559,6 +1559,26 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
                 props.push(['opacity', opacity]);
               }
             }
+            // img可能有matrix属性，需判断
+            else if(tagName === 'image') {
+              let hasTransform = -1;
+              for(let m = 0, len = props.length; m < len; m++) {
+                if(props[m][0] === 'transform') {
+                  hasTransform = m;
+                  break;
+                }
+              }
+              if(hasTransform === -1) {
+                let inverse = mx.inverse(dom.renderMatrix);
+                props.push(['transform', `matrix(${inverse.join(',')})`]);
+              }
+              else {
+                let matrix = props[hasTransform][1].match(/[\d.]+/g).map(i => parseFloat(i));
+                let inverse = mx.inverse(dom.renderMatrix);
+                matrix = mx.multiply(inverse, matrix);
+                props[hasTransform][1] = `matrix(${matrix.join(',')})`;
+              }
+            }
           }
         }
       }

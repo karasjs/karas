@@ -500,33 +500,32 @@ class Dom extends Xom {
           }, isVirtual);
           x = data.x;
           y += item.outerHeight;
+          // absolute/flex前置虚拟计算
           if(isVirtual) {
             maxW = Math.max(maxW, item.outerWidth);
             cw = 0;
           }
-          else {
-            // 紧邻的2个block合并垂直margin
-            if(!isVirtual && lastBlock) {
-              let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
-              let { [MARGIN_TOP]: marginTop } = item.computedStyle;
-              let max;
-              // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
-              if(marginBottom >= 0 && marginTop >= 0) {
-                max = Math.max(marginBottom, marginTop);
-                max = max - marginBottom - marginTop;
-              }
-              else if(marginBottom < 0 && marginTop < 0) {
-                max = Math.min(marginBottom, marginTop);
-                max = max - marginBottom - marginTop;
-              }
-              else {
-                max = marginBottom + marginTop;
-                max = 0;
-              }
-              if(max) {
-                item.__offsetY(max, true);
-                y += max;
-              }
+          // 紧邻的2个block合并垂直margin
+          else if(lastBlock) {
+            let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
+            let { [MARGIN_TOP]: marginTop } = item.computedStyle;
+            let max;
+            // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
+            if(marginBottom >= 0 && marginTop >= 0) {
+              max = Math.max(marginBottom, marginTop);
+              max = max - marginBottom - marginTop;
+            }
+            else if(marginBottom < 0 && marginTop < 0) {
+              max = Math.min(marginBottom, marginTop);
+              max = max - marginBottom - marginTop;
+            }
+            else {
+              max = marginBottom + marginTop;
+              max = 0;
+            }
+            if(max) {
+              item.__offsetY(max, true);
+              y += max;
             }
             lastBlock = item;
           }
@@ -603,9 +602,9 @@ class Dom extends Xom {
     let tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    if(lineGroup.size) {
-      y += lineGroup.marginBottom;
-    }
+    // if(lineGroup.size) {
+    //   y += lineGroup.marginBottom;
+    // }
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {
@@ -617,6 +616,10 @@ class Dom extends Xom {
     }
     if(!isVirtual) {
       this.__marginAuto(currentStyle, data);
+      // if(flowChildren.length === 0) {
+      //   let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = computedStyle;
+      //   console.log(marginTop, marginBottom);
+      // }
     }
   }
 

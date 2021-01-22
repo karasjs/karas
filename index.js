@@ -17026,14 +17026,13 @@
               }, isVirtual);
 
               x = data.x;
-              y += item.outerHeight;
+              y += item.outerHeight; // absolute/flex前置虚拟计算
 
               if (isVirtual) {
                 maxW = Math.max(maxW, item.outerWidth);
                 cw = 0;
-              } else {
-                // 紧邻的2个block合并垂直margin
-                if (!isVirtual && lastBlock) {
+              } // 紧邻的2个block合并垂直margin
+              else if (lastBlock) {
                   var marginBottom = lastBlock.computedStyle[MARGIN_BOTTOM$3];
                   var marginTop = item.computedStyle[MARGIN_TOP$2];
                   var max; // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
@@ -17054,10 +17053,9 @@
 
                     y += max;
                   }
-                }
 
-                lastBlock = item;
-              }
+                  lastBlock = item;
+                }
             }
           } // 文字和inline类似
           else {
@@ -17138,11 +17136,10 @@
         var tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__ioSize(tw, th);
-
-        if (lineGroup.size) {
-          y += lineGroup.marginBottom;
-        } // text-align
+        this.__ioSize(tw, th); // if(lineGroup.size) {
+        //   y += lineGroup.marginBottom;
+        // }
+        // text-align
 
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
@@ -17156,7 +17153,11 @@
         }
 
         if (!isVirtual) {
-          this.__marginAuto(currentStyle, data);
+          this.__marginAuto(currentStyle, data); // if(flowChildren.length === 0) {
+          //   let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = computedStyle;
+          //   console.log(marginTop, marginBottom);
+          // }
+
         }
       } // 弹性布局时的计算位置
 
@@ -24024,12 +24025,12 @@
        * 除首次外每次刷新前检查reflow列表，计算需要reflow的节点局部重新布局
        * 当一个元素absolute时，其变化不会影响父元素和兄弟元素，直接自己重新局部LAYOUT包含子节点
        * 当inline变化时，视为其最近block/flex父变化
-       * 当block变化时，如父是flex往上查找最上层flex视为其变化，如不是则影响后面兄弟和父resize
-       * 当flex变化时，如父是flex往上查找最上层flex视为其变化，如不是则影响所有递归子节点和父resize
+       * 当block变化时，如父是flex往上查找最上层flex视为其变化，如不是则影响后面兄弟offset和父resize
+       * 当flex变化时，如父是flex往上查找最上层flex视为其变化，如不是则影响所有递归子节点layout和父resize
        * 以上3种情况向上查找时遇到absolute父均提前跳出，并标记absolute父LAYOUT
        * 当relative只变化left/top/right/bottom时，自己重新layout
        * 检测节点时记录影响的所有节点，最终形成一棵或n棵局部树
-       * 一般需要重新布局的记作LAYOUT，被兄弟影响只需偏移的记作OFFSET，OFFSET可能会重复变为LAYOUT
+       * 需要重新布局的记作LAYOUT，被兄弟影响只需偏移的记作OFFSET，OFFSET可能会重复变为LAYOUT
        * 上述情况倘若发生包含重复，去掉子树，因子树视为被包含的重新布局
        * 如果有从root开始的，直接重新布局像首次那样即可
        * 如果非root，所有树根按先根顺序记录下来，依次执行局部布局

@@ -505,27 +505,29 @@ class Dom extends Xom {
             maxW = Math.max(maxW, item.outerWidth);
             cw = 0;
           }
-          // 紧邻的2个block合并垂直margin
-          else if(lastBlock) {
-            let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
-            let { [MARGIN_TOP]: marginTop } = item.computedStyle;
-            let max;
-            // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
-            if(marginBottom >= 0 && marginTop >= 0) {
-              max = Math.max(marginBottom, marginTop);
-              max = max - marginBottom - marginTop;
-            }
-            else if(marginBottom < 0 && marginTop < 0) {
-              max = Math.min(marginBottom, marginTop);
-              max = max - marginBottom - marginTop;
-            }
-            else {
-              max = marginBottom + marginTop;
-              max = 0;
-            }
-            if(max) {
-              item.__offsetY(max, true);
-              y += max;
+          else {
+            // 紧邻的2个block合并垂直margin
+            if(lastBlock) {
+              let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
+              let { [MARGIN_TOP]: marginTop } = item.computedStyle;
+              let max;
+              // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
+              if(marginBottom >= 0 && marginTop >= 0) {
+                max = Math.max(marginBottom, marginTop);
+                max = max - marginBottom - marginTop;
+              }
+              else if(marginBottom < 0 && marginTop < 0) {
+                max = Math.min(marginBottom, marginTop);
+                max = max - marginBottom - marginTop;
+              }
+              else {
+                max = marginBottom + marginTop;
+                max = 0;
+              }
+              if(max) {
+                item.__offsetY(max, true);
+                y += max;
+              }
             }
             lastBlock = item;
           }

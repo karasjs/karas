@@ -17031,8 +17031,9 @@
               if (isVirtual) {
                 maxW = Math.max(maxW, item.outerWidth);
                 cw = 0;
-              } // 紧邻的2个block合并垂直margin
-              else if (lastBlock) {
+              } else {
+                // 紧邻的2个block合并垂直margin
+                if (lastBlock) {
                   var marginBottom = lastBlock.computedStyle[MARGIN_BOTTOM$3];
                   var marginTop = item.computedStyle[MARGIN_TOP$2];
                   var max; // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
@@ -17053,9 +17054,10 @@
 
                     y += max;
                   }
-
-                  lastBlock = item;
                 }
+
+                lastBlock = item;
+              }
             }
           } // 文字和inline类似
           else {

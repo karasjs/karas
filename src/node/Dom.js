@@ -499,7 +499,43 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x = data.x;
+          // oh包含margin，因此考虑了负的情况
           y += item.outerHeight;
+          // 自身无内容
+          if(item.flowChildren.length === 0) {
+            let {
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+              [HEIGHT]: height,
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+            } = item.computedStyle;
+            console.log(marginTop, marginBottom, paddingTop, paddingBottom, height, borderTopWidth, borderBottomWidth);
+            if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+              console.warn('in');
+              let max;
+              // 这里和上下block合并margin情况一样，只是对象变成自己合并自己，可以假象为自己一拆为二，只是不用offset操作
+              if(marginBottom >= 0 && marginTop >= 0) {
+                max = Math.max(marginBottom, marginTop);
+                max = max - marginBottom - marginTop;
+              }
+              else if(marginBottom < 0 && marginTop < 0) {
+                max = Math.min(marginBottom, marginTop);
+                max = max - marginBottom - marginTop;
+              }
+              // 这里不太一样，需考虑正负相加
+              else {
+                max = marginTop + marginBottom;
+                max = -max;
+              }
+              console.log(max);
+              if(max) {
+                y += max;
+              }
+            }
+          }
           // absolute/flex前置虚拟计算
           if(isVirtual) {
             maxW = Math.max(maxW, item.outerWidth);
@@ -520,10 +556,8 @@ class Dom extends Xom {
                 max = Math.min(marginBottom, marginTop);
                 max = max - marginBottom - marginTop;
               }
-              else {
-                max = marginBottom + marginTop;
-                max = 0;
-              }
+              // 正负相加不用理会，如果是正负情况，后面这个在layout时从__preLayout获取到的考虑到负margin
+              // 如果是负正情况，后面这个在layout时的y会根据前面的outerHeight考虑到负margin
               if(max) {
                 item.__offsetY(max, true);
                 y += max;
@@ -604,9 +638,6 @@ class Dom extends Xom {
     let tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    // if(lineGroup.size) {
-    //   y += lineGroup.marginBottom;
-    // }
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {
@@ -618,10 +649,6 @@ class Dom extends Xom {
     }
     if(!isVirtual) {
       this.__marginAuto(currentStyle, data);
-      // if(flowChildren.length === 0) {
-      //   let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = computedStyle;
-      //   console.log(marginTop, marginBottom);
-      // }
     }
   }
 

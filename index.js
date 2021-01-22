@@ -13523,7 +13523,8 @@
         this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$1] + computedStyle[BORDER_BOTTOM_WIDTH$1];
         this.__outerWidth = w + computedStyle[MARGIN_LEFT$1] + computedStyle[MARGIN_RIGHT$1];
         this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[MARGIN_BOTTOM$1];
-      } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
+      } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
+      // fromAbs为absolute特有
 
     }, {
       key: "__layout",
@@ -15842,6 +15843,7 @@
     }, {
       key: "marginBottom",
       get: function get() {
+        // lineGroup都是inline-block，不会有负
         var n = 0;
         this.list.forEach(function (item) {
           n = Math.max(n, item.computedStyle[MARGIN_BOTTOM$2]);
@@ -16932,13 +16934,15 @@
 
 
         var maxW = 0;
-        var cw = 0; // 递归布局，将inline的节点组成lineGroup一行
+        var cw = 0; // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
 
         var lineGroup = new LineGroup(x, y);
+        var lastBlock;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             if (item.currentStyle[DISPLAY$3] === 'inline') {
-              // inline开头，不用考虑是否放得下直接放
+              lastBlock = null; // inline开头，不用考虑是否放得下直接放
+
               if (x === data.x) {
                 lineGroup.add(item);
 
@@ -17027,11 +17031,38 @@
               if (isVirtual) {
                 maxW = Math.max(maxW, item.outerWidth);
                 cw = 0;
+              } else {
+                // 紧邻的2个block合并垂直margin
+                if (!isVirtual && lastBlock) {
+                  var marginBottom = lastBlock.computedStyle[MARGIN_BOTTOM$3];
+                  var marginTop = item.computedStyle[MARGIN_TOP$2];
+                  var max; // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
+
+                  if (marginBottom >= 0 && marginTop >= 0) {
+                    max = Math.max(marginBottom, marginTop);
+                    max = max - marginBottom - marginTop;
+                  } else if (marginBottom < 0 && marginTop < 0) {
+                    max = Math.min(marginBottom, marginTop);
+                    max = max - marginBottom - marginTop;
+                  } else {
+                    max = marginBottom + marginTop;
+                    max = 0;
+                  }
+
+                  if (max) {
+                    item.__offsetY(max, true);
+
+                    y += max;
+                  }
+                }
+
+                lastBlock = item;
               }
             }
           } // 文字和inline类似
           else {
-              // x开头，不用考虑是否放得下直接放
+              lastBlock = null; // x开头，不用考虑是否放得下直接放
+
               if (x === data.x) {
                 lineGroup.add(item);
 

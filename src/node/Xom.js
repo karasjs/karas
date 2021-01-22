@@ -957,7 +957,8 @@ class Xom extends Node {
     this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
   }
 
-  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
+  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
+  // fromAbs为absolute特有
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this, this.isShadowRoot);
     let { w } = data;

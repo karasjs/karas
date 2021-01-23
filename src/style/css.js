@@ -622,6 +622,8 @@ function normalize(style, reset = []) {
       borderRightWidth: true,
       borderBottomWidth: true,
       borderLeftWidth: true,
+      width: true,
+      height: true,
     }.hasOwnProperty(k) && v[0] < 0) {
       v[0] = 0;
     }

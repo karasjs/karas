@@ -4585,7 +4585,9 @@
         borderTopWidth: true,
         borderRightWidth: true,
         borderBottomWidth: true,
-        borderLeftWidth: true
+        borderLeftWidth: true,
+        width: true,
+        height: true
       }.hasOwnProperty(k) && v[0] < 0) {
         v[0] = 0;
       }
@@ -16953,6 +16955,7 @@
         var lineGroup = new LineGroup(x, y);
         var lastBlock;
         flowChildren.forEach(function (item, i) {
+          // console.warn('child', i, item.tagName)
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             if (item.currentStyle[DISPLAY$3] === 'inline') {
               lastBlock = null; // inline开头，不用考虑是否放得下直接放
@@ -17039,9 +17042,11 @@
                 h: h
               }, isVirtual);
 
-              x = data.x; // oh包含margin，因此考虑了负的情况
+              x = data.x; // console.log('y1',y,item.outerHeight)
+              // oh包含margin，因此考虑了负的情况
 
-              y += item.outerHeight; // 自身无内容
+              y += item.outerHeight; // console.log('y2',y)
+              // 自身无内容
               // if(item.flowChildren && item.flowChildren.length === 0) {
               //   let {
               //     [MARGIN_TOP]: marginTop,

@@ -423,6 +423,7 @@ class Dom extends Xom {
     let lineGroup = new LineGroup(x, y);
     let lastBlock;
     flowChildren.forEach((item, i) => {
+      // console.warn('child', i, item.tagName)
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(item.currentStyle[DISPLAY] === 'inline') {
           lastBlock = null;
@@ -499,8 +500,10 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x = data.x;
+          // console.log('y1',y,item.outerHeight)
           // oh包含margin，因此考虑了负的情况
           y += item.outerHeight;
+          // console.log('y2',y)
           // 自身无内容
           // if(item.flowChildren && item.flowChildren.length === 0) {
           //   let {

@@ -605,12 +605,25 @@ function normalize(style, reset = []) {
     if(isNil(v)) {
       return;
     }
-    k = STYLE_KEY[style2Upper(k)];
-    calUnit(res, k, v);
-    v = res[k];
+    let k2 = STYLE_KEY[style2Upper(k)];
+    calUnit(res, k2, v);
+    v = res[k2];
     // 无单位视为px
     if(v[1] === NUMBER) {
       v[1] = PX;
+    }
+    // 限制padding/border为正数
+    if({
+      paddingTop: true,
+      paddingRight: true,
+      paddingBottom: true,
+      paddingLeft: true,
+      borderTopWidth: true,
+      borderRightWidth: true,
+      borderBottomWidth: true,
+      borderLeftWidth: true,
+    }.hasOwnProperty(k) && v[0] < 0) {
+      v[0] = 0;
     }
   });
   temp = style.color;

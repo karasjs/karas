@@ -422,7 +422,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
     let lineGroup = new LineGroup(x, y);
     let lastBlock;
-    flowChildren.forEach(item => {
+    flowChildren.forEach((item, i) => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(item.currentStyle[DISPLAY] === 'inline') {
           lastBlock = null;
@@ -502,40 +502,42 @@ class Dom extends Xom {
           // oh包含margin，因此考虑了负的情况
           y += item.outerHeight;
           // 自身无内容
-          if(item.flowChildren.length === 0) {
-            let {
-              [MARGIN_TOP]: marginTop,
-              [MARGIN_BOTTOM]: marginBottom,
-              [PADDING_TOP]: paddingTop,
-              [PADDING_BOTTOM]: paddingBottom,
-              [HEIGHT]: height,
-              [BORDER_TOP_WIDTH]: borderTopWidth,
-              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-            } = item.computedStyle;
-            console.log(marginTop, marginBottom, paddingTop, paddingBottom, height, borderTopWidth, borderBottomWidth);
-            if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
-              console.warn('in');
-              let max;
-              // 这里和上下block合并margin情况一样，只是对象变成自己合并自己，可以假象为自己一拆为二，只是不用offset操作
-              if(marginBottom >= 0 && marginTop >= 0) {
-                max = Math.max(marginBottom, marginTop);
-                max = max - marginBottom - marginTop;
-              }
-              else if(marginBottom < 0 && marginTop < 0) {
-                max = Math.min(marginBottom, marginTop);
-                max = max - marginBottom - marginTop;
-              }
-              // 这里不太一样，需考虑正负相加
-              else {
-                max = marginTop + marginBottom;
-                max = -max;
-              }
-              console.log(max);
-              if(max) {
-                y += max;
-              }
-            }
-          }
+          // if(item.flowChildren && item.flowChildren.length === 0) {
+          //   let {
+          //     [MARGIN_TOP]: marginTop,
+          //     [MARGIN_BOTTOM]: marginBottom,
+          //     [PADDING_TOP]: paddingTop,
+          //     [PADDING_BOTTOM]: paddingBottom,
+          //     [HEIGHT]: height,
+          //     [BORDER_TOP_WIDTH]: borderTopWidth,
+          //     [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+          //   } = item.computedStyle;
+          //   console.log(marginTop, marginBottom, paddingTop, paddingBottom, height, borderTopWidth, borderBottomWidth);
+          //   if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+          //     console.warn('in');
+          //     let max;
+          //     // 这里和上下block合并margin情况一样，只是对象变成自己合并自己，可以假象为自己一拆为二，只是不用offset操作
+          //     if(marginBottom >= 0 && marginTop >= 0) {
+          //       max = Math.max(marginBottom, marginTop);
+          //       max = max - marginBottom - marginTop;
+          //     }
+          //     else if(marginBottom < 0 && marginTop < 0) {
+          //       max = Math.min(marginBottom, marginTop);
+          //       console.log('max1',max);
+          //       max = max - marginBottom - marginTop;
+          //       console.log('max2',max);
+          //     }
+          //     // 这里不太一样，需考虑正负相加
+          //     else {
+          //       max = marginTop + marginBottom;
+          //       max = -max;
+          //     }
+          //     console.log('end',y,max);
+          //     if(max) {
+          //       // y += max;
+          //     }
+          //   }
+          // }
           // absolute/flex前置虚拟计算
           if(isVirtual) {
             maxW = Math.max(maxW, item.outerWidth);

@@ -421,12 +421,38 @@ class Dom extends Xom {
     let cw = 0;
     // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
     let lineGroup = new LineGroup(x, y);
-    let lastBlock;
-    flowChildren.forEach((item, i) => {
-      // console.warn('child', i, item.tagName)
-      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        if(item.currentStyle[DISPLAY] === 'inline') {
+    // 上一个兄弟block引用，以及如果是空的标识，空要暂时记录下来等待后续判断合并处理，也有可能空是最后连续的block
+    let lastBlock, lastEmptyBlock = null;
+    let mergeMarginBottomList = [], mergeMarginTopList = [];
+    flowChildren.forEach(item => {
+      let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+      let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
+      // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block忽略
+      if(lastEmptyBlock && lastEmptyBlock !== lastBlock && lastBlock && (!isXom || isInline)) {
+        let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
+        let { [MARGIN_TOP]: marginTop2, [MARGIN_BOTTOM]: marginBottom2 } = lastEmptyBlock.computedStyle;
+        let total = marginBottom + marginTop2 + marginBottom2;
+        let max = Math.max(marginTop2, marginBottom2);
+        max = Math.max(max, marginBottom);
+        let min = Math.min(marginTop2, marginBottom2);
+        min = Math.min(min, marginBottom);
+        // 同样简单的规则，最大最小值判断，只是不用偏移
+        let diff;
+        if(max > 0 && min > 0) {}
+        else if(max < 0 && min < 0) {
+        }
+        else if(max !== 0 && min !== 0) {
+          diff = max + min - total;
+        }
+        if(diff) {
+          y += diff;
+        }
+      }
+      if(isXom) {
+        // inline和block不同对待
+        if(isInline) {
           lastBlock = null;
+          lastEmptyBlock = null;
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
@@ -500,81 +526,101 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x = data.x;
-          // console.log('y1',y,item.outerHeight)
-          // oh包含margin，因此考虑了负的情况
-          y += item.outerHeight;
-          // console.log('y2',y)
           // 自身无内容
-          // if(item.flowChildren && item.flowChildren.length === 0) {
-          //   let {
-          //     [MARGIN_TOP]: marginTop,
-          //     [MARGIN_BOTTOM]: marginBottom,
-          //     [PADDING_TOP]: paddingTop,
-          //     [PADDING_BOTTOM]: paddingBottom,
-          //     [HEIGHT]: height,
-          //     [BORDER_TOP_WIDTH]: borderTopWidth,
-          //     [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-          //   } = item.computedStyle;
-          //   console.log(marginTop, marginBottom, paddingTop, paddingBottom, height, borderTopWidth, borderBottomWidth);
-          //   if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
-          //     console.warn('in');
-          //     let max;
-          //     // 这里和上下block合并margin情况一样，只是对象变成自己合并自己，可以假象为自己一拆为二，只是不用offset操作
-          //     if(marginBottom >= 0 && marginTop >= 0) {
-          //       max = Math.max(marginBottom, marginTop);
-          //       max = max - marginBottom - marginTop;
-          //     }
-          //     else if(marginBottom < 0 && marginTop < 0) {
-          //       max = Math.min(marginBottom, marginTop);
-          //       console.log('max1',max);
-          //       max = max - marginBottom - marginTop;
-          //       console.log('max2',max);
-          //     }
-          //     // 这里不太一样，需考虑正负相加
-          //     else {
-          //       max = marginTop + marginBottom;
-          //       max = -max;
-          //     }
-          //     console.log('end',y,max);
-          //     if(max) {
-          //       // y += max;
-          //     }
-          //   }
-          // }
+          if(item.flowChildren && item.flowChildren.length === 0) {
+            let {
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+              [HEIGHT]: height,
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+            } = item.computedStyle;
+            // 无内容高度为0的特殊情况，记录下来等后续block判断跳过继续，不是就忽略掉
+            if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+              mergeMarginBottomList.push(marginBottom);
+              mergeMarginTopList.push(marginTop);
+              lastEmptyBlock = item;
+            }
+          }
+          y += item.outerHeight;
           // absolute/flex前置虚拟计算
           if(isVirtual) {
             maxW = Math.max(maxW, item.outerWidth);
             cw = 0;
           }
-          else {
-            // 紧邻的2个block合并垂直margin
-            if(lastBlock) {
-              let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
-              let { [MARGIN_TOP]: marginTop } = item.computedStyle;
+          // 相邻的block合并垂直margin，最后面的如果是empty则跳过，留待下轮循环判断
+          if(lastBlock && !lastEmptyBlock) {
+            let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
+            let { [MARGIN_TOP]: marginTop } = item.computedStyle;
+            // 再分2种情况，中间有空block的
+            if(mergeMarginBottomList.length) {
+              let total = marginBottom + marginTop;
+              let max = Math.max(marginTop, marginBottom);
+              let min = Math.min(marginTop, marginBottom);
+              let diff;
+              // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
+              mergeMarginBottomList.forEach(item => {
+                total += item;
+                max = Math.max(max, item);
+                min = Math.min(min, item);
+              });
+              mergeMarginTopList.forEach(item => {
+                total += item;
+                max = Math.max(max, item);
+                min = Math.min(min, item);
+              });
+              // 正正取最大
+              if(max > 0 && min > 0) {
+                diff = Math.max(max, min) - total;
+              }
+              // 负负取最小
+              else if(max < 0 && min < 0) {
+                diff = Math.min(max, min) - total;
+              }
+              // 正负则相加
+              else if(max !== 0 && min !== 0) {
+                diff = max + min - total;
+              }
+              if(diff) {
+                item.__offsetY(diff, true);
+                y += diff;
+              }
+            }
+            // 无空block就是普通的2个block相邻
+            else {
               let max;
               // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
-              if(marginBottom >= 0 && marginTop >= 0) {
+              if(marginBottom > 0 && marginTop > 0) {
                 max = Math.max(marginBottom, marginTop);
+                // 最大正减去两者之和是个负数误差，y偏移这个误差即可
                 max = max - marginBottom - marginTop;
               }
               else if(marginBottom < 0 && marginTop < 0) {
                 max = Math.min(marginBottom, marginTop);
+                // 最小负减去两者之和是个正数误差，同样偏移这个y即可
                 max = max - marginBottom - marginTop;
               }
-              // 正负相加不用理会，如果是正负情况，后面这个在layout时从__preLayout获取到的考虑到负margin
+              // 如果是正负情况，后面这个在layout时从__preLayout获取到的考虑到负margin
               // 如果是负正情况，后面这个在layout时的y会根据前面的outerHeight考虑到负margin
+              // 所以异号或者0不用考虑，普通循环过程中包含
               if(max) {
                 item.__offsetY(max, true);
                 y += max;
               }
             }
+          }
+          if(!lastEmptyBlock) {
             lastBlock = item;
+            lastEmptyBlock = null;
           }
         }
       }
       // 文字和inline类似
       else {
         lastBlock = null;
+        lastEmptyBlock = null;
         // x开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);

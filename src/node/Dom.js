@@ -430,12 +430,20 @@ class Dom extends Xom {
       // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block忽略
       if(lastEmptyBlock && lastEmptyBlock !== lastBlock && lastBlock && (!isXom || isInline)) {
         let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
-        let { [MARGIN_TOP]: marginTop2, [MARGIN_BOTTOM]: marginBottom2 } = lastEmptyBlock.computedStyle;
-        let total = marginBottom + marginTop2 + marginBottom2;
-        let max = Math.max(marginTop2, marginBottom2);
-        max = Math.max(max, marginBottom);
-        let min = Math.min(marginTop2, marginBottom2);
-        min = Math.min(min, marginBottom);
+        let total = marginBottom, max = marginBottom, min = marginBottom;
+        // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
+        mergeMarginBottomList.forEach(item => {
+          total += item;
+          max = Math.max(max, item);
+          min = Math.min(min, item);
+        });
+        mergeMarginBottomList = [];
+        mergeMarginTopList.forEach(item => {
+          total += item;
+          max = Math.max(max, item);
+          min = Math.min(min, item);
+        });
+        mergeMarginTopList = [];
         // 同样简单的规则，最大最小值判断，只是不用偏移
         let diff;
         if(max > 0 && min > 0) {}
@@ -453,6 +461,8 @@ class Dom extends Xom {
         if(isInline) {
           lastBlock = null;
           lastEmptyBlock = null;
+          mergeMarginBottomList = [];
+          mergeMarginTopList = [];
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
@@ -543,6 +553,12 @@ class Dom extends Xom {
               mergeMarginTopList.push(marginTop);
               lastEmptyBlock = item;
             }
+            else {
+              lastEmptyBlock = null;
+            }
+          }
+          else {
+            lastEmptyBlock = null;
           }
           y += item.outerHeight;
           // absolute/flex前置虚拟计算
@@ -566,11 +582,13 @@ class Dom extends Xom {
                 max = Math.max(max, item);
                 min = Math.min(min, item);
               });
+              mergeMarginBottomList = [];
               mergeMarginTopList.forEach(item => {
                 total += item;
                 max = Math.max(max, item);
                 min = Math.min(min, item);
               });
+              mergeMarginTopList = [];
               // 正正取最大
               if(max > 0 && min > 0) {
                 diff = Math.max(max, min) - total;
@@ -621,6 +639,8 @@ class Dom extends Xom {
       else {
         lastBlock = null;
         lastEmptyBlock = null;
+        mergeMarginBottomList = [];
+        mergeMarginTopList = [];
         // x开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);

@@ -16964,14 +16964,22 @@
 
           if (lastEmptyBlock && lastEmptyBlock !== lastBlock && lastBlock && (!isXom || isInline)) {
             var marginBottom = lastBlock.computedStyle[MARGIN_BOTTOM$3];
-            var _lastEmptyBlock$compu = lastEmptyBlock.computedStyle,
-                marginTop2 = _lastEmptyBlock$compu[MARGIN_TOP$2],
-                marginBottom2 = _lastEmptyBlock$compu[MARGIN_BOTTOM$3];
-            var total = marginBottom + marginTop2 + marginBottom2;
-            var max = Math.max(marginTop2, marginBottom2);
-            max = Math.max(max, marginBottom);
-            var min = Math.min(marginTop2, marginBottom2);
-            min = Math.min(min, marginBottom); // 同样简单的规则，最大最小值判断，只是不用偏移
+            var total = marginBottom,
+                max = marginBottom,
+                min = marginBottom; // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
+
+            mergeMarginBottomList.forEach(function (item) {
+              total += item;
+              max = Math.max(max, item);
+              min = Math.min(min, item);
+            });
+            mergeMarginBottomList = [];
+            mergeMarginTopList.forEach(function (item) {
+              total += item;
+              max = Math.max(max, item);
+              min = Math.min(min, item);
+            });
+            mergeMarginTopList = []; // 同样简单的规则，最大最小值判断，只是不用偏移
 
             var diff;
 
@@ -16988,7 +16996,9 @@
             // inline和block不同对待
             if (isInline) {
               lastBlock = null;
-              lastEmptyBlock = null; // inline开头，不用考虑是否放得下直接放
+              lastEmptyBlock = null;
+              mergeMarginBottomList = [];
+              mergeMarginTopList = []; // inline开头，不用考虑是否放得下直接放
 
               if (x === data.x) {
                 lineGroup.add(item);
@@ -17088,7 +17098,11 @@
                   mergeMarginBottomList.push(_marginBottom);
                   mergeMarginTopList.push(marginTop);
                   lastEmptyBlock = item;
+                } else {
+                  lastEmptyBlock = null;
                 }
+              } else {
+                lastEmptyBlock = null;
               }
 
               y += item.outerHeight; // absolute/flex前置虚拟计算
@@ -17118,11 +17132,13 @@
                     _max = Math.max(_max, item);
                     _min = Math.min(_min, item);
                   });
+                  mergeMarginBottomList = [];
                   mergeMarginTopList.forEach(function (item) {
                     _total += item;
                     _max = Math.max(_max, item);
                     _min = Math.min(_min, item);
-                  }); // 正正取最大
+                  });
+                  mergeMarginTopList = []; // 正正取最大
 
                   if (_max > 0 && _min > 0) {
                     _diff = Math.max(_max, _min) - _total;
@@ -17173,7 +17189,9 @@
           } // 文字和inline类似
           else {
               lastBlock = null;
-              lastEmptyBlock = null; // x开头，不用考虑是否放得下直接放
+              lastEmptyBlock = null;
+              mergeMarginBottomList = [];
+              mergeMarginTopList = []; // x开头，不用考虑是否放得下直接放
 
               if (x === data.x) {
                 lineGroup.add(item);

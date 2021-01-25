@@ -15403,13 +15403,17 @@
       key: "animate",
       value: function animate(list) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-        // if(this.isDestroyed) {
-        //   return;
-        // }
         var animation = new Animation(this, list, options);
+
+        if (this.isDestroyed) {
+          animation.__destroy(true);
+
+          return animation;
+        }
+
         this.animationList.push(animation);
 
-        if (this.isDestroyed || options.autoPlay === false) {
+        if (options.autoPlay === false) {
           return animation;
         }
 

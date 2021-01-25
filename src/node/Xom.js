@@ -2684,12 +2684,12 @@ class Xom extends Node {
   }
 
   animate(list, options = {}) {
-    if(this.isDestroyed) {
-      return;
-    }
+    // if(this.isDestroyed) {
+    //   return;
+    // }
     let animation = new Animation(this, list, options);
     this.animationList.push(animation);
-    if(options.autoPlay === false) {
+    if(this.isDestroyed || options.autoPlay === false) {
       return animation;
     }
     return animation.play();

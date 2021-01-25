@@ -1227,7 +1227,7 @@ class Root extends Dom {
         }
         // reflowHash没有记录则无返回继续递归执行
       }, { uniqueList });
-      // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+      // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行子节点先LAYOUT/OFFSET
       let diffList = [];
       let diffI = 0;
       uniqueList.forEach(item => {

@@ -15403,15 +15403,13 @@
       key: "animate",
       value: function animate(list) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-        if (this.isDestroyed) {
-          return;
-        }
-
+        // if(this.isDestroyed) {
+        //   return;
+        // }
         var animation = new Animation(this, list, options);
         this.animationList.push(animation);
 
-        if (options.autoPlay === false) {
+        if (this.isDestroyed || options.autoPlay === false) {
           return animation;
         }
 
@@ -16333,10 +16331,10 @@
 
         if (this.shadowRoot) {
           this.shadowRoot.__destroy();
-        }
+        } // this.__shadow = null;
+        // this.__shadowRoot = null;
 
-        this.__shadow = null;
-        this.__shadowRoot = null;
+
         this.__parent = null;
       }
     }, {
@@ -24413,7 +24411,7 @@
 
             }, {
               uniqueList: uniqueList
-            }); // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+            }); // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行子节点先LAYOUT/OFFSET
 
 
             var diffList = [];

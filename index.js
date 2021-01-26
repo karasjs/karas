@@ -11130,8 +11130,8 @@
         var target = __config[I_TARGET];
         var fps = __config[I_FPS];
         var playCount = __config[I_PLAY_COUNT];
-        var currentFrames = __config[I_CURRENT_FRAMES];
-        var direction = __config[I_DIRECTION];
+        var currentFrames = __config[I_CURRENT_FRAMES]; // let direction = __config[I_DIRECTION];
+
         var iterations = __config[I_ITERATIONS];
         var stayBegin = __config[I_STAY_BEGIN];
         var stayEnd = __config[I_STAY_END];
@@ -11229,35 +11229,26 @@
 
         if (isLastFrame) {
           // endDelay实际最后一次播放时生效，这里仅计算时间对比
-          inEndDelay = currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+          inEndDelay = isLastCount && currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
           // 多次播放时到达最后一帧也会显示
 
-          if (stayEnd && isLastCount) {
+          if (stayEnd || !isLastCount) {
             current = cloneStyle$2(currentFrame[FRAME_STYLE], __config[I_KEYS]);
-          } // 非最后一遍的最后一帧，根据差值视为第1帧
-          else if (!isLastCount) {
-              var t = currentTime - duration;
-              __config[I_NEXT_TIME] = t + diff;
-              playCount = ++__config[I_PLAY_COUNT];
-              __config[I_NEXT_BEGIN] = true; // 要排除非来回播放，来回的话视为最后1帧
-
-              if (direction !== 'alternate' && direction !== 'alternate-reverse') {
-                currentFrame = currentFrames[0];
-
-                var _total = currentFrames[1][FRAME_TIME] - currentFrame[FRAME_TIME];
-
-                percent = t / _total;
-                current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
-              } else {
-                current = cloneStyle$2(currentFrame[FRAME_STYLE], __config[I_KEYS]);
-              }
-            } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
-            else {
-                current = cloneStyle$2(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
-              } // 非尾每轮次放完增加次数和计算下轮准备
+          } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
+          else {
+              current = cloneStyle$2(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
+            } // 非尾每轮次放完增加次数和计算下轮准备
 
 
-          if (!isLastCount) ; // 尾次考虑endDelay
+          if (!isLastCount) {
+            // duration特别短的情况循环减去
+            while (__config[I_NEXT_TIME] >= duration) {
+              __config[I_NEXT_TIME] -= duration;
+            }
+
+            playCount = ++__config[I_PLAY_COUNT];
+            __config[I_NEXT_BEGIN] = true;
+          } // 尾次考虑endDelay，非尾次无endDelay结束动画
           else if (!inEndDelay) {
               __config[I_NEXT_TIME] = 0;
               playCount = ++__config[I_PLAY_COUNT]; // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
@@ -11265,7 +11256,8 @@
               if (playCount >= iterations) {
                 frame.offFrame(this);
               }
-            }
+            } // endDelay中无需特殊处理nextTime
+
         } else {
           current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
         } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做

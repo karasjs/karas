@@ -1535,7 +1535,6 @@ class Animation extends Event {
     let fps = __config[I_FPS];
     let playCount = __config[I_PLAY_COUNT];
     let currentFrames = __config[I_CURRENT_FRAMES];
-    let direction = __config[I_DIRECTION];
     let iterations = __config[I_ITERATIONS];
     let stayBegin = __config[I_STAY_BEGIN];
     let stayEnd = __config[I_STAY_END];
@@ -1622,27 +1621,11 @@ class Animation extends Event {
      */
     if(isLastFrame) {
       // endDelay实际最后一次播放时生效，这里仅计算时间对比
-      inEndDelay = currentTime < duration + endDelay;
+      inEndDelay = isLastCount && currentTime < duration + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       // 多次播放时到达最后一帧也会显示
-      if(stayEnd && isLastCount) {
+      if(stayEnd || !isLastCount) {
         current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
-      }
-      // 非最后一遍的最后一帧，根据差值视为第1帧
-      else if(!isLastCount) {
-        let t = currentTime - duration;
-        __config[I_NEXT_TIME] = t + diff;
-        playCount = ++__config[I_PLAY_COUNT];
-        __config[I_NEXT_BEGIN] = true;
-        // 要排除非来回播放，来回的话视为最后1帧
-        if(direction !== 'alternate' && direction !== 'alternate-reverse') {          currentFrame = currentFrames[0];
-          let total = currentFrames[1][FRAME_TIME] - currentFrame[FRAME_TIME];
-          percent = t / total;
-          current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
-        }
-        else {
-          current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
-        }
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
@@ -1650,11 +1633,14 @@ class Animation extends Event {
       }
       // 非尾每轮次放完增加次数和计算下轮准备
       if(!isLastCount) {
-        // __config[I_NEXT_TIME] = currentTime - duration + diff;
-        // playCount = ++__config[I_PLAY_COUNT];
-        // __config[I_NEXT_BEGIN] = true;
+        // duration特别短的情况循环减去
+        while(__config[I_NEXT_TIME] >= duration) {
+          __config[I_NEXT_TIME] -= duration;
+        }
+        playCount = ++__config[I_PLAY_COUNT];
+        __config[I_NEXT_BEGIN] = true;
       }
-      // 尾次考虑endDelay
+      // 尾次考虑endDelay，非尾次无endDelay结束动画
       else if(!inEndDelay) {
         __config[I_NEXT_TIME] = 0;
         playCount = ++__config[I_PLAY_COUNT];
@@ -1663,6 +1649,7 @@ class Animation extends Event {
           frame.offFrame(this);
         }
       }
+      // endDelay中无需特殊处理nextTime
     }
     else {
       current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);

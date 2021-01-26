@@ -2683,10 +2683,11 @@ class Xom extends Node {
   }
 
   animate(list, options = {}) {
-    if(this.isDestroyed) {
-      return;
-    }
     let animation = new Animation(this, list, options);
+    if(this.isDestroyed) {
+      animation.__destroy(true);
+      return animation;
+    }
     this.animationList.push(animation);
     if(options.autoPlay === false) {
       return animation;

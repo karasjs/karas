@@ -177,8 +177,8 @@ class Component extends Event {
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
     }
-    this.__shadow = null;
-    this.__shadowRoot = null;
+    // this.__shadow = null;
+    // this.__shadowRoot = null;
     this.__parent = null;
   }
 

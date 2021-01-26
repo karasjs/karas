@@ -1636,8 +1636,8 @@ class Animation extends Event {
         // duration特别短的情况循环减去
         while(__config[I_NEXT_TIME] >= duration) {
           __config[I_NEXT_TIME] -= duration;
+          playCount = ++__config[I_PLAY_COUNT];
         }
-        playCount = ++__config[I_PLAY_COUNT];
         __config[I_NEXT_BEGIN] = true;
       }
       // 尾次考虑endDelay，非尾次无endDelay结束动画

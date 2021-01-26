@@ -11130,8 +11130,7 @@
         var target = __config[I_TARGET];
         var fps = __config[I_FPS];
         var playCount = __config[I_PLAY_COUNT];
-        var currentFrames = __config[I_CURRENT_FRAMES]; // let direction = __config[I_DIRECTION];
-
+        var currentFrames = __config[I_CURRENT_FRAMES];
         var iterations = __config[I_ITERATIONS];
         var stayBegin = __config[I_STAY_BEGIN];
         var stayEnd = __config[I_STAY_END];
@@ -11244,9 +11243,9 @@
             // duration特别短的情况循环减去
             while (__config[I_NEXT_TIME] >= duration) {
               __config[I_NEXT_TIME] -= duration;
+              playCount = ++__config[I_PLAY_COUNT];
             }
 
-            playCount = ++__config[I_PLAY_COUNT];
             __config[I_NEXT_BEGIN] = true;
           } // 尾次考虑endDelay，非尾次无endDelay结束动画
           else if (!inEndDelay) {
@@ -15378,12 +15377,14 @@
       key: "animate",
       value: function animate(list) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+        var animation = new Animation(this, list, options);
 
         if (this.isDestroyed) {
-          return;
+          animation.__destroy(true);
+
+          return animation;
         }
 
-        var animation = new Animation(this, list, options);
         this.animationList.push(animation);
 
         if (options.autoPlay === false) {
@@ -16307,10 +16308,10 @@
 
         if (this.shadowRoot) {
           this.shadowRoot.__destroy();
-        }
+        } // this.__shadow = null;
+        // this.__shadowRoot = null;
 
-        this.__shadow = null;
-        this.__shadowRoot = null;
+
         this.__parent = null;
       }
     }, {
@@ -27388,7 +27389,7 @@
     Cache: Cache
   };
 
-  var version = "0.49.1";
+  var version = "0.49.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

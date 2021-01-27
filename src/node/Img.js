@@ -28,8 +28,6 @@ const {
     BACKGROUND_IMAGE,
     BACKGROUND_COLOR,
     BOX_SHADOW,
-    FILTER,
-    MIX_BLEND_MODE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -67,8 +65,6 @@ class Img extends Dom {
       style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = [0, PX];
       style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = [0, PX];
       style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = null;
-      style[FILTER] = currentStyle[FILTER] = null;
-      style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
     }
     let config = this.__config;
     config[NODE_IS_MASK] = isMask;

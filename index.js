@@ -18319,8 +18319,6 @@
       BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$c.BACKGROUND_IMAGE,
       BACKGROUND_COLOR$2 = _enums$STYLE_KEY$c.BACKGROUND_COLOR,
       BOX_SHADOW$3 = _enums$STYLE_KEY$c.BOX_SHADOW,
-      FILTER$4 = _enums$STYLE_KEY$c.FILTER,
-      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$c.MIX_BLEND_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -18370,8 +18368,6 @@
         style[BORDER_LEFT_WIDTH$3] = currentStyle[BORDER_LEFT_WIDTH$3] = [0, PX$6];
         style[BORDER_BOTTOM_WIDTH$3] = currentStyle[BORDER_BOTTOM_WIDTH$3] = [0, PX$6];
         style[BOX_SHADOW$3] = currentStyle[BOX_SHADOW$3] = null;
-        style[FILTER$4] = currentStyle[FILTER$4] = null;
-        style[MIX_BLEND_MODE$1] = currentStyle[MIX_BLEND_MODE$1] = 'normal';
       }
 
       var config = _this.__config;
@@ -18935,8 +18931,6 @@
         style.background = null;
         style.border = null;
         style.boxShadow = null;
-        style.filter = null;
-        style.mixBlendMode = 'normal';
       }
 
       _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
@@ -20207,8 +20201,8 @@
       NONE$1 = o$1.NONE,
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OPACITY$4 = o$1.OPACITY,
-      FILTER$5 = o$1.FILTER,
-      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE;
+      FILTER$4 = o$1.FILTER,
+      MIX_BLEND_MODE$1 = o$1.MIX_BLEND_MODE;
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
@@ -20435,7 +20429,7 @@
       }
     }
 
-    if (contain$1(lv, FILTER$5)) {
+    if (contain$1(lv, FILTER$4)) {
       if (filter) {
         elem.setAttribute('filter', filter);
       } else {
@@ -20443,7 +20437,7 @@
       }
     }
 
-    if (contain$1(lv, MIX_BLEND_MODE$2)) {
+    if (contain$1(lv, MIX_BLEND_MODE$1)) {
       if (mixBlendMode) {
         elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
       } else {
@@ -20960,9 +20954,9 @@
       DISPLAY$6 = _enums$STYLE_KEY$e.DISPLAY,
       OPACITY$5 = _enums$STYLE_KEY$e.OPACITY,
       VISIBILITY$5 = _enums$STYLE_KEY$e.VISIBILITY,
-      FILTER$6 = _enums$STYLE_KEY$e.FILTER,
+      FILTER$5 = _enums$STYLE_KEY$e.FILTER,
       OVERFLOW$1 = _enums$STYLE_KEY$e.OVERFLOW,
-      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
+      MIX_BLEND_MODE$2 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$e.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$e.TRANSFORM,
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN,
@@ -21297,7 +21291,7 @@
           visibility = _node$__config2$NODE_[VISIBILITY$5],
           transform = _node$__config2$NODE_[TRANSFORM$5],
           transformOrigin = _node$__config2$NODE_[TRANSFORM_ORIGIN$5],
-          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$3]; // mask不能被汇总到top上
+          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$2]; // mask不能被汇总到top上
 
       if (isMask) {
         continue;
@@ -21521,7 +21515,7 @@
         }
 
         if (contain$2(__refreshLevel, FT$1)) {
-          var filter = _computedStyle[FILTER$6] = currentStyle[FILTER$6];
+          var filter = _computedStyle[FILTER$5] = currentStyle[FILTER$5];
           __config[NODE_BLUR_VALUE$1] = 0;
 
           if (Array.isArray(filter)) {
@@ -21552,7 +21546,7 @@
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          _computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
+          _computedStyle[MIX_BLEND_MODE$2] = currentStyle[MIX_BLEND_MODE$2];
         } // total可以跳过所有孩子节点省略循环，filter/mask强制前提有total
 
 
@@ -21623,7 +21617,7 @@
             position = _config$NODE_COMPUTE[POSITION$3],
             visibility = _config$NODE_COMPUTE[VISIBILITY$5],
             overflow = _config$NODE_COMPUTE[OVERFLOW$1],
-            mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$3]; // text一定是叶子节点
+            mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$2]; // text一定是叶子节点
 
         if (node instanceof Text) {
           prevLv = lv;
@@ -21773,7 +21767,7 @@
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
           overflow = _node$__config3$NODE_[OVERFLOW$1],
-          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里
+          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$2]; // text如果不可见，parent会直接跳过，不会走到这里
 
       if (node instanceof Text) {
         ctx.globalAlpha = __opacity;
@@ -22636,7 +22630,7 @@
         }
 
         if (contain$2(__refreshLevel, FT$1)) {
-          var filter = computedStyle[FILTER$6] = currentStyle[FILTER$6];
+          var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
           delete virtualDom.filter; // 移除老缓存，防止无限增长
 
           for (var _i11 = defsCache.length - 1; _i11 >= 0; _i11--) {
@@ -22679,7 +22673,7 @@
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          var mixBlendMode = computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
+          var mixBlendMode = computedStyle[MIX_BLEND_MODE$2] = currentStyle[MIX_BLEND_MODE$2];
 
           if (mixBlendMode !== 'normal') {
             virtualDom.mixBlendMode = mixBlendMode;
@@ -22920,7 +22914,7 @@
       getLevel = o$1.getLevel,
       isRepaint = o$1.isRepaint,
       NONE$3 = o$1.NONE,
-      FILTER$7 = o$1.FILTER,
+      FILTER$6 = o$1.FILTER,
       REPAINT$3 = o$1.REPAINT,
       REFLOW$1 = o$1.REFLOW;
   var isIgnore = o.isIgnore,
@@ -23265,7 +23259,7 @@
       }
     }
 
-    if ((need || contain$3(lv, FILTER$7)) && __config[NODE_CACHE_FILTER$4]) {
+    if ((need || contain$3(lv, FILTER$6)) && __config[NODE_CACHE_FILTER$4]) {
       __config[NODE_CACHE_FILTER$4].release();
 
       __config[NODE_CACHE_FILTER$4] = null;
@@ -24772,7 +24766,7 @@
       PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
       STROKE_WIDTH$2 = _enums$STYLE_KEY$g.STROKE_WIDTH,
       BOX_SHADOW$4 = _enums$STYLE_KEY$g.BOX_SHADOW,
-      FILTER$8 = _enums$STYLE_KEY$g.FILTER;
+      FILTER$7 = _enums$STYLE_KEY$g.FILTER;
   var isNil$9 = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
@@ -25316,7 +25310,7 @@
             paddingLeft = _this$computedStyle[PADDING_LEFT$6],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
             boxShadow = _this$computedStyle[BOX_SHADOW$4],
-            filter = _this$computedStyle[FILTER$8],
+            filter = _this$computedStyle[FILTER$7],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         var originX = __sx2 + paddingLeft;
@@ -25412,7 +25406,7 @@
       PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
       STROKE_WIDTH$3 = _enums$STYLE_KEY$h.STROKE_WIDTH,
       BOX_SHADOW$5 = _enums$STYLE_KEY$h.BOX_SHADOW,
-      FILTER$9 = _enums$STYLE_KEY$h.FILTER;
+      FILTER$8 = _enums$STYLE_KEY$h.FILTER;
   var isNil$a = util.isNil;
 
   function concatPointAndControl(point, control) {
@@ -25898,7 +25892,7 @@
             paddingLeft = _this$computedStyle[PADDING_LEFT$7],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
             boxShadow = _this$computedStyle[BOX_SHADOW$5],
-            filter = _this$computedStyle[FILTER$9],
+            filter = _this$computedStyle[FILTER$8],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         var originX = __sx2 + paddingLeft;
@@ -26005,7 +25999,7 @@
       PADDING_LEFT$8 = _enums$STYLE_KEY$i.PADDING_LEFT,
       STROKE_WIDTH$4 = _enums$STYLE_KEY$i.STROKE_WIDTH,
       BOX_SHADOW$6 = _enums$STYLE_KEY$i.BOX_SHADOW,
-      FILTER$a = _enums$STYLE_KEY$i.FILTER;
+      FILTER$9 = _enums$STYLE_KEY$i.FILTER;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
 
@@ -26393,7 +26387,7 @@
             paddingLeft = _this$computedStyle[PADDING_LEFT$8],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
             boxShadow = _this$computedStyle[BOX_SHADOW$6],
-            filter = _this$computedStyle[FILTER$a];
+            filter = _this$computedStyle[FILTER$9];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
@@ -26444,7 +26438,7 @@
       PADDING_LEFT$9 = _enums$STYLE_KEY$j.PADDING_LEFT,
       STROKE_WIDTH$5 = _enums$STYLE_KEY$j.STROKE_WIDTH,
       BOX_SHADOW$7 = _enums$STYLE_KEY$j.BOX_SHADOW,
-      FILTER$b = _enums$STYLE_KEY$j.FILTER;
+      FILTER$a = _enums$STYLE_KEY$j.FILTER;
   var isNil$c = util.isNil;
 
   function genVertex(x, y, width, height) {
@@ -26599,7 +26593,7 @@
             paddingLeft = _this$computedStyle[PADDING_LEFT$9],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
             boxShadow = _this$computedStyle[BOX_SHADOW$7],
-            filter = _this$computedStyle[FILTER$b];
+            filter = _this$computedStyle[FILTER$a];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
@@ -26631,7 +26625,7 @@
       PADDING_LEFT$a = _enums$STYLE_KEY$k.PADDING_LEFT,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$k.STROKE_WIDTH,
       BOX_SHADOW$8 = _enums$STYLE_KEY$k.BOX_SHADOW,
-      FILTER$c = _enums$STYLE_KEY$k.FILTER;
+      FILTER$b = _enums$STYLE_KEY$k.FILTER;
   var isNil$d = util.isNil;
 
   function getR$2(v) {
@@ -26733,7 +26727,7 @@
             paddingLeft = _this$computedStyle[PADDING_LEFT$a],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
             boxShadow = _this$computedStyle[BOX_SHADOW$8],
-            filter = _this$computedStyle[FILTER$c];
+            filter = _this$computedStyle[FILTER$b];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
@@ -26784,7 +26778,7 @@
       PADDING_LEFT$b = _enums$STYLE_KEY$l.PADDING_LEFT,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$l.STROKE_WIDTH,
       BOX_SHADOW$9 = _enums$STYLE_KEY$l.BOX_SHADOW,
-      FILTER$d = _enums$STYLE_KEY$l.FILTER;
+      FILTER$c = _enums$STYLE_KEY$l.FILTER;
   var isNil$e = util.isNil;
 
   function getR$3(v) {
@@ -26934,7 +26928,7 @@
             paddingLeft = _this$computedStyle[PADDING_LEFT$b],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
             boxShadow = _this$computedStyle[BOX_SHADOW$9],
-            filter = _this$computedStyle[FILTER$d];
+            filter = _this$computedStyle[FILTER$c];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;

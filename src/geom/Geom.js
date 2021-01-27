@@ -66,8 +66,6 @@ class Geom extends Xom {
       style.background = null;
       style.border = null;
       style.boxShadow = null;
-      style.filter = null;
-      style.mixBlendMode = 'normal';
     }
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);

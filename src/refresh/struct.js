@@ -41,6 +41,7 @@ const {
     NODE_HAS_CONTENT,
     NODE_CACHE_STYLE,
     NODE_DEFS_CACHE,
+    NODE_IS_MASK,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -61,7 +62,7 @@ const {
 } = level;
 
 /**
- * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出
+ * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出，忽略掉mask没有意义
  * @param structs 先序整树
  */
 function genLRD(structs) {
@@ -106,17 +107,30 @@ function genLRD(structs) {
         }
         last = obj;
         // 文本或单个节点不再继续深度遍历
-        if(node instanceof Text || !total) {
+        if(node instanceof Text) {
+          continue;
+        }
+        if(!total) {
+          if(hasMask) {
+            i += hasMask;
+          }
           continue;
         }
         // 遗留有total缓存的跳过视为1个节点
         if(__cacheTotal && __cacheTotal.available) {
           i += (total || 0);
+          if(hasMask) {
+            i += hasMask;
+          }
           continue;
         }
         hash[i] = obj;
         list.push(i);
         i += (total || 0);
+        // lrd忽略掉mask
+        if(hasMask) {
+          i += hasMask;
+        }
       }
       // 第一层Root没有parent，后面层都有，最后一个子节点连到parent，如果parent本身有链接，赋予first
       if(parent && last) {
@@ -314,6 +328,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
       [NODE_CACHE_FILTER]: __cacheFilter,
       [NODE_CACHE_MASK]: __cacheMask,
       [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+      [NODE_IS_MASK]: isMask,
       [NODE_COMPUTED_STYLE]: {
         [DISPLAY]: display,
         [VISIBILITY]: visibility,
@@ -322,6 +337,10 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
         [MIX_BLEND_MODE]: mixBlendMode,
       },
     } = node.__config;
+    // mask不能被汇总到top上
+    if(isMask) {
+      continue;
+    }
     if(display === 'none') {
       i += (total || 0);
       if(hasMask) {
@@ -329,7 +348,8 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
       }
       continue;
     }
-    if(visibility === 'hidden') {
+    // 单个不可见节点跳过
+    if(visibility === 'hidden' && !total) {
       continue;
     }
     let parentIndex = parentIndexHash[i];

@@ -20958,6 +20958,7 @@
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
@@ -20972,7 +20973,7 @@
       contain$2 = o$1.contain,
       MBM = o$1.MIX_BLEND_MODE;
   /**
-   * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出
+   * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出，忽略掉mask没有意义
    * @param structs 先序整树
    */
 
@@ -21025,19 +21026,36 @@
 
           last = obj; // 文本或单个节点不再继续深度遍历
 
-          if (node instanceof Text || !total) {
+          if (node instanceof Text) {
+            continue;
+          }
+
+          if (!total) {
+            if (hasMask) {
+              i += hasMask;
+            }
+
             continue;
           } // 遗留有total缓存的跳过视为1个节点
 
 
           if (__cacheTotal && __cacheTotal.available) {
             i += total || 0;
+
+            if (hasMask) {
+              i += hasMask;
+            }
+
             continue;
           }
 
           hash[i] = obj;
           list.push(i);
-          i += total || 0;
+          i += total || 0; // lrd忽略掉mask
+
+          if (hasMask) {
+            i += hasMask;
+          }
         } // 第一层Root没有parent，后面层都有，最后一个子节点连到parent，如果parent本身有链接，赋予first
 
 
@@ -21265,12 +21283,17 @@
           __cacheFilter = _node$__config2[NODE_CACHE_FILTER$3],
           __cacheMask = _node$__config2[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config2[NODE_CACHE_OVERFLOW$3],
+          isMask = _node$__config2[NODE_IS_MASK$2],
           _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
           display = _node$__config2$NODE_[DISPLAY$6],
           visibility = _node$__config2$NODE_[VISIBILITY$5],
           transform = _node$__config2$NODE_[TRANSFORM$5],
           transformOrigin = _node$__config2$NODE_[TRANSFORM_ORIGIN$5],
-          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$2];
+          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$2]; // mask不能被汇总到top上
+
+      if (isMask) {
+        continue;
+      }
 
       if (display === 'none') {
         i += _total2 || 0;
@@ -21280,9 +21303,10 @@
         }
 
         continue;
-      }
+      } // 单个不可见节点跳过
 
-      if (visibility === 'hidden') {
+
+      if (visibility === 'hidden' && !_total2) {
         continue;
       }
 
@@ -22857,7 +22881,7 @@
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
-      NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
+      NODE_IS_MASK$3 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
       NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
@@ -23052,7 +23076,7 @@
         computedStyle = __config[NODE_COMPUTED_STYLE$3],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$3],
-        isMask = __config[NODE_IS_MASK$2];
+        isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新

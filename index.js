@@ -18319,6 +18319,7 @@
       BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$c.BACKGROUND_IMAGE,
       BACKGROUND_COLOR$2 = _enums$STYLE_KEY$c.BACKGROUND_COLOR,
       BOX_SHADOW$3 = _enums$STYLE_KEY$c.BOX_SHADOW,
+      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$c.MIX_BLEND_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -18368,6 +18369,7 @@
         style[BORDER_LEFT_WIDTH$3] = currentStyle[BORDER_LEFT_WIDTH$3] = [0, PX$6];
         style[BORDER_BOTTOM_WIDTH$3] = currentStyle[BORDER_BOTTOM_WIDTH$3] = [0, PX$6];
         style[BOX_SHADOW$3] = currentStyle[BOX_SHADOW$3] = null;
+        style[MIX_BLEND_MODE$1] = currentStyle[MIX_BLEND_MODE$1] = 'normal';
       }
 
       var config = _this.__config;
@@ -18931,6 +18933,7 @@
         style.background = null;
         style.border = null;
         style.boxShadow = null;
+        style.mixBlendMode = 'normal';
       }
 
       _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
@@ -20202,7 +20205,7 @@
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OPACITY$4 = o$1.OPACITY,
       FILTER$4 = o$1.FILTER,
-      MIX_BLEND_MODE$1 = o$1.MIX_BLEND_MODE;
+      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE;
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
@@ -20437,7 +20440,7 @@
       }
     }
 
-    if (contain$1(lv, MIX_BLEND_MODE$1)) {
+    if (contain$1(lv, MIX_BLEND_MODE$2)) {
       if (mixBlendMode) {
         elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
       } else {
@@ -20956,7 +20959,7 @@
       VISIBILITY$5 = _enums$STYLE_KEY$e.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$e.FILTER,
       OVERFLOW$1 = _enums$STYLE_KEY$e.OVERFLOW,
-      MIX_BLEND_MODE$2 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
+      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$e.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$e.TRANSFORM,
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN,
@@ -21291,7 +21294,7 @@
           visibility = _node$__config2$NODE_[VISIBILITY$5],
           transform = _node$__config2$NODE_[TRANSFORM$5],
           transformOrigin = _node$__config2$NODE_[TRANSFORM_ORIGIN$5],
-          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$2]; // mask不能被汇总到top上
+          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$3]; // mask不能被汇总到top上
 
       if (isMask) {
         continue;
@@ -21546,7 +21549,7 @@
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          _computedStyle[MIX_BLEND_MODE$2] = currentStyle[MIX_BLEND_MODE$2];
+          _computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
         } // total可以跳过所有孩子节点省略循环，filter/mask强制前提有total
 
 
@@ -21617,7 +21620,7 @@
             position = _config$NODE_COMPUTE[POSITION$3],
             visibility = _config$NODE_COMPUTE[VISIBILITY$5],
             overflow = _config$NODE_COMPUTE[OVERFLOW$1],
-            mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$2]; // text一定是叶子节点
+            mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$3]; // text一定是叶子节点
 
         if (node instanceof Text) {
           prevLv = lv;
@@ -21767,7 +21770,7 @@
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
           overflow = _node$__config3$NODE_[OVERFLOW$1],
-          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$2]; // text如果不可见，parent会直接跳过，不会走到这里
+          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里
 
       if (node instanceof Text) {
         ctx.globalAlpha = __opacity;
@@ -22673,7 +22676,7 @@
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          var mixBlendMode = computedStyle[MIX_BLEND_MODE$2] = currentStyle[MIX_BLEND_MODE$2];
+          var mixBlendMode = computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
 
           if (mixBlendMode !== 'normal') {
             virtualDom.mixBlendMode = mixBlendMode;

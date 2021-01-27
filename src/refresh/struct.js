@@ -62,7 +62,7 @@ const {
 } = level;
 
 /**
- * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出，忽略掉mask没有意义
+ * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出
  * @param structs 先序整树
  */
 function genLRD(structs) {
@@ -107,30 +107,17 @@ function genLRD(structs) {
         }
         last = obj;
         // 文本或单个节点不再继续深度遍历
-        if(node instanceof Text) {
-          continue;
-        }
-        if(!total) {
-          if(hasMask) {
-            i += hasMask;
-          }
+        if(node instanceof Text || !total) {
           continue;
         }
         // 遗留有total缓存的跳过视为1个节点
         if(__cacheTotal && __cacheTotal.available) {
           i += (total || 0);
-          if(hasMask) {
-            i += hasMask;
-          }
           continue;
         }
         hash[i] = obj;
         list.push(i);
         i += (total || 0);
-        // lrd忽略掉mask
-        if(hasMask) {
-          i += hasMask;
-        }
       }
       // 第一层Root没有parent，后面层都有，最后一个子节点连到parent，如果parent本身有链接，赋予first
       if(parent && last) {
@@ -348,8 +335,8 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
       }
       continue;
     }
-    // 单个不可见节点跳过
-    if(visibility === 'hidden' && !total) {
+    // 单个不可见节点跳过，其孩子还要继续
+    if(visibility === 'hidden') {
       continue;
     }
     let parentIndex = parentIndexHash[i];

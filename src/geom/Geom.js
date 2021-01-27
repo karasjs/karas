@@ -59,14 +59,14 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
-    this.__isClip = !!this.props.clip;
-    let isMask = this.__isMask = this.__isClip || !!this.props.mask;
+    let isClip = this.__isClip = !!this.props.clip;
+    let isMask = this.__isMask = isClip || !!this.props.mask;
     let { style } = this;
     if(isMask) {
       style.background = null;
       style.border = null;
-      style.strokeWidth = 0;
-      style.stroke = null;
+      style.boxShadow = null;
+      style.mixBlendMode = 'normal';
     }
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
@@ -95,7 +95,7 @@ class Geom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { currentStyle, computedStyle } = this;
+    let { currentStyle } = this;
     // 计算需考虑style的属性
     let {
       [WIDTH]: width,

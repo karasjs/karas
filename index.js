@@ -11147,7 +11147,6 @@
         var fps = __config[I_FPS];
         var playCount = __config[I_PLAY_COUNT];
         var currentFrames = __config[I_CURRENT_FRAMES];
-        var direction = __config[I_DIRECTION];
         var iterations = __config[I_ITERATIONS];
         var stayBegin = __config[I_STAY_BEGIN];
         var stayEnd = __config[I_STAY_END];
@@ -11245,35 +11244,26 @@
 
         if (isLastFrame) {
           // endDelay实际最后一次播放时生效，这里仅计算时间对比
-          inEndDelay = currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+          inEndDelay = isLastCount && currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
           // 多次播放时到达最后一帧也会显示
 
-          if (stayEnd && isLastCount) {
+          if (stayEnd || !isLastCount) {
             current = cloneStyle$2(currentFrame[FRAME_STYLE], __config[I_KEYS]);
-          } // 非最后一遍的最后一帧，根据差值视为第1帧
-          else if (!isLastCount) {
-              var t = currentTime - duration;
-              __config[I_NEXT_TIME] = t + diff;
+          } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
+          else {
+              current = cloneStyle$2(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
+            } // 非尾每轮次放完增加次数和计算下轮准备
+
+
+          if (!isLastCount) {
+            // duration特别短的情况循环减去
+            while (__config[I_NEXT_TIME] >= duration) {
+              __config[I_NEXT_TIME] -= duration;
               playCount = ++__config[I_PLAY_COUNT];
-              __config[I_NEXT_BEGIN] = true; // 要排除非来回播放，来回的话视为最后1帧
+            }
 
-              if (direction !== 'alternate' && direction !== 'alternate-reverse') {
-                currentFrame = currentFrames[0];
-
-                var _total = currentFrames[1][FRAME_TIME] - currentFrame[FRAME_TIME];
-
-                percent = t / _total;
-                current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
-              } else {
-                current = cloneStyle$2(currentFrame[FRAME_STYLE], __config[I_KEYS]);
-              }
-            } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
-            else {
-                current = cloneStyle$2(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
-              } // 非尾每轮次放完增加次数和计算下轮准备
-
-
-          if (!isLastCount) ; // 尾次考虑endDelay
+            __config[I_NEXT_BEGIN] = true;
+          } // 尾次考虑endDelay，非尾次无endDelay结束动画
           else if (!inEndDelay) {
               __config[I_NEXT_TIME] = 0;
               playCount = ++__config[I_PLAY_COUNT]; // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
@@ -11281,7 +11271,8 @@
               if (playCount >= iterations) {
                 frame.offFrame(this);
               }
-            }
+            } // endDelay中无需特殊处理nextTime
+
         } else {
           current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
         } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
@@ -18482,6 +18473,10 @@
       BORDER_BOTTOM_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_RIGHT_RADIUS,
       BORDER_BOTTOM_LEFT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_LEFT_RADIUS,
       VISIBILITY$3 = _enums$STYLE_KEY$c.VISIBILITY,
+      BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$c.BACKGROUND_IMAGE,
+      BACKGROUND_COLOR$2 = _enums$STYLE_KEY$c.BACKGROUND_COLOR,
+      BOX_SHADOW$3 = _enums$STYLE_KEY$c.BOX_SHADOW,
+      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$c.MIX_BLEND_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -18492,7 +18487,9 @@
       NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
       NODE_DEFS_CACHE$1 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
       NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK;
-  var AUTO$4 = unit.AUTO;
+  var AUTO$4 = unit.AUTO,
+      PX$6 = unit.PX,
+      RGBA$2 = unit.RGBA;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
 
@@ -18514,8 +18511,24 @@
         loadImg.error = true;
       }
 
-      _this.__isClip = !!_this.props.clip;
-      var isMask = _this.__isMask = _this.__isClip || !!_this.props.mask;
+      var isClip = _this.__isClip = !!_this.props.clip;
+      var isMask = _this.__isMask = isClip || !!_this.props.mask;
+
+      if (isMask) {
+        var _assertThisInitialize = _assertThisInitialized(_this),
+            style = _assertThisInitialize.style,
+            currentStyle = _assertThisInitialize.currentStyle;
+
+        style[BACKGROUND_IMAGE$2] = currentStyle[BACKGROUND_IMAGE$2] = [null];
+        style[BACKGROUND_COLOR$2] = currentStyle[BACKGROUND_COLOR$2] = [[0, 0, 0, 0], RGBA$2];
+        style[BORDER_TOP_WIDTH$3] = currentStyle[BORDER_TOP_WIDTH$3] = [0, PX$6];
+        style[BORDER_RIGHT_WIDTH$3] = currentStyle[BORDER_RIGHT_WIDTH$3] = [0, PX$6];
+        style[BORDER_LEFT_WIDTH$3] = currentStyle[BORDER_LEFT_WIDTH$3] = [0, PX$6];
+        style[BORDER_BOTTOM_WIDTH$3] = currentStyle[BORDER_BOTTOM_WIDTH$3] = [0, PX$6];
+        style[BOX_SHADOW$3] = currentStyle[BOX_SHADOW$3] = null;
+        style[MIX_BLEND_MODE$1] = currentStyle[MIX_BLEND_MODE$1] = 'normal';
+      }
+
       var config = _this.__config;
       config[NODE_IS_MASK] = isMask;
       return _this;
@@ -19046,7 +19059,7 @@
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW,
       NODE_DEFS_CACHE$2 = _enums$NODE_KEY$5.NODE_DEFS_CACHE;
   var AUTO$5 = unit.AUTO,
-      PX$6 = unit.PX,
+      PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
   var int2rgba$2 = util.int2rgba,
       isNil$7 = util.isNil,
@@ -19067,8 +19080,8 @@
 
       _this = _super.call(this, tagName, props);
       _this.__isMulti = !!_this.props.multi;
-      _this.__isClip = !!_this.props.clip;
-      var isMask = _this.__isMask = _this.__isClip || !!_this.props.mask;
+      var isClip = _this.__isClip = !!_this.props.clip;
+      var isMask = _this.__isMask = isClip || !!_this.props.mask;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style;
@@ -19076,8 +19089,8 @@
       if (isMask) {
         style.background = null;
         style.border = null;
-        style.strokeWidth = 0;
-        style.stroke = null;
+        style.boxShadow = null;
+        style.mixBlendMode = 'normal';
       }
 
       _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
@@ -19098,7 +19111,7 @@
         // 无children，直接以style的width为宽度，不定义则为0
         var width = this.currentStyle[WIDTH$6];
 
-        if (width[1] === PX$6) {
+        if (width[1] === PX$7) {
           return w - width[0];
         } else if (width[1] === PERCENT$7) {
           return w - total * width[0] * 0.01;
@@ -19112,8 +19125,7 @@
         var b = 0;
         var min = 0;
         var max = 0;
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle; // 计算需考虑style的属性
+        var currentStyle = this.currentStyle; // 计算需考虑style的属性
 
         var width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$6],
@@ -19207,7 +19219,7 @@
           var strokeWidth = currentStyle[STROKE_WIDTH$1] || [];
           var w = this.width;
           computedStyle[STROKE_WIDTH$1] = strokeWidth.map(function (item) {
-            if (item[1] === PX$6) {
+            if (item[1] === PX$7) {
               return item[0];
             } else if (item[1] === PERCENT$7) {
               return item[0] * w * 0.01;
@@ -20011,7 +20023,8 @@
       sr.__config[NODE_MATRIX_EVENT$1] = oldSr.__config[NODE_MATRIX_EVENT$1];
     }
 
-    ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
+    ['__x', '__y', '__width', '__height', '__sx1', // text和xom
+    '__layoutData', '__parent', '__domParent'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
     sr.__config[NODE_DOM_PARENT$2] = oldSr.domParent;
@@ -20349,7 +20362,7 @@
       TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
       OPACITY$4 = o$1.OPACITY,
       FILTER$4 = o$1.FILTER,
-      MIX_BLEND_MODE$1 = o$1.MIX_BLEND_MODE;
+      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE;
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
@@ -20584,7 +20597,7 @@
       }
     }
 
-    if (contain$1(lv, MIX_BLEND_MODE$1)) {
+    if (contain$1(lv, MIX_BLEND_MODE$2)) {
       if (mixBlendMode) {
         elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
       } else {
@@ -21103,7 +21116,7 @@
       VISIBILITY$5 = _enums$STYLE_KEY$e.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$e.FILTER,
       OVERFLOW$1 = _enums$STYLE_KEY$e.OVERFLOW,
-      MIX_BLEND_MODE$2 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
+      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$e.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$e.TRANSFORM,
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$e.TRANSFORM_ORIGIN,
@@ -21124,6 +21137,7 @@
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
@@ -21431,12 +21445,17 @@
           __cacheFilter = _node$__config2[NODE_CACHE_FILTER$3],
           __cacheMask = _node$__config2[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config2[NODE_CACHE_OVERFLOW$3],
+          isMask = _node$__config2[NODE_IS_MASK$2],
           _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
           display = _node$__config2$NODE_[DISPLAY$6],
           visibility = _node$__config2$NODE_[VISIBILITY$5],
           transform = _node$__config2$NODE_[TRANSFORM$5],
           transformOrigin = _node$__config2$NODE_[TRANSFORM_ORIGIN$5],
-          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$2];
+          mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$3]; // mask不能被汇总到top上
+
+      if (isMask) {
+        continue;
+      }
 
       if (display === 'none') {
         i += _total2 || 0;
@@ -21446,7 +21465,8 @@
         }
 
         continue;
-      }
+      } // 单个不可见节点跳过，其孩子还要继续
+
 
       if (visibility === 'hidden') {
         continue;
@@ -21686,7 +21706,7 @@
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          _computedStyle[MIX_BLEND_MODE$2] = currentStyle[MIX_BLEND_MODE$2];
+          _computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
         } // total可以跳过所有孩子节点省略循环，filter/mask强制前提有total
 
 
@@ -21757,7 +21777,7 @@
             position = _config$NODE_COMPUTE[POSITION$3],
             visibility = _config$NODE_COMPUTE[VISIBILITY$5],
             overflow = _config$NODE_COMPUTE[OVERFLOW$1],
-            mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$2]; // text一定是叶子节点
+            mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$3]; // text一定是叶子节点
 
         if (node instanceof Text) {
           prevLv = lv;
@@ -21907,7 +21927,7 @@
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
           overflow = _node$__config3$NODE_[OVERFLOW$1],
-          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$2]; // text如果不可见，parent会直接跳过，不会走到这里
+          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里
 
       if (node instanceof Text) {
         ctx.globalAlpha = __opacity;
@@ -22333,7 +22353,7 @@
           hasMask = _structs$_i3[STRUCT_HAS_MASK$1];
       var _node$__config4 = node.__config,
           computedStyle = _node$__config4[NODE_COMPUTED_STYLE$2],
-          __refreshLevel = _node$__config4[NODE_REFRESH_LV$1]; // 第一个mask在另外一个离屏上，开始聚集所有mask元素的绘制
+          __refreshLevel = _node$__config4[NODE_REFRESH_LV$1]; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏，开始聚集所有mask元素的绘制
 
       if (maskStartHash.hasOwnProperty(_i7)) {
         ctx = maskStartHash[_i7].ctx;
@@ -22375,7 +22395,7 @@
       } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
 
 
-      if (offScreenMask || hasMask) {
+      if (offScreenMask) {
         var _j7 = _i7 + (total || 0) + 1;
 
         var startIndex, endIndex;
@@ -22813,7 +22833,7 @@
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          var mixBlendMode = computedStyle[MIX_BLEND_MODE$2] = currentStyle[MIX_BLEND_MODE$2];
+          var mixBlendMode = computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
 
           if (mixBlendMode !== 'normal') {
             virtualDom.mixBlendMode = mixBlendMode;
@@ -23023,7 +23043,7 @@
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
-      NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
+      NODE_IS_MASK$3 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
       NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
@@ -23044,7 +23064,7 @@
       isObject$2 = util.isObject,
       isFunction$6 = util.isFunction;
   var AUTO$6 = unit.AUTO,
-      PX$7 = unit.PX,
+      PX$8 = unit.PX,
       PERCENT$8 = unit.PERCENT,
       INHERIT$5 = unit.INHERIT;
   var calRelative$2 = css.calRelative,
@@ -23112,7 +23132,7 @@
     var c = node.currentStyle[k];
     var v = node.computedStyle[k];
 
-    if (c[1] === PX$7) {
+    if (c[1] === PX$8) {
       return c[0] === v;
     }
 
@@ -23218,7 +23238,7 @@
         computedStyle = __config[NODE_COMPUTED_STYLE$3],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$3],
-        isMask = __config[NODE_IS_MASK$2];
+        isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
@@ -23965,8 +23985,8 @@
         } // 根节点满宽高
 
 
-        currentStyle[WIDTH$7] = [width, PX$7];
-        currentStyle[HEIGHT$7] = [height, PX$7];
+        currentStyle[WIDTH$7] = [width, PX$8];
+        currentStyle[HEIGHT$7] = [height, PX$8];
         computedStyle[WIDTH$7] = width;
         computedStyle[HEIGHT$7] = height;
       }
@@ -24905,7 +24925,7 @@
       PADDING_TOP$6 = _enums$STYLE_KEY$g.PADDING_TOP,
       PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
       STROKE_WIDTH$2 = _enums$STYLE_KEY$g.STROKE_WIDTH,
-      BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
+      BOX_SHADOW$4 = _enums$STYLE_KEY$g.BOX_SHADOW,
       FILTER$7 = _enums$STYLE_KEY$g.FILTER;
   var isNil$9 = util.isNil;
 
@@ -25449,7 +25469,7 @@
             paddingTop = _this$computedStyle[PADDING_TOP$6],
             paddingLeft = _this$computedStyle[PADDING_LEFT$6],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
-            boxShadow = _this$computedStyle[BOX_SHADOW$3],
+            boxShadow = _this$computedStyle[BOX_SHADOW$4],
             filter = _this$computedStyle[FILTER$7],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
@@ -25545,7 +25565,7 @@
       PADDING_TOP$7 = _enums$STYLE_KEY$h.PADDING_TOP,
       PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
       STROKE_WIDTH$3 = _enums$STYLE_KEY$h.STROKE_WIDTH,
-      BOX_SHADOW$4 = _enums$STYLE_KEY$h.BOX_SHADOW,
+      BOX_SHADOW$5 = _enums$STYLE_KEY$h.BOX_SHADOW,
       FILTER$8 = _enums$STYLE_KEY$h.FILTER;
   var isNil$a = util.isNil;
 
@@ -26031,7 +26051,7 @@
             paddingTop = _this$computedStyle[PADDING_TOP$7],
             paddingLeft = _this$computedStyle[PADDING_LEFT$7],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
-            boxShadow = _this$computedStyle[BOX_SHADOW$4],
+            boxShadow = _this$computedStyle[BOX_SHADOW$5],
             filter = _this$computedStyle[FILTER$8],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
@@ -26138,7 +26158,7 @@
       PADDING_TOP$8 = _enums$STYLE_KEY$i.PADDING_TOP,
       PADDING_LEFT$8 = _enums$STYLE_KEY$i.PADDING_LEFT,
       STROKE_WIDTH$4 = _enums$STYLE_KEY$i.STROKE_WIDTH,
-      BOX_SHADOW$5 = _enums$STYLE_KEY$i.BOX_SHADOW,
+      BOX_SHADOW$6 = _enums$STYLE_KEY$i.BOX_SHADOW,
       FILTER$9 = _enums$STYLE_KEY$i.FILTER;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
@@ -26526,7 +26546,7 @@
             paddingTop = _this$computedStyle[PADDING_TOP$8],
             paddingLeft = _this$computedStyle[PADDING_LEFT$8],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
-            boxShadow = _this$computedStyle[BOX_SHADOW$5],
+            boxShadow = _this$computedStyle[BOX_SHADOW$6],
             filter = _this$computedStyle[FILTER$9];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
@@ -26577,7 +26597,7 @@
       PADDING_TOP$9 = _enums$STYLE_KEY$j.PADDING_TOP,
       PADDING_LEFT$9 = _enums$STYLE_KEY$j.PADDING_LEFT,
       STROKE_WIDTH$5 = _enums$STYLE_KEY$j.STROKE_WIDTH,
-      BOX_SHADOW$6 = _enums$STYLE_KEY$j.BOX_SHADOW,
+      BOX_SHADOW$7 = _enums$STYLE_KEY$j.BOX_SHADOW,
       FILTER$a = _enums$STYLE_KEY$j.FILTER;
   var isNil$c = util.isNil;
 
@@ -26732,7 +26752,7 @@
             paddingTop = _this$computedStyle[PADDING_TOP$9],
             paddingLeft = _this$computedStyle[PADDING_LEFT$9],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
-            boxShadow = _this$computedStyle[BOX_SHADOW$6],
+            boxShadow = _this$computedStyle[BOX_SHADOW$7],
             filter = _this$computedStyle[FILTER$a];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
@@ -26764,7 +26784,7 @@
       PADDING_TOP$a = _enums$STYLE_KEY$k.PADDING_TOP,
       PADDING_LEFT$a = _enums$STYLE_KEY$k.PADDING_LEFT,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$k.STROKE_WIDTH,
-      BOX_SHADOW$7 = _enums$STYLE_KEY$k.BOX_SHADOW,
+      BOX_SHADOW$8 = _enums$STYLE_KEY$k.BOX_SHADOW,
       FILTER$b = _enums$STYLE_KEY$k.FILTER;
   var isNil$d = util.isNil;
 
@@ -26866,7 +26886,7 @@
             paddingTop = _this$computedStyle[PADDING_TOP$a],
             paddingLeft = _this$computedStyle[PADDING_LEFT$a],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
-            boxShadow = _this$computedStyle[BOX_SHADOW$7],
+            boxShadow = _this$computedStyle[BOX_SHADOW$8],
             filter = _this$computedStyle[FILTER$b];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
@@ -26917,7 +26937,7 @@
       PADDING_TOP$b = _enums$STYLE_KEY$l.PADDING_TOP,
       PADDING_LEFT$b = _enums$STYLE_KEY$l.PADDING_LEFT,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-      BOX_SHADOW$8 = _enums$STYLE_KEY$l.BOX_SHADOW,
+      BOX_SHADOW$9 = _enums$STYLE_KEY$l.BOX_SHADOW,
       FILTER$c = _enums$STYLE_KEY$l.FILTER;
   var isNil$e = util.isNil;
 
@@ -27067,7 +27087,7 @@
             paddingTop = _this$computedStyle[PADDING_TOP$b],
             paddingLeft = _this$computedStyle[PADDING_LEFT$b],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
-            boxShadow = _this$computedStyle[BOX_SHADOW$8],
+            boxShadow = _this$computedStyle[BOX_SHADOW$9],
             filter = _this$computedStyle[FILTER$c];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
@@ -27555,7 +27575,7 @@
     Cache: Cache
   };
 
-  var version = "0.49.1";
+  var version = "0.49.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

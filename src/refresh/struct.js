@@ -41,6 +41,7 @@ const {
     NODE_HAS_CONTENT,
     NODE_CACHE_STYLE,
     NODE_DEFS_CACHE,
+    NODE_IS_MASK,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -314,6 +315,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
       [NODE_CACHE_FILTER]: __cacheFilter,
       [NODE_CACHE_MASK]: __cacheMask,
       [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+      [NODE_IS_MASK]: isMask,
       [NODE_COMPUTED_STYLE]: {
         [DISPLAY]: display,
         [VISIBILITY]: visibility,
@@ -322,6 +324,10 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
         [MIX_BLEND_MODE]: mixBlendMode,
       },
     } = node.__config;
+    // mask不能被汇总到top上
+    if(isMask) {
+      continue;
+    }
     if(display === 'none') {
       i += (total || 0);
       if(hasMask) {
@@ -329,6 +335,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
       }
       continue;
     }
+    // 单个不可见节点跳过，其孩子还要继续
     if(visibility === 'hidden') {
       continue;
     }
@@ -1086,7 +1093,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       [NODE_COMPUTED_STYLE]: computedStyle,
       [NODE_REFRESH_LV]: __refreshLevel,
     } = node.__config;
-    // 第一个mask在另外一个离屏上，开始聚集所有mask元素的绘制
+    // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏，开始聚集所有mask元素的绘制
     if(maskStartHash.hasOwnProperty(i)) {
       ctx = maskStartHash[i].ctx;
     }
@@ -1116,7 +1123,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       ctx = offScreenFilter.target.ctx;
     }
     // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
-    if(offScreenMask || hasMask) {
+    if(offScreenMask) {
       let j = i + (total || 0) + 1;
       let startIndex, endIndex;
       while(hasMask--) {

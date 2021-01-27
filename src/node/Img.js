@@ -25,6 +25,11 @@ const {
     BORDER_BOTTOM_RIGHT_RADIUS,
     BORDER_BOTTOM_LEFT_RADIUS,
     VISIBILITY,
+    BACKGROUND_IMAGE,
+    BACKGROUND_COLOR,
+    BOX_SHADOW,
+    FILTER,
+    MIX_BLEND_MODE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -39,7 +44,7 @@ const {
     NODE_IS_MASK,
   },
 } = enums;
-const { AUTO } = unit;
+const { AUTO, PX, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 
 class Img extends Dom {
@@ -51,8 +56,20 @@ class Img extends Dom {
     if(!src) {
       loadImg.error = true;
     }
-    this.__isClip = !!this.props.clip;
-    let isMask = this.__isMask = this.__isClip || !!this.props.mask;
+    let isClip = this.__isClip = !!this.props.clip;
+    let isMask = this.__isMask = isClip || !!this.props.mask;
+    if(isMask) {
+      let { style, currentStyle } = this;
+      style[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE] = [null];
+      style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = [[0, 0, 0, 0], RGBA];
+      style[BORDER_TOP_WIDTH] = currentStyle[BORDER_TOP_WIDTH] = [0, PX];
+      style[BORDER_RIGHT_WIDTH] = currentStyle[BORDER_RIGHT_WIDTH] = [0, PX];
+      style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = [0, PX];
+      style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = [0, PX];
+      style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = null;
+      style[FILTER] = currentStyle[FILTER] = null;
+      style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
+    }
     let config = this.__config;
     config[NODE_IS_MASK] = isMask;
   }

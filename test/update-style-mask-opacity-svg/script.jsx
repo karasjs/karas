@@ -9,6 +9,7 @@ let o = karas.render(
              top: 0,
              width: 10,
              height: 10,
+             strokeWidth: 0,
              fill: '#FFF',
            }}/>
   </svg>,

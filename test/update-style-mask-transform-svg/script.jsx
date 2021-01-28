@@ -10,6 +10,7 @@ let o = karas.render(
              width: 10,
              height: 10,
              fill: '#FFF',
+             strokeWidth: 0,
            }}/>
   </svg>,
   '#test'

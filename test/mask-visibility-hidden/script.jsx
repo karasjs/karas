@@ -9,6 +9,7 @@ karas.render(
       top: 0,
       width: 10,
       height: 10,
+      strokeWidth: 0,
       fill: '#F00',
     }} points={[
       [0, 0],

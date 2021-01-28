@@ -13,7 +13,8 @@ let o = karas.render(
           [1, 1],
           [0, 1]
         ]}
-        style={{position:'absolute',left:50,top:50,width:50,height:50,fill:'#fff',translateY:50}}/>
+        style={{position:'absolute',left:50,top:50,width:50,height:50,fill:'#fff',translateY:50,
+          strokeWidth: 0,}}/>
     </div>
   </canvas>,
   '#test'

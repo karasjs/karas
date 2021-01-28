@@ -12,7 +12,7 @@ let o = karas.render(
         [1, 1],
         [0, 1]
       ]}
-      style={{position:'absolute',left:50,top:50,width:50,height:50,fill:'#fff',transform:'translateX(50px)'}}/>
+      style={{position:'absolute',left:50,top:50,width:50,height:50,fill:'#fff',transform:'translateX(50px)', strokeWidth: 0,}}/>
   </svg>,
   '#test'
 );

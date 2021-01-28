@@ -13,6 +13,7 @@ let o = karas.render(
         top: 0,
         width: 100,
         height: 100,
+        strokeWidth: 0,
         fill: '#F99',
       }}/>
     </div>

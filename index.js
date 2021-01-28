@@ -1433,6 +1433,34 @@
     return res;
   }
 
+  function getMergeMarginTB(topList, bottomList) {
+    var total = 0;
+    var max = topList[0];
+    var min = topList[0];
+    topList.forEach(function (item) {
+      total += item;
+      max = Math.max(max, item);
+      min = Math.min(min, item);
+    });
+    bottomList.forEach(function (item) {
+      total += item;
+      max = Math.max(max, item);
+      min = Math.min(min, item);
+    }); // 正数取最大，负数取最小，正负则相加
+
+    var diff = 0;
+
+    if (max > 0 && min > 0) {
+      diff = Math.max(max, min) - total;
+    } else if (max < 0 && min < 0) {
+      diff = Math.min(max, min) - total;
+    } else if (max !== 0 && min !== 0) {
+      diff = max + min - total;
+    }
+
+    return diff;
+  }
+
   var util = {
     isObject: isObject,
     isString: isString,
@@ -1468,7 +1496,8 @@
     extend: extend,
     joinArr: joinArr,
     extendAnimate: extendAnimate,
-    transformBbox: transformBbox
+    transformBbox: transformBbox,
+    getMergeMarginTB: getMergeMarginTB
   };
 
   var reg = {
@@ -16955,53 +16984,29 @@
         var cw = 0; // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
 
         var lineGroup = new LineGroup(x, y); // 上一个兄弟block引用，以及如果是空的标识，空要暂时记录下来等待后续判断合并处理，也有可能空是最后连续的block
-
-        var lastBlock,
-            lastEmptyBlock = null;
         var mergeMarginBottomList = [],
             mergeMarginTopList = [];
         flowChildren.forEach(function (item) {
           var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
           var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline'; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block忽略
 
-          if (lastEmptyBlock && lastEmptyBlock !== lastBlock && lastBlock && (!isXom || isInline)) {
-            var marginBottom = lastBlock.computedStyle[MARGIN_BOTTOM$3];
-            var total = marginBottom,
-                max = marginBottom,
-                min = marginBottom; // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
+          if (!isXom || isInline) {
+            if (mergeMarginBottomList.length && mergeMarginTopList.length) {
+              var diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 
-            mergeMarginBottomList.forEach(function (item) {
-              total += item;
-              max = Math.max(max, item);
-              min = Math.min(min, item);
-            });
+              if (diff) {
+                y += diff;
+              }
+            }
+
+            mergeMarginTopList = [];
             mergeMarginBottomList = [];
-            mergeMarginTopList.forEach(function (item) {
-              total += item;
-              max = Math.max(max, item);
-              min = Math.min(min, item);
-            });
-            mergeMarginTopList = []; // 同样简单的规则，最大最小值判断，只是不用偏移
-
-            var diff;
-
-            if (max > 0 && min > 0) ; else if (max < 0 && min < 0) ; else if (max !== 0 && min !== 0) {
-              diff = max + min - total;
-            }
-
-            if (diff) {
-              y += diff;
-            }
           }
 
           if (isXom) {
             // inline和block不同对待
             if (isInline) {
-              lastBlock = null;
-              lastEmptyBlock = null;
-              mergeMarginBottomList = [];
-              mergeMarginTopList = []; // inline开头，不用考虑是否放得下直接放
-
+              // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
                 lineGroup.add(item);
 
@@ -17086,25 +17091,23 @@
 
               x = data.x; // 自身无内容
 
+              var isEmptyBlock;
+
               if (item.flowChildren && item.flowChildren.length === 0) {
                 var _item$computedStyle = item.computedStyle,
                     marginTop = _item$computedStyle[MARGIN_TOP$2],
-                    _marginBottom = _item$computedStyle[MARGIN_BOTTOM$3],
+                    marginBottom = _item$computedStyle[MARGIN_BOTTOM$3],
                     paddingTop = _item$computedStyle[PADDING_TOP$2],
                     paddingBottom = _item$computedStyle[PADDING_BOTTOM$2],
                     height = _item$computedStyle[HEIGHT$4],
                     borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$2],
-                    borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$2]; // 无内容高度为0的特殊情况，记录下来等后续block判断跳过继续，不是就忽略掉
+                    borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$2]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
 
                 if (paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
-                  mergeMarginBottomList.push(_marginBottom);
+                  mergeMarginBottomList.push(marginBottom);
                   mergeMarginTopList.push(marginTop);
-                  lastEmptyBlock = item;
-                } else {
-                  lastEmptyBlock = null;
+                  isEmptyBlock = true;
                 }
-              } else {
-                lastEmptyBlock = null;
               }
 
               y += item.outerHeight; // absolute/flex前置虚拟计算
@@ -17112,89 +17115,35 @@
               if (isVirtual) {
                 maxW = Math.max(maxW, item.outerWidth);
                 cw = 0;
-              } // 相邻的block合并垂直margin，最后面的如果是empty则跳过，留待下轮循环判断
+              } // 空block要留下轮循环看，非空本轮处理掉看是否要合并
 
 
-              if (lastBlock && !lastEmptyBlock) {
-                var _marginBottom2 = lastBlock.computedStyle[MARGIN_BOTTOM$3];
-                var _marginTop = item.computedStyle[MARGIN_TOP$2]; // 再分2种情况，中间有空block的
+              if (!isEmptyBlock) {
+                var _item$computedStyle2 = item.computedStyle,
+                    _marginTop = _item$computedStyle2[MARGIN_TOP$2],
+                    _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$3]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+                // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
                 if (mergeMarginBottomList.length) {
-                  var _total = _marginBottom2 + _marginTop;
+                  mergeMarginTopList.push(_marginTop);
 
-                  var _max = Math.max(_marginTop, _marginBottom2);
-
-                  var _min = Math.min(_marginTop, _marginBottom2);
-
-                  var _diff; // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
-
-
-                  mergeMarginBottomList.forEach(function (item) {
-                    _total += item;
-                    _max = Math.max(_max, item);
-                    _min = Math.min(_min, item);
-                  });
-                  mergeMarginBottomList = [];
-                  mergeMarginTopList.forEach(function (item) {
-                    _total += item;
-                    _max = Math.max(_max, item);
-                    _min = Math.min(_min, item);
-                  });
-                  mergeMarginTopList = []; // 正正取最大
-
-                  if (_max > 0 && _min > 0) {
-                    _diff = Math.max(_max, _min) - _total;
-                  } // 负负取最小
-                  else if (_max < 0 && _min < 0) {
-                      _diff = Math.min(_max, _min) - _total;
-                    } // 正负则相加
-                    else if (_max !== 0 && _min !== 0) {
-                        _diff = _max + _min - _total;
-                      }
+                  var _diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 
                   if (_diff) {
                     item.__offsetY(_diff, true);
 
                     y += _diff;
                   }
-                } // 无空block就是普通的2个block相邻
-                else {
-                    var _max2; // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
+                } // 同时自己保存bottom，为后续block准备
 
 
-                    if (_marginBottom2 > 0 && _marginTop > 0) {
-                      _max2 = Math.max(_marginBottom2, _marginTop); // 最大正减去两者之和是个负数误差，y偏移这个误差即可
-
-                      _max2 = _max2 - _marginBottom2 - _marginTop;
-                    } else if (_marginBottom2 < 0 && _marginTop < 0) {
-                      _max2 = Math.min(_marginBottom2, _marginTop); // 最小负减去两者之和是个正数误差，同样偏移这个y即可
-
-                      _max2 = _max2 - _marginBottom2 - _marginTop;
-                    } // 如果是正负情况，后面这个在layout时从__preLayout获取到的考虑到负margin
-                    // 如果是负正情况，后面这个在layout时的y会根据前面的outerHeight考虑到负margin
-                    // 所以异号或者0不用考虑，普通循环过程中包含
-
-
-                    if (_max2) {
-                      item.__offsetY(_max2, true);
-
-                      y += _max2;
-                    }
-                  }
-              }
-
-              if (!lastEmptyBlock) {
-                lastBlock = item;
-                lastEmptyBlock = null;
+                mergeMarginTopList = [];
+                mergeMarginBottomList = [_marginBottom];
               }
             }
           } // 文字和inline类似
           else {
-              lastBlock = null;
-              lastEmptyBlock = null;
-              mergeMarginBottomList = [];
-              mergeMarginTopList = []; // x开头，不用考虑是否放得下直接放
-
+              // x开头，不用考虑是否放得下直接放
               if (x === data.x) {
                 lineGroup.add(item);
 
@@ -24410,7 +24359,7 @@
         }
         /**
          * 修剪树，自顶向下深度遍历
-         * LAYOUT节点作为局部根，其递归子节点无需重复任何操作去重
+         * LAYOUT节点作为局部根，其递归子节点无需重复任何操作，直接去重
          * OFFSET节点作为局部根，其递归子节点先执行任何操作，后续根节点再偏移一次
          */
         else {
@@ -24444,7 +24393,8 @@
 
             }, {
               uniqueList: uniqueList
-            }); // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行子节点先LAYOUT/OFFSET
+            }); // 按顺序执行列表即可，上层LAYOUT先执行且停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+            // 记录diff在结束后进行structs更新
 
 
             var diffList = [];
@@ -24463,7 +24413,7 @@
                 var isLastAbs = position === 'absolute';
                 var isNowAbs = cts[POSITION$4] === 'absolute';
                 var isLastNone = display === 'none';
-                var isNowNone = cts[DISPLAY$7] === 'none';
+                var isNowNone = cts[DISPLAY$7] === 'none'; // none不可见布局无效可以无视
 
                 if (isLastNone && isNowNone) {
                   return;
@@ -24481,7 +24431,8 @@
 
                 while (component && current.isShadowRoot) {
                   current = current.host;
-                }
+                } // y使用prev或者parent的，首个节点无prev
+
 
                 var ref = current.prev;
 

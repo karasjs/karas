@@ -1199,7 +1199,7 @@ class Root extends Dom {
     }
     /**
      * 修剪树，自顶向下深度遍历
-     * LAYOUT节点作为局部根，其递归子节点无需重复任何操作去重
+     * LAYOUT节点作为局部根，其递归子节点无需重复任何操作，直接去重
      * OFFSET节点作为局部根，其递归子节点先执行任何操作，后续根节点再偏移一次
      */
     else {
@@ -1226,7 +1226,8 @@ class Root extends Dom {
         }
         // reflowHash没有记录则无返回继续递归执行
       }, { uniqueList });
-      // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行子节点先LAYOUT/OFFSET
+      // 按顺序执行列表即可，上层LAYOUT先执行且停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+      // 记录diff在结束后进行structs更新
       let diffList = [];
       let diffI = 0;
       uniqueList.forEach(item => {
@@ -1239,6 +1240,7 @@ class Root extends Dom {
           let isNowAbs = cts[POSITION] === 'absolute';
           let isLastNone = display === 'none';
           let isNowNone = cts[DISPLAY] === 'none';
+          // none不可见布局无效可以无视
           if(isLastNone && isNowNone) {
             return;
           }
@@ -1249,6 +1251,7 @@ class Root extends Dom {
           while(component && current.isShadowRoot) {
             current = current.host;
           }
+          // y使用prev或者parent的，首个节点无prev
           let ref = current.prev;
           if(ref) {
             y = ref.y;

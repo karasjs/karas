@@ -428,41 +428,19 @@ class Dom extends Xom {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
       // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block忽略
-      if(lastEmptyBlock && lastEmptyBlock !== lastBlock && lastBlock && (!isXom || isInline)) {
-        let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
-        let total = marginBottom, max = marginBottom, min = marginBottom;
-        // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
-        mergeMarginBottomList.forEach(item => {
-          total += item;
-          max = Math.max(max, item);
-          min = Math.min(min, item);
-        });
-        mergeMarginBottomList = [];
-        mergeMarginTopList.forEach(item => {
-          total += item;
-          max = Math.max(max, item);
-          min = Math.min(min, item);
-        });
+      if((!isXom || isInline)) {
+        if(mergeMarginBottomList.length && mergeMarginTopList.length) {
+          let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+          if(diff) {
+            y += diff;
+          }
+        }
         mergeMarginTopList = [];
-        // 同样简单的规则，最大最小值判断，只是不用偏移
-        let diff;
-        if(max > 0 && min > 0) {}
-        else if(max < 0 && min < 0) {
-        }
-        else if(max !== 0 && min !== 0) {
-          diff = max + min - total;
-        }
-        if(diff) {
-          y += diff;
-        }
+        mergeMarginBottomList = [];
       }
       if(isXom) {
         // inline和block不同对待
         if(isInline) {
-          lastBlock = null;
-          lastEmptyBlock = null;
-          mergeMarginBottomList = [];
-          mergeMarginTopList = [];
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
@@ -537,6 +515,7 @@ class Dom extends Xom {
           }, isVirtual);
           x = data.x;
           // 自身无内容
+          let isEmptyBlock;
           if(item.flowChildren && item.flowChildren.length === 0) {
             let {
               [MARGIN_TOP]: marginTop,
@@ -547,18 +526,12 @@ class Dom extends Xom {
               [BORDER_TOP_WIDTH]: borderTopWidth,
               [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
             } = item.computedStyle;
-            // 无内容高度为0的特殊情况，记录下来等后续block判断跳过继续，不是就忽略掉
+            // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
             if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
               mergeMarginBottomList.push(marginBottom);
               mergeMarginTopList.push(marginTop);
-              lastEmptyBlock = item;
+              isEmptyBlock = true;
             }
-            else {
-              lastEmptyBlock = null;
-            }
-          }
-          else {
-            lastEmptyBlock = null;
           }
           y += item.outerHeight;
           // absolute/flex前置虚拟计算
@@ -566,81 +539,27 @@ class Dom extends Xom {
             maxW = Math.max(maxW, item.outerWidth);
             cw = 0;
           }
-          // 相邻的block合并垂直margin，最后面的如果是empty则跳过，留待下轮循环判断
-          if(lastBlock && !lastEmptyBlock) {
-            let { [MARGIN_BOTTOM]: marginBottom } = lastBlock.computedStyle;
-            let { [MARGIN_TOP]: marginTop } = item.computedStyle;
-            // 再分2种情况，中间有空block的
+          // 空block要留下轮循环看，非空本轮处理掉看是否要合并
+          if(!isEmptyBlock) {
+            let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
+            // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+            // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
             if(mergeMarginBottomList.length) {
-              let total = marginBottom + marginTop;
-              let max = Math.max(marginTop, marginBottom);
-              let min = Math.min(marginTop, marginBottom);
-              let diff;
-              // 忽略上下，只取最大最小值，和之前总和相比，看偏移量
-              mergeMarginBottomList.forEach(item => {
-                total += item;
-                max = Math.max(max, item);
-                min = Math.min(min, item);
-              });
-              mergeMarginBottomList = [];
-              mergeMarginTopList.forEach(item => {
-                total += item;
-                max = Math.max(max, item);
-                min = Math.min(min, item);
-              });
-              mergeMarginTopList = [];
-              // 正正取最大
-              if(max > 0 && min > 0) {
-                diff = Math.max(max, min) - total;
-              }
-              // 负负取最小
-              else if(max < 0 && min < 0) {
-                diff = Math.min(max, min) - total;
-              }
-              // 正负则相加
-              else if(max !== 0 && min !== 0) {
-                diff = max + min - total;
-              }
+              mergeMarginTopList.push(marginTop);
+              let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 item.__offsetY(diff, true);
                 y += diff;
               }
             }
-            // 无空block就是普通的2个block相邻
-            else {
-              let max;
-              // 正负值不同分3种情况，正正取最大，负负取最小，正负则相加
-              if(marginBottom > 0 && marginTop > 0) {
-                max = Math.max(marginBottom, marginTop);
-                // 最大正减去两者之和是个负数误差，y偏移这个误差即可
-                max = max - marginBottom - marginTop;
-              }
-              else if(marginBottom < 0 && marginTop < 0) {
-                max = Math.min(marginBottom, marginTop);
-                // 最小负减去两者之和是个正数误差，同样偏移这个y即可
-                max = max - marginBottom - marginTop;
-              }
-              // 如果是正负情况，后面这个在layout时从__preLayout获取到的考虑到负margin
-              // 如果是负正情况，后面这个在layout时的y会根据前面的outerHeight考虑到负margin
-              // 所以异号或者0不用考虑，普通循环过程中包含
-              if(max) {
-                item.__offsetY(max, true);
-                y += max;
-              }
-            }
-          }
-          if(!lastEmptyBlock) {
-            lastBlock = item;
-            lastEmptyBlock = null;
+            // 同时自己保存bottom，为后续block准备
+            mergeMarginTopList = [];
+            mergeMarginBottomList = [marginBottom];
           }
         }
       }
       // 文字和inline类似
       else {
-        lastBlock = null;
-        lastEmptyBlock = null;
-        mergeMarginBottomList = [];
-        mergeMarginTopList = [];
         // x开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);

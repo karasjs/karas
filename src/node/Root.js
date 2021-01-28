@@ -1226,10 +1226,20 @@ class Root extends Dom {
         }
         // reflowHash没有记录则无返回继续递归执行
       }, { uniqueList });
-      // 按顺序执行列表即可，上层LAYOUT先执行且停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
-      // 记录diff在结束后进行structs更新
+      /**
+       * 按顺序执行列表即可，上层LAYOUT先执行且停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+       * 同级按先后顺序排列，过程中记录diff在结束后进行structs更新
+       * 这里要注意margin合并的逻辑，因为最终都是block（flex等同），需要进行合并
+       * 在处理一个block时，先判断是否是空block，同时看后面紧邻的有没有在uniqueList的下一个
+       * 单独空block处理、2个相邻的非block处理直接可以进行判断
+       * 中间的空block（即非空block的下一个是空block，且下一个不是最后一个），先记录下来list，合并后一并offset
+       * 合并margin和Dom的逻辑一样，抽离共有方法
+       **/
       let diffList = [];
       let diffI = 0;
+      let blockList = [];
+      let mergeMarginBottomList = [], mergeMarginTopList = [];
+      console.error(uniqueList);
       uniqueList.forEach(item => {
         let { node, lv, component } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
@@ -1333,8 +1343,8 @@ class Root extends Dom {
               });
             }
           }
-          // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
-          let fromAbs = node.computedStyle[POSITION] === 'absolute';
+          // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
+          // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
           let dx, dy;
           if(change2Abs) {
             dx = -outerWidth;
@@ -1342,7 +1352,7 @@ class Root extends Dom {
           }
           else {
             let { outerWidth: ow, outerHeight: oh } = node;
-            if(fromAbs) {
+            if(isLastAbs) {
               dx = ow;
               dy = oh;
             }
@@ -1443,7 +1453,7 @@ class Root extends Dom {
               last = last.domParent;
             }
           }
-          // component未知dom变化，所以强制重新struct，同时防止zIndex变更影响父节点
+          // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
           if(component) {
             let arr = node.__modifyStruct(root, diffI);
             diffI += arr[1];

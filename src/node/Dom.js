@@ -421,13 +421,12 @@ class Dom extends Xom {
     let cw = 0;
     // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
     let lineGroup = new LineGroup(x, y);
-    // 上一个兄弟block引用，以及如果是空的标识，空要暂时记录下来等待后续判断合并处理，也有可能空是最后连续的block
-    let lastBlock, lastEmptyBlock = null;
+    // 连续block（flex）的上下margin合并值记录，合并时从列表中取
     let mergeMarginBottomList = [], mergeMarginTopList = [];
     flowChildren.forEach(item => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
-      // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block忽略
+      // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
       if((!isXom || isInline)) {
         if(mergeMarginBottomList.length && mergeMarginTopList.length) {
           let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
@@ -439,7 +438,7 @@ class Dom extends Xom {
         mergeMarginBottomList = [];
       }
       if(isXom) {
-        // inline和block不同对待
+        // inline和block（flex等同）不同对待
         if(isInline) {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {

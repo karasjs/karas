@@ -16983,12 +16983,13 @@
         var maxW = 0;
         var cw = 0; // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
 
-        var lineGroup = new LineGroup(x, y); // 上一个兄弟block引用，以及如果是空的标识，空要暂时记录下来等待后续判断合并处理，也有可能空是最后连续的block
+        var lineGroup = new LineGroup(x, y); // 连续block（flex）的上下margin合并值记录，合并时从列表中取
+
         var mergeMarginBottomList = [],
             mergeMarginTopList = [];
         flowChildren.forEach(function (item) {
           var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
-          var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline'; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block忽略
+          var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline'; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
           if (!isXom || isInline) {
             if (mergeMarginBottomList.length && mergeMarginTopList.length) {
@@ -17004,7 +17005,7 @@
           }
 
           if (isXom) {
-            // inline和block不同对待
+            // inline和block（flex等同）不同对待
             if (isInline) {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -24393,12 +24394,21 @@
 
             }, {
               uniqueList: uniqueList
-            }); // 按顺序执行列表即可，上层LAYOUT先执行且停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
-            // 记录diff在结束后进行structs更新
+            });
+            /**
+             * 按顺序执行列表即可，上层LAYOUT先执行且停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+             * 同级按先后顺序排列，过程中记录diff在结束后进行structs更新
+             * 这里要注意margin合并的逻辑，因为最终都是block（flex等同），需要进行合并
+             * 在处理一个block时，先判断是否是空block，同时看后面紧邻的有没有在uniqueList的下一个
+             * 单独空block处理、2个相邻的非block处理直接可以进行判断
+             * 中间的空block（即非空block的下一个是空block，且下一个不是最后一个），先记录下来list，合并后一并offset
+             * 合并margin和Dom的逻辑一样，抽离共有方法
+             **/
 
 
             var diffList = [];
             var diffI = 0;
+            console.error(uniqueList);
             uniqueList.forEach(function (item) {
               var node = item.node,
                   lv = item.lv,
@@ -24526,10 +24536,10 @@
                       h: h
                     });
                   }
-                } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
+                } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
+                // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
 
 
-                var fromAbs = node.computedStyle[POSITION$4] === 'absolute';
                 var dx, dy;
 
                 if (change2Abs) {
@@ -24539,7 +24549,7 @@
                   var ow = node.outerWidth,
                       oh = node.outerHeight;
 
-                  if (fromAbs) {
+                  if (isLastAbs) {
                     dx = ow;
                     dy = oh;
                   } else {
@@ -24659,7 +24669,7 @@
                     last.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                     last = last.domParent;
                   }
-                } // component未知dom变化，所以强制重新struct，同时防止zIndex变更影响父节点
+                } // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
 
 
                 if (component) {

@@ -1352,14 +1352,8 @@ class Root extends Dom {
           }
           else {
             let { outerWidth: ow, outerHeight: oh } = node;
-            if(isLastAbs) {
-              dx = ow;
-              dy = oh;
-            }
-            else {
-              dx = ow - outerWidth;
-              dy = oh - outerHeight;
-            }
+            dx = ow - outerWidth;
+            dy = oh - outerHeight;
           }
           // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经包含了
           // 这样node重新布局后再次设置parent的偏移

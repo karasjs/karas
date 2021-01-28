@@ -16987,7 +16987,8 @@
 
         var mergeMarginBottomList = [],
             mergeMarginTopList = [];
-        flowChildren.forEach(function (item) {
+        var length = flowChildren.length;
+        flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
           var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline'; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
@@ -17116,7 +17117,7 @@
               if (isVirtual) {
                 maxW = Math.max(maxW, item.outerWidth);
                 cw = 0;
-              } // 空block要留下轮循环看，非空本轮处理掉看是否要合并
+              } // 空block要留下轮循环看，除非是最后一个，非空本轮处理掉看是否要合并
 
 
               if (!isEmptyBlock) {
@@ -17140,7 +17141,18 @@
 
                 mergeMarginTopList = [];
                 mergeMarginBottomList = [_marginBottom];
-              }
+              } // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
+              else if (i === length - 1) {
+                  var _item$computedStyle3 = item.computedStyle,
+                      _marginTop2 = _item$computedStyle3[MARGIN_TOP$2],
+                      _marginBottom2 = _item$computedStyle3[MARGIN_BOTTOM$3];
+
+                  var _diff2 = util.getMergeMarginTB([_marginTop2], [_marginBottom2]);
+
+                  if (_diff2) {
+                    y += _diff2;
+                  }
+                }
             }
           } // 文字和inline类似
           else {
@@ -17541,16 +17553,16 @@
 
               if (isDirectionRow) {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                  var _diff2 = maxCross - item.outerHeight;
-
-                  if (_diff2 !== 0) {
-                    item.__offsetY(_diff2 * 0.5, true);
-                  }
-                } else if (alignSelf === 'flex-end') {
                   var _diff3 = maxCross - item.outerHeight;
 
                   if (_diff3 !== 0) {
-                    item.__offsetY(_diff3, true);
+                    item.__offsetY(_diff3 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff4 = maxCross - item.outerHeight;
+
+                  if (_diff4 !== 0) {
+                    item.__offsetY(_diff4, true);
                   }
                 } else if (height[1] === AUTO$3) {
                   var old = item.height;
@@ -17561,16 +17573,16 @@
                 }
               } else {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                  var _diff4 = maxCross - item.outerWidth;
-
-                  if (_diff4 !== 0) {
-                    item.__offsetX(_diff4 * 0.5, true);
-                  }
-                } else if (alignSelf === 'flex-end') {
                   var _diff5 = maxCross - item.outerWidth;
 
                   if (_diff5 !== 0) {
-                    item.__offsetX(_diff5, true);
+                    item.__offsetX(_diff5 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff6 = maxCross - item.outerWidth;
+
+                  if (_diff6 !== 0) {
+                    item.__offsetX(_diff6, true);
                   }
                 } else if (width[1] === AUTO$3) {
                   var _old = item.width;
@@ -17591,10 +17603,10 @@
 
               if (isDirectionRow) {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'flex-end') {
-                  var _diff6 = maxCross - item.outerHeight;
+                  var _diff7 = maxCross - item.outerHeight;
 
-                  if (_diff6 !== 0) {
-                    item.__offsetY(_diff6, true);
+                  if (_diff7 !== 0) {
+                    item.__offsetY(_diff7, true);
                   }
                 } else if (alignSelf === 'stretch') {
                   var computedStyle = item.computedStyle,
@@ -17614,18 +17626,18 @@
                     item.__outerHeight += d;
                   }
                 } else {
-                  var _diff7 = maxCross - item.outerHeight;
+                  var _diff8 = maxCross - item.outerHeight;
 
-                  if (_diff7 !== 0) {
-                    item.__offsetY(_diff7 * 0.5, true);
+                  if (_diff8 !== 0) {
+                    item.__offsetY(_diff8 * 0.5, true);
                   }
                 }
               } else {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'flex-end') {
-                  var _diff8 = maxCross - item.outerWidth;
+                  var _diff9 = maxCross - item.outerWidth;
 
-                  if (_diff8 !== 0) {
-                    item.__offsetX(_diff8, true);
+                  if (_diff9 !== 0) {
+                    item.__offsetX(_diff9, true);
                   }
                 } else if (alignSelf === 'stretch') {
                   var _computedStyle = item.computedStyle,
@@ -17649,10 +17661,10 @@
                     item.__outerWidth += _d2;
                   }
                 } else {
-                  var _diff9 = maxCross - item.outerWidth;
+                  var _diff10 = maxCross - item.outerWidth;
 
-                  if (_diff9 !== 0) {
-                    item.__offsetX(_diff9 * 0.5, true);
+                  if (_diff10 !== 0) {
+                    item.__offsetX(_diff10 * 0.5, true);
                   }
                 }
               }
@@ -17663,10 +17675,10 @@
 
               if (isDirectionRow) {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                  var _diff10 = maxCross - item.outerHeight;
+                  var _diff11 = maxCross - item.outerHeight;
 
-                  if (_diff10 !== 0) {
-                    item.__offsetY(_diff10 * 0.5, true);
+                  if (_diff11 !== 0) {
+                    item.__offsetY(_diff11 * 0.5, true);
                   }
                 } else if (alignSelf === 'stretch') {
                   var computedStyle = item.computedStyle,
@@ -17686,18 +17698,18 @@
                     item.__outerHeight += d;
                   }
                 } else {
-                  var _diff11 = maxCross - item.outerHeight;
+                  var _diff12 = maxCross - item.outerHeight;
 
-                  if (_diff11 !== 0) {
-                    item.__offsetY(_diff11, true);
+                  if (_diff12 !== 0) {
+                    item.__offsetY(_diff12, true);
                   }
                 }
               } else {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                  var _diff12 = maxCross - item.outerWidth;
+                  var _diff13 = maxCross - item.outerWidth;
 
-                  if (_diff12 !== 0) {
-                    item.__offsetX(_diff12 * 0.5, true);
+                  if (_diff13 !== 0) {
+                    item.__offsetX(_diff13 * 0.5, true);
                   }
                 } else if (alignSelf === 'stretch') {
                   var _computedStyle2 = item.computedStyle,
@@ -17721,10 +17733,10 @@
                     item.__outerWidth += _d3;
                   }
                 } else {
-                  var _diff13 = maxCross - item.outerHeight;
+                  var _diff14 = maxCross - item.outerHeight;
 
-                  if (_diff13 !== 0) {
-                    item.__offsetY(_diff13, true);
+                  if (_diff14 !== 0) {
+                    item.__offsetY(_diff14, true);
                   }
                 }
               }
@@ -17735,16 +17747,16 @@
 
               if (isDirectionRow) {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                  var _diff14 = maxCross - item.outerHeight;
-
-                  if (_diff14 !== 0) {
-                    item.__offsetY(_diff14 * 0.5, true);
-                  }
-                } else if (alignSelf === 'flex-end') {
                   var _diff15 = maxCross - item.outerHeight;
 
                   if (_diff15 !== 0) {
-                    item.__offsetY(_diff15, true);
+                    item.__offsetY(_diff15 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff16 = maxCross - item.outerHeight;
+
+                  if (_diff16 !== 0) {
+                    item.__offsetY(_diff16, true);
                   }
                 } else if (alignSelf === 'stretch') {
                   var computedStyle = item.computedStyle,
@@ -17766,16 +17778,16 @@
                 }
               } else {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                  var _diff16 = maxCross - item.outerWidth;
-
-                  if (_diff16 !== 0) {
-                    item.__offsetX(_diff16 * 0.5, true);
-                  }
-                } else if (alignSelf === 'flex-end') {
                   var _diff17 = maxCross - item.outerWidth;
 
                   if (_diff17 !== 0) {
-                    item.__offsetX(_diff17, true);
+                    item.__offsetX(_diff17 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff18 = maxCross - item.outerWidth;
+
+                  if (_diff18 !== 0) {
+                    item.__offsetX(_diff18, true);
                   }
                 } else if (alignSelf === 'stretch') {
                   var _computedStyle3 = item.computedStyle,
@@ -22979,10 +22991,13 @@
       Z_INDEX$4 = _enums$STYLE_KEY$f.Z_INDEX,
       MARGIN_TOP$4 = _enums$STYLE_KEY$f.MARGIN_TOP,
       MARGIN_LEFT$4 = _enums$STYLE_KEY$f.MARGIN_LEFT,
+      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$f.MARGIN_BOTTOM,
       PADDING_TOP$5 = _enums$STYLE_KEY$f.PADDING_TOP,
       PADDING_LEFT$5 = _enums$STYLE_KEY$f.PADDING_LEFT,
+      PADDING_BOTTOM$3 = _enums$STYLE_KEY$f.PADDING_BOTTOM,
       BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_BOTTOM_WIDTH,
       _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
       UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -24408,6 +24423,8 @@
 
             var diffList = [];
             var diffI = 0;
+            var mergeMarginBottomList = [],
+                mergeMarginTopList = [];
             console.error(uniqueList);
             uniqueList.forEach(function (item) {
               var node = item.node,
@@ -24516,41 +24533,28 @@
                   }
 
                   change2Abs = true;
-                } else {
-                  node.__layout({
-                    x: _x,
-                    y: y,
-                    w: _width,
-                    h: h
-                  });
-
-                  if (node instanceof Dom$1) {
-                    if (!node.parent && node.host) {
-                      container = node; // 特殊判断component的sr为container
-                    }
-
-                    node.__layoutAbs(container, {
+                } // 现在是普通流，不管之前是啥直接布局
+                else {
+                    node.__layout({
                       x: _x,
                       y: y,
                       w: _width,
                       h: h
                     });
-                  }
-                } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
-                // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
 
+                    if (node instanceof Dom$1) {
+                      if (!node.parent && node.host) {
+                        container = node; // 特殊判断component的sr为container
+                      }
 
-                var dx, dy;
-
-                if (change2Abs) {
-                  dx = -outerWidth;
-                  dy = -outerHeight;
-                } else {
-                  var ow = node.outerWidth,
-                      oh = node.outerHeight;
-                  dx = ow - outerWidth;
-                  dy = oh - outerHeight;
-                } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经包含了
+                      node.__layoutAbs(container, {
+                        x: _x,
+                        y: y,
+                        w: _width,
+                        h: h
+                      });
+                    }
+                  } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经包含了
                 // 这样node重新布局后再次设置parent的偏移
 
 
@@ -24568,7 +24572,44 @@
                     oy && node.__offsetY(oy);
                     break;
                   }
-                } // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
+                } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
+                // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
+
+
+                var dx, dy;
+
+                if (change2Abs) {
+                  dx = -outerWidth;
+                  dy = -outerHeight;
+                } else {
+                  var ow = node.outerWidth,
+                      oh = node.outerHeight;
+                  dx = ow - outerWidth;
+                  dy = oh - outerHeight;
+                } // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
+
+
+                var isEmptyBlock;
+
+                if (node.flowChildren && node.flowChildren.length === 0) {
+                  var _node$computedStyle = node.computedStyle,
+                      marginTop = _node$computedStyle[MARGIN_TOP$4],
+                      marginBottom = _node$computedStyle[MARGIN_BOTTOM$4],
+                      paddingTop = _node$computedStyle[PADDING_TOP$5],
+                      paddingBottom = _node$computedStyle[PADDING_BOTTOM$3],
+                      _height = _node$computedStyle[HEIGHT$7],
+                      borderTopWidth = _node$computedStyle[BORDER_TOP_WIDTH$5],
+                      borderBottomWidth = _node$computedStyle[BORDER_BOTTOM_WIDTH$5]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+
+                  if (paddingTop <= 0 && paddingBottom <= 0 && _height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+                    mergeMarginBottomList.push(marginBottom);
+                    mergeMarginTopList.push(marginTop);
+                    isEmptyBlock = true;
+                  }
+                } // 作为最后一个block空节点，需要合并margin
+
+
+                if (!node.next && isEmptyBlock) ; // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
 
 
                 if (dx || dy) {
@@ -24696,11 +24737,11 @@
                       bottom = _node$currentStyle[BOTTOM$3],
                       left = _node$currentStyle[LEFT$3],
                       _currentStyle3 = node.currentStyle,
-                      _node$computedStyle = node.computedStyle,
-                      t = _node$computedStyle[TOP$3],
-                      r = _node$computedStyle[RIGHT$3],
-                      b = _node$computedStyle[BOTTOM$3],
-                      l = _node$computedStyle[LEFT$3],
+                      _node$computedStyle2 = node.computedStyle,
+                      t = _node$computedStyle2[TOP$3],
+                      r = _node$computedStyle2[RIGHT$3],
+                      b = _node$computedStyle2[BOTTOM$3],
+                      l = _node$computedStyle2[LEFT$3],
                       _computedStyle2 = node.computedStyle;
 
                   var _parent3;

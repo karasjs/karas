@@ -423,7 +423,8 @@ class Dom extends Xom {
     let lineGroup = new LineGroup(x, y);
     // 连续block（flex）的上下margin合并值记录，合并时从列表中取
     let mergeMarginBottomList = [], mergeMarginTopList = [];
-    flowChildren.forEach(item => {
+    let length = flowChildren.length;
+    flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
       // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
@@ -538,7 +539,7 @@ class Dom extends Xom {
             maxW = Math.max(maxW, item.outerWidth);
             cw = 0;
           }
-          // 空block要留下轮循环看，非空本轮处理掉看是否要合并
+          // 空block要留下轮循环看，除非是最后一个，非空本轮处理掉看是否要合并
           if(!isEmptyBlock) {
             let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
             // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
@@ -554,6 +555,14 @@ class Dom extends Xom {
             // 同时自己保存bottom，为后续block准备
             mergeMarginTopList = [];
             mergeMarginBottomList = [marginBottom];
+          }
+          // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
+          else if(i === length - 1) {
+            let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
+            let diff = util.getMergeMarginTB([marginTop], [marginBottom]);
+            if(diff) {
+              y += diff;
+            }
           }
         }
       }

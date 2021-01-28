@@ -35,10 +35,13 @@ const {
     Z_INDEX,
     MARGIN_TOP,
     MARGIN_LEFT,
+    MARGIN_BOTTOM,
     PADDING_TOP,
     PADDING_LEFT,
+    PADDING_BOTTOM,
     BORDER_TOP_WIDTH,
     BORDER_LEFT_WIDTH,
+    BORDER_BOTTOM_WIDTH,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -1324,6 +1327,7 @@ class Root extends Dom {
             }
             change2Abs = true;
           }
+          // 现在是普通流，不管之前是啥直接布局
           else {
             node.__layout({
               x,
@@ -1343,18 +1347,6 @@ class Root extends Dom {
               });
             }
           }
-          // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
-          // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
-          let dx, dy;
-          if(change2Abs) {
-            dx = -outerWidth;
-            dy = -outerHeight;
-          }
-          else {
-            let { outerWidth: ow, outerHeight: oh } = node;
-            dx = ow - outerWidth;
-            dy = oh - outerHeight;
-          }
           // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经包含了
           // 这样node重新布局后再次设置parent的偏移
           let p = node;
@@ -1368,6 +1360,39 @@ class Root extends Dom {
               break;
             }
           }
+          // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
+          // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
+          let dx, dy;
+          if(change2Abs) {
+            dx = -outerWidth;
+            dy = -outerHeight;
+          }
+          else {
+            let { outerWidth: ow, outerHeight: oh } = node;
+            dx = ow - outerWidth;
+            dy = oh - outerHeight;
+          }
+          // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
+          let isEmptyBlock;
+          if(node.flowChildren && node.flowChildren.length === 0) {
+            let {
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+              [HEIGHT]: height,
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+            } = node.computedStyle;
+            // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+            if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+              mergeMarginBottomList.push(marginBottom);
+              mergeMarginTopList.push(marginTop);
+              isEmptyBlock = true;
+            }
+          }
+          // 作为最后一个block空节点，需要合并margin
+          if(!node.next && isEmptyBlock) {}
           // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
           if(dx || dy) {
             let p = node;

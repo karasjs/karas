@@ -9225,7 +9225,16 @@
 
             var now = self.__now = inject.now();
             var diff = now - last;
-            diff = Math.max(diff, 0); // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
+            diff = Math.max(diff, 0); // 特殊情况0.5ms以内由于向下取整关系近似为0，防止重复渲染
+
+            if (diff === 0) {
+              if (task.length || taskCp.length) {
+                cb();
+              }
+
+              return;
+            } // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
+
 
             last = now; // 优先动画计算
 
@@ -23172,6 +23181,107 @@
         component: component
       };
     }
+  } // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
+  // 如果最终是root，则返回true标识，直接整个重新开始布局
+
+
+  function checkInfluence(root, reflowHash, node, component, focus) {
+    // 自身尺寸固定且无变化，无需向上查找，但position/absolute发生变化的除外，focus会强制
+    if (isFixedSize(node) && !focus) {
+      return;
+    }
+
+    var target = node; // inline新老都影响，节点变为最近的父非inline
+
+    if (node.currentStyle[DISPLAY$7] === 'inline' || node.computedStyle[DISPLAY$7] === 'inline') {
+      var _parent = node.domParent;
+
+      do {
+        target = _parent; // 父到root提前跳出
+
+        if (_parent === root) {
+          return true;
+        } // 父已有LAYOUT跳出防重
+
+
+        if (isLAYOUT(_parent, reflowHash)) {
+          return;
+        } // 遇到absolute跳出，如果absolute发生变化，一定会存在于列表中，不用考虑
+
+
+        if (_parent.currentStyle[POSITION$4] === 'absolute' || _parent.computedStyle[POSITION$4] === 'absolute') {
+          setLAYOUT(_parent, reflowHash, component);
+          return;
+        } // 父固定宽度跳出直接父进行LAYOUT即可
+
+
+        if (isFixedSize(_parent)) {
+          setLAYOUT(_parent, reflowHash, component);
+          return;
+        } // 继续向上
+
+
+        _parent = _parent.domParent;
+      } while (_parent && (_parent.currentStyle[DISPLAY$7] === 'inline' || _parent.computedStyle[DISPLAY$7] === 'inline')); // target至少是node的parent，如果固定尺寸提前跳出
+
+
+      if (isFixedSize(target)) {
+        setLAYOUT(target, reflowHash, component);
+        return;
+      }
+    } // 此时target指向node，如果原本是inline则是其非inline父
+
+
+    var parent = target.domParent; // parent有LAYOUT跳出，已被包含
+
+    if (parent && isLAYOUT(parent, reflowHash)) {
+      return;
+    } // 检查flex，如果父是flex，向上查找flex顶点视作其更改
+
+
+    if (parent && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex')) {
+      do {
+        target = parent;
+
+        if (parent === root) {
+          return true;
+        }
+
+        if (isLAYOUT(parent, reflowHash)) {
+          return;
+        }
+
+        if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
+          setLAYOUT(parent, reflowHash, component);
+          return;
+        }
+
+        if (isFixedSize(parent)) {
+          setLAYOUT(parent, reflowHash, component);
+          return;
+        }
+
+        parent = parent.domParent;
+      } while (parent && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex')); // target至少是node的parent，如果固定尺寸提前跳出
+
+
+      if (isFixedSize(target)) {
+        setLAYOUT(target, reflowHash, component);
+        return;
+      }
+    } // 此时target指向node，如果父原本是flex则是其最上flex父
+
+
+    parent = target.domParent; // parent有LAYOUT跳出，已被包含
+
+    if (parent && isLAYOUT(parent, reflowHash)) {
+      return;
+    } // 向上查找了并且没提前跳出的，父重新布局
+
+
+    if (target !== node) {
+      setLAYOUT(target, reflowHash, component);
+    }
   }
 
   var uniqueUpdateId = 0;
@@ -24127,9 +24237,9 @@
 
           if (isInherit) {
             while (parent && parent !== root) {
-              var _parent = parent,
-                  _uniqueUpdateId = _parent.__config[NODE_UNIQUE_UPDATE_ID],
-                  currentStyle = _parent.currentStyle;
+              var _parent2 = parent,
+                  _uniqueUpdateId = _parent2.__config[NODE_UNIQUE_UPDATE_ID],
+                  currentStyle = _parent2.currentStyle;
 
               var _isInherit = void 0;
 
@@ -24198,108 +24308,7 @@
         var root = this;
         var hasRoot;
         __uniqueReflowId = 0;
-        var reflowHash = {}; // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
-        // 如果最终是root，则返回true标识，直接整个重新开始布局
-
-        function checkInfluence(node, component, focus) {
-          // 自身尺寸固定且无变化，无需向上查找，但position/absolute发生变化的除外，focus会强制
-          if (isFixedSize(node) && !focus) {
-            return;
-          }
-
-          var target = node; // inline新老都影响，节点变为最近的父非inline
-
-          if (node.currentStyle[DISPLAY$7] === 'inline' || node.computedStyle[DISPLAY$7] === 'inline') {
-            var _parent2 = node.domParent;
-
-            do {
-              target = _parent2; // 父到root提前跳出
-
-              if (_parent2 === root) {
-                return true;
-              } // 父已有LAYOUT跳出防重
-
-
-              if (isLAYOUT(_parent2, reflowHash)) {
-                return;
-              } // 遇到absolute跳出，如果absolute发生变化，一定会存在于列表中，不用考虑
-
-
-              if (_parent2.currentStyle[POSITION$4] === 'absolute' || _parent2.computedStyle[POSITION$4] === 'absolute') {
-                setLAYOUT(_parent2, reflowHash, component);
-                return;
-              } // 父固定宽度跳出直接父进行LAYOUT即可
-
-
-              if (isFixedSize(_parent2)) {
-                setLAYOUT(_parent2, reflowHash, component);
-                return;
-              } // 继续向上
-
-
-              _parent2 = _parent2.domParent;
-            } while (_parent2 && (_parent2.currentStyle[DISPLAY$7] === 'inline' || _parent2.computedStyle[DISPLAY$7] === 'inline')); // target至少是node的parent，如果固定尺寸提前跳出
-
-
-            if (isFixedSize(target)) {
-              setLAYOUT(target, reflowHash, component);
-              return;
-            }
-          } // 此时target指向node，如果原本是inline则是其非inline父
-
-
-          var parent = target.domParent; // parent有LAYOUT跳出，已被包含
-
-          if (parent && isLAYOUT(parent, reflowHash)) {
-            return;
-          } // 检查flex，如果父是flex，向上查找flex顶点视作其更改
-
-
-          if (parent && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex')) {
-            do {
-              target = parent;
-
-              if (parent === root) {
-                return true;
-              }
-
-              if (isLAYOUT(parent, reflowHash)) {
-                return;
-              }
-
-              if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
-                setLAYOUT(parent, reflowHash, component);
-                return;
-              }
-
-              if (isFixedSize(parent)) {
-                setLAYOUT(parent, reflowHash, component);
-                return;
-              }
-
-              parent = parent.domParent;
-            } while (parent && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex')); // target至少是node的parent，如果固定尺寸提前跳出
-
-
-            if (isFixedSize(target)) {
-              setLAYOUT(target, reflowHash, component);
-              return;
-            }
-          } // 此时target指向node，如果父原本是flex则是其最上flex父
-
-
-          parent = target.domParent; // parent有LAYOUT跳出，已被包含
-
-          if (parent && isLAYOUT(parent, reflowHash)) {
-            return;
-          } // 向上查找了并且没提前跳出的，父重新布局
-
-
-          if (target !== node) {
-            setLAYOUT(target, reflowHash, component);
-          }
-        } // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
-
+        var reflowHash = {}; // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
 
         for (var i = 0, len = reflowList.length; i < len; i++) {
           var _reflowList$i = reflowList[i],
@@ -24334,7 +24343,7 @@
           else if (currentStyle[POSITION$4] !== computedStyle[POSITION$4]) {
               o.lv = LAYOUT;
 
-              if (checkInfluence(node, component, true)) {
+              if (checkInfluence(root, reflowHash, node, component, true)) {
                 hasRoot = true;
                 break;
               }
@@ -24365,7 +24374,7 @@
                 else {
                     o.lv = LAYOUT;
 
-                    if (checkInfluence(node, component)) {
+                    if (checkInfluence(root, reflowHash, node, component)) {
                       hasRoot = true;
                       break;
                     }

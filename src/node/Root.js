@@ -237,6 +237,10 @@ function checkInfluence(root, reflowHash, node, component) {
   if(isLAYOUT(parent, reflowHash)) {
     return;
   }
+  // parent是root的flex特殊处理
+  if(parent === root && (parent.computedStyle[DISPLAY] === 'flex' || parent.currentStyle[DISPLAY] === 'flex')) {
+    return true;
+  }
   // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
   let topFlex;
   do {
@@ -268,6 +272,9 @@ function checkInfluence(root, reflowHash, node, component) {
   // 找到最上层flex，视作其更改
   if(topFlex) {
     target = topFlex;
+  }
+  if(target === root) {
+    return true;
   }
   // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
   if(target !== node) {

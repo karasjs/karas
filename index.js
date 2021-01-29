@@ -3384,18 +3384,26 @@
         } else if (v === 'auto') {
           parseFlex(style, 1, 1, 'auto');
         } else if (/^[\d.]+$/.test(v)) {
-          parseFlex(style, Math.max(0, parseFloat(v)), 1, 0);
+          parseFlex(style, parseFloat(v), 1, 0);
         } else if (/^[\d.]+px$/i.test(v)) {
           parseFlex(style, 1, 1, 0);
         } else if (/^[\d.]+%$/.test(v)) {
           parseFlex(style, 1, 1, v);
         } else if (/^[\d.]+\s+[\d.]+$/.test(v)) {
           var arr = v.split(/\s+/);
-          parseFlex(style, arr[0], arr[1], 0);
+          parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), 0);
         } else if (/^[\d.]+\s+[\d.]+%$/.test(v)) {
           var _arr = v.split(/\s+/);
 
-          parseFlex(style, _arr[0], 1, _arr[1]);
+          parseFlex(style, parseFloat(_arr[0]), 1, _arr[1]);
+        } else if (/^[\d.]+\s+[\d.]+\s+[\d.]+(px|%)?$/.test(v)) {
+          var _arr2 = v.split(/\s+/);
+
+          parseFlex(style, parseFloat(_arr2[0]), parseFloat(_arr2[1]), _arr2[2]);
+        } else if (/^[\d.]+\s+[\d.]+\s+(auto|none)$/.test(v)) {
+          var _arr3 = v.split(/\s+/);
+
+          parseFlex(style, parseFloat(_arr3[0]), parseFloat(_arr3[1]), _arr3[2]);
         } else {
           parseFlex(style, 0, 1, 'auto');
         }
@@ -3464,15 +3472,15 @@
         //   });
         // }
       } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
-        var _arr2 = v.toString().split(/\s*,\s*/);
+        var _arr4 = v.toString().split(/\s*,\s*/);
 
-        if (_arr2.length === 1) {
-          _arr2[1] = _arr2[0];
+        if (_arr4.length === 1) {
+          _arr4[1] = _arr4[0];
         }
 
         this[k].forEach(function (k, i) {
           if (isNil$2(style[k])) {
-            style[k] = _arr2[i];
+            style[k] = _arr4[i];
           }
         });
       } else if (k === 'margin' || k === 'padding') {
@@ -17146,8 +17154,10 @@
                   var _item$computedStyle3 = item.computedStyle,
                       _marginTop2 = _item$computedStyle3[MARGIN_TOP$2],
                       _marginBottom2 = _item$computedStyle3[MARGIN_BOTTOM$3];
+                  mergeMarginTopList.push(_marginTop2);
+                  mergeMarginBottomList.push(_marginBottom2);
 
-                  var _diff2 = util.getMergeMarginTB([_marginTop2], [_marginBottom2]);
+                  var _diff2 = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 
                   if (_diff2) {
                     y += _diff2;
@@ -23117,10 +23127,23 @@
     }
 
     return false;
-  }
+  } // 除了固定尺寸，父级也不能是flex或变化flex
+
 
   function isFixedSize(node) {
-    return isFixedWidthOrHeight(node, WIDTH$7) && isFixedWidthOrHeight(node, HEIGHT$7);
+    var res = isFixedWidthOrHeight(node, WIDTH$7) && isFixedWidthOrHeight(node, HEIGHT$7);
+
+    if (res) {
+      var parent = node.domParent;
+
+      if (parent) {
+        if (parent.currentStyle[DISPLAY$7] === 'flex' || parent.computedStyle[DISPLAY$7] === 'flex') {
+          return false;
+        }
+      }
+
+      return res;
+    }
   }
 
   var OFFSET = 0;
@@ -23146,16 +23169,17 @@
         component: component
       };
     }
-  } // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
-  // 如果最终是root，则返回true标识，直接整个重新开始布局
+  }
+  /**
+   * 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
+   * absolute的发生变化则查找其相对容器，如果是flex也会受影响，不是则为block无需
+   * 将影响升至最近的父级节点，并添加布局标识，这样后面的深度遍历会以父级为准忽略本身
+   * 如果最终是root，则返回true标识，直接整个重新开始布局
+   * @returns {boolean}
+   */
 
 
-  function checkInfluence(root, reflowHash, node, component, focus) {
-    // 自身尺寸固定且无变化，无需向上查找，但position/absolute发生变化的除外，focus会强制
-    if (isFixedSize(node) && !focus) {
-      return;
-    }
-
+  function checkInfluence(root, reflowHash, node, component) {
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
     if (node.currentStyle[DISPLAY$7] === 'inline' || node.computedStyle[DISPLAY$7] === 'inline') {
@@ -23171,13 +23195,13 @@
 
         if (isLAYOUT(_parent, reflowHash)) {
           return;
-        } // 遇到absolute跳出，如果absolute发生变化，一定会存在于列表中，不用考虑
+        } // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
 
 
         if (_parent.currentStyle[POSITION$4] === 'absolute' || _parent.computedStyle[POSITION$4] === 'absolute') {
           setLAYOUT(_parent, reflowHash, component);
           return;
-        } // 父固定宽度跳出直接父进行LAYOUT即可
+        } // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文
 
 
         if (isFixedSize(_parent)) {
@@ -23187,61 +23211,69 @@
 
 
         _parent = _parent.domParent;
-      } while (_parent && (_parent.currentStyle[DISPLAY$7] === 'inline' || _parent.computedStyle[DISPLAY$7] === 'inline')); // target至少是node的parent，如果固定尺寸提前跳出
+      } while (_parent && (_parent.currentStyle[DISPLAY$7] === 'inline' || _parent.computedStyle[DISPLAY$7] === 'inline')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
 
 
       if (isFixedSize(target)) {
         setLAYOUT(target, reflowHash, component);
         return;
       }
-    } // 此时target指向node，如果原本是inline则是其非inline父
+    } // 此时target指向node，如果原本是inline则是其flow的非inline父
 
 
-    var parent = target.domParent; // parent有LAYOUT跳出，已被包含
+    var parent = target.domParent;
 
-    if (parent && isLAYOUT(parent, reflowHash)) {
+    if (!parent) {
       return;
-    } // 检查flex，如果父是flex，向上查找flex顶点视作其更改
+    }
+
+    if (parent === root) {
+      return true;
+    } // parent有LAYOUT跳出，已被包含
 
 
-    if (parent && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex')) {
-      do {
-        target = parent;
-
-        if (parent === root) {
-          return true;
-        }
-
-        if (isLAYOUT(parent, reflowHash)) {
-          return;
-        }
-
-        if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
-          setLAYOUT(parent, reflowHash, component);
-          return;
-        }
-
-        if (isFixedSize(parent)) {
-          setLAYOUT(parent, reflowHash, component);
-          return;
-        }
-
-        parent = parent.domParent;
-      } while (parent && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex')); // target至少是node的parent，如果固定尺寸提前跳出
+    if (isLAYOUT(parent, reflowHash)) {
+      return;
+    } // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
 
 
-      if (isFixedSize(target)) {
-        setLAYOUT(target, reflowHash, component);
+    var topFlex;
+
+    do {
+      // 父到root提前跳出
+      if (parent === root) {
+        break;
+      } // 父已有LAYOUT跳出防重
+
+
+      if (isLAYOUT(parent, reflowHash)) {
         return;
+      } // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
+
+
+      if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
+        setLAYOUT(parent, reflowHash, component);
+        return;
+      } // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文
+
+
+      if (isFixedSize(parent)) {
+        setLAYOUT(parent, reflowHash, component);
+        return;
+      } // flex相关，包含变化或不变化
+
+
+      if (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex') {
+        topFlex = parent;
       }
-    } // 此时target指向node，如果父原本是flex则是其最上flex父
+
+      parent = parent.domParent;
+    } while (parent); // 找到最上层flex，视作其更改
 
 
-    parent = target.domParent; // parent有LAYOUT跳出，已被包含
-
-    if (parent && isLAYOUT(parent, reflowHash)) {
-      return;
-    } // 向上查找了并且没提前跳出的，父重新布局
+    if (topFlex) {
+      target = topFlex;
+    } // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
 
 
     if (target !== node) {
@@ -24308,7 +24340,7 @@
           else if (currentStyle[POSITION$4] !== computedStyle[POSITION$4]) {
               o.lv = LAYOUT;
 
-              if (checkInfluence(root, reflowHash, node, component, true)) {
+              if (checkInfluence(root, reflowHash, node, component)) {
                 hasRoot = true;
                 break;
               }
@@ -24423,10 +24455,8 @@
 
             var diffList = [];
             var diffI = 0;
-            var mergeMarginBottomList = [],
-                mergeMarginTopList = [];
             console.error(uniqueList);
-            uniqueList.forEach(function (item) {
+            uniqueList.forEach(function (item, i) {
               var node = item.node,
                   lv = item.lv,
                   component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
@@ -24479,6 +24509,7 @@
                 var container = node;
 
                 if (isNowAbs) {
+                  // TODO: margin合并前面的block
                   container = container.domParent;
 
                   while (container && container !== root) {
@@ -24554,8 +24585,8 @@
                         h: h
                       });
                     }
-                  } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经包含了
-                // 这样node重新布局后再次设置parent的偏移
+                  } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
+                // 这样node重新布局后再次设置其使用parent的偏移
 
 
                 var p = node;
@@ -24587,29 +24618,84 @@
                   dx = ow - outerWidth;
                   dy = oh - outerHeight;
                 } // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
-
-
-                var isEmptyBlock;
-
-                if (node.flowChildren && node.flowChildren.length === 0) {
-                  var _node$computedStyle = node.computedStyle,
-                      marginTop = _node$computedStyle[MARGIN_TOP$4],
-                      marginBottom = _node$computedStyle[MARGIN_BOTTOM$4],
-                      paddingTop = _node$computedStyle[PADDING_TOP$5],
-                      paddingBottom = _node$computedStyle[PADDING_BOTTOM$3],
-                      _height = _node$computedStyle[HEIGHT$7],
-                      borderTopWidth = _node$computedStyle[BORDER_TOP_WIDTH$5],
-                      borderBottomWidth = _node$computedStyle[BORDER_BOTTOM_WIDTH$5]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
-
-                  if (paddingTop <= 0 && paddingBottom <= 0 && _height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
-                    mergeMarginBottomList.push(marginBottom);
-                    mergeMarginTopList.push(marginTop);
-                    isEmptyBlock = true;
-                  }
-                } // 作为最后一个block空节点，需要合并margin
-
-
-                if (!node.next && isEmptyBlock) ; // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
+                // 新布局时因为是以prev/parent的y为开始，所有新的是不考虑之前的margin合并的
+                // let isEmptyBlock;
+                // if(node.flowChildren && node.flowChildren.length === 0) {
+                //   let {
+                //     [MARGIN_TOP]: marginTop,
+                //     [MARGIN_BOTTOM]: marginBottom,
+                //     [PADDING_TOP]: paddingTop,
+                //     [PADDING_BOTTOM]: paddingBottom,
+                //     [HEIGHT]: height,
+                //     [BORDER_TOP_WIDTH]: borderTopWidth,
+                //     [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+                //   } = node.computedStyle;
+                //   // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+                //   if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+                //     mergeMarginBottomList.push(marginBottom);
+                //     mergeMarginTopList.push(marginTop);
+                //     isEmptyBlock = true;
+                //   }
+                // }
+                // let isNextReflow = uniqueList[i + 1] && uniqueList[i + 1] === node.next;
+                // // 空block比较麻烦，分支较多
+                // if(isEmptyBlock) {
+                //   let next = node.next;
+                //   let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = cps;
+                //   // 空block是最后一个没有next兄弟，直接处理
+                //   if(!next) {
+                //     mergeMarginTopList.push(marginTop);
+                //     mergeMarginBottomList.push(marginBottom);
+                //     let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+                //     if(diff) {
+                //       node.__offsetY(diff, true);
+                //       dy += diff;
+                //     }
+                //     mergeMarginTopList = [];
+                //     mergeMarginBottomList = [];
+                //   }
+                //   // 有next兄弟的空block
+                //   else {
+                //     // 下个也在reflow列表里，记录下来等下个处理，因为紧邻，所以一定是i+1个
+                //     if(next === uniqueList[i + 1]) {
+                //       mergeMarginTopList.push(marginTop);
+                //       mergeMarginBottomList.push(marginBottom);
+                //     }
+                //     // 下个不在reflow列表里
+                //     else {
+                //       if(next instanceof Component) {
+                //         next = next.shadowRoot;
+                //       }
+                //       let isBlock;
+                //       if(!(next instanceof Text)) {
+                //         isBlock = next.computedStyle[DISPLAY] !== 'inline';
+                //       }
+                //     }
+                //   }
+                // }
+                // // 本次非空，看有无记录，有则合并，无则不处理，需要将前面的block的mb和自己的mt放入，前面的重复放入不影响
+                // else {
+                //   let prev = node.prev;
+                //   if(prev instanceof Component) {
+                //     prev = prev.shadowRoot;
+                //   }
+                //   // 即便重复也无所谓，不影响计算
+                //   if(prev instanceof Xom) {
+                //     let marginBottom = prev.computedStyle[MARGIN_BOTTOM];
+                //     mergeMarginBottomList.push(marginBottom);
+                //   }
+                //   mergeMarginTopList.push(cps[MARGIN_TOP]);
+                //   if(mergeMarginTopList.length && mergeMarginBottomList.length) {
+                //     let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+                //     if(diff) {
+                //       node.__offsetY(diff, true);
+                //       dy += diff;
+                //     }
+                //   }
+                //   mergeMarginTopList = [];
+                //   mergeMarginBottomList = [];
+                // }
+                // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
 
 
                 if (dx || dy) {
@@ -24737,11 +24823,11 @@
                       bottom = _node$currentStyle[BOTTOM$3],
                       left = _node$currentStyle[LEFT$3],
                       _currentStyle3 = node.currentStyle,
-                      _node$computedStyle2 = node.computedStyle,
-                      t = _node$computedStyle2[TOP$3],
-                      r = _node$computedStyle2[RIGHT$3],
-                      b = _node$computedStyle2[BOTTOM$3],
-                      l = _node$computedStyle2[LEFT$3],
+                      _node$computedStyle = node.computedStyle,
+                      t = _node$computedStyle[TOP$3],
+                      r = _node$computedStyle[RIGHT$3],
+                      b = _node$computedStyle[BOTTOM$3],
+                      l = _node$computedStyle[LEFT$3],
                       _computedStyle2 = node.computedStyle;
 
                   var _parent3;

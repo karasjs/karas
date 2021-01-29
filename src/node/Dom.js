@@ -559,7 +559,9 @@ class Dom extends Xom {
           // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
           else if(i === length - 1) {
             let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
-            let diff = util.getMergeMarginTB([marginTop], [marginBottom]);
+            mergeMarginTopList.push(marginTop);
+            mergeMarginBottomList.push(marginBottom);
+            let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
             if(diff) {
               y += diff;
             }

@@ -1454,7 +1454,7 @@
       diff = Math.max(max, min) - total;
     } else if (max < 0 && min < 0) {
       diff = Math.min(max, min) - total;
-    } else if (max !== 0 && min !== 0) {
+    } else if (max !== 0 || min !== 0) {
       diff = max + min - total;
     }
 
@@ -17151,12 +17151,6 @@
                 mergeMarginBottomList = [_marginBottom];
               } // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
               else if (i === length - 1) {
-                  var _item$computedStyle3 = item.computedStyle,
-                      _marginTop2 = _item$computedStyle3[MARGIN_TOP$2],
-                      _marginBottom2 = _item$computedStyle3[MARGIN_BOTTOM$3];
-                  mergeMarginTopList.push(_marginTop2);
-                  mergeMarginBottomList.push(_marginBottom2);
-
                   var _diff2 = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 
                   if (_diff2) {

@@ -530,7 +530,7 @@ function getMergeMarginTB(topList, bottomList) {
   else if(max < 0 && min < 0) {
     diff = Math.min(max, min) - total;
   }
-  else if(max !== 0 && min !== 0) {
+  else if(max !== 0 || min !== 0) {
     diff = max + min - total;
   }
   return diff;

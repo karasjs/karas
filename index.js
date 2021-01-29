@@ -24605,6 +24605,7 @@
                 // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
 
 
+                var fromAbs = node.computedStyle[POSITION$4] === 'absolute';
                 var dx, dy;
 
                 if (change2Abs) {
@@ -24612,9 +24613,15 @@
                   dy = -outerHeight;
                 } else {
                   var ow = node.outerWidth,
-                      oh = node.outerHeight;
-                  dx = ow - outerWidth;
-                  dy = oh - outerHeight;
+                      oh = node.outerHeight; // 由非abs变为abs纯增加
+
+                  if (fromAbs) {
+                    dx = ow;
+                    dy = oh;
+                  } else {
+                    dx = ow - outerWidth;
+                    dy = oh - outerHeight;
+                  }
                 } // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
                 // 新布局时因为是以prev/parent的y为开始，所有新的是不考虑之前的margin合并的
 

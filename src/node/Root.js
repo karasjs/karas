@@ -1376,6 +1376,7 @@ class Root extends Dom {
           }
           // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
           // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
+          let fromAbs = node.computedStyle[POSITION] === 'absolute';
           let dx, dy;
           if(change2Abs) {
             dx = -outerWidth;
@@ -1383,8 +1384,15 @@ class Root extends Dom {
           }
           else {
             let { outerWidth: ow, outerHeight: oh } = node;
-            dx = ow - outerWidth;
-            dy = oh - outerHeight;
+            // 由非abs变为abs纯增加
+            if(fromAbs) {
+              dx = ow;
+              dy = oh;
+            }
+            else {
+              dx = ow - outerWidth;
+              dy = oh - outerHeight;
+            }
           }
           // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
           // 新布局时因为是以prev/parent的y为开始，所有新的是不考虑之前的margin合并的

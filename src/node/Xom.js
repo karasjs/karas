@@ -2777,7 +2777,7 @@ class Xom extends Node {
     this.__sy4 += diff;
   }
 
-  __resizeX(diff) {
+  __resizeX(diff, lv) {
     this.computedStyle.width = this.__width += diff;
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
@@ -2786,9 +2786,12 @@ class Xom extends Node {
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
     }
+    if(lv !== undefined) {
+      this.__config[NODE_REFRESH_LV] |= lv;
+    }
   }
 
-  __resizeY(diff) {
+  __resizeY(diff, lv) {
     this.computedStyle.height = this.__height += diff;
     this.__clientHeight += diff;
     this.__offsetHeight += diff;
@@ -2796,6 +2799,9 @@ class Xom extends Node {
     this.__layoutData.h += diff;
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
+    }
+    if(lv !== undefined) {
+      this.__config[NODE_REFRESH_LV] |= lv;
     }
   }
 

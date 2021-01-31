@@ -23222,15 +23222,12 @@
 
 
       if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
-        // setLAYOUT(parent, reflowHash, component);
-        // return;
         break;
       } // 父固定宽高跳出
 
 
       if (isFixedSize(parent, true)) {
-        break; // setLAYOUT(parent, reflowHash, component);
-        // return;
+        break;
       } // flex相关，包含变化或不变化
 
 
@@ -23264,23 +23261,7 @@
       }
 
       parent = parent.domParent;
-    } // 如果target发生了absolute的变化，视作其container重新布局
-    // if((target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute')
-    //   && target.currentStyle[POSITION] !== target.computedStyle[POSITION]) {
-    //   while(target = target.domParent) {
-    //     // target不会没有，因为root强制不为absolute
-    //     if(target === root) {
-    //       return true;
-    //     }
-    //     let p = target.computedStyle[POSITION];
-    //     if(p === 'absolute' || p === 'relative') {
-    //       target.__updateStruct(root.__structs);
-    //       setLAYOUT(target, reflowHash, component);
-    //       return;
-    //     }
-    //   }
-    // }
-    // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
+    } // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
 
 
     if (target !== node) {
@@ -24802,8 +24783,7 @@
 
 
                   while (last) {
-                    last.__cancelCache(true); // last.__config[NODE_REFRESH_LV] |= REFLOW;
-
+                    last.__cancelCache(true);
 
                     last = last.domParent;
                   }

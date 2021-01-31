@@ -258,15 +258,11 @@ function checkInfluence(root, reflowHash, node, component) {
     }
     // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
     if(parent.currentStyle[POSITION] === 'absolute' || parent.computedStyle[POSITION] === 'absolute') {
-      // setLAYOUT(parent, reflowHash, component);
-      // return;
       break;
     }
     // 父固定宽高跳出
     if(isFixedSize(parent, true)) {
       break;
-      // setLAYOUT(parent, reflowHash, component);
-      // return;
     }
     // flex相关，包含变化或不变化
     if(parent.computedStyle[DISPLAY] === 'flex' || parent.currentStyle[DISPLAY] === 'flex') {
@@ -297,22 +293,6 @@ function checkInfluence(root, reflowHash, node, component) {
     }
     parent = parent.domParent;
   }
-  // 如果target发生了absolute的变化，视作其container重新布局
-  // if((target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute')
-  //   && target.currentStyle[POSITION] !== target.computedStyle[POSITION]) {
-  //   while(target = target.domParent) {
-  //     // target不会没有，因为root强制不为absolute
-  //     if(target === root) {
-  //       return true;
-  //     }
-  //     let p = target.computedStyle[POSITION];
-  //     if(p === 'absolute' || p === 'relative') {
-  //       target.__updateStruct(root.__structs);
-  //       setLAYOUT(target, reflowHash, component);
-  //       return;
-  //     }
-  //   }
-  // }
   // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
   if(target !== node) {
     setLAYOUT(target, reflowHash, component);
@@ -1600,7 +1580,6 @@ class Root extends Dom {
             // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
             while(last) {
               last.__cancelCache(true);
-              // last.__config[NODE_REFRESH_LV] |= REFLOW;
               last = last.domParent;
             }
           }

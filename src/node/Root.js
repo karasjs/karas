@@ -1615,9 +1615,10 @@ class Root extends Dom {
               }
             }
             while(true);
-            // 最后一个递归向上取消总缓存保留自身缓存，防止过程中重复next多次无用递归
+            // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
             while(last) {
-              last.__cancelCache(true);
+              last.__cancelCache();
+              last.__config[NODE_REFRESH_LV] |= REFLOW;
               last = last.domParent;
             }
           }

@@ -2574,18 +2574,16 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  __cancelCache(onlyTotal) {
+  __cancelCache() {
     let __config = this.__config;
+    __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
+    let __cache = __config[NODE_CACHE];
     let __cacheTotal = __config[NODE_CACHE_TOTAL];
     let __cacheFilter = __config[NODE_CACHE_FILTER];
     let __cacheMask = __config[NODE_CACHE_MASK];
     let __cacheOverflow = __config[NODE_CACHE_OVERFLOW];
-    if(!onlyTotal) {
-      __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
-      let __cache = __config[NODE_CACHE];
-      if(__cache) {
-        __cache.release();
-      }
+    if(__cache) {
+      __cache.release();
     }
     if(__cacheTotal) {
       __cacheTotal.release();

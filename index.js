@@ -15307,20 +15307,17 @@
 
     }, {
       key: "__cancelCache",
-      value: function __cancelCache(onlyTotal) {
+      value: function __cancelCache() {
         var __config = this.__config;
+        __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
+        var __cache = __config[NODE_CACHE$1];
         var __cacheTotal = __config[NODE_CACHE_TOTAL];
         var __cacheFilter = __config[NODE_CACHE_FILTER$1];
         var __cacheMask = __config[NODE_CACHE_MASK];
         var __cacheOverflow = __config[NODE_CACHE_OVERFLOW$1];
 
-        if (!onlyTotal) {
-          __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
-          var __cache = __config[NODE_CACHE$1];
-
-          if (__cache) {
-            __cache.release();
-          }
+        if (__cache) {
+          __cache.release();
         }
 
         if (__cacheTotal) {
@@ -21726,7 +21723,6 @@
 
 
     var lrd = genLRD(__structs);
-    console.error(lrd);
     /**
      * 再后序遍历进行__cacheTotal合并，统计节点个数，有total的视为1个，排除掉Root和Text，
      * 在这个过程中，注意层级lv的变化，因为一个节点清除total后其所有父节点肯定也会清除，形成一条顶到底链路，
@@ -21815,7 +21811,6 @@
           }
 
         prevLv = lv;
-        console.log(_i3, index, needGenTotal, hasMask, __cacheTotal && __cacheTotal.available);
 
         if (needGenTotal) {
           // 有老的直接使用，没有才重新生成，注意还需判断blur,mask,overflow
@@ -21851,8 +21846,7 @@
               }
             }
 
-            var isClip = node.next.isClip;
-            console.log(needWaitIndex); // mask一定不会是0，所以可以直接判断，有则等待最后一个改变的next的mask，否则直接生成
+            var isClip = node.next.isClip; // mask一定不会是0，所以可以直接判断，有则等待最后一个改变的next的mask，否则直接生成
 
             if (needWaitIndex) {
               maskGenHash[needWaitIndex] = {
@@ -24846,12 +24840,13 @@
                     else {
                         break;
                       }
-                  } while (true); // 最后一个递归向上取消总缓存保留自身缓存，防止过程中重复next多次无用递归
+                  } while (true); // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
 
 
                   while (last) {
-                    last.__cancelCache(true);
+                    last.__cancelCache();
 
+                    last.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                     last = last.domParent;
                   }
                 } // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点

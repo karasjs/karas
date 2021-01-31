@@ -15307,17 +15307,20 @@
 
     }, {
       key: "__cancelCache",
-      value: function __cancelCache() {
+      value: function __cancelCache(onlyTotal) {
         var __config = this.__config;
-        __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
-        var __cache = __config[NODE_CACHE$1];
         var __cacheTotal = __config[NODE_CACHE_TOTAL];
         var __cacheFilter = __config[NODE_CACHE_FILTER$1];
         var __cacheMask = __config[NODE_CACHE_MASK];
         var __cacheOverflow = __config[NODE_CACHE_OVERFLOW$1];
 
-        if (__cache) {
-          __cache.release();
+        if (!onlyTotal) {
+          __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
+          var __cache = __config[NODE_CACHE$1];
+
+          if (__cache) {
+            __cache.release();
+          }
         }
 
         if (__cacheTotal) {
@@ -15338,15 +15341,7 @@
           inject.releaseCacheCanvas(__cacheOverflow.canvas);
           __config[NODE_CACHE_OVERFLOW$1] = null;
         }
-      } // cancelCache() {
-      //   this.__cancelCache();
-      //   let parent = this.domParent;
-      //   while(parent) {
-      //     parent.__cancelCache();
-      //     parent = parent.domParent;
-      //   }
-      // }
-
+      }
     }, {
       key: "updateStyle",
       value: function updateStyle(style, cb) {
@@ -18357,19 +18352,6 @@
 
 
         return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e);
-      }
-    }, {
-      key: "__cancelCache",
-      value: function __cancelCache(recursion) {
-        _get(_getPrototypeOf(Dom.prototype), "__cancelCache", this).call(this, recursion);
-
-        if (recursion) {
-          this.children.forEach(function (child) {
-            if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
-              child.__cancelCache(recursion);
-            }
-          });
-        }
       } // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
 
     }, {
@@ -19823,13 +19805,6 @@
         if (strokeMiterlimit && strokeMiterlimit !== 4) {
           props.push(['stroke-miterlimit', strokeMiterlimit]);
         }
-      }
-    }, {
-      key: "__cancelCache",
-      value: function __cancelCache(recursion) {
-        _get(_getPrototypeOf(Geom.prototype), "__cancelCache", this).call(this, recursion);
-
-        this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
       } // geom的cache无内容也不清除
 
     }, {
@@ -23276,8 +23251,6 @@
     } // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
 
 
-    parent = target.domParent;
-
     while (parent) {
       // 无论新老absolute，不变化则设置，变化一定会出现在列表中
       if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
@@ -23292,24 +23265,22 @@
 
       parent = parent.domParent;
     } // 如果target发生了absolute的变化，视作其container重新布局
-
-
-    if ((target.currentStyle[POSITION$4] === 'absolute' || target.computedStyle[POSITION$4] === 'absolute') && target.currentStyle[POSITION$4] !== target.computedStyle[POSITION$4]) {
-      while (target = target.domParent) {
-        if (!target || target === root) {
-          return true;
-        }
-
-        var p = target.computedStyle[POSITION$4];
-
-        if (p === 'absolute' || p === 'relative') {
-          target.__updateStruct(root.__structs);
-
-          setLAYOUT(target, reflowHash, component);
-          return;
-        }
-      }
-    } // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
+    // if((target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute')
+    //   && target.currentStyle[POSITION] !== target.computedStyle[POSITION]) {
+    //   while(target = target.domParent) {
+    //     // target不会没有，因为root强制不为absolute
+    //     if(target === root) {
+    //       return true;
+    //     }
+    //     let p = target.computedStyle[POSITION];
+    //     if(p === 'absolute' || p === 'relative') {
+    //       target.__updateStruct(root.__structs);
+    //       setLAYOUT(target, reflowHash, component);
+    //       return;
+    //     }
+    //   }
+    // }
+    // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
 
 
     if (target !== node) {
@@ -24493,10 +24464,7 @@
             var diffList = [];
             var diffI = 0;
             var mergeOffsetList = [];
-            var __uniqueMergeOffsetId = 0; // let blockList = [];
-            // let mergeMarginBottomList = [], mergeMarginTopList = [];
-
-            console.error(uniqueList);
+            var __uniqueMergeOffsetId = 0;
             uniqueList.forEach(function (item) {
               var node = item.node,
                   lv = item.lv,
@@ -24521,7 +24489,6 @@
                 var _parent$__layoutData = parent.__layoutData,
                     _x = _parent$__layoutData.x,
                     y = _parent$__layoutData.y,
-                    w = _parent$__layoutData.w,
                     h = _parent$__layoutData.h,
                     _width = parent.width,
                     _computedStyle = parent.computedStyle;
@@ -24601,6 +24568,8 @@
 
                     return;
                   }
+
+                  console.log(111);
 
                   parent.__updateStruct(root.__structs);
 
@@ -24767,12 +24736,15 @@
 
                 if (dy) {
                   var _p2 = node;
+                  var last;
 
                   do {
                     // component的sr没有next兄弟，视为component的next
                     while (_p2.isShadowRoot) {
                       _p2 = _p2.host;
                     }
+
+                    last = _p2; // 先偏移next，忽略有定位的absolute或LAYOUT
 
                     var next = _p2.next;
 
@@ -24826,13 +24798,15 @@
                     if (_p2 === root) {
                       break;
                     }
-                  } while (true); // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
-                  // while(last) {
-                  //   last.__cancelCache();
-                  //   last.__config[NODE_REFRESH_LV] |= REFLOW;
-                  //   last = last.domParent;
-                  // }
+                  } while (true); // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
 
+
+                  while (last) {
+                    last.__cancelCache(true);
+
+                    last.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
+                    last = last.domParent;
+                  }
                 } // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
 
 
@@ -24942,8 +24916,8 @@
              */
 
             mergeOffsetList.forEach(function (parent) {
-              delete parent.__uniqueMergeOffsetId;
-              console.warn(parent); // let pPosition = parent.computedStyle[POSITION];
+              delete parent.__uniqueMergeOffsetId; // console.warn(parent);
+              // let pPosition = parent.computedStyle[POSITION];
               // let isContainer = pPosition === 'absolute' || pPosition === 'relative' || !parent.parent;
 
               var flowChildren = parent.flowChildren,

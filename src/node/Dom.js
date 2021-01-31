@@ -1646,17 +1646,6 @@ class Dom extends Xom {
     return super.__emitEvent(e);
   }
 
-  __cancelCache(recursion) {
-    super.__cancelCache(recursion);
-    if(recursion) {
-      this.children.forEach(child => {
-        if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-          child.__cancelCache(recursion);
-        }
-      });
-    }
-  }
-
   // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
   __deepScan(cb, options) {
     if(super.__deepScan(cb, options)) {

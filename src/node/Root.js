@@ -283,7 +283,6 @@ function checkInfluence(root, reflowHash, node, component) {
     return true;
   }
   // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
-  parent = target.domParent;
   while(parent) {
     // 无论新老absolute，不变化则设置，变化一定会出现在列表中
     if(parent.currentStyle[POSITION] === 'absolute' || parent.computedStyle[POSITION] === 'absolute') {
@@ -299,20 +298,21 @@ function checkInfluence(root, reflowHash, node, component) {
     parent = parent.domParent;
   }
   // 如果target发生了absolute的变化，视作其container重新布局
-  if((target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute')
-    && target.currentStyle[POSITION] !== target.computedStyle[POSITION]) {
-    while(target = target.domParent) {
-      if(!target || target === root) {
-        return true;
-      }
-      let p = target.computedStyle[POSITION];
-      if(p === 'absolute' || p === 'relative') {
-        target.__updateStruct(root.__structs);
-        setLAYOUT(target, reflowHash, component);
-        return;
-      }
-    }
-  }
+  // if((target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute')
+  //   && target.currentStyle[POSITION] !== target.computedStyle[POSITION]) {
+  //   while(target = target.domParent) {
+  //     // target不会没有，因为root强制不为absolute
+  //     if(target === root) {
+  //       return true;
+  //     }
+  //     let p = target.computedStyle[POSITION];
+  //     if(p === 'absolute' || p === 'relative') {
+  //       target.__updateStruct(root.__structs);
+  //       setLAYOUT(target, reflowHash, component);
+  //       return;
+  //     }
+  //   }
+  // }
   // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
   if(target !== node) {
     setLAYOUT(target, reflowHash, component);
@@ -1301,9 +1301,6 @@ class Root extends Dom {
       let diffI = 0;
       let mergeOffsetList = [];
       let __uniqueMergeOffsetId = 0;
-      // let blockList = [];
-      // let mergeMarginBottomList = [], mergeMarginTopList = [];
-      console.error(uniqueList);
       uniqueList.forEach(item => {
         let { node, lv, component } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
@@ -1319,7 +1316,7 @@ class Root extends Dom {
             return;
           }
           let parent = node.domParent;
-          let { __layoutData: { x, y, w, h }, width, computedStyle } = parent;
+          let { __layoutData: { x, y, h }, width, computedStyle } = parent;
           let current = node;
           // cp的shadowRoot要向上到cp本身
           while(component && current.isShadowRoot) {
@@ -1385,7 +1382,7 @@ class Root extends Dom {
                 diffList.push(arr);
               }
               return;
-            }
+            }console.log(111)
             parent.__updateStruct(root.__structs);
             change2Abs = true;
           }
@@ -1600,12 +1597,12 @@ class Root extends Dom {
               }
             }
             while(true);
-            // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
-            // while(last) {
-            //   last.__cancelCache();
-            //   last.__config[NODE_REFRESH_LV] |= REFLOW;
-            //   last = last.domParent;
-            // }
+            // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
+            while(last) {
+              last.__cancelCache(true);
+              last.__config[NODE_REFRESH_LV] |= REFLOW;
+              last = last.domParent;
+            }
           }
 
           // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
@@ -1700,7 +1697,7 @@ class Root extends Dom {
        */
       mergeOffsetList.forEach(parent => {
         delete parent.__uniqueMergeOffsetId;
-        console.warn(parent);
+        // console.warn(parent);
         // let pPosition = parent.computedStyle[POSITION];
         // let isContainer = pPosition === 'absolute' || pPosition === 'relative' || !parent.parent;
         let flowChildren = parent.flowChildren, absChildren = parent.flowChildren;

@@ -16734,7 +16734,7 @@
         return [struct, d];
       }
       /**
-       * 因为zIndex的变化造成的更新，只需重排这一段顺序即可
+       * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
        * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
        * @param structs
        * @private
@@ -16761,7 +16761,7 @@
         var arr = [];
         var source = [];
 
-        for (var i = index + 1; i <= total; i++) {
+        for (var i = index + 1; i <= index + total; i++) {
           var child = structs[i];
           var o = {
             child: child,
@@ -18327,7 +18327,8 @@
 
         var type = e.event.type;
         var listener = this.listener,
-            zIndexChildren = this.zIndexChildren;
+            zIndexChildren = this.zIndexChildren; // if(!zIndexChildren) {console.log(this)}
+
         var cb;
 
         if (listener.hasOwnProperty(type)) {
@@ -23302,7 +23303,8 @@
         var p = target.computedStyle[POSITION$4];
 
         if (p === 'absolute' || p === 'relative') {
-          target.__zIndexChildren = null;
+          target.__updateStruct(root.__structs);
+
           setLAYOUT(target, reflowHash, component);
           return;
         }
@@ -24582,10 +24584,10 @@
                       diffList.push(arr);
 
                       if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
-                        node.domParent.__updateStruct(root.__structs);
+                        parent.__updateStruct(root.__structs);
 
                         if (_this4.renderMode === mode.SVG) {
-                          cleanSvgCache(node.domParent);
+                          cleanSvgCache(parent);
                         }
                       }
                     } else if (isLastNone || isNowNone) {
@@ -24600,7 +24602,8 @@
                     return;
                   }
 
-                  node.__zIndexChildren = null;
+                  parent.__updateStruct(root.__structs);
+
                   change2Abs = true;
                 } // 现在是普通流，不管之前是啥直接布局
                 else {
@@ -24672,16 +24675,13 @@
                 var dy;
 
                 if (change2Abs) {
-                  // dx = -outerWidth;
                   dy = -outerHeight;
                 } else {
                   var oh = node.outerHeight; // 由非abs变为abs纯增加
 
                   if (fromAbs) {
-                    // dx = ow;
                     dy = oh;
                   } else {
-                    // dx = ow - outerWidth;
                     dy = oh - outerHeight;
                   }
                 } // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
@@ -24767,15 +24767,12 @@
 
                 if (dy) {
                   var _p2 = node;
-                  var last;
 
                   do {
                     // component的sr没有next兄弟，视为component的next
                     while (_p2.isShadowRoot) {
                       _p2 = _p2.host;
                     }
-
-                    last = _p2; // 先偏移next，忽略有定位的absolute或LAYOUT
 
                     var next = _p2.next;
 
@@ -24798,36 +24795,21 @@
 
                     _p2 = _p2.parent;
 
-                    if (!_p2 || _p2 === root) {
+                    if (!_p2) {
                       break;
                     } // parent判断是否要resize
 
 
                     var _p3 = _p2,
                         _currentStyle2 = _p3.currentStyle;
-                    var isAbs = _currentStyle2[POSITION$4] === 'absolute'; // if(dx) {
-                    //   let need;
-                    //   // width在block不需要，parent一定不会是flex/inline
-                    //   if(isAbs) {
-                    //     if(currentStyle[WIDTH][1] === AUTO
-                    //       && (currentStyle[LEFT][1] === AUTO || currentStyle[RIGHT][1] === AUTO)) {
-                    //       need = true;
-                    //     }
-                    //   }
-                    //   if(need) {
-                    //     p.__resizeX(dx);
-                    //     p.__cancelCache();
-                    //     p.__config[NODE_REFRESH_LV] |= REFLOW;
-                    //   }
-                    // }
-
+                    var isAbs = _currentStyle2[POSITION$4] === 'absolute';
                     var need = void 0;
 
                     if (isAbs) {
                       if (_currentStyle2[HEIGHT$7][1] === AUTO$6 && (_currentStyle2[TOP$3][1] === AUTO$6 || _currentStyle2[BOTTOM$3][1] === AUTO$6)) {
                         need = true;
                       }
-                    } // height则需要
+                    } // height不定则需要
                     else if (_currentStyle2[HEIGHT$7][1] === AUTO$6) {
                         need = true;
                       }
@@ -24840,15 +24822,17 @@
                     else {
                         break;
                       }
+
+                    if (_p2 === root) {
+                      break;
+                    }
                   } while (true); // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
+                  // while(last) {
+                  //   last.__cancelCache();
+                  //   last.__config[NODE_REFRESH_LV] |= REFLOW;
+                  //   last = last.domParent;
+                  // }
 
-
-                  while (last) {
-                    last.__cancelCache();
-
-                    last.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
-                    last = last.domParent;
-                  }
                 } // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
 
 

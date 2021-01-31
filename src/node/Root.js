@@ -307,7 +307,7 @@ function checkInfluence(root, reflowHash, node, component) {
       }
       let p = target.computedStyle[POSITION];
       if(p === 'absolute' || p === 'relative') {
-        target.__zIndexChildren = null;
+        target.__updateStruct(root.__structs);
         setLAYOUT(target, reflowHash, component);
         return;
       }
@@ -1372,9 +1372,9 @@ class Root extends Dom {
                 diffList.push(arr);
                 if((position !== cts[POSITION] && (position === 'static' || cts[POSITION] === 'static'))
                   || zIndex !== cts[Z_INDEX]) {
-                  node.domParent.__updateStruct(root.__structs);
+                  parent.__updateStruct(root.__structs);
                   if(this.renderMode === mode.SVG) {
-                    cleanSvgCache(node.domParent);
+                    cleanSvgCache(parent);
                   }
                 }
               }
@@ -1386,7 +1386,7 @@ class Root extends Dom {
               }
               return;
             }
-            node.__zIndexChildren = null;
+            parent.__updateStruct(root.__structs);
             change2Abs = true;
           }
           // 现在是普通流，不管之前是啥直接布局
@@ -1451,18 +1451,15 @@ class Root extends Dom {
           let fromAbs = node.computedStyle[POSITION] === 'absolute';
           let dy;
           if(change2Abs) {
-            // dx = -outerWidth;
             dy = -outerHeight;
           }
           else {
             let { outerHeight: oh } = node;
             // 由非abs变为abs纯增加
             if(fromAbs) {
-              // dx = ow;
               dy = oh;
             }
             else {
-              // dx = ow - outerWidth;
               dy = oh - outerHeight;
             }
           }
@@ -1573,27 +1570,12 @@ class Root extends Dom {
               }
               // 要么一定有parent，因为上面向上循环排除了cp返回cp的情况；要么就是root本身
               p = p.parent;
-              if(!p || p === root) {
+              if(!p) {
                 break;
               }
               // parent判断是否要resize
               let { currentStyle } = p;
               let isAbs = currentStyle[POSITION] === 'absolute';
-              // if(dx) {
-              //   let need;
-              //   // width在block不需要，parent一定不会是flex/inline
-              //   if(isAbs) {
-              //     if(currentStyle[WIDTH][1] === AUTO
-              //       && (currentStyle[LEFT][1] === AUTO || currentStyle[RIGHT][1] === AUTO)) {
-              //       need = true;
-              //     }
-              //   }
-              //   if(need) {
-              //     p.__resizeX(dx);
-              //     p.__cancelCache();
-              //     p.__config[NODE_REFRESH_LV] |= REFLOW;
-              //   }
-              // }
               let need;
               if(isAbs) {
                 if(currentStyle[HEIGHT][1] === AUTO
@@ -1601,7 +1583,7 @@ class Root extends Dom {
                   need = true;
                 }
               }
-              // height则需要
+              // height不定则需要
               else if(currentStyle[HEIGHT][1] === AUTO) {
                 need = true;
               }
@@ -1613,14 +1595,17 @@ class Root extends Dom {
               else {
                 break;
               }
+              if(p === root) {
+                break;
+              }
             }
             while(true);
             // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
-            while(last) {
-              last.__cancelCache();
-              last.__config[NODE_REFRESH_LV] |= REFLOW;
-              last = last.domParent;
-            }
+            // while(last) {
+            //   last.__cancelCache();
+            //   last.__config[NODE_REFRESH_LV] |= REFLOW;
+            //   last = last.domParent;
+            // }
           }
 
           // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点

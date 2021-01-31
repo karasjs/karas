@@ -204,7 +204,7 @@ class Dom extends Xom {
   }
 
   /**
-   * 因为zIndex的变化造成的更新，只需重排这一段顺序即可
+   * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
    * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
    * @param structs
    * @private
@@ -222,7 +222,7 @@ class Dom extends Xom {
     // 按直接子节点划分为相同数量的若干段进行排序
     let arr = [];
     let source = [];
-    for(let i = index + 1; i <= total; i++) {
+    for(let i = index + 1; i <= index + total; i++) {
       let child = structs[i];
       let o = {
         child,
@@ -1620,6 +1620,7 @@ class Dom extends Xom {
     }
     let { event: { type } } = e;
     let { listener, zIndexChildren } = this;
+    // if(!zIndexChildren) {console.log(this)}
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];

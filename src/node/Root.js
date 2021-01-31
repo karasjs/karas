@@ -135,19 +135,19 @@ function initEvent(dom, Root) {
   });
 }
 
-// 提取出对比节点尺寸是否修改，用currentStyle的对比computedStyle的
+// 提取出对比节点尺寸是否固定非AUTO
 function isFixedWidthOrHeight(node, k) {
   let c = node.currentStyle[k];
-  let v = node.computedStyle[k];
-  if(c[1] === PX) {
-    return c[0] === v;
-  }
-  if(c[1] === PERCENT) {
-    let parent = node.domParent;
-    let s = parent.__layoutData[k === 'width' ? 'w' : 'h'];
-    return c[0] * s * 0.01 === v;
-  }
-  return false;
+  // let v = node.computedStyle[k];
+  // if(c[1] === PX) {
+  //   return c[0] === v;
+  // }
+  // if(c[1] === PERCENT) {
+  //   let parent = node.domParent;
+  //   let s = parent.__layoutData[k === WIDTH ? 'w' : 'h'];
+  //   return c[0] * s * 0.01 === v;
+  // }
+  return c[1] !== AUTO;
 }
 // 除了固定尺寸，父级也不能是flex或变化flex
 function isFixedSize(node, includeParentFlex) {
@@ -1679,6 +1679,7 @@ class Root extends Dom {
        * 会出现absolute节点，但不会出现absolute嵌套
        * 先进行flow，再看abs，因为flow会影响abs的默认定位
        * 完成后对此父节点的后续兄弟节点进行offset调整，多次不会干扰影响
+       * 然后继续往上循环，直到root结束
        */
       mergeOffsetList.forEach(parent => {
         delete parent.__uniqueMergeOffsetId;
@@ -1716,9 +1717,13 @@ class Root extends Dom {
           let item = absChildren[i];
           // console.log(item);
         }
-        // 对parent本身进行缩放，后面兄弟进行偏移
-        if(diffTotal) {
+        // 对parent本身进行缩放，后面兄弟进行偏移，完成后继续向上，除非遇到固定尺寸或abs
+        if(parent && diffTotal && !isFixedWidthOrHeight(parent, HEIGHT)) {
           parent.__resizeY(diffTotal, REFLOW);
+          let isAbs = parent.computedStyle[POSITION] === 'absolute';
+          if(isAbs) {
+            // break;
+          }
           let next = parent.next;
           while(next) {
             // absolute的孩子特殊判断，属于parent容器的需要，不属于的auto的也需要
@@ -1736,6 +1741,7 @@ class Root extends Dom {
             }
             next = next.next;
           }
+          parent = parent.domParent;
         }
       });
 

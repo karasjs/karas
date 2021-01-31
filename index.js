@@ -23051,7 +23051,6 @@
       isFunction$6 = util.isFunction;
   var AUTO$6 = unit.AUTO,
       PX$8 = unit.PX,
-      PERCENT$8 = unit.PERCENT,
       INHERIT$5 = unit.INHERIT;
   var calRelative$2 = css.calRelative,
       isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute,
@@ -23111,24 +23110,21 @@
         }
       });
     });
-  } // 提取出对比节点尺寸是否修改，用currentStyle的对比computedStyle的
+  } // 提取出对比节点尺寸是否固定非AUTO
 
 
   function isFixedWidthOrHeight(node, k) {
-    var c = node.currentStyle[k];
-    var v = node.computedStyle[k];
+    var c = node.currentStyle[k]; // let v = node.computedStyle[k];
+    // if(c[1] === PX) {
+    //   return c[0] === v;
+    // }
+    // if(c[1] === PERCENT) {
+    //   let parent = node.domParent;
+    //   let s = parent.__layoutData[k === WIDTH ? 'w' : 'h'];
+    //   return c[0] * s * 0.01 === v;
+    // }
 
-    if (c[1] === PX$8) {
-      return c[0] === v;
-    }
-
-    if (c[1] === PERCENT$8) {
-      var parent = node.domParent;
-      var s = parent.__layoutData[k === 'width' ? 'w' : 'h'];
-      return c[0] * s * 0.01 === v;
-    }
-
-    return false;
+    return c[1] !== AUTO$6;
   } // 除了固定尺寸，父级也不能是flex或变化flex
 
 
@@ -24918,6 +24914,7 @@
              * 会出现absolute节点，但不会出现absolute嵌套
              * 先进行flow，再看abs，因为flow会影响abs的默认定位
              * 完成后对此父节点的后续兄弟节点进行offset调整，多次不会干扰影响
+             * 然后继续往上循环，直到root结束
              */
 
             mergeOffsetList.forEach(function (parent) {
@@ -24964,19 +24961,21 @@
 
               for (var _i5 = 0, _len5 = absChildren.length; _i5 < _len5; _i5++) {
                 var _item = absChildren[_i5]; // console.log(item);
-              } // 对parent本身进行缩放，后面兄弟进行偏移
+              } // 对parent本身进行缩放，后面兄弟进行偏移，完成后继续向上，除非遇到固定尺寸或abs
 
 
-              if (diffTotal) {
+              if (parent && diffTotal && !isFixedWidthOrHeight(parent, HEIGHT$7)) {
                 parent.__resizeY(diffTotal, REFLOW$1);
+
+                var isAbs = parent.computedStyle[POSITION$4] === 'absolute';
 
                 var next = parent.next;
 
                 while (next) {
                   // absolute的孩子特殊判断，属于parent容器的需要，不属于的auto的也需要
-                  var isAbs = next.computedStyle[POSITION$4] === 'absolute';
+                  var _isAbs = next.computedStyle[POSITION$4] === 'absolute';
 
-                  if (isAbs) {
+                  if (_isAbs) {
                     if (isContainer) {
                       next.__offsetY(diffTotal, true, REFLOW$1);
                     }
@@ -24986,6 +24985,8 @@
 
                   next = next.next;
                 }
+
+                parent = parent.domParent;
               }
             }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了
             // 这里因为和update保持一致的顺序，因此一定是先根顺序且互不包含

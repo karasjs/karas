@@ -1600,7 +1600,7 @@ class Root extends Dom {
             // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
             while(last) {
               last.__cancelCache(true);
-              last.__config[NODE_REFRESH_LV] |= REFLOW;
+              // last.__config[NODE_REFRESH_LV] |= REFLOW;
               last = last.domParent;
             }
           }

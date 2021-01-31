@@ -24802,9 +24802,9 @@
 
 
                   while (last) {
-                    last.__cancelCache(true);
+                    last.__cancelCache(true); // last.__config[NODE_REFRESH_LV] |= REFLOW;
 
-                    last.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
+
                     last = last.domParent;
                   }
                 } // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点

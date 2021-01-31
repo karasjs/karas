@@ -150,17 +150,17 @@ function isFixedWidthOrHeight(node, k) {
   return false;
 }
 // 除了固定尺寸，父级也不能是flex或变化flex
-function isFixedSize(node) {
+function isFixedSize(node, includeParentFlex) {
   let res = isFixedWidthOrHeight(node, WIDTH) && isFixedWidthOrHeight(node, HEIGHT);
-  if(res) {
+  if(res && includeParentFlex) {
     let parent = node.domParent;
     if(parent) {
       if(parent.currentStyle[DISPLAY] === 'flex' || parent.computedStyle[DISPLAY] === 'flex') {
         return false;
       }
     }
-    return res;
   }
+  return res;
 }
 
 const OFFSET = 0;
@@ -213,8 +213,8 @@ function checkInfluence(root, reflowHash, node, component) {
         setLAYOUT(parent, reflowHash, component);
         return;
       }
-      // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文
-      if(isFixedSize(parent)) {
+      // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
+      if(isFixedSize(parent, true)) {
         setLAYOUT(parent, reflowHash, component);
         return;
       }
@@ -223,7 +223,7 @@ function checkInfluence(root, reflowHash, node, component) {
     }
     while(parent && (parent.currentStyle[DISPLAY] === 'inline' || parent.computedStyle[DISPLAY] === 'inline'));
     // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
-    if(isFixedSize(target)) {
+    if(isFixedSize(target, true)) {
       setLAYOUT(target, reflowHash, component);
       return;
     }
@@ -262,7 +262,7 @@ function checkInfluence(root, reflowHash, node, component) {
       return;
     }
     // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文
-    if(isFixedSize(parent)) {
+    if(isFixedSize(parent, true)) {
       setLAYOUT(parent, reflowHash, component);
       return;
     }
@@ -280,13 +280,19 @@ function checkInfluence(root, reflowHash, node, component) {
   if(target === root) {
     return true;
   }
-  // 向上检查absolute，找到则视为其变更，上面过程中一定没有出现absolute
+  // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
   parent = target.domParent;
   while(parent) {
     // 无论新老absolute，不变化则设置，变化一定会出现在列表中
     if(parent.currentStyle[POSITION] === 'absolute' || parent.computedStyle[POSITION] === 'absolute') {
-      setLAYOUT(parent, reflowHash, component);
-      return;
+      // 固定尺寸的不用设置，需要跳出循环
+      if(isFixedSize(parent)) {
+        break;
+      }
+      else {
+        setLAYOUT(parent, reflowHash, component);
+        return;
+      }
     }
     parent = parent.domParent;
   }
@@ -1281,7 +1287,7 @@ class Root extends Dom {
       // let mergeMarginBottomList = [], mergeMarginTopList = [];
       console.error(uniqueList);
       uniqueList.forEach((item, i) => {
-        let { node, lv, component } = item; console.log(node, node.__uniqueReflowId);
+        let { node, lv, component } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
           let cps = node.computedStyle, cts = node.currentStyle;
@@ -1671,48 +1677,59 @@ class Root extends Dom {
        * merge和offset后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
        * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，
        * 会出现absolute节点，但不会出现absolute嵌套
-       * 先进行flow，再看abs，因为flow会影响abs的默认定位，可以一次循环完成
+       * 先进行flow，再看abs，因为flow会影响abs的默认定位
        * 完成后对此父节点的后续兄弟节点进行offset调整，多次不会干扰影响
        */
       mergeOffsetList.forEach(parent => {
         delete parent.__uniqueMergeOffsetId;
         console.warn(parent);
-        let children = parent.children, isStart, lastY, diffTotal = 0;
-        // 遍历孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
-        for(let i = 0, len = children.length; i < len; i++) {
-          let item = children[i];
+        let pPosition = parent.computedStyle[POSITION];
+        let isContainer = pPosition === 'absolute' || pPosition === 'relative' || !parent.parent;
+        let flowChildren = parent.flowChildren, absChildren = parent.flowChildren;
+        let isStart, lastY, diffTotal = 0;
+        // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
+        for(let i = 0, len = flowChildren.length; i < len; i++) {
+          let item = flowChildren[i];
           // 忽略掉前面没有变更的节点
           if(!isStart) {
+            if(item instanceof Component) {
+              item = item.shadowRoot;
+            }
             if(item.hasOwnProperty('__uniqueReflowId')) {
               isStart = true;
               lastY = item.__layoutData.y + item.outerHeight;
             }
             continue;
           }
-          // 开始变更的节点，absolute特殊处理
-          let isAbs = item.computedStyle[POSITION] === 'absolute';
+          // 开始变更的节点，flow的依次检查y和变更lastY
           let { y } = item.__layoutData;
-          if(isAbs) {
-            //
-          }
           // flow的依次检查y和变更lastY
-          else {
-            let diff = lastY - y;
-            if(diff) {
-              diffTotal += diff;
-              item.__offsetY(diff, true, REFLOW);
-            }
-            lastY += item.outerHeight;
+          let diff = lastY - y;
+          if(diff) {
+            diffTotal += diff;
+            item.__offsetY(diff, true, REFLOW);
           }
+          lastY += item.outerHeight;
+        }
+        // 遍历abs，如果parent是container
+        for(let i = 0, len = absChildren.length; i < len; i++) {
+          let item = absChildren[i];
+          // console.log(item);
         }
         // 对parent本身进行缩放，后面兄弟进行偏移
         if(diffTotal) {
           parent.__resizeY(diffTotal, REFLOW);
           let next = parent.next;
           while(next) {
+            // absolute的孩子特殊判断，属于parent容器的需要，不属于的auto的也需要
             let isAbs = next.computedStyle[POSITION] === 'absolute';
             if(isAbs) {
-              //
+              if(isContainer) {
+                next.__offsetY(diffTotal, true, REFLOW);
+              }
+              else {
+                //
+              }
             }
             else {
               next.__offsetY(diffTotal, true, REFLOW);

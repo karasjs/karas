@@ -23132,10 +23132,10 @@
   } // 除了固定尺寸，父级也不能是flex或变化flex
 
 
-  function isFixedSize(node) {
+  function isFixedSize(node, includeParentFlex) {
     var res = isFixedWidthOrHeight(node, WIDTH$7) && isFixedWidthOrHeight(node, HEIGHT$7);
 
-    if (res) {
+    if (res && includeParentFlex) {
       var parent = node.domParent;
 
       if (parent) {
@@ -23143,9 +23143,9 @@
           return false;
         }
       }
-
-      return res;
     }
+
+    return res;
   }
 
   var OFFSET = 0;
@@ -23203,10 +23203,10 @@
         if (_parent.currentStyle[POSITION$4] === 'absolute' || _parent.computedStyle[POSITION$4] === 'absolute') {
           setLAYOUT(_parent, reflowHash, component);
           return;
-        } // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文
+        } // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
 
 
-        if (isFixedSize(_parent)) {
+        if (isFixedSize(_parent, true)) {
           setLAYOUT(_parent, reflowHash, component);
           return;
         } // 继续向上
@@ -23216,7 +23216,7 @@
       } while (_parent && (_parent.currentStyle[DISPLAY$7] === 'inline' || _parent.computedStyle[DISPLAY$7] === 'inline')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
 
 
-      if (isFixedSize(target)) {
+      if (isFixedSize(target, true)) {
         setLAYOUT(target, reflowHash, component);
         return;
       }
@@ -23260,7 +23260,7 @@
       } // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文
 
 
-      if (isFixedSize(parent)) {
+      if (isFixedSize(parent, true)) {
         setLAYOUT(parent, reflowHash, component);
         return;
       } // flex相关，包含变化或不变化
@@ -23280,7 +23280,7 @@
 
     if (target === root) {
       return true;
-    } // 向上检查absolute，找到则视为其变更，上面过程中一定没有出现absolute
+    } // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
 
 
     parent = target.domParent;
@@ -23288,8 +23288,13 @@
     while (parent) {
       // 无论新老absolute，不变化则设置，变化一定会出现在列表中
       if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
-        setLAYOUT(parent, reflowHash, component);
-        return;
+        // 固定尺寸的不用设置，需要跳出循环
+        if (isFixedSize(parent)) {
+          break;
+        } else {
+          setLAYOUT(parent, reflowHash, component);
+          return;
+        }
       }
 
       parent = parent.domParent;
@@ -24483,8 +24488,7 @@
             uniqueList.forEach(function (item, i) {
               var node = item.node,
                   lv = item.lv,
-                  component = item.component;
-              console.log(node, node.__uniqueReflowId); // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               if (lv >= LAYOUT) {
                 var cps = node.computedStyle,
@@ -24912,46 +24916,54 @@
              * merge和offset后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
              * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，
              * 会出现absolute节点，但不会出现absolute嵌套
-             * 先进行flow，再看abs，因为flow会影响abs的默认定位，可以一次循环完成
+             * 先进行flow，再看abs，因为flow会影响abs的默认定位
              * 完成后对此父节点的后续兄弟节点进行offset调整，多次不会干扰影响
              */
 
             mergeOffsetList.forEach(function (parent) {
               delete parent.__uniqueMergeOffsetId;
               console.warn(parent);
-              var children = parent.children,
-                  isStart,
+              var pPosition = parent.computedStyle[POSITION$4];
+              var isContainer = pPosition === 'absolute' || pPosition === 'relative' || !parent.parent;
+              var flowChildren = parent.flowChildren,
+                  absChildren = parent.flowChildren;
+              var isStart,
                   lastY,
-                  diffTotal = 0; // 遍历孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
+                  diffTotal = 0; // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
 
-              for (var _i4 = 0, _len4 = children.length; _i4 < _len4; _i4++) {
-                var item = children[_i4]; // 忽略掉前面没有变更的节点
+              for (var _i4 = 0, _len4 = flowChildren.length; _i4 < _len4; _i4++) {
+                var item = flowChildren[_i4]; // 忽略掉前面没有变更的节点
 
                 if (!isStart) {
+                  if (item instanceof Component$1) {
+                    item = item.shadowRoot;
+                  }
+
                   if (item.hasOwnProperty('__uniqueReflowId')) {
                     isStart = true;
                     lastY = item.__layoutData.y + item.outerHeight;
                   }
 
                   continue;
-                } // 开始变更的节点，absolute特殊处理
+                } // 开始变更的节点，flow的依次检查y和变更lastY
 
 
-                var isAbs = item.computedStyle[POSITION$4] === 'absolute';
-                var y = item.__layoutData.y;
+                var y = item.__layoutData.y; // flow的依次检查y和变更lastY
 
-                if (isAbs) ; // flow的依次检查y和变更lastY
-                else {
-                    var _diff = lastY - y;
+                var _diff = lastY - y;
 
-                    if (_diff) {
-                      diffTotal += _diff;
+                if (_diff) {
+                  diffTotal += _diff;
 
-                      item.__offsetY(_diff, true, REFLOW$1);
-                    }
+                  item.__offsetY(_diff, true, REFLOW$1);
+                }
 
-                    lastY += item.outerHeight;
-                  }
+                lastY += item.outerHeight;
+              } // 遍历abs，如果parent是container
+
+
+              for (var _i5 = 0, _len5 = absChildren.length; _i5 < _len5; _i5++) {
+                var _item = absChildren[_i5]; // console.log(item);
               } // 对parent本身进行缩放，后面兄弟进行偏移
 
 
@@ -24961,9 +24973,14 @@
                 var next = parent.next;
 
                 while (next) {
-                  var _isAbs = next.computedStyle[POSITION$4] === 'absolute';
+                  // absolute的孩子特殊判断，属于parent容器的需要，不属于的auto的也需要
+                  var isAbs = next.computedStyle[POSITION$4] === 'absolute';
 
-                  if (_isAbs) ; else {
+                  if (isAbs) {
+                    if (isContainer) {
+                      next.__offsetY(diffTotal, true, REFLOW$1);
+                    }
+                  } else {
                     next.__offsetY(diffTotal, true, REFLOW$1);
                   }
 
@@ -24978,9 +24995,9 @@
                 isFirst = true,
                 structs = root.__structs;
             diffList.forEach(function (item) {
-              var _item = _slicedToArray(item, 2),
-                  ns = _item[0],
-                  d = _item[1]; // 第一个有变化的，及后面无论有无变化都需更新
+              var _item2 = _slicedToArray(item, 2),
+                  ns = _item2[0],
+                  d = _item2[1]; // 第一个有变化的，及后面无论有无变化都需更新
               // 第1个变化区域无需更改前面一段
 
 
@@ -24992,8 +25009,8 @@
               else {
                   var j = ns[STRUCT_INDEX$3] + (ns[STRUCT_TOTAL$2] || 0) + 1 + diff;
 
-                  for (var _i5 = lastIndex; _i5 < j; _i5++) {
-                    structs[_i5][STRUCT_INDEX$3] += diff;
+                  for (var _i6 = lastIndex; _i6 < j; _i6++) {
+                    structs[_i6][STRUCT_INDEX$3] += diff;
                   }
 
                   lastIndex = j;
@@ -25002,8 +25019,8 @@
             }); // 后面的要根据偏移量校正索引
 
             if (diff) {
-              for (var _i6 = lastIndex, _len5 = structs.length; _i6 < _len5; _i6++) {
-                structs[_i6][STRUCT_INDEX$3] += diff;
+              for (var _i7 = lastIndex, _len6 = structs.length; _i7 < _len6; _i7++) {
+                structs[_i7][STRUCT_INDEX$3] += diff;
               }
             } // 清除id
 

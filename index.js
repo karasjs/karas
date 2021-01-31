@@ -21726,6 +21726,7 @@
 
 
     var lrd = genLRD(__structs);
+    console.error(lrd);
     /**
      * 再后序遍历进行__cacheTotal合并，统计节点个数，有total的视为1个，排除掉Root和Text，
      * 在这个过程中，注意层级lv的变化，因为一个节点清除total后其所有父节点肯定也会清除，形成一条顶到底链路，
@@ -21814,6 +21815,7 @@
           }
 
         prevLv = lv;
+        console.log(_i3, index, needGenTotal, hasMask, __cacheTotal && __cacheTotal.available);
 
         if (needGenTotal) {
           // 有老的直接使用，没有才重新生成，注意还需判断blur,mask,overflow
@@ -21849,7 +21851,8 @@
               }
             }
 
-            var isClip = node.next.isClip; // mask一定不会是0，所以可以直接判断，有则等待最后一个改变的next的mask，否则直接生成
+            var isClip = node.next.isClip;
+            console.log(needWaitIndex); // mask一定不会是0，所以可以直接判断，有则等待最后一个改变的next的mask，否则直接生成
 
             if (needWaitIndex) {
               maskGenHash[needWaitIndex] = {
@@ -24661,10 +24664,10 @@
                     oy && node.__offsetY(oy);
                     break;
                   }
-                } // 去重记录parent，整个结束后按先序顺序进行margin合并以及偏移，
+                } // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
 
 
-                if (!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+                if (!change2Abs && !parent.hasOwnProperty('__uniqueMergeOffsetId')) {
                   parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
                   mergeOffsetList.push(parent);
                 } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
@@ -24953,45 +24956,52 @@
                 }
             });
             /**
-             * merge和offset后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
-             * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，
-             * 会出现absolute节点，但不会出现absolute嵌套
-             * 先进行flow，再看abs，因为flow会影响abs的默认定位
-             * 完成后对此父节点的后续兄弟节点进行offset调整，多次不会干扰影响
+             * mergeMargin后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
+             * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，且不会有abs节点的父节点
+             * 完成后对此父节点的后续兄弟节点进行调整，多次不会干扰影响
              * 然后继续往上循环，直到root结束
              */
 
             mergeOffsetList.forEach(function (parent) {
-              delete parent.__uniqueMergeOffsetId; // console.warn(parent);
-              // let pPosition = parent.computedStyle[POSITION];
+              delete parent.__uniqueMergeOffsetId;
+              console.warn(parent); // let pPosition = parent.computedStyle[POSITION];
               // let isContainer = pPosition === 'absolute' || pPosition === 'relative' || !parent.parent;
-              // let flowChildren = parent.flowChildren, absChildren = parent.flowChildren;
-              // let isStart, lastY, diffTotal = 0;
-              // // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
-              // for(let i = 0, len = flowChildren.length; i < len; i++) {
-              //   let item = flowChildren[i];
-              //   // 忽略掉前面没有变更的节点
-              //   if(!isStart) {
-              //     if(item instanceof Component) {
-              //       item = item.shadowRoot;
-              //     }
-              //     if(item.hasOwnProperty('__uniqueReflowId')) {
-              //       isStart = true;
-              //       lastY = item.__layoutData.y + item.outerHeight;
-              //     }
-              //     continue;
-              //   }
-              //   // 开始变更的节点，flow的依次检查y和变更lastY
-              //   let { y } = item.__layoutData;
-              //   // flow的依次检查y和变更lastY
-              //   let diff = lastY - y;
-              //   if(diff) {
-              //     diffTotal += diff;
-              //     item.__offsetY(diff, true, REFLOW);
-              //   }
-              //   lastY += item.outerHeight;
-              // }
-              // // 遍历abs，如果parent是container
+
+              var flowChildren = parent.flowChildren,
+                  absChildren = parent.flowChildren;
+              var isStart,
+                  lastY;
+   // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
+
+              for (var _i4 = 0, _len4 = flowChildren.length; _i4 < _len4; _i4++) {
+                var item = flowChildren[_i4]; // 忽略掉前面没有变更的节点
+
+                if (!isStart) {
+                  if (item instanceof Component$1) {
+                    item = item.shadowRoot;
+                  }
+
+                  if (item.hasOwnProperty('__uniqueReflowId')) {
+                    isStart = true;
+                    lastY = item.__layoutData.y + item.outerHeight; // 不能是第0个，没法合并
+
+                    if (!_i4) {
+                      continue;
+                    }
+                  } else {
+                    continue;
+                  }
+                } // 开始变更的节点，至少不是第0个
+                //   let { y } = item.__layoutData;
+                //   // flow的依次检查y和变更lastY
+                //   let diff = lastY - y;
+                //   if(diff) {
+                //     diffTotal += diff;
+                //     item.__offsetY(diff, true, REFLOW);
+                //   }
+                //   lastY += item.outerHeight;
+
+              } // // 遍历abs，如果parent是container
               // for(let i = 0, len = absChildren.length; i < len; i++) {
               //   let item = absChildren[i];
               //   // console.log(item);
@@ -25022,6 +25032,7 @@
               //   }
               //   parent = parent.domParent;
               // }
+
             }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了
             // 这里因为和update保持一致的顺序，因此一定是先根顺序且互不包含
 
@@ -25044,8 +25055,8 @@
               else {
                   var j = ns[STRUCT_INDEX$3] + (ns[STRUCT_TOTAL$2] || 0) + 1 + diff;
 
-                  for (var _i4 = lastIndex; _i4 < j; _i4++) {
-                    structs[_i4][STRUCT_INDEX$3] += diff;
+                  for (var _i5 = lastIndex; _i5 < j; _i5++) {
+                    structs[_i5][STRUCT_INDEX$3] += diff;
                   }
 
                   lastIndex = j;
@@ -25054,8 +25065,8 @@
             }); // 后面的要根据偏移量校正索引
 
             if (diff) {
-              for (var _i5 = lastIndex, _len4 = structs.length; _i5 < _len4; _i5++) {
-                structs[_i5][STRUCT_INDEX$3] += diff;
+              for (var _i6 = lastIndex, _len5 = structs.length; _i6 < _len5; _i6++) {
+                structs[_i6][STRUCT_INDEX$3] += diff;
               }
             } // 清除id
 

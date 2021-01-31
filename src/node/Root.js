@@ -1439,8 +1439,9 @@ class Root extends Dom {
               break;
             }
           }
-          // 去重记录parent，整个结束后按先序顺序进行margin合并以及偏移，
-          if(!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+
+          // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
+          if(!change2Abs && !parent.hasOwnProperty('__uniqueMergeOffsetId')) {
             parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
             mergeOffsetList.push(parent);
           }
@@ -1706,35 +1707,39 @@ class Root extends Dom {
         }
       });
       /**
-       * merge和offset后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
-       * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，
-       * 会出现absolute节点，但不会出现absolute嵌套
-       * 先进行flow，再看abs，因为flow会影响abs的默认定位
-       * 完成后对此父节点的后续兄弟节点进行offset调整，多次不会干扰影响
+       * mergeMargin后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
+       * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，且不会有abs节点的父节点
+       * 完成后对此父节点的后续兄弟节点进行调整，多次不会干扰影响
        * 然后继续往上循环，直到root结束
        */
       mergeOffsetList.forEach(parent => {
         delete parent.__uniqueMergeOffsetId;
-        // console.warn(parent);
+        console.warn(parent);
         // let pPosition = parent.computedStyle[POSITION];
         // let isContainer = pPosition === 'absolute' || pPosition === 'relative' || !parent.parent;
-        // let flowChildren = parent.flowChildren, absChildren = parent.flowChildren;
-        // let isStart, lastY, diffTotal = 0;
-        // // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
-        // for(let i = 0, len = flowChildren.length; i < len; i++) {
-        //   let item = flowChildren[i];
-        //   // 忽略掉前面没有变更的节点
-        //   if(!isStart) {
-        //     if(item instanceof Component) {
-        //       item = item.shadowRoot;
-        //     }
-        //     if(item.hasOwnProperty('__uniqueReflowId')) {
-        //       isStart = true;
-        //       lastY = item.__layoutData.y + item.outerHeight;
-        //     }
-        //     continue;
-        //   }
-        //   // 开始变更的节点，flow的依次检查y和变更lastY
+        let flowChildren = parent.flowChildren, absChildren = parent.flowChildren;
+        let isStart, lastY, diffTotal = 0;
+        // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
+        for(let i = 0, len = flowChildren.length; i < len; i++) {
+          let item = flowChildren[i];
+          // 忽略掉前面没有变更的节点
+          if(!isStart) {
+            if(item instanceof Component) {
+              item = item.shadowRoot;
+            }
+            if(item.hasOwnProperty('__uniqueReflowId')) {
+              isStart = true;
+              lastY = item.__layoutData.y + item.outerHeight;
+              // 不能是第0个，没法合并
+              if(!i) {
+                continue;
+              }
+            }
+            else {
+              continue;
+            }
+          }
+          // 开始变更的节点，至少不是第0个
         //   let { y } = item.__layoutData;
         //   // flow的依次检查y和变更lastY
         //   let diff = lastY - y;
@@ -1743,7 +1748,7 @@ class Root extends Dom {
         //     item.__offsetY(diff, true, REFLOW);
         //   }
         //   lastY += item.outerHeight;
-        // }
+        }
         // // 遍历abs，如果parent是container
         // for(let i = 0, len = absChildren.length; i < len; i++) {
         //   let item = absChildren[i];

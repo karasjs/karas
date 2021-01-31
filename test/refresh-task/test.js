@@ -8,7 +8,7 @@ module.exports = {
       .waitForElementVisible('body', 1000)
       .moveToElement('svg', 1, 1)
       .mouseButtonClick(0)
-      .pause(100)
+      .pause(20)
       .assert.value('input', '1')
       .end();
   }

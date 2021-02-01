@@ -19,6 +19,7 @@ import Controller from '../animate/Controller';
 import change from '../refresh/change';
 import level from '../refresh/level';
 import struct from '../refresh/struct';
+import reflow from '../refresh/reflow';
 
 const {
   STYLE_KEY: {
@@ -91,7 +92,7 @@ const DIRECTION_HASH = {
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { calRelative, isRelativeOrAbsolute, equalStyle } = css;
-const { contain, getLevel, isRepaint, NONE, FILTER, REPAINT, REFLOW } = level;
+const { contain, getLevel, isRepaint, NONE, FILTER, REPAINT, REFLOW, LAYOUT, OFFSET } = level;
 const { isIgnore, isGeom, isMeasure } = change;
 
 function getDom(dom) {
@@ -138,15 +139,6 @@ function initEvent(dom, Root) {
 // 提取出对比节点尺寸是否固定非AUTO
 function isFixedWidthOrHeight(node, k) {
   let c = node.currentStyle[k];
-  // let v = node.computedStyle[k];
-  // if(c[1] === PX) {
-  //   return c[0] === v;
-  // }
-  // if(c[1] === PERCENT) {
-  //   let parent = node.domParent;
-  //   let s = parent.__layoutData[k === WIDTH ? 'w' : 'h'];
-  //   return c[0] * s * 0.01 === v;
-  // }
   return c[1] !== AUTO;
 }
 // 除了固定尺寸，父级也不能是flex或变化flex
@@ -163,8 +155,6 @@ function isFixedSize(node, includeParentFlex) {
   return res;
 }
 
-const OFFSET = 0;
-const LAYOUT = 1;
 function isLAYOUT(node, hash) {
   return node.hasOwnProperty('__uniqueReflowId') && hash[node.__uniqueReflowId] >= LAYOUT;
 }
@@ -1426,7 +1416,7 @@ class Root extends Dom {
           // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
           // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
           let fromAbs = isLastAbs;
-          let dy;
+          let dy = 0;
           if(change2Abs) {
             dy = -outerHeight;
           }
@@ -1440,180 +1430,23 @@ class Root extends Dom {
               dy = oh - outerHeight;
             }
           }
-
-          // 这里尝试判断是否需要合并margin，然后综合对偏移的dy产生影响
-          // 新布局时因为是以prev/parent的y为开始，所有新的是不考虑之前的margin合并的
-          // let isEmptyBlock;
-          // if(node.flowChildren && node.flowChildren.length === 0) {
-          //   let {
-          //     [MARGIN_TOP]: marginTop,
-          //     [MARGIN_BOTTOM]: marginBottom,
-          //     [PADDING_TOP]: paddingTop,
-          //     [PADDING_BOTTOM]: paddingBottom,
-          //     [HEIGHT]: height,
-          //     [BORDER_TOP_WIDTH]: borderTopWidth,
-          //     [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-          //   } = node.computedStyle;
-          //   // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
-          //   if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
-          //     mergeMarginBottomList.push(marginBottom);
-          //     mergeMarginTopList.push(marginTop);
-          //     isEmptyBlock = true;
-          //   }
-          // }
-          // let isNextReflow = uniqueList[i + 1] && uniqueList[i + 1] === node.next;
-          // // 空block比较麻烦，分支较多
-          // if(isEmptyBlock) {
-          //   let next = node.next;
-          //   let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = cps;
-          //   // 空block是最后一个没有next兄弟，直接处理
-          //   if(!next) {
-          //     mergeMarginTopList.push(marginTop);
-          //     mergeMarginBottomList.push(marginBottom);
-          //     let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
-          //     if(diff) {
-          //       node.__offsetY(diff, true);
-          //       dy += diff;
-          //     }
-          //     mergeMarginTopList = [];
-          //     mergeMarginBottomList = [];
-          //   }
-          //   // 有next兄弟的空block
-          //   else {
-          //     // 下个也在reflow列表里，记录下来等下个处理，因为紧邻，所以一定是i+1个
-          //     if(next === uniqueList[i + 1]) {
-          //       mergeMarginTopList.push(marginTop);
-          //       mergeMarginBottomList.push(marginBottom);
-          //     }
-          //     // 下个不在reflow列表里
-          //     else {
-          //       if(next instanceof Component) {
-          //         next = next.shadowRoot;
-          //       }
-          //       let isBlock;
-          //       if(!(next instanceof Text)) {
-          //         isBlock = next.computedStyle[DISPLAY] !== 'inline';
-          //       }
-          //     }
-          //   }
-          // }
-          // // 本次非空，看有无记录，有则合并，无则不处理，需要将前面的block的mb和自己的mt放入，前面的重复放入不影响
-          // else {
-          //   let prev = node.prev;
-          //   if(prev instanceof Component) {
-          //     prev = prev.shadowRoot;
-          //   }
-          //   // 即便重复也无所谓，不影响计算
-          //   if(prev instanceof Xom) {
-          //     let marginBottom = prev.computedStyle[MARGIN_BOTTOM];
-          //     mergeMarginBottomList.push(marginBottom);
-          //   }
-          //   mergeMarginTopList.push(cps[MARGIN_TOP]);
-          //   if(mergeMarginTopList.length && mergeMarginBottomList.length) {
-          //     let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
-          //     if(diff) {
-          //       node.__offsetY(diff, true);
-          //       dy += diff;
-          //     }
-          //   }
-          //   mergeMarginTopList = [];
-          //   mergeMarginBottomList = [];
-          // }
+          // 如果发生了dy变更，首先进行的偏移要排除掉margin合并，放在后面进行，否则会因之前的margin合并干扰错误
+          let next = node.next;
+          while(next) {
+            let cs = next.computedStyle;
+            if(cs[POSITION] !== 'absolute') {
+              let y = node.y + outerHeight;
+              let ny = next.y;
+              if(y !== ny) {
+                dy += y - ny;
+              }
+              break;
+            }
+            next = next.next;
+          }
 
           // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute或者固定高度的中止
-          if(dy) {
-            let p = node;
-            let last;
-            do {
-              // component的sr没有next兄弟，视为component的next
-              while(p.isShadowRoot) {
-                p = p.host;
-              }
-              last = p;
-              let isContainer, resizeAbsList = [];
-              if(p.parent) {
-                let cs = p.parent.computedStyle;
-                let ps = cs[POSITION];
-                isContainer = p.parent === root || ps === 'relative' || ps === 'absolute';
-              }
-              // 先偏移next，忽略有定位的absolute或LAYOUT，本身非container也忽略
-              let next = p.next;
-              while(next) {
-                if(next.currentStyle[POSITION] === 'absolute') {
-                  if(isContainer) {
-                    let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
-                    if(top[1] === AUTO) {
-                      if(bottom[1] === AUTO || bottom[1] === PX) {
-                        next.__offsetY(dy, true, REFLOW);
-                        next.__cancelCache();
-                      }
-                      else if(bottom[1] === PERCENT) {
-                        let v = (1 - bottom[0] * 0.01) * dy;
-                        next.__offsetY(v, true, REFLOW);
-                        next.__cancelCache();
-                      }
-                    }
-                    else if(top[1] === PERCENT) {
-                      let v = top[0] * 0.01 * dy;
-                      next.__offsetY(v, true, REFLOW);
-                      next.__cancelCache();
-                    }
-                    // height为百分比的记录下来后面重新布局
-                    if(height[1] === PERCENT) {
-                      resizeAbsList.push(next);
-                    }
-                  }
-                }
-                else if(!next.hasOwnProperty('__uniqueReflowId') || reflowHash[next.__uniqueReflowId] < LAYOUT) {
-                  next.__offsetY(dy, true, REFLOW);
-                  next.__cancelCache();
-                }
-                next = next.next;
-              }
-              // 要么一定有parent，因为上面向上循环排除了cp返回cp的情况；要么就是root本身
-              p = p.parent;
-              if(!p) {
-                break;
-              }
-              // parent判断是否要resize
-              let { currentStyle } = p;
-              let isAbs = currentStyle[POSITION] === 'absolute';
-              let need;
-              if(isAbs) {
-                if(currentStyle[HEIGHT][1] === AUTO
-                  && (currentStyle[TOP][1] === AUTO || currentStyle[BOTTOM][1] === AUTO)) {
-                  need = true;
-                }
-              }
-              // height不定则需要
-              else if(currentStyle[HEIGHT][1] === AUTO) {
-                need = true;
-              }
-              if(need) {
-                p.__resizeY(dy, REFLOW);
-                p.__cancelCache();
-                // 因调整导致的abs尺寸变化，注意排除本身有布局更新的
-                resizeAbsList.forEach(item => {
-                  if(!item.hasOwnProperty('__uniqueReflowId') || reflowHash[item.__uniqueReflowId] < LAYOUT) {
-                    p.__layoutAbs(p, null, item);
-                  }
-                });
-              }
-              // abs或者高度不需要继续向上调整提前跳出
-              else {
-                break;
-              }
-              if(p === root) {
-                break;
-              }
-            }
-            while(true);
-            // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
-            while(last) {
-              last.__cancelCache(true);
-              last = last.domParent;
-            }
-          }
+          reflow.offsetAndResizeByNodeOnY(node, root, reflowHash, dy);
 
           // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
           if(component) {
@@ -1705,7 +1538,7 @@ class Root extends Dom {
        * 完成后对此父节点的后续兄弟节点进行调整，多次不会干扰影响
        * 然后继续往上循环，直到root结束
        */
-      mergeOffsetList.forEach(parent => {return;
+      mergeOffsetList.forEach(parent => {
         delete parent.__uniqueMergeOffsetId;
         let flowChildren = parent.flowChildren, absChildren = parent.absChildren;
         let mergeMarginBottomList = [], mergeMarginTopList = [];
@@ -1800,66 +1633,52 @@ class Root extends Dom {
         }
         // 有偏移才进行absChildren和parent的next以及向上递归偏移
         if(diffTotal) {
-          let { sy, clientHeight } = parent;
+          let { sy } = parent;
           // 遍历abs，如果top/bottom不固定也需发生偏移
           for(let i = 0, len = absChildren.length; i < len; i++) {
             let item = absChildren[i];
             let { [TOP]: top, [BOTTOM]: bottom } = item.currentStyle;
-            // 分几种情况，除非top固定PX，否则都要偏移
-            if(top[1] === AUTO) {
-              if(bottom[1] === AUTO) {
-                let { sy: oldY, prev } = item;
-                let newY = sy;
-                while(prev) {
-                  if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
-                    newY = prev.y + prev.outerHeight;
-                    break;
+            if(!item.hasOwnProperty('__uniqueReflowId') || reflowHash[item.__uniqueReflowId] < LAYOUT) {
+              // 分几种情况，除非top固定PX，否则都要偏移
+              if(top[1] === AUTO) {
+                if(bottom[1] === AUTO) {
+                  let { sy: oldY, prev } = item;
+                  let newY = sy;
+                  while(prev) {
+                    if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
+                      newY = prev.y + prev.outerHeight;
+                      break;
+                    }
+                    prev = prev.prev;
                   }
-                  prev = prev.prev;
+                  if(oldY !== newY) {
+                    item.__offsetY(diffTotal, true, REFLOW);
+                    item.__cancelCache();
+                  }
                 }
-                if(oldY !== newY) {
+                else if(bottom[1] === PERCENT) {
+                  let v = (1 - bottom[0] * 0.01) * diffTotal;
+                  item.__offsetY(v, true, REFLOW);
+                  item.__cancelCache();
+                }
+                else if(bottom[1] === PX) {
                   item.__offsetY(diffTotal, true, REFLOW);
                   item.__cancelCache();
                 }
               }
-              else if(bottom[1] === PERCENT) {
-                let t = (1 - bottom[0] * 0.01);console.log(t,bottom);
-                let v = t * clientHeight - t * (clientHeight - diffTotal);
-                console.log(v);
+              else if(top[1] === PERCENT) {
+                let v = top[0] * 0.01 * diffTotal;
+                item.__offsetY(v, true, REFLOW);
+                item.__cancelCache();
               }
-              else {}
-            }
-            else if(top[1] === PERCENT) {
-              let { sy: oldY } = item;
             }
           }
+          if(!isFixedWidthOrHeight(parent, HEIGHT)) {
+            parent.__resizeY(diffTotal, REFLOW);
+            // 从parent开始遍历+向上递归，先其next再其parent
+            reflow.offsetAndResizeByNodeOnY(parent, root, reflowHash, diffTotal);
+          }
         }
-        // // 对parent本身进行缩放，后面兄弟进行偏移，完成后继续向上，除非遇到固定尺寸或abs
-        // if(parent && diffTotal && !isFixedWidthOrHeight(parent, HEIGHT)) {
-        //   parent.__resizeY(diffTotal, REFLOW);
-        //   let isAbs = parent.computedStyle[POSITION] === 'absolute';
-        //   if(isAbs) {
-        //     // break;
-        //   }
-        //   let next = parent.next;
-        //   while(next) {
-        //     // absolute的孩子特殊判断，属于parent容器的需要，不属于的auto的也需要
-        //     let isAbs = next.computedStyle[POSITION] === 'absolute';
-        //     if(isAbs) {
-        //       if(isContainer) {
-        //         next.__offsetY(diffTotal, true, REFLOW);
-        //       }
-        //       else {
-        //         //
-        //       }
-        //     }
-        //     else {
-        //       next.__offsetY(diffTotal, true, REFLOW);
-        //     }
-        //     next = next.next;
-        //   }
-        //   parent = parent.domParent;
-        // }
       });
 
       // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了

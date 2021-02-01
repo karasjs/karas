@@ -1491,6 +1491,7 @@ class Dom extends Xom {
         y2 = y;
         let prev = item.prev;
         while(prev) {
+          // 目前不考虑margin合并，直接以前面的flow的最近的prev末尾为准
           if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
             y2 = prev.y + prev.outerHeight;
             break;

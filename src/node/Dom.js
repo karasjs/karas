@@ -1497,9 +1497,6 @@ class Dom extends Xom {
           }
           prev = prev.prev;
         }
-        if(!prev) {
-          y2 = y;
-        }
         if(height[1] !== AUTO) {
           h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
         }
@@ -1620,7 +1617,6 @@ class Dom extends Xom {
     }
     let { event: { type } } = e;
     let { listener, zIndexChildren } = this;
-    // if(!zIndexChildren) {console.log(this)}
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];

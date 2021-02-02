@@ -1422,7 +1422,8 @@ class Root extends Dom {
                 if(target instanceof Component) {
                   target = target.shadowRoot;
                 }
-                if(target.computedStyle[POSITION] !== 'absolute') {
+                let cs = target.computedStyle;
+                if(cs[POSITION] !== 'absolute' && cs[DISPLAY] !== 'none') {
                   target.__offsetY(diff, true, REFLOW);
                   target.__cancelCache();
                 }

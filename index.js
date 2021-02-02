@@ -22968,6 +22968,7 @@
   };
 
   var _enums$STYLE_KEY$f = enums.STYLE_KEY,
+      DISPLAY$7 = _enums$STYLE_KEY$f.DISPLAY,
       TOP$3 = _enums$STYLE_KEY$f.TOP,
       BOTTOM$3 = _enums$STYLE_KEY$f.BOTTOM,
       POSITION$4 = _enums$STYLE_KEY$f.POSITION,
@@ -23002,62 +23003,64 @@
         var container = void 0;
 
         while (next) {
-          if (next.currentStyle[POSITION$4] === 'absolute') {
-            var _next$currentStyle = next.currentStyle,
-                top = _next$currentStyle[TOP$3],
-                bottom = _next$currentStyle[BOTTOM$3],
-                height = _next$currentStyle[HEIGHT$7];
+          if (next.currentStyle[DISPLAY$7] !== 'none') {
+            if (next.currentStyle[POSITION$4] === 'absolute') {
+              var _next$currentStyle = next.currentStyle,
+                  top = _next$currentStyle[TOP$3],
+                  bottom = _next$currentStyle[BOTTOM$3],
+                  height = _next$currentStyle[HEIGHT$7];
 
-            if (top[1] === AUTO$6) {
-              if (bottom[1] === AUTO$6 || bottom[1] === PX$8) {
-                next.__offsetY(dy, true, REFLOW$1);
+              if (top[1] === AUTO$6) {
+                if (bottom[1] === AUTO$6 || bottom[1] === PX$8) {
+                  next.__offsetY(dy, true, REFLOW$1);
+
+                  next.__cancelCache();
+                } else if (bottom[1] === PERCENT$8) {
+                  var v = (1 - bottom[0] * 0.01) * dy;
+
+                  next.__offsetY(v, true, REFLOW$1);
+
+                  next.__cancelCache();
+                }
+              } else if (top[1] === PERCENT$8) {
+                var _v = top[0] * 0.01 * dy;
+
+                next.__offsetY(_v, true, REFLOW$1);
 
                 next.__cancelCache();
-              } else if (bottom[1] === PERCENT$8) {
-                var v = (1 - bottom[0] * 0.01) * dy;
+              } // 高度百分比需发生变化的重新布局，需要在容器内
 
-                next.__offsetY(v, true, REFLOW$1);
 
-                next.__cancelCache();
+              if (height[1] === PERCENT$8) {
+                if (isContainer) {
+                  parent.__layoutAbs(parent, null, next);
+                } else {
+                  if (!container) {
+                    container = parent;
+
+                    while (container) {
+                      if (container === root || container.isShadowRoot) {
+                        break;
+                      }
+
+                      var _cs = container.currentStyle;
+
+                      if (_cs[POSITION$4] === 'absolute' || _cs[POSITION$4] === 'relative') {
+                        break;
+                      }
+
+                      container = container.domParent;
+                    }
+                  }
+
+                  inDirectAbsList.push([parent, container, next]);
+                }
               }
-            } else if (top[1] === PERCENT$8) {
-              var _v = top[0] * 0.01 * dy;
-
-              next.__offsetY(_v, true, REFLOW$1);
+            } else {
+              next.__offsetY(dy, true, REFLOW$1);
 
               next.__cancelCache();
-            } // 高度百分比需发生变化的重新布局，需要在容器内
-
-
-            if (height[1] === PERCENT$8) {
-              if (isContainer) {
-                parent.__layoutAbs(parent, null, next);
-              } else {
-                if (!container) {
-                  container = parent;
-
-                  while (container) {
-                    if (container === root || container.isShadowRoot) {
-                      break;
-                    }
-
-                    var _cs = container.currentStyle;
-
-                    if (_cs[POSITION$4] === 'absolute' || _cs[POSITION$4] === 'relative') {
-                      break;
-                    }
-
-                    container = container.domParent;
-                  }
-                }
-
-                inDirectAbsList.push([parent, container, next]);
-              }
             }
-          } else {
-            next.__offsetY(dy, true, REFLOW$1);
-
-            next.__cancelCache();
           }
 
           next = next.next;
@@ -23118,7 +23121,7 @@
       BOTTOM$4 = _enums$STYLE_KEY$g.BOTTOM,
       LEFT$3 = _enums$STYLE_KEY$g.LEFT,
       POSITION$5 = _enums$STYLE_KEY$g.POSITION,
-      DISPLAY$7 = _enums$STYLE_KEY$g.DISPLAY,
+      DISPLAY$8 = _enums$STYLE_KEY$g.DISPLAY,
       VISIBILITY$6 = _enums$STYLE_KEY$g.VISIBILITY,
       COLOR$5 = _enums$STYLE_KEY$g.COLOR,
       WIDTH$7 = _enums$STYLE_KEY$g.WIDTH,
@@ -23252,7 +23255,7 @@
       var parent = node.domParent;
 
       if (parent) {
-        if (parent.currentStyle[DISPLAY$7] === 'flex' || parent.computedStyle[DISPLAY$7] === 'flex') {
+        if (parent.currentStyle[DISPLAY$8] === 'flex' || parent.computedStyle[DISPLAY$8] === 'flex') {
           return false;
         }
       }
@@ -23294,7 +23297,7 @@
   function checkInfluence(root, reflowHash, node, component) {
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (node.currentStyle[DISPLAY$7] === 'inline' || node.computedStyle[DISPLAY$7] === 'inline') {
+    if (node.currentStyle[DISPLAY$8] === 'inline' || node.computedStyle[DISPLAY$8] === 'inline') {
       var _parent = node.domParent;
 
       do {
@@ -23323,7 +23326,7 @@
 
 
         _parent = _parent.domParent;
-      } while (_parent && (_parent.currentStyle[DISPLAY$7] === 'inline' || _parent.computedStyle[DISPLAY$7] === 'inline')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
+      } while (_parent && (_parent.currentStyle[DISPLAY$8] === 'inline' || _parent.computedStyle[DISPLAY$8] === 'inline')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
 
 
       if (isFixedSize(target, true)) {
@@ -23345,7 +23348,7 @@
     } // parent是root的flex/absolute特殊处理
 
 
-    if (parent === root && (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex' || parent.computedStyle[POSITION$5] === 'absolute' || parent.currentStyle[POSITION$5] === 'absolute')) {
+    if (parent === root && (parent.computedStyle[DISPLAY$8] === 'flex' || parent.currentStyle[DISPLAY$8] === 'flex' || parent.computedStyle[POSITION$5] === 'absolute' || parent.currentStyle[POSITION$5] === 'absolute')) {
       return true;
     } // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
 
@@ -23374,7 +23377,7 @@
       } // flex相关，包含变化或不变化
 
 
-      if (parent.computedStyle[DISPLAY$7] === 'flex' || parent.currentStyle[DISPLAY$7] === 'flex') {
+      if (parent.computedStyle[DISPLAY$8] === 'flex' || parent.currentStyle[DISPLAY$8] === 'flex') {
         topFlex = parent;
       }
 
@@ -23508,7 +23511,7 @@
                   delete style[k];
                   continue;
                 }
-              } else if (k === DISPLAY$7) {
+              } else if (k === DISPLAY$8) {
                 hasDisplay = true;
               } // repaint细化等级，reflow在checkReflow()
 
@@ -23664,7 +23667,7 @@
     } // 由于父节点中有display:none，一些子节点也为none，执行普通动画是无效的，此时lv<REFLOW
 
 
-    if (computedStyle[DISPLAY$7] === 'none' && lv < REFLOW$2) {
+    if (computedStyle[DISPLAY$8] === 'none' && lv < REFLOW$2) {
       return false;
     } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
 
@@ -23675,8 +23678,8 @@
       while (parent) {
         var _config2 = parent.__config;
 
-        if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$7] === 'none') {
-          computedStyle[DISPLAY$7] = 'none';
+        if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$8] === 'none') {
+          computedStyle[DISPLAY$8] = 'none';
           return false;
         }
 
@@ -24213,8 +24216,8 @@
         var currentStyle = this.currentStyle,
             computedStyle = this.computedStyle; // canvas/svg作为根节点一定是block或flex，不会是inline
 
-        if (['flex', 'block'].indexOf(currentStyle[DISPLAY$7]) === -1) {
-          computedStyle[DISPLAY$7] = currentStyle[DISPLAY$7] = 'block';
+        if (['flex', 'block'].indexOf(currentStyle[DISPLAY$8]) === -1) {
+          computedStyle[DISPLAY$8] = currentStyle[DISPLAY$8] = 'block';
         } // 同理position不能为absolute
 
 
@@ -24599,11 +24602,11 @@
                     cts = node.currentStyle;
                 var zIndex = cps[Z_INDEX$4],
                     position = cps[POSITION$5],
-                    display = cps[DISPLAY$7];
+                    display = cps[DISPLAY$8];
                 var isLastAbs = position === 'absolute';
                 var isNowAbs = cts[POSITION$5] === 'absolute';
                 var isLastNone = display === 'none';
-                var isNowNone = cts[DISPLAY$7] === 'none'; // none不可见布局无效可以无视
+                var isNowNone = cts[DISPLAY$8] === 'none'; // none不可见布局无效可以无视
 
                 if (isLastNone && isNowNone) {
                   return;
@@ -24777,7 +24780,9 @@
                         target = target.shadowRoot;
                       }
 
-                      if (target.computedStyle[POSITION$5] !== 'absolute') {
+                      var cs = target.computedStyle;
+
+                      if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$8] !== 'none') {
                         target.__offsetY(_diff, true, REFLOW$2);
 
                         target.__cancelCache();
@@ -24934,7 +24939,7 @@
 
                 var _cs = isXom && item.currentStyle;
 
-                var isInline = isXom && _cs[DISPLAY$7] === 'inline';
+                var isInline = isXom && _cs[DISPLAY$8] === 'inline';
                 lastChild = item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
                 if (!isXom || isInline) {
@@ -24956,7 +24961,7 @@
 
 
                 if (isXom && !isInline) {
-                  var isNone = isXom && _cs[DISPLAY$7] === 'none';
+                  var isNone = isXom && _cs[DISPLAY$8] === 'none';
                   var isEmptyBlock = void 0;
 
                   if (!isNone && item.flowChildren && item.flowChildren.length === 0) {

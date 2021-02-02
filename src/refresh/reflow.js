@@ -4,6 +4,7 @@ import level from './level';
 
 const {
   STYLE_KEY: {
+    DISPLAY,
     TOP,
     BOTTOM,
     POSITION,
@@ -32,50 +33,52 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
       let next = node.next;
       let container;
       while(next) {
-        if(next.currentStyle[POSITION] === 'absolute') {
-          let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
-          if(top[1] === AUTO) {
-            if(bottom[1] === AUTO || bottom[1] === PX) {
-              next.__offsetY(dy, true, REFLOW);
-              next.__cancelCache();
+        if(next.currentStyle[DISPLAY] !== 'none') {
+          if(next.currentStyle[POSITION] === 'absolute') {
+            let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
+            if(top[1] === AUTO) {
+              if(bottom[1] === AUTO || bottom[1] === PX) {
+                next.__offsetY(dy, true, REFLOW);
+                next.__cancelCache();
+              }
+              else if(bottom[1] === PERCENT) {
+                let v = (1 - bottom[0] * 0.01) * dy;
+                next.__offsetY(v, true, REFLOW);
+                next.__cancelCache();
+              }
             }
-            else if(bottom[1] === PERCENT) {
-              let v = (1 - bottom[0] * 0.01) * dy;
+            else if(top[1] === PERCENT) {
+              let v = top[0] * 0.01 * dy;
               next.__offsetY(v, true, REFLOW);
               next.__cancelCache();
             }
+            // 高度百分比需发生变化的重新布局，需要在容器内
+            if(height[1] === PERCENT) {
+              if(isContainer) {
+                parent.__layoutAbs(parent, null, next);
+              }
+              else {
+                if(!container) {
+                  container = parent;
+                  while(container) {
+                    if(container === root || container.isShadowRoot) {
+                      break;
+                    }
+                    let cs = container.currentStyle;
+                    if(cs[POSITION] === 'absolute' || cs[POSITION] === 'relative') {
+                      break;
+                    }
+                    container = container.domParent;
+                  }
+                }
+                inDirectAbsList.push([parent, container, next]);
+              }
+            }
           }
-          else if(top[1] === PERCENT) {
-            let v = top[0] * 0.01 * dy;
-            next.__offsetY(v, true, REFLOW);
+          else {
+            next.__offsetY(dy, true, REFLOW);
             next.__cancelCache();
           }
-          // 高度百分比需发生变化的重新布局，需要在容器内
-          if(height[1] === PERCENT) {
-            if(isContainer) {
-              parent.__layoutAbs(parent, null, next);
-            }
-            else {
-              if(!container) {
-                container = parent;
-                while(container) {
-                  if(container === root || container.isShadowRoot) {
-                    break;
-                  }
-                  let cs = container.currentStyle;
-                  if(cs[POSITION] === 'absolute' || cs[POSITION] === 'relative') {
-                    break;
-                  }
-                  container = container.domParent;
-                }
-              }
-              inDirectAbsList.push([parent, container, next]);
-            }
-          }
-        }
-        else {
-          next.__offsetY(dy, true, REFLOW);
-          next.__cancelCache();
         }
         next = next.next;
       }

@@ -1379,12 +1379,15 @@ class Root extends Dom {
             if(!container) {
               container = root;
             }
-            node.__layoutAbs(container, {
-              x,
-              y,
-              w: width,
-              h,
-            });
+            // 防止geom
+            if(node instanceof Dom) {
+              node.__layoutAbs(container, {
+                x,
+                y,
+                w: width,
+                h,
+              });
+            }
           }
 
           // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了

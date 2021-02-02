@@ -24720,14 +24720,17 @@
 
                     if (!container) {
                       container = root;
-                    }
+                    } // 防止geom
 
-                    node.__layoutAbs(container, {
-                      x: _x,
-                      y: y,
-                      w: _width,
-                      h: h
-                    });
+
+                    if (node instanceof Dom$1) {
+                      node.__layoutAbs(container, {
+                        x: _x,
+                        y: y,
+                        w: _width,
+                        h: h
+                      });
+                    }
                   } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
                 // 这样node重新布局后再次设置其使用parent的偏移
 

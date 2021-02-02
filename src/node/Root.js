@@ -1303,14 +1303,12 @@ class Root extends Dom {
             y += computedStyle[MARGIN_TOP] + computedStyle[BORDER_TOP_WIDTH] + computedStyle[PADDING_TOP];
           }
           x += computedStyle[MARGIN_LEFT] + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[PADDING_LEFT];
-          let { outerHeight } = node;
-          let change2Abs;
           // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
           let container = node;
           if(isNowAbs) {
             container = container.domParent;
             while(container && container !== root) {
-              if(isRelativeOrAbsolute) {
+              if(isRelativeOrAbsolute(container)) {
                 break;
               }
               // 不能用domParent，必须在组件环境内
@@ -1355,7 +1353,6 @@ class Root extends Dom {
             }
             // 标识flow变abs，可能引发zIndex变更，重设struct
             parent.__updateStruct(root.__structs);
-            change2Abs = true;
           }
           // 现在是普通流，不管之前是啥直接布局
           else {
@@ -1366,6 +1363,28 @@ class Root extends Dom {
               h,
             });
             y += node.outerHeight;
+            container = container.domParent;
+            while(container && container !== root) {
+              if(isRelativeOrAbsolute(container)) {
+                break;
+              }
+              // 不能用domParent，必须在组件环境内
+              if(container.parent) {
+                container = container.parent;
+              }
+              else if(container.host) {
+                break;
+              }
+            }
+            if(!container) {
+              container = root;
+            }
+            node.__layoutAbs(container, {
+              x,
+              y,
+              w: width,
+              h,
+            });
           }
 
           // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
@@ -1383,6 +1402,9 @@ class Root extends Dom {
           }
 
           // 向下调整next的flow位置，遇到重复LAYOUT的跳出等待其调用并处理其next，忽视掉abs，margin和abs在merge中做
+          while(node.isShadowRoot) {
+            node = node.host;
+          }
           let next = node.next;
           while(next && !next.hasOwnProperty('__uniqueReflowId')) {
             if(next.computedStyle[POSITION] === 'absolute') {
@@ -1393,9 +1415,13 @@ class Root extends Dom {
             let diff = y - oy;
             if(diff) {
               while(next && !next.hasOwnProperty('__uniqueReflowId')) {
-                if(next.computedStyle[POSITION] !== 'absolute') {
-                  next.__offsetY(diff, true, REFLOW);
-                  next.__cancelCache();
+                let target = next;
+                if(target instanceof Component) {
+                  target = target.shadowRoot;
+                }
+                if(target.computedStyle[POSITION] !== 'absolute') {
+                  target.__offsetY(diff, true, REFLOW);
+                  target.__cancelCache();
                 }
                 next = next.next;
               }
@@ -1404,7 +1430,7 @@ class Root extends Dom {
           }
 
           // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
-          if(!change2Abs && !parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+          if(!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
             parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
             mergeOffsetList.push(parent);
           }
@@ -1600,7 +1626,7 @@ class Root extends Dom {
         let height = cs[HEIGHT];
         let isContainer = parent === root || parent.isShadowRoot || cs[POSITION] === 'absolute' || cs[POSITION] === 'relative';
         if(height[1] === AUTO) {
-          let oldH = parent.height;
+          let oldH = parent.height + parent.computedStyle[PADDING_TOP];
           let nowH = lastChild.y + lastChild.outerHeight - parent.y;
           let diff = nowH - oldH;
           // 调整next以及非固定PX的abs，再递归向上
@@ -1610,7 +1636,7 @@ class Root extends Dom {
             for(let i = 0, len = absChildren.length; i < len; i++) {
               let item = absChildren[i];
               let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = item.currentStyle;
-              // 不管是不是容器，所有的都调整，因为即便不是容器，其偏移还是上级parent的某一个，相对值diff固定偏移量都一样
+              // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
               if(top[1] === AUTO) {
                 if(bottom[1] === AUTO) {
                   let prev = item.prev;
@@ -1645,9 +1671,32 @@ class Root extends Dom {
                 }
               }
               else if(top[1] === PERCENT) {
-                let v = top[0] * 0.01 * diff;
-                item.__offsetY(v, true, REFLOW);
-                item.__cancelCache();
+                if(isContainer) {
+                  let v = top[0] * 0.01 * diff;
+                  item.__offsetY(v, true, REFLOW);
+                  item.__cancelCache();
+                }
+                // 非容器的特殊处理
+                else {
+                  if(!container) {
+                    container = parent.domParent;
+                    while(container) {
+                      if(container === root || container.isShadowRoot) {
+                        break;
+                      }
+                      let cs = container.currentStyle;
+                      if(cs[POSITION] === 'absolute' || cs[POSITION] === 'relative') {
+                        break;
+                      }
+                      container = container.domParent;
+                    }
+                  }
+                  if(container.currentStyle[HEIGHT][1] !== PX) {
+                    let v = top[0] * 0.01 * diff;
+                    item.__offsetY(v, true, REFLOW);
+                    item.__cancelCache();
+                  }
+                }
               }
               // 高度百分比需发生变化的重新布局，需要在容器内
               if(height[1] === PERCENT) {
@@ -1705,7 +1754,7 @@ class Root extends Dom {
           }
         }
       });
-
+      // merge过程中需要重新布局的abs
       inDirectAbsList.forEach(arr => {
         arr[0].__layoutAbs(arr[1], null, arr[2]);
       });

@@ -11,18 +11,18 @@ const {
   },
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
-const { REFLOW, LAYOUT, OFFSET } = level;
+const { REFLOW } = level;
 
 function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
   if(dy) {
-    // component的sr没有next兄弟，视为component的next
-    while(node.isShadowRoot) {
-      node = node.host;
-    }
     let last;
     do {
+      // component的sr没有next兄弟，视为component的next
+      while(node.isShadowRoot) {
+        node = node.host;
+      }
       last = node;
-      let isContainer, resizeAbsList = [], parent = node.domParent;
+      let isContainer, parent = node.domParent;
       if(parent) {
         let cs = parent.computedStyle;
         let ps = cs[POSITION];

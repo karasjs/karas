@@ -16456,6 +16456,11 @@
         return this.__ref;
       }
     }, {
+      key: "domParent",
+      get: function get() {
+        return this.__domParent;
+      }
+    }, {
       key: "state",
       get: function get() {
         return this.__state;
@@ -22970,20 +22975,18 @@
   var AUTO$6 = unit.AUTO,
       PX$8 = unit.PX,
       PERCENT$8 = unit.PERCENT;
-  var REFLOW$1 = o$1.REFLOW,
-      LAYOUT = o$1.LAYOUT,
-      OFFSET = o$1.OFFSET;
+  var REFLOW$1 = o$1.REFLOW;
 
   function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
     if (dy) {
-      // component的sr没有next兄弟，视为component的next
-      while (node.isShadowRoot) {
-        node = node.host;
-      }
-
       var last;
 
       do {
+        // component的sr没有next兄弟，视为component的next
+        while (node.isShadowRoot) {
+          node = node.host;
+        }
+
         last = node;
         var isContainer = void 0,
             parent = node.domParent;
@@ -23183,8 +23186,8 @@
       FILTER$6 = o$1.FILTER,
       REPAINT$3 = o$1.REPAINT,
       REFLOW$2 = o$1.REFLOW,
-      LAYOUT$1 = o$1.LAYOUT,
-      OFFSET$1 = o$1.OFFSET;
+      LAYOUT = o$1.LAYOUT,
+      OFFSET = o$1.OFFSET;
   var isIgnore = o.isIgnore,
       isGeom$3 = o.isGeom,
       isMeasure = o.isMeasure;
@@ -23259,12 +23262,12 @@
   }
 
   function isLAYOUT(node, hash) {
-    return node.hasOwnProperty('__uniqueReflowId') && hash[node.__uniqueReflowId] >= LAYOUT$1;
+    return node.hasOwnProperty('__uniqueReflowId') && hash[node.__uniqueReflowId] >= LAYOUT;
   }
 
   function setLAYOUT(node, hash, component) {
     addLAYOUT(node, hash, component);
-    hash[node.__uniqueReflowId].lv |= LAYOUT$1;
+    hash[node.__uniqueReflowId].lv |= LAYOUT;
   }
 
   var __uniqueReflowId = 0;
@@ -23274,7 +23277,7 @@
       node.__uniqueReflowId = __uniqueReflowId;
       hash[__uniqueReflowId++] = {
         node: node,
-        lv: LAYOUT$1,
+        lv: LAYOUT,
         component: component
       };
     }
@@ -24456,7 +24459,7 @@
             node.__uniqueReflowId = __uniqueReflowId;
             reflowHash[__uniqueReflowId++] = {
               node: node,
-              lv: OFFSET$1,
+              lv: OFFSET,
               img: img,
               component: component
             };
@@ -24465,10 +24468,10 @@
           var o = reflowHash[node.__uniqueReflowId]; // absolute无变化，只影响自己
 
           if (currentStyle[POSITION$5] === 'absolute' && computedStyle[POSITION$5] === 'absolute') {
-            o.lv = LAYOUT$1;
+            o.lv = LAYOUT;
           } // absolute和非absolute互换
           else if (currentStyle[POSITION$5] !== computedStyle[POSITION$5]) {
-              o.lv = LAYOUT$1;
+              o.lv = LAYOUT;
 
               if (checkInfluence(root, reflowHash, node, component)) {
                 hasRoot = true;
@@ -24495,11 +24498,11 @@
 
                 if (onlyXY && !img && !component) {
                   if (computedStyle[POSITION$5] === 'relative') {
-                    o.lv |= OFFSET$1;
+                    o.lv |= OFFSET;
                   }
                 } // 剩余的其它变化
                 else {
-                    o.lv = LAYOUT$1;
+                    o.lv = LAYOUT;
 
                     if (checkInfluence(root, reflowHash, node, component)) {
                       hasRoot = true;
@@ -24547,7 +24550,7 @@
               if (node.hasOwnProperty('__uniqueReflowId')) {
                 var _o = reflowHash[node.__uniqueReflowId]; // delete node.__uniqueReflowId; // 清除掉
 
-                if (_o.lv >= LAYOUT$1) {
+                if (_o.lv >= LAYOUT) {
                   options.uniqueList.push(_o);
                 } else {
                   // OFFSET的话先递归看子节点，本身改变放在最后
@@ -24591,7 +24594,7 @@
                   lv = item.lv,
                   component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
-              if (lv >= LAYOUT$1) {
+              if (lv >= LAYOUT) {
                 var cps = node.computedStyle,
                     cts = node.currentStyle;
                 var zIndex = cps[Z_INDEX$4],
@@ -24630,9 +24633,7 @@
                   y += _computedStyle[MARGIN_TOP$4] + _computedStyle[BORDER_TOP_WIDTH$5] + _computedStyle[PADDING_TOP$5];
                 }
 
-                _x += _computedStyle[MARGIN_LEFT$4] + _computedStyle[BORDER_LEFT_WIDTH$5] + _computedStyle[PADDING_LEFT$5];
-                var outerHeight = node.outerHeight;
-                var change2Abs; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
+                _x += _computedStyle[MARGIN_LEFT$4] + _computedStyle[BORDER_LEFT_WIDTH$5] + _computedStyle[PADDING_LEFT$5]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
                 var container = node;
 
@@ -24640,7 +24641,7 @@
                   container = container.domParent;
 
                   while (container && container !== root) {
-                    if (isRelativeOrAbsolute$2) {
+                    if (isRelativeOrAbsolute$2(container)) {
                       break;
                     } // 不能用domParent，必须在组件环境内
 
@@ -24692,8 +24693,6 @@
 
 
                   parent.__updateStruct(root.__structs);
-
-                  change2Abs = true;
                 } // 现在是普通流，不管之前是啥直接布局
                 else {
                     node.__layout({
@@ -24704,6 +24703,31 @@
                     });
 
                     y += node.outerHeight;
+                    container = container.domParent;
+
+                    while (container && container !== root) {
+                      if (isRelativeOrAbsolute$2(container)) {
+                        break;
+                      } // 不能用domParent，必须在组件环境内
+
+
+                      if (container.parent) {
+                        container = container.parent;
+                      } else if (container.host) {
+                        break;
+                      }
+                    }
+
+                    if (!container) {
+                      container = root;
+                    }
+
+                    node.__layoutAbs(container, {
+                      x: _x,
+                      y: y,
+                      w: _width,
+                      h: h
+                    });
                   } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
                 // 这样node重新布局后再次设置其使用parent的偏移
 
@@ -24725,6 +24749,10 @@
                 } // 向下调整next的flow位置，遇到重复LAYOUT的跳出等待其调用并处理其next，忽视掉abs，margin和abs在merge中做
 
 
+                while (node.isShadowRoot) {
+                  node = node.host;
+                }
+
                 var next = node.next;
 
                 while (next && !next.hasOwnProperty('__uniqueReflowId')) {
@@ -24740,10 +24768,16 @@
 
                   if (_diff) {
                     while (next && !next.hasOwnProperty('__uniqueReflowId')) {
-                      if (next.computedStyle[POSITION$5] !== 'absolute') {
-                        next.__offsetY(_diff, true, REFLOW$2);
+                      var target = next;
 
-                        next.__cancelCache();
+                      if (target instanceof Component$1) {
+                        target = target.shadowRoot;
+                      }
+
+                      if (target.computedStyle[POSITION$5] !== 'absolute') {
+                        target.__offsetY(_diff, true, REFLOW$2);
+
+                        target.__cancelCache();
                       }
 
                       next = next.next;
@@ -24754,7 +24788,7 @@
                 } // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
 
 
-                if (!change2Abs && !parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+                if (!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
                   parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
                   mergeOffsetList.push(parent);
                 } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
@@ -24784,18 +24818,19 @@
                   }
               } // OFFSET操作的节点都是relative，要考虑auto变化
               else {
-                  var _node$currentStyle = node.currentStyle,
-                      top = _node$currentStyle[TOP$4],
-                      right = _node$currentStyle[RIGHT$3],
-                      bottom = _node$currentStyle[BOTTOM$4],
-                      left = _node$currentStyle[LEFT$3],
-                      _currentStyle2 = node.currentStyle,
-                      _node$computedStyle = node.computedStyle,
-                      t = _node$computedStyle[TOP$4],
-                      r = _node$computedStyle[RIGHT$3],
-                      b = _node$computedStyle[BOTTOM$4],
-                      l = _node$computedStyle[LEFT$3],
-                      _computedStyle2 = node.computedStyle;
+                  var _node2 = node,
+                      _node2$currentStyle = _node2.currentStyle,
+                      top = _node2$currentStyle[TOP$4],
+                      right = _node2$currentStyle[RIGHT$3],
+                      bottom = _node2$currentStyle[BOTTOM$4],
+                      left = _node2$currentStyle[LEFT$3],
+                      _currentStyle2 = _node2.currentStyle,
+                      _node2$computedStyle = _node2.computedStyle,
+                      t = _node2$computedStyle[TOP$4],
+                      r = _node2$computedStyle[RIGHT$3],
+                      b = _node2$computedStyle[BOTTOM$4],
+                      l = _node2$computedStyle[LEFT$3],
+                      _computedStyle2 = _node2.computedStyle;
 
                   var _parent3;
 
@@ -24986,7 +25021,7 @@
               var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
               if (height[1] === AUTO$7) {
-                var oldH = parent.height;
+                var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
                 var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
                 var _diff5 = nowH - oldH; // 调整next以及非固定PX的abs，再递归向上
@@ -25002,7 +25037,7 @@
                     var _item$currentStyle = _item.currentStyle,
                         top = _item$currentStyle[TOP$4],
                         bottom = _item$currentStyle[BOTTOM$4],
-                        _height2 = _item$currentStyle[HEIGHT$8]; // 不管是不是容器，所有的都调整，因为即便不是容器，其偏移还是上级parent的某一个，相对值diff固定偏移量都一样
+                        _height2 = _item$currentStyle[HEIGHT$8]; // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
 
                     if (top[1] === AUTO$7) {
                       if (bottom[1] === AUTO$7) {
@@ -25048,11 +25083,40 @@
                         _item.__cancelCache();
                       }
                     } else if (top[1] === PERCENT$9) {
-                      var _v = top[0] * 0.01 * _diff5;
+                      if (isContainer) {
+                        var _v = top[0] * 0.01 * _diff5;
 
-                      _item.__offsetY(_v, true, REFLOW$2);
+                        _item.__offsetY(_v, true, REFLOW$2);
 
-                      _item.__cancelCache();
+                        _item.__cancelCache();
+                      } // 非容器的特殊处理
+                      else {
+                          if (!container) {
+                            container = parent.domParent;
+
+                            while (container) {
+                              if (container === root || container.isShadowRoot) {
+                                break;
+                              }
+
+                              var _cs3 = container.currentStyle;
+
+                              if (_cs3[POSITION$5] === 'absolute' || _cs3[POSITION$5] === 'relative') {
+                                break;
+                              }
+
+                              container = container.domParent;
+                            }
+                          }
+
+                          if (container.currentStyle[HEIGHT$8][1] !== PX$9) {
+                            var _v2 = top[0] * 0.01 * _diff5;
+
+                            _item.__offsetY(_v2, true, REFLOW$2);
+
+                            _item.__cancelCache();
+                          }
+                        }
                     } // 高度百分比需发生变化的重新布局，需要在容器内
 
 
@@ -25069,9 +25133,9 @@
                                 break;
                               }
 
-                              var _cs3 = container.currentStyle;
+                              var _cs4 = container.currentStyle;
 
-                              if (_cs3[POSITION$5] === 'absolute' || _cs3[POSITION$5] === 'relative') {
+                              if (_cs4[POSITION$5] === 'absolute' || _cs4[POSITION$5] === 'relative') {
                                 break;
                               }
 
@@ -25108,9 +25172,9 @@
 
                     var _isXom2 = _target instanceof Xom;
 
-                    var _cs4 = _isXom2 && _target.currentStyle;
+                    var _cs5 = _isXom2 && _target.currentStyle;
 
-                    var _isAbs = _isXom2 && _cs4[POSITION$5] === 'absolute';
+                    var _isAbs = _isXom2 && _cs5[POSITION$5] === 'absolute';
 
                     if (!_isAbs) {
                       var _y = _target.y + _target.outerHeight;
@@ -25130,7 +25194,8 @@
                   }
                 }
               }
-            });
+            }); // merge过程中需要重新布局的abs
+
             inDirectAbsList.forEach(function (arr) {
               arr[0].__layoutAbs(arr[1], null, arr[2]);
             }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了

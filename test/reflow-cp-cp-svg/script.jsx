@@ -10,6 +10,7 @@ class Father extends karas.Component {
         <Child ref="child2"/>
         <div>next4</div>
       </div>
+      <div>next5</div>
     </div>;
   }
 }

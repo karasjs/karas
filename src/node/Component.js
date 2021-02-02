@@ -241,6 +241,10 @@ class Component extends Event {
     return this.__ref;
   }
 
+  get domParent() {
+    return this.__domParent;
+  }
+
   get state() {
     return this.__state;
   }

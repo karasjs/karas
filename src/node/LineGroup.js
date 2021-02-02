@@ -80,6 +80,7 @@ class LineGroup {
   }
 
   get marginBottom() {
+    // lineGroup都是inline-block，不会有负
     let n = 0;
     this.list.forEach(item => {
       n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);

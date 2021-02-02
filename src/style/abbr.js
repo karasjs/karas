@@ -134,7 +134,7 @@ export default {
         parseFlex(style, 1, 1, 'auto');
       }
       else if(/^[\d.]+$/.test(v)) {
-        parseFlex(style, Math.max(0, parseFloat(v)), 1, 0);
+        parseFlex(style, parseFloat(v), 1, 0);
       }
       else if(/^[\d.]+px$/i.test(v)) {
         parseFlex(style, 1, 1, 0);
@@ -144,11 +144,19 @@ export default {
       }
       else if(/^[\d.]+\s+[\d.]+$/.test(v)) {
         let arr = v.split(/\s+/);
-        parseFlex(style, arr[0], arr[1], 0);
+        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), 0);
       }
       else if(/^[\d.]+\s+[\d.]+%$/.test(v)) {
         let arr = v.split(/\s+/);
-        parseFlex(style, arr[0], 1, arr[1]);
+        parseFlex(style, parseFloat(arr[0]), 1, arr[1]);
+      }
+      else if(/^[\d.]+\s+[\d.]+\s+[\d.]+(px|%)?$/.test(v)) {
+        let arr = v.split(/\s+/);
+        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
+      }
+      else if(/^[\d.]+\s+[\d.]+\s+(auto|none)$/.test(v)) {
+        let arr = v.split(/\s+/);
+        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
       }
       else {
         parseFlex(style, 0, 1, 'auto');

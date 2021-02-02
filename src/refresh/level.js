@@ -73,6 +73,8 @@ let o = Object.assign({
   isRepaint(lv) {
     return lv < ENUM.REFLOW;
   },
+  LAYOUT: 1,
+  OFFSET: 0,
 }, ENUM);
 o.TRANSFORMS = TRANSFORMS;
 

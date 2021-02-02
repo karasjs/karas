@@ -204,7 +204,7 @@ class Dom extends Xom {
   }
 
   /**
-   * 因为zIndex的变化造成的更新，只需重排这一段顺序即可
+   * 因为zIndex/abs的变化造成的更新，只需重排这一段顺序即可
    * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
    * @param structs
    * @private
@@ -222,7 +222,7 @@ class Dom extends Xom {
     // 按直接子节点划分为相同数量的若干段进行排序
     let arr = [];
     let source = [];
-    for(let i = index + 1; i <= total; i++) {
+    for(let i = index + 1; i <= index + total; i++) {
       let child = structs[i];
       let o = {
         child,
@@ -419,11 +419,28 @@ class Dom extends Xom {
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxW = 0;
     let cw = 0;
-    // 递归布局，将inline的节点组成lineGroup一行
+    // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
     let lineGroup = new LineGroup(x, y);
-    flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        if(item.currentStyle[DISPLAY] === 'inline') {
+    // 连续block（flex）的上下margin合并值记录，合并时从列表中取
+    let mergeMarginBottomList = [], mergeMarginTopList = [];
+    let length = flowChildren.length;
+    flowChildren.forEach((item, i) => {
+      let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+      let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
+      // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
+      if((!isXom || isInline)) {
+        if(mergeMarginBottomList.length && mergeMarginTopList.length) {
+          let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+          if(diff) {
+            y += diff;
+          }
+        }
+        mergeMarginTopList = [];
+        mergeMarginBottomList = [];
+      }
+      if(isXom) {
+        // inline和block（flex等同）不同对待
+        if(isInline) {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
@@ -497,10 +514,55 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x = data.x;
+          let isNone = item.currentStyle[DISPLAY] === 'none';
+          // 自身无内容
+          let isEmptyBlock;
+          if(!isNone && item.flowChildren && item.flowChildren.length === 0) {
+            let {
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+              [HEIGHT]: height,
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+            } = item.computedStyle;
+            // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+            if(paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+              mergeMarginBottomList.push(marginBottom);
+              mergeMarginTopList.push(marginTop);
+              isEmptyBlock = true;
+            }
+          }
           y += item.outerHeight;
+          // absolute/flex前置虚拟计算
           if(isVirtual) {
             maxW = Math.max(maxW, item.outerWidth);
             cw = 0;
+          }
+          // 空block要留下轮循环看，除非是最后一个，非空本轮处理掉看是否要合并
+          if(!isNone && !isEmptyBlock) {
+            let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
+            // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+            // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
+            if(mergeMarginBottomList.length) {
+              mergeMarginTopList.push(marginTop);
+              let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+              if(diff) {
+                item.__offsetY(diff, true);
+                y += diff;
+              }
+            }
+            // 同时自己保存bottom，为后续block准备
+            mergeMarginTopList = [];
+            mergeMarginBottomList = [marginBottom];
+          }
+          // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
+          else if(i === length - 1) {
+            let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+            if(diff) {
+              y += diff;
+            }
           }
         }
       }
@@ -574,9 +636,6 @@ class Dom extends Xom {
     let tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    if(lineGroup.size) {
-      y += lineGroup.marginBottom;
-    }
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {
@@ -1433,14 +1492,12 @@ class Dom extends Xom {
         y2 = y;
         let prev = item.prev;
         while(prev) {
+          // 目前不考虑margin合并，直接以前面的flow的最近的prev末尾为准
           if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
             y2 = prev.y + prev.outerHeight;
             break;
           }
           prev = prev.prev;
-        }
-        if(!prev) {
-          y2 = y;
         }
         if(height[1] !== AUTO) {
           h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
@@ -1585,17 +1642,6 @@ class Dom extends Xom {
     }
     // child不触发再看自己
     return super.__emitEvent(e);
-  }
-
-  __cancelCache(recursion) {
-    super.__cancelCache(recursion);
-    if(recursion) {
-      this.children.forEach(child => {
-        if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-          child.__cancelCache(recursion);
-        }
-      });
-    }
   }
 
   // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历

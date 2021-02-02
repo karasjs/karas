@@ -774,11 +774,6 @@ class Geom extends Xom {
     }
   }
 
-  __cancelCache(recursion) {
-    super.__cancelCache(recursion);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
-  }
-
   // geom的cache无内容也不清除
   __releaseWhenEmpty() {}
 

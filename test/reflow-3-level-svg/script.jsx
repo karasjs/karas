@@ -1,10 +1,12 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <div style={{position:'relative',padding:10,background:'#00F'}} ref="middle">
-      <div style={{padding:10,background:'#0F0'}} ref="inner">123</div>
-      <div style={{position:'absolute',left:100}}>next</div>
-      <div>next2</div>
+    <div style={{padding:10,background:'#F00'}}>
+      <div style={{padding:10,background:'#0F0'}} ref="middle">
+        <div style={{padding:10,background:'#00F'}} ref="inner">1</div>
+      </div>
+      <div>next1</div>
     </div>
+    <div>next2</div>
   </svg>,
   '#test'
 );

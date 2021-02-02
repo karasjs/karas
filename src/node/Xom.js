@@ -957,7 +957,8 @@ class Xom extends Node {
     this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
   }
 
-  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
+  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
+  // fromAbs为absolute特有
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this, this.isShadowRoot);
     let { w } = data;
@@ -991,12 +992,15 @@ class Xom extends Node {
         this.__hasMask = count;
       }
     }
+    this.__ox = this.__oy = 0;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
         = this.__clientWidth = this.__clientHeight
         = this.__offsetWidth = this.__offsetHeight
         = this.__outerWidth = this.__outerHeight
         = computedStyle[WIDTH] = computedStyle[HEIGHT] = 0;
+      this.__x = data.x;
+      this.__y = data.y;
       this.__layoutNone();
       return;
     }
@@ -1014,7 +1018,6 @@ class Xom extends Node {
           break;
       }
     }
-    this.__ox = this.__oy = 0;
     // 3种布局，默认block
     if(display === 'flex') {
       this.__layoutFlex(data, isVirtual);
@@ -1098,6 +1101,15 @@ class Xom extends Node {
   __layoutNone() {
     let { computedStyle } = this;
     computedStyle[DISPLAY] = 'none';
+    computedStyle[MARGIN_TOP]
+      = computedStyle[MARGIN_RIGHT]
+      = computedStyle[MARGIN_BOTTOM]
+      = computedStyle[MARGIN_LEFT]
+      = computedStyle[PADDING_TOP]
+      = computedStyle[PADDING_RIGHT]
+      = computedStyle[PADDING_BOTTOM]
+      = computedStyle[PADDING_LEFT]
+      = 0;
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -2573,16 +2585,18 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  __cancelCache() {
+  __cancelCache(onlyTotal) {
     let __config = this.__config;
-    __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
-    let __cache = __config[NODE_CACHE];
     let __cacheTotal = __config[NODE_CACHE_TOTAL];
     let __cacheFilter = __config[NODE_CACHE_FILTER];
     let __cacheMask = __config[NODE_CACHE_MASK];
     let __cacheOverflow = __config[NODE_CACHE_OVERFLOW];
-    if(__cache) {
-      __cache.release();
+    if(!onlyTotal) {
+      __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
+      let __cache = __config[NODE_CACHE];
+      if(__cache) {
+        __cache.release();
+      }
     }
     if(__cacheTotal) {
       __cacheTotal.release();
@@ -2598,15 +2612,6 @@ class Xom extends Node {
     if(__cacheOverflow) {
       inject.releaseCacheCanvas(__cacheOverflow.canvas);
       __config[NODE_CACHE_OVERFLOW] = null;
-    }
-  }
-
-  cancelCache() {
-    this.__cancelCache();
-    let parent = this.domParent;
-    while(parent) {
-      parent.__cancelCache();
-      parent = parent.domParent;
     }
   }
 
@@ -2776,7 +2781,7 @@ class Xom extends Node {
     this.__sy4 += diff;
   }
 
-  __resizeX(diff) {
+  __resizeX(diff, lv) {
     this.computedStyle.width = this.__width += diff;
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
@@ -2785,9 +2790,12 @@ class Xom extends Node {
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
     }
+    if(lv !== undefined) {
+      this.__config[NODE_REFRESH_LV] |= lv;
+    }
   }
 
-  __resizeY(diff) {
+  __resizeY(diff, lv) {
     this.computedStyle.height = this.__height += diff;
     this.__clientHeight += diff;
     this.__offsetHeight += diff;
@@ -2795,6 +2803,9 @@ class Xom extends Node {
     this.__layoutData.h += diff;
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
+    }
+    if(lv !== undefined) {
+      this.__config[NODE_REFRESH_LV] |= lv;
     }
   }
 

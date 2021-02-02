@@ -992,12 +992,15 @@ class Xom extends Node {
         this.__hasMask = count;
       }
     }
+    this.__ox = this.__oy = 0;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
         = this.__clientWidth = this.__clientHeight
         = this.__offsetWidth = this.__offsetHeight
         = this.__outerWidth = this.__outerHeight
         = computedStyle[WIDTH] = computedStyle[HEIGHT] = 0;
+      this.__x = data.x;
+      this.__y = data.y;
       this.__layoutNone();
       return;
     }
@@ -1015,7 +1018,6 @@ class Xom extends Node {
           break;
       }
     }
-    this.__ox = this.__oy = 0;
     // 3种布局，默认block
     if(display === 'flex') {
       this.__layoutFlex(data, isVirtual);
@@ -1099,6 +1101,15 @@ class Xom extends Node {
   __layoutNone() {
     let { computedStyle } = this;
     computedStyle[DISPLAY] = 'none';
+    computedStyle[MARGIN_TOP]
+      = computedStyle[MARGIN_RIGHT]
+      = computedStyle[MARGIN_BOTTOM]
+      = computedStyle[MARGIN_LEFT]
+      = computedStyle[PADDING_TOP]
+      = computedStyle[PADDING_RIGHT]
+      = computedStyle[PADDING_BOTTOM]
+      = computedStyle[PADDING_LEFT]
+      = 0;
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding

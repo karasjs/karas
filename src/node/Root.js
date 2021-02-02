@@ -1353,6 +1353,7 @@ class Root extends Dom {
               }
               return;
             }
+            // 标识flow变abs，可能引发zIndex变更，重设struct
             parent.__updateStruct(root.__structs);
             change2Abs = true;
           }
@@ -1364,35 +1365,9 @@ class Root extends Dom {
               w: width,
               h,
             });
-            if(node instanceof Dom) {
-              if(!node.parent && node.host) {
-                container = node; // 特殊判断component的sr为container
-              }
-              else {
-                while(container && container !== root) {
-                  if(isRelativeOrAbsolute) {
-                    break;
-                  }
-                  // 不能用domParent，必须在组件环境内
-                  if(container.parent) {
-                    container = container.parent;
-                  }
-                  else if(container.host) {
-                    break;
-                  }
-                }
-                if(!container) {
-                  container = root;
-                }
-              }
-              node.__layoutAbs(container, {
-                x,
-                y,
-                w: width,
-                h,
-              });
-            }
+            y += node.outerHeight;
           }
+
           // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
           // 这样node重新布局后再次设置其使用parent的偏移
           let p = node;
@@ -1407,48 +1382,34 @@ class Root extends Dom {
             }
           }
 
+          // 向下调整next的flow位置，遇到重复LAYOUT的跳出等待其调用并处理其next，忽视掉abs，margin和abs在merge中做
+          let next = node.next;
+          while(next && !next.hasOwnProperty('__uniqueReflowId')) {
+            if(next.computedStyle[POSITION] === 'absolute') {
+              next = next.next;
+              continue;
+            }
+            let { y: oy } = next;
+            let diff = y - oy;
+            if(diff) {
+              while(next && !next.hasOwnProperty('__uniqueReflowId')) {
+                if(next.computedStyle[POSITION] !== 'absolute') {
+                  next.__offsetY(diff, true, REFLOW);
+                  next.__cancelCache();
+                }
+                next = next.next;
+              }
+            }
+            break;
+          }
+
           // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
           if(!change2Abs && !parent.hasOwnProperty('__uniqueMergeOffsetId')) {
             parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
             mergeOffsetList.push(parent);
           }
 
-          // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况，此时更新完毕，computedStyle是新的
-          // abs没有变化前面会跳出，这里一定是发生了变化或者非abs不变化
-          let fromAbs = isLastAbs;
-          let dy = 0;
-          if(change2Abs) {
-            dy = -outerHeight;
-          }
-          else {
-            let { outerHeight: oh } = node;
-            // 由非abs变为abs纯增加
-            if(fromAbs) {
-              dy = oh;
-            }
-            else {
-              dy = oh - outerHeight;
-            }
-          }
-          // 如果发生了dy变更，首先进行的偏移要排除掉margin合并，放在后面进行，否则会因之前的margin合并干扰错误
-          let next = node.next;
-          while(next) {
-            let cs = next.computedStyle;
-            if(cs[POSITION] !== 'absolute') {
-              let y = node.y + outerHeight;
-              let ny = next.y;
-              if(y !== ny) {
-                dy += y - ny;
-              }
-              break;
-            }
-            next = next.next;
-          }
-
-          // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute或者固定高度的中止
-          reflow.offsetAndResizeByNodeOnY(node, root, reflowHash, dy);
-
-          // component未知dom变化，所以强制重新struct，text为其父节点，同时防止zIndex变更影响父节点
+          // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
           if(component) {
             let arr = node.__modifyStruct(root, diffI);
             diffI += arr[1];
@@ -1461,7 +1422,7 @@ class Root extends Dom {
               }
             }
           }
-          // display有none变化，重置struct和zc
+          // display有none变化，重置struct和zIndexChildren
           else if(isLastNone || isNowNone) {
             node.__zIndexChildren = null;
             let arr = node.__modifyStruct(root, diffI);
@@ -1534,16 +1495,18 @@ class Root extends Dom {
       });
       /**
        * mergeMargin后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
-       * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，且不会有abs节点的父节点
+       * 由于保持先根遍历的顺序，因此会从最上最里的节点开始，先进行margin合并
+       * 由于之前忽略掉abs节点，因此再检查直接abs是否要调整
        * 完成后对此父节点的后续兄弟节点进行调整，多次不会干扰影响
        * 然后继续往上循环，直到root结束
        */
+      let inDirectAbsList = [];
       mergeOffsetList.forEach(parent => {
         delete parent.__uniqueMergeOffsetId;
         let flowChildren = parent.flowChildren, absChildren = parent.absChildren;
         let mergeMarginBottomList = [], mergeMarginTopList = [];
-        let length = flowChildren.length;
-        let isStart, startIndex, diffTotal = 0;
+        let length = flowChildren.length, lastChild;
+        let isStart, startIndex, startNode;
         // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
         for(let i = 0; i < length; i++) {
           let item = flowChildren[i];
@@ -1556,16 +1519,18 @@ class Root extends Dom {
             if(item.hasOwnProperty('__uniqueReflowId')) {
               isStart = true;
               startIndex = i;
+              startNode = item;
             }
           }
           // 开始变更的节点，至少不是第0个
-          let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
+          let cs = isXom && item.currentStyle;
+          let isInline = isXom && cs[DISPLAY] === 'inline';
+          lastChild = item;
           // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
           if((!isXom || isInline)) {
             if(mergeMarginBottomList.length && mergeMarginTopList.length && isStart) {
               let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
-                diffTotal += diff;
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REFLOW);
                   flowChildren[j].__cancelCache();
@@ -1577,8 +1542,9 @@ class Root extends Dom {
           }
           // 和普通布局类似，只是不用重新布局只需处理合并margin再根据差值偏移
           if(isXom && !isInline) {
+            let isNone = isXom && cs[DISPLAY] === 'none';
             let isEmptyBlock;
-            if(item.flowChildren && item.flowChildren.length === 0) {
+            if(!isNone && item.flowChildren && item.flowChildren.length === 0) {
               let {
                 [MARGIN_TOP]: marginTop,
                 [MARGIN_BOTTOM]: marginBottom,
@@ -1596,7 +1562,7 @@ class Root extends Dom {
               }
             }
             // 空block要留下轮循环看，除非是最后一个，非空本轮处理掉看是否要合并
-            if(!isEmptyBlock) {
+            if(!isNone && !isEmptyBlock) {
               let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
               // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
               // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
@@ -1606,7 +1572,6 @@ class Root extends Dom {
                   let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
                   // 需要合并的情况，根据记录数和索引向上向下遍历节点设置偏移，同时设置总偏移量供父级使用
                   if(diff) {
-                    diffTotal += diff;
                     for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                       flowChildren[j].__offsetY(diff, true, REFLOW);
                       flowChildren[j].__cancelCache();
@@ -1622,7 +1587,6 @@ class Root extends Dom {
             else if(i === length - 1) {
               let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
-                diffTotal += diff;
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REFLOW);
                   flowChildren[j].__cancelCache();
@@ -1631,54 +1595,119 @@ class Root extends Dom {
             }
           }
         }
-        // 有偏移才进行absChildren和parent的next以及向上递归偏移
-        if(diffTotal) {
-          let { sy } = parent;
-          // 遍历abs，如果top/bottom不固定也需发生偏移
-          for(let i = 0, len = absChildren.length; i < len; i++) {
-            let item = absChildren[i];
-            let { [TOP]: top, [BOTTOM]: bottom } = item.currentStyle;
-            if(!item.hasOwnProperty('__uniqueReflowId') || reflowHash[item.__uniqueReflowId] < LAYOUT) {
-              // 分几种情况，除非top固定PX，否则都要偏移
+        // 先检查parent的尺寸是否发生了变化，从而决定是否调整next以及向上递归调整
+        let cs = parent.currentStyle;
+        let height = cs[HEIGHT];
+        let isContainer = parent === root || parent.isShadowRoot || cs[POSITION] === 'absolute' || cs[POSITION] === 'relative';
+        if(height[1] === AUTO) {
+          let oldH = parent.height;
+          let nowH = lastChild.y + lastChild.outerHeight - parent.y;
+          let diff = nowH - oldH;
+          // 调整next以及非固定PX的abs，再递归向上
+          if(diff) {
+            parent.__resizeY(diff, REFLOW);
+            let container;
+            for(let i = 0, len = absChildren.length; i < len; i++) {
+              let item = absChildren[i];
+              let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = item.currentStyle;
+              // 不管是不是容器，所有的都调整，因为即便不是容器，其偏移还是上级parent的某一个，相对值diff固定偏移量都一样
               if(top[1] === AUTO) {
                 if(bottom[1] === AUTO) {
-                  let { sy: oldY, prev } = item;
-                  let newY = sy;
+                  let prev = item.prev;
                   while(prev) {
-                    if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
-                      newY = prev.y + prev.outerHeight;
+                    let target = prev;
+                    if(target instanceof Component) {
+                      target = target.shadowRoot;
+                    }
+                    let isXom = target instanceof Xom;
+                    let cs = isXom && target.currentStyle;
+                    let isAbs = isXom && cs[POSITION] === 'absolute';
+                    if(!isAbs) {
+                      let y = target.y + target.outerHeight;
+                      let d = y - item.y;
+                      if(d) {
+                        item.__offsetY(d, true, REFLOW);
+                        item.__cancelCache();
+                      }
                       break;
                     }
                     prev = prev.prev;
                   }
-                  if(oldY !== newY) {
-                    item.__offsetY(diffTotal, true, REFLOW);
-                    item.__cancelCache();
-                  }
-                }
-                else if(bottom[1] === PERCENT) {
-                  let v = (1 - bottom[0] * 0.01) * diffTotal;
-                  item.__offsetY(v, true, REFLOW);
-                  item.__cancelCache();
                 }
                 else if(bottom[1] === PX) {
-                  item.__offsetY(diffTotal, true, REFLOW);
+                  item.__offsetY(diff, true, REFLOW);
+                  item.__cancelCache();
+                }
+                else if(bottom[1] === PERCENT) {
+                  let v = (1 - bottom[0] * 0.01) * diff;
+                  item.__offsetY(v, true, REFLOW);
                   item.__cancelCache();
                 }
               }
               else if(top[1] === PERCENT) {
-                let v = top[0] * 0.01 * diffTotal;
+                let v = top[0] * 0.01 * diff;
                 item.__offsetY(v, true, REFLOW);
                 item.__cancelCache();
               }
+              // 高度百分比需发生变化的重新布局，需要在容器内
+              if(height[1] === PERCENT) {
+                if(isContainer) {
+                  parent.__layoutAbs(parent, null, item);
+                }
+                // 不在容器内说明在上级，存入等结束后统一重新布局
+                else {
+                  if(!container) {
+                    container = parent.domParent;
+                    while(container) {
+                      if(container === root || container.isShadowRoot) {
+                        break;
+                      }
+                      let cs = container.currentStyle;
+                      if(cs[POSITION] === 'absolute' || cs[POSITION] === 'relative') {
+                        break;
+                      }
+                      container = container.domParent;
+                    }
+                  }
+                  inDirectAbsList.push([parent, container, item]);
+                }
+              }
             }
-          }
-          if(!isFixedWidthOrHeight(parent, HEIGHT)) {
-            parent.__resizeY(diffTotal, REFLOW);
-            // 从parent开始遍历+向上递归，先其next再其parent
-            reflow.offsetAndResizeByNodeOnY(parent, root, reflowHash, diffTotal);
+            reflow.offsetAndResizeByNodeOnY(parent, root, reflowHash, diff, inDirectAbsList);
+            return;
           }
         }
+        // 没有diff变化或者固定尺寸，可能内部发生变化，调整AUTO的abs，不递归向上
+        for(let i = 0, len = absChildren.length; i < len; i++) {
+          let item = absChildren[i];
+          let { [TOP]: top, [BOTTOM]: bottom } = item.currentStyle;
+          if(top[1] === AUTO && bottom[1] === AUTO) {
+            let prev = item.prev;
+            while(prev) {
+              let target = prev;
+              if(target instanceof Component) {
+                target = target.shadowRoot;
+              }
+              let isXom = target instanceof Xom;
+              let cs = isXom && target.currentStyle;
+              let isAbs = isXom && cs[POSITION] === 'absolute';
+              if(!isAbs) {
+                let y = target.y + target.outerHeight;
+                let d = y - item.y;
+                if(d) {
+                  item.__offsetY(d, true, REFLOW);
+                  item.__cancelCache();
+                }
+                break;
+              }
+              prev = prev.prev;
+            }
+          }
+        }
+      });
+
+      inDirectAbsList.forEach(arr => {
+        arr[0].__layoutAbs(arr[1], null, arr[2]);
       });
 
       // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了

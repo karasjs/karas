@@ -514,9 +514,10 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x = data.x;
+          let isNone = item.currentStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
-          if(item.flowChildren && item.flowChildren.length === 0) {
+          if(!isNone && item.flowChildren && item.flowChildren.length === 0) {
             let {
               [MARGIN_TOP]: marginTop,
               [MARGIN_BOTTOM]: marginBottom,
@@ -540,7 +541,7 @@ class Dom extends Xom {
             cw = 0;
           }
           // 空block要留下轮循环看，除非是最后一个，非空本轮处理掉看是否要合并
-          if(!isEmptyBlock) {
+          if(!isNone && !isEmptyBlock) {
             let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
             // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
             // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并

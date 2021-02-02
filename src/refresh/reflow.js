@@ -13,63 +13,79 @@ const {
 const { AUTO, PX, PERCENT } = unit;
 const { REFLOW, LAYOUT, OFFSET } = level;
 
-function offsetAndResizeByNodeOnY(node, root, reflowHash, dy) {
+function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
   if(dy) {
-    let p = node;
+    // component的sr没有next兄弟，视为component的next
+    while(node.isShadowRoot) {
+      node = node.host;
+    }
     let last;
     do {
-      // component的sr没有next兄弟，视为component的next
-      while(p.isShadowRoot) {
-        p = p.host;
-      }
-      last = p;
-      let isContainer, resizeAbsList = [];
-      if(p.parent) {
-        let cs = p.parent.computedStyle;
+      last = node;
+      let isContainer, resizeAbsList = [], parent = node.domParent;
+      if(parent) {
+        let cs = parent.computedStyle;
         let ps = cs[POSITION];
-        isContainer = p.parent === root || p.parent.isShadowRoot || ps === 'relative' || ps === 'absolute';
+        isContainer = parent === root || parent.isShadowRoot || ps === 'relative' || ps === 'absolute';
       }
-      // 先偏移next，忽略有定位的absolute或LAYOUT，本身非container也忽略
-      let next = p.next;
+      // 先偏移next，忽略有定位的absolute，本身非container也忽略
+      let next = node.next;
+      let container;
       while(next) {
         if(next.currentStyle[POSITION] === 'absolute') {
-          if(isContainer) {
-            let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
-            if(top[1] === AUTO) {
-              if(bottom[1] === AUTO || bottom[1] === PX) {
-                next.__offsetY(dy, true, REFLOW);
-                next.__cancelCache();
-              }
-              else if(bottom[1] === PERCENT) {
-                let v = (1 - bottom[0] * 0.01) * dy;
-                next.__offsetY(v, true, REFLOW);
-                next.__cancelCache();
-              }
+          let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
+          if(top[1] === AUTO) {
+            if(bottom[1] === AUTO || bottom[1] === PX) {
+              next.__offsetY(dy, true, REFLOW);
+              next.__cancelCache();
             }
-            else if(top[1] === PERCENT) {
-              let v = top[0] * 0.01 * dy;
+            else if(bottom[1] === PERCENT) {
+              let v = (1 - bottom[0] * 0.01) * dy;
               next.__offsetY(v, true, REFLOW);
               next.__cancelCache();
             }
-            // height为百分比的记录下来后面重新布局
-            if(height[1] === PERCENT) {
-              resizeAbsList.push(next);
+          }
+          else if(top[1] === PERCENT) {
+            let v = top[0] * 0.01 * dy;
+            next.__offsetY(v, true, REFLOW);
+            next.__cancelCache();
+          }
+          // 高度百分比需发生变化的重新布局，需要在容器内
+          if(height[1] === PERCENT) {
+            if(isContainer) {
+              parent.__layoutAbs(parent, null, next);
+            }
+            else {
+              if(!container) {
+                container = parent;
+                while(container) {
+                  if(container === root || container.isShadowRoot) {
+                    break;
+                  }
+                  let cs = container.currentStyle;
+                  if(cs[POSITION] === 'absolute' || cs[POSITION] === 'relative') {
+                    break;
+                  }
+                  container = container.domParent;
+                }
+              }
+              inDirectAbsList.push([parent, container, next]);
             }
           }
         }
-        else if(!next.hasOwnProperty('__uniqueReflowId') || reflowHash[next.__uniqueReflowId] < LAYOUT) {
+        else {
           next.__offsetY(dy, true, REFLOW);
           next.__cancelCache();
         }
         next = next.next;
       }
-      // 要么一定有parent，因为上面向上循环排除了cp返回cp的情况；要么就是root本身
-      p = p.parent;
-      if(!p) {
+      // root本身没domParent
+      if(!parent) {
         break;
       }
+      node = parent;
       // parent判断是否要resize
-      let { currentStyle } = p;
+      let { currentStyle } = node;
       let isAbs = currentStyle[POSITION] === 'absolute';
       let need;
       if(isAbs) {
@@ -83,20 +99,14 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy) {
         need = true;
       }
       if(need) {
-        p.__resizeY(dy, REFLOW);
-        p.__cancelCache();
-        // 因调整导致的abs尺寸变化，注意排除本身有布局更新的
-        resizeAbsList.forEach(item => {
-          if(!item.hasOwnProperty('__uniqueReflowId') || reflowHash[item.__uniqueReflowId] < LAYOUT) {
-            p.__layoutAbs(p, null, item);
-          }
-        });
+        node.__resizeY(dy, REFLOW);
+        node.__cancelCache();
       }
       // abs或者高度不需要继续向上调整提前跳出
       else {
         break;
       }
-      if(p === root) {
+      if(node === root) {
         break;
       }
     }

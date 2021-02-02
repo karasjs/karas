@@ -36,7 +36,7 @@
   * auto 默认
   * px
   * %
-* marginTop/marginRight/marginBottom/marginLeft `不会合并重叠margin`
+* marginTop/marginRight/marginBottom/marginLeft `强制开启bfc`
   * auto 默认
   * px
   * %

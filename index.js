@@ -13853,7 +13853,7 @@
       }
     }, {
       key: "__calMatrix",
-      value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight) {
+      value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, offsetWidth, offsetHeight) {
         var matrixCache = __cacheStyle[MATRIX$3]; // tx/ty变化特殊优化
 
         if (matrixCache && lv < REFLOW && !contain(lv, TF)) {
@@ -13866,7 +13866,7 @@
             if (isNil$5(v)) {
               v = 0;
             } else if (v[1] === PERCENT$5) {
-              v = v[0] * this.outerWidth * 0.01;
+              v = v[0] * this.offsetWidth * 0.01;
             } else {
               v = v[0];
             }
@@ -13883,7 +13883,7 @@
             if (isNil$5(_v4)) {
               _v4 = 0;
             } else if (_v4[1] === PERCENT$5) {
-              _v4 = _v4[0] * this.outerHeight * 0.01;
+              _v4 = _v4[0] * this.offsetHeight * 0.01;
             } else {
               _v4 = _v4[0];
             }
@@ -13898,16 +13898,16 @@
         } // 先根据cache计算需要重新计算的computedStyle
         else {
             if (sx === undefined) {
-              sx = this.sx;
-              sy = this.sy;
-              outerWidth = this.outerWidth;
-              outerHeight = this.outerHeight;
+              sx = this.__x1;
+              sy = this.__y1;
+              offsetWidth = this.offsetWidth;
+              offsetHeight = this.offsetHeight;
             }
 
             if (__cacheStyle[TRANSFORM_ORIGIN$4] === undefined) {
               __cacheStyle[TRANSFORM_ORIGIN$4] = true;
               matrixCache = null;
-              computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], outerWidth, outerHeight);
+              computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight);
             }
 
             if (__cacheStyle[TRANSFORM$4] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
@@ -13916,7 +13916,7 @@
               var matrix; // transform相对于自身
 
               if (currentStyle[TRANSFORM$4]) {
-                matrix = tf.calMatrix(currentStyle[TRANSFORM$4], outerWidth, outerHeight);
+                matrix = tf.calMatrix(currentStyle[TRANSFORM$4], offsetWidth, offsetHeight);
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
@@ -13939,9 +13939,9 @@
 
                     if (v[1] === PERCENT$5) {
                       if (k === TRANSLATE_X$4) {
-                        computedStyle[k] = v[0] * outerWidth * 0.01;
+                        computedStyle[k] = v[0] * offsetWidth * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
-                        computedStyle[k] = v[0] * outerHeight * 0.01;
+                        computedStyle[k] = v[0] * offsetHeight * 0.01;
                       }
                     }
 
@@ -13949,7 +13949,7 @@
                   });
 
                   if (temp.length) {
-                    matrix = tf.calMatrix(temp, outerWidth, outerHeight);
+                    matrix = tf.calMatrix(temp, offsetWidth, offsetHeight);
                   }
                 }
 
@@ -13968,16 +13968,15 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
         var _this3 = this;
 
-        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight);
+        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
 
         if (lv >= REPAINT$1) {
           if (__cacheStyle[BACKGROUND_POSITION_X$2] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_X$2] = true;
-            var bgX = currentStyle[BACKGROUND_POSITION_X$2]; // computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
-
+            var bgX = currentStyle[BACKGROUND_POSITION_X$2];
             computedStyle[BACKGROUND_POSITION_X$2] = (bgX || []).map(function (item) {
               return item[1] === PX$4 ? item[0] : item[0] + '%';
             });
@@ -13985,16 +13984,14 @@
 
           if (__cacheStyle[BACKGROUND_POSITION_Y$2] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_Y$2] = true;
-            var bgY = currentStyle[BACKGROUND_POSITION_Y$2]; // computedStyle[BACKGROUND_POSITION_Y] = bgY[1] === PX ? bgY[0] : (bgY[0] + '%');
-
+            var bgY = currentStyle[BACKGROUND_POSITION_Y$2];
             computedStyle[BACKGROUND_POSITION_Y$2] = (bgY || []).map(function (item) {
               return item[1] === PX$4 ? item[0] : item[0] + '%';
             });
           }
 
           if (__cacheStyle[BACKGROUND_SIZE$2] === undefined) {
-            __cacheStyle[BACKGROUND_SIZE$2] = true; // computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], clientWidth, clientHeight);
-
+            __cacheStyle[BACKGROUND_SIZE$2] = true;
             computedStyle[BACKGROUND_SIZE$2] = (currentStyle[BACKGROUND_SIZE$2] || []).map(function (item) {
               return calBackgroundSize(item, clientWidth, clientHeight);
             });
@@ -14009,7 +14006,6 @@
 
 
               if (util.isString(bgi)) {
-                // __cacheStyle[BACKGROUND_IMAGE] = true;
                 var loadBgi = _this3.__loadBgi[i] = _this3.__loadBgi[i] || {};
                 var cache = inject.IMG[BACKGROUND_IMAGE$1];
 
@@ -14044,8 +14040,7 @@
                       });
                     }
                   }, {
-                    width: clientWidth,
-                    height: clientHeight
+                    ctx: ctx
                   });
                 }
 
@@ -14073,7 +14068,7 @@
 
           if (__cacheStyle[BORDER_TOP_LEFT_RADIUS] === undefined || __cacheStyle[BORDER_TOP_RIGHT_RADIUS] === undefined || __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS] === undefined || __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS] === undefined) {
             __cacheStyle[BORDER_TOP_LEFT_RADIUS] = __cacheStyle[BORDER_TOP_RIGHT_RADIUS] = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS] = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS] = true;
-            calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+            calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle);
           } // width/style/radius影响border，color不影响渲染缓存
 
 
@@ -14337,6 +14332,8 @@
             height = this.height,
             clientWidth = this.clientWidth,
             clientHeight = this.clientHeight,
+            offsetWidth = this.offsetWidth,
+            offsetHeight = this.offsetHeight,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             __hasMask = this.__hasMask;
@@ -14371,7 +14368,7 @@
 
         var p = this.domParent; // 计算好cacheStyle的内容，以及位图缓存指数
 
-        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
+        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
 
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
@@ -18712,6 +18709,8 @@
                     loadImg.height = data.height;
                     reload();
                   }
+                }, {
+                  ctx: ctx
                 });
                 return;
               } else {
@@ -18724,8 +18723,7 @@
               }
             }
           }, {
-            width: width,
-            height: height
+            ctx: ctx
           });
         }
 
@@ -27982,7 +27980,7 @@
     Cache: Cache
   };
 
-  var version = "0.50.0";
+  var version = "0.50.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

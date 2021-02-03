@@ -1207,7 +1207,7 @@ class Xom extends Node {
     }
   }
 
-  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight) {
+  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, offsetWidth, offsetHeight) {
     let matrixCache = __cacheStyle[MATRIX];
     // tx/ty变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
@@ -1218,7 +1218,7 @@ class Xom extends Node {
           v = 0;
         }
         else if(v[1] === PERCENT) {
-          v = v[0] * this.outerWidth * 0.01;
+          v = v[0] * this.offsetWidth * 0.01;
         }
         else {
           v = v[0];
@@ -1234,7 +1234,7 @@ class Xom extends Node {
           v = 0;
         }
         else if(v[1] === PERCENT) {
-          v = v[0] * this.outerHeight * 0.01;
+          v = v[0] * this.offsetHeight * 0.01;
         }
         else {
           v = v[0];
@@ -1249,15 +1249,15 @@ class Xom extends Node {
     // 先根据cache计算需要重新计算的computedStyle
     else {
       if(sx === undefined) {
-        sx = this.sx;
-        sy = this.sy;
-        outerWidth = this.outerWidth;
-        outerHeight = this.outerHeight;
+        sx = this.__x1;
+        sy = this.__y1;
+        offsetWidth = this.offsetWidth;
+        offsetHeight = this.offsetHeight;
       }
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
         matrixCache = null;
-        computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], outerWidth, outerHeight);
+        computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight);
       }
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
@@ -1280,7 +1280,7 @@ class Xom extends Node {
         let matrix;
         // transform相对于自身
         if(currentStyle[TRANSFORM]) {
-          matrix = tf.calMatrix(currentStyle[TRANSFORM], outerWidth, outerHeight);
+          matrix = tf.calMatrix(currentStyle[TRANSFORM], offsetWidth, offsetHeight);
         }
         // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -1308,16 +1308,16 @@ class Xom extends Node {
             }
             if(v[1] === PERCENT) {
               if(k === TRANSLATE_X) {
-                computedStyle[k] = v[0] * outerWidth * 0.01;
+                computedStyle[k] = v[0] * offsetWidth * 0.01;
               }
               else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * outerHeight * 0.01;
+                computedStyle[k] = v[0] * offsetHeight * 0.01;
               }
             }
             temp.push([k, v]);
           });
           if(temp.length) {
-            matrix = tf.calMatrix(temp, outerWidth, outerHeight);
+            matrix = tf.calMatrix(temp, offsetWidth, offsetHeight);
           }
         }
         computedStyle[TRANSFORM] = matrix || [1, 0, 0, 1, 0, 0];
@@ -1333,18 +1333,17 @@ class Xom extends Node {
   }
 
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
-             sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
+             clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, y1, y2, y3, y4) {
-    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight);
+    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     if(lv >= REPAINT) {
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_X] = true;
         let {
           [BACKGROUND_POSITION_X]: bgX,
         } = currentStyle;
-        // computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
         computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
           return item[1] === PX ? item[0] : (item[0] + '%');
         });
@@ -1354,14 +1353,12 @@ class Xom extends Node {
         let {
           [BACKGROUND_POSITION_Y]: bgY,
         } = currentStyle;
-        // computedStyle[BACKGROUND_POSITION_Y] = bgY[1] === PX ? bgY[0] : (bgY[0] + '%');
         computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
           return item[1] === PX ? item[0] : (item[0] + '%');
         });
       }
       if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
         __cacheStyle[BACKGROUND_SIZE] = true;
-        // computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], clientWidth, clientHeight);
         computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
           return calBackgroundSize(item, clientWidth, clientHeight);
         });
@@ -1374,7 +1371,6 @@ class Xom extends Node {
           }
           // 防止隐藏不加载背景图
           if(util.isString(bgi)) {
-            // __cacheStyle[BACKGROUND_IMAGE] = true;
             let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
             let cache = inject.IMG[BACKGROUND_IMAGE];
             if(cache && cache.state === inject.LOADED) {
@@ -1408,8 +1404,7 @@ class Xom extends Node {
                   });
                 }
               }, {
-                width: clientWidth,
-                height: clientHeight,
+                ctx,
               });
             }
             return true;
@@ -1459,7 +1454,7 @@ class Xom extends Node {
           = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS]
           = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS]
           = true;
-        calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+        calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle);
       }
       // width/style/radius影响border，color不影响渲染缓存
       let btlr = computedStyle[BORDER_TOP_LEFT_RADIUS];
@@ -1693,6 +1688,8 @@ class Xom extends Node {
       height,
       clientWidth,
       clientHeight,
+      offsetWidth,
+      offsetHeight,
       outerWidth,
       outerHeight,
       __hasMask,
@@ -1724,7 +1721,7 @@ class Xom extends Node {
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT]
       = this.__calCache(renderMode, lv, ctx, defs, this.parent,
         __cacheStyle, currentStyle, computedStyle,
-        x, y, clientWidth, clientHeight, outerWidth, outerHeight,
+        clientWidth, clientHeight, offsetWidth, offsetHeight,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         paddingTop, paddingRight, paddingBottom, paddingLeft,
         x1, x2, x3, x4, y1, y2, y3, y4

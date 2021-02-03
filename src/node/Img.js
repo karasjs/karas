@@ -260,6 +260,8 @@ class Img extends Dom {
                 loadImg.height = data.height;
                 reload();
               }
+            }, {
+              ctx,
             });
             return;
           }
@@ -272,8 +274,7 @@ class Img extends Dom {
           }
         }
       }, {
-        width,
-        height,
+        ctx,
       });
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {

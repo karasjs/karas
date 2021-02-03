@@ -1941,10 +1941,10 @@ class Xom extends Node {
             ctx = c.ctx;
           }
         }
-        offScreenOverflow.x = x;
-        offScreenOverflow.y = y;
-        offScreenOverflow.outerWidth = outerWidth;
-        offScreenOverflow.outerHeight = outerHeight;
+        offScreenOverflow.x = x1;
+        offScreenOverflow.y = y1;
+        offScreenOverflow.offsetWidth = offsetWidth;
+        offScreenOverflow.offsetHeight = offsetHeight;
       }
       else if(renderMode === mode.SVG) {
         let v = {
@@ -1954,7 +1954,7 @@ class Xom extends Node {
             {
               tagName: 'path',
               props: [
-                ['d', `M${x},${y}L${x + outerWidth},${y}L${x + outerWidth},${y + outerHeight}L${x},${y + outerHeight},L${x},${y}`],
+                ['d', `M${x1},${y1}L${x + offsetWidth},${y}L${x + offsetWidth},${y + offsetHeight}L${x},${y + offsetHeight},L${x},${y}`],
               ],
             }
           ],

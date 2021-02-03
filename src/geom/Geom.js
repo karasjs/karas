@@ -153,12 +153,12 @@ class Geom extends Xom {
   }
 
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
-             sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
+             clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, y1, y2, y3, y4) {
     super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
-      sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
+      clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,
       x1, x2, x3, x4, y1, y2, y3, y4);

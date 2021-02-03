@@ -14605,17 +14605,17 @@
               }
             }
 
-            offScreenOverflow.x = x;
-            offScreenOverflow.y = y;
-            offScreenOverflow.outerWidth = outerWidth;
-            offScreenOverflow.outerHeight = outerHeight;
+            offScreenOverflow.x = x1;
+            offScreenOverflow.y = y1;
+            offScreenOverflow.offsetWidth = offsetWidth;
+            offScreenOverflow.offsetHeight = offsetHeight;
           } else if (renderMode === mode.SVG) {
             var v = {
               tagName: 'clipPath',
               props: [],
               children: [{
                 tagName: 'path',
-                props: [['d', "M".concat(x, ",").concat(y, "L").concat(x + outerWidth, ",").concat(y, "L").concat(x + outerWidth, ",").concat(y + outerHeight, "L").concat(x, ",").concat(y + outerHeight, ",L").concat(x, ",").concat(y)]]
+                props: [['d', "M".concat(x1, ",").concat(y1, "L").concat(x + offsetWidth, ",").concat(y, "L").concat(x + offsetWidth, ",").concat(y + offsetHeight, "L").concat(x, ",").concat(y + offsetHeight, ",L").concat(x, ",").concat(y)]]
               }]
             };
             var id = defs.add(v);
@@ -19176,10 +19176,10 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
+        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
 
         if (isNil$7(__cacheStyle[STROKE_WIDTH$1])) {
           __cacheStyle[STROKE_WIDTH$1] = true;
@@ -22181,14 +22181,14 @@
                     origin = offScreenOverflow.ctx,
                     x = offScreenOverflow.x,
                     y = offScreenOverflow.y,
-                    outerWidth = offScreenOverflow.outerWidth,
-                    outerHeight = offScreenOverflow.outerHeight;
+                    offsetWidth = offScreenOverflow.offsetWidth,
+                    offsetHeight = offScreenOverflow.offsetHeight;
                 ctx.globalCompositeOperation = 'destination-in';
                 ctx.globalAlpha = 1;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath();
-                ctx.rect(x, y, outerWidth, outerHeight);
+                ctx.rect(x, y, offsetWidth, offsetHeight);
                 ctx.fill();
                 ctx.closePath();
                 ctx.globalCompositeOperation = 'source-over';
@@ -22455,14 +22455,14 @@
               origin = offScreenOverflow.ctx,
               x = offScreenOverflow.x,
               y = offScreenOverflow.y,
-              outerWidth = offScreenOverflow.outerWidth,
-              outerHeight = offScreenOverflow.outerHeight;
+              offsetWidth = offScreenOverflow.offsetWidth,
+              offsetHeight = offScreenOverflow.offsetHeight;
           ctx.globalCompositeOperation = 'destination-in';
           ctx.globalAlpha = 1;
           ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
           ctx.fillStyle = '#FFF';
           ctx.beginPath();
-          ctx.rect(x, y, outerWidth, outerHeight);
+          ctx.rect(x, y, offsetWidth, offsetHeight);
           ctx.fill();
           ctx.closePath();
           ctx.globalCompositeOperation = 'source-over';

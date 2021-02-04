@@ -1850,6 +1850,12 @@ class Xom extends Node {
           let [xc, yc] = __cache.coords;
           dx = __cache.dx;
           dy = __cache.dy;
+          let diffX = xc + dbx - x1;
+          let diffY = yc + dby - y1;
+          bx1 += diffX;
+          by1 += diffY;
+          bx2 += diffX;
+          by2 += diffY;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
           res.x1 = x1 = xc + dbx;
           res.y1 = y1 = yc + dby;

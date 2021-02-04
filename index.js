@@ -14514,7 +14514,13 @@
                   yc = _cache$coords[1];
 
               dx = __cache.dx;
-              dy = __cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
+              dy = __cache.dy;
+              var diffX = xc + dbx - x1;
+              var diffY = yc + dby - y1;
+              bx1 += diffX;
+              by1 += diffY;
+              bx2 += diffX;
+              by2 += diffY; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
               res.x1 = x1 = xc + dbx;
               res.y1 = y1 = yc + dby;
@@ -18693,12 +18699,6 @@
             computedStyle = this.computedStyle,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle[DISPLAY$4],
-            borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$3],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$3],
-            borderBottomWidth = _this$computedStyle[BORDER_BOTTOM_WIDTH$3],
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$3],
-            paddingTop = _this$computedStyle[PADDING_TOP$3],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$3],
             borderTopLeftRadius = _this$computedStyle[BORDER_TOP_LEFT_RADIUS$1],
             borderTopRightRadius = _this$computedStyle[BORDER_TOP_RIGHT_RADIUS$1],
             borderBottomRightRadius = _this$computedStyle[BORDER_BOTTOM_RIGHT_RADIUS$1],
@@ -18813,8 +18813,8 @@
         }
 
         var originX, originY;
-        originX = res.x2 + paddingLeft;
-        originY = res.y2 + paddingTop;
+        originX = res.x3;
+        originY = res.y3;
 
         if (loadImg.error && !placeholder && Img.showError) {
           var strokeWidth = Math.min(width, height) * 0.02;
@@ -18877,7 +18877,7 @@
 
           if (source) {
             // 圆角需要生成一个mask
-            var list = border.calRadius(originX, originY, width, height, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
             if (renderMode === mode.CANVAS) {
               // 有border-radius需模拟遮罩裁剪
@@ -27606,15 +27606,10 @@
     easing: 'e',
     filter: 'ft',
     boxShadow: 'bd',
-    overflow: 'of'
+    overflow: 'of',
+    backgroundClip: 'bp'
   };
-  var abbrCssProperty = {
-    os: 'offset',
-    e: 'easing',
-    ft: 'filter',
-    bd: 'boxShadow',
-    of: 'overflow'
-  };
+  var abbrCssProperty = {};
   var fullAnimate = {
     value: 'v',
     options: 'o'

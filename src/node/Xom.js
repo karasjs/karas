@@ -1249,8 +1249,8 @@ class Xom extends Node {
     // 先根据cache计算需要重新计算的computedStyle
     else {
       if(sx === undefined) {
-        sx = this.__x1;
-        sy = this.__y1;
+        sx = this.__sx1;
+        sy = this.__sy1;
         offsetWidth = this.offsetWidth;
         offsetHeight = this.offsetHeight;
       }

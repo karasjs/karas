@@ -13898,8 +13898,8 @@
         } // 先根据cache计算需要重新计算的computedStyle
         else {
             if (sx === undefined) {
-              sx = this.__x1;
-              sy = this.__y1;
+              sx = this.__sx1;
+              sy = this.__sy1;
               offsetWidth = this.offsetWidth;
               offsetHeight = this.offsetHeight;
             }
@@ -21203,8 +21203,7 @@
     return res.reverse();
   }
 
-  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
-    var matrixHash = {};
+  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash) {
     var sx1 = node.__sx1,
         sy1 = node.__sy1,
         __config = node.__config;
@@ -21228,9 +21227,9 @@
 
     while (list.length) {
       list.splice(0).forEach(function (parentIndex) {
-        var total = __structs[parentIndex][STRUCT_TOTAL$1];
+        var total = __structs[parentIndex][STRUCT_TOTAL$1] || 0;
 
-        for (var i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
+        for (var i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
           var _structs$i2 = __structs[i],
               node2 = _structs$i2[STRUCT_NODE$1],
               _total = _structs$i2[STRUCT_TOTAL$1];
@@ -21263,13 +21262,17 @@
           }
 
           parentIndexHash[i] = parentIndex;
-          opacityHash[i] = opacityHash[parentIndex] * opacity;
+          opacityHash[i] = opacityHash[parentIndex] * opacity; // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算
+
+          if (node2 instanceof Text) {
+            continue;
+          }
+
           var bbox = void 0,
               dx = 0,
               dy = 0;
 
           if (__cacheTotal && __cacheTotal.available) {
-            i += _total || 0;
             bbox = __cacheTotal.bbox.slice(0);
             dx = __cacheTotal.dbx;
             dy = __cacheTotal.dby;
@@ -21279,32 +21282,30 @@
             dy = __cache.dby;
           } else {
             bbox = node2.bbox;
-          } // 可能Text或Xom没有内容
+          } // 可能Xom没有内容
 
 
           if (bbox) {
+            bbox[0] -= sx1;
+            bbox[1] -= sy1;
+            bbox[2] -= sx1;
+            bbox[3] -= sy1;
             var matrix = matrixHash[parentIndex];
 
-            var _blur = (blurHash[parentIndex] || 0) + (__blurValue || 0); // 父级matrix初始化E为null，自身不为E时才运算，可以加速，但要防止text作为top的孩子的情况，不应该计算
+            var _blur = (blurHash[parentIndex] || 0) + (__blurValue || 0); // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
 
             if (transform && !mx.isE(transform)) {
-              var isDirectText = node2 instanceof Text && node2.domParent === node;
+              var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              if (!isDirectText) {
-                var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+              tfo[0] += __sx1 - sx1 + dx;
+              tfo[1] += __sy1 - sy1 + dy;
+              var m = tf.calMatrixByOrigin(transform, tfo);
 
-                tfo[0] += __sx1 - sx1 + dx;
-                tfo[1] += __sy1 - sy1 + dy;
-                var m = tf.calMatrixByOrigin(transform, tfo);
-
-                if (matrix) {
-                  matrix = mx.multiply(matrix, m);
-                } else {
-                  matrix = m;
-                }
+              if (matrix) {
+                matrix = mx.multiply(matrix, m);
               } else {
-                matrix = null;
+                matrix = m;
               }
             }
 
@@ -21317,6 +21318,7 @@
             if (_total) {
               blurHash[i] = _blur;
               list.push(i);
+              i += _total;
             }
 
             if (!bboxTotal) {
@@ -21339,10 +21341,10 @@
   }
 
   function mergeBbox(bbox, t) {
-    bbox[0] = Math.min(bbox[0], t[0]);
-    bbox[1] = Math.min(bbox[1], t[1]);
-    bbox[2] = Math.max(bbox[2], t[2]);
-    bbox[3] = Math.max(bbox[3], t[3]);
+    bbox[0] = Math.min(bbox[0], bbox[0] + t[0]);
+    bbox[1] = Math.min(bbox[1], bbox[1] + t[1]);
+    bbox[2] = Math.max(bbox[2], bbox[2] + t[2]);
+    bbox[3] = Math.max(bbox[3], bbox[3] + t[3]);
   }
 
   function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {
@@ -21354,7 +21356,7 @@
     var parentIndexHash = {};
     var matrixHash = {};
     var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
+    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
 
     if (!bboxTotal) {
       return;

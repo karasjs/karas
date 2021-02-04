@@ -138,8 +138,7 @@ function genLRD(structs) {
   return res.reverse();
 }
 
-function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
-  let matrixHash = {};
+function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash) {
   let { __sx1: sx1, __sy1: sy1, __config } = node;
   let {
     [NODE_CACHE]: cache,
@@ -161,8 +160,8 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   opacityHash[index] = 1;
   while(list.length) {
     list.splice(0).forEach(parentIndex => {
-      let total = __structs[parentIndex][STRUCT_TOTAL];
-      for(let i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
+      let total = __structs[parentIndex][STRUCT_TOTAL] || 0;
+      for(let i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
         let {
           [STRUCT_NODE]: node2,
           [STRUCT_TOTAL]: total,
@@ -189,7 +188,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         }
         // display:none跳过整个节点树，visibility只跳过自身
         if(display === 'none') {
-          i += (total || 0);
+          i += total || 0;
           continue;
         }
         if(visibility === 'hidden') {
@@ -197,9 +196,12 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         }
         parentIndexHash[i] = parentIndex;
         opacityHash[i] = opacityHash[parentIndex] * opacity;
+        // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算
+        if(node2 instanceof Text) {
+          continue;
+        }
         let bbox, dx = 0, dy = 0;
         if(__cacheTotal && __cacheTotal.available) {
-          i += (total || 0);
           bbox = __cacheTotal.bbox.slice(0);
           dx = __cacheTotal.dbx;
           dy = __cacheTotal.dby;
@@ -212,28 +214,26 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         else {
           bbox = node2.bbox;
         }
-        // 可能Text或Xom没有内容
+        // 可能Xom没有内容
         if(bbox) {
+          bbox[0] -= sx1;
+          bbox[1] -= sy1;
+          bbox[2] -= sx1;
+          bbox[3] -= sy1;
           let matrix = matrixHash[parentIndex];
           let blur = (blurHash[parentIndex] || 0) + (__blurValue || 0);
-          // 父级matrix初始化E为null，自身不为E时才运算，可以加速，但要防止text作为top的孩子的情况，不应该计算
+          // 父级matrix初始化E为null，自身不为E时才运算，可以加速
           if(transform && !mx.isE(transform)) {
-            let isDirectText = node2 instanceof Text && node2.domParent === node;
-            if(!isDirectText) {
-              let tfo = transformOrigin.slice(0);
-              // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-              tfo[0] += __sx1 - sx1 + dx;
-              tfo[1] += __sy1 - sy1 + dy;
-              let m = tf.calMatrixByOrigin(transform, tfo);
-              if(matrix) {
-                matrix = mx.multiply(matrix, m);
-              }
-              else {
-                matrix = m;
-              }
+            let tfo = transformOrigin.slice(0);
+            // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+            tfo[0] += __sx1 - sx1 + dx;
+            tfo[1] += __sy1 - sy1 + dy;
+            let m = tf.calMatrixByOrigin(transform, tfo);
+            if(matrix) {
+              matrix = mx.multiply(matrix, m);
             }
             else {
-              matrix = null;
+              matrix = m;
             }
           }
           if(matrix) {
@@ -244,6 +244,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           if(total) {
             blurHash[i] = blur;
             list.push(i);
+            i += total;
           }
           if(!bboxTotal) {
             bboxTotal = bbox;
@@ -264,10 +265,10 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
 }
 
 function mergeBbox(bbox, t) {
-  bbox[0] = Math.min(bbox[0], t[0]);
-  bbox[1] = Math.min(bbox[1], t[1]);
-  bbox[2] = Math.max(bbox[2], t[2]);
-  bbox[3] = Math.max(bbox[3], t[3]);
+  bbox[0] = Math.min(bbox[0], bbox[0] + t[0]);
+  bbox[1] = Math.min(bbox[1], bbox[1] + t[1]);
+  bbox[2] = Math.max(bbox[2], bbox[2] + t[2]);
+  bbox[3] = Math.max(bbox[3], bbox[3] + t[3]);
 }
 
 function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {
@@ -278,7 +279,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
   let parentIndexHash = {};
   let matrixHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
   if(!bboxTotal) {
     return;
   }

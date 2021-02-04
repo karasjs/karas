@@ -156,12 +156,12 @@ class Geom extends Xom {
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, y1, y2, y3, y4) {
+             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
     super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,
-      x1, x2, x3, x4, y1, y2, y3, y4);
+      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
       let strokeWidth = currentStyle[STROKE_WIDTH] || [];
@@ -201,9 +201,7 @@ class Geom extends Xom {
         if(Array.isArray(v)) {
           v.forEach(item => {
             if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-              res.push(this.__gradient(renderMode, ctx, defs,
-                x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
-                clientWidth, clientHeight, item));
+              res.push(this.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
             }
             else if(item[3] > 0) {
               res.push(int2rgba(item));

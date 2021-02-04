@@ -85,6 +85,7 @@ const STYLE_KEY = {
   BORDER_BOTTOM: 81,
   BORDER_LEFT: 82,
   LETTER_SPACING: 83,
+  BACKGROUND_CLIP: 84,
 };
 
 function style2Lower(s) {

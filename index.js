@@ -324,7 +324,8 @@
     BORDER_RIGHT: 80,
     BORDER_BOTTOM: 81,
     BORDER_LEFT: 82,
-    LETTER_SPACING: 83
+    LETTER_SPACING: 83,
+    BACKGROUND_CLIP: 84
   };
 
   function style2Lower(s) {
@@ -3136,6 +3137,7 @@
     backgroundRepeat: 'repeat',
     backgroundPositionX: 0,
     backgroundPositionY: 0,
+    backgroundClip: 'border-box',
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -3890,7 +3892,7 @@
 
   var IGNORE = _defineProperty({}, STYLE_KEY$3.POINTER_EVENTS, true);
 
-  var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$3.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$3.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$3.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.OVERFLOW, true), _REPAINT);
+  var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$3.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$3.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$3.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_CLIP, true), _REPAINT);
   var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$3.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_FAMILY, true), _MEASURE);
   var o = {
     GEOM: GEOM$1,
@@ -4044,7 +4046,8 @@
       ALIGN_SELF = _enums$STYLE_KEY$2.ALIGN_SELF,
       ALIGN_ITEMS = _enums$STYLE_KEY$2.ALIGN_ITEMS,
       MATRIX = _enums$STYLE_KEY$2.MATRIX,
-      LETTER_SPACING = _enums$STYLE_KEY$2.LETTER_SPACING;
+      LETTER_SPACING = _enums$STYLE_KEY$2.LETTER_SPACING,
+      BACKGROUND_CLIP = _enums$STYLE_KEY$2.BACKGROUND_CLIP;
   var AUTO = unit.AUTO,
       PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -4938,7 +4941,7 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex', 'backgroundClip'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
       }
@@ -5001,7 +5004,7 @@
       // border-width不支持百分比
       computedStyle[k] = currentStyle[k][1] === PX$1 ? Math.max(0, currentStyle[k][0]) : 0;
     });
-    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK].forEach(function (k) {
+    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, BACKGROUND_CLIP].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     var textAlign = currentStyle[TEXT_ALIGN];
@@ -5238,9 +5241,9 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, STYLE_KEY$4.POSITION, true), _defineProperty(_VALUE$1, STYLE_KEY$4.DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FLEX_DIRECTION, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FLEX_GROW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FLEX_SHRINK, true), _defineProperty(_VALUE$1, STYLE_KEY$4.JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.ALIGN_ITEMS, true), _defineProperty(_VALUE$1, STYLE_KEY$4.ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OPACITY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.Z_INDEX, true), _VALUE$1);
-  var ARRAY_0$1 = (_ARRAY_$1 = {}, _defineProperty(_ARRAY_$1, STYLE_KEY$4.COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BACKGROUND_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_LEFT_COLOR, true), _ARRAY_$1);
-  var ARRAY_0_1$1 = (_ARRAY_0_$1 = {}, _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _ARRAY_0_$1);
+  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, POSITION, true), _defineProperty(_VALUE$1, DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, FLEX_DIRECTION, true), _defineProperty(_VALUE$1, FLEX_GROW, true), _defineProperty(_VALUE$1, FLEX_SHRINK, true), _defineProperty(_VALUE$1, JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, ALIGN_ITEMS, true), _defineProperty(_VALUE$1, ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, OPACITY, true), _defineProperty(_VALUE$1, Z_INDEX, true), _defineProperty(_VALUE$1, BACKGROUND_CLIP, true), _VALUE$1);
+  var ARRAY_0$1 = (_ARRAY_$1 = {}, _defineProperty(_ARRAY_$1, COLOR, true), _defineProperty(_ARRAY_$1, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_LEFT_COLOR, true), _ARRAY_$1);
+  var ARRAY_0_1$1 = (_ARRAY_0_$1 = {}, _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, TRANSFORM_ORIGIN$1, true), _ARRAY_0_$1);
 
   function cloneStyle$1(style, keys) {
     if (!keys) {
@@ -8579,15 +8582,11 @@
     return [[cpx2, cpy2], [cx2, cy2], [cx1, cy1], [cpx1, cpy1]];
   }
   /**
-   * 简单计算椭圆的圆化坐标控制点
+   * 简单计算椭圆的圆化坐标控制点，视作重合位置，外面判断backgroundClip并调整坐标
    * @param x 起始x
    * @param y 起始y
    * @param w 宽
    * @param h 高
-   * @param btw boderTopWidth
-   * @param brw borderRightWidth
-   * @param bbw borderBottomWidth
-   * @param blw borderLeftWidth
    * @param btlr borderTopLeftRadius
    * @param btrr borderTopRightRadius
    * @param bbrr borderBottomRightRadius
@@ -8596,7 +8595,7 @@
    */
 
 
-  function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+  function calRadius(x, y, w, h, btlr, btrr, bbrr, bblr) {
     var need;
 
     var _btlr = _slicedToArray(btlr, 2),
@@ -8613,17 +8612,16 @@
 
     var _bblr = _slicedToArray(bblr, 2),
         bblx = _bblr[0],
-        bbly = _bblr[1]; // 先减去对应borderWidth，因为border可能比较宽，弧度只体现在外圆弧，有可能radius为0减去后为负数需判断
+        bbly = _bblr[1];
 
-
-    btlx -= blw;
-    btly -= btw;
-    btrx -= brw;
-    btry -= btw;
-    bbrx -= brw;
-    bbry -= bbw;
-    bblx -= blw;
-    bbly -= bbw; // 圆角必须x/y都>0才有效，否则视为不绘制
+    btlx = Math.max(btlx, 0);
+    btly = Math.max(btly, 0);
+    btrx = Math.max(btrx, 0);
+    btry = Math.max(btry, 0);
+    bbrx = Math.max(bbrx, 0);
+    bbry = Math.max(bbry, 0);
+    bblx = Math.max(bblx, 0);
+    bbly = Math.max(bbly, 0); // 圆角必须x/y都>0才有效，否则视为不绘制
 
     if (btlx > 0 && btly > 0 || btrx > 0 && btry > 0 || bbrx > 0 && bbry > 0 || bblx > 0 && bbly > 0) {
       need = true;
@@ -12845,6 +12843,7 @@
       BORDER_RIGHT = _enums$STYLE_KEY$a.BORDER_RIGHT,
       BORDER_BOTTOM = _enums$STYLE_KEY$a.BORDER_BOTTOM,
       BORDER_LEFT = _enums$STYLE_KEY$a.BORDER_LEFT,
+      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$a.BACKGROUND_CLIP,
       _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
       UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
       UPDATE_FOCUS = _enums$UPDATE_KEY$1.UPDATE_FOCUS,
@@ -12925,8 +12924,8 @@
     }
   }
 
-  function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
-    var method = arguments.length > 17 && arguments[17] !== undefined ? arguments[17] : 'fill';
+  function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
+    var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
     // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
     var matrix, cx, cy;
 
@@ -12938,7 +12937,7 @@
     } // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
 
 
-    var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
 
     if (!list) {
       list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
@@ -13002,9 +13001,9 @@
     }
   }
 
-  function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+  function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
     // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-    var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
 
     if (!list) {
       list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
@@ -13122,7 +13121,7 @@
     return 0;
   }
 
-  function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y3, x4, y4, outerWidth, outerHeight) {
+  function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x4, y4, outerWidth, outerHeight) {
     var _data = _slicedToArray(data, 6),
         x = _data[0],
         y = _data[1],
@@ -13968,7 +13967,7 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
         var _this3 = this;
 
         this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
@@ -14040,13 +14039,14 @@
                       });
                     }
                   }, {
-                    ctx: ctx
+                    ctx: ctx,
+                    node: _this3
                   });
                 }
 
                 return true;
               } else if (bgi && bgi.k) {
-                return _this3.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgi);
+                return _this3.__gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, bgi);
               }
             });
           }
@@ -14097,7 +14097,7 @@
                 if (borderTopWidth > 0) {
                   var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
                   var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-                  __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, btlr, btrr);
+                  __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2, x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
                 } else {
                   __cacheStyle[k2] = [];
                 }
@@ -14107,7 +14107,7 @@
 
                   var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
 
-                  __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, btrr, bbrr);
+                  __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], _deg, _deg2, x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
                 } else {
                   __cacheStyle[k2] = [];
                 }
@@ -14117,7 +14117,7 @@
 
                   var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
 
-                  __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, bblr, bbrr);
+                  __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], _deg3, _deg4, x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
                 } else {
                   __cacheStyle[k2] = [];
                 }
@@ -14127,7 +14127,7 @@
 
                   var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-                  __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, btlr, bblr);
+                  __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], _deg5, _deg6, x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
                 } else {
                   __cacheStyle[k2] = [];
                 }
@@ -14346,29 +14346,67 @@
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$1],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$1],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1];
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
+            backgroundClip = computedStyle[BACKGROUND_CLIP$1];
         var x1 = this.__sx1 = x + marginLeft;
-        var x2 = this.__sx2 = x1 + borderLeftWidth;
-        var x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
-        var x4 = this.__sx4 = x3 + borderRightWidth;
+        var x2 = this.__sx2 = x1 + borderLeftWidth; // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
+        // let x4 = this.__sx4 = x3 + borderRightWidth;
+
+        var x3 = this.__sx3 = x2 + paddingLeft;
+        var x4 = this.__sx4 = x3 + width;
+        var x5 = this.__sx5 = x4 + paddingRight;
+        var x6 = this.__sx6 = x5 + borderRightWidth;
         var y1 = this.__sy1 = y + marginTop;
-        var y2 = this.__sy2 = y1 + borderTopWidth;
-        var y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
-        var y4 = this.__sy4 = y3 + borderBottomWidth;
+        var y2 = this.__sy2 = y1 + borderTopWidth; // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
+        // let y4 = this.__sy4 = y3 + borderBottomWidth;
+
+        var y3 = this.__sy3 = y2 + paddingTop;
+        var y4 = this.__sy4 = y3 + height;
+        var y5 = this.__sy5 = y4 + paddingBottom;
+        var y6 = this.__sy6 = y5 + borderBottomWidth;
+        var bx1 = x1,
+            by1 = y1,
+            bx2 = x6,
+            by2 = y6;
+
+        if (backgroundClip === 'padding-box') {
+          bx1 = x2;
+          by1 = y2;
+          bx2 = x5;
+          by2 = y5;
+        } else if (backgroundClip === 'content-box') {
+          bx1 = x3;
+          by1 = y3;
+          bx2 = x4;
+          by2 = y4;
+        }
+
+        this.__bx1 = bx1;
+        this.__by1 = by1;
+        this.__bx2 = bx2;
+        this.__by2 = by2;
         var res = {
           x1: x1,
           x2: x2,
           x3: x3,
           x4: x4,
+          x5: x5,
+          x6: x6,
           y1: y1,
           y2: y2,
           y3: y3,
-          y4: y4
+          y4: y4,
+          y5: y5,
+          y6: y6,
+          bx1: bx1,
+          by1: by1,
+          bx2: bx2,
+          by2: by2
         }; // 防止cp直接返回cp嵌套，拿到真实dom的parent
 
         var p = this.domParent; // 计算好cacheStyle的内容，以及位图缓存指数
 
-        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
+        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
 
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
@@ -14485,12 +14523,16 @@
                 res.x2 = x2 += dx;
                 res.x3 = x3 += dx;
                 res.x4 = x4 += dx;
+                res.x5 = x5 += dx;
+                res.x6 = x6 += dx;
               }
 
               if (dy) {
                 res.y2 = y2 += dy;
                 res.y3 = y3 += dy;
                 res.y4 = y4 += dy;
+                res.y5 = y5 += dy;
+                res.y6 = y6 += dy;
               }
             } else {
               __config[NODE_LIMIT_CACHE] = true;
@@ -14663,11 +14705,40 @@
         if (visibility === 'hidden' && renderMode === mode.CANVAS) {
           res["break"] = true;
           return res;
-        } // 背景色垫底
+        } // 背景色垫底，根据backgroundClip的不同值要调整坐标尺寸，也会影响borderRadius
 
+
+        var btlr, btrr, bbrr, bblr;
+
+        if (backgroundColor[3] > 0 || backgroundImage) {
+          btlr = borderTopLeftRadius.slice(0);
+          btrr = borderTopRightRadius.slice(0);
+          bbrr = borderBottomRightRadius.slice(0);
+          bblr = borderBottomLeftRadius.slice(0);
+
+          if (backgroundClip === 'padding-box') {
+            btlr[0] -= borderLeftWidth;
+            btlr[1] -= borderTopWidth;
+            btrr[0] -= borderRightWidth;
+            btrr[1] -= borderTopWidth;
+            bbrr[0] -= borderRightWidth;
+            bbrr[1] -= borderBottomWidth;
+            bblr[0] -= borderLeftWidth;
+            bblr[1] -= borderBottomWidth;
+          } else if (backgroundClip === 'content-box') {
+            btlr[0] -= borderLeftWidth + paddingLeft;
+            btlr[1] -= borderTopWidth + paddingTop;
+            btrr[0] -= borderRightWidth + paddingRight;
+            btrr[1] -= borderTopWidth + paddingTop;
+            bbrr[0] -= borderRightWidth + paddingRight;
+            bbrr[1] -= borderBottomWidth + paddingBottom;
+            bblr[0] -= borderLeftWidth + paddingLeft;
+            bblr[1] -= borderBottomWidth + paddingBottom;
+          }
+        }
 
         if (backgroundColor[3] > 0) {
-          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this, btlr, btrr, bbrr, bblr);
         } // 渐变或图片叠加
 
 
@@ -14681,7 +14752,9 @@
               var loadBgi = _this4.__loadBgi[i];
 
               if (loadBgi.url === backgroundImage[i]) {
-                var source = loadBgi.source; // 无source不绘制
+                var source = loadBgi.source;
+                var bgW = bx2 - bx1;
+                var bgH = by2 - by1; // 无source不绘制
 
                 if (source) {
                   var _width5 = loadBgi.width,
@@ -14696,54 +14769,54 @@
                     w = _width5;
                     h = _height5;
                   } else if (w === -2) {
-                    if (_width5 > clientWidth && _height5 > clientHeight) {
-                      w = _width5 / clientWidth;
-                      h = _height5 / clientHeight;
+                    if (_width5 > bgW && _height5 > bgH) {
+                      w = _width5 / bgW;
+                      h = _height5 / bgH;
 
                       if (w >= h) {
-                        w = clientWidth;
+                        w = bgW;
                         h = w * _height5 / _width5;
                       } else {
-                        h = clientHeight;
+                        h = bgH;
                         w = h * _width5 / _height5;
                       }
-                    } else if (_width5 > clientWidth) {
-                      w = clientWidth;
+                    } else if (_width5 > bgW) {
+                      w = bgW;
                       h = w * _height5 / _width5;
-                    } else if (_height5 > clientHeight) {
-                      h = clientHeight;
+                    } else if (_height5 > bgH) {
+                      h = bgH;
                       w = h * _width5 / _height5;
                     } else {
                       w = _width5;
                       h = _height5;
                     }
                   } else if (w === -3) {
-                    if (clientWidth > _width5 && clientHeight > _height5) {
-                      w = _width5 / clientWidth;
-                      h = _height5 / clientHeight;
+                    if (bgW > _width5 && bgH > _height5) {
+                      w = _width5 / bgW;
+                      h = _height5 / bgH;
 
                       if (w <= h) {
-                        w = clientWidth;
+                        w = bgW;
                         h = w * _height5 / _width5;
                       } else {
-                        h = clientHeight;
+                        h = bgH;
                         w = h * _width5 / _height5;
                       }
-                    } else if (clientWidth > _width5) {
-                      w = clientWidth;
+                    } else if (bgW > _width5) {
+                      w = bgW;
                       h = w * _height5 / _width5;
-                    } else if (clientHeight > _height5) {
-                      h = clientHeight;
+                    } else if (bgH > _height5) {
+                      h = bgH;
                       w = h * _width5 / _height5;
                     } else {
-                      w = _width5 / clientWidth;
-                      h = _height5 / clientHeight;
+                      w = _width5 / bgW;
+                      h = _height5 / bgH;
 
                       if (w <= h) {
-                        w = clientWidth;
+                        w = bgW;
                         h = w * _height5 / _width5;
                       } else {
-                        h = clientHeight;
+                        h = bgH;
                         w = h * _width5 / _height5;
                       }
                     }
@@ -14753,10 +14826,10 @@
                     h = w * _height5 / _width5;
                   }
 
-                  var bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2][i], clientWidth, w);
-                  var bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2][i], clientHeight, h); // 超出尺寸模拟mask截取
+                  var bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2][i], bgW, w);
+                  var bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2][i], bgH, h); // 超出尺寸模拟mask截取
 
-                  var needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+                  var needMask = bgX < x2 || bgY < y2 || w > bgW || h > bgH; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
                   var xnl = 0;
                   var xnr = 0;
@@ -14764,13 +14837,13 @@
                   var ynb = 0; // repeat-x
 
                   if (['repeat-x', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
-                    var diff = bgX - x2;
+                    var diff = bgX - bx1;
 
                     if (diff > 0) {
                       xnl = Math.ceil(diff / w);
                     }
 
-                    diff = x2 + clientWidth - bgX - w;
+                    diff = bx1 + bgW - bgX - w;
 
                     if (diff > 0) {
                       xnr = Math.ceil(diff / w);
@@ -14779,13 +14852,13 @@
 
 
                   if (['repeat-y', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
-                    var _diff = bgY - y2;
+                    var _diff = bgY - by1;
 
                     if (_diff > 0) {
                       ynt = Math.ceil(_diff / h);
                     }
 
-                    _diff = y2 + clientHeight - bgY - h;
+                    _diff = by1 + bgH - bgY - h;
 
                     if (_diff > 0) {
                       ynb = Math.ceil(_diff / h);
@@ -14801,7 +14874,7 @@
 
                       repeat.push([_x, bgY]); // 看最左边超过没有
 
-                      if (!needMask && _i4 === 0 && _x < x2) {
+                      if (!needMask && _i4 === 0 && _x < bx1) {
                         needMask = true;
                       }
                     }
@@ -14813,7 +14886,7 @@
 
                       repeat.push([_x2, bgY]); // 看最右边超过没有
 
-                      if (!needMask && _i5 === xnr - 1 && _x2 + w > x2 + clientWidth) {
+                      if (!needMask && _i5 === xnr - 1 && _x2 + w > bx1 + bgW) {
                         needMask = true;
                       }
                     }
@@ -14825,7 +14898,7 @@
 
                       repeat.push([bgX, _y]); // 看最上边超过没有
 
-                      if (!needMask && _i6 === 0 && _y < y2) {
+                      if (!needMask && _i6 === 0 && _y < by1) {
                         needMask = true;
                       }
                     }
@@ -14837,7 +14910,7 @@
 
                       repeat.push([bgX, _y2]); // 看最下边超过没有
 
-                      if (!needMask && _i7 === ynb - 1 && _y2 + w > y2 + clientHeight) {
+                      if (!needMask && _i7 === ynb - 1 && _y2 + w > by1 + clientHeight) {
                         needMask = true;
                       }
                     }
@@ -14879,7 +14952,7 @@
                   if (renderMode === mode.CANVAS) {
                     if (needMask) {
                       ctx.save();
-                      renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, _this4, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
+                      renderBgc(renderMode, '#FFF', bx1, by1, bgW, bgH, ctx, defs, _this4, btlr, btrr, bbrr, bblr, 'clip');
                     } // 先画不考虑repeat的中心声明的
 
 
@@ -14893,7 +14966,7 @@
                       ctx.restore();
                     }
                   } else if (renderMode === mode.SVG) {
-                    var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, clientWidth, clientHeight);
+                    var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, bgW, bgH);
 
                     var props = [['xlink:href', bgi], ['x', bgX], ['y', bgY], ['width', _width5], ['height', _height5]];
                     var needResize;
@@ -14905,7 +14978,7 @@
 
                     if (needMask) {
                       var p1 = [x2, y2];
-                      var p2 = [x2 + clientWidth, y2 + clientHeight];
+                      var p2 = [x2 + bgW, y2 + bgH];
 
                       if (needResize) {
                         var inverse = mx.inverse(_matrix);
@@ -14940,7 +15013,7 @@
                       var copy = clone$2(props);
 
                       if (needResize) {
-                        var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], clientWidth, clientHeight);
+                        var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], bgW, bgH);
 
                         if (_matrix2 && !mx.isE(_matrix2)) {
                           copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
@@ -14964,9 +15037,9 @@
 
               if (gd) {
                 if (gd.k === 'conic') {
-                  renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, _this4, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+                  renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, _this4, btlr, btrr, bbrr, bblr);
                 } else {
-                  renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, _this4, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+                  renderBgc(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, _this4, btlr, btrr, bbrr, bblr);
                 }
               }
             }
@@ -14976,7 +15049,7 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            renderBoxShadow(renderMode, ctx, defs, item, _this4, x1, y1, x2, y2, x3, y3, x4, y4, outerWidth, outerHeight);
+            renderBoxShadow(renderMode, ctx, defs, item, _this4, x1, y1, x6, y6, outerWidth, outerHeight);
           });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -15103,24 +15176,26 @@
       }
     }, {
       key: "__gradient",
-      value: function __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, vs) {
+      value: function __gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, vs) {
+        var iw = bx2 - bx1;
+        var ih = by2 - by1;
         var k = vs.k,
             v = vs.v,
             d = vs.d,
             s = vs.s,
             z = vs.z,
             p = vs.p;
-        var cx = x2 + iw * 0.5;
-        var cy = y2 + ih * 0.5;
+        var cx = bx1 + iw * 0.5;
+        var cy = by1 + ih * 0.5;
         var res = {
           k: k
         };
 
         if (k === 'linear') {
-          var gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
+          var gd = gradient.getLinear(v, d, bx1, by1, cx, cy, iw, ih);
           res.v = this.__getLg(renderMode, ctx, defs, gd);
         } else if (k === 'radial') {
-          var _gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
+          var _gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2);
 
           if (_gd) {
             res.v = this.__getRg(renderMode, ctx, defs, _gd);
@@ -15132,9 +15207,9 @@
         } else if (k === 'conic') {
           var bbox = this.bbox;
           var m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
-          var m2 = Math.max(Math.abs(x3 - x2), Math.abs(y3 - y2));
+          var m2 = Math.max(Math.abs(iw), Math.abs(ih));
 
-          var _gd2 = gradient.getConic(v, d, p, x2, y2, x3, y3, m1 / m2);
+          var _gd2 = gradient.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2);
 
           res.v = this.__getCg(renderMode, ctx, defs, _gd2);
         }
@@ -19176,10 +19251,10 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
+        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
 
         if (isNil$7(__cacheStyle[STROKE_WIDTH$1])) {
           __cacheStyle[STROKE_WIDTH$1] = true;
@@ -19218,7 +19293,7 @@
             if (Array.isArray(v)) {
               v.forEach(function (item) {
                 if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-                  res.push(_this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, item));
+                  res.push(_this2.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
                 } else if (item[3] > 0) {
                   res.push(int2rgba$2(item));
                 } else {
@@ -19975,7 +20050,7 @@
     var sr = cp.shadowRoot;
 
     if (sr instanceof Xom$2) {
-      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sy1', '__sy2', '__sy3', '__sy4', '__computedStyle'].forEach(function (k) {
+      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', '__bx1', '__by1', '__bx2', '__by2', '__computedStyle'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
       sr.__config[NODE_COMPUTED_STYLE$1] = oldSr.computedStyle;
@@ -19984,7 +20059,7 @@
     }
 
     ['__x', '__y', '__width', '__height', '__sx1', // text和xom
-    '__layoutData', '__parent', '__domParent'].forEach(function (k) {
+    '__sy1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
     sr.__config[NODE_DOM_PARENT$2] = oldSr.domParent;
@@ -25870,18 +25945,14 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __sx2 = this.__sx2,
-            __sy2 = this.__sy2,
+        var originX = this.__sx2,
+            originY = this.__sy2,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle[PADDING_TOP$6],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$6],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
             boxShadow = _this$computedStyle[BOX_SHADOW$4],
             filter = _this$computedStyle[FILTER$7],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
-        var originX = __sx2 + paddingLeft;
-        var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
             y1 = __cacheProps.y1,
@@ -26452,18 +26523,14 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __sx2 = this.__sx2,
-            __sy2 = this.__sy2,
+        var originX = this.__sx2,
+            originY = this.__sy2,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle[PADDING_TOP$7],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$7],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
             boxShadow = _this$computedStyle[BOX_SHADOW$5],
             filter = _this$computedStyle[FILTER$8],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
-        var originX = __sx2 + paddingLeft;
-        var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
@@ -26945,18 +27012,14 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            __sx2 = this.__sx2,
-            __sy2 = this.__sy2,
+            originX = this.__sx2,
+            originY = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle[PADDING_TOP$8],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$8],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
             boxShadow = _this$computedStyle[BOX_SHADOW$6],
             filter = _this$computedStyle[FILTER$9];
-        var originX = __sx2 + paddingLeft;
-        var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -27151,18 +27214,14 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __sx2 = this.__sx2,
-            __sy2 = this.__sy2,
+        var originX = this.__sx2,
+            originY = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle[PADDING_TOP$9],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$9],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
             boxShadow = _this$computedStyle[BOX_SHADOW$7],
             filter = _this$computedStyle[FILTER$a];
-        var originX = __sx2 + paddingLeft;
-        var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
@@ -27285,18 +27344,14 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            __sx2 = this.__sx2,
-            __sy2 = this.__sy2,
+            originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle[PADDING_TOP$a],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$a],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
             boxShadow = _this$computedStyle[BOX_SHADOW$8],
             filter = _this$computedStyle[FILTER$b];
-        var originX = __sx2 + paddingLeft;
-        var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -27486,18 +27541,14 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            __sx2 = this.__sx2,
-            __sy2 = this.__sy2,
+            originX = this.__sx2,
+            originY = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle[PADDING_TOP$b],
-            paddingLeft = _this$computedStyle[PADDING_LEFT$b],
             strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
             boxShadow = _this$computedStyle[BOX_SHADOW$9],
             filter = _this$computedStyle[FILTER$c];
-        var originX = __sx2 + paddingLeft;
-        var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);

@@ -98,10 +98,17 @@ function updateCp(cp, props, state) {
       '__sx2',
       '__sx3',
       '__sx4',
-      '__sy1',
+      '__sx5',
+      '__sx6',
       '__sy2',
       '__sy3',
       '__sy4',
+      '__sy5',
+      '__sy6',
+      '__bx1',
+      '__by1',
+      '__bx2',
+      '__by2',
       '__computedStyle',
     ].forEach(k => {
       sr[k] = oldSr[k];
@@ -117,6 +124,7 @@ function updateCp(cp, props, state) {
     '__width',
     '__height',
     '__sx1', // text和xom
+    '__sy1',
     '__layoutData',
     '__parent',
     '__domParent',

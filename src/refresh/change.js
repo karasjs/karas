@@ -49,6 +49,7 @@ const REPAINT = {
   [STYLE_KEY.FILTER]: true,
   [STYLE_KEY.BOX_SHADOW]: true,
   [STYLE_KEY.OVERFLOW]: true,
+  [STYLE_KEY.BACKGROUND_CLIP]: true,
 };
 const MEASURE = {
   [STYLE_KEY.FONT_SIZE]: true,

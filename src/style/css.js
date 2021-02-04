@@ -59,6 +59,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   ALIGN_ITEMS,
   MATRIX,
   LETTER_SPACING,
+  BACKGROUND_CLIP,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -929,6 +930,7 @@ function normalize(style, reset = []) {
     'flexGrow',
     'flexShrink',
     'zIndex',
+    'backgroundClip',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
@@ -1007,6 +1009,7 @@ function computeReflow(node, isHost) {
     ALIGN_SELF,
     FLEX_GROW,
     FLEX_SHRINK,
+    BACKGROUND_CLIP,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
@@ -1222,28 +1225,28 @@ function isRelativeOrAbsolute(node) {
 }
 
 const VALUE = {
-  [STYLE_KEY.POSITION]: true,
-  [STYLE_KEY.DISPLAY]: true,
+  [POSITION]: true,
+  [DISPLAY]: true,
   [STYLE_KEY.BACKGROUND_REPEAT]: true,
-  [STYLE_KEY.FLEX_DIRECTION]: true,
-  [STYLE_KEY.FLEX_GROW]: true,
-  [STYLE_KEY.FLEX_SHRINK]: true,
-  [STYLE_KEY.JUSTIFY_CONTENT]: true,
-  [STYLE_KEY.ALIGN_ITEMS]: true,
-  [STYLE_KEY.ALIGN_SELF]: true,
+  [FLEX_DIRECTION]: true,
+  [FLEX_GROW]: true,
+  [FLEX_SHRINK]: true,
+  [JUSTIFY_CONTENT]: true,
+  [ALIGN_ITEMS]: true,
+  [ALIGN_SELF]: true,
   [STYLE_KEY.OVERFLOW]: true,
   [STYLE_KEY.MIX_BLEND_MODE]: true,
   [STYLE_KEY.STROKE_LINECAP]: true,
   [STYLE_KEY.STROKE_LINEJOIN]: true,
   [STYLE_KEY.STROKE_MITERLIMIT]: true,
   [STYLE_KEY.FILL_RULE]: true,
-  [STYLE_KEY.OPACITY]: true,
-  [STYLE_KEY.Z_INDEX]: true,
+  [OPACITY]: true,
+  [Z_INDEX]: true,
+  [BACKGROUND_CLIP]: true,
 };
 const ARRAY_0 = {
-  [STYLE_KEY.COLOR]: true,
-  // [STYLE_KEY.BACKGROUND_SIZE]: true,
-  [STYLE_KEY.BACKGROUND_COLOR]: true,
+  [COLOR]: true,
+  [BACKGROUND_COLOR]: true,
   [STYLE_KEY.BORDER_TOP_COLOR]: true,
   [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
   [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
@@ -1254,7 +1257,7 @@ const ARRAY_0_1 = {
   [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
   [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
   [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
-  [STYLE_KEY.TRANSFORM_ORIGIN]: true,
+  [TRANSFORM_ORIGIN]: true,
 };
 function cloneStyle(style, keys) {
   if(!keys) {

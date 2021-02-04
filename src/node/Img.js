@@ -146,8 +146,16 @@ class Img extends Dom {
   }
 
   // img根据加载情况更新__hasContent
-  __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
-    let res = super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
+  __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+             clientWidth, clientHeight, outerWidth, outerHeight,
+             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+             paddingTop, paddingRight, paddingBottom, paddingLeft,
+             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
+    let res = super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+      clientWidth, clientHeight, outerWidth, outerHeight,
+      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+      paddingTop, paddingRight, paddingBottom, paddingLeft,
+      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
     if(!res) {
       let {
         computedStyle,
@@ -179,12 +187,6 @@ class Img extends Dom {
       computedStyle,
       computedStyle: {
         [DISPLAY]: display,
-        [BORDER_TOP_WIDTH]: borderTopWidth,
-        [BORDER_RIGHT_WIDTH]: borderRightWidth,
-        [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-        [BORDER_LEFT_WIDTH]: borderLeftWidth,
-        [PADDING_TOP]: paddingTop,
-        [PADDING_LEFT]: paddingLeft,
         [BORDER_TOP_LEFT_RADIUS]: borderTopLeftRadius,
         [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
         [BORDER_BOTTOM_RIGHT_RADIUS]: borderBottomRightRadius,
@@ -285,8 +287,8 @@ class Img extends Dom {
       ctx = __cache.ctx;
     }
     let originX, originY;
-    originX = res.x2 + paddingLeft;
-    originY = res.y2 + paddingTop;
+    originX = res.x3;
+    originY = res.y3;
     if(loadImg.error && !placeholder && Img.showError) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
@@ -365,7 +367,6 @@ class Img extends Dom {
       if(source) {
         // 圆角需要生成一个mask
         let list = border.calRadius(originX, originY, width, height,
-          borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
           borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         if(renderMode === mode.CANVAS) {
           // 有border-radius需模拟遮罩裁剪

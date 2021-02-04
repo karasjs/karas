@@ -7,6 +7,7 @@ let o = karas.render(
       borderLeftColor:'#F00',
       borderBottomRightRadius:10,
       borderTopLeftRadius:10,
+      backgroundClip:'padding-box'
     }}/>
   </svg>,
   '#test'

@@ -25,6 +25,7 @@ const DOM = {
   backgroundRepeat: 'repeat',
   backgroundPositionX: 0,
   backgroundPositionY: 0,
+  backgroundClip: 'border-box',
   borderTopWidth: 0,
   borderRightWidth: 0,
   borderBottomWidth: 0,

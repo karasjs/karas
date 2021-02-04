@@ -10,15 +10,10 @@ let fullCssProperty = {
   filter: 'ft',
   boxShadow: 'bd',
   overflow: 'of',
+  backgroundClip: 'bp',
 };
 
-let abbrCssProperty = {
-  os: 'offset',
-  e: 'easing',
-  ft: 'filter',
-  bd: 'boxShadow',
-  of: 'overflow',
-};
+let abbrCssProperty = {};
 
 let fullAnimate = {
   value: 'v',

@@ -106,16 +106,12 @@ class Ellipse extends Geom {
   get bbox() {
     let {
       isMulti, __cacheProps,
-      __sx2, __sy2, width, height,
+      __sx2: originX, __sy2: originY, width, height,
       computedStyle: {
-        [PADDING_TOP]: paddingTop,
-        [PADDING_LEFT]: paddingLeft,
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
         [FILTER]: filter,
       } } = this;
-    let originX = __sx2 + paddingLeft;
-    let originY = __sy2 + paddingTop;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
     this.buildCache(cx, cy);

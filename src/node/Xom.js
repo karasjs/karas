@@ -87,6 +87,7 @@ const {
     BORDER_RIGHT,
     BORDER_BOTTOM,
     BORDER_LEFT,
+    BACKGROUND_CLIP,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -169,7 +170,7 @@ function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
   }
 }
 
-function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr, method = 'fill') {
+function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr, method = 'fill') {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
   let matrix, cx, cy;
   if(Array.isArray(color)) {
@@ -179,7 +180,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw,
     color = color[0];
   }
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
   if(!list) {
     list = [
       [x, y],
@@ -243,9 +244,9 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw,
   }
 }
 
-function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
   if(!list) {
     list = [
       [x, y],
@@ -376,7 +377,7 @@ function calBackgroundPosition(position, container, size) {
   return 0;
 }
 
-function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y3, x4, y4, outerWidth, outerHeight) {
+function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x4, y4, outerWidth, outerHeight) {
   let [x, y, blur, spread, color, inset] = data;
   let c = int2rgba(color);
   let n = Math.abs(blur) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2;
@@ -1336,7 +1337,7 @@ class Xom extends Node {
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, y1, y2, y3, y4) {
+             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
     this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     if(lv >= REPAINT) {
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
@@ -1405,12 +1406,13 @@ class Xom extends Node {
                 }
               }, {
                 ctx,
+                node: this,
               });
             }
             return true;
           }
           else if(bgi && bgi.k) {
-            return this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgi);
+            return this.__gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, bgi);
           }
         });
       }
@@ -1481,7 +1483,7 @@ class Xom extends Node {
               let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
               let deg2 = Math.atan(borderTopWidth / borderRightWidth);
               __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x3, x4, y1, y2, y3, y4, 0, btlr, btrr);
+                x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
             }
             else {
               __cacheStyle[k2] = [];
@@ -1492,7 +1494,7 @@ class Xom extends Node {
               let deg1 = Math.atan(borderRightWidth / borderTopWidth);
               let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
               __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x3, x4, y1, y2, y3, y4, 1, btrr, bbrr);
+                x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
             }
             else {
               __cacheStyle[k2] = [];
@@ -1503,7 +1505,7 @@ class Xom extends Node {
               let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
               let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
               __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x3, x4, y1, y2, y3, y4, 2, bblr, bbrr);
+                x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
             }
             else {
               __cacheStyle[k2] = [];
@@ -1514,7 +1516,7 @@ class Xom extends Node {
               let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
               let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
               __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x3, x4, y1, y2, y3, y4, 3, btlr, bblr);
+                x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
             }
             else {
               __cacheStyle[k2] = [];
@@ -1705,16 +1707,42 @@ class Xom extends Node {
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+      [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
     let x1 = this.__sx1 = x + marginLeft;
     let x2 = this.__sx2 = x1 + borderLeftWidth;
-    let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
-    let x4 = this.__sx4 = x3 + borderRightWidth;
+    // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
+    // let x4 = this.__sx4 = x3 + borderRightWidth;
+    let x3 = this.__sx3 = x2 + paddingLeft;
+    let x4 = this.__sx4 = x3 + width;
+    let x5 = this.__sx5 = x4 + paddingRight;
+    let x6 = this.__sx6 = x5 + borderRightWidth;
     let y1 = this.__sy1 = y + marginTop;
     let y2 = this.__sy2 = y1 + borderTopWidth;
-    let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
-    let y4 = this.__sy4 = y3 + borderBottomWidth;
-    let res = { x1, x2, x3, x4, y1, y2, y3, y4 };
+    // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
+    // let y4 = this.__sy4 = y3 + borderBottomWidth;
+    let y3 = this.__sy3 = y2 + paddingTop;
+    let y4 = this.__sy4 = y3 + height;
+    let y5 = this.__sy5 = y4 + paddingBottom;
+    let y6 = this.__sy6 = y5 + borderBottomWidth;
+    let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
+    if(backgroundClip === 'padding-box') {
+      bx1 = x2;
+      by1 = y2;
+      bx2 = x5;
+      by2 = y5;
+    }
+    else if(backgroundClip === 'content-box') {
+      bx1 = x3;
+      by1 = y3;
+      bx2 = x4;
+      by2 = y4;
+    }
+    this.__bx1 = bx1;
+    this.__by1 = by1;
+    this.__bx2 = bx2;
+    this.__by2 = by2;
+    let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = this.domParent;
     // 计算好cacheStyle的内容，以及位图缓存指数
@@ -1724,7 +1752,7 @@ class Xom extends Node {
         clientWidth, clientHeight, offsetWidth, offsetHeight,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         paddingTop, paddingRight, paddingBottom, paddingLeft,
-        x1, x2, x3, x4, y1, y2, y3, y4
+        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2
       );
     let {
       [BACKGROUND_COLOR]: backgroundColor,
@@ -1822,6 +1850,12 @@ class Xom extends Node {
           let [xc, yc] = __cache.coords;
           dx = __cache.dx;
           dy = __cache.dy;
+          let diffX = xc + dbx - x1;
+          let diffY = yc + dby - y1;
+          bx1 += diffX;
+          by1 += diffY;
+          bx2 += diffX;
+          by2 += diffY;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
           res.x1 = x1 = xc + dbx;
           res.y1 = y1 = yc + dby;
@@ -1829,11 +1863,15 @@ class Xom extends Node {
             res.x2 = x2 += dx;
             res.x3 = x3 += dx;
             res.x4 = x4 += dx;
+            res.x5 = x5 += dx;
+            res.x6 = x6 += dx;
           }
           if(dy) {
             res.y2 = y2 += dy;
             res.y3 = y3 += dy;
             res.y4 = y4 += dy;
+            res.y5 = y5 += dy;
+            res.y6 = y6 += dy;
           }
         }
         else {
@@ -1998,11 +2036,37 @@ class Xom extends Node {
       res.break = true;
       return res;
     }
-    // 背景色垫底
+    // 背景色垫底，根据backgroundClip的不同值要调整坐标尺寸，也会影响borderRadius
+    let btlr, btrr, bbrr, bblr;
+    if(backgroundColor[3] > 0 || backgroundImage) {
+      btlr = borderTopLeftRadius.slice(0);
+      btrr = borderTopRightRadius.slice(0);
+      bbrr = borderBottomRightRadius.slice(0);
+      bblr = borderBottomLeftRadius.slice(0);
+      if(backgroundClip === 'padding-box') {
+        btlr[0] -= borderLeftWidth;
+        btlr[1] -= borderTopWidth;
+        btrr[0] -= borderRightWidth;
+        btrr[1] -= borderTopWidth;
+        bbrr[0] -= borderRightWidth;
+        bbrr[1] -= borderBottomWidth;
+        bblr[0] -= borderLeftWidth;
+        bblr[1] -= borderBottomWidth;
+      }
+      else if(backgroundClip === 'content-box') {
+        btlr[0] -= borderLeftWidth + paddingLeft;
+        btlr[1] -= borderTopWidth + paddingTop;
+        btrr[0] -= borderRightWidth + paddingRight;
+        btrr[1] -= borderTopWidth + paddingTop;
+        bbrr[0] -= borderRightWidth + paddingRight;
+        bbrr[1] -= borderBottomWidth + paddingBottom;
+        bblr[0] -= borderLeftWidth + paddingLeft;
+        bblr[1] -= borderBottomWidth + paddingBottom;
+      }
+    }
     if(backgroundColor[3] > 0) {
-      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], x2, y2, clientWidth, clientHeight, ctx, defs, this,
-        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-        borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
+        btlr, btrr, bbrr, bblr);
     }
     // 渐变或图片叠加
     if(backgroundImage) {
@@ -2014,6 +2078,8 @@ class Xom extends Node {
           let loadBgi = this.__loadBgi[i];
           if(loadBgi.url === backgroundImage[i]) {
             let source = loadBgi.source;
+            let bgW = bx2 - bx1;
+            let bgH = by2 - by1;
             // 无source不绘制
             if(source) {
               let { width, height } = loadBgi;
@@ -2024,24 +2090,24 @@ class Xom extends Node {
                 h = height;
               }
               else if(w === -2) {
-                if(width > clientWidth && height > clientHeight) {
-                  w = width / clientWidth;
-                  h = height / clientHeight;
+                if(width > bgW && height > bgH) {
+                  w = width / bgW;
+                  h = height / bgH;
                   if(w >= h) {
-                    w = clientWidth;
+                    w = bgW;
                     h = w * height / width;
                   }
                   else {
-                    h = clientHeight;
+                    h = bgH;
                     w = h * width / height;
                   }
                 }
-                else if(width > clientWidth) {
-                  w = clientWidth;
+                else if(width > bgW) {
+                  w = bgW;
                   h = w * height / width;
                 }
-                else if(height > clientHeight) {
-                  h = clientHeight;
+                else if(height > bgH) {
+                  h = bgH;
                   w = h * width / height;
                 }
                 else {
@@ -2050,35 +2116,35 @@ class Xom extends Node {
                 }
               }
               else if(w === -3) {
-                if(clientWidth > width && clientHeight > height) {
-                  w = width / clientWidth;
-                  h = height / clientHeight;
+                if(bgW > width && bgH > height) {
+                  w = width / bgW;
+                  h = height / bgH;
                   if(w <= h) {
-                    w = clientWidth;
+                    w = bgW;
                     h = w * height / width;
                   }
                   else {
-                    h = clientHeight;
+                    h = bgH;
                     w = h * width / height;
                   }
                 }
-                else if(clientWidth > width) {
-                  w = clientWidth;
+                else if(bgW > width) {
+                  w = bgW;
                   h = w * height / width;
                 }
-                else if(clientHeight > height) {
-                  h = clientHeight;
+                else if(bgH > height) {
+                  h = bgH;
                   w = h * width / height;
                 }
                 else {
-                  w = width / clientWidth;
-                  h = height / clientHeight;
+                  w = width / bgW;
+                  h = height / bgH;
                   if(w <= h) {
-                    w = clientWidth;
+                    w = bgW;
                     h = w * height / width;
                   }
                   else {
-                    h = clientHeight;
+                    h = bgH;
                     w = h * width / height;
                   }
                 }
@@ -2089,10 +2155,10 @@ class Xom extends Node {
               else if(h === -1) {
                 h = w * height / width;
               }
-              let bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], clientWidth, w);
-              let bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], clientHeight, h);
+              let bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w);
+              let bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h);
               // 超出尺寸模拟mask截取
-              let needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight;
+              let needMask = bgX < x2 || bgY < y2 || w > bgW || h > bgH;
               // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
               let xnl = 0;
               let xnr = 0;
@@ -2100,22 +2166,22 @@ class Xom extends Node {
               let ynb = 0;
               // repeat-x
               if(['repeat-x', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
-                let diff = bgX - x2;
+                let diff = bgX - bx1;
                 if(diff > 0) {
                   xnl = Math.ceil(diff / w);
                 }
-                diff = x2 + clientWidth - bgX - w;
+                diff = bx1 + bgW - bgX - w;
                 if(diff > 0) {
                   xnr = Math.ceil(diff / w);
                 }
               }
               // repeat-y
               if(['repeat-y', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
-                let diff = bgY - y2;
+                let diff = bgY - by1;
                 if(diff > 0) {
                   ynt = Math.ceil(diff / h);
                 }
-                diff = y2 + clientHeight - bgY - h;
+                diff = by1 + bgH - bgY - h;
                 if(diff > 0) {
                   ynb = Math.ceil(diff / h);
                 }
@@ -2127,7 +2193,7 @@ class Xom extends Node {
                   let x = bgX - (i + 1) * w;
                   repeat.push([x, bgY]);
                   // 看最左边超过没有
-                  if(!needMask && i === 0 && x < x2) {
+                  if(!needMask && i === 0 && x < bx1) {
                     needMask = true;
                   }
                 }
@@ -2137,7 +2203,7 @@ class Xom extends Node {
                   let x = bgX + (i + 1) * w;
                   repeat.push([x, bgY]);
                   // 看最右边超过没有
-                  if(!needMask && i === xnr - 1 && x + w > x2 + clientWidth) {
+                  if(!needMask && i === xnr - 1 && x + w > bx1 + bgW) {
                     needMask = true;
                   }
                 }
@@ -2147,7 +2213,7 @@ class Xom extends Node {
                   let y = bgY - (i + 1) * h;
                   repeat.push([bgX, y]);
                   // 看最上边超过没有
-                  if(!needMask && i === 0 && y < y2) {
+                  if(!needMask && i === 0 && y < by1) {
                     needMask = true;
                   }
                 }
@@ -2157,7 +2223,7 @@ class Xom extends Node {
                   let y = bgY + (i + 1) * h;
                   repeat.push([bgX, y]);
                   // 看最下边超过没有
-                  if(!needMask && i === ynb - 1 && y + w > y2 + clientHeight) {
+                  if(!needMask && i === ynb - 1 && y + w > by1 + clientHeight) {
                     needMask = true;
                   }
                 }
@@ -2194,9 +2260,8 @@ class Xom extends Node {
               if(renderMode === mode.CANVAS) {
                 if(needMask) {
                   ctx.save();
-                  renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, this,
-                    borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-                    borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
+                  renderBgc(renderMode, '#FFF', bx1, by1, bgW, bgH, ctx, defs, this,
+                    btlr, btrr, bbrr, bblr, 'clip');
                 }
                 // 先画不考虑repeat的中心声明的
                 ctx.drawImage(source, bgX, bgY, w, h);
@@ -2209,7 +2274,7 @@ class Xom extends Node {
                 }
               }
               else if(renderMode === mode.SVG) {
-                let matrix = image.matrixResize(width, height, w, h, bgX, bgY, clientWidth, clientHeight);
+                let matrix = image.matrixResize(width, height, w, h, bgX, bgY, bgW, bgH);
                 let props = [
                   ['xlink:href', bgi],
                   ['x', bgX],
@@ -2224,7 +2289,7 @@ class Xom extends Node {
                 }
                 if(needMask) {
                   let p1 = [x2, y2];
-                  let p2 = [x2 + clientWidth, y2 + clientHeight];
+                  let p2 = [x2 + bgW, y2 + bgH];
                   if(needResize) {
                     let inverse = mx.inverse(matrix);
                     p1 = mx.calPoint(p1, inverse);
@@ -2254,7 +2319,7 @@ class Xom extends Node {
                 repeat.forEach(item => {
                   let copy = clone(props);
                   if(needResize) {
-                    let matrix = image.matrixResize(width, height, w, h, item[0], item[1], clientWidth, clientHeight);
+                    let matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
                     if(matrix && !mx.isE(matrix)) {
                       copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
                     }
@@ -2275,14 +2340,12 @@ class Xom extends Node {
           let gd = __cacheStyle[BACKGROUND_IMAGE][i];
           if(gd) {
             if(gd.k === 'conic') {
-              renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
-                borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-                borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+              renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
+                btlr, btrr, bbrr, bblr);
             }
             else {
-              renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
-                borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-                borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+              renderBgc(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
+                btlr, btrr, bbrr, bblr);
             }
           }
         }
@@ -2291,7 +2354,7 @@ class Xom extends Node {
     // boxShadow可能会有多个
     if(boxShadow) {
       boxShadow.forEach(item => {
-        renderBoxShadow(renderMode, ctx, defs, item, this, x1, y1, x2, y2, x3, y3, x4, y4, outerWidth, outerHeight);
+        renderBoxShadow(renderMode, ctx, defs, item, this, x1, y1, x6, y6, outerWidth, outerHeight);
       });
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
@@ -2389,17 +2452,19 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, vs) {
+  __gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, vs) {
+    let iw = bx2 - bx1;
+    let ih = by2 - by1;
     let { k, v, d, s, z, p } = vs;
-    let cx = x2 + iw * 0.5;
-    let cy = y2 + ih * 0.5;
+    let cx = bx1 + iw * 0.5;
+    let cy = by1 + ih * 0.5;
     let res = { k };
     if(k === 'linear') {
-      let gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
+      let gd = gradient.getLinear(v, d, bx1, by1, cx, cy, iw, ih);
       res.v = this.__getLg(renderMode, ctx, defs, gd);
     }
     else if(k === 'radial') {
-      let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
+      let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2);
       if(gd) {
         res.v = this.__getRg(renderMode, ctx, defs, gd);
         if(gd.matrix) {
@@ -2410,8 +2475,8 @@ class Xom extends Node {
     else if(k === 'conic') {
       let bbox = this.bbox;
       let m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
-      let m2 = Math.max(Math.abs(x3 - x2), Math.abs(y3 - y2));
-      let gd = gradient.getConic(v, d, p, x2, y2, x3, y3, m1 / m2);
+      let m2 = Math.max(Math.abs(iw), Math.abs(ih));
+      let gd = gradient.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2);
       res.v = this.__getCg(renderMode, ctx, defs, gd);
     }
     return res;

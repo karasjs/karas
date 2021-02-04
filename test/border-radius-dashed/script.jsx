@@ -9,6 +9,7 @@ karas.render(
       borderRightColor: 'rgba(0,0,255,0.5)',
       borderRadius: '30 30',
       background:'#F00',
+      backgroundClip:'padding-box'
     }}/>
   </canvas>,
   '#test'

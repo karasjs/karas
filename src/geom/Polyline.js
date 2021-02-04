@@ -392,18 +392,14 @@ class Polyline extends Geom {
 
   get bbox() {
     let {
-      __sx2, __sy2,
+      __sx2: originX, __sy2: originY,
       computedStyle: {
-        [PADDING_TOP]: paddingTop,
-        [PADDING_LEFT]: paddingLeft,
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
         [FILTER]: filter,
       },
       isMulti, __cacheProps,
     } = this;
-    let originX = __sx2 + paddingLeft;
-    let originY = __sy2 + paddingTop;
     this.buildCache(originX, originY);
     let bbox = super.bbox;
     let half = strokeWidth * 0.5;

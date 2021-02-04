@@ -2638,36 +2638,31 @@ function calBezierLeftBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
 }
 
 /**
- * 简单计算椭圆的圆化坐标控制点
+ * 简单计算椭圆的圆化坐标控制点，视作重合位置，外面判断backgroundClip并调整坐标
  * @param x 起始x
  * @param y 起始y
  * @param w 宽
  * @param h 高
- * @param btw boderTopWidth
- * @param brw borderRightWidth
- * @param bbw borderBottomWidth
- * @param blw borderLeftWidth
  * @param btlr borderTopLeftRadius
  * @param btrr borderTopRightRadius
  * @param bbrr borderBottomRightRadius
  * @param bblr borderBottomLeftRadius
  * @returns {[]} 多边形的顶点和曲线控制点
  */
-function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+function calRadius(x, y, w, h, btlr, btrr, bbrr, bblr) {
   let need;
   let [btlx, btly] = btlr;
   let [btrx, btry] = btrr;
   let [bbrx, bbry] = bbrr;
   let [bblx, bbly] = bblr;
-  // 先减去对应borderWidth，因为border可能比较宽，弧度只体现在外圆弧，有可能radius为0减去后为负数需判断
-  btlx -= blw;
-  btly -= btw;
-  btrx -= brw;
-  btry -= btw;
-  bbrx -= brw;
-  bbry -= bbw;
-  bblx -= blw;
-  bbly -= bbw;
+  btlx = Math.max(btlx, 0);
+  btly = Math.max(btly, 0);
+  btrx = Math.max(btrx, 0);
+  btry = Math.max(btry, 0);
+  bbrx = Math.max(bbrx, 0);
+  bbry = Math.max(bbry, 0);
+  bblx = Math.max(bblx, 0);
+  bbly = Math.max(bbly, 0);
   // 圆角必须x/y都>0才有效，否则视为不绘制
   if(btlx > 0 && btly > 0 || btrx > 0 && btry > 0 || bbrx > 0 && bbry > 0 || bblx > 0 && bbly > 0) {
     need = true;

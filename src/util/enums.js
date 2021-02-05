@@ -106,10 +106,13 @@ function style2Upper(s) {
 
 const STYLE_R_KEY = {};
 const STYLE_RV_KEY = {};
+const STYLE_V_KEY = {};
 Object.keys(STYLE_KEY).forEach(k => {
   let k2 = STYLE_KEY[k];
   STYLE_R_KEY[k2] = k;
-  STYLE_RV_KEY[k2] = style2Lower(k);
+  let l = style2Lower(k);
+  STYLE_RV_KEY[k2] = l;
+  STYLE_V_KEY[l] = k2;
 });
 
 // Root的update过程使用
@@ -176,9 +179,10 @@ const STRUCT_KEY = {
 };
 
 export default {
-  STYLE_KEY,
-  STYLE_R_KEY,
-  STYLE_RV_KEY,
+  STYLE_KEY, // 大写常量为k，数字为值
+  STYLE_R_KEY, // 数字为k，大写常量为值
+  STYLE_RV_KEY, // 数字为k，小写为值
+  STYLE_V_KEY, // 小写为k，数字为值
   style2Lower,
   style2Upper,
   UPDATE_KEY,

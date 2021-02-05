@@ -346,10 +346,13 @@
 
   var STYLE_R_KEY = {};
   var STYLE_RV_KEY = {};
+  var STYLE_V_KEY = {};
   Object.keys(STYLE_KEY).forEach(function (k) {
     var k2 = STYLE_KEY[k];
     STYLE_R_KEY[k2] = k;
-    STYLE_RV_KEY[k2] = style2Lower(k);
+    var l = style2Lower(k);
+    STYLE_RV_KEY[k2] = l;
+    STYLE_V_KEY[l] = k2;
   }); // Root的update过程使用
 
   var UPDATE_KEY = {
@@ -412,8 +415,13 @@
   };
   var enums = {
     STYLE_KEY: STYLE_KEY,
+    // 大写常量为k，数字为值
     STYLE_R_KEY: STYLE_R_KEY,
+    // 数字为k，大写常量为值
     STYLE_RV_KEY: STYLE_RV_KEY,
+    // 数字为k，小写为值
+    STYLE_V_KEY: STYLE_V_KEY,
+    // 小写为k，数字为值
     style2Lower: style2Lower,
     style2Upper: style2Upper,
     UPDATE_KEY: UPDATE_KEY,
@@ -28036,7 +28044,7 @@
     Cache: Cache
   };
 
-  var version = "0.51.0";
+  var version = "0.51.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

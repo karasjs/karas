@@ -134,6 +134,10 @@
   * px
   * %
   * contain/cover
+* backgroundClip
+  * border-box 默认
+  * padding-box
+  * content-box
 * borderTopWidth/borderRightWidth/borderBottomWidth/borderLeftWidth
   * 0 默认
   * px

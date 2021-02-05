@@ -1384,14 +1384,14 @@ class Xom extends Node {
               // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
               loadBgi.url = bgi;
               loadBgi.source = null;
+              let node = this;
+              let root = node.root;
               inject.measureImg(bgi, data => {
                 // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
                 if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
                   loadBgi.source = data.source;
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
-                  let node = this;
-                  let root = node.root;
                   root.delRefreshTask(loadBgi.cb);
                   root.addRefreshTask(loadBgi.cb = {
                     __before() {
@@ -1406,7 +1406,9 @@ class Xom extends Node {
                 }
               }, {
                 ctx,
-                node: this,
+                root,
+                width: bx2 - bx1,
+                height: by2 - by1,
               });
             }
             return true;

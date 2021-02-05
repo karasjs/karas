@@ -14017,14 +14017,14 @@
                   // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
                   loadBgi.url = bgi;
                   loadBgi.source = null;
+                  var node = _this3;
+                  var root = node.root;
                   inject.measureImg(bgi, function (data) {
                     // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
                     if (data.success && data.url === loadBgi.url && !_this3.isDestroyed) {
                       loadBgi.source = data.source;
                       loadBgi.width = data.width;
                       loadBgi.height = data.height;
-                      var node = _this3;
-                      var root = node.root;
                       root.delRefreshTask(loadBgi.cb);
                       root.addRefreshTask(loadBgi.cb = {
                         __before: function __before() {
@@ -14040,7 +14040,9 @@
                     }
                   }, {
                     ctx: ctx,
-                    node: _this3
+                    root: root,
+                    width: bx2 - bx1,
+                    height: by2 - by1
                   });
                 }
 
@@ -18706,7 +18708,8 @@
             visibility = _this$computedStyle[VISIBILITY$3],
             virtualDom = this.virtualDom,
             __config = this.__config,
-            loadImg = this.__loadImg;
+            loadImg = this.__loadImg,
+            root = this.root;
 
         if (!cache && (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend)) {
           ctx = (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend).target.ctx;
@@ -18727,8 +18730,7 @@
 
             if (data.url === loadImg.url && !self.isDestroyed) {
               var reload = function reload() {
-                var root = self.root,
-                    _self$currentStyle = self.currentStyle,
+                var _self$currentStyle = self.currentStyle,
                     width = _self$currentStyle[WIDTH$5],
                     height = _self$currentStyle[HEIGHT$5];
                 root.delRefreshTask(self.__task);
@@ -18785,7 +18787,10 @@
                     reload();
                   }
                 }, {
-                  ctx: ctx
+                  ctx: ctx,
+                  root: root,
+                  width: width,
+                  height: height
                 });
                 return;
               } else {
@@ -18798,7 +18803,10 @@
               }
             }
           }, {
-            ctx: ctx
+            ctx: ctx,
+            root: root,
+            width: width,
+            height: height
           });
         }
 

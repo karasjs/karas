@@ -196,6 +196,7 @@ class Img extends Dom {
       virtualDom,
       __config,
       __loadImg: loadImg,
+      root,
     } = this;
     if(!cache && (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend)) {
       ctx = (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend).target.ctx;
@@ -214,7 +215,7 @@ class Img extends Dom {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if(data.url === loadImg.url && !self.isDestroyed) {
           function reload() {
-            let { root, currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
+            let { currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
             root.delRefreshTask(self.__task);
             if(width[1] !== AUTO && height[1] !== AUTO) {
               root.addRefreshTask(self.__task = {
@@ -264,6 +265,9 @@ class Img extends Dom {
               }
             }, {
               ctx,
+              root,
+              width,
+              height,
             });
             return;
           }
@@ -277,6 +281,9 @@ class Img extends Dom {
         }
       }, {
         ctx,
+        root,
+        width,
+        height,
       });
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {

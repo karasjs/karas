@@ -206,6 +206,26 @@ class Component extends karas.Component {
 * **说明**  
   公开的枚举类型，因v8特殊优化的关系，一些常用的属性以索引下标的形式存储，而非常见的string的key。
 
+#### STYLE_KEY
+* **类型** `Object`
+* **说明**  
+  大写常量做key，数字为值，样式的枚举。
+
+#### STYLE_R_KEY
+* **类型** `Object`
+* **说明**  
+  数字做key，大写常量为值，样式的反枚举。
+
+#### STYLE_RV_KEY
+* **类型** `Object`
+* **说明**  
+  数字做key，小写style样式键为值。
+
+#### STYLE_V_KEY
+* **类型** `Object`
+* **说明**  
+  小写style样式键做key，数字为值。
+
 <a name="Node"></a>
 ## Node
 Xom/Text的基类，抽象共有部分。所有节点均派生于它。

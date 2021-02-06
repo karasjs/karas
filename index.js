@@ -13908,8 +13908,8 @@
         } // 先根据cache计算需要重新计算的computedStyle
         else {
             if (sx1 === undefined) {
-              sx1 = this.__ssx1;
-              sy1 = this.__ssy1;
+              sx1 = this.__sx1;
+              sy1 = this.__sy1;
               offsetWidth = this.offsetWidth;
               offsetHeight = this.offsetHeight;
             }
@@ -14284,7 +14284,7 @@
             for (var list = ['Top', 'Right', 'Bottom', 'Left'], _i = 0, _len = list.length; _i < _len; _i++) {
               var k = list[_i];
 
-              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
+              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
                 return true;
               }
             }
@@ -14398,7 +14398,7 @@
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
             backgroundClip = computedStyle[BACKGROUND_CLIP$1];
-        var x1 = this.__sx1 = this.__ssx1 = x + marginLeft;
+        var x1 = this.__sx1 = x + marginLeft;
         var x2 = this.__sx2 = x1 + borderLeftWidth; // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
         // let x4 = this.__sx4 = x3 + borderRightWidth;
 
@@ -14406,7 +14406,7 @@
         var x4 = this.__sx4 = x3 + width;
         var x5 = this.__sx5 = x4 + paddingRight;
         var x6 = this.__sx6 = x5 + borderRightWidth;
-        var y1 = this.__sy1 = this.__ssy1 = y + marginTop;
+        var y1 = this.__sy1 = y + marginTop;
         var y2 = this.__sy2 = y1 + borderTopWidth; // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
         // let y4 = this.__sy4 = y3 + borderBottomWidth;
 
@@ -20106,7 +20106,7 @@
     }
 
     ['__x', '__y', '__width', '__height', '__sx1', // text和xom
-    '__sy1', '__ssx1', '__ssy1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
+    '__sy1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
     sr.__config[NODE_DOM_PARENT$3] = oldSr.domParent;

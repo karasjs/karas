@@ -1251,8 +1251,8 @@ class Xom extends Node {
     // 先根据cache计算需要重新计算的computedStyle
     else {
       if(sx1 === undefined) {
-        sx1 = this.__ssx1;
-        sy1 = this.__ssy1;
+        sx1 = this.__sx1;
+        sy1 = this.__sy1;
         offsetWidth = this.offsetWidth;
         offsetHeight = this.offsetHeight;
       }
@@ -1652,7 +1652,7 @@ class Xom extends Node {
         for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
           let k = list[i];
           if(computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
-            && computedStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][3] > 0) {
+            && currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][3] > 0) {
             return true;
           }
         }
@@ -1756,7 +1756,7 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
-    let x1 = this.__sx1 = this.__ssx1 = x + marginLeft;
+    let x1 = this.__sx1 = x + marginLeft;
     let x2 = this.__sx2 = x1 + borderLeftWidth;
     // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
     // let x4 = this.__sx4 = x3 + borderRightWidth;
@@ -1764,7 +1764,7 @@ class Xom extends Node {
     let x4 = this.__sx4 = x3 + width;
     let x5 = this.__sx5 = x4 + paddingRight;
     let x6 = this.__sx6 = x5 + borderRightWidth;
-    let y1 = this.__sy1 = this.__ssy1 = y + marginTop;
+    let y1 = this.__sy1 = y + marginTop;
     let y2 = this.__sy2 = y1 + borderTopWidth;
     // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
     // let y4 = this.__sy4 = y3 + borderBottomWidth;

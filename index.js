@@ -15883,21 +15883,21 @@
             __sy1 = this.__sy1,
             clientWidth = this.clientWidth,
             clientHeight = this.clientHeight,
-            _this$computedStyle = this.computedStyle,
-            borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$1],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$1],
-            borderBottomWidth = _this$computedStyle[BORDER_BOTTOM_WIDTH$1],
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$1],
-            boxShadow = _this$computedStyle[BOX_SHADOW$2],
-            filter = _this$computedStyle[FILTER$3];
+            _this$currentStyle = this.currentStyle,
+            borderTopWidth = _this$currentStyle[BORDER_TOP_WIDTH$1],
+            borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$1],
+            borderBottomWidth = _this$currentStyle[BORDER_BOTTOM_WIDTH$1],
+            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$1],
+            boxShadow = _this$currentStyle[BOX_SHADOW$2],
+            filter = _this$currentStyle[FILTER$3];
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
             ox = _this$__spreadByBoxSh2[0],
             oy = _this$__spreadByBoxSh2[1];
 
-        clientWidth += borderLeftWidth + borderRightWidth;
-        clientHeight += borderTopWidth + borderBottomWidth;
+        clientWidth += borderLeftWidth[0] + borderRightWidth[0];
+        clientHeight += borderTopWidth[0] + borderBottomWidth[0];
         return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
       }
     }, {
@@ -19543,7 +19543,8 @@
             dx = res.dx,
             dy = res.dy;
         var list = this.__cacheProps.list,
-            isMulti = this.isMulti; // 普通情况下只有1个，按普通情况走
+            isMulti = this.isMulti;
+        console.log(fills); // 普通情况下只有1个，按普通情况走
 
         if (fills.length <= 1 && strokes.length <= 1) {
           var o = {
@@ -25467,8 +25468,6 @@
   }(Dom$1);
 
   var _enums$STYLE_KEY$h = enums.STYLE_KEY,
-      PADDING_TOP$6 = _enums$STYLE_KEY$h.PADDING_TOP,
-      PADDING_LEFT$6 = _enums$STYLE_KEY$h.PADDING_LEFT,
       STROKE_WIDTH$2 = _enums$STYLE_KEY$h.STROKE_WIDTH,
       BOX_SHADOW$4 = _enums$STYLE_KEY$h.BOX_SHADOW,
       FILTER$7 = _enums$STYLE_KEY$h.FILTER;
@@ -26010,10 +26009,10 @@
       get: function get() {
         var originX = this.__sx2,
             originY = this.__sy2,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
-            boxShadow = _this$computedStyle[BOX_SHADOW$4],
-            filter = _this$computedStyle[FILTER$7],
+            _this$currentStyle = this.currentStyle,
+            strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
+            boxShadow = _this$currentStyle[BOX_SHADOW$4],
+            filter = _this$currentStyle[FILTER$7],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         this.buildCache(originX, originY);
@@ -26026,7 +26025,10 @@
 
         var bbox = _get(_getPrototypeOf(Line.prototype), "bbox", this);
 
-        var half = strokeWidth * 0.5;
+        var half = 0;
+        strokeWidth.forEach(function (item) {
+          half = Math.max(item[0], half);
+        });
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
@@ -26103,8 +26105,6 @@
   }(Geom$1);
 
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
-      PADDING_TOP$7 = _enums$STYLE_KEY$i.PADDING_TOP,
-      PADDING_LEFT$7 = _enums$STYLE_KEY$i.PADDING_LEFT,
       STROKE_WIDTH$3 = _enums$STYLE_KEY$i.STROKE_WIDTH,
       BOX_SHADOW$5 = _enums$STYLE_KEY$i.BOX_SHADOW,
       FILTER$8 = _enums$STYLE_KEY$i.FILTER;
@@ -26588,17 +26588,20 @@
       get: function get() {
         var originX = this.__sx2,
             originY = this.__sy2,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
-            boxShadow = _this$computedStyle[BOX_SHADOW$5],
-            filter = _this$computedStyle[FILTER$8],
+            _this$currentStyle = this.currentStyle,
+            strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
+            boxShadow = _this$currentStyle[BOX_SHADOW$5],
+            filter = _this$currentStyle[FILTER$8],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
 
-        var half = strokeWidth * 0.5;
+        var half = 0;
+        strokeWidth.forEach(function (item) {
+          half = Math.max(item[0], half);
+        });
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
@@ -26692,8 +26695,6 @@
   }(Polyline);
 
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
-      PADDING_TOP$8 = _enums$STYLE_KEY$j.PADDING_TOP,
-      PADDING_LEFT$8 = _enums$STYLE_KEY$j.PADDING_LEFT,
       STROKE_WIDTH$4 = _enums$STYLE_KEY$j.STROKE_WIDTH,
       BOX_SHADOW$6 = _enums$STYLE_KEY$j.BOX_SHADOW,
       FILTER$9 = _enums$STYLE_KEY$j.FILTER;
@@ -27079,10 +27080,10 @@
             originY = this.__sy2,
             width = this.width,
             height = this.height,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
-            boxShadow = _this$computedStyle[BOX_SHADOW$6],
-            filter = _this$computedStyle[FILTER$9];
+            _this$currentStyle = this.currentStyle,
+            strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
+            boxShadow = _this$currentStyle[BOX_SHADOW$6],
+            filter = _this$currentStyle[FILTER$9];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -27102,7 +27103,10 @@
 
         var bbox = _get(_getPrototypeOf(Sector.prototype), "bbox", this);
 
-        var half = strokeWidth * 0.5;
+        var half = 0;
+        strokeWidth.forEach(function (item) {
+          half = Math.max(item[0], half);
+        });
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
@@ -27127,8 +27131,6 @@
   }(Geom$1);
 
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
-      PADDING_TOP$9 = _enums$STYLE_KEY$k.PADDING_TOP,
-      PADDING_LEFT$9 = _enums$STYLE_KEY$k.PADDING_LEFT,
       STROKE_WIDTH$5 = _enums$STYLE_KEY$k.STROKE_WIDTH,
       BOX_SHADOW$7 = _enums$STYLE_KEY$k.BOX_SHADOW,
       FILTER$a = _enums$STYLE_KEY$k.FILTER;
@@ -27281,15 +27283,19 @@
             originY = this.__sy2,
             width = this.width,
             height = this.height,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
-            boxShadow = _this$computedStyle[BOX_SHADOW$7],
-            filter = _this$computedStyle[FILTER$a];
+            _this$currentStyle = this.currentStyle,
+            strokeWidth = _this$currentStyle[STROKE_WIDTH$5],
+            boxShadow = _this$currentStyle[BOX_SHADOW$7],
+            filter = _this$currentStyle[FILTER$a];
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
 
-        var half = strokeWidth * 0.5;
+        console.log(bbox);
+        var half = 0;
+        strokeWidth.forEach(function (item) {
+          half = Math.max(item[0], half);
+        });
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
@@ -27300,8 +27306,8 @@
         oy += half;
         bbox[0] = Math.min(bbox[0], originX - ox);
         bbox[1] = Math.min(bbox[1], originY - oy);
-        bbox[2] = Math.min(bbox[2], originX + width + ox);
-        bbox[3] = Math.min(bbox[3], originY + height + oy);
+        bbox[2] = Math.max(bbox[2], originX + width + ox);
+        bbox[3] = Math.max(bbox[3], originY + height + oy);
         return bbox;
       }
     }]);
@@ -27310,8 +27316,6 @@
   }(Geom$1);
 
   var _enums$STYLE_KEY$l = enums.STYLE_KEY,
-      PADDING_TOP$a = _enums$STYLE_KEY$l.PADDING_TOP,
-      PADDING_LEFT$a = _enums$STYLE_KEY$l.PADDING_LEFT,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$l.STROKE_WIDTH,
       BOX_SHADOW$8 = _enums$STYLE_KEY$l.BOX_SHADOW,
       FILTER$b = _enums$STYLE_KEY$l.FILTER;
@@ -27411,10 +27415,10 @@
             originY = this.__sy3,
             width = this.width,
             height = this.height,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
-            boxShadow = _this$computedStyle[BOX_SHADOW$8],
-            filter = _this$computedStyle[FILTER$b];
+            _this$current = this.current,
+            strokeWidth = _this$current[STROKE_WIDTH$6],
+            boxShadow = _this$current[BOX_SHADOW$8],
+            filter = _this$current[FILTER$b];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -27434,7 +27438,10 @@
 
         var bbox = _get(_getPrototypeOf(Circle.prototype), "bbox", this);
 
-        var half = strokeWidth * 0.5;
+        var half = 0;
+        strokeWidth.forEach(function (item) {
+          half = Math.max(item[0], half);
+        });
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
@@ -27459,8 +27466,6 @@
   }(Geom$1);
 
   var _enums$STYLE_KEY$m = enums.STYLE_KEY,
-      PADDING_TOP$b = _enums$STYLE_KEY$m.PADDING_TOP,
-      PADDING_LEFT$b = _enums$STYLE_KEY$m.PADDING_LEFT,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$m.STROKE_WIDTH,
       BOX_SHADOW$9 = _enums$STYLE_KEY$m.BOX_SHADOW,
       FILTER$c = _enums$STYLE_KEY$m.FILTER;
@@ -27608,10 +27613,10 @@
             originY = this.__sy2,
             width = this.width,
             height = this.height,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
-            boxShadow = _this$computedStyle[BOX_SHADOW$9],
-            filter = _this$computedStyle[FILTER$c];
+            _this$currentStyle = this.currentStyle,
+            strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
+            boxShadow = _this$currentStyle[BOX_SHADOW$9],
+            filter = _this$currentStyle[FILTER$c];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -27636,7 +27641,10 @@
 
         var bbox = _get(_getPrototypeOf(Ellipse.prototype), "bbox", this);
 
-        var half = strokeWidth * 0.5;
+        var half = 0;
+        strokeWidth.forEach(function (item) {
+          half = Math.max(item[0], half);
+        });
 
         var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
             _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),

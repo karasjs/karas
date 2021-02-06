@@ -5,8 +5,6 @@ import geom from '../math/geom';
 import inject from '../util/inject';
 
 const { STYLE_KEY: {
-  PADDING_TOP,
-  PADDING_LEFT,
   STROKE_WIDTH,
   BOX_SHADOW,
   FILTER,
@@ -328,7 +326,7 @@ class Sector extends Geom {
     let {
       isMulti, __cacheProps,
       __sx2: originX, __sy2: originY, width, height,
-      computedStyle: {
+      currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
         [FILTER]: filter,
@@ -348,7 +346,10 @@ class Sector extends Geom {
       r = __cacheProps.r;
     }
     let bbox = super.bbox;
-    let half = strokeWidth * 0.5;
+    let half = 0;
+    strokeWidth.forEach(item => {
+      half = Math.max(item[0], half);
+    });
     let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
     ox += half;
     oy += half;

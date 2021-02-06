@@ -4,8 +4,6 @@ import enums from '../util/enums';
 import geom from '../math/geom';
 
 const { STYLE_KEY: {
-  PADDING_TOP,
-  PADDING_LEFT,
   STROKE_WIDTH,
   BOX_SHADOW,
   FILTER,
@@ -107,7 +105,7 @@ class Ellipse extends Geom {
     let {
       isMulti, __cacheProps,
       __sx2: originX, __sy2: originY, width, height,
-      computedStyle: {
+      currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
         [FILTER]: filter,
@@ -130,7 +128,10 @@ class Ellipse extends Geom {
       ry = __cacheProps.ry;
     }
     let bbox = super.bbox;
-    let half = strokeWidth * 0.5;
+    let half = 0;
+    strokeWidth.forEach(item => {
+      half = Math.max(item[0], half);
+    });
     let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
     ox += half;
     oy += half;

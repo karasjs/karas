@@ -3044,7 +3044,7 @@ class Xom extends Node {
   get bbox() {
     let {
       __sx1, __sy1, clientWidth, clientHeight,
-      computedStyle: {
+      currentStyle: {
         [BORDER_TOP_WIDTH]: borderTopWidth,
         [BORDER_RIGHT_WIDTH]: borderRightWidth,
         [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -3054,8 +3054,8 @@ class Xom extends Node {
       },
     } = this;
     let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
-    clientWidth += borderLeftWidth + borderRightWidth;
-    clientHeight += borderTopWidth + borderBottomWidth;
+    clientWidth += borderLeftWidth[0] + borderRightWidth[0];
+    clientHeight += borderTopWidth[0] + borderBottomWidth[0];
     return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
   }
 

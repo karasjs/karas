@@ -4,8 +4,6 @@ import enums from '../util/enums';
 import geom from '../math/geom';
 
 const { STYLE_KEY: {
-  PADDING_TOP,
-  PADDING_LEFT,
   STROKE_WIDTH,
   BOX_SHADOW,
   FILTER,
@@ -125,21 +123,24 @@ class Rect extends Geom {
   get bbox() {
     let {
       __sx2: originX, __sy2: originY, width, height,
-      computedStyle: {
+      currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
         [FILTER]: filter,
       } } = this;
     this.buildCache(originX, originY);
-    let bbox = super.bbox;
-    let half = strokeWidth * 0.5;
+    let bbox = super.bbox;console.log(bbox);
+    let half = 0;
+    strokeWidth.forEach(item => {
+      half = Math.max(item[0], half);
+    });
     let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
     ox += half;
     oy += half;
     bbox[0] = Math.min(bbox[0], originX - ox);
     bbox[1] = Math.min(bbox[1], originY - oy);
-    bbox[2] = Math.min(bbox[2], originX + width + ox);
-    bbox[3] = Math.min(bbox[3], originY + height + oy);
+    bbox[2] = Math.max(bbox[2], originX + width + ox);
+    bbox[3] = Math.max(bbox[3], originY + height + oy);
     return bbox;
   }
 }

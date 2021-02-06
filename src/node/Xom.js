@@ -1567,63 +1567,6 @@ class Xom extends Node {
       computedStyle[POINTER_EVENTS] = currentStyle[POINTER_EVENTS][0];
     }
     __cacheStyle[POINTER_EVENTS] = computedStyle[POINTER_EVENTS];
-    // 决定是否缓存位图的指数，有内容就缓存，空容器无内容
-    // if(renderMode === mode.CANVAS) {
-    //   if(lv < REPAINT) {
-    //     return this.__hasContent;
-    //   }
-    //   let visibility = computedStyle[VISIBILITY];
-    //   if(visibility !== 'hidden') {
-    //     let bgI = computedStyle[BACKGROUND_IMAGE];
-    //     if(bgI) {
-    //       for(let i = 0, len = bgI.length; i < len; i++) {
-    //         let item = bgI[i];
-    //         if(!item) {
-    //           continue;
-    //         }
-    //         if(item.k) {
-    //           return true;
-    //         }
-    //         let loadBgi = this.__loadBgi[i];
-    //         if(item === loadBgi.url && loadBgi.source) {
-    //           return true;
-    //         }
-    //       }
-    //     }
-    //     if(computedStyle[BACKGROUND_COLOR][3] > 0) {
-    //       let width = computedStyle[WIDTH], height = computedStyle[HEIGHT],
-    //         paddingTop = computedStyle[PADDING_TOP], paddingRight = computedStyle[PADDING_RIGHT],
-    //         paddingBottom = computedStyle[PADDING_BOTTOM], paddingLeft = computedStyle[PADDING_LEFT];
-    //       if(width && height || paddingTop || paddingRight || paddingBottom || paddingLeft) {
-    //         return true;
-    //       }
-    //     }
-    //     for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
-    //       let k = list[i];
-    //       if(computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
-    //         && computedStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][3] > 0) {
-    //         return true;
-    //       }
-    //     }
-    //     let bs = computedStyle[BOX_SHADOW];
-    //     if(Array.isArray(bs)) {
-    //       for(let i = 0, len = bs.length; i < len; i++) {
-    //         let item = bs[i];
-    //         if(item && (item[2] > 0 || item[3] > 0)) {
-    //           return true;
-    //         }
-    //       }
-    //     }
-    //     // borderRadius用5，只要有bgc或border就会超过
-    //     for(let i = 0, len = borderRadiusKs.length; i < len; i++) {
-    //       let v = computedStyle[borderRadiusKs[i]];
-    //       if(v[0] > 0 && v[1] > 0) {
-    //         return true;
-    //       }
-    //     }
-    //   }
-    // }
-    // return false;
   }
 
   __calContent(renderMode, lv, currentStyle, computedStyle) {
@@ -1952,6 +1895,7 @@ class Xom extends Node {
                 matrix,
               };
               ctx = c.ctx;
+              ctx.filter = `blur(${v}px)`;
             }
           }
           else if(renderMode === mode.SVG

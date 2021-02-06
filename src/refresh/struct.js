@@ -1,5 +1,4 @@
 import Geom from '../geom/Geom';
-import blur from '../style/blur';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
@@ -976,9 +975,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(filterHash.hasOwnProperty(i)) {
           let list = filterHash[i];
           list.forEach(offScreenFilter => {
-            let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
-            let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
-            t.clear();
             if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
               let { target, ctx: origin } = offScreenFilter;
               origin.globalAlpha = 1;
@@ -1196,9 +1192,6 @@ function renderCanvas(renderMode, ctx, defs, root) {
     if(filterHash.hasOwnProperty(i)) {
       let list = filterHash[i];
       list.forEach(offScreenFilter => {
-        let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
-        let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
-        t.clear();
         if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
           let { target, ctx: origin } = offScreenFilter;
           origin.setTransform(1, 0, 0, 1, 0, 0);

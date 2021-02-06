@@ -2,7 +2,6 @@ import Page from './Page';
 import util from '../util/util';
 import inject from '../util/inject';
 import enums from '../util/enums';
-import blur from '../style/blur';
 import tf from '../style/transform';
 import mx from '../math/matrix';
 
@@ -196,20 +195,21 @@ class Cache {
   static genBlur(cache, v) {
     let { coords: [x, y], size, canvas, sx1, sy1, width, height, bbox } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
+    offScreen.ctx.filter = `blur(${v}px)`;
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
     offScreen.draw();
-    let cacheFilter = inject.getCacheWebgl(width, height);
-    blur.gaussBlur(offScreen, cacheFilter, v, width, height);
-    cacheFilter.bbox = bbox;
-    cacheFilter.coords = [1, 1];
-    cacheFilter.size = size;
-    cacheFilter.sx1 = sx1;
-    cacheFilter.sy1 = sy1;
-    cacheFilter.dbx = cache.dbx;
-    cacheFilter.dby = cache.dby;
-    cacheFilter.width = width;
-    cacheFilter.height = height;
-    return cacheFilter;
+    offScreen.bbox = bbox;
+    offScreen.coords = [1, 1];
+    offScreen.size = size;
+    offScreen.sx1 = sx1;
+    offScreen.sy1 = sy1;
+    offScreen.dx = cache.dx;
+    offScreen.dy = cache.dy;
+    offScreen.dbx = cache.dbx;
+    offScreen.dby = cache.dby;
+    offScreen.width = width;
+    offScreen.height = height;
+    return offScreen;
   }
 
   static genMask(target, next, isClip, transform, tfo) {

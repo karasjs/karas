@@ -1209,7 +1209,7 @@ class Xom extends Node {
     }
   }
 
-  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, offsetWidth, offsetHeight) {
+  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight) {
     let matrixCache = __cacheStyle[MATRIX];
     // tx/ty变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
@@ -1250,9 +1250,9 @@ class Xom extends Node {
     }
     // 先根据cache计算需要重新计算的computedStyle
     else {
-      if(sx === undefined) {
-        sx = this.__sx1;
-        sy = this.__sy1;
+      if(sx1 === undefined) {
+        sx1 = this.__ssx1;
+        sy1 = this.__ssy1;
         offsetWidth = this.offsetWidth;
         offsetHeight = this.offsetHeight;
       }
@@ -1326,8 +1326,8 @@ class Xom extends Node {
       }
       if(!matrixCache) {
         let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
-        tfo[0] += sx || 0;
-        tfo[1] += sy || 0;
+        tfo[0] += sx1 || 0;
+        tfo[1] += sy1 || 0;
         matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(computedStyle[TRANSFORM], tfo);
       }
     }
@@ -1339,7 +1339,7 @@ class Xom extends Node {
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
-    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
+    // this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     if(lv >= REPAINT) {
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_X] = true;
@@ -1634,17 +1634,9 @@ class Xom extends Node {
       let visibility = currentStyle[VISIBILITY];
       if(visibility !== 'hidden') {
         let bgI = currentStyle[BACKGROUND_IMAGE];
-        if(bgI) {
+        if(Array.isArray(bgI)) {
           for(let i = 0, len = bgI.length; i < len; i++) {
-            let item = bgI[i];
-            if(!item) {
-              continue;
-            }
-            if(item.k) {
-              return true;
-            }
-            let loadBgi = this.__loadBgi[i];
-            if(item === loadBgi.url && loadBgi.source) {
+            if(bgI[i]) {
               return true;
             }
           }
@@ -1764,7 +1756,7 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
-    let x1 = this.__sx1 = x + marginLeft;
+    let x1 = this.__sx1 = this.__ssx1 = x + marginLeft;
     let x2 = this.__sx2 = x1 + borderLeftWidth;
     // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
     // let x4 = this.__sx4 = x3 + borderRightWidth;
@@ -1772,7 +1764,7 @@ class Xom extends Node {
     let x4 = this.__sx4 = x3 + width;
     let x5 = this.__sx5 = x4 + paddingRight;
     let x6 = this.__sx6 = x5 + borderRightWidth;
-    let y1 = this.__sy1 = y + marginTop;
+    let y1 = this.__sy1 = this.__ssy1 = y + marginTop;
     let y2 = this.__sy2 = y1 + borderTopWidth;
     // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
     // let y4 = this.__sy4 = y3 + borderBottomWidth;
@@ -1801,6 +1793,7 @@ class Xom extends Node {
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
+    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && renderMode === mode.CANVAS) {
@@ -1822,21 +1815,18 @@ class Xom extends Node {
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
           __cache.__appendData(x1, y1);
-          let dbx = __cache.dbx, dby = __cache.dby;
+          // let dbx = __cache.dbx, dby = __cache.dby;
           ctx = __cache.ctx;
-          let [xc, yc] = __cache.coords;
+          // let [xc, yc] = __cache.coords;
           dx = __cache.dx;
           dy = __cache.dy;
-          let diffX = xc + dbx - x1;
-          let diffY = yc + dby - y1;
-          bx1 += diffX;
-          by1 += diffY;
-          bx2 += diffX;
-          by2 += diffY;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
-          res.x1 = x1 = xc + dbx;
-          res.y1 = y1 = yc + dby;
+          bx1 += dx;
+          by1 += dy;
+          bx2 += dx;
+          by2 += dy;
           if(dx) {
+            res.x1 = x1 += dx;
             res.x2 = x2 += dx;
             res.x3 = x3 += dx;
             res.x4 = x4 += dx;
@@ -1844,6 +1834,7 @@ class Xom extends Node {
             res.x6 = x6 += dx;
           }
           if(dy) {
+            res.y1 = y1 += dy;
             res.y2 = y2 += dy;
             res.y3 = y3 += dy;
             res.y4 = y4 += dy;

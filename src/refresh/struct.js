@@ -980,20 +980,24 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
             t.clear();
             if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
-              let target = offScreenFilter.target;
-              offScreenFilter.ctx.drawImage(target.canvas, 0, 0);
+              let { target, ctx: origin } = offScreenFilter;
+              origin.globalAlpha = 1;
+              origin.setTransform(1, 0, 0, 1, 0, 0);
+              origin.drawImage(target.canvas, 0, 0);
               target.draw();
+              target.ctx.globalAlpha = 1;
+              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
-              ctx = offScreenFilter.ctx;
+              ctx = origin;
             }
           });
         }
-        // overflow在filter后面
+        // 降级overflow在filter后面
         if(overflowHash.hasOwnProperty(i)) {
           let list = overflowHash[i];
           list.forEach(offScreenOverflow => {
-            let { target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
+            let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
             ctx.globalCompositeOperation = 'destination-in';
             ctx.globalAlpha = 1;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1004,7 +1008,11 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.closePath();
             ctx.globalCompositeOperation = 'source-over';
             if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
+              origin.setTransform(1, 0, 0, 1, 0, 0);
+              origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+              origin.globalAlpha = 1;
               origin.drawImage(target.canvas, 0, 0);
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
               ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
               ctx = origin;
@@ -1020,6 +1028,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             if(!maskStartHash.hasOwnProperty(i + 1)) {
               offScreenBlend.ctx.drawImage(target.canvas, 0, 0);
               target.draw();
+              target.ctx.globalAlpha = 1;
+              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
               ctx = offScreenBlend.ctx;
@@ -1190,12 +1200,16 @@ function renderCanvas(renderMode, ctx, defs, root) {
         let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
         t.clear();
         if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
-          let target = offScreenFilter.target;
-          offScreenFilter.ctx.drawImage(target.canvas, 0, 0);
+          let { target, ctx: origin } = offScreenFilter;
+          origin.setTransform(1, 0, 0, 1, 0, 0);
+          origin.globalAlpha = 1;
+          origin.drawImage(target.canvas, 0, 0);
           target.draw();
+          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          target.ctx.globalAlpha = 1;
           target.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);
-          ctx = offScreenFilter.ctx;
+          ctx = origin;
         }
       });
     }
@@ -1217,8 +1231,9 @@ function renderCanvas(renderMode, ctx, defs, root) {
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
-          ctx.clearRect(0, 0, width, height);
-          inject.releaseCacheCanvas(target.canvas);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          // ctx.clearRect(0, 0, width, height);
+          // inject.releaseCacheCanvas(target.canvas);
           ctx = origin;
         }
       });
@@ -1230,11 +1245,16 @@ function renderCanvas(renderMode, ctx, defs, root) {
         let target = offScreenBlend.target;
         offScreenBlend.ctx.globalCompositeOperation = offScreenBlend.mixBlendMode;
         if(!maskStartHash.hasOwnProperty(i + 1)) {
-          offScreenBlend.ctx.drawImage(target.canvas, 0, 0);
+          let origin = offScreenBlend.ctx;
+          origin.setTransform(1, 0, 0, 1, 0, 0);
+          origin.globalAlpha = 1;
+          origin.drawImage(target.canvas, 0, 0);
           target.draw();
+          target.ctx.globalAlpha = 1;
+          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);
-          ctx = offScreenBlend.ctx;
+          ctx = origin;
           ctx.globalCompositeOperation = 'source-over';
         }
       });

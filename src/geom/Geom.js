@@ -383,7 +383,7 @@ class Geom extends Xom {
       dx,
       dy,
     } = res;
-    let { __cacheProps: { list }, isMulti } = this;console.log(fills);
+    let { __cacheProps: { list }, isMulti } = this;
     // 普通情况下只有1个，按普通情况走
     if(fills.length <= 1 && strokes.length <= 1) {
       let o = {

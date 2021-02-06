@@ -129,7 +129,7 @@ class Rect extends Geom {
         [FILTER]: filter,
       } } = this;
     this.buildCache(originX, originY);
-    let bbox = super.bbox;console.log(bbox);
+    let bbox = super.bbox;
     let half = 0;
     strokeWidth.forEach(item => {
       half = Math.max(item[0], half);

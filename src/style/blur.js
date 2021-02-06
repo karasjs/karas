@@ -232,6 +232,8 @@ class KawaseBlurFilter {
     let uOffsetArray = new Float32Array([ offset * uvX, offset * uvY ]);
     this.draw(target.canvas, uOffsetArray, true);
     this.webgl.draw();
+    target.ctx.globalAlpha = 1;
+    target.ctx.setTransform(1, 0, 0, 1, 0, 0);
     target.ctx.clearRect(0, 0, width, height);
     target.ctx.drawImage(gl.canvas, 0, 0);
     target.draw();

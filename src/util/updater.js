@@ -125,6 +125,8 @@ function updateCp(cp, props, state) {
     '__height',
     '__sx1', // text和xom
     '__sy1',
+    '__ssx1',
+    '__ssy1',
     '__layoutData',
     '__parent',
     '__domParent',

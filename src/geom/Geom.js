@@ -47,6 +47,7 @@ const {
     NODE_CACHE_MASK,
     NODE_CACHE_OVERFLOW,
     NODE_DEFS_CACHE,
+    NODE_CACHE_STYLE,
   }
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
@@ -192,7 +193,7 @@ class Geom extends Xom {
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
     });
-    // geom才有的style
+    // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
     [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
@@ -214,6 +215,9 @@ class Geom extends Xom {
         __cacheStyle[k] = res;
       }
     });
+  }
+
+  __calContent(renderMode, lv, currentStyle, computedStyle) {
     // Geom强制有内容
     return computedStyle[VISIBILITY] !== 'hidden';
   }
@@ -361,18 +365,7 @@ class Geom extends Xom {
       return res;
     }
     // data在无cache时没有提前设置
-    let preData = this.__preSet(renderMode, ctx, defs);
-    let { x2, y2 } = res;
-    let { originX, originY } = preData;
-    // 有cache时需计算差值
-    let {
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_TOP]: paddingTop,
-    } = this.computedStyle;
-    x2 += paddingLeft;
-    y2 += paddingTop;
-    preData.dx = x2 - originX;
-    preData.dy = y2 - originY;
+    let preData = this.__preSet();
     return Object.assign(res, preData);
   }
 

@@ -121,6 +121,7 @@ const {
     NODE_CACHE_OVERFLOW,
     NODE_IS_DESTROYED,
     NODE_DEFS_CACHE,
+    NODE_DOM_PARENT,
   }
 } = enums;
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
@@ -1567,13 +1568,72 @@ class Xom extends Node {
     }
     __cacheStyle[POINTER_EVENTS] = computedStyle[POINTER_EVENTS];
     // 决定是否缓存位图的指数，有内容就缓存，空容器无内容
+    // if(renderMode === mode.CANVAS) {
+    //   if(lv < REPAINT) {
+    //     return this.__hasContent;
+    //   }
+    //   let visibility = computedStyle[VISIBILITY];
+    //   if(visibility !== 'hidden') {
+    //     let bgI = computedStyle[BACKGROUND_IMAGE];
+    //     if(bgI) {
+    //       for(let i = 0, len = bgI.length; i < len; i++) {
+    //         let item = bgI[i];
+    //         if(!item) {
+    //           continue;
+    //         }
+    //         if(item.k) {
+    //           return true;
+    //         }
+    //         let loadBgi = this.__loadBgi[i];
+    //         if(item === loadBgi.url && loadBgi.source) {
+    //           return true;
+    //         }
+    //       }
+    //     }
+    //     if(computedStyle[BACKGROUND_COLOR][3] > 0) {
+    //       let width = computedStyle[WIDTH], height = computedStyle[HEIGHT],
+    //         paddingTop = computedStyle[PADDING_TOP], paddingRight = computedStyle[PADDING_RIGHT],
+    //         paddingBottom = computedStyle[PADDING_BOTTOM], paddingLeft = computedStyle[PADDING_LEFT];
+    //       if(width && height || paddingTop || paddingRight || paddingBottom || paddingLeft) {
+    //         return true;
+    //       }
+    //     }
+    //     for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
+    //       let k = list[i];
+    //       if(computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
+    //         && computedStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][3] > 0) {
+    //         return true;
+    //       }
+    //     }
+    //     let bs = computedStyle[BOX_SHADOW];
+    //     if(Array.isArray(bs)) {
+    //       for(let i = 0, len = bs.length; i < len; i++) {
+    //         let item = bs[i];
+    //         if(item && (item[2] > 0 || item[3] > 0)) {
+    //           return true;
+    //         }
+    //       }
+    //     }
+    //     // borderRadius用5，只要有bgc或border就会超过
+    //     for(let i = 0, len = borderRadiusKs.length; i < len; i++) {
+    //       let v = computedStyle[borderRadiusKs[i]];
+    //       if(v[0] > 0 && v[1] > 0) {
+    //         return true;
+    //       }
+    //     }
+    //   }
+    // }
+    // return false;
+  }
+
+  __calContent(renderMode, lv, currentStyle, computedStyle) {
     if(renderMode === mode.CANVAS) {
       if(lv < REPAINT) {
         return this.__hasContent;
       }
-      let visibility = computedStyle[VISIBILITY];
+      let visibility = currentStyle[VISIBILITY];
       if(visibility !== 'hidden') {
-        let bgI = computedStyle[BACKGROUND_IMAGE];
+        let bgI = currentStyle[BACKGROUND_IMAGE];
         if(bgI) {
           for(let i = 0, len = bgI.length; i < len; i++) {
             let item = bgI[i];
@@ -1589,7 +1649,7 @@ class Xom extends Node {
             }
           }
         }
-        if(computedStyle[BACKGROUND_COLOR][3] > 0) {
+        if(currentStyle[BACKGROUND_COLOR][0][3] > 0) {
           let width = computedStyle[WIDTH], height = computedStyle[HEIGHT],
             paddingTop = computedStyle[PADDING_TOP], paddingRight = computedStyle[PADDING_RIGHT],
             paddingBottom = computedStyle[PADDING_BOTTOM], paddingLeft = computedStyle[PADDING_LEFT];
@@ -1604,20 +1664,13 @@ class Xom extends Node {
             return true;
           }
         }
-        let bs = computedStyle[BOX_SHADOW];
+        let bs = currentStyle[BOX_SHADOW];
         if(Array.isArray(bs)) {
           for(let i = 0, len = bs.length; i < len; i++) {
             let item = bs[i];
             if(item && (item[2] > 0 || item[3] > 0)) {
               return true;
             }
-          }
-        }
-        // borderRadius用5，只要有bgc或border就会超过
-        for(let i = 0, len = borderRadiusKs.length; i < len; i++) {
-          let v = computedStyle[borderRadiusKs[i]];
-          if(v[0] > 0 && v[1] > 0) {
-            return true;
           }
         }
       }
@@ -1644,13 +1697,13 @@ class Xom extends Node {
   __renderSelf(renderMode, lv, ctx, defs, cache) {
     let {
       isDestroyed,
-      currentStyle,
-      computedStyle,
-      __cacheStyle,
       root,
       __config,
     } = this;
     let __cache = __config[NODE_CACHE];
+    let __cacheStyle = __config[NODE_CACHE_STYLE];
+    let currentStyle = __config[NODE_CURRENT_STYLE];
+    let computedStyle = __config[NODE_COMPUTED_STYLE];
     // geom特殊处理，每次>=REPAINT重新渲染生成
     this.__renderSelfData = null;
     // 渲染完认为完全无变更，等布局/动画/更新重置
@@ -1746,10 +1799,69 @@ class Xom extends Node {
     this.__by2 = by2;
     let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
-    let p = this.domParent;
+    let p = __config[NODE_DOM_PARENT];
+    let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
+    // canvas特殊申请离屏缓存
+    let dx = 0, dy = 0;
+    if(cache && renderMode === mode.CANVAS) {
+      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
+      if(!hasContent && this.__releaseWhenEmpty(__cache)) {
+        res.break = true;
+        __config[NODE_LIMIT_CACHE] = false;
+      }
+      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
+      else if(!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
+        let bbox = this.bbox;
+        if(__cache) {
+          __cache.reset(bbox);
+        }
+        else {
+          __cache = Cache.getInstance(bbox);
+        }
+        // 有可能超过最大尺寸限制不使用缓存
+        if(__cache && __cache.enabled) {
+          __cache.__bbox = bbox;
+          __cache.__appendData(x1, y1);
+          let dbx = __cache.dbx, dby = __cache.dby;
+          ctx = __cache.ctx;
+          let [xc, yc] = __cache.coords;
+          dx = __cache.dx;
+          dy = __cache.dy;
+          let diffX = xc + dbx - x1;
+          let diffY = yc + dby - y1;
+          bx1 += diffX;
+          by1 += diffY;
+          bx2 += diffX;
+          by2 += diffY;
+          // 重置ctx为cache的，以及绘制坐标为cache的区域
+          res.x1 = x1 = xc + dbx;
+          res.y1 = y1 = yc + dby;
+          if(dx) {
+            res.x2 = x2 += dx;
+            res.x3 = x3 += dx;
+            res.x4 = x4 += dx;
+            res.x5 = x5 += dx;
+            res.x6 = x6 += dx;
+          }
+          if(dy) {
+            res.y2 = y2 += dy;
+            res.y3 = y3 += dy;
+            res.y4 = y4 += dy;
+            res.y5 = y5 += dy;
+            res.y6 = y6 += dy;
+          }
+        }
+        else {
+          __config[NODE_LIMIT_CACHE] = true;
+          __cache = null;
+        }
+        __config[NODE_CACHE] = __cache;
+      }
+      res.dx = dx;
+      res.dy = dy;
+    }
     // 计算好cacheStyle的内容，以及位图缓存指数
-    let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT]
-      = this.__calCache(renderMode, lv, ctx, defs, this.parent,
+    this.__calCache(renderMode, lv, ctx, defs, this.parent,
         __cacheStyle, currentStyle, computedStyle,
         clientWidth, clientHeight, offsetWidth, offsetHeight,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
@@ -1825,67 +1937,9 @@ class Xom extends Node {
     if(renderMode === mode.SVG) {
       virtualDom.visibility = visibility;
     }
-    // canvas特殊申请离屏缓存
-    let dx = 0, dy = 0;
-    if(cache && renderMode === mode.CANVAS) {
-      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-      if(!hasContent && this.__releaseWhenEmpty(__cache)) {
-        res.break = true;
-        __config[NODE_LIMIT_CACHE] = false;
-        return res;
-      }
-      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      if(!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
-        let bbox = this.bbox;
-        if(__cache) {
-          __cache.reset(bbox);
-        }
-        else {
-          __cache = Cache.getInstance(bbox);
-        }
-        // 有可能超过最大尺寸限制不使用缓存
-        if(__cache && __cache.enabled) {
-          __cache.__bbox = bbox;
-          __cache.__appendData(x1, y1);
-          let dbx = __cache.dbx, dby = __cache.dby;
-          ctx = __cache.ctx;
-          let [xc, yc] = __cache.coords;
-          dx = __cache.dx;
-          dy = __cache.dy;
-          let diffX = xc + dbx - x1;
-          let diffY = yc + dby - y1;
-          bx1 += diffX;
-          by1 += diffY;
-          bx2 += diffX;
-          by2 += diffY;
-          // 重置ctx为cache的，以及绘制坐标为cache的区域
-          res.x1 = x1 = xc + dbx;
-          res.y1 = y1 = yc + dby;
-          if(dx) {
-            res.x2 = x2 += dx;
-            res.x3 = x3 += dx;
-            res.x4 = x4 += dx;
-            res.x5 = x5 += dx;
-            res.x6 = x6 += dx;
-          }
-          if(dy) {
-            res.y2 = y2 += dy;
-            res.y3 = y3 += dy;
-            res.y4 = y4 += dy;
-            res.y5 = y5 += dy;
-            res.y6 = y6 += dy;
-          }
-        }
-        else {
-          __config[NODE_LIMIT_CACHE] = true;
-          __cache = null;
-        }
-      }
-      __config[NODE_CACHE] = __cache;
-      // 无离屏功能视为不可缓存本身
-      if(__config[NODE_LIMIT_CACHE]) {
-        return { limitCache: true };
-      }
+    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
+    if(renderMode === mode.CANVAS && cache && (__config[NODE_LIMIT_CACHE] || res.break)) {
+      return { limitCache: true };
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
     let offScreenFilter;

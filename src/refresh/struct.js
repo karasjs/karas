@@ -975,12 +975,25 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(filterHash.hasOwnProperty(i)) {
           let list = filterHash[i];
           list.forEach(offScreenFilter => {
+            let { target, ctx: origin, blur } = offScreenFilter;
+            // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
+            if(ctx.filter) {
+              let apply = inject.getCacheCanvas(width, height, null);
+              apply.ctx.filter = `blur(${blur}px)`;
+              apply.ctx.drawImage(target.canvas, 0, 0);
+              apply.ctx.filter = null;
+              target.ctx.globalAlpha = 1;
+              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+              target.ctx.clearRect(0, 0, width, height);
+              target.ctx.drawImage(apply.canvas, 0, 0);
+              apply.ctx.clearRect(0, 0, width, height);
+            }
             if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
-              let { target, ctx: origin } = offScreenFilter;
               origin.globalAlpha = 1;
               origin.setTransform(1, 0, 0, 1, 0, 0);
               origin.drawImage(target.canvas, 0, 0);
               target.draw();
+              target.ctx.filter = null;
               target.ctx.globalAlpha = 1;
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
@@ -1188,16 +1201,29 @@ function renderCanvas(renderMode, ctx, defs, root) {
     if(node instanceof Geom) {
       node.render(renderMode, __refreshLevel, ctx, defs);
     }
-    // 最后一个节点检查filter，有则应用，可能有多个包含自己
+    // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
     if(filterHash.hasOwnProperty(i)) {
       let list = filterHash[i];
       list.forEach(offScreenFilter => {
+        let { target, ctx: origin, blur } = offScreenFilter;
+        // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
+        if(ctx.filter) {
+          let apply = inject.getCacheCanvas(width, height, null);
+          apply.ctx.filter = `blur(${blur}px)`;
+          apply.ctx.drawImage(target.canvas, 0, 0);
+          apply.ctx.filter = null;
+          target.ctx.globalAlpha = 1;
+          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          target.ctx.clearRect(0, 0, width, height);
+          target.ctx.drawImage(apply.canvas, 0, 0);
+          apply.ctx.clearRect(0, 0, width, height);
+        }
         if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
-          let { target, ctx: origin } = offScreenFilter;
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
           target.draw();
+          target.ctx.filter = null;
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.globalAlpha = 1;
           target.ctx.clearRect(0, 0, width, height);

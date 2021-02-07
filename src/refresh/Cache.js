@@ -197,6 +197,7 @@ class Cache {
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.ctx.filter = `blur(${v}px)`;
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
+    offScreen.ctx.filter = null;
     offScreen.draw();
     offScreen.bbox = bbox;
     offScreen.coords = [1, 1];

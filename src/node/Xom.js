@@ -1895,7 +1895,6 @@ class Xom extends Node {
                 matrix,
               };
               ctx = c.ctx;
-              ctx.filter = `blur(${v}px)`;
             }
           }
           else if(renderMode === mode.SVG

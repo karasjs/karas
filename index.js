@@ -12236,6 +12236,7 @@
         var offScreen = inject.getCacheCanvas(width, height);
         offScreen.ctx.filter = "blur(".concat(v, "px)");
         offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
+        offScreen.ctx.filter = null;
         offScreen.draw();
         offScreen.bbox = bbox;
         offScreen.coords = [1, 1];
@@ -14243,7 +14244,6 @@
                     matrix: matrix
                   };
                   ctx = c.ctx;
-                  ctx.filter = "blur(".concat(v, "px)");
                 }
               } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
                 // 模糊框卷积尺寸 #66
@@ -21890,22 +21890,32 @@
               var _list3 = filterHash[_i5];
 
               _list3.forEach(function (offScreenFilter) {
+                var target = offScreenFilter.target,
+                    origin = offScreenFilter.ctx,
+                    blur = offScreenFilter.blur; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
+
+                if (ctx.filter) {
+                  var apply = inject.getCacheCanvas(width, height, null);
+                  apply.ctx.filter = "blur(".concat(blur, "px)");
+                  apply.ctx.drawImage(target.canvas, 0, 0);
+                  apply.ctx.filter = null;
+                  target.ctx.globalAlpha = 1;
+                  target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  target.ctx.clearRect(0, 0, width, height);
+                  target.ctx.drawImage(apply.canvas, 0, 0);
+                  apply.ctx.clearRect(0, 0, width, height);
+                }
+
                 if (!maskStartHash.hasOwnProperty(_i5 + 1) && !overflowHash.hasOwnProperty(_i5) && !blendHash.hasOwnProperty(_i5)) {
-                  var _target3 = offScreenFilter.target,
-                      origin = offScreenFilter.ctx;
                   origin.globalAlpha = 1;
                   origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.drawImage(_target3.canvas, 0, 0);
-
-                  _target3.draw();
-
-                  _target3.ctx.globalAlpha = 1;
-
-                  _target3.ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-                  _target3.ctx.clearRect(0, 0, width, height);
-
-                  inject.releaseCacheCanvas(_target3.canvas);
+                  origin.drawImage(target.canvas, 0, 0);
+                  target.draw();
+                  target.ctx.filter = null;
+                  target.ctx.globalAlpha = 1;
+                  target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  target.ctx.clearRect(0, 0, width, height);
+                  inject.releaseCacheCanvas(target.canvas);
                   ctx = origin;
                 }
               });
@@ -22017,14 +22027,14 @@
                 ctx = _offScreenMask2.ctx;
                 ctx.globalAlpha = 1;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
-                var _target4 = _offScreenMask2.target;
-                ctx.drawImage(_target4.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
+                var _target3 = _offScreenMask2.target;
+                ctx.drawImage(_target3.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
                 ctx.globalCompositeOperation = 'source-over';
 
-                _target4.draw(ctx);
+                _target3.draw(ctx);
 
-                _target4.ctx.clearRect(0, 0, width, height);
+                _target3.ctx.clearRect(0, 0, width, height);
 
                 inject.releaseCacheCanvas(_offScreenMask2.target.canvas);
               }
@@ -22169,20 +22179,35 @@
 
       if (node instanceof Geom$1) {
         node.render(renderMode, __refreshLevel, ctx, defs);
-      } // 最后一个节点检查filter，有则应用，可能有多个包含自己
+      } // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
 
 
       if (filterHash.hasOwnProperty(_i7)) {
         var _list8 = filterHash[_i7];
 
         _list8.forEach(function (offScreenFilter) {
+          var target = offScreenFilter.target,
+              origin = offScreenFilter.ctx,
+              blur = offScreenFilter.blur; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
+
+          if (ctx.filter) {
+            var apply = inject.getCacheCanvas(width, height, null);
+            apply.ctx.filter = "blur(".concat(blur, "px)");
+            apply.ctx.drawImage(target.canvas, 0, 0);
+            apply.ctx.filter = null;
+            target.ctx.globalAlpha = 1;
+            target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            target.ctx.clearRect(0, 0, width, height);
+            target.ctx.drawImage(apply.canvas, 0, 0);
+            apply.ctx.clearRect(0, 0, width, height);
+          }
+
           if (!maskStartHash.hasOwnProperty(_i7 + 1) && !overflowHash.hasOwnProperty(_i7) && !blendHash.hasOwnProperty(_i7)) {
-            var target = offScreenFilter.target,
-                origin = offScreenFilter.ctx;
             origin.setTransform(1, 0, 0, 1, 0, 0);
             origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
             target.draw();
+            target.ctx.filter = null;
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.globalAlpha = 1;
             target.ctx.clearRect(0, 0, width, height);
@@ -27710,7 +27735,7 @@
     Cache: Cache
   };
 
-  var version = "0.51.1";
+  var version = "0.51.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

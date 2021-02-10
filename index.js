@@ -12240,7 +12240,7 @@
         var offScreen = inject.getCacheCanvas(width, height);
         offScreen.ctx.filter = "blur(".concat(v, "px)");
         offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
-        offScreen.ctx.filter = null;
+        offScreen.ctx.filter = 'none';
         offScreen.draw();
         offScreen.bbox = bbox;
         offScreen.coords = [1, 1];
@@ -21902,7 +21902,7 @@
                   var apply = inject.getCacheCanvas(width, height, null);
                   apply.ctx.filter = "blur(".concat(blur, "px)");
                   apply.ctx.drawImage(target.canvas, 0, 0);
-                  apply.ctx.filter = null;
+                  apply.ctx.filter = 'none';
                   target.ctx.globalAlpha = 1;
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.clearRect(0, 0, width, height);
@@ -21915,7 +21915,7 @@
                   origin.setTransform(1, 0, 0, 1, 0, 0);
                   origin.drawImage(target.canvas, 0, 0);
                   target.draw();
-                  target.ctx.filter = null;
+                  target.ctx.filter = 'none';
                   target.ctx.globalAlpha = 1;
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.clearRect(0, 0, width, height);
@@ -22198,7 +22198,7 @@
             var apply = inject.getCacheCanvas(width, height, null);
             apply.ctx.filter = "blur(".concat(blur, "px)");
             apply.ctx.drawImage(target.canvas, 0, 0);
-            apply.ctx.filter = null;
+            apply.ctx.filter = 'none';
             target.ctx.globalAlpha = 1;
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.clearRect(0, 0, width, height);
@@ -22211,7 +22211,7 @@
             origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
             target.draw();
-            target.ctx.filter = null;
+            target.ctx.filter = 'none';
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.globalAlpha = 1;
             target.ctx.clearRect(0, 0, width, height);

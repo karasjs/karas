@@ -981,7 +981,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               let apply = inject.getCacheCanvas(width, height, null);
               apply.ctx.filter = `blur(${blur}px)`;
               apply.ctx.drawImage(target.canvas, 0, 0);
-              apply.ctx.filter = null;
+              apply.ctx.filter = 'none';
               target.ctx.globalAlpha = 1;
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
@@ -993,7 +993,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               origin.setTransform(1, 0, 0, 1, 0, 0);
               origin.drawImage(target.canvas, 0, 0);
               target.draw();
-              target.ctx.filter = null;
+              target.ctx.filter = 'none';
               target.ctx.globalAlpha = 1;
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
@@ -1211,7 +1211,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
           let apply = inject.getCacheCanvas(width, height, null);
           apply.ctx.filter = `blur(${blur}px)`;
           apply.ctx.drawImage(target.canvas, 0, 0);
-          apply.ctx.filter = null;
+          apply.ctx.filter = 'none';
           target.ctx.globalAlpha = 1;
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.clearRect(0, 0, width, height);
@@ -1223,7 +1223,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
           target.draw();
-          target.ctx.filter = null;
+          target.ctx.filter = 'none';
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.globalAlpha = 1;
           target.ctx.clearRect(0, 0, width, height);

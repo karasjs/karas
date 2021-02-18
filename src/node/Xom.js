@@ -7,7 +7,6 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
-import blur from '../style/blur';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';

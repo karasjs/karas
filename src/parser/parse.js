@@ -85,32 +85,12 @@ function replaceVars(target, vars) {
  * 遍历一遍library的一级，将一级的id存到hash上，无需递归二级，
  * 因为顺序前提要求排好且无循环依赖，所以被用到的一定在前面出现，
  * 一般是无children的元件在前，包含children的div在后
- * 只需将可能存在的children在遍历link一遍即可，如果children里有递归，前面因为出现过已经link过了
+ * 即便library中的元素有children或library，在linkChild时将其link过去，parse递归会继续处理
  * @param item：library的一级孩子
  * @param hash：存放library的key/value引用
  */
 function linkLibrary(item, hash) {
-  let { id, children } = item;
-  if(Array.isArray(children)) {
-    children.forEach(child => {
-      // 排除原始类型文本
-      if(!isPrimitive(child)) {
-        let { libraryId } = child;
-        // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
-        if(isNil(libraryId)) {
-          return;
-        }
-        let libraryItem = hash[libraryId];
-        // 规定图层child只有init和动画，属性和子图层来自库
-        if(libraryItem) {
-          linkChild(child, libraryItem);
-        }
-        else {
-          throw new Error('Link library item miss libraryId: ' + libraryId);
-        }
-      }
-    });
-  }
+  let id = item.id;
   // library中一定有id，因为是一级，二级+特殊需求才会出现放开
   if(isNil(id)) {
     throw new Error('Library item miss id: ' + JSON.stringify(item));
@@ -120,11 +100,20 @@ function linkLibrary(item, hash) {
   }
 }
 
+/**
+ * 链接child到library文件，
+ * props需要是clone的，因为防止多个child使用同一个库文件
+ * children则直接引用，无需担心多个使用同一个
+ * library也需要带上，在library直接子元素还包含library时会用到
+ * @param child
+ * @param libraryItem
+ */
 function linkChild(child, libraryItem) {
   // 规定图层child只有init和动画，属性和子图层来自库
   child.tagName = libraryItem.tagName;
   child.props = clone(libraryItem.props);
   child.children = libraryItem.children;
+  child.library = libraryItem.library;
   // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
   Object.keys(libraryItem).forEach(k => {
     if(k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
@@ -158,21 +147,9 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       return parse(karas, item, animateRecords, vars, hash);
     });
   }
-  let { library, libraryId } = json;
-  // 有library说明是个mc节点，不会有init/animate和children链接，是个正常节点
-  if(Array.isArray(library)) {
-    hash = {};
-    // 强制要求library的文件是排好顺序的，即元件和被引用类型在前面，引用的在后面，
-    // 另外没有循环引用，没有递归library，先遍历设置引用，再递归进行连接
-    library.forEach(item => {
-      linkLibrary(item, hash);
-    });
-    // 删除以免二次解析，有library一定没libraryId
-    json.library = null;
-    json.libraryId = null;
-  }
-  // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
-  else if(!isNil(libraryId) && hash) {
+  // 先判断是否是个链接到库的节点，是则进行链接操作
+  let libraryId = json.libraryId;
+  if(!isNil(libraryId)) {
     let libraryItem = hash[libraryId];
     // 规定图层child只有init和动画，tagName和属性和子图层来自库
     if(libraryItem) {
@@ -181,6 +158,16 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     else {
       throw new Error('Link library miss id: ' + libraryId);
     }
+    json.libraryId = null;
+  }
+  // 再判断是否有library形成一个新的作用域，会出现library下的library使得一个链接节点链接后出现library的情况
+  let library = json.library;
+  if(Array.isArray(library)) {
+    hash = {};
+    library.forEach(item => {
+      linkLibrary(item, hash);
+    });
+    json.library = null;
   }
   let { tagName, props = {}, children = [], animate = [], __animateRecords } = json;
   if(!tagName) {
@@ -199,7 +186,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     vd = karas.createGm(tagName, props);
   }
   else {
-    vd = karas.createVd(tagName, props, children.map((item, i) => {
+    vd = karas.createVd(tagName, props, children.map(item => {
       if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
         return item;
       }

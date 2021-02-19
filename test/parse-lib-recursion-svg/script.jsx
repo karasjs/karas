@@ -1,36 +1,56 @@
 let o = karas.parse({
   tagName: 'svg',
-  props: {},
-  children: [
-    karas.parse({
-      library: [{
-        id: 'b',
-        tagName: 'span',
-        props: {
-          style: {
-            color: '#00F',
-          },
-        },
-        children: [123],
-      }, {
-        id: 'a',
-        tagName: 'span',
-        props: {
-          style: {
-            color: '#F00',
-          },
-        },
-        children: [{
-          libraryId: 'b',
-        }, 456],
-      }],
-      tagName: 'div',
-      props: {},
-      children: [{
+  props: {
+    width: 360,
+    height: 360,
+  },
+  children: [{
+    tagName: 'div',
+    props: {},
+    children: [
+      {
         libraryId: 'a',
-      }],
-    })
-  ],
+      }
+    ],
+    library: [
+      {
+        id: 'a',
+        tagName: 'p',
+        props: { style: { padding: 10, background: '#F00' } },
+        children: [
+          {
+            tagName: 'span',
+            children: [
+              {
+                libraryId: 'c',
+              }
+            ],
+            library: [
+              {
+                id: 'c',
+                tagName: 'strong',
+                props: { style: { width: 100, height: 100, background: '#0F0' } },
+                children: [
+                ],
+              }
+            ]
+          },
+          {
+            libraryId: 'b',
+          }
+        ],
+        library: [
+          {
+            id: 'b',
+            tagName: 'b',
+            props: { style: { width: 100, height: 100, background: '#00F' } },
+            children: [
+            ],
+          }
+        ]
+      }
+    ]
+  }],
 }, '#test');
-var input = document.querySelector('#base64');
+let input = document.querySelector('#base64');
 input.value = JSON.stringify(o.virtualDom);

@@ -1,4 +1,4 @@
-import Geom from '../geom/Geom';
+import Geom from '../node/geom/Geom';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';

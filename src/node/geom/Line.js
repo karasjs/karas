@@ -1,9 +1,9 @@
 import Geom from './Geom';
-import mode from '../node/mode';
-import painter from '../util/painter';
-import util from '../util/util';
-import enums from '../util/enums';
-import geom from '../math/geom';
+import mode from '../mode';
+import painter from '../../util/painter';
+import util from '../../util/util';
+import enums from '../../util/enums';
+import geom from '../../math/geom';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,

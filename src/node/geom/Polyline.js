@@ -1,7 +1,7 @@
 import Geom from './Geom';
-import util from '../util/util';
-import enums from '../util/enums';
-import geom from '../math/geom';
+import util from '../../util/util';
+import enums from '../../util/enums';
+import geom from '../../math/geom';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,

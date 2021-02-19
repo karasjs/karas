@@ -1,15 +1,15 @@
-import Xom from '../node/Xom';
-import reset from '../style/reset';
-import css from '../style/css';
-import unit from '../style/unit';
-import enums from '../util/enums';
-import mode from '../node/mode';
-import util from '../util/util';
-import level from '../refresh/level';
-import painter from '../util/painter';
-import transform from '../style/transform';
-import mx from '../math/matrix';
-import inject from '../util/inject';
+import Xom from '../Xom';
+import reset from '../../style/reset';
+import css from '../../style/css';
+import unit from '../../style/unit';
+import enums from '../../util/enums';
+import mode from '../mode';
+import util from '../../util/util';
+import level from '../../refresh/level';
+import painter from '../../util/painter';
+import transform from '../../style/transform';
+import mx from '../../math/matrix';
+import inject from '../../util/inject';
 
 const {
   STYLE_KEY: {

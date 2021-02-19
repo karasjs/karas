@@ -4,7 +4,7 @@ import Xom from './Xom';
 import Component from './Component';
 import Defs from './Defs';
 import mode from './mode';
-import Geom from '../geom/Geom';
+import Geom from './geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
 import util from '../util/util';

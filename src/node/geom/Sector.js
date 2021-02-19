@@ -1,8 +1,8 @@
 import Geom from './Geom';
-import util from '../util/util';
-import enums from '../util/enums';
-import geom from '../math/geom';
-import inject from '../util/inject';
+import util from '../../util/util';
+import enums from '../../util/enums';
+import geom from '../../math/geom';
+import inject from '../../util/inject';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,

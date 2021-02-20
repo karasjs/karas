@@ -143,6 +143,15 @@ let inject = {
       });
       return;
     }
+    else if(!url || !util.isString(url)) {
+      inject.error('Measure img invalid: ' + url);
+      cb && cb({
+        state: LOADED,
+        success: false,
+        url,
+      });
+      return;
+    }
     let cache = IMG[url] = IMG[url] || {
       state: INIT,
       task: [],

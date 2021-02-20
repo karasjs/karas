@@ -3585,6 +3585,14 @@
           });
         });
         return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Measure img invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
       }
 
       var cache = IMG[url] = IMG[url] || {
@@ -27638,7 +27646,7 @@
     Cache: Cache
   };
 
-  var version = "0.51.4";
+  var version = "0.51.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

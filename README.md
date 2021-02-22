@@ -6,6 +6,7 @@ karas实现了一个微型浏览器引擎，同时扩充CSS/WAA在样式/动画�
 
 [![NPM version](https://img.shields.io/npm/v/karas.svg)](https://npmjs.org/package/karas)
 ![CI](https://github.com/karasjs/karas/workflows/CI/badge.svg)
+![npm-download](https://img.shields.io/npm/dm/karas)
 
 [![logo](https://raw.githubusercontent.com/karasjs/karas/master/logo.png)](https://raw.githubusercontent.com/karasjs/karas/master/logo.png)
 

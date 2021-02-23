@@ -4871,9 +4871,15 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'flexGrow', 'flexShrink', 'zIndex', 'backgroundClip'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
+      }
+    }); // 直接赋值的number类型
+
+    ['flexGrow', 'flexShrink', 'zIndex'].forEach(function (k) {
+      if (style.hasOwnProperty(k)) {
+        res[STYLE_KEY$4[style2Upper$1(k)]] = parseFloat(style[k]) || 0;
       }
     }); // 这些支持多个的用数组表示
 
@@ -27708,7 +27714,7 @@
     Cache: Cache
   };
 
-  var version = "0.51.5";
+  var version = "0.51.6";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

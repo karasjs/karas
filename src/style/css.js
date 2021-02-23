@@ -927,13 +927,20 @@ function normalize(style, reset = []) {
     'borderRightStyle',
     'borderBottomStyle',
     'borderLeftStyle',
-    'flexGrow',
-    'flexShrink',
-    'zIndex',
     'backgroundClip',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
+    }
+  });
+  // 直接赋值的number类型
+  [
+    'flexGrow',
+    'flexShrink',
+    'zIndex',
+  ].forEach(k => {
+    if(style.hasOwnProperty(k)) {
+      res[STYLE_KEY[style2Upper(k)]] = parseFloat(style[k]) || 0;
     }
   });
   // 这些支持多个的用数组表示

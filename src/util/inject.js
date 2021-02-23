@@ -277,6 +277,9 @@ let inject = {
       if(typeof window !== 'undefined' && window.Element && (o instanceof window.Element)) {
         return true;
       }
+      if(typeof window !== 'undefined' && window.OffscreenCanvas && (o instanceof window.OffscreenCanvas)) {
+        return true;
+      }
       if(util.isFunction(o.getElementsByTagName)) {
         return true;
       }

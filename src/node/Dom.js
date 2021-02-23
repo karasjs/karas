@@ -342,10 +342,6 @@ class Dom extends Xom {
     let main = isDirectionRow ? width : height;
     if(main[1] === PX) {
       b = max = main[0];
-      // 递归时children的长度会影响flex元素的最小宽度
-      // if(isRecursion) {
-      //   min = b;
-      // }
     }
     else if(main[1] === PERCENT) {
       b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
@@ -354,7 +350,6 @@ class Dom extends Xom {
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let [b2, min2, max2] = item.__calAutoBasis(isDirectionRow, x, y, w, h, isVirtual);
-        // let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
         b = Math.max(b, b2);
         min = Math.max(min, min2);
         max = Math.max(max, max2);
@@ -690,7 +685,7 @@ class Dom extends Xom {
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         // abs虚拟布局计算时纵向也是看横向宽度
-        let [b, min, max] = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h);
+        let [b, min, max] = item.__calAutoBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual);
         if(isVirtual) {
           if(isDirectionRow) {
             maxX += max;

@@ -16585,10 +16585,7 @@
         var main = isDirectionRow ? width : height;
 
         if (main[1] === PX$5) {
-          b = max = main[0]; // 递归时children的长度会影响flex元素的最小宽度
-          // if(isRecursion) {
-          //   min = b;
-          // }
+          b = max = main[0];
         } else if (main[1] === PERCENT$6) {
           b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
         } // 递归children取最大值
@@ -16600,8 +16597,7 @@
                 _item$__calAutoBasis2 = _slicedToArray(_item$__calAutoBasis, 3),
                 b2 = _item$__calAutoBasis2[0],
                 min2 = _item$__calAutoBasis2[1],
-                max2 = _item$__calAutoBasis2[2]; // let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
-
+                max2 = _item$__calAutoBasis2[2];
 
             b = Math.max(b, b2);
             min = Math.max(min, min2);
@@ -16995,7 +16991,7 @@
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             // abs虚拟布局计算时纵向也是看横向宽度
-            var _item$__calAutoBasis3 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
+            var _item$__calAutoBasis3 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual),
                 _item$__calAutoBasis4 = _slicedToArray(_item$__calAutoBasis3, 3),
                 b = _item$__calAutoBasis4[0],
                 min = _item$__calAutoBasis4[1],

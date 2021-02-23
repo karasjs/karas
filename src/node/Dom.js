@@ -340,7 +340,8 @@ class Dom extends Xom {
       // 文本水平
       else if(isDirectionRow) {
         min = Math.max(item.charWidth, min);
-        max = Math.max(item.textWidth, max);
+        // max = Math.max(item.textWidth, max);
+        max = Math.max(item.charWidth, max);
       }
       // 文本垂直
       else {

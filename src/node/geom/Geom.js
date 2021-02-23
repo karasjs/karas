@@ -15,8 +15,12 @@ const {
   STYLE_KEY: {
     DISPLAY,
     MARGIN_TOP,
+    MARGIN_RIGHT,
+    MARGIN_BOTTOM,
     MARGIN_LEFT,
     PADDING_TOP,
+    PADDING_RIGHT,
+    PADDING_BOTTOM,
     PADDING_LEFT,
     WIDTH,
     HEIGHT,
@@ -47,7 +51,6 @@ const {
     NODE_CACHE_MASK,
     NODE_CACHE_OVERFLOW,
     NODE_DEFS_CACHE,
-    NODE_CACHE_STYLE,
   }
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
@@ -92,7 +95,7 @@ class Geom extends Xom {
     return w;
   }
 
-  __calAutoBasis(isDirectionRow) {
+  __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual) {
     let b = 0;
     let min = 0;
     let max = 0;
@@ -101,6 +104,14 @@ class Geom extends Xom {
     let {
       [WIDTH]: width,
       [HEIGHT]: height,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_RIGHT]: marginRight,
+      [MARGIN_BOTTOM]: marginBottom,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_TOP]: paddingTop,
+      [PADDING_RIGHT]: paddingRight,
+      [PADDING_BOTTOM]: paddingBottom,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -108,22 +119,33 @@ class Geom extends Xom {
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     if(main[1] !== AUTO) {
-      b = max += main[0];
+      b = max = main[0];
+    }
+    else if(main[1] === PERCENT) {
+      b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
     }
     // border也得计算在内
     if(isDirectionRow) {
-      let w = borderRightWidth[0] + borderLeftWidth[0];
-      b += w;
-      max += w;
-      min += w;
+      let mp = this.__calMp(marginLeft, w)
+        + this.__calMp(marginRight, w)
+        + this.__calMp(paddingLeft, w)
+        + this.__calMp(paddingRight, w);
+      let w2 = borderLeftWidth[0] + borderRightWidth[0] + mp;
+      b += w2;
+      max += w2;
+      min += w2;
     }
     else {
-      let h = borderTopWidth[0] + borderBottomWidth[0];
-      b += h;
-      max += h;
-      min += h;
+      let mp = this.__calMp(marginTop, w)
+        + this.__calMp(marginBottom, w)
+        + this.__calMp(paddingTop, w)
+        + this.__calMp(paddingBottom, w);
+      let h2 = borderTopWidth[0] + borderBottomWidth[0] + mp;
+      b += h2;
+      max += h2;
+      min += h2;
     }
-    return { b, min, max };
+    return [b, min, max];
   }
 
   __layoutBlock(data, isVirtual) {

@@ -958,6 +958,20 @@ class Xom extends Node {
     this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
   }
 
+  // 换算margin/padding为px单位
+  __calMp(v, w) {
+    let n = 0;
+    if(v[1] === PX) {
+      n += v[0];
+    }
+    else if(v[1] === PERCENT) {
+      v[0] *= w * 0.01;
+      v[1] = PX;
+      n += v[0];
+    }
+    return n;
+  }
+
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
   // fromAbs为absolute特有
   __layout(data, isVirtual, fromAbs) {

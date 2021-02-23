@@ -13180,6 +13180,22 @@
         this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$1] + computedStyle[BORDER_BOTTOM_WIDTH$1];
         this.__outerWidth = w + computedStyle[MARGIN_LEFT$1] + computedStyle[MARGIN_RIGHT$1];
         this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[MARGIN_BOTTOM$1];
+      } // 换算margin/padding为px单位
+
+    }, {
+      key: "__calMp",
+      value: function __calMp(v, w) {
+        var n = 0;
+
+        if (v[1] === PX$4) {
+          n += v[0];
+        } else if (v[1] === PERCENT$5) {
+          v[0] *= w * 0.01;
+          v[1] = PX$4;
+          n += v[0];
+        }
+
+        return n;
       } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
       // fromAbs为absolute特有
 
@@ -16518,9 +16534,28 @@
           }
         });
       }
+      /**
+       * flex布局时，计算basis尺寸，如果有css声明则以其为标准，没有则auto自动计算
+       * 声明为%比时基准容器为传入的w/h，一般是父block元素，递归flex则一直是父block
+       * 影响尺寸的只有换行的text，以及一组inline，均按其中最大尺寸的一个计算
+       * auto自动计算递归进行，如果是普通row方向，按最大text的charWidth为准
+       * 如果是column方向，则水平排满后看text的height
+       * 在的abs下时进入特殊状态，无论是row/column，都会按row方向尝试最大尺寸，直到舞台边缘或容器声明的w折行
+       * 返回b，声明则按css值，否则同min
+       * 返回min为最小宽度，遇到字符则单列排版后需要的最大宽度
+       * 返回max为最大宽度，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
+       * @param isDirectionRow
+       * @param x
+       * @param y
+       * @param w
+       * @param h
+       * @param isVirtual
+       * @private
+       */
+
     }, {
       key: "__calAutoBasis",
-      value: function __calAutoBasis(isDirectionRow, w, h, isRecursion) {
+      value: function __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual) {
         var b = 0;
         var min = 0;
         var max = 0;
@@ -16545,38 +16580,43 @@
 
         if (main[1] === PX$5) {
           b = max = main[0]; // 递归时children的长度会影响flex元素的最小宽度
-
-          if (isRecursion) {
-            min = b;
-          }
+          // if(isRecursion) {
+          //   min = b;
+          // }
+        } else if (main[1] === PERCENT$6) {
+          b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
         } // 递归children取最大值
 
 
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, w, h, true),
-                b2 = _item$__calAutoBasis.b,
-                min2 = _item$__calAutoBasis.min,
-                max2 = _item$__calAutoBasis.max;
+            var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, x, y, w, h, isVirtual),
+                _item$__calAutoBasis2 = _slicedToArray(_item$__calAutoBasis, 3),
+                b2 = _item$__calAutoBasis2[0],
+                min2 = _item$__calAutoBasis2[1],
+                max2 = _item$__calAutoBasis2[2]; // let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
+
 
             b = Math.max(b, b2);
             min = Math.max(min, min2);
             max = Math.max(max, max2);
           } // 文本水平
           else if (isDirectionRow) {
-              min = Math.max(item.charWidth, min);
+              b = Math.max(b, item.charWidth);
+              min = Math.max(min, item.charWidth);
               max = Math.max(item.textWidth, max);
-            } // 文本垂直
+            } // 文本垂直，尝试伪布局得到高度
             else {
                 css.computeReflow(item);
 
                 item.__layout({
-                  x: 0,
-                  y: 0,
+                  x: x,
+                  y: y,
                   w: w,
                   h: h
                 }, true);
 
+                b = Math.max(b, item.height);
                 min = Math.max(min, item.height);
                 max = Math.max(max, item.height);
               }
@@ -16598,27 +16638,7 @@
           min += h2;
         }
 
-        return {
-          b: b,
-          min: min,
-          max: max
-        };
-      } // 换算margin/padding为px单位
-
-    }, {
-      key: "__calMp",
-      value: function __calMp(v, w) {
-        var n = 0;
-
-        if (v[1] === PX$5) {
-          n += v[0];
-        } else if (v[1] === PERCENT$6) {
-          v[0] *= w * 0.01;
-          v[1] = PX$5;
-          n += v[0];
-        }
-
-        return n;
+        return [b, min, max];
       }
     }, {
       key: "__layoutNone",
@@ -16960,6 +16980,7 @@
         var growList = [];
         var shrinkList = [];
         var basisList = [];
+        var maxList = [];
         var minList = [];
         var growSum = 0;
         var shrinkSum = 0;
@@ -16968,10 +16989,11 @@
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             // abs虚拟布局计算时纵向也是看横向宽度
-            var _item$__calAutoBasis2 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
-                b = _item$__calAutoBasis2.b,
-                min = _item$__calAutoBasis2.min,
-                max = _item$__calAutoBasis2.max;
+            var _item$__calAutoBasis3 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
+                _item$__calAutoBasis4 = _slicedToArray(_item$__calAutoBasis3, 3),
+                b = _item$__calAutoBasis4[0],
+                min = _item$__calAutoBasis4[1],
+                max = _item$__calAutoBasis4[2];
 
             if (isVirtual) {
               if (isDirectionRow) {
@@ -16991,21 +17013,24 @@
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
-            shrinkSum += flexShrink; // 根据basis不同，计算方式不同
+            shrinkSum += flexShrink; // 根据basis不同，计算方式不同，上面每个元素计算的是min以及主轴尺寸，下面要按basis规范来覆盖
 
             if (flexBasis[1] === AUTO$3) {
-              basisList.push(max);
-              basisSum += max;
+              basisList.push(b);
+              basisSum += b;
             } else if (flexBasis[1] === PX$5) {
-              computedStyle[FLEX_BASIS$2] = b = flexBasis[0];
-              basisList.push(b);
-              basisSum += b;
+              var _b = computedStyle[FLEX_BASIS$2] = flexBasis[0];
+
+              basisList.push(_b);
+              basisSum += _b;
             } else if (flexBasis[1] === PERCENT$6) {
-              b = computedStyle[FLEX_BASIS$2] = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
-              basisList.push(b);
-              basisSum += b;
+              var _b2 = computedStyle[FLEX_BASIS$2] = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+
+              basisList.push(_b2);
+              basisSum += _b2;
             }
 
+            maxList.push(max);
             maxSum += max;
             minList.push(min);
           } // 文本
@@ -17025,25 +17050,28 @@
               shrinkSum += 1;
 
               if (isDirectionRow) {
-                basisList.push(item.textWidth);
-                basisSum += item.textWidth;
+                var c = item.charWidth;
+                basisList.push(c);
+                basisSum += c;
+                maxList.push(item.textWidth);
                 maxSum += item.textWidth;
-                minList.push(item.charWidth);
+                minList.push(c);
               } else {
                 item.__layout({
-                  x: 0,
-                  y: 0,
+                  x: x,
+                  y: y,
                   w: w,
-                  h: h
+                  h: _h
                 }, true);
 
-                basisList.push(item.height);
-                basisSum += item.height;
-                maxSum += item.height;
-                minList.push(item.height);
+                var _h = item.height;
+                basisList.push(_h);
+                basisSum += _h;
+                maxSum += _h;
+                minList.push(_h);
               }
             }
-        });
+        }); // abs时，只需关注宽度即可，无需真正布局
 
         if (isVirtual) {
           var _tw = this.__width = Math.min(maxX, w);
@@ -17052,22 +17080,43 @@
 
           return;
         }
+        /**
+         * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
+         * 这里比较麻烦，因为text的长度是可变化的，会因为伸缩而不确定性换行，这样导致basis在auto时不确定性
+         * basis在没有明确指定时等同于min值，即text中最大字符宽度，先考虑row的情况
+         * 在maxSum<=w时特殊处理，text可按照不换行最大长度计算
+         * 其它情况按正常伸缩计算，即以basis为基准
+         * 这样，如果text全部算起来都不到总尺寸，则以max为基准算basis，防止以basis算显示错误
+         * 而如果超过总尺寸，以basis算看是伸还是缩也符合
+         */
+
 
         var maxCross = 0; // 判断是否超出，决定使用grow还是shrink
 
-        var isOverflow = maxSum > (isDirectionRow ? w : h);
+        var isMoreThanMax = maxSum <= (isDirectionRow ? w : h);
+        var isOverflow = !isMoreThanMax && basisSum > (isDirectionRow ? w : h);
+        var overflow, free; // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
+
+        if (isMoreThanMax) {
+          free = (isDirectionRow ? w : h) - maxSum;
+        } else if (isOverflow) {
+          overflow = basisSum - (isDirectionRow ? w : h);
+        } else {
+          free = (isDirectionRow ? w : h) - basisSum;
+        }
+
         flowChildren.forEach(function (item, i) {
           var main;
           var shrink = shrinkList[i];
-          var grow = growList[i]; // 计算主轴长度
+          var grow = growList[i]; // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
 
-          if (isOverflow) {
-            var overflow = basisSum - (isDirectionRow ? w : h);
+          if (isMoreThanMax) {
+            main = grow ? maxList[i] + free * grow / growSum : maxList[i];
+          } else if (isOverflow) {
             main = shrink ? basisList[i] - overflow * shrink / shrinkSum : basisList[i];
           } else {
-            var free = (isDirectionRow ? w : h) - basisSum;
             main = grow ? basisList[i] + free * grow / growSum : basisList[i];
-          } // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
+          } // 主轴长度的最小值不能小于元素的最小长度，即横向时的字符宽度
 
 
           main = Math.max(main, minList[i]);
@@ -18659,8 +18708,12 @@
   var _enums$STYLE_KEY$d = enums.STYLE_KEY,
       DISPLAY$5 = _enums$STYLE_KEY$d.DISPLAY,
       MARGIN_TOP$3 = _enums$STYLE_KEY$d.MARGIN_TOP,
+      MARGIN_RIGHT$3 = _enums$STYLE_KEY$d.MARGIN_RIGHT,
+      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$d.MARGIN_BOTTOM,
       MARGIN_LEFT$3 = _enums$STYLE_KEY$d.MARGIN_LEFT,
       PADDING_TOP$4 = _enums$STYLE_KEY$d.PADDING_TOP,
+      PADDING_RIGHT$3 = _enums$STYLE_KEY$d.PADDING_RIGHT,
+      PADDING_BOTTOM$3 = _enums$STYLE_KEY$d.PADDING_BOTTOM,
       PADDING_LEFT$4 = _enums$STYLE_KEY$d.PADDING_LEFT,
       WIDTH$6 = _enums$STYLE_KEY$d.WIDTH,
       HEIGHT$6 = _enums$STYLE_KEY$d.HEIGHT,
@@ -18689,8 +18742,7 @@
       NODE_CACHE_FILTER$2 = _enums$NODE_KEY$5.NODE_CACHE_FILTER,
       NODE_CACHE_MASK$1 = _enums$NODE_KEY$5.NODE_CACHE_MASK,
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW,
-      NODE_DEFS_CACHE$2 = _enums$NODE_KEY$5.NODE_DEFS_CACHE,
-      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$5.NODE_CACHE_STYLE;
+      NODE_DEFS_CACHE$2 = _enums$NODE_KEY$5.NODE_DEFS_CACHE;
   var AUTO$5 = unit.AUTO,
       PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
@@ -18754,7 +18806,7 @@
       }
     }, {
       key: "__calAutoBasis",
-      value: function __calAutoBasis(isDirectionRow) {
+      value: function __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual) {
         var b = 0;
         var min = 0;
         var max = 0;
@@ -18762,6 +18814,14 @@
 
         var width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$6],
+            marginLeft = currentStyle[MARGIN_LEFT$3],
+            marginTop = currentStyle[MARGIN_TOP$3],
+            marginRight = currentStyle[MARGIN_RIGHT$3],
+            marginBottom = currentStyle[MARGIN_BOTTOM$4],
+            paddingLeft = currentStyle[PADDING_LEFT$4],
+            paddingTop = currentStyle[PADDING_TOP$4],
+            paddingRight = currentStyle[PADDING_RIGHT$3],
+            paddingBottom = currentStyle[PADDING_BOTTOM$3],
             borderTopWidth = currentStyle[BORDER_TOP_WIDTH$4],
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$4],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$4],
@@ -18769,27 +18829,29 @@
         var main = isDirectionRow ? width : height;
 
         if (main[1] !== AUTO$5) {
-          b = max += main[0];
+          b = max = main[0];
+        } else if (main[1] === PERCENT$7) {
+          b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
         } // border也得计算在内
 
 
         if (isDirectionRow) {
-          var w = borderRightWidth[0] + borderLeftWidth[0];
-          b += w;
-          max += w;
-          min += w;
+          var mp = this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w);
+
+          var w2 = borderLeftWidth[0] + borderRightWidth[0] + mp;
+          b += w2;
+          max += w2;
+          min += w2;
         } else {
-          var h = borderTopWidth[0] + borderBottomWidth[0];
-          b += h;
-          max += h;
-          min += h;
+          var _mp = this.__calMp(marginTop, w) + this.__calMp(marginBottom, w) + this.__calMp(paddingTop, w) + this.__calMp(paddingBottom, w);
+
+          var h2 = borderTopWidth[0] + borderBottomWidth[0] + _mp;
+          b += h2;
+          max += h2;
+          min += h2;
         }
 
-        return {
-          b: b,
-          min: min,
-          max: max
-        };
+        return [b, min, max];
       }
     }, {
       key: "__layoutBlock",
@@ -20753,7 +20815,7 @@
       NODE_BLUR_VALUE$1 = _enums$NODE_KEY$7.NODE_BLUR_VALUE,
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
-      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
+      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
       NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
@@ -21253,7 +21315,7 @@
         __config[NODE_REFRESH_LV$1] = NONE$2;
         var currentStyle = __config[NODE_CURRENT_STYLE$3],
             _computedStyle = __config[NODE_COMPUTED_STYLE$2],
-            __cacheStyle = __config[NODE_CACHE_STYLE$2];
+            __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, _computedStyle); // 恶心的v8性能优化
@@ -22399,7 +22461,7 @@
 
         var currentStyle = __config[NODE_CURRENT_STYLE$3],
             computedStyle = __config[NODE_COMPUTED_STYLE$2],
-            __cacheStyle = __config[NODE_CACHE_STYLE$2];
+            __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
@@ -22827,10 +22889,10 @@
       Z_INDEX$4 = _enums$STYLE_KEY$g.Z_INDEX,
       MARGIN_TOP$4 = _enums$STYLE_KEY$g.MARGIN_TOP,
       MARGIN_LEFT$4 = _enums$STYLE_KEY$g.MARGIN_LEFT,
-      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
+      MARGIN_BOTTOM$5 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
       PADDING_TOP$5 = _enums$STYLE_KEY$g.PADDING_TOP,
       PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
-      PADDING_BOTTOM$3 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
+      PADDING_BOTTOM$4 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
       BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
@@ -22847,7 +22909,7 @@
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
       _enums$NODE_KEY$8 = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$8.NODE_TAG_NAME,
-      NODE_CACHE_STYLE$3 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
+      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
       NODE_CACHE_PROPS$1 = _enums$NODE_KEY$8.NODE_CACHE_PROPS,
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
@@ -23171,7 +23233,7 @@
 
 
     var tagName = __config[NODE_TAG_NAME$1],
-        __cacheStyle = __config[NODE_CACHE_STYLE$3],
+        __cacheStyle = __config[NODE_CACHE_STYLE$2],
         __cacheProps = __config[NODE_CACHE_PROPS$1],
         currentStyle = __config[NODE_CURRENT_STYLE$4],
         computedStyle = __config[NODE_COMPUTED_STYLE$3],
@@ -24665,9 +24727,9 @@
                   if (!isNone && item.flowChildren && item.flowChildren.length === 0) {
                     var _item$computedStyle = item.computedStyle,
                         marginTop = _item$computedStyle[MARGIN_TOP$4],
-                        marginBottom = _item$computedStyle[MARGIN_BOTTOM$4],
+                        marginBottom = _item$computedStyle[MARGIN_BOTTOM$5],
                         paddingTop = _item$computedStyle[PADDING_TOP$5],
-                        paddingBottom = _item$computedStyle[PADDING_BOTTOM$3],
+                        paddingBottom = _item$computedStyle[PADDING_BOTTOM$4],
                         _height = _item$computedStyle[HEIGHT$8],
                         borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$5],
                         borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$5]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
@@ -24683,7 +24745,7 @@
                   if (!isNone && !isEmptyBlock) {
                     var _item$computedStyle2 = item.computedStyle,
                         _marginTop = _item$computedStyle2[MARGIN_TOP$4],
-                        _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$4]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+                        _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$5]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
                     // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
                     if (mergeMarginBottomList.length) {

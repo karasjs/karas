@@ -23430,31 +23430,27 @@
       __config[NODE_CACHE_FILTER$4].release();
 
       __config[NODE_CACHE_FILTER$4] = null;
-    } // 由于父节点中有display:none，一些子节点也为none，执行普通动画是无效的，此时lv<REFLOW
+    } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
 
 
-    if (computedStyle[DISPLAY$8] === 'none' && lv < REFLOW$2) {
+    if (computedStyle[DISPLAY$8] === 'none' && !hasDisplay) {
       return false;
-    } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
+    } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效，直接父节点即可，因为display是继承的
+    // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
+    // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
 
 
     var parent = domParent;
 
-    if (hasDisplay) {
-      while (parent) {
-        var _config2 = parent.__config;
+    if (hasDisplay && parent) {
+      var _config2 = parent.__config;
 
-        if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$8] === 'none') {
-          computedStyle[DISPLAY$8] = 'none';
-          return false;
-        }
-
-        parent = _config2[NODE_DOM_PARENT$4];
+      if (_config2[NODE_CURRENT_STYLE$4][DISPLAY$8] === 'none' || _config2[NODE_COMPUTED_STYLE$3][DISPLAY$8] === 'none') {
+        computedStyle[DISPLAY$8] = 'none';
+        return false;
       }
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
-
-    parent = domParent;
 
     while (parent) {
       var _config3 = parent.__config; // 向上查找，出现重复跳出

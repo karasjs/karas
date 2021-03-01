@@ -827,7 +827,14 @@ class Geom extends Xom {
     return this.__currentProps;
   }
 
+  static get REGISTER() {
+    return REGISTER;
+  }
+
   static getRegister(name) {
+    if(!name || !util.isString(name) || name.charAt(0) !== '$') {
+      throw new Error('Invalid param');
+    }
     if(!REGISTER.hasOwnProperty(name)) {
       throw new Error(`Geom has not register: ${name}`);
     }
@@ -835,6 +842,9 @@ class Geom extends Xom {
   }
 
   static register(name, obj) {
+    if(!name || !util.isString(name) || name.charAt(0) !== '$' || !(obj.prototype instanceof Geom)) {
+      throw new Error('Invalid param');
+    }
     if(Geom.hasRegister(name)) {
       throw new Error(`Geom has already register: ${name}`);
     }
@@ -842,7 +852,7 @@ class Geom extends Xom {
   }
 
   static hasRegister(name) {
-    return REGISTER.hasOwnProperty(name);
+    return name && REGISTER.hasOwnProperty(name);
   }
 }
 

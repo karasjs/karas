@@ -1,5 +1,6 @@
 import abbr from './abbr';
 import Node from '../node/Node';
+import Component from '../node/Component';
 import $$type from '../util/$$type';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -139,7 +140,7 @@ function linkChild(child, libraryItem) {
 }
 
 function parse(karas, json, animateRecords, vars, hash = {}) {
-  if(isPrimitive(json) || json instanceof Node) {
+  if(isPrimitive(json) || json instanceof Node || json instanceof Component) {
     return json;
   }
   if(Array.isArray(json)) {
@@ -169,7 +170,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     });
     json.library = null;
   }
-  let { tagName, props = {}, children = [], animate = [], __animateRecords } = json;
+  let { tagName, props = {}, children = [], animate = [] } = json;
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
   }
@@ -185,6 +186,15 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
   if(tagName.charAt(0) === '$') {
     vd = karas.createGm(tagName, props);
   }
+  else if(/^[A-Z]/.test(tagName)) {
+    let cp = Component.getRegister(tagName);
+    vd = karas.createCp(cp, props, children.map(item => {
+      if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
+        return item;
+      }
+      return parse(karas, item, animateRecords, vars, hash);
+    }));
+  }
   else {
     vd = karas.createVd(tagName, props, children.map(item => {
       if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
@@ -192,9 +202,6 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       }
       return parse(karas, item, animateRecords, vars, hash);
     }));
-  }
-  if(__animateRecords) {
-    vd.__animateRecords = __animateRecords;
   }
   let animationRecord;
   if(animate) {

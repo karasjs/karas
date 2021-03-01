@@ -15866,6 +15866,7 @@
       isFunction$4 = util.isFunction,
       clone$3 = util.clone,
       extend$1 = util.extend;
+  var REGISTER = {};
   /**
    * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
    * @param cp
@@ -16161,6 +16162,42 @@
       key: "isDestroyed",
       get: function get() {
         return this.__isDestroyed;
+      }
+    }], [{
+      key: "getRegister",
+      value: function getRegister(name) {
+        if (!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
+          throw new Error('Invalid param');
+        }
+
+        if (!REGISTER.hasOwnProperty(name)) {
+          throw new Error("Component has not register: ".concat(name));
+        }
+
+        return REGISTER[name];
+      }
+    }, {
+      key: "register",
+      value: function register(name, obj) {
+        if (!name || !util.isString(name) || !/^[A-Z]/.test(name) || !(obj.prototype instanceof Component)) {
+          throw new Error('Invalid param');
+        }
+
+        if (Component.hasRegister(name)) {
+          throw new Error("Component has already register: ".concat(name));
+        }
+
+        REGISTER[name] = obj;
+      }
+    }, {
+      key: "hasRegister",
+      value: function hasRegister(name) {
+        return name && REGISTER.hasOwnProperty(name);
+      }
+    }, {
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER;
       }
     }]);
 
@@ -18757,7 +18794,7 @@
       joinArr$2 = util.joinArr;
   var canvasPolygon$3 = painter.canvasPolygon,
       svgPolygon$3 = painter.svgPolygon;
-  var REGISTER = {};
+  var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
     _inherits(Geom, _Xom);
@@ -19591,25 +19628,38 @@
     }], [{
       key: "getRegister",
       value: function getRegister(name) {
-        if (!REGISTER.hasOwnProperty(name)) {
+        if (!name || !util.isString(name) || name.charAt(0) !== '$') {
+          throw new Error('Invalid param');
+        }
+
+        if (!REGISTER$1.hasOwnProperty(name)) {
           throw new Error("Geom has not register: ".concat(name));
         }
 
-        return REGISTER[name];
+        return REGISTER$1[name];
       }
     }, {
       key: "register",
       value: function register(name, obj) {
+        if (!name || !util.isString(name) || name.charAt(0) !== '$' || !(obj.prototype instanceof Geom)) {
+          throw new Error('Invalid param');
+        }
+
         if (Geom.hasRegister(name)) {
           throw new Error("Geom has already register: ".concat(name));
         }
 
-        REGISTER[name] = obj;
+        REGISTER$1[name] = obj;
       }
     }, {
       key: "hasRegister",
       value: function hasRegister(name) {
-        return REGISTER.hasOwnProperty(name);
+        return name && REGISTER$1.hasOwnProperty(name);
+      }
+    }, {
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER$1;
       }
     }]);
 
@@ -27497,7 +27547,7 @@
   function parse(karas, json, animateRecords, vars) {
     var hash = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
 
-    if (isPrimitive(json) || json instanceof Node) {
+    if (isPrimitive(json) || json instanceof Node || json instanceof Component$1) {
       return json;
     }
 
@@ -27539,8 +27589,7 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         _json$animate = json.animate,
-        animate = _json$animate === void 0 ? [] : _json$animate,
-        __animateRecords = json.__animateRecords;
+        animate = _json$animate === void 0 ? [] : _json$animate;
 
     if (!tagName) {
       throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
@@ -27558,6 +27607,15 @@
 
     if (tagName.charAt(0) === '$') {
       vd = karas.createGm(tagName, props);
+    } else if (/^[A-Z]/.test(tagName)) {
+      var cp = Component$1.getRegister(tagName);
+      vd = karas.createCp(cp, props, children.map(function (item) {
+        if (item && [TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
+          return item;
+        }
+
+        return parse(karas, item, animateRecords, vars, hash);
+      }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
         if (item && [TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
@@ -27566,10 +27624,6 @@
 
         return parse(karas, item, animateRecords, vars, hash);
       }));
-    }
-
-    if (__animateRecords) {
-      vd.__animateRecords = __animateRecords;
     }
 
     var animationRecord;

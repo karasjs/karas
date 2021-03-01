@@ -9,6 +9,8 @@ import change from '../refresh/change';
 
 const { isNil, isFunction, clone, extend } = util;
 
+const REGISTER = {};
+
 /**
  * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
  * @param cp
@@ -255,6 +257,34 @@ class Component extends Event {
 
   get isDestroyed() {
     return this.__isDestroyed;
+  }
+
+  static get REGISTER() {
+    return REGISTER;
+  }
+
+  static getRegister(name) {
+    if(!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
+      throw new Error('Invalid param');
+    }
+    if(!REGISTER.hasOwnProperty(name)) {
+      throw new Error(`Component has not register: ${name}`);
+    }
+    return REGISTER[name];
+  }
+
+  static register(name, obj) {
+    if(!name || !util.isString(name) || !/^[A-Z]/.test(name) || !(obj.prototype instanceof Component)) {
+      throw new Error('Invalid param');
+    }
+    if(Component.hasRegister(name)) {
+      throw new Error(`Component has already register: ${name}`);
+    }
+    REGISTER[name] = obj;
+  }
+
+  static hasRegister(name) {
+    return name && REGISTER.hasOwnProperty(name);
   }
 }
 

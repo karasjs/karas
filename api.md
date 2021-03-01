@@ -893,11 +893,6 @@ karas.render(
 );
 ```
 
-### STYLE_KEY
-* **类型** `Object`
-* **说明**  
-currentStyle/computedStyle中的key枚举。
-
 <a name="自定义事件"></a>
 ## 自定义事件
 除了Dom标准事件，自定义事件也很常用，最典型的例子是EventBus。实例化Event类或者继承Event类是普遍的做法，当继承Event类后，可使用其发送侦听注销事件的功能。
@@ -1703,6 +1698,33 @@ root.ref.cp.setState({ a: 1 }, function() {
   console.log('setState finish');
 });
 ```
+
+### 静态属性
+
+#### getRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+  返回已注册名字为name的组件。
+* **说明**  
+parse的json中首字母大写的tagName为组件，任何parse的组件都需要先注册。
+
+#### register
+* **类型** `Function`
+* **参数**
+  * name `String`
+  * target `class`
+    将要注册的组件类。
+* **说明**  
+注册名字为name的组件为target类。
+
+#### hasRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+  返回名字为name是否已经被注册为组件。
+* **说明**  
+注册前先检查是否已经被注册过。
 
 ### html属性attribute
 

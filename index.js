@@ -308,24 +308,26 @@
     POINTER_EVENTS: 66,
     OVERFLOW: 67,
     MIX_BLEND_MODE: 68,
+    BACKGROUND_CLIP: 69,
+    WHITE_SPACE: 70,
+    TEXT_OVERFLOW: 71,
     // GEOM
-    FILL: 69,
-    STROKE: 70,
-    STROKE_WIDTH: 71,
-    STROKE_DASHARRAY: 72,
-    STROKE_DASHARRAY_STR: 73,
-    STROKE_LINECAP: 74,
-    STROKE_LINEJOIN: 75,
-    STROKE_MITERLIMIT: 76,
-    FILL_RULE: 77,
-    MATRIX: 78,
+    FILL: 72,
+    STROKE: 73,
+    STROKE_WIDTH: 74,
+    STROKE_DASHARRAY: 75,
+    STROKE_DASHARRAY_STR: 76,
+    STROKE_LINECAP: 77,
+    STROKE_LINEJOIN: 78,
+    STROKE_MITERLIMIT: 79,
+    FILL_RULE: 80,
     // 无此样式，仅cache需要
-    BORDER_TOP: 79,
-    BORDER_RIGHT: 80,
-    BORDER_BOTTOM: 81,
-    BORDER_LEFT: 82,
-    LETTER_SPACING: 83,
-    BACKGROUND_CLIP: 84
+    MATRIX: 81,
+    BORDER_TOP: 82,
+    BORDER_RIGHT: 83,
+    BORDER_BOTTOM: 84,
+    BORDER_LEFT: 85,
+    LETTER_SPACING: 86
   };
 
   function style2Lower(s) {
@@ -3103,7 +3105,9 @@
     boxShadow: null,
     pointerEvents: 'inherit',
     overflow: 'visible',
-    mixBlendMode: 'normal'
+    mixBlendMode: 'normal',
+    whiteSpace: 'inherit',
+    textOverflow: 'clip'
   };
   var GEOM = {
     fill: 'transparent',
@@ -3981,7 +3985,9 @@
       ALIGN_ITEMS = _enums$STYLE_KEY$2.ALIGN_ITEMS,
       MATRIX = _enums$STYLE_KEY$2.MATRIX,
       LETTER_SPACING = _enums$STYLE_KEY$2.LETTER_SPACING,
-      BACKGROUND_CLIP = _enums$STYLE_KEY$2.BACKGROUND_CLIP;
+      BACKGROUND_CLIP = _enums$STYLE_KEY$2.BACKGROUND_CLIP,
+      WHITE_SPACE = _enums$STYLE_KEY$2.WHITE_SPACE,
+      TEXT_OVERFLOW = _enums$STYLE_KEY$2.TEXT_OVERFLOW;
   var AUTO = unit.AUTO,
       PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -4676,6 +4682,16 @@
 
         res[LETTER_SPACING] = [_n, PX$1];
       }
+    }
+
+    temp = style.whiteSpace;
+
+    if (temp) {
+      if (temp === 'inherit') {
+        res[WHITE_SPACE] = [0, INHERIT$2];
+      } else {
+        res[WHITE_SPACE] = [temp, STRING];
+      }
     } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
@@ -4875,7 +4891,7 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
       }
@@ -4975,6 +4991,15 @@
       computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
     } else {
       computedStyle[LETTER_SPACING] = letterSpacing[0];
+    } //whiteSpace
+
+
+    var whiteSpace = currentStyle[WHITE_SPACE];
+
+    if (whiteSpace[1] === INHERIT$2) {
+      computedStyle[WHITE_SPACE] = isRoot ? 'normal' : parentComputedStyle[WHITE_SPACE];
+    } else {
+      computedStyle[WHITE_SPACE] = whiteSpace[0];
     }
   }
 
@@ -5181,7 +5206,7 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, POSITION, true), _defineProperty(_VALUE$1, DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, FLEX_DIRECTION, true), _defineProperty(_VALUE$1, FLEX_GROW, true), _defineProperty(_VALUE$1, FLEX_SHRINK, true), _defineProperty(_VALUE$1, JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, ALIGN_ITEMS, true), _defineProperty(_VALUE$1, ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, OPACITY, true), _defineProperty(_VALUE$1, Z_INDEX, true), _defineProperty(_VALUE$1, BACKGROUND_CLIP, true), _VALUE$1);
+  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, POSITION, true), _defineProperty(_VALUE$1, DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, FLEX_DIRECTION, true), _defineProperty(_VALUE$1, FLEX_GROW, true), _defineProperty(_VALUE$1, FLEX_SHRINK, true), _defineProperty(_VALUE$1, JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, ALIGN_ITEMS, true), _defineProperty(_VALUE$1, ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, OPACITY, true), _defineProperty(_VALUE$1, Z_INDEX, true), _defineProperty(_VALUE$1, BACKGROUND_CLIP, true), _defineProperty(_VALUE$1, TEXT_OVERFLOW, true), _VALUE$1);
   var ARRAY_0$1 = (_ARRAY_$1 = {}, _defineProperty(_ARRAY_$1, COLOR, true), _defineProperty(_ARRAY_$1, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_LEFT_COLOR, true), _ARRAY_$1);
   var ARRAY_0_1$1 = (_ARRAY_0_$1 = {}, _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, TRANSFORM_ORIGIN$1, true), _ARRAY_0_$1);
 
@@ -16179,7 +16204,7 @@
     }, {
       key: "register",
       value: function register(name, obj) {
-        if (!name || !util.isString(name) || !/^[A-Z]/.test(name) || !(obj.prototype instanceof Component)) {
+        if (!name || !util.isString(name) || !/^[A-Z]/.test(name) || !obj.prototype || !(obj.prototype instanceof Component)) {
           throw new Error('Invalid param');
         }
 
@@ -19641,7 +19666,7 @@
     }, {
       key: "register",
       value: function register(name, obj) {
-        if (!name || !util.isString(name) || name.charAt(0) !== '$' || !(obj.prototype instanceof Geom)) {
+        if (!name || !util.isString(name) || name.charAt(0) !== '$' || !obj.prototype || !(obj.prototype instanceof Geom)) {
           throw new Error('Invalid param');
         }
 

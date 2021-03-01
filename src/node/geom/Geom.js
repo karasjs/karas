@@ -842,7 +842,8 @@ class Geom extends Xom {
   }
 
   static register(name, obj) {
-    if(!name || !util.isString(name) || name.charAt(0) !== '$' || !(obj.prototype instanceof Geom)) {
+    if(!name || !util.isString(name) || name.charAt(0) !== '$'
+      || !obj.prototype || !(obj.prototype instanceof Geom)) {
       throw new Error('Invalid param');
     }
     if(Geom.hasRegister(name)) {

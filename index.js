@@ -311,23 +311,23 @@
     BACKGROUND_CLIP: 69,
     WHITE_SPACE: 70,
     TEXT_OVERFLOW: 71,
+    LETTER_SPACING: 72,
     // GEOM
-    FILL: 72,
-    STROKE: 73,
-    STROKE_WIDTH: 74,
-    STROKE_DASHARRAY: 75,
-    STROKE_DASHARRAY_STR: 76,
-    STROKE_LINECAP: 77,
-    STROKE_LINEJOIN: 78,
-    STROKE_MITERLIMIT: 79,
-    FILL_RULE: 80,
+    FILL: 73,
+    STROKE: 74,
+    STROKE_WIDTH: 75,
+    STROKE_DASHARRAY: 76,
+    STROKE_DASHARRAY_STR: 77,
+    STROKE_LINECAP: 78,
+    STROKE_LINEJOIN: 79,
+    STROKE_MITERLIMIT: 80,
+    FILL_RULE: 81,
     // 无此样式，仅cache需要
-    MATRIX: 81,
-    BORDER_TOP: 82,
-    BORDER_RIGHT: 83,
-    BORDER_BOTTOM: 84,
-    BORDER_LEFT: 85,
-    LETTER_SPACING: 86
+    MATRIX: 82,
+    BORDER_TOP: 83,
+    BORDER_RIGHT: 84,
+    BORDER_BOTTOM: 85,
+    BORDER_LEFT: 86
   };
 
   function style2Lower(s) {
@@ -3430,8 +3430,9 @@
     // 每次渲染前的更新后，等待测量的文字对象列表
     data: {},
     // Text中存入的特殊等待测量的信息，字体+字号+粗细为key
-    charWidth: {} // key的文字宽度hash
-
+    charWidth: {},
+    // key的文字宽度hash
+    ELLIPSIS: '…'
   };
 
   var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
@@ -3537,6 +3538,8 @@
             chars.push(_char);
             html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;').replace(' ', '&nbsp;'), "</span>");
           }
+
+          data[i].s = '';
         }
       });
 
@@ -3568,7 +3571,10 @@
       });
       textCache.list = [];
       textCache.data = {};
-      document.body.removeChild(div);
+
+      if (typeof karas === 'undefined' || !karas.debug) {
+        document.body.removeChild(div);
+      }
     },
     IMG: IMG,
     INIT: INIT,
@@ -5434,7 +5440,11 @@
       COLOR$2 = _enums$STYLE_KEY$4.COLOR,
       VISIBILITY$1 = _enums$STYLE_KEY$4.VISIBILITY,
       TEXT_ALIGN$1 = _enums$STYLE_KEY$4.TEXT_ALIGN,
-      LETTER_SPACING$2 = _enums$STYLE_KEY$4.LETTER_SPACING;
+      LETTER_SPACING$2 = _enums$STYLE_KEY$4.LETTER_SPACING,
+      OVERFLOW = _enums$STYLE_KEY$4.OVERFLOW,
+      WHITE_SPACE$1 = _enums$STYLE_KEY$4.WHITE_SPACE,
+      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$4.TEXT_OVERFLOW;
+  var ELLIPSIS = textCache.ELLIPSIS;
 
   var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
@@ -5470,21 +5480,30 @@
             charWidthList = this.charWidthList; // 每次都要清空重新计算，计算会有缓存
 
         charWidthList.splice(0);
-
-        if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(computedStyle);
-        }
-
         var key = this.__key = computedStyle[FONT_SIZE$3] + ',' + computedStyle[FONT_FAMILY$3] + ',' + computedStyle[FONT_WEIGHT$3];
         var wait = textCache.data[key] = textCache.data[key] || {
           key: key,
           style: computedStyle,
           hash: {},
-          s: []
+          s: ''
         };
         var cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
         var sum = 0;
-        var needMeasure = false;
+        var needMeasure = false; // text-overflow:ellipse需要，即便没有也要先测量
+
+        if (renderMode === mode.CANVAS) {
+          ctx.font = css.setFontStyle(computedStyle);
+
+          if (!cache.hasOwnProperty(ELLIPSIS)) {
+            cache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
+            wait.hash[ELLIPSIS] = true;
+          }
+        } else if (renderMode === mode.SVG) {
+          if (!cache.hasOwnProperty(ELLIPSIS)) {
+            wait.s += ELLIPSIS;
+            needMeasure = true;
+          }
+        }
 
         for (var i = 0, length = content.length; i < length; i++) {
           var _char = content.charAt(i);
@@ -5550,6 +5569,7 @@
         this.__y = this.__sy1 = y;
         var isDestroyed = this.isDestroyed,
             content = this.content,
+            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             lineBoxes = this.lineBoxes,
             charWidthList = this.charWidthList;
@@ -5566,55 +5586,109 @@
         var count = 0;
         var length = content.length;
         var maxW = 0;
+        var overflow = currentStyle[OVERFLOW],
+            textOverflow = currentStyle[TEXT_OVERFLOW$1];
         var lineHeight = computedStyle[LINE_HEIGHT$1],
-            letterSpacing = computedStyle[LETTER_SPACING$2];
+            letterSpacing = computedStyle[LETTER_SPACING$2],
+            whiteSpace = computedStyle[WHITE_SPACE$1]; // 不换行特殊对待，同时考虑overflow和textOverflow
 
-        while (i < length) {
-          count += charWidthList[i] + letterSpacing;
+        if (whiteSpace === 'nowrap') {
+          var isTo;
 
-          if (count === w) {
-            var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
-            lineBoxes.push(lineBox);
-            maxW = Math.max(maxW, count);
-            y += lineHeight;
-            begin = i + 1;
-            i = begin;
-            count = 0;
-          } else if (count > w) {
-            var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+          while (i < length) {
+            count += charWidthList[i] + letterSpacing; // overflow必须hidden才生效文字裁剪
 
-            if (i === begin) {
-              i = begin + 1;
-              width = count;
-            } else {
-              width = count - charWidthList[i];
+            if (overflow === 'hidden' && count > w && (textOverflow === 'clip' || textOverflow === 'ellipsis')) {
+              isTo = true;
+              break;
             }
 
-            var _lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
-
-            lineBoxes.push(_lineBox);
-            maxW = Math.max(maxW, width);
-            y += lineHeight;
-            begin = i;
-            count = 0;
-          } else {
             i++;
+          } // 仅ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
+
+
+          if (isTo && textOverflow === 'ellipsis') {
+            var ew = textCache.charWidth[this.__key][ELLIPSIS];
+
+            for (; i > 0; i--) {
+              count -= charWidthList[i - 1];
+              var ww = count + ew;
+
+              if (ww <= w) {
+                var lineBox = new LineBox(this, x, y, ww, content.slice(0, i) + ELLIPSIS);
+                lineBoxes.push(lineBox);
+                maxW = ww;
+                y += lineHeight;
+                break;
+              }
+            } // 最后也没找到，兜底首字母
+
+
+            if (i === 0) {
+              var _ww = charWidthList[0] + ew;
+
+              var _lineBox = new LineBox(this, x, y, _ww, content.charAt(0) + ELLIPSIS);
+
+              lineBoxes.push(_lineBox);
+              maxW = _ww;
+              y += lineHeight;
+            }
+          } else {
+            var _lineBox2 = new LineBox(this, x, y, count, content.slice(0, i));
+
+            lineBoxes.push(_lineBox2);
+            maxW = count;
+            y += lineHeight;
           }
-        } // 最后一行，只有一行未满时也进这里
-
-
-        if (begin < length && begin < i) {
-          count = 0;
-
-          for (i = begin; i < length; i++) {
+        } else {
+          while (i < length) {
             count += charWidthList[i] + letterSpacing;
+
+            if (count === w) {
+              var _lineBox3 = new LineBox(this, x, y, count, content.slice(begin, i + 1));
+
+              lineBoxes.push(_lineBox3);
+              maxW = Math.max(maxW, count);
+              y += lineHeight;
+              begin = i + 1;
+              i = begin;
+              count = 0;
+            } else if (count > w) {
+              var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+
+              if (i === begin) {
+                i = begin + 1;
+                width = count;
+              } else {
+                width = count - charWidthList[i];
+              }
+
+              var _lineBox4 = new LineBox(this, x, y, width, content.slice(begin, i));
+
+              lineBoxes.push(_lineBox4);
+              maxW = Math.max(maxW, width);
+              y += lineHeight;
+              begin = i;
+              count = 0;
+            } else {
+              i++;
+            }
+          } // 最后一行，只有一行未满时也进这里
+
+
+          if (begin < length && begin < i) {
+            count = 0;
+
+            for (i = begin; i < length; i++) {
+              count += charWidthList[i] + letterSpacing;
+            }
+
+            var _lineBox5 = new LineBox(this, x, y, count, content.slice(begin, length));
+
+            lineBoxes.push(_lineBox5);
+            maxW = Math.max(maxW, count);
+            y += lineHeight;
           }
-
-          var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length));
-
-          lineBoxes.push(_lineBox2);
-          maxW = Math.max(maxW, count);
-          y += lineHeight;
         }
 
         this.__width = maxW;
@@ -12466,8 +12540,9 @@
       BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$a.BORDER_BOTTOM_STYLE,
       BORDER_LEFT_STYLE = _enums$STYLE_KEY$a.BORDER_LEFT_STYLE,
       FILTER$3 = _enums$STYLE_KEY$a.FILTER,
-      OVERFLOW = _enums$STYLE_KEY$a.OVERFLOW,
+      OVERFLOW$1 = _enums$STYLE_KEY$a.OVERFLOW,
       MIX_BLEND_MODE = _enums$STYLE_KEY$a.MIX_BLEND_MODE,
+      TEXT_OVERFLOW$2 = _enums$STYLE_KEY$a.TEXT_OVERFLOW,
       BORDER_TOP_COLOR = _enums$STYLE_KEY$a.BORDER_TOP_COLOR,
       BORDER_BOTTOM_COLOR = _enums$STYLE_KEY$a.BORDER_BOTTOM_COLOR,
       BORDER_LEFT_COLOR = _enums$STYLE_KEY$a.BORDER_LEFT_COLOR,
@@ -13713,7 +13788,7 @@
           } // 这些直接赋值的不需要再算缓存
 
 
-          [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, FILTER$3, OVERFLOW, MIX_BLEND_MODE].forEach(function (k) {
+          [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, FILTER$3, OVERFLOW$1, MIX_BLEND_MODE, TEXT_OVERFLOW$2].forEach(function (k) {
             computedStyle[k] = currentStyle[k];
           });
           [BACKGROUND_COLOR$1, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {
@@ -14132,7 +14207,7 @@
             filter = computedStyle[FILTER$3],
             backgroundSize = computedStyle[BACKGROUND_SIZE$2],
             boxShadow = computedStyle[BOX_SHADOW$2],
-            overflow = computedStyle[OVERFLOW],
+            overflow = computedStyle[OVERFLOW$1],
             mixBlendMode = computedStyle[MIX_BLEND_MODE]; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
@@ -20964,7 +21039,7 @@
       OPACITY$5 = _enums$STYLE_KEY$e.OPACITY,
       VISIBILITY$5 = _enums$STYLE_KEY$e.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$e.FILTER,
-      OVERFLOW$1 = _enums$STYLE_KEY$e.OVERFLOW,
+      OVERFLOW$2 = _enums$STYLE_KEY$e.OVERFLOW,
       MIX_BLEND_MODE$3 = _enums$STYLE_KEY$e.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$e.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$e.TRANSFORM,
@@ -21625,7 +21700,7 @@
         var _config$NODE_COMPUTE = __config[NODE_COMPUTED_STYLE$2],
             position = _config$NODE_COMPUTE[POSITION$3],
             visibility = _config$NODE_COMPUTE[VISIBILITY$5],
-            overflow = _config$NODE_COMPUTE[OVERFLOW$1],
+            overflow = _config$NODE_COMPUTE[OVERFLOW$2],
             mixBlendMode = _config$NODE_COMPUTE[MIX_BLEND_MODE$3]; // text一定是叶子节点
 
         if (node instanceof Text) {
@@ -21775,7 +21850,7 @@
           _node$__config3$NODE_ = _node$__config3[NODE_COMPUTED_STYLE$2],
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
-          overflow = _node$__config3$NODE_[OVERFLOW$1],
+          overflow = _node$__config3$NODE_[OVERFLOW$2],
           mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里
 
       if (node instanceof Text) {

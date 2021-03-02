@@ -17,8 +17,13 @@ const {
     VISIBILITY,
     TEXT_ALIGN,
     LETTER_SPACING,
+    OVERFLOW,
+    WHITE_SPACE,
+    TEXT_OVERFLOW,
   },
 } = enums;
+
+const ELLIPSIS = textCache.ELLIPSIS;
 
 class Text extends Node {
   constructor(content) {
@@ -40,19 +45,30 @@ class Text extends Node {
     let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
-    if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(computedStyle);
-    }
     let key = this.__key = computedStyle[FONT_SIZE] + ',' + computedStyle[FONT_FAMILY] + ',' + computedStyle[FONT_WEIGHT];
     let wait = textCache.data[key] = textCache.data[key] || {
       key,
       style: computedStyle,
       hash: {},
-      s: [],
+      s: '',
     };
     let cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
     let sum = 0;
     let needMeasure = false;
+    // text-overflow:ellipse需要，即便没有也要先测量
+    if(renderMode === mode.CANVAS) {
+      ctx.font = css.setFontStyle(computedStyle);
+      if(!cache.hasOwnProperty(ELLIPSIS)) {
+        cache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
+        wait.hash[ELLIPSIS] = true;
+      }
+    }
+    else if(renderMode === mode.SVG) {
+      if(!cache.hasOwnProperty(ELLIPSIS)) {
+        wait.s += ELLIPSIS;
+        needMeasure = true;
+      }
+    }
     for(let i = 0, length = content.length; i < length; i++) {
       let char = content.charAt(i);
       let mw;
@@ -103,7 +119,7 @@ class Text extends Node {
     let { x, y, w } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
-    let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
+    let { isDestroyed, content, currentStyle, computedStyle, lineBoxes, charWidthList } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none') {
       return;
     }
@@ -115,49 +131,101 @@ class Text extends Node {
     let count = 0;
     let length = content.length;
     let maxW = 0;
-    let { [LINE_HEIGHT]: lineHeight, [LETTER_SPACING]: letterSpacing } = computedStyle;
-    while(i < length) {
-      count += charWidthList[i] + letterSpacing;
-      if(count === w) {
-        let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
+    let {
+      [OVERFLOW]: overflow,
+      [TEXT_OVERFLOW]: textOverflow,
+    } = currentStyle;
+    let {
+      [LINE_HEIGHT]: lineHeight,
+      [LETTER_SPACING]: letterSpacing,
+      [WHITE_SPACE]: whiteSpace,
+    } = computedStyle;
+    // 不换行特殊对待，同时考虑overflow和textOverflow
+    if(whiteSpace === 'nowrap') {
+      let isTo;
+      while(i < length) {
+        count += charWidthList[i] + letterSpacing;
+        // overflow必须hidden才生效文字裁剪
+        if(overflow === 'hidden' && count > w && (textOverflow === 'clip' || textOverflow === 'ellipsis')) {
+          isTo = true;
+          break;
+        }
+        i++;
+      }
+      // 仅ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
+      if(isTo && textOverflow === 'ellipsis') {
+        let ew = textCache.charWidth[this.__key][ELLIPSIS];
+        for(; i > 0; i--) {
+          count -= charWidthList[i - 1];
+          let ww = count + ew;
+          if(ww <= w) {
+            let lineBox = new LineBox(this, x, y, ww, content.slice(0, i) + ELLIPSIS);
+            lineBoxes.push(lineBox);
+            maxW = ww;
+            y += lineHeight;
+            break;
+          }
+        }
+        // 最后也没找到，兜底首字母
+        if(i === 0) {
+          let ww = charWidthList[0] + ew;
+          let lineBox = new LineBox(this, x, y, ww, content.charAt(0) + ELLIPSIS);
+          lineBoxes.push(lineBox);
+          maxW = ww;
+          y += lineHeight;
+        }
+      }
+      else {
+        let lineBox = new LineBox(this, x, y, count, content.slice(0, i));
+        lineBoxes.push(lineBox);
+        maxW = count;
+        y += lineHeight;
+      }
+    }
+    else {
+      while(i < length) {
+        count += charWidthList[i] + letterSpacing;
+        if(count === w) {
+          let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
+          lineBoxes.push(lineBox);
+          maxW = Math.max(maxW, count);
+          y += lineHeight;
+          begin = i + 1;
+          i = begin;
+          count = 0;
+        }
+        else if(count > w) {
+          let width;
+          // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+          if(i === begin) {
+            i = begin + 1;
+            width = count;
+          }
+          else {
+            width = count - charWidthList[i];
+          }
+          let lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
+          lineBoxes.push(lineBox);
+          maxW = Math.max(maxW, width);
+          y += lineHeight;
+          begin = i;
+          count = 0;
+        }
+        else {
+          i++;
+        }
+      }
+      // 最后一行，只有一行未满时也进这里
+      if(begin < length && begin < i) {
+        count = 0;
+        for(i = begin; i < length; i++) {
+          count += charWidthList[i] + letterSpacing;
+        }
+        let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
         lineBoxes.push(lineBox);
         maxW = Math.max(maxW, count);
         y += lineHeight;
-        begin = i + 1;
-        i = begin;
-        count = 0;
       }
-      else if(count > w) {
-        let width;
-        // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
-        if(i === begin) {
-          i = begin + 1;
-          width = count;
-        }
-        else {
-          width = count - charWidthList[i];
-        }
-        let lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
-        lineBoxes.push(lineBox);
-        maxW = Math.max(maxW, width);
-        y += lineHeight;
-        begin = i;
-        count = 0;
-      }
-      else {
-        i++;
-      }
-    }
-    // 最后一行，只有一行未满时也进这里
-    if(begin < length && begin < i) {
-      count = 0;
-      for(i = begin; i < length; i++) {
-        count += charWidthList[i] + letterSpacing;
-      }
-      let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
-      lineBoxes.push(lineBox);
-      maxW = Math.max(maxW, count);
-      y += lineHeight;
     }
     this.__width = maxW;
     this.__height = y - data.y;

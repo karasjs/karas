@@ -365,6 +365,7 @@ class Dom extends Xom {
     // 计算需考虑style的属性
     let {
       [DISPLAY]: display,
+      [FLEX_DIRECTION]: flexDirection,
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
@@ -386,11 +387,33 @@ class Dom extends Xom {
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let [b2, min2, max2] = item.__calAutoBasis(isDirectionRow, x, y, w, h, isVirtual, true);
-        // 直接孩子/递归孩子都需要根据flex和方向来判断合并规则，flex相加，普通取极值
+        // 直接孩子/递归孩子都需要根据flex和流方向来判断合并规则，flex根据弹性方向，普通取极值
         if(display === 'flex') {
-          b += b2;
-          min += min2;
-          max += max2;
+          // 根据父节点的flex方向，孩子孙子的方向组合，判断是相加还是极值，多层时顶层和底层，中间忽视
+          if(isDirectionRow) {
+            if(flexDirection === 'row') {
+              b += b2;
+              min += min2;
+              max += max2;
+            }
+            else {
+              b = Math.max(b, b2);
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+          }
+          else {
+            if(flexDirection === 'row') {
+              b = Math.max(b, b2);
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+            else {
+              b += b2;
+              min += min2;
+              max += max2;
+            }
+          }
         }
         // 竖排的即便不是flex，因为计算的是flex的child，这里返回grandchild也要累积
         else if(!isDirectionRow) {
@@ -850,20 +873,23 @@ class Dom extends Xom {
       let main;
       let shrink = shrinkList[i];
       let grow = growList[i];
+      let isGrow;
       // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
       if(isMoreThanMax) {
+        isGrow = true;
         main = grow ? (maxList[i] + free * grow / growSum) : maxList[i];
       }
       else if(isOverflow) {
         main = shrink ? (basisList[i] - overflow * shrink / shrinkSum) : basisList[i];
       }
       else {
+        isGrow = !!grow;
         main = grow ? (basisList[i] + free * grow / growSum) : basisList[i];
       }
       // 主轴长度的最小值不能小于元素的最小长度，即横向时的字符宽度，收缩时会用到确保最小值
       main = Math.max(main, minList[i]);
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        let { currentStyle, computedStyle } = item;
+        let { currentStyle } = item;
         let {
           [DISPLAY]: display,
           [FLEX_DIRECTION]: flexDirection,
@@ -894,6 +920,7 @@ class Dom extends Xom {
             y,
             w,
             h: main,
+            h2: isGrow ? main : undefined, // 竖向flex的child如果是grow，假设为固定尺寸但不修改原始style
           });
         }
         // 重设因伸缩而导致的主轴长度

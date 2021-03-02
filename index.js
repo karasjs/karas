@@ -13404,6 +13404,7 @@
 
         var fixedWidth;
         var fixedHeight; // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
+        // 垂直嵌套flex时也会用到，子级有grow时，孙子要按它来算
 
         if (w2 !== undefined) {
           fixedWidth = true;
@@ -16646,6 +16647,7 @@
             currentStyle = this.currentStyle; // 计算需考虑style的属性
 
         var display = currentStyle[DISPLAY$3],
+            flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$4],
             height = currentStyle[HEIGHT$4];
         var main = isDirectionRow ? width : height; // 已声明主轴尺寸的，basis和max均为，暂不考虑未支持的nowrap不换行，如果是递归孩子，直接返回皆可
@@ -16671,13 +16673,32 @@
                 _item$__calAutoBasis2 = _slicedToArray(_item$__calAutoBasis, 3),
                 b2 = _item$__calAutoBasis2[0],
                 min2 = _item$__calAutoBasis2[1],
-                max2 = _item$__calAutoBasis2[2]; // 直接孩子/递归孩子都需要根据flex和方向来判断合并规则，flex相加，普通取极值
+                max2 = _item$__calAutoBasis2[2]; // 直接孩子/递归孩子都需要根据flex和流方向来判断合并规则，flex根据弹性方向，普通取极值
 
 
             if (display === 'flex') {
-              b += b2;
-              min += min2;
-              max += max2;
+              // 根据父节点的flex方向，孩子孙子的方向组合，判断是相加还是极值，多层时顶层和底层，中间忽视
+              if (isDirectionRow) {
+                if (flexDirection === 'row') {
+                  b += b2;
+                  min += min2;
+                  max += max2;
+                } else {
+                  b = Math.max(b, b2);
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
+                }
+              } else {
+                if (flexDirection === 'row') {
+                  b = Math.max(b, b2);
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
+                } else {
+                  b += b2;
+                  min += min2;
+                  max += max2;
+                }
+              }
             } // 竖排的即便不是flex，因为计算的是flex的child，这里返回grandchild也要累积
             else if (!isDirectionRow) {
                 b += b2;
@@ -17208,13 +17229,16 @@
         flowChildren.forEach(function (item, i) {
           var main;
           var shrink = shrinkList[i];
-          var grow = growList[i]; // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
+          var grow = growList[i];
+          var isGrow; // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
 
           if (isMoreThanMax) {
+            isGrow = true;
             main = grow ? maxList[i] + free * grow / growSum : maxList[i];
           } else if (isOverflow) {
             main = shrink ? basisList[i] - overflow * shrink / shrinkSum : basisList[i];
           } else {
+            isGrow = !!grow;
             main = grow ? basisList[i] + free * grow / growSum : basisList[i];
           } // 主轴长度的最小值不能小于元素的最小长度，即横向时的字符宽度，收缩时会用到确保最小值
 
@@ -17222,8 +17246,7 @@
           main = Math.max(main, minList[i]);
 
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle2 = item.currentStyle,
-                computedStyle = item.computedStyle;
+            var _currentStyle2 = item.currentStyle;
             var display = _currentStyle2[DISPLAY$3],
                 _flexDirection = _currentStyle2[FLEX_DIRECTION$2],
                 width = _currentStyle2[WIDTH$4],
@@ -17253,7 +17276,9 @@
                 x: x,
                 y: y,
                 w: w,
-                h: main
+                h: main,
+                h2: isGrow ? main : undefined // 竖向flex的child如果是grow，假设为固定尺寸但不修改原始style
+
               });
             } // 重设因伸缩而导致的主轴长度
 

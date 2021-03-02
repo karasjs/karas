@@ -1155,6 +1155,7 @@ class Xom extends Node {
     let fixedWidth;
     let fixedHeight;
     // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
+    // 垂直嵌套flex时也会用到，子级有grow时，孙子要按它来算
     if(w2 !== undefined) {
       fixedWidth = true;
       w = w2;

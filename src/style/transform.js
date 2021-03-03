@@ -74,12 +74,9 @@ function calMatrixByOrigin(m, transformOrigin) {
   if(ox === 0 && oy === 0) {
     return res;
   }
-  res[4] += ox;
-  res[5] += oy;
-  let t2 = identity();
-  t2[4] = -ox;
-  t2[5] = -oy;
-  res = multiply(res, t2);
+  let [a, b, c, d, e, f] = res;
+  res[4] = -ox * a - oy * c + e + ox;
+  res[5] = -ox * b - oy * d + f + oy;
   return res;
 }
 

@@ -6422,12 +6422,16 @@
       return res;
     }
 
-    res[4] += ox;
-    res[5] += oy;
-    var t2 = identity$1();
-    t2[4] = -ox;
-    t2[5] = -oy;
-    res = multiply$1(res, t2);
+    var _res = _slicedToArray(res, 6),
+        a = _res[0],
+        b = _res[1],
+        c = _res[2],
+        d = _res[3],
+        e = _res[4],
+        f = _res[5];
+
+    res[4] = -ox * a - oy * c + e + ox;
+    res[5] = -ox * b - oy * d + f + oy;
     return res;
   }
 

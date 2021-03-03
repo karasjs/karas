@@ -5586,7 +5586,8 @@
         var count = 0;
         var length = content.length;
         var maxW = 0;
-        var overflow = currentStyle[OVERFLOW],
+        var display = currentStyle[DISPLAY$1],
+            overflow = currentStyle[OVERFLOW],
             textOverflow = currentStyle[TEXT_OVERFLOW$1];
         var lineHeight = computedStyle[LINE_HEIGHT$1],
             letterSpacing = computedStyle[LETTER_SPACING$2],
@@ -5604,10 +5605,10 @@
             }
 
             i++;
-          } // 仅ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
+          } // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
 
 
-          if (isTo && textOverflow === 'ellipsis') {
+          if (isTo && (display === 'block' || display === 'inline') && textOverflow === 'ellipsis') {
             var ew = textCache.charWidth[this.__key][ELLIPSIS];
 
             for (; i > 0; i--) {
@@ -16385,6 +16386,7 @@
       ALIGN_ITEMS$1 = _enums$STYLE_KEY$b.ALIGN_ITEMS,
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$b.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$b.Z_INDEX,
+      WHITE_SPACE$2 = _enums$STYLE_KEY$b.WHITE_SPACE,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -16744,11 +16746,13 @@
     }, {
       key: "__calAutoBasis",
       value: function __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+        css.computeReflow(this, this.isShadowRoot);
         var b = 0;
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle; // 计算需考虑style的属性
+            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle; // 计算需考虑style的属性
 
         var display = currentStyle[DISPLAY$3],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -16815,13 +16819,21 @@
               }
           } // 文本水平
           else if (isDirectionRow) {
-              b = Math.max(b, item.charWidth);
-              min = Math.max(min, item.charWidth);
-              max = Math.max(item.textWidth, max);
+              var whiteSpace = computedStyle[WHITE_SPACE$2];
+              var tw = item.textWidth;
+
+              if (whiteSpace === 'nowrap') {
+                b = Math.max(b, tw);
+                min = Math.max(min, tw);
+              } else {
+                b = Math.max(b, item.charWidth);
+                min = Math.max(min, item.charWidth);
+              }
+
+              max = Math.max(tw, max);
+              console.log(whiteSpace, b, min, max);
             } // 文本垂直，尝试伪布局得到高度
             else {
-                css.computeReflow(item);
-
                 item.__layout({
                   x: x,
                   y: y,
@@ -17149,6 +17161,7 @@
       value: function __layoutFlex(data, isVirtual) {
         var _this2 = this;
 
+        console.error(this.tagName);
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle[FLEX_DIRECTION$2],

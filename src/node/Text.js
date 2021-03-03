@@ -132,6 +132,7 @@ class Text extends Node {
     let length = content.length;
     let maxW = 0;
     let {
+      [DISPLAY]: display,
       [OVERFLOW]: overflow,
       [TEXT_OVERFLOW]: textOverflow,
     } = currentStyle;
@@ -152,8 +153,8 @@ class Text extends Node {
         }
         i++;
       }
-      // 仅ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
-      if(isTo && textOverflow === 'ellipsis') {
+      // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
+      if(isTo && (display === 'block' || display === 'inline') && textOverflow === 'ellipsis') {
         let ew = textCache.charWidth[this.__key][ELLIPSIS];
         for(; i > 0; i--) {
           count -= charWidthList[i - 1];

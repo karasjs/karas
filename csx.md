@@ -105,6 +105,13 @@
 * letterSpacing
   * inherit 默认，根元素为0
   * px
+* whiteSpace
+  * inherit 默认， 根元素为breakAll
+  * nowrap
+  * breakAll
+* textOverflow
+  * clip 默认
+  * ellipse
 * backgroundColor
   * transparent 默认
   * #rgb/rgb/rgba

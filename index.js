@@ -16831,7 +16831,6 @@
               }
 
               max = Math.max(tw, max);
-              console.log(whiteSpace, b, min, max);
             } // 文本垂直，尝试伪布局得到高度
             else {
                 item.__layout({
@@ -17161,7 +17160,6 @@
       value: function __layoutFlex(data, isVirtual) {
         var _this2 = this;
 
-        console.error(this.tagName);
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -27969,7 +27967,7 @@
     Cache: Cache
   };
 
-  var version = "0.52.1";
+  var version = "0.53.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

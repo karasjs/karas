@@ -441,7 +441,7 @@ class Dom extends Xom {
           b = Math.max(b, item.charWidth);
           min = Math.max(min, item.charWidth);
         }
-        max = Math.max(tw, max);console.log(whiteSpace, b, min, max);
+        max = Math.max(tw, max);
       }
       // 文本垂直，尝试伪布局得到高度
       else {
@@ -718,7 +718,7 @@ class Dom extends Xom {
   }
 
   // 弹性布局时的计算位置
-  __layoutFlex(data, isVirtual) {console.error(this.tagName);
+  __layoutFlex(data, isVirtual) {
     let { flowChildren, currentStyle } = this;
     let {
       [FLEX_DIRECTION]: flexDirection,

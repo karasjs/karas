@@ -70,13 +70,12 @@ function calMatrix(transform, ow, oh) {
 
 function calMatrixByOrigin(m, transformOrigin) {
   let [ox, oy] = transformOrigin;
+  let res = m.slice(0);
   if(ox === 0 && oy === 0) {
-    return m.slice(0);
+    return res;
   }
-  let t = identity();
-  t[4] = ox;
-  t[5] = oy;
-  let res = multiply(t, m);
+  res[4] += ox;
+  res[5] += oy;
   let t2 = identity();
   t2[4] = -ox;
   t2[5] = -oy;

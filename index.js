@@ -6416,14 +6416,14 @@
         ox = _transformOrigin[0],
         oy = _transformOrigin[1];
 
+    var res = m.slice(0);
+
     if (ox === 0 && oy === 0) {
-      return m.slice(0);
+      return res;
     }
 
-    var t = identity$1();
-    t[4] = ox;
-    t[5] = oy;
-    var res = multiply$1(t, m);
+    res[4] += ox;
+    res[5] += oy;
     var t2 = identity$1();
     t2[4] = -ox;
     t2[5] = -oy;

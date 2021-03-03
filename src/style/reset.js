@@ -70,6 +70,8 @@ const DOM = {
   pointerEvents: 'inherit',
   overflow: 'visible',
   mixBlendMode: 'normal',
+  whiteSpace: 'inherit',
+  textOverflow: 'clip',
 };
 
 const GEOM = {

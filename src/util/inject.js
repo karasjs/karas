@@ -97,6 +97,7 @@ let inject = {
           chars.push(char);
           html += `<span style="${inline}">${char.replace(/</, '&lt;').replace(' ', '&nbsp;')}</span>`;
         }
+        data[i].s = '';
       }
     });
     if(!html) {
@@ -122,7 +123,9 @@ let inject = {
     list.forEach(text => text.__measureCb());
     textCache.list = [];
     textCache.data = {};
-    document.body.removeChild(div);
+    if(typeof karas === 'undefined' || !karas.debug) {
+      document.body.removeChild(div);
+    }
   },
   IMG,
   INIT,

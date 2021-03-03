@@ -74,6 +74,7 @@ const {
     FILTER,
     OVERFLOW,
     MIX_BLEND_MODE,
+    TEXT_OVERFLOW,
     BORDER_TOP_COLOR,
     BORDER_BOTTOM_COLOR,
     BORDER_LEFT_COLOR,
@@ -1449,6 +1450,7 @@ class Xom extends Node {
         FILTER,
         OVERFLOW,
         MIX_BLEND_MODE,
+        TEXT_OVERFLOW,
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });

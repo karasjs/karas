@@ -43,6 +43,7 @@ const {
     ALIGN_ITEMS,
     JUSTIFY_CONTENT,
     Z_INDEX,
+    WHITE_SPACE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -358,10 +359,11 @@ class Dom extends Xom {
    * @private
    */
   __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+    css.computeReflow(this, this.isShadowRoot);
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
     // 计算需考虑style的属性
     let {
       [DISPLAY]: display,
@@ -429,13 +431,20 @@ class Dom extends Xom {
       }
       // 文本水平
       else if(isDirectionRow) {
-        b = Math.max(b, item.charWidth);
-        min = Math.max(min, item.charWidth);
-        max = Math.max(item.textWidth, max);
+        let whiteSpace = computedStyle[WHITE_SPACE];
+        let tw = item.textWidth;
+        if(whiteSpace === 'nowrap') {
+          b = Math.max(b, tw);
+          min = Math.max(min, tw);
+        }
+        else {
+          b = Math.max(b, item.charWidth);
+          min = Math.max(min, item.charWidth);
+        }
+        max = Math.max(tw, max);
       }
       // 文本垂直，尝试伪布局得到高度
       else {
-        css.computeReflow(item);
         item.__layout({
           x,
           y,

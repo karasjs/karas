@@ -274,7 +274,8 @@ class Component extends Event {
   }
 
   static register(name, obj) {
-    if(!name || !util.isString(name) || !/^[A-Z]/.test(name) || !(obj.prototype instanceof Component)) {
+    if(!name || !util.isString(name) || !/^[A-Z]/.test(name)
+      || !obj.prototype || !(obj.prototype instanceof Component)) {
       throw new Error('Invalid param');
     }
     if(Component.hasRegister(name)) {

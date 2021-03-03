@@ -60,6 +60,8 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   MATRIX,
   LETTER_SPACING,
   BACKGROUND_CLIP,
+  WHITE_SPACE,
+  TEXT_OVERFLOW,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -741,6 +743,15 @@ function normalize(style, reset = []) {
       res[LETTER_SPACING] = [n, PX];
     }
   }
+  temp = style.whiteSpace;
+  if(temp) {
+    if(temp === 'inherit') {
+      res[WHITE_SPACE] = [0, INHERIT];
+    }
+    else {
+      res[WHITE_SPACE] = [temp, STRING];
+    }
+  }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;
   if(temp !== undefined) {
@@ -928,6 +939,7 @@ function normalize(style, reset = []) {
     'borderBottomStyle',
     'borderLeftStyle',
     'backgroundClip',
+    'textOverflow',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
@@ -1048,6 +1060,14 @@ function computeReflow(node, isHost) {
   }
   else {
     computedStyle[LETTER_SPACING] = letterSpacing[0];
+  }
+  //whiteSpace
+  let whiteSpace = currentStyle[WHITE_SPACE];
+  if(whiteSpace[1] === INHERIT) {
+    computedStyle[WHITE_SPACE] = isRoot ? 'normal' : parentComputedStyle[WHITE_SPACE];
+  }
+  else {
+    computedStyle[WHITE_SPACE] = whiteSpace[0];
   }
 }
 
@@ -1250,6 +1270,7 @@ const VALUE = {
   [OPACITY]: true,
   [Z_INDEX]: true,
   [BACKGROUND_CLIP]: true,
+  [TEXT_OVERFLOW]: true,
 };
 const ARRAY_0 = {
   [COLOR]: true,

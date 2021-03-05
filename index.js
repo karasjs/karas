@@ -17986,7 +17986,7 @@
             clientHeight = container.clientHeight,
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
-            children = this.children,
+            flowChildren = this.flowChildren,
             absChildren = this.absChildren;
         var display = computedStyle[DISPLAY$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
@@ -18200,7 +18200,7 @@
           }
         }); // 递归进行，遇到absolute/relative/component的设置新容器
 
-        children.forEach(function (item) {
+        flowChildren.forEach(function (item) {
           if (target) {
             // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
             var node = item;
@@ -23618,6 +23618,25 @@
 
         prev.__config[NODE_CACHE_MASK$3] = null;
       }
+    } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
+
+
+    if (computedStyle[DISPLAY$8] === 'none' && !hasDisplay) {
+      return false;
+    } // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
+    // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
+    // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
+
+
+    var parent = domParent;
+
+    if (hasDisplay && parent) {
+      var _config2 = parent.__config;
+
+      if (_config2[NODE_CURRENT_STYLE$4][DISPLAY$8] === 'none' || _config2[NODE_COMPUTED_STYLE$3][DISPLAY$8] === 'none') {
+        computedStyle[DISPLAY$8] = 'none';
+        return false;
+      }
     } // reflow/repaint/measure相关的记录下来
 
 
@@ -23683,25 +23702,6 @@
       __config[NODE_CACHE_FILTER$4].release();
 
       __config[NODE_CACHE_FILTER$4] = null;
-    } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
-
-
-    if (computedStyle[DISPLAY$8] === 'none' && !hasDisplay) {
-      return false;
-    } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效，直接父节点即可，因为display是继承的
-    // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
-    // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
-
-
-    var parent = domParent;
-
-    if (hasDisplay && parent) {
-      var _config2 = parent.__config;
-
-      if (_config2[NODE_CURRENT_STYLE$4][DISPLAY$8] === 'none' || _config2[NODE_COMPUTED_STYLE$3][DISPLAY$8] === 'none') {
-        computedStyle[DISPLAY$8] = 'none';
-        return false;
-      }
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
 
@@ -27553,7 +27553,8 @@
     filter: 'ft',
     boxShadow: 'bd',
     overflow: 'of',
-    backgroundClip: 'bp'
+    backgroundClip: 'bp',
+    textOverflow: 'tof'
   };
   var abbrCssProperty = {};
   var fullAnimate = {

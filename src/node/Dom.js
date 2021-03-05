@@ -1481,7 +1481,7 @@ class Dom extends Xom {
    */
   __layoutAbs(container, data, target) {
     let { sx: x, sy: y, clientWidth, clientHeight, computedStyle } = container;
-    let { isDestroyed, children, absChildren } = this;
+    let { isDestroyed, flowChildren, absChildren } = this;
     let {
       [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -1678,7 +1678,7 @@ class Dom extends Xom {
       }
     });
     // 递归进行，遇到absolute/relative/component的设置新容器
-    children.forEach(item => {
+    flowChildren.forEach(item => {
       if(target) {
         // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
         let node = item;

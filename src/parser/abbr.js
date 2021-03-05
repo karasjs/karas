@@ -11,6 +11,7 @@ let fullCssProperty = {
   boxShadow: 'bd',
   overflow: 'of',
   backgroundClip: 'bp',
+  textOverflow: 'tof',
 };
 
 let abbrCssProperty = {};

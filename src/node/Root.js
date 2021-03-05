@@ -455,6 +455,21 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       prev.__config[NODE_CACHE_MASK] = null;
     }
   }
+  // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
+  if(computedStyle[DISPLAY] === 'none' && !hasDisplay) {
+    return false;
+  }
+  // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
+  // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
+  // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
+  let parent = domParent;
+  if(hasDisplay && parent) {
+    let __config = parent.__config;
+    if(__config[NODE_CURRENT_STYLE][DISPLAY] === 'none' || __config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
+      computedStyle[DISPLAY] = 'none';
+      return false;
+    }
+  }
   // reflow/repaint/measure相关的记录下来
   let isRp = !component && isRepaint(lv);
   if(isRp) {
@@ -508,21 +523,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   if((need || contain(lv, FILTER)) && __config[NODE_CACHE_FILTER]) {
     __config[NODE_CACHE_FILTER].release();
     __config[NODE_CACHE_FILTER] = null;
-  }
-  // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
-  if(computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-    return false;
-  }
-  // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效，直接父节点即可，因为display是继承的
-  // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
-  // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
-  let parent = domParent;
-  if(hasDisplay && parent) {
-    let __config = parent.__config;
-    if(__config[NODE_CURRENT_STYLE][DISPLAY] === 'none' || __config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
-      computedStyle[DISPLAY] = 'none';
-      return false;
-    }
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
   while(parent) {

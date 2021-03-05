@@ -1580,6 +1580,10 @@
       end = _ref[1];
     }
 
+    if (begin === end) {
+      return [];
+    }
+
     var list = [];
     var b = Math.floor(begin / 90);
     var e = Math.floor(end / 90); // 同象限直接算
@@ -24722,18 +24726,23 @@
                     });
 
                     y += node.outerHeight;
-                    container = container.domParent;
 
-                    while (container && container !== root) {
-                      if (isRelativeOrAbsolute$2(container)) {
-                        break;
-                      } // 不能用domParent，必须在组件环境内
+                    if (component) {
+                      container = node;
+                    } else {
+                      container = container.domParent;
+
+                      while (container && container !== root) {
+                        if (isRelativeOrAbsolute$2(container)) {
+                          break;
+                        } // 不能用domParent，必须在组件环境内
 
 
-                      if (container.parent) {
-                        container = container.parent;
-                      } else if (container.host) {
-                        break;
+                        if (container.parent) {
+                          container = container.parent;
+                        } else if (container.host) {
+                          break;
+                        }
                       }
                     }
 

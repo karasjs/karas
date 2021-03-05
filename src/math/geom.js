@@ -116,6 +116,9 @@ function sectorPoints(x, y, r, begin, end) {
   if(begin > end) {
     [begin, end] = [end, begin];
   }
+  if(begin === end) {
+    return [];
+  }
   let list = [];
   let b = Math.floor(begin / 90);
   let e = Math.floor(end / 90);

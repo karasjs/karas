@@ -1361,17 +1361,22 @@ class Root extends Dom {
               h,
             });
             y += node.outerHeight;
-            container = container.domParent;
-            while(container && container !== root) {
-              if(isRelativeOrAbsolute(container)) {
-                break;
-              }
-              // 不能用domParent，必须在组件环境内
-              if(container.parent) {
-                container = container.parent;
-              }
-              else if(container.host) {
-                break;
+            if(component) {
+              container = node;
+            }
+            else {
+              container = container.domParent;
+              while(container && container !== root) {
+                if(isRelativeOrAbsolute(container)) {
+                  break;
+                }
+                // 不能用domParent，必须在组件环境内
+                if(container.parent) {
+                  container = container.parent;
+                }
+                else if(container.host) {
+                  break;
+                }
               }
             }
             if(!container) {

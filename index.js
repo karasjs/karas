@@ -17986,7 +17986,7 @@
             clientHeight = container.clientHeight,
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
-            flowChildren = this.flowChildren,
+            children = this.children,
             absChildren = this.absChildren;
         var display = computedStyle[DISPLAY$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
@@ -18189,9 +18189,8 @@
             w2: w2,
             // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
             h2: h2
-          }, false, true);
+          }, false, true); // item.__layoutAbs(item, data);
 
-          item.__layoutAbs(item, data);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);
@@ -18202,7 +18201,7 @@
           }
         }); // 递归进行，遇到absolute/relative/component的设置新容器
 
-        flowChildren.forEach(function (item) {
+        children.forEach(function (item) {
           if (target) {
             // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
             var node = item;

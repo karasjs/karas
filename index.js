@@ -18191,6 +18191,8 @@
             h2: h2
           }, false, true);
 
+          item.__layoutAbs(item, data);
+
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);
           }

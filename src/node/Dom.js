@@ -1670,6 +1670,7 @@ class Dom extends Xom {
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
       }, false, true);
+      item.__layoutAbs(item, data);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }

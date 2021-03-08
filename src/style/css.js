@@ -601,8 +601,6 @@ function normalize(style, reset = []) {
     'left',
     'width',
     'height',
-    'flexBasis',
-    // 'strokeWidth',
   ].forEach(k => {
     let v = style[k];
     if(isNil(v)) {
@@ -631,6 +629,24 @@ function normalize(style, reset = []) {
       v[0] = 0;
     }
   });
+  temp = style.flexBasis;
+  if(!isNil(temp)) {
+    if(temp === 'content') {
+      res[FLEX_BASIS] = [temp, STRING];
+    }
+    else if(/^[\d.]/.test(temp)) {
+      calUnit(res, FLEX_BASIS, temp);
+      let v = res[FLEX_BASIS];
+      v[0] = Math.max(v[0], 0);
+      // 无单位视为px
+      if(v[1] === NUMBER) {
+        v[1] = PX;
+      }
+    }
+    else {
+      res[FLEX_BASIS] = [0, AUTO];
+    }
+  }
   temp = style.color;
   if(!isNil(temp)) {
     if(temp === 'inherit') {
@@ -692,7 +708,7 @@ function normalize(style, reset = []) {
     }
     else {
       // 统一文字声明格式
-      res[FONT_FAMILY] = [temp.replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
+      res[FONT_FAMILY] = [temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
     }
   }
   temp = style.textAlign;
@@ -949,12 +965,15 @@ function normalize(style, reset = []) {
   [
     'flexGrow',
     'flexShrink',
-    'zIndex',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
-      res[STYLE_KEY[style2Upper(k)]] = parseFloat(style[k]) || 0;
+      res[STYLE_KEY[style2Upper(k)]] = Math.max(parseFloat(style[k]) || 0, 0);
     }
   });
+  temp = style.zIndex;
+  if(!isNil(temp)) {
+    res[Z_INDEX] = parseFloat(temp) || 0;
+  }
   // 这些支持多个的用数组表示
   [
     'backgroundRepeat',

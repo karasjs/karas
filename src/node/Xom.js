@@ -959,13 +959,13 @@ class Xom extends Node {
     this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
   }
 
-  // 换算margin/padding为px单位
-  __calMp(v, w) {
+  // 换算margin/padding为px单位，onlyAbsValue只考虑绝对值，不考虑百分比等
+  __calMp(v, w, onlyAbsValue) {
     let n = 0;
     if(v[1] === PX) {
       n += v[0];
     }
-    else if(v[1] === PERCENT) {
+    else if(v[1] === PERCENT && !onlyAbsValue) {
       v[0] *= w * 0.01;
       v[1] = PX;
       n += v[0];

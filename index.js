@@ -16755,6 +16755,7 @@
     }, {
       key: "__calMinMax",
       value: function __calMinMax(isDirectionRow, x, y, w, h, isVirtual) {
+        css.computeReflow(this, this.isShadowRoot);
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
@@ -16890,12 +16891,12 @@
     }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+        css.computeReflow(this, this.isShadowRoot);
         var b = 0;
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle; // 计算需考虑style的属性
+            currentStyle = this.currentStyle; // 计算需考虑style的属性
 
         var display = currentStyle[DISPLAY$3],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -16906,20 +16907,21 @@
 
         var isAuto = flexBasis[1] === AUTO$3;
         var isFixed = flexBasis[1] === PX$5 || flexBasis[1] === PERCENT$6;
-        var isContent = !isAuto && !isFixed; // flex的item固定basis计算
+        var isContent = !isAuto && !isFixed;
+        var fixedSize; // flex的item固定basis计算
 
         if (isFixed) {
           if (flexBasis[1] === PX$5) {
-            b = flexBasis[0];
+            b = fixedSize = flexBasis[0];
           } else {
-            b = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+            b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
           }
         } // 已声明主轴尺寸的，当basis是auto时为值
         else if ((main[1] === PX$5 || main[1] === PERCENT$6) && isAuto) {
             if (main[1] === PX$5) {
-              b = min = max = main[0];
+              b = fixedSize = main[0];
             } else {
-              b = min = max = main[0] * 0.01 * (isDirectionRow ? w : h);
+              b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
             }
           } // 非固定尺寸的basis为auto时降级为content
           else if (isAuto) {
@@ -16930,32 +16932,57 @@
         if (display === 'flex') {
           var isRow = flexDirection !== 'column';
           flowChildren.forEach(function (item) {
-            var currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+            if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+              var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-            if (currentStyle[DISPLAY$3] === 'inline') {
-              currentStyle[DISPLAY$3] = 'block';
-            }
+              if (_currentStyle[DISPLAY$3] === 'inline') {
+                _currentStyle[DISPLAY$3] = 'block';
+              }
 
-            var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
-                _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
-                min2 = _item$__calMinMax8[0],
-                max2 = _item$__calMinMax8[1];
+              var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
+                  _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
+                  min2 = _item$__calMinMax8[0],
+                  max2 = _item$__calMinMax8[1];
 
-            if (isDirectionRow) {
-              if (isRow) {
-                min += min2;
-                max += max2;
+              if (isDirectionRow) {
+                if (isRow) {
+                  min += min2;
+                  max += max2;
+                } else {
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
+                }
               } else {
-                min = Math.max(min, min2);
-                max = Math.max(max, max2);
+                if (isRow) {
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
+                } else {
+                  min += min2;
+                  max += max2;
+                }
+              }
+            } else if (isDirectionRow) {
+              if (isRow) {
+                min += item.charWidth;
+                max += item.textWidth;
+              } else {
+                min = Math.max(min, item.charWidth);
+                max = Math.max(max, item.textWidth);
               }
             } else {
+              item.__layout({
+                x: x,
+                y: y,
+                w: w,
+                h: h
+              }, true);
+
               if (isRow) {
-                min = Math.max(min, min2);
-                max = Math.max(max, max2);
+                min = Math.max(min, item.height);
+                max = Math.max(max, item.height);
               } else {
-                min += min2;
-                max += max2;
+                min += item.height;
+                max += item.height;
               }
             }
           });
@@ -16991,6 +17018,10 @@
               }
             });
           }
+
+        if (fixedSize) {
+          max = Math.max(fixedSize, max);
+        }
 
         if (isContent) {
           b = max;
@@ -17344,10 +17375,10 @@
         var growSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+            var _currentStyle2 = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-            if (_currentStyle[DISPLAY$3] === 'inline') {
-              _currentStyle[DISPLAY$3] = 'block';
+            if (_currentStyle2[DISPLAY$3] === 'inline') {
+              _currentStyle2[DISPLAY$3] = 'block';
             } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -17367,8 +17398,8 @@
               return;
             }
 
-            var flexGrow = _currentStyle[FLEX_GROW$1],
-                flexShrink = _currentStyle[FLEX_SHRINK$1];
+            var flexGrow = _currentStyle2[FLEX_GROW$1],
+                flexShrink = _currentStyle2[FLEX_SHRINK$1];
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
@@ -17447,7 +17478,7 @@
           }
         }); // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
 
-        var isOverflow = hypotheticalSum > (isDirectionRow ? w : h);
+        var isOverflow = hypotheticalSum >= (isDirectionRow ? w : h);
         var targetMainList = [];
         basisList.forEach(function (item, i) {
           if (isOverflow) {
@@ -17581,11 +17612,11 @@
           var main = targetMainList[i];
 
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle2 = item.currentStyle;
-            var display = _currentStyle2[DISPLAY$3],
-                _flexDirection = _currentStyle2[FLEX_DIRECTION$2],
-                width = _currentStyle2[WIDTH$4],
-                height = _currentStyle2[HEIGHT$4];
+            var _currentStyle3 = item.currentStyle;
+            var display = _currentStyle3[DISPLAY$3],
+                _flexDirection = _currentStyle3[FLEX_DIRECTION$2],
+                width = _currentStyle3[WIDTH$4],
+                height = _currentStyle3[HEIGHT$4];
 
             if (isDirectionRow) {
               // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
@@ -19236,8 +19267,8 @@
         return w;
       }
     }, {
-      key: "__calAutoBasis",
-      value: function __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual) {
+      key: "__calBasis",
+      value: function __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
         var b = 0;
         var min = 0;
         var max = 0;

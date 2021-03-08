@@ -95,7 +95,7 @@ class Geom extends Xom {
     return w;
   }
 
-  __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual) {
+  __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
     let b = 0;
     let min = 0;
     let max = 0;

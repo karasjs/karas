@@ -338,6 +338,7 @@ class Dom extends Xom {
 
   // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
   __calMinMax(isDirectionRow, x, y, w, h, isVirtual) {
+    css.computeReflow(this, this.isShadowRoot);
     let min = 0;
     let max = 0;
     let { flowChildren, currentStyle } = this;
@@ -468,10 +469,11 @@ class Dom extends Xom {
    * @private
    */
   __calBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+    css.computeReflow(this, this.isShadowRoot);
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle, computedStyle } = this;
+    let { flowChildren, currentStyle } = this;
     // 计算需考虑style的属性
     let {
       [DISPLAY]: display,
@@ -485,22 +487,23 @@ class Dom extends Xom {
     let isAuto = flexBasis[1] === AUTO;
     let isFixed = flexBasis[1] === PX || flexBasis[1] === PERCENT;
     let isContent = !isAuto && !isFixed;
+    let fixedSize;
     // flex的item固定basis计算
     if(isFixed) {
       if(flexBasis[1] === PX) {
-        b = flexBasis[0];
+        b = fixedSize = flexBasis[0];
       }
       else {
-        b = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+        b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
       }
     }
     // 已声明主轴尺寸的，当basis是auto时为值
     else if((main[1] === PX || main[1] === PERCENT) && isAuto) {
       if(main[1] === PX) {
-        b = min = max = main[0];
+        b = fixedSize = main[0];
       }
       else {
-        b = min = max = main[0] * 0.01 * (isDirectionRow ? w : h);
+        b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
       }
     }
     // 非固定尺寸的basis为auto时降级为content
@@ -511,30 +514,58 @@ class Dom extends Xom {
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
       flowChildren.forEach(item => {
-        let { currentStyle } = item;
-        // flex的child如果是inline，变为block，在计算autoBasis前就要
-        if(currentStyle[DISPLAY] === 'inline') {
-          currentStyle[DISPLAY] = 'block';
-        }
-        let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
-        if(isDirectionRow) {
-          if(isRow) {
-            min += min2;
-            max += max2;
+        if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          let { currentStyle } = item;
+          // flex的child如果是inline，变为block，在计算autoBasis前就要
+          if(currentStyle[DISPLAY] === 'inline') {
+            currentStyle[DISPLAY] = 'block';
+          }
+          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+          if(isDirectionRow) {
+            if(isRow) {
+              min += min2;
+              max += max2;
+            }
+            else {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
           }
           else {
-            min = Math.max(min, min2);
-            max = Math.max(max, max2);
+            if(isRow) {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+            else {
+              min += min2;
+              max += max2;
+            }
+          }
+        }
+        else if(isDirectionRow) {
+          if(isRow) {
+            min += item.charWidth;
+            max += item.textWidth;
+          }
+          else {
+            min = Math.max(min, item.charWidth);
+            max = Math.max(max, item.textWidth);
           }
         }
         else {
+          item.__layout({
+            x,
+            y,
+            w,
+            h,
+          }, true);
           if(isRow) {
-            min = Math.max(min, min2);
-            max = Math.max(max, max2);
+            min = Math.max(min, item.height);
+            max = Math.max(max, item.height);
           }
           else {
-            min += min2;
-            max += max2;
+            min += item.height;
+            max += item.height;
           }
         }
       });
@@ -568,6 +599,9 @@ class Dom extends Xom {
           max += item.height;
         }
       });
+    }
+    if(fixedSize) {
+      max = Math.max(fixedSize, max);
     }
     if(isContent) {
       b = max;
@@ -962,7 +996,7 @@ class Dom extends Xom {
       }
     });
     // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
-    let isOverflow = hypotheticalSum > (isDirectionRow ? w : h);
+    let isOverflow = hypotheticalSum >= (isDirectionRow ? w : h);
     let targetMainList = [];
     basisList.forEach((item, i) => {
       if(isOverflow) {

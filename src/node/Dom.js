@@ -43,7 +43,7 @@ const {
     ALIGN_ITEMS,
     JUSTIFY_CONTENT,
     Z_INDEX,
-    WHITE_SPACE,
+    // WHITE_SPACE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -324,6 +324,7 @@ class Dom extends Xom {
         + this.__calMp(paddingRight, w, !isDirectItem);
       mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
       res = res.map(item => item + mpb);
+      res.push(mpb);
     }
     else {
       let mp = this.__calMp(marginTop, w, !isDirectItem)
@@ -332,6 +333,7 @@ class Dom extends Xom {
         + this.__calMp(paddingBottom, w, !isDirectItem);
       mpb = borderTopWidth[0] + borderBottomWidth[0] + mp;
       res = res.map(item => item + mpb);
+      res.push(mpb);
     }
     return res;
   }
@@ -887,6 +889,7 @@ class Dom extends Xom {
     let growList = [];
     let shrinkList = [];
     let basisList = [];
+    let mpbList = [];
     let maxList = [];
     let minList = [];
     let growSum = 0;
@@ -896,13 +899,13 @@ class Dom extends Xom {
     let minSum = 0;
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        let { currentStyle } = item;
+        let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
         if(currentStyle[DISPLAY] === 'inline') {
           currentStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
-        let [b, min, max] = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual);
+        let [b, min, max, mpb] = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual);
         if(isVirtual) {
           if(isDirectionRow) {
             maxX += max;
@@ -913,6 +916,7 @@ class Dom extends Xom {
           return;
         }
         let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink } = currentStyle;
+        computedStyle[FLEX_BASIS] = b;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
         growSum += flexGrow;
@@ -920,6 +924,7 @@ class Dom extends Xom {
         // 根据basis不同，计算方式不同
         basisList.push(b);
         basisSum += b;
+        mpbList.push(mpb);
         maxList.push(max);
         maxSum += max;
         minList.push(min);
@@ -944,6 +949,7 @@ class Dom extends Xom {
           let tw = item.textWidth;
           basisList.push(tw);
           basisSum += tw;
+          mpbList.push(0);
           maxList.push(tw);
           maxSum += tw;
           minList.push(cw);
@@ -959,6 +965,7 @@ class Dom extends Xom {
           let h = item.height;
           basisList.push(h);
           basisSum += h;
+          mpbList.push(0);
           maxSum += h;
           minList.push(h);
           minSum += h;
@@ -1131,7 +1138,7 @@ class Dom extends Xom {
             y,
             w: main,
             h,
-            w2: main, // w2假设固定宽度，忽略原始style中的设置
+            w2: main - mpbList[i], // w2假设固定宽度，忽略原始style中的设置
           });
         }
         else {
@@ -1145,7 +1152,7 @@ class Dom extends Xom {
             y,
             w,
             h: main,
-            h2: main, // 同w2
+            h2: main - mpbList[i], // 同w2
           });
         }
       }

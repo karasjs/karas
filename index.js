@@ -16413,7 +16413,6 @@
       ALIGN_ITEMS$1 = _enums$STYLE_KEY$b.ALIGN_ITEMS,
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$b.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$b.Z_INDEX,
-      WHITE_SPACE$2 = _enums$STYLE_KEY$b.WHITE_SPACE,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -16740,6 +16739,7 @@
           res = res.map(function (item) {
             return item + mpb;
           });
+          res.push(mpb);
         } else {
           var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
 
@@ -16747,6 +16747,7 @@
           res = res.map(function (item) {
             return item + mpb;
           });
+          res.push(mpb);
         }
 
         return res;
@@ -17370,12 +17371,14 @@
         var growList = [];
         var shrinkList = [];
         var basisList = [];
+        var mpbList = [];
         var maxList = [];
         var minList = [];
         var growSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle2 = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+            var _currentStyle2 = item.currentStyle,
+                computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
             if (_currentStyle2[DISPLAY$3] === 'inline') {
               _currentStyle2[DISPLAY$3] = 'block';
@@ -17383,10 +17386,11 @@
 
 
             var _item$__calBasis = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual),
-                _item$__calBasis2 = _slicedToArray(_item$__calBasis, 3),
+                _item$__calBasis2 = _slicedToArray(_item$__calBasis, 4),
                 b = _item$__calBasis2[0],
                 min = _item$__calBasis2[1],
-                max = _item$__calBasis2[2];
+                max = _item$__calBasis2[2],
+                mpb = _item$__calBasis2[3];
 
             if (isVirtual) {
               if (isDirectionRow) {
@@ -17400,11 +17404,13 @@
 
             var flexGrow = _currentStyle2[FLEX_GROW$1],
                 flexShrink = _currentStyle2[FLEX_SHRINK$1];
+            computedStyle[FLEX_BASIS$2] = b;
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
 
             basisList.push(b);
+            mpbList.push(mpb);
             maxList.push(max);
             minList.push(min);
           } // 文本
@@ -17426,6 +17432,7 @@
                 var cw = item.charWidth;
                 var _tw = item.textWidth;
                 basisList.push(_tw);
+                mpbList.push(0);
                 maxList.push(_tw);
                 minList.push(cw);
               } else {
@@ -17438,6 +17445,7 @@
 
                 var _h = item.height;
                 basisList.push(_h);
+                mpbList.push(0);
                 minList.push(_h);
               }
             }
@@ -17630,7 +17638,7 @@
                 y: y,
                 w: main,
                 h: h,
-                w2: main // w2假设固定宽度，忽略原始style中的设置
+                w2: main - mpbList[i] // w2假设固定宽度，忽略原始style中的设置
 
               });
             } else {
@@ -17645,7 +17653,7 @@
                 y: y,
                 w: w,
                 h: main,
-                h2: main // 同w2
+                h2: main - mpbList[i] // 同w2
 
               });
             }

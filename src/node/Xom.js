@@ -1130,7 +1130,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data) {
-    let { x, y, w, h, w2, h2 } = data;
+    let { x, y, w, h, w2, h2, w3, h3 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -1156,10 +1156,14 @@ class Xom extends Node {
     let fixedWidth;
     let fixedHeight;
     // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
-    // flex时也会用到，子级得出目标主尺寸后按这个来
     if(w2 !== undefined) {
       fixedWidth = true;
       w = w2;
+    }
+    // flex时也会用到，子级得出目标主尺寸后按这个来
+    else if(w3 !== undefined) {
+      fixedWidth = true;
+      w = w3;
     }
     else if(width[1] !== AUTO) {
       fixedWidth = true;
@@ -1175,6 +1179,10 @@ class Xom extends Node {
     if(h2 !== undefined) {
       fixedHeight = true;
       h = h2;
+    }
+    else if(h3 !== undefined) {
+      fixedHeight = true;
+      h = h3;
     }
     else if(height[1] !== AUTO) {
       fixedHeight = true;
@@ -1192,11 +1200,11 @@ class Xom extends Node {
     data.x = x;
     y += borderTopWidth + marginTop + paddingTop;
     data.y = y;
-    // 传入w2/h2时，abs伪固定尺寸（left+right）或flex的item已知目标主尺寸，需减去mpb
-    if(width[1] === AUTO || w2 !== undefined) {
+    // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb
+    if(width[1] === AUTO || w3 !== undefined) {
       w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
     }
-    if(height[1] === AUTO || h2 !== undefined) {
+    if(height[1] === AUTO || h3 !== undefined) {
       h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
     }
     return {

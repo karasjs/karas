@@ -1012,13 +1012,6 @@ class Dom extends Xom {
       }
     });
     // 初始可用空间，冻结使用确定的target尺寸，未冻结使用假想
-    let total = Infinity;
-    if(isDirectionRow) {
-      total = w;
-    }
-    else if(fixedHeight) {
-      total = h;
-    }
     let free = 0;
     basisList.forEach((item, i) => {
       if(targetMainList[i] !== undefined) {
@@ -1028,6 +1021,16 @@ class Dom extends Xom {
         free += item;
       }
     });
+    let total = Infinity;
+    if(isDirectionRow) {
+      total = w;
+    }
+    else if(fixedHeight) {
+      total = h;
+    }
+    else {
+      total = free;
+    }
     free = Math.abs(total - free);
     // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
     let factorSum = 0;
@@ -1132,7 +1135,7 @@ class Dom extends Xom {
             y,
             w: main,
             h,
-            w2: main, // w2假设固定宽度，忽略原始style中的设置
+            w3: main, // w3假设固定宽度，忽略原始style中的设置
           });
         }
         else {
@@ -1146,7 +1149,7 @@ class Dom extends Xom {
             y,
             w,
             h: main,
-            h2: main, // 同w2
+            h3: main, // 同w2
           });
         }
       }

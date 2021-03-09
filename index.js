@@ -13514,7 +13514,9 @@
             w = data.w,
             h = data.h,
             w2 = data.w2,
-            h2 = data.h2;
+            h2 = data.h2,
+            w3 = data.w3,
+            h3 = data.h3;
         this.__x = x;
         this.__y = y;
         var currentStyle = this.currentStyle,
@@ -13536,28 +13538,34 @@
 
         var fixedWidth;
         var fixedHeight; // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
-        // flex时也会用到，子级得出目标主尺寸后按这个来
 
         if (w2 !== undefined) {
           fixedWidth = true;
           w = w2;
-        } else if (width[1] !== AUTO$2) {
-          fixedWidth = true;
+        } // flex时也会用到，子级得出目标主尺寸后按这个来
+        else if (w3 !== undefined) {
+            fixedWidth = true;
+            w = w3;
+          } else if (width[1] !== AUTO$2) {
+            fixedWidth = true;
 
-          switch (width[1]) {
-            case PX$4:
-              w = width[0];
-              break;
+            switch (width[1]) {
+              case PX$4:
+                w = width[0];
+                break;
 
-            case PERCENT$5:
-              w *= width[0] * 0.01;
-              break;
+              case PERCENT$5:
+                w *= width[0] * 0.01;
+                break;
+            }
           }
-        }
 
         if (h2 !== undefined) {
           fixedHeight = true;
           h = h2;
+        } else if (h3 !== undefined) {
+          fixedHeight = true;
+          h = h3;
         } else if (height[1] !== AUTO$2) {
           fixedHeight = true;
 
@@ -13576,13 +13584,13 @@
         x += borderLeftWidth + marginLeft + paddingLeft;
         data.x = x;
         y += borderTopWidth + marginTop + paddingTop;
-        data.y = y; // 传入w2/h2时，abs伪固定尺寸（left+right）或flex的item已知目标主尺寸，需减去mpb
+        data.y = y; // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb
 
-        if (width[1] === AUTO$2 || w2 !== undefined) {
+        if (width[1] === AUTO$2 || w3 !== undefined) {
           w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
         }
 
-        if (height[1] === AUTO$2 || h2 !== undefined) {
+        if (height[1] === AUTO$2 || h3 !== undefined) {
           h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
         }
 
@@ -17493,14 +17501,6 @@
           }
         }); // 初始可用空间，冻结使用确定的target尺寸，未冻结使用假想
 
-        var total = Infinity;
-
-        if (isDirectionRow) {
-          total = w;
-        } else if (fixedHeight) {
-          total = h;
-        }
-
         var free = 0;
         basisList.forEach(function (item, i) {
           if (targetMainList[i] !== undefined) {
@@ -17509,6 +17509,16 @@
             free += item;
           }
         });
+        var total = Infinity;
+
+        if (isDirectionRow) {
+          total = w;
+        } else if (fixedHeight) {
+          total = h;
+        } else {
+          total = free;
+        }
+
         free = Math.abs(total - free); // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
 
         var factorSum = 0;
@@ -17631,7 +17641,7 @@
                 y: y,
                 w: main,
                 h: h,
-                w2: main // w2假设固定宽度，忽略原始style中的设置
+                w3: main // w3假设固定宽度，忽略原始style中的设置
 
               });
             } else {
@@ -17646,7 +17656,7 @@
                 y: y,
                 w: w,
                 h: main,
-                h2: main // 同w2
+                h3: main // 同w2
 
               });
             }

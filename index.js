@@ -3847,7 +3847,7 @@
 
   var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$3.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$3.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$3.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_CLIP, true), _REPAINT);
   var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$3.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_FAMILY, true), _MEASURE);
-  var o$1 = {
+  var o = {
     GEOM: GEOM$1,
     GEOM_KEY_SET: GEOM_KEY_SET$1,
     IGNORE: IGNORE,
@@ -3856,7 +3856,7 @@
     addGeom: function addGeom(tagName, ks, cb) {
       if (Array.isArray(ks)) {
         ks.forEach(function (k) {
-          o$1.addGeom(tagName, k, cb);
+          o.addGeom(tagName, k, cb);
         });
       } else if (ks) {
         if (!GEOM$1.hasOwnProperty(ks)) {
@@ -3869,7 +3869,7 @@
     }
   };
 
-  o$1.isIgnore = function (k) {
+  o.isIgnore = function (k) {
     return IGNORE.hasOwnProperty(k);
   };
 
@@ -3877,17 +3877,17 @@
     return GEOM$1.hasOwnProperty(k) && GEOM$1[k].hasOwnProperty(tagName);
   }
 
-  o$1.isGeom = isGeom;
+  o.isGeom = isGeom;
 
-  o$1.isRepaint = function (k) {
+  o.isRepaint = function (k) {
     return REPAINT.hasOwnProperty(k) || isGeom(k);
   };
 
-  o$1.isMeasure = function (k) {
+  o.isMeasure = function (k) {
     return MEASURE.hasOwnProperty(k);
   };
 
-  o$1.isValid = function (tagName, k) {
+  o.isValid = function (tagName, k) {
     if (!k) {
       return false;
     }
@@ -3908,12 +3908,12 @@
     return false;
   };
 
-  var MEASURE_KEY_SET = o$1.MEASURE_KEY_SET = Object.keys(MEASURE).map(function (i) {
+  var MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(MEASURE).map(function (i) {
     return parseInt(i);
   });
   var len = MEASURE_KEY_SET.length;
 
-  o$1.isMeasureInherit = function (target) {
+  o.isMeasureInherit = function (target) {
     for (var i = 0; i < len; i++) {
       var k = MEASURE_KEY_SET[i];
 
@@ -3925,7 +3925,7 @@
     return false;
   };
 
-  o$1.measureInheritList = function (target) {
+  o.measureInheritList = function (target) {
     var list = [];
 
     for (var i = 0; i < len; i++) {
@@ -3939,13 +3939,13 @@
     return list;
   };
 
-  o$1.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
-  o$1.addGeom('$circle', ['r']);
-  o$1.addGeom('$ellipse', ['rx', 'ry']);
-  o$1.addGeom('$rect', ['rx', 'ry']);
-  o$1.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
-  o$1.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
-  o$1.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
+  o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
+  o.addGeom('$circle', ['r']);
+  o.addGeom('$ellipse', ['rx', 'ry']);
+  o.addGeom('$rect', ['rx', 'ry']);
+  o.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
+  o.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
+  o.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
 
   var _VALUE$1, _ARRAY_$1, _ARRAY_0_$1;
   var STYLE_KEY$4 = enums.STYLE_KEY,
@@ -4014,10 +4014,10 @@
   var isNil$3 = util.isNil,
       rgba2int$2 = util.rgba2int,
       equalArr$1 = util.equalArr;
-  var MEASURE_KEY_SET$1 = o$1.MEASURE_KEY_SET,
-      isGeom$1 = o$1.isGeom,
-      GEOM$2 = o$1.GEOM,
-      GEOM_KEY_SET$2 = o$1.GEOM_KEY_SET;
+  var MEASURE_KEY_SET$1 = o.MEASURE_KEY_SET,
+      isGeom$1 = o.isGeom,
+      GEOM$2 = o.GEOM,
+      GEOM_KEY_SET$2 = o.GEOM_KEY_SET;
   var DEFAULT_FONT_SIZE = 16;
   var COLOR_HASH$1 = key.COLOR_HASH,
       LENGTH_HASH$1 = key.LENGTH_HASH,
@@ -9358,8 +9358,8 @@
       equalArr$2 = util.equalArr;
   var linear = easing.linear;
   var cloneStyle$2 = css.cloneStyle;
-  var isGeom$2 = o$1.isGeom,
-      GEOM$3 = o$1.GEOM;
+  var isGeom$2 = o.isGeom,
+      GEOM$3 = o.GEOM;
   var COLOR_HASH$2 = key.COLOR_HASH,
       LENGTH_HASH$2 = key.LENGTH_HASH,
       RADIUS_HASH$2 = key.RADIUS_HASH,
@@ -10662,7 +10662,7 @@
           }); // 检查key合法性
 
           Object.keys(current).forEach(function (k) {
-            if (k !== 'easing' && k !== 'offset' && !o$1.isValid(tagName, k)) {
+            if (k !== 'easing' && k !== 'offset' && !o.isValid(tagName, k)) {
               delete current[k];
             }
           });
@@ -11833,7 +11833,7 @@
 
   };
   var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM_ORIGIN, true), _TRANSFORMS);
-  var o$2 = Object.assign({
+  var o$1 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
     },
@@ -11844,7 +11844,7 @@
      * @returns {number|*}
      */
     getLevel: function getLevel(k) {
-      if (o$1.isIgnore(k)) {
+      if (o.isIgnore(k)) {
         return ENUM.NONE;
       }
 
@@ -11860,7 +11860,7 @@
         return ENUM.FILTER;
       }
 
-      if (o$1.isRepaint(k)) {
+      if (o.isRepaint(k)) {
         return ENUM.REPAINT;
       }
 
@@ -11875,7 +11875,7 @@
     LAYOUT: 1,
     OFFSET: 0
   }, ENUM);
-  o$2.TRANSFORMS = TRANSFORMS;
+  o$1.TRANSFORMS = TRANSFORMS;
 
   var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
   var NUMBER$3 = [8, 8, 8, 8, 8, 4, 2, 1, 1, 1];
@@ -12636,17 +12636,17 @@
   var calRelative$1 = css.calRelative;
   var canvasPolygon$1 = painter.canvasPolygon,
       svgPolygon$1 = painter.svgPolygon;
-  var GEOM$4 = o$1.GEOM;
-  var contain = o$2.contain,
-      NONE = o$2.NONE,
-      TRANSFORM_ALL = o$2.TRANSFORM_ALL,
-      TF = o$2.TRANSFORM,
-      REFLOW = o$2.REFLOW,
-      REPAINT$1 = o$2.REPAINT,
-      TX = o$2.TRANSLATE_X,
-      TY = o$2.TRANSLATE_Y,
-      OP = o$2.OPACITY,
-      FT = o$2.FILTER;
+  var GEOM$4 = o.GEOM;
+  var contain = o$1.contain,
+      NONE = o$1.NONE,
+      TRANSFORM_ALL = o$1.TRANSFORM_ALL,
+      TF = o$1.TRANSFORM,
+      REFLOW = o$1.REFLOW,
+      REPAINT$1 = o$1.REPAINT,
+      TX = o$1.TRANSLATE_X,
+      TY = o$1.TRANSLATE_Y,
+      OP = o$1.OPACITY,
+      FT = o$1.FILTER;
 
   function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
     if (renderMode === mode.CANVAS) {
@@ -16350,7 +16350,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -18854,7 +18854,7 @@
 
                       var res = {};
                       res[UPDATE_NODE$2] = self;
-                      res[UPDATE_FOCUS$1] = o$2.REPAINT;
+                      res[UPDATE_FOCUS$1] = o$1.REPAINT;
                       res[UPDATE_CONFIG$2] = self.__config;
 
                       root.__addUpdate(self, self.__config, root, root.__config, res);
@@ -18870,7 +18870,7 @@
 
                       var res = {};
                       res[UPDATE_NODE$2] = self;
-                      res[UPDATE_FOCUS$1] = o$2.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+                      res[UPDATE_FOCUS$1] = o$1.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
                       res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化
 
@@ -19570,7 +19570,7 @@
         } // 存在老的缓存认为可提前跳出
 
 
-        if (lv < o$2.REPAINT && (__cache && __cache.available || !o$2.contain(lv, o$2.FILTER) && __cacheFilter || __cacheMask || __cacheOverflow)) {
+        if (lv < o$1.REPAINT && (__cache && __cache.available || !o$1.contain(lv, o$1.FILTER) && __cacheFilter || __cacheMask || __cacheOverflow)) {
           res["break"] = true; // geom子类标识可以跳过自定义render()
         }
 
@@ -20528,12 +20528,12 @@
 
   var joinVd$1 = util.joinVd,
       joinDef$1 = util.joinDef;
-  var contain$1 = o$2.contain,
-      NONE$1 = o$2.NONE,
-      TRANSFORM_ALL$1 = o$2.TRANSFORM_ALL,
-      OPACITY$4 = o$2.OPACITY,
-      FILTER$4 = o$2.FILTER,
-      MIX_BLEND_MODE$2 = o$2.MIX_BLEND_MODE;
+  var contain$1 = o$1.contain,
+      NONE$1 = o$1.NONE,
+      TRANSFORM_ALL$1 = o$1.TRANSFORM_ALL,
+      OPACITY$4 = o$1.OPACITY,
+      FILTER$4 = o$1.FILTER,
+      MIX_BLEND_MODE$2 = o$1.MIX_BLEND_MODE;
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
@@ -21315,13 +21315,13 @@
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
       STRUCT_HAS_MASK$1 = _enums$STRUCT_KEY$2.STRUCT_HAS_MASK,
       STRUCT_LV$2 = _enums$STRUCT_KEY$2.STRUCT_LV;
-  var NONE$2 = o$2.NONE,
-      TRANSFORM_ALL$2 = o$2.TRANSFORM_ALL,
-      OP$1 = o$2.OPACITY,
-      FT$1 = o$2.FILTER,
-      REPAINT$2 = o$2.REPAINT,
-      contain$2 = o$2.contain,
-      MBM = o$2.MIX_BLEND_MODE;
+  var NONE$2 = o$1.NONE,
+      TRANSFORM_ALL$2 = o$1.TRANSFORM_ALL,
+      OP$1 = o$1.OPACITY,
+      FT$1 = o$1.FILTER,
+      REPAINT$2 = o$1.REPAINT,
+      contain$2 = o$1.contain,
+      MBM = o$1.MIX_BLEND_MODE;
   /**
    * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出
    * @param structs 先序整树
@@ -23227,7 +23227,7 @@
   var AUTO$6 = unit.AUTO,
       PX$8 = unit.PX,
       PERCENT$8 = unit.PERCENT;
-  var REFLOW$1 = o$2.REFLOW;
+  var REFLOW$1 = o$1.REFLOW;
 
   function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
     if (dy) {
@@ -23433,28 +23433,28 @@
   var calRelative$2 = css.calRelative,
       isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute,
       equalStyle$1 = css.equalStyle;
-  var contain$3 = o$2.contain,
-      getLevel = o$2.getLevel,
-      isRepaint = o$2.isRepaint,
-      NONE$3 = o$2.NONE,
-      FILTER$6 = o$2.FILTER,
-      REPAINT$3 = o$2.REPAINT,
-      REFLOW$2 = o$2.REFLOW,
-      LAYOUT = o$2.LAYOUT,
-      OFFSET = o$2.OFFSET;
-  var isIgnore = o$1.isIgnore,
-      isGeom$3 = o$1.isGeom,
-      isMeasure = o$1.isMeasure;
+  var contain$3 = o$1.contain,
+      getLevel = o$1.getLevel,
+      isRepaint = o$1.isRepaint,
+      NONE$3 = o$1.NONE,
+      FILTER$6 = o$1.FILTER,
+      REPAINT$3 = o$1.REPAINT,
+      REFLOW$2 = o$1.REFLOW,
+      LAYOUT = o$1.LAYOUT,
+      OFFSET = o$1.OFFSET;
+  var isIgnore = o.isIgnore,
+      isGeom$3 = o.isGeom,
+      isMeasure = o.isMeasure;
 
   function getDom(dom) {
     if (util.isString(dom) && dom) {
-      var _o = document.querySelector(dom);
+      var o = document.querySelector(dom);
 
-      if (!_o) {
+      if (!o) {
         throw new Error('Can not find dom of selector: ' + dom);
       }
 
-      return _o;
+      return o;
     }
 
     if (!dom) {
@@ -24175,7 +24175,7 @@
         this.__root = this;
         this.cache = !!this.props.cache; // OffscreenCanvas兼容，包含worker的
 
-        if (typeof window !== 'undefined' && window.OffscreenCanvas && o instanceof window.OffscreenCanvas || typeof self !== 'undefined' && self.OffscreenCanvas && o instanceof self.OffscreenCanvas) {
+        if (typeof window !== 'undefined' && window.OffscreenCanvas && dom instanceof window.OffscreenCanvas || typeof self !== 'undefined' && self.OffscreenCanvas && dom instanceof self.OffscreenCanvas) {
           this.__dom = dom;
           this.__width = dom.width;
           this.__height = dom.height;
@@ -24616,7 +24616,7 @@
           measureHash[__uniqueUpdateId] = true;
           var last = node; // 检查measure的属性是否是inherit
 
-          var isInherit = o$1.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = o.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             while (parent && parent !== root) {
@@ -24629,10 +24629,10 @@
               if (parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
                 var style = updateHash[_uniqueUpdateId][UPDATE_STYLE$2];
                 measureHash[_uniqueUpdateId] = true;
-                var temp = o$1.measureInheritList(style);
+                var temp = o.measureInheritList(style);
                 _isInherit = !!temp.length;
               } else {
-                _isInherit = o$1.isMeasureInherit(currentStyle);
+                _isInherit = o.isMeasureInherit(currentStyle);
               } // 如果parent有inherit存入列表且继续向上，否则跳出循环
 
 
@@ -24720,13 +24720,13 @@
             };
           }
 
-          var _o2 = reflowHash[node.__uniqueReflowId]; // absolute无变化，只影响自己
+          var o = reflowHash[node.__uniqueReflowId]; // absolute无变化，只影响自己
 
           if (currentStyle[POSITION$5] === 'absolute' && computedStyle[POSITION$5] === 'absolute') {
-            _o2.lv = LAYOUT;
+            o.lv = LAYOUT;
           } // absolute和非absolute互换
           else if (currentStyle[POSITION$5] !== computedStyle[POSITION$5]) {
-              _o2.lv = LAYOUT;
+              o.lv = LAYOUT;
 
               if (checkInfluence(root, reflowHash, node, component)) {
                 hasRoot = true;
@@ -24753,11 +24753,11 @@
 
                 if (onlyXY && !img && !component) {
                   if (computedStyle[POSITION$5] === 'relative') {
-                    _o2.lv |= OFFSET;
+                    o.lv |= OFFSET;
                   }
                 } // 剩余的其它变化
                 else {
-                    _o2.lv = LAYOUT;
+                    o.lv = LAYOUT;
 
                     if (checkInfluence(root, reflowHash, node, component)) {
                       hasRoot = true;
@@ -24803,10 +24803,10 @@
 
             this.__deepScan(function (node, options) {
               if (node.hasOwnProperty('__uniqueReflowId')) {
-                var _o3 = reflowHash[node.__uniqueReflowId]; // delete node.__uniqueReflowId; // 清除掉
+                var _o = reflowHash[node.__uniqueReflowId]; // delete node.__uniqueReflowId; // 清除掉
 
-                if (_o3.lv >= LAYOUT) {
-                  options.uniqueList.push(_o3);
+                if (_o.lv >= LAYOUT) {
+                  options.uniqueList.push(_o);
                 } else {
                   // OFFSET的话先递归看子节点，本身改变放在最后
                   var _uniqueList = [];
@@ -24819,7 +24819,7 @@
                     options.uniqueList.push(item);
                   });
 
-                  options.uniqueList.push(_o3);
+                  options.uniqueList.push(_o);
                 } // 返回true即可提前结束深度遍历，在reflowHash有记录时提前跳出，子节点交由上面逻辑执行
 
 
@@ -28204,8 +28204,8 @@
   };
 
   var refresh = {
-    level: o$2,
-    change: o$1,
+    level: o$1,
+    change: o,
     Page: Page,
     Cache: Cache
   };

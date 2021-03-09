@@ -701,8 +701,8 @@ class Root extends Dom {
     this.__root = this;
     this.cache = !!this.props.cache;
     // OffscreenCanvas兼容，包含worker的
-    if(typeof window !== 'undefined' && window.OffscreenCanvas && (o instanceof window.OffscreenCanvas)
-      || typeof self !== 'undefined' && self.OffscreenCanvas && (o instanceof self.OffscreenCanvas)) {
+    if(typeof window !== 'undefined' && window.OffscreenCanvas && (dom instanceof window.OffscreenCanvas)
+      || typeof self !== 'undefined' && self.OffscreenCanvas && (dom instanceof self.OffscreenCanvas)) {
       this.__dom = dom;
       this.__width = dom.width;
       this.__height = dom.height;

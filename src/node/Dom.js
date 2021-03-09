@@ -300,44 +300,8 @@ class Dom extends Xom {
     });
   }
 
-  // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
-  __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
-    let {
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_TOP]: marginTop,
-      [MARGIN_RIGHT]: marginRight,
-      [MARGIN_BOTTOM]: marginBottom,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_TOP]: paddingTop,
-      [PADDING_RIGHT]: paddingRight,
-      [PADDING_BOTTOM]: paddingBottom,
-      [BORDER_TOP_WIDTH]: borderTopWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-    } = currentStyle;
-    let mpb;
-    if(isDirectionRow) {
-      let mp = this.__calMp(marginLeft, w, !isDirectItem)
-        + this.__calMp(marginRight, w, !isDirectItem)
-        + this.__calMp(paddingLeft, w, !isDirectItem)
-        + this.__calMp(paddingRight, w, !isDirectItem);
-      mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
-      res = res.map(item => item + mpb);
-    }
-    else {
-      let mp = this.__calMp(marginTop, w, !isDirectItem)
-        + this.__calMp(marginBottom, w, !isDirectItem)
-        + this.__calMp(paddingTop, w, !isDirectItem)
-        + this.__calMp(paddingBottom, w, !isDirectItem);
-      mpb = borderTopWidth[0] + borderBottomWidth[0] + mp;
-      res = res.map(item => item + mpb);
-    }
-    return res;
-  }
-
   // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
-  __calMinMax(isDirectionRow, x, y, w, h, isVirtual) {
+  __calMinMax(isDirectionRow, x, y, w, h) {
     css.computeReflow(this, this.isShadowRoot);
     let min = 0;
     let max = 0;
@@ -363,7 +327,7 @@ class Dom extends Xom {
           if(currentStyle[DISPLAY] === 'inline') {
             currentStyle[DISPLAY] = 'block';
           }
-          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
           if(isDirectionRow) {
             if(isRow) {
               min += min2;
@@ -389,7 +353,7 @@ class Dom extends Xom {
       else if(display === 'block') {
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
             if(isDirectionRow) {
               min = Math.max(min, min2);
               max = Math.max(max, max2);
@@ -418,7 +382,7 @@ class Dom extends Xom {
       else if(display === 'inline') {
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
             if(isDirectionRow) {
               min += min2;
               max += max2;
@@ -465,10 +429,9 @@ class Dom extends Xom {
    * @param w
    * @param h
    * @param isVirtual abs非固定尺寸时先进行虚拟布局标识
-   * @param isRecursion 是否是递归孩子
    * @private
    */
-  __calBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+  __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
     css.computeReflow(this, this.isShadowRoot);
     let b = 0;
     let min = 0;

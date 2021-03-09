@@ -13536,7 +13536,7 @@
 
         var fixedWidth;
         var fixedHeight; // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
-        // 垂直嵌套flex时也会用到，子级有grow时，孙子要按它来算
+        // flex时也会用到，子级得出目标主尺寸后按这个来
 
         if (w2 !== undefined) {
           fixedWidth = true;
@@ -13576,13 +13576,13 @@
         x += borderLeftWidth + marginLeft + paddingLeft;
         data.x = x;
         y += borderTopWidth + marginTop + paddingTop;
-        data.y = y;
+        data.y = y; // 传入w2/h2时，abs伪固定尺寸（left+right）或flex的item已知目标主尺寸，需减去mpb
 
-        if (width[1] === AUTO$2) {
+        if (width[1] === AUTO$2 || w2 !== undefined) {
           w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
         }
 
-        if (height[1] === AUTO$2) {
+        if (height[1] === AUTO$2 || h2 !== undefined) {
           h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
         }
 
@@ -16739,7 +16739,6 @@
           res = res.map(function (item) {
             return item + mpb;
           });
-          res.push(mpb);
         } else {
           var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
 
@@ -16747,7 +16746,6 @@
           res = res.map(function (item) {
             return item + mpb;
           });
-          res.push(mpb);
         }
 
         return res;
@@ -17371,7 +17369,6 @@
         var growList = [];
         var shrinkList = [];
         var basisList = [];
-        var mpbList = [];
         var maxList = [];
         var minList = [];
         var growSum = 0;
@@ -17386,11 +17383,10 @@
 
 
             var _item$__calBasis = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual),
-                _item$__calBasis2 = _slicedToArray(_item$__calBasis, 4),
+                _item$__calBasis2 = _slicedToArray(_item$__calBasis, 3),
                 b = _item$__calBasis2[0],
                 min = _item$__calBasis2[1],
-                max = _item$__calBasis2[2],
-                mpb = _item$__calBasis2[3];
+                max = _item$__calBasis2[2];
 
             if (isVirtual) {
               if (isDirectionRow) {
@@ -17410,7 +17406,6 @@
             growSum += flexGrow;
 
             basisList.push(b);
-            mpbList.push(mpb);
             maxList.push(max);
             minList.push(min);
           } // 文本
@@ -17432,7 +17427,6 @@
                 var cw = item.charWidth;
                 var _tw = item.textWidth;
                 basisList.push(_tw);
-                mpbList.push(0);
                 maxList.push(_tw);
                 minList.push(cw);
               } else {
@@ -17445,7 +17439,6 @@
 
                 var _h = item.height;
                 basisList.push(_h);
-                mpbList.push(0);
                 minList.push(_h);
               }
             }
@@ -17638,7 +17631,7 @@
                 y: y,
                 w: main,
                 h: h,
-                w2: main - mpbList[i] // w2假设固定宽度，忽略原始style中的设置
+                w2: main // w2假设固定宽度，忽略原始style中的设置
 
               });
             } else {
@@ -17653,7 +17646,7 @@
                 y: y,
                 w: w,
                 h: main,
-                h2: main - mpbList[i] // 同w2
+                h2: main // 同w2
 
               });
             }

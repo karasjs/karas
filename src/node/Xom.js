@@ -1156,7 +1156,7 @@ class Xom extends Node {
     let fixedWidth;
     let fixedHeight;
     // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
-    // 垂直嵌套flex时也会用到，子级有grow时，孙子要按它来算
+    // flex时也会用到，子级得出目标主尺寸后按这个来
     if(w2 !== undefined) {
       fixedWidth = true;
       w = w2;
@@ -1192,10 +1192,11 @@ class Xom extends Node {
     data.x = x;
     y += borderTopWidth + marginTop + paddingTop;
     data.y = y;
-    if(width[1] === AUTO) {
+    // 传入w2/h2时，abs伪固定尺寸（left+right）或flex的item已知目标主尺寸，需减去mpb
+    if(width[1] === AUTO || w2 !== undefined) {
       w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
     }
-    if(height[1] === AUTO) {
+    if(height[1] === AUTO || h2 !== undefined) {
       h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
     }
     return {

@@ -43,7 +43,7 @@ const {
     ALIGN_ITEMS,
     JUSTIFY_CONTENT,
     Z_INDEX,
-    WHITE_SPACE,
+    // WHITE_SPACE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -300,7 +300,8 @@ class Dom extends Xom {
     });
   }
 
-  __addMpWidthAutoBasis(isDirectionRow, w, currentStyle, b, min, max) {
+  // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
+  __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
     let {
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_TOP]: marginTop,
@@ -315,55 +316,32 @@ class Dom extends Xom {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
+    let mpb;
     if(isDirectionRow) {
-      let mp = this.__calMp(marginLeft, w)
-        + this.__calMp(marginRight, w)
-        + this.__calMp(paddingLeft, w)
-        + this.__calMp(paddingRight, w);
-      let w2 = borderLeftWidth[0] + borderRightWidth[0] + mp;
-      b += w2;
-      max += w2;
-      min += w2;
+      let mp = this.__calMp(marginLeft, w, !isDirectItem)
+        + this.__calMp(marginRight, w, !isDirectItem)
+        + this.__calMp(paddingLeft, w, !isDirectItem)
+        + this.__calMp(paddingRight, w, !isDirectItem);
+      mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
+      res = res.map(item => item + mpb);
     }
     else {
-      let mp = this.__calMp(marginTop, w)
-        + this.__calMp(marginBottom, w)
-        + this.__calMp(paddingTop, w)
-        + this.__calMp(paddingBottom, w);
-      let h2 = borderTopWidth[0] + borderBottomWidth[0] + mp;
-      b += h2;
-      max += h2;
-      min += h2;
+      let mp = this.__calMp(marginTop, w, !isDirectItem)
+        + this.__calMp(marginBottom, w, !isDirectItem)
+        + this.__calMp(paddingTop, w, !isDirectItem)
+        + this.__calMp(paddingBottom, w, !isDirectItem);
+      mpb = borderTopWidth[0] + borderBottomWidth[0] + mp;
+      res = res.map(item => item + mpb);
     }
-    return [b, min, max];
+    return res;
   }
 
-  /**
-   * flex布局时，计算basis尺寸，如果有css声明则以其为标准，没有则auto自动计算
-   * 声明为%比时基准容器为传入的w/h，一般是父block元素，递归flex则一直是父block
-   * 影响尺寸的只有换行的text，以及一组inline，均按其中最大尺寸的一个计算
-   * auto自动计算递归进行，如果是普通row方向，按最大text的charWidth为准
-   * 如果是column方向，则水平排满后看text的height
-   * 在的abs下时进入特殊状态，无论是row/column，都会按row方向尝试最大尺寸，直到舞台边缘或容器声明的w折行
-   * 返回b，声明则按css值，否则同min
-   * 返回min为最小宽度，遇到字符则单列排版后需要的最大宽度
-   * 返回max为最大宽度，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
-   * flex的孩子的孩子需递归，有些不同
-   * @param isDirectionRow
-   * @param x
-   * @param y
-   * @param w
-   * @param h
-   * @param isVirtual
-   * @param isRecursion 是否是递归孩子
-   * @private
-   */
-  __calAutoBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+  // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
+  __calMinMax(isDirectionRow, x, y, w, h, isVirtual) {
     css.computeReflow(this, this.isShadowRoot);
-    let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle, computedStyle } = this;
+    let { flowChildren, currentStyle } = this;
     // 计算需考虑style的属性
     let {
       [DISPLAY]: display,
@@ -372,92 +350,264 @@ class Dom extends Xom {
       [HEIGHT]: height,
     } = currentStyle;
     let main = isDirectionRow ? width : height;
-    // 已声明主轴尺寸的，basis和max均为，暂不考虑未支持的nowrap不换行，如果是递归孩子，直接返回皆可
+    // 只绝对值生效，%不生效，依旧要判断
     if(main[1] === PX) {
-      b = max = main[0];
-      if(isRecursion) {
-        return this.__addMpWidthAutoBasis(isDirectionRow, w, currentStyle, b, min, max);
-      }
+      min = max = main[0];
     }
-    else if(main[1] === PERCENT) {
-      b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
-      if(isRecursion) {
-        return this.__addMpWidthAutoBasis(isDirectionRow, w, currentStyle, b, min, max);
-      }
-    }
-    // 递归children取max/min进行合并计算
-    flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        let [b2, min2, max2] = item.__calAutoBasis(isDirectionRow, x, y, w, h, isVirtual, true);
-        // 直接孩子/递归孩子都需要根据flex和流方向来判断合并规则，flex根据弹性方向，普通取极值
-        if(display === 'flex') {
-          // 根据父节点的flex方向，孩子孙子的方向组合，判断是相加还是极值，多层时顶层和底层，中间忽视
+    else {
+      if(display === 'flex') {
+        let isRow = flexDirection !== 'column';
+        flowChildren.forEach(item => {
+          let { currentStyle } = item;
+          // flex的child如果是inline，变为block，在计算autoBasis前就要
+          if(currentStyle[DISPLAY] === 'inline') {
+            currentStyle[DISPLAY] = 'block';
+          }
+          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
           if(isDirectionRow) {
-            if(flexDirection === 'row') {
-              b += b2;
+            if(isRow) {
               min += min2;
               max += max2;
             }
             else {
-              b = Math.max(b, b2);
               min = Math.max(min, min2);
               max = Math.max(max, max2);
             }
           }
           else {
-            if(flexDirection === 'row') {
-              b = Math.max(b, b2);
+            if(isRow) {
               min = Math.max(min, min2);
               max = Math.max(max, max2);
             }
             else {
-              b += b2;
+              min += min2;
+              max += max2;
+            }
+          }
+        });
+      }
+      else if(display === 'block') {
+        flowChildren.forEach(item => {
+          if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+            if(isDirectionRow) {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+            else {
+              min += min2;
+              max += max2;
+            }
+          }
+          else if(isDirectionRow) {
+            min = Math.max(min, item.charWidth);
+            max = Math.max(max, item.textWidth);
+          }
+          else {
+            item.__layout({
+              x,
+              y,
+              w,
+              h,
+            }, true);
+            min = Math.max(min, item.height);
+            max = Math.max(max, item.height);
+          }
+        });
+      }
+      else if(display === 'inline') {
+        flowChildren.forEach(item => {
+          if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+            if(isDirectionRow) {
+              min += min2;
+              max += max2;
+            }
+            else {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+          }
+          else if(isDirectionRow) {
+            min = Math.max(min, item.charWidth);
+            max = Math.max(max, item.textWidth);
+          }
+          else {
+            item.__layout({
+              x,
+              y,
+              w,
+              h,
+            }, true);
+            min = Math.max(min, item.height);
+            max = Math.max(max, item.height);
+          }
+        });
+      }
+    }
+    return this.__addMp(isDirectionRow, w, currentStyle, [min, max]);
+  }
+
+  /**
+   * flex布局时，计算basis尺寸，如果有固定声明则以其为标准，content为内容最大尺寸，auto依赖w/h或降级content
+   * basis要考虑相加直接item的mpb，非绝对值单位以container为基准，basis为内容时为max值
+   * item的孩子为孙子节点需递归，不参与basis计算，只参与min/max，尺寸和mpb均只考虑绝对值
+   * 自动计算时影响尺寸的只有换行的text，以及一组inline，均按其中最大尺寸的一个计算
+   * auto自动计算递归进行，如果是普通row方向，按最大text的charWidth为准
+   * 如果是column方向，则虚拟布局后看text的height
+   * 在的abs下时进入特殊状态，无论是row/column，都会按row方向尝试最大尺寸，直到舞台边缘或容器声明的w折行
+   * 返回b，声明则按css值，否则是max
+   * 返回min为最小宽度，遇到字符/inline则单列排版后需要的最大宽度
+   * 返回max为最大宽度，理想情况一排最大值，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
+   * @param isDirectionRow
+   * @param x
+   * @param y
+   * @param w
+   * @param h
+   * @param isVirtual abs非固定尺寸时先进行虚拟布局标识
+   * @param isRecursion 是否是递归孩子
+   * @private
+   */
+  __calBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+    css.computeReflow(this, this.isShadowRoot);
+    let b = 0;
+    let min = 0;
+    let max = 0;
+    let { flowChildren, currentStyle } = this;
+    // 计算需考虑style的属性
+    let {
+      [DISPLAY]: display,
+      [FLEX_DIRECTION]: flexDirection,
+      [WIDTH]: width,
+      [HEIGHT]: height,
+      [FLEX_BASIS]: flexBasis,
+    } = currentStyle;
+    let main = isDirectionRow ? width : height;
+    // basis3种情况：auto、固定、content
+    let isAuto = flexBasis[1] === AUTO;
+    let isFixed = flexBasis[1] === PX || flexBasis[1] === PERCENT;
+    let isContent = !isAuto && !isFixed;
+    let fixedSize;
+    // flex的item固定basis计算
+    if(isFixed) {
+      if(flexBasis[1] === PX) {
+        b = fixedSize = flexBasis[0];
+      }
+      else {
+        b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+      }
+    }
+    // 已声明主轴尺寸的，当basis是auto时为值
+    else if((main[1] === PX || main[1] === PERCENT) && isAuto) {
+      if(main[1] === PX) {
+        b = fixedSize = main[0];
+      }
+      else {
+        b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
+      }
+    }
+    // 非固定尺寸的basis为auto时降级为content
+    else if(isAuto) {
+      isContent = true;
+    }
+    // flex的item还是flex时
+    if(display === 'flex') {
+      let isRow = flexDirection !== 'column';
+      flowChildren.forEach(item => {
+        if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          let { currentStyle } = item;
+          // flex的child如果是inline，变为block，在计算autoBasis前就要
+          if(currentStyle[DISPLAY] === 'inline') {
+            currentStyle[DISPLAY] = 'block';
+          }
+          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+          if(isDirectionRow) {
+            if(isRow) {
+              min += min2;
+              max += max2;
+            }
+            else {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+          }
+          else {
+            if(isRow) {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
+            else {
               min += min2;
               max += max2;
             }
           }
         }
-        // 竖排的即便不是flex，因为计算的是flex的child，这里返回grandchild也要累积
-        else if(!isDirectionRow) {
-          b += b2;
-          min += min2;
-          max += max2;
+        else if(isDirectionRow) {
+          if(isRow) {
+            min += item.charWidth;
+            max += item.textWidth;
+          }
+          else {
+            min = Math.max(min, item.charWidth);
+            max = Math.max(max, item.textWidth);
+          }
         }
         else {
-          b = Math.max(b, b2);
-          min = Math.max(min, min2);
-          max = Math.max(max, max2);
+          item.__layout({
+            x,
+            y,
+            w,
+            h,
+          }, true);
+          if(isRow) {
+            min = Math.max(min, item.height);
+            max = Math.max(max, item.height);
+          }
+          else {
+            min += item.height;
+            max += item.height;
+          }
         }
-      }
-      // 文本水平
-      else if(isDirectionRow) {
-        let whiteSpace = computedStyle[WHITE_SPACE];
-        let tw = item.textWidth;
-        if(whiteSpace === 'nowrap') {
-          b = Math.max(b, tw);
-          min = Math.max(min, tw);
+      });
+    }
+    // flex的item是block/inline时，inline也会变成block统一对待
+    else {
+      flowChildren.forEach(item => {
+        if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+          if(isDirectionRow) {
+            min = Math.max(min, min2);
+            max = Math.max(max, max2);
+          }
+          else {
+            min += min2;
+            max += max2;
+          }
         }
-        else {
-          b = Math.max(b, item.charWidth);
+        else if(isDirectionRow) {
           min = Math.max(min, item.charWidth);
+          max = Math.max(max, item.textWidth);
         }
-        max = Math.max(tw, max);
-      }
-      // 文本垂直，尝试伪布局得到高度
-      else {
-        item.__layout({
-          x,
-          y,
-          w,
-          h,
-        }, true);
-        b = Math.max(b, item.height);
-        min = Math.max(min, item.height);
-        max = Math.max(max, item.height);
-      }
-    });
-    // margin/padding/border也得计算在内，此时还没有，百分比相对于父flex元素的宽度
-    return this.__addMpWidthAutoBasis(isDirectionRow, w, currentStyle, b, min, max);
+        else {
+          item.__layout({
+            x,
+            y,
+            w,
+            h,
+          }, true);
+          min += item.height;
+          max += item.height;
+        }
+      });
+    }
+    if(fixedSize) {
+      max = Math.max(fixedSize, max);
+    }
+    if(isContent) {
+      b = max;
+    }
+    // 直接item的mpb影响basis
+    return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], true);
   }
 
   __layoutNone() {
@@ -732,7 +882,7 @@ class Dom extends Xom {
       return;
     }
     let maxX = 0;
-    let isDirectionRow = flexDirection === 'row';
+    let isDirectionRow = flexDirection !== 'column';
     // 计算伸缩基数
     let growList = [];
     let shrinkList = [];
@@ -752,7 +902,7 @@ class Dom extends Xom {
           currentStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
-        let [b, min, max] = item.__calAutoBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual);
+        let [b, min, max] = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual);
         if(isVirtual) {
           if(isDirectionRow) {
             maxX += max;
@@ -762,26 +912,15 @@ class Dom extends Xom {
           }
           return;
         }
-        let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink, [FLEX_BASIS]: flexBasis } = currentStyle;
+        let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink } = currentStyle;
+        computedStyle[FLEX_BASIS] = b;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
         growSum += flexGrow;
         shrinkSum += flexShrink;
-        // 根据basis不同，计算方式不同，上面每个元素计算的是min以及主轴尺寸，下面要按basis规范来覆盖
-        if(flexBasis[1] === AUTO) {
-          basisList.push(b);
-          basisSum += b;
-        }
-        else if(flexBasis[1] === PX) {
-          let b = computedStyle[FLEX_BASIS] = flexBasis[0];
-          basisList.push(b);
-          basisSum += b;
-        }
-        else if(flexBasis[1] === PERCENT) {
-          let b = computedStyle[FLEX_BASIS] = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
-          basisList.push(b);
-          basisSum += b;
-        }
+        // 根据basis不同，计算方式不同
+        basisList.push(b);
+        basisSum += b;
         maxList.push(max);
         maxSum += max;
         minList.push(min);
@@ -802,13 +941,14 @@ class Dom extends Xom {
         shrinkList.push(1);
         shrinkSum += 1;
         if(isDirectionRow) {
-          let c = item.charWidth;
-          basisList.push(c);
-          basisSum += c;
-          maxList.push(item.textWidth);
-          maxSum += item.textWidth;
-          minList.push(c);
-          minSum += c;
+          let cw = item.charWidth;
+          let tw = item.textWidth;
+          basisList.push(tw);
+          basisSum += tw;
+          maxList.push(tw);
+          maxSum += tw;
+          minList.push(cw);
+          minSum += cw;
         }
         else {
           item.__layout({
@@ -834,69 +974,148 @@ class Dom extends Xom {
     }
     /**
      * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
-     * 这里比较麻烦，因为text的长度是可变化的，会因为伸缩而不确定性换行，这样导致basis在auto时不确定性
-     * basis在没有明确指定时等同于min值，即text中最大字符宽度，先考虑row的情况
-     * 在maxSum<=w时特殊处理，text可按照不换行最大长度计算
-     * 其它情况按正常伸缩计算，即以basis为基准
-     * 这样，如果text全部算起来都不到总尺寸，则以max为基准算basis，防止以basis算显示错误
-     * 而如果超过总尺寸，以basis算看是伸还是缩也符合
-     * column情况b/min/max都相等，根据sum和父节点的height是否固定情况看
-     // 判断是否超出，决定使用grow还是shrink，水平垂直不同
+     * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
+     * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
+     * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
+     * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
+     * 先收集basis和假设主尺寸
      */
-    let maxCross = 0;
-    let isMoreThanMax;
-    // 水平如果固定宽度则为基准，否则为布局容器宽度，两者返回的值都是w
-    if(isDirectionRow) {
-      isMoreThanMax = maxSum <= w;
-    }
-    else if(fixedHeight) {
-      isMoreThanMax = maxSum <= h;
-    }
-    let isOverflow;
-    if(!isMoreThanMax) {
-      if(isDirectionRow) {
-        isOverflow = basisSum > w;
+    let hypotheticalSum = 0, hypotheticalList = [];
+    basisList.forEach((item, i) => {
+      let min = minList[i], max = maxList[i];
+      if(item < min) {
+        hypotheticalSum += min;
+        hypotheticalList.push(min);
       }
-      else if(fixedHeight) {
-        isOverflow = basisSum > h;
-      }
-    }
-    let overflow = 0, free = 0;
-    // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
-    if(isMoreThanMax) {
-      free = (isDirectionRow ? w : h) - maxSum;
-    }
-    else if(isOverflow) {
-      overflow = basisSum - (isDirectionRow ? w : h);
-    }
-    // 没>max，也没<b，正常算free，垂直自适应高度时使用默认0
-    else {
-      if(isDirectionRow) {
-        free = w - basisSum;
-      }
-      else if(fixedHeight) {
-        free = h - basisSum;
-      }
-    }
-    flowChildren.forEach((item, i) => {
-      let main;
-      let shrink = shrinkList[i];
-      let grow = growList[i];
-      let isGrow;
-      // 计算主轴长度，以basis为基准判断伸缩选择，收缩比较简单，计算后再判断不能小于min即可
-      if(isMoreThanMax) {
-        isGrow = true;
-        main = grow ? (maxList[i] + free * grow / growSum) : maxList[i];
-      }
-      else if(isOverflow) {
-        main = shrink ? (basisList[i] - overflow * shrink / shrinkSum) : basisList[i];
+      else if(item > max) {
+        hypotheticalSum += max;
+        hypotheticalList.push(max);
       }
       else {
-        isGrow = !!grow;
-        main = grow ? (basisList[i] + free * grow / growSum) : basisList[i];
+        hypotheticalSum += item;
+        hypotheticalList.push(item);
       }
-      // 主轴长度的最小值不能小于元素的最小长度，即横向时的字符宽度，收缩时会用到确保最小值
-      main = Math.max(main, minList[i]);
+    });
+    // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
+    let isOverflow = hypotheticalSum >= (isDirectionRow ? w : h);
+    let targetMainList = [];
+    basisList.forEach((item, i) => {
+      if(isOverflow) {
+        if(!shrinkList[i] || (basisList[i] < hypotheticalList[i])) {
+          targetMainList[i] = hypotheticalList[i];
+        }
+      }
+      else {
+        if(!growList[i] || (basisList[i] > hypotheticalList[i])) {
+          targetMainList[i] = hypotheticalList[i];
+        }
+      }
+    });
+    // 初始可用空间，冻结使用确定的target尺寸，未冻结使用假想
+    let free = 0;
+    basisList.forEach((item, i) => {
+      if(targetMainList[i] !== undefined) {
+        free += targetMainList[i];
+      }
+      else {
+        free += item;
+      }
+    });
+    let total = Infinity;
+    if(isDirectionRow) {
+      total = w;
+    }
+    else if(fixedHeight) {
+      total = h;
+    }
+    else {
+      total = free;
+    }
+    free = Math.abs(total - free);
+    // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
+    let factorSum = 0;
+    if(isOverflow) {
+      // 计算真正的因子占比，同时得出缩小尺寸数值
+      // 还需判断每个item收缩不能<min值，小于的话将无法缩小的这部分按比例分配到其它几项上
+      // 于是写成一个循环，每轮先处理一遍，如果产生收缩超限的情况，将超限的设为最小值并剔除
+      // 剩下的重新分配因子占比继续从头循环重来一遍
+      let factorList = shrinkList.map((item, i) => {
+        if(targetMainList[i] === undefined) {
+          let n = item * basisList[i];
+          factorSum += n;
+          return n;
+        }
+      });
+      while(true) {
+        if(factorSum < 1) {
+          free *= factorSum;
+        }
+        let needReset, factorSum2 = 0;
+        factorList.forEach((item, i) => {
+          if(item) {
+            let r = item / factorSum;
+            let s = r * free; // 需要收缩的尺寸
+            let n = basisList[i] - s; // 实际尺寸
+            // 比min还小设置为min，同时设0剔除
+            if(n < minList[i]) {
+              targetMainList[i] = minList[i];
+              factorList[i] = 0;
+              needReset = true;
+              free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
+            }
+            // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
+            else {
+              targetMainList[i] = n;
+              factorSum2 += item;
+            }
+          }
+        });
+        if(!needReset) {
+          break;
+        }
+        factorSum = factorSum2;
+      }
+    }
+    else {
+      let factorList = growList.map((item, i) => {
+        if(targetMainList[i] === undefined) {
+          factorSum += item;
+          return item;
+        }
+      });
+      while(true) {
+        if(factorSum < 1) {
+          free *= factorSum;
+        }
+        let needReset, factorSum2 = 0;
+        factorList.forEach((item, i) => {
+          if(item) {
+            let r = item / factorSum;
+            let s = r * free; // 需要扩展的尺寸
+            let n = basisList[i] + s; // 实际尺寸
+            // 比min还小设置为min，同时设0剔除
+            if(n < minList[i]) {
+              targetMainList[i] = minList[i];
+              factorList[i] = 0;
+              needReset = true;
+              free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
+            }
+            // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
+            else {
+              targetMainList[i] = n;
+              factorSum2 += item;
+            }
+          }
+        });
+        if(!needReset) {
+          break;
+        }
+        factorSum = factorSum2;
+      }
+    }
+    let maxCross = 0;
+    flowChildren.forEach((item, i) => {
+      let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle } = item;
         let {
@@ -916,6 +1135,7 @@ class Dom extends Xom {
             y,
             w: main,
             h,
+            w3: main, // w3假设固定宽度，忽略原始style中的设置
           });
         }
         else {
@@ -929,43 +1149,8 @@ class Dom extends Xom {
             y,
             w,
             h: main,
-            h2: isGrow ? main : undefined, // 竖向flex的child如果是grow，假设为固定尺寸但不修改原始style
+            h3: main, // 同w2
           });
-        }
-        // 重设因伸缩而导致的主轴长度
-        let fitShrink = isOverflow && shrink;
-        let fitGrow = !isOverflow && grow;
-        if(fitShrink || fitGrow) {
-          // 收缩为负值，防止>=0的bug情况，另外还要判断最小值
-          if(fitShrink) {
-            if(isDirectionRow) {
-              let diff = main - Math.max(minList[i], item.outerWidth);
-              if(diff < 0) {
-                item.__resizeX(diff);
-              }
-            }
-            else {
-              let diff = main - Math.max(minList[i], item.outerHeight);
-              if(diff < 0) {
-                item.__resizeY(diff);
-              }
-            }
-          }
-          // 只有正值才扩展，一般不会出现，防止bug情况
-          else {
-            if(isDirectionRow) {
-              let diff = main - item.outerWidth;
-              if(diff > 0) {
-                item.__resizeX(diff);
-              }
-            }
-            else {
-              let diff = main - item.outerHeight;
-              if(diff > 0) {
-                item.__resizeY(diff);
-              }
-            }
-          }
         }
       }
       else {

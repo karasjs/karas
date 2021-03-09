@@ -973,6 +973,42 @@ class Xom extends Node {
     return n;
   }
 
+  // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
+  __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
+    let {
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_RIGHT]: marginRight,
+      [MARGIN_BOTTOM]: marginBottom,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_TOP]: paddingTop,
+      [PADDING_RIGHT]: paddingRight,
+      [PADDING_BOTTOM]: paddingBottom,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    } = currentStyle;
+    let mpb;
+    if(isDirectionRow) {
+      let mp = this.__calMp(marginLeft, w, !isDirectItem)
+        + this.__calMp(marginRight, w, !isDirectItem)
+        + this.__calMp(paddingLeft, w, !isDirectItem)
+        + this.__calMp(paddingRight, w, !isDirectItem);
+      mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
+      res = res.map(item => item + mpb);
+    }
+    else {
+      let mp = this.__calMp(marginTop, w, !isDirectItem)
+        + this.__calMp(marginBottom, w, !isDirectItem)
+        + this.__calMp(paddingTop, w, !isDirectItem)
+        + this.__calMp(paddingBottom, w, !isDirectItem);
+      mpb = borderTopWidth[0] + borderBottomWidth[0] + mp;
+      res = res.map(item => item + mpb);
+    }
+    return res;
+  }
+
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
   // fromAbs为absolute特有
   __layout(data, isVirtual, fromAbs) {

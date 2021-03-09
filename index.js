@@ -13343,6 +13343,42 @@
         }
 
         return n;
+      } // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
+
+    }, {
+      key: "__addMp",
+      value: function __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
+        var marginLeft = currentStyle[MARGIN_LEFT$1],
+            marginTop = currentStyle[MARGIN_TOP$1],
+            marginRight = currentStyle[MARGIN_RIGHT$1],
+            marginBottom = currentStyle[MARGIN_BOTTOM$1],
+            paddingLeft = currentStyle[PADDING_LEFT$1],
+            paddingTop = currentStyle[PADDING_TOP$1],
+            paddingRight = currentStyle[PADDING_RIGHT$1],
+            paddingBottom = currentStyle[PADDING_BOTTOM$1],
+            borderTopWidth = currentStyle[BORDER_TOP_WIDTH$1],
+            borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$1],
+            borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$1],
+            borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$1];
+        var mpb;
+
+        if (isDirectionRow) {
+          var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
+
+          mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
+          res = res.map(function (item) {
+            return item + mpb;
+          });
+        } else {
+          var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
+
+          mpb = borderTopWidth[0] + borderBottomWidth[0] + _mp;
+          res = res.map(function (item) {
+            return item + mpb;
+          });
+        }
+
+        return res;
       } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
       // fromAbs为absolute特有
 
@@ -16726,47 +16762,11 @@
             item.__offsetY(diff, isLayout, lv);
           }
         });
-      } // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
-
-    }, {
-      key: "__addMp",
-      value: function __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
-        var marginLeft = currentStyle[MARGIN_LEFT$2],
-            marginTop = currentStyle[MARGIN_TOP$2],
-            marginRight = currentStyle[MARGIN_RIGHT$2],
-            marginBottom = currentStyle[MARGIN_BOTTOM$3],
-            paddingLeft = currentStyle[PADDING_LEFT$2],
-            paddingTop = currentStyle[PADDING_TOP$2],
-            paddingRight = currentStyle[PADDING_RIGHT$2],
-            paddingBottom = currentStyle[PADDING_BOTTOM$2],
-            borderTopWidth = currentStyle[BORDER_TOP_WIDTH$2],
-            borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$2],
-            borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$2],
-            borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$2];
-        var mpb;
-
-        if (isDirectionRow) {
-          var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
-
-          mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
-          res = res.map(function (item) {
-            return item + mpb;
-          });
-        } else {
-          var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
-
-          mpb = borderTopWidth[0] + borderBottomWidth[0] + _mp;
-          res = res.map(function (item) {
-            return item + mpb;
-          });
-        }
-
-        return res;
       } // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
 
     }, {
       key: "__calMinMax",
-      value: function __calMinMax(isDirectionRow, x, y, w, h, isVirtual) {
+      value: function __calMinMax(isDirectionRow, x, y, w, h) {
         css.computeReflow(this, this.isShadowRoot);
         var min = 0;
         var max = 0;
@@ -16791,7 +16791,7 @@
                 currentStyle[DISPLAY$3] = 'block';
               }
 
-              var _item$__calMinMax = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
+              var _item$__calMinMax = item.__calMinMax(isDirectionRow, x, y, w, h),
                   _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
                   min2 = _item$__calMinMax2[0],
                   max2 = _item$__calMinMax2[1];
@@ -16817,7 +16817,7 @@
           } else if (display === 'block') {
             flowChildren.forEach(function (item) {
               if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-                var _item$__calMinMax3 = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
+                var _item$__calMinMax3 = item.__calMinMax(isDirectionRow, x, y, w, h),
                     _item$__calMinMax4 = _slicedToArray(_item$__calMinMax3, 2),
                     min2 = _item$__calMinMax4[0],
                     max2 = _item$__calMinMax4[1];
@@ -16847,7 +16847,7 @@
           } else if (display === 'inline') {
             flowChildren.forEach(function (item) {
               if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-                var _item$__calMinMax5 = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
+                var _item$__calMinMax5 = item.__calMinMax(isDirectionRow, x, y, w, h),
                     _item$__calMinMax6 = _slicedToArray(_item$__calMinMax5, 2),
                     min2 = _item$__calMinMax6[0],
                     max2 = _item$__calMinMax6[1];
@@ -16896,13 +16896,12 @@
        * @param w
        * @param h
        * @param isVirtual abs非固定尺寸时先进行虚拟布局标识
-       * @param isRecursion 是否是递归孩子
        * @private
        */
 
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, x, y, w, h, isVirtual, isRecursion) {
+      value: function __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
         css.computeReflow(this, this.isShadowRoot);
         var b = 0;
         var min = 0;
@@ -19283,8 +19282,26 @@
         return w;
       }
     }, {
+      key: "__calMinMax",
+      value: function __calMinMax(isDirectionRow, x, y, w, h) {
+        css.computeReflow(this, this.isShadowRoot);
+        var min = 0;
+        var max = 0;
+        var currentStyle = this.currentStyle; // 计算需考虑style的属性
+
+        var width = currentStyle[WIDTH$6],
+            height = currentStyle[HEIGHT$6];
+        var main = isDirectionRow ? width : height; // 只绝对值生效，%不生效，依旧要判断
+
+        if (main[1] === PX$7) {
+          min = max = main[0];
+        }
+
+        return this.__addMp(isDirectionRow, w, currentStyle, [min, max]);
+      }
+    }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
+      value: function __calBasis(isDirectionRow, x, y, w, h) {
         var b = 0;
         var min = 0;
         var max = 0;
@@ -28210,7 +28227,7 @@
     Cache: Cache
   };
 
-  var version = "0.53.2";
+  var version = "0.53.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

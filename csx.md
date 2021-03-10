@@ -402,7 +402,7 @@ json有压缩格式，即把常见的样式/动画的key简写别名，使得整
   animate?: Object/Array<{ value: Object/Array, options: Object }>,
 }
 ```
-工具导出的json能看到`library`字段，这是编辑器专用，为了复用，所有的元件（可理解为一个dom类）均在library中，且有唯一`id`标识，json中使用`libraryId`来引用并实例化元件。实例化的json有`init`属性来覆盖`props`属性，相当于创建对象并传入初始化参数。
+工具导出的json能看到`library`字段，这是编辑器专用，为了复用，所有的元件（可理解为一个dom类）均在library中，且有唯一`id`标识，json中使用`libraryId`来引用并实例化元件。实例化的json有`init`属性来覆盖`props`属性，相当于创建对象并传入初始化参数。一般情况下，实例化无法覆盖`children`和`animate`，后面会有特殊方式。
 ```ts
 {
   tagName: 'canvas',
@@ -432,7 +432,8 @@ json有压缩格式，即把常见的样式/动画的key简写别名，使得整
         width: 100,
         height: 100
       }
-    }
+    },
+    children: ['text']
   }
 }
 ```
@@ -458,8 +459,8 @@ let json = {
       }
     },
     children: [],
-    'var-children': {
-      id: 'children',
+    'var-children.0': {
+      id: 'custom',
       desc: '自定义children'
     }
   }
@@ -467,7 +468,7 @@ let json = {
 karas.parse(json, {
   vars: {
     color: '#00F',
-    'children.0': 'text'
+    custom: 'text'
   }
 });
 ```

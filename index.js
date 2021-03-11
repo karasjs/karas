@@ -3774,6 +3774,11 @@
 
         if (typeof window !== 'undefined' && window.OffscreenCanvas && o instanceof window.OffscreenCanvas) {
           return true;
+        } // worker
+
+
+        if (typeof self !== 'undefined' && self.OffscreenCanvas && o instanceof self.OffscreenCanvas) {
+          return true;
         }
 
         if (util.isFunction(o.getElementsByTagName)) {
@@ -24204,27 +24209,32 @@
         this.__initProps();
 
         this.__root = this;
-        this.cache = !!this.props.cache; // 已有root节点
+        this.cache = !!this.props.cache; // OffscreenCanvas兼容，包含worker的
 
-        if (dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
+        if (typeof window !== 'undefined' && window.OffscreenCanvas && dom instanceof window.OffscreenCanvas || typeof self !== 'undefined' && self.OffscreenCanvas && dom instanceof self.OffscreenCanvas) {
           this.__dom = dom;
+          this.__width = dom.width;
+          this.__height = dom.height;
+        } // 已有root节点
+        else if (dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
+            this.__dom = dom;
 
-          if (this.width) {
-            dom.setAttribute('width', this.width);
-          }
-
-          if (this.height) {
-            dom.setAttribute('height', this.height);
-          }
-        } // 没有canvas/svg节点则生成一个新的
-        else {
-            this.__dom = dom.querySelector(this.tagName);
-
-            if (!this.__dom) {
-              dom.innerHTML = this.__genHtml();
-              this.__dom = dom.querySelector(this.tagName);
+            if (this.width) {
+              dom.setAttribute('width', this.width);
             }
-          }
+
+            if (this.height) {
+              dom.setAttribute('height', this.height);
+            }
+          } // 没有canvas/svg节点则生成一个新的
+          else {
+              this.__dom = dom.querySelector(this.tagName);
+
+              if (!this.__dom) {
+                dom.innerHTML = this.__genHtml();
+                this.__dom = dom.querySelector(this.tagName);
+              }
+            }
 
         this.__uuid = isNil$8(this.__dom.__uuid) ? uuid$1++ : this.__dom.__uuid;
         this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式

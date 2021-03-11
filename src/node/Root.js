@@ -700,8 +700,15 @@ class Root extends Dom {
     this.__initProps();
     this.__root = this;
     this.cache = !!this.props.cache;
+    // OffscreenCanvas兼容，包含worker的
+    if(typeof window !== 'undefined' && window.OffscreenCanvas && (dom instanceof window.OffscreenCanvas)
+      || typeof self !== 'undefined' && self.OffscreenCanvas && (dom instanceof self.OffscreenCanvas)) {
+      this.__dom = dom;
+      this.__width = dom.width;
+      this.__height = dom.height;
+    }
     // 已有root节点
-    if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
+    else if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
       this.__dom = dom;
       if(this.width) {
         dom.setAttribute('width', this.width);

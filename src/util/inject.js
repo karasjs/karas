@@ -283,6 +283,10 @@ let inject = {
       if(typeof window !== 'undefined' && window.OffscreenCanvas && (o instanceof window.OffscreenCanvas)) {
         return true;
       }
+      // worker
+      if(typeof self !== 'undefined' && self.OffscreenCanvas && (o instanceof self.OffscreenCanvas)) {
+        return true;
+      }
       if(util.isFunction(o.getElementsByTagName)) {
         return true;
       }

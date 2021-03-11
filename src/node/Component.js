@@ -13,6 +13,7 @@ const REGISTER = {};
 
 /**
  * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
+ * 在check时树递归会用到，判断是否需要查找cp更新
  * @param cp
  */
 function setUpdateFlag(cp) {
@@ -75,6 +76,7 @@ class Component extends Event {
       else {
         self.__nextState = n;
         self.__taskList = [cb];
+        // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
         let list = [];
         let t = self.__task = {
           __before: () => {
@@ -142,7 +144,7 @@ class Component extends Event {
     else {
       throw new Error('Component render() must return a dom/text: ' + this);
     }
-    // shadow指向直接root，shadowRoot考虑到返回Component的递归
+    // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
     this.__shadow = sr;
     sr.__host = this;
     while(sr instanceof Component) {

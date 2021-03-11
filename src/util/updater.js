@@ -37,10 +37,16 @@ function check(vd) {
       }
     });
   }
+  // 高阶组件会进入此分支，被父组件调用
+  else if(vd instanceof Component && vd.__hasUpdate) {
+    vd.__hasUpdate = false;
+    checkCp(vd, vd.props);
+  }
 }
 
 /**
- * 检查cp是否有state变更
+ * 检查cp是否有state变更，注意递归检查时需要看shadow不能看shadowRoot，
+ * 否则高阶组件会被跳过，其更新无法触发update生命周期
  * @param cp
  * @param nextProps
  * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制检查更新，否则可以跳过
@@ -62,11 +68,11 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
     else {
       cp.props = nextProps;
       cp.state = cp.__nextState || cp.state;
-      check(cp.shadowRoot);
+      check(cp.shadow);
     }
   }
   else {
-    check(cp.shadowRoot);
+    check(cp.shadow);
   }
 }
 
@@ -141,6 +147,17 @@ function updateCp(cp, props, state) {
   // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
   if(json && json.placeholder) {
     delete json.placeholder;
+  }
+  // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr需要同时更新引用
+  let host = cp.host;
+  while(host) {
+    if(host.shadow === cp) {
+      host.__shadowRoot = sr;
+      host = host.host;
+    }
+    else {
+      break;
+    }
   }
 }
 

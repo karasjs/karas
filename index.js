@@ -16046,6 +16046,7 @@
   var REGISTER = {};
   /**
    * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
+   * 在check时树递归会用到，判断是否需要查找cp更新
    * @param cp
    */
 
@@ -16128,7 +16129,8 @@
             self.__taskList.push(cb);
           } else {
             self.__nextState = n;
-            self.__taskList = [cb];
+            self.__taskList = [cb]; // 回调更新列表，before执行时splice出来供after执行，防止中途产生的后续setState干扰
+
             var list = [];
             var t = self.__task = {
               __before: function __before() {
@@ -16195,7 +16197,7 @@
           inject.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
         } else {
           throw new Error('Component render() must return a dom/text: ' + this);
-        } // shadow指向直接root，shadowRoot考虑到返回Component的递归
+        } // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
 
 
         this.__shadow = sr;
@@ -20140,10 +20142,15 @@
             checkCp(child, child.props);
           }
       });
-    }
+    } // 高阶组件会进入此分支，被父组件调用
+    else if (vd instanceof Component$2 && vd.__hasUpdate) {
+        vd.__hasUpdate = false;
+        checkCp(vd, vd.props);
+      }
   }
   /**
-   * 检查cp是否有state变更
+   * 检查cp是否有state变更，注意递归检查时需要看shadow不能看shadowRoot，
+   * 否则高阶组件会被跳过，其更新无法触发update生命周期
    * @param cp
    * @param nextProps
    * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制检查更新，否则可以跳过
@@ -20167,10 +20174,10 @@
       else {
           cp.props = nextProps;
           cp.state = cp.__nextState || cp.state;
-          check(cp.shadowRoot);
+          check(cp.shadow);
         }
     } else {
-      check(cp.shadowRoot);
+      check(cp.shadow);
     }
   }
   /**
@@ -20221,6 +20228,18 @@
 
     if (json && json.placeholder) {
       delete json.placeholder;
+    } // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr需要同时更新引用
+
+
+    var host = cp.host;
+
+    while (host) {
+      if (host.shadow === cp) {
+        host.__shadowRoot = sr;
+        host = host.host;
+      } else {
+        break;
+      }
     }
   }
   /**

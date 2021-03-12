@@ -24075,14 +24075,13 @@
       _this.__task = [];
       _this.__taskCp = [];
       _this.__ref = {};
-      _this.__updateHash = {};
       _this.__reflowList = [{
         node: _assertThisInitialized(_this)
       }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
 
       _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
-      _this.__config[NODE_UPDATE_HASH] = _this.__updateHash;
+      _this.__config[NODE_UPDATE_HASH] = _this.__updateHash = {};
       return _this;
     }
 
@@ -24200,6 +24199,11 @@
 
         return data;
       }
+      /**
+       * 添加到真实Dom上，优先已存在的同名canvas/svg节点，没有则dom下生成新的
+       * @param dom
+       */
+
     }, {
       key: "appendTo",
       value: function appendTo(dom) {
@@ -24368,16 +24372,28 @@
     }, {
       key: "addRefreshTask",
       value: function addRefreshTask(cb) {
+        var _this3 = this;
+
         if (!cb) {
           return;
         }
 
-        var task = this.task; // 第一个添加延迟侦听，后续放队列等待一并执行
+        var task = this.task,
+            isDestroyed = this.isDestroyed;
+
+        if (isDestroyed) {
+          return;
+        } // 第一个添加延迟侦听，后续放队列等待一并执行
+
 
         if (!task.length) {
           var clone;
           frame.nextFrame({
             __before: function __before(diff) {
+              if (_this3.isDestroyed) {
+                return;
+              }
+
               clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
               if (clone.length) {
@@ -24389,6 +24405,10 @@
               }
             },
             __after: function __after(diff) {
+              if (_this3.isDestroyed) {
+                return;
+              }
+
               clone.forEach(function (item) {
                 if (isObject$2(item) && isFunction$6(item.__after)) {
                   item.__after(diff);
@@ -24436,22 +24456,31 @@
     }, {
       key: "addRefreshCp",
       value: function addRefreshCp(cb) {
-        var _this3 = this;
+        var _this4 = this;
 
-        var taskCp = this.taskCp;
+        var taskCp = this.taskCp,
+            isDestroyed = this.isDestroyed;
+
+        if (isDestroyed) {
+          return;
+        }
 
         if (!taskCp.length) {
           var clone;
 
           frame.__nextFrameCp({
             __before: function __before(diff) {
+              if (_this4.isDestroyed) {
+                return;
+              }
+
               clone = taskCp.splice(0);
 
               if (clone.length) {
                 clone.forEach(function (item) {
                   item.__before(diff);
                 });
-                updater.check(_this3);
+                updater.check(_this4);
                 var len = updater.updateList.length;
 
                 if (len) {
@@ -24470,12 +24499,16 @@
                     res[UPDATE_COMPONENT] = cp;
                     res[UPDATE_CONFIG$3] = sr.__config;
 
-                    _this3.__addUpdate(sr, sr.__config, _this3, _this3.__config, res);
+                    _this4.__addUpdate(sr, sr.__config, _this4, _this4.__config, res);
                   });
                 }
               }
             },
             __after: function __after(diff) {
+              if (_this4.isDestroyed) {
+                return;
+              }
+
               clone.forEach(function (item) {
                 item.__after(diff);
               }); // 触发didUpdate
@@ -24718,7 +24751,7 @@
     }, {
       key: "__checkReflow",
       value: function __checkReflow(width, height) {
-        var _this4 = this;
+        var _this5 = this;
 
         var reflowList = this.__reflowList;
 
@@ -24966,7 +24999,7 @@
                       if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                         parent.__updateStruct(root.__structs);
 
-                        if (_this4.renderMode === mode.SVG) {
+                        if (_this5.renderMode === mode.SVG) {
                           cleanSvgCache(parent);
                         }
                       }
@@ -25104,7 +25137,7 @@
                   if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                     node.domParent.__updateStruct(root.__structs);
 
-                    if (_this4.renderMode === mode.SVG) {
+                    if (_this5.renderMode === mode.SVG) {
                       cleanSvgCache(node.domParent);
                     }
                   }
@@ -25135,7 +25168,7 @@
 
                   var _parent3;
 
-                  if (node === _this4) {
+                  if (node === _this5) {
                     _parent3 = node;
                   } else {
                     _parent3 = node.domParent;
@@ -25556,11 +25589,11 @@
     }, {
       key: "__frameHook",
       value: function __frameHook() {
-        var _this5 = this;
+        var _this6 = this;
 
         if (!this.__hookTask) {
           var r = this.__hookTask = function () {
-            _this5.refresh();
+            _this6.refresh();
           };
 
           frame.__hookTask.push(r);

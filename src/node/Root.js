@@ -601,11 +601,10 @@ class Root extends Dom {
     this.__task = [];
     this.__taskCp = [];
     this.__ref = {};
-    this.__updateHash = {};
     this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
     this.__animateController = new Controller();
     Event.mix(this);
-    this.__config[NODE_UPDATE_HASH] = this.__updateHash;
+    this.__config[NODE_UPDATE_HASH] = this.__updateHash = {};
   }
 
   __initProps() {
@@ -694,6 +693,10 @@ class Root extends Dom {
     return data;
   }
 
+  /**
+   * 添加到真实Dom上，优先已存在的同名canvas/svg节点，没有则dom下生成新的
+   * @param dom
+   */
   appendTo(dom) {
     dom = getDom(dom);
     this.__children = builder.initRoot(this.__cd, this);
@@ -836,12 +839,18 @@ class Root extends Dom {
     if(!cb) {
       return;
     }
-    let { task } = this;
+    let { task, isDestroyed } = this;
+    if(isDestroyed) {
+      return;
+    }
     // 第一个添加延迟侦听，后续放队列等待一并执行
     if(!task.length) {
       let clone;
       frame.nextFrame({
         __before: diff => {
+          if(this.isDestroyed) {
+            return;
+          }
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
@@ -853,6 +862,9 @@ class Root extends Dom {
           }
         },
         __after: diff => {
+          if(this.isDestroyed) {
+            return;
+          }
           clone.forEach(item => {
             if(isObject(item) && isFunction(item.__after)) {
               item.__after(diff);
@@ -894,11 +906,17 @@ class Root extends Dom {
    * @param cb
    */
   addRefreshCp(cb) {
-    let { taskCp } = this;
+    let { taskCp, isDestroyed } = this;
+    if(isDestroyed) {
+      return;
+    }
     if(!taskCp.length) {
       let clone;
       frame.__nextFrameCp({
         __before: diff => {
+          if(this.isDestroyed) {
+            return;
+          }
           clone = taskCp.splice(0);
           if(clone.length) {
             clone.forEach(item => {
@@ -926,6 +944,9 @@ class Root extends Dom {
           }
         },
         __after: diff => {
+          if(this.isDestroyed) {
+            return;
+          }
           clone.forEach(item => {
             item.__after(diff);
           });

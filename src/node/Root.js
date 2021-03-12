@@ -828,17 +828,15 @@ class Root extends Dom {
   }
 
   resize(w, h, cb) {
-    if(w !== this.width || h !== this.height) {
-      this.__width = w;
-      this.__hegiht = h;
-      this.addRefreshTask(cb || function() {});
+    let self = this;
+    if(w !== self.width || h !== self.height) {
+      self.__width = w;
+      self.__hegiht = h;
+      self.addRefreshTask(cb, true);
     }
   }
 
-  addRefreshTask(cb) {
-    if(!cb) {
-      return;
-    }
+  addRefreshTask(cb, isFirst) {
     let { task, isDestroyed } = this;
     if(isDestroyed) {
       return;
@@ -875,7 +873,7 @@ class Root extends Dom {
           });
         }
       });
-      this.__frameHook();
+      this.__frameHook(isFirst);
     }
     if(task.indexOf(cb) === -1) {
       task.push(cb);
@@ -1837,10 +1835,20 @@ class Root extends Dom {
 
   // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
   // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
-  __frameHook() {
+  __frameHook(isFirst) {
     if(!this.__hookTask) {
       let r = this.__hookTask = (() => {
-        this.refresh();
+        this.refresh(null, isFirst);
+      });
+      frame.__hookTask.push(r);
+    }
+    else if(isFirst) {
+      let i = frame.__hookTask.indexOf(this.__hookTask);
+      if(i > -1) {
+        frame.__hookTask.splice(i, 1);
+      }
+      let r = this.__hookTask = (() => {
+        this.refresh(null, isFirst);
       });
       frame.__hookTask.push(r);
     }

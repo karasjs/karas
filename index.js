@@ -24363,20 +24363,18 @@
     }, {
       key: "resize",
       value: function resize(w, h, cb) {
-        if (w !== this.width || h !== this.height) {
-          this.__width = w;
-          this.__hegiht = h;
-          this.addRefreshTask(cb || function () {});
+        var self = this;
+
+        if (w !== self.width || h !== self.height) {
+          self.__width = w;
+          self.__hegiht = h;
+          self.addRefreshTask(cb, true);
         }
       }
     }, {
       key: "addRefreshTask",
-      value: function addRefreshTask(cb) {
+      value: function addRefreshTask(cb, isFirst) {
         var _this3 = this;
-
-        if (!cb) {
-          return;
-        }
 
         var task = this.task,
             isDestroyed = this.isDestroyed;
@@ -24419,7 +24417,7 @@
             }
           });
 
-          this.__frameHook();
+          this.__frameHook(isFirst);
         }
 
         if (task.indexOf(cb) === -1) {
@@ -25588,15 +25586,27 @@
 
     }, {
       key: "__frameHook",
-      value: function __frameHook() {
+      value: function __frameHook(isFirst) {
         var _this6 = this;
 
         if (!this.__hookTask) {
           var r = this.__hookTask = function () {
-            _this6.refresh();
+            _this6.refresh(null, isFirst);
           };
 
           frame.__hookTask.push(r);
+        } else if (isFirst) {
+          var i = frame.__hookTask.indexOf(this.__hookTask);
+
+          if (i > -1) {
+            frame.__hookTask.splice(i, 1);
+          }
+
+          var _r = this.__hookTask = function () {
+            _this6.refresh(null, isFirst);
+          };
+
+          frame.__hookTask.push(_r);
         }
       }
     }, {
@@ -28279,7 +28289,7 @@
     Cache: Cache
   };
 
-  var version = "0.53.5";
+  var version = "0.53.6";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -5,7 +5,7 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-o.ref.div.updateFormatStyleNoOverwrite({
+o.ref.div.updateFormatStyle({
   [karas.enums.STYLE_KEY.COLOR]: [[0, 0, 255, 1], karas.style.unit.RGBA],
 }, function() {
   input.value = o.ref.div.getComputedStyle().color;

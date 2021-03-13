@@ -2442,7 +2442,7 @@ class Xom extends Node {
       frame.offFrame(item);
     });
     root.delRefreshTask(this.__loadBgi.cb);
-    root.delRefreshTask(this.__task);
+    root.delRefreshTask(this.__usTask);
     this.__matrix = this.__matrixEvent = this.__root = null;
     this.__cancelCache();
   }
@@ -2734,7 +2734,7 @@ class Xom extends Node {
     let formatStyle = css.normalize(style);
     // 有root说明被添加渲染过了
     if(root) {
-      root.addRefreshTask(node.__task = {
+      root.addRefreshTask(node.__usTask = {
         __before() {
           if(__config[NODE_IS_DESTROYED]) {
             return;
@@ -2764,16 +2764,17 @@ class Xom extends Node {
     else {
       Object.assign(this.currentStyle, formatStyle);
       if(util.isFunction(cb)) {
-        cb.call(node, 0);
+        cb.call(node, -1);
       }
     }
   }
 
-  updateFormatStyleNoOverwrite(style, cb) {
-    let { root, __config } = this;
+  // 传入格式化好key/value的样式
+  updateFormatStyle(style, cb) {
+    let node = this;
+    let { root, __config } = node;
     if(root) {
-      let node = this;
-      root.addRefreshTask(node.__task = {
+      root.addRefreshTask(node.__usTask = {
         __before() {
           if(__config[NODE_IS_DESTROYED]) {
             return;
@@ -2797,6 +2798,13 @@ class Xom extends Node {
           }
         },
       });
+    }
+    // 没有是在如parse()还未添加的时候，可以直接同步覆盖
+    else {
+      Object.assign(this.currentStyle, style);
+      if(util.isFunction(cb)) {
+        cb.call(node, -1);
+      }
     }
   }
 

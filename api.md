@@ -610,7 +610,7 @@ root.updateStyle({
 root.appendTo('#selector');
 ```
 
-#### updateFormatStyleNoOverwrite
+#### updateFormatStyle
 * **类型** `Function`
 * **参数**
   * style `Object`

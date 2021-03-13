@@ -14899,7 +14899,7 @@
         });
 
         root.delRefreshTask(this.__loadBgi.cb);
-        root.delRefreshTask(this.__task);
+        root.delRefreshTask(this.__usTask);
         this.__matrix = this.__matrixEvent = this.__root = null;
 
         this.__cancelCache();
@@ -15228,7 +15228,7 @@
         var formatStyle = css.normalize(style); // 有root说明被添加渲染过了
 
         if (root) {
-          root.addRefreshTask(node.__task = {
+          root.addRefreshTask(node.__usTask = {
             __before: function __before() {
               if (__config[NODE_IS_DESTROYED$1]) {
                 return;
@@ -15262,19 +15262,20 @@
             Object.assign(this.currentStyle, formatStyle);
 
             if (util.isFunction(cb)) {
-              cb.call(node, 0);
+              cb.call(node, -1);
             }
           }
-      }
+      } // 传入格式化好key/value的样式
+
     }, {
-      key: "updateFormatStyleNoOverwrite",
-      value: function updateFormatStyleNoOverwrite(style, cb) {
-        var root = this.root,
-            __config = this.__config;
+      key: "updateFormatStyle",
+      value: function updateFormatStyle(style, cb) {
+        var node = this;
+        var root = node.root,
+            __config = node.__config;
 
         if (root) {
-          var node = this;
-          root.addRefreshTask(node.__task = {
+          root.addRefreshTask(node.__usTask = {
             __before: function __before() {
               if (__config[NODE_IS_DESTROYED$1]) {
                 return;
@@ -15301,7 +15302,14 @@
               }
             }
           });
-        }
+        } // 没有是在如parse()还未添加的时候，可以直接同步覆盖
+        else {
+            Object.assign(this.currentStyle, style);
+
+            if (util.isFunction(cb)) {
+              cb.call(node, -1);
+            }
+          }
       }
     }, {
       key: "animate",
@@ -24294,7 +24302,7 @@
         defs.clear(); // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
 
         if (isFirst) {
-          this.__checkRoot(width, height);
+          this.__checkRoot(renderMode, width, height);
 
           this.__computeMeasure(renderMode, ctx);
         } // 非首次刷新如果没有更新则无需继续
@@ -24367,13 +24375,16 @@
 
         if (w !== self.width || h !== self.height) {
           self.__width = w;
-          self.__hegiht = h;
-          self.addRefreshTask(cb, true);
+          self.__height = h;
+          self.updateStyle({
+            width: w,
+            height: h
+          }, cb);
         }
       }
     }, {
       key: "addRefreshTask",
-      value: function addRefreshTask(cb, isFirst) {
+      value: function addRefreshTask(cb) {
         var _this3 = this;
 
         var task = this.task,
@@ -24417,7 +24428,7 @@
             }
           });
 
-          this.__frameHook(isFirst);
+          this.__frameHook();
         }
 
         if (task.indexOf(cb) === -1) {
@@ -24524,6 +24535,7 @@
       }
       /**
        * 每次刷新前检查root节点的样式，有些固定的修改无效，有些继承的作为根初始化
+       * @param renderMode
        * @param width
        * @param height
        * @private
@@ -24531,8 +24543,9 @@
 
     }, {
       key: "__checkRoot",
-      value: function __checkRoot(width, height) {
-        var currentStyle = this.currentStyle,
+      value: function __checkRoot(renderMode, width, height) {
+        var dom = this.dom,
+            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle; // canvas/svg作为根节点一定是block或flex，不会是inline
 
         if (['flex', 'block'].indexOf(currentStyle[DISPLAY$8]) === -1) {
@@ -24548,7 +24561,15 @@
         currentStyle[WIDTH$7] = [width, PX$9];
         currentStyle[HEIGHT$8] = [height, PX$9];
         computedStyle[WIDTH$7] = width;
-        computedStyle[HEIGHT$8] = height;
+        computedStyle[HEIGHT$8] = height; // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
+
+        if (renderMode === mode.CANVAS) {
+          dom.width = width;
+          dom.height = height;
+        } else if (renderMode === mode.SVG) {
+          dom.setAttribute('width', width);
+          dom.setAttribute('height', height);
+        }
       }
       /**
        * 添加更新入口，按节点汇总更新信息
@@ -24638,9 +24659,9 @@
 
         if (updateRoot) {
           root.__updateRoot = null;
-          hasUpdate = parseUpdate(renderMode, root, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式
+          hasUpdate = parseUpdate(renderMode, root, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
 
-          root.__checkRoot(width, height);
+          root.__checkRoot(renderMode, width, height);
         } // 汇总处理每个节点，k是递增数字直接循环遍历
 
 
@@ -25586,27 +25607,15 @@
 
     }, {
       key: "__frameHook",
-      value: function __frameHook(isFirst) {
+      value: function __frameHook() {
         var _this6 = this;
 
         if (!this.__hookTask) {
           var r = this.__hookTask = function () {
-            _this6.refresh(null, isFirst);
+            _this6.refresh();
           };
 
           frame.__hookTask.push(r);
-        } else if (isFirst) {
-          var i = frame.__hookTask.indexOf(this.__hookTask);
-
-          if (i > -1) {
-            frame.__hookTask.splice(i, 1);
-          }
-
-          var _r = this.__hookTask = function () {
-            _this6.refresh(null, isFirst);
-          };
-
-          frame.__hookTask.push(_r);
         }
       }
     }, {

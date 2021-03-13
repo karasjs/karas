@@ -771,7 +771,7 @@ class Root extends Dom {
     defs.clear();
     // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
     if(isFirst) {
-      this.__checkRoot(width, height);
+      this.__checkRoot(renderMode, width, height);
       this.__computeMeasure(renderMode, ctx);
     }
     // 非首次刷新如果没有更新则无需继续
@@ -831,12 +831,15 @@ class Root extends Dom {
     let self = this;
     if(w !== self.width || h !== self.height) {
       self.__width = w;
-      self.__hegiht = h;
-      self.addRefreshTask(cb, true);
+      self.__height = h;
+      self.updateStyle({
+        width: w,
+        height: h,
+      }, cb);
     }
   }
 
-  addRefreshTask(cb, isFirst) {
+  addRefreshTask(cb) {
     let { task, isDestroyed } = this;
     if(isDestroyed) {
       return;
@@ -873,7 +876,7 @@ class Root extends Dom {
           });
         }
       });
-      this.__frameHook(isFirst);
+      this.__frameHook();
     }
     if(task.indexOf(cb) === -1) {
       task.push(cb);
@@ -961,12 +964,13 @@ class Root extends Dom {
 
   /**
    * 每次刷新前检查root节点的样式，有些固定的修改无效，有些继承的作为根初始化
+   * @param renderMode
    * @param width
    * @param height
    * @private
    */
-  __checkRoot(width, height) {
-    let { currentStyle, computedStyle } = this;
+  __checkRoot(renderMode, width, height) {
+    let { dom, currentStyle, computedStyle } = this;
     // canvas/svg作为根节点一定是block或flex，不会是inline
     if(['flex', 'block'].indexOf(currentStyle[DISPLAY]) === -1) {
       computedStyle[DISPLAY] = currentStyle[DISPLAY] = 'block';
@@ -980,6 +984,15 @@ class Root extends Dom {
     currentStyle[HEIGHT] = [height, PX];
     computedStyle[WIDTH] = width;
     computedStyle[HEIGHT] = height;
+    // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
+    if(renderMode === mode.CANVAS) {
+      dom.width = width;
+      dom.height = height;
+    }
+    else if(renderMode === mode.SVG) {
+      dom.setAttribute('width', width);
+      dom.setAttribute('height', height);
+    }
   }
 
   /**
@@ -1066,8 +1079,8 @@ class Root extends Dom {
       root.__updateRoot = null;
       hasUpdate = parseUpdate(renderMode, root, updateRoot,
         reflowList, measureList, cacheHash, cacheList);
-      // 此时做root检查，防止root出现继承等无效样式
-      root.__checkRoot(width, height);
+      // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
+      root.__checkRoot(renderMode, width, height);
     }
     // 汇总处理每个节点，k是递增数字直接循环遍历
     let keys = Object.keys(updateHash);
@@ -1835,20 +1848,10 @@ class Root extends Dom {
 
   // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
   // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
-  __frameHook(isFirst) {
+  __frameHook() {
     if(!this.__hookTask) {
       let r = this.__hookTask = (() => {
-        this.refresh(null, isFirst);
-      });
-      frame.__hookTask.push(r);
-    }
-    else if(isFirst) {
-      let i = frame.__hookTask.indexOf(this.__hookTask);
-      if(i > -1) {
-        frame.__hookTask.splice(i, 1);
-      }
-      let r = this.__hookTask = (() => {
-        this.refresh(null, isFirst);
+        this.refresh();
       });
       frame.__hookTask.push(r);
     }

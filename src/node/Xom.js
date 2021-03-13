@@ -2442,7 +2442,7 @@ class Xom extends Node {
       frame.offFrame(item);
     });
     root.delRefreshTask(this.__loadBgi.cb);
-    root.delRefreshTask(this.__usTask);
+    root.delRefreshTask(this.__task);
     this.__matrix = this.__matrixEvent = this.__root = null;
     this.__cancelCache();
   }
@@ -2734,7 +2734,7 @@ class Xom extends Node {
     let formatStyle = css.normalize(style);
     // 有root说明被添加渲染过了
     if(root) {
-      root.addRefreshTask(node.__usTask = {
+      root.addRefreshTask(node.__task = {
         __before() {
           if(__config[NODE_IS_DESTROYED]) {
             return;
@@ -2774,7 +2774,7 @@ class Xom extends Node {
     let node = this;
     let { root, __config } = node;
     if(root) {
-      root.addRefreshTask(node.__usTask = {
+      root.addRefreshTask(node.__task = {
         __before() {
           if(__config[NODE_IS_DESTROYED]) {
             return;

@@ -14899,7 +14899,7 @@
         });
 
         root.delRefreshTask(this.__loadBgi.cb);
-        root.delRefreshTask(this.__usTask);
+        root.delRefreshTask(this.__task);
         this.__matrix = this.__matrixEvent = this.__root = null;
 
         this.__cancelCache();
@@ -15228,7 +15228,7 @@
         var formatStyle = css.normalize(style); // 有root说明被添加渲染过了
 
         if (root) {
-          root.addRefreshTask(node.__usTask = {
+          root.addRefreshTask(node.__task = {
             __before: function __before() {
               if (__config[NODE_IS_DESTROYED$1]) {
                 return;
@@ -15275,7 +15275,7 @@
             __config = node.__config;
 
         if (root) {
-          root.addRefreshTask(node.__usTask = {
+          root.addRefreshTask(node.__task = {
             __before: function __before() {
               if (__config[NODE_IS_DESTROYED$1]) {
                 return;
@@ -24080,7 +24080,7 @@
       _this.__mh = 0; // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
       // this.__scy = 1;
 
-      _this.__task = [];
+      _this.__taskUp = [];
       _this.__taskCp = [];
       _this.__ref = {};
       _this.__reflowList = [{
@@ -24387,7 +24387,7 @@
       value: function addRefreshTask(cb) {
         var _this3 = this;
 
-        var task = this.task,
+        var taskUp = this.taskUp,
             isDestroyed = this.isDestroyed;
 
         if (isDestroyed) {
@@ -24395,7 +24395,7 @@
         } // 第一个添加延迟侦听，后续放队列等待一并执行
 
 
-        if (!task.length) {
+        if (!taskUp.length) {
           var clone;
           frame.nextFrame({
             __before: function __before(diff) {
@@ -24403,7 +24403,7 @@
                 return;
               }
 
-              clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
+              clone = taskUp.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
               if (clone.length) {
                 clone.forEach(function (item, i) {
@@ -24431,8 +24431,8 @@
           this.__frameHook();
         }
 
-        if (task.indexOf(cb) === -1) {
-          task.push(cb);
+        if (taskUp.indexOf(cb) === -1) {
+          taskUp.push(cb);
         }
       }
     }, {
@@ -24442,11 +24442,11 @@
           return;
         }
 
-        var task = this.task;
+        var taskUp = this.taskUp;
 
-        for (var i = 0, len = task.length; i < len; i++) {
-          if (task[i] === cb) {
-            task.splice(i, 1);
+        for (var i = 0, len = taskUp.length; i < len; i++) {
+          if (taskUp[i] === cb) {
+            taskUp.splice(i, 1);
             break;
           }
         }
@@ -25649,9 +25649,9 @@
         return this.__defs;
       }
     }, {
-      key: "task",
+      key: "taskUp",
       get: function get() {
-        return this.__task;
+        return this.__taskUp;
       }
     }, {
       key: "taskCp",

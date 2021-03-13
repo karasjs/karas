@@ -598,7 +598,7 @@ class Root extends Dom {
     this.__mh = 0;
     // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
-    this.__task = [];
+    this.__taskUp = [];
     this.__taskCp = [];
     this.__ref = {};
     this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
@@ -840,19 +840,19 @@ class Root extends Dom {
   }
 
   addRefreshTask(cb) {
-    let { task, isDestroyed } = this;
+    let { taskUp, isDestroyed } = this;
     if(isDestroyed) {
       return;
     }
     // 第一个添加延迟侦听，后续放队列等待一并执行
-    if(!task.length) {
+    if(!taskUp.length) {
       let clone;
       frame.nextFrame({
         __before: diff => {
           if(this.isDestroyed) {
             return;
           }
-          clone = task.splice(0);
+          clone = taskUp.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
             clone.forEach((item, i) => {
@@ -878,8 +878,8 @@ class Root extends Dom {
       });
       this.__frameHook();
     }
-    if(task.indexOf(cb) === -1) {
-      task.push(cb);
+    if(taskUp.indexOf(cb) === -1) {
+      taskUp.push(cb);
     }
   }
 
@@ -887,10 +887,10 @@ class Root extends Dom {
     if(!cb) {
       return;
     }
-    let { task } = this;
-    for(let i = 0, len = task.length; i < len; i++) {
-      if(task[i] === cb) {
-        task.splice(i, 1);
+    let { taskUp } = this;
+    for(let i = 0, len = taskUp.length; i < len; i++) {
+      if(taskUp[i] === cb) {
+        taskUp.splice(i, 1);
         break;
       }
     }
@@ -1882,8 +1882,8 @@ class Root extends Dom {
     return this.__defs;
   }
 
-  get task() {
-    return this.__task;
+  get taskUp() {
+    return this.__taskUp;
   }
 
   get taskCp() {

@@ -17525,7 +17525,8 @@
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
           var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline';
-          var isInlineBlock = isXom && item.currentStyle[DISPLAY$3] === 'inlineBlock'; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
+          var isInlineBlock = isXom && item.currentStyle[DISPLAY$3] === 'inlineBlock';
+          var isImg = item.tagName === 'img'; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
 
           if (!isXom || isInline || isInlineBlock) {
             if (mergeMarginBottomList.length && mergeMarginTopList.length) {
@@ -17563,7 +17564,7 @@
                   lineBoxManager.setNotEnd();
                 } // inline和不折行的ib，其中ib需要手动存入当前lb中
                 else {
-                    isInlineBlock && lineBoxManager.addItem(item);
+                    (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY;
                   } // abs统计宽度
@@ -17590,10 +17591,7 @@
                   }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
 
-                  if (isInlineBlock) {
-                    lineBoxManager.addItem(item);
-                  }
-
+                  (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 } // 放不下处理之前的lineBox，并重新开头
@@ -17617,7 +17615,7 @@
                       lineBoxManager.setNotEnd();
                     } // inline和不折行的ib，其中ib需要手动存入当前lb中
                     else {
-                        isInlineBlock && lineBoxManager.addItem(item);
+                        (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                         x = lineBoxManager.lastX;
                         y = lineBoxManager.lastY;
                       }
@@ -18545,6 +18543,7 @@
           var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
           var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline';
           var isInlineBlock = isXom && item.currentStyle[DISPLAY$3] === 'inlineBlock';
+          var isImg = item.tagName === 'img';
 
           if (isXom) {
             if (!isInline && !isInlineBlock) {
@@ -18572,7 +18571,7 @@
                 lineBoxManager.setNotEnd();
               } // inline和不折行的ib，其中ib需要手动存入当前lb中
               else {
-                  isInlineBlock && lineBoxManager.addItem(item);
+                  (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 }
@@ -18596,10 +18595,7 @@
                 }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
 
-                if (isInlineBlock) {
-                  lineBoxManager.addItem(item);
-                }
-
+                (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
@@ -18624,7 +18620,7 @@
                     lineBoxManager.setNotEnd();
                   } // inline和不折行的ib，其中ib需要手动存入当前lb中
                   else {
-                      isInlineBlock && lineBoxManager.addItem(item);
+                      (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                       x = lineBoxManager.lastX;
                       y = lineBoxManager.lastY;
                     }
@@ -19135,6 +19131,10 @@
     }, {
       key: "baseLine",
       get: function get() {
+        if (!this.lineBoxManager.size) {
+          return this.y + this.height;
+        }
+
         return this.lineBoxManager.baseLine;
       }
     }]);

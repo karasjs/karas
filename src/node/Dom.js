@@ -654,6 +654,7 @@ class Dom extends Xom {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      let isImg = item.tagName === 'img';
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
       if((!isXom || isInline || isInlineBlock)) {
         if(mergeMarginBottomList.length && mergeMarginTopList.length) {
@@ -687,7 +688,7 @@ class Dom extends Xom {
             }
             // inline和不折行的ib，其中ib需要手动存入当前lb中
             else {
-              isInlineBlock && lineBoxManager.addItem(item);
+              (isInlineBlock || isImg) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
@@ -712,9 +713,7 @@ class Dom extends Xom {
                 lineBoxManager,
               }, isVirtual);
               // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
-              if(isInlineBlock) {
-                lineBoxManager.addItem(item);
-              }
+              (isInlineBlock || isImg) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
@@ -738,7 +737,7 @@ class Dom extends Xom {
               }
               // inline和不折行的ib，其中ib需要手动存入当前lb中
               else {
-                isInlineBlock && lineBoxManager.addItem(item);
+                (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               }
@@ -1588,6 +1587,7 @@ class Dom extends Xom {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      let isImg = item.tagName === 'img';
       if(isXom) {
         if(!isInline && !isInlineBlock) {
           item.currentStyle[DISPLAY] = item.computedStyle[DISPLAY] = 'inlineBlock';
@@ -1613,7 +1613,7 @@ class Dom extends Xom {
           }
           // inline和不折行的ib，其中ib需要手动存入当前lb中
           else {
-            isInlineBlock && lineBoxManager.addItem(item);
+            (isInlineBlock || isImg) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -1635,9 +1635,7 @@ class Dom extends Xom {
               lineBoxManager,
             }, isVirtual);
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
-            if(isInlineBlock) {
-              lineBoxManager.addItem(item);
-            }
+            (isInlineBlock || isImg) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -1662,7 +1660,7 @@ class Dom extends Xom {
             }
             // inline和不折行的ib，其中ib需要手动存入当前lb中
             else {
-              isInlineBlock && lineBoxManager.addItem(item);
+              (isInlineBlock || isImg) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
@@ -2105,6 +2103,9 @@ class Dom extends Xom {
   }
 
   get baseLine() {
+    if(!this.lineBoxManager.size) {
+      return this.y + this.height;
+    }
     return this.lineBoxManager.baseLine;
   }
 }

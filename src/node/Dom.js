@@ -1,7 +1,7 @@
 import Xom from './Xom';
 import Text from './Text';
 import mode from './mode';
-import LineGroup from './LineGroup';
+import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
 import reset from '../style/reset';
@@ -139,11 +139,13 @@ class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
+    // this.__lineBoxes = []; // 一行inline元素组成的LineBox对象存放列表
     let { style } = this;
     if(!style.display || !{
       flex: true,
       block: true,
       inline: true,
+      inlineBlock: true,
       none: true,
     }.hasOwnProperty(style.display)) {
       if(tag.INLINE.hasOwnProperty(this.tagName)) {
@@ -256,26 +258,53 @@ class Dom extends Xom {
     }
   }
 
-  // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
+  /**
+   * 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下，这里只会出现行内级即inline(Block)
+   * 调用前提是非行开头的inline尝试计算是否放得下，开头无需且禁止判断，防止出现永远放不下一个字符卡死
+   * 返回非负数就是放得下，这样一些尺寸为0的也算
+   * @param w 剩余宽度
+   * @param total 容器尺寸
+   * @returns {number|*}
+   * @private
+   */
   __tryLayInline(w, total) {
-    let { flowChildren, currentStyle: { [WIDTH]: width } } = this;
-    if(width[1] === PX) {
-      return w - width[0];
-    }
-    else if(width[1] === PERCENT) {
-      return w - total * width[0] * 0.01;
-    }
-    for(let i = 0; i < flowChildren.length; i++) {
-      // 当放不下时直接返回，无需继续多余的尝试计算
-      if(w < 0) {
-        return w;
+    let { flowChildren, currentStyle: {
+      [DISPLAY]: display,
+      [WIDTH]: width,
+    } } = this;
+    // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
+    if(display === 'inline') {
+      if(flowChildren.length) {
+        let first = flowChildren[0];
+        if(first instanceof Xom || first instanceof Component) {
+          w -= first.__tryLayInline(w, total);
+        }
+        else {
+          w -= first.firstCharWidth;
+        }
       }
-      let item = flowChildren[i];
-      if(item instanceof Xom || item instanceof Component) {
-        w -= item.__tryLayInline(w, total);
+    }
+    // inlineBlock尝试所有孩子在一行上
+    else {
+      if(width[1] === PX) {
+        return w - width[0];
       }
-      else {
-        w -= item.textWidth;
+      else if(width[1] === PERCENT) {
+        return w - total * width[0] * 0.01;
+      }
+      for(let i = 0; i < flowChildren.length; i++) {
+        // 当放不下时直接返回，无需继续多余的尝试计算
+        if(w < 0) {
+          return w;
+        }
+        let item = flowChildren[i];
+        if(item instanceof Xom || item instanceof Component) {
+          w -= item.__tryLayInline(w, total);
+        }
+        // text强制一行，否则非头就是放不下，需从头开始
+        else {
+          w -= item.textWidth;
+        }
       }
     }
     return w;
@@ -324,7 +353,7 @@ class Dom extends Xom {
         flowChildren.forEach(item => {
           let { currentStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
-          if(currentStyle[DISPLAY] === 'inline') {
+          if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
             currentStyle[DISPLAY] = 'block';
           }
           let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
@@ -419,8 +448,8 @@ class Dom extends Xom {
    * 自动计算时影响尺寸的只有换行的text，以及一组inline，均按其中最大尺寸的一个计算
    * auto自动计算递归进行，如果是普通row方向，按最大text的charWidth为准
    * 如果是column方向，则虚拟布局后看text的height
-   * 在的abs下时进入特殊状态，无论是row/column，都会按row方向尝试最大尺寸，直到舞台边缘或容器声明的w折行
-   * 返回b，声明则按css值，否则是max
+   * 在abs下时进入特殊状态，无论是row/column，都会按row方向尝试最大尺寸，直到舞台边缘或容器声明的w折行
+   * 返回b，声明则按css值，否则是auto/content
    * 返回min为最小宽度，遇到字符/inline则单列排版后需要的最大宽度
    * 返回max为最大宽度，理想情况一排最大值，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
    * @param isDirectionRow
@@ -480,7 +509,7 @@ class Dom extends Xom {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let { currentStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
-          if(currentStyle[DISPLAY] === 'inline') {
+          if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
             currentStyle[DISPLAY] = 'block';
           }
           let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
@@ -583,32 +612,42 @@ class Dom extends Xom {
     });
   }
 
-  // 本身block布局时计算好所有子元素的基本位置
+  /**
+   * block布局，本身固定尺寸优先，否则看内容从上往下从左往右flow流排布
+   * 内部inline和inlineBlock组成LineBox，通过LineBoxManager来管理混排的现象
+   * LineBoxManager只有block和inlineBlock内部生成，inline会复用最近父级的
+   * 内部的block在垂直方向要考虑margin合并的问题，强制所有节点为bfc，精简逻辑
+   * @param data
+   * @param isVirtual abs无尺寸时提前虚拟布局计算尺寸
+   * @private
+   */
   __layoutBlock(data, isVirtual) {
-    let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
-    lineGroups.splice(0);
+    let { flowChildren, currentStyle, computedStyle } = this;
     let {
       [TEXT_ALIGN]: textAlign,
     } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
+    // abs虚拟布局需预知width，固定可提前返回
     if(fixedWidth && isVirtual) {
       this.__width = w;
       this.__ioSize(w, this.height);
       return;
     }
+    // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
+    // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
+    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxW = 0;
     let cw = 0;
-    // 递归布局，将inline的节点组成lineGroup一行，同时记录上一个block，进行垂直方向的margin合并
-    let lineGroup = new LineGroup(x, y);
-    // 连续block（flex）的上下margin合并值记录，合并时从列表中取
+    // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
     let mergeMarginBottomList = [], mergeMarginTopList = [];
     let length = flowChildren.length;
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
-      // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
-      if((!isXom || isInline)) {
+      let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
+      if((!isXom || isInline || isInlineBlock)) {
         if(mergeMarginBottomList.length && mergeMarginTopList.length) {
           let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
           if(diff) {
@@ -619,26 +658,41 @@ class Dom extends Xom {
         mergeMarginBottomList = [];
       }
       if(isXom) {
-        // inline和block（flex等同）不同对待
-        if(isInline) {
-          // inline开头，不用考虑是否放得下直接放
+        // inline和inlineBlock的细节不同之处，ib除了w/h之外，更想像block一样占据一行
+        // 比如2个inline前面占一半后面比一半多但还是会从一半开始然后第2行换行继续，但ib放不下则重开一行
+        // inline和ib能互相嵌套，形成的LineBox中则是TextBox和节点混合
+        if(isInlineBlock || isInline) {
+          // x开头，不用考虑是否放得下直接放
           if(x === data.x) {
-            lineGroup.add(item);
             item.__layout({
               x,
               y,
               w,
               h,
+              lineBoxManager, // ib内部新生成会内部判断，这里不管统一传入
             }, isVirtual);
-            x += item.outerWidth;
+            // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
+            if(item.__isIbFull) {
+              x = data.x;
+              y += item.outerHeight;
+              lineBoxManager.setNotEnd();
+            }
+            // inline和不折行的ib，其中ib需要手动存入当前lb中
+            else {
+              isInlineBlock && lineBoxManager.addItem(item);
+              x = lineBoxManager.lastX;
+              y = lineBoxManager.lastY;
+            }
+            // abs统计宽度
             if(isVirtual) {
               maxW = Math.max(maxW, cw);
               cw = item.outerWidth;
+              maxW = Math.max(maxW, cw);
             }
           }
           else {
-            // 非开头先尝试是否放得下
-            let fw = item.__tryLayInline(w - x + data.x, w);
+            // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
+            let fw = item.__tryLayInline(w + data.x - x, w);
             // 放得下继续
             if(fw >= 0) {
               item.__layout({
@@ -646,54 +700,64 @@ class Dom extends Xom {
                 y,
                 w,
                 h,
+                lx: data.x,
+                lineBoxManager,
               }, isVirtual);
-            }
-            // 放不下处理之前的lineGroup，并重新开头
-            else {
-              lineGroups.push(lineGroup);
-              if(!isVirtual) {
-                lineGroup.verticalAlign();
+              // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
+              if(isInlineBlock) {
+                lineBoxManager.addItem(item);
               }
+              x = lineBoxManager.lastX;
+              y = lineBoxManager.lastY;
+            }
+            // 放不下处理之前的lineBox，并重新开头
+            else {
               x = data.x;
-              y += lineGroup.height + lineGroup.marginBottom;
+              y = lineBoxManager.endY;
+              lineBoxManager.setNewLine();
               item.__layout({
-                x: data.x,
+                x,
                 y,
                 w,
                 h,
+                lineBoxManager,
               }, isVirtual);
-              lineGroup = new LineGroup(x, y);
+              // 重新开头的ib和上面开头处一样逻辑
+              if(item.__isIbFull) {
+                x = data.x;
+                y += item.outerHeight;
+                lineBoxManager.setNotEnd();
+              }
+              // inline和不折行的ib，其中ib需要手动存入当前lb中
+              else {
+                isInlineBlock && lineBoxManager.addItem(item);
+                x = lineBoxManager.lastX;
+                y = lineBoxManager.lastY;
+              }
               if(isVirtual) {
                 maxW = Math.max(maxW, cw);
                 cw = 0;
               }
             }
-            x += item.outerWidth;
-            lineGroup.add(item);
             if(isVirtual) {
               cw += item.outerWidth;
+              maxW = Math.max(maxW, cw);
             }
           }
         }
+        // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
         else {
-          // block/flex先处理之前可能的lineGroup
-          if(lineGroup.size) {
-            lineGroups.push(lineGroup);
-            lineGroup.verticalAlign();
-            y += lineGroup.height + lineGroup.marginBottom;
-            lineGroup = new LineGroup(data.x, y);
-            if(isVirtual) {
-              maxW = Math.max(maxW, cw);
-              cw = 0;
-            }
+          x = data.x;
+          if(lineBoxManager.isEnd) {
+            y = lineBoxManager.endY;
+            lineBoxManager.setNotEnd();
           }
           item.__layout({
-            x: data.x,
+            x,
             y,
             w,
             h,
           }, isVirtual);
-          x = data.x;
           let isNone = item.currentStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
@@ -750,17 +814,19 @@ class Dom extends Xom {
       else {
         // x开头，不用考虑是否放得下直接放
         if(x === data.x) {
-          lineGroup.add(item);
           item.__layout({
             x,
             y,
             w,
             h,
+            lineBoxManager,
           }, isVirtual);
-          x += item.width;
+          x = lineBoxManager.lastX;
+          y = lineBoxManager.lastY;
           if(isVirtual) {
             maxW = Math.max(maxW, cw);
             cw = item.width;
+            maxW = Math.max(maxW, cw);
           }
         }
         else {
@@ -773,59 +839,54 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lineBoxManager,
             }, isVirtual);
+            x = lineBoxManager.lastX;
+            y = lineBoxManager.lastY;
           }
-          // 放不下处理之前的lineGroup，并重新开头
+          // 放不下处理之前的lineBox，并重新开头
           else {
-            lineGroups.push(lineGroup);
-            lineGroup.verticalAlign();
             x = data.x;
-            y += lineGroup.height + lineGroup.marginBottom;
+            y = lineBoxManager.endY;
+            lineBoxManager.setNewLine();
             item.__layout({
-              x: data.x,
+              x,
               y,
               w,
               h,
+              lineBoxManager,
             }, isVirtual);
-            lineGroup = new LineGroup(x, y);
+            x = lineBoxManager.lastX;
+            y = lineBoxManager.lastY;
             if(isVirtual) {
               maxW = Math.max(maxW, cw);
               cw = 0;
             }
           }
-          x += item.width;
-          lineGroup.add(item);
           if(isVirtual) {
             cw += item.width;
+            maxW = Math.max(maxW, cw);
           }
         }
       }
     });
-    // 结束后处理可能遗留的最后的lineGroup
-    if(lineGroup.size) {
-      lineGroups.push(lineGroup);
-      // flex/abs的虚拟前置布局，无需真正计算
-      if(!isVirtual) {
-        lineGroup.verticalAlign();
-      }
-      else {
-        maxW = Math.max(maxW, cw);
-      }
-      y += lineGroup.height;
+    // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
+    // 当以block换行时，新行是true，否则是false即结尾
+    if(lineBoxManager.isEnd) {
+      y = lineBoxManager.endY;
     }
-    let tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
+    let tw = this.__width = (fixedWidth || !isVirtual) ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    // text-align
-    if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
-      lineGroups.forEach(lineGroup => {
-        let diff = w - lineGroup.width;
-        if(diff > 0) {
-          lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
-        }
-      });
-    }
+    // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {
+      lineBoxManager.verticalAlign();
+      if(['center', 'right'].indexOf(textAlign) > -1) {
+        let diff = w - lineBoxManager.width;
+        if(diff > 0) {
+          lineBoxManager.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
+        }
+      }
       this.__marginAuto(currentStyle, data);
     }
   }
@@ -861,7 +922,7 @@ class Dom extends Xom {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
-        if(currentStyle[DISPLAY] === 'inline') {
+        if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
           currentStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
@@ -1475,42 +1536,78 @@ class Dom extends Xom {
     this.__marginAuto(currentStyle, data);
   }
 
-  // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
-  __layoutInline(data, isVirtual) {
-    let { flowChildren, computedStyle, lineGroups } = this;
-    lineGroups.splice(0);
+  /**
+   * inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
+   * inlineBlock复用逻辑，可以设置w/h，在混排时表现不同，inlineBlock换行限制在规定的矩形内，
+   * 且ib会在没设置width且换行的时候撑满上一行，即便内部尺寸没抵达边界
+   * 而inline换行则会从父容器start处开始，且首尾可能占用矩形不同
+   * @param data
+   * @param isVirtual
+   * @param isInline
+   * @private
+   */
+  __layoutInline(data, isVirtual, isInline) {
+    let { flowChildren, computedStyle } = this;
     let {
       [TEXT_ALIGN]: textAlign,
     } = computedStyle;
-    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
+    let { fixedWidth, fixedHeight, x, y, w, h, lx, lineBoxManager } = this.__preLayout(data, isInline);
+    // abs虚拟布局需预知width，固定可提前返回
     if(fixedWidth && isVirtual) {
       this.__width = w;
       this.__ioSize(w, this.height);
       return;
     }
-    // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+    // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x
+    // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成
+    if(!isInline) {
+      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+      lx = x;
+    }
+    // inline作为开始节点可能没有行首坐标lx，此时等同于x，强制赋值
+    else if(lx === undefined) {
+      lx = x;
+    }
+    // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值
     let maxW = 0;
     let cw = 0;
-    // 递归布局，将inline的节点组成lineGroup一行
-    let lineGroup = new LineGroup(x, y);
+    let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        if(item.currentStyle[DISPLAY] !== 'inline') {
-          item.currentStyle[DISPLAY] = item.computedStyle[DISPLAY] = 'inline';
+      let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+      let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
+      let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      if(isXom) {
+        if(!isInline && !isInlineBlock) {
+          item.currentStyle[DISPLAY] = item.computedStyle[DISPLAY] = 'inlineBlock';
           inject.error('Inline can not contain block/flex');
         }
-        // inline开头，不用考虑是否放得下直接放
+        // x开头，不用考虑是否放得下直接放
         if(x === data.x) {
-          lineGroup.add(item);
           item.__layout({
             x,
             y,
             w,
             h,
+            lineBoxManager,
           }, isVirtual);
-          x += item.outerWidth;
+          // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
+          if(item.__isIbFull) {
+            isInlineBlock && (this.__isIbFull = true);
+            lineBoxManager.addItem(item);
+            x = data.x;
+            y += item.outerHeight;
+            maxW = w;
+            lineBoxManager.setNotEnd();
+          }
+          // inline和不折行的ib，其中ib需要手动存入当前lb中
+          else {
+            isInlineBlock && lineBoxManager.addItem(item);
+            x = lineBoxManager.lastX;
+            y = lineBoxManager.lastY;
+          }
           maxW = Math.max(maxW, cw);
           cw = item.outerWidth;
+          maxW = Math.max(maxW, cw);
         }
         else {
           // 非开头先尝试是否放得下
@@ -1522,41 +1619,68 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lx: data.x,
+              lineBoxManager,
             }, isVirtual);
+            // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
+            if(isInlineBlock) {
+              lineBoxManager.addItem(item);
+            }
+            x = lineBoxManager.lastX;
+            y = lineBoxManager.lastY;
           }
-          // 放不下处理之前的lineGroup，并重新开头
+          // 放不下处理之前的lineBox，并重新开头
           else {
-            lineGroups.push(lineGroup);
-            lineGroup.verticalAlign();
             x = data.x;
-            y += lineGroup.height;
+            y = lineBoxManager.endY;
+            lineBoxManager.setNewLine();
             item.__layout({
               x: data.x,
               y,
               w,
               h,
+              lineBoxManager,
             }, isVirtual);
-            lineGroup = new LineGroup(x, y);
+            // 重新开头的ib和上面开头处一样逻辑
+            if(item.__isIbFull) {
+              lineBoxManager.addItem(item);
+              x = data.x;
+              y += item.outerHeight;
+              lineBoxManager.setNotEnd();
+            }
+            // inline和不折行的ib，其中ib需要手动存入当前lb中
+            else {
+              isInlineBlock && lineBoxManager.addItem(item);
+              x = lineBoxManager.lastX;
+              y = lineBoxManager.lastY;
+            }
             maxW = Math.max(maxW, cw);
             cw = 0;
           }
-          x += item.outerWidth;
-          lineGroup.add(item);
           cw += item.outerWidth;
+          maxW = Math.max(maxW, cw);
         }
       }
-      // inline里的其它只有文本
+      // inline里的其它只有文本，可能开始紧跟着之前的x，也可能换行后从lx行头开始
+      // 紧跟着x可能出现在前面有节点换行后第2行，此时不一定放得下，因此不能作为判断依据，开头仅有lx
       else {
-        if(x === data.x) {
-          lineGroup.add(item);
+        let n = lineBoxManager.size;
+        if(x === lx) {
           item.__layout({
             x,
             y,
             w,
             h,
+            lx,
+            lineBoxManager,
           }, isVirtual);
-          x += item.width;
-          maxW = Math.max(maxW, cw);
+          x = lineBoxManager.lastX;
+          y = lineBoxManager.lastY;
+          // ib情况发生折行
+          if(isInlineBlock && (lineBoxManager.size - n) > 0) {
+            isIbFull = true;
+          }
+          maxW = Math.max(maxW, item.width);
           cw = item.width;
         }
         else {
@@ -1569,54 +1693,56 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lx,
+              lineBoxManager,
             }, isVirtual);
+            x = lineBoxManager.lastX;
+            y = lineBoxManager.lastY;
+            // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
           }
-          // 放不下处理之前的lineGroup，并重新开头
+          // 放不下处理之前的lineBox，并重新开头
           else {
-            lineGroups.push(lineGroup);
-            if(!isVirtual) {
-              lineGroup.verticalAlign();
-            }
             x = data.x;
-            y += lineGroup.height;
+            y = lineBoxManager.endY;
+            lineBoxManager.setNewLine();
             item.__layout({
-              x: data.x,
+              x,
               y,
               w,
               h,
+              lineBoxManager,
             }, isVirtual);
-            lineGroup = new LineGroup(x, y);
+            x = lineBoxManager.lastX;
+            y = lineBoxManager.lastY;
+            // ib情况发生折行
+            if(isInlineBlock && (lineBoxManager.size - n) > 0) {
+              isIbFull = true;
+            }
             maxW = Math.max(maxW, cw);
             cw = 0;
           }
           x += item.width;
-          lineGroup.add(item);
           cw += item.width;
         }
       }
     });
-    // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
-    if(lineGroup.size) {
-      lineGroups.push(lineGroup);
-      // flex/abs的虚拟前置布局，无需真正计算
-      if(!isVirtual) {
-        lineGroup.verticalAlign();
-      }
-      y += lineGroup.height;
-      maxW = Math.max(maxW, cw);
-    }
-    // 元素的width不能超过父元素w
-    let tw = this.__width = fixedWidth ? w : maxW;
+    // 同block结尾，不过这里一定是lineBox结束，无需判断
+    y = lineBoxManager.endY;
+    // 标识ib情况同block一样占满行
+    this.__isIbFull = isIbFull;
+    // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸
+    let tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    // text-align
-    if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
-      lineGroups.forEach(lineGroup => {
-        let diff = this.__width - lineGroup.width;
+    // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+    if(!isVirtual) {
+      lineBoxManager.verticalAlign();
+      if(['center', 'right'].indexOf(textAlign) > -1) {
+        let diff = w - lineBoxManager.width;
         if(diff > 0) {
-          lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
+          lineBoxManager.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
         }
-      });
+      }
     }
   }
 
@@ -1964,13 +2090,12 @@ class Dom extends Xom {
     return this.__lineGroups;
   }
 
+  get lineBoxManager() {
+    return this.__lineBoxManager;
+  }
+
   get baseLine() {
-    let len = this.lineGroups.length;
-    if(len) {
-      let last = this.lineGroups[len - 1];
-      return last.y - this.y + last.baseLine;
-    }
-    return this.height;
+    return this.lineBoxManager.baseLine;
   }
 }
 

@@ -924,8 +924,11 @@ class Xom extends Node {
     return res;
   }
 
-  // 获取margin/padding的实际值
+  // 设置margin/padding的实际值，layout时执行，inline的垂直方向为0
   __mp(currentStyle, computedStyle, w) {
+    let display = computedStyle[DISPLAY];
+    if(display === 'inline') {}
+    else {}
     [
       'Top',
       'Right',
@@ -934,8 +937,13 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      computedStyle[a] = this.__mpWidth(currentStyle[a], w);
-      computedStyle[b] = this.__mpWidth(currentStyle[b], w);
+      if(display === 'inline' && k === 'Top' || k === 'Bottom') {
+        computedStyle[a] = computedStyle[b] = 0;
+      }
+      else {
+        computedStyle[a] = this.__mpWidth(currentStyle[a], w);
+        computedStyle[b] = this.__mpWidth(currentStyle[b], w);
+      }
     });
   }
 
@@ -949,6 +957,7 @@ class Xom extends Node {
     return 0;
   }
 
+  // dom常用的几种尺寸赋值
   __ioSize(w, h) {
     let computedStyle = this.computedStyle;
     this.__clientWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
@@ -1010,7 +1019,7 @@ class Xom extends Node {
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
-  // fromAbs为absolute特有
+  // fromAbs为absolute节点特有省略计算标识，本节点是abs时真正布局传入
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this, this.isShadowRoot);
     let { w } = data;
@@ -1023,10 +1032,16 @@ class Xom extends Node {
       [POSITION]: position,
     } = currentStyle;
     this.__cancelCache();
-    this.__layoutData = clone(data);
+    this.__layoutData = {
+      x: data.x,
+      y: data.y,
+      w: data.w,
+      h: data.h,
+      lx: data.lx,
+    };
     __config[NODE_REFRESH_LV] = REFLOW;
     __config[NODE_LIMIT_CACHE] = false;
-    // 防止display:none不统计mask，virtual也忽略
+    // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
     if(!isVirtual) {
       let { next } = this;
       // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -1060,22 +1075,31 @@ class Xom extends Node {
     if(!fromAbs) {
       this.__mp(currentStyle, computedStyle, w);
     }
+    // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
-      switch(width[1]) {
-        case PX:
-          w = width[0];
-          break;
-        case PERCENT:
-          w *= width[0] * 0.01;
-          break;
+      if(display === 'inline') {
+        width[1] = AUTO;
+      }
+      else {
+        switch(width[1]) {
+          case PX:
+            w = width[0];
+            break;
+          case PERCENT:
+            w *= width[0] * 0.01;
+            break;
+        }
       }
     }
-    // 3种布局，默认block
+    // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {
       this.__layoutFlex(data, isVirtual);
     }
-    else if(display === 'inline') {
+    else if(display === 'inlineBlock') {
       this.__layoutInline(data, isVirtual);
+    }
+    else if(display === 'inline') {
+      this.__layoutInline(data, isVirtual, true);
     }
     else {
       this.__layoutBlock(data, isVirtual);
@@ -1165,8 +1189,8 @@ class Xom extends Node {
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
-  __preLayout(data) {
-    let { x, y, w, h, w2, h2, w3, h3 } = data;
+  __preLayout(data, isInline) {
+    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -1250,6 +1274,8 @@ class Xom extends Node {
       y,
       w,
       h,
+      lx,
+      lineBoxManager,
     };
   }
 

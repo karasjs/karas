@@ -7,7 +7,12 @@ export default {
       // car: 1.1171875, // content-area ratio，(1854+434)/2048
       blr: 0.9052734375, // base-line ratio，1854/2048
       // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-      // lgr: 0.03271484375, // line-gap ratio，67/2048
+      lgr: 0.03271484375, // line-gap ratio，67/2048
+      // 个别字符误差，https://stackoverflow.com/questions/66548845/why-is-the-sum-width-of-each-item-not-equal-to-the-total-in-canvas-textmetrics
+      padding: {
+        1: 1.484375 / 20,
+        f: 0.361328125 / 20,
+      },
     },
     verdana: {
       lhr: 1.21533203125, // (0+2059+430)/2048
@@ -39,10 +44,14 @@ export default {
     return this.info.hasOwnProperty(fontFamily);
   },
   register(name, info) {
-    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 67 } = info || {};
+    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 67, padding = {} } = info || {};
     this.info[name.toLowerCase()] = {
       lhr: (ascent + descent + lineGap) / emSquare,
       blr: ascent / emSquare,
+      padding,
     };
+  },
+  addPadding(name, padding) {
+    Object.assign(this.info[name.toLowerCase()].padding, padding);
   },
 };

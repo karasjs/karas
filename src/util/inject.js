@@ -1,4 +1,5 @@
 import util from './util';
+import debug from './debug';
 import enums from './enums';
 import textCache from '../node/textCache';
 
@@ -13,6 +14,7 @@ const CANVAS = {};
 const WEBGL = {};
 const CANVAS_LIST = [];
 const WEBGL_LIST = [];
+const SUPPORT_OFFSCREEN_CANVAS = util.isFunction(OffscreenCanvas) && util.isFunction(OffscreenCanvas.prototype.getContext);
 
 function cache(key, width, height, hash, message) {
   let o;
@@ -22,20 +24,18 @@ function cache(key, width, height, hash, message) {
       o = target.pop();
     }
     else {
-      o = document.createElement('canvas');
+      o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     }
   }
   else if(!hash[key]) {
-    o = hash[key] = document.createElement('canvas');
+    o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
     o = hash[key];
   }
-  // o.setAttribute('width', width + 'px');
-  // o.setAttribute('height', height + 'px');
   o.width = width;
   o.height = height;
-  if(typeof karas !== 'undefined' && karas.debug) {
+  if(debug.flag) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
     o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
@@ -123,7 +123,7 @@ let inject = {
     list.forEach(text => text.__measureCb());
     textCache.list = [];
     textCache.data = {};
-    if(typeof karas === 'undefined' || !karas.debug) {
+    if(!debug.flag) {
       document.body.removeChild(div);
     }
   },
@@ -196,7 +196,7 @@ let inject = {
         }
       }
       img.src = url;
-      if(typeof karas !== 'undefined' && karas.debug) {
+      if(debug.flag) {
         document.body.appendChild(img);
       }
     }

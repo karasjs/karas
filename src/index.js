@@ -22,6 +22,7 @@ import builder from './util/builder';
 import updater from './util/updater';
 import inject from './util/inject';
 import enums from './util/enums';
+import debug from './util/debug';
 import parser from './parser/index';
 import style from './style/index';
 import animate from './animate/index';
@@ -118,6 +119,9 @@ let karas = {
   updater,
   refresh,
   enums,
+  set debug(v) {
+    debug.flag = !!v;
+  },
 };
 
 builder.ref({
@@ -137,6 +141,9 @@ updater.ref({
 
 if(typeof window !== 'undefined') {
   window.karas = karas;
+}
+else if(typeof self !== 'undefined') {
+  self.karas = karas;
 }
 
 export default karas;

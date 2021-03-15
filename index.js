@@ -3441,6 +3441,10 @@
     }
   };
 
+  var debug = {
+    flag: false
+  };
+
   var textCache = {
     list: [],
     // 每次渲染前的更新后，等待测量的文字对象列表
@@ -3460,6 +3464,7 @@
   var WEBGL = {};
   var CANVAS_LIST = [];
   var WEBGL_LIST = [];
+  var SUPPORT_OFFSCREEN_CANVAS = util.isFunction(OffscreenCanvas) && util.isFunction(OffscreenCanvas.prototype.getContext);
 
   function cache(key, width, height, hash, message) {
     var o;
@@ -3470,20 +3475,18 @@
       if (target.length) {
         o = target.pop();
       } else {
-        o = document.createElement('canvas');
+        o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
       }
     } else if (!hash[key]) {
-      o = hash[key] = document.createElement('canvas');
+      o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     } else {
       o = hash[key];
-    } // o.setAttribute('width', width + 'px');
-    // o.setAttribute('height', height + 'px');
-
+    }
 
     o.width = width;
     o.height = height;
 
-    if (typeof karas !== 'undefined' && karas.debug) {
+    if (debug.flag) {
       o.style.width = width + 'px';
       o.style.height = height + 'px';
       o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
@@ -3588,7 +3591,7 @@
       textCache.list = [];
       textCache.data = {};
 
-      if (typeof karas === 'undefined' || !karas.debug) {
+      if (!debug.flag) {
         document.body.removeChild(div);
       }
     },
@@ -3671,7 +3674,7 @@
 
         img.src = url;
 
-        if (typeof karas !== 'undefined' && karas.debug) {
+        if (debug.flag) {
           document.body.appendChild(img);
         }
       }
@@ -28852,7 +28855,12 @@
     builder: builder,
     updater: updater,
     refresh: refresh,
-    enums: enums
+    enums: enums,
+
+    set debug(v) {
+      debug.flag = !!v;
+    }
+
   };
   builder.ref({
     Xom: Xom,
@@ -28871,6 +28879,8 @@
 
   if (typeof window !== 'undefined') {
     window.karas = karas$1;
+  } else if (typeof self !== 'undefined') {
+    self.karas = karas$1;
   }
 
   return karas$1;

@@ -935,7 +935,7 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      if(display === 'inline' && (k === 'Top' || k === 'Bottom')) {
+      if(display === 'inline' && this.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
         computedStyle[a] = computedStyle[b] = 0;
       }
       else {
@@ -1075,7 +1075,7 @@ class Xom extends Node {
     }
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
-      if(display === 'inline') {
+      if(display === 'inline' && this.tagName !== 'img') {
         width[1] = AUTO;
       }
       else {

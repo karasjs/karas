@@ -13411,7 +13411,7 @@
           var a = STYLE_KEY$6[style2Upper$2('margin' + k)];
           var b = STYLE_KEY$6[style2Upper$2('padding' + k)];
 
-          if (display === 'inline' && (k === 'Top' || k === 'Bottom')) {
+          if (display === 'inline' && _this2.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
             computedStyle[a] = computedStyle[b] = 0;
           } else {
             computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
@@ -13560,7 +13560,7 @@
 
 
         if (width[1] !== AUTO$2) {
-          if (display === 'inline') {
+          if (display === 'inline' && this.tagName !== 'img') {
             width[1] = AUTO$2;
           } else {
             switch (width[1]) {

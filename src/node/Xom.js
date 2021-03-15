@@ -1285,8 +1285,8 @@ class Xom extends Node {
       [MARGIN_RIGHT]: marginRight,
       [WIDTH]: width,
     } = style;
-    if(position !== 'absolute' && width !== AUTO && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
-      let ow = this.outerWidth;
+    if(position !== 'absolute' && width[1] !== AUTO && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
+      let ow = this.outerWidth; console.log(ow);
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5, true);
       }

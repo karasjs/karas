@@ -13783,8 +13783,9 @@
             marginRight = style[MARGIN_RIGHT$1],
             width = style[WIDTH$3];
 
-        if (position !== 'absolute' && width !== AUTO$2 && marginLeft[1] === AUTO$2 && marginRight[1] === AUTO$2) {
+        if (position !== 'absolute' && width[1] !== AUTO$2 && marginLeft[1] === AUTO$2 && marginRight[1] === AUTO$2) {
           var ow = this.outerWidth;
+          console.log(ow);
 
           if (ow < data.w) {
             this.__offsetX((data.w - ow) * 0.5, true);
@@ -15835,21 +15836,14 @@
 
       this.__list = [];
       this.__x = x;
-      this.__y = y; // this.__baseLine = 0;
+      this.__y = y;
     }
 
     _createClass(LineBox, [{
       key: "add",
       value: function add(item) {
         this.list.push(item);
-      } // __calBaseLine() {
-      //   let baseLine = this.__y;
-      //   this.list.forEach(item => { console.log(item.baseLine)
-      //     baseLine = Math.max(baseLine, item.baseLine);
-      //   });
-      //   return baseLine;
-      // }
-
+      }
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
@@ -15864,13 +15858,6 @@
             }
           });
         }
-      }
-    }, {
-      key: "horizonAlign",
-      value: function horizonAlign(diff) {
-        this.list.forEach(function (item) {
-          item.__offsetX(diff, true);
-        });
       }
     }, {
       key: "list",
@@ -16040,12 +16027,26 @@
       }
     }, {
       key: "horizonAlign",
-      value: function horizonAlign() {}
+      value: function horizonAlign(w, textAlign) {
+        this.__list.forEach(function (lineBox) {
+          var diff = w - lineBox.width;
+
+          if (diff > 0) {
+            if (textAlign === 'center') {
+              diff *= 0.5;
+            }
+
+            lineBox.list.forEach(function (item) {
+              item.__offsetX(diff, true);
+            });
+          }
+        });
+      }
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        this.__list.forEach(function (item) {
-          item.verticalAlign();
+        this.__list.forEach(function (lineBox) {
+          lineBox.verticalAlign();
         });
       }
     }, {
@@ -16090,6 +16091,9 @@
       get: function get() {
         return this.__list.length > 1;
       }
+    }, {
+      key: "width",
+      get: function get() {}
     }, {
       key: "baseLine",
       get: function get() {
@@ -17741,11 +17745,7 @@
           lineBoxManager.verticalAlign();
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
-            var diff = w - lineBoxManager.width;
-
-            if (diff > 0) {
-              lineBoxManager.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
-            }
+            lineBoxManager.horizonAlign(tw, textAlign);
           }
 
           this.__marginAuto(currentStyle, data);
@@ -18669,12 +18669,8 @@
         if (!isVirtual) {
           lineBoxManager.verticalAlign();
 
-          if (['center', 'right'].indexOf(textAlign) > -1) {
-            var diff = w - lineBoxManager.width;
-
-            if (diff > 0) {
-              lineBoxManager.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
-            }
+          if (!isInline && ['center', 'right'].indexOf(textAlign) > -1) {
+            lineBoxManager.horizonAlign(tw, textAlign);
           }
         }
       }

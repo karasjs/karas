@@ -21,20 +21,11 @@ class LineBox {
     this.__list = [];
     this.__x = x;
     this.__y = y;
-    // this.__baseLine = 0;
   }
 
   add(item) {
     this.list.push(item);
   }
-
-  // __calBaseLine() {
-  //   let baseLine = this.__y;
-  //   this.list.forEach(item => { console.log(item.baseLine)
-  //     baseLine = Math.max(baseLine, item.baseLine);
-  //   });
-  //   return baseLine;
-  // }
 
   verticalAlign() {
     let n = this.baseLine;
@@ -47,12 +38,6 @@ class LineBox {
         }
       });
     }
-  }
-
-  horizonAlign(diff) {
-    this.list.forEach(item => {
-      item.__offsetX(diff, true);
-    });
   }
 
   get list() {

@@ -73,11 +73,23 @@ class LineBoxManager {
     return this.__list.length;
   }
 
-  horizonAlign() {}
+  horizonAlign(w, textAlign) {
+    this.__list.forEach(lineBox => {
+      let diff = w - lineBox.width;
+      if(diff > 0) {
+        if(textAlign === 'center') {
+          diff *= 0.5;
+        }
+        lineBox.list.forEach(item => {
+          item.__offsetX(diff, true);
+        });
+      }
+    });
+  }
 
   verticalAlign() {
-    this.__list.forEach(item => {
-      item.verticalAlign();
+    this.__list.forEach(lineBox => {
+      lineBox.verticalAlign();
     });
   }
 
@@ -109,6 +121,8 @@ class LineBoxManager {
   get breakLine() {
     return this.__list.length > 1;
   }
+
+  get width() {}
 
   get baseLine() {
     let list = this.__list;

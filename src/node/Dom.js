@@ -885,10 +885,7 @@ class Dom extends Xom {
     if(!isVirtual) {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
-        let diff = w - lineBoxManager.width;
-        if(diff > 0) {
-          lineBoxManager.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
-        }
+        lineBoxManager.horizonAlign(tw, textAlign);
       }
       this.__marginAuto(currentStyle, data);
     }
@@ -1746,11 +1743,8 @@ class Dom extends Xom {
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {
       lineBoxManager.verticalAlign();
-      if(['center', 'right'].indexOf(textAlign) > -1) {
-        let diff = w - lineBoxManager.width;
-        if(diff > 0) {
-          lineBoxManager.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
-        }
+      if(!isInline && ['center', 'right'].indexOf(textAlign) > -1) {
+        lineBoxManager.horizonAlign(tw, textAlign);
       }
     }
   }

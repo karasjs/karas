@@ -117,7 +117,7 @@ class Text extends Node {
   }
 
   __layout(data, isVirtual) {
-    let { x, y, w, lx, lineBoxManager } = data;
+    let { x, y, w, lx = x, lineBoxManager } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
     let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList } = this;

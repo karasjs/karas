@@ -5646,7 +5646,8 @@
         var x = data.x,
             y = data.y,
             w = data.w,
-            lx = data.lx,
+            _data$lx = data.lx,
+            lx = _data$lx === void 0 ? x : _data$lx,
             lineBoxManager = data.lineBoxManager;
         this.__x = this.__sx1 = x;
         this.__y = this.__sy1 = y;
@@ -17142,12 +17143,17 @@
 
     }, {
       key: "__calMinMax",
-      value: function __calMinMax(isDirectionRow, x, y, w, h) {
+      value: function __calMinMax(isDirectionRow, data) {
         css.computeReflow(this, this.isShadowRoot);
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle; // 计算需考虑style的属性
+            currentStyle = this.currentStyle;
+        var x = data.x,
+            y = data.y,
+            w = data.w,
+            h = data.h,
+            lineBoxManager = data.lineBoxManager; // 计算需考虑style的属性
 
         var display = currentStyle[DISPLAY$3],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -17160,6 +17166,7 @@
         } else {
           if (display === 'flex') {
             var isRow = flexDirection !== 'column';
+            lineBoxManager = new LineBoxManager(x, y);
             flowChildren.forEach(function (item) {
               var currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
@@ -17167,7 +17174,13 @@
                 currentStyle[DISPLAY$3] = 'block';
               }
 
-              var _item$__calMinMax = item.__calMinMax(isDirectionRow, x, y, w, h),
+              var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
+                x: x,
+                y: y,
+                w: w,
+                h: h,
+                lineBoxManager: lineBoxManager
+              }),
                   _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
                   min2 = _item$__calMinMax2[0],
                   max2 = _item$__calMinMax2[1];
@@ -17191,9 +17204,16 @@
               }
             });
           } else if (display === 'block') {
+            lineBoxManager = new LineBoxManager(x, y);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-                var _item$__calMinMax3 = item.__calMinMax(isDirectionRow, x, y, w, h),
+                var _item$__calMinMax3 = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: lineBoxManager
+                }),
                     _item$__calMinMax4 = _slicedToArray(_item$__calMinMax3, 2),
                     min2 = _item$__calMinMax4[0],
                     max2 = _item$__calMinMax4[1];
@@ -17220,10 +17240,20 @@
                 max = Math.max(max, item.height);
               }
             });
-          } else if (display === 'inline') {
+          } else {
+            if (display === 'inlineBlock') {
+              lineBoxManager = new lineBoxManager(x, y);
+            }
+
             flowChildren.forEach(function (item) {
               if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-                var _item$__calMinMax5 = item.__calMinMax(isDirectionRow, x, y, w, h),
+                var _item$__calMinMax5 = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: lineBoxManager
+                }),
                     _item$__calMinMax6 = _slicedToArray(_item$__calMinMax5, 2),
                     min2 = _item$__calMinMax6[0],
                     max2 = _item$__calMinMax6[1];
@@ -17267,23 +17297,25 @@
        * 返回min为最小宽度，遇到字符/inline则单列排版后需要的最大宽度
        * 返回max为最大宽度，理想情况一排最大值，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
        * @param isDirectionRow
-       * @param x
-       * @param y
-       * @param w
-       * @param h
+       * @param data
        * @param isVirtual abs非固定尺寸时先进行虚拟布局标识
        * @private
        */
 
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
+      value: function __calBasis(isDirectionRow, data, isVirtual) {
         css.computeReflow(this, this.isShadowRoot);
         var b = 0;
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle; // 计算需考虑style的属性
+            currentStyle = this.currentStyle;
+        var x = data.x,
+            y = data.y,
+            w = data.w,
+            h = data.h,
+            lineBoxManager = data.lineBoxManager; // 计算需考虑style的属性
 
         var display = currentStyle[DISPLAY$3],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -17326,7 +17358,13 @@
                 _currentStyle[DISPLAY$3] = 'block';
               }
 
-              var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
+              var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
+                x: x,
+                y: y,
+                w: w,
+                h: h,
+                lineBoxManager: lineBoxManager
+              }),
                   _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
                   min2 = _item$__calMinMax8[0],
                   max2 = _item$__calMinMax8[1];
@@ -17361,7 +17399,8 @@
                 x: x,
                 y: y,
                 w: w,
-                h: h
+                h: h,
+                lineBoxManager: lineBoxManager
               }, true);
 
               if (isRow) {
@@ -17377,7 +17416,13 @@
         else {
             flowChildren.forEach(function (item) {
               if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-                var _item$__calMinMax9 = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual),
+                var _item$__calMinMax9 = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: lineBoxManager
+                }),
                     _item$__calMinMax10 = _slicedToArray(_item$__calMinMax9, 2),
                     min2 = _item$__calMinMax10[0],
                     max2 = _item$__calMinMax10[1];
@@ -17397,7 +17442,8 @@
                   x: x,
                   y: y,
                   w: w,
-                  h: h
+                  h: h,
+                  lineBoxManager: lineBoxManager
                 }, true);
 
                 min += item.height;
@@ -17799,7 +17845,13 @@
             } // abs虚拟布局计算时纵向也是看横向宽度
 
 
-            var _item$__calBasis = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual),
+            var _item$__calBasis = item.__calBasis(isVirtual ? true : isDirectionRow, {
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+              lineBoxManager: lineBoxManager
+            }, isVirtual),
                 _item$__calBasis2 = _slicedToArray(_item$__calBasis, 3),
                 b = _item$__calBasis2[0],
                 min = _item$__calBasis2[1],
@@ -17852,7 +17904,6 @@
                   y: y,
                   w: w,
                   h: _h,
-                  lx: x,
                   lineBoxManager: lineBoxManager
                 }, true);
 
@@ -19756,7 +19807,7 @@
       }
     }, {
       key: "__calMinMax",
-      value: function __calMinMax(isDirectionRow, x, y, w, h) {
+      value: function __calMinMax(isDirectionRow, data) {
         css.computeReflow(this, this.isShadowRoot);
         var min = 0;
         var max = 0;
@@ -19770,15 +19821,17 @@
           min = max = main[0];
         }
 
-        return this.__addMp(isDirectionRow, w, currentStyle, [min, max]);
+        return this.__addMp(isDirectionRow, data.w, currentStyle, [min, max]);
       }
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, x, y, w, h) {
+      value: function __calBasis(isDirectionRow, data) {
         var b = 0;
         var min = 0;
         var max = 0;
-        var currentStyle = this.currentStyle; // 计算需考虑style的属性
+        var currentStyle = this.currentStyle;
+        var w = data.w,
+            h = data.h; // 计算需考虑style的属性
 
         var width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$6],

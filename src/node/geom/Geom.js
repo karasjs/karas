@@ -95,7 +95,7 @@ class Geom extends Xom {
     return w;
   }
 
-  __calMinMax(isDirectionRow, x, y, w, h) {
+  __calMinMax(isDirectionRow, data) {
     css.computeReflow(this, this.isShadowRoot);
     let min = 0;
     let max = 0;
@@ -110,14 +110,15 @@ class Geom extends Xom {
     if(main[1] === PX) {
       min = max = main[0];
     }
-    return this.__addMp(isDirectionRow, w, currentStyle, [min, max]);
+    return this.__addMp(isDirectionRow, data.w, currentStyle, [min, max]);
   }
 
-  __calBasis(isDirectionRow, x, y, w, h) {
+  __calBasis(isDirectionRow, data) {
     let b = 0;
     let min = 0;
     let max = 0;
     let { currentStyle } = this;
+    let { w, h } = data;
     // 计算需考虑style的属性
     let {
       [WIDTH]: width,

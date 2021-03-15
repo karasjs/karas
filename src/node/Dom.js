@@ -330,11 +330,12 @@ class Dom extends Xom {
   }
 
   // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
-  __calMinMax(isDirectionRow, x, y, w, h) {
+  __calMinMax(isDirectionRow, data) {
     css.computeReflow(this, this.isShadowRoot);
     let min = 0;
     let max = 0;
     let { flowChildren, currentStyle } = this;
+    let { x, y, w, h, lineBoxManager } = data;
     // 计算需考虑style的属性
     let {
       [DISPLAY]: display,
@@ -350,13 +351,14 @@ class Dom extends Xom {
     else {
       if(display === 'flex') {
         let isRow = flexDirection !== 'column';
+        lineBoxManager = new LineBoxManager(x, y);
         flowChildren.forEach(item => {
           let { currentStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
           if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
             currentStyle[DISPLAY] = 'block';
           }
-          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
+          let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
           if(isDirectionRow) {
             if(isRow) {
               min += min2;
@@ -380,9 +382,10 @@ class Dom extends Xom {
         });
       }
       else if(display === 'block') {
+        lineBoxManager = new LineBoxManager(x, y);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
+            let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
             if(isDirectionRow) {
               min = Math.max(min, min2);
               max = Math.max(max, max2);
@@ -408,10 +411,13 @@ class Dom extends Xom {
           }
         });
       }
-      else if(display === 'inline') {
+      else {
+        if(display === 'inlineBlock') {
+          lineBoxManager = new lineBoxManager(x, y);
+        }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h);
+            let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
             if(isDirectionRow) {
               min += min2;
               max += max2;
@@ -453,19 +459,17 @@ class Dom extends Xom {
    * 返回min为最小宽度，遇到字符/inline则单列排版后需要的最大宽度
    * 返回max为最大宽度，理想情况一排最大值，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
    * @param isDirectionRow
-   * @param x
-   * @param y
-   * @param w
-   * @param h
+   * @param data
    * @param isVirtual abs非固定尺寸时先进行虚拟布局标识
    * @private
    */
-  __calBasis(isDirectionRow, x, y, w, h, isVirtual) {
+  __calBasis(isDirectionRow, data, isVirtual) {
     css.computeReflow(this, this.isShadowRoot);
     let b = 0;
     let min = 0;
     let max = 0;
     let { flowChildren, currentStyle } = this;
+    let { x, y, w, h, lineBoxManager } = data;
     // 计算需考虑style的属性
     let {
       [DISPLAY]: display,
@@ -512,7 +516,7 @@ class Dom extends Xom {
           if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
             currentStyle[DISPLAY] = 'block';
           }
-          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+          let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
           if(isDirectionRow) {
             if(isRow) {
               min += min2;
@@ -550,6 +554,7 @@ class Dom extends Xom {
             y,
             w,
             h,
+            lineBoxManager,
           }, true);
           if(isRow) {
             min = Math.max(min, item.height);
@@ -566,7 +571,7 @@ class Dom extends Xom {
     else {
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-          let [min2, max2] = item.__calMinMax(isDirectionRow, x, y, w, h, isVirtual);
+          let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
           if(isDirectionRow) {
             min = Math.max(min, min2);
             max = Math.max(max, max2);
@@ -586,6 +591,7 @@ class Dom extends Xom {
             y,
             w,
             h,
+            lineBoxManager,
           }, true);
           min += item.height;
           max += item.height;
@@ -927,7 +933,7 @@ class Dom extends Xom {
           currentStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
-        let [b, min, max] = item.__calBasis(isVirtual ? true : isDirectionRow, x, y, w, h, isVirtual);
+        let [b, min, max] = item.__calBasis(isVirtual ? true : isDirectionRow, { x, y, w, h, lineBoxManager }, isVirtual);
         if(isVirtual) {
           if(isDirectionRow) {
             maxX += max;
@@ -981,7 +987,6 @@ class Dom extends Xom {
             y,
             w,
             h,
-            lx: x,
             lineBoxManager,
           }, true);
           let h = item.height;

@@ -1685,7 +1685,7 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下
-          let fw = item.__tryLayInline(w - x + data.x);
+          let fw = item.__tryLayInline(w + data.x - x);
           // 放得下继续
           if(fw >= 0) {
             item.__layout({
@@ -1721,8 +1721,8 @@ class Dom extends Xom {
             maxW = Math.max(maxW, cw);
             cw = 0;
           }
-          x += item.width;
           cw += item.width;
+          maxW = Math.max(maxW, cw);
         }
       }
     });

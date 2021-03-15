@@ -5805,14 +5805,20 @@
               if (!lineCount) {
                 maxW = count - firstLineSpace;
                 _textBox5 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, length));
+
+                if (lineBoxManager.isNewLine) {
+                  y += lineHeight;
+                } else {
+                  y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                }
               } else {
                 _textBox5 = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, length));
                 maxW = Math.max(maxW, count);
+                y += lineHeight;
               }
 
               textBoxes.push(_textBox5);
               lineBoxManager.addItem(_textBox5);
-              y += lineHeight;
             }
           }
 
@@ -18591,7 +18597,7 @@
                 cw = item.width;
               } else {
                 // 非开头先尝试是否放得下
-                var _fw2 = item.__tryLayInline(w - x + data.x); // 放得下继续
+                var _fw2 = item.__tryLayInline(w + data.x - x); // 放得下继续
 
 
                 if (_fw2 >= 0) {
@@ -18631,8 +18637,8 @@
                     cw = 0;
                   }
 
-                x += item.width;
                 cw += item.width;
+                maxW = Math.max(maxW, cw);
               }
             }
         }); // 同block结尾，不过这里一定是lineBox结束，无需判断

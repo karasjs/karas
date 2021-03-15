@@ -263,14 +263,20 @@ class Text extends Node {
         if(!lineCount) {
           maxW = count - firstLineSpace;
           textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, length));
+          if(lineBoxManager.isNewLine) {
+            y += lineHeight;
+          }
+          else {
+            y += Math.max(lineHeight, lineBoxManager.lineHeight);
+          }
         }
         else {
           textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, length));
           maxW = Math.max(maxW, count);
+          y += lineHeight;
         }
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox);
-        y += lineHeight;
       }
     }
     this.__width = maxW;

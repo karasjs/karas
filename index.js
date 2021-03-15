@@ -13406,12 +13406,11 @@
         var _this2 = this;
 
         var display = computedStyle[DISPLAY$2];
-
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
           var a = STYLE_KEY$6[style2Upper$2('margin' + k)];
           var b = STYLE_KEY$6[style2Upper$2('padding' + k)];
 
-          if (display === 'inline' && k === 'Top' || k === 'Bottom') {
+          if (display === 'inline' && (k === 'Top' || k === 'Bottom')) {
             computedStyle[a] = computedStyle[b] = 0;
           } else {
             computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
@@ -15937,10 +15936,12 @@
     }, {
       key: "marginBottom",
       get: function get() {
-        // lineGroup都是inline-block，不会有负
+        // lineBox都是inline-block，暂定不会有负
         var n = 0;
         this.list.forEach(function (item) {
-          n = Math.max(n, item.computedStyle[MARGIN_BOTTOM$2]);
+          if (!(item instanceof TextBox)) {
+            n = Math.max(n, item.computedStyle[MARGIN_BOTTOM$2]);
+          }
         });
         return n;
       }

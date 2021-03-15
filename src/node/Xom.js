@@ -927,8 +927,6 @@ class Xom extends Node {
   // 设置margin/padding的实际值，layout时执行，inline的垂直方向为0
   __mp(currentStyle, computedStyle, w) {
     let display = computedStyle[DISPLAY];
-    if(display === 'inline') {}
-    else {}
     [
       'Top',
       'Right',
@@ -937,7 +935,7 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      if(display === 'inline' && k === 'Top' || k === 'Bottom') {
+      if(display === 'inline' && (k === 'Top' || k === 'Bottom')) {
         computedStyle[a] = computedStyle[b] = 0;
       }
       else {

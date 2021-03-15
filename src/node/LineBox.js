@@ -1,4 +1,5 @@
 import enums from '../util/enums';
+import TextBox from './TextBox';
 
 const { STYLE_KEY: {
   MARGIN_BOTTOM,
@@ -107,10 +108,12 @@ class LineBox {
   }
 
   get marginBottom() {
-    // lineGroup都是inline-block，不会有负
+    // lineBox都是inline-block，暂定不会有负
     let n = 0;
     this.list.forEach(item => {
-      n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
+      if(!(item instanceof TextBox)) {
+        n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
+      }
     });
     return n;
   }

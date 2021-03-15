@@ -17661,6 +17661,7 @@
                   y: y,
                   w: w,
                   h: h,
+                  lx: data.x,
                   lineBoxManager: lineBoxManager
                 }, isVirtual);
 
@@ -17683,6 +17684,7 @@
                     y: y,
                     w: w,
                     h: h,
+                    lx: data.x,
                     lineBoxManager: lineBoxManager
                   }, isVirtual);
 
@@ -17699,6 +17701,7 @@
                       y: y,
                       w: w,
                       h: h,
+                      lx: data.x,
                       lineBoxManager: lineBoxManager
                     }, isVirtual);
 
@@ -17706,7 +17709,7 @@
                     y = lineBoxManager.lastY;
 
                     if (isVirtual) {
-                      maxW = Math.max(maxW, cw);
+                      maxW = Math.max(maxW, item.width);
                       cw = 0;
                     }
                   }
@@ -18623,6 +18626,7 @@
                       y: y,
                       w: w,
                       h: h,
+                      lx: lx,
                       lineBoxManager: lineBoxManager
                     }, isVirtual);
 
@@ -18633,7 +18637,7 @@
                       isIbFull = true;
                     }
 
-                    maxW = Math.max(maxW, cw);
+                    maxW = Math.max(maxW, item.width);
                     cw = 0;
                   }
 

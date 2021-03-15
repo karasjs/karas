@@ -819,6 +819,7 @@ class Dom extends Xom {
             y,
             w,
             h,
+            lx: data.x,
             lineBoxManager,
           }, isVirtual);
           x = lineBoxManager.lastX;
@@ -839,6 +840,7 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lx: data.x,
               lineBoxManager,
             }, isVirtual);
             x = lineBoxManager.lastX;
@@ -854,12 +856,13 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lx: data.x,
               lineBoxManager,
             }, isVirtual);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             if(isVirtual) {
-              maxW = Math.max(maxW, cw);
+              maxW = Math.max(maxW, item.width);
               cw = 0;
             }
           }
@@ -1710,6 +1713,7 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lx,
               lineBoxManager,
             }, isVirtual);
             x = lineBoxManager.lastX;
@@ -1718,7 +1722,7 @@ class Dom extends Xom {
             if(isInlineBlock && (lineBoxManager.size - n) > 0) {
               isIbFull = true;
             }
-            maxW = Math.max(maxW, cw);
+            maxW = Math.max(maxW, item.width);
             cw = 0;
           }
           cw += item.width;

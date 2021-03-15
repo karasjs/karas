@@ -14,7 +14,7 @@ const CANVAS = {};
 const WEBGL = {};
 const CANVAS_LIST = [];
 const WEBGL_LIST = [];
-const SUPPORT_OFFSCREEN_CANVAS = util.isFunction(OffscreenCanvas) && util.isFunction(OffscreenCanvas.prototype.getContext);
+const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
 
 function cache(key, width, height, hash, message) {
   let o;

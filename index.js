@@ -3464,7 +3464,7 @@
   var WEBGL = {};
   var CANVAS_LIST = [];
   var WEBGL_LIST = [];
-  var SUPPORT_OFFSCREEN_CANVAS = util.isFunction(OffscreenCanvas) && util.isFunction(OffscreenCanvas.prototype.getContext);
+  var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
 
   function cache(key, width, height, hash, message) {
     var o;

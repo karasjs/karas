@@ -1,5 +1,5 @@
 # karas(鸦)
-A flexible JavaScript framework for RIA on Canvas/Svg.
+A declarative JavaScript framework for RIA on Canvas/Svg.
 
 ---
 karas实现了一个微型浏览器引擎，同时扩充CSS/WAA在样式/动画上的标准，增强类似SVG的矢量标签描述语法，结合JSX/React的开发方式，形成一个对前端友好的RIA框架。

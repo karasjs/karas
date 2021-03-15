@@ -7,7 +7,7 @@ let o = karas.render(
   '#test'
 );
 o.ref.span.updateStyle({
-  display: 'inline',
+  display: 'inlineBlock',
 }, function() {
   let canvas = document.querySelector('canvas');
   let input = document.querySelector('#base64');

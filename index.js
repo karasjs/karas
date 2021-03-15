@@ -17233,7 +17233,8 @@
                   x: x,
                   y: y,
                   w: w,
-                  h: h
+                  h: h,
+                  lineBoxManager: lineBoxManager
                 }, true);
 
                 min = Math.max(min, item.height);
@@ -17273,7 +17274,8 @@
                   x: x,
                   y: y,
                   w: w,
-                  h: h
+                  h: h,
+                  lineBoxManager: lineBoxManager
                 }, true);
 
                 min = Math.max(min, item.height);

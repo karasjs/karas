@@ -22,6 +22,7 @@ let json = {
         props: {
           style: {
             position: 'relative',
+            display:'inlineBlock',
             padding: 2,
           }
         },
@@ -30,6 +31,7 @@ let json = {
             tagName: 'span',
             props: {
               style: {
+                display:'inlineBlock',
                 padding: 2,
               }
             },

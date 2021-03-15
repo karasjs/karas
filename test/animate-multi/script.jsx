@@ -1,6 +1,6 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <span ref="t" style={{background:'#F00'}}>123</span>
+    <span ref="t" style={{display:'inlineBlock',background:'#F00'}}>123</span>
   </canvas>,
   '#test'
 );
@@ -19,7 +19,7 @@ let animation = t.animate([
 
 let o2 = karas.render(
   <canvas width="360" height="360">
-    <span ref="t" style={{background:'#F00'}}>123</span>
+    <span ref="t" style={{display:'inlineBlock',background:'#F00'}}>123</span>
   </canvas>,
   '#test2'
 );

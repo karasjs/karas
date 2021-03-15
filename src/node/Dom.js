@@ -405,6 +405,7 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lineBoxManager,
             }, true);
             min = Math.max(min, item.height);
             max = Math.max(max, item.height);
@@ -437,6 +438,7 @@ class Dom extends Xom {
               y,
               w,
               h,
+              lineBoxManager,
             }, true);
             min = Math.max(min, item.height);
             max = Math.max(max, item.height);

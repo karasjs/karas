@@ -22,6 +22,7 @@ let json = {
         props: {
           style: {
             position: 'relative',
+            display:'inlineBlock',
             padding: 2,
             background: '#F00',
           }
@@ -33,6 +34,7 @@ let json = {
             props: {
               style: {
                 position: 'relative',
+                display:'inlineBlock',
                 padding: 2,
                 background: '#0F0',
               }
@@ -44,6 +46,7 @@ let json = {
                 props: {
                   style: {
                     position: 'relative',
+                    display:'inlineBlock',
                     padding: 2,
                     background: '#00F',
                   }

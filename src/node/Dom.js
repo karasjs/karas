@@ -908,6 +908,7 @@ class Dom extends Xom {
       this.__ioSize(w, this.height);
       return;
     }
+    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
     let maxX = 0;
     let isDirectionRow = flexDirection !== 'column';
     // 计算伸缩基数
@@ -983,6 +984,8 @@ class Dom extends Xom {
             y,
             w,
             h,
+            lx: x,
+            lineBoxManager,
           }, true);
           let h = item.height;
           basisList.push(h);
@@ -1186,6 +1189,8 @@ class Dom extends Xom {
           y,
           w: isDirectionRow ? main : w,
           h: isDirectionRow ? h : main,
+          lx: x,
+          lineBoxManager,
         });
       }
       if(isDirectionRow) {

@@ -17778,6 +17778,7 @@
           return;
         }
 
+        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
         var maxX = 0;
         var isDirectionRow = flexDirection !== 'column'; // 计算伸缩基数
 
@@ -17849,7 +17850,9 @@
                   x: x,
                   y: y,
                   w: w,
-                  h: _h
+                  h: _h,
+                  lx: x,
+                  lineBoxManager: lineBoxManager
                 }, true);
 
                 var _h = item.height;
@@ -18072,7 +18075,9 @@
               x: x,
               y: y,
               w: isDirectionRow ? main : w,
-              h: isDirectionRow ? h : main
+              h: isDirectionRow ? h : main,
+              lx: x,
+              lineBoxManager: lineBoxManager
             });
           }
 

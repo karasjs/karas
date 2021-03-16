@@ -1594,6 +1594,9 @@ class Dom extends Xom {
     let { flowChildren, computedStyle } = this;
     let {
       [TEXT_ALIGN]: textAlign,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_RIGHT]: paddingRight,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
     } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h, lx, lineBoxManager } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
@@ -1770,6 +1773,8 @@ class Dom extends Xom {
         }
       }
     });
+    // inline最后的x要算上右侧mpb
+    lineBoxManager.addX(marginRight + paddingRight + borderRightWidth);
     // 同block结尾，不过这里一定是lineBox结束，无需判断
     y = lineBoxManager.endY;
     // 标识ib情况同block一样占满行

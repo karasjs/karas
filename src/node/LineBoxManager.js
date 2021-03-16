@@ -60,7 +60,7 @@ class LineBoxManager {
       lineBox = list[length - 1];
     }
     lineBox.add(o);
-    // 设置结束x的位置给next的inline标记用
+    // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
     this.__lastX = o.x + o.outerWidth;
     this.__lastY = o.y;
     if(nextNewLine) {
@@ -91,6 +91,10 @@ class LineBoxManager {
     this.__list.forEach(lineBox => {
       lineBox.verticalAlign();
     });
+  }
+
+  addX(n) {
+    this.__lastX += n;
   }
 
   get lastX() {

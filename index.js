@@ -9111,16 +9111,7 @@
 
             var now = self.__now = inject.now();
             var diff = now - last;
-            diff = Math.max(diff, 0); // 特殊情况0.5ms以内由于向下取整关系近似为0，防止重复渲染
-
-            if (diff === 0) {
-              if (task.length || taskCp.length) {
-                cb();
-              }
-
-              return;
-            } // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
-
+            diff = Math.max(diff, 0); // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
 
             last = now; // 优先动画计算
 
@@ -13397,7 +13388,7 @@
 
         this.__config[NODE_STRUCT$1] = res;
         return res;
-      } // 设置margin/padding的实际值，layout时执行，inline的垂直方向为0
+      } // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
 
     }, {
       key: "__mp",
@@ -13407,14 +13398,16 @@
         var display = computedStyle[DISPLAY$2];
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
           var a = STYLE_KEY$6[style2Upper$2('margin' + k)];
-          var b = STYLE_KEY$6[style2Upper$2('padding' + k)];
+          var b = STYLE_KEY$6[style2Upper$2('padding' + k)]; // if(display === 'inline' && this.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
+          //   computedStyle[a] = computedStyle[b] = 0;
+          // }
+          // else {
+          //   computedStyle[a] = this.__mpWidth(currentStyle[a], w);
+          //   computedStyle[b] = this.__mpWidth(currentStyle[b], w);
+          // }
 
-          if (display === 'inline' && _this2.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
-            computedStyle[a] = computedStyle[b] = 0;
-          } else {
-            computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
-            computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
-          }
+          computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
+          computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
         });
       }
     }, {
@@ -13746,12 +13739,16 @@
               h *= height[0] * 0.01;
               break;
           }
-        } // margin/padding/border影响x和y和尺寸
+        } // margin/padding/border影响x和y和尺寸，注意inline的y不受mpb影响
 
 
         x += borderLeftWidth + marginLeft + paddingLeft;
         data.x = x;
-        y += borderTopWidth + marginTop + paddingTop;
+
+        if (!isInline) {
+          y += borderTopWidth + marginTop + paddingTop;
+        }
+
         data.y = y; // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb
 
         if (width[1] === AUTO$2 || w3 !== undefined) {
@@ -16013,7 +16010,7 @@
           lineBox = list[length - 1];
         }
 
-        lineBox.add(o); // 设置结束x的位置给next的inline标记用
+        lineBox.add(o); // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
 
         this.__lastX = o.x + o.outerWidth;
         this.__lastY = o.y;
@@ -16047,6 +16044,11 @@
         this.__list.forEach(function (lineBox) {
           lineBox.verticalAlign();
         });
+      }
+    }, {
+      key: "addX",
+      value: function addX(n) {
+        this.__lastX += n;
       }
     }, {
       key: "size",
@@ -18535,7 +18537,10 @@
 
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle;
-        var textAlign = computedStyle[TEXT_ALIGN$3];
+        var textAlign = computedStyle[TEXT_ALIGN$3],
+            marginRight = computedStyle[MARGIN_RIGHT$2],
+            paddingRight = computedStyle[PADDING_RIGHT$2],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2];
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),
             fixedWidth = _this$__preLayout3.fixedWidth,
@@ -18735,7 +18740,9 @@
                 maxW = Math.max(maxW, cw);
               }
             }
-        }); // 同block结尾，不过这里一定是lineBox结束，无需判断
+        }); // inline最后的x要算上右侧mpb
+
+        lineBoxManager.addX(marginRight + paddingRight + borderRightWidth); // 同block结尾，不过这里一定是lineBox结束，无需判断
 
         y = lineBoxManager.endY; // 标识ib情况同block一样占满行
 

@@ -924,7 +924,7 @@ class Xom extends Node {
     return res;
   }
 
-  // 设置margin/padding的实际值，layout时执行，inline的垂直方向为0
+  // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
   __mp(currentStyle, computedStyle, w) {
     let display = computedStyle[DISPLAY];
     [
@@ -935,13 +935,15 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      if(display === 'inline' && this.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
-        computedStyle[a] = computedStyle[b] = 0;
-      }
-      else {
-        computedStyle[a] = this.__mpWidth(currentStyle[a], w);
-        computedStyle[b] = this.__mpWidth(currentStyle[b], w);
-      }
+      // if(display === 'inline' && this.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
+      //   computedStyle[a] = computedStyle[b] = 0;
+      // }
+      // else {
+      //   computedStyle[a] = this.__mpWidth(currentStyle[a], w);
+      //   computedStyle[b] = this.__mpWidth(currentStyle[b], w);
+      // }
+      computedStyle[a] = this.__mpWidth(currentStyle[a], w);
+      computedStyle[b] = this.__mpWidth(currentStyle[b], w);
     });
   }
 
@@ -1253,10 +1255,12 @@ class Xom extends Node {
           break;
       }
     }
-    // margin/padding/border影响x和y和尺寸
+    // margin/padding/border影响x和y和尺寸，注意inline的y不受mpb影响
     x += borderLeftWidth + marginLeft + paddingLeft;
     data.x = x;
-    y += borderTopWidth + marginTop + paddingTop;
+    if(!isInline) {
+      y += borderTopWidth + marginTop + paddingTop;
+    }
     data.y = y;
     // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb
     if(width[1] === AUTO || w3 !== undefined) {

@@ -1256,14 +1256,14 @@ class Dom extends Xom {
           isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
         }
       }
-      else if(justifyContent === 'space-between') {
+      else if(justifyContent === 'spaceBetween') {
         let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
           let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
         }
       }
-      else if(justifyContent === 'space-around') {
+      else if(justifyContent === 'spaceAround') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = flowChildren[i];

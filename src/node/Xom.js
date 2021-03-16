@@ -2188,7 +2188,7 @@ class Xom extends Node {
               let ynt = 0;
               let ynb = 0;
               // repeat-x
-              if(['repeat-x', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+              if(['repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
                 let diff = bgX - bx1;
                 if(diff > 0) {
                   xnl = Math.ceil(diff / w);
@@ -2199,7 +2199,7 @@ class Xom extends Node {
                 }
               }
               // repeat-y
-              if(['repeat-y', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+              if(['repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
                 let diff = bgY - by1;
                 if(diff > 0) {
                   ynt = Math.ceil(diff / h);

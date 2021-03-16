@@ -1,6 +1,6 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <div ref="t" style={{width:100,height:100,background:'url(../image.png) no-repeat 0 0',backgroundSize:'100% 100%'}}/>
+    <div ref="t" style={{width:100,height:100,background:'url(../image.png) noRepeat 0 0',backgroundSize:'100% 100%'}}/>
   </svg>,
   '#test'
 );

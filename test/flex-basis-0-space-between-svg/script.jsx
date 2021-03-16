@@ -1,6 +1,6 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <div style={{display:'flex',justifyContent:'space-between'}}>
+    <div style={{display:'flex',justifyContent:'spaceBetween'}}>
       <span style={{flexBasis:0}}>1</span>
       <span style={{flexBasis:0}}>2</span>
       <span style={{flexBasis:0}}>3</span>

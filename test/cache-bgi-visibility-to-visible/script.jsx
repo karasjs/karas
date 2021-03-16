@@ -13,7 +13,7 @@ let o = karas.render(
                 top: 0,
                 width: 60,
                 height: 60,
-                background: 'url(../image.png) no-repeat 0 0',
+                background: 'url(../image.png) noRepeat 0 0',
                 visibility: 'hidden',
               }}/>
     </div>

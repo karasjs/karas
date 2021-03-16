@@ -920,7 +920,7 @@ class Dom extends Xom {
     let tw = this.__width = (fixedWidth || !isVirtual) ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+    // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {

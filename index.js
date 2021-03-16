@@ -5641,8 +5641,6 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual) {
-        var _this2 = this;
-
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -5680,13 +5678,13 @@
             whiteSpace = computedStyle[WHITE_SPACE$1]; // 不换行特殊对待，同时考虑overflow和textOverflow
 
         if (whiteSpace === 'nowrap') {
-          var isTo;
+          var isTextOverflow;
 
           while (i < length) {
             count += charWidthList[i] + letterSpacing; // overflow必须hidden才生效文字裁剪
 
             if (overflow === 'hidden' && count > w && (textOverflow === 'clip' || textOverflow === 'ellipsis')) {
-              isTo = true;
+              isTextOverflow = true;
               break;
             }
 
@@ -5694,7 +5692,7 @@
           } // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
 
 
-          if (isTo && (display === 'block' || display === 'inline') && textOverflow === 'ellipsis') {
+          if (isTextOverflow && textOverflow === 'ellipsis' && (display === 'block' || display === 'inlineBlock')) {
             var ew = textCache.charWidth[this.__key][ELLIPSIS];
 
             for (; i > 0; i--) {
@@ -5704,11 +5702,12 @@
               if (ww <= w) {
                 var textBox = new TextBox(this, x, y, ww, lineHeight, content.slice(0, i) + ELLIPSIS);
                 textBoxes.push(textBox);
+                lineBoxManager.addItem(textBox, true);
                 maxW = ww;
                 y += lineHeight;
                 break;
               }
-            } // 最后也没找到，兜底首字母
+            } // 最后也没找到，宽度极短情况，兜底首字母
 
 
             if (i === 0) {
@@ -5717,6 +5716,7 @@
               var _textBox = new TextBox(this, x, y, _ww, lineHeight, content.charAt(0) + ELLIPSIS);
 
               textBoxes.push(_textBox);
+              lineBoxManager.addItem(_textBox, true);
               maxW = _ww;
               y += lineHeight;
             }
@@ -5724,6 +5724,7 @@
             var _textBox2 = new TextBox(this, x, y, count, lineHeight, content.slice(0, i));
 
             textBoxes.push(_textBox2);
+            lineBoxManager.addItem(_textBox2);
             maxW = count;
             y += lineHeight;
           }
@@ -5828,20 +5829,17 @@
 
         this.__width = maxW;
         this.__height = y - data.y; // flex/abs前置计算无需真正布局
-
-        if (!isVirtual) {
-          var textAlign = computedStyle[TEXT_ALIGN$1];
-
-          if (['center', 'right'].indexOf(textAlign) > -1) {
-            textBoxes.forEach(function (textBox) {
-              var diff = _this2.__width - textBox.width;
-
-              if (diff > 0) {
-                textBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
-              }
-            });
-          }
-        }
+        // if(!isVirtual) {
+        //   let { [TEXT_ALIGN]: textAlign } = computedStyle;
+        //   if(['center', 'right'].indexOf(textAlign) > -1) {
+        //     textBoxes.forEach(textBox => {
+        //       let diff = this.__width - textBox.width;
+        //       if(diff > 0) {
+        //         textBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
+        //       }
+        //     });
+        //   }
+        // }
       }
     }, {
       key: "__offsetX",
@@ -13780,13 +13778,13 @@
       key: "__marginAuto",
       value: function __marginAuto(style, data) {
         var position = style[POSITION$1],
+            display = style[DISPLAY$2],
             marginLeft = style[MARGIN_LEFT$1],
             marginRight = style[MARGIN_RIGHT$1],
             width = style[WIDTH$3];
 
-        if (position !== 'absolute' && width[1] !== AUTO$2 && marginLeft[1] === AUTO$2 && marginRight[1] === AUTO$2) {
+        if (position !== 'absolute' && (display === 'block' || display === 'flex') && (width[1] !== AUTO$2 || this.tagName === 'img') && marginLeft[1] === AUTO$2 && marginRight[1] === AUTO$2) {
           var ow = this.outerWidth;
-          console.log(ow);
 
           if (ow < data.w) {
             this.__offsetX((data.w - ow) * 0.5, true);
@@ -17816,7 +17814,7 @@
         var tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__ioSize(tw, th); // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+        this.__ioSize(tw, th); // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
         if (!isVirtual) {

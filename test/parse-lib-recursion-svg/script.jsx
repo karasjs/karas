@@ -29,7 +29,7 @@ let o = karas.parse({
               {
                 id: 'c',
                 tagName: 'strong',
-                props: { style: { width: 100, height: 100, background: '#0F0' } },
+                props: { style: { display:'inlineBlock', width: 100, height: 100, background: '#0F0' } },
                 children: [
                 ],
               }
@@ -43,7 +43,7 @@ let o = karas.parse({
           {
             id: 'b',
             tagName: 'b',
-            props: { style: { width: 100, height: 100, background: '#00F' } },
+            props: { style: { display:'inlineBlock',width: 100, height: 100, background: '#00F' } },
             children: [
             ],
           }

@@ -3,7 +3,7 @@ let o = karas.render(
     <div style={{height:20,background:'#F00',margin:5}}>1</div>
     <div style={{background:'#0F0',margin:'-8 20 -10'}}></div>
     <div style={{background:'#0F0',margin:'-5 20 -13'}}></div>
-    <span style={{height:20,background:'#00F',margin:10}}>3</span>
+    <span style={{display:'inlineBlock',height:20,background:'#00F',margin:10}}>3</span>
   </svg>,
   '#test'
 );

@@ -5,7 +5,7 @@ let o = karas.render(
         <$rect ref="$rect"/>
       </span>
     </div>
-    <b style={{width:100,height:100,background:'#F00'}} ref="b"/>
+    <b style={{display:'inlineBlock',width:100,height:100,background:'#F00'}} ref="b"/>
   </svg>,
   '#test'
 );

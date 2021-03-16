@@ -17144,6 +17144,8 @@
     }, {
       key: "__calMinMax",
       value: function __calMinMax(isDirectionRow, data) {
+        var _this2 = this;
+
         css.computeReflow(this, this.isShadowRoot);
         var min = 0;
         var max = 0;
@@ -17166,40 +17168,66 @@
         } else {
           if (display === 'flex') {
             var isRow = flexDirection !== 'column';
-            lineBoxManager = new LineBoxManager(x, y);
             flowChildren.forEach(function (item) {
-              var currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+              if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+                var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-              if (currentStyle[DISPLAY$3] === 'inline' || currentStyle[DISPLAY$3] === 'inlineBlock') {
-                currentStyle[DISPLAY$3] = 'block';
-              }
+                if (_currentStyle[DISPLAY$3] === 'inline' || _currentStyle[DISPLAY$3] === 'inlineBlock') {
+                  _currentStyle[DISPLAY$3] = 'block';
+                }
 
-              var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
-                x: x,
-                y: y,
-                w: w,
-                h: h,
-                lineBoxManager: lineBoxManager
-              }),
-                  _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
-                  min2 = _item$__calMinMax2[0],
-                  max2 = _item$__calMinMax2[1];
+                var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h
+                }),
+                    _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
+                    min2 = _item$__calMinMax2[0],
+                    max2 = _item$__calMinMax2[1];
 
-              if (isDirectionRow) {
-                if (isRow) {
-                  min += min2;
-                  max += max2;
+                if (isDirectionRow) {
+                  if (isRow) {
+                    min += min2;
+                    max += max2;
+                  } else {
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
+                  }
                 } else {
-                  min = Math.max(min, min2);
-                  max = Math.max(max, max2);
+                  if (isRow) {
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
+                  } else {
+                    min += min2;
+                    max += max2;
+                  }
+                }
+              } else if (isDirectionRow) {
+                if (isRow) {
+                  min += item.charWidth;
+                  max += item.textWidth;
+                } else {
+                  min = Math.max(min, item.charWidth);
+                  max = Math.max(max, item.textWidth);
                 }
               } else {
+                lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y);
+
+                item.__layout({
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: lineBoxManager
+                }, true);
+
                 if (isRow) {
-                  min = Math.max(min, min2);
-                  max = Math.max(max, max2);
+                  min = Math.max(min, item.height);
+                  max = Math.max(max, item.height);
                 } else {
-                  min += min2;
-                  max += max2;
+                  min += item.height;
+                  max += item.height;
                 }
               }
             });
@@ -17307,6 +17335,8 @@
     }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, data, isVirtual) {
+        var _this3 = this;
+
         css.computeReflow(this, this.isShadowRoot);
         var b = 0;
         var min = 0;
@@ -17316,8 +17346,7 @@
         var x = data.x,
             y = data.y,
             w = data.w,
-            h = data.h,
-            lineBoxManager = data.lineBoxManager; // 计算需考虑style的属性
+            h = data.h; // 计算需考虑style的属性
 
         var display = currentStyle[DISPLAY$3],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -17354,18 +17383,17 @@
           var isRow = flexDirection !== 'column';
           flowChildren.forEach(function (item) {
             if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-              var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+              var _currentStyle2 = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-              if (_currentStyle[DISPLAY$3] === 'inline' || _currentStyle[DISPLAY$3] === 'inlineBlock') {
-                _currentStyle[DISPLAY$3] = 'block';
+              if (_currentStyle2[DISPLAY$3] === 'inline' || _currentStyle2[DISPLAY$3] === 'inlineBlock') {
+                _currentStyle2[DISPLAY$3] = 'block';
               }
 
               var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
                 x: x,
                 y: y,
                 w: w,
-                h: h,
-                lineBoxManager: lineBoxManager
+                h: h
               }),
                   _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
                   min2 = _item$__calMinMax8[0],
@@ -17397,6 +17425,8 @@
                 max = Math.max(max, item.textWidth);
               }
             } else {
+              var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y);
+
               item.__layout({
                 x: x,
                 y: y,
@@ -17416,6 +17446,7 @@
           });
         } // flex的item是block/inline时，inline也会变成block统一对待
         else {
+            var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
                 var _item$__calMinMax9 = item.__calMinMax(isDirectionRow, {
@@ -17638,6 +17669,7 @@
                 if (lineBoxManager.isEnd) {
                   y = lineBoxManager.endY;
                   lineBoxManager.setNotEnd();
+                  lineBoxManager.setNewLine();
                 }
 
                 item.__layout({
@@ -17801,7 +17833,7 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isVirtual) {
-        var _this2 = this;
+        var _this4 = this;
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
@@ -17825,7 +17857,6 @@
           return;
         }
 
-        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
         var maxX = 0;
         var isDirectionRow = flexDirection !== 'column'; // 计算伸缩基数
 
@@ -17837,11 +17868,11 @@
         var growSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle2 = item.currentStyle,
+            var _currentStyle3 = item.currentStyle,
                 computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-            if (_currentStyle2[DISPLAY$3] === 'inline' || _currentStyle2[DISPLAY$3] === 'inlineBlock') {
-              _currentStyle2[DISPLAY$3] = 'block';
+            if (_currentStyle3[DISPLAY$3] === 'inline' || _currentStyle3[DISPLAY$3] === 'inlineBlock') {
+              _currentStyle3[DISPLAY$3] = 'block';
             } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -17849,8 +17880,7 @@
               x: x,
               y: y,
               w: w,
-              h: h,
-              lineBoxManager: lineBoxManager
+              h: h
             }, isVirtual),
                 _item$__calBasis2 = _slicedToArray(_item$__calBasis, 3),
                 b = _item$__calBasis2[0],
@@ -17867,8 +17897,8 @@
               return;
             }
 
-            var flexGrow = _currentStyle2[FLEX_GROW$1],
-                flexShrink = _currentStyle2[FLEX_SHRINK$1];
+            var flexGrow = _currentStyle3[FLEX_GROW$1],
+                flexShrink = _currentStyle3[FLEX_SHRINK$1];
             computedStyle[FLEX_BASIS$2] = b;
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
@@ -17899,6 +17929,8 @@
                 maxList.push(_tw);
                 minList.push(cw);
               } else {
+                var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y);
+
                 item.__layout({
                   x: x,
                   y: y,
@@ -18085,11 +18117,11 @@
           var main = targetMainList[i];
 
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle3 = item.currentStyle;
-            var display = _currentStyle3[DISPLAY$3],
-                _flexDirection = _currentStyle3[FLEX_DIRECTION$2],
-                width = _currentStyle3[WIDTH$4],
-                height = _currentStyle3[HEIGHT$4];
+            var _currentStyle4 = item.currentStyle;
+            var display = _currentStyle4[DISPLAY$3],
+                _flexDirection = _currentStyle4[FLEX_DIRECTION$2],
+                width = _currentStyle4[WIDTH$4],
+                height = _currentStyle4[HEIGHT$4];
 
             if (isDirectionRow) {
               // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
@@ -18123,6 +18155,8 @@
               });
             }
           } else {
+            var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y);
+
             item.__layout({
               x: x,
               y: y,
@@ -18254,7 +18288,7 @@
                   var _d = _v - _old;
 
                   item.__clientWidth += _d;
-                  _this2.__offsetWidth += _d;
+                  _this4.__offsetWidth += _d;
                   item.__outerWidth += _d;
                 }
               }
@@ -18319,7 +18353,7 @@
                     var _d2 = _v2 - _old2;
 
                     item.__clientWidth += _d2;
-                    _this2.__offsetWidth += _d2;
+                    _this4.__offsetWidth += _d2;
                     item.__outerWidth += _d2;
                   }
                 } else {
@@ -18391,7 +18425,7 @@
                     var _d3 = _v3 - _old3;
 
                     item.__clientWidth += _d3;
-                    _this2.__offsetWidth += _d3;
+                    _this4.__offsetWidth += _d3;
                     item.__outerWidth += _d3;
                   }
                 } else {
@@ -18469,7 +18503,7 @@
                     var _d4 = _v4 - _old4;
 
                     item.__clientWidth += _d4;
-                    _this2.__offsetWidth += _d4;
+                    _this4.__offsetWidth += _d4;
                     item.__outerWidth += _d4;
                   }
                 }
@@ -18499,7 +18533,7 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data, isVirtual, isInline) {
-        var _this3 = this;
+        var _this5 = this;
 
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle;
@@ -18563,7 +18597,7 @@
 
 
               if (item.__isIbFull) {
-                isInlineBlock && (_this3.__isIbFull = true);
+                isInlineBlock && (_this5.__isIbFull = true);
                 lineBoxManager.addItem(item);
                 x = data.x;
                 y += item.outerHeight;

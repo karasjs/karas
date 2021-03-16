@@ -443,7 +443,7 @@ class Dom extends Xom {
       }
       else {
         if(display === 'inlineBlock') {
-          lineBoxManager = new lineBoxManager(x, y);
+          lineBoxManager = new LineBoxManager(x, y);
         }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {

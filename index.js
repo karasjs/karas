@@ -17269,7 +17269,7 @@
             });
           } else {
             if (display === 'inlineBlock') {
-              lineBoxManager = new lineBoxManager(x, y);
+              lineBoxManager = new LineBoxManager(x, y);
             }
 
             flowChildren.forEach(function (item) {
@@ -24142,7 +24142,7 @@
   function checkInfluence(root, reflowHash, node, component) {
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (node.currentStyle[DISPLAY$8] === 'inline' || node.computedStyle[DISPLAY$8] === 'inline') {
+    if (node.currentStyle[DISPLAY$8] === 'inline' || node.computedStyle[DISPLAY$8] === 'inline' || node.currentStyle[DISPLAY$8] === 'inlineBlock' || node.computedStyle[DISPLAY$8] === 'inlineBlock') {
       var _parent = node.domParent;
 
       do {
@@ -24171,7 +24171,7 @@
 
 
         _parent = _parent.domParent;
-      } while (_parent && (_parent.currentStyle[DISPLAY$8] === 'inline' || _parent.computedStyle[DISPLAY$8] === 'inline')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
+      } while (_parent && (_parent.currentStyle[DISPLAY$8] === 'inline' || _parent.computedStyle[DISPLAY$8] === 'inline' || _parent.currentStyle[DISPLAY$8] === 'inlineBlock' || _parent.computedStyle[DISPLAY$8] === 'inlineBlock')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
 
 
       if (isFixedSize(target, true)) {
@@ -25835,9 +25835,10 @@
                 var _cs = isXom && item.currentStyle;
 
                 var isInline = isXom && _cs[DISPLAY$8] === 'inline';
+                var isInlineBlock = isXom && _cs[DISPLAY$8] === 'inlineBlock';
                 lastChild = item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
-                if (!isXom || isInline) {
+                if (!isXom || isInline || isInlineBlock) {
                   if (mergeMarginBottomList.length && mergeMarginTopList.length && isStart) {
                     var _diff2 = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 

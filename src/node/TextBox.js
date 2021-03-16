@@ -127,6 +127,10 @@ class TextBox {
   get parent() {
     return this.__parent;
   }
+
+  get parentLineBox() {
+    return this.__parentLineBox;
+  }
 }
 
 export default TextBox;

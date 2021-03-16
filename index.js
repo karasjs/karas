@@ -630,7 +630,7 @@
         // base-line ratio，1854/2048
         // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
         lgr: 0.03271484375,
-        // line-gap ratio，67/2048
+        // line-gap ratio，67/2048，默认0
         // 个别字符误差，https://stackoverflow.com/questions/66548845/why-is-the-sum-width-of-each-item-not-equal-to-the-total-in-canvas-textmetrics
         padding: {
           1: 1.484375 / 20,
@@ -664,7 +664,6 @@
       'pingfang sc': {
         lhr: 1.4,
         // (0+1060+340)/1000
-        // car: 1.4, // (1060+340)/1000
         blr: 1.06 // 1060/1000
 
       },
@@ -3077,7 +3076,7 @@
     backgroundRepeat: 'repeat',
     backgroundPositionX: 0,
     backgroundPositionY: 0,
-    backgroundClip: 'border-box',
+    backgroundClip: 'borderBox',
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -3100,7 +3099,7 @@
     flexShrink: 1,
     flexBasis: 'auto',
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'flexStart',
     alignItems: 'stretch',
     alignSelf: 'auto',
     textAlign: 'inherit',
@@ -5505,6 +5504,11 @@
       key: "parent",
       get: function get() {
         return this.__parent;
+      }
+    }, {
+      key: "parentLineBox",
+      get: function get() {
+        return this.__parentLineBox;
       }
     }]);
 
@@ -8896,6 +8900,98 @@
 
   var image = {
     matrixResize: matrixResize
+  };
+
+  var joinArr$1 = util.joinArr;
+  var canvasPolygon$1 = painter.canvasPolygon,
+      svgPolygon$1 = painter.svgPolygon;
+
+  function renderBgc$1(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr) {
+    var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
+    // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
+    var matrix, cx, cy;
+
+    if (Array.isArray(color)) {
+      matrix = color[1];
+      cx = color[2];
+      cy = color[3];
+      color = color[0];
+    } // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+
+
+    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
+
+    if (!list) {
+      list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
+    } // 椭圆有matrix，用逆矩阵变化点来完成
+
+
+    if (matrix) {
+      var tfo = [cx, cy];
+      matrix = tf.calMatrixByOrigin(matrix, tfo);
+      var t = mx.inverse(matrix);
+      list = list.map(function (item) {
+        if (!item || !item.length) {
+          return null;
+        }
+
+        var arr = [];
+
+        for (var i = 0, len = item.length; i < len; i += 2) {
+          var p = mx.calPoint([item[i], item[i + 1]], t);
+          arr.push(p[0]);
+          arr.push(p[1]);
+        }
+
+        return arr;
+      });
+    }
+
+    if (renderMode === mode.CANVAS) {
+      if (matrix) {
+        ctx.save();
+        var me = xom.matrixEvent;
+        matrix = mx.multiply(me, matrix);
+        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      }
+
+      ctx.beginPath();
+
+      if (ctx.fillStyle !== color) {
+        ctx.fillStyle = color;
+      }
+
+      canvasPolygon$1(ctx, list);
+      ctx[method]();
+      ctx.closePath();
+
+      if (matrix) {
+        ctx.restore();
+      }
+    } else if (renderMode === mode.SVG) {
+      var d = svgPolygon$1(list);
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [['d', d], ['fill', color]]
+      }); // 椭圆渐变独有
+
+      if (matrix) {
+        var bb = xom.virtualDom.bb;
+        bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(matrix, ','), ")")]);
+      }
+    }
+  }
+
+  function renderBgcInline(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr) {
+    console.log(xom.tagName, color, x, y, w, h, btlr, btrr, bbrr, bblr);
+    var contentBoxList = xom.__contentBoxList;
+    console.log(contentBoxList);
+  }
+
+  var bg = {
+    renderBgc: renderBgc$1,
+    renderBgcInline: renderBgcInline
   };
 
   var isFunction$1 = util.isFunction;
@@ -12727,11 +12823,11 @@
   var clone$2 = util.clone,
       int2rgba$1 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
-      joinArr$1 = util.joinArr,
+      joinArr$2 = util.joinArr,
       isNil$5 = util.isNil;
   var calRelative$1 = css.calRelative;
-  var canvasPolygon$1 = painter.canvasPolygon,
-      svgPolygon$1 = painter.svgPolygon;
+  var canvasPolygon$2 = painter.canvasPolygon,
+      svgPolygon$2 = painter.svgPolygon;
   var GEOM$4 = o.GEOM;
   var contain = o$1.contain,
       NONE = o$1.NONE,
@@ -12753,97 +12849,20 @@
       }
 
       points.forEach(function (point) {
-        canvasPolygon$1(ctx, point, dx, dy);
+        canvasPolygon$2(ctx, point, dx, dy);
       });
       ctx.fill();
       ctx.closePath();
     } else if (renderMode === mode.SVG) {
       var s = '';
       points.forEach(function (point) {
-        s += svgPolygon$1(point);
+        s += svgPolygon$2(point);
       });
       xom.virtualDom.bb.push({
         type: 'item',
         tagName: 'path',
         props: [['d', s], ['fill', color]]
       });
-    }
-  }
-
-  function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
-    var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
-    // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
-    var matrix, cx, cy;
-
-    if (Array.isArray(color)) {
-      matrix = color[1];
-      cx = color[2];
-      cy = color[3];
-      color = color[0];
-    } // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-
-
-    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
-
-    if (!list) {
-      list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
-    } // 椭圆有matrix，用逆矩阵变化点来完成
-
-
-    if (matrix) {
-      var tfo = [cx, cy];
-      matrix = tf.calMatrixByOrigin(matrix, tfo);
-      var t = mx.inverse(matrix);
-      list = list.map(function (item) {
-        if (!item || !item.length) {
-          return null;
-        }
-
-        var arr = [];
-
-        for (var i = 0, len = item.length; i < len; i += 2) {
-          var p = mx.calPoint([item[i], item[i + 1]], t);
-          arr.push(p[0]);
-          arr.push(p[1]);
-        }
-
-        return arr;
-      });
-    }
-
-    if (renderMode === mode.CANVAS) {
-      if (matrix) {
-        ctx.save();
-        var me = xom.matrixEvent;
-        matrix = mx.multiply(me, matrix);
-        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-      }
-
-      ctx.beginPath();
-
-      if (ctx.fillStyle !== color) {
-        ctx.fillStyle = color;
-      }
-
-      canvasPolygon$1(ctx, list);
-      ctx[method]();
-      ctx.closePath();
-
-      if (matrix) {
-        ctx.restore();
-      }
-    } else if (renderMode === mode.SVG) {
-      var d = svgPolygon$1(list);
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'path',
-        props: [['d', d], ['fill', color]]
-      }); // 椭圆渐变独有
-
-      if (matrix) {
-        var bb = xom.virtualDom.bb;
-        bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(matrix, ','), ")")]);
-      }
     }
   }
 
@@ -12861,12 +12880,12 @@
 
       ctx.save();
       ctx.beginPath();
-      canvasPolygon$1(ctx, list);
+      canvasPolygon$2(ctx, list);
       ctx.clip();
       ctx.closePath();
       color.forEach(function (item) {
         ctx.beginPath();
-        canvasPolygon$1(ctx, item[0]);
+        canvasPolygon$2(ctx, item[0]);
         ctx.fillStyle = item[1];
         ctx.fill();
         ctx.closePath();
@@ -12878,7 +12897,7 @@
         tagName: 'clipPath',
         children: [{
           tagName: 'path',
-          props: [['d', svgPolygon$1(list)], ['fill', '#FFF']]
+          props: [['d', svgPolygon$2(list)], ['fill', '#FFF']]
         }]
       };
 
@@ -12889,7 +12908,7 @@
         xom.virtualDom.bb.push({
           type: 'item',
           tagName: 'path',
-          props: [['d', svgPolygon$1(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+          props: [['d', svgPolygon$2(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
         });
       });
     }
@@ -13004,8 +13023,8 @@
           cross = [[cross[0], cross[1]], [cross[2], cross[1]], [cross[2], cross[3]], [cross[0], cross[3]], [cross[0], cross[1]]]; // 扩散区域类似边框填充
 
           if (spread) {
-            canvasPolygon$1(ctx, cross);
-            canvasPolygon$1(ctx, box.slice(0).reverse());
+            canvasPolygon$2(ctx, cross);
+            canvasPolygon$2(ctx, box.slice(0).reverse());
             ctx.clip();
             ctx.closePath();
             ctx.beginPath();
@@ -13014,13 +13033,13 @@
               ctx.fillStyle = c;
             }
 
-            canvasPolygon$1(ctx, box);
+            canvasPolygon$2(ctx, box);
             ctx.fill();
             ctx.closePath();
             ctx.restore();
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$1(ctx, cross);
+            canvasPolygon$2(ctx, cross);
             ctx.clip();
             ctx.closePath();
             ctx.beginPath();
@@ -13032,9 +13051,9 @@
             ctx.shadowColor = c;
             ctx.shadowBlur = blur; // 画在外围的空心矩形，宽度要比blur大，n考虑了这一情况取了最大值
 
-            canvasPolygon$1(ctx, [[xa, ya], [xb, ya], [xb, yb], [x1 - n, yb], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, yb], [xa, yb], [xa, ya]]);
+            canvasPolygon$2(ctx, [[xa, ya], [xb, ya], [xb, yb], [x1 - n, yb], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, yb], [xa, yb], [xa, ya]]);
           } else {
-            canvasPolygon$1(ctx, box);
+            canvasPolygon$2(ctx, box);
             ctx.clip();
             ctx.closePath();
             ctx.beginPath();
@@ -13047,7 +13066,7 @@
             ctx.shadowOffsetY = y;
             ctx.shadowColor = c;
             ctx.shadowBlur = blur;
-            canvasPolygon$1(ctx, [[x1, y1], [x4, y1], [x4, y4], [x1 - n, y4], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y4], [x1, y4], [x1, y1]]);
+            canvasPolygon$2(ctx, [[x1, y1], [x4, y1], [x4, y4], [x1 - n, y4], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y4], [x1, y4], [x1, y1]]);
           }
         } // outset需裁减掉box本身的内容，clip()非零环绕显示box外的阴影内容，fill()绘制在内无效
         else {
@@ -13066,8 +13085,8 @@
 
             if (spread) {
               // 扩散区域类似边框填充
-              canvasPolygon$1(ctx, box);
-              canvasPolygon$1(ctx, blurBox.slice(0).reverse());
+              canvasPolygon$2(ctx, box);
+              canvasPolygon$2(ctx, blurBox.slice(0).reverse());
               ctx.clip();
               ctx.closePath();
               ctx.beginPath();
@@ -13076,7 +13095,7 @@
                 ctx.fillStyle = c;
               }
 
-              canvasPolygon$1(ctx, blurBox);
+              canvasPolygon$2(ctx, blurBox);
               ctx.fill();
               ctx.closePath();
               ctx.restore();
@@ -13084,12 +13103,12 @@
               ctx.beginPath(); // 阴影部分看相交情况裁剪，有相交时逆时针绘制相交区域即可排除之
 
               if (_cross) {
-                canvasPolygon$1(ctx, [[_cross[0], _cross[1]], [_cross[2], _cross[1]], [_cross[2], _cross[3]], [_cross[0], _cross[3]], [_cross[0], _cross[1]]].reverse());
+                canvasPolygon$2(ctx, [[_cross[0], _cross[1]], [_cross[2], _cross[1]], [_cross[2], _cross[3]], [_cross[0], _cross[3]], [_cross[0], _cross[1]]].reverse());
               }
 
-              canvasPolygon$1(ctx, box);
-              canvasPolygon$1(ctx, blurBox);
-              canvasPolygon$1(ctx, outer);
+              canvasPolygon$2(ctx, box);
+              canvasPolygon$2(ctx, blurBox);
+              canvasPolygon$2(ctx, outer);
               ctx.clip();
               ctx.closePath();
               ctx.beginPath();
@@ -13100,10 +13119,10 @@
 
               ctx.shadowColor = c;
               ctx.shadowBlur = blur;
-              canvasPolygon$1(ctx, blurBox);
+              canvasPolygon$2(ctx, blurBox);
             } else {
-              canvasPolygon$1(ctx, box);
-              canvasPolygon$1(ctx, outer);
+              canvasPolygon$2(ctx, box);
+              canvasPolygon$2(ctx, outer);
               ctx.clip();
               ctx.closePath();
               ctx.beginPath();
@@ -13116,7 +13135,7 @@
               ctx.shadowOffsetY = y;
               ctx.shadowColor = c;
               ctx.shadowBlur = blur;
-              canvasPolygon$1(ctx, box);
+              canvasPolygon$2(ctx, box);
             }
           }
 
@@ -13162,7 +13181,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(_cross2) + svgPolygon$1(box.slice(0).reverse())], ['fill', '#FFF']]
+                props: [['d', svgPolygon$2(_cross2) + svgPolygon$2(box.slice(0).reverse())], ['fill', '#FFF']]
               }]
             };
             var clip = defs.add(v2);
@@ -13172,13 +13191,13 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1(box)], ['fill', c], ['clip-path', 'url(#' + clip + ')']]
+              props: [['d', svgPolygon$2(box)], ['fill', c], ['clip-path', 'url(#' + clip + ')']]
             });
             v = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(_cross2)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$2(_cross2)], ['fill', '#FFF']]
               }]
             };
             clip = defs.add(v);
@@ -13188,7 +13207,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1([[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [x1 - n, _yb2], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, _yb2], [_xa2, _yb2], [_xa2, _ya2]])], ['fill', '#FFF'], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
+              props: [['d', svgPolygon$2([[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [x1 - n, _yb2], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, _yb2], [_xa2, _yb2], [_xa2, _ya2]])], ['fill', '#FFF'], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
             });
           } else {
             var _v = {
@@ -13208,7 +13227,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(box)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$2(box)], ['fill', '#FFF']]
               }]
             };
 
@@ -13219,7 +13238,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1([[x1, y1], [x4, y1], [x4, y4], [x1 - n, y4], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y4], [x1, y4], [x1, y1]])], ['fill', '#FFF'], ['filter', 'url(#' + _filter + ')'], ['clip-path', 'url(#' + _clip + ')']]
+              props: [['d', svgPolygon$2([[x1, y1], [x4, y1], [x4, y4], [x1 - n, y4], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y4], [x1, y4], [x1, y1]])], ['fill', '#FFF'], ['filter', 'url(#' + _filter + ')'], ['clip-path', 'url(#' + _clip + ')']]
             });
           }
         } else {
@@ -13253,7 +13272,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(box) + svgPolygon$1(_blurBox.slice(0).reverse())], ['fill', '#FFF']]
+                props: [['d', svgPolygon$2(box) + svgPolygon$2(_blurBox.slice(0).reverse())], ['fill', '#FFF']]
               }]
             };
 
@@ -13264,13 +13283,13 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1(_blurBox)], ['fill', c], ['clip-path', 'url(#' + _clip2 + ')']]
+              props: [['d', svgPolygon$2(_blurBox)], ['fill', c], ['clip-path', 'url(#' + _clip2 + ')']]
             });
             _v2 = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', (_cross3 ? svgPolygon$1([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$1(box) + svgPolygon$1(_blurBox) + svgPolygon$1(outer)], ['fill', '#FFF']]
+                props: [['d', (_cross3 ? svgPolygon$2([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$2(box) + svgPolygon$2(_blurBox) + svgPolygon$2(outer)], ['fill', '#FFF']]
               }]
             };
             _clip2 = defs.add(_v2);
@@ -13280,7 +13299,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1(_blurBox)], ['fill', '#FFF'], ['filter', 'url(#' + _filter2 + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
+              props: [['d', svgPolygon$2(_blurBox)], ['fill', '#FFF'], ['filter', 'url(#' + _filter2 + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
             });
           } else {
             var _v3 = {
@@ -13300,7 +13319,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(box) + svgPolygon$1(outer)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$2(box) + svgPolygon$2(outer)], ['fill', '#FFF']]
               }]
             };
 
@@ -13311,7 +13330,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1(box)], ['fill', '#FFF'], ['filter', 'url(#' + _filter3 + ')'], ['clip-path', 'url(#' + _clip3 + ')']]
+              props: [['d', svgPolygon$2(box)], ['fill', '#FFF'], ['filter', 'url(#' + _filter3 + ')'], ['clip-path', 'url(#' + _clip3 + ')']]
             });
           }
         }
@@ -13398,14 +13417,7 @@
         var display = computedStyle[DISPLAY$2];
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
           var a = STYLE_KEY$6[style2Upper$2('margin' + k)];
-          var b = STYLE_KEY$6[style2Upper$2('padding' + k)]; // if(display === 'inline' && this.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
-          //   computedStyle[a] = computedStyle[b] = 0;
-          // }
-          // else {
-          //   computedStyle[a] = this.__mpWidth(currentStyle[a], w);
-          //   computedStyle[b] = this.__mpWidth(currentStyle[b], w);
-          // }
-
+          var b = STYLE_KEY$6[style2Upper$2('padding' + k)];
           computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
           computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
         });
@@ -14237,10 +14249,11 @@
           } else if (!__config[NODE_CACHE_TOTAL].available) {
             __config[NODE_CACHE_TOTAL].available = true;
           }
-        } // canvas返回信息，svg已经初始化好了vd
+        }
 
+        var display = computedStyle[DISPLAY$2]; // canvas返回信息，svg已经初始化好了vd
 
-        if (computedStyle[DISPLAY$2] === 'none') {
+        if (display === 'none') {
           return {
             "break": true
           };
@@ -14268,34 +14281,50 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$1],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
-            backgroundClip = computedStyle[BACKGROUND_CLIP$1];
-        var x1 = this.__sx1 = x + marginLeft;
-        var x2 = this.__sx2 = x1 + borderLeftWidth; // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
-        // let x4 = this.__sx4 = x3 + borderRightWidth;
+            backgroundClip = computedStyle[BACKGROUND_CLIP$1]; // 考虑mpb的6个坐标，inline比较特殊单独计算 TODO:放layout
 
-        var x3 = this.__sx3 = x2 + paddingLeft;
-        var x4 = this.__sx4 = x3 + width;
-        var x5 = this.__sx5 = x4 + paddingRight;
-        var x6 = this.__sx6 = x5 + borderRightWidth;
-        var y1 = this.__sy1 = y + marginTop;
-        var y2 = this.__sy2 = y1 + borderTopWidth; // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
-        // let y4 = this.__sy4 = y3 + borderBottomWidth;
+        var x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6;
 
-        var y3 = this.__sy3 = y2 + paddingTop;
-        var y4 = this.__sy4 = y3 + height;
-        var y5 = this.__sy5 = y4 + paddingBottom;
-        var y6 = this.__sy6 = y5 + borderBottomWidth;
+        if (display === 'inline') {
+          x1 = this.__sx1;
+          x2 = this.__sx2;
+          x3 = this.__sx3;
+          x4 = this.__sx4;
+          x5 = this.__sx5;
+          x6 = this.__sx6;
+          y1 = this.__sy1;
+          y2 = this.__sy2;
+          y3 = this.__sy3;
+          y4 = this.__sy4;
+          y5 = this.__sy5;
+          y6 = this.__sy6;
+        } else {
+          x1 = this.__sx1 = x + marginLeft;
+          x2 = this.__sx2 = x1 + borderLeftWidth;
+          x3 = this.__sx3 = x2 + paddingLeft;
+          x4 = this.__sx4 = x3 + width;
+          x5 = this.__sx5 = x4 + paddingRight;
+          x6 = this.__sx6 = x5 + borderRightWidth;
+          y1 = this.__sy1 = y + marginTop;
+          y2 = this.__sy2 = y1 + borderTopWidth;
+          y3 = this.__sy3 = y2 + paddingTop;
+          y4 = this.__sy4 = y3 + height;
+          y5 = this.__sy5 = y4 + paddingBottom;
+          y6 = this.__sy6 = y5 + borderBottomWidth;
+        } // 默认border-box
+
+
         var bx1 = x1,
             by1 = y1,
             bx2 = x6,
             by2 = y6;
 
-        if (backgroundClip === 'padding-box') {
+        if (backgroundClip === 'paddingBox') {
           bx1 = x2;
           by1 = y2;
           bx2 = x5;
           by2 = y5;
-        } else if (backgroundClip === 'content-box') {
+        } else if (backgroundClip === 'contentBox') {
           bx1 = x3;
           by1 = y3;
           bx2 = x4;
@@ -14354,11 +14383,9 @@
               if (__cache && __cache.enabled) {
                 __cache.__bbox = bbox;
 
-                __cache.__appendData(x1, y1); // let dbx = __cache.dbx, dby = __cache.dby;
+                __cache.__appendData(x1, y1);
 
-
-                ctx = __cache.ctx; // let [xc, yc] = __cache.coords;
-
+                ctx = __cache.ctx;
                 dx = __cache.dx;
                 dy = __cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
@@ -14458,7 +14485,7 @@
         if (renderMode === mode.SVG) {
           // svg可以没变化省略计算，因为只相对于自身
           if (!contain(lv, TRANSFORM_ALL) && lv < REPAINT$1) ; else if (!mx.isE(renderMatrix)) {
-            virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
+            virtualDom.transform = 'matrix(' + joinArr$2(renderMatrix, ',') + ')';
           } else {
             delete virtualDom.transform;
           }
@@ -14661,10 +14688,19 @@
             bblr[0] -= borderLeftWidth + paddingLeft;
             bblr[1] -= borderBottomWidth + paddingBottom;
           }
+        } // inline特殊渲染LineBox
+
+
+        if (display === 'inline') {
+          if (backgroundColor[3] > 0) {
+            bg.renderBgcInline(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+          }
+
+          return;
         }
 
         if (backgroundColor[3] > 0) {
-          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this, btlr, btrr, bbrr, bblr);
+          bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
         } // 渐变或图片叠加
 
 
@@ -14878,7 +14914,7 @@
                   if (renderMode === mode.CANVAS) {
                     if (needMask) {
                       ctx.save();
-                      renderBgc(renderMode, '#FFF', bx1, by1, bgW, bgH, ctx, defs, _this4, btlr, btrr, bbrr, bblr, 'clip');
+                      bg.renderBgc(_this4, renderMode, ctx, defs, '#FFF', bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
                     } // 先画不考虑repeat的中心声明的
 
 
@@ -14899,7 +14935,7 @@
 
                     if (_matrix && !mx.isE(_matrix)) {
                       needResize = true;
-                      props.push(['transform', 'matrix(' + joinArr$1(_matrix, ',') + ')']);
+                      props.push(['transform', 'matrix(' + joinArr$2(_matrix, ',') + ')']);
                     }
 
                     if (needMask) {
@@ -14942,7 +14978,7 @@
                         var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], bgW, bgH);
 
                         if (_matrix2 && !mx.isE(_matrix2)) {
-                          copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
+                          copy[5][1] = 'matrix(' + joinArr$2(_matrix2, ',') + ')';
                         }
                       }
 
@@ -15839,6 +15875,7 @@
       key: "add",
       value: function add(item) {
         this.list.push(item);
+        item.__parentLineBox = this;
       }
     }, {
       key: "verticalAlign",
@@ -15946,6 +15983,7 @@
       this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
 
       this.__y = this.__lastY = y;
+      this.__domList = [];
       this.__list = []; // 包含若干LineBox
 
       this.__isNewLine = true; // 区域内是否是新行，dom开头肯定是
@@ -16010,6 +16048,10 @@
           lineBox = list[length - 1];
         }
 
+        this.__domList.forEach(function (item) {
+          item[1].push(o);
+        });
+
         lineBox.add(o); // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
 
         this.__lastX = o.x + o.outerWidth;
@@ -16049,6 +16091,26 @@
       key: "addX",
       value: function addX(n) {
         this.__lastX += n;
+      }
+    }, {
+      key: "pushContentBoxList",
+      value: function pushContentBoxList(dom, v) {
+        this.__domList.push([dom, v]); // this.__contentBoxList = v;
+
+      }
+    }, {
+      key: "popContentBoxList",
+      value: function popContentBoxList() {
+        this.__domList.pop(); // let domList = this.__domList;
+        // domList.pop();
+        // let len = domList.length;
+        // if(len) {
+        //   this.__contentBoxList = domList[len - 1][1];
+        // }
+        // else {
+        //   this.__contentBoxList = null;
+        // }
+
       }
     }, {
       key: "size",
@@ -16812,6 +16874,7 @@
       ALIGN_ITEMS$1 = _enums$STYLE_KEY$b.ALIGN_ITEMS,
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$b.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$b.Z_INDEX,
+      BACKGROUND_CLIP$2 = _enums$STYLE_KEY$b.BACKGROUND_CLIP,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -18181,7 +18244,7 @@
         if (!isOverflow && growSum === 0 && diff > 0) {
           var len = flowChildren.length;
 
-          if (justifyContent === 'flex-end') {
+          if (justifyContent === 'flexEnd') {
             for (var i = 0; i < len; i++) {
               var child = flowChildren[i];
               isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
@@ -18248,13 +18311,13 @@
                   paddingLeft = computedStyle[PADDING_LEFT$2];
 
               if (isDirectionRow) {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'center') {
                   var _diff3 = maxCross - item.outerHeight;
 
                   if (_diff3 !== 0) {
                     item.__offsetY(_diff3 * 0.5, true);
                   }
-                } else if (alignSelf === 'flex-end') {
+                } else if (alignSelf === 'flexEnd') {
                   var _diff4 = maxCross - item.outerHeight;
 
                   if (_diff4 !== 0) {
@@ -18268,13 +18331,13 @@
                   item.__outerHeight += d;
                 }
               } else {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'center') {
                   var _diff5 = maxCross - item.outerWidth;
 
                   if (_diff5 !== 0) {
                     item.__offsetX(_diff5 * 0.5, true);
                   }
-                } else if (alignSelf === 'flex-end') {
+                } else if (alignSelf === 'flexEnd') {
                   var _diff6 = maxCross - item.outerWidth;
 
                   if (_diff6 !== 0) {
@@ -18298,7 +18361,7 @@
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
               if (isDirectionRow) {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'flex-end') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'flexEnd') {
                   var _diff7 = maxCross - item.outerHeight;
 
                   if (_diff7 !== 0) {
@@ -18329,7 +18392,7 @@
                   }
                 }
               } else {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'flex-end') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'flexEnd') {
                   var _diff9 = maxCross - item.outerWidth;
 
                   if (_diff9 !== 0) {
@@ -18365,12 +18428,12 @@
                 }
               }
             });
-          } else if (alignItems === 'flex-end') {
+          } else if (alignItems === 'flexEnd') {
             flowChildren.forEach(function (item) {
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
               if (isDirectionRow) {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'center') {
                   var _diff11 = maxCross - item.outerHeight;
 
                   if (_diff11 !== 0) {
@@ -18401,7 +18464,7 @@
                   }
                 }
               } else {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'center') {
                   var _diff13 = maxCross - item.outerWidth;
 
                   if (_diff13 !== 0) {
@@ -18442,13 +18505,13 @@
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
               if (isDirectionRow) {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'center') {
                   var _diff15 = maxCross - item.outerHeight;
 
                   if (_diff15 !== 0) {
                     item.__offsetY(_diff15 * 0.5, true);
                   }
-                } else if (alignSelf === 'flex-end') {
+                } else if (alignSelf === 'flexEnd') {
                   var _diff16 = maxCross - item.outerHeight;
 
                   if (_diff16 !== 0) {
@@ -18473,13 +18536,13 @@
                   }
                 }
               } else {
-                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                if (alignSelf === 'flexStart') ; else if (alignSelf === 'center') {
                   var _diff17 = maxCross - item.outerWidth;
 
                   if (_diff17 !== 0) {
                     item.__offsetX(_diff17 * 0.5, true);
                   }
-                } else if (alignSelf === 'flex-end') {
+                } else if (alignSelf === 'flexEnd') {
                   var _diff18 = maxCross - item.outerWidth;
 
                   if (_diff18 !== 0) {
@@ -18559,24 +18622,35 @@
           this.__ioSize(w, this.height);
 
           return;
-        } // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x
-        // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成
+        }
 
+        var right = marginRight + paddingRight + borderRightWidth; // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x
+        // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成
 
         if (!isInline) {
           lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
           lx = x;
         } // inline作为开始节点可能没有行首坐标lx，此时等同于x，强制赋值
         else if (lx === undefined) {
+            this.__lineBoxManager = lineBoxManager;
             lx = x;
-          } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值
+          } // 存LineBox里的内容列表转用，布局过程中由lineBoxManager存入
+
+
+        var contentBoxList;
+
+        if (isInline) {
+          contentBoxList = this.__contentBoxList = [];
+          lineBoxManager.pushContentBoxList(this, contentBoxList);
+        } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值，仅在ib时统计
 
 
         var maxW = 0;
         var cw = 0;
         var isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
 
-        flowChildren.forEach(function (item) {
+        var length = flowChildren.length;
+        flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom;
           var isInline = isXom && item.currentStyle[DISPLAY$3] === 'inline';
           var isInlineBlock = isXom && item.currentStyle[DISPLAY$3] === 'inlineBlock';
@@ -18603,8 +18677,8 @@
                 isInlineBlock && (_this5.__isIbFull = true);
                 lineBoxManager.addItem(item);
                 x = data.x;
-                y += item.outerHeight;
-                maxW = w;
+                y += item.outerHeight; // maxW = w;
+
                 lineBoxManager.setNotEnd();
               } // inline和不折行的ib，其中ib需要手动存入当前lb中
               else {
@@ -18613,9 +18687,10 @@
                   y = lineBoxManager.lastY;
                 }
 
-              maxW = Math.max(maxW, cw);
-              cw = item.outerWidth;
-              maxW = Math.max(maxW, cw);
+              if (!isInline) {
+                cw = item.outerWidth;
+                maxW = Math.max(maxW, cw);
+              }
             } else {
               // 非开头先尝试是否放得下
               var fw = item.__tryLayInline(w - x + data.x, w); // 放得下继续
@@ -18642,7 +18717,7 @@
                   lineBoxManager.setNewLine();
 
                   item.__layout({
-                    x: data.x,
+                    x: x,
                     y: y,
                     w: w,
                     h: h,
@@ -18662,12 +18737,15 @@
                       y = lineBoxManager.lastY;
                     }
 
-                  maxW = Math.max(maxW, cw);
-                  cw = 0;
+                  if (!isInline) {
+                    cw = 0;
+                  }
                 }
 
-              cw += item.outerWidth;
-              maxW = Math.max(maxW, cw);
+              if (!isInline) {
+                cw += item.outerWidth;
+                maxW = Math.max(maxW, cw);
+              }
             }
           } // inline里的其它只有文本，可能开始紧跟着之前的x，也可能换行后从lx行头开始
           // 紧跟着x可能出现在前面有节点换行后第2行，此时不一定放得下，因此不能作为判断依据，开头仅有lx
@@ -18691,8 +18769,8 @@
                   isIbFull = true;
                 }
 
-                maxW = Math.max(maxW, item.width);
                 cw = item.width;
+                maxW = Math.max(maxW, cw);
               } else {
                 // 非开头先尝试是否放得下
                 var _fw2 = item.__tryLayInline(w + data.x - x); // 放得下继续
@@ -18732,7 +18810,6 @@
                       isIbFull = true;
                     }
 
-                    maxW = Math.max(maxW, item.width);
                     cw = 0;
                   }
 
@@ -18740,16 +18817,24 @@
                 maxW = Math.max(maxW, cw);
               }
             }
-        }); // inline最后的x要算上右侧mpb
-
-        lineBoxManager.addX(marginRight + paddingRight + borderRightWidth); // 同block结尾，不过这里一定是lineBox结束，无需判断
+        }); // 同block结尾，不过这里一定是lineBox结束，无需判断
 
         y = lineBoxManager.endY; // 标识ib情况同block一样占满行
 
-        this.__isIbFull = isIbFull; // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸
+        this.__isIbFull = isIbFull; // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸，inline没有固定尺寸概念
 
-        var tw = this.__width = fixedWidth || isIbFull ? w : maxW;
-        var th = this.__height = fixedHeight ? h : y - data.y;
+        var tw, th;
+
+        if (isInline) {
+          // inline最后的x要算上右侧mpb，同时其尺寸计算比较特殊
+          lineBoxManager.addX(right);
+          lineBoxManager.popContentBoxList();
+
+          this.__inlineSize(lineBoxManager, contentBoxList);
+        } else {
+          tw = this.__width = fixedWidth || isIbFull ? w : maxW;
+          th = this.__height = fixedHeight ? h : y - data.y;
+        }
 
         this.__ioSize(tw, th); // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
@@ -18761,6 +18846,101 @@
             lineBoxManager.horizonAlign(tw, textAlign);
           }
         }
+      }
+      /**
+       * inline的尺寸计算非常特殊，并非一个矩形区域，而是由字体行高结合节点下多个LineBox中的内容决定，
+       * 且这个尺寸又并非真实LineBox中的内容直接合并计算而来，比如包含了个更大尺寸的ib却不会计入
+       * 具体方法为遍历持有的LineBox下的内容，x取两侧极值，同时首尾要考虑mpb，y值取上下极值，同样首尾考虑mpb
+       * 首尾行LineBox可能不是不是占满一行，比如前后都有同行inline的情况，非首尾行则肯定占满
+       * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseLine得来，并非LineBox全部
+       * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
+       * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
+       * @param lineBoxManager
+       * @param contentBoxList
+       * @private
+       */
+
+    }, {
+      key: "__inlineSize",
+      value: function __inlineSize(lineBoxManager, contentBoxList) {
+        var computedStyle = this.computedStyle;
+        var marginTop = computedStyle[MARGIN_TOP$2],
+            marginRight = computedStyle[MARGIN_RIGHT$2],
+            marginBottom = computedStyle[MARGIN_BOTTOM$3],
+            marginLeft = computedStyle[MARGIN_LEFT$2],
+            paddingTop = computedStyle[PADDING_TOP$2],
+            paddingRight = computedStyle[PADDING_RIGHT$2],
+            paddingBottom = computedStyle[PADDING_BOTTOM$2],
+            paddingLeft = computedStyle[PADDING_LEFT$2],
+            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$2],
+            backgroundClip = computedStyle[BACKGROUND_CLIP$2];
+        var baseLine = css.getBaseLine(computedStyle);
+
+        var maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
+        var length = contentBoxList.length;
+        var lastLineBox,
+            diff = 0; // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行
+
+        contentBoxList.forEach(function (item, i) {
+          // console.log(item, item.parentLineBox);
+          if (item.parentLineBox !== lastLineBox) {
+            lastLineBox = item.parentLineBox;
+            diff = lastLineBox.baseLine - baseLine + lastLineBox.y; // console.log(diff);
+          } // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb
+
+
+          if (i) {
+            minX = Math.min(minX, item.x);
+            maxY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
+
+            if (i === length - 1) {
+              maxX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
+            } else {
+              maxX = Math.max(maxX, item.x + item.outerWidth);
+            }
+          } // 第一个初始化
+          else {
+              minX = item.x;
+              minY = item.y + diff;
+              minCX = minX - paddingLeft;
+              minCY = minY - paddingTop;
+              minFX = minCX - borderLeftWidth;
+              minFY = minCY - borderTopWidth;
+              minOX = minFX - marginLeft;
+              minOY = minFY - marginTop;
+              maxX = maxCX = maxFX = maxOX = item.x + item.outerWidth;
+              maxY = maxCY = maxFY = maxOY = item.y + diff + item.outerHeight; // lastRect.push()
+
+              if (i === length - 1) {
+                maxCX += paddingRight;
+                maxCY += paddingBottom;
+                maxFX += paddingRight + borderRightWidth;
+                maxFY += paddingBottom + borderBottomWidth;
+                maxOX += borderRightWidth + paddingRight + marginRight;
+                maxOY += borderBottomWidth + paddingBottom + borderBottomWidth;
+              }
+            }
+        }); // console.log(minX, minY, minCX, minCY, minFX, minFY, minOX, minOY);
+
+        this.__x = minOX;
+        this.__y = minOY;
+        this.__width = maxX - minX;
+        this.__height = maxY - minY;
+        this.__sx1 = minFX;
+        this.__sy1 = minFY;
+        this.__sx2 = minCX;
+        this.__sy2 = minCY;
+        this.__sx3 = minX;
+        this.__sy3 = minY;
+        this.__sx4 = maxX;
+        this.__sy4 = maxY;
+        this.__sx5 = maxCX;
+        this.__sy5 = maxCY;
+        this.__sx6 = maxFX;
+        this.__sy6 = maxFY;
       }
       /**
        * 只针对绝对定位children布局
@@ -19176,6 +19356,11 @@
 
         return this.lineBoxManager.baseLine;
       }
+    }, {
+      key: "parentLineBox",
+      get: function get() {
+        return this.__parentLineBox;
+      }
     }]);
 
     return Dom;
@@ -19213,8 +19398,8 @@
   var AUTO$4 = unit.AUTO,
       PX$6 = unit.PX,
       RGBA$2 = unit.RGBA;
-  var canvasPolygon$2 = painter.canvasPolygon,
-      svgPolygon$2 = painter.svgPolygon;
+  var canvasPolygon$3 = painter.canvasPolygon,
+      svgPolygon$3 = painter.svgPolygon;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -19565,7 +19750,7 @@
               if (list) {
                 ctx.save();
                 ctx.beginPath();
-                canvasPolygon$2(ctx, list);
+                canvasPolygon$3(ctx, list);
                 ctx.clip();
                 ctx.closePath();
                 ctx.drawImage(source, originX, originY, width, height);
@@ -19580,7 +19765,7 @@
                 virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
 
                 if (!virtualDom.cache && list) {
-                  var d = svgPolygon$2(list);
+                  var d = svgPolygon$3(list);
                   var v = {
                     tagName: 'clipPath',
                     props: [],
@@ -19610,7 +19795,7 @@
               var props = [['xlink:href', loadImg.error ? placeholder : src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
-                var _d = svgPolygon$2(list);
+                var _d = svgPolygon$3(list);
 
                 var _v = {
                   tagName: 'clipPath',
@@ -19790,9 +19975,9 @@
       PERCENT$7 = unit.PERCENT;
   var int2rgba$2 = util.int2rgba,
       isNil$7 = util.isNil,
-      joinArr$2 = util.joinArr;
-  var canvasPolygon$3 = painter.canvasPolygon,
-      svgPolygon$3 = painter.svgPolygon;
+      joinArr$3 = util.joinArr;
+  var canvasPolygon$4 = painter.canvasPolygon,
+      svgPolygon$4 = painter.svgPolygon;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -19990,7 +20175,7 @@
           __cacheStyle[STROKE_DASHARRAY$1] = true;
           computedStyle[STROKE_DASHARRAY$1] = currentStyle[STROKE_DASHARRAY$1] || [];
           __cacheStyle[STROKE_DASHARRAY_STR] = computedStyle[STROKE_DASHARRAY$1].map(function (item) {
-            return joinArr$2(item, ',');
+            return joinArr$3(item, ',');
           });
         } // 直接赋值的
 
@@ -20308,10 +20493,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return canvasPolygon$3(ctx, item, dx, dy);
+              return canvasPolygon$4(ctx, item, dx, dy);
             });
           } else {
-            canvasPolygon$3(ctx, list, dx, dy);
+            canvasPolygon$4(ctx, list, dx, dy);
           }
 
           if (isFill && fill && fill !== 'none') {
@@ -20328,10 +20513,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return d += svgPolygon$3(item);
+              return d += svgPolygon$4(item);
             });
           } else {
-            d = svgPolygon$3(list);
+            d = svgPolygon$4(list);
           }
 
           var props = [['d', d]]; // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
@@ -20447,7 +20632,7 @@
               return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            canvasPolygon$3(ctx, list, dx, dy);
+            canvasPolygon$4(ctx, list, dx, dy);
           }
 
           ctx[method]();
@@ -20461,10 +20646,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return d += svgPolygon$3(item);
+              return d += svgPolygon$4(item);
             });
           } else {
-            d = svgPolygon$3(list);
+            d = svgPolygon$4(list);
           }
 
           var props = [['d', d]];
@@ -20480,7 +20665,7 @@
             this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
           }
 
-          props.push(['transform', "matrix(".concat(joinArr$2(matrix, ','), ")")]);
+          props.push(['transform', "matrix(".concat(joinArr$3(matrix, ','), ")")]);
           this.addGeom('path', props);
         }
       }
@@ -20502,12 +20687,12 @@
             list.forEach(function (item) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$3(ctx, item, dx, dy);
+              canvasPolygon$4(ctx, item, dx, dy);
               ctx.clip();
               ctx.closePath();
               color.forEach(function (item) {
                 ctx.beginPath();
-                canvasPolygon$3(ctx, item[0], dx, dy);
+                canvasPolygon$4(ctx, item[0], dx, dy);
                 ctx.fillStyle = item[1];
                 ctx.fill();
                 ctx.closePath();
@@ -20517,12 +20702,12 @@
           } else {
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$3(ctx, list, dx, dy);
+            canvasPolygon$4(ctx, list, dx, dy);
             ctx.clip();
             ctx.closePath();
             color.forEach(function (item) {
               ctx.beginPath();
-              canvasPolygon$3(ctx, item[0], dx, dy);
+              canvasPolygon$4(ctx, item[0], dx, dy);
               ctx.fillStyle = item[1];
               ctx.fill();
               ctx.closePath();
@@ -20538,7 +20723,7 @@
                 tagName: 'clipPath',
                 children: [{
                   tagName: 'path',
-                  props: [['d', svgPolygon$3(item)], ['fill', '#FFF']]
+                  props: [['d', svgPolygon$4(item)], ['fill', '#FFF']]
                 }]
               };
               var clip = defs.add(v);
@@ -20549,7 +20734,7 @@
                 _this3.virtualDom.bb.push({
                   type: 'item',
                   tagName: 'path',
-                  props: [['d', svgPolygon$3(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                  props: [['d', svgPolygon$4(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
                 });
               });
             });
@@ -20558,7 +20743,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$3(list)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$4(list)], ['fill', '#FFF']]
               }]
             };
             var clip = defs.add(v);
@@ -20569,7 +20754,7 @@
               _this3.virtualDom.bb.push({
                 type: 'item',
                 tagName: 'path',
-                props: [['d', svgPolygon$3(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                props: [['d', svgPolygon$4(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
               });
             });
           }

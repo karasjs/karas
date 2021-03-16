@@ -9,6 +9,7 @@ class LineBoxManager {
   constructor(x, y) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
+    this.__domList = [];
     this.__list = []; // 包含若干LineBox
     this.__isNewLine = true; // 区域内是否是新行，dom开头肯定是
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
@@ -59,6 +60,9 @@ class LineBoxManager {
       let length = list.length;
       lineBox = list[length - 1];
     }
+    this.__domList.forEach(item => {
+      item[1].push(o);
+    });
     lineBox.add(o);
     // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
     this.__lastX = o.x + o.outerWidth;
@@ -67,10 +71,6 @@ class LineBoxManager {
       this.__isNewLine = true;
     }
     return lineBox;
-  }
-
-  get size() {
-    return this.__list.length;
   }
 
   horizonAlign(w, textAlign) {
@@ -95,6 +95,28 @@ class LineBoxManager {
 
   addX(n) {
     this.__lastX += n;
+  }
+
+  pushContentBoxList(dom, v) {
+    this.__domList.push([dom, v]);
+    // this.__contentBoxList = v;
+  }
+
+  popContentBoxList() {
+    this.__domList.pop();
+    // let domList = this.__domList;
+    // domList.pop();
+    // let len = domList.length;
+    // if(len) {
+    //   this.__contentBoxList = domList[len - 1][1];
+    // }
+    // else {
+    //   this.__contentBoxList = null;
+    // }
+  }
+
+  get size() {
+    return this.__list.length;
   }
 
   get lastX() {

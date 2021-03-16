@@ -25,6 +25,7 @@ class LineBox {
 
   add(item) {
     this.list.push(item);
+    item.__parentLineBox = this;
   }
 
   verticalAlign() {

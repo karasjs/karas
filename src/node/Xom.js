@@ -7,6 +7,7 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
+import bg from '../style/bg';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -168,80 +169,6 @@ function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
         ['fill', color],
       ],
     });
-  }
-}
-
-function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr, method = 'fill') {
-  // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
-  let matrix, cx, cy;
-  if(Array.isArray(color)) {
-    matrix = color[1];
-    cx = color[2];
-    cy = color[3];
-    color = color[0];
-  }
-  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
-  if(!list) {
-    list = [
-      [x, y],
-      [x + w, y],
-      [x + w, y + h],
-      [x, y + h],
-      [x, y],
-    ];
-  }
-  // 椭圆有matrix，用逆矩阵变化点来完成
-  if(matrix) {
-    let tfo = [cx, cy];
-    matrix = transform.calMatrixByOrigin(matrix, tfo);
-    let t = mx.inverse(matrix);
-    list = list.map(item => {
-      if(!item || !item.length) {
-        return null;
-      }
-      let arr = [];
-      for(let i = 0, len = item.length; i < len; i += 2) {
-        let p = mx.calPoint([item[i], item[i + 1]], t);
-        arr.push(p[0]);
-        arr.push(p[1]);
-      }
-      return arr;
-    });
-  }
-  if(renderMode === mode.CANVAS) {
-    if(matrix) {
-      ctx.save();
-      let me = xom.matrixEvent;
-      matrix = mx.multiply(me, matrix);
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-    }
-    ctx.beginPath();
-    if(ctx.fillStyle !== color) {
-      ctx.fillStyle = color;
-    }
-    canvasPolygon(ctx, list);
-    ctx[method]();
-    ctx.closePath();
-    if(matrix) {
-      ctx.restore();
-    }
-  }
-  else if(renderMode === mode.SVG) {
-    let d = svgPolygon(list);
-    xom.virtualDom.bb.push({
-      type: 'item',
-      tagName: 'path',
-      props: [
-        ['d', d],
-        ['fill', color],
-      ],
-    });
-    // 椭圆渐变独有
-    if(matrix) {
-      let bb = xom.virtualDom.bb;
-      bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
-    }
   }
 }
 
@@ -935,13 +862,6 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      // if(display === 'inline' && this.tagName !== 'img' && (k === 'Top' || k === 'Bottom')) {
-      //   computedStyle[a] = computedStyle[b] = 0;
-      // }
-      // else {
-      //   computedStyle[a] = this.__mpWidth(currentStyle[a], w);
-      //   computedStyle[b] = this.__mpWidth(currentStyle[b], w);
-      // }
       computedStyle[a] = this.__mpWidth(currentStyle[a], w);
       computedStyle[b] = this.__mpWidth(currentStyle[b], w);
     });
@@ -1759,8 +1679,9 @@ class Xom extends Node {
         __config[NODE_CACHE_TOTAL].available = true;
       }
     }
+    let display = computedStyle[DISPLAY];
     // canvas返回信息，svg已经初始化好了vd
-    if(computedStyle[DISPLAY] === 'none') {
+    if(display === 'none') {
       return { break: true };
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
@@ -1790,30 +1711,45 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
-    let x1 = this.__sx1 = x + marginLeft;
-    let x2 = this.__sx2 = x1 + borderLeftWidth;
-    // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
-    // let x4 = this.__sx4 = x3 + borderRightWidth;
-    let x3 = this.__sx3 = x2 + paddingLeft;
-    let x4 = this.__sx4 = x3 + width;
-    let x5 = this.__sx5 = x4 + paddingRight;
-    let x6 = this.__sx6 = x5 + borderRightWidth;
-    let y1 = this.__sy1 = y + marginTop;
-    let y2 = this.__sy2 = y1 + borderTopWidth;
-    // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
-    // let y4 = this.__sy4 = y3 + borderBottomWidth;
-    let y3 = this.__sy3 = y2 + paddingTop;
-    let y4 = this.__sy4 = y3 + height;
-    let y5 = this.__sy5 = y4 + paddingBottom;
-    let y6 = this.__sy6 = y5 + borderBottomWidth;
+    // 考虑mpb的6个坐标，inline比较特殊单独计算 TODO:放layout
+    let x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6;
+    if(display === 'inline') {
+      x1 = this.__sx1;
+      x2 = this.__sx2;
+      x3 = this.__sx3;
+      x4 = this.__sx4;
+      x5 = this.__sx5;
+      x6 = this.__sx6;
+      y1 = this.__sy1;
+      y2 = this.__sy2;
+      y3 = this.__sy3;
+      y4 = this.__sy4;
+      y5 = this.__sy5;
+      y6 = this.__sy6;
+    }
+    else {
+      x1 = this.__sx1 = x + marginLeft;
+      x2 = this.__sx2 = x1 + borderLeftWidth;
+      x3 = this.__sx3 = x2 + paddingLeft;
+      x4 = this.__sx4 = x3 + width;
+      x5 = this.__sx5 = x4 + paddingRight;
+      x6 = this.__sx6 = x5 + borderRightWidth;
+      y1 = this.__sy1 = y + marginTop;
+      y2 = this.__sy2 = y1 + borderTopWidth;
+      y3 = this.__sy3 = y2 + paddingTop;
+      y4 = this.__sy4 = y3 + height;
+      y5 = this.__sy5 = y4 + paddingBottom;
+      y6 = this.__sy6 = y5 + borderBottomWidth;
+    }
+    // 默认border-box
     let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
-    if(backgroundClip === 'padding-box') {
+    if(backgroundClip === 'paddingBox') {
       bx1 = x2;
       by1 = y2;
       bx2 = x5;
       by2 = y5;
     }
-    else if(backgroundClip === 'content-box') {
+    else if(backgroundClip === 'contentBox') {
       bx1 = x3;
       by1 = y3;
       bx2 = x4;
@@ -1849,9 +1785,7 @@ class Xom extends Node {
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
           __cache.__appendData(x1, y1);
-          // let dbx = __cache.dbx, dby = __cache.dby;
           ctx = __cache.ctx;
-          // let [xc, yc] = __cache.coords;
           dx = __cache.dx;
           dy = __cache.dy;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
@@ -2145,9 +2079,17 @@ class Xom extends Node {
         bblr[1] -= borderBottomWidth + paddingBottom;
       }
     }
+    // inline特殊渲染LineBox
+    if(display === 'inline') {
+      if(backgroundColor[3] > 0) {
+        bg.renderBgcInline(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
+          bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+      }
+      return;
+    }
     if(backgroundColor[3] > 0) {
-      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
-        btlr, btrr, bbrr, bblr);
+      bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
+        bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
     }
     // 渐变或图片叠加
     if(backgroundImage) {
@@ -2341,8 +2283,8 @@ class Xom extends Node {
               if(renderMode === mode.CANVAS) {
                 if(needMask) {
                   ctx.save();
-                  renderBgc(renderMode, '#FFF', bx1, by1, bgW, bgH, ctx, defs, this,
-                    btlr, btrr, bbrr, bblr, 'clip');
+                  bg.renderBgc(this, renderMode, ctx, defs, '#FFF',
+                    bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
                 }
                 // 先画不考虑repeat的中心声明的
                 ctx.drawImage(source, bgX, bgY, w, h);

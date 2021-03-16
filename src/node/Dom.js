@@ -43,7 +43,7 @@ const {
     ALIGN_ITEMS,
     JUSTIFY_CONTENT,
     Z_INDEX,
-    // WHITE_SPACE,
+    BACKGROUND_CLIP,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -1243,7 +1243,7 @@ class Dom extends Xom {
     // 主轴侧轴对齐方式
     if(!isOverflow && growSum === 0 && diff > 0) {
       let len = flowChildren.length;
-      if(justifyContent === 'flex-end') {
+      if(justifyContent === 'flexEnd') {
         for(let i = 0; i < len; i++) {
           let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
@@ -1305,14 +1305,14 @@ class Dom extends Xom {
             [PADDING_LEFT]: paddingLeft,
           } = computedStyle;
           if(isDirectionRow) {
-            if(alignSelf === 'flex-start') {}
+            if(alignSelf === 'flexStart') {}
             else if(alignSelf === 'center') {
               let diff = maxCross - item.outerHeight;
               if(diff !== 0) {
                 item.__offsetY(diff * 0.5, true);
               }
             }
-            else if(alignSelf === 'flex-end') {
+            else if(alignSelf === 'flexEnd') {
               let diff = maxCross - item.outerHeight;
               if(diff !== 0) {
                 item.__offsetY(diff, true);
@@ -1327,14 +1327,14 @@ class Dom extends Xom {
             }
           }
           else {
-            if(alignSelf === 'flex-start') {}
+            if(alignSelf === 'flexStart') {}
             else if(alignSelf === 'center') {
               let diff = maxCross - item.outerWidth;
               if(diff !== 0) {
                 item.__offsetX(diff * 0.5, true);
               }
             }
-            else if(alignSelf === 'flex-end') {
+            else if(alignSelf === 'flexEnd') {
               let diff = maxCross - item.outerWidth;
               if(diff !== 0) {
                 item.__offsetX(diff, true);
@@ -1355,9 +1355,9 @@ class Dom extends Xom {
         flowChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {
-            if(alignSelf === 'flex-start') {
+            if(alignSelf === 'flexStart') {
             }
-            else if(alignSelf === 'flex-end') {
+            else if(alignSelf === 'flexEnd') {
               let diff = maxCross - item.outerHeight;
               if(diff !== 0) {
                 item.__offsetY(diff, true);
@@ -1389,9 +1389,9 @@ class Dom extends Xom {
             }
           }
           else {
-            if(alignSelf === 'flex-start') {
+            if(alignSelf === 'flexStart') {
             }
-            else if(alignSelf === 'flex-end') {
+            else if(alignSelf === 'flexEnd') {
               let diff = maxCross - item.outerWidth;
               if(diff !== 0) {
                 item.__offsetX(diff, true);
@@ -1425,11 +1425,11 @@ class Dom extends Xom {
           }
         });
       }
-      else if(alignItems === 'flex-end') {
+      else if(alignItems === 'flexEnd') {
         flowChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {
-            if(alignSelf === 'flex-start') {
+            if(alignSelf === 'flexStart') {
             }
             else if(alignSelf === 'center') {
               let diff = maxCross - item.outerHeight;
@@ -1463,7 +1463,7 @@ class Dom extends Xom {
             }
           }
           else {
-            if(alignSelf === 'flex-start') {
+            if(alignSelf === 'flexStart') {
             }
             else if(alignSelf === 'center') {
               let diff = maxCross - item.outerWidth;
@@ -1503,7 +1503,7 @@ class Dom extends Xom {
         flowChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {
-            if(alignSelf === 'flex-start') {
+            if(alignSelf === 'flexStart') {
             }
             else if(alignSelf === 'center') {
               let diff = maxCross - item.outerHeight;
@@ -1511,7 +1511,7 @@ class Dom extends Xom {
                 item.__offsetY(diff * 0.5, true);
               }
             }
-            else if(alignSelf === 'flex-end') {
+            else if(alignSelf === 'flexEnd') {
               let diff = maxCross - item.outerHeight;
               if(diff !== 0) {
                 item.__offsetY(diff, true);
@@ -1537,7 +1537,7 @@ class Dom extends Xom {
             }
           }
           else {
-            if(alignSelf === 'flex-start') {
+            if(alignSelf === 'flexStart') {
             }
             else if(alignSelf === 'center') {
               let diff = maxCross - item.outerWidth;
@@ -1545,7 +1545,7 @@ class Dom extends Xom {
                 item.__offsetX(diff * 0.5, true);
               }
             }
-            else if(alignSelf === 'flex-end') {
+            else if(alignSelf === 'flexEnd') {
               let diff = maxCross - item.outerWidth;
               if(diff !== 0) {
                 item.__offsetX(diff, true);
@@ -1605,6 +1605,7 @@ class Dom extends Xom {
       this.__ioSize(w, this.height);
       return;
     }
+    let right = marginRight + paddingRight + borderRightWidth;
     // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x
     // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成
     if(!isInline) {
@@ -1613,13 +1614,21 @@ class Dom extends Xom {
     }
     // inline作为开始节点可能没有行首坐标lx，此时等同于x，强制赋值
     else if(lx === undefined) {
+      this.__lineBoxManager = lineBoxManager;
       lx = x;
     }
-    // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值
+    // 存LineBox里的内容列表转用，布局过程中由lineBoxManager存入
+    let contentBoxList;
+    if(isInline) {
+      contentBoxList = this.__contentBoxList = [];
+      lineBoxManager.pushContentBoxList(this, contentBoxList);
+    }
+    // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值，仅在ib时统计
     let maxW = 0;
     let cw = 0;
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
-    flowChildren.forEach(item => {
+    let length = flowChildren.length;
+    flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
@@ -1644,7 +1653,7 @@ class Dom extends Xom {
             lineBoxManager.addItem(item);
             x = data.x;
             y += item.outerHeight;
-            maxW = w;
+            // maxW = w;
             lineBoxManager.setNotEnd();
           }
           // inline和不折行的ib，其中ib需要手动存入当前lb中
@@ -1653,9 +1662,10 @@ class Dom extends Xom {
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
-          maxW = Math.max(maxW, cw);
-          cw = item.outerWidth;
-          maxW = Math.max(maxW, cw);
+          if(!isInline) {
+            cw = item.outerWidth;
+            maxW = Math.max(maxW, cw);
+          }
         }
         else {
           // 非开头先尝试是否放得下
@@ -1681,7 +1691,7 @@ class Dom extends Xom {
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
             item.__layout({
-              x: data.x,
+              x,
               y,
               w,
               h,
@@ -1700,11 +1710,14 @@ class Dom extends Xom {
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
-            maxW = Math.max(maxW, cw);
-            cw = 0;
+            if(!isInline) {
+              cw = 0;
+            }
           }
-          cw += item.outerWidth;
-          maxW = Math.max(maxW, cw);
+          if(!isInline) {
+            cw += item.outerWidth;
+            maxW = Math.max(maxW, cw);
+          }
         }
       }
       // inline里的其它只有文本，可能开始紧跟着之前的x，也可能换行后从lx行头开始
@@ -1726,8 +1739,8 @@ class Dom extends Xom {
           if(isInlineBlock && (lineBoxManager.size - n) > 0) {
             isIbFull = true;
           }
-          maxW = Math.max(maxW, item.width);
           cw = item.width;
+          maxW = Math.max(maxW, cw);
         }
         else {
           // 非开头先尝试是否放得下
@@ -1765,7 +1778,6 @@ class Dom extends Xom {
             if(isInlineBlock && (lineBoxManager.size - n) > 0) {
               isIbFull = true;
             }
-            maxW = Math.max(maxW, item.width);
             cw = 0;
           }
           cw += item.width;
@@ -1773,15 +1785,22 @@ class Dom extends Xom {
         }
       }
     });
-    // inline最后的x要算上右侧mpb
-    lineBoxManager.addX(marginRight + paddingRight + borderRightWidth);
     // 同block结尾，不过这里一定是lineBox结束，无需判断
     y = lineBoxManager.endY;
     // 标识ib情况同block一样占满行
     this.__isIbFull = isIbFull;
-    // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸
-    let tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
-    let th = this.__height = fixedHeight ? h : y - data.y;
+    // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸，inline没有固定尺寸概念
+    let tw, th;
+    if(isInline) {
+      // inline最后的x要算上右侧mpb，同时其尺寸计算比较特殊
+      lineBoxManager.addX(right);
+      lineBoxManager.popContentBoxList();
+      this.__inlineSize(lineBoxManager, contentBoxList);
+    }
+    else {
+      tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
+      th = this.__height = fixedHeight ? h : y - data.y;
+    }
     this.__ioSize(tw, th);
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {
@@ -1790,6 +1809,102 @@ class Dom extends Xom {
         lineBoxManager.horizonAlign(tw, textAlign);
       }
     }
+  }
+
+  /**
+   * inline的尺寸计算非常特殊，并非一个矩形区域，而是由字体行高结合节点下多个LineBox中的内容决定，
+   * 且这个尺寸又并非真实LineBox中的内容直接合并计算而来，比如包含了个更大尺寸的ib却不会计入
+   * 具体方法为遍历持有的LineBox下的内容，x取两侧极值，同时首尾要考虑mpb，y值取上下极值，同样首尾考虑mpb
+   * 首尾行LineBox可能不是不是占满一行，比如前后都有同行inline的情况，非首尾行则肯定占满
+   * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseLine得来，并非LineBox全部
+   * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
+   * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
+   * @param lineBoxManager
+   * @param contentBoxList
+   * @private
+   */
+  __inlineSize(lineBoxManager, contentBoxList) {
+    let computedStyle = this.computedStyle;
+    let {
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_RIGHT]: marginRight,
+      [MARGIN_BOTTOM]: marginBottom,
+      [MARGIN_LEFT]: marginLeft,
+      [PADDING_TOP]: paddingTop,
+      [PADDING_RIGHT]: paddingRight,
+      [PADDING_BOTTOM]: paddingBottom,
+      [PADDING_LEFT]: paddingLeft,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BACKGROUND_CLIP]: backgroundClip,
+    } = computedStyle;
+    let baseLine = css.getBaseLine(computedStyle);
+    let lastRect = [], rectList = [lastRect];
+    // console.warn(this.tagName, contentBoxList, fontSize, lineHeight, baseLine);
+    let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
+    let length = contentBoxList.length;
+    let lastLineBox, diff = 0;
+    // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行
+    contentBoxList.forEach((item, i) => {
+      // console.log(item, item.parentLineBox);
+      if(item.parentLineBox !== lastLineBox) {
+        lastLineBox = item.parentLineBox;
+        diff = lastLineBox.baseLine - baseLine + lastLineBox.y;
+        // console.log(diff);
+      }
+      // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb
+      if(i) {
+        minX = Math.min(minX, item.x);
+        maxY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
+        if(i === length - 1) {
+          maxX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
+        }
+        else {
+          maxX = Math.max(maxX, item.x + item.outerWidth);
+        }
+      }
+      // 第一个初始化
+      else {
+        minX = item.x;
+        minY = item.y + diff;
+        minCX = minX - paddingLeft;
+        minCY = minY - paddingTop;
+        minFX = minCX - borderLeftWidth;
+        minFY = minCY - borderTopWidth;
+        minOX = minFX - marginLeft;
+        minOY = minFY - marginTop;
+        maxX = maxCX = maxFX = maxOX = item.x + item.outerWidth;
+        maxY = maxCY = maxFY = maxOY = item.y + diff + item.outerHeight;
+        // lastRect.push()
+        if(i === length - 1) {
+          maxCX += paddingRight;
+          maxCY += paddingBottom;
+          maxFX += paddingRight + borderRightWidth;
+          maxFY += paddingBottom + borderBottomWidth;
+          maxOX += borderRightWidth + paddingRight + marginRight
+          maxOY += borderBottomWidth + paddingBottom + borderBottomWidth;
+        }
+      }
+    });
+    // console.log(minX, minY, minCX, minCY, minFX, minFY, minOX, minOY);
+    this.__x = minOX;
+    this.__y = minOY;
+    this.__width = maxX - minX;
+    this.__height = maxY - minY;
+    this.__sx1 = minFX;
+    this.__sy1 = minFY;
+    this.__sx2 = minCX;
+    this.__sy2 = minCY;
+    this.__sx3 = minX;
+    this.__sy3 = minY;
+    this.__sx4 = maxX;
+    this.__sy4 = maxY;
+    this.__sx5 = maxCX;
+    this.__sy5 = maxCY;
+    this.__sx6 = maxFX;
+    this.__sy6 = maxFY;
   }
 
   /**
@@ -2145,6 +2260,10 @@ class Dom extends Xom {
       return this.y + this.height;
     }
     return this.lineBoxManager.baseLine;
+  }
+
+  get parentLineBox() {
+    return this.__parentLineBox;
   }
 }
 

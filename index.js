@@ -3269,45 +3269,109 @@
       var v = style[k];
 
       if (k === 'background') {
-        if (isNil$2(style.backgroundImage)) {
-          var gd = reg.gradient.exec(v);
+        // bg缩写多个时有color则必须是最后一个
+        if (Array.isArray(v)) {
+          var length = v.length;
 
-          if (gd) {
-            style.backgroundImage = gd[0];
-            v = v.replace(gd[0], '');
-          } else {
-            var img = reg.img.exec(v);
+          if (isNil$2(style.backgroundColor)) {
+            var bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v[length - 1]);
 
-            if (img) {
-              style.backgroundImage = img[0];
-              v = v.replace(img[0], '');
+            if (bgc) {
+              style.backgroundColor = bgc[0];
+              v = v.slice(0, length - 1);
             }
           }
-        }
 
-        if (isNil$2(style.backgroundRepeat)) {
-          var repeat = /(no-)?repeat(-[xy])?/i.exec(v);
+          var bgi = [];
+          var bgr = [];
+          var bgp = [];
+          v.forEach(function (item) {
+            if (isNil$2(style.backgroundImage)) {
+              var gd = reg.gradient.exec(item);
 
-          if (repeat) {
-            style.backgroundRepeat = repeat[0].toLowerCase();
+              if (gd) {
+                bgi.push(gd[0]);
+                item = item.replace(gd[0], '');
+              } else {
+                var img = reg.img.exec(v);
+
+                if (img) {
+                  bgi.push(img[0]);
+                  item = item.replace(img[0], '');
+                }
+              }
+            }
+
+            if (isNil$2(style.backgroundRepeat)) {
+              var repeat = /(no-?)?repeat(-?[xy])?/i.exec(item);
+
+              if (repeat) {
+                bgr.push(repeat[0].toLowerCase());
+              }
+            }
+
+            if (isNil$2(style.backgroundPosition)) {
+              var position = item.match(reg.position);
+
+              if (position) {
+                bgp.push(position.join(' '));
+              }
+            }
+          });
+
+          if (bgi.length) {
+            style.backgroundImage = bgi;
           }
-        }
 
-        if (isNil$2(style.backgroundColor)) {
-          var bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
-
-          if (bgc) {
-            style.backgroundColor = bgc[0];
-            v = v.replace(bgc[0], '');
+          if (bgr.length) {
+            style.backgroundRepeat = bgr;
           }
-        }
 
-        if (isNil$2(style.backgroundPosition)) {
-          var position = v.match(reg.position);
-
-          if (position) {
-            style.backgroundPosition = position.join(' ');
+          if (bgp.length) {
+            style.backgroundPosition = bgp;
             this.toFull(style, 'backgroundPosition');
+          }
+        } else {
+          if (isNil$2(style.backgroundImage)) {
+            var gd = reg.gradient.exec(v);
+
+            if (gd) {
+              style.backgroundImage = gd[0];
+              v = v.replace(gd[0], '');
+            } else {
+              var img = reg.img.exec(v);
+
+              if (img) {
+                style.backgroundImage = img[0];
+                v = v.replace(img[0], '');
+              }
+            }
+          }
+
+          if (isNil$2(style.backgroundRepeat)) {
+            var repeat = /(no-?)?repeat(-?[xy])?/i.exec(v);
+
+            if (repeat) {
+              style.backgroundRepeat = repeat[0].toLowerCase();
+            }
+          }
+
+          if (isNil$2(style.backgroundColor)) {
+            var _bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
+
+            if (_bgc) {
+              style.backgroundColor = _bgc[0];
+              v = v.replace(_bgc[0], '');
+            }
+          }
+
+          if (isNil$2(style.backgroundPosition)) {
+            var position = v.match(reg.position);
+
+            if (position) {
+              style.backgroundPosition = position.join(' ');
+              this.toFull(style, 'backgroundPosition');
+            }
           }
         }
       } else if (k === 'flex') {
@@ -12862,10 +12926,12 @@
   }
 
   function calBackgroundPosition(position, container, size) {
-    if (position[1] === PX$4) {
-      return position[0];
-    } else if (position[1] === PERCENT$5) {
-      return (container - size) * position[0] * 0.01;
+    if (Array.isArray(position)) {
+      if (position[1] === PX$4) {
+        return position[0];
+      } else if (position[1] === PERCENT$5) {
+        return (container - size) * position[0] * 0.01;
+      }
     }
 
     return 0;
@@ -14143,17 +14209,13 @@
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
             backgroundClip = computedStyle[BACKGROUND_CLIP$1];
         var x1 = this.__sx1 = x + marginLeft;
-        var x2 = this.__sx2 = x1 + borderLeftWidth; // let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
-        // let x4 = this.__sx4 = x3 + borderRightWidth;
-
+        var x2 = this.__sx2 = x1 + borderLeftWidth;
         var x3 = this.__sx3 = x2 + paddingLeft;
         var x4 = this.__sx4 = x3 + width;
         var x5 = this.__sx5 = x4 + paddingRight;
         var x6 = this.__sx6 = x5 + borderRightWidth;
         var y1 = this.__sy1 = y + marginTop;
-        var y2 = this.__sy2 = y1 + borderTopWidth; // let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
-        // let y4 = this.__sy4 = y3 + borderBottomWidth;
-
+        var y2 = this.__sy2 = y1 + borderTopWidth;
         var y3 = this.__sy3 = y2 + paddingTop;
         var y4 = this.__sy4 = y3 + height;
         var y5 = this.__sy5 = y4 + paddingBottom;
@@ -14542,10 +14604,13 @@
 
 
         if (backgroundImage) {
-          backgroundImage.forEach(function (bgi, i) {
+          var length = backgroundImage.length;
+          backgroundImage.slice(0).reverse().forEach(function (bgi, i) {
             if (!bgi) {
               return;
             }
+
+            i = length - 1 - i;
 
             if (util.isString(bgi)) {
               var loadBgi = _this4.__loadBgi[i];
@@ -14559,9 +14624,10 @@
                   var _width5 = loadBgi.width,
                       _height5 = loadBgi.height;
 
-                  var _backgroundSize$i = _slicedToArray(backgroundSize[i], 2),
-                      w = _backgroundSize$i[0],
-                      h = _backgroundSize$i[1]; // -1为auto，-2为contain，-3为cover
+                  var _ref = backgroundSize[i] || [],
+                      _ref2 = _slicedToArray(_ref, 2),
+                      w = _ref2[0],
+                      h = _ref2[1]; // -1为auto，-2为contain，-3为cover
 
 
                   if (w === -1 && h === -1) {
@@ -14635,7 +14701,7 @@
                   var ynt = 0;
                   var ynb = 0; // repeat-x
 
-                  if (['repeat-x', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+                  if (['repeat-x', 'repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
                     var diff = bgX - bx1;
 
                     if (diff > 0) {
@@ -14650,7 +14716,7 @@
                   } // repeat-y
 
 
-                  if (['repeat-y', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+                  if (['repeat-y', 'repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
                     var _diff = bgY - by1;
 
                     if (_diff > 0) {
@@ -14776,8 +14842,8 @@
                     }
 
                     if (needMask) {
-                      var p1 = [x2, y2];
-                      var p2 = [x2 + bgW, y2 + bgH];
+                      var p1 = [bx1, by1];
+                      var p2 = [bx2, by2];
 
                       if (needResize) {
                         var inverse = mx.inverse(_matrix);

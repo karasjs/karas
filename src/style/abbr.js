@@ -91,38 +91,92 @@ export default {
   toFull(style, k) {
     let v = style[k];
     if(k === 'background') {
-      if(isNil(style.backgroundImage)) {
-        let gd = reg.gradient.exec(v);
-        if(gd) {
-          style.backgroundImage = gd[0];
-          v = v.replace(gd[0], '');
-        }
-        else {
-          let img = reg.img.exec(v);
-          if(img) {
-            style.backgroundImage = img[0];
-            v = v.replace(img[0], '');
+      // bg缩写多个时有color则必须是最后一个
+      if(Array.isArray(v)) {
+        let length = v.length;
+        if(isNil(style.backgroundColor)) {
+          let bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v[length - 1]);
+          if(bgc) {
+            style.backgroundColor = bgc[0];
+            v = v.slice(0, length - 1);
           }
         }
-      }
-      if(isNil(style.backgroundRepeat)) {
-        let repeat = /(no-)?repeat(-[xy])?/i.exec(v);
-        if(repeat) {
-          style.backgroundRepeat = repeat[0].toLowerCase();
+        let bgi = [];
+        let bgr = [];
+        let bgp = [];
+        v.forEach(item => {
+          if(isNil(style.backgroundImage)) {
+            let gd = reg.gradient.exec(item);
+            if(gd) {
+              bgi.push(gd[0]);
+              item = item.replace(gd[0], '');
+            }
+            else {
+              let img = reg.img.exec(v);
+              if(img) {
+                bgi.push(img[0]);
+                item = item.replace(img[0], '');
+              }
+            }
+          }
+          if(isNil(style.backgroundRepeat)) {
+            let repeat = /(no-?)?repeat(-?[xy])?/i.exec(item);
+            if(repeat) {
+              bgr.push(repeat[0].toLowerCase());
+            }
+          }
+          if(isNil(style.backgroundPosition)) {
+            let position = item.match(reg.position);
+            if(position) {
+              bgp.push(position.join(' '));
+            }
+          }
+        });
+        if(bgi.length) {
+          style.backgroundImage = bgi;
         }
-      }
-      if(isNil(style.backgroundColor)) {
-        let bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
-        if(bgc) {
-          style.backgroundColor = bgc[0];
-          v = v.replace(bgc[0], '');
+        if(bgr.length) {
+          style.backgroundRepeat = bgr;
         }
-      }
-      if(isNil(style.backgroundPosition)) {
-        let position = v.match(reg.position);
-        if(position) {
-          style.backgroundPosition = position.join(' ');
+        if(bgp.length) {
+          style.backgroundPosition = bgp;
           this.toFull(style, 'backgroundPosition');
+        }
+      }
+      else {
+        if(isNil(style.backgroundImage)) {
+          let gd = reg.gradient.exec(v);
+          if(gd) {
+            style.backgroundImage = gd[0];
+            v = v.replace(gd[0], '');
+          }
+          else {
+            let img = reg.img.exec(v);
+            if(img) {
+              style.backgroundImage = img[0];
+              v = v.replace(img[0], '');
+            }
+          }
+        }
+        if(isNil(style.backgroundRepeat)) {
+          let repeat = /(no-?)?repeat(-?[xy])?/i.exec(v);
+          if(repeat) {
+            style.backgroundRepeat = repeat[0].toLowerCase();
+          }
+        }
+        if(isNil(style.backgroundColor)) {
+          let bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
+          if(bgc) {
+            style.backgroundColor = bgc[0];
+            v = v.replace(bgc[0], '');
+          }
+        }
+        if(isNil(style.backgroundPosition)) {
+          let position = v.match(reg.position);
+          if(position) {
+            style.backgroundPosition = position.join(' ');
+            this.toFull(style, 'backgroundPosition');
+          }
         }
       }
     }

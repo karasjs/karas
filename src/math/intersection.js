@@ -1059,8 +1059,10 @@ export default {
   intersectBezier2Bezier2, // 二阶贝塞尔曲线 与 二阶贝塞尔曲线
   intersectBezier3Bezier3, // 三阶贝塞尔曲线 与 三阶贝塞尔曲线
   intersectBezier2Bezier3, // 二阶贝塞尔曲线 与 三阶贝塞尔曲线
-  intersectBezier2Ellipse, // 二阶贝塞尔曲线 与 椭圆
-  intersectBezier3Ellipse, // 三阶贝塞尔曲线 与 椭圆
-  intersectBezier2Circle, // 二阶贝塞尔曲线 与 圆
-  intersectBezier3Circle, // 三阶贝塞尔曲线 与 圆
+
+  // below functions are not used for now
+  // intersectBezier2Ellipse, // 二阶贝塞尔曲线 与 椭圆
+  // intersectBezier3Ellipse, // 三阶贝塞尔曲线 与 椭圆
+  // intersectBezier2Circle, // 二阶贝塞尔曲线 与 圆
+  // intersectBezier3Circle, // 三阶贝塞尔曲线 与 圆
 }

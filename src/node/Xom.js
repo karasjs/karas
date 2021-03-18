@@ -296,11 +296,13 @@ function calBackgroundSize(value, w, h) {
 }
 
 function calBackgroundPosition(position, container, size) {
-  if(position[1] === PX) {
-    return position[0];
-  }
-  else if(position[1] === PERCENT) {
-    return (container - size) * position[0] * 0.01;
+  if(Array.isArray(position)) {
+    if(position[1] === PX) {
+      return position[0];
+    }
+    else if(position[1] === PERCENT) {
+      return (container - size) * position[0] * 0.01;
+    }
   }
   return 0;
 }
@@ -853,7 +855,6 @@ class Xom extends Node {
 
   // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
   __mp(currentStyle, computedStyle, w) {
-    let display = computedStyle[DISPLAY];
     [
       'Top',
       'Right',
@@ -2093,10 +2094,12 @@ class Xom extends Node {
     }
     // 渐变或图片叠加
     if(backgroundImage) {
-      backgroundImage.forEach((bgi, i) => {
+      let length = backgroundImage.length;
+      backgroundImage.slice(0).reverse().forEach((bgi, i) => {
         if(!bgi) {
           return;
         }
+        i = length - 1 - i;
         if(util.isString(bgi)) {
           let loadBgi = this.__loadBgi[i];
           if(loadBgi.url === backgroundImage[i]) {
@@ -2106,7 +2109,7 @@ class Xom extends Node {
             // 无source不绘制
             if(source) {
               let { width, height } = loadBgi;
-              let [w, h] = backgroundSize[i];
+              let [w, h] = backgroundSize[i] || [];
               // -1为auto，-2为contain，-3为cover
               if(w === -1 && h === -1) {
                 w = width;
@@ -2188,7 +2191,7 @@ class Xom extends Node {
               let ynt = 0;
               let ynb = 0;
               // repeat-x
-              if(['repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+              if(['repeat-x', 'repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
                 let diff = bgX - bx1;
                 if(diff > 0) {
                   xnl = Math.ceil(diff / w);
@@ -2199,7 +2202,7 @@ class Xom extends Node {
                 }
               }
               // repeat-y
-              if(['repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+              if(['repeat-y', 'repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
                 let diff = bgY - by1;
                 if(diff > 0) {
                   ynt = Math.ceil(diff / h);
@@ -2311,8 +2314,8 @@ class Xom extends Node {
                   props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
                 }
                 if(needMask) {
-                  let p1 = [x2, y2];
-                  let p2 = [x2 + bgW, y2 + bgH];
+                  let p1 = [bx1, by1];
+                  let p2 = [bx2, by2];
                   if(needResize) {
                     let inverse = mx.inverse(matrix);
                     p1 = mx.calPoint(p1, inverse);

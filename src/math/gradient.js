@@ -93,27 +93,21 @@ export function getConicGradientImage(
     for (let x = 0; x < width; x++) {
       // step 1. 找到当前点坐标相对 (originX, originY) 的角度
       const angle = getAngle(x, y);
+      // step 2. 找到当前点坐标对应的渐变区间
       let j;
       for (
         j = 0;
         j < increasingList.length && increasingList[j].angle <= angle;
         j++
       ) {}
-      // step 2. 找到当前点坐标对应的渐变区间
       const start = increasingList[j - 1];
       const end = increasingList[j];
-      const dx = x - originX;
-      const dy = originY - y;
-      if (Math.abs(dx) === Math.abs(dy)) {
-        console.log(x, y, dx, dy, angle);
-      }
-      // console.log(angle)
       if (!(start && end)) {
-        // 不在渐变区间里，用透明色填充
+        // step 2-1. 不在渐变区间里，用透明色填充
         res.push(0, 0, 0, 0);
         continue;
       }
-      // console.log(angle)
+      // step 3. 计算色值并填充
       const factor = (angle - start.angle) / (end.angle - start.angle);
       const color = end.color.map(
         (v, idx) => factor * (v - start.color[idx]) + start.color[idx]

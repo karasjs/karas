@@ -15111,6 +15111,10 @@
             bblr[1] -= borderBottomWidth + paddingBottom;
           }
         }
+
+        if (__cache && __cache.enabled) {
+          __cache.__available = true;
+        }
         /**
          * inline的渲染同block/ib不一样，不是一个矩形区域
          * 它根据内部的contentBox渲染，contentBox是指lineBox中的内容，即TextBox/inline/ib元素
@@ -15158,7 +15162,7 @@
                       by2 = _inline$getInlineBox2[7];
 
                   if (backgroundColor[3] > 0) {
-                    bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                    bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
                   }
 
                   if (boxShadow) {
@@ -15215,7 +15219,7 @@
                       by2 = _inline$getInlineBox4[7];
 
                   if (backgroundColor[3] > 0) {
-                    bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+                    bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
                   }
 
                   if (boxShadow) {
@@ -15604,10 +15608,6 @@
 
         if (borderLeftWidth > 0 && borderLeftColor[3] > 0) {
           border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
-        }
-
-        if (__cache && __cache.enabled) {
-          __cache.__available = true;
         }
 
         return res;

@@ -29273,7 +29273,11 @@
     backgroundClip: 'bp',
     textOverflow: 'tof'
   };
-  var abbrCssProperty = {};
+  var abbrCssProperty = {
+    os: 'offset',
+    // 非css属性不会被下面反向遍历插入，手动
+    e: 'easing'
+  };
   var fullAnimate = {
     value: 'v',
     options: 'o'
@@ -29685,7 +29689,7 @@
     Cache: Cache
   };
 
-  var version = "0.53.7";
+  var version = "0.53.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

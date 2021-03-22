@@ -1569,21 +1569,6 @@ class Xom extends Node {
         let baseLine = css.getBaseLine(computedStyle);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它
         let diffL = fontSize * (font.info[ff].lgr || 0);
-        // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
-        // let eyt = 0, eyb = 0;
-        // if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-        //   eyt = paddingTop;
-        //   eyb = paddingBottom;
-        // }
-        // else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-        //   eyt = paddingTop + borderTopWidth;
-        //   eyb = paddingBottom + borderBottomWidth;
-        // }
-        // // 计算x左右两侧pb值，其影响border渲染
-        // let pbl = paddingLeft + borderLeftWidth;
-        // let pbr = paddingRight + borderRightWidth;
-        // let pbt = paddingTop + borderTopWidth;
-        // let pbb = paddingBottom + borderBottomWidth;
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
@@ -1591,8 +1576,6 @@ class Xom extends Node {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
             // 上一行
-            // let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox,
-            //   baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst);
             let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
               lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
@@ -1636,10 +1619,8 @@ class Xom extends Node {
           }
           // 最后一个特殊判断
           if(i === length - 1) {
-            // let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox,
-            //   baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst, true);
             let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
-              lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
+              lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             if(backgroundColor[3] > 0) {

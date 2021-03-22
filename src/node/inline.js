@@ -83,7 +83,6 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHe
   let x2 = end.x + end.outerWidth;
   // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
   dom = end instanceof TextBox ? end.parent.domParent : end.domParent;
-  let n = 0;
   // 从end开始，向上获取dom节点的尾部mpb进行累加，直到xom跳出
   while(dom !== xom) {
     let list = dom.contentBoxList;

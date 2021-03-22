@@ -13487,7 +13487,7 @@
     var by1 = lineBox.y + diff - pbt;
     var x2 = end.x + end.outerWidth; // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
 
-    dom = end instanceof TextBox ? end.parent.domParent : end.domParent;
+    dom = end instanceof TextBox ? end.parent.domParent : end.domParent; // 从end开始，向上获取dom节点的尾部mpb进行累加，直到xom跳出
 
     while (dom !== xom) {
       var _list = dom.contentBoxList;
@@ -15134,22 +15134,7 @@
             var ff = css.getFontFamily(fontFamily);
             var baseLine = css.getBaseLine(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它
 
-            var diffL = fontSize * (o.info[ff].lgr || 0); // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
-            // let eyt = 0, eyb = 0;
-            // if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-            //   eyt = paddingTop;
-            //   eyb = paddingBottom;
-            // }
-            // else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-            //   eyt = paddingTop + borderTopWidth;
-            //   eyb = paddingBottom + borderBottomWidth;
-            // }
-            // // 计算x左右两侧pb值，其影响border渲染
-            // let pbl = paddingLeft + borderLeftWidth;
-            // let pbr = paddingRight + borderRightWidth;
-            // let pbt = paddingTop + borderTopWidth;
-            // let pbb = paddingBottom + borderBottomWidth;
-            // 注意只有1个的时候特殊情况，圆角只在首尾行出现
+            var diffL = fontSize * (o.info[ff].lgr || 0); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
             var isFirst = true;
             var lastContentBox = contentBoxList[0],
@@ -15161,8 +15146,6 @@
               if (contentBox.parentLineBox !== lastLineBox) {
                 (function () {
                   // 上一行
-                  // let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox,
-                  //   baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst);
                   var _inline$getInlineBox = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                       _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
                       ix1 = _inline$getInlineBox2[0],
@@ -15220,9 +15203,7 @@
 
               if (i === length - 1) {
                 (function () {
-                  // let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox,
-                  //   baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst, true);
-                  var _inline$getInlineBox3 = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox, baseLine, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                  var _inline$getInlineBox3 = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                       _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
                       ix1 = _inline$getInlineBox4[0],
                       iy1 = _inline$getInlineBox4[1],

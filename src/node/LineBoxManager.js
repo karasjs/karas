@@ -82,6 +82,7 @@ class LineBoxManager {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
+        lineBox.__offsetX(diff);
         lineBox.list.forEach(item => {
           item.__offsetX(diff, true);
         });
@@ -100,7 +101,7 @@ class LineBoxManager {
   }
 
   /**
-   * inline递归过程中布局调用，不断初入栈dom对象
+   * inline递归过程中布局调用，不断出入栈dom对象，获取当前行状态下有哪些dom还在
    * @param dom
    */
   pushContentBoxList(dom) {

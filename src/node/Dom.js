@@ -1851,9 +1851,9 @@ class Dom extends Xom {
     }
     this.__ioSize(tw, th);
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
-    if(!isVirtual) {
-      !isInline && lineBoxManager.verticalAlign();
-      if(!isInline && ['center', 'right'].indexOf(textAlign) > -1) {
+    if(!isVirtual && !isInline) {
+      lineBoxManager.verticalAlign();
+      if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
       }
     }

@@ -2,7 +2,13 @@ import enums from '../util/enums';
 import TextBox from './TextBox';
 
 const { STYLE_KEY: {
-  MARGIN_BOTTOM,
+  DISPLAY,
+  MARGIN_LEFT,
+  BORDER_LEFT_WIDTH,
+  PADDING_LEFT,
+  PADDING_RIGHT,
+  BORDER_RIGHT_WIDTH,
+  MARGIN_RIGHT,
 } } = enums;
 
 /**
@@ -70,11 +76,50 @@ class LineBox {
   }
 
   get width() {
-    let width = 0;
-    this.list.forEach(item => {
-      width += item.outerWidth;
-    });
-    return width;
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      let first = list[0];
+      let last = list[length - 1];
+      let x1 = first.x;
+      let dom = first instanceof TextBox ? first.parent.domParent : first.domParent;
+      while(true) {
+        let list = dom.contentBoxList;
+        let {
+          [DISPLAY]: display,
+          [MARGIN_LEFT]: marginLeft,
+          [BORDER_LEFT_WIDTH]: borderLeftWidth,
+          [PADDING_LEFT]: paddingLeft,
+        } = dom.computedStyle;
+        if(display !== 'inline') {
+          break;
+        }
+        if(first === list[0]) {
+          x1 -= marginLeft + borderLeftWidth + paddingLeft;
+        }
+        dom = dom.domParent;
+      }
+      let x2 = last.x + last.outerWidth;
+      dom = last instanceof TextBox ? last.parent.domParent : last.domParent;
+      while(true) {
+        let list = dom.contentBoxList;
+        let {
+          [DISPLAY]: display,
+          [MARGIN_RIGHT]: marginRight,
+          [BORDER_RIGHT_WIDTH]: borderRightWidth,
+          [PADDING_RIGHT]: paddingRight,
+        } = dom.computedStyle;
+        if(display !== 'inline') {
+          break;
+        }
+        if(first === list[list.length - 1]) {
+          x2 += marginRight + borderRightWidth + paddingRight;
+        }
+        dom = dom.domParent;
+      }
+      return x2 - x1;
+    }
+    return 0;
   }
 
   get height() {

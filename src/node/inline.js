@@ -1,0 +1,117 @@
+import TextBox from './TextBox';
+import enums from '../util/enums';
+
+const {
+  STYLE_KEY: {
+    MARGIN_LEFT,
+    MARGIN_RIGHT,
+    PADDING_LEFT,
+    PADDING_RIGHT,
+    BORDER_LEFT_WIDTH,
+    BORDER_RIGHT_WIDTH,
+  },
+} = enums;
+
+/**
+ * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
+ * @param xom
+ * @param contentBoxList
+ * @param start
+ * @param end
+ * @param lineBox
+ * @param baseLine
+ * @param lineHeight
+ * @param diffL
+ * @param isStart
+ * @param isEnd
+ * @param backgroundClip
+ * @param paddingTop
+ * @param paddingRight
+ * @param paddingBottom
+ * @param paddingLeft
+ * @param borderTopWidth
+ * @param borderRightWidth
+ * @param borderBottomWidth
+ * @param borderLeftWidth
+ * @returns {(*|number)[]}
+ */
+function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHeight, diffL, isStart, isEnd,
+                      backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
+                      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
+  // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
+  let eyt = 0, eyb = 0;
+  if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+    eyt = paddingTop;
+    eyb = paddingBottom;
+  }
+  else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+    eyt = paddingTop + borderTopWidth;
+    eyb = paddingBottom + borderBottomWidth;
+  }
+  // 同y的border伸展范围，其影响border渲染
+  let pbt = paddingTop + borderTopWidth;
+  let pbb = paddingBottom + borderBottomWidth;
+  // inline的baseLine和lineBox的差值
+  let diff = lineBox.baseLine - baseLine;
+  // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseLine对齐后计算的
+  let x1 = start.x;
+  let dom = start instanceof TextBox ? start.parent.domParent : start.domParent;
+  while(dom !== xom) {
+    let list = dom.contentBoxList;
+    if(start === list[0]) {
+      let {
+        [MARGIN_LEFT]: marginLeft,
+        [PADDING_LEFT]: paddingLeft,
+        [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      } = xom.computedStyle;
+      x1 -= marginLeft + paddingLeft + borderLeftWidth;
+    }
+    dom = dom.parent;
+  }
+  let bx1 = x1;
+  if(isStart) {
+    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+      x1 -= paddingLeft;
+    }
+    else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+      x1 -= paddingLeft + borderLeftWidth;
+    }
+    bx1 -= paddingLeft + borderLeftWidth;
+  }
+  let y1 = lineBox.y + diff - eyt;
+  let by1 = lineBox.y + diff - pbt;
+  let x2 = end.x + end.outerWidth;
+  // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
+  dom = end instanceof TextBox ? end.parent.domParent : end.domParent;
+  let n = 0;
+  // 从end开始，向上获取dom节点的尾部mpb进行累加，直到xom跳出
+  while(dom !== xom) {
+    let list = dom.contentBoxList;
+    if(end === list[list.length - 1]) {
+      let {
+        [MARGIN_RIGHT]: marginRight,
+        [PADDING_RIGHT]: paddingRight,
+        [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      } = xom.computedStyle;
+      x2 += marginRight + paddingRight + borderRightWidth;
+    }
+    dom = dom.parent;
+  }
+  let bx2 = x2;
+  if(isEnd) {
+    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+      x2 += paddingRight;
+    }
+    else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+      x2 += paddingRight + borderRightWidth;
+    }
+    bx2 += paddingRight + borderRightWidth;
+  }
+  let y2 = lineBox.y + diff + lineHeight - diffL + eyb;
+  let by2 = lineBox.y + diff + lineHeight - diffL + pbb;
+  return [x1, y1, x2, y2, bx1, by1, bx2, by2];
+}
+
+export default {
+  getInlineBox,
+};

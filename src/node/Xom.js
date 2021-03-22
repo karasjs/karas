@@ -21,6 +21,7 @@ import Cache from '../refresh/Cache';
 import transform from '../style/transform';
 import font from '../style/font';
 import bs from '../style/bs';
+import inline from './inline';
 
 const {
   STYLE_KEY,
@@ -1517,7 +1518,7 @@ class Xom extends Node {
       res.break = true;
       return res;
     }
-    // 背景色垫底，根据backgroundClip的不同值要调整坐标尺寸，也会影响borderRadius
+    // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
     let btlr, btrr, bbrr, bblr;
     if(backgroundColor[3] > 0 || backgroundImage) {
       btlr = borderTopLeftRadius.slice(0);
@@ -1569,20 +1570,20 @@ class Xom extends Node {
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它
         let diffL = fontSize * (font.info[ff].lgr || 0);
         // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
-        let eyt = 0, eyb = 0;
-        if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-          eyt = paddingTop;
-          eyb = paddingBottom;
-        }
-        else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-          eyt = paddingTop + borderTopWidth;
-          eyb = paddingBottom + borderBottomWidth;
-        }
-        // 计算x左右两侧pb值，其影响border渲染
-        let pbl = paddingLeft + borderLeftWidth;
-        let pbr = paddingRight + borderRightWidth;
-        let pbt = paddingTop + borderTopWidth;
-        let pbb = paddingBottom + borderBottomWidth;
+        // let eyt = 0, eyb = 0;
+        // if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+        //   eyt = paddingTop;
+        //   eyb = paddingBottom;
+        // }
+        // else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+        //   eyt = paddingTop + borderTopWidth;
+        //   eyb = paddingBottom + borderBottomWidth;
+        // }
+        // // 计算x左右两侧pb值，其影响border渲染
+        // let pbl = paddingLeft + borderLeftWidth;
+        // let pbr = paddingRight + borderRightWidth;
+        // let pbt = paddingTop + borderTopWidth;
+        // let pbb = paddingBottom + borderBottomWidth;
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
@@ -1590,8 +1591,12 @@ class Xom extends Node {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
             // 上一行
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = bg.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox,
-              baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst);
+            // let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox,
+            //   baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst);
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
+              lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false,
+              backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
+              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
                 ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
@@ -1631,8 +1636,12 @@ class Xom extends Node {
           }
           // 最后一个特殊判断
           if(i === length - 1) {
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = bg.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox,
-              baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst, true);
+            // let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox,
+            //   baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst, true);
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
+              lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
+              backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
+              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
                 ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
@@ -1679,6 +1688,7 @@ class Xom extends Node {
       }
       return;
     }
+    // block渲染，bgc垫底
     if(backgroundColor[3] > 0) {
       bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
         bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);

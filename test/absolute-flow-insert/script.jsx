@@ -3,7 +3,7 @@ karas.render(
     <div style={{position:'relative'}}>
       <div style={{background:'#F00'}}>1</div>
       <div style={{position:'absolute',left:30,background:'#00F'}}>absolute</div>
-      <span style={{background:'#F00'}}>2</span>
+      <span style={{display:'inlineBlock',background:'#F00'}}>2</span>
     </div>
   </canvas>,
   '#test'

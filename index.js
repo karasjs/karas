@@ -16830,9 +16830,16 @@
       key: "baseLine",
       get: function get() {
         var list = this.__list;
+        var length = list.length;
 
-        if (list.length) {
-          return list[list.length - 1].baseLine;
+        if (length) {
+          var n = 0;
+
+          for (var i = 0; i < length - 1; i++) {
+            n += list[i].height;
+          }
+
+          return n + list[length - 1].baseLine;
         }
 
         return 0;
@@ -20071,7 +20078,11 @@
           return this.height;
         }
 
-        return this.lineBoxManager.baseLine;
+        var _this$computedStyle = this.computedStyle,
+            marginTop = _this$computedStyle[MARGIN_TOP$2],
+            borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$3],
+            paddingTop = _this$computedStyle[PADDING_TOP$3];
+        return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
       }
     }, {
       key: "parentLineBox",
@@ -21539,7 +21550,7 @@
     }, {
       key: "baseLine",
       get: function get() {
-        return this.__height;
+        return this.height;
       }
     }, {
       key: "isMulti",

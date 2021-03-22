@@ -2300,7 +2300,12 @@ class Dom extends Xom {
     if(!this.lineBoxManager.size) {
       return this.height;
     }
-    return this.lineBoxManager.baseLine;
+    let {
+      [MARGIN_TOP]: marginTop,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [PADDING_TOP]: paddingTop,
+    } = this.computedStyle;
+    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
   }
 
   get parentLineBox() {

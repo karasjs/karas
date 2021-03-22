@@ -161,8 +161,13 @@ class LineBoxManager {
 
   get baseLine() {
     let list = this.__list;
-    if(list.length) {
-      return list[list.length - 1].baseLine;
+    let length = list.length;
+    if(length) {
+      let n = 0;
+      for(let i = 0; i < length - 1; i++) {
+        n += list[i].height;
+      }
+      return n + list[length - 1].baseLine;
     }
     return 0;
   }

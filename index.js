@@ -19345,6 +19345,7 @@
           if (isXom) {
             if (!isInline2 && !isInlineBlock) {
               item.currentStyle[DISPLAY$4] = item.computedStyle[DISPLAY$4] = 'inlineBlock';
+              isInlineBlock = true;
               inject.error('Inline can not contain block/flex');
             } // x开头，不用考虑是否放得下直接放
 

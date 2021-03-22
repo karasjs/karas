@@ -1184,19 +1184,19 @@ class Dom extends Xom {
     flowChildren.forEach((item, i) => {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        let { currentStyle } = item;
-        let {
-          [DISPLAY]: display,
-          [FLEX_DIRECTION]: flexDirection,
-          [WIDTH]: width,
-          [HEIGHT]: height,
-        } = currentStyle;
+        // let { currentStyle } = item;
+        // let {
+        //   [DISPLAY]: display,
+        //   [FLEX_DIRECTION]: flexDirection,
+        //   [WIDTH]: width,
+        //   [HEIGHT]: height,
+        // } = currentStyle;
         if(isDirectionRow) {
           // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-          if(display === 'flex' && flexDirection === 'column' && fixedHeight && height[1] === AUTO) {
-            height[0] = h;
-            height[1] = PX;
-          }
+          // if(display === 'flex' && flexDirection === 'column' && fixedHeight && height[1] === AUTO) {
+          //   height[0] = h;
+          //   height[1] = PX;
+          // }
           item.__layout({
             x,
             y,
@@ -1207,10 +1207,10 @@ class Dom extends Xom {
         }
         else {
           // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-          if(display === 'flex' && flexDirection === 'row' && width[1] === AUTO) {
-            width[0] = w;
-            width[1] = PX;
-          }
+          // if(display === 'flex' && flexDirection === 'row' && width[1] === AUTO) {
+          //   width[0] = w;
+          //   width[1] = PX;
+          // }
           item.__layout({
             x,
             y,

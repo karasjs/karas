@@ -18856,19 +18856,19 @@
           var main = targetMainList[i];
 
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            var _currentStyle4 = item.currentStyle;
-            var display = _currentStyle4[DISPLAY$4],
-                _flexDirection = _currentStyle4[FLEX_DIRECTION$2],
-                width = _currentStyle4[WIDTH$4],
-                height = _currentStyle4[HEIGHT$4];
-
+            // let { currentStyle } = item;
+            // let {
+            //   [DISPLAY]: display,
+            //   [FLEX_DIRECTION]: flexDirection,
+            //   [WIDTH]: width,
+            //   [HEIGHT]: height,
+            // } = currentStyle;
             if (isDirectionRow) {
               // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height[1] === AUTO$3) {
-                height[0] = h;
-                height[1] = PX$6;
-              }
-
+              // if(display === 'flex' && flexDirection === 'column' && fixedHeight && height[1] === AUTO) {
+              //   height[0] = h;
+              //   height[1] = PX;
+              // }
               item.__layout({
                 x: x,
                 y: y,
@@ -18879,11 +18879,10 @@
               });
             } else {
               // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              if (display === 'flex' && _flexDirection === 'row' && width[1] === AUTO$3) {
-                width[0] = w;
-                width[1] = PX$6;
-              }
-
+              // if(display === 'flex' && flexDirection === 'row' && width[1] === AUTO) {
+              //   width[0] = w;
+              //   width[1] = PX;
+              // }
               item.__layout({
                 x: x,
                 y: y,

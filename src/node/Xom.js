@@ -556,7 +556,6 @@ class Xom extends Node {
       [HEIGHT]: height,
     } = currentStyle;
     let {
-      // [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,

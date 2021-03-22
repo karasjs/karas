@@ -16152,9 +16152,9 @@
         this.__sx3 += diff;
         this.__sx4 += diff;
         this.__sx5 += diff;
-        this.__sx6 += diff;
+        this.__sx6 += diff; // flex没有lineBox
 
-        if (!this.__isRealInline()) {
+        if (!this.__isRealInline() && this.lineBoxManager) {
           this.lineBoxManager.__offsetX(diff);
         }
       }
@@ -16176,9 +16176,9 @@
         this.__sy3 += diff;
         this.__sy4 += diff;
         this.__sy5 += diff;
-        this.__sy6 += diff;
+        this.__sy6 += diff; // flex没有lineBox
 
-        if (!this.__isRealInline()) {
+        if (!this.__isRealInline() && this.lineBoxManager) {
           this.lineBoxManager.__offsetY(diff);
         }
       }

@@ -1244,7 +1244,7 @@ class Dom extends Xom {
     // 主轴侧轴对齐方式
     if(!isOverflow && growSum === 0 && diff > 0) {
       let len = flowChildren.length;
-      if(justifyContent === 'flexEnd' || alignSelf === 'flex-end') {
+      if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
           let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);

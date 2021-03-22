@@ -18829,7 +18829,7 @@
         if (!isOverflow && growSum === 0 && diff > 0) {
           var len = flowChildren.length;
 
-          if (justifyContent === 'flexEnd' || alignSelf === 'flex-end') {
+          if (justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
             for (var i = 0; i < len; i++) {
               var child = flowChildren[i];
               isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);

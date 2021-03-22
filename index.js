@@ -16510,15 +16510,11 @@
     }, {
       key: "baseLine",
       get: function get() {
-        if (this.__baseLine === undefined) {
-          var baseLine = 0;
-          this.list.forEach(function (item) {
-            baseLine = Math.max(baseLine, item.baseLine);
-          });
-          this.__baseLine = baseLine;
-        }
-
-        return this.__baseLine;
+        var baseLine = 0;
+        this.list.forEach(function (item) {
+          baseLine = Math.max(baseLine, item.baseLine);
+        });
+        return baseLine;
       }
     }, {
       key: "lineHeight",

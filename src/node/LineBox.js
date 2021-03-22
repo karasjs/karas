@@ -86,14 +86,11 @@ class LineBox {
   }
 
   get baseLine() {
-    if(this.__baseLine === undefined) {
-      let baseLine = 0;
-      this.list.forEach(item => {
-        baseLine = Math.max(baseLine, item.baseLine);
-      });
-      this.__baseLine = baseLine;
-    }
-    return this.__baseLine;
+    let baseLine = 0;
+    this.list.forEach(item => {
+      baseLine = Math.max(baseLine, item.baseLine);
+    });
+    return baseLine;
   }
 
   get lineHeight() {

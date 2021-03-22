@@ -14,7 +14,10 @@ let fullCssProperty = {
   textOverflow: 'tof',
 };
 
-let abbrCssProperty = {};
+let abbrCssProperty = {
+  os: 'offset', // 非css属性不会被下面反向遍历插入，手动
+  e: 'easing',
+};
 
 let fullAnimate = {
   value: 'v',

@@ -1626,17 +1626,6 @@ class Dom extends Xom {
     if(isInline) {
       contentBoxList = this.__contentBoxList = [];
       lineBoxManager.pushContentBoxList(this);
-      // inline提前算首尾行的起始x坐标，比较特殊
-      if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-        this.__iBgX1 = x - paddingLeft;
-      }
-      else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-        this.__iBgX1 = x;
-      }
-      else {
-        this.__iBgX1 = x - paddingLeft - borderLeftWidth;
-      }
-      this.__iBX1 = x - paddingLeft - borderLeftWidth;
     }
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值，仅在ib时统计
     let maxW = 0;
@@ -1683,7 +1672,7 @@ class Dom extends Xom {
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
-          if(!isInline2) {
+          if(!isInline) {
             cw = item.outerWidth;
             maxW = Math.max(maxW, cw);
           }
@@ -1734,11 +1723,11 @@ class Dom extends Xom {
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
-            if(!isInline2) {
+            if(!isInline) {
               cw = 0;
             }
           }
-          if(!isInline2) {
+          if(!isInline) {
             cw += item.outerWidth;
             maxW = Math.max(maxW, cw);
           }
@@ -1824,17 +1813,7 @@ class Dom extends Xom {
     this.__isIbFull = isIbFull;
     // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸，inline没有固定尺寸概念
     let tw, th;
-    if(isInline) {
-      if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-        this.__iBgX2 = x + paddingRight;
-      }
-      else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-        this.__iBgX2 = x;
-      }
-      else {
-        this.__iBgX2 = x + paddingLeft + borderRightWidth;
-      }
-      this.__iBX2 = x + paddingLeft + borderRightWidth;
+    if(isInline && this.__isRealInline()) {
       // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
       if(selfEndSpace) {
         lineBoxManager.addX(selfEndSpace);
@@ -2298,7 +2277,7 @@ class Dom extends Xom {
 
   get baseLine() {
     if(!this.lineBoxManager.size) {
-      return this.height;
+      return this.outerHeight;
     }
     let {
       [MARGIN_TOP]: marginTop,

@@ -1951,7 +1951,7 @@ class Xom extends Node {
               renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
                 btlr, btrr, bbrr, bblr);
             }
-            else {console.log(gd.v);
+            else {
               bg.renderBgc(this, renderMode, ctx, defs, gd.v,
                 bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
             }

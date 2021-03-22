@@ -15575,7 +15575,6 @@
                 if (gd.k === 'conic') {
                   renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, _this4, btlr, btrr, bbrr, bblr);
                 } else {
-                  console.log(gd.v);
                   bg.renderBgc(_this4, renderMode, ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
                 }
               }
@@ -19322,17 +19321,7 @@
 
         if (isInline) {
           contentBoxList = this.__contentBoxList = [];
-          lineBoxManager.pushContentBoxList(this); // inline提前算首尾行的起始x坐标，比较特殊
-
-          if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-            this.__iBgX1 = x - paddingLeft;
-          } else if (backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-            this.__iBgX1 = x;
-          } else {
-            this.__iBgX1 = x - paddingLeft - borderLeftWidth;
-          }
-
-          this.__iBX1 = x - paddingLeft - borderLeftWidth;
+          lineBoxManager.pushContentBoxList(this);
         } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值，仅在ib时统计
 
 
@@ -19385,7 +19374,7 @@
                   y = lineBoxManager.lastY;
                 }
 
-              if (!isInline2) {
+              if (!isInline) {
                 cw = item.outerWidth;
                 maxW = Math.max(maxW, cw);
               }
@@ -19438,12 +19427,12 @@
                       y = lineBoxManager.lastY;
                     }
 
-                  if (!isInline2) {
+                  if (!isInline) {
                     cw = 0;
                   }
                 }
 
-              if (!isInline2) {
+              if (!isInline) {
                 cw += item.outerWidth;
                 maxW = Math.max(maxW, cw);
               }
@@ -19537,17 +19526,8 @@
 
         var tw, th;
 
-        if (isInline) {
-          if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-            this.__iBgX2 = x + paddingRight;
-          } else if (backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-            this.__iBgX2 = x;
-          } else {
-            this.__iBgX2 = x + paddingLeft + borderRightWidth;
-          }
-
-          this.__iBX2 = x + paddingLeft + borderRightWidth; // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
-
+        if (isInline && this.__isRealInline()) {
+          // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
           if (selfEndSpace) {
             lineBoxManager.addX(selfEndSpace);
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
@@ -20075,7 +20055,7 @@
       key: "baseLine",
       get: function get() {
         if (!this.lineBoxManager.size) {
-          return this.height;
+          return this.outerHeight;
         }
 
         var _this$computedStyle = this.computedStyle,

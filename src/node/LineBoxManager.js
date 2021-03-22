@@ -13,6 +13,7 @@ class LineBoxManager {
     this.__list = []; // 包含若干LineBox
     this.__isNewLine = true; // 区域内是否是新行，dom开头肯定是
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
+    // this.endLineSpace = 0; // 最后一行mpb累计，inline布局时最后一行空白判断
   }
 
   /**
@@ -60,8 +61,9 @@ class LineBoxManager {
       let length = list.length;
       lineBox = list[length - 1];
     }
+    // inline递归过程中所有inline父子顺序列表，每个dom都需要对当前内容保存
     this.__domList.forEach(item => {
-      item[1].push(o);
+      item.__contentBoxList.push(o);
     });
     lineBox.add(o);
     // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
@@ -97,22 +99,28 @@ class LineBoxManager {
     this.__lastX += n;
   }
 
-  pushContentBoxList(dom, v) {
-    this.__domList.push([dom, v]);
-    // this.__contentBoxList = v;
+  /**
+   * inline递归过程中布局调用，不断初入栈dom对象
+   * @param dom
+   */
+  pushContentBoxList(dom) {
+    this.__domList.push(dom);
   }
 
   popContentBoxList() {
     this.__domList.pop();
-    // let domList = this.__domList;
-    // domList.pop();
-    // let len = domList.length;
-    // if(len) {
-    //   this.__contentBoxList = domList[len - 1][1];
-    // }
-    // else {
-    //   this.__contentBoxList = null;
-    // }
+  }
+
+  __offsetX(diff) {
+    this.__list.forEach(lineBox => {
+      lineBox.__offsetX(diff);
+    });
+  }
+
+  __offsetY(diff) {
+    this.__list.forEach(lineBox => {
+      lineBox.__offsetY(diff);
+    });
   }
 
   get size() {
@@ -155,7 +163,7 @@ class LineBoxManager {
     if(list.length) {
       return list[list.length - 1].baseLine;
     }
-    return this.__y;
+    return 0;
   }
 
   get marginBottom() {

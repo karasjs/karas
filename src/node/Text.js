@@ -5,6 +5,8 @@ import css from '../style/css';
 import enums from '../util/enums';
 import util from '../util/util';
 import textCache from './textCache';
+import inject from '../util/inject';
+import font from '../style/font';
 
 const {
   STYLE_KEY: {
@@ -36,7 +38,7 @@ class Text extends Node {
   }
 
   /**
-   * 预先计算每个字的宽度，在每次渲染前做
+   * 预先计算每个字的宽度，在每次布局渲染前做
    * @param renderMode
    * @param ctx
    * @private
@@ -45,10 +47,21 @@ class Text extends Node {
     let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
-    let key = this.__key = computedStyle[FONT_SIZE] + ',' + computedStyle[FONT_FAMILY] + ',' + computedStyle[FONT_WEIGHT];
+    let ffs = computedStyle[FONT_FAMILY].split(',');
+    let ff = 'arial';
+    for(let i = 0, len = ffs.length; i < len; i++) {
+      if(inject.checkSupportFontFamily(ffs[i])) {
+        ff = ffs[i];
+        break;
+      }
+    }
+    let fs = computedStyle[FONT_SIZE];
+    let fw = computedStyle[FONT_WEIGHT];
+    let key = this.__key = computedStyle[FONT_SIZE] + ',' + ff + ',' + fw;
     let wait = textCache.data[key] = textCache.data[key] || {
-      key,
-      style: computedStyle,
+      ff,
+      fs,
+      fw,
       hash: {},
       s: '',
     };
@@ -70,6 +83,7 @@ class Text extends Node {
         needMeasure = true;
       }
     }
+    // 逐字测量，canvas可瞬间得到信息，svg先预存统一进行
     for(let i = 0, length = content.length; i < length; i++) {
       let char = content.charAt(i);
       let mw;
@@ -116,8 +130,16 @@ class Text extends Node {
     this.__textWidth = sum;
   }
 
-  __layout(data, isVirtual) {
-    let { x, y, w, lx = x, lineBoxManager } = data;
+  /**
+   * text在virtual时和普通一样，无需特殊处理
+   * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和
+   * 即便宽度不足，每行还是强制渲染一个字符，换行依据lx开始，因为x可能是从中间开始的，非inline则两个相等
+   * 最后一个字符排版时要考虑末尾mpb，排不下的话回退删掉这个字符，如果最后一个字符另起开头，排不下也强制排
+   * @param data
+   * @private
+   */
+  __layout(data) {
+    let { x, y, w, lx = x, lineBoxManager, endSpace } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
     let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList } = this;
@@ -198,6 +220,11 @@ class Text extends Node {
         count += charWidthList[i] + letterSpacing;
         if(count === w) {
           let textBox;
+          // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
+          if(i === length - 1 && count > w - endSpace) {
+            count -= charWidthList[i - 1];
+            i--;
+          }
           if(!lineCount) {
             maxW = count - firstLineSpace;
             textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i + 1));
@@ -261,42 +288,61 @@ class Text extends Node {
       if(!lineCount) {
         this.__x = this.__sx1 = lx;
       }
-      // 最后一行，只有一行未满时也进这里
+      // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
       if(begin < length) {
         let textBox;
         if(!lineCount) {
+          let needBack;
+          if(count > w - endSpace) {
+            needBack = true;
+            count -= charWidthList[length - 1];
+          }
           maxW = count - firstLineSpace;
-          textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, length));
+          textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, needBack ? length - 1 : length));
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox);
           if(lineBoxManager.isNewLine) {
             y += lineHeight;
           }
           else {
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
           }
+          if(needBack) {
+            let width = charWidthList[length - 1];
+            textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(length - 1));
+            maxW = Math.max(maxW, width);
+            textBoxes.push(textBox);
+            lineBoxManager.setNewLine();
+            lineBoxManager.addItem(textBox);
+            y += lineHeight;
+          }
         }
         else {
-          textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, length));
+          let needBack;
+          if(count > w - endSpace) {
+            needBack = true;
+            count -= charWidthList[length - 1];
+          }
+          textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, needBack ? length - 1 : length));
           maxW = Math.max(maxW, count);
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox);
           y += lineHeight;
+          if(needBack) {
+            let width = charWidthList[length - 1];
+            textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(length - 1));
+            maxW = Math.max(maxW, width);
+            textBoxes.push(textBox);
+            lineBoxManager.setNewLine();
+            lineBoxManager.addItem(textBox);
+            y += lineHeight;
+          }
         }
-        textBoxes.push(textBox);
-        lineBoxManager.addItem(textBox);
       }
     }
     this.__width = maxW;
     this.__height = y - data.y;
-    // flex/abs前置计算无需真正布局
-    // if(!isVirtual) {
-    //   let { [TEXT_ALIGN]: textAlign } = computedStyle;
-    //   if(['center', 'right'].indexOf(textAlign) > -1) {
-    //     textBoxes.forEach(textBox => {
-    //       let diff = this.__width - textBox.width;
-    //       if(diff > 0) {
-    //         textBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
-    //       }
-    //     });
-    //   }
-    // }
+    this.__baseLine = css.getBaseLine(computedStyle);
   }
 
   __offsetX(diff, isLayout) {
@@ -405,12 +451,13 @@ class Text extends Node {
   }
 
   get baseLine() {
-    let { textBoxes } = this;
-    if(!textBoxes.length) {
-      return 0;
-    }
-    let last = textBoxes[textBoxes.length - 1];
-    return last.y - this.y + last.baseLine;
+    return this.__baseLine;
+  //   let { textBoxes } = this;
+  //   if(!textBoxes.length) {
+  //     return 0;
+  //   }
+  //   let last = textBoxes[textBoxes.length - 1];
+  //   return last.y - this.y + last.baseLine;
   }
 
   get currentStyle() {

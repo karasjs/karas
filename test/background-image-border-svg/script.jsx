@@ -12,5 +12,7 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-let input = document.querySelector('#base64');
-input.value = JSON.stringify(o.virtualDom);
+o.on('refresh', function() {
+  let input = document.querySelector('#base64');
+  input.value = JSON.stringify(o.virtualDom);
+});

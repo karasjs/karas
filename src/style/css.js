@@ -1096,6 +1096,18 @@ function setFontStyle(style) {
     + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY] || 'arial');
 }
 
+function getFontFamily(str) {
+  let ff = str.split(',');
+  let f = 'arial';
+  for(let i = 0, len = ff.length; i < len; i++) {
+    if(font.support(ff[i])) {
+      f = ff[i];
+      break;
+    }
+  }
+  return f;
+}
+
 function getBaseLine(style) {
   let fontSize = style[FONT_SIZE];
   let ff = style[FONT_FAMILY].split(',');
@@ -1408,6 +1420,7 @@ export default {
   computeMeasure,
   computeReflow,
   setFontStyle,
+  getFontFamily,
   getBaseLine,
   calRelative,
   calAbsolute,

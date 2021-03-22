@@ -19,6 +19,8 @@ import change from '../refresh/change';
 import level from '../refresh/level';
 import Cache from '../refresh/Cache';
 import transform from '../style/transform';
+import font from '../style/font';
+import bs from '../style/bs';
 
 const {
   STYLE_KEY,
@@ -89,6 +91,9 @@ const {
     BORDER_BOTTOM,
     BORDER_LEFT,
     BACKGROUND_CLIP,
+    FONT_SIZE,
+    FONT_FAMILY,
+    LINE_HEIGHT,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -143,34 +148,6 @@ const {
   OPACITY: OP,
   FILTER: FT,
 } = level;
-
-function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
-  if(renderMode === mode.CANVAS) {
-    ctx.beginPath();
-    if(ctx.fillStyle !== color) {
-      ctx.fillStyle = color;
-    }
-    points.forEach(point => {
-      canvasPolygon(ctx, point, dx, dy);
-    });
-    ctx.fill();
-    ctx.closePath();
-  }
-  else if(renderMode === mode.SVG) {
-    let s = '';
-    points.forEach(point => {
-      s += svgPolygon(point);
-    });
-    xom.virtualDom.bb.push({
-      type: 'item',
-      tagName: 'path',
-      props: [
-        ['d', s],
-        ['fill', color],
-      ],
-    });
-  }
-}
 
 function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
@@ -229,53 +206,6 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, 
   }
 }
 
-let borderRadiusKs = [BORDER_TOP_LEFT_RADIUS, BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS];
-function calBorderRadius(w, h, currentStyle, computedStyle) {
-  let noRadius = true;
-  borderRadiusKs.forEach(k => {
-    computedStyle[k] = currentStyle[k].map((item, i) => {
-      if(item[0] > 0) {
-        noRadius = false;
-      }
-      else {
-        return 0;
-      }
-      if(item[1] === PX) {
-        return Math.max(0, item[0]);
-      }
-      else {
-        return Math.max(0, item[0] * (i ? h : w) * 0.01);
-      }
-    });
-  });
-  // 优化提前跳出
-  if(noRadius) {
-    return;
-  }
-  // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
-  borderRadiusKs.forEach((k, i) => {
-    let j = i % 2 === 0 ? 0 : 1;
-    let target = j ? h : w;
-    let prev = computedStyle[k];
-    let next = computedStyle[borderRadiusKs[(i + 1) % 4]];
-    // 相加超过边长则是相交
-    if(prev[j] + next[j] > target) {
-      let half = target * 0.5;
-      // 都超过一半中点取中点
-      if(prev[j] >= half && next[j] >= half) {
-        prev[j] = next[j] = half;
-      }
-      // 仅1个超过中点，因相交用总长减去另一方即可
-      else if(prev[j] > half) {
-        prev[j] = target - next[j];
-      }
-      else if(next[j] > half) {
-        next[j] = target - prev[j];
-      }
-    }
-  });
-}
-
 function calBackgroundSize(value, w, h) {
   let res = [];
   value.forEach((item, i) => {
@@ -305,501 +235,6 @@ function calBackgroundPosition(position, container, size) {
     }
   }
   return 0;
-}
-
-function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x4, y4, outerWidth, outerHeight) {
-  let [x, y, blur, spread, color, inset] = data;
-  let c = int2rgba(color);
-  let n = Math.abs(blur) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2;
-  // box本身坐标顺时针
-  let box = [
-    [x1, y1],
-    [x4, y1],
-    [x4, y4],
-    [x1, y4],
-    [x1, y1],
-  ];
-  // 算上各种偏移/扩散的最外层坐标，且逆时针
-  let outer = [
-    [x1 - n, y1 - n],
-    [x1 - n, y4 + n],
-    [x4 + n, y4 + n],
-    [x4 + n, y1 - n],
-    [x1 - n, y1 - n],
-  ];
-  if(color[3] > 0 && (blur > 0 || spread > 0)) {
-    if(renderMode === mode.CANVAS) {
-      ctx.save();
-      ctx.beginPath();
-      // inset裁剪box外面
-      if(inset === 'inset') {
-        let xa = x1 + x + spread;
-        let ya = y1 + y + spread;
-        let xb = x4 + x - spread;
-        let yb = y4 + y - spread;
-        let spreadBox = [
-          [xa, ya],
-          [xb, ya],
-          [xb, yb],
-          [xa, yb],
-        ];
-        // 是否相交判断需要绘制
-        let cross = geom.getRectsIntersection(
-          [box[0][0], box[0][1], box[2][0], box[2][1]],
-          [spreadBox[0][0], spreadBox[0][1], spreadBox[2][0], spreadBox[2][1]]);
-        if(!cross) {
-          return;
-        }
-        cross = [
-          [cross[0], cross[1]],
-          [cross[2], cross[1]],
-          [cross[2], cross[3]],
-          [cross[0], cross[3]],
-          [cross[0], cross[1]],
-        ];
-        // 扩散区域类似边框填充
-        if(spread) {
-          canvasPolygon(ctx, cross);
-          canvasPolygon(ctx, box.slice(0).reverse());
-          ctx.clip();
-          ctx.closePath();
-          ctx.beginPath();
-          if(ctx.fillStyle !== c) {
-            ctx.fillStyle = c;
-          }
-          canvasPolygon(ctx, box);
-          ctx.fill();
-          ctx.closePath();
-          ctx.restore();
-          ctx.save();
-          ctx.beginPath();
-          canvasPolygon(ctx, cross);
-          ctx.clip();
-          ctx.closePath();
-          ctx.beginPath();
-          if(ctx.fillStyle !== '#FFF') {
-            ctx.fillStyle = '#FFF';
-          }
-          ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
-          // 画在外围的空心矩形，宽度要比blur大，n考虑了这一情况取了最大值
-          canvasPolygon(ctx, [
-            [xa, ya],
-            [xb, ya],
-            [xb, yb],
-            [x1 - n, yb],
-            [x1 - n, y4 + n],
-            [x4 + n, y4 + n],
-            [x4 + n, y1 - n],
-            [x1 - n, y1 - n],
-            [x1 - n, yb],
-            [xa, yb],
-            [xa, ya],
-          ]);
-        }
-        else {
-          canvasPolygon(ctx, box);
-          ctx.clip();
-          ctx.closePath();
-          ctx.beginPath();
-          if(ctx.fillStyle !== '#FFF') {
-            ctx.fillStyle = '#FFF';
-          }
-          ctx.shadowOffsetX = x;
-          ctx.shadowOffsetY = y;
-          ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
-          canvasPolygon(ctx, [
-            [x1, y1],
-            [x4, y1],
-            [x4, y4],
-            [x1 - n, y4],
-            [x1 - n, y4 + n],
-            [x4 + n, y4 + n],
-            [x4 + n, y1 - n],
-            [x1 - n, y1 - n],
-            [x1 - n, y4],
-            [x1, y4],
-            [x1, y1],
-          ]);
-        }
-      }
-      // outset需裁减掉box本身的内容，clip()非零环绕显示box外的阴影内容，fill()绘制在内无效
-      else {
-        let xa = x1 + x - spread;
-        let ya = y1 + y - spread;
-        let xb = x4 + x + spread;
-        let yb = y4 + y + spread;
-        let blurBox = [
-          [xa, ya],
-          [xb, ya],
-          [xb, yb],
-          [xa, yb],
-        ];
-        let cross = geom.getRectsIntersection(
-          [box[0][0], box[0][1], box[2][0], box[2][1]],
-          [blurBox[0][0], blurBox[0][1], blurBox[2][0], blurBox[2][1]]);
-        // 分为是否有spread，因模糊成本spread区域将没有模糊
-        if(spread) {
-          // 扩散区域类似边框填充
-          canvasPolygon(ctx, box);
-          canvasPolygon(ctx, blurBox.slice(0).reverse());
-          ctx.clip();
-          ctx.closePath();
-          ctx.beginPath();
-          if(ctx.fillStyle !== c) {
-            ctx.fillStyle = c;
-          }
-          canvasPolygon(ctx, blurBox);
-          ctx.fill();
-          ctx.closePath();
-          ctx.restore();
-          ctx.save();
-          ctx.beginPath();
-          // 阴影部分看相交情况裁剪，有相交时逆时针绘制相交区域即可排除之
-          if(cross) {
-            canvasPolygon(ctx, [
-              [cross[0], cross[1]],
-              [cross[2], cross[1]],
-              [cross[2], cross[3]],
-              [cross[0], cross[3]],
-              [cross[0], cross[1]],
-            ].reverse());
-          }
-          canvasPolygon(ctx, box);
-          canvasPolygon(ctx, blurBox);
-          canvasPolygon(ctx, outer);
-          ctx.clip();
-          ctx.closePath();
-          ctx.beginPath();
-          if(ctx.fillStyle !== '#FFF') {
-            ctx.fillStyle = '#FFF';
-          }
-          ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
-          canvasPolygon(ctx, blurBox);
-        }
-        else {
-          canvasPolygon(ctx, box);
-          canvasPolygon(ctx, outer);
-          ctx.clip();
-          ctx.closePath();
-          ctx.beginPath();
-          if(ctx.fillStyle !== '#FFF') {
-            ctx.fillStyle = '#FFF';
-          }
-          ctx.shadowOffsetX = x;
-          ctx.shadowOffsetY = y;
-          ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
-          canvasPolygon(ctx, box);
-        }
-      }
-      ctx.fill();
-      ctx.closePath();
-      ctx.restore();
-    }
-    else if(renderMode === mode.SVG) {
-      let d = mx.int2convolution(blur);
-      if(inset === 'inset') {
-        let xa = x1 + x + spread;
-        let ya = y1 + y + spread;
-        let xb = x4 + x - spread;
-        let yb = y4 + y - spread;
-        let spreadBox = [
-          [xa, ya],
-          [xb, ya],
-          [xb, yb],
-          [xa, yb],
-        ];
-        let cross = geom.getRectsIntersection(
-          [box[0][0], box[0][1], box[2][0], box[2][1]],
-          [spreadBox[0][0], spreadBox[0][1], spreadBox[2][0], spreadBox[2][1]]);
-        if(!cross) {
-          return;
-        }
-        cross = [
-          [cross[0], cross[1]],
-          [cross[2], cross[1]],
-          [cross[2], cross[3]],
-          [cross[0], cross[3]],
-          [cross[0], cross[1]],
-        ];
-        if(spread) {
-          let v = {
-            tagName: 'filter',
-            props: [
-              ['x', -d / outerWidth],
-              ['y', -d / outerHeight],
-              ['width', 1 + d * 2 / outerWidth],
-              ['height', 1 + d * 2 / outerHeight],
-            ],
-            children: [
-              {
-                tagName: 'feDropShadow',
-                props: [
-                  ['dx', 0],
-                  ['dy', 0],
-                  ['stdDeviation', blur * 0.5],
-                  ['flood-color', c],
-                ],
-              },
-            ],
-          }
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          let filter = defs.add(v);
-          let v2 = {
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [
-                ['d', svgPolygon(cross) + svgPolygon(box.slice(0).reverse())],
-                ['fill', '#FFF'],
-              ],
-            }],
-          };
-          let clip = defs.add(v2);
-          xom.__config[NODE_DEFS_CACHE].push(v2);
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon(box)],
-              ['fill', c],
-              ['clip-path', 'url(#' + clip + ')'],
-            ],
-          });
-          v = {
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [
-                ['d', svgPolygon(cross)],
-                ['fill', '#FFF'],
-              ],
-            }],
-          };
-          clip = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon([
-                [xa, ya],
-                [xb, ya],
-                [xb, yb],
-                [x1 - n, yb],
-                [x1 - n, y4 + n],
-                [x4 + n, y4 + n],
-                [x4 + n, y1 - n],
-                [x1 - n, y1 - n],
-                [x1 - n, yb],
-                [xa, yb],
-                [xa, ya],
-              ])],
-              ['fill', '#FFF'],
-              ['filter', 'url(#' + filter + ')'],
-              ['clip-path', 'url(#' + clip + ')'],
-            ],
-          });
-        }
-        else {
-          let v = {
-            tagName: 'filter',
-            props: [
-              ['x', -d / outerWidth],
-              ['y', -d / outerHeight],
-              ['width', 1 + d * 2 / outerWidth],
-              ['height', 1 + d * 2 / outerHeight],
-            ],
-            children: [
-              {
-                tagName: 'feDropShadow',
-                props: [
-                  ['dx', x],
-                  ['dy', y],
-                  ['stdDeviation', blur * 0.5],
-                  ['flood-color', c],
-                ],
-              },
-            ],
-          }
-          let filter = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          v = {
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [
-                ['d', svgPolygon(box)],
-                ['fill', '#FFF'],
-              ],
-            }],
-          };
-          let clip = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon([
-                [x1, y1],
-                [x4, y1],
-                [x4, y4],
-                [x1 - n, y4],
-                [x1 - n, y4 + n],
-                [x4 + n, y4 + n],
-                [x4 + n, y1 - n],
-                [x1 - n, y1 - n],
-                [x1 - n, y4],
-                [x1, y4],
-                [x1, y1],
-              ])],
-              ['fill', '#FFF'],
-              ['filter', 'url(#' + filter + ')'],
-              ['clip-path', 'url(#' + clip + ')'],
-            ],
-          });
-        }
-      }
-      else {
-        let xa = x1 + x - spread;
-        let ya = y1 + y - spread;
-        let xb = x4 + x + spread;
-        let yb = y4 + y + spread;
-        let blurBox = [
-          [xa, ya],
-          [xb, ya],
-          [xb, yb],
-          [xa, yb],
-        ];
-        let cross = geom.getRectsIntersection(
-          [box[0][0], box[0][1], box[2][0], box[2][1]],
-          [blurBox[0][0], blurBox[0][1], blurBox[2][0], blurBox[2][1]]);
-        if(spread) {
-          let v = {
-            tagName: 'filter',
-            props: [
-              ['x', -d / outerWidth],
-              ['y', -d / outerHeight],
-              ['width', 1 + d * 2 / outerWidth],
-              ['height', 1 + d * 2 / outerHeight],
-            ],
-            children: [
-              {
-                tagName: 'feDropShadow',
-                props: [
-                  ['dx', 0],
-                  ['dy', 0],
-                  ['stdDeviation', blur * 0.5],
-                  ['flood-color', c],
-                ],
-              },
-            ],
-          };
-          let filter = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          v = {
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [
-                ['d', svgPolygon(box) + svgPolygon(blurBox.slice(0).reverse())],
-                ['fill', '#FFF'],
-              ],
-            }],
-          };
-          let clip = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon(blurBox)],
-              ['fill', c],
-              ['clip-path', 'url(#' + clip + ')'],
-            ],
-          });
-          v = {
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [
-                ['d', (cross ? svgPolygon([
-                  [cross[0], cross[1]],
-                  [cross[2], cross[1]],
-                  [cross[2], cross[3]],
-                  [cross[0], cross[3]],
-                  [cross[0], cross[1]],
-                ].reverse()) : '')
-                + svgPolygon(box) + svgPolygon(blurBox) + svgPolygon(outer)],
-                ['fill', '#FFF'],
-              ],
-            }],
-          };
-          clip = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon(blurBox)],
-              ['fill', '#FFF'],
-              ['filter', 'url(#' + filter + ')'],
-              ['clip-path', 'url(#' + clip + ')'],
-            ],
-          });
-        }
-        else {
-          let v = {
-            tagName: 'filter',
-            props: [
-              ['x', -d / outerWidth],
-              ['y', -d / outerHeight],
-              ['width', 1 + d * 2 / outerWidth],
-              ['height', 1 + d * 2 / outerHeight],
-            ],
-            children: [
-              {
-                tagName: 'feDropShadow',
-                props: [
-                  ['dx', x],
-                  ['dy', y],
-                  ['stdDeviation', blur * 0.5],
-                  ['flood-color', c],
-                ],
-              },
-            ],
-          };
-          let filter = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          v = {
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [
-                ['d', svgPolygon(box) + svgPolygon(outer)],
-                ['fill', '#FFF'],
-              ],
-            }],
-          };
-          let clip = defs.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon(box)],
-              ['fill', '#FFF'],
-              ['filter', 'url(#' + filter + ')'],
-              ['clip-path', 'url(#' + clip + ')'],
-            ],
-          });
-        }
-      }
-    }
-  }
 }
 
 class Xom extends Node {
@@ -998,7 +433,7 @@ class Xom extends Node {
     }
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
-      if(display === 'inline' && this.tagName !== 'img') {
+      if(this.__isRealInline()) {
         width[1] = AUTO;
       }
       else {
@@ -1111,7 +546,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager, endSpace = 0 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -1120,6 +555,7 @@ class Xom extends Node {
       [HEIGHT]: height,
     } = currentStyle;
     let {
+      // [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -1183,12 +619,21 @@ class Xom extends Node {
       y += borderTopWidth + marginTop + paddingTop;
     }
     data.y = y;
-    // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb
-    if(width[1] === AUTO || w3 !== undefined) {
-      w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
+    // inline的w/h很特殊，需不考虑inline自身水平的mpb以便换行，因为mpb只在首尾行生效，所以首尾需特殊处理中间忽略
+    // 当嵌套inline时更加复杂，假如inline有尾部mpb，最后一行需考虑，如果此inline是父的最后一个且父有mpb需叠加
+    let selfEndSpace = 0;
+    if(isInline) {
+      selfEndSpace = paddingRight + borderRightWidth + marginRight;
+      // endSpace += selfEndSpace;
     }
-    if(height[1] === AUTO || h3 !== undefined) {
-      h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
+    // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb，其一定是block和inline互斥
+    if(!isInline) {
+      if(width[1] === AUTO || w3 !== undefined) {
+        w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
+      }
+      if(height[1] === AUTO || h3 !== undefined) {
+        h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
+      }
     }
     return {
       fixedWidth,
@@ -1199,6 +644,8 @@ class Xom extends Node {
       h,
       lx,
       lineBoxManager,
+      endSpace,
+      selfEndSpace,
     };
   }
 
@@ -1462,6 +909,8 @@ class Xom extends Node {
         }
       });
       // 圆角边计算
+      let isInline = this.__isRealInline();
+      let contentBoxList = isInline ? this.contentBoxList : null;
       if(__cacheStyle[BORDER_TOP_LEFT_RADIUS] === undefined
         || __cacheStyle[BORDER_TOP_RIGHT_RADIUS] === undefined
         || __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS] === undefined
@@ -1471,7 +920,14 @@ class Xom extends Node {
           = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS]
           = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS]
           = true;
-        calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle);
+        // 非替代的inline计算看contentBox首尾
+        if(isInline) {
+          border.calBorderRadiusInline(contentBoxList, currentStyle, computedStyle);
+        }
+        // 普通block整体计算
+        else {
+          border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle);
+        }
       }
       // width/style/radius影响border，color不影响渲染缓存
       let btlr = computedStyle[BORDER_TOP_LEFT_RADIUS];
@@ -1495,10 +951,12 @@ class Xom extends Node {
         if(__cacheStyle[k2] === undefined) {
           if(k2 === BORDER_TOP) {
             if(borderTopWidth > 0) {
-              let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-              let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-              __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
+              if(!isInline) {
+                let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+                let deg2 = Math.atan(borderTopWidth / borderRightWidth);
+                __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
+                  x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
+              }
             }
             else {
               __cacheStyle[k2] = [];
@@ -1506,10 +964,12 @@ class Xom extends Node {
           }
           else if(k2 === BORDER_RIGHT) {
             if(borderRightWidth > 0) {
-              let deg1 = Math.atan(borderRightWidth / borderTopWidth);
-              let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-              __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
+              if(!isInline) {
+                let deg1 = Math.atan(borderRightWidth / borderTopWidth);
+                let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+                __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
+                  x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
+              }
             }
             else {
               __cacheStyle[k2] = [];
@@ -1517,10 +977,12 @@ class Xom extends Node {
           }
           else if(k2 === BORDER_BOTTOM) {
             if(borderBottomWidth > 0) {
-              let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
-              let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-              __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
+              if(!isInline) {
+                let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
+                let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
+                __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
+                  x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
+              }
             }
             else {
               __cacheStyle[k2] = [];
@@ -1528,10 +990,12 @@ class Xom extends Node {
           }
           else if(k2 === BORDER_LEFT) {
             if(borderLeftWidth > 0) {
-              let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
-              let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-              __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
-                x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
+              if(!isInline) {
+                let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
+                let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
+                __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
+                  x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
+              }
             }
             else {
               __cacheStyle[k2] = [];
@@ -1712,9 +1176,10 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
-    // 考虑mpb的6个坐标，inline比较特殊单独计算 TODO:放layout
+    let isRealInline = this.__isRealInline();
+    // 考虑mpb的6个坐标，inline比较特殊单独计算
     let x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6;
-    if(display === 'inline') {
+    if(isRealInline) {
       x1 = this.__sx1;
       x2 = this.__sx2;
       x3 = this.__sx3;
@@ -1744,13 +1209,13 @@ class Xom extends Node {
     }
     // 默认border-box
     let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
-    if(backgroundClip === 'paddingBox') {
+    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
       bx1 = x2;
       by1 = y2;
       bx2 = x5;
       by2 = y5;
     }
-    else if(backgroundClip === 'contentBox') {
+    else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
       bx1 = x3;
       by1 = y3;
       bx2 = x4;
@@ -2059,7 +1524,7 @@ class Xom extends Node {
       btrr = borderTopRightRadius.slice(0);
       bbrr = borderBottomRightRadius.slice(0);
       bblr = borderBottomLeftRadius.slice(0);
-      if(backgroundClip === 'padding-box') {
+      if(backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
         btlr[0] -= borderLeftWidth;
         btlr[1] -= borderTopWidth;
         btrr[0] -= borderRightWidth;
@@ -2069,7 +1534,7 @@ class Xom extends Node {
         bblr[0] -= borderLeftWidth;
         bblr[1] -= borderBottomWidth;
       }
-      else if(backgroundClip === 'content-box') {
+      else if(backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
         btlr[0] -= borderLeftWidth + paddingLeft;
         btlr[1] -= borderTopWidth + paddingTop;
         btrr[0] -= borderRightWidth + paddingRight;
@@ -2080,11 +1545,137 @@ class Xom extends Node {
         bblr[1] -= borderBottomWidth + paddingBottom;
       }
     }
-    // inline特殊渲染LineBox
-    if(display === 'inline') {
-      if(backgroundColor[3] > 0) {
-        bg.renderBgcInline(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
-          bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+    /**
+     * inline的渲染同block/ib不一样，不是一个矩形区域
+     * 它根据内部的contentBox渲染，contentBox是指lineBox中的内容，即TextBox/inline/ib元素
+     * 首尾可能不满行，比如从一半开始或一半结束，甚至可能没有内容
+     * 两行之间可能不满，如果lineBox的高度>lineHeight的话，另外特殊字体如arial拥有lineGap也会产生间隙，背景色不绘制这个间隙
+     * x轴根据contentBox的范围坐标，y则固定和font/lineHeight相关
+     * 圆角发生在首尾lineBox处，中间不会有，bgi则产生类似bgc作为mask的效果
+     * 另外要注意多个时的顺序，必须依次渲染，后面的bb可能会覆盖前面行的
+     */
+    if(isRealInline) {
+      let contentBoxList = this.contentBoxList;
+      let length = contentBoxList.length;
+      if(length) {
+        let {
+          [FONT_SIZE]: fontSize,
+          [FONT_FAMILY]: fontFamily,
+          [LINE_HEIGHT]: lineHeight,
+        } = computedStyle;
+        // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
+        let ff = css.getFontFamily(fontFamily);
+        let baseLine = css.getBaseLine(computedStyle);
+        // lineGap，一般为0，某些字体如arial有，渲染高度需减去它
+        let diffL = fontSize * (font.info[ff].lgr || 0);
+        // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
+        let eyt = 0, eyb = 0;
+        if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+          eyt = paddingTop;
+          eyb = paddingBottom;
+        }
+        else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+          eyt = paddingTop + borderTopWidth;
+          eyb = paddingBottom + borderBottomWidth;
+        }
+        // 计算x左右两侧pb值，其影响border渲染
+        let pbl = paddingLeft + borderLeftWidth;
+        let pbr = paddingRight + borderRightWidth;
+        let pbt = paddingTop + borderTopWidth;
+        let pbb = paddingBottom + borderBottomWidth;
+        // 注意只有1个的时候特殊情况，圆角只在首尾行出现
+        let isFirst = true;
+        let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
+        for(let i = 0; i < length; i++) {
+          let contentBox = contentBoxList[i];
+          if(contentBox.parentLineBox !== lastLineBox) {
+            // 上一行
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = bg.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox,
+              baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst);
+            if(backgroundColor[3] > 0) {
+              bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
+                ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+            }
+            if(boxShadow) {
+              boxShadow.forEach(item => {
+                bs.renderBoxShadow(this, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+              });
+            }
+            if(borderTopWidth > 0 && borderTopColor[3] > 0) {
+              let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+              let deg2 = Math.atan(borderTopWidth / borderRightWidth);
+              let list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2,
+                bx1, bx1 + borderLeftWidth, bx2, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+            }
+            if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
+              let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
+              let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
+              let list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], deg1, deg2,
+                bx1, bx1 + borderLeftWidth, bx2, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+            }
+            if(isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
+              let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
+              let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
+              let list = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], deg1, deg2,
+                bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+            }
+            isFirst = false;
+            lastContentBox = contentBox;
+            lastLineBox = contentBox.parentLineBox;
+          }
+          // 最后一个特殊判断
+          if(i === length - 1) {
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = bg.getInlineBox(this, contentBoxList, lastContentBox, contentBoxList[Math.max(0, i - 1)], lastLineBox,
+              baseLine, lineHeight, diffL, eyt, eyb, pbl, pbr, pbt, pbb, isFirst, true);
+            if(backgroundColor[3] > 0) {
+              bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
+                ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+            }
+            if(boxShadow) {
+              boxShadow.forEach(item => {
+                bs.renderBoxShadow(this, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+              });
+            }
+            if(borderTopWidth > 0 && borderTopColor[3] > 0) {
+              let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+              let deg2 = Math.atan(borderTopWidth / borderRightWidth);
+              let list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2,
+                bx1, bx1, bx2 - borderRightWidth, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], btrr);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+            }
+            if(borderRightWidth > 0 && borderRightColor[3] > 0) {
+              let deg1 = Math.atan(borderRightWidth / borderTopWidth);
+              let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+              let list = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], deg1, deg2,
+                bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+            }
+            if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
+              let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
+              let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
+              let list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], deg1, deg2,
+                bx1, bx1, bx2 - borderRightWidth, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+            }
+            if(isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
+              let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
+              let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
+              let list = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], deg1, deg2,
+                bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2,
+                by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
+              border.renderBorder(this, renderMode, ctx, list, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+            }
+          }
+        }
       }
       return;
     }
@@ -2369,9 +1960,9 @@ class Xom extends Node {
               renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
                 btlr, btrr, bbrr, bblr);
             }
-            else {
-              renderBgc(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
-                btlr, btrr, bbrr, bblr);
+            else {console.log(gd.v);
+              bg.renderBgc(this, renderMode, ctx, defs, gd.v,
+                bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
             }
           }
         }
@@ -2380,21 +1971,21 @@ class Xom extends Node {
     // boxShadow可能会有多个
     if(boxShadow) {
       boxShadow.forEach(item => {
-        renderBoxShadow(renderMode, ctx, defs, item, this, x1, y1, x6, y6, outerWidth, outerHeight);
+        bs.renderBoxShadow(this, renderMode, ctx, defs, item, x1, y1, x6, y6, x6 - x1, y6 - y1);
       });
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
-      renderBorder(renderMode, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR], ctx, this, dx, dy);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR], dx, dy);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
-      renderBorder(renderMode, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR], ctx, this, dx, dy);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-      renderBorder(renderMode, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR], ctx, this, dx, dy);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-      renderBorder(renderMode, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR], ctx, this, dx, dy);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
     }
     if(__cache && __cache.enabled) {
       __cache.__available = true;
@@ -2861,6 +2452,11 @@ class Xom extends Node {
     this.__sx2 += diff;
     this.__sx3 += diff;
     this.__sx4 += diff;
+    this.__sx5 += diff;
+    this.__sx6 += diff;
+    if(!this.__isRealInline()) {
+      this.lineBoxManager.__offsetX(diff);
+    }
   }
 
   __offsetY(diff, isLayout, lv) {
@@ -2875,6 +2471,11 @@ class Xom extends Node {
     this.__sy2 += diff;
     this.__sy3 += diff;
     this.__sy4 += diff;
+    this.__sy5 += diff;
+    this.__sy6 += diff;
+    if(!this.__isRealInline()) {
+      this.lineBoxManager.__offsetY(diff);
+    }
   }
 
   __resizeX(diff, lv) {
@@ -2980,6 +2581,10 @@ class Xom extends Node {
       bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
       points: [p1, p2, p3, p4],
     };
+  }
+
+  __isRealInline() {
+    return this.computedStyle[DISPLAY] === 'inline';
   }
 
   get tagName() {

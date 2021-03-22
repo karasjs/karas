@@ -41,6 +41,14 @@ class LineBox {
     }
   }
 
+  __offsetX(diff) {
+    this.__x += diff;
+  }
+
+  __offsetY(diff) {
+    this.__y += diff;
+  }
+
   get list() {
     return this.__list;
   }
@@ -78,11 +86,14 @@ class LineBox {
   }
 
   get baseLine() {
-    let baseLine = this.__y;
-    this.list.forEach(item => {
-      baseLine = Math.max(baseLine, item.baseLine);
-    });
-    return baseLine;
+    if(this.__baseLine === undefined) {
+      let baseLine = 0;
+      this.list.forEach(item => {
+        baseLine = Math.max(baseLine, item.baseLine);
+      });
+      this.__baseLine = baseLine;
+    }
+    return this.__baseLine;
   }
 
   get lineHeight() {
@@ -93,16 +104,16 @@ class LineBox {
     return n;
   }
 
-  get marginBottom() {
-    // lineBox都是inline-block，暂定不会有负
-    let n = 0;
-    this.list.forEach(item => {
-      if(!(item instanceof TextBox)) {
-        n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
-      }
-    });
-    return n;
-  }
+  // get marginBottom() {
+  //   // lineBox都是inline-block，暂定不会有负
+  //   let n = 0;
+  //   this.list.forEach(item => {
+  //     if(!(item instanceof TextBox)) {
+  //       n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
+  //     }
+  //   });
+  //   return n;
+  // }
 }
 
 export default LineBox;

@@ -1,11 +1,33 @@
+import geom from '../math/geom';
+import mode from '../node/mode';
+import painter from '../util/painter';
+import enums from '../util/enums';
+import unit from './unit';
+
+const { H } = geom;
+const { PX } = unit;
+const { canvasPolygon, svgPolygon } = painter;
+const {
+  STYLE_KEY: {
+    BORDER_LEFT_WIDTH,
+    BORDER_RIGHT_WIDTH,
+    BORDER_TOP_WIDTH,
+    BORDER_BOTTOM_WIDTH,
+    PADDING_LEFT,
+    PADDING_RIGHT,
+    PADDING_BOTTOM,
+    PADDING_TOP,
+    BORDER_TOP_LEFT_RADIUS,
+    BORDER_TOP_RIGHT_RADIUS,
+    BORDER_BOTTOM_LEFT_RADIUS,
+    BORDER_BOTTOM_RIGHT_RADIUS,
+  },
+} = enums;
+
 /* 获取合适的虚线实体空白宽度ps/pd和数量n
  * 总长total，start边长bs，end边长be，内容长w，
  * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
  */
-import geom from '../math/geom';
-
-const { H } = geom;
-
 function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
   let n = 1;
   let ps = 1;
@@ -2736,7 +2758,129 @@ function limit(points, x, y, direction) {
   }
 }
 
+const BR_KS = [BORDER_TOP_LEFT_RADIUS, BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS];
+function calBorderRadius(w, h, currentStyle, computedStyle) {
+  let noRadius = true;
+  BR_KS.forEach(k => {
+    computedStyle[k] = currentStyle[k].map((item, i) => {
+      if(item[0] > 0) {
+        noRadius = false;
+      }
+      else {
+        return 0;
+      }
+      if(item[1] === PX) {
+        return Math.max(0, item[0]);
+      }
+      else {
+        return Math.max(0, item[0] * (i ? h : w) * 0.01);
+      }
+    });
+  });
+  // 优化提前跳出
+  if(noRadius) {
+    return;
+  }
+  // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
+  BR_KS.forEach((k, i) => {
+    let j = i % 2 === 0 ? 0 : 1;
+    let target = j ? h : w;
+    let prev = computedStyle[k];
+    let next = computedStyle[BR_KS[(i + 1) % 4]];
+    // 相加超过边长则是相交
+    if(prev[j] + next[j] > target) {
+      let half = target * 0.5;
+      // 都超过一半中点取中点
+      if(prev[j] >= half && next[j] >= half) {
+        prev[j] = next[j] = half;
+      }
+      // 仅1个超过中点，因相交用总长减去另一方即可
+      else if(prev[j] > half) {
+        prev[j] = target - next[j];
+      }
+      else if(next[j] > half) {
+        next[j] = target - prev[j];
+      }
+    }
+  });
+}
+
+function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
+  let first, last;
+  if(contentBoxList.length) {
+    first = contentBoxList[0];
+    last = contentBoxList[contentBoxList.length - 1]
+  }
+  // 先看first的左侧
+  let w = first ? first.outerWidth : 0, h = first ? first.outerHeight : 0;
+  w += computedStyle[BORDER_LEFT_WIDTH] + computedStyle[PADDING_LEFT];
+  h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH]
+    + computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
+  [BORDER_TOP_LEFT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS].forEach(k => {
+    computedStyle[k] = currentStyle[k].map((item, i) => {
+      let v;
+      if(item[1] === PX) {
+        v = Math.max(0, item[0]);
+        v = Math.min(i ? h : w, v);
+      }
+      else {
+        v = Math.max(0, item[0] * (i ? h : w) * 0.01);
+        v = Math.min(i ? h : w, v);
+      }
+      return v;
+    });
+  });
+  // 再看end的右侧
+  w = last ? last.outerWidth : 0;
+  h = last ? last.outerHeight : 0;
+  [BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS].forEach(k => {
+    computedStyle[k] = currentStyle[k].map((item, i) => {
+      let v;
+      if(item[1] === PX) {
+        v = Math.max(0, item[0]);
+        v = Math.min(i ? h : w, v);
+      }
+      else {
+        v = Math.max(0, item[0] * (i ? h : w) * 0.01);
+        v = Math.min(i ? h : w, v);
+      }
+      return v;
+    });
+  });
+}
+
+function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
+  if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
+    if(ctx.fillStyle !== color) {
+      ctx.fillStyle = color;
+    }
+    points.forEach(point => {
+      canvasPolygon(ctx, point, dx, dy);
+    });
+    ctx.fill();
+    ctx.closePath();
+  }
+  else if(renderMode === mode.SVG) {
+    let s = '';
+    points.forEach(point => {
+      s += svgPolygon(point);
+    });
+    xom.virtualDom.bb.push({
+      type: 'item',
+      tagName: 'path',
+      props: [
+        ['d', s],
+        ['fill', color],
+      ],
+    });
+  }
+}
+
 export default {
   calPoints,
   calRadius,
+  calBorderRadius,
+  calBorderRadiusInline,
+  renderBorder,
 };

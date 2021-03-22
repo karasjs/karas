@@ -1,6 +1,6 @@
 'use strict';
 
-export default {
+let o = {
   info: {
     arial: {
       lhr: 1.14990234375, // 默认line-height ratio，(67+1854+434)/2048
@@ -8,10 +8,10 @@ export default {
       blr: 0.9052734375, // base-line ratio，1854/2048
       // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
       lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
-      // 个别字符误差，https://stackoverflow.com/questions/66548845/why-is-the-sum-width-of-each-item-not-equal-to-the-total-in-canvas-textmetrics
+      // 个别字符误差，https://github.com/karasjs/karas/issues/145
       padding: {
-        1: 1.484375 / 20,
-        f: 0.361328125 / 20,
+        1: true,
+        f: true,
       },
     },
     verdana: {
@@ -34,7 +34,7 @@ export default {
       lhr: 1.4, // (0+1060+340)/1000
       blr: 1.06, // 1060/1000
     },
-    '宋体': {
+    simsun: {
       lhr: 1.4, // (0+1060+340)/1000
       blr: 1.06,
     },
@@ -54,3 +54,7 @@ export default {
     Object.assign(this.info[name.toLowerCase()].padding, padding);
   },
 };
+
+o.info['宋体'] = o.info.simsun;
+
+export default o;

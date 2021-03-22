@@ -2,6 +2,7 @@ import util from './util';
 import debug from './debug';
 import enums from './enums';
 import textCache from '../node/textCache';
+import font from '../style/font';
 
 const { STYLE_KEY: {
   FONT_SIZE,
@@ -15,6 +16,8 @@ const WEBGL = {};
 const CANVAS_LIST = [];
 const WEBGL_LIST = [];
 const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
+
+let defaultFontFamilyData;
 
 function cache(key, width, height, hash, message) {
   let o;
@@ -86,18 +89,24 @@ let inject = {
     let { list, data } = textCache;
     let html = '';
     let keys = [];
+    let ffs = [];
+    let fss = [];
+    let lengths = [];
     let chars = [];
-    Object.keys(data).forEach(i => {
-      let { key, style, s } = data[i];
+    Object.keys(data).forEach(key => {
+      let { ff, fs, fw, s } = data[key];
       if(s) {
-        let inline = `position:absolute;font-family:${style[FONT_FAMILY]};font-size:${style[FONT_SIZE]}px;font-weight:${style[FONT_WEIGHT]}`;
-        for(let j = 0, len = s.length; j < len; j++) {
-          keys.push(key);
-          let char = s.charAt(j);
+        keys.push(key);
+        ffs.push(ff);
+        fss.push(fs);
+        lengths.push(s.length);
+        let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
+        for(let i = 0, len = s.length; i < len; i++) {
+          let char = s.charAt(i);
           chars.push(char);
           html += `<span style="${inline}">${char.replace(/</, '&lt;').replace(' ', '&nbsp;')}</span>`;
         }
-        data[i].s = '';
+        data[key].s = '';
       }
     });
     if(!html) {
@@ -112,9 +121,18 @@ let inject = {
     div.innerHTML = html;
     let cns = div.childNodes;
     let { charWidth } = textCache;
+    let count = 0, index = 0, key, ff, fs;
     for(let i = 0, len = cns.length; i < len; i++) {
       let node = cns[i];
-      let key = keys[i];
+      if(count === 0) {
+        key = keys[index];
+        ff = ffs[index];
+        fs = fss[index];
+      }
+      if(++count === lengths[index]) {
+        index++;
+        count = 0;
+      }
       let char = chars[i];
       // clientWidth只返回ceil整数，精度必须用getComputedStyle
       let css = window.getComputedStyle(node, null);
@@ -292,6 +310,39 @@ let inject = {
       }
     }
     return false;
+  },
+  checkSupportFontFamily(ff) {
+    ff = ff.toLowerCase();
+    // 强制arial兜底
+    if(ff === 'arial') {
+      return true;
+    }
+    if(!font.info.hasOwnProperty(ff)) {
+      return false;
+    }
+    if(font.info[ff].hasOwnProperty('checked')) {
+      return font.info[ff].checked;
+    }
+    let canvas = inject.getCacheCanvas(16, 16, '__$$checkSupportFontFamily$$__');
+    let context = canvas.ctx;
+    context.textAlign = 'center';
+    context.fillStyle = '#000';
+    context.textBaseline = 'middle';
+    if(!defaultFontFamilyData) {
+      context.font = '16px arial';
+      context.fillText('a', 8, 8);
+      defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
+    }
+    context.clearRect(0, 0, 16, 16);
+    context.font = '16px ' + ff + ',arial';
+    context.fillText('a', 8, 8);
+    let data = context.getImageData(0, 0, 16, 16).data;
+    for(let i = 0, len = data.length; i < len; i++) {
+      if(defaultFontFamilyData[i] !== data[i]) {
+        return font.info[ff].checked = true;
+      }
+    }
+    return font.info[ff].checked = false;
   },
 };
 

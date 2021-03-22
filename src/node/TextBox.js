@@ -117,7 +117,8 @@ class TextBox {
   }
 
   get baseLine() {
-    return this.y + css.getBaseLine(this.parent.computedStyle);
+    return this.parent.baseLine;
+    // return css.getBaseLine(this.parent.computedStyle);
   }
 
   get virtualDom() {

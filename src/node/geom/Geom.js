@@ -826,6 +826,10 @@ class Geom extends Xom {
     return this['__' + k];
   }
 
+  __isRealInline() {
+    return false;
+  }
+
   get baseLine() {
     return this.__height;
   }

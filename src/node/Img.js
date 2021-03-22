@@ -465,6 +465,10 @@ class Img extends Dom {
     }
   }
 
+  __isRealInline() {
+    return false;
+  }
+
   get baseLine() {
     return this.height;
   }

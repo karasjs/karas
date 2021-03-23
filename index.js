@@ -15135,36 +15135,29 @@
         } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
 
 
-        var hasBgi = backgroundImage.some(function (item) {
-          return item;
-        });
-        var btlr, btrr, bbrr, bblr;
+        var btlr = borderTopLeftRadius.slice(0);
+        var btrr = borderTopRightRadius.slice(0);
+        var bbrr = borderBottomRightRadius.slice(0);
+        var bblr = borderBottomLeftRadius.slice(0);
 
-        if (backgroundColor[3] > 0 || hasBgi) {
-          btlr = borderTopLeftRadius.slice(0);
-          btrr = borderTopRightRadius.slice(0);
-          bbrr = borderBottomRightRadius.slice(0);
-          bblr = borderBottomLeftRadius.slice(0);
-
-          if (backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
-            btlr[0] -= borderLeftWidth;
-            btlr[1] -= borderTopWidth;
-            btrr[0] -= borderRightWidth;
-            btrr[1] -= borderTopWidth;
-            bbrr[0] -= borderRightWidth;
-            bbrr[1] -= borderBottomWidth;
-            bblr[0] -= borderLeftWidth;
-            bblr[1] -= borderBottomWidth;
-          } else if (backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
-            btlr[0] -= borderLeftWidth + paddingLeft;
-            btlr[1] -= borderTopWidth + paddingTop;
-            btrr[0] -= borderRightWidth + paddingRight;
-            btrr[1] -= borderTopWidth + paddingTop;
-            bbrr[0] -= borderRightWidth + paddingRight;
-            bbrr[1] -= borderBottomWidth + paddingBottom;
-            bblr[0] -= borderLeftWidth + paddingLeft;
-            bblr[1] -= borderBottomWidth + paddingBottom;
-          }
+        if (backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
+          btlr[0] -= borderLeftWidth;
+          btlr[1] -= borderTopWidth;
+          btrr[0] -= borderRightWidth;
+          btrr[1] -= borderTopWidth;
+          bbrr[0] -= borderRightWidth;
+          bbrr[1] -= borderBottomWidth;
+          bblr[0] -= borderLeftWidth;
+          bblr[1] -= borderBottomWidth;
+        } else if (backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
+          btlr[0] -= borderLeftWidth + paddingLeft;
+          btlr[1] -= borderTopWidth + paddingTop;
+          btrr[0] -= borderRightWidth + paddingRight;
+          btrr[1] -= borderTopWidth + paddingTop;
+          bbrr[0] -= borderRightWidth + paddingRight;
+          bbrr[1] -= borderBottomWidth + paddingBottom;
+          bblr[0] -= borderLeftWidth + paddingLeft;
+          bblr[1] -= borderBottomWidth + paddingBottom;
         }
 
         if (__cache && __cache.enabled) {
@@ -15184,6 +15177,9 @@
         if (isRealInline) {
           var contentBoxList = this.contentBoxList;
           var length = contentBoxList.length;
+          var hasBgi = backgroundImage.some(function (item) {
+            return item;
+          });
 
           if (length) {
             var fontSize = computedStyle[FONT_SIZE$4],

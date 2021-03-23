@@ -744,7 +744,6 @@ class Geom extends Xom {
               tagName: 'path',
               props: [
                 ['d', svgPolygon(item)],
-                ['fill', '#FFF'],
               ],
             }],
           };
@@ -770,7 +769,6 @@ class Geom extends Xom {
             tagName: 'path',
             props: [
               ['d', svgPolygon(list)],
-              ['fill', '#FFF'],
             ],
           }],
         };

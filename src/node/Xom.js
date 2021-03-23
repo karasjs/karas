@@ -1,12 +1,10 @@
 import Node from './Node';
 import mode from './mode';
-// import painter from '../util/painter';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
-import image from '../style/image';
 import bg from '../style/bg';
 import enums from '../util/enums';
 import util from '../util/util';
@@ -18,7 +16,6 @@ import geom from '../math/geom';
 import change from '../refresh/change';
 import level from '../refresh/level';
 import Cache from '../refresh/Cache';
-import transform from '../style/transform';
 import font from '../style/font';
 import bs from '../style/bs';
 import inline from './inline';
@@ -134,7 +131,6 @@ const {
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { clone, int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
-// const { canvasPolygon, svgPolygon } = painter;
 const { GEOM } = change;
 
 const {
@@ -1477,7 +1473,7 @@ class Xom extends Node {
           [LINE_HEIGHT]: lineHeight,
         } = computedStyle;
         let iw = 0;
-        let offscreen;
+        let offscreen, svgBgSymbol = [];
         // bgi视作inline排满一行绘制，然后按分行拆开给每行
         if(hasBgi) {
           iw = inline.getInlineWidth(this, contentBoxList);
@@ -1499,21 +1495,30 @@ class Xom extends Node {
             if(util.isString(bgi)) {
               let loadBgi = this.__loadBgi[i];
               if(loadBgi.url === backgroundImage[i]) {
-                bg.renderImage(this, renderMode, offscreen.ctx, defs, loadBgi,
+                let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx, defs, loadBgi,
                   0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr,
                   currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                if(renderMode === mode.SVG && uuid) {
+                  svgBgSymbol.push(uuid);
+                }
               }
             }
             else if(bgi.k) {
               let gd = this.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
               if(gd) {
                 if(gd.k === 'conic') {
-                  gradient.renderConic(this, renderMode, offscreen.ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1,
-                    btlr, btrr, bbrr, bblr);
+                  let uuid = gradient.renderConic(this, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight,
+                    btlr, btrr, bbrr, bblr, true);
+                  if(renderMode === mode.SVG && uuid) {
+                    svgBgSymbol.push(uuid);
+                  }
                 }
                 else {
-                  bg.renderBgc(this, renderMode, offscreen.ctx, defs, gd.v,
-                    0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr);
+                  let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx, defs, gd.v,
+                    0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, 'fill', true);
+                  if(renderMode === mode.SVG && uuid) {
+                    svgBgSymbol.push(uuid);
+                  }
                 }
               }
             }
@@ -1527,8 +1532,8 @@ class Xom extends Node {
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
-        // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制
-        let countW = 0;
+        // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制，svg还需统计第几行
+        let count = 0, countW = 0;
         for(let i = 0; i < length; i++) {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
@@ -1541,11 +1546,43 @@ class Xom extends Node {
               bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
                 ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
             }
-            if(offscreen) {
-              let w = ix2 - ix1;
+            let w = ix2 - ix1;
+            // canvas的bg位图裁剪
+            if(renderMode === mode.CANVAS && offscreen) {
               ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
-              countW += w;
             }
+            //svg则特殊判断
+            else if(renderMode === mode.SVG && svgBgSymbol.length) {
+              svgBgSymbol.forEach(symbol => {
+                if(symbol) {
+                  let v = {
+                    tagName: 'clipPath',
+                    props: [],
+                    children: [
+                      {
+                        tagName: 'path',
+                        props: [
+                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${lineHeight}L${countW},${lineHeight},L${countW},${0}`],
+                        ],
+                      }
+                    ],
+                  };
+                  let clip = defs.add(v);
+                  __config[NODE_DEFS_CACHE].push(v);
+                  virtualDom.bb.push({
+                    type: 'item',
+                    tagName: 'use',
+                    props: [
+                      ['xlink:href', '#' + symbol],
+                      ['x', ix1 - countW],
+                      ['y', iy1],
+                      ['clip-path', 'url(#' + clip + ')'],
+                    ],
+                  });
+                }
+              });
+            }
+            countW += w;
             if(boxShadow) {
               boxShadow.forEach(item => {
                 bs.renderBoxShadow(this, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
@@ -1578,6 +1615,7 @@ class Xom extends Node {
             isFirst = false;
             lastContentBox = contentBox;
             lastLineBox = contentBox.parentLineBox;
+            count++;
           }
           // 最后一个特殊判断
           if(i === length - 1) {
@@ -1589,10 +1627,41 @@ class Xom extends Node {
               bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
                 ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
             }
-            if(offscreen) {
-              let w = ix2 - ix1;
+            let w = ix2 - ix1;
+            // canvas的bg位图裁剪
+            if(renderMode === mode.CANVAS && offscreen) {
               ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
-              countW += w;
+            }
+            //svg则特殊判断
+            else if(renderMode === mode.SVG && svgBgSymbol.length) {
+              svgBgSymbol.forEach(symbol => {
+                if(symbol) {
+                  let v = {
+                    tagName: 'clipPath',
+                    props: [],
+                    children: [
+                      {
+                        tagName: 'path',
+                        props: [
+                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${lineHeight}L${countW},${lineHeight},L${countW},${0}`],
+                        ],
+                      }
+                    ],
+                  };
+                  let clip = defs.add(v);
+                  __config[NODE_DEFS_CACHE].push(v);
+                  virtualDom.bb.push({
+                    type: 'item',
+                    tagName: 'use',
+                    props: [
+                      ['xlink:href', '#' + symbol],
+                      ['x', ix1 - countW],
+                      ['y', iy1],
+                      ['clip-path', 'url(#' + clip + ')'],
+                    ],
+                  });
+                }
+              });
             }
             if(boxShadow) {
               boxShadow.forEach(item => {

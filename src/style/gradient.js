@@ -613,7 +613,7 @@ function calConicRadius(v, deg, position, x1, y1, x2, y2) {
   return [cx, cy, r, deg];
 }
 
-function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr) {
+function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
   if(!list) {
@@ -629,7 +629,7 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
     let data = gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop);
     let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
     let imgData = offscreen.ctx.getImageData(0,0, w, h);
-    for (let i = 0; i < imgData.data.length; i++) {
+    for(let i = 0; i < imgData.data.length; i++) {
       imgData.data[i] = data[i];
     }
     offscreen.ctx.putImageData(imgData, 0, 0);
@@ -643,29 +643,49 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
     offscreen.ctx.clearRect(0, 0, w, h);
   }
   else if(renderMode === mode.SVG) {
-    let v = {
-      tagName: 'clipPath',
-      children: [{
-        tagName: 'path',
-        props: [
-          ['d', svgPolygon(list)],
-          ['fill', '#FFF'],
-        ],
-      }],
-    };
-    xom.__config[NODE_DEFS_CACHE].push(v);
-    let clip = defs.add(v);
-    res.forEach(item => {
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'path',
-        props: [
-          ['d', svgPolygon(item[0])],
-          ['fill', item[1]],
-          ['clip-path', 'url(#' + clip + ')'],
-        ],
+    if(isInline) {
+      let v = {
+        tagName: 'symbol',
+        props: [],
+        children: [],
+      };
+      xom.__config[NODE_DEFS_CACHE].push(v);
+      res.forEach(item => {
+        v.children.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', svgPolygon(item[0])],
+            ['fill', item[1]],
+          ],
+        });
       });
-    });
+      return defs.add(v);
+    }
+    else {
+      let v = {
+        tagName: 'clipPath',
+        children: [{
+          tagName: 'path',
+          props: [
+            ['d', svgPolygon(list)],
+          ],
+        }],
+      };
+      xom.__config[NODE_DEFS_CACHE].push(v);
+      let clip = defs.add(v);
+      res.forEach(item => {
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', svgPolygon(item[0])],
+            ['fill', item[1]],
+            ['clip-path', 'url(#' + clip + ')'],
+          ],
+        });
+      });
+    }
   }
 }
 

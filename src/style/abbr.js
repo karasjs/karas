@@ -95,7 +95,7 @@ export default {
       if(Array.isArray(v)) {
         let length = v.length;
         if(isNil(style.backgroundColor)) {
-          let bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v[length - 1]);
+          let bgc = /^\s*((transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))/i.exec(v[length - 1]);
           if(bgc) {
             style.backgroundColor = bgc[0];
             v = v.slice(0, length - 1);

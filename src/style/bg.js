@@ -17,11 +17,11 @@ const {
     NODE_DEFS_CACHE,
   },
 } = enums;
-const { joinArr } = util;
+const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { AUTO, PX, PERCENT, STRING } = unit;
 
-function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill') {
+function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
   let matrix, cx, cy;
   if(Array.isArray(color)) {
@@ -79,18 +79,38 @@ function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bb
   }
   else if(renderMode === mode.SVG) {
     let d = svgPolygon(list);
-    xom.virtualDom.bb.push({
-      type: 'item',
-      tagName: 'path',
-      props: [
-        ['d', d],
-        ['fill', color],
-      ],
-    });
-    // 椭圆渐变独有
-    if(matrix) {
-      let bb = xom.virtualDom.bb;
-      bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
+    if(isInline) {
+      let v = {
+        tagName: 'symbol',
+        props: [],
+        children: [
+          {
+            type: 'item',
+            tagName: 'path',
+            props: [
+              ['d', d],
+              ['fill', color],
+            ],
+          },
+        ],
+      };
+      xom.__config[NODE_DEFS_CACHE].push(v);
+      return defs.add(v);
+    }
+    else {
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', d],
+          ['fill', color],
+        ],
+      });
+      // 椭圆渐变独有
+      if(matrix) {
+        let bb = xom.virtualDom.bb;
+        bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
+      }
     }
   }
 }

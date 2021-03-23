@@ -4679,7 +4679,7 @@
     return arr;
   }
 
-  function clone$1(obj) {
+  function clone(obj) {
     if (isNil(obj) || _typeof(obj) !== 'object') {
       return obj;
     } // parse递归会出现内部先返回解析好的json，外部parse不能clone
@@ -4695,7 +4695,7 @@
 
     var n = Array.isArray(obj) ? [] : {};
     Object.keys(obj).forEach(function (i) {
-      n[i] = clone$1(obj[i]);
+      n[i] = clone(obj[i]);
     });
     return n;
   }
@@ -4993,7 +4993,7 @@
     int2invert: int2invert,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
-    clone: clone$1,
+    clone: clone,
     cloneStyle: cloneStyle,
     equalArr: equalArr,
     equal: equal,
@@ -6069,7 +6069,7 @@
     return [cx, cy, r, deg];
   }
 
-  function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr) {
+  function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
     // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
     var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
 
@@ -6096,24 +6096,43 @@
       ctx.restore();
       offscreen.ctx.clearRect(0, 0, w, h);
     } else if (renderMode === mode.SVG) {
-      var v = {
-        tagName: 'clipPath',
-        children: [{
-          tagName: 'path',
-          props: [['d', svgPolygon$2(list)], ['fill', '#FFF']]
-        }]
-      };
+      if (isInline) {
+        var v = {
+          tagName: 'symbol',
+          props: [],
+          children: []
+        };
 
-      xom.__config[NODE_DEFS_CACHE].push(v);
+        xom.__config[NODE_DEFS_CACHE].push(v);
 
-      var clip = defs.add(v);
-      res.forEach(function (item) {
-        xom.virtualDom.bb.push({
-          type: 'item',
-          tagName: 'path',
-          props: [['d', svgPolygon$2(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+        res.forEach(function (item) {
+          v.children.push({
+            type: 'item',
+            tagName: 'path',
+            props: [['d', svgPolygon$2(item[0])], ['fill', item[1]]]
+          });
         });
-      });
+        return defs.add(v);
+      } else {
+        var _v = {
+          tagName: 'clipPath',
+          children: [{
+            tagName: 'path',
+            props: [['d', svgPolygon$2(list)]]
+          }]
+        };
+
+        xom.__config[NODE_DEFS_CACHE].push(_v);
+
+        var clip = defs.add(_v);
+        res.forEach(function (item) {
+          xom.virtualDom.bb.push({
+            type: 'item',
+            tagName: 'path',
+            props: [['d', svgPolygon$2(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+          });
+        });
+      }
     }
   }
 
@@ -6361,7 +6380,7 @@
           var length = v.length;
 
           if (isNil$2(style.backgroundColor)) {
-            var bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v[length - 1]);
+            var bgc = /^\s*((transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))/i.exec(v[length - 1]);
 
             if (bgc) {
               style.backgroundColor = bgc[0];
@@ -9422,7 +9441,8 @@
       BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
       NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
-  var joinArr$1 = util.joinArr;
+  var clone$1 = util.clone,
+      joinArr$1 = util.joinArr;
   var canvasPolygon$3 = painter.canvasPolygon,
       svgPolygon$3 = painter.svgPolygon;
   var AUTO$1 = unit.AUTO,
@@ -9432,6 +9452,7 @@
 
   function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr) {
     var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
+    var isInline = arguments.length > 14 ? arguments[14] : undefined;
     // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
     var matrix, cx, cy;
 
@@ -9494,15 +9515,32 @@
       }
     } else if (renderMode === mode.SVG) {
       var d = svgPolygon$3(list);
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'path',
-        props: [['d', d], ['fill', color]]
-      }); // 椭圆渐变独有
 
-      if (matrix) {
-        var bb = xom.virtualDom.bb;
-        bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(matrix, ','), ")")]);
+      if (isInline) {
+        var v = {
+          tagName: 'symbol',
+          props: [],
+          children: [{
+            type: 'item',
+            tagName: 'path',
+            props: [['d', d], ['fill', color]]
+          }]
+        };
+
+        xom.__config[NODE_DEFS_CACHE$1].push(v);
+
+        return defs.add(v);
+      } else {
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: [['d', d], ['fill', color]]
+        }); // 椭圆渐变独有
+
+        if (matrix) {
+          var bb = xom.virtualDom.bb;
+          bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(matrix, ','), ")")]);
+        }
       }
     }
   }
@@ -9790,7 +9828,7 @@
         }); // 再画重复的十字和4角象限
 
         repeat.forEach(function (item) {
-          var copy = clone(props);
+          var copy = clone$1(props);
 
           if (needResize) {
             var _matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
@@ -14176,8 +14214,7 @@
       rgba2int$3 = util.rgba2int,
       joinArr$2 = util.joinArr,
       isNil$5 = util.isNil;
-  var calRelative$1 = css.calRelative; // const { canvasPolygon, svgPolygon } = painter;
-
+  var calRelative$1 = css.calRelative;
   var GEOM$4 = o$1.GEOM;
   var contain = o$2.contain,
       NONE = o$2.NONE,
@@ -15594,204 +15631,267 @@
           });
 
           if (length) {
-            var fontSize = computedStyle[FONT_SIZE$4],
-                fontFamily = computedStyle[FONT_FAMILY$5],
-                lineHeight = computedStyle[LINE_HEIGHT$3];
-            var iw = 0;
-            var offscreen; // bgi视作inline排满一行绘制，然后按分行拆开给每行
+            (function () {
+              var fontSize = computedStyle[FONT_SIZE$4],
+                  fontFamily = computedStyle[FONT_FAMILY$5],
+                  lineHeight = computedStyle[LINE_HEIGHT$3];
+              var iw = 0;
+              var offscreen,
+                  svgBgSymbol = []; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
-            if (hasBgi) {
-              iw = inline.getInlineWidth(this, contentBoxList);
+              if (hasBgi) {
+                iw = inline.getInlineWidth(_this4, contentBoxList);
 
-              if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-                iw += paddingLeft + paddingRight;
-              } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-                iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
-              }
-
-              if (renderMode === mode.CANVAS) {
-                offscreen = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
-              }
-
-              var _length = backgroundImage.length;
-              backgroundImage.slice(0).reverse().forEach(function (bgi, i) {
-                if (!bgi) {
-                  return;
+                if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+                  iw += paddingLeft + paddingRight;
+                } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+                  iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
                 }
 
-                i = _length - 1 - i;
+                if (renderMode === mode.CANVAS) {
+                  offscreen = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
+                }
 
-                if (util.isString(bgi)) {
-                  var loadBgi = _this4.__loadBgi[i];
-
-                  if (loadBgi.url === backgroundImage[i]) {
-                    bg.renderImage(_this4, renderMode, offscreen.ctx, defs, loadBgi, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                var _length = backgroundImage.length;
+                backgroundImage.slice(0).reverse().forEach(function (bgi, i) {
+                  if (!bgi) {
+                    return;
                   }
-                } else if (bgi.k) {
-                  var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
 
-                  if (gd) {
-                    if (gd.k === 'conic') {
-                      gradient$1.renderConic(_this4, renderMode, offscreen.ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
-                    } else {
-                      bg.renderBgc(_this4, renderMode, offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr);
+                  i = _length - 1 - i;
+
+                  if (util.isString(bgi)) {
+                    var loadBgi = _this4.__loadBgi[i];
+
+                    if (loadBgi.url === backgroundImage[i]) {
+                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx, defs, loadBgi, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
+
+                      if (renderMode === mode.SVG && uuid) {
+                        svgBgSymbol.push(uuid);
+                      }
+                    }
+                  } else if (bgi.k) {
+                    var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
+
+                    if (gd) {
+                      if (gd.k === 'conic') {
+                        var _uuid = gradient$1.renderConic(_this4, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
+
+                        if (renderMode === mode.SVG && _uuid) {
+                          svgBgSymbol.push(_uuid);
+                        }
+                      } else {
+                        var _uuid2 = bg.renderBgc(_this4, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, 'fill', true);
+
+                        if (renderMode === mode.SVG && _uuid2) {
+                          svgBgSymbol.push(_uuid2);
+                        }
+                      }
                     }
                   }
+                });
+              } // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
+
+
+              var ff = css.getFontFamily(fontFamily);
+              var baseLine = css.getBaseLine(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
+
+              var diffL = fontSize * (o.info[ff].lgr || 0); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
+
+              var isFirst = true;
+              var lastContentBox = contentBoxList[0],
+                  lastLineBox = lastContentBox.parentLineBox; // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制，svg还需统计第几行
+
+              var countW = 0;
+
+              for (var i = 0; i < length; i++) {
+                var contentBox = contentBoxList[i];
+
+                if (contentBox.parentLineBox !== lastLineBox) {
+                  (function () {
+                    // 上一行
+                    var _inline$getInlineBox = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                        _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
+                        ix1 = _inline$getInlineBox2[0],
+                        iy1 = _inline$getInlineBox2[1],
+                        ix2 = _inline$getInlineBox2[2],
+                        iy2 = _inline$getInlineBox2[3],
+                        bx1 = _inline$getInlineBox2[4],
+                        by1 = _inline$getInlineBox2[5],
+                        bx2 = _inline$getInlineBox2[6],
+                        by2 = _inline$getInlineBox2[7];
+
+                    if (backgroundColor[3] > 0) {
+                      bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                    }
+
+                    var w = ix2 - ix1; // canvas的bg位图裁剪
+
+                    if (renderMode === mode.CANVAS && offscreen) {
+                      ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+                    } //svg则特殊判断
+                    else if (renderMode === mode.SVG && svgBgSymbol.length) {
+                        svgBgSymbol.forEach(function (symbol) {
+                          if (symbol) {
+                            var _v2 = {
+                              tagName: 'clipPath',
+                              props: [],
+                              children: [{
+                                tagName: 'path',
+                                props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(lineHeight, "L").concat(countW, ",").concat(lineHeight, ",L").concat(countW, ",", 0)]]
+                              }]
+                            };
+                            var clip = defs.add(_v2);
+
+                            __config[NODE_DEFS_CACHE$3].push(_v2);
+
+                            virtualDom.bb.push({
+                              type: 'item',
+                              tagName: 'use',
+                              props: [['xlink:href', '#' + symbol], ['x', ix1 - countW], ['y', iy1], ['clip-path', 'url(#' + clip + ')']]
+                            });
+                          }
+                        });
+                      }
+
+                    countW += w;
+
+                    if (boxShadow) {
+                      boxShadow.forEach(function (item) {
+                        bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                      });
+                    }
+
+                    if (borderTopWidth > 0 && borderTopColor[3] > 0) {
+                      var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+                      var deg2 = Math.atan(borderTopWidth / borderRightWidth);
+                      var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
+                      border.renderBorder(_this4, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+                    }
+
+                    if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
+                      var _deg7 = Math.atan(borderBottomWidth / borderLeftWidth);
+
+                      var _deg8 = Math.atan(borderBottomWidth / borderRightWidth);
+
+                      var _list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg7, _deg8, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
+
+                      border.renderBorder(_this4, renderMode, ctx, _list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                    }
+
+                    if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
+                      var _deg9 = Math.atan(borderLeftWidth / borderTopWidth);
+
+                      var _deg10 = Math.atan(borderLeftWidth / borderBottomWidth);
+
+                      var _list2 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg9, _deg10, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
+
+                      border.renderBorder(_this4, renderMode, ctx, _list2, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                    }
+
+                    isFirst = false;
+                    lastContentBox = contentBox;
+                    lastLineBox = contentBox.parentLineBox;
+                  })();
+                } // 最后一个特殊判断
+
+
+                if (i === length - 1) {
+                  (function () {
+                    var _inline$getInlineBox3 = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                        _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
+                        ix1 = _inline$getInlineBox4[0],
+                        iy1 = _inline$getInlineBox4[1],
+                        ix2 = _inline$getInlineBox4[2],
+                        iy2 = _inline$getInlineBox4[3],
+                        bx1 = _inline$getInlineBox4[4],
+                        by1 = _inline$getInlineBox4[5],
+                        bx2 = _inline$getInlineBox4[6],
+                        by2 = _inline$getInlineBox4[7];
+
+                    if (backgroundColor[3] > 0) {
+                      bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+                    }
+
+                    var w = ix2 - ix1; // canvas的bg位图裁剪
+
+                    if (renderMode === mode.CANVAS && offscreen) {
+                      ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+                    } //svg则特殊判断
+                    else if (renderMode === mode.SVG && svgBgSymbol.length) {
+                        svgBgSymbol.forEach(function (symbol) {
+                          if (symbol) {
+                            var _v3 = {
+                              tagName: 'clipPath',
+                              props: [],
+                              children: [{
+                                tagName: 'path',
+                                props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(lineHeight, "L").concat(countW, ",").concat(lineHeight, ",L").concat(countW, ",", 0)]]
+                              }]
+                            };
+                            var clip = defs.add(_v3);
+
+                            __config[NODE_DEFS_CACHE$3].push(_v3);
+
+                            virtualDom.bb.push({
+                              type: 'item',
+                              tagName: 'use',
+                              props: [['xlink:href', '#' + symbol], ['x', ix1 - countW], ['y', iy1], ['clip-path', 'url(#' + clip + ')']]
+                            });
+                          }
+                        });
+                      }
+
+                    if (boxShadow) {
+                      boxShadow.forEach(function (item) {
+                        bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                      });
+                    }
+
+                    if (borderTopWidth > 0 && borderTopColor[3] > 0) {
+                      var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+                      var deg2 = Math.atan(borderTopWidth / borderRightWidth);
+                      var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], btrr);
+                      border.renderBorder(_this4, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+                    }
+
+                    if (borderRightWidth > 0 && borderRightColor[3] > 0) {
+                      var _deg11 = Math.atan(borderRightWidth / borderTopWidth);
+
+                      var _deg12 = Math.atan(borderRightWidth / borderBottomWidth);
+
+                      var _list3 = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], _deg11, _deg12, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
+
+                      border.renderBorder(_this4, renderMode, ctx, _list3, __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+                    }
+
+                    if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
+                      var _deg13 = Math.atan(borderBottomWidth / borderLeftWidth);
+
+                      var _deg14 = Math.atan(borderBottomWidth / borderRightWidth);
+
+                      var _list4 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg13, _deg14, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
+
+                      border.renderBorder(_this4, renderMode, ctx, _list4, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                    }
+
+                    if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
+                      var _deg15 = Math.atan(borderLeftWidth / borderTopWidth);
+
+                      var _deg16 = Math.atan(borderLeftWidth / borderBottomWidth);
+
+                      var _list5 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg15, _deg16, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
+
+                      border.renderBorder(_this4, renderMode, ctx, _list5, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                    }
+                  })();
                 }
-              });
-            } // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
-
-
-            var ff = css.getFontFamily(fontFamily);
-            var baseLine = css.getBaseLine(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
-
-            var diffL = fontSize * (o.info[ff].lgr || 0); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
-
-            var isFirst = true;
-            var lastContentBox = contentBoxList[0],
-                lastLineBox = lastContentBox.parentLineBox; // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制
-
-            var countW = 0;
-
-            for (var i = 0; i < length; i++) {
-              var contentBox = contentBoxList[i];
-
-              if (contentBox.parentLineBox !== lastLineBox) {
-                (function () {
-                  // 上一行
-                  var _inline$getInlineBox = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
-                      _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
-                      ix1 = _inline$getInlineBox2[0],
-                      iy1 = _inline$getInlineBox2[1],
-                      ix2 = _inline$getInlineBox2[2],
-                      iy2 = _inline$getInlineBox2[3],
-                      bx1 = _inline$getInlineBox2[4],
-                      by1 = _inline$getInlineBox2[5],
-                      bx2 = _inline$getInlineBox2[6],
-                      by2 = _inline$getInlineBox2[7];
-
-                  if (backgroundColor[3] > 0) {
-                    bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
-                  }
-
-                  if (offscreen) {
-                    var w = ix2 - ix1;
-                    ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
-                    countW += w;
-                  }
-
-                  if (boxShadow) {
-                    boxShadow.forEach(function (item) {
-                      bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
-                    });
-                  }
-
-                  if (borderTopWidth > 0 && borderTopColor[3] > 0) {
-                    var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-                    var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-                    var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
-                    border.renderBorder(_this4, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
-                  }
-
-                  if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-                    var _deg7 = Math.atan(borderBottomWidth / borderLeftWidth);
-
-                    var _deg8 = Math.atan(borderBottomWidth / borderRightWidth);
-
-                    var _list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg7, _deg8, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
-
-                    border.renderBorder(_this4, renderMode, ctx, _list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
-                  }
-
-                  if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-                    var _deg9 = Math.atan(borderLeftWidth / borderTopWidth);
-
-                    var _deg10 = Math.atan(borderLeftWidth / borderBottomWidth);
-
-                    var _list2 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg9, _deg10, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
-
-                    border.renderBorder(_this4, renderMode, ctx, _list2, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
-                  }
-
-                  isFirst = false;
-                  lastContentBox = contentBox;
-                  lastLineBox = contentBox.parentLineBox;
-                })();
-              } // 最后一个特殊判断
-
-
-              if (i === length - 1) {
-                (function () {
-                  var _inline$getInlineBox3 = inline.getInlineBox(_this4, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
-                      _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
-                      ix1 = _inline$getInlineBox4[0],
-                      iy1 = _inline$getInlineBox4[1],
-                      ix2 = _inline$getInlineBox4[2],
-                      iy2 = _inline$getInlineBox4[3],
-                      bx1 = _inline$getInlineBox4[4],
-                      by1 = _inline$getInlineBox4[5],
-                      bx2 = _inline$getInlineBox4[6],
-                      by2 = _inline$getInlineBox4[7];
-
-                  if (backgroundColor[3] > 0) {
-                    bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
-                  }
-
-                  if (offscreen) {
-                    var w = ix2 - ix1;
-                    ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
-                    countW += w;
-                  }
-
-                  if (boxShadow) {
-                    boxShadow.forEach(function (item) {
-                      bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
-                    });
-                  }
-
-                  if (borderTopWidth > 0 && borderTopColor[3] > 0) {
-                    var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-                    var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-                    var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], btrr);
-                    border.renderBorder(_this4, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
-                  }
-
-                  if (borderRightWidth > 0 && borderRightColor[3] > 0) {
-                    var _deg11 = Math.atan(borderRightWidth / borderTopWidth);
-
-                    var _deg12 = Math.atan(borderRightWidth / borderBottomWidth);
-
-                    var _list3 = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], _deg11, _deg12, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
-
-                    border.renderBorder(_this4, renderMode, ctx, _list3, __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
-                  }
-
-                  if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-                    var _deg13 = Math.atan(borderBottomWidth / borderLeftWidth);
-
-                    var _deg14 = Math.atan(borderBottomWidth / borderRightWidth);
-
-                    var _list4 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg13, _deg14, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
-
-                    border.renderBorder(_this4, renderMode, ctx, _list4, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
-                  }
-
-                  if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-                    var _deg15 = Math.atan(borderLeftWidth / borderTopWidth);
-
-                    var _deg16 = Math.atan(borderLeftWidth / borderBottomWidth);
-
-                    var _list5 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg15, _deg16, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
-
-                    border.renderBorder(_this4, renderMode, ctx, _list5, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
-                  }
-                })();
               }
-            }
 
-            if (offscreen) {
-              offscreen.ctx.clearRect(0, 0, iw, lineHeight);
-            }
+              if (offscreen) {
+                offscreen.ctx.clearRect(0, 0, iw, lineHeight);
+              }
+            })();
           }
 
           return;
@@ -21678,7 +21778,7 @@
                 tagName: 'clipPath',
                 children: [{
                   tagName: 'path',
-                  props: [['d', svgPolygon$6(item)], ['fill', '#FFF']]
+                  props: [['d', svgPolygon$6(item)]]
                 }]
               };
               var clip = defs.add(v);
@@ -21698,7 +21798,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$6(list)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$6(list)]]
               }]
             };
             var clip = defs.add(v);

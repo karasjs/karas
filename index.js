@@ -4679,7 +4679,7 @@
     return arr;
   }
 
-  function clone(obj) {
+  function clone$1(obj) {
     if (isNil(obj) || _typeof(obj) !== 'object') {
       return obj;
     } // parse递归会出现内部先返回解析好的json，外部parse不能clone
@@ -4695,7 +4695,7 @@
 
     var n = Array.isArray(obj) ? [] : {};
     Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
+      n[i] = clone$1(obj[i]);
     });
     return n;
   }
@@ -4993,7 +4993,7 @@
     int2invert: int2invert,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
-    clone: clone,
+    clone: clone$1,
     cloneStyle: cloneStyle,
     equalArr: equalArr,
     equal: equal,
@@ -5398,7 +5398,7 @@
         return o.info[ff].checked;
       }
 
-      var canvas = inject.getCacheCanvas(16, 16, '__$$checkSupportFontFamily$$__');
+      var canvas = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
       var context = canvas.ctx;
       context.textAlign = 'center';
       context.fillStyle = '#000';
@@ -6094,6 +6094,7 @@
       ctx.closePath();
       ctx.drawImage(offscreen.canvas, x, y);
       ctx.restore();
+      offscreen.ctx.clearRect(0, 0, w, h);
     } else if (renderMode === mode.SVG) {
       var v = {
         tagName: 'clipPath',
@@ -9417,6 +9418,10 @@
     matrixResize: matrixResize
   };
 
+  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
+      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
+      NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var joinArr$1 = util.joinArr;
   var canvasPolygon$3 = painter.canvasPolygon,
       svgPolygon$3 = painter.svgPolygon;
@@ -9530,8 +9535,286 @@
     return 0;
   }
 
+  function renderImage(xom, renderMode, ctx, defs, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config) {
+    var source = loadBgi.source; // 无source不绘制，可能错误或加载中
+
+    if (source) {
+      var bgW = bx2 - bx1;
+      var bgH = by2 - by1;
+      var width = loadBgi.width,
+          height = loadBgi.height;
+
+      var _ref = backgroundSize[i] || [],
+          _ref2 = _slicedToArray(_ref, 2),
+          w = _ref2[0],
+          h = _ref2[1]; // -1为auto，-2为contain，-3为cover
+
+
+      if (w === -1 && h === -1) {
+        w = width;
+        h = height;
+      } else if (w === -2) {
+        if (width > bgW && height > bgH) {
+          w = width / bgW;
+          h = height / bgH;
+
+          if (w >= h) {
+            w = bgW;
+            h = w * height / width;
+          } else {
+            h = bgH;
+            w = h * width / height;
+          }
+        } else if (width > bgW) {
+          w = bgW;
+          h = w * height / width;
+        } else if (height > bgH) {
+          h = bgH;
+          w = h * width / height;
+        } else {
+          w = width;
+          h = height;
+        }
+      } else if (w === -3) {
+        if (bgW > width && bgH > height) {
+          w = width / bgW;
+          h = height / bgH;
+
+          if (w <= h) {
+            w = bgW;
+            h = w * height / width;
+          } else {
+            h = bgH;
+            w = h * width / height;
+          }
+        } else if (bgW > width) {
+          w = bgW;
+          h = w * height / width;
+        } else if (bgH > height) {
+          h = bgH;
+          w = h * width / height;
+        } else {
+          w = width / bgW;
+          h = height / bgH;
+
+          if (w <= h) {
+            w = bgW;
+            h = w * height / width;
+          } else {
+            h = bgH;
+            w = h * width / height;
+          }
+        }
+      } else if (w === -1) {
+        w = h * width / height;
+      } else if (h === -1) {
+        h = w * height / width;
+      }
+
+      var bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$1][i], bgW, w);
+      var bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$1][i], bgH, h); // 超出尺寸模拟mask截取
+
+      var needMask = bgX < bx1 || bgY < by1 || w > bgW || h > bgH; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+
+      var xnl = 0;
+      var xnr = 0;
+      var ynt = 0;
+      var ynb = 0; // repeat-x
+
+      if (['repeat-x', 'repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+        var diff = bgX - bx1;
+
+        if (diff > 0) {
+          xnl = Math.ceil(diff / w);
+        }
+
+        diff = bx1 + bgW - bgX - w;
+
+        if (diff > 0) {
+          xnr = Math.ceil(diff / w);
+        }
+      } // repeat-y
+
+
+      if (['repeat-y', 'repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+        var _diff = bgY - by1;
+
+        if (_diff > 0) {
+          ynt = Math.ceil(_diff / h);
+        }
+
+        _diff = by1 + bgH - bgY - h;
+
+        if (_diff > 0) {
+          ynb = Math.ceil(_diff / h);
+        }
+      } // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
+
+
+      var repeat = [];
+
+      if (xnl > 0) {
+        for (var _i = 0; _i < xnl; _i++) {
+          var x = bgX - (_i + 1) * w;
+          repeat.push([x, bgY]); // 看最左边超过没有
+
+          if (!needMask && _i === 0 && x < bx1) {
+            needMask = true;
+          }
+        }
+      }
+
+      if (xnr > 0) {
+        for (var _i2 = 0; _i2 < xnr; _i2++) {
+          var _x = bgX + (_i2 + 1) * w;
+
+          repeat.push([_x, bgY]); // 看最右边超过没有
+
+          if (!needMask && _i2 === xnr - 1 && _x + w > bx1 + bgW) {
+            needMask = true;
+          }
+        }
+      }
+
+      if (ynt > 0) {
+        for (var _i3 = 0; _i3 < ynt; _i3++) {
+          var y = bgY - (_i3 + 1) * h;
+          repeat.push([bgX, y]); // 看最上边超过没有
+
+          if (!needMask && _i3 === 0 && y < by1) {
+            needMask = true;
+          }
+        }
+      }
+
+      if (ynb > 0) {
+        for (var _i4 = 0; _i4 < ynb; _i4++) {
+          var _y = bgY + (_i4 + 1) * h;
+
+          repeat.push([bgX, _y]); // 看最下边超过没有
+
+          if (!needMask && _i4 === ynb - 1 && _y + w > by1 + bgH) {
+            needMask = true;
+          }
+        }
+      } // 原点和同行列十字画完，看4个角的情况
+
+
+      if (xnl > 0 && ynt > 0) {
+        for (var _i5 = 0; _i5 < xnl; _i5++) {
+          for (var j = 0; j < ynt; j++) {
+            repeat.push([bgX - (_i5 + 1) * w, bgY - (j + 1) * h]);
+          }
+        }
+      }
+
+      if (xnr > 0 && ynt > 0) {
+        for (var _i6 = 0; _i6 < xnr; _i6++) {
+          for (var _j = 0; _j < ynt; _j++) {
+            repeat.push([bgX + (_i6 + 1) * w, bgY - (_j + 1) * h]);
+          }
+        }
+      }
+
+      if (xnl > 0 && ynb > 0) {
+        for (var _i7 = 0; _i7 < xnl; _i7++) {
+          for (var _j2 = 0; _j2 < ynb; _j2++) {
+            repeat.push([bgX - (_i7 + 1) * w, bgY + (_j2 + 1) * h]);
+          }
+        }
+      }
+
+      if (xnr > 0 && ynb > 0) {
+        for (var _i8 = 0; _i8 < xnr; _i8++) {
+          for (var _j3 = 0; _j3 < ynb; _j3++) {
+            repeat.push([bgX + (_i8 + 1) * w, bgY + (_j3 + 1) * h]);
+          }
+        }
+      }
+
+      if (renderMode === mode.CANVAS) {
+        if (needMask) {
+          ctx.save();
+          renderBgc(this, renderMode, ctx, defs, '#FFF', bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
+        } // 先画不考虑repeat的中心声明的
+
+
+        ctx.drawImage(source, bgX, bgY, w, h); // 再画重复的十字和4角象限
+
+        repeat.forEach(function (item) {
+          ctx.drawImage(source, item[0], item[1], w, h);
+        });
+
+        if (needMask) {
+          ctx.restore();
+        }
+      } else if (renderMode === mode.SVG) {
+        var matrix = image.matrixResize(width, height, w, h, bgX, bgY, bgW, bgH);
+        var props = [['xlink:href', loadBgi.url], ['x', bgX], ['y', bgY], ['width', width], ['height', height]];
+        var needResize;
+
+        if (matrix && !mx.isE(matrix)) {
+          needResize = true;
+          props.push(['transform', 'matrix(' + joinArr$1(matrix, ',') + ')']);
+        }
+
+        if (needMask) {
+          var p1 = [bx1, by1];
+          var p2 = [bx2, by2];
+
+          if (needResize) {
+            var inverse = mx.inverse(matrix);
+            p1 = mx.calPoint(p1, inverse);
+            p2 = mx.calPoint(p2, inverse);
+          }
+
+          var v = {
+            tagName: 'clipPath',
+            children: [{
+              tagName: 'path',
+              props: [['d', "M".concat(p1[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
+            }]
+          };
+          var id = defs.add(v);
+
+          __config[NODE_DEFS_CACHE$1].push(v);
+
+          props.push(['clip-path', 'url(#' + id + ')']);
+        } // 先画不考虑repeat的中心声明的
+
+
+        xom.virtualDom.bb.push({
+          type: 'img',
+          tagName: 'image',
+          props: props
+        }); // 再画重复的十字和4角象限
+
+        repeat.forEach(function (item) {
+          var copy = clone(props);
+
+          if (needResize) {
+            var _matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
+
+            if (_matrix && !mx.isE(_matrix)) {
+              copy[5][1] = 'matrix(' + joinArr$1(_matrix, ',') + ')';
+            }
+          }
+
+          copy[1][1] = item[0];
+          copy[2][1] = item[1];
+          xom.virtualDom.bb.push({
+            type: 'img',
+            tagName: 'image',
+            props: copy
+          });
+        });
+      }
+    }
+  }
+
   var bg = {
     renderBgc: renderBgc,
+    renderImage: renderImage,
     calBackgroundSize: calBackgroundSize,
     calBackgroundPosition: calBackgroundPosition
   };
@@ -10031,41 +10314,41 @@
   easing['ease-out'] = easing.easeOut;
   easing['ease-in-out'] = easing.easeInOut;
 
-  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
-      FILTER$1 = _enums$STYLE_KEY$8.FILTER,
-      TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$8.TRANSFORM_ORIGIN,
-      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
-      BOX_SHADOW$1 = _enums$STYLE_KEY$8.BOX_SHADOW,
-      TRANSLATE_X$2 = _enums$STYLE_KEY$8.TRANSLATE_X,
-      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$8.BACKGROUND_SIZE,
-      FONTSIZE = _enums$STYLE_KEY$8.FONTSIZE,
-      FLEX_BASIS$1 = _enums$STYLE_KEY$8.FLEX_BASIS,
-      FLEX_DIRECTION$1 = _enums$STYLE_KEY$8.FLEX_DIRECTION,
-      WIDTH$2 = _enums$STYLE_KEY$8.WIDTH,
-      HEIGHT$2 = _enums$STYLE_KEY$8.HEIGHT,
-      MARGIN_RIGHT = _enums$STYLE_KEY$8.MARGIN_RIGHT,
-      MARGIN_TOP = _enums$STYLE_KEY$8.MARGIN_TOP,
-      MARGIN_LEFT = _enums$STYLE_KEY$8.MARGIN_LEFT,
-      MARGIN_BOTTOM = _enums$STYLE_KEY$8.MARGIN_BOTTOM,
-      PADDING_LEFT$1 = _enums$STYLE_KEY$8.PADDING_LEFT,
-      PADDING_BOTTOM$1 = _enums$STYLE_KEY$8.PADDING_BOTTOM,
-      PADDING_RIGHT$1 = _enums$STYLE_KEY$8.PADDING_RIGHT,
-      PADDING_TOP$1 = _enums$STYLE_KEY$8.PADDING_TOP,
-      TOP = _enums$STYLE_KEY$8.TOP,
-      RIGHT = _enums$STYLE_KEY$8.RIGHT,
-      BOTTOM = _enums$STYLE_KEY$8.BOTTOM,
-      LEFT = _enums$STYLE_KEY$8.LEFT,
-      LINE_HEIGHT$2 = _enums$STYLE_KEY$8.LINE_HEIGHT,
-      OPACITY$1 = _enums$STYLE_KEY$8.OPACITY,
-      Z_INDEX$1 = _enums$STYLE_KEY$8.Z_INDEX,
-      TRANSFORM$2 = _enums$STYLE_KEY$8.TRANSFORM,
-      COLOR$3 = _enums$STYLE_KEY$8.COLOR,
-      FONT_WEIGHT$4 = _enums$STYLE_KEY$8.FONT_WEIGHT,
-      FONT_STYLE$2 = _enums$STYLE_KEY$8.FONT_STYLE,
-      FONT_FAMILY$4 = _enums$STYLE_KEY$8.FONT_FAMILY,
-      TEXT_ALIGN$2 = _enums$STYLE_KEY$8.TEXT_ALIGN,
-      MATRIX$2 = _enums$STYLE_KEY$8.MATRIX,
+  var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
+      FILTER$1 = _enums$STYLE_KEY$9.FILTER,
+      TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
+      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
+      BOX_SHADOW$1 = _enums$STYLE_KEY$9.BOX_SHADOW,
+      TRANSLATE_X$2 = _enums$STYLE_KEY$9.TRANSLATE_X,
+      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$9.BACKGROUND_SIZE,
+      FONTSIZE = _enums$STYLE_KEY$9.FONTSIZE,
+      FLEX_BASIS$1 = _enums$STYLE_KEY$9.FLEX_BASIS,
+      FLEX_DIRECTION$1 = _enums$STYLE_KEY$9.FLEX_DIRECTION,
+      WIDTH$2 = _enums$STYLE_KEY$9.WIDTH,
+      HEIGHT$2 = _enums$STYLE_KEY$9.HEIGHT,
+      MARGIN_RIGHT = _enums$STYLE_KEY$9.MARGIN_RIGHT,
+      MARGIN_TOP = _enums$STYLE_KEY$9.MARGIN_TOP,
+      MARGIN_LEFT = _enums$STYLE_KEY$9.MARGIN_LEFT,
+      MARGIN_BOTTOM = _enums$STYLE_KEY$9.MARGIN_BOTTOM,
+      PADDING_LEFT$1 = _enums$STYLE_KEY$9.PADDING_LEFT,
+      PADDING_BOTTOM$1 = _enums$STYLE_KEY$9.PADDING_BOTTOM,
+      PADDING_RIGHT$1 = _enums$STYLE_KEY$9.PADDING_RIGHT,
+      PADDING_TOP$1 = _enums$STYLE_KEY$9.PADDING_TOP,
+      TOP = _enums$STYLE_KEY$9.TOP,
+      RIGHT = _enums$STYLE_KEY$9.RIGHT,
+      BOTTOM = _enums$STYLE_KEY$9.BOTTOM,
+      LEFT = _enums$STYLE_KEY$9.LEFT,
+      LINE_HEIGHT$2 = _enums$STYLE_KEY$9.LINE_HEIGHT,
+      OPACITY$1 = _enums$STYLE_KEY$9.OPACITY,
+      Z_INDEX$1 = _enums$STYLE_KEY$9.Z_INDEX,
+      TRANSFORM$2 = _enums$STYLE_KEY$9.TRANSFORM,
+      COLOR$3 = _enums$STYLE_KEY$9.COLOR,
+      FONT_WEIGHT$4 = _enums$STYLE_KEY$9.FONT_WEIGHT,
+      FONT_STYLE$2 = _enums$STYLE_KEY$9.FONT_STYLE,
+      FONT_FAMILY$4 = _enums$STYLE_KEY$9.FONT_FAMILY,
+      TEXT_ALIGN$2 = _enums$STYLE_KEY$9.TEXT_ALIGN,
+      MATRIX$2 = _enums$STYLE_KEY$9.MATRIX,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_STYLE = _enums$UPDATE_KEY.UPDATE_STYLE,
@@ -10088,7 +10371,7 @@
       isNumber$1 = util.isNumber,
       isObject$1 = util.isObject,
       isString$1 = util.isString,
-      clone$1 = util.clone,
+      clone$2 = util.clone,
       equalArr$2 = util.equalArr;
   var linear = easing.linear;
   var cloneStyle$2 = css.cloneStyle;
@@ -10298,7 +10581,7 @@
       if (equalArr$2(res[1], [0, 0])) {
         return;
       }
-    } else if (k === BACKGROUND_POSITION_X$1 || k === BACKGROUND_POSITION_Y$1) {
+    } else if (k === BACKGROUND_POSITION_X$2 || k === BACKGROUND_POSITION_Y$2) {
       res[1] = [];
       var length = Math.min(p.length, n.length);
 
@@ -10320,7 +10603,7 @@
 
           res[1].push(_v2);
         } else if (p[1] === PX$5 && n[1] === PERCENT$5) {
-          var _v3 = _ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X$1 ? 'clientWidth' : 'clientHeight'];
+          var _v3 = _ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X$2 ? 'clientWidth' : 'clientHeight'];
 
           _v3 = _v3 - _pi[0];
 
@@ -10330,7 +10613,7 @@
 
           res[1].push(_v3);
         } else if (p[1] === PERCENT$5 && n[1] === PX$5) {
-          var _v4 = _ni[0] * 100 / target[k === BACKGROUND_POSITION_X$1 ? 'clientWidth' : 'clientHeight'];
+          var _v4 = _ni[0] * 100 / target[k === BACKGROUND_POSITION_X$2 ? 'clientWidth' : 'clientHeight'];
 
           _v4 = _v4 - _pi[0];
 
@@ -10996,7 +11279,7 @@
             item[1][0] += v[i][1] * percent;
           }
         });
-      } else if (k === BACKGROUND_POSITION_X$1 || k === BACKGROUND_POSITION_Y$1) {
+      } else if (k === BACKGROUND_POSITION_X$2 || k === BACKGROUND_POSITION_Y$2) {
         st.forEach(function (item, i) {
           if (v[i]) {
             item[0] += v[i] * percent;
@@ -11237,7 +11520,7 @@
 
       _this = _super.call(this);
       _this.__id = uuid++;
-      list = clone$1(list || []);
+      list = clone$2(list || []);
 
       if (Array.isArray(list)) {
         list = list.filter(function (item) {
@@ -11412,21 +11695,21 @@
 
 
         if (list.length === 1) {
-          list[0] = clone$1(list[0]);
+          list[0] = clone$2(list[0]);
 
           if (list[0].offset === 1) {
             list.unshift({
               offset: 0
             });
           } else {
-            var copy = clone$1(list[0]);
+            var copy = clone$2(list[0]);
             copy.offset = 1;
             list.push(copy);
           }
         } // 强制clone防止同引用
         else {
             list.forEach(function (item, i) {
-              list[i] = clone$1(item);
+              list[i] = clone$2(item);
             });
           } // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
@@ -11511,7 +11794,7 @@
         } // 反向存储帧的倒排结果
 
 
-        var framesR = clone$1(frames).reverse();
+        var framesR = clone$2(frames).reverse();
         framesR.forEach(function (item) {
           item[FRAME_TIME] = duration - item[FRAME_TIME];
           item[FRAME_TRANSITION] = [];
@@ -12537,11 +12820,11 @@
 
   var _TRANSFORMS;
   var STYLE_KEY$5 = enums.STYLE_KEY,
-      _enums$STYLE_KEY$9 = enums.STYLE_KEY,
-      TRANSLATE_X$3 = _enums$STYLE_KEY$9.TRANSLATE_X,
-      TRANSLATE_Y$2 = _enums$STYLE_KEY$9.TRANSLATE_Y,
-      OPACITY$2 = _enums$STYLE_KEY$9.OPACITY,
-      FILTER$2 = _enums$STYLE_KEY$9.FILTER;
+      _enums$STYLE_KEY$a = enums.STYLE_KEY,
+      TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
+      TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
+      OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
+      FILTER$2 = _enums$STYLE_KEY$a.FILTER;
   var ENUM = {
     // 低4位表示repaint级别
     NONE: 0,
@@ -12790,9 +13073,9 @@
     return Page;
   }();
 
-  var _enums$STYLE_KEY$a = enums.STYLE_KEY,
-      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$a.TRANSFORM_ORIGIN,
-      TRANSFORM$3 = _enums$STYLE_KEY$a.TRANSFORM,
+  var _enums$STYLE_KEY$b = enums.STYLE_KEY,
+      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$b.TRANSFORM_ORIGIN,
+      TRANSFORM$3 = _enums$STYLE_KEY$b.TRANSFORM,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
@@ -13259,7 +13542,7 @@
 
   _defineProperty(Cache, "NUM", 5);
 
-  var NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
+  var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
   var canvasPolygon$4 = painter.canvasPolygon,
       svgPolygon$4 = painter.svgPolygon;
@@ -13452,7 +13735,7 @@
               }]
             };
 
-            xom.__config[NODE_DEFS_CACHE$1].push(v);
+            xom.__config[NODE_DEFS_CACHE$2].push(v);
 
             var filter = defs.add(v);
             var v2 = {
@@ -13464,7 +13747,7 @@
             };
             var clip = defs.add(v2);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(v2);
+            xom.__config[NODE_DEFS_CACHE$2].push(v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -13480,7 +13763,7 @@
             };
             clip = defs.add(v);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(v);
+            xom.__config[NODE_DEFS_CACHE$2].push(v);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -13499,7 +13782,7 @@
 
             var _filter = defs.add(_v);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v);
 
             _v = {
               tagName: 'clipPath',
@@ -13511,7 +13794,7 @@
 
             var _clip = defs.add(_v);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -13544,7 +13827,7 @@
 
             var _filter2 = defs.add(_v2);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v2);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v2);
 
             _v2 = {
               tagName: 'clipPath',
@@ -13556,7 +13839,7 @@
 
             var _clip2 = defs.add(_v2);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v2);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -13572,7 +13855,7 @@
             };
             _clip2 = defs.add(_v2);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v2);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -13591,7 +13874,7 @@
 
             var _filter3 = defs.add(_v3);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v3);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v3);
 
             _v3 = {
               tagName: 'clipPath',
@@ -13603,7 +13886,7 @@
 
             var _clip3 = defs.add(_v3);
 
-            xom.__config[NODE_DEFS_CACHE$1].push(_v3);
+            xom.__config[NODE_DEFS_CACHE$2].push(_v3);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -13620,13 +13903,13 @@
     renderBoxShadow: renderBoxShadow
   };
 
-  var _enums$STYLE_KEY$b = enums.STYLE_KEY,
-      MARGIN_LEFT$1 = _enums$STYLE_KEY$b.MARGIN_LEFT,
-      MARGIN_RIGHT$1 = _enums$STYLE_KEY$b.MARGIN_RIGHT,
-      PADDING_LEFT$2 = _enums$STYLE_KEY$b.PADDING_LEFT,
-      PADDING_RIGHT$2 = _enums$STYLE_KEY$b.PADDING_RIGHT,
-      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$b.BORDER_LEFT_WIDTH,
-      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$b.BORDER_RIGHT_WIDTH;
+  var _enums$STYLE_KEY$c = enums.STYLE_KEY,
+      MARGIN_LEFT$1 = _enums$STYLE_KEY$c.MARGIN_LEFT,
+      MARGIN_RIGHT$1 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
+      PADDING_LEFT$2 = _enums$STYLE_KEY$c.PADDING_LEFT,
+      PADDING_RIGHT$2 = _enums$STYLE_KEY$c.PADDING_RIGHT,
+      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_RIGHT_WIDTH;
   /**
    * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
    * @param xom
@@ -13787,74 +14070,74 @@
   var STYLE_KEY$6 = enums.STYLE_KEY,
       STYLE_RV_KEY$2 = enums.STYLE_RV_KEY,
       style2Upper$2 = enums.style2Upper,
-      _enums$STYLE_KEY$c = enums.STYLE_KEY,
-      BORDER_TOP_LEFT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_TOP_LEFT_RADIUS,
-      BORDER_TOP_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_LEFT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_RIGHT_RADIUS,
-      PADDING_LEFT$3 = _enums$STYLE_KEY$c.PADDING_LEFT,
-      PADDING_RIGHT$3 = _enums$STYLE_KEY$c.PADDING_RIGHT,
-      PADDING_TOP$2 = _enums$STYLE_KEY$c.PADDING_TOP,
-      PADDING_BOTTOM$2 = _enums$STYLE_KEY$c.PADDING_BOTTOM,
-      MARGIN_LEFT$2 = _enums$STYLE_KEY$c.MARGIN_LEFT,
-      MARGIN_TOP$1 = _enums$STYLE_KEY$c.MARGIN_TOP,
-      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$c.MARGIN_BOTTOM,
-      MARGIN_RIGHT$2 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
-      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$c.BORDER_LEFT_WIDTH,
-      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$c.BORDER_RIGHT_WIDTH,
-      TOP$1 = _enums$STYLE_KEY$c.TOP,
-      RIGHT$1 = _enums$STYLE_KEY$c.RIGHT,
-      BOTTOM$1 = _enums$STYLE_KEY$c.BOTTOM,
-      LEFT$1 = _enums$STYLE_KEY$c.LEFT,
-      POSITION$1 = _enums$STYLE_KEY$c.POSITION,
-      DISPLAY$2 = _enums$STYLE_KEY$c.DISPLAY,
-      WIDTH$3 = _enums$STYLE_KEY$c.WIDTH,
-      HEIGHT$3 = _enums$STYLE_KEY$c.HEIGHT,
-      MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
-      TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
-      TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
-      TRANSFORM$4 = _enums$STYLE_KEY$c.TRANSFORM,
-      SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
-      SCALE_Y$3 = _enums$STYLE_KEY$c.SCALE_Y,
-      ROTATE_Z$2 = _enums$STYLE_KEY$c.ROTATE_Z,
-      SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
-      SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
-      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
-      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_Y,
-      BACKGROUND_SIZE$2 = _enums$STYLE_KEY$c.BACKGROUND_SIZE,
-      BACKGROUND_COLOR$1 = _enums$STYLE_KEY$c.BACKGROUND_COLOR,
-      BACKGROUND_IMAGE$1 = _enums$STYLE_KEY$c.BACKGROUND_IMAGE,
-      BACKGROUND_REPEAT = _enums$STYLE_KEY$c.BACKGROUND_REPEAT,
-      BOX_SHADOW$2 = _enums$STYLE_KEY$c.BOX_SHADOW,
-      OPACITY$3 = _enums$STYLE_KEY$c.OPACITY,
-      Z_INDEX$2 = _enums$STYLE_KEY$c.Z_INDEX,
-      BORDER_TOP_STYLE = _enums$STYLE_KEY$c.BORDER_TOP_STYLE,
-      BORDER_RIGHT_STYLE = _enums$STYLE_KEY$c.BORDER_RIGHT_STYLE,
-      BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$c.BORDER_BOTTOM_STYLE,
-      BORDER_LEFT_STYLE = _enums$STYLE_KEY$c.BORDER_LEFT_STYLE,
-      FILTER$3 = _enums$STYLE_KEY$c.FILTER,
-      OVERFLOW$1 = _enums$STYLE_KEY$c.OVERFLOW,
-      MIX_BLEND_MODE = _enums$STYLE_KEY$c.MIX_BLEND_MODE,
-      TEXT_OVERFLOW$2 = _enums$STYLE_KEY$c.TEXT_OVERFLOW,
-      BORDER_TOP_COLOR = _enums$STYLE_KEY$c.BORDER_TOP_COLOR,
-      BORDER_BOTTOM_COLOR = _enums$STYLE_KEY$c.BORDER_BOTTOM_COLOR,
-      BORDER_LEFT_COLOR = _enums$STYLE_KEY$c.BORDER_LEFT_COLOR,
-      BORDER_RIGHT_COLOR = _enums$STYLE_KEY$c.BORDER_RIGHT_COLOR,
-      FONT_STYLE$3 = _enums$STYLE_KEY$c.FONT_STYLE,
-      COLOR$4 = _enums$STYLE_KEY$c.COLOR,
-      VISIBILITY$2 = _enums$STYLE_KEY$c.VISIBILITY,
-      POINTER_EVENTS$1 = _enums$STYLE_KEY$c.POINTER_EVENTS,
-      BORDER_TOP = _enums$STYLE_KEY$c.BORDER_TOP,
-      BORDER_RIGHT = _enums$STYLE_KEY$c.BORDER_RIGHT,
-      BORDER_BOTTOM = _enums$STYLE_KEY$c.BORDER_BOTTOM,
-      BORDER_LEFT = _enums$STYLE_KEY$c.BORDER_LEFT,
-      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$c.BACKGROUND_CLIP,
-      FONT_SIZE$4 = _enums$STYLE_KEY$c.FONT_SIZE,
-      FONT_FAMILY$5 = _enums$STYLE_KEY$c.FONT_FAMILY,
-      LINE_HEIGHT$3 = _enums$STYLE_KEY$c.LINE_HEIGHT,
+      _enums$STYLE_KEY$d = enums.STYLE_KEY,
+      BORDER_TOP_LEFT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_BOTTOM_LEFT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_BOTTOM_RIGHT_RADIUS,
+      PADDING_LEFT$3 = _enums$STYLE_KEY$d.PADDING_LEFT,
+      PADDING_RIGHT$3 = _enums$STYLE_KEY$d.PADDING_RIGHT,
+      PADDING_TOP$2 = _enums$STYLE_KEY$d.PADDING_TOP,
+      PADDING_BOTTOM$2 = _enums$STYLE_KEY$d.PADDING_BOTTOM,
+      MARGIN_LEFT$2 = _enums$STYLE_KEY$d.MARGIN_LEFT,
+      MARGIN_TOP$1 = _enums$STYLE_KEY$d.MARGIN_TOP,
+      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$d.MARGIN_BOTTOM,
+      MARGIN_RIGHT$2 = _enums$STYLE_KEY$d.MARGIN_RIGHT,
+      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
+      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
+      TOP$1 = _enums$STYLE_KEY$d.TOP,
+      RIGHT$1 = _enums$STYLE_KEY$d.RIGHT,
+      BOTTOM$1 = _enums$STYLE_KEY$d.BOTTOM,
+      LEFT$1 = _enums$STYLE_KEY$d.LEFT,
+      POSITION$1 = _enums$STYLE_KEY$d.POSITION,
+      DISPLAY$2 = _enums$STYLE_KEY$d.DISPLAY,
+      WIDTH$3 = _enums$STYLE_KEY$d.WIDTH,
+      HEIGHT$3 = _enums$STYLE_KEY$d.HEIGHT,
+      MATRIX$3 = _enums$STYLE_KEY$d.MATRIX,
+      TRANSLATE_X$4 = _enums$STYLE_KEY$d.TRANSLATE_X,
+      TRANSLATE_Y$3 = _enums$STYLE_KEY$d.TRANSLATE_Y,
+      TRANSFORM$4 = _enums$STYLE_KEY$d.TRANSFORM,
+      SCALE_X$3 = _enums$STYLE_KEY$d.SCALE_X,
+      SCALE_Y$3 = _enums$STYLE_KEY$d.SCALE_Y,
+      ROTATE_Z$2 = _enums$STYLE_KEY$d.ROTATE_Z,
+      SKEW_X$2 = _enums$STYLE_KEY$d.SKEW_X,
+      SKEW_Y$2 = _enums$STYLE_KEY$d.SKEW_Y,
+      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$d.TRANSFORM_ORIGIN,
+      BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$d.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$d.BACKGROUND_POSITION_Y,
+      BACKGROUND_SIZE$2 = _enums$STYLE_KEY$d.BACKGROUND_SIZE,
+      BACKGROUND_COLOR$1 = _enums$STYLE_KEY$d.BACKGROUND_COLOR,
+      BACKGROUND_IMAGE$1 = _enums$STYLE_KEY$d.BACKGROUND_IMAGE,
+      BACKGROUND_REPEAT = _enums$STYLE_KEY$d.BACKGROUND_REPEAT,
+      BOX_SHADOW$2 = _enums$STYLE_KEY$d.BOX_SHADOW,
+      OPACITY$3 = _enums$STYLE_KEY$d.OPACITY,
+      Z_INDEX$2 = _enums$STYLE_KEY$d.Z_INDEX,
+      BORDER_TOP_STYLE = _enums$STYLE_KEY$d.BORDER_TOP_STYLE,
+      BORDER_RIGHT_STYLE = _enums$STYLE_KEY$d.BORDER_RIGHT_STYLE,
+      BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$d.BORDER_BOTTOM_STYLE,
+      BORDER_LEFT_STYLE = _enums$STYLE_KEY$d.BORDER_LEFT_STYLE,
+      FILTER$3 = _enums$STYLE_KEY$d.FILTER,
+      OVERFLOW$1 = _enums$STYLE_KEY$d.OVERFLOW,
+      MIX_BLEND_MODE = _enums$STYLE_KEY$d.MIX_BLEND_MODE,
+      TEXT_OVERFLOW$2 = _enums$STYLE_KEY$d.TEXT_OVERFLOW,
+      BORDER_TOP_COLOR = _enums$STYLE_KEY$d.BORDER_TOP_COLOR,
+      BORDER_BOTTOM_COLOR = _enums$STYLE_KEY$d.BORDER_BOTTOM_COLOR,
+      BORDER_LEFT_COLOR = _enums$STYLE_KEY$d.BORDER_LEFT_COLOR,
+      BORDER_RIGHT_COLOR = _enums$STYLE_KEY$d.BORDER_RIGHT_COLOR,
+      FONT_STYLE$3 = _enums$STYLE_KEY$d.FONT_STYLE,
+      COLOR$4 = _enums$STYLE_KEY$d.COLOR,
+      VISIBILITY$2 = _enums$STYLE_KEY$d.VISIBILITY,
+      POINTER_EVENTS$1 = _enums$STYLE_KEY$d.POINTER_EVENTS,
+      BORDER_TOP = _enums$STYLE_KEY$d.BORDER_TOP,
+      BORDER_RIGHT = _enums$STYLE_KEY$d.BORDER_RIGHT,
+      BORDER_BOTTOM = _enums$STYLE_KEY$d.BORDER_BOTTOM,
+      BORDER_LEFT = _enums$STYLE_KEY$d.BORDER_LEFT,
+      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$d.BACKGROUND_CLIP,
+      FONT_SIZE$4 = _enums$STYLE_KEY$d.FONT_SIZE,
+      FONT_FAMILY$5 = _enums$STYLE_KEY$d.FONT_FAMILY,
+      LINE_HEIGHT$3 = _enums$STYLE_KEY$d.LINE_HEIGHT,
       _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
       UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
       UPDATE_FOCUS = _enums$UPDATE_KEY$1.UPDATE_FOCUS,
@@ -13883,14 +14166,13 @@
       NODE_CACHE_MASK = _enums$NODE_KEY$2.NODE_CACHE_MASK,
       NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW,
       NODE_IS_DESTROYED$1 = _enums$NODE_KEY$2.NODE_IS_DESTROYED,
-      NODE_DEFS_CACHE$2 = _enums$NODE_KEY$2.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$2.NODE_DEFS_CACHE,
       NODE_DOM_PARENT = _enums$NODE_KEY$2.NODE_DOM_PARENT;
   var AUTO$3 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$6 = unit.PERCENT,
       INHERIT$4 = unit.INHERIT;
-  var clone$2 = util.clone,
-      int2rgba$2 = util.int2rgba,
+  var int2rgba$2 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
       joinArr$2 = util.joinArr,
       isNil$5 = util.isNil;
@@ -13961,7 +14243,7 @@
       config[NODE_REFRESH_LV] = REFLOW;
       config[NODE_STYLE] = _this.__style;
       config[NODE_MATRIX_EVENT] = [];
-      config[NODE_DEFS_CACHE$2] = _this.__cacheDefs;
+      config[NODE_DEFS_CACHE$3] = _this.__cacheDefs;
       _this.__frameAnimateList = [];
       return _this;
     }
@@ -14505,18 +14787,20 @@
 
         // this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
         if (lv >= REPAINT$1) {
-          if (__cacheStyle[BACKGROUND_POSITION_X$2] === undefined) {
-            __cacheStyle[BACKGROUND_POSITION_X$2] = true;
-            var bgX = currentStyle[BACKGROUND_POSITION_X$2];
-            computedStyle[BACKGROUND_POSITION_X$2] = (bgX || []).map(function (item) {
+          var isInline = this.__isRealInline();
+
+          if (__cacheStyle[BACKGROUND_POSITION_X$3] === undefined) {
+            __cacheStyle[BACKGROUND_POSITION_X$3] = true;
+            var bgX = currentStyle[BACKGROUND_POSITION_X$3];
+            computedStyle[BACKGROUND_POSITION_X$3] = (bgX || []).map(function (item) {
               return item[1] === PX$6 ? item[0] : item[0] + '%';
             });
           }
 
-          if (__cacheStyle[BACKGROUND_POSITION_Y$2] === undefined) {
-            __cacheStyle[BACKGROUND_POSITION_Y$2] = true;
-            var bgY = currentStyle[BACKGROUND_POSITION_Y$2];
-            computedStyle[BACKGROUND_POSITION_Y$2] = (bgY || []).map(function (item) {
+          if (__cacheStyle[BACKGROUND_POSITION_Y$3] === undefined) {
+            __cacheStyle[BACKGROUND_POSITION_Y$3] = true;
+            var bgY = currentStyle[BACKGROUND_POSITION_Y$3];
+            computedStyle[BACKGROUND_POSITION_Y$3] = (bgY || []).map(function (item) {
               return item[1] === PX$6 ? item[0] : item[0] + '%';
             });
           }
@@ -14579,7 +14863,7 @@
                 }
 
                 return true;
-              } else if (bgi && bgi.k) {
+              } else if (!isInline && bgi.k) {
                 return _this3.__gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, bgi);
               }
             });
@@ -14599,8 +14883,6 @@
               __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k][0]);
             }
           }); // 圆角边计算
-
-          var isInline = this.__isRealInline();
 
           var contentBoxList = isInline ? this.contentBoxList : null;
 
@@ -15147,7 +15429,7 @@
                   };
                   var id = defs.add(o);
 
-                  __config[NODE_DEFS_CACHE$2].push(o);
+                  __config[NODE_DEFS_CACHE$3].push(o);
 
                   virtualDom.filter = 'url(#' + id + ')';
                 } else {
@@ -15219,7 +15501,7 @@
             };
             var id = defs.add(v);
 
-            __config[NODE_DEFS_CACHE$2].push(v);
+            __config[NODE_DEFS_CACHE$3].push(v);
 
             virtualDom.overflow = 'url(#' + id + ')';
           }
@@ -15315,7 +15597,8 @@
             var fontSize = computedStyle[FONT_SIZE$4],
                 fontFamily = computedStyle[FONT_FAMILY$5],
                 lineHeight = computedStyle[LINE_HEIGHT$3];
-            var iw = 0; // bgi视作inline排满一行绘制，然后按分行拆开给每行
+            var iw = 0;
+            var offscreen; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
             if (hasBgi) {
               iw = inline.getInlineWidth(this, contentBoxList);
@@ -15326,22 +15609,45 @@
                 iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
               }
 
-              console.log(backgroundImage, iw);
-
               if (renderMode === mode.CANVAS) {
-                var off = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
+                offscreen = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
               }
+
+              var _length = backgroundImage.length;
+              backgroundImage.slice(0).reverse().forEach(function (bgi, i) {
+                if (!bgi) {
+                  return;
+                }
+
+                i = _length - 1 - i;
+
+                if (util.isString(bgi)) {
+                  var loadBgi = _this4.__loadBgi[i];
+                } else if (bgi.k) {
+                  var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
+
+                  if (gd) {
+                    if (gd.k === 'conic') {
+                      gradient$1.renderConic(_this4, renderMode, offscreen.ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                    } else {
+                      bg.renderBgc(_this4, renderMode, offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr);
+                    }
+                  }
+                }
+              });
             } // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
 
 
             var ff = css.getFontFamily(fontFamily);
-            var baseLine = css.getBaseLine(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它
+            var baseLine = css.getBaseLine(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
 
             var diffL = fontSize * (o.info[ff].lgr || 0); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
             var isFirst = true;
             var lastContentBox = contentBoxList[0],
-                lastLineBox = lastContentBox.parentLineBox;
+                lastLineBox = lastContentBox.parentLineBox; // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制
+
+            var countW = 0;
 
             for (var i = 0; i < length; i++) {
               var contentBox = contentBoxList[i];
@@ -15362,6 +15668,12 @@
 
                   if (backgroundColor[3] > 0) {
                     bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                  }
+
+                  if (offscreen) {
+                    var w = ix2 - ix1;
+                    ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+                    countW += w;
                   }
 
                   if (boxShadow) {
@@ -15421,6 +15733,12 @@
                     bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
                   }
 
+                  if (offscreen) {
+                    var w = ix2 - ix1;
+                    ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+                    countW += w;
+                  }
+
                   if (boxShadow) {
                     boxShadow.forEach(function (item) {
                       bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
@@ -15466,6 +15784,10 @@
                 })();
               }
             }
+
+            if (offscreen) {
+              offscreen.ctx.clearRect(0, 0, iw, lineHeight);
+            }
           }
 
           return;
@@ -15478,298 +15800,19 @@
 
 
         if (backgroundImage) {
-          var _length = backgroundImage.length;
+          var _length2 = backgroundImage.length;
           backgroundImage.slice(0).reverse().forEach(function (bgi, i) {
             if (!bgi) {
               return;
             }
 
-            i = _length - 1 - i;
+            i = _length2 - 1 - i;
 
             if (util.isString(bgi)) {
               var loadBgi = _this4.__loadBgi[i];
 
               if (loadBgi.url === backgroundImage[i]) {
-                var source = loadBgi.source;
-                var bgW = bx2 - bx1;
-                var bgH = by2 - by1; // 无source不绘制
-
-                if (source) {
-                  var _width5 = loadBgi.width,
-                      _height5 = loadBgi.height;
-
-                  var _ref = backgroundSize[i] || [],
-                      _ref2 = _slicedToArray(_ref, 2),
-                      w = _ref2[0],
-                      h = _ref2[1]; // -1为auto，-2为contain，-3为cover
-
-
-                  if (w === -1 && h === -1) {
-                    w = _width5;
-                    h = _height5;
-                  } else if (w === -2) {
-                    if (_width5 > bgW && _height5 > bgH) {
-                      w = _width5 / bgW;
-                      h = _height5 / bgH;
-
-                      if (w >= h) {
-                        w = bgW;
-                        h = w * _height5 / _width5;
-                      } else {
-                        h = bgH;
-                        w = h * _width5 / _height5;
-                      }
-                    } else if (_width5 > bgW) {
-                      w = bgW;
-                      h = w * _height5 / _width5;
-                    } else if (_height5 > bgH) {
-                      h = bgH;
-                      w = h * _width5 / _height5;
-                    } else {
-                      w = _width5;
-                      h = _height5;
-                    }
-                  } else if (w === -3) {
-                    if (bgW > _width5 && bgH > _height5) {
-                      w = _width5 / bgW;
-                      h = _height5 / bgH;
-
-                      if (w <= h) {
-                        w = bgW;
-                        h = w * _height5 / _width5;
-                      } else {
-                        h = bgH;
-                        w = h * _width5 / _height5;
-                      }
-                    } else if (bgW > _width5) {
-                      w = bgW;
-                      h = w * _height5 / _width5;
-                    } else if (bgH > _height5) {
-                      h = bgH;
-                      w = h * _width5 / _height5;
-                    } else {
-                      w = _width5 / bgW;
-                      h = _height5 / bgH;
-
-                      if (w <= h) {
-                        w = bgW;
-                        h = w * _height5 / _width5;
-                      } else {
-                        h = bgH;
-                        w = h * _width5 / _height5;
-                      }
-                    }
-                  } else if (w === -1) {
-                    w = h * _width5 / _height5;
-                  } else if (h === -1) {
-                    h = w * _height5 / _width5;
-                  }
-
-                  var bgX = bx1 + bg.calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2][i], bgW, w);
-                  var bgY = by1 + bg.calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2][i], bgH, h); // 超出尺寸模拟mask截取
-
-                  var needMask = bgX < x2 || bgY < y2 || w > bgW || h > bgH; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
-
-                  var xnl = 0;
-                  var xnr = 0;
-                  var ynt = 0;
-                  var ynb = 0; // repeat-x
-
-                  if (['repeat-x', 'repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
-                    var diff = bgX - bx1;
-
-                    if (diff > 0) {
-                      xnl = Math.ceil(diff / w);
-                    }
-
-                    diff = bx1 + bgW - bgX - w;
-
-                    if (diff > 0) {
-                      xnr = Math.ceil(diff / w);
-                    }
-                  } // repeat-y
-
-
-                  if (['repeat-y', 'repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
-                    var _diff = bgY - by1;
-
-                    if (_diff > 0) {
-                      ynt = Math.ceil(_diff / h);
-                    }
-
-                    _diff = by1 + bgH - bgY - h;
-
-                    if (_diff > 0) {
-                      ynb = Math.ceil(_diff / h);
-                    }
-                  } // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
-
-
-                  var repeat = [];
-
-                  if (xnl > 0) {
-                    for (var _i3 = 0; _i3 < xnl; _i3++) {
-                      var _x = bgX - (_i3 + 1) * w;
-
-                      repeat.push([_x, bgY]); // 看最左边超过没有
-
-                      if (!needMask && _i3 === 0 && _x < bx1) {
-                        needMask = true;
-                      }
-                    }
-                  }
-
-                  if (xnr > 0) {
-                    for (var _i4 = 0; _i4 < xnr; _i4++) {
-                      var _x2 = bgX + (_i4 + 1) * w;
-
-                      repeat.push([_x2, bgY]); // 看最右边超过没有
-
-                      if (!needMask && _i4 === xnr - 1 && _x2 + w > bx1 + bgW) {
-                        needMask = true;
-                      }
-                    }
-                  }
-
-                  if (ynt > 0) {
-                    for (var _i5 = 0; _i5 < ynt; _i5++) {
-                      var _y = bgY - (_i5 + 1) * h;
-
-                      repeat.push([bgX, _y]); // 看最上边超过没有
-
-                      if (!needMask && _i5 === 0 && _y < by1) {
-                        needMask = true;
-                      }
-                    }
-                  }
-
-                  if (ynb > 0) {
-                    for (var _i6 = 0; _i6 < ynb; _i6++) {
-                      var _y2 = bgY + (_i6 + 1) * h;
-
-                      repeat.push([bgX, _y2]); // 看最下边超过没有
-
-                      if (!needMask && _i6 === ynb - 1 && _y2 + w > by1 + clientHeight) {
-                        needMask = true;
-                      }
-                    }
-                  } // 原点和同行列十字画完，看4个角的情况
-
-
-                  if (xnl > 0 && ynt > 0) {
-                    for (var _i7 = 0; _i7 < xnl; _i7++) {
-                      for (var j = 0; j < ynt; j++) {
-                        repeat.push([bgX - (_i7 + 1) * w, bgY - (j + 1) * h]);
-                      }
-                    }
-                  }
-
-                  if (xnr > 0 && ynt > 0) {
-                    for (var _i8 = 0; _i8 < xnr; _i8++) {
-                      for (var _j = 0; _j < ynt; _j++) {
-                        repeat.push([bgX + (_i8 + 1) * w, bgY - (_j + 1) * h]);
-                      }
-                    }
-                  }
-
-                  if (xnl > 0 && ynb > 0) {
-                    for (var _i9 = 0; _i9 < xnl; _i9++) {
-                      for (var _j2 = 0; _j2 < ynb; _j2++) {
-                        repeat.push([bgX - (_i9 + 1) * w, bgY + (_j2 + 1) * h]);
-                      }
-                    }
-                  }
-
-                  if (xnr > 0 && ynb > 0) {
-                    for (var _i10 = 0; _i10 < xnr; _i10++) {
-                      for (var _j3 = 0; _j3 < ynb; _j3++) {
-                        repeat.push([bgX + (_i10 + 1) * w, bgY + (_j3 + 1) * h]);
-                      }
-                    }
-                  }
-
-                  if (renderMode === mode.CANVAS) {
-                    if (needMask) {
-                      ctx.save();
-                      bg.renderBgc(_this4, renderMode, ctx, defs, '#FFF', bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
-                    } // 先画不考虑repeat的中心声明的
-
-
-                    ctx.drawImage(source, bgX, bgY, w, h); // 再画重复的十字和4角象限
-
-                    repeat.forEach(function (item) {
-                      ctx.drawImage(source, item[0], item[1], w, h);
-                    });
-
-                    if (needMask) {
-                      ctx.restore();
-                    }
-                  } else if (renderMode === mode.SVG) {
-                    var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, bgW, bgH);
-
-                    var props = [['xlink:href', bgi], ['x', bgX], ['y', bgY], ['width', _width5], ['height', _height5]];
-                    var needResize;
-
-                    if (_matrix && !mx.isE(_matrix)) {
-                      needResize = true;
-                      props.push(['transform', 'matrix(' + joinArr$2(_matrix, ',') + ')']);
-                    }
-
-                    if (needMask) {
-                      var p1 = [bx1, by1];
-                      var p2 = [bx2, by2];
-
-                      if (needResize) {
-                        var inverse = mx.inverse(_matrix);
-                        p1 = mx.calPoint(p1, inverse);
-                        p2 = mx.calPoint(p2, inverse);
-                      }
-
-                      var _v2 = {
-                        tagName: 'clipPath',
-                        children: [{
-                          tagName: 'path',
-                          props: [['d', "M".concat(p1[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
-                        }]
-                      };
-
-                      var _id = defs.add(_v2);
-
-                      __config[NODE_DEFS_CACHE$2].push(_v2);
-
-                      props.push(['clip-path', 'url(#' + _id + ')']);
-                    } // 先画不考虑repeat的中心声明的
-
-
-                    _this4.virtualDom.bb.push({
-                      type: 'img',
-                      tagName: 'image',
-                      props: props
-                    }); // 再画重复的十字和4角象限
-
-
-                    repeat.forEach(function (item) {
-                      var copy = clone$2(props);
-
-                      if (needResize) {
-                        var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], bgW, bgH);
-
-                        if (_matrix2 && !mx.isE(_matrix2)) {
-                          copy[5][1] = 'matrix(' + joinArr$2(_matrix2, ',') + ')';
-                        }
-                      }
-
-                      copy[1][1] = item[0];
-                      copy[2][1] = item[1];
-
-                      _this4.virtualDom.bb.push({
-                        type: 'img',
-                        tagName: 'image',
-                        props: copy
-                      });
-                    });
-                  }
-                }
+                bg.renderImage(_this4, renderMode, ctx, defs, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
               }
             } else if (bgi.k) {
               var gd = __cacheStyle[BACKGROUND_IMAGE$1][i];
@@ -15911,15 +15954,15 @@
       }
     }, {
       key: "__gradient",
-      value: function __gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, vs) {
+      value: function __gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, bgi) {
         var iw = bx2 - bx1;
         var ih = by2 - by1;
-        var k = vs.k,
-            v = vs.v,
-            d = vs.d,
-            s = vs.s,
-            z = vs.z,
-            p = vs.p;
+        var k = bgi.k,
+            v = bgi.v,
+            d = bgi.d,
+            s = bgi.s,
+            z = bgi.z,
+            p = bgi.p;
         var cx = bx1 + iw * 0.5;
         var cy = by1 + ih * 0.5;
         var res = {
@@ -15973,7 +16016,7 @@
           };
           var uuid = defs.add(v);
 
-          this.__config[NODE_DEFS_CACHE$2].push(v);
+          this.__config[NODE_DEFS_CACHE$3].push(v);
 
           return 'url(#' + uuid + ')';
         }
@@ -16000,7 +16043,7 @@
           };
           var uuid = defs.add(v);
 
-          this.__config[NODE_DEFS_CACHE$2].push(v);
+          this.__config[NODE_DEFS_CACHE$3].push(v);
 
           return 'url(#' + uuid + ')';
         }
@@ -16056,10 +16099,10 @@
 
               var _geom$pointOnCircle3 = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset),
                   _geom$pointOnCircle4 = _slicedToArray(_geom$pointOnCircle3, 2),
-                  _x3 = _geom$pointOnCircle4[0],
-                  _y3 = _geom$pointOnCircle4[1];
+                  _x = _geom$pointOnCircle4[0],
+                  _y = _geom$pointOnCircle4[1];
 
-              list.push([x1, y1, _x3, _y3, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
+              list.push([x1, y1, _x, _y, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
             }
           } // 最后一段补自己末尾颜色特殊处理
 
@@ -16080,8 +16123,8 @@
           end[7] = s[3];
           list.push(end);
 
-          for (var _i11 = 0, _len4 = list.length; _i11 < _len4; _i11++) {
-            var cur = list[_i11];
+          for (var _i3 = 0, _len4 = list.length; _i3 < _len4; _i3++) {
+            var cur = list[_i3];
 
             if (prev) {
               var v = {
@@ -16097,7 +16140,7 @@
               };
               var uuid = defs.add(v);
 
-              this.__config[NODE_DEFS_CACHE$2].push(v);
+              this.__config[NODE_DEFS_CACHE$3].push(v);
 
               res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], 'url(#' + uuid + ')']);
             }
@@ -16630,14 +16673,14 @@
     return Xom;
   }(Node);
 
-  var _enums$STYLE_KEY$d = enums.STYLE_KEY,
-      DISPLAY$3 = _enums$STYLE_KEY$d.DISPLAY,
-      MARGIN_LEFT$3 = _enums$STYLE_KEY$d.MARGIN_LEFT,
-      BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
-      PADDING_LEFT$4 = _enums$STYLE_KEY$d.PADDING_LEFT,
-      PADDING_RIGHT$4 = _enums$STYLE_KEY$d.PADDING_RIGHT,
-      BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
-      MARGIN_RIGHT$3 = _enums$STYLE_KEY$d.MARGIN_RIGHT;
+  var _enums$STYLE_KEY$e = enums.STYLE_KEY,
+      DISPLAY$3 = _enums$STYLE_KEY$e.DISPLAY,
+      MARGIN_LEFT$3 = _enums$STYLE_KEY$e.MARGIN_LEFT,
+      BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
+      PADDING_LEFT$4 = _enums$STYLE_KEY$e.PADDING_LEFT,
+      PADDING_RIGHT$4 = _enums$STYLE_KEY$e.PADDING_RIGHT,
+      BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
+      MARGIN_RIGHT$3 = _enums$STYLE_KEY$e.MARGIN_RIGHT;
   /**
    * css中常见的概念，一行内容，里面可能有若干不同的内容，仅在布局阶段出现，不参与渲染逻辑
    * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inline等节点，而内容TextBox则属于Text
@@ -17706,38 +17749,38 @@
     BOLD: BOLD
   };
 
-  var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-      POSITION$2 = _enums$STYLE_KEY$e.POSITION,
-      DISPLAY$4 = _enums$STYLE_KEY$e.DISPLAY,
-      FONT_WEIGHT$5 = _enums$STYLE_KEY$e.FONT_WEIGHT,
-      MARGIN_LEFT$4 = _enums$STYLE_KEY$e.MARGIN_LEFT,
-      MARGIN_TOP$2 = _enums$STYLE_KEY$e.MARGIN_TOP,
-      MARGIN_RIGHT$4 = _enums$STYLE_KEY$e.MARGIN_RIGHT,
-      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$e.MARGIN_BOTTOM,
-      PADDING_LEFT$5 = _enums$STYLE_KEY$e.PADDING_LEFT,
-      PADDING_BOTTOM$3 = _enums$STYLE_KEY$e.PADDING_BOTTOM,
-      PADDING_RIGHT$5 = _enums$STYLE_KEY$e.PADDING_RIGHT,
-      PADDING_TOP$3 = _enums$STYLE_KEY$e.PADDING_TOP,
-      BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$e.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$e.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
-      TOP$2 = _enums$STYLE_KEY$e.TOP,
-      RIGHT$2 = _enums$STYLE_KEY$e.RIGHT,
-      BOTTOM$2 = _enums$STYLE_KEY$e.BOTTOM,
-      LEFT$2 = _enums$STYLE_KEY$e.LEFT,
-      WIDTH$4 = _enums$STYLE_KEY$e.WIDTH,
-      HEIGHT$4 = _enums$STYLE_KEY$e.HEIGHT,
-      TEXT_ALIGN$3 = _enums$STYLE_KEY$e.TEXT_ALIGN,
-      FLEX_DIRECTION$2 = _enums$STYLE_KEY$e.FLEX_DIRECTION,
-      FLEX_BASIS$2 = _enums$STYLE_KEY$e.FLEX_BASIS,
-      FLEX_SHRINK$1 = _enums$STYLE_KEY$e.FLEX_SHRINK,
-      FLEX_GROW$1 = _enums$STYLE_KEY$e.FLEX_GROW,
-      ALIGN_SELF$1 = _enums$STYLE_KEY$e.ALIGN_SELF,
-      ALIGN_ITEMS$1 = _enums$STYLE_KEY$e.ALIGN_ITEMS,
-      JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$e.JUSTIFY_CONTENT,
-      Z_INDEX$3 = _enums$STYLE_KEY$e.Z_INDEX,
-      BACKGROUND_CLIP$2 = _enums$STYLE_KEY$e.BACKGROUND_CLIP,
+  var _enums$STYLE_KEY$f = enums.STYLE_KEY,
+      POSITION$2 = _enums$STYLE_KEY$f.POSITION,
+      DISPLAY$4 = _enums$STYLE_KEY$f.DISPLAY,
+      FONT_WEIGHT$5 = _enums$STYLE_KEY$f.FONT_WEIGHT,
+      MARGIN_LEFT$4 = _enums$STYLE_KEY$f.MARGIN_LEFT,
+      MARGIN_TOP$2 = _enums$STYLE_KEY$f.MARGIN_TOP,
+      MARGIN_RIGHT$4 = _enums$STYLE_KEY$f.MARGIN_RIGHT,
+      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$f.MARGIN_BOTTOM,
+      PADDING_LEFT$5 = _enums$STYLE_KEY$f.PADDING_LEFT,
+      PADDING_BOTTOM$3 = _enums$STYLE_KEY$f.PADDING_BOTTOM,
+      PADDING_RIGHT$5 = _enums$STYLE_KEY$f.PADDING_RIGHT,
+      PADDING_TOP$3 = _enums$STYLE_KEY$f.PADDING_TOP,
+      BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$f.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$f.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_LEFT_WIDTH,
+      TOP$2 = _enums$STYLE_KEY$f.TOP,
+      RIGHT$2 = _enums$STYLE_KEY$f.RIGHT,
+      BOTTOM$2 = _enums$STYLE_KEY$f.BOTTOM,
+      LEFT$2 = _enums$STYLE_KEY$f.LEFT,
+      WIDTH$4 = _enums$STYLE_KEY$f.WIDTH,
+      HEIGHT$4 = _enums$STYLE_KEY$f.HEIGHT,
+      TEXT_ALIGN$3 = _enums$STYLE_KEY$f.TEXT_ALIGN,
+      FLEX_DIRECTION$2 = _enums$STYLE_KEY$f.FLEX_DIRECTION,
+      FLEX_BASIS$2 = _enums$STYLE_KEY$f.FLEX_BASIS,
+      FLEX_SHRINK$1 = _enums$STYLE_KEY$f.FLEX_SHRINK,
+      FLEX_GROW$1 = _enums$STYLE_KEY$f.FLEX_GROW,
+      ALIGN_SELF$1 = _enums$STYLE_KEY$f.ALIGN_SELF,
+      ALIGN_ITEMS$1 = _enums$STYLE_KEY$f.ALIGN_ITEMS,
+      JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$f.JUSTIFY_CONTENT,
+      Z_INDEX$3 = _enums$STYLE_KEY$f.Z_INDEX,
+      BACKGROUND_CLIP$2 = _enums$STYLE_KEY$f.BACKGROUND_CLIP,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -20259,25 +20302,25 @@
     return Dom;
   }(Xom);
 
-  var _enums$STYLE_KEY$f = enums.STYLE_KEY,
-      WIDTH$5 = _enums$STYLE_KEY$f.WIDTH,
-      HEIGHT$5 = _enums$STYLE_KEY$f.HEIGHT,
-      DISPLAY$5 = _enums$STYLE_KEY$f.DISPLAY,
-      BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$f.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$f.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$f.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$f.BORDER_BOTTOM_WIDTH,
-      PADDING_TOP$4 = _enums$STYLE_KEY$f.PADDING_TOP,
-      PADDING_LEFT$6 = _enums$STYLE_KEY$f.PADDING_LEFT,
-      BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_TOP_LEFT_RADIUS,
-      BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_BOTTOM_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_BOTTOM_LEFT_RADIUS,
-      VISIBILITY$3 = _enums$STYLE_KEY$f.VISIBILITY,
-      BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$f.BACKGROUND_IMAGE,
-      BACKGROUND_COLOR$2 = _enums$STYLE_KEY$f.BACKGROUND_COLOR,
-      BOX_SHADOW$3 = _enums$STYLE_KEY$f.BOX_SHADOW,
-      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$f.MIX_BLEND_MODE,
+  var _enums$STYLE_KEY$g = enums.STYLE_KEY,
+      WIDTH$5 = _enums$STYLE_KEY$g.WIDTH,
+      HEIGHT$5 = _enums$STYLE_KEY$g.HEIGHT,
+      DISPLAY$5 = _enums$STYLE_KEY$g.DISPLAY,
+      BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
+      PADDING_TOP$4 = _enums$STYLE_KEY$g.PADDING_TOP,
+      PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
+      BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_LEFT_RADIUS,
+      VISIBILITY$3 = _enums$STYLE_KEY$g.VISIBILITY,
+      BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$g.BACKGROUND_IMAGE,
+      BACKGROUND_COLOR$2 = _enums$STYLE_KEY$g.BACKGROUND_COLOR,
+      BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
+      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$g.MIX_BLEND_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -20286,7 +20329,7 @@
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
       NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
-      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
       NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK;
   var AUTO$5 = unit.AUTO,
       PX$8 = unit.PX,
@@ -20670,7 +20713,7 @@
                   };
                   var id = defs.add(v);
 
-                  __config[NODE_DEFS_CACHE$3].push(v);
+                  __config[NODE_DEFS_CACHE$4].push(v);
 
                   virtualDom.conClip = 'url(#' + id + ')';
                 }
@@ -20702,7 +20745,7 @@
 
                 var _id = defs.add(_v);
 
-                __config[NODE_DEFS_CACHE$3].push(_v);
+                __config[NODE_DEFS_CACHE$4].push(_v);
 
                 virtualDom.conClip = 'url(#' + _id + ')';
                 delete virtualDom.cache;
@@ -20830,32 +20873,32 @@
     return Defs;
   }();
 
-  var _enums$STYLE_KEY$g = enums.STYLE_KEY,
-      DISPLAY$6 = _enums$STYLE_KEY$g.DISPLAY,
-      MARGIN_TOP$3 = _enums$STYLE_KEY$g.MARGIN_TOP,
-      MARGIN_RIGHT$5 = _enums$STYLE_KEY$g.MARGIN_RIGHT,
-      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
-      MARGIN_LEFT$5 = _enums$STYLE_KEY$g.MARGIN_LEFT,
-      PADDING_TOP$5 = _enums$STYLE_KEY$g.PADDING_TOP,
-      PADDING_RIGHT$6 = _enums$STYLE_KEY$g.PADDING_RIGHT,
-      PADDING_BOTTOM$4 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
-      PADDING_LEFT$7 = _enums$STYLE_KEY$g.PADDING_LEFT,
-      WIDTH$6 = _enums$STYLE_KEY$g.WIDTH,
-      HEIGHT$6 = _enums$STYLE_KEY$g.HEIGHT,
-      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
-      FILL$1 = _enums$STYLE_KEY$g.FILL,
-      STROKE$1 = _enums$STYLE_KEY$g.STROKE,
-      STROKE_MITERLIMIT = _enums$STYLE_KEY$g.STROKE_MITERLIMIT,
-      STROKE_WIDTH$1 = _enums$STYLE_KEY$g.STROKE_WIDTH,
-      STROKE_LINECAP = _enums$STYLE_KEY$g.STROKE_LINECAP,
-      STROKE_LINEJOIN = _enums$STYLE_KEY$g.STROKE_LINEJOIN,
-      STROKE_DASHARRAY$1 = _enums$STYLE_KEY$g.STROKE_DASHARRAY,
-      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$g.STROKE_DASHARRAY_STR,
-      FILL_RULE = _enums$STYLE_KEY$g.FILL_RULE,
-      VISIBILITY$4 = _enums$STYLE_KEY$g.VISIBILITY,
+  var _enums$STYLE_KEY$h = enums.STYLE_KEY,
+      DISPLAY$6 = _enums$STYLE_KEY$h.DISPLAY,
+      MARGIN_TOP$3 = _enums$STYLE_KEY$h.MARGIN_TOP,
+      MARGIN_RIGHT$5 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
+      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
+      MARGIN_LEFT$5 = _enums$STYLE_KEY$h.MARGIN_LEFT,
+      PADDING_TOP$5 = _enums$STYLE_KEY$h.PADDING_TOP,
+      PADDING_RIGHT$6 = _enums$STYLE_KEY$h.PADDING_RIGHT,
+      PADDING_BOTTOM$4 = _enums$STYLE_KEY$h.PADDING_BOTTOM,
+      PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
+      WIDTH$6 = _enums$STYLE_KEY$h.WIDTH,
+      HEIGHT$6 = _enums$STYLE_KEY$h.HEIGHT,
+      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$h.BORDER_RIGHT_WIDTH,
+      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$h.BORDER_LEFT_WIDTH,
+      FILL$1 = _enums$STYLE_KEY$h.FILL,
+      STROKE$1 = _enums$STYLE_KEY$h.STROKE,
+      STROKE_MITERLIMIT = _enums$STYLE_KEY$h.STROKE_MITERLIMIT,
+      STROKE_WIDTH$1 = _enums$STYLE_KEY$h.STROKE_WIDTH,
+      STROKE_LINECAP = _enums$STYLE_KEY$h.STROKE_LINECAP,
+      STROKE_LINEJOIN = _enums$STYLE_KEY$h.STROKE_LINEJOIN,
+      STROKE_DASHARRAY$1 = _enums$STYLE_KEY$h.STROKE_DASHARRAY,
+      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$h.STROKE_DASHARRAY_STR,
+      FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
+      VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
       _enums$NODE_KEY$5 = enums.NODE_KEY,
       NODE_CACHE_PROPS = _enums$NODE_KEY$5.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$5.NODE_CURRENT_PROPS,
@@ -20867,7 +20910,7 @@
       NODE_CACHE_FILTER$2 = _enums$NODE_KEY$5.NODE_CACHE_FILTER,
       NODE_CACHE_MASK$1 = _enums$NODE_KEY$5.NODE_CACHE_MASK,
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW,
-      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$5.NODE_DEFS_CACHE;
+      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$5.NODE_DEFS_CACHE;
   var AUTO$6 = unit.AUTO,
       PX$9 = unit.PX,
       PERCENT$8 = unit.PERCENT;
@@ -21622,6 +21665,8 @@
             ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
             ctx.restore();
           }
+
+          offscreen.ctx.clearRect(0, 0, w, h);
         } else if (renderMode === mode.SVG) {
           if (isMulti) {
             list.forEach(function (item) {
@@ -21634,7 +21679,7 @@
               };
               var clip = defs.add(v);
 
-              _this3.__config[NODE_DEFS_CACHE$4].push(v);
+              _this3.__config[NODE_DEFS_CACHE$5].push(v);
 
               color.forEach(function (item) {
                 _this3.virtualDom.bb.push({
@@ -21654,7 +21699,7 @@
             };
             var clip = defs.add(v);
 
-            this.__config[NODE_DEFS_CACHE$4].push(v);
+            this.__config[NODE_DEFS_CACHE$5].push(v);
 
             color.forEach(function (item) {
               _this3.virtualDom.bb.push({
@@ -22977,17 +23022,17 @@
     return Controller;
   }();
 
-  var _enums$STYLE_KEY$h = enums.STYLE_KEY,
-      POSITION$3 = _enums$STYLE_KEY$h.POSITION,
-      DISPLAY$7 = _enums$STYLE_KEY$h.DISPLAY,
-      OPACITY$5 = _enums$STYLE_KEY$h.OPACITY,
-      VISIBILITY$5 = _enums$STYLE_KEY$h.VISIBILITY,
-      FILTER$5 = _enums$STYLE_KEY$h.FILTER,
-      OVERFLOW$2 = _enums$STYLE_KEY$h.OVERFLOW,
-      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$h.MIX_BLEND_MODE,
-      FILL$2 = _enums$STYLE_KEY$h.FILL,
-      TRANSFORM$5 = _enums$STYLE_KEY$h.TRANSFORM,
-      TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$h.TRANSFORM_ORIGIN,
+  var _enums$STYLE_KEY$i = enums.STYLE_KEY,
+      POSITION$3 = _enums$STYLE_KEY$i.POSITION,
+      DISPLAY$7 = _enums$STYLE_KEY$i.DISPLAY,
+      OPACITY$5 = _enums$STYLE_KEY$i.OPACITY,
+      VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
+      FILTER$5 = _enums$STYLE_KEY$i.FILTER,
+      OVERFLOW$2 = _enums$STYLE_KEY$i.OVERFLOW,
+      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$i.MIX_BLEND_MODE,
+      FILL$2 = _enums$STYLE_KEY$i.FILL,
+      TRANSFORM$5 = _enums$STYLE_KEY$i.TRANSFORM,
+      TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
       _enums$NODE_KEY$7 = enums.NODE_KEY,
       NODE_CACHE$4 = _enums$NODE_KEY$7.NODE_CACHE,
       NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
@@ -23004,7 +23049,7 @@
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
-      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$6 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
       NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
@@ -24533,7 +24578,7 @@
             hasMask = _structs$_i4[STRUCT_HAS_MASK$1];
         var _node$__config5 = node.__config,
             __refreshLevel = _node$__config5[NODE_REFRESH_LV$1],
-            defsCache = _node$__config5[NODE_DEFS_CACHE$5]; // 只要涉及到matrix和opacity就影响mask
+            defsCache = _node$__config5[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
 
         var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$2 || contain$2(__refreshLevel, TRANSFORM_ALL$2 | OP$1));
 
@@ -24591,7 +24636,7 @@
       var display = node.computedStyle[DISPLAY$7];
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           __refreshLevel = __config[NODE_REFRESH_LV$1],
-          defsCache = __config[NODE_DEFS_CACHE$5]; // 将随后的若干个mask节点范围存下来
+          defsCache = __config[NODE_DEFS_CACHE$6]; // 将随后的若干个mask节点范围存下来
 
       if (hasMask && display !== 'none') {
         var _start = _i10 + (total || 0) + 1;
@@ -24733,7 +24778,7 @@
                   };
                   var id = defs.add(o);
 
-                  __config[NODE_DEFS_CACHE$5].push(o);
+                  __config[NODE_DEFS_CACHE$6].push(o);
 
                   virtualDom.filter = 'url(#' + id + ')';
                 }
@@ -24755,7 +24800,7 @@
         virtualDom.lv = __refreshLevel;
       } else {
         // >=REPAINT会调用render，重新生成defsCache
-        __config[NODE_DEFS_CACHE$5] && __config[NODE_DEFS_CACHE$5].splice(0);
+        __config[NODE_DEFS_CACHE$6] && __config[NODE_DEFS_CACHE$6].splice(0);
 
         if (node instanceof Geom$1) {
           node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
@@ -24915,12 +24960,12 @@
     renderSvg: renderSvg
   };
 
-  var _enums$STYLE_KEY$i = enums.STYLE_KEY,
-      DISPLAY$8 = _enums$STYLE_KEY$i.DISPLAY,
-      TOP$3 = _enums$STYLE_KEY$i.TOP,
-      BOTTOM$3 = _enums$STYLE_KEY$i.BOTTOM,
-      POSITION$4 = _enums$STYLE_KEY$i.POSITION,
-      HEIGHT$7 = _enums$STYLE_KEY$i.HEIGHT;
+  var _enums$STYLE_KEY$j = enums.STYLE_KEY,
+      DISPLAY$8 = _enums$STYLE_KEY$j.DISPLAY,
+      TOP$3 = _enums$STYLE_KEY$j.TOP,
+      BOTTOM$3 = _enums$STYLE_KEY$j.BOTTOM,
+      POSITION$4 = _enums$STYLE_KEY$j.POSITION,
+      HEIGHT$7 = _enums$STYLE_KEY$j.HEIGHT;
   var AUTO$7 = unit.AUTO,
       PX$a = unit.PX,
       PERCENT$9 = unit.PERCENT;
@@ -25063,27 +25108,27 @@
   };
 
   var _DIRECTION_HASH;
-  var _enums$STYLE_KEY$j = enums.STYLE_KEY,
-      TOP$4 = _enums$STYLE_KEY$j.TOP,
-      RIGHT$3 = _enums$STYLE_KEY$j.RIGHT,
-      BOTTOM$4 = _enums$STYLE_KEY$j.BOTTOM,
-      LEFT$3 = _enums$STYLE_KEY$j.LEFT,
-      POSITION$5 = _enums$STYLE_KEY$j.POSITION,
-      DISPLAY$9 = _enums$STYLE_KEY$j.DISPLAY,
-      VISIBILITY$6 = _enums$STYLE_KEY$j.VISIBILITY,
-      COLOR$5 = _enums$STYLE_KEY$j.COLOR,
-      WIDTH$7 = _enums$STYLE_KEY$j.WIDTH,
-      HEIGHT$8 = _enums$STYLE_KEY$j.HEIGHT,
-      Z_INDEX$4 = _enums$STYLE_KEY$j.Z_INDEX,
-      MARGIN_TOP$4 = _enums$STYLE_KEY$j.MARGIN_TOP,
-      MARGIN_LEFT$6 = _enums$STYLE_KEY$j.MARGIN_LEFT,
-      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
-      PADDING_TOP$6 = _enums$STYLE_KEY$j.PADDING_TOP,
-      PADDING_LEFT$8 = _enums$STYLE_KEY$j.PADDING_LEFT,
-      PADDING_BOTTOM$5 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
-      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
-      BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+  var _enums$STYLE_KEY$k = enums.STYLE_KEY,
+      TOP$4 = _enums$STYLE_KEY$k.TOP,
+      RIGHT$3 = _enums$STYLE_KEY$k.RIGHT,
+      BOTTOM$4 = _enums$STYLE_KEY$k.BOTTOM,
+      LEFT$3 = _enums$STYLE_KEY$k.LEFT,
+      POSITION$5 = _enums$STYLE_KEY$k.POSITION,
+      DISPLAY$9 = _enums$STYLE_KEY$k.DISPLAY,
+      VISIBILITY$6 = _enums$STYLE_KEY$k.VISIBILITY,
+      COLOR$5 = _enums$STYLE_KEY$k.COLOR,
+      WIDTH$7 = _enums$STYLE_KEY$k.WIDTH,
+      HEIGHT$8 = _enums$STYLE_KEY$k.HEIGHT,
+      Z_INDEX$4 = _enums$STYLE_KEY$k.Z_INDEX,
+      MARGIN_TOP$4 = _enums$STYLE_KEY$k.MARGIN_TOP,
+      MARGIN_LEFT$6 = _enums$STYLE_KEY$k.MARGIN_LEFT,
+      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$k.MARGIN_BOTTOM,
+      PADDING_TOP$6 = _enums$STYLE_KEY$k.PADDING_TOP,
+      PADDING_LEFT$8 = _enums$STYLE_KEY$k.PADDING_LEFT,
+      PADDING_BOTTOM$5 = _enums$STYLE_KEY$k.PADDING_BOTTOM,
+      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$k.BORDER_TOP_WIDTH,
+      BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$k.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
       _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
       UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -27327,10 +27372,10 @@
     return Root;
   }(Dom$1);
 
-  var _enums$STYLE_KEY$k = enums.STYLE_KEY,
-      STROKE_WIDTH$2 = _enums$STYLE_KEY$k.STROKE_WIDTH,
-      BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW,
-      FILTER$7 = _enums$STYLE_KEY$k.FILTER;
+  var _enums$STYLE_KEY$l = enums.STYLE_KEY,
+      STROKE_WIDTH$2 = _enums$STYLE_KEY$l.STROKE_WIDTH,
+      BOX_SHADOW$4 = _enums$STYLE_KEY$l.BOX_SHADOW,
+      FILTER$7 = _enums$STYLE_KEY$l.FILTER;
   var isNil$9 = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
@@ -27964,10 +28009,10 @@
     return Line;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$l = enums.STYLE_KEY,
-      STROKE_WIDTH$3 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-      BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW,
-      FILTER$8 = _enums$STYLE_KEY$l.FILTER;
+  var _enums$STYLE_KEY$m = enums.STYLE_KEY,
+      STROKE_WIDTH$3 = _enums$STYLE_KEY$m.STROKE_WIDTH,
+      BOX_SHADOW$5 = _enums$STYLE_KEY$m.BOX_SHADOW,
+      FILTER$8 = _enums$STYLE_KEY$m.FILTER;
   var isNil$a = util.isNil;
 
   function concatPointAndControl(point, control) {
@@ -28554,10 +28599,10 @@
     return Polygon;
   }(Polyline);
 
-  var _enums$STYLE_KEY$m = enums.STYLE_KEY,
-      STROKE_WIDTH$4 = _enums$STYLE_KEY$m.STROKE_WIDTH,
-      BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW,
-      FILTER$9 = _enums$STYLE_KEY$m.FILTER;
+  var _enums$STYLE_KEY$n = enums.STYLE_KEY,
+      STROKE_WIDTH$4 = _enums$STYLE_KEY$n.STROKE_WIDTH,
+      BOX_SHADOW$6 = _enums$STYLE_KEY$n.BOX_SHADOW,
+      FILTER$9 = _enums$STYLE_KEY$n.FILTER;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
 
@@ -28990,10 +29035,10 @@
     return Sector;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$n = enums.STYLE_KEY,
-      STROKE_WIDTH$5 = _enums$STYLE_KEY$n.STROKE_WIDTH,
-      BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW,
-      FILTER$a = _enums$STYLE_KEY$n.FILTER;
+  var _enums$STYLE_KEY$o = enums.STYLE_KEY,
+      STROKE_WIDTH$5 = _enums$STYLE_KEY$o.STROKE_WIDTH,
+      BOX_SHADOW$7 = _enums$STYLE_KEY$o.BOX_SHADOW,
+      FILTER$a = _enums$STYLE_KEY$o.FILTER;
   var isNil$c = util.isNil;
 
   function genVertex(x, y, width, height) {
@@ -29174,10 +29219,10 @@
     return Rect;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$o = enums.STYLE_KEY,
-      STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
-      BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
-      FILTER$b = _enums$STYLE_KEY$o.FILTER;
+  var _enums$STYLE_KEY$p = enums.STYLE_KEY,
+      STROKE_WIDTH$6 = _enums$STYLE_KEY$p.STROKE_WIDTH,
+      BOX_SHADOW$8 = _enums$STYLE_KEY$p.BOX_SHADOW,
+      FILTER$b = _enums$STYLE_KEY$p.FILTER;
   var isNil$d = util.isNil;
 
   function getR$2(v) {
@@ -29324,10 +29369,10 @@
     return Circle;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$p = enums.STYLE_KEY,
-      STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
-      BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
-      FILTER$c = _enums$STYLE_KEY$p.FILTER;
+  var _enums$STYLE_KEY$q = enums.STYLE_KEY,
+      STROKE_WIDTH$7 = _enums$STYLE_KEY$q.STROKE_WIDTH,
+      BOX_SHADOW$9 = _enums$STYLE_KEY$q.BOX_SHADOW,
+      FILTER$c = _enums$STYLE_KEY$q.FILTER;
   var isNil$e = util.isNil;
 
   function getR$3(v) {

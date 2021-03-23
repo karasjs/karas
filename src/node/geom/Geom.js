@@ -733,6 +733,7 @@ class Geom extends Xom {
         ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
         ctx.restore();
       }
+      offscreen.ctx.clearRect(0, 0, w, h);
     }
     else if(renderMode === mode.SVG) {
       if(isMulti) {

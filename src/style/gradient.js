@@ -640,6 +640,7 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
     ctx.closePath();
     ctx.drawImage(offscreen.canvas, x, y);
     ctx.restore();
+    offscreen.ctx.clearRect(0, 0, w, h);
   }
   else if(renderMode === mode.SVG) {
     let v = {

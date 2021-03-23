@@ -323,7 +323,7 @@ let inject = {
     if(font.info[ff].hasOwnProperty('checked')) {
       return font.info[ff].checked;
     }
-    let canvas = inject.getCacheCanvas(16, 16, '__$$checkSupportFontFamily$$__');
+    let canvas = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
     let context = canvas.ctx;
     context.textAlign = 'center';
     context.fillStyle = '#000';

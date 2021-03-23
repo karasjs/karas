@@ -1,6 +1,6 @@
 import Node from './Node';
 import mode from './mode';
-import painter from '../util/painter';
+// import painter from '../util/painter';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -131,10 +131,10 @@ const {
     NODE_DOM_PARENT,
   }
 } = enums;
-const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
+const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { clone, int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
-const { canvasPolygon, svgPolygon } = painter;
+// const { canvasPolygon, svgPolygon } = painter;
 const { GEOM } = change;
 
 const {
@@ -149,94 +149,6 @@ const {
   OPACITY: OP,
   FILTER: FT,
 } = level;
-
-function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
-  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
-  if(!list) {
-    list = [
-      [x, y],
-      [x + w, y],
-      [x + w, y + h],
-      [x, y + h],
-      [x, y],
-    ];
-  }
-  if(renderMode === mode.CANVAS) {
-    let alpha = ctx.globalAlpha;
-    ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
-    ctx.save();
-    ctx.beginPath();
-    canvasPolygon(ctx, list);
-    ctx.clip();
-    ctx.closePath();
-    color.forEach(item => {
-      ctx.beginPath();
-      canvasPolygon(ctx, item[0]);
-      ctx.fillStyle = item[1];
-      ctx.fill();
-      ctx.closePath();
-    });
-    ctx.restore();
-    ctx.globalAlpha = alpha;
-  }
-  else if(renderMode === mode.SVG) {
-    let v = {
-      tagName: 'clipPath',
-      children: [{
-        tagName: 'path',
-        props: [
-          ['d', svgPolygon(list)],
-          ['fill', '#FFF'],
-        ],
-      }],
-    };
-    xom.__config[NODE_DEFS_CACHE].push(v);
-    let clip = defs.add(v);
-    color.forEach(item => {
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'path',
-        props: [
-          ['d', svgPolygon(item[0])],
-          ['fill', item[1]],
-          ['clip-path', 'url(#' + clip + ')'],
-        ],
-      });
-    });
-  }
-}
-
-function calBackgroundSize(value, w, h) {
-  let res = [];
-  value.forEach((item, i) => {
-    if(item[1] === PX) {
-      res.push(item[0]);
-    }
-    else if(item[1] === PERCENT) {
-      res.push(item[0] * (i ? h : w) * 0.01);
-    }
-    else if(item[1] === AUTO) {
-      res.push(-1);
-    }
-    else if(item[1] === STRING) {
-      res.push(item[0] === 'contain' ? -2 : -3);
-    }
-  });
-  return res;
-}
-
-function calBackgroundPosition(position, container, size) {
-  if(Array.isArray(position)) {
-    if(position[1] === PX) {
-      return position[0];
-    }
-    else if(position[1] === PERCENT) {
-      return (container - size) * position[0] * 0.01;
-    }
-  }
-  return 0;
-}
 
 class Xom extends Node {
   constructor(tagName, props = {}) {
@@ -820,7 +732,7 @@ class Xom extends Node {
       if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
         __cacheStyle[BACKGROUND_SIZE] = true;
         computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
-          return calBackgroundSize(item, clientWidth, clientHeight);
+          return bg.calBackgroundSize(item, clientWidth, clientHeight);
         });
       }
       if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {
@@ -1518,8 +1430,9 @@ class Xom extends Node {
       return res;
     }
     // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
+    let hasBgi = backgroundImage.some(item => item);
     let btlr, btrr, bbrr, bblr;
-    if(backgroundColor[3] > 0 || backgroundImage) {
+    if(backgroundColor[3] > 0 || hasBgi) {
       btlr = borderTopLeftRadius.slice(0);
       btrr = borderTopRightRadius.slice(0);
       bbrr = borderBottomRightRadius.slice(0);
@@ -1566,6 +1479,21 @@ class Xom extends Node {
           [FONT_FAMILY]: fontFamily,
           [LINE_HEIGHT]: lineHeight,
         } = computedStyle;
+        let iw = 0;
+        // bgi视作inline排满一行绘制，然后按分行拆开给每行
+        if(hasBgi) {
+          iw = inline.getInlineWidth(this, contentBoxList);
+          if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+            iw += paddingLeft + paddingRight;
+          }
+          else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+            iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+          }
+          console.log(backgroundImage, iw);
+          if(renderMode === mode.CANVAS) {
+            let off = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
+          }
+        }
         // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         let ff = css.getFontFamily(fontFamily);
         let baseLine = css.getBaseLine(computedStyle);
@@ -1669,6 +1597,9 @@ class Xom extends Node {
           }
         }
       }
+      else {
+        // TODO
+      }
       return;
     }
     // block渲染，bgc垫底
@@ -1765,8 +1696,8 @@ class Xom extends Node {
               else if(h === -1) {
                 h = w * height / width;
               }
-              let bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w);
-              let bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h);
+              let bgX = bx1 + bg.calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w);
+              let bgY = by1 + bg.calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h);
               // 超出尺寸模拟mask截取
               let needMask = bgX < x2 || bgY < y2 || w > bgW || h > bgH;
               // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
@@ -1950,7 +1881,7 @@ class Xom extends Node {
           let gd = __cacheStyle[BACKGROUND_IMAGE][i];
           if(gd) {
             if(gd.k === 'conic') {
-              renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
+              gradient.renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
                 btlr, btrr, bbrr, bblr);
             }
             else {

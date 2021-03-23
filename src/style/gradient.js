@@ -4,10 +4,20 @@ import reg from './reg';
 import geom from '../math/geom';
 import vector from '../math/vector';
 import mx from '../math/matrix';
+import border from './border';
+import mode from '../node/mode';
+import painter from '../util/painter';
+import enums from '../util/enums';
 
 const { rgba2int, isNil } = util;
 const { PX, PERCENT } = unit;
 const { d2r } = geom;
+const { canvasPolygon, svgPolygon } = painter;
+const {
+  NODE_KEY: {
+    NODE_DEFS_CACHE,
+  },
+} = enums;
 
 function getLinearDeg(v) {
   let deg = 180;
@@ -599,9 +609,67 @@ function calConicRadius(v, deg, position, x1, y1, x2, y2) {
   return [cx, cy, r, deg];
 }
 
+function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
+  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
+  if(!list) {
+    list = [
+      [x, y],
+      [x + w, y],
+      [x + w, y + h],
+      [x, y + h],
+      [x, y],
+    ];
+  }
+  if(renderMode === mode.CANVAS) {
+    let alpha = ctx.globalAlpha;
+    ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+    ctx.save();
+    ctx.beginPath();
+    canvasPolygon(ctx, list);
+    ctx.clip();
+    ctx.closePath();
+    color.forEach(item => {
+      ctx.beginPath();
+      canvasPolygon(ctx, item[0]);
+      ctx.fillStyle = item[1];
+      ctx.fill();
+      ctx.closePath();
+    });
+    ctx.restore();
+    ctx.globalAlpha = alpha;
+  }
+  else if(renderMode === mode.SVG) {
+    let v = {
+      tagName: 'clipPath',
+      children: [{
+        tagName: 'path',
+        props: [
+          ['d', svgPolygon(list)],
+          ['fill', '#FFF'],
+        ],
+      }],
+    };
+    xom.__config[NODE_DEFS_CACHE].push(v);
+    let clip = defs.add(v);
+    color.forEach(item => {
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', svgPolygon(item[0])],
+          ['fill', item[1]],
+          ['clip-path', 'url(#' + clip + ')'],
+        ],
+      });
+    });
+  }
+}
+
 export default {
   parseGradient,
   getLinear,
   getRadial,
   getConic,
+  renderConic,
 };

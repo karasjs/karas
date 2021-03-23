@@ -4,9 +4,11 @@ import mx from '../math/matrix';
 import mode from '../node/mode';
 import painter from '../util/painter';
 import util from '../util/util';
+import unit from './unit';
 
 const { joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
+const { AUTO, PX, PERCENT, STRING } = unit;
 
 function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill') {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
@@ -82,6 +84,39 @@ function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bb
   }
 }
 
+function calBackgroundSize(value, w, h) {
+  let res = [];
+  value.forEach((item, i) => {
+    if(item[1] === PX) {
+      res.push(item[0]);
+    }
+    else if(item[1] === PERCENT) {
+      res.push(item[0] * (i ? h : w) * 0.01);
+    }
+    else if(item[1] === AUTO) {
+      res.push(-1);
+    }
+    else if(item[1] === STRING) {
+      res.push(item[0] === 'contain' ? -2 : -3);
+    }
+  });
+  return res;
+}
+
+function calBackgroundPosition(position, container, size) {
+  if(Array.isArray(position)) {
+    if(position[1] === PX) {
+      return position[0];
+    }
+    else if(position[1] === PERCENT) {
+      return (container - size) * position[0] * 0.01;
+    }
+  }
+  return 0;
+}
+
 export default {
   renderBgc,
+  calBackgroundSize,
+  calBackgroundPosition,
 };

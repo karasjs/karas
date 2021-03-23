@@ -17903,12 +17903,9 @@
       isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
   function genZIndexChildren(dom) {
-    var flow = [];
-    var abs = [];
+    var normal = [];
     var hasMc;
     var mcHash = {};
-    var needSort = false;
-    var lastIndex;
     var lastMaskIndex;
     var children = dom.children;
     children.forEach(function (item, i) {
@@ -17933,49 +17930,52 @@
         lastMaskIndex = undefined;
 
         if (item instanceof Xom) {
+          child.__zIndex = item.currentStyle[Z_INDEX$3];
+
           if (isRelativeOrAbsolute$1(item)) {
             // 临时变量为排序使用
-            child.__iIndex = i;
-            var z = child.__zIndex = item.currentStyle[Z_INDEX$3];
-            abs.push(child);
-
-            if (lastIndex === undefined) {
-              lastIndex = z;
-            } else if (!needSort) {
-              if (z < lastIndex) {
-                needSort = true;
-              }
-
-              lastIndex = z;
-            }
+            child.__aIndex = true;
+            normal.push(child);
           } else {
-            flow.push(child);
+            normal.push(child);
           }
         } else {
-          flow.push(child);
+          child.__zIndex = 0;
+          normal.push(child);
         }
+
+        child.__iIndex = i;
       }
     });
-    needSort && abs.sort(function (a, b) {
+    normal.sort(function (a, b) {
       if (a.__zIndex !== b.__zIndex) {
         return a.__zIndex - b.__zIndex;
-      }
+      } // zIndex相等时abs优先flow
+
+
+      if (a.__aIndex !== b.__aIndex) {
+        if (a.__aIndex) {
+          return 1;
+        }
+
+        return -1;
+      } // 都相等看索引
+
 
       return a.__iIndex - b.__iIndex;
-    });
-    var res = flow.concat(abs); // 将遮罩插入到对应顺序上
+    }); // 将遮罩插入到对应顺序上
 
     if (hasMc) {
-      for (var i = res.length - 1; i >= 0; i--) {
-        var idx = res[i].__iIndex;
+      for (var i = normal.length - 1; i >= 0; i--) {
+        var idx = normal[i].__iIndex;
 
         if (mcHash.hasOwnProperty(idx)) {
-          res.splice.apply(res, [i + 1, 0].concat(_toConsumableArray(mcHash[idx])));
+          normal.splice.apply(normal, [i + 1, 0].concat(_toConsumableArray(mcHash[idx])));
         }
       }
     }
 
-    return res;
+    return normal;
   }
 
   var Dom$1 = /*#__PURE__*/function (_Xom) {

@@ -10,7 +10,6 @@ import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
-import TextBox from './TextBox';
 
 const {
   STYLE_KEY: {
@@ -64,12 +63,9 @@ const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
 
 function genZIndexChildren(dom) {
-  let flow = [];
-  let abs = [];
+  let normal = [];
   let hasMc;
   let mcHash = {};
-  let needSort = false;
-  let lastIndex;
   let lastMaskIndex;
   let children = dom.children;
   children.forEach((item, i) => {
@@ -93,47 +89,47 @@ function genZIndexChildren(dom) {
     else {
       lastMaskIndex = undefined;
       if(item instanceof Xom) {
+        child.__zIndex = item.currentStyle[Z_INDEX];
         if(isRelativeOrAbsolute(item)) {
           // 临时变量为排序使用
-          child.__iIndex = i;
-          let z = child.__zIndex = item.currentStyle[Z_INDEX];
-          abs.push(child);
-          if(lastIndex === undefined) {
-            lastIndex = z;
-          }
-          else if(!needSort) {
-            if(z < lastIndex) {
-              needSort = true;
-            }
-            lastIndex = z;
-          }
+          child.__aIndex = true;
+          normal.push(child);
         }
         else {
-          flow.push(child);
+          normal.push(child);
         }
       }
       else {
-        flow.push(child);
+        child.__zIndex = 0;
+        normal.push(child);
       }
+      child.__iIndex = i;
     }
   });
-  needSort && abs.sort(function(a, b) {
+  normal.sort(function(a, b) {
     if(a.__zIndex !== b.__zIndex) {
       return a.__zIndex - b.__zIndex;
     }
+    // zIndex相等时abs优先flow
+    if(a.__aIndex !== b.__aIndex) {
+      if(a.__aIndex) {
+        return 1;
+      }
+      return -1;
+    }
+    // 都相等看索引
     return a.__iIndex - b.__iIndex;
   });
-  let res = flow.concat(abs);
   // 将遮罩插入到对应顺序上
   if(hasMc) {
-    for(let i = res.length - 1; i >= 0; i--) {
-      let idx = res[i].__iIndex;
+    for(let i = normal.length - 1; i >= 0; i--) {
+      let idx = normal[i].__iIndex;
       if(mcHash.hasOwnProperty(idx)) {
-        res.splice(i + 1, 0, ...mcHash[idx]);
+        normal.splice(i + 1, 0, ...mcHash[idx]);
       }
     }
   }
-  return res;
+  return normal;
 }
 
 class Dom extends Xom {

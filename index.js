@@ -18856,19 +18856,7 @@
           var main = targetMainList[i];
 
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            // let { currentStyle } = item;
-            // let {
-            //   [DISPLAY]: display,
-            //   [FLEX_DIRECTION]: flexDirection,
-            //   [WIDTH]: width,
-            //   [HEIGHT]: height,
-            // } = currentStyle;
             if (isDirectionRow) {
-              // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              // if(display === 'flex' && flexDirection === 'column' && fixedHeight && height[1] === AUTO) {
-              //   height[0] = h;
-              //   height[1] = PX;
-              // }
               item.__layout({
                 x: x,
                 y: y,
@@ -18878,11 +18866,6 @@
 
               });
             } else {
-              // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              // if(display === 'flex' && flexDirection === 'row' && width[1] === AUTO) {
-              //   width[0] = w;
-              //   width[1] = PX;
-              // }
               item.__layout({
                 x: x,
                 y: y,
@@ -18972,9 +18955,9 @@
                   flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
                   alignSelf = _item$currentStyle[ALIGN_SELF$1],
                   width = _item$currentStyle[WIDTH$4],
-                  height = _item$currentStyle[HEIGHT$4]; // column的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+                  height = _item$currentStyle[HEIGHT$4]; // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
 
-              if (display === 'flex' && flexDirection === 'column' && height[1] === AUTO$3 && item.outerHeight < maxCross) {
+              if (isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO$3 && item.outerHeight < maxCross) {
                 item.__layout(Object.assign(item.__layoutData, {
                   h3: maxCross
                 }));
@@ -29777,7 +29760,7 @@
     Cache: Cache
   };
 
-  var version = "0.53.8";
+  var version = "0.54.0-alpha2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

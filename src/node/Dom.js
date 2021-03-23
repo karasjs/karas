@@ -1184,19 +1184,7 @@ class Dom extends Xom {
     flowChildren.forEach((item, i) => {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        // let { currentStyle } = item;
-        // let {
-        //   [DISPLAY]: display,
-        //   [FLEX_DIRECTION]: flexDirection,
-        //   [WIDTH]: width,
-        //   [HEIGHT]: height,
-        // } = currentStyle;
         if(isDirectionRow) {
-          // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-          // if(display === 'flex' && flexDirection === 'column' && fixedHeight && height[1] === AUTO) {
-          //   height[0] = h;
-          //   height[1] = PX;
-          // }
           item.__layout({
             x,
             y,
@@ -1206,11 +1194,6 @@ class Dom extends Xom {
           });
         }
         else {
-          // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-          // if(display === 'flex' && flexDirection === 'row' && width[1] === AUTO) {
-          //   width[0] = w;
-          //   width[1] = PX;
-          // }
           item.__layout({
             x,
             y,
@@ -1297,8 +1280,8 @@ class Dom extends Xom {
             [WIDTH]: width,
             [HEIGHT]: height,
           } } = item;
-          // column的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
-          if(display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+          // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+          if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
             item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
           }
           let {

@@ -63,7 +63,7 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHe
         [MARGIN_LEFT]: marginLeft,
         [PADDING_LEFT]: paddingLeft,
         [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      } = xom.computedStyle;
+      } = dom.computedStyle;
       x1 -= marginLeft + paddingLeft + borderLeftWidth;
     }
     dom = dom.parent;
@@ -91,7 +91,7 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHe
         [MARGIN_RIGHT]: marginRight,
         [PADDING_RIGHT]: paddingRight,
         [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      } = xom.computedStyle;
+      } = dom.computedStyle;
       x2 += marginRight + paddingRight + borderRightWidth;
     }
     dom = dom.parent;

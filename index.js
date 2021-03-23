@@ -13461,10 +13461,10 @@
       var list = dom.contentBoxList;
 
       if (start === list[0]) {
-        var _xom$computedStyle = xom.computedStyle,
-            marginLeft = _xom$computedStyle[MARGIN_LEFT$1],
-            _paddingLeft = _xom$computedStyle[PADDING_LEFT$2],
-            _borderLeftWidth = _xom$computedStyle[BORDER_LEFT_WIDTH$2];
+        var _dom$computedStyle = dom.computedStyle,
+            marginLeft = _dom$computedStyle[MARGIN_LEFT$1],
+            _paddingLeft = _dom$computedStyle[PADDING_LEFT$2],
+            _borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$2];
         x1 -= marginLeft + _paddingLeft + _borderLeftWidth;
       }
 
@@ -13493,10 +13493,10 @@
       var _list = dom.contentBoxList;
 
       if (end === _list[_list.length - 1]) {
-        var _xom$computedStyle2 = xom.computedStyle,
-            marginRight = _xom$computedStyle2[MARGIN_RIGHT$1],
-            _paddingRight = _xom$computedStyle2[PADDING_RIGHT$2],
-            _borderRightWidth = _xom$computedStyle2[BORDER_RIGHT_WIDTH$2];
+        var _dom$computedStyle2 = dom.computedStyle,
+            marginRight = _dom$computedStyle2[MARGIN_RIGHT$1],
+            _paddingRight = _dom$computedStyle2[PADDING_RIGHT$2],
+            _borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$2];
         x2 += marginRight + _paddingRight + _borderRightWidth;
       }
 
@@ -18968,9 +18968,18 @@
             flowChildren.forEach(function (item) {
               var computedStyle = item.computedStyle,
                   _item$currentStyle = item.currentStyle,
+                  display = _item$currentStyle[DISPLAY$4],
+                  flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
                   alignSelf = _item$currentStyle[ALIGN_SELF$1],
                   width = _item$currentStyle[WIDTH$4],
-                  height = _item$currentStyle[HEIGHT$4];
+                  height = _item$currentStyle[HEIGHT$4]; // column的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+
+              if (display === 'flex' && flexDirection === 'column' && height[1] === AUTO$3 && item.outerHeight < maxCross) {
+                item.__layout(Object.assign(item.__layoutData, {
+                  h3: maxCross
+                }));
+              }
+
               var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
                   borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
                   marginTop = computedStyle[MARGIN_TOP$2],
@@ -19102,7 +19111,7 @@
                 }
               }
             });
-          } else if (alignItems === 'flexEnd' || alignSelf === 'flex-end') {
+          } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
             flowChildren.forEach(function (item) {
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 

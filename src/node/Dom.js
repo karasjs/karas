@@ -1290,7 +1290,17 @@ class Dom extends Xom {
       if(alignItems === 'stretch') {
         // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
         flowChildren.forEach(item => {
-          let { computedStyle, currentStyle: { [ALIGN_SELF]: alignSelf, [WIDTH]: width, [HEIGHT]: height } } = item;
+          let { computedStyle, currentStyle: {
+            [DISPLAY]: display,
+            [FLEX_DIRECTION]: flexDirection,
+            [ALIGN_SELF]: alignSelf,
+            [WIDTH]: width,
+            [HEIGHT]: height,
+          } } = item;
+          // column的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+          if(display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+            item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+          }
           let {
             [BORDER_TOP_WIDTH]: borderTopWidth,
             [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -1426,7 +1436,7 @@ class Dom extends Xom {
           }
         });
       }
-      else if(alignItems === 'flexEnd' || alignSelf === 'flex-end') {
+      else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
         flowChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {

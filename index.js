@@ -15623,6 +15623,10 @@
 
                 if (util.isString(bgi)) {
                   var loadBgi = _this4.__loadBgi[i];
+
+                  if (loadBgi.url === backgroundImage[i]) {
+                    bg.renderImage(_this4, renderMode, offscreen.ctx, defs, loadBgi, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                  }
                 } else if (bgi.k) {
                   var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
 

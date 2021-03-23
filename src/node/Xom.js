@@ -1498,6 +1498,11 @@ class Xom extends Node {
             i = length - 1 - i;
             if(util.isString(bgi)) {
               let loadBgi = this.__loadBgi[i];
+              if(loadBgi.url === backgroundImage[i]) {
+                bg.renderImage(this, renderMode, offscreen.ctx, defs, loadBgi,
+                  0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr,
+                  currentStyle, i, backgroundSize, backgroundRepeat, __config);
+              }
             }
             else if(bgi.k) {
               let gd = this.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);

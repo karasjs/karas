@@ -28483,7 +28483,7 @@
             return;
           }
 
-          var controlList = controls[i];
+          var controlList = controls[i] || [];
 
           var _pointList$ = _slicedToArray(pointList[0], 2),
               xa = _pointList$[0],

@@ -1878,7 +1878,7 @@ class Xom extends Node {
           let gd = __cacheStyle[BACKGROUND_IMAGE][i];
           if(gd) {
             if(gd.k === 'conic') {
-              gradient.renderConic(renderMode, gd.v, bx1, by1, bx2 - bx1, by2 - by1, ctx, defs, this,
+              gradient.renderConic(this, renderMode, ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1,
                 btlr, btrr, bbrr, bblr);
             }
             else {
@@ -2091,58 +2091,51 @@ class Xom extends Node {
     if(stop[0][1] > 0) {
       stop.unshift([stop[0][0].slice(0), 0]);
     }
-    let offset = renderMode === mode.CANVAS ? 1.5 : 0.5;
-    // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
-    let list = [];
-    for(let i = 0, len = stop.length; i < len - 1; i++) {
-      let begin = stop[i][1] * 360;
-      let end = stop[i + 1][1] * 360;
-      let diff = end - begin;
-      let n = Math.ceil(diff);
-      let per = diff / n;
-      // 计算每块的2个弧端点
-      let bc = stop[i][0];
-      let ec = stop[i + 1][0];
-      let dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
-      let pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
-      for(let j = 0; j < n; j++) {
-        let [x1, y1] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg - offset);
-        let [x2, y2] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset);
-        list.push([
-          x1, y1,
-          x2, y2,
-          Math.round(bc[0] + pc[0] * j),
-          Math.round(bc[1] + pc[1] * j),
-          Math.round(bc[2] + pc[2] * j),
-          Math.round(bc[3] + pc[3] * j),
-        ]);
-      }
-    }
-    // 最后一段补自己末尾颜色特殊处理
-    let end = list[0].slice(0);
-    let [x2, y2] = geom.pointOnCircle(cx, cy, r, deg);
-    end[2] = x2;
-    end[3] = y2;
-    let s = stop[stop.length - 1][0];
-    end[4] = s[0];
-    end[5] = s[1];
-    end[6] = s[2];
-    end[7] = s[3];
-    list.push(end);
-    let prev, res = [];
+    // canvas采用点色值计算法，svg则分360度画块
+    let res = [];
     if(renderMode === mode.CANVAS) {
-      for(let i = 0, len = list.length; i < len; i++) {
-        let cur = list[i];
-        if(prev) {
-          let lg = ctx.createLinearGradient(prev[0], prev[1], cur[2], cur[3]);
-          lg.addColorStop(0, int2rgba([prev[4], prev[5], prev[6], prev[7]]));
-          lg.addColorStop(1, int2rgba([cur[4], cur[5], cur[6], cur[7]]));
-          res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], lg]);
-        }
-        prev = cur;
-      }
+      return gd;
     }
     else if(renderMode === mode.SVG) {
+      let offset = 0.5;
+      let prev;
+      // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
+      let list = [];
+      for(let i = 0, len = stop.length; i < len - 1; i++) {
+        let begin = stop[i][1] * 360;
+        let end = stop[i + 1][1] * 360;
+        let diff = end - begin;
+        let n = Math.ceil(diff);
+        let per = diff / n;
+        // 计算每块的2个弧端点
+        let bc = stop[i][0];
+        let ec = stop[i + 1][0];
+        let dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
+        let pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
+        for(let j = 0; j < n; j++) {
+          let [x1, y1] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg - offset);
+          let [x2, y2] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset);
+          list.push([
+            x1, y1,
+            x2, y2,
+            Math.round(bc[0] + pc[0] * j),
+            Math.round(bc[1] + pc[1] * j),
+            Math.round(bc[2] + pc[2] * j),
+            Math.round(bc[3] + pc[3] * j),
+          ]);
+        }
+      }
+      // 最后一段补自己末尾颜色特殊处理
+      let end = list[0].slice(0);
+      let [x2, y2] = geom.pointOnCircle(cx, cy, r, deg);
+      end[2] = x2;
+      end[3] = y2;
+      let s = stop[stop.length - 1][0];
+      end[4] = s[0];
+      end[5] = s[1];
+      end[6] = s[2];
+      end[7] = s[3];
+      list.push(end);
       for(let i = 0, len = list.length; i < len; i++) {
         let cur = list[i];
         if(prev) {

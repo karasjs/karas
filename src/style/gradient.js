@@ -1,13 +1,15 @@
-import util from '../util/util';
 import unit from './unit';
 import reg from './reg';
 import geom from '../math/geom';
 import vector from '../math/vector';
 import mx from '../math/matrix';
+import gradient from '../math/gradient';
 import border from './border';
 import mode from '../node/mode';
+import util from '../util/util';
 import painter from '../util/painter';
 import enums from '../util/enums';
+import inject from '../util/inject';
 
 const { rgba2int, isNil } = util;
 const { PX, PERCENT } = unit;
@@ -570,6 +572,8 @@ function getConic(v, d, p, x1, y1, x2, y2, ratio = 1) {
   return {
     cx,
     cy,
+    w: x2 - x1,
+    h: y2 - y1,
     r,
     deg,
     stop,
@@ -609,7 +613,7 @@ function calConicRadius(v, deg, position, x1, y1, x2, y2) {
   return [cx, cy, r, deg];
 }
 
-function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, bbrr, bblr) {
+function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr) {
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
   if(!list) {
@@ -622,22 +626,20 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, 
     ];
   }
   if(renderMode === mode.CANVAS) {
-    let alpha = ctx.globalAlpha;
-    ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+    let data = gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop);
+    let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
+    let imgData = offscreen.ctx.getImageData(0,0, w, h);
+    for (let i = 0; i < imgData.data.length; i++) {
+      imgData.data[i] = data[i];
+    }
+    offscreen.ctx.putImageData(imgData, 0, 0);
     ctx.save();
     ctx.beginPath();
     canvasPolygon(ctx, list);
     ctx.clip();
     ctx.closePath();
-    color.forEach(item => {
-      ctx.beginPath();
-      canvasPolygon(ctx, item[0]);
-      ctx.fillStyle = item[1];
-      ctx.fill();
-      ctx.closePath();
-    });
+    ctx.drawImage(offscreen.canvas, x, y);
     ctx.restore();
-    ctx.globalAlpha = alpha;
   }
   else if(renderMode === mode.SVG) {
     let v = {
@@ -652,7 +654,7 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btlr, btrr, 
     };
     xom.__config[NODE_DEFS_CACHE].push(v);
     let clip = defs.add(v);
-    color.forEach(item => {
+    res.forEach(item => {
       xom.virtualDom.bb.push({
         type: 'item',
         tagName: 'path',

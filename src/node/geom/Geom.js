@@ -10,6 +10,7 @@ import painter from '../../util/painter';
 import transform from '../../style/transform';
 import mx from '../../math/matrix';
 import inject from '../../util/inject';
+import gradient from '../../math/gradient';
 
 const {
   STYLE_KEY: {
@@ -424,7 +425,7 @@ class Geom extends Xom {
       dx,
       dy,
     } = res;
-    let { __cacheProps: { list }, isMulti } = this;
+    let { __cacheProps: { list }, isMulti, bbox } = this;
     // 普通情况下只有1个，按普通情况走
     if(fills.length <= 1 && strokes.length <= 1) {
       let o = {
@@ -439,6 +440,7 @@ class Geom extends Xom {
         strokeMiterlimit: strokeMiterlimits[0],
         dx,
         dy,
+        bbox,
       };
       this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
     }
@@ -452,6 +454,7 @@ class Geom extends Xom {
             fillRule: fillRules[i],
             dx,
             dy,
+            bbox,
           };
           this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
         }
@@ -469,6 +472,7 @@ class Geom extends Xom {
             strokeMiterlimit: strokeMiterlimits[i],
             dx,
             dy,
+            bbox,
           };
           this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
         }
@@ -694,13 +698,21 @@ class Geom extends Xom {
   __conicGradient(renderMode, ctx, defs, list, isMulti, res) {
     let {
       fill,
-      dx,
-      dy,
+      bbox,
+      dx = 0,
+      dy = 0,
     } = res;
     let color = fill.v;
     if(renderMode === mode.CANVAS) {
-      let alpha = ctx.globalAlpha;
-      ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+      let [x1, y1, x2, y2] = bbox;
+      let w = x2 - x1, h = y2 - y1;
+      let data = gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop);
+      let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
+      let imgData = offscreen.ctx.getImageData(0,0, w, h);
+      for (let i = 0; i < imgData.data.length; i++) {
+        imgData.data[i] = data[i];
+      }
+      offscreen.ctx.putImageData(imgData, 0, 0);
       if(isMulti) {
         list.forEach(item => {
           ctx.save();
@@ -708,13 +720,7 @@ class Geom extends Xom {
           canvasPolygon(ctx, item, dx, dy);
           ctx.clip();
           ctx.closePath();
-          color.forEach(item => {
-            ctx.beginPath();
-            canvasPolygon(ctx, item[0], dx, dy);
-            ctx.fillStyle = item[1];
-            ctx.fill();
-            ctx.closePath();
-          });
+          ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
           ctx.restore();
         });
       }
@@ -724,16 +730,9 @@ class Geom extends Xom {
         canvasPolygon(ctx, list, dx, dy);
         ctx.clip();
         ctx.closePath();
-        color.forEach(item => {
-          ctx.beginPath();
-          canvasPolygon(ctx, item[0], dx, dy);
-          ctx.fillStyle = item[1];
-          ctx.fill();
-          ctx.closePath();
-        });
+        ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
         ctx.restore();
       }
-      ctx.globalAlpha = alpha;
     }
     else if(renderMode === mode.SVG) {
       if(isMulti) {

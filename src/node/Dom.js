@@ -1639,7 +1639,7 @@ class Dom extends Xom {
         if(!isInline2 && !isInlineBlock) {
           item.currentStyle[DISPLAY] = item.computedStyle[DISPLAY] = 'inlineBlock';
           isInlineBlock = true;
-          inject.error('Inline can not contain block/flex');
+          inject.warn('Inline can not contain block/flex');
         }
         // x开头，不用考虑是否放得下直接放
         if(x === lx) {

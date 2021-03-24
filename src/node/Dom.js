@@ -1603,7 +1603,10 @@ class Dom extends Xom {
    * @private
    */
   __layoutInline(data, isVirtual, isInline) {
-    let { flowChildren, computedStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
+    let {
+      [WIDTH]: width,
+    } = currentStyle;
     let {
       [TEXT_ALIGN]: textAlign,
       [WHITE_SPACE]: whiteSpace,
@@ -1665,7 +1668,7 @@ class Dom extends Xom {
           }, isVirtual);
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
-            isInlineBlock && (isIbFull = true);
+            isInlineBlock && (w[1] === AUTO) && (isIbFull = true);
             lineBoxManager.addItem(item);
             x = lx;
             y += item.outerHeight;
@@ -1755,8 +1758,8 @@ class Dom extends Xom {
           }, isVirtual);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
-          // ib情况发生折行
-          if(!isInline && (lineBoxManager.size - n) > 1) {
+          // ib情况发生折行，且非定宽
+          if(!isInline && (lineBoxManager.size - n) > 1 && width[1] === AUTO) {
             isIbFull = true;
           }
           cw = item.width;
@@ -1805,7 +1808,7 @@ class Dom extends Xom {
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
-            if(!isInline && (lineBoxManager.size - n) > 1) {
+            if(!isInline && (lineBoxManager.size - n) > 1 && width[1] === AUTO) {
               isIbFull = true;
             }
             cw = 0;

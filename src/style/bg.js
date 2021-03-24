@@ -148,7 +148,7 @@ function calBackgroundPosition(position, container, size) {
 
 function renderImage(xom, renderMode, ctx, defs, loadBgi,
                      bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-                     currentStyle, i, backgroundSize, backgroundRepeat, __config) {
+                     currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
   let source = loadBgi.source;
   // 无source不绘制，可能错误或加载中
   if(source) {
@@ -381,29 +381,62 @@ function renderImage(xom, renderMode, ctx, defs, loadBgi,
         __config[NODE_DEFS_CACHE].push(v);
         props.push(['clip-path', 'url(#' + id + ')']);
       }
-      // 先画不考虑repeat的中心声明的
-      xom.virtualDom.bb.push({
-        type: 'img',
-        tagName: 'image',
-        props,
-      });
-      // 再画重复的十字和4角象限
-      repeat.forEach(item => {
-        let copy = clone(props);
-        if(needResize) {
-          let matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
-          if(matrix && !mx.isE(matrix)) {
-            copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+      if(isInline) {
+        let v = {
+          tagName: 'symbol',
+          props: [],
+          children: [
+            {
+              type: 'img',
+              tagName: 'image',
+              props,
+            }
+          ],
+        };
+        xom.__config[NODE_DEFS_CACHE].push(v);
+        repeat.forEach(item => {
+          let copy = clone(props);
+          if(needResize) {
+            let matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
+            if(matrix && !mx.isE(matrix)) {
+              copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+            }
           }
-        }
-        copy[1][1] = item[0];
-        copy[2][1] = item[1];
+          copy[1][1] = item[0];
+          copy[2][1] = item[1];
+          v.children.push({
+            type: 'img',
+            tagName: 'image',
+            props: copy,
+          });
+        });
+        return defs.add(v);
+      }
+      else {
+        // 先画不考虑repeat的中心声明的
         xom.virtualDom.bb.push({
           type: 'img',
           tagName: 'image',
-          props: copy,
+          props,
         });
-      });
+        // 再画重复的十字和4角象限
+        repeat.forEach(item => {
+          let copy = clone(props);
+          if(needResize) {
+            let matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
+            if(matrix && !mx.isE(matrix)) {
+              copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+            }
+          }
+          copy[1][1] = item[0];
+          copy[2][1] = item[1];
+          xom.virtualDom.bb.push({
+            type: 'img',
+            tagName: 'image',
+            props: copy,
+          });
+        });
+      }
     }
   }
 }

@@ -9574,7 +9574,7 @@
     return 0;
   }
 
-  function renderImage(xom, renderMode, ctx, defs, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config) {
+  function renderImage(xom, renderMode, ctx, defs, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
     var source = loadBgi.source; // 无source不绘制，可能错误或加载中
 
     if (source) {
@@ -9819,34 +9819,70 @@
           __config[NODE_DEFS_CACHE$1].push(v);
 
           props.push(['clip-path', 'url(#' + id + ')']);
-        } // 先画不考虑repeat的中心声明的
+        }
 
+        if (isInline) {
+          var _v = {
+            tagName: 'symbol',
+            props: [],
+            children: [{
+              type: 'img',
+              tagName: 'image',
+              props: props
+            }]
+          };
 
-        xom.virtualDom.bb.push({
-          type: 'img',
-          tagName: 'image',
-          props: props
-        }); // 再画重复的十字和4角象限
+          xom.__config[NODE_DEFS_CACHE$1].push(_v);
 
-        repeat.forEach(function (item) {
-          var copy = clone$1(props);
+          repeat.forEach(function (item) {
+            var copy = clone$1(props);
 
-          if (needResize) {
-            var _matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
+            if (needResize) {
+              var _matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
 
-            if (_matrix && !mx.isE(_matrix)) {
-              copy[5][1] = 'matrix(' + joinArr$1(_matrix, ',') + ')';
+              if (_matrix && !mx.isE(_matrix)) {
+                copy[5][1] = 'matrix(' + joinArr$1(_matrix, ',') + ')';
+              }
             }
-          }
 
-          copy[1][1] = item[0];
-          copy[2][1] = item[1];
+            copy[1][1] = item[0];
+            copy[2][1] = item[1];
+
+            _v.children.push({
+              type: 'img',
+              tagName: 'image',
+              props: copy
+            });
+          });
+          return defs.add(_v);
+        } else {
+          // 先画不考虑repeat的中心声明的
           xom.virtualDom.bb.push({
             type: 'img',
             tagName: 'image',
-            props: copy
+            props: props
+          }); // 再画重复的十字和4角象限
+
+          repeat.forEach(function (item) {
+            var copy = clone$1(props);
+
+            if (needResize) {
+              var _matrix2 = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
+
+              if (_matrix2 && !mx.isE(_matrix2)) {
+                copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
+              }
+            }
+
+            copy[1][1] = item[0];
+            copy[2][1] = item[1];
+            xom.virtualDom.bb.push({
+              type: 'img',
+              tagName: 'image',
+              props: copy
+            });
           });
-        });
+        }
       }
     }
   }
@@ -15667,7 +15703,7 @@
                     var loadBgi = _this4.__loadBgi[i];
 
                     if (loadBgi.url === backgroundImage[i]) {
-                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx, defs, loadBgi, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx, defs, loadBgi, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
 
                       if (renderMode === mode.SVG && uuid) {
                         svgBgSymbol.push(uuid);
@@ -19624,7 +19660,9 @@
       key: "__layoutInline",
       value: function __layoutInline(data, isVirtual, isInline) {
         var flowChildren = this.flowChildren,
+            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
+        var width = currentStyle[WIDTH$4];
         var textAlign = computedStyle[TEXT_ALIGN$3],
             whiteSpace = computedStyle[WHITE_SPACE$2];
 
@@ -19707,7 +19745,7 @@
 
 
               if (item.__isIbFull) {
-                isInlineBlock && (isIbFull = true);
+                isInlineBlock && w[1] === AUTO$4 && (isIbFull = true);
                 lineBoxManager.addItem(item);
                 x = lx;
                 y += item.outerHeight;
@@ -19799,9 +19837,9 @@
                 }, isVirtual);
 
                 x = lineBoxManager.lastX;
-                y = lineBoxManager.lastY; // ib情况发生折行
+                y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
-                if (!isInline && lineBoxManager.size - n > 1) {
+                if (!isInline && lineBoxManager.size - n > 1 && width[1] === AUTO$4) {
                   isIbFull = true;
                 }
 
@@ -19855,7 +19893,7 @@
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY; // ib情况发生折行
 
-                    if (!isInline && lineBoxManager.size - n > 1) {
+                    if (!isInline && lineBoxManager.size - n > 1 && width[1] === AUTO$4) {
                       isIbFull = true;
                     }
 
@@ -21761,14 +21799,9 @@
 
           var w = x2 - x1,
               h = y2 - y1;
-          var data = gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop);
           var offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
           var imgData = offscreen.ctx.getImageData(0, 0, w, h);
-
-          for (var i = 0; i < imgData.data.length; i++) {
-            imgData.data[i] = data[i];
-          }
-
+          var data = gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
           offscreen.ctx.putImageData(imgData, 0, 0);
 
           if (isMulti) {

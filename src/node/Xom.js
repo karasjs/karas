@@ -1497,7 +1497,7 @@ class Xom extends Node {
               if(loadBgi.url === backgroundImage[i]) {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx, defs, loadBgi,
                   0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr,
-                  currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                  currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
                 if(renderMode === mode.SVG && uuid) {
                   svgBgSymbol.push(uuid);
                 }

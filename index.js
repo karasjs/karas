@@ -8516,6 +8516,8 @@
             whiteSpace = computedStyle[WHITE_SPACE$1]; // 不换行特殊对待，同时考虑overflow和textOverflow
 
         if (whiteSpace === 'nowrap') {
+          count = 0; // 不换行时，首行统计从0开始
+
           var isTextOverflow;
 
           while (i < length) {
@@ -14577,6 +14579,7 @@
             w3 = data.w3,
             h3 = data.h3,
             lx = data.lx,
+            nowrap = data.nowrap,
             lineBoxManager = data.lineBoxManager,
             _data$endSpace = data.endSpace,
             endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace;
@@ -14657,7 +14660,7 @@
         var selfEndSpace = 0;
 
         if (isInline) {
-          selfEndSpace = paddingRight + borderRightWidth + marginRight; // endSpace += selfEndSpace;
+          selfEndSpace = paddingRight + borderRightWidth + marginRight;
         } // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb，其一定是block和inline互斥
 
 
@@ -14680,6 +14683,7 @@
           h: h,
           lx: lx,
           lineBoxManager: lineBoxManager,
+          nowrap: nowrap,
           endSpace: endSpace,
           selfEndSpace: selfEndSpace
         };
@@ -17884,7 +17888,7 @@
       ALIGN_ITEMS$1 = _enums$STYLE_KEY$f.ALIGN_ITEMS,
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$f.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$f.Z_INDEX,
-      BACKGROUND_CLIP$2 = _enums$STYLE_KEY$f.BACKGROUND_CLIP,
+      WHITE_SPACE$2 = _enums$STYLE_KEY$f.WHITE_SPACE,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -18150,7 +18154,10 @@
         var flowChildren = this.flowChildren,
             _this$currentStyle = this.currentStyle,
             display = _this$currentStyle[DISPLAY$4],
-            width = _this$currentStyle[WIDTH$4]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
+            width = _this$currentStyle[WIDTH$4],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$4],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$5],
+            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$5]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
         if (display === 'inline') {
           if (flowChildren.length) {
@@ -18185,7 +18192,24 @@
                   w -= item.textWidth;
                 }
             }
-          }
+          } // 还要减去开头的mpb
+
+
+        if (marginLeft[1] === PX$7) {
+          w -= marginLeft[0];
+        } else if (marginLeft[1] === PERCENT$7) {
+          w -= marginLeft[0] * total * 0.01;
+        }
+
+        if (paddingLeft[1] === PX$7) {
+          w -= paddingLeft[0];
+        } else if (paddingLeft[1] === PERCENT$7) {
+          w -= paddingLeft[0] * total * 0.01;
+        }
+
+        if (borderLeftWidth[1] === PX$7) {
+          w -= borderLeftWidth[0];
+        }
 
         return w;
       } // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
@@ -19605,11 +19629,7 @@
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle;
         var textAlign = computedStyle[TEXT_ALIGN$3],
-            backgroundClip = computedStyle[BACKGROUND_CLIP$2],
-            paddingLeft = computedStyle[PADDING_LEFT$5],
-            paddingRight = computedStyle[PADDING_RIGHT$5],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5];
+            whiteSpace = computedStyle[WHITE_SPACE$2];
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),
             fixedWidth = _this$__preLayout3.fixedWidth,
@@ -19620,6 +19640,7 @@
             h = _this$__preLayout3.h,
             lx = _this$__preLayout3.lx,
             lineBoxManager = _this$__preLayout3.lineBoxManager,
+            nowrap = _this$__preLayout3.nowrap,
             endSpace = _this$__preLayout3.endSpace,
             selfEndSpace = _this$__preLayout3.selfEndSpace; // abs虚拟布局需预知width，固定可提前返回
 
@@ -19706,9 +19727,8 @@
                 maxW = Math.max(maxW, cw);
               }
             } else {
-              // 非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-              var fw = item.__tryLayInline(w - x + data.x, w - (isEnd ? endSpace : 0)); // 放得下继续
-
+              // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
+              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
 
               if (fw >= 0) {
                 item.__layout({
@@ -19717,6 +19737,7 @@
                   w: w,
                   h: h,
                   lx: lx,
+                  nowrap: whiteSpace === 'nowrap',
                   lineBoxManager: lineBoxManager,
                   endSpace: endSpace
                 }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
@@ -19744,7 +19765,7 @@
 
                   if (item.__isIbFull) {
                     lineBoxManager.addItem(item);
-                    x = data.x;
+                    x = lx;
                     y += item.outerHeight;
                     lineBoxManager.setNotEnd();
                   } // inline和不折行的ib，其中ib需要手动存入当前lb中
@@ -19783,7 +19804,7 @@
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行
 
-                if (isInlineBlock && lineBoxManager.size - n > 0) {
+                if (!isInline && lineBoxManager.size - n > 0) {
                   isIbFull = true;
                 }
 
@@ -19791,9 +19812,12 @@
                 maxW = Math.max(maxW, cw);
               } else {
                 // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-                var _fw2 = item.__tryLayInline(w + lx - x);
+                // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
+                var focusNoWrap = !i && nowrap || whiteSpace === 'nowrap';
 
-                if (_fw2 >= 0 && isEnd && endSpace && item.content.length === 1) {
+                var _fw2 = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x);
+
+                if (!focusNoWrap && _fw2 >= 0 && isEnd && endSpace && item.content.length === 1) {
                   var fw2 = _fw2 - endSpace;
 
                   if (fw2 < 0) {
@@ -19834,7 +19858,7 @@
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY; // ib情况发生折行
 
-                    if (isInlineBlock && lineBoxManager.size - n > 0) {
+                    if (!isInline && lineBoxManager.size - n > 0) {
                       isIbFull = true;
                     }
 

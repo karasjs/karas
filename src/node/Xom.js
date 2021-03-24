@@ -455,7 +455,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager, endSpace = 0 } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, nowrap, lineBoxManager, endSpace = 0 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -532,7 +532,6 @@ class Xom extends Node {
     let selfEndSpace = 0;
     if(isInline) {
       selfEndSpace = paddingRight + borderRightWidth + marginRight;
-      // endSpace += selfEndSpace;
     }
     // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb，其一定是block和inline互斥
     if(!isInline) {
@@ -552,6 +551,7 @@ class Xom extends Node {
       h,
       lx,
       lineBoxManager,
+      nowrap,
       endSpace,
       selfEndSpace,
     };

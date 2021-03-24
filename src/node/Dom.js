@@ -43,7 +43,7 @@ const {
     ALIGN_ITEMS,
     JUSTIFY_CONTENT,
     Z_INDEX,
-    BACKGROUND_CLIP,
+    WHITE_SPACE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -267,6 +267,9 @@ class Dom extends Xom {
     let { flowChildren, currentStyle: {
       [DISPLAY]: display,
       [WIDTH]: width,
+      [MARGIN_LEFT]: marginLeft,
+      [PADDING_LEFT]: paddingLeft,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } } = this;
     // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
     if(display === 'inline') {
@@ -302,6 +305,22 @@ class Dom extends Xom {
           w -= item.textWidth;
         }
       }
+    }
+    // 还要减去开头的mpb
+    if(marginLeft[1] === PX) {
+      w -= marginLeft[0];
+    }
+    else if(marginLeft[1] === PERCENT) {
+      w -= marginLeft[0] * total * 0.01;
+    }
+    if(paddingLeft[1] === PX) {
+      w -= paddingLeft[0];
+    }
+    else if(paddingLeft[1] === PERCENT) {
+      w -= paddingLeft[0] * total * 0.01;
+    }
+    if(borderLeftWidth[1] === PX) {
+      w -= borderLeftWidth[0];
     }
     return w;
   }
@@ -1587,13 +1606,9 @@ class Dom extends Xom {
     let { flowChildren, computedStyle } = this;
     let {
       [TEXT_ALIGN]: textAlign,
-      [BACKGROUND_CLIP]: backgroundClip,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_RIGHT]: paddingRight,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [WHITE_SPACE]: whiteSpace,
     } = computedStyle;
-    let { fixedWidth, fixedHeight, x, y, w, h, lx, lineBoxManager, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
+    let { fixedWidth, fixedHeight, x, y, w, h, lx, lineBoxManager, nowrap, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
     if(fixedWidth && isVirtual) {
       this.__width = w;
@@ -1668,8 +1683,8 @@ class Dom extends Xom {
           }
         }
         else {
-          // 非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-          let fw = item.__tryLayInline(w - x + data.x, w - (isEnd ? endSpace : 0));
+          // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
+          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
           // 放得下继续
           if(fw >= 0) {
             item.__layout({
@@ -1678,6 +1693,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              nowrap: whiteSpace === 'nowrap',
               lineBoxManager,
               endSpace,
             }, isVirtual);
@@ -1703,7 +1719,7 @@ class Dom extends Xom {
             // 重新开头的ib和上面开头处一样逻辑
             if(item.__isIbFull) {
               lineBoxManager.addItem(item);
-              x = data.x;
+              x = lx;
               y += item.outerHeight;
               lineBoxManager.setNotEnd();
             }
@@ -1740,7 +1756,7 @@ class Dom extends Xom {
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // ib情况发生折行
-          if(isInlineBlock && (lineBoxManager.size - n) > 0) {
+          if(!isInline && (lineBoxManager.size - n) > 0) {
             isIbFull = true;
           }
           cw = item.width;
@@ -1748,8 +1764,10 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-          let fw = item.__tryLayInline(w + lx - x);
-          if(fw >= 0 && isEnd && endSpace && item.content.length === 1) {
+          // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
+          let focusNoWrap = (!i && nowrap) || whiteSpace === 'nowrap';
+          let fw = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x);
+          if(!focusNoWrap && fw >= 0 && isEnd && endSpace && item.content.length === 1) {
             let fw2 = fw - endSpace;
             if(fw2 < 0) {
               fw = fw2;
@@ -1787,7 +1805,7 @@ class Dom extends Xom {
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
-            if(isInlineBlock && (lineBoxManager.size - n) > 0) {
+            if(!isInline && (lineBoxManager.size - n) > 0) {
               isIbFull = true;
             }
             cw = 0;

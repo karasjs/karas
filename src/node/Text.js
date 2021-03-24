@@ -168,6 +168,7 @@ class Text extends Node {
     } = computedStyle;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
+      count = 0; // 不换行时，首行统计从0开始
       let isTextOverflow;
       while(i < length) {
         count += charWidthList[i] + letterSpacing;

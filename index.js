@@ -646,8 +646,18 @@
       tahoma: {
         lhr: 1.20703125,
         // (0+2049+423)/2048
-        blr: 1.00048828125 // 2049/2048
-
+        blr: 1.00048828125,
+        // 2049/2048
+        padding: {
+          S: 1,
+          T: 1,
+          Z: 1,
+          c: 1,
+          f: 0.7,
+          i: 1,
+          l: 1,
+          t: 0.9
+        }
       },
       georgia: {
         lhr: 1.13623046875,
@@ -664,13 +674,19 @@
       'pingfang sc': {
         lhr: 1.4,
         // (0+1060+340)/1000
-        blr: 1.06 // 1060/1000
-
+        blr: 1.06,
+        // 1060/1000
+        padding: {
+          f: 0.5
+        }
       },
       simsun: {
         lhr: 1.4,
         // (0+1060+340)/1000
-        blr: 1.06
+        blr: 1.06,
+        padding: {
+          f: 0.5
+        }
       }
     },
     support: function support(fontFamily) {
@@ -5430,7 +5446,7 @@
       }
 
       context.clearRect(0, 0, 16, 16);
-      context.font = '16px ' + ff + ',arial';
+      context.font = '16px ' + ff;
       context.fillText('a', 8, 8);
       var data = context.getImageData(0, 0, 16, 16).data;
 

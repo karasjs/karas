@@ -7,7 +7,7 @@ module.exports = (function(settings) {
     'cli_args': {
       'webdriver.chrome.driver': require('chromedriver').path,
     },
-    check_process_delay: 2000,
+    check_process_delay: 5000,
   };
   settings.test_settings = {
     default: {

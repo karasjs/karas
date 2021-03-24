@@ -343,7 +343,7 @@ let inject = {
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
     }
     context.clearRect(0, 0, 16, 16);
-    context.font = '16px ' + ff + ',arial';
+    context.font = '16px ' + ff;
     context.fillText('a', 8, 8);
     let data = context.getImageData(0, 0, 16, 16).data;
     for(let i = 0, len = data.length; i < len; i++) {

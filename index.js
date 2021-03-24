@@ -1792,39 +1792,45 @@
 
   /**
    * 获取渐变图像像素数组
-   * @param {number} originX - 渐变中心x坐标
+   * @param {number} originX - 渐变中心x坐标（相对图片左上角(0,0)的值，可在图片外，下同）
    * @param {number} originY - 渐变中心y坐标
    * @param {number} width - 图片宽度
    * @param {number} height - 图片高度
    * @param {Array<stop>} stop - 渐变声明列表
+   * @param data - canvas的imgData.data
    * @returns {Array<number>} 图像像素数组，每4个元素（rgba）构成一个像素点
-   * @example let w = 200;
-              let h = 200;
-              let ctx = document.getElementById('example').getContext('2d');
-              let imgData = ctx.getImageData(0,0, w, h);
-              let data = getConicGradientImage(99.5, 99.5, w, h, [{
-                  color: [0,0,0,255],
-                  angle: 0,
-                } ,{
-                  color: [255,0,0,255],
-                  angle: 2 * Math.PI,
-                }]);
-              for (let i = 0; i < imgData.data.length; i++) {
-               imgData.data[i] = data[i];
-              }
-              ctx.putImageData(imgData, 0, 0);
+   * @example
+       // 矩形宽度为200*200，此时坐标为0～199，渐变中心为中点时，应传入99.5，可消除零点问题
+       // 若渐变中心在某一整数轴上，就会引入零点问题，此时零点取y轴正半轴的色值，要消除这个问题，可以对渐变中心增加一个偏移量，使其不为整数
+       let w = 200;
+       let h = 200;
+       let ctx = document.getElementById('example').getContext('2d');
+       let imgData = ctx.getImageData(0,0, w, h);
+       let data = getConicGradientImage(99.5, 99.5, w, h, [{
+         color: [0,0,0,255],
+         angle: 0,
+       } ,{
+         color: [255,0,0,255],
+         angle: 2 * Math.PI,
+       }]);
+       for (let i = 0; i < imgData.data.length; i++) {
+         imgData.data[i] = data[i];
+       }
+       ctx.putImageData(imgData, 0, 0);
    */
-  function getConicGradientImage(originX, originY, width, height, stop) {
+  function getConicGradientImage(originX, originY, width, height, stop, data) {
     if (stop.length < 2) {
       throw new Error('Conic gradient should recieve at least 2 gradient statements (start line and end line).');
     }
+
+    width = Math.floor(width);
+    height = Math.floor(height);
     /**
      * 根据坐标获取角度
      * @param {number} x - x坐标，左上角为原点
      * @param {number} y - y坐标，左上角为原点
      * @returns {number} angle - 角度，0～2 * Math.PI，(originX, originY) 为原点，垂直向上为0
      */
-
 
     var getAngle = function getAngle(x, y) {
       // 此函数注释内的x、y轴基于 (originX, originY)
@@ -1871,7 +1877,6 @@
         angle: item[1] * Math.PI * 2
       };
     });
-    var res = [];
 
     for (var y = 0; y < height; y++) {
       var _loop = function _loop(x) {
@@ -1886,8 +1891,7 @@
         var end = increasingList[j];
 
         if (!(start && end)) {
-          // step 2-1. 不在渐变区间里，用透明色填充
-          res.push(0, 0, 0, 0);
+          // step 2-1. 不在渐变区间里
           return "continue";
         } // step 3. 计算色值并填充
 
@@ -1896,7 +1900,11 @@
         var color = end.color.map(function (v, idx) {
           return factor * (v - start.color[idx]) + start.color[idx];
         });
-        res.push(color[0], color[1], color[2], Math.min(255, color[3] * 255));
+        var i = (x + y * width) * 4;
+        data[i] = color[0];
+        data[i + 1] = color[1];
+        data[i + 2] = color[2];
+        data[i + 3] = Math.min(255, color[3] * 255);
       };
 
       for (var x = 0; x < width; x++) {
@@ -1906,7 +1914,7 @@
       }
     }
 
-    return res;
+    return data;
   }
 
   var gradient = {
@@ -5020,10 +5028,6 @@
     ELLIPSIS: '…'
   };
 
-  var _enums$STYLE_KEY$2 = enums.STYLE_KEY,
-      FONT_SIZE = _enums$STYLE_KEY$2.FONT_SIZE,
-      FONT_FAMILY = _enums$STYLE_KEY$2.FONT_FAMILY,
-      FONT_WEIGHT = _enums$STYLE_KEY$2.FONT_WEIGHT;
   var SPF = 1000 / 60;
   var CANVAS = {};
   var WEBGL = {};
@@ -6078,14 +6082,9 @@
     }
 
     if (renderMode === mode.CANVAS) {
-      var data = gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop);
       var offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
       var imgData = offscreen.ctx.getImageData(0, 0, w, h);
-
-      for (var i = 0; i < imgData.data.length; i++) {
-        imgData.data[i] = data[i];
-      }
-
+      gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
       offscreen.ctx.putImageData(imgData, 0, 0);
       ctx.save();
       ctx.beginPath();
@@ -6760,58 +6759,58 @@
   var STYLE_KEY$4 = enums.STYLE_KEY,
       STYLE_RV_KEY$1 = enums.STYLE_RV_KEY,
       style2Upper$1 = enums.style2Upper,
-      _enums$STYLE_KEY$3 = enums.STYLE_KEY,
-      POSITION = _enums$STYLE_KEY$3.POSITION,
-      WIDTH$1 = _enums$STYLE_KEY$3.WIDTH,
-      HEIGHT$1 = _enums$STYLE_KEY$3.HEIGHT,
-      TRANSLATE_X = _enums$STYLE_KEY$3.TRANSLATE_X,
-      TRANSLATE_Y = _enums$STYLE_KEY$3.TRANSLATE_Y,
-      SCALE_X = _enums$STYLE_KEY$3.SCALE_X,
-      SCALE_Y = _enums$STYLE_KEY$3.SCALE_Y,
-      SKEW_X = _enums$STYLE_KEY$3.SKEW_X,
-      SKEW_Y = _enums$STYLE_KEY$3.SKEW_Y,
-      ROTATE_Z = _enums$STYLE_KEY$3.ROTATE_Z,
-      TRANSFORM$1 = _enums$STYLE_KEY$3.TRANSFORM,
-      TRANSFORM_ORIGIN$1 = _enums$STYLE_KEY$3.TRANSFORM_ORIGIN,
-      BACKGROUND_IMAGE = _enums$STYLE_KEY$3.BACKGROUND_IMAGE,
-      BACKGROUND_COLOR = _enums$STYLE_KEY$3.BACKGROUND_COLOR,
-      BACKGROUND_POSITION_X = _enums$STYLE_KEY$3.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y = _enums$STYLE_KEY$3.BACKGROUND_POSITION_Y,
-      BACKGROUND_SIZE = _enums$STYLE_KEY$3.BACKGROUND_SIZE,
-      OPACITY = _enums$STYLE_KEY$3.OPACITY,
-      Z_INDEX = _enums$STYLE_KEY$3.Z_INDEX,
-      COLOR = _enums$STYLE_KEY$3.COLOR,
-      FONT_SIZE$1 = _enums$STYLE_KEY$3.FONT_SIZE,
-      FONT_FAMILY$1 = _enums$STYLE_KEY$3.FONT_FAMILY,
-      FONT_WEIGHT$1 = _enums$STYLE_KEY$3.FONT_WEIGHT,
-      FONT_STYLE = _enums$STYLE_KEY$3.FONT_STYLE,
-      LINE_HEIGHT = _enums$STYLE_KEY$3.LINE_HEIGHT,
-      TEXT_ALIGN = _enums$STYLE_KEY$3.TEXT_ALIGN,
-      FILTER = _enums$STYLE_KEY$3.FILTER,
-      VISIBILITY = _enums$STYLE_KEY$3.VISIBILITY,
-      BOX_SHADOW = _enums$STYLE_KEY$3.BOX_SHADOW,
-      POINTER_EVENTS = _enums$STYLE_KEY$3.POINTER_EVENTS,
-      FILL = _enums$STYLE_KEY$3.FILL,
-      STROKE = _enums$STYLE_KEY$3.STROKE,
-      STROKE_WIDTH = _enums$STYLE_KEY$3.STROKE_WIDTH,
-      STROKE_DASHARRAY = _enums$STYLE_KEY$3.STROKE_DASHARRAY,
-      BORDER_TOP_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_LEFT_WIDTH,
-      DISPLAY = _enums$STYLE_KEY$3.DISPLAY,
-      FLEX_DIRECTION = _enums$STYLE_KEY$3.FLEX_DIRECTION,
-      FLEX_GROW = _enums$STYLE_KEY$3.FLEX_GROW,
-      FLEX_SHRINK = _enums$STYLE_KEY$3.FLEX_SHRINK,
-      FLEX_BASIS = _enums$STYLE_KEY$3.FLEX_BASIS,
-      JUSTIFY_CONTENT = _enums$STYLE_KEY$3.JUSTIFY_CONTENT,
-      ALIGN_SELF = _enums$STYLE_KEY$3.ALIGN_SELF,
-      ALIGN_ITEMS = _enums$STYLE_KEY$3.ALIGN_ITEMS,
-      MATRIX = _enums$STYLE_KEY$3.MATRIX,
-      LETTER_SPACING = _enums$STYLE_KEY$3.LETTER_SPACING,
-      BACKGROUND_CLIP = _enums$STYLE_KEY$3.BACKGROUND_CLIP,
-      WHITE_SPACE = _enums$STYLE_KEY$3.WHITE_SPACE,
-      TEXT_OVERFLOW = _enums$STYLE_KEY$3.TEXT_OVERFLOW;
+      _enums$STYLE_KEY$2 = enums.STYLE_KEY,
+      POSITION = _enums$STYLE_KEY$2.POSITION,
+      WIDTH$1 = _enums$STYLE_KEY$2.WIDTH,
+      HEIGHT$1 = _enums$STYLE_KEY$2.HEIGHT,
+      TRANSLATE_X = _enums$STYLE_KEY$2.TRANSLATE_X,
+      TRANSLATE_Y = _enums$STYLE_KEY$2.TRANSLATE_Y,
+      SCALE_X = _enums$STYLE_KEY$2.SCALE_X,
+      SCALE_Y = _enums$STYLE_KEY$2.SCALE_Y,
+      SKEW_X = _enums$STYLE_KEY$2.SKEW_X,
+      SKEW_Y = _enums$STYLE_KEY$2.SKEW_Y,
+      ROTATE_Z = _enums$STYLE_KEY$2.ROTATE_Z,
+      TRANSFORM$1 = _enums$STYLE_KEY$2.TRANSFORM,
+      TRANSFORM_ORIGIN$1 = _enums$STYLE_KEY$2.TRANSFORM_ORIGIN,
+      BACKGROUND_IMAGE = _enums$STYLE_KEY$2.BACKGROUND_IMAGE,
+      BACKGROUND_COLOR = _enums$STYLE_KEY$2.BACKGROUND_COLOR,
+      BACKGROUND_POSITION_X = _enums$STYLE_KEY$2.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y = _enums$STYLE_KEY$2.BACKGROUND_POSITION_Y,
+      BACKGROUND_SIZE = _enums$STYLE_KEY$2.BACKGROUND_SIZE,
+      OPACITY = _enums$STYLE_KEY$2.OPACITY,
+      Z_INDEX = _enums$STYLE_KEY$2.Z_INDEX,
+      COLOR = _enums$STYLE_KEY$2.COLOR,
+      FONT_SIZE = _enums$STYLE_KEY$2.FONT_SIZE,
+      FONT_FAMILY = _enums$STYLE_KEY$2.FONT_FAMILY,
+      FONT_WEIGHT = _enums$STYLE_KEY$2.FONT_WEIGHT,
+      FONT_STYLE = _enums$STYLE_KEY$2.FONT_STYLE,
+      LINE_HEIGHT = _enums$STYLE_KEY$2.LINE_HEIGHT,
+      TEXT_ALIGN = _enums$STYLE_KEY$2.TEXT_ALIGN,
+      FILTER = _enums$STYLE_KEY$2.FILTER,
+      VISIBILITY = _enums$STYLE_KEY$2.VISIBILITY,
+      BOX_SHADOW = _enums$STYLE_KEY$2.BOX_SHADOW,
+      POINTER_EVENTS = _enums$STYLE_KEY$2.POINTER_EVENTS,
+      FILL = _enums$STYLE_KEY$2.FILL,
+      STROKE = _enums$STYLE_KEY$2.STROKE,
+      STROKE_WIDTH = _enums$STYLE_KEY$2.STROKE_WIDTH,
+      STROKE_DASHARRAY = _enums$STYLE_KEY$2.STROKE_DASHARRAY,
+      BORDER_TOP_WIDTH$1 = _enums$STYLE_KEY$2.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$2.BORDER_RIGHT_WIDTH,
+      BORDER_BOTTOM_WIDTH$1 = _enums$STYLE_KEY$2.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$2.BORDER_LEFT_WIDTH,
+      DISPLAY = _enums$STYLE_KEY$2.DISPLAY,
+      FLEX_DIRECTION = _enums$STYLE_KEY$2.FLEX_DIRECTION,
+      FLEX_GROW = _enums$STYLE_KEY$2.FLEX_GROW,
+      FLEX_SHRINK = _enums$STYLE_KEY$2.FLEX_SHRINK,
+      FLEX_BASIS = _enums$STYLE_KEY$2.FLEX_BASIS,
+      JUSTIFY_CONTENT = _enums$STYLE_KEY$2.JUSTIFY_CONTENT,
+      ALIGN_SELF = _enums$STYLE_KEY$2.ALIGN_SELF,
+      ALIGN_ITEMS = _enums$STYLE_KEY$2.ALIGN_ITEMS,
+      MATRIX = _enums$STYLE_KEY$2.MATRIX,
+      LETTER_SPACING = _enums$STYLE_KEY$2.LETTER_SPACING,
+      BACKGROUND_CLIP = _enums$STYLE_KEY$2.BACKGROUND_CLIP,
+      WHITE_SPACE = _enums$STYLE_KEY$2.WHITE_SPACE,
+      TEXT_OVERFLOW = _enums$STYLE_KEY$2.TEXT_OVERFLOW;
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -7427,17 +7426,17 @@
 
     if (temp || temp === 0) {
       if (temp === 'inherit') {
-        res[FONT_SIZE$1] = [0, INHERIT$2];
+        res[FONT_SIZE] = [0, INHERIT$2];
       } else if (/%$/.test(temp)) {
         var _v2 = Math.max(0, parseFloat(temp));
 
         if (_v2) {
-          res[FONT_SIZE$1] = [_v2, PERCENT$1];
+          res[FONT_SIZE] = [_v2, PERCENT$1];
         } else {
-          res[FONT_SIZE$1] = [DEFAULT_FONT_SIZE, PX$2];
+          res[FONT_SIZE] = [DEFAULT_FONT_SIZE, PX$2];
         }
       } else {
-        res[FONT_SIZE$1] = [Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE, PX$2];
+        res[FONT_SIZE] = [Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE, PX$2];
       }
     }
 
@@ -7445,15 +7444,15 @@
 
     if (!isNil$3(temp)) {
       if (temp === 'bold') {
-        res[FONT_WEIGHT$1] = [700, NUMBER];
+        res[FONT_WEIGHT] = [700, NUMBER];
       } else if (temp === 'normal') {
-        res[FONT_WEIGHT$1] = [400, NUMBER];
+        res[FONT_WEIGHT] = [400, NUMBER];
       } else if (temp === 'lighter') {
-        res[FONT_WEIGHT$1] = [200, NUMBER];
+        res[FONT_WEIGHT] = [200, NUMBER];
       } else if (temp === 'inherit') {
-        res[FONT_WEIGHT$1] = [0, INHERIT$2];
+        res[FONT_WEIGHT] = [0, INHERIT$2];
       } else {
-        res[FONT_WEIGHT$1] = [Math.max(0, parseInt(temp)) || 400, NUMBER];
+        res[FONT_WEIGHT] = [Math.max(0, parseInt(temp)) || 400, NUMBER];
       }
     }
 
@@ -7471,10 +7470,10 @@
 
     if (temp) {
       if (temp === 'inherit') {
-        res[FONT_FAMILY$1] = [0, INHERIT$2];
+        res[FONT_FAMILY] = [0, INHERIT$2];
       } else {
         // 统一文字声明格式
-        res[FONT_FAMILY$1] = [temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
+        res[FONT_FAMILY] = [temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
       }
     }
 
@@ -7826,7 +7825,7 @@
     else if (lineHeight[1] === PX$2) {
         computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) || calNormalLineHeight(computedStyle);
       } else if (lineHeight[1] === NUMBER) {
-        computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE$1] || calNormalLineHeight(computedStyle);
+        computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE] || calNormalLineHeight(computedStyle);
       } // normal
       else {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
@@ -7851,8 +7850,8 @@
   }
 
   function setFontStyle(style) {
-    var fontSize = style[FONT_SIZE$1];
-    return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT$1] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY$1] || 'arial');
+    var fontSize = style[FONT_SIZE];
+    return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY] || 'arial');
   }
 
   function getFontFamily(str) {
@@ -7870,8 +7869,8 @@
   }
 
   function getBaseLine(style) {
-    var fontSize = style[FONT_SIZE$1];
-    var ff = style[FONT_FAMILY$1].split(',');
+    var fontSize = style[FONT_SIZE];
+    var ff = style[FONT_FAMILY].split(',');
     var f = 'arial';
 
     for (var i = 0, len = ff.length; i < len; i++) {
@@ -7886,7 +7885,7 @@
   }
 
   function calNormalLineHeight(style) {
-    var ff = style[FONT_FAMILY$1].split(',');
+    var ff = style[FONT_FAMILY].split(',');
     var f = 'arial';
 
     for (var i = 0, len = ff.length; i < len; i++) {
@@ -7896,7 +7895,7 @@
       }
     }
 
-    return style[FONT_SIZE$1] * (o.info[f] || o.info.arial).lhr;
+    return style[FONT_SIZE] * (o.info[f] || o.info.arial).lhr;
   }
 
   function calRelativePercent(n, parent, k) {
@@ -8177,13 +8176,13 @@
     cloneStyle: cloneStyle$1
   };
 
-  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
-      COLOR$1 = _enums$STYLE_KEY$4.COLOR,
-      FONT_WEIGHT$2 = _enums$STYLE_KEY$4.FONT_WEIGHT,
-      FONT_FAMILY$2 = _enums$STYLE_KEY$4.FONT_FAMILY,
-      FONT_SIZE$2 = _enums$STYLE_KEY$4.FONT_SIZE,
-      FONT_STYLE$1 = _enums$STYLE_KEY$4.FONT_STYLE,
-      LETTER_SPACING$1 = _enums$STYLE_KEY$4.LETTER_SPACING;
+  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
+      COLOR$1 = _enums$STYLE_KEY$3.COLOR,
+      FONT_WEIGHT$1 = _enums$STYLE_KEY$3.FONT_WEIGHT,
+      FONT_FAMILY$1 = _enums$STYLE_KEY$3.FONT_FAMILY,
+      FONT_SIZE$1 = _enums$STYLE_KEY$3.FONT_SIZE,
+      FONT_STYLE$1 = _enums$STYLE_KEY$3.FONT_STYLE,
+      LETTER_SPACING$1 = _enums$STYLE_KEY$3.LETTER_SPACING;
   /**
    * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
    * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
@@ -8241,7 +8240,7 @@
             ctx.fillText(content, x, y);
           }
         } else if (renderMode === mode.SVG) {
-          var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$2] + 'px']];
+          var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$1] + 'px']];
 
           if (letterSpacing) {
             props.push(['letter-spacing', letterSpacing]);
@@ -8325,19 +8324,19 @@
     return TextBox;
   }();
 
-  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
-      DISPLAY$1 = _enums$STYLE_KEY$5.DISPLAY,
-      LINE_HEIGHT$1 = _enums$STYLE_KEY$5.LINE_HEIGHT,
-      FONT_SIZE$3 = _enums$STYLE_KEY$5.FONT_SIZE,
-      FONT_FAMILY$3 = _enums$STYLE_KEY$5.FONT_FAMILY,
-      FONT_WEIGHT$3 = _enums$STYLE_KEY$5.FONT_WEIGHT,
-      COLOR$2 = _enums$STYLE_KEY$5.COLOR,
-      VISIBILITY$1 = _enums$STYLE_KEY$5.VISIBILITY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$5.TEXT_ALIGN,
-      LETTER_SPACING$2 = _enums$STYLE_KEY$5.LETTER_SPACING,
-      OVERFLOW = _enums$STYLE_KEY$5.OVERFLOW,
-      WHITE_SPACE$1 = _enums$STYLE_KEY$5.WHITE_SPACE,
-      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$5.TEXT_OVERFLOW;
+  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
+      DISPLAY$1 = _enums$STYLE_KEY$4.DISPLAY,
+      LINE_HEIGHT$1 = _enums$STYLE_KEY$4.LINE_HEIGHT,
+      FONT_SIZE$2 = _enums$STYLE_KEY$4.FONT_SIZE,
+      FONT_FAMILY$2 = _enums$STYLE_KEY$4.FONT_FAMILY,
+      FONT_WEIGHT$2 = _enums$STYLE_KEY$4.FONT_WEIGHT,
+      COLOR$2 = _enums$STYLE_KEY$4.COLOR,
+      VISIBILITY$1 = _enums$STYLE_KEY$4.VISIBILITY,
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$4.TEXT_ALIGN,
+      LETTER_SPACING$2 = _enums$STYLE_KEY$4.LETTER_SPACING,
+      OVERFLOW = _enums$STYLE_KEY$4.OVERFLOW,
+      WHITE_SPACE$1 = _enums$STYLE_KEY$4.WHITE_SPACE,
+      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$4.TEXT_OVERFLOW;
   var ELLIPSIS = textCache.ELLIPSIS;
 
   var Text = /*#__PURE__*/function (_Node) {
@@ -8374,7 +8373,7 @@
             charWidthList = this.charWidthList; // 每次都要清空重新计算，计算会有缓存
 
         charWidthList.splice(0);
-        var ffs = computedStyle[FONT_FAMILY$3].split(',');
+        var ffs = computedStyle[FONT_FAMILY$2].split(',');
         var ff = 'arial';
 
         for (var i = 0, len = ffs.length; i < len; i++) {
@@ -8384,9 +8383,9 @@
           }
         }
 
-        var fs = computedStyle[FONT_SIZE$3];
-        var fw = computedStyle[FONT_WEIGHT$3];
-        var key = this.__key = computedStyle[FONT_SIZE$3] + ',' + ff + ',' + fw;
+        var fs = computedStyle[FONT_SIZE$2];
+        var fw = computedStyle[FONT_WEIGHT$2];
+        var key = this.__key = computedStyle[FONT_SIZE$2] + ',' + ff + ',' + fw;
         var wait = textCache.data[key] = textCache.data[key] || {
           ff: ff,
           fs: fs,
@@ -9237,15 +9236,15 @@
     geom: geom
   };
 
-  var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
-      TRANSLATE_X$1 = _enums$STYLE_KEY$6.TRANSLATE_X,
-      TRANSLATE_Y$1 = _enums$STYLE_KEY$6.TRANSLATE_Y,
-      SCALE_X$1 = _enums$STYLE_KEY$6.SCALE_X,
-      SCALE_Y$1 = _enums$STYLE_KEY$6.SCALE_Y,
-      SKEW_X$1 = _enums$STYLE_KEY$6.SKEW_X,
-      SKEW_Y$1 = _enums$STYLE_KEY$6.SKEW_Y,
-      ROTATE_Z$1 = _enums$STYLE_KEY$6.ROTATE_Z,
-      MATRIX$1 = _enums$STYLE_KEY$6.MATRIX;
+  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
+      TRANSLATE_X$1 = _enums$STYLE_KEY$5.TRANSLATE_X,
+      TRANSLATE_Y$1 = _enums$STYLE_KEY$5.TRANSLATE_Y,
+      SCALE_X$1 = _enums$STYLE_KEY$5.SCALE_X,
+      SCALE_Y$1 = _enums$STYLE_KEY$5.SCALE_Y,
+      SKEW_X$1 = _enums$STYLE_KEY$5.SKEW_X,
+      SKEW_Y$1 = _enums$STYLE_KEY$5.SKEW_Y,
+      ROTATE_Z$1 = _enums$STYLE_KEY$5.ROTATE_Z,
+      MATRIX$1 = _enums$STYLE_KEY$5.MATRIX;
   var PX$3 = unit.PX,
       PERCENT$2 = unit.PERCENT;
   var matrix = math.matrix,
@@ -9417,9 +9416,9 @@
     pointInQuadrilateral: pointInQuadrilateral
   };
 
-  var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
-      SCALE_X$2 = _enums$STYLE_KEY$7.SCALE_X,
-      SCALE_Y$2 = _enums$STYLE_KEY$7.SCALE_Y;
+  var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
+      SCALE_X$2 = _enums$STYLE_KEY$6.SCALE_X,
+      SCALE_Y$2 = _enums$STYLE_KEY$6.SCALE_Y;
   var PERCENT$3 = unit.PERCENT,
       NUMBER$1 = unit.NUMBER;
 
@@ -9439,9 +9438,9 @@
     matrixResize: matrixResize
   };
 
-  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
-      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
+  var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
+      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$7.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$7.BACKGROUND_POSITION_Y,
       NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$1 = util.clone,
       joinArr$1 = util.joinArr;
@@ -10354,41 +10353,41 @@
   easing['ease-out'] = easing.easeOut;
   easing['ease-in-out'] = easing.easeInOut;
 
-  var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
-      FILTER$1 = _enums$STYLE_KEY$9.FILTER,
-      TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
-      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
-      BOX_SHADOW$1 = _enums$STYLE_KEY$9.BOX_SHADOW,
-      TRANSLATE_X$2 = _enums$STYLE_KEY$9.TRANSLATE_X,
-      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$9.BACKGROUND_SIZE,
-      FONTSIZE = _enums$STYLE_KEY$9.FONTSIZE,
-      FLEX_BASIS$1 = _enums$STYLE_KEY$9.FLEX_BASIS,
-      FLEX_DIRECTION$1 = _enums$STYLE_KEY$9.FLEX_DIRECTION,
-      WIDTH$2 = _enums$STYLE_KEY$9.WIDTH,
-      HEIGHT$2 = _enums$STYLE_KEY$9.HEIGHT,
-      MARGIN_RIGHT = _enums$STYLE_KEY$9.MARGIN_RIGHT,
-      MARGIN_TOP = _enums$STYLE_KEY$9.MARGIN_TOP,
-      MARGIN_LEFT = _enums$STYLE_KEY$9.MARGIN_LEFT,
-      MARGIN_BOTTOM = _enums$STYLE_KEY$9.MARGIN_BOTTOM,
-      PADDING_LEFT$1 = _enums$STYLE_KEY$9.PADDING_LEFT,
-      PADDING_BOTTOM$1 = _enums$STYLE_KEY$9.PADDING_BOTTOM,
-      PADDING_RIGHT$1 = _enums$STYLE_KEY$9.PADDING_RIGHT,
-      PADDING_TOP$1 = _enums$STYLE_KEY$9.PADDING_TOP,
-      TOP = _enums$STYLE_KEY$9.TOP,
-      RIGHT = _enums$STYLE_KEY$9.RIGHT,
-      BOTTOM = _enums$STYLE_KEY$9.BOTTOM,
-      LEFT = _enums$STYLE_KEY$9.LEFT,
-      LINE_HEIGHT$2 = _enums$STYLE_KEY$9.LINE_HEIGHT,
-      OPACITY$1 = _enums$STYLE_KEY$9.OPACITY,
-      Z_INDEX$1 = _enums$STYLE_KEY$9.Z_INDEX,
-      TRANSFORM$2 = _enums$STYLE_KEY$9.TRANSFORM,
-      COLOR$3 = _enums$STYLE_KEY$9.COLOR,
-      FONT_WEIGHT$4 = _enums$STYLE_KEY$9.FONT_WEIGHT,
-      FONT_STYLE$2 = _enums$STYLE_KEY$9.FONT_STYLE,
-      FONT_FAMILY$4 = _enums$STYLE_KEY$9.FONT_FAMILY,
-      TEXT_ALIGN$2 = _enums$STYLE_KEY$9.TEXT_ALIGN,
-      MATRIX$2 = _enums$STYLE_KEY$9.MATRIX,
+  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
+      FILTER$1 = _enums$STYLE_KEY$8.FILTER,
+      TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$8.TRANSFORM_ORIGIN,
+      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
+      BOX_SHADOW$1 = _enums$STYLE_KEY$8.BOX_SHADOW,
+      TRANSLATE_X$2 = _enums$STYLE_KEY$8.TRANSLATE_X,
+      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$8.BACKGROUND_SIZE,
+      FONTSIZE = _enums$STYLE_KEY$8.FONTSIZE,
+      FLEX_BASIS$1 = _enums$STYLE_KEY$8.FLEX_BASIS,
+      FLEX_DIRECTION$1 = _enums$STYLE_KEY$8.FLEX_DIRECTION,
+      WIDTH$2 = _enums$STYLE_KEY$8.WIDTH,
+      HEIGHT$2 = _enums$STYLE_KEY$8.HEIGHT,
+      MARGIN_RIGHT = _enums$STYLE_KEY$8.MARGIN_RIGHT,
+      MARGIN_TOP = _enums$STYLE_KEY$8.MARGIN_TOP,
+      MARGIN_LEFT = _enums$STYLE_KEY$8.MARGIN_LEFT,
+      MARGIN_BOTTOM = _enums$STYLE_KEY$8.MARGIN_BOTTOM,
+      PADDING_LEFT$1 = _enums$STYLE_KEY$8.PADDING_LEFT,
+      PADDING_BOTTOM$1 = _enums$STYLE_KEY$8.PADDING_BOTTOM,
+      PADDING_RIGHT$1 = _enums$STYLE_KEY$8.PADDING_RIGHT,
+      PADDING_TOP$1 = _enums$STYLE_KEY$8.PADDING_TOP,
+      TOP = _enums$STYLE_KEY$8.TOP,
+      RIGHT = _enums$STYLE_KEY$8.RIGHT,
+      BOTTOM = _enums$STYLE_KEY$8.BOTTOM,
+      LEFT = _enums$STYLE_KEY$8.LEFT,
+      LINE_HEIGHT$2 = _enums$STYLE_KEY$8.LINE_HEIGHT,
+      OPACITY$1 = _enums$STYLE_KEY$8.OPACITY,
+      Z_INDEX$1 = _enums$STYLE_KEY$8.Z_INDEX,
+      TRANSFORM$2 = _enums$STYLE_KEY$8.TRANSFORM,
+      COLOR$3 = _enums$STYLE_KEY$8.COLOR,
+      FONT_WEIGHT$3 = _enums$STYLE_KEY$8.FONT_WEIGHT,
+      FONT_STYLE$2 = _enums$STYLE_KEY$8.FONT_STYLE,
+      FONT_FAMILY$3 = _enums$STYLE_KEY$8.FONT_FAMILY,
+      TEXT_ALIGN$2 = _enums$STYLE_KEY$8.TEXT_ALIGN,
+      MATRIX$2 = _enums$STYLE_KEY$8.MATRIX,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_STYLE = _enums$UPDATE_KEY.UPDATE_STYLE,
@@ -10485,9 +10484,9 @@
             style[k] = [util.rgba2int(computedStyle[k]), RGBA$1];
           } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
             style[k] = [computedStyle[k], PX$5];
-          } else if (k === FONT_WEIGHT$4) {
+          } else if (k === FONT_WEIGHT$3) {
             style[k] = [computedStyle[k], NUMBER$2];
-          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$4 || k === TEXT_ALIGN$2) {
+          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$2) {
             style[k] = [computedStyle[k], STRING$2];
           }
         }
@@ -12860,11 +12859,11 @@
 
   var _TRANSFORMS;
   var STYLE_KEY$5 = enums.STYLE_KEY,
-      _enums$STYLE_KEY$a = enums.STYLE_KEY,
-      TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
-      TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
-      OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
-      FILTER$2 = _enums$STYLE_KEY$a.FILTER;
+      _enums$STYLE_KEY$9 = enums.STYLE_KEY,
+      TRANSLATE_X$3 = _enums$STYLE_KEY$9.TRANSLATE_X,
+      TRANSLATE_Y$2 = _enums$STYLE_KEY$9.TRANSLATE_Y,
+      OPACITY$2 = _enums$STYLE_KEY$9.OPACITY,
+      FILTER$2 = _enums$STYLE_KEY$9.FILTER;
   var ENUM = {
     // 低4位表示repaint级别
     NONE: 0,
@@ -13113,9 +13112,9 @@
     return Page;
   }();
 
-  var _enums$STYLE_KEY$b = enums.STYLE_KEY,
-      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$b.TRANSFORM_ORIGIN,
-      TRANSFORM$3 = _enums$STYLE_KEY$b.TRANSFORM,
+  var _enums$STYLE_KEY$a = enums.STYLE_KEY,
+      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$a.TRANSFORM_ORIGIN,
+      TRANSFORM$3 = _enums$STYLE_KEY$a.TRANSFORM,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
@@ -13943,13 +13942,13 @@
     renderBoxShadow: renderBoxShadow
   };
 
-  var _enums$STYLE_KEY$c = enums.STYLE_KEY,
-      MARGIN_LEFT$1 = _enums$STYLE_KEY$c.MARGIN_LEFT,
-      MARGIN_RIGHT$1 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
-      PADDING_LEFT$2 = _enums$STYLE_KEY$c.PADDING_LEFT,
-      PADDING_RIGHT$2 = _enums$STYLE_KEY$c.PADDING_RIGHT,
-      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_LEFT_WIDTH,
-      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_RIGHT_WIDTH;
+  var _enums$STYLE_KEY$b = enums.STYLE_KEY,
+      MARGIN_LEFT$1 = _enums$STYLE_KEY$b.MARGIN_LEFT,
+      MARGIN_RIGHT$1 = _enums$STYLE_KEY$b.MARGIN_RIGHT,
+      PADDING_LEFT$2 = _enums$STYLE_KEY$b.PADDING_LEFT,
+      PADDING_RIGHT$2 = _enums$STYLE_KEY$b.PADDING_RIGHT,
+      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$b.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$b.BORDER_RIGHT_WIDTH;
   /**
    * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
    * @param xom
@@ -14110,74 +14109,74 @@
   var STYLE_KEY$6 = enums.STYLE_KEY,
       STYLE_RV_KEY$2 = enums.STYLE_RV_KEY,
       style2Upper$2 = enums.style2Upper,
-      _enums$STYLE_KEY$d = enums.STYLE_KEY,
-      BORDER_TOP_LEFT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_TOP_LEFT_RADIUS,
-      BORDER_TOP_RIGHT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_BOTTOM_LEFT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS$1 = _enums$STYLE_KEY$d.BORDER_BOTTOM_RIGHT_RADIUS,
-      PADDING_LEFT$3 = _enums$STYLE_KEY$d.PADDING_LEFT,
-      PADDING_RIGHT$3 = _enums$STYLE_KEY$d.PADDING_RIGHT,
-      PADDING_TOP$2 = _enums$STYLE_KEY$d.PADDING_TOP,
-      PADDING_BOTTOM$2 = _enums$STYLE_KEY$d.PADDING_BOTTOM,
-      MARGIN_LEFT$2 = _enums$STYLE_KEY$d.MARGIN_LEFT,
-      MARGIN_TOP$1 = _enums$STYLE_KEY$d.MARGIN_TOP,
-      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$d.MARGIN_BOTTOM,
-      MARGIN_RIGHT$2 = _enums$STYLE_KEY$d.MARGIN_RIGHT,
-      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
-      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
-      TOP$1 = _enums$STYLE_KEY$d.TOP,
-      RIGHT$1 = _enums$STYLE_KEY$d.RIGHT,
-      BOTTOM$1 = _enums$STYLE_KEY$d.BOTTOM,
-      LEFT$1 = _enums$STYLE_KEY$d.LEFT,
-      POSITION$1 = _enums$STYLE_KEY$d.POSITION,
-      DISPLAY$2 = _enums$STYLE_KEY$d.DISPLAY,
-      WIDTH$3 = _enums$STYLE_KEY$d.WIDTH,
-      HEIGHT$3 = _enums$STYLE_KEY$d.HEIGHT,
-      MATRIX$3 = _enums$STYLE_KEY$d.MATRIX,
-      TRANSLATE_X$4 = _enums$STYLE_KEY$d.TRANSLATE_X,
-      TRANSLATE_Y$3 = _enums$STYLE_KEY$d.TRANSLATE_Y,
-      TRANSFORM$4 = _enums$STYLE_KEY$d.TRANSFORM,
-      SCALE_X$3 = _enums$STYLE_KEY$d.SCALE_X,
-      SCALE_Y$3 = _enums$STYLE_KEY$d.SCALE_Y,
-      ROTATE_Z$2 = _enums$STYLE_KEY$d.ROTATE_Z,
-      SKEW_X$2 = _enums$STYLE_KEY$d.SKEW_X,
-      SKEW_Y$2 = _enums$STYLE_KEY$d.SKEW_Y,
-      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$d.TRANSFORM_ORIGIN,
-      BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$d.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$d.BACKGROUND_POSITION_Y,
-      BACKGROUND_SIZE$2 = _enums$STYLE_KEY$d.BACKGROUND_SIZE,
-      BACKGROUND_COLOR$1 = _enums$STYLE_KEY$d.BACKGROUND_COLOR,
-      BACKGROUND_IMAGE$1 = _enums$STYLE_KEY$d.BACKGROUND_IMAGE,
-      BACKGROUND_REPEAT = _enums$STYLE_KEY$d.BACKGROUND_REPEAT,
-      BOX_SHADOW$2 = _enums$STYLE_KEY$d.BOX_SHADOW,
-      OPACITY$3 = _enums$STYLE_KEY$d.OPACITY,
-      Z_INDEX$2 = _enums$STYLE_KEY$d.Z_INDEX,
-      BORDER_TOP_STYLE = _enums$STYLE_KEY$d.BORDER_TOP_STYLE,
-      BORDER_RIGHT_STYLE = _enums$STYLE_KEY$d.BORDER_RIGHT_STYLE,
-      BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$d.BORDER_BOTTOM_STYLE,
-      BORDER_LEFT_STYLE = _enums$STYLE_KEY$d.BORDER_LEFT_STYLE,
-      FILTER$3 = _enums$STYLE_KEY$d.FILTER,
-      OVERFLOW$1 = _enums$STYLE_KEY$d.OVERFLOW,
-      MIX_BLEND_MODE = _enums$STYLE_KEY$d.MIX_BLEND_MODE,
-      TEXT_OVERFLOW$2 = _enums$STYLE_KEY$d.TEXT_OVERFLOW,
-      BORDER_TOP_COLOR = _enums$STYLE_KEY$d.BORDER_TOP_COLOR,
-      BORDER_BOTTOM_COLOR = _enums$STYLE_KEY$d.BORDER_BOTTOM_COLOR,
-      BORDER_LEFT_COLOR = _enums$STYLE_KEY$d.BORDER_LEFT_COLOR,
-      BORDER_RIGHT_COLOR = _enums$STYLE_KEY$d.BORDER_RIGHT_COLOR,
-      FONT_STYLE$3 = _enums$STYLE_KEY$d.FONT_STYLE,
-      COLOR$4 = _enums$STYLE_KEY$d.COLOR,
-      VISIBILITY$2 = _enums$STYLE_KEY$d.VISIBILITY,
-      POINTER_EVENTS$1 = _enums$STYLE_KEY$d.POINTER_EVENTS,
-      BORDER_TOP = _enums$STYLE_KEY$d.BORDER_TOP,
-      BORDER_RIGHT = _enums$STYLE_KEY$d.BORDER_RIGHT,
-      BORDER_BOTTOM = _enums$STYLE_KEY$d.BORDER_BOTTOM,
-      BORDER_LEFT = _enums$STYLE_KEY$d.BORDER_LEFT,
-      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$d.BACKGROUND_CLIP,
-      FONT_SIZE$4 = _enums$STYLE_KEY$d.FONT_SIZE,
-      FONT_FAMILY$5 = _enums$STYLE_KEY$d.FONT_FAMILY,
-      LINE_HEIGHT$3 = _enums$STYLE_KEY$d.LINE_HEIGHT,
+      _enums$STYLE_KEY$c = enums.STYLE_KEY,
+      BORDER_TOP_LEFT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_LEFT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_RIGHT_RADIUS,
+      PADDING_LEFT$3 = _enums$STYLE_KEY$c.PADDING_LEFT,
+      PADDING_RIGHT$3 = _enums$STYLE_KEY$c.PADDING_RIGHT,
+      PADDING_TOP$2 = _enums$STYLE_KEY$c.PADDING_TOP,
+      PADDING_BOTTOM$2 = _enums$STYLE_KEY$c.PADDING_BOTTOM,
+      MARGIN_LEFT$2 = _enums$STYLE_KEY$c.MARGIN_LEFT,
+      MARGIN_TOP$1 = _enums$STYLE_KEY$c.MARGIN_TOP,
+      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$c.MARGIN_BOTTOM,
+      MARGIN_RIGHT$2 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
+      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$c.BORDER_LEFT_WIDTH,
+      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$c.BORDER_RIGHT_WIDTH,
+      TOP$1 = _enums$STYLE_KEY$c.TOP,
+      RIGHT$1 = _enums$STYLE_KEY$c.RIGHT,
+      BOTTOM$1 = _enums$STYLE_KEY$c.BOTTOM,
+      LEFT$1 = _enums$STYLE_KEY$c.LEFT,
+      POSITION$1 = _enums$STYLE_KEY$c.POSITION,
+      DISPLAY$2 = _enums$STYLE_KEY$c.DISPLAY,
+      WIDTH$3 = _enums$STYLE_KEY$c.WIDTH,
+      HEIGHT$3 = _enums$STYLE_KEY$c.HEIGHT,
+      MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
+      TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
+      TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
+      TRANSFORM$4 = _enums$STYLE_KEY$c.TRANSFORM,
+      SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
+      SCALE_Y$3 = _enums$STYLE_KEY$c.SCALE_Y,
+      ROTATE_Z$2 = _enums$STYLE_KEY$c.ROTATE_Z,
+      SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
+      SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
+      TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
+      BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_Y,
+      BACKGROUND_SIZE$2 = _enums$STYLE_KEY$c.BACKGROUND_SIZE,
+      BACKGROUND_COLOR$1 = _enums$STYLE_KEY$c.BACKGROUND_COLOR,
+      BACKGROUND_IMAGE$1 = _enums$STYLE_KEY$c.BACKGROUND_IMAGE,
+      BACKGROUND_REPEAT = _enums$STYLE_KEY$c.BACKGROUND_REPEAT,
+      BOX_SHADOW$2 = _enums$STYLE_KEY$c.BOX_SHADOW,
+      OPACITY$3 = _enums$STYLE_KEY$c.OPACITY,
+      Z_INDEX$2 = _enums$STYLE_KEY$c.Z_INDEX,
+      BORDER_TOP_STYLE = _enums$STYLE_KEY$c.BORDER_TOP_STYLE,
+      BORDER_RIGHT_STYLE = _enums$STYLE_KEY$c.BORDER_RIGHT_STYLE,
+      BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$c.BORDER_BOTTOM_STYLE,
+      BORDER_LEFT_STYLE = _enums$STYLE_KEY$c.BORDER_LEFT_STYLE,
+      FILTER$3 = _enums$STYLE_KEY$c.FILTER,
+      OVERFLOW$1 = _enums$STYLE_KEY$c.OVERFLOW,
+      MIX_BLEND_MODE = _enums$STYLE_KEY$c.MIX_BLEND_MODE,
+      TEXT_OVERFLOW$2 = _enums$STYLE_KEY$c.TEXT_OVERFLOW,
+      BORDER_TOP_COLOR = _enums$STYLE_KEY$c.BORDER_TOP_COLOR,
+      BORDER_BOTTOM_COLOR = _enums$STYLE_KEY$c.BORDER_BOTTOM_COLOR,
+      BORDER_LEFT_COLOR = _enums$STYLE_KEY$c.BORDER_LEFT_COLOR,
+      BORDER_RIGHT_COLOR = _enums$STYLE_KEY$c.BORDER_RIGHT_COLOR,
+      FONT_STYLE$3 = _enums$STYLE_KEY$c.FONT_STYLE,
+      COLOR$4 = _enums$STYLE_KEY$c.COLOR,
+      VISIBILITY$2 = _enums$STYLE_KEY$c.VISIBILITY,
+      POINTER_EVENTS$1 = _enums$STYLE_KEY$c.POINTER_EVENTS,
+      BORDER_TOP = _enums$STYLE_KEY$c.BORDER_TOP,
+      BORDER_RIGHT = _enums$STYLE_KEY$c.BORDER_RIGHT,
+      BORDER_BOTTOM = _enums$STYLE_KEY$c.BORDER_BOTTOM,
+      BORDER_LEFT = _enums$STYLE_KEY$c.BORDER_LEFT,
+      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$c.BACKGROUND_CLIP,
+      FONT_SIZE$3 = _enums$STYLE_KEY$c.FONT_SIZE,
+      FONT_FAMILY$4 = _enums$STYLE_KEY$c.FONT_FAMILY,
+      LINE_HEIGHT$3 = _enums$STYLE_KEY$c.LINE_HEIGHT,
       _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
       UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
       UPDATE_FOCUS = _enums$UPDATE_KEY$1.UPDATE_FOCUS,
@@ -15636,8 +15635,8 @@
 
           if (length) {
             (function () {
-              var fontSize = computedStyle[FONT_SIZE$4],
-                  fontFamily = computedStyle[FONT_FAMILY$5],
+              var fontSize = computedStyle[FONT_SIZE$3],
+                  fontFamily = computedStyle[FONT_FAMILY$4],
                   lineHeight = computedStyle[LINE_HEIGHT$3];
               var iw = 0;
               var offscreen,
@@ -16781,14 +16780,14 @@
     return Xom;
   }(Node);
 
-  var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-      DISPLAY$3 = _enums$STYLE_KEY$e.DISPLAY,
-      MARGIN_LEFT$3 = _enums$STYLE_KEY$e.MARGIN_LEFT,
-      BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
-      PADDING_LEFT$4 = _enums$STYLE_KEY$e.PADDING_LEFT,
-      PADDING_RIGHT$4 = _enums$STYLE_KEY$e.PADDING_RIGHT,
-      BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
-      MARGIN_RIGHT$3 = _enums$STYLE_KEY$e.MARGIN_RIGHT;
+  var _enums$STYLE_KEY$d = enums.STYLE_KEY,
+      DISPLAY$3 = _enums$STYLE_KEY$d.DISPLAY,
+      MARGIN_LEFT$3 = _enums$STYLE_KEY$d.MARGIN_LEFT,
+      BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
+      PADDING_LEFT$4 = _enums$STYLE_KEY$d.PADDING_LEFT,
+      PADDING_RIGHT$4 = _enums$STYLE_KEY$d.PADDING_RIGHT,
+      BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
+      MARGIN_RIGHT$3 = _enums$STYLE_KEY$d.MARGIN_RIGHT;
   /**
    * css中常见的概念，一行内容，里面可能有若干不同的内容，仅在布局阶段出现，不参与渲染逻辑
    * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inline等节点，而内容TextBox则属于Text
@@ -17857,38 +17856,38 @@
     BOLD: BOLD
   };
 
-  var _enums$STYLE_KEY$f = enums.STYLE_KEY,
-      POSITION$2 = _enums$STYLE_KEY$f.POSITION,
-      DISPLAY$4 = _enums$STYLE_KEY$f.DISPLAY,
-      FONT_WEIGHT$5 = _enums$STYLE_KEY$f.FONT_WEIGHT,
-      MARGIN_LEFT$4 = _enums$STYLE_KEY$f.MARGIN_LEFT,
-      MARGIN_TOP$2 = _enums$STYLE_KEY$f.MARGIN_TOP,
-      MARGIN_RIGHT$4 = _enums$STYLE_KEY$f.MARGIN_RIGHT,
-      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$f.MARGIN_BOTTOM,
-      PADDING_LEFT$5 = _enums$STYLE_KEY$f.PADDING_LEFT,
-      PADDING_BOTTOM$3 = _enums$STYLE_KEY$f.PADDING_BOTTOM,
-      PADDING_RIGHT$5 = _enums$STYLE_KEY$f.PADDING_RIGHT,
-      PADDING_TOP$3 = _enums$STYLE_KEY$f.PADDING_TOP,
-      BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$f.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$f.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_LEFT_WIDTH,
-      TOP$2 = _enums$STYLE_KEY$f.TOP,
-      RIGHT$2 = _enums$STYLE_KEY$f.RIGHT,
-      BOTTOM$2 = _enums$STYLE_KEY$f.BOTTOM,
-      LEFT$2 = _enums$STYLE_KEY$f.LEFT,
-      WIDTH$4 = _enums$STYLE_KEY$f.WIDTH,
-      HEIGHT$4 = _enums$STYLE_KEY$f.HEIGHT,
-      TEXT_ALIGN$3 = _enums$STYLE_KEY$f.TEXT_ALIGN,
-      FLEX_DIRECTION$2 = _enums$STYLE_KEY$f.FLEX_DIRECTION,
-      FLEX_BASIS$2 = _enums$STYLE_KEY$f.FLEX_BASIS,
-      FLEX_SHRINK$1 = _enums$STYLE_KEY$f.FLEX_SHRINK,
-      FLEX_GROW$1 = _enums$STYLE_KEY$f.FLEX_GROW,
-      ALIGN_SELF$1 = _enums$STYLE_KEY$f.ALIGN_SELF,
-      ALIGN_ITEMS$1 = _enums$STYLE_KEY$f.ALIGN_ITEMS,
-      JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$f.JUSTIFY_CONTENT,
-      Z_INDEX$3 = _enums$STYLE_KEY$f.Z_INDEX,
-      WHITE_SPACE$2 = _enums$STYLE_KEY$f.WHITE_SPACE,
+  var _enums$STYLE_KEY$e = enums.STYLE_KEY,
+      POSITION$2 = _enums$STYLE_KEY$e.POSITION,
+      DISPLAY$4 = _enums$STYLE_KEY$e.DISPLAY,
+      FONT_WEIGHT$4 = _enums$STYLE_KEY$e.FONT_WEIGHT,
+      MARGIN_LEFT$4 = _enums$STYLE_KEY$e.MARGIN_LEFT,
+      MARGIN_TOP$2 = _enums$STYLE_KEY$e.MARGIN_TOP,
+      MARGIN_RIGHT$4 = _enums$STYLE_KEY$e.MARGIN_RIGHT,
+      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$e.MARGIN_BOTTOM,
+      PADDING_LEFT$5 = _enums$STYLE_KEY$e.PADDING_LEFT,
+      PADDING_BOTTOM$3 = _enums$STYLE_KEY$e.PADDING_BOTTOM,
+      PADDING_RIGHT$5 = _enums$STYLE_KEY$e.PADDING_RIGHT,
+      PADDING_TOP$3 = _enums$STYLE_KEY$e.PADDING_TOP,
+      BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$e.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$e.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
+      TOP$2 = _enums$STYLE_KEY$e.TOP,
+      RIGHT$2 = _enums$STYLE_KEY$e.RIGHT,
+      BOTTOM$2 = _enums$STYLE_KEY$e.BOTTOM,
+      LEFT$2 = _enums$STYLE_KEY$e.LEFT,
+      WIDTH$4 = _enums$STYLE_KEY$e.WIDTH,
+      HEIGHT$4 = _enums$STYLE_KEY$e.HEIGHT,
+      TEXT_ALIGN$3 = _enums$STYLE_KEY$e.TEXT_ALIGN,
+      FLEX_DIRECTION$2 = _enums$STYLE_KEY$e.FLEX_DIRECTION,
+      FLEX_BASIS$2 = _enums$STYLE_KEY$e.FLEX_BASIS,
+      FLEX_SHRINK$1 = _enums$STYLE_KEY$e.FLEX_SHRINK,
+      FLEX_GROW$1 = _enums$STYLE_KEY$e.FLEX_GROW,
+      ALIGN_SELF$1 = _enums$STYLE_KEY$e.ALIGN_SELF,
+      ALIGN_ITEMS$1 = _enums$STYLE_KEY$e.ALIGN_ITEMS,
+      JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$e.JUSTIFY_CONTENT,
+      Z_INDEX$3 = _enums$STYLE_KEY$e.Z_INDEX,
+      WHITE_SPACE$2 = _enums$STYLE_KEY$e.WHITE_SPACE,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -18012,7 +18011,7 @@
         }
       }
 
-      if (!style[FONT_WEIGHT$5] && tag.BOLD.hasOwnProperty(tagName)) {
+      if (!style[FONT_WEIGHT$4] && tag.BOLD.hasOwnProperty(tagName)) {
         style.fontWeight = 700;
       }
 
@@ -19624,8 +19623,6 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data, isVirtual, isInline) {
-        var _this5 = this;
-
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle;
         var textAlign = computedStyle[TEXT_ALIGN$3],
@@ -19710,7 +19707,7 @@
 
 
               if (item.__isIbFull) {
-                isInlineBlock && (_this5.__isIbFull = true);
+                isInlineBlock && (isIbFull = true);
                 lineBoxManager.addItem(item);
                 x = lx;
                 y += item.outerHeight;
@@ -19804,7 +19801,7 @@
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行
 
-                if (!isInline && lineBoxManager.size - n > 0) {
+                if (!isInline && lineBoxManager.size - n > 1) {
                   isIbFull = true;
                 }
 
@@ -19858,7 +19855,7 @@
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY; // ib情况发生折行
 
-                    if (!isInline && lineBoxManager.size - n > 0) {
+                    if (!isInline && lineBoxManager.size - n > 1) {
                       isIbFull = true;
                     }
 
@@ -20430,25 +20427,25 @@
     return Dom;
   }(Xom);
 
-  var _enums$STYLE_KEY$g = enums.STYLE_KEY,
-      WIDTH$5 = _enums$STYLE_KEY$g.WIDTH,
-      HEIGHT$5 = _enums$STYLE_KEY$g.HEIGHT,
-      DISPLAY$5 = _enums$STYLE_KEY$g.DISPLAY,
-      BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
-      PADDING_TOP$4 = _enums$STYLE_KEY$g.PADDING_TOP,
-      PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
-      BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_LEFT_RADIUS,
-      BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_RIGHT_RADIUS,
-      BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_RIGHT_RADIUS,
-      BORDER_BOTTOM_LEFT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_LEFT_RADIUS,
-      VISIBILITY$3 = _enums$STYLE_KEY$g.VISIBILITY,
-      BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$g.BACKGROUND_IMAGE,
-      BACKGROUND_COLOR$2 = _enums$STYLE_KEY$g.BACKGROUND_COLOR,
-      BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
-      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$g.MIX_BLEND_MODE,
+  var _enums$STYLE_KEY$f = enums.STYLE_KEY,
+      WIDTH$5 = _enums$STYLE_KEY$f.WIDTH,
+      HEIGHT$5 = _enums$STYLE_KEY$f.HEIGHT,
+      DISPLAY$5 = _enums$STYLE_KEY$f.DISPLAY,
+      BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$f.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$f.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$f.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$f.BORDER_BOTTOM_WIDTH,
+      PADDING_TOP$4 = _enums$STYLE_KEY$f.PADDING_TOP,
+      PADDING_LEFT$6 = _enums$STYLE_KEY$f.PADDING_LEFT,
+      BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_TOP_LEFT_RADIUS,
+      BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_TOP_RIGHT_RADIUS,
+      BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_BOTTOM_RIGHT_RADIUS,
+      BORDER_BOTTOM_LEFT_RADIUS$2 = _enums$STYLE_KEY$f.BORDER_BOTTOM_LEFT_RADIUS,
+      VISIBILITY$3 = _enums$STYLE_KEY$f.VISIBILITY,
+      BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$f.BACKGROUND_IMAGE,
+      BACKGROUND_COLOR$2 = _enums$STYLE_KEY$f.BACKGROUND_COLOR,
+      BOX_SHADOW$3 = _enums$STYLE_KEY$f.BOX_SHADOW,
+      MIX_BLEND_MODE$1 = _enums$STYLE_KEY$f.MIX_BLEND_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -21001,32 +20998,32 @@
     return Defs;
   }();
 
-  var _enums$STYLE_KEY$h = enums.STYLE_KEY,
-      DISPLAY$6 = _enums$STYLE_KEY$h.DISPLAY,
-      MARGIN_TOP$3 = _enums$STYLE_KEY$h.MARGIN_TOP,
-      MARGIN_RIGHT$5 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
-      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
-      MARGIN_LEFT$5 = _enums$STYLE_KEY$h.MARGIN_LEFT,
-      PADDING_TOP$5 = _enums$STYLE_KEY$h.PADDING_TOP,
-      PADDING_RIGHT$6 = _enums$STYLE_KEY$h.PADDING_RIGHT,
-      PADDING_BOTTOM$4 = _enums$STYLE_KEY$h.PADDING_BOTTOM,
-      PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
-      WIDTH$6 = _enums$STYLE_KEY$h.WIDTH,
-      HEIGHT$6 = _enums$STYLE_KEY$h.HEIGHT,
-      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$h.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$h.BORDER_LEFT_WIDTH,
-      FILL$1 = _enums$STYLE_KEY$h.FILL,
-      STROKE$1 = _enums$STYLE_KEY$h.STROKE,
-      STROKE_MITERLIMIT = _enums$STYLE_KEY$h.STROKE_MITERLIMIT,
-      STROKE_WIDTH$1 = _enums$STYLE_KEY$h.STROKE_WIDTH,
-      STROKE_LINECAP = _enums$STYLE_KEY$h.STROKE_LINECAP,
-      STROKE_LINEJOIN = _enums$STYLE_KEY$h.STROKE_LINEJOIN,
-      STROKE_DASHARRAY$1 = _enums$STYLE_KEY$h.STROKE_DASHARRAY,
-      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$h.STROKE_DASHARRAY_STR,
-      FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
-      VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
+  var _enums$STYLE_KEY$g = enums.STYLE_KEY,
+      DISPLAY$6 = _enums$STYLE_KEY$g.DISPLAY,
+      MARGIN_TOP$3 = _enums$STYLE_KEY$g.MARGIN_TOP,
+      MARGIN_RIGHT$5 = _enums$STYLE_KEY$g.MARGIN_RIGHT,
+      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
+      MARGIN_LEFT$5 = _enums$STYLE_KEY$g.MARGIN_LEFT,
+      PADDING_TOP$5 = _enums$STYLE_KEY$g.PADDING_TOP,
+      PADDING_RIGHT$6 = _enums$STYLE_KEY$g.PADDING_RIGHT,
+      PADDING_BOTTOM$4 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
+      PADDING_LEFT$7 = _enums$STYLE_KEY$g.PADDING_LEFT,
+      WIDTH$6 = _enums$STYLE_KEY$g.WIDTH,
+      HEIGHT$6 = _enums$STYLE_KEY$g.HEIGHT,
+      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
+      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
+      FILL$1 = _enums$STYLE_KEY$g.FILL,
+      STROKE$1 = _enums$STYLE_KEY$g.STROKE,
+      STROKE_MITERLIMIT = _enums$STYLE_KEY$g.STROKE_MITERLIMIT,
+      STROKE_WIDTH$1 = _enums$STYLE_KEY$g.STROKE_WIDTH,
+      STROKE_LINECAP = _enums$STYLE_KEY$g.STROKE_LINECAP,
+      STROKE_LINEJOIN = _enums$STYLE_KEY$g.STROKE_LINEJOIN,
+      STROKE_DASHARRAY$1 = _enums$STYLE_KEY$g.STROKE_DASHARRAY,
+      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$g.STROKE_DASHARRAY_STR,
+      FILL_RULE = _enums$STYLE_KEY$g.FILL_RULE,
+      VISIBILITY$4 = _enums$STYLE_KEY$g.VISIBILITY,
       _enums$NODE_KEY$5 = enums.NODE_KEY,
       NODE_CACHE_PROPS = _enums$NODE_KEY$5.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$5.NODE_CURRENT_PROPS,
@@ -23150,17 +23147,17 @@
     return Controller;
   }();
 
-  var _enums$STYLE_KEY$i = enums.STYLE_KEY,
-      POSITION$3 = _enums$STYLE_KEY$i.POSITION,
-      DISPLAY$7 = _enums$STYLE_KEY$i.DISPLAY,
-      OPACITY$5 = _enums$STYLE_KEY$i.OPACITY,
-      VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
-      FILTER$5 = _enums$STYLE_KEY$i.FILTER,
-      OVERFLOW$2 = _enums$STYLE_KEY$i.OVERFLOW,
-      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$i.MIX_BLEND_MODE,
-      FILL$2 = _enums$STYLE_KEY$i.FILL,
-      TRANSFORM$5 = _enums$STYLE_KEY$i.TRANSFORM,
-      TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
+  var _enums$STYLE_KEY$h = enums.STYLE_KEY,
+      POSITION$3 = _enums$STYLE_KEY$h.POSITION,
+      DISPLAY$7 = _enums$STYLE_KEY$h.DISPLAY,
+      OPACITY$5 = _enums$STYLE_KEY$h.OPACITY,
+      VISIBILITY$5 = _enums$STYLE_KEY$h.VISIBILITY,
+      FILTER$5 = _enums$STYLE_KEY$h.FILTER,
+      OVERFLOW$2 = _enums$STYLE_KEY$h.OVERFLOW,
+      MIX_BLEND_MODE$3 = _enums$STYLE_KEY$h.MIX_BLEND_MODE,
+      FILL$2 = _enums$STYLE_KEY$h.FILL,
+      TRANSFORM$5 = _enums$STYLE_KEY$h.TRANSFORM,
+      TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$h.TRANSFORM_ORIGIN,
       _enums$NODE_KEY$7 = enums.NODE_KEY,
       NODE_CACHE$4 = _enums$NODE_KEY$7.NODE_CACHE,
       NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
@@ -25088,12 +25085,12 @@
     renderSvg: renderSvg
   };
 
-  var _enums$STYLE_KEY$j = enums.STYLE_KEY,
-      DISPLAY$8 = _enums$STYLE_KEY$j.DISPLAY,
-      TOP$3 = _enums$STYLE_KEY$j.TOP,
-      BOTTOM$3 = _enums$STYLE_KEY$j.BOTTOM,
-      POSITION$4 = _enums$STYLE_KEY$j.POSITION,
-      HEIGHT$7 = _enums$STYLE_KEY$j.HEIGHT;
+  var _enums$STYLE_KEY$i = enums.STYLE_KEY,
+      DISPLAY$8 = _enums$STYLE_KEY$i.DISPLAY,
+      TOP$3 = _enums$STYLE_KEY$i.TOP,
+      BOTTOM$3 = _enums$STYLE_KEY$i.BOTTOM,
+      POSITION$4 = _enums$STYLE_KEY$i.POSITION,
+      HEIGHT$7 = _enums$STYLE_KEY$i.HEIGHT;
   var AUTO$7 = unit.AUTO,
       PX$a = unit.PX,
       PERCENT$9 = unit.PERCENT;
@@ -25236,27 +25233,27 @@
   };
 
   var _DIRECTION_HASH;
-  var _enums$STYLE_KEY$k = enums.STYLE_KEY,
-      TOP$4 = _enums$STYLE_KEY$k.TOP,
-      RIGHT$3 = _enums$STYLE_KEY$k.RIGHT,
-      BOTTOM$4 = _enums$STYLE_KEY$k.BOTTOM,
-      LEFT$3 = _enums$STYLE_KEY$k.LEFT,
-      POSITION$5 = _enums$STYLE_KEY$k.POSITION,
-      DISPLAY$9 = _enums$STYLE_KEY$k.DISPLAY,
-      VISIBILITY$6 = _enums$STYLE_KEY$k.VISIBILITY,
-      COLOR$5 = _enums$STYLE_KEY$k.COLOR,
-      WIDTH$7 = _enums$STYLE_KEY$k.WIDTH,
-      HEIGHT$8 = _enums$STYLE_KEY$k.HEIGHT,
-      Z_INDEX$4 = _enums$STYLE_KEY$k.Z_INDEX,
-      MARGIN_TOP$4 = _enums$STYLE_KEY$k.MARGIN_TOP,
-      MARGIN_LEFT$6 = _enums$STYLE_KEY$k.MARGIN_LEFT,
-      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$k.MARGIN_BOTTOM,
-      PADDING_TOP$6 = _enums$STYLE_KEY$k.PADDING_TOP,
-      PADDING_LEFT$8 = _enums$STYLE_KEY$k.PADDING_LEFT,
-      PADDING_BOTTOM$5 = _enums$STYLE_KEY$k.PADDING_BOTTOM,
-      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$k.BORDER_TOP_WIDTH,
-      BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$k.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
+  var _enums$STYLE_KEY$j = enums.STYLE_KEY,
+      TOP$4 = _enums$STYLE_KEY$j.TOP,
+      RIGHT$3 = _enums$STYLE_KEY$j.RIGHT,
+      BOTTOM$4 = _enums$STYLE_KEY$j.BOTTOM,
+      LEFT$3 = _enums$STYLE_KEY$j.LEFT,
+      POSITION$5 = _enums$STYLE_KEY$j.POSITION,
+      DISPLAY$9 = _enums$STYLE_KEY$j.DISPLAY,
+      VISIBILITY$6 = _enums$STYLE_KEY$j.VISIBILITY,
+      COLOR$5 = _enums$STYLE_KEY$j.COLOR,
+      WIDTH$7 = _enums$STYLE_KEY$j.WIDTH,
+      HEIGHT$8 = _enums$STYLE_KEY$j.HEIGHT,
+      Z_INDEX$4 = _enums$STYLE_KEY$j.Z_INDEX,
+      MARGIN_TOP$4 = _enums$STYLE_KEY$j.MARGIN_TOP,
+      MARGIN_LEFT$6 = _enums$STYLE_KEY$j.MARGIN_LEFT,
+      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
+      PADDING_TOP$6 = _enums$STYLE_KEY$j.PADDING_TOP,
+      PADDING_LEFT$8 = _enums$STYLE_KEY$j.PADDING_LEFT,
+      PADDING_BOTTOM$5 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
+      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
+      BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
       _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
       UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -27500,10 +27497,10 @@
     return Root;
   }(Dom$1);
 
-  var _enums$STYLE_KEY$l = enums.STYLE_KEY,
-      STROKE_WIDTH$2 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-      BOX_SHADOW$4 = _enums$STYLE_KEY$l.BOX_SHADOW,
-      FILTER$7 = _enums$STYLE_KEY$l.FILTER;
+  var _enums$STYLE_KEY$k = enums.STYLE_KEY,
+      STROKE_WIDTH$2 = _enums$STYLE_KEY$k.STROKE_WIDTH,
+      BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW,
+      FILTER$7 = _enums$STYLE_KEY$k.FILTER;
   var isNil$9 = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
@@ -28137,10 +28134,10 @@
     return Line;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$m = enums.STYLE_KEY,
-      STROKE_WIDTH$3 = _enums$STYLE_KEY$m.STROKE_WIDTH,
-      BOX_SHADOW$5 = _enums$STYLE_KEY$m.BOX_SHADOW,
-      FILTER$8 = _enums$STYLE_KEY$m.FILTER;
+  var _enums$STYLE_KEY$l = enums.STYLE_KEY,
+      STROKE_WIDTH$3 = _enums$STYLE_KEY$l.STROKE_WIDTH,
+      BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW,
+      FILTER$8 = _enums$STYLE_KEY$l.FILTER;
   var isNil$a = util.isNil;
 
   function concatPointAndControl(point, control) {
@@ -28727,10 +28724,10 @@
     return Polygon;
   }(Polyline);
 
-  var _enums$STYLE_KEY$n = enums.STYLE_KEY,
-      STROKE_WIDTH$4 = _enums$STYLE_KEY$n.STROKE_WIDTH,
-      BOX_SHADOW$6 = _enums$STYLE_KEY$n.BOX_SHADOW,
-      FILTER$9 = _enums$STYLE_KEY$n.FILTER;
+  var _enums$STYLE_KEY$m = enums.STYLE_KEY,
+      STROKE_WIDTH$4 = _enums$STYLE_KEY$m.STROKE_WIDTH,
+      BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW,
+      FILTER$9 = _enums$STYLE_KEY$m.FILTER;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
 
@@ -29163,10 +29160,10 @@
     return Sector;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$o = enums.STYLE_KEY,
-      STROKE_WIDTH$5 = _enums$STYLE_KEY$o.STROKE_WIDTH,
-      BOX_SHADOW$7 = _enums$STYLE_KEY$o.BOX_SHADOW,
-      FILTER$a = _enums$STYLE_KEY$o.FILTER;
+  var _enums$STYLE_KEY$n = enums.STYLE_KEY,
+      STROKE_WIDTH$5 = _enums$STYLE_KEY$n.STROKE_WIDTH,
+      BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW,
+      FILTER$a = _enums$STYLE_KEY$n.FILTER;
   var isNil$c = util.isNil;
 
   function genVertex(x, y, width, height) {
@@ -29347,10 +29344,10 @@
     return Rect;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$p = enums.STYLE_KEY,
-      STROKE_WIDTH$6 = _enums$STYLE_KEY$p.STROKE_WIDTH,
-      BOX_SHADOW$8 = _enums$STYLE_KEY$p.BOX_SHADOW,
-      FILTER$b = _enums$STYLE_KEY$p.FILTER;
+  var _enums$STYLE_KEY$o = enums.STYLE_KEY,
+      STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
+      BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
+      FILTER$b = _enums$STYLE_KEY$o.FILTER;
   var isNil$d = util.isNil;
 
   function getR$2(v) {
@@ -29497,10 +29494,10 @@
     return Circle;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$q = enums.STYLE_KEY,
-      STROKE_WIDTH$7 = _enums$STYLE_KEY$q.STROKE_WIDTH,
-      BOX_SHADOW$9 = _enums$STYLE_KEY$q.BOX_SHADOW,
-      FILTER$c = _enums$STYLE_KEY$q.FILTER;
+  var _enums$STYLE_KEY$p = enums.STYLE_KEY,
+      STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
+      BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
+      FILTER$c = _enums$STYLE_KEY$p.FILTER;
   var isNil$e = util.isNil;
 
   function getR$3(v) {

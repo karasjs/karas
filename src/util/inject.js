@@ -1,14 +1,8 @@
 import util from './util';
 import debug from './debug';
-import enums from './enums';
 import textCache from '../node/textCache';
 import font from '../style/font';
 
-const { STYLE_KEY: {
-  FONT_SIZE,
-  FONT_FAMILY,
-  FONT_WEIGHT,
-} } = enums;
 const SPF = 1000 / 60;
 
 const CANVAS = {};

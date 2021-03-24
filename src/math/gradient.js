@@ -11,6 +11,7 @@
  * @param {number} width - 图片宽度
  * @param {number} height - 图片高度
  * @param {Array<stop>} stop - 渐变声明列表
+ * @param data - canvas的imgData.data
  * @returns {Array<number>} 图像像素数组，每4个元素（rgba）构成一个像素点
  * @example
      // 矩形宽度为200*200，此时坐标为0～199，渐变中心为中点时，应传入99.5，可消除零点问题
@@ -36,7 +37,8 @@ function getConicGradientImage(
   originY,
   width,
   height,
-  stop
+  stop,
+  data
 ) {
   if(stop.length < 2) {
     throw new Error(
@@ -96,7 +98,7 @@ function getConicGradientImage(
     color: item[0],
     angle: item[1] * Math.PI * 2,
   }));
-  let res = [];
+
   for(let y = 0; y < height; y++) {
     for(let x = 0; x < width; x++) {
       // step 1. 找到当前点坐标相对 (originX, originY) 的角度
@@ -108,8 +110,7 @@ function getConicGradientImage(
       let start = increasingList[j - 1];
       let end = increasingList[j];
       if(!(start && end)) {
-        // step 2-1. 不在渐变区间里，用透明色填充
-        res.push(0, 0, 0, 0);
+        // step 2-1. 不在渐变区间里
         continue;
       }
       // step 3. 计算色值并填充
@@ -117,10 +118,14 @@ function getConicGradientImage(
       let color = end.color.map(
         (v, idx) => factor * (v - start.color[idx]) + start.color[idx]
       );
-      res.push(color[0], color[1], color[2], Math.min(255, color[3] * 255));
+      let i = (x + y * width) * 4;
+      data[i] = color[0];
+      data[i+1] = color[1];
+      data[i+2] = color[2];
+      data[i+3] = Math.min(255, color[3] * 255);
     }
   }
-  return res;
+  return data;
 }
 
 export default {

@@ -1665,7 +1665,7 @@ class Dom extends Xom {
           }, isVirtual);
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
-            isInlineBlock && (this.__isIbFull = true);
+            isInlineBlock && (isIbFull = true);
             lineBoxManager.addItem(item);
             x = lx;
             y += item.outerHeight;
@@ -1756,7 +1756,7 @@ class Dom extends Xom {
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // ib情况发生折行
-          if(!isInline && (lineBoxManager.size - n) > 0) {
+          if(!isInline && (lineBoxManager.size - n) > 1) {
             isIbFull = true;
           }
           cw = item.width;
@@ -1805,7 +1805,7 @@ class Dom extends Xom {
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
-            if(!isInline && (lineBoxManager.size - n) > 0) {
+            if(!isInline && (lineBoxManager.size - n) > 1) {
               isIbFull = true;
             }
             cw = 0;

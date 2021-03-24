@@ -626,12 +626,9 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
     ];
   }
   if(renderMode === mode.CANVAS) {
-    let data = gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop);
     let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
     let imgData = offscreen.ctx.getImageData(0,0, w, h);
-    for(let i = 0; i < imgData.data.length; i++) {
-      imgData.data[i] = data[i];
-    }
+    gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
     offscreen.ctx.putImageData(imgData, 0, 0);
     ctx.save();
     ctx.beginPath();

@@ -8,7 +8,7 @@ let o = karas.render(
           position: 'absolute',
           left: 20,
           background: '#F00',
-        }}>1111111111111111</span>
+        }}>2222222222222</span>
     </div>
   </svg>,
   '#test'

@@ -6,27 +6,30 @@
 
 /**
  * 获取渐变图像像素数组
- * @param {number} originX - 渐变中心x坐标
+ * @param {number} originX - 渐变中心x坐标（相对图片左上角(0,0)的值，可在图片外，下同）
  * @param {number} originY - 渐变中心y坐标
  * @param {number} width - 图片宽度
  * @param {number} height - 图片高度
  * @param {Array<stop>} stop - 渐变声明列表
  * @returns {Array<number>} 图像像素数组，每4个元素（rgba）构成一个像素点
- * @example let w = 200;
-            let h = 200;
-            let ctx = document.getElementById('example').getContext('2d');
-            let imgData = ctx.getImageData(0,0, w, h);
-            let data = getConicGradientImage(99.5, 99.5, w, h, [{
-                color: [0,0,0,255],
-                angle: 0,
-              } ,{
-                color: [255,0,0,255],
-                angle: 2 * Math.PI,
-              }]);
-            for (let i = 0; i < imgData.data.length; i++) {
-             imgData.data[i] = data[i];
-            }
-            ctx.putImageData(imgData, 0, 0);
+ * @example
+     // 矩形宽度为200*200，此时坐标为0～199，渐变中心为中点时，应传入99.5，可消除零点问题
+     // 若渐变中心在某一整数轴上，就会引入零点问题，此时零点取y轴正半轴的色值，要消除这个问题，可以对渐变中心增加一个偏移量，使其不为整数
+     let w = 200;
+     let h = 200;
+     let ctx = document.getElementById('example').getContext('2d');
+     let imgData = ctx.getImageData(0,0, w, h);
+     let data = getConicGradientImage(99.5, 99.5, w, h, [{
+       color: [0,0,0,255],
+       angle: 0,
+     } ,{
+       color: [255,0,0,255],
+       angle: 2 * Math.PI,
+     }]);
+     for (let i = 0; i < imgData.data.length; i++) {
+       imgData.data[i] = data[i];
+     }
+     ctx.putImageData(imgData, 0, 0);
  */
 function getConicGradientImage(
   originX,
@@ -40,6 +43,9 @@ function getConicGradientImage(
       'Conic gradient should recieve at least 2 gradient statements (start line and end line).'
     );
   }
+
+  width = Math.floor(width);
+  height = Math.floor(height);
 
   /**
    * 根据坐标获取角度

@@ -631,10 +631,10 @@
         // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
         lgr: 0.03271484375,
         // line-gap ratio，67/2048，默认0
-        // 个别字符误差，https://github.com/karasjs/karas/issues/145
+        // 个别字符误差，初次之外误差还有根据经验得的比例系数，https://github.com/karasjs/karas/issues/145
         padding: {
-          1: true,
-          f: true
+          1: 1,
+          f: 0.9
         }
       },
       verdana: {
@@ -5179,6 +5179,21 @@
         document.body.removeChild(div);
       }
     },
+    measureTextSync: function measureTextSync(key, ff, fs, fw, _char3) {
+      var inline = "position:absolute;font-family:".concat(ff, ";font-size:").concat(fs, "px;font-weight:").concat(fw);
+      var html = "<span style=\"".concat(inline, "\">").concat(_char3, "</span><span style=\"").concat(inline, "\">").concat(_char3).concat(_char3, "</span>");
+      var div = document.createElement('div');
+      div.style.position = 'absolute';
+      div.style.left = '99999px';
+      div.style.top = '-99999px';
+      div.style.visibility = 'hidden';
+      document.body.appendChild(div);
+      div.innerHTML = html;
+      var cns = div.childNodes;
+      var w1 = parseFloat(window.getComputedStyle(cns[0], null).width);
+      var w2 = parseFloat(window.getComputedStyle(cns[1], null).width);
+      return w1 * 2 - w2;
+    },
     IMG: IMG,
     INIT: INIT,
     LOADED: LOADED,
@@ -8332,7 +8347,6 @@
       FONT_WEIGHT$2 = _enums$STYLE_KEY$4.FONT_WEIGHT,
       COLOR$2 = _enums$STYLE_KEY$4.COLOR,
       VISIBILITY$1 = _enums$STYLE_KEY$4.VISIBILITY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$4.TEXT_ALIGN,
       LETTER_SPACING$2 = _enums$STYLE_KEY$4.LETTER_SPACING,
       OVERFLOW = _enums$STYLE_KEY$4.OVERFLOW,
       WHITE_SPACE$1 = _enums$STYLE_KEY$4.WHITE_SPACE,
@@ -8383,6 +8397,7 @@
           }
         }
 
+        this.__ff = ff;
         var fs = computedStyle[FONT_SIZE$2];
         var fw = computedStyle[FONT_WEIGHT$2];
         var key = this.__key = computedStyle[FONT_SIZE$2] + ',' + ff + ',' + fw;
@@ -8491,7 +8506,10 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             textBoxes = this.textBoxes,
-            charWidthList = this.charWidthList; // 空内容w/h都为0可以提前跳出
+            charWidthList = this.charWidthList,
+            root = this.root,
+            __ff = this.__ff,
+            __key = this.__key; // 空内容w/h都为0可以提前跳出
 
         if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || !content) {
           return;
@@ -8512,7 +8530,13 @@
             textOverflow = currentStyle[TEXT_OVERFLOW$1];
         var lineHeight = computedStyle[LINE_HEIGHT$1],
             letterSpacing = computedStyle[LETTER_SPACING$2],
-            whiteSpace = computedStyle[WHITE_SPACE$1]; // 不换行特殊对待，同时考虑overflow和textOverflow
+            whiteSpace = computedStyle[WHITE_SPACE$1],
+            fontSize = computedStyle[FONT_SIZE$2],
+            fontWeight = computedStyle[FONT_WEIGHT$2]; // 特殊字体中特殊字符连续时需减少一定的padding量
+
+        var padding = o.info[__ff].padding;
+        var needReduce = !!padding;
+        var lastChar; // 不换行特殊对待，同时考虑overflow和textOverflow
 
         if (whiteSpace === 'nowrap') {
           count = 0; // 不换行时，首行统计从0开始
@@ -8531,7 +8555,7 @@
           } // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
 
 
-          if (isTextOverflow && textOverflow === 'ellipsis' && (display === 'block' || display === 'inlineBlock')) {
+          if (isTextOverflow && textOverflow === 'ellipsis' && (display === 'block' || display === 'inlineBlock' || display === 'flex')) {
             var ew = textCache.charWidth[this.__key][ELLIPSIS];
 
             for (; i > 0; i--) {
@@ -8573,7 +8597,43 @@
             var lineCount = 0;
 
             while (i < length) {
-              count += charWidthList[i] + letterSpacing;
+              count += charWidthList[i] + letterSpacing; // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
+
+              if (needReduce) {
+                var _char2 = content[i];
+
+                if (_char2 === lastChar && padding[_char2]) {
+                  var hasCache = void 0,
+                      p = textCache.padding[__key] = textCache.padding[__key] || {};
+
+                  if (textCache.padding.hasOwnProperty(__key)) {
+                    if (p.hasOwnProperty(_char2)) {
+                      hasCache = true;
+                      count -= p[_char2];
+                    }
+                  }
+
+                  if (!hasCache) {
+                    var n = 0;
+
+                    if (root.renderMode === mode.CANVAS) {
+                      root.ctx.font = css.setFontStyle(computedStyle);
+                      var w1 = root.ctx.measureText(_char2).width;
+                      var w2 = root.ctx.measureText(_char2 + _char2).width;
+                      n = w1 * 2 - w2;
+                      n *= padding[_char2];
+                    } else if (root.renderMode === mode.SVG) {
+                      n = inject.measureTextSync(__key, __ff, fontSize, fontWeight, _char2);
+                      n *= padding[_char2];
+                    }
+
+                    count -= n;
+                    p[_char2] = n;
+                  }
+                }
+
+                lastChar = _char2;
+              }
 
               if (count === w) {
                 var _textBox3 = void 0; // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
@@ -8857,12 +8917,12 @@
     }, {
       key: "baseLine",
       get: function get() {
-        return this.__baseLine; //   let { textBoxes } = this;
-        //   if(!textBoxes.length) {
-        //     return 0;
-        //   }
-        //   let last = textBoxes[textBoxes.length - 1];
-        //   return last.y - this.y + last.baseLine;
+        return this.__baseLine;
+      }
+    }, {
+      key: "root",
+      get: function get() {
+        return this.parent.root;
       }
     }, {
       key: "currentStyle",
@@ -10422,7 +10482,7 @@
       FONT_WEIGHT$3 = _enums$STYLE_KEY$8.FONT_WEIGHT,
       FONT_STYLE$2 = _enums$STYLE_KEY$8.FONT_STYLE,
       FONT_FAMILY$3 = _enums$STYLE_KEY$8.FONT_FAMILY,
-      TEXT_ALIGN$2 = _enums$STYLE_KEY$8.TEXT_ALIGN,
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$8.TEXT_ALIGN,
       MATRIX$2 = _enums$STYLE_KEY$8.MATRIX,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
@@ -10522,7 +10582,7 @@
             style[k] = [computedStyle[k], PX$5];
           } else if (k === FONT_WEIGHT$3) {
             style[k] = [computedStyle[k], NUMBER$2];
-          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$2) {
+          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$1) {
             style[k] = [computedStyle[k], STRING$2];
           }
         }
@@ -17914,7 +17974,7 @@
       LEFT$2 = _enums$STYLE_KEY$e.LEFT,
       WIDTH$4 = _enums$STYLE_KEY$e.WIDTH,
       HEIGHT$4 = _enums$STYLE_KEY$e.HEIGHT,
-      TEXT_ALIGN$3 = _enums$STYLE_KEY$e.TEXT_ALIGN,
+      TEXT_ALIGN$2 = _enums$STYLE_KEY$e.TEXT_ALIGN,
       FLEX_DIRECTION$2 = _enums$STYLE_KEY$e.FLEX_DIRECTION,
       FLEX_BASIS$2 = _enums$STYLE_KEY$e.FLEX_BASIS,
       FLEX_SHRINK$1 = _enums$STYLE_KEY$e.FLEX_SHRINK,
@@ -18655,7 +18715,7 @@
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-        var textAlign = computedStyle[TEXT_ALIGN$3];
+        var textAlign = computedStyle[TEXT_ALIGN$2];
 
         var _this$__preLayout = this.__preLayout(data),
             fixedWidth = _this$__preLayout.fixedWidth,
@@ -19663,7 +19723,7 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var width = currentStyle[WIDTH$4];
-        var textAlign = computedStyle[TEXT_ALIGN$3],
+        var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2];
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),

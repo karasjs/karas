@@ -139,6 +139,21 @@ let inject = {
       document.body.removeChild(div);
     }
   },
+  measureTextSync(key, ff, fs, fw, char) {
+    let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
+    let html = `<span style="${inline}">${char}</span><span style="${inline}">${char}${char}</span>`;
+    let div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = '99999px';
+    div.style.top = '-99999px';
+    div.style.visibility = 'hidden';
+    document.body.appendChild(div);
+    div.innerHTML = html;
+    let cns = div.childNodes;
+    let w1 = parseFloat(window.getComputedStyle(cns[0], null).width);
+    let w2 = parseFloat(window.getComputedStyle(cns[1], null).width);
+    return w1 * 2 - w2;
+  },
   IMG,
   INIT,
   LOADED,

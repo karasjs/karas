@@ -8,10 +8,10 @@ let o = {
       blr: 0.9052734375, // base-line ratio，1854/2048
       // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
       lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
-      // 个别字符误差，https://github.com/karasjs/karas/issues/145
+      // 个别字符误差，初次之外误差还有根据经验得的比例系数，https://github.com/karasjs/karas/issues/145
       padding: {
-        1: true,
-        f: true,
+        1: 1,
+        f: 0.9,
       },
     },
     verdana: {

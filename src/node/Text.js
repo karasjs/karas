@@ -17,7 +17,6 @@ const {
     FONT_WEIGHT,
     COLOR,
     VISIBILITY,
-    TEXT_ALIGN,
     LETTER_SPACING,
     OVERFLOW,
     WHITE_SPACE,
@@ -55,6 +54,7 @@ class Text extends Node {
         break;
       }
     }
+    this.__ff = ff;
     let fs = computedStyle[FONT_SIZE];
     let fw = computedStyle[FONT_WEIGHT];
     let key = this.__key = computedStyle[FONT_SIZE] + ',' + ff + ',' + fw;
@@ -142,7 +142,7 @@ class Text extends Node {
     let { x, y, w, lx = x, lineBoxManager, endSpace } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
-    let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList } = this;
+    let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
     // 空内容w/h都为0可以提前跳出
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content) {
       return;
@@ -165,7 +165,13 @@ class Text extends Node {
       [LINE_HEIGHT]: lineHeight,
       [LETTER_SPACING]: letterSpacing,
       [WHITE_SPACE]: whiteSpace,
+      [FONT_SIZE]: fontSize,
+      [FONT_WEIGHT]: fontWeight,
     } = computedStyle;
+    // 特殊字体中特殊字符连续时需减少一定的padding量
+    let padding = font.info[__ff].padding;
+    let needReduce = !!padding;
+    let lastChar;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
       count = 0; // 不换行时，首行统计从0开始
@@ -181,7 +187,7 @@ class Text extends Node {
       }
       // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
       if(isTextOverflow && textOverflow === 'ellipsis'
-        && (display === 'block' || display === 'inlineBlock')) {
+        && (display === 'block' || display === 'inlineBlock' || display === 'flex')) {
         let ew = textCache.charWidth[this.__key][ELLIPSIS];
         for(; i > 0; i--) {
           count -= charWidthList[i - 1];
@@ -219,6 +225,36 @@ class Text extends Node {
       let lineCount = 0;
       while(i < length) {
         count += charWidthList[i] + letterSpacing;
+        // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
+        if(needReduce) {
+          let char = content[i];
+          if(char === lastChar && padding[char]) {
+            let hasCache, p = textCache.padding[__key] = textCache.padding[__key] || {};
+            if(textCache.padding.hasOwnProperty(__key)) {
+              if(p.hasOwnProperty(char)) {
+                hasCache = true;
+                count -= p[char];
+              }
+            }
+            if(!hasCache) {
+              let n = 0;
+              if(root.renderMode === mode.CANVAS) {
+                root.ctx.font = css.setFontStyle(computedStyle);
+                let w1 = root.ctx.measureText(char).width;
+                let w2 = root.ctx.measureText(char + char).width;
+                n = w1 * 2 - w2;
+                n *= padding[char];
+              }
+              else if(root.renderMode === mode.SVG) {
+                n = inject.measureTextSync(__key, __ff, fontSize, fontWeight, char);
+                n *= padding[char];
+              }
+              count -= n;
+              p[char] = n;
+            }
+          }
+          lastChar = char;
+        }
         if(count === w) {
           let textBox;
           // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
@@ -453,12 +489,10 @@ class Text extends Node {
 
   get baseLine() {
     return this.__baseLine;
-  //   let { textBoxes } = this;
-  //   if(!textBoxes.length) {
-  //     return 0;
-  //   }
-  //   let last = textBoxes[textBoxes.length - 1];
-  //   return last.y - this.y + last.baseLine;
+  }
+
+  get root() {
+    return this.parent.root;
   }
 
   get currentStyle() {

@@ -1891,7 +1891,7 @@ class Dom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
     let baseLine = css.getBaseLine(computedStyle);
-    // x/clientX/offsetX
+    // x/clientX/offsetX/outerX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
     let length = contentBoxList.length;
     let lastLineBox, diff = 0;
@@ -1901,10 +1901,10 @@ class Dom extends Xom {
         lastLineBox = item.parentLineBox;
         diff = lastLineBox.baseLine - baseLine;
       }
-      // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb
+      // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb，中间的无需考虑嵌套inline的mpb
       if(i) {
         minX = Math.min(minX, item.x);
-        maxY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
+        maxY = maxCX = maxOY = maxFY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
         minCX = Math.min(minCX, item.x);
         minCY = Math.min(minCY, item.y);
         minFX = Math.min(minFX, item.x);
@@ -1912,10 +1912,10 @@ class Dom extends Xom {
         minOX = Math.min(minOX, item.x);
         minOY = Math.min(minOY, item.y);
         if(i === length - 1) {
-          maxX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
+          maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
         }
         else {
-          maxX = Math.max(maxX, item.x + item.outerWidth);
+          maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
         }
       }
       // 第一个初始化

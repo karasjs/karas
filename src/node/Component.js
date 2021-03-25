@@ -135,13 +135,8 @@ class Component extends Event {
         }
       });
     }
-    else if(sr instanceof Component) {
+    else if(!(sr instanceof Component)) {
       // 本身build是递归的，子cp已经初始化了
-      inject.warn('Component render() return a component: '
-        + this.tagName + ' -> ' + sr.tagName
-        + ', should not inherit style/event');
-    }
-    else {
       throw new Error('Component render() must return a dom/text: ' + this);
     }
     // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归

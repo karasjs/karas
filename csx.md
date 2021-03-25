@@ -28,9 +28,10 @@
   * static 默认
   * absolute
   * relative
-* display
+* display `强制开启bfc`
   * block
-  * inline 等同于inline-block
+  * inline
+  * inlineBlock
   * none
 * top/right/bottom/left
   * auto 默认
@@ -62,22 +63,22 @@
   * row 默认
   * column
 * justifyContent
-  * flex-start 默认
-  * flex-end
-  * space-bewteen
-  * space-around
+  * flexStart 默认
+  * flexEnd
+  * spaceBetween
+  * spaceAround
   * center
 * alignItems
   * stretch 默认
   * center
-  * flex-start
-  * flex-end
+  * flexStart
+  * flexEnd
 * alignSelf
   * auto 默认
   * stretch
   * center
-  * flex-start
-  * flex-end
+  * flexStart
+  * flexEnd
 * fontSize
   * inherit 默认，根元素为16px
   * px
@@ -118,11 +119,11 @@
 * backgroundImage
   * none 默认，可以是数组形式设置多个
   * url() 图片
-  * linear-gradient
-    * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限，color-stop为css格式
-  * radial-gradient
-    * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形，color-stop为css格式
-  * conic-gradient
+  * linearGradient
+    * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限，color-stop为css格式
+  * radialGradient
+    * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形，color-stop为css格式
+  * conicGradient
 * backgroundPositionX
   * 0 默认，可以是数组形式设置多个
   * px
@@ -133,18 +134,18 @@
   * %
   * contain/cover
 * backgroundRepeat
-  * no-repeat 默认，可以是数组形式设置多个
-  * repeat-x
-  * repeat-y
+  * noRepeat 默认，可以是数组形式设置多个
+  * repeatX
+  * repeatY
 * backgroundSize
   * auto 默认，可以是数组形式设置多个
   * px
   * %
   * contain/cover
 * backgroundClip
-  * border-box 默认
-  * padding-box
-  * content-box
+  * borderBox 默认
+  * paddingBox
+  * contentBox
 * borderTopWidth/borderRightWidth/borderBottomWidth/borderLeftWidth
   * 0 默认
   * px
@@ -216,20 +217,20 @@
 * fill
   * transparent 默认，可以是数组形式设置多个
   * #rgb/rgb/rgba
-  * linear-gradient
-    * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
-  * radial-gradient
-    * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
-  * conic-gradient
+  * linearGradient
+    * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
+  * radialGradient
+    * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+  * conicGradient
 * stroke
   * #000 默认，可以是数组形式设置多个
   * transparent
   * #rgb/rgb/rgba
-  * linear-gradient
-    * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
-  * radial-gradient
-    * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
-  * conic-gradient
+  * linearGradient
+    * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
+  * radialGradient
+    * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+  * conicGradient
 * strokeWidth
   * 1 默认，可以是数组形式设置多个
   * px
@@ -292,15 +293,15 @@
 填充颜色
 * stroke: Color
 描边颜色
-* stroke-width: Number
+* strokeWidth: Number
 描边粗细
-* stroke-dasharray: Array<Number>
+* strokeDasharray: Array<Number>
 描边虚线
-* stroke-linecap: String
+* strokeLinecap: String
 描边样式
-* stroke-linejoin: String
+* strokeLinejoin: String
 描边转角
-* stroke-miterlimit: Number
+* strokeMiterlimit: Number
 描边斜切比率
 ## 共有属性
 * mask: Boolean

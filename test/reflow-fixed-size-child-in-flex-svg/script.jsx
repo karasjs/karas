@@ -3,7 +3,7 @@ let o = karas.render(
     <div style={{display:'flex',padding:10,background:'#00F'}}>
       <div style={{padding:10,background:'#F00',flex:'auto',width:100,height:100}}>
         <div style={{padding:10,background:'#999'}}>
-          <span style={{padding:10,background:'#0F0'}} ref="inner">123</span>
+          <span style={{display:'inlineBlock',padding:10,background:'#0F0'}} ref="inner">123</span>
         </div>
       </div>
       <div style={{flex:'auto',background:'#999'}}>in</div>

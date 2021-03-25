@@ -9,7 +9,7 @@ karas.render(
         <span>123123</span>
         <span>456</span>
       </div>
-      <span style={{background:'#0f0',textAlign:'center'}}>aaa</span>
+      <span style={{display:'inlineBlock',background:'#0f0',textAlign:'center'}}>aaa</span>
     </div>
     <div style={{
       position: 'absolute',

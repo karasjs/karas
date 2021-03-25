@@ -1,6 +1,7 @@
 let o = karas.render(
   <svg width="360" height="360">
     <span style={{
+      display:'inlineBlock',
       width: 32,
       height: 32,
       background: '#F00',

@@ -4,6 +4,7 @@ import inject from '../util/inject';
 import enums from '../util/enums';
 import tf from '../style/transform';
 import mx from '../math/matrix';
+import debug from '../util/debug';
 
 const {
   STYLE_KEY: {
@@ -55,7 +56,7 @@ class Cache {
       let ctx = page.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      if(typeof karas !== 'undefined' && karas.debug) {
+      if(debug.flag) {
         page.canvas.setAttribute('size', page.size);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.beginPath();

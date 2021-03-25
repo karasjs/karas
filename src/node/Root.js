@@ -186,7 +186,8 @@ function addLAYOUT(node, hash, component) {
 function checkInfluence(root, reflowHash, node, component) {
   let target = node;
   // inline新老都影响，节点变为最近的父非inline
-  if(node.currentStyle[DISPLAY] === 'inline' || node.computedStyle[DISPLAY] === 'inline') {
+  if(node.currentStyle[DISPLAY] === 'inline' || node.computedStyle[DISPLAY] === 'inline'
+    || node.currentStyle[DISPLAY] === 'inlineBlock' || node.computedStyle[DISPLAY] === 'inlineBlock') {
     let parent = node.domParent;
     do {
       target = parent;
@@ -211,7 +212,8 @@ function checkInfluence(root, reflowHash, node, component) {
       // 继续向上
       parent = parent.domParent;
     }
-    while(parent && (parent.currentStyle[DISPLAY] === 'inline' || parent.computedStyle[DISPLAY] === 'inline'));
+    while(parent && (parent.currentStyle[DISPLAY] === 'inline' || parent.computedStyle[DISPLAY] === 'inline'
+      || parent.currentStyle[DISPLAY] === 'inlineBlock' || parent.computedStyle[DISPLAY] === 'inlineBlock'));
     // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
     if(isFixedSize(target, true)) {
       setLAYOUT(target, reflowHash, component);
@@ -1597,9 +1599,10 @@ class Root extends Dom {
           // 开始变更的节点，至少不是第0个
           let cs = isXom && item.currentStyle;
           let isInline = isXom && cs[DISPLAY] === 'inline';
+          let isInlineBlock = isXom && cs[DISPLAY] === 'inlineBlock';
           lastChild = item;
           // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
-          if((!isXom || isInline)) {
+          if((!isXom || isInline || isInlineBlock)) {
             if(mergeMarginBottomList.length && mergeMarginTopList.length && isStart) {
               let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {

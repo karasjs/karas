@@ -5,16 +5,16 @@ karas.render(
       left: 0,
       top: 0,
     }}>
-      <span style={{background:'#f00'}}>aaaaaaaaaaaaaaaaaaaaaaaa</span>
-      <span style={{background:'#0f0'}}>456</span>
+      <span style={{display:'inlineBlock',background:'#f00'}}>aaaaaaaaaaaaaaaaaaaaaaaa</span>
+      <span style={{display:'inlineBlock',background:'#0f0'}}>456</span>
     </div>
     <div style={{
       position: 'absolute',
       left: 10,
       top: 100,
     }}>
-      <span style={{background:'#f00',textAlign:'center'}}>aaa</span>
-      <span style={{background:'#0f0'}}>
+      <span style={{display:'inlineBlock',background:'#f00',textAlign:'center'}}>aaa</span>
+      <span style={{display:'inlineBlock',background:'#0f0'}}>
         <span>123</span>
         <span>456</span>
       </span>

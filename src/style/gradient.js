@@ -1,13 +1,25 @@
-import util from '../util/util';
 import unit from './unit';
 import reg from './reg';
 import geom from '../math/geom';
 import vector from '../math/vector';
 import mx from '../math/matrix';
+import gradient from '../math/gradient';
+import border from './border';
+import mode from '../node/mode';
+import util from '../util/util';
+import painter from '../util/painter';
+import enums from '../util/enums';
+import inject from '../util/inject';
 
 const { rgba2int, isNil } = util;
 const { PX, PERCENT } = unit;
 const { d2r } = geom;
+const { canvasPolygon, svgPolygon } = painter;
+const {
+  NODE_KEY: {
+    NODE_DEFS_CACHE,
+  },
+} = enums;
 
 function getLinearDeg(v) {
   let deg = 180;
@@ -560,6 +572,8 @@ function getConic(v, d, p, x1, y1, x2, y2, ratio = 1) {
   return {
     cx,
     cy,
+    w: x2 - x1,
+    h: y2 - y1,
     r,
     deg,
     stop,
@@ -599,9 +613,83 @@ function calConicRadius(v, deg, position, x1, y1, x2, y2) {
   return [cx, cy, r, deg];
 }
 
+function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
+  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
+  if(!list) {
+    list = [
+      [x, y],
+      [x + w, y],
+      [x + w, y + h],
+      [x, y + h],
+      [x, y],
+    ];
+  }
+  if(renderMode === mode.CANVAS) {
+    let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
+    let imgData = offscreen.ctx.getImageData(0,0, w, h);
+    gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
+    offscreen.ctx.putImageData(imgData, 0, 0);
+    ctx.save();
+    ctx.beginPath();
+    canvasPolygon(ctx, list);
+    ctx.clip();
+    ctx.closePath();
+    ctx.drawImage(offscreen.canvas, x, y);
+    ctx.restore();
+    offscreen.ctx.clearRect(0, 0, w, h);
+  }
+  else if(renderMode === mode.SVG) {
+    if(isInline) {
+      let v = {
+        tagName: 'symbol',
+        props: [],
+        children: [],
+      };
+      xom.__config[NODE_DEFS_CACHE].push(v);
+      res.forEach(item => {
+        v.children.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', svgPolygon(item[0])],
+            ['fill', item[1]],
+          ],
+        });
+      });
+      return defs.add(v);
+    }
+    else {
+      let v = {
+        tagName: 'clipPath',
+        children: [{
+          tagName: 'path',
+          props: [
+            ['d', svgPolygon(list)],
+          ],
+        }],
+      };
+      xom.__config[NODE_DEFS_CACHE].push(v);
+      let clip = defs.add(v);
+      res.forEach(item => {
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', svgPolygon(item[0])],
+            ['fill', item[1]],
+            ['clip-path', 'url(#' + clip + ')'],
+          ],
+        });
+      });
+    }
+  }
+}
+
 export default {
   parseGradient,
   getLinear,
   getRadial,
   getConic,
+  renderConic,
 };

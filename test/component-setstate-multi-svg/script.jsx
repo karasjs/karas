@@ -28,6 +28,7 @@ class Component extends karas.Component {
           return <span ref={id}
                        key={id}
                        style={{
+                         display:'inlineBlock',
                          width: 32,
                          height: 32,
                          background: id === '0' ? '#F00' : '#00F',

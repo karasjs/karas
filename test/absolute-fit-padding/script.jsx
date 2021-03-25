@@ -7,8 +7,8 @@ karas.render(
       padding: 50,
       background: '#ccc',
     }}>
-      <span style={{background:'#f00'}}>aaaaaaaaaaaaaaaaaaa</span>
-      <span style={{background:'#0f0'}}>456</span>777</div>
+      <span style={{display:'inlineBlock',background:'#f00'}}>aaaaaaaaaaaaaaaaaaa</span>
+      <span style={{display:'inlineBlock',background:'#0f0'}}>456</span>777</div>
     <div style={{
       position: 'absolute',
       left: 50,
@@ -16,8 +16,8 @@ karas.render(
       padding: 50,
       background: '#ccc',
     }}>
-      <span style={{background:'#f00'}}>aaaaaaaaaaaaaaaaaaa</span>
-      <span style={{background:'#0f0'}}>456</span>777</div>
+      <span style={{display:'inlineBlock',background:'#f00'}}>aaaaaaaaaaaaaaaaaaa</span>
+      <span style={{display:'inlineBlock',background:'#0f0'}}>456</span>777</div>
   </canvas>,
   '#test'
 );

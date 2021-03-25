@@ -1,6 +1,6 @@
 karas.render(
   <canvas width="360" height="360">
-    <div style={{display:'flex',justifyContent:'flex-end'}}>
+    <div style={{display:'flex',justifyContent:'flexEnd'}}>
       <span>1</span>
       <span>2</span>
     </div>
@@ -8,11 +8,11 @@ karas.render(
       <span>1</span>
       <span>2</span>
     </div>
-    <div style={{display:'flex',justifyContent:'space-between'}}>
+    <div style={{display:'flex',justifyContent:'spaceBetween'}}>
       <span>1</span>
       <span>2</span>
     </div>
-    <div style={{display:'flex',justifyContent:'space-around'}}>
+    <div style={{display:'flex',justifyContent:'spaceAround'}}>
       <span>1</span>
       <span>2</span>
     </div>

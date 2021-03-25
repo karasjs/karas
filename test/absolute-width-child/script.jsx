@@ -12,7 +12,7 @@ karas.render(
         background: '#f00',
         textAlign: 'center',
       }}>123</span>
-      <span style={{background:'#0f0'}}>456</span>
+      <span style={{display:'inlineBlock',background:'#0f0'}}>456</span>
       <div style={{background:'#00f'}}>789</div>
       <div style={{display:'flex',background:'#999'}}>000</div>
     </div>

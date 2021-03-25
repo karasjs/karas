@@ -22,6 +22,7 @@ let json = {
         props: {
           style: {
             position: 'relative',
+            display:'inlineBlock',
             padding: 2,
             background: '#F00',
           }
@@ -32,6 +33,7 @@ let json = {
         tagName: 'span',
         props: {
           style: {
+            display:'inlineBlock',
             padding: 2,
             background: '#0F0',
           }
@@ -42,6 +44,7 @@ let json = {
         tagName: 'span',
         props: {
           style: {
+            display:'inlineBlock',
             padding: 2,
             background: '#00F',
           }
@@ -54,6 +57,7 @@ let json = {
         props: {
           style: {
             position: 'relative',
+            display:'inlineBlock',
             padding: 2,
             background: '#FF0',
           }
@@ -64,6 +68,7 @@ let json = {
         tagName: 'span',
         props: {
           style: {
+            display:'inlineBlock',
             padding: 2,
             background: '#0FF',
           }

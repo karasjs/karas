@@ -1,6 +1,6 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <div style={{position:'absolute',left:300,top:0,width:100,height:100,background:'url(../image.png) no-repeat',backgroundSize:'110 110',translateX:-100}}/>
+    <div style={{position:'absolute',left:300,top:0,width:100,height:100,background:'url(../image.png) noRepeat',backgroundSize:'110 110',translateX:-100}}/>
   </canvas>,
   '#test'
 );

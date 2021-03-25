@@ -7,11 +7,13 @@ let o = karas.render(
       width: 50,
       height: 20,
       border: '5px solid #0F0',
-      background:'url(../image.png) no-repeat 0 0',
+      background:'url(../image.png) noRepeat 0 0',
       backgroundSize: '100% auto',
     }}/>
   </svg>,
   '#test'
 );
-let input = document.querySelector('#base64');
-input.value = JSON.stringify(o.virtualDom);
+o.on('refresh', function() {
+  let input = document.querySelector('#base64');
+  input.value = JSON.stringify(o.virtualDom);
+});

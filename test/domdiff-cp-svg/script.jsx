@@ -11,7 +11,7 @@ function render(child) {
 
 class Component extends karas.Component {
   render() {
-    return <span style={{background:'linear-gradient(#F00,#00F)'}}>456</span>;
+    return <span style={{display:'inlineBlock',background:'linear-gradient(#F00,#00F)'}}>456</span>;
   }
 }
 

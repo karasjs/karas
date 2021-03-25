@@ -7,5 +7,5 @@ let o = karas.render(
 setTimeout(() => {
   let input = document.querySelector('#base64');
   let svg = document.querySelector('svg');
-  input.value = svg.outerHTML;
-}, 200);
+  input.value = svg.innerHTML;
+}, 50);

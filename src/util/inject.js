@@ -1,18 +1,17 @@
 import util from './util';
-import enums from './enums';
+import debug from './debug';
 import textCache from '../node/textCache';
+import font from '../style/font';
 
-const { STYLE_KEY: {
-  FONT_SIZE,
-  FONT_FAMILY,
-  FONT_WEIGHT,
-} } = enums;
 const SPF = 1000 / 60;
 
 const CANVAS = {};
 const WEBGL = {};
 const CANVAS_LIST = [];
 const WEBGL_LIST = [];
+const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
+
+let defaultFontFamilyData;
 
 function cache(key, width, height, hash, message) {
   let o;
@@ -22,20 +21,18 @@ function cache(key, width, height, hash, message) {
       o = target.pop();
     }
     else {
-      o = document.createElement('canvas');
+      o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
     }
   }
   else if(!hash[key]) {
-    o = hash[key] = document.createElement('canvas');
+    o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
   }
   else {
     o = hash[key];
   }
-  // o.setAttribute('width', width + 'px');
-  // o.setAttribute('height', height + 'px');
   o.width = width;
   o.height = height;
-  if(typeof karas !== 'undefined' && karas.debug) {
+  if(debug.flag) {
     o.style.width = width + 'px';
     o.style.height = height + 'px';
     o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
@@ -86,18 +83,24 @@ let inject = {
     let { list, data } = textCache;
     let html = '';
     let keys = [];
+    let ffs = [];
+    let fss = [];
+    let lengths = [];
     let chars = [];
-    Object.keys(data).forEach(i => {
-      let { key, style, s } = data[i];
+    Object.keys(data).forEach(key => {
+      let { ff, fs, fw, s } = data[key];
       if(s) {
-        let inline = `position:absolute;font-family:${style[FONT_FAMILY]};font-size:${style[FONT_SIZE]}px;font-weight:${style[FONT_WEIGHT]}`;
-        for(let j = 0, len = s.length; j < len; j++) {
-          keys.push(key);
-          let char = s.charAt(j);
+        keys.push(key);
+        ffs.push(ff);
+        fss.push(fs);
+        lengths.push(s.length);
+        let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
+        for(let i = 0, len = s.length; i < len; i++) {
+          let char = s.charAt(i);
           chars.push(char);
           html += `<span style="${inline}">${char.replace(/</, '&lt;').replace(' ', '&nbsp;')}</span>`;
         }
-        data[i].s = '';
+        data[key].s = '';
       }
     });
     if(!html) {
@@ -112,9 +115,18 @@ let inject = {
     div.innerHTML = html;
     let cns = div.childNodes;
     let { charWidth } = textCache;
+    let count = 0, index = 0, key, ff, fs;
     for(let i = 0, len = cns.length; i < len; i++) {
       let node = cns[i];
-      let key = keys[i];
+      if(count === 0) {
+        key = keys[index];
+        ff = ffs[index];
+        fs = fss[index];
+      }
+      if(++count === lengths[index]) {
+        index++;
+        count = 0;
+      }
       let char = chars[i];
       // clientWidth只返回ceil整数，精度必须用getComputedStyle
       let css = window.getComputedStyle(node, null);
@@ -123,9 +135,24 @@ let inject = {
     list.forEach(text => text.__measureCb());
     textCache.list = [];
     textCache.data = {};
-    if(typeof karas === 'undefined' || !karas.debug) {
+    if(!debug.flag) {
       document.body.removeChild(div);
     }
+  },
+  measureTextSync(key, ff, fs, fw, char) {
+    let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
+    let html = `<span style="${inline}">${char}</span><span style="${inline}">${char}${char}</span>`;
+    let div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = '99999px';
+    div.style.top = '-99999px';
+    div.style.visibility = 'hidden';
+    document.body.appendChild(div);
+    div.innerHTML = html;
+    let cns = div.childNodes;
+    let w1 = parseFloat(window.getComputedStyle(cns[0], null).width);
+    let w2 = parseFloat(window.getComputedStyle(cns[1], null).width);
+    return w1 * 2 - w2;
   },
   IMG,
   INIT,
@@ -196,7 +223,7 @@ let inject = {
         }
       }
       img.src = url;
-      if(typeof karas !== 'undefined' && karas.debug) {
+      if(debug.flag) {
         document.body.appendChild(img);
       }
     }
@@ -292,6 +319,39 @@ let inject = {
       }
     }
     return false;
+  },
+  checkSupportFontFamily(ff) {
+    ff = ff.toLowerCase();
+    // 强制arial兜底
+    if(ff === 'arial') {
+      return true;
+    }
+    if(!font.info.hasOwnProperty(ff)) {
+      return false;
+    }
+    if(font.info[ff].hasOwnProperty('checked')) {
+      return font.info[ff].checked;
+    }
+    let canvas = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
+    let context = canvas.ctx;
+    context.textAlign = 'center';
+    context.fillStyle = '#000';
+    context.textBaseline = 'middle';
+    if(!defaultFontFamilyData) {
+      context.font = '16px arial';
+      context.fillText('a', 8, 8);
+      defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
+    }
+    context.clearRect(0, 0, 16, 16);
+    context.font = '16px ' + ff;
+    context.fillText('a', 8, 8);
+    let data = context.getImageData(0, 0, 16, 16).data;
+    for(let i = 0, len = data.length; i < len; i++) {
+      if(defaultFontFamilyData[i] !== data[i]) {
+        return font.info[ff].checked = true;
+      }
+    }
+    return font.info[ff].checked = false;
   },
 };
 

@@ -43,13 +43,6 @@ class Frame {
         let now = self.__now = inject.now();
         let diff = now - last;
         diff = Math.max(diff, 0);
-        // 特殊情况0.5ms以内由于向下取整关系近似为0，防止重复渲染
-        if(diff === 0) {
-          if(task.length || taskCp.length) {
-            cb();
-          }
-          return;
-        }
         // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算

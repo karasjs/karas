@@ -1,10 +1,12 @@
 import Node from './Node';
-import LineBox from './LineBox';
+import TextBox from './TextBox';
 import mode from './mode';
 import css from '../style/css';
 import enums from '../util/enums';
 import util from '../util/util';
 import textCache from './textCache';
+import inject from '../util/inject';
+import font from '../style/font';
 
 const {
   STYLE_KEY: {
@@ -15,7 +17,6 @@ const {
     FONT_WEIGHT,
     COLOR,
     VISIBILITY,
-    TEXT_ALIGN,
     LETTER_SPACING,
     OVERFLOW,
     WHITE_SPACE,
@@ -29,14 +30,14 @@ class Text extends Node {
   constructor(content) {
     super();
     this.__content = util.isNil(content) ? '' : content.toString();
-    this.__lineBoxes = [];
+    this.__textBoxes = [];
     this.__charWidthList = [];
     this.__charWidth = 0;
     this.__textWidth = 0;
   }
 
   /**
-   * 预先计算每个字的宽度，在每次渲染前做
+   * 预先计算每个字的宽度，在每次布局渲染前做
    * @param renderMode
    * @param ctx
    * @private
@@ -45,10 +46,22 @@ class Text extends Node {
     let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
-    let key = this.__key = computedStyle[FONT_SIZE] + ',' + computedStyle[FONT_FAMILY] + ',' + computedStyle[FONT_WEIGHT];
+    let ffs = computedStyle[FONT_FAMILY].split(',');
+    let ff = 'arial';
+    for(let i = 0, len = ffs.length; i < len; i++) {
+      if(inject.checkSupportFontFamily(ffs[i])) {
+        ff = ffs[i];
+        break;
+      }
+    }
+    this.__ff = ff;
+    let fs = computedStyle[FONT_SIZE];
+    let fw = computedStyle[FONT_WEIGHT];
+    let key = this.__key = computedStyle[FONT_SIZE] + ',' + ff + ',' + fw;
     let wait = textCache.data[key] = textCache.data[key] || {
-      key,
-      style: computedStyle,
+      ff,
+      fs,
+      fw,
       hash: {},
       s: '',
     };
@@ -65,10 +78,12 @@ class Text extends Node {
     }
     else if(renderMode === mode.SVG) {
       if(!cache.hasOwnProperty(ELLIPSIS)) {
+        cache[ELLIPSIS] = 0;
         wait.s += ELLIPSIS;
         needMeasure = true;
       }
     }
+    // 逐字测量，canvas可瞬间得到信息，svg先预存统一进行
     for(let i = 0, length = content.length; i < length; i++) {
       let char = content.charAt(i);
       let mw;
@@ -115,20 +130,30 @@ class Text extends Node {
     this.__textWidth = sum;
   }
 
-  __layout(data, isVirtual) {
-    let { x, y, w } = data;
+  /**
+   * text在virtual时和普通一样，无需特殊处理
+   * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和
+   * 即便宽度不足，每行还是强制渲染一个字符，换行依据lx开始，因为x可能是从中间开始的，非inline则两个相等
+   * 最后一个字符排版时要考虑末尾mpb，排不下的话回退删掉这个字符，如果最后一个字符另起开头，排不下也强制排
+   * @param data
+   * @private
+   */
+  __layout(data) {
+    let { x, y, w, lx = x, lineBoxManager, endSpace } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
-    let { isDestroyed, content, currentStyle, computedStyle, lineBoxes, charWidthList } = this;
-    if(isDestroyed || computedStyle[DISPLAY] === 'none') {
+    let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
+    // 空内容w/h都为0可以提前跳出
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content) {
       return;
     }
     this.__ox = this.__oy = 0;
-    lineBoxes.splice(0);
-    // 顺序尝试分割字符串为lineBox，形成多行
+    textBoxes.splice(0);
+    // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
     let begin = 0;
     let i = 0;
-    let count = 0;
+    let firstLineSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
+    let count = firstLineSpace;
     let length = content.length;
     let maxW = 0;
     let {
@@ -140,64 +165,131 @@ class Text extends Node {
       [LINE_HEIGHT]: lineHeight,
       [LETTER_SPACING]: letterSpacing,
       [WHITE_SPACE]: whiteSpace,
+      [FONT_SIZE]: fontSize,
+      [FONT_WEIGHT]: fontWeight,
     } = computedStyle;
+    // 特殊字体中特殊字符连续时需减少一定的padding量
+    let padding = font.info[__ff].padding;
+    let needReduce = !!padding;
+    let lastChar;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
-      let isTo;
+      count = 0; // 不换行时，首行统计从0开始
+      let isTextOverflow;
       while(i < length) {
         count += charWidthList[i] + letterSpacing;
         // overflow必须hidden才生效文字裁剪
         if(overflow === 'hidden' && count > w && (textOverflow === 'clip' || textOverflow === 'ellipsis')) {
-          isTo = true;
+          isTextOverflow = true;
           break;
         }
         i++;
       }
       // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
-      if(isTo && (display === 'block' || display === 'inline') && textOverflow === 'ellipsis') {
+      if(isTextOverflow && textOverflow === 'ellipsis'
+        && (display === 'block' || display === 'inlineBlock' || display === 'flex')) {
         let ew = textCache.charWidth[this.__key][ELLIPSIS];
         for(; i > 0; i--) {
           count -= charWidthList[i - 1];
           let ww = count + ew;
           if(ww <= w) {
-            let lineBox = new LineBox(this, x, y, ww, content.slice(0, i) + ELLIPSIS);
-            lineBoxes.push(lineBox);
+            let textBox = new TextBox(this, x, y, ww, lineHeight, content.slice(0, i) + ELLIPSIS);
+            textBoxes.push(textBox);
+            lineBoxManager.addItem(textBox, true);
             maxW = ww;
             y += lineHeight;
             break;
           }
         }
-        // 最后也没找到，兜底首字母
+        // 最后也没找到，宽度极短情况，兜底首字母
         if(i === 0) {
           let ww = charWidthList[0] + ew;
-          let lineBox = new LineBox(this, x, y, ww, content.charAt(0) + ELLIPSIS);
-          lineBoxes.push(lineBox);
+          let textBox = new TextBox(this, x, y, ww, lineHeight, content.charAt(0) + ELLIPSIS);
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox, true);
           maxW = ww;
           y += lineHeight;
         }
       }
       else {
-        let lineBox = new LineBox(this, x, y, count, content.slice(0, i));
-        lineBoxes.push(lineBox);
+        let textBox = new TextBox(this, x, y, count, lineHeight, content.slice(0, i));
+        textBoxes.push(textBox);
+        lineBoxManager.addItem(textBox);
         maxW = count;
         y += lineHeight;
       }
     }
+    // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
+    // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
     else {
+      let lineCount = 0;
       while(i < length) {
-        count += charWidthList[i] + letterSpacing;
+        let cw = charWidthList[i] + letterSpacing;
+        count += cw;
+        // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
+        if(needReduce) {
+          let char = content[i];
+          if(char === lastChar && padding[char]) {
+            let hasCache, p = textCache.padding[__key] = textCache.padding[__key] || {};
+            if(textCache.padding.hasOwnProperty(__key)) {
+              if(p.hasOwnProperty(char)) {
+                hasCache = true;
+                count -= p[char];
+              }
+            }
+            if(!hasCache) {
+              let n = 0;
+              if(root.renderMode === mode.CANVAS) {
+                root.ctx.font = css.setFontStyle(computedStyle);
+                let w1 = root.ctx.measureText(char).width;
+                let w2 = root.ctx.measureText(char + char).width;
+                n = w1 * 2 - w2;
+                n *= padding[char];
+              }
+              else if(root.renderMode === mode.SVG) {
+                n = inject.measureTextSync(__key, __ff, fontSize, fontWeight, char);
+                n *= padding[char];
+              }
+              count -= n;
+              p[char] = n;
+            }
+          }
+          lastChar = char;
+        }
+        // 忽略零宽字符
+        if(cw === 0) {
+          i++;
+          continue;
+        }
+        // 换行都要判断i不是0的时候，第1个字符强制不换行
         if(count === w) {
-          let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
-          lineBoxes.push(lineBox);
-          maxW = Math.max(maxW, count);
-          y += lineHeight;
+          let textBox;
+          // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
+          if(i === length - 1 && count > w - endSpace && i) {
+            count -= charWidthList[i - 1];
+            i--;
+          }
+          if(!lineCount) {
+            maxW = count - firstLineSpace;
+            textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i + 1));
+          }
+          else {
+            textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, i + 1));
+            maxW = Math.max(maxW, count);
+          }
+          // 必须先添加再设置y，当有diff的lineHeight时，第一个换行不影响，再换行时第2个换行即第3行会被第1行影响
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox, true);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           begin = i + 1;
           i = begin;
           count = 0;
+          lineCount++;
         }
         else if(count > w) {
           let width;
-          // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+          // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
+          // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里条件
           if(i === begin) {
             i = begin + 1;
             width = count;
@@ -205,49 +297,89 @@ class Text extends Node {
           else {
             width = count - charWidthList[i];
           }
-          let lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
-          lineBoxes.push(lineBox);
-          maxW = Math.max(maxW, width);
-          y += lineHeight;
+          let textBox;
+          if(!lineCount) {
+            maxW = width - firstLineSpace;
+            textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i));
+          }
+          else {
+            textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(begin, i));
+            maxW = Math.max(maxW, width);
+          }
+          // 必须先添加再设置y，同上
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox, true);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           begin = i;
           count = 0;
+          lineCount++;
         }
         else {
           i++;
         }
       }
-      // 最后一行，只有一行未满时也进这里
-      if(begin < length && begin < i) {
-        count = 0;
-        for(i = begin; i < length; i++) {
-          count += charWidthList[i] + letterSpacing;
+      // 换行后Text的x重设为lx
+      if(!lineCount) {
+        this.__x = this.__sx1 = lx;
+      }
+      // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
+      if(begin < length) {
+        let textBox;
+        if(!lineCount) {
+          let needBack;
+          // 防止开头第一个begin=0时回退，这在inline有padding且是第一个child时会发生
+          if(begin && count > w - endSpace) {
+            needBack = true;
+            count -= charWidthList[length - 1];
+          }
+          maxW = count - firstLineSpace;
+          textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, needBack ? length - 1 : length));
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+          if(needBack) {
+            let width = charWidthList[length - 1];
+            textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(length - 1));
+            maxW = Math.max(maxW, width);
+            textBoxes.push(textBox);
+            lineBoxManager.setNewLine();
+            lineBoxManager.addItem(textBox);
+            y += lineHeight;
+          }
         }
-        let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
-        lineBoxes.push(lineBox);
-        maxW = Math.max(maxW, count);
-        y += lineHeight;
+        else {
+          let needBack;
+          // 防止begin在结尾时回退，必须要有个字符，这在最后一行1个字符排不下时会出现
+          if(count > w - endSpace && begin < length - 1) {
+            needBack = true;
+            count -= charWidthList[length - 1];
+          }
+          textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, needBack ? length - 1 : length));
+          maxW = Math.max(maxW, count);
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+          if(needBack) {
+            let width = charWidthList[length - 1];
+            textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(length - 1));
+            maxW = Math.max(maxW, width);
+            textBoxes.push(textBox);
+            lineBoxManager.setNewLine();
+            lineBoxManager.addItem(textBox);
+            y += lineHeight;
+          }
+        }
       }
     }
     this.__width = maxW;
     this.__height = y - data.y;
-    // flex/abs前置计算无需真正布局
-    if(!isVirtual) {
-      let { [TEXT_ALIGN]: textAlign } = computedStyle;
-      if(['center', 'right'].indexOf(textAlign) > -1) {
-        lineBoxes.forEach(lineBox => {
-          let diff = this.__width - lineBox.width;
-          if(diff > 0) {
-            lineBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
-          }
-        });
-      }
-    }
+    this.__baseLine = css.getBaseLine(computedStyle);
   }
 
   __offsetX(diff, isLayout) {
     super.__offsetX(diff, isLayout);
     if(isLayout) {
-      this.lineBoxes.forEach(item => {
+      this.textBoxes.forEach(item => {
         item.__offsetX(diff);
       });
     }
@@ -257,7 +389,7 @@ class Text extends Node {
   __offsetY(diff, isLayout) {
     super.__offsetY(diff, isLayout);
     if(isLayout) {
-      this.lineBoxes.forEach(item => {
+      this.textBoxes.forEach(item => {
         item.__offsetY(diff);
       });
     }
@@ -265,7 +397,7 @@ class Text extends Node {
   }
 
   __tryLayInline(w) {
-    return w - this.textWidth;
+    return w - this.charWidthList[0];
   }
 
   __calMaxAndMinWidth() {
@@ -292,7 +424,7 @@ class Text extends Node {
         children: [],
       };
     }
-    let { isDestroyed, computedStyle, lineBoxes, cacheStyle, charWidthList } = this;
+    let { isDestroyed, computedStyle, textBoxes, cacheStyle, charWidthList } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden') {
       return false;
     }
@@ -307,12 +439,12 @@ class Text extends Node {
       }
     }
     let index = 0;
-    lineBoxes.forEach(item => {
+    textBoxes.forEach(item => {
       item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList);
       index += item.content.length;
     });
     if(renderMode === mode.SVG) {
-      this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);
+      this.virtualDom.children = textBoxes.map(textBox => textBox.virtualDom);
     }
     return true;
   }
@@ -329,8 +461,8 @@ class Text extends Node {
     this.__content = v;
   }
 
-  get lineBoxes() {
-    return this.__lineBoxes;
+  get textBoxes() {
+    return this.__textBoxes;
   }
 
   get charWidthList() {
@@ -341,17 +473,20 @@ class Text extends Node {
     return this.__charWidth;
   }
 
+  get firstCharWidth() {
+    return this.charWidthList[0] || 0;
+  }
+
   get textWidth() {
     return this.__textWidth;
   }
 
   get baseLine() {
-    let { lineBoxes } = this;
-    if(!lineBoxes.length) {
-      return 0;
-    }
-    let last = lineBoxes[lineBoxes.length - 1];
-    return last.y - this.y + last.baseLine;
+    return this.__baseLine;
+  }
+
+  get root() {
+    return this.parent.root;
   }
 
   get currentStyle() {

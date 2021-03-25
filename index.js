@@ -8613,7 +8613,8 @@
             var lineCount = 0;
 
             while (i < length) {
-              count += charWidthList[i] + letterSpacing; // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
+              var cw = charWidthList[i] + letterSpacing;
+              count += cw; // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
 
               if (needReduce) {
                 var _char2 = content[i];
@@ -8649,6 +8650,12 @@
                 }
 
                 lastChar = _char2;
+              } // 忽略零宽字符
+
+
+              if (cw === 0) {
+                i++;
+                continue;
               } // 换行都要判断i不是0的时候，第1个字符强制不换行
 
 
@@ -16519,7 +16526,7 @@
                     var w = ix2 - ix1; // canvas的bg位图裁剪
 
                     if (renderMode === mode.CANVAS && offscreen) {
-                      ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+                      ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
                     } //svg则特殊判断
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
                         svgBgSymbol.forEach(function (symbol) {
@@ -16529,7 +16536,7 @@
                               props: [],
                               children: [{
                                 tagName: 'path',
-                                props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(lineHeight, "L").concat(countW, ",").concat(lineHeight, ",L").concat(countW, ",", 0)]]
+                                props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
                             var clip = defs.add(_v2);

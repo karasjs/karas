@@ -224,7 +224,8 @@ class Text extends Node {
     else {
       let lineCount = 0;
       while(i < length) {
-        count += charWidthList[i] + letterSpacing;
+        let cw = charWidthList[i] + letterSpacing;
+        count += cw;
         // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
         if(needReduce) {
           let char = content[i];
@@ -254,6 +255,11 @@ class Text extends Node {
             }
           }
           lastChar = char;
+        }
+        // 忽略零宽字符
+        if(cw === 0) {
+          i++;
+          continue;
         }
         // 换行都要判断i不是0的时候，第1个字符强制不换行
         if(count === w) {

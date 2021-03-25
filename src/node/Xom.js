@@ -1605,7 +1605,7 @@ class Xom extends Node {
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
             if(renderMode === mode.CANVAS && offscreen) {
-              ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+              ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
             }
             //svg则特殊判断
             else if(renderMode === mode.SVG && svgBgSymbol.length) {
@@ -1618,7 +1618,7 @@ class Xom extends Node {
                       {
                         tagName: 'path',
                         props: [
-                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${lineHeight}L${countW},${lineHeight},L${countW},${0}`],
+                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${ih}L${countW},${ih},L${countW},${0}`],
                         ],
                       }
                     ],

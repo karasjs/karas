@@ -2285,10 +2285,6 @@ class Xom extends Node {
     this.__sx4 += diff;
     this.__sx5 += diff;
     this.__sx6 += diff;
-    // flex没有lineBox
-    if(!this.__isRealInline() && this.lineBoxManager) {
-      this.lineBoxManager.__offsetX(diff);
-    }
   }
 
   __offsetY(diff, isLayout, lv) {
@@ -2305,10 +2301,6 @@ class Xom extends Node {
     this.__sy4 += diff;
     this.__sy5 += diff;
     this.__sy6 += diff;
-    // flex没有lineBox
-    if(!this.__isRealInline() && this.lineBoxManager) {
-      this.lineBoxManager.__offsetY(diff);
-    }
   }
 
   __resizeX(diff, lv) {

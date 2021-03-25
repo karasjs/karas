@@ -270,9 +270,10 @@ class Text extends Node {
             textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, i + 1));
             maxW = Math.max(maxW, count);
           }
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+          // 必须先添加再设置y，当有diff的lineHeight时，第一个换行不影响，再换行时第2个换行即第3行会被第1行影响
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox, true);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           begin = i + 1;
           i = begin;
           count = 0;
@@ -298,9 +299,10 @@ class Text extends Node {
             textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(begin, i));
             maxW = Math.max(maxW, width);
           }
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+          // 必须先添加再设置y，同上
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox, true);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           begin = i;
           count = 0;
           lineCount++;

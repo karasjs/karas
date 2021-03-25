@@ -119,21 +119,9 @@ class LineBoxManager {
     this.__domStack.pop();
   }
 
-  __offsetX(diff) {
-    this.__list.forEach(lineBox => {
-      lineBox.__offsetX(diff);
-    });
-  }
-
-  __offsetY(diff) {
-    this.__list.forEach(lineBox => {
-      lineBox.__offsetY(diff);
-    });
-  }
-
   /**
    * 当前有lineBox则设置lineHeight/baseLine，否则记录下来等新的设置
-   * 当是新行时不设置，下个创建的新lineBox用
+   * 当是新行时不设置，留下个创建的新lineBox用
    * @param l
    * @param b
    * @private
@@ -144,8 +132,8 @@ class LineBoxManager {
       this.__list[length - 1].__setLB(l, b);
     }
     else {
-      this.__lineHeight = l;
-      this.__baseLine = b;
+      this.__lineHeight = Math.max(this.__lineHeight, l);
+      this.__baseLine = Math.max(this.__baseLine, b);
     }
   }
 

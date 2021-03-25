@@ -8666,11 +8666,12 @@
                 } else {
                   _textBox3 = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, i + 1));
                   maxW = Math.max(maxW, count);
-                }
+                } // 必须先添加再设置y，当有diff的lineHeight时，第一个换行不影响，再换行时第2个换行即第3行会被第1行影响
 
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
+
                 textBoxes.push(_textBox3);
                 lineBoxManager.addItem(_textBox3, true);
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 begin = i + 1;
                 i = begin;
                 count = 0;
@@ -8694,11 +8695,12 @@
                 } else {
                   _textBox4 = new TextBox(this, lx, y, width, lineHeight, content.slice(begin, i));
                   maxW = Math.max(maxW, width);
-                }
+                } // 必须先添加再设置y，同上
 
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
+
                 textBoxes.push(_textBox4);
                 lineBoxManager.addItem(_textBox4, true);
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 begin = i;
                 count = 0;
                 lineCount++;
@@ -14776,7 +14778,16 @@
     }
 
     var y2 = lineBox.y + diff + lineHeight - diffL + eyb;
-    var by2 = lineBox.y + diff + lineHeight - diffL + pbb;
+    var by2 = lineBox.y + diff + lineHeight - diffL + pbb; // x要考虑xom的ox值
+
+    x1 += xom.ox;
+    x2 += xom.ox;
+    bx1 += xom.ox;
+    bx2 += xom.ox;
+    y1 += xom.oy;
+    y2 += xom.oy;
+    by1 += xom.oy;
+    by2 += xom.oy;
     return [x1, y1, x2, y2, bx1, by1, bx2, by2];
   }
   /**
@@ -17286,11 +17297,7 @@
         this.__sx3 += diff;
         this.__sx4 += diff;
         this.__sx5 += diff;
-        this.__sx6 += diff; // flex没有lineBox
-
-        if (!this.__isRealInline() && this.lineBoxManager) {
-          this.lineBoxManager.__offsetX(diff);
-        }
+        this.__sx6 += diff;
       }
     }, {
       key: "__offsetY",
@@ -17310,11 +17317,7 @@
         this.__sy3 += diff;
         this.__sy4 += diff;
         this.__sy5 += diff;
-        this.__sy6 += diff; // flex没有lineBox
-
-        if (!this.__isRealInline() && this.lineBoxManager) {
-          this.lineBoxManager.__offsetY(diff);
-        }
+        this.__sy6 += diff;
       }
     }, {
       key: "__resizeX",
@@ -17601,7 +17604,8 @@
       this.__list = [];
       this.__x = x;
       this.__y = y;
-      this.__lineHeight = 0;
+      this.__lineHeight = 0; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseLine
+
       this.__baseLine = 0;
     }
 
@@ -17625,16 +17629,6 @@
             }
           });
         }
-      }
-    }, {
-      key: "__offsetX",
-      value: function __offsetX(diff) {
-        this.__x += diff;
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff) {
-        this.__y += diff;
       }
       /**
        * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
@@ -17916,23 +17910,9 @@
       value: function popContentBoxList() {
         this.__domStack.pop();
       }
-    }, {
-      key: "__offsetX",
-      value: function __offsetX(diff) {
-        this.__list.forEach(function (lineBox) {
-          lineBox.__offsetX(diff);
-        });
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff) {
-        this.__list.forEach(function (lineBox) {
-          lineBox.__offsetY(diff);
-        });
-      }
       /**
        * 当前有lineBox则设置lineHeight/baseLine，否则记录下来等新的设置
-       * 当是新行时不设置，下个创建的新lineBox用
+       * 当是新行时不设置，留下个创建的新lineBox用
        * @param l
        * @param b
        * @private
@@ -17946,8 +17926,8 @@
         if (length && !this.isNewLine) {
           this.__list[length - 1].__setLB(l, b);
         } else {
-          this.__lineHeight = l;
-          this.__baseLine = b;
+          this.__lineHeight = Math.max(this.__lineHeight, l);
+          this.__baseLine = Math.max(this.__baseLine, b);
         }
       }
     }, {

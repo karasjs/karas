@@ -108,6 +108,15 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHe
   }
   let y2 = lineBox.y + diff + lineHeight - diffL + eyb;
   let by2 = lineBox.y + diff + lineHeight - diffL + pbb;
+  // x要考虑xom的ox值
+  x1 += xom.ox;
+  x2 += xom.ox;
+  bx1 += xom.ox;
+  bx2 += xom.ox;
+  y1 += xom.oy;
+  y2 += xom.oy;
+  by1 += xom.oy;
+  by2 += xom.oy;
   return [x1, y1, x2, y2, bx1, by1, bx2, by2];
 }
 

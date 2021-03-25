@@ -27,7 +27,7 @@ class LineBox {
     this.__list = [];
     this.__x = x;
     this.__y = y;
-    this.__lineHeight = 0;
+    this.__lineHeight = 0; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseLine
     this.__baseLine = 0;
   }
 
@@ -47,14 +47,6 @@ class LineBox {
         }
       });
     }
-  }
-
-  __offsetX(diff) {
-    this.__x += diff;
-  }
-
-  __offsetY(diff) {
-    this.__y += diff;
   }
 
   /**

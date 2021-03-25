@@ -8652,11 +8652,11 @@
               } // 换行都要判断i不是0的时候，第1个字符强制不换行
 
 
-              if (i && count === w) {
+              if (count === w) {
                 var _textBox3 = void 0; // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
 
 
-                if (i === length - 1 && count > w - endSpace) {
+                if (i === length - 1 && count > w - endSpace && i) {
                   count -= charWidthList[i - 1];
                   i--;
                 }
@@ -8677,7 +8677,7 @@
                 i = begin;
                 count = 0;
                 lineCount++;
-              } else if (i && count > w) {
+              } else if (count > w) {
                 var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
                 // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里条件
 
@@ -8713,9 +8713,8 @@
 
             if (!lineCount) {
               this.__x = this.__sx1 = lx;
-            }
+            } // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
 
-            console.log(begin, length, lineCount); // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
 
             if (begin < length) {
               var _textBox5;
@@ -8732,12 +8731,7 @@
                 _textBox5 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, needBack ? length - 1 : length));
                 textBoxes.push(_textBox5);
                 lineBoxManager.addItem(_textBox5);
-
-                if (lineBoxManager.isNewLine) {
-                  y += lineHeight;
-                } else {
-                  y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                }
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
 
                 if (needBack) {
                   var _width = charWidthList[length - 1];
@@ -8749,9 +8743,10 @@
                   y += lineHeight;
                 }
               } else {
-                var _needBack;
+                var _needBack; // 防止begin在结尾时回退，必须要有个字符，这在最后一行1个字符排不下时会出现
 
-                if (count > w - endSpace) {
+
+                if (count > w - endSpace && begin < length - 1) {
                   _needBack = true;
                   count -= charWidthList[length - 1];
                 }
@@ -8760,7 +8755,7 @@
                 maxW = Math.max(maxW, count);
                 textBoxes.push(_textBox5);
                 lineBoxManager.addItem(_textBox5);
-                y += lineHeight;
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
 
                 if (_needBack) {
                   var _width2 = charWidthList[length - 1];

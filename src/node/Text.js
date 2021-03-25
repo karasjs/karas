@@ -256,10 +256,10 @@ class Text extends Node {
           lastChar = char;
         }
         // 换行都要判断i不是0的时候，第1个字符强制不换行
-        if(i && count === w) {
+        if(count === w) {
           let textBox;
           // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
-          if(i === length - 1 && count > w - endSpace) {
+          if(i === length - 1 && count > w - endSpace && i) {
             count -= charWidthList[i - 1];
             i--;
           }
@@ -280,7 +280,7 @@ class Text extends Node {
           count = 0;
           lineCount++;
         }
-        else if(i && count > w) {
+        else if(count > w) {
           let width;
           // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
           // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里条件
@@ -315,7 +315,7 @@ class Text extends Node {
       // 换行后Text的x重设为lx
       if(!lineCount) {
         this.__x = this.__sx1 = lx;
-      }console.log(begin, length,lineCount);
+      }
       // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
       if(begin < length) {
         let textBox;
@@ -330,12 +330,7 @@ class Text extends Node {
           textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, needBack ? length - 1 : length));
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox);
-          if(lineBoxManager.isNewLine) {
-            y += lineHeight;
-          }
-          else {
-            y += Math.max(lineHeight, lineBoxManager.lineHeight);
-          }
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           if(needBack) {
             let width = charWidthList[length - 1];
             textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(length - 1));
@@ -348,7 +343,8 @@ class Text extends Node {
         }
         else {
           let needBack;
-          if(count > w - endSpace) {
+          // 防止begin在结尾时回退，必须要有个字符，这在最后一行1个字符排不下时会出现
+          if(count > w - endSpace && begin < length - 1) {
             needBack = true;
             count -= charWidthList[length - 1];
           }
@@ -356,7 +352,7 @@ class Text extends Node {
           maxW = Math.max(maxW, count);
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox);
-          y += lineHeight;
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           if(needBack) {
             let width = charWidthList[length - 1];
             textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(length - 1));

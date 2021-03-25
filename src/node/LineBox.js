@@ -153,23 +153,12 @@ class LineBox {
 
   get lineHeight() {
     let lineHeight = 0;
-    // 只有TextBox和InlineBox
+    // 只有TextBox和InlineBlock
     this.list.forEach(item => {
-      lineHeight = Math.max(lineHeight, item.height);
+      lineHeight = Math.max(lineHeight, item.outerHeight);
     });
     return Math.max(this.__lineHeight, lineHeight);
   }
-
-  // get marginBottom() {
-  //   // lineBox都是inline-block，暂定不会有负
-  //   let n = 0;
-  //   this.list.forEach(item => {
-  //     if(!(item instanceof TextBox)) {
-  //       n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
-  //     }
-  //   });
-  //   return n;
-  // }
 }
 
 export default LineBox;

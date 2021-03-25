@@ -1628,16 +1628,16 @@ class Dom extends Xom {
     }
     // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
     // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
-    if(!isInline) {
-      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
-      lx = x;
-      endSpace = selfEndSpace = 0;
-    }
-    else {
+    if(isInline) {
       this.__lineBoxManager = lineBoxManager;
       let lineHeight = computedStyle[LINE_HEIGHT];
       let baseLine = css.getBaseLine(computedStyle);
       lineBoxManager.__setLB(lineHeight, baseLine);
+    }
+    else {
+      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+      lx = x;
+      endSpace = selfEndSpace = 0;
     }
     // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
     let contentBoxList;
@@ -1835,7 +1835,7 @@ class Dom extends Xom {
     this.__isIbFull = isIbFull;
     // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸，inline没有固定尺寸概念
     let tw, th;
-    if(isInline && this.__isRealInline()) {
+    if(isInline) {
       // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
       if(selfEndSpace) {
         lineBoxManager.addX(selfEndSpace);

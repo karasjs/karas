@@ -265,18 +265,12 @@ class Text extends Node {
           if(!lineCount) {
             maxW = count - firstLineSpace;
             textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i + 1));
-            if(lineBoxManager.isNewLine) {
-              y += lineHeight;
-            }
-            else {
-              y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            }
           }
           else {
             textBox = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, i + 1));
             maxW = Math.max(maxW, count);
-            y += lineHeight;
           }
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox, true);
           begin = i + 1;
@@ -299,18 +293,12 @@ class Text extends Node {
           if(!lineCount) {
             maxW = width - firstLineSpace;
             textBox = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i));
-            if(lineBoxManager.isNewLine) {
-              y += lineHeight;
-            }
-            else {
-              y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            }
           }
           else {
             textBox = new TextBox(this, lx, y, width, lineHeight, content.slice(begin, i));
             maxW = Math.max(maxW, width);
-            y += lineHeight;
           }
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox, true);
           begin = i;

@@ -8663,18 +8663,12 @@
                 if (!lineCount) {
                   maxW = count - firstLineSpace;
                   _textBox3 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i + 1));
-
-                  if (lineBoxManager.isNewLine) {
-                    y += lineHeight;
-                  } else {
-                    y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                  }
                 } else {
                   _textBox3 = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, i + 1));
                   maxW = Math.max(maxW, count);
-                  y += lineHeight;
                 }
 
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 textBoxes.push(_textBox3);
                 lineBoxManager.addItem(_textBox3, true);
                 begin = i + 1;
@@ -8697,18 +8691,12 @@
                 if (!lineCount) {
                   maxW = width - firstLineSpace;
                   _textBox4 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i));
-
-                  if (lineBoxManager.isNewLine) {
-                    y += lineHeight;
-                  } else {
-                    y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                  }
                 } else {
                   _textBox4 = new TextBox(this, lx, y, width, lineHeight, content.slice(begin, i));
                   maxW = Math.max(maxW, width);
-                  y += lineHeight;
                 }
 
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 textBoxes.push(_textBox4);
                 lineBoxManager.addItem(_textBox4, true);
                 begin = i;
@@ -17765,23 +17753,13 @@
     }, {
       key: "lineHeight",
       get: function get() {
-        var lineHeight = 0; // 只有TextBox和InlineBox
+        var lineHeight = 0; // 只有TextBox和InlineBlock
 
         this.list.forEach(function (item) {
-          lineHeight = Math.max(lineHeight, item.height);
+          lineHeight = Math.max(lineHeight, item.outerHeight);
         });
         return Math.max(this.__lineHeight, lineHeight);
-      } // get marginBottom() {
-      //   // lineBox都是inline-block，暂定不会有负
-      //   let n = 0;
-      //   this.list.forEach(item => {
-      //     if(!(item instanceof TextBox)) {
-      //       n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
-      //     }
-      //   });
-      //   return n;
-      // }
-
+      }
     }]);
 
     return LineBox;
@@ -19896,16 +19874,16 @@
         // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
 
 
-        if (!isInline) {
-          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
-          lx = x;
-          endSpace = selfEndSpace = 0;
-        } else {
+        if (isInline) {
           this.__lineBoxManager = lineBoxManager;
           var lineHeight = computedStyle[LINE_HEIGHT$4];
           var baseLine = css.getBaseLine(computedStyle);
 
           lineBoxManager.__setLB(lineHeight, baseLine);
+        } else {
+          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+          lx = x;
+          endSpace = selfEndSpace = 0;
         } // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
 
 
@@ -20122,7 +20100,7 @@
 
         var tw, th;
 
-        if (isInline && this.__isRealInline()) {
+        if (isInline) {
           // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
           if (selfEndSpace) {
             lineBoxManager.addX(selfEndSpace);

@@ -255,7 +255,8 @@ class Text extends Node {
           }
           lastChar = char;
         }
-        if(count === w) {
+        // 换行都要判断i不是0的时候，第1个字符强制不换行
+        if(i && count === w) {
           let textBox;
           // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
           if(i === length - 1 && count > w - endSpace) {
@@ -279,7 +280,7 @@ class Text extends Node {
           count = 0;
           lineCount++;
         }
-        else if(count > w) {
+        else if(i && count > w) {
           let width;
           // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
           // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里条件
@@ -314,13 +315,14 @@ class Text extends Node {
       // 换行后Text的x重设为lx
       if(!lineCount) {
         this.__x = this.__sx1 = lx;
-      }
+      }console.log(begin, length,lineCount);
       // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
       if(begin < length) {
         let textBox;
         if(!lineCount) {
           let needBack;
-          if(count > w - endSpace) {
+          // 防止开头第一个begin=0时回退，这在inline有padding且是第一个child时会发生
+          if(begin && count > w - endSpace) {
             needBack = true;
             count -= charWidthList[length - 1];
           }

@@ -8649,9 +8649,10 @@
                 }
 
                 lastChar = _char2;
-              }
+              } // 换行都要判断i不是0的时候，第1个字符强制不换行
 
-              if (count === w) {
+
+              if (i && count === w) {
                 var _textBox3 = void 0; // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
 
 
@@ -8676,7 +8677,7 @@
                 i = begin;
                 count = 0;
                 lineCount++;
-              } else if (count > w) {
+              } else if (i && count > w) {
                 var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
                 // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里条件
 
@@ -8712,16 +8713,17 @@
 
             if (!lineCount) {
               this.__x = this.__sx1 = lx;
-            } // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
+            }
 
+            console.log(begin, length, lineCount); // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
 
             if (begin < length) {
               var _textBox5;
 
               if (!lineCount) {
-                var needBack;
+                var needBack; // 防止开头第一个begin=0时回退，这在inline有padding且是第一个child时会发生
 
-                if (count > w - endSpace) {
+                if (begin && count > w - endSpace) {
                   needBack = true;
                   count -= charWidthList[length - 1];
                 }
@@ -17983,9 +17985,10 @@
 
         if (length) {
           return list[length - 1].endY;
-        }
+        } // 最后一行可能为空inline，需考虑lh
 
-        return this.__y;
+
+        return this.__y + this.__lineHeight;
       }
     }, {
       key: "isEnd",
@@ -19936,10 +19939,10 @@
               item.currentStyle[DISPLAY$4] = item.computedStyle[DISPLAY$4] = 'inlineBlock';
               isInlineBlock = true;
               inject.warn('Inline can not contain block/flex');
-            } // x开头，不用考虑是否放得下直接放
+            } // x开头，不用考虑是否放得下直接放，i为0强制不换行
 
 
-            if (x === lx) {
+            if (x === lx || !i) {
               item.__layout({
                 x: x,
                 y: y,
@@ -20030,9 +20033,9 @@
           } // inline里的其它只有文本，可能开始紧跟着之前的x，也可能换行后从lx行头开始
           // 紧跟着x可能出现在前面有节点换行后第2行，此时不一定放得下，因此不能作为判断依据，开头仅有lx
           else {
-              var n = lineBoxManager.size;
+              var n = lineBoxManager.size; // i为0时强制不换行
 
-              if (x === lx) {
+              if (x === lx || !i) {
                 item.__layout({
                   x: x,
                   y: y,

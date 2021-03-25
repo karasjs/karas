@@ -1673,8 +1673,8 @@ class Dom extends Xom {
           isInlineBlock = true;
           inject.warn('Inline can not contain block/flex');
         }
-        // x开头，不用考虑是否放得下直接放
-        if(x === lx) {
+        // x开头，不用考虑是否放得下直接放，i为0强制不换行
+        if(x === lx || !i) {
           item.__layout({
             x,
             y,
@@ -1764,7 +1764,8 @@ class Dom extends Xom {
       // 紧跟着x可能出现在前面有节点换行后第2行，此时不一定放得下，因此不能作为判断依据，开头仅有lx
       else {
         let n = lineBoxManager.size;
-        if(x === lx) {
+        // i为0时强制不换行
+        if(x === lx || !i) {
           item.__layout({
             x,
             y,

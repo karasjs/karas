@@ -167,7 +167,8 @@ class LineBoxManager {
     if(length) {
       return list[length - 1].endY;
     }
-    return this.__y;
+    // 最后一行可能为空inline，需考虑lh
+    return this.__y + this.__lineHeight;
   }
 
   get isEnd() {

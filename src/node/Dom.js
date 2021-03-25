@@ -942,15 +942,11 @@ class Dom extends Xom {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
-        // 递归inline进行对齐
-        flowChildren.forEach(item => {
-          if(item instanceof Dom || item instanceof Component && item.shadowRoot instanceof Dom) {
-            if(item.computedStyle[DISPLAY] === 'inline') {
-              item.__inlineSize(lineBoxManager, item.contentBoxList, true);
-            }
-          }
-        });
       }
+      // 所有inline计算size
+      lineBoxManager.domList.forEach(item => {
+        item.__inlineSize(lineBoxManager);
+      });
       this.__marginAuto(currentStyle, data);
     }
   }
@@ -1839,19 +1835,16 @@ class Dom extends Xom {
       }
       // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
       lineBoxManager.popContentBoxList();
-      this.__inlineSize(lineBoxManager, contentBoxList);
-      tw = this.__width;
-      th = this.__height;
-      if(lineBoxManager.size > 1) {
-        if(lx > x) {}
-        this.__x = lx;
-      }
     }
     else {
       tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
       th = this.__height = fixedHeight ? h : y - data.y;
+      this.__ioSize(tw, th);
+      // 所有inline计算size
+      lineBoxManager.domList.forEach(item => {
+        item.__inlineSize(lineBoxManager);
+      });
     }
-    this.__ioSize(tw, th);
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
     if(!isVirtual && !isInline) {
       lineBoxManager.verticalAlign();
@@ -1870,12 +1863,10 @@ class Dom extends Xom {
    * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
    * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
    * @param lineBoxManager
-   * @param contentBoxList
-   * @param recursion 是否递归inline
    * @private
    */
-  __inlineSize(lineBoxManager, contentBoxList, recursion) {
-    let computedStyle = this.computedStyle;
+  __inlineSize(lineBoxManager) {
+    let { contentBoxList, computedStyle } = this;
     let {
       [MARGIN_TOP]: marginTop,
       [MARGIN_RIGHT]: marginRight,
@@ -1890,29 +1881,27 @@ class Dom extends Xom {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
-    let baseLine = css.getBaseLine(computedStyle);
+    let baseLine = css.getBaseLine(computedStyle);console.warn(this.tagName);
     // x/clientX/offsetX/outerX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
     let length = contentBoxList.length;
-    let lastLineBox, diff = 0;
     // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行
     contentBoxList.forEach((item, i) => {
-      if(item.parentLineBox !== lastLineBox) {
-        lastLineBox = item.parentLineBox;
-        diff = lastLineBox.baseLine - baseLine;
-      }
       // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb，中间的无需考虑嵌套inline的mpb
       if(i) {
         minX = Math.min(minX, item.x);
-        maxY = maxCX = maxOY = maxFY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
         minCX = Math.min(minCX, item.x);
-        minCY = Math.min(minCY, item.y);
         minFX = Math.min(minFX, item.x);
-        minFY = Math.min(minFY, item.y);
         minOX = Math.min(minOX, item.x);
-        minOY = Math.min(minOY, item.y);
         if(i === length - 1) {
-          maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
+          maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
+          maxY = maxCY = maxFY = maxOY = Math.max(maxY, item.y + item.outerHeight);
+          maxCX += paddingRight;
+          maxCY += paddingBottom;
+          maxFX += paddingRight + borderRightWidth;
+          maxFY += paddingBottom + borderBottomWidth;
+          maxOX += borderRightWidth + paddingRight + marginRight
+          maxOY += borderBottomWidth + paddingBottom + marginBottom;
         }
         else {
           maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
@@ -1921,7 +1910,7 @@ class Dom extends Xom {
       // 第一个初始化
       else {
         minX = item.x;
-        minY = item.y + diff;
+        minY = item.y;
         minCX = minX - paddingLeft;
         minCY = minY - paddingTop;
         minFX = minCX - borderLeftWidth;
@@ -1929,21 +1918,27 @@ class Dom extends Xom {
         minOX = minFX - marginLeft;
         minOY = minFY - marginTop;
         maxX = maxCX = maxFX = maxOX = item.x + item.outerWidth;
-        maxY = maxCY = maxFY = maxOY = item.y + diff + item.outerHeight;
+        maxY = maxCY = maxFY = maxOY = item.y + item.outerHeight;
         if(i === length - 1) {
           maxCX += paddingRight;
           maxCY += paddingBottom;
           maxFX += paddingRight + borderRightWidth;
           maxFY += paddingBottom + borderBottomWidth;
           maxOX += borderRightWidth + paddingRight + marginRight
-          maxOY += borderBottomWidth + paddingBottom + borderBottomWidth;
+          maxOY += borderBottomWidth + paddingBottom + marginBottom;
         }
       }
     });
     this.__x = minOX;
     this.__y = minOY;
-    this.__width = maxX - minX;
-    this.__height = maxY - minY;
+    this.__width = computedStyle[WIDTH] = maxX - minX;
+    this.__height = computedStyle[HEIGHT] = maxY - minY;
+    this.__clientWidth = maxCX - minCX;
+    this.__clientHeight = maxCY - minCY;
+    this.__offsetWidth = maxFX - minFX;
+    this.__offsetHeight = maxFY - minFY;
+    this.__outerWidth = maxOX - minOX;
+    this.__outerHeight = maxOY - minOY;
     this.__sx1 = minFX;
     this.__sy1 = minFY;
     this.__sx2 = minCX;
@@ -1956,15 +1951,6 @@ class Dom extends Xom {
     this.__sy5 = maxCY;
     this.__sx6 = maxFX;
     this.__sy6 = maxFY;
-    if(recursion) {
-      this.flowChildren.forEach(item => {
-        if(item instanceof Dom || item instanceof Component && item.shadowRoot instanceof Dom) {
-          if(item.computedStyle[DISPLAY] === 'inline') {
-            item.__inlineSize(lineBoxManager, item.contentBoxList, true);
-          }
-        }
-      });
-    }
   }
 
   /**

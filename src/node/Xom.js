@@ -409,13 +409,13 @@ class Xom extends Node {
     }
     this.__sx = this.x + this.ox;
     this.__sy = this.y + this.oy;
-    // 计算结果存入computedStyle
-    let tw = computedStyle[WIDTH] = this.width;
-    let th = computedStyle[HEIGHT] = this.height;
+    // 计算结果存入computedStyle，inline在其inlineSize特殊处理
+    computedStyle[WIDTH] = this.width;
+    computedStyle[HEIGHT] = this.height;
     // virtual时计算返回给abs布局用，普通的在各自layout做
-    if(isVirtual) {
-      this.__ioSize(tw, th);
-    }
+    // if(isVirtual) {
+    //   this.__ioSize(tw, th);
+    // }
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {

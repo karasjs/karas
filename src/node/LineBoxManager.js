@@ -10,6 +10,7 @@ class LineBoxManager {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
     this.__domList = [];
+    this.__domStack = [];
     this.__list = []; // 包含若干LineBox
     this.__isNewLine = true; // 区域内是否是新行，dom开头肯定是
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
@@ -62,7 +63,7 @@ class LineBoxManager {
       lineBox = list[length - 1];
     }
     // inline递归过程中所有inline父子顺序列表，每个dom都需要对当前内容保存
-    this.__domList.forEach(item => {
+    this.__domStack.forEach(item => {
       item.__contentBoxList.push(o);
     });
     lineBox.add(o);
@@ -106,10 +107,11 @@ class LineBoxManager {
    */
   pushContentBoxList(dom) {
     this.__domList.push(dom);
+    this.__domStack.push(dom);
   }
 
   popContentBoxList() {
-    this.__domList.pop();
+    this.__domStack.pop();
   }
 
   __offsetX(diff) {
@@ -157,7 +159,9 @@ class LineBoxManager {
     return this.__list.length > 1;
   }
 
-  get width() {}
+  get domList() {
+    return this.__domList;
+  }
 
   get baseLine() {
     let list = this.__list;

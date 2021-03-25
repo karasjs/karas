@@ -1835,15 +1835,15 @@ class Dom extends Xom {
       }
       // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
       lineBoxManager.popContentBoxList();
+      // abs时计算，最近非inline父层在这种情况不计算
+      if(isVirtual) {
+        this.__inlineSize(lineBoxManager);
+      }
     }
     else {
       tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
       th = this.__height = fixedHeight ? h : y - data.y;
       this.__ioSize(tw, th);
-      // 所有inline计算size
-      lineBoxManager.domList.forEach(item => {
-        item.__inlineSize(lineBoxManager);
-      });
     }
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
     if(!isVirtual && !isInline) {
@@ -1851,6 +1851,10 @@ class Dom extends Xom {
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
       }
+      // block的所有inline计算size
+      lineBoxManager.domList.forEach(item => {
+        item.__inlineSize(lineBoxManager);
+      });
     }
   }
 
@@ -1881,7 +1885,6 @@ class Dom extends Xom {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
-    let baseLine = css.getBaseLine(computedStyle);console.warn(this.tagName);
     // x/clientX/offsetX/outerX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
     let length = contentBoxList.length;

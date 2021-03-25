@@ -20004,17 +20004,16 @@
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
 
 
-          lineBoxManager.popContentBoxList();
+          lineBoxManager.popContentBoxList(); // abs时计算，最近非inline父层在这种情况不计算
+
+          if (isVirtual) {
+            this.__inlineSize(lineBoxManager);
+          }
         } else {
           tw = this.__width = fixedWidth || isIbFull ? w : maxW;
           th = this.__height = fixedHeight ? h : y - data.y;
 
-          this.__ioSize(tw, th); // 所有inline计算size
-
-
-          lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(lineBoxManager);
-          });
+          this.__ioSize(tw, th);
         } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
 
 
@@ -20023,7 +20022,12 @@
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxManager.horizonAlign(tw, textAlign);
-          }
+          } // block的所有inline计算size
+
+
+          lineBoxManager.domList.forEach(function (item) {
+            item.__inlineSize(lineBoxManager);
+          });
         }
       }
       /**
@@ -20054,9 +20058,7 @@
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5];
-        var baseLine = css.getBaseLine(computedStyle);
-        console.warn(this.tagName); // x/clientX/offsetX/outerX
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5]; // x/clientX/offsetX/outerX
 
         var maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
         var length = contentBoxList.length; // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行

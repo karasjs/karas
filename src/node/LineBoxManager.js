@@ -88,7 +88,7 @@ class LineBoxManager {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
-        lineBox.__offsetX(diff);
+        // lineBox.__offsetX(diff);
         lineBox.list.forEach(item => {
           item.__offsetX(diff, true);
         });

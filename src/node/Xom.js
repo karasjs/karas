@@ -753,6 +753,9 @@ class Xom extends Node {
     // this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     if(lv >= REPAINT) {
       let isInline = this.__isRealInline();
+      if(isInline && !this.contentBoxList.length) {
+        isInline = false;
+      }
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_X] = true;
         let {
@@ -863,7 +866,6 @@ class Xom extends Node {
         }
       });
       // 圆角边计算
-      let contentBoxList = isInline ? this.contentBoxList : null;
       if(__cacheStyle[BORDER_TOP_LEFT_RADIUS] === undefined
         || __cacheStyle[BORDER_TOP_RIGHT_RADIUS] === undefined
         || __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS] === undefined
@@ -875,7 +877,7 @@ class Xom extends Node {
           = true;
         // 非替代的inline计算看contentBox首尾
         if(isInline) {
-          border.calBorderRadiusInline(contentBoxList, currentStyle, computedStyle);
+          border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle);
         }
         // 普通block整体计算
         else {
@@ -1674,6 +1676,7 @@ class Xom extends Node {
               lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
+            // console.warn(ix1,iy1,ix2,iy2);
             // 要算上开头空白inline，可能有多个和递归嵌套
             if(isFirst) {
               let n = getFirstEmptyInlineWidth(this);

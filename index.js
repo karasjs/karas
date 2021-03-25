@@ -15607,6 +15607,10 @@
         if (lv >= REPAINT$1) {
           var isInline = this.__isRealInline();
 
+          if (isInline && !this.contentBoxList.length) {
+            isInline = false;
+          }
+
           if (__cacheStyle[BACKGROUND_POSITION_X$3] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_X$3] = true;
             var bgX = currentStyle[BACKGROUND_POSITION_X$3];
@@ -15702,13 +15706,11 @@
             }
           }); // 圆角边计算
 
-          var contentBoxList = isInline ? this.contentBoxList : null;
-
           if (__cacheStyle[BORDER_TOP_LEFT_RADIUS$1] === undefined || __cacheStyle[BORDER_TOP_RIGHT_RADIUS$1] === undefined || __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1] === undefined || __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1] === undefined) {
             __cacheStyle[BORDER_TOP_LEFT_RADIUS$1] = __cacheStyle[BORDER_TOP_RIGHT_RADIUS$1] = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS$1] = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS$1] = true; // 非替代的inline计算看contentBox首尾
 
             if (isInline) {
-              border.calBorderRadiusInline(contentBoxList, currentStyle, computedStyle);
+              border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle);
             } // 普通block整体计算
             else {
                 border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle);
@@ -16595,7 +16597,8 @@
                         bx1 = _inline$getInlineBox4[4],
                         by1 = _inline$getInlineBox4[5],
                         bx2 = _inline$getInlineBox4[6],
-                        by2 = _inline$getInlineBox4[7]; // 要算上开头空白inline，可能有多个和递归嵌套
+                        by2 = _inline$getInlineBox4[7]; // console.warn(ix1,iy1,ix2,iy2);
+                    // 要算上开头空白inline，可能有多个和递归嵌套
 
 
                     if (isFirst) {
@@ -17629,7 +17632,14 @@
             }
           });
         }
-      }
+      } // __offsetX(diff) {
+      //   this.__x += diff;
+      // }
+      //
+      // __offsetY(diff) {
+      //   this.__y += diff;
+      // }
+
       /**
        * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
        * @param l
@@ -17871,9 +17881,8 @@
           if (diff > 0) {
             if (textAlign === 'center') {
               diff *= 0.5;
-            }
+            } // lineBox.__offsetX(diff);
 
-            lineBox.__offsetX(diff);
 
             lineBox.list.forEach(function (item) {
               item.__offsetX(diff, true);

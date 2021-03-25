@@ -13285,7 +13285,7 @@
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
 
-          if (typeof karas !== 'undefined' && karas.debug) {
+          if (debug.flag) {
             page.canvas.setAttribute('size', page.size);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.beginPath();
@@ -19032,7 +19032,15 @@
           lineBoxManager.verticalAlign();
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(tw, textAlign);
+            lineBoxManager.horizonAlign(tw, textAlign); // 递归inline进行对齐
+
+            flowChildren.forEach(function (item) {
+              if (item instanceof Dom || item instanceof Component$1 && item.shadowRoot instanceof Dom) {
+                if (item.computedStyle[DISPLAY$4] === 'inline') {
+                  item.__inlineSize(lineBoxManager, item.contentBoxList, true);
+                }
+              }
+            });
           }
 
           this.__marginAuto(currentStyle, data);
@@ -20001,6 +20009,11 @@
 
           tw = this.__width;
           th = this.__height;
+
+          if (lineBoxManager.size > 1) {
+
+            this.__x = lx;
+          }
         } else {
           tw = this.__width = fixedWidth || isIbFull ? w : maxW;
           th = this.__height = fixedHeight ? h : y - data.y;
@@ -20027,12 +20040,13 @@
        * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
        * @param lineBoxManager
        * @param contentBoxList
+       * @param recursion 是否递归inline
        * @private
        */
 
     }, {
       key: "__inlineSize",
-      value: function __inlineSize(lineBoxManager, contentBoxList) {
+      value: function __inlineSize(lineBoxManager, contentBoxList, recursion) {
         var computedStyle = this.computedStyle;
         var marginTop = computedStyle[MARGIN_TOP$2],
             marginRight = computedStyle[MARGIN_RIGHT$4],
@@ -20046,7 +20060,8 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5];
-        var baseLine = css.getBaseLine(computedStyle);
+        var baseLine = css.getBaseLine(computedStyle); // x/clientX/offsetX
+
         var maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
         var length = contentBoxList.length;
         var lastLineBox,
@@ -20062,6 +20077,12 @@
           if (i) {
             minX = Math.min(minX, item.x);
             maxY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
+            minCX = Math.min(minCX, item.x);
+            minCY = Math.min(minCY, item.y);
+            minFX = Math.min(minFX, item.x);
+            minFY = Math.min(minFY, item.y);
+            minOX = Math.min(minOX, item.x);
+            minOY = Math.min(minOY, item.y);
 
             if (i === length - 1) {
               maxX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
@@ -20107,6 +20128,16 @@
         this.__sy5 = maxCY;
         this.__sx6 = maxFX;
         this.__sy6 = maxFY;
+
+        if (recursion) {
+          this.flowChildren.forEach(function (item) {
+            if (item instanceof Dom || item instanceof Component$1 && item.shadowRoot instanceof Dom) {
+              if (item.computedStyle[DISPLAY$4] === 'inline') {
+                item.__inlineSize(lineBoxManager, item.contentBoxList, true);
+              }
+            }
+          });
+        }
       }
       /**
        * 只针对绝对定位children布局
@@ -30244,7 +30275,7 @@
   Geom$1.register('$rect', Rect);
   Geom$1.register('$circle', Circle);
   Geom$1.register('$ellipse', Ellipse);
-  var karas$1 = {
+  var karas = {
     version: version,
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
@@ -30354,12 +30385,12 @@
   });
 
   if (typeof window !== 'undefined') {
-    window.karas = karas$1;
+    window.karas = karas;
   } else if (typeof self !== 'undefined') {
-    self.karas = karas$1;
+    self.karas = karas;
   }
 
-  return karas$1;
+  return karas;
 
 })));
 //# sourceMappingURL=index.js.map

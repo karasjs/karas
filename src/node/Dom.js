@@ -942,6 +942,14 @@ class Dom extends Xom {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
+        // 递归inline进行对齐
+        flowChildren.forEach(item => {
+          if(item instanceof Dom || item instanceof Component && item.shadowRoot instanceof Dom) {
+            if(item.computedStyle[DISPLAY] === 'inline') {
+              item.__inlineSize(lineBoxManager, item.contentBoxList, true);
+            }
+          }
+        });
       }
       this.__marginAuto(currentStyle, data);
     }
@@ -1834,6 +1842,10 @@ class Dom extends Xom {
       this.__inlineSize(lineBoxManager, contentBoxList);
       tw = this.__width;
       th = this.__height;
+      if(lineBoxManager.size > 1) {
+        if(lx > x) {}
+        this.__x = lx;
+      }
     }
     else {
       tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
@@ -1859,9 +1871,10 @@ class Dom extends Xom {
    * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
    * @param lineBoxManager
    * @param contentBoxList
+   * @param recursion 是否递归inline
    * @private
    */
-  __inlineSize(lineBoxManager, contentBoxList) {
+  __inlineSize(lineBoxManager, contentBoxList, recursion) {
     let computedStyle = this.computedStyle;
     let {
       [MARGIN_TOP]: marginTop,
@@ -1878,6 +1891,7 @@ class Dom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
     let baseLine = css.getBaseLine(computedStyle);
+    // x/clientX/offsetX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
     let length = contentBoxList.length;
     let lastLineBox, diff = 0;
@@ -1891,6 +1905,12 @@ class Dom extends Xom {
       if(i) {
         minX = Math.min(minX, item.x);
         maxY = Math.max(maxY, item.y + diff + item.outerHeight + marginBottom + paddingBottom + borderBottomWidth);
+        minCX = Math.min(minCX, item.x);
+        minCY = Math.min(minCY, item.y);
+        minFX = Math.min(minFX, item.x);
+        minFY = Math.min(minFY, item.y);
+        minOX = Math.min(minOX, item.x);
+        minOY = Math.min(minOY, item.y);
         if(i === length - 1) {
           maxX = Math.max(maxX, item.x + item.outerWidth + marginRight + paddingRight + borderRightWidth);
         }
@@ -1936,6 +1956,15 @@ class Dom extends Xom {
     this.__sy5 = maxCY;
     this.__sx6 = maxFX;
     this.__sy6 = maxFY;
+    if(recursion) {
+      this.flowChildren.forEach(item => {
+        if(item instanceof Dom || item instanceof Component && item.shadowRoot instanceof Dom) {
+          if(item.computedStyle[DISPLAY] === 'inline') {
+            item.__inlineSize(lineBoxManager, item.contentBoxList, true);
+          }
+        }
+      });
+    }
   }
 
   /**

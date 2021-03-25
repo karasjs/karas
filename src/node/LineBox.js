@@ -27,6 +27,8 @@ class LineBox {
     this.__list = [];
     this.__x = x;
     this.__y = y;
+    this.__lineHeight = 0;
+    this.__baseLine = 0;
   }
 
   add(item) {
@@ -36,8 +38,8 @@ class LineBox {
 
   verticalAlign() {
     let n = this.baseLine;
-    // 仅当有2个和以上时才需要vertical对齐调整
-    if(this.list.length > 1) {
+    // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
+    if(this.list.length) {
       this.list.forEach(item => {
         let m = item.baseLine;
         if(m !== n) {
@@ -53,6 +55,17 @@ class LineBox {
 
   __offsetY(diff) {
     this.__y += diff;
+  }
+
+  /**
+   * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
+   * @param l
+   * @param b
+   * @private
+   */
+  __setLB(l, b) {
+    this.__lineHeight = l;
+    this.__baseLine = b;
   }
 
   get list() {
@@ -127,7 +140,7 @@ class LineBox {
     this.list.forEach(item => {
       height = Math.max(height, item.outerHeight);
     });
-    return height;
+    return Math.max(this.__lineHeight, height);
   }
 
   get baseLine() {
@@ -135,15 +148,16 @@ class LineBox {
     this.list.forEach(item => {
       baseLine = Math.max(baseLine, item.baseLine);
     });
-    return baseLine;
+    return Math.max(this.__baseLine, baseLine);
   }
 
   get lineHeight() {
-    let n = 0;
+    let lineHeight = 0;
+    // 只有TextBox和InlineBox
     this.list.forEach(item => {
-      n = Math.max(n, item.height);
+      lineHeight = Math.max(lineHeight, item.height);
     });
-    return n;
+    return Math.max(this.__lineHeight, lineHeight);
   }
 
   // get marginBottom() {

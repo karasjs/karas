@@ -44,6 +44,7 @@ const {
     JUSTIFY_CONTENT,
     Z_INDEX,
     WHITE_SPACE,
+    LINE_HEIGHT,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -272,7 +273,7 @@ class Dom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } } = this;
     // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
-    if(display === 'inline') {
+    if(this.__isRealInline()) {
       if(flowChildren.length) {
         let first = flowChildren[0];
         if(first instanceof Xom || first instanceof Component) {
@@ -1622,6 +1623,9 @@ class Dom extends Xom {
       this.__ioSize(w, this.height);
       return;
     }
+    if(isInline && !this.__isRealInline()) {
+      isInline = false;
+    }
     // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
     // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
     if(!isInline) {
@@ -1631,6 +1635,9 @@ class Dom extends Xom {
     }
     else {
       this.__lineBoxManager = lineBoxManager;
+      let lineHeight = computedStyle[LINE_HEIGHT];
+      let baseLine = css.getBaseLine(computedStyle);
+      lineBoxManager.__setLB(lineHeight, baseLine);
     }
     // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
     let contentBoxList;
@@ -1833,9 +1840,18 @@ class Dom extends Xom {
       if(selfEndSpace) {
         lineBoxManager.addX(selfEndSpace);
       }
+      // 如果没有内容，空白还要加上开头即左侧mpb
+      if(!flowChildren.length) {
+        let {
+          [MARGIN_LEFT]: marginLeft,
+          [PADDING_LEFT]: paddingLeft,
+          [BORDER_LEFT_WIDTH]: borderLeftWidth,
+        } = computedStyle;
+        lineBoxManager.addX(marginLeft + paddingLeft + borderLeftWidth);
+      }
       // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
       lineBoxManager.popContentBoxList();
-      // abs时计算，最近非inline父层在这种情况不计算
+      // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
       if(isVirtual) {
         this.__inlineSize(lineBoxManager);
       }
@@ -1884,76 +1900,103 @@ class Dom extends Xom {
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     // x/clientX/offsetX/outerX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
     let length = contentBoxList.length;
-    // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行
-    contentBoxList.forEach((item, i) => {
-      // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb，中间的无需考虑嵌套inline的mpb
-      if(i) {
-        minX = Math.min(minX, item.x);
-        minCX = Math.min(minCX, item.x);
-        minFX = Math.min(minFX, item.x);
-        minOX = Math.min(minOX, item.x);
-        if(i === length - 1) {
-          maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
-          maxY = maxCY = maxFY = maxOY = Math.max(maxY, item.y + item.outerHeight);
-          maxCX += paddingRight;
-          maxCY += paddingBottom;
-          maxFX += paddingRight + borderRightWidth;
-          maxFY += paddingBottom + borderBottomWidth;
-          maxOX += borderRightWidth + paddingRight + marginRight
-          maxOY += borderBottomWidth + paddingBottom + marginBottom;
+    if(length) {
+      // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行
+      contentBoxList.forEach((item, i) => {
+        // 非第一个除了minY不用看其它都要，minX是换行导致，而maxX在最后一个要考虑右侧mpb，中间的无需考虑嵌套inline的mpb
+        if(i) {
+          minX = Math.min(minX, item.x);
+          minCX = Math.min(minCX, item.x);
+          minFX = Math.min(minFX, item.x);
+          minOX = Math.min(minOX, item.x);
+          if(i === length - 1) {
+            maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
+            maxY = maxCY = maxFY = maxOY = Math.max(maxY, item.y + item.outerHeight);
+            maxCX += paddingRight;
+            maxCY += paddingBottom;
+            maxFX += paddingRight + borderRightWidth;
+            maxFY += paddingBottom + borderBottomWidth;
+            maxOX += borderRightWidth + paddingRight + marginRight
+            maxOY += borderBottomWidth + paddingBottom + marginBottom;
+          }
+          else {
+            maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
+          }
         }
+        // 第一个初始化
         else {
-          maxX = maxCX = maxFX = maxOX = Math.max(maxX, item.x + item.outerWidth);
+          minX = item.x;
+          minY = item.y;
+          minCX = minX - paddingLeft;
+          minCY = minY - paddingTop;
+          minFX = minCX - borderLeftWidth;
+          minFY = minCY - borderTopWidth;
+          minOX = minFX - marginLeft;
+          minOY = minFY - marginTop;
+          maxX = maxCX = maxFX = maxOX = item.x + item.outerWidth;
+          maxY = maxCY = maxFY = maxOY = item.y + item.outerHeight;
+          if(i === length - 1) {
+            maxCX += paddingRight;
+            maxCY += paddingBottom;
+            maxFX += paddingRight + borderRightWidth;
+            maxFY += paddingBottom + borderBottomWidth;
+            maxOX += borderRightWidth + paddingRight + marginRight
+            maxOY += borderBottomWidth + paddingBottom + marginBottom;
+          }
         }
-      }
-      // 第一个初始化
-      else {
-        minX = item.x;
-        minY = item.y;
-        minCX = minX - paddingLeft;
-        minCY = minY - paddingTop;
-        minFX = minCX - borderLeftWidth;
-        minFY = minCY - borderTopWidth;
-        minOX = minFX - marginLeft;
-        minOY = minFY - marginTop;
-        maxX = maxCX = maxFX = maxOX = item.x + item.outerWidth;
-        maxY = maxCY = maxFY = maxOY = item.y + item.outerHeight;
-        if(i === length - 1) {
-          maxCX += paddingRight;
-          maxCY += paddingBottom;
-          maxFX += paddingRight + borderRightWidth;
-          maxFY += paddingBottom + borderBottomWidth;
-          maxOX += borderRightWidth + paddingRight + marginRight
-          maxOY += borderBottomWidth + paddingBottom + marginBottom;
-        }
-      }
-    });
-    this.__x = minOX;
-    this.__y = minOY;
-    this.__width = computedStyle[WIDTH] = maxX - minX;
-    this.__height = computedStyle[HEIGHT] = maxY - minY;
-    this.__clientWidth = maxCX - minCX;
-    this.__clientHeight = maxCY - minCY;
-    this.__offsetWidth = maxFX - minFX;
-    this.__offsetHeight = maxFY - minFY;
-    this.__outerWidth = maxOX - minOX;
-    this.__outerHeight = maxOY - minOY;
-    this.__sx1 = minFX;
-    this.__sy1 = minFY;
-    this.__sx2 = minCX;
-    this.__sy2 = minCY;
-    this.__sx3 = minX;
-    this.__sy3 = minY;
-    this.__sx4 = maxX;
-    this.__sy4 = maxY;
-    this.__sx5 = maxCX;
-    this.__sy5 = maxCY;
-    this.__sx6 = maxFX;
-    this.__sy6 = maxFY;
+      });
+      this.__x = minOX;
+      this.__y = minOY;
+      this.__width = computedStyle[WIDTH] = maxX - minX;
+      // 防止比自己最小高度lineHeight还小，比如内容是个小字体
+      this.__height = computedStyle[HEIGHT] = Math.max(lineHeight, maxY - minY);
+      this.__clientWidth = maxCX - minCX;
+      this.__clientHeight = maxCY - minCY;
+      this.__offsetWidth = maxFX - minFX;
+      this.__offsetHeight = maxFY - minFY;
+      this.__outerWidth = maxOX - minOX;
+      this.__outerHeight = maxOY - minOY;
+      this.__sx1 = minFX;
+      this.__sy1 = minFY;
+      this.__sx2 = minCX;
+      this.__sy2 = minCY;
+      this.__sx3 = minX;
+      this.__sy3 = minY;
+      this.__sx4 = maxX;
+      this.__sy4 = maxY;
+      this.__sx5 = maxCX;
+      this.__sy5 = maxCY;
+      this.__sx6 = maxFX;
+      this.__sy6 = maxFY;
+    }
+    // 如果没有内容，宽度为0高度为lineHeight
+    else {
+      let tw = this.__width = computedStyle[WIDTH] = 0;
+      let th = this.__height = computedStyle[HEIGHT] = lineHeight;
+      this.__ioSize(tw, th);
+      this.__sy -= marginTop + paddingTop + borderTopWidth;
+      this.__sx1 = this.sx + marginLeft;
+      this.__sy1 = this.sy + marginTop;
+      this.__sx2 = this.__sx1 + borderLeftWidth;
+      this.__sy2 = this.__sy1 + borderTopWidth;
+      this.__sx4 = this.__sx3 = this.__sx2 + paddingLeft;
+      this.__sy4 = this.__sy3 = this.__sy2 + paddingTop;
+      this.__sx5 = this.__sx4 + paddingRight;
+      this.__sy5 = this.__sy4 + th + paddingBottom;
+      this.__sx6 = this.__sx5 + borderRightWidth;
+      this.__sy6 = this.__sy5 + borderBottomWidth;
+      this.__clientWidth = this.__sx5 - this.__sx2;
+      this.__clientHeight = this.__sy5 - this.__sy2;
+      this.__offsetWidth = this.__sx6 - this.__sx1;
+      this.__offsetHeight = this.__sy6 - this.__sy1;
+      this.__outerWidth = this.__offsetWidth + marginLeft + marginRight;
+      this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
+    }
   }
 
   /**

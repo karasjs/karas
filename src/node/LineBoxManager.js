@@ -13,8 +13,9 @@ class LineBoxManager {
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
     this.__isNewLine = true; // 区域内是否是新行，dom开头肯定是
+    this.__lineHeight = 0;
+    this.__baseLine = 0;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
-    // this.endLineSpace = 0; // 最后一行mpb累计，inline布局时最后一行空白判断
   }
 
   /**
@@ -56,6 +57,10 @@ class LineBoxManager {
     if(this.__isNewLine) {
       this.__isNewLine = false;
       lineBox = this.genLineBox(o.x, o.y);
+      if(this.__lineHeight) {
+        lineBox.__setLB(this.__lineHeight, this.__baseLine);
+        this.__lineHeight = this.__baseLine = 0;
+      }
     }
     else {
       let list = this.__list;
@@ -124,6 +129,24 @@ class LineBoxManager {
     this.__list.forEach(lineBox => {
       lineBox.__offsetY(diff);
     });
+  }
+
+  /**
+   * 当前有lineBox则设置lineHeight/baseLine，否则记录下来等新的设置
+   * 当是新行时不设置，下个创建的新lineBox用
+   * @param l
+   * @param b
+   * @private
+   */
+  __setLB(l, b) {
+    let length = this.__list.length;
+    if(length && !this.isNewLine) {
+      this.__list[length - 1].__setLB(l, b);
+    }
+    else {
+      this.__lineHeight = l;
+      this.__baseLine = b;
+    }
   }
 
   get size() {

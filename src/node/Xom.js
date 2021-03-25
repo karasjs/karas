@@ -1,5 +1,6 @@
 import Node from './Node';
 import mode from './mode';
+import Component from './Component';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -129,7 +130,7 @@ const {
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
-const { clone, int2rgba, rgba2int, joinArr, isNil } = util;
+const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
 
@@ -145,6 +146,50 @@ const {
   OPACITY: OP,
   FILTER: FT,
 } = level;
+
+function getFirstEmptyInlineWidth(xom) {
+  let n = 0;
+  let flowChildren = xom.flowChildren;
+  let length = flowChildren.length;
+  for(let i = 0; i < length; i++) {
+    let child = flowChildren[i];
+    if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+      if(child.flowChildren.length) {
+        n += getFirstEmptyInlineWidth(child);
+        break;
+      }
+      else if(child.__isRealInline()) {
+        n += child.outerWidth;
+      }
+    }
+    else {
+      break;
+    }
+  }
+  return n;
+}
+
+function getLastEmptyInlineWidth(xom) {
+  let n = 0;
+  let flowChildren = xom.flowChildren;
+  let length = flowChildren.length;
+  for(let i = length - 1; i >= 0; i--) {
+    let child = flowChildren[i];
+    if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+      if(child.flowChildren.length) {
+        n += getLastEmptyInlineWidth(child);
+        break;
+      }
+      else {
+        n += child.outerWidth;
+      }
+    }
+    else {
+      break;
+    }
+  }
+  return n;
+}
 
 class Xom extends Node {
   constructor(tagName, props = {}) {
@@ -1542,6 +1587,12 @@ class Xom extends Node {
               lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
+            // 要算上开头空白inline，可能有多个和递归嵌套
+            if(isFirst) {
+              let n = getFirstEmptyInlineWidth(this);
+              ix1 -= n;
+              bx1 -= n;
+            }
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
                 ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
@@ -1623,6 +1674,16 @@ class Xom extends Node {
               lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
+            // 要算上开头空白inline，可能有多个和递归嵌套
+            if(isFirst) {
+              let n = getFirstEmptyInlineWidth(this);
+              ix1 -= n;
+              bx1 -= n;
+            }
+            // 要算上末尾空白inline，可能有多个和递归嵌套
+            let n = getLastEmptyInlineWidth(this);
+            ix2 += n;
+            bx2 += n;
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR],
                 ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
@@ -1705,11 +1766,12 @@ class Xom extends Node {
         if(offscreen) {
           offscreen.ctx.clearRect(0, 0, iw, lineHeight);
         }
+        return;
       }
-      else {
-        // TODO
+      // 无内容且无尺寸的无需渲染
+      else if(bx1 === bx2 || by1 === by2) {
+        return;
       }
-      return;
     }
     // block渲染，bgc垫底
     if(backgroundColor[3] > 0) {
@@ -2355,7 +2417,7 @@ class Xom extends Node {
   }
 
   __isRealInline() {
-    return this.computedStyle[DISPLAY] === 'inline';
+    return this.currentStyle[DISPLAY] === 'inline';
   }
 
   get tagName() {

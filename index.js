@@ -16418,21 +16418,25 @@
               var fontSize = computedStyle[FONT_SIZE$3],
                   fontFamily = computedStyle[FONT_FAMILY$4],
                   lineHeight = computedStyle[LINE_HEIGHT$3];
-              var iw = 0;
+              var iw = 0,
+                  ih = 0;
               var offscreen,
                   svgBgSymbol = []; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
               if (hasBgi) {
                 iw = inline.getInlineWidth(_this4, contentBoxList);
+                ih = lineHeight;
 
                 if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
                   iw += paddingLeft + paddingRight;
+                  ih += paddingTop + paddingBottom;
                 } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
                   iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+                  ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
                 }
 
                 if (renderMode === mode.CANVAS) {
-                  offscreen = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
+                  offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
                 }
 
                 var _length = backgroundImage.length;
@@ -16447,14 +16451,14 @@
                     var loadBgi = _this4.__loadBgi[i];
 
                     if (loadBgi.url === backgroundImage[i]) {
-                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx, defs, loadBgi, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
+                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx, defs, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
 
                       if (renderMode === mode.SVG && uuid) {
                         svgBgSymbol.push(uuid);
                       }
                     }
                   } else if (bgi.k) {
-                    var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
+                    var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, ih, bgi);
 
                     if (gd) {
                       if (gd.k === 'conic') {
@@ -16464,7 +16468,7 @@
                           svgBgSymbol.push(_uuid);
                         }
                       } else {
-                        var _uuid2 = bg.renderBgc(_this4, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, 'fill', true);
+                        var _uuid2 = bg.renderBgc(_this4, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
 
                         if (renderMode === mode.SVG && _uuid2) {
                           svgBgSymbol.push(_uuid2);
@@ -16597,8 +16601,7 @@
                         bx1 = _inline$getInlineBox4[4],
                         by1 = _inline$getInlineBox4[5],
                         bx2 = _inline$getInlineBox4[6],
-                        by2 = _inline$getInlineBox4[7]; // console.warn(ix1,iy1,ix2,iy2);
-                    // 要算上开头空白inline，可能有多个和递归嵌套
+                        by2 = _inline$getInlineBox4[7]; // 要算上开头空白inline，可能有多个和递归嵌套
 
 
                     if (isFirst) {
@@ -16620,7 +16623,7 @@
                     var w = ix2 - ix1; // canvas的bg位图裁剪
 
                     if (renderMode === mode.CANVAS && offscreen) {
-                      ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+                      ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
                     } //svg则特殊判断
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
                         svgBgSymbol.forEach(function (symbol) {
@@ -16630,7 +16633,7 @@
                               props: [],
                               children: [{
                                 tagName: 'path',
-                                props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(lineHeight, "L").concat(countW, ",").concat(lineHeight, ",L").concat(countW, ",", 0)]]
+                                props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
                             var clip = defs.add(_v3);
@@ -16693,7 +16696,7 @@
               }
 
               if (offscreen) {
-                offscreen.ctx.clearRect(0, 0, iw, lineHeight);
+                offscreen.ctx.clearRect(0, 0, iw, ih);
               }
 
               return {
@@ -17632,14 +17635,17 @@
             }
           });
         }
-      } // __offsetX(diff) {
-      //   this.__x += diff;
-      // }
-      //
-      // __offsetY(diff) {
-      //   this.__y += diff;
-      // }
-
+      }
+    }, {
+      key: "__offsetX",
+      value: function __offsetX(diff) {
+        this.__x += diff;
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.__y += diff;
+      }
       /**
        * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
        * @param l
@@ -17881,8 +17887,9 @@
           if (diff > 0) {
             if (textAlign === 'center') {
               diff *= 0.5;
-            } // lineBox.__offsetX(diff);
+            }
 
+            lineBox.__offsetX(diff);
 
             lineBox.list.forEach(function (item) {
               item.__offsetX(diff, true);
@@ -17918,6 +17925,20 @@
       key: "popContentBoxList",
       value: function popContentBoxList() {
         this.__domStack.pop();
+      }
+    }, {
+      key: "__offsetX",
+      value: function __offsetX(diff) {
+        this.__list.forEach(function (lineBox) {
+          lineBox.__offsetX(diff);
+        });
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.__list.forEach(function (lineBox) {
+          lineBox.__offsetY(diff);
+        });
       }
       /**
        * 当前有lineBox则设置lineHeight/baseLine，否则记录下来等新的设置
@@ -18416,7 +18437,12 @@
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
-        _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
+        _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv); // 记得偏移LineBox
+
+
+        if (isLayout && !this.__isRealInline() && this.lineBoxManager) {
+          this.lineBoxManager.__offsetX(diff);
+        }
 
         this.flowChildren.forEach(function (item) {
           if (item) {
@@ -18428,6 +18454,10 @@
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
         _get(_getPrototypeOf(Dom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
+
+        if (isLayout && !this.__isRealInline() && this.lineBoxManager) {
+          this.lineBoxManager.__offsetY(diff);
+        }
 
         this.flowChildren.forEach(function (item) {
           if (item) {

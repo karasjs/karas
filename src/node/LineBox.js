@@ -49,13 +49,13 @@ class LineBox {
     }
   }
 
-  // __offsetX(diff) {
-  //   this.__x += diff;
-  // }
-  //
-  // __offsetY(diff) {
-  //   this.__y += diff;
-  // }
+  __offsetX(diff) {
+    this.__x += diff;
+  }
+
+  __offsetY(diff) {
+    this.__y += diff;
+  }
 
   /**
    * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底

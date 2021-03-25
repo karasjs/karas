@@ -88,7 +88,7 @@ class LineBoxManager {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
-        // lineBox.__offsetX(diff);
+        lineBox.__offsetX(diff);
         lineBox.list.forEach(item => {
           item.__offsetX(diff, true);
         });
@@ -117,6 +117,18 @@ class LineBoxManager {
 
   popContentBoxList() {
     this.__domStack.pop();
+  }
+
+  __offsetX(diff) {
+    this.__list.forEach(lineBox => {
+      lineBox.__offsetX(diff);
+    });
+  }
+
+  __offsetY(diff) {
+    this.__list.forEach(lineBox => {
+      lineBox.__offsetY(diff);
+    });
   }
 
   /**

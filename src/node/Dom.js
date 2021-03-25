@@ -329,6 +329,10 @@ class Dom extends Xom {
   // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout, lv);
+    // 记得偏移LineBox
+    if(isLayout && !this.__isRealInline() && this.lineBoxManager) {
+      this.lineBoxManager.__offsetX(diff);
+    }
     this.flowChildren.forEach(item => {
       if(item) {
         item.__offsetX(diff, isLayout, lv);
@@ -338,6 +342,9 @@ class Dom extends Xom {
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout, lv);
+    if(isLayout && !this.__isRealInline() && this.lineBoxManager) {
+      this.lineBoxManager.__offsetY(diff);
+    }
     this.flowChildren.forEach(item => {
       if(item) {
         item.__offsetY(diff, isLayout, lv);

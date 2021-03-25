@@ -1519,19 +1519,22 @@ class Xom extends Node {
           [FONT_FAMILY]: fontFamily,
           [LINE_HEIGHT]: lineHeight,
         } = computedStyle;
-        let iw = 0;
+        let iw = 0, ih = 0;
         let offscreen, svgBgSymbol = [];
         // bgi视作inline排满一行绘制，然后按分行拆开给每行
         if(hasBgi) {
           iw = inline.getInlineWidth(this, contentBoxList);
+          ih = lineHeight;
           if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
             iw += paddingLeft + paddingRight;
+            ih += paddingTop + paddingBottom;
           }
           else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
             iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+            ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
           }
           if(renderMode === mode.CANVAS) {
-            offscreen = inject.getCacheCanvas(iw, lineHeight, '__$$INLINE_BGI$$__');
+            offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
           }
           let length = backgroundImage.length;
           backgroundImage.slice(0).reverse().forEach((bgi, i) => {
@@ -1543,7 +1546,7 @@ class Xom extends Node {
               let loadBgi = this.__loadBgi[i];
               if(loadBgi.url === backgroundImage[i]) {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx, defs, loadBgi,
-                  0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr,
+                  0, 0, iw, ih, btlr, btrr, bbrr, bblr,
                   currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
                 if(renderMode === mode.SVG && uuid) {
                   svgBgSymbol.push(uuid);
@@ -1551,7 +1554,7 @@ class Xom extends Node {
               }
             }
             else if(bgi.k) {
-              let gd = this.__gradient(renderMode, ctx, defs, 0, 0, iw, lineHeight, bgi);
+              let gd = this.__gradient(renderMode, ctx, defs, 0, 0, iw, ih, bgi);
               if(gd) {
                 if(gd.k === 'conic') {
                   let uuid = gradient.renderConic(this, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight,
@@ -1562,7 +1565,7 @@ class Xom extends Node {
                 }
                 else {
                   let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx, defs, gd.v,
-                    0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, 'fill', true);
+                    0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
                   if(renderMode === mode.SVG && uuid) {
                     svgBgSymbol.push(uuid);
                   }
@@ -1676,7 +1679,6 @@ class Xom extends Node {
               lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
-            // console.warn(ix1,iy1,ix2,iy2);
             // 要算上开头空白inline，可能有多个和递归嵌套
             if(isFirst) {
               let n = getFirstEmptyInlineWidth(this);
@@ -1694,7 +1696,7 @@ class Xom extends Node {
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
             if(renderMode === mode.CANVAS && offscreen) {
-              ctx.drawImage(offscreen.canvas, countW, 0, w, lineHeight, ix1 + dx, iy1 + dy, w, lineHeight);
+              ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
             }
             //svg则特殊判断
             else if(renderMode === mode.SVG && svgBgSymbol.length) {
@@ -1707,7 +1709,7 @@ class Xom extends Node {
                       {
                         tagName: 'path',
                         props: [
-                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${lineHeight}L${countW},${lineHeight},L${countW},${0}`],
+                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${ih}L${countW},${ih},L${countW},${0}`],
                         ],
                       }
                     ],
@@ -1767,7 +1769,7 @@ class Xom extends Node {
           }
         }
         if(offscreen) {
-          offscreen.ctx.clearRect(0, 0, iw, lineHeight);
+          offscreen.ctx.clearRect(0, 0, iw, ih);
         }
         return;
       }

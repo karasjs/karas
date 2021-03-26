@@ -28,16 +28,16 @@
   * static 默认
   * absolute
   * relative
-* display `强制开启bfc`
-  * block
-  * inline
+* display
+  * block `简化强制开启bfc`
+  * inline `渲染简化按dom序而非LineBox序`
   * inlineBlock
   * none
 * top/right/bottom/left
   * auto 默认
   * px
   * %
-* marginTop/marginRight/marginBottom/marginLeft `强制开启bfc`
+* marginTop/marginRight/marginBottom/marginLeft
   * auto 默认
   * px
   * %
@@ -181,7 +181,7 @@
 * opacity
   * 1 默认
   * number
-* zIndex
+* zIndex `简化每个元素都有自己独立的堆叠上下文，bg始终在底部`
   * auto 默认
   * number
 * boxShadow

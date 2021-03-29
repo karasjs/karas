@@ -312,22 +312,23 @@
     WHITE_SPACE: 70,
     TEXT_OVERFLOW: 71,
     LETTER_SPACING: 72,
+    LINE_CLAMP: 73,
     // GEOM
-    FILL: 73,
-    STROKE: 74,
-    STROKE_WIDTH: 75,
-    STROKE_DASHARRAY: 76,
-    STROKE_DASHARRAY_STR: 77,
-    STROKE_LINECAP: 78,
-    STROKE_LINEJOIN: 79,
-    STROKE_MITERLIMIT: 80,
-    FILL_RULE: 81,
+    FILL: 74,
+    STROKE: 75,
+    STROKE_WIDTH: 76,
+    STROKE_DASHARRAY: 77,
+    STROKE_DASHARRAY_STR: 78,
+    STROKE_LINECAP: 79,
+    STROKE_LINEJOIN: 80,
+    STROKE_MITERLIMIT: 81,
+    FILL_RULE: 82,
     // 无此样式，仅cache需要
-    MATRIX: 82,
-    BORDER_TOP: 83,
-    BORDER_RIGHT: 84,
-    BORDER_BOTTOM: 85,
-    BORDER_LEFT: 86
+    MATRIX: 83,
+    BORDER_TOP: 84,
+    BORDER_RIGHT: 85,
+    BORDER_BOTTOM: 86,
+    BORDER_LEFT: 87
   };
 
   function style2Lower(s) {
@@ -6247,7 +6248,8 @@
     overflow: 'visible',
     mixBlendMode: 'normal',
     whiteSpace: 'inherit',
-    textOverflow: 'clip'
+    textOverflow: 'clip',
+    lineClamp: 0
   };
   var GEOM = {
     fill: 'transparent',
@@ -6841,7 +6843,8 @@
       LETTER_SPACING = _enums$STYLE_KEY$2.LETTER_SPACING,
       BACKGROUND_CLIP = _enums$STYLE_KEY$2.BACKGROUND_CLIP,
       WHITE_SPACE = _enums$STYLE_KEY$2.WHITE_SPACE,
-      TEXT_OVERFLOW = _enums$STYLE_KEY$2.TEXT_OVERFLOW;
+      TEXT_OVERFLOW = _enums$STYLE_KEY$2.TEXT_OVERFLOW,
+      LINE_CLAMP = _enums$STYLE_KEY$2.LINE_CLAMP;
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -7563,6 +7566,13 @@
       } else {
         res[WHITE_SPACE] = [temp, STRING];
       }
+    }
+
+    temp = style.lineClamp;
+
+    if (temp !== undefined) {
+      temp = parseInt(temp) || 0;
+      res[LINE_CLAMP] = [Math.max(0, temp), NUMBER];
     } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
@@ -7837,7 +7847,8 @@
       // border-width不支持百分比
       computedStyle[k] = currentStyle[k][1] === PX$2 ? Math.max(0, currentStyle[k][0]) : 0;
     });
-    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, BACKGROUND_CLIP].forEach(function (k) {
+    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, // BACKGROUND_CLIP,
+    LINE_CLAMP].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     var textAlign = currentStyle[TEXT_ALIGN];
@@ -8097,7 +8108,7 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, POSITION, true), _defineProperty(_VALUE$1, DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, FLEX_DIRECTION, true), _defineProperty(_VALUE$1, FLEX_GROW, true), _defineProperty(_VALUE$1, FLEX_SHRINK, true), _defineProperty(_VALUE$1, JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, ALIGN_ITEMS, true), _defineProperty(_VALUE$1, ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, OPACITY, true), _defineProperty(_VALUE$1, Z_INDEX, true), _defineProperty(_VALUE$1, BACKGROUND_CLIP, true), _defineProperty(_VALUE$1, TEXT_OVERFLOW, true), _VALUE$1);
+  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, POSITION, true), _defineProperty(_VALUE$1, DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, FLEX_DIRECTION, true), _defineProperty(_VALUE$1, FLEX_GROW, true), _defineProperty(_VALUE$1, FLEX_SHRINK, true), _defineProperty(_VALUE$1, JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, ALIGN_ITEMS, true), _defineProperty(_VALUE$1, ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, OPACITY, true), _defineProperty(_VALUE$1, Z_INDEX, true), _defineProperty(_VALUE$1, BACKGROUND_CLIP, true), _defineProperty(_VALUE$1, TEXT_OVERFLOW, true), _defineProperty(_VALUE$1, LINE_CLAMP, true), _VALUE$1);
   var ARRAY_0$1 = (_ARRAY_$1 = {}, _defineProperty(_ARRAY_$1, COLOR, true), _defineProperty(_ARRAY_$1, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_LEFT_COLOR, true), _ARRAY_$1);
   var ARRAY_0_1$1 = (_ARRAY_0_$1 = {}, _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, TRANSFORM_ORIGIN$1, true), _ARRAY_0_$1);
 
@@ -15607,7 +15618,6 @@
       value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
         var _this3 = this;
 
-        // this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
         if (lv >= REPAINT$1) {
           var isInline = this.__isRealInline();
 
@@ -15701,7 +15711,7 @@
           } // 这些直接赋值的不需要再算缓存
 
 
-          [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, FILTER$3, OVERFLOW$1, MIX_BLEND_MODE, TEXT_OVERFLOW$2].forEach(function (k) {
+          [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, FILTER$3, OVERFLOW$1, MIX_BLEND_MODE, TEXT_OVERFLOW$2, BACKGROUND_CLIP$1].forEach(function (k) {
             computedStyle[k] = currentStyle[k];
           });
           [BACKGROUND_COLOR$1, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {

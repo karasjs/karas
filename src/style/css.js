@@ -62,6 +62,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   BACKGROUND_CLIP,
   WHITE_SPACE,
   TEXT_OVERFLOW,
+  LINE_CLAMP,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -768,6 +769,11 @@ function normalize(style, reset = []) {
       res[WHITE_SPACE] = [temp, STRING];
     }
   }
+  temp = style.lineClamp;
+  if(temp !== undefined) {
+    temp = parseInt(temp) || 0;
+    res[LINE_CLAMP] = [Math.max(0, temp), NUMBER];
+  }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;
   if(temp !== undefined) {
@@ -1047,7 +1053,8 @@ function computeReflow(node, isHost) {
     ALIGN_SELF,
     FLEX_GROW,
     FLEX_SHRINK,
-    BACKGROUND_CLIP,
+    // BACKGROUND_CLIP,
+    LINE_CLAMP,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
@@ -1302,6 +1309,7 @@ const VALUE = {
   [Z_INDEX]: true,
   [BACKGROUND_CLIP]: true,
   [TEXT_OVERFLOW]: true,
+  [LINE_CLAMP]: true,
 };
 const ARRAY_0 = {
   [COLOR]: true,

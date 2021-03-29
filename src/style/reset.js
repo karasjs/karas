@@ -72,6 +72,7 @@ const DOM = {
   mixBlendMode: 'normal',
   whiteSpace: 'inherit',
   textOverflow: 'clip',
+  lineClamp: 0,
 };
 
 const GEOM = {

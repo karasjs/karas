@@ -750,7 +750,6 @@ class Xom extends Node {
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
-    // this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
     if(lv >= REPAINT) {
       let isInline = this.__isRealInline();
       if(isInline && !this.contentBoxList.length) {
@@ -851,6 +850,7 @@ class Xom extends Node {
         OVERFLOW,
         MIX_BLEND_MODE,
         TEXT_OVERFLOW,
+        BACKGROUND_CLIP,
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });

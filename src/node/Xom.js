@@ -787,7 +787,6 @@ class Xom extends Node {
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });
-      let backgroundClip = computedStyle[BACKGROUND_CLIP];
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_X] = true;
         let {
@@ -1183,14 +1182,6 @@ class Xom extends Node {
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
     this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
-    // 计算好cacheStyle的内容，以及位图缓存指数
-    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, defs, this.parent,
-        __cacheStyle, currentStyle, computedStyle,
-        clientWidth, clientHeight, offsetWidth, offsetHeight,
-        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-        paddingTop, paddingRight, paddingBottom, paddingLeft,
-        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-      );
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && renderMode === mode.CANVAS) {
@@ -1216,10 +1207,6 @@ class Xom extends Node {
           dx = __cache.dx;
           dy = __cache.dy;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
-          bx1 += dx;
-          by1 += dy;
-          bx2 += dx;
-          by2 += dy;
           if(dx) {
             res.x1 = x1 += dx;
             res.x2 = x2 += dx;
@@ -1246,6 +1233,14 @@ class Xom extends Node {
       res.dx = dx;
       res.dy = dy;
     }
+    // 计算好cacheStyle的内容，以及位图缓存指数
+    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, defs, this.parent,
+      __cacheStyle, currentStyle, computedStyle,
+      clientWidth, clientHeight, offsetWidth, offsetHeight,
+      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+      paddingTop, paddingRight, paddingBottom, paddingLeft,
+      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
+    );
     res.bx1 = bx1;
     res.by1 = by1;
     res.bx2 = bx2;

@@ -751,6 +751,20 @@ class Xom extends Node {
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
     let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
+    let backgroundClip = computedStyle[BACKGROUND_CLIP] = currentStyle[BACKGROUND_CLIP];
+    // 默认border-box
+    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+      bx1 = x2;
+      by1 = y2;
+      bx2 = x5;
+      by2 = y5;
+    }
+    else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
+      bx1 = x3;
+      by1 = y3;
+      bx2 = x4;
+      by2 = y4;
+    }
     if(lv >= REPAINT) {
       let isInline = this.__isRealInline();
       if(isInline && !this.contentBoxList.length) {
@@ -774,19 +788,6 @@ class Xom extends Node {
         computedStyle[k] = currentStyle[k];
       });
       let backgroundClip = computedStyle[BACKGROUND_CLIP];
-      // 默认border-box
-      if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-        bx1 = x2;
-        by1 = y2;
-        bx2 = x5;
-        by2 = y5;
-      }
-      else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-        bx1 = x3;
-        by1 = y3;
-        bx2 = x4;
-        by2 = y4;
-      }
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_X] = true;
         let {
@@ -981,10 +982,6 @@ class Xom extends Node {
       if(contain(lv, FT)) {
         computedStyle[FILTER] = currentStyle[FILTER];
       }
-      bx1 = this.__bx1;
-      by1 = this.__by1;
-      bx2 = this.__bx2;
-      by2 = this.__by2;
     }
     // 强制计算继承性的
     let parentComputedStyle = parent && parent.computedStyle;
@@ -1186,6 +1183,14 @@ class Xom extends Node {
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
     this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
+    // 计算好cacheStyle的内容，以及位图缓存指数
+    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, defs, this.parent,
+        __cacheStyle, currentStyle, computedStyle,
+        clientWidth, clientHeight, offsetWidth, offsetHeight,
+        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+        paddingTop, paddingRight, paddingBottom, paddingLeft,
+        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
+      );
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && renderMode === mode.CANVAS) {
@@ -1241,14 +1246,6 @@ class Xom extends Node {
       res.dx = dx;
       res.dy = dy;
     }
-    // 计算好cacheStyle的内容，以及位图缓存指数
-    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, defs, this.parent,
-        __cacheStyle, currentStyle, computedStyle,
-        clientWidth, clientHeight, offsetWidth, offsetHeight,
-        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-        paddingTop, paddingRight, paddingBottom, paddingLeft,
-        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-      );
     res.bx1 = bx1;
     res.by1 = by1;
     res.bx2 = bx2;

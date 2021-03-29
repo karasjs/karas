@@ -15615,14 +15615,37 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
         var _this3 = this;
+
+        var bx1 = x1,
+            by1 = y1,
+            bx2 = x6,
+            by2 = y6;
 
         if (lv >= REPAINT$1) {
           var isInline = this.__isRealInline();
 
           if (isInline && !this.contentBoxList.length) {
             isInline = false;
+          } // 这些直接赋值的不需要再算缓存
+
+
+          [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, FILTER$3, OVERFLOW$1, MIX_BLEND_MODE, TEXT_OVERFLOW$2, BACKGROUND_CLIP$1].forEach(function (k) {
+            computedStyle[k] = currentStyle[k];
+          });
+          var backgroundClip = computedStyle[BACKGROUND_CLIP$1]; // 默认border-box
+
+          if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+            bx1 = x2;
+            by1 = y2;
+            bx2 = x5;
+            by2 = y5;
+          } else if (backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
+            bx1 = x3;
+            by1 = y3;
+            bx2 = x4;
+            by2 = y4;
           }
 
           if (__cacheStyle[BACKGROUND_POSITION_X$3] === undefined) {
@@ -15708,12 +15731,8 @@
           if (__cacheStyle[BOX_SHADOW$2] === undefined) {
             __cacheStyle[BOX_SHADOW$2] = true;
             computedStyle[BOX_SHADOW$2] = currentStyle[BOX_SHADOW$2];
-          } // 这些直接赋值的不需要再算缓存
+          }
 
-
-          [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, FILTER$3, OVERFLOW$1, MIX_BLEND_MODE, TEXT_OVERFLOW$2, BACKGROUND_CLIP$1].forEach(function (k) {
-            computedStyle[k] = currentStyle[k];
-          });
           [BACKGROUND_COLOR$1, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {
             if (__cacheStyle[k] === undefined) {
               __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k][0]);
@@ -15810,6 +15829,11 @@
           if (contain(lv, FT)) {
             computedStyle[FILTER$3] = currentStyle[FILTER$3];
           }
+
+          bx1 = this.__bx1;
+          by1 = this.__by1;
+          bx2 = this.__bx2;
+          by2 = this.__by2;
         } // 强制计算继承性的
 
 
@@ -15846,6 +15870,7 @@
         }
 
         __cacheStyle[POINTER_EVENTS$1] = computedStyle[POINTER_EVENTS$1];
+        return [bx1, by1, bx2, by2];
       }
     }, {
       key: "__calContent",
@@ -15997,8 +16022,7 @@
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
-            backgroundClip = computedStyle[BACKGROUND_CLIP$1];
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
 
         var isRealInline = this.__isRealInline(); // 考虑mpb的6个坐标，inline比较特殊单独计算
 
@@ -16031,30 +16055,8 @@
           y4 = this.__sy4 = y3 + height;
           y5 = this.__sy5 = y4 + paddingBottom;
           y6 = this.__sy6 = y5 + borderBottomWidth;
-        } // 默认border-box
-
-
-        var bx1 = x1,
-            by1 = y1,
-            bx2 = x6,
-            by2 = y6;
-
-        if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-          bx1 = x2;
-          by1 = y2;
-          bx2 = x5;
-          by2 = y5;
-        } else if (backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-          bx1 = x3;
-          by1 = y3;
-          bx2 = x4;
-          by2 = y4;
         }
 
-        this.__bx1 = bx1;
-        this.__by1 = by1;
-        this.__bx2 = bx2;
-        this.__by2 = by2;
         var res = {
           x1: x1,
           x2: x2,
@@ -16067,11 +16069,7 @@
           y3: y3,
           y4: y4,
           y5: y5,
-          y6: y6,
-          bx1: bx1,
-          by1: by1,
-          bx2: bx2,
-          by2: by2
+          y6: y6
         }; // 防止cp直接返回cp嵌套，拿到真实dom的parent
 
         var p = __config[NODE_DOM_PARENT$1];
@@ -16144,8 +16142,17 @@
         } // 计算好cacheStyle的内容，以及位图缓存指数
 
 
-        this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
+        var _this$__calCache = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6),
+            _this$__calCache2 = _slicedToArray(_this$__calCache, 4),
+            bx1 = _this$__calCache2[0],
+            by1 = _this$__calCache2[1],
+            bx2 = _this$__calCache2[2],
+            by2 = _this$__calCache2[3];
 
+        res.bx1 = bx1;
+        res.by1 = by1;
+        res.bx2 = bx2;
+        res.by2 = by2;
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
             borderRightColor = computedStyle[BORDER_RIGHT_COLOR],
@@ -16163,7 +16170,8 @@
             backgroundSize = computedStyle[BACKGROUND_SIZE$2],
             boxShadow = computedStyle[BOX_SHADOW$2],
             overflow = computedStyle[OVERFLOW$1],
-            mixBlendMode = computedStyle[MIX_BLEND_MODE]; // 先设置透明度，canvas可以向上累积
+            mixBlendMode = computedStyle[MIX_BLEND_MODE],
+            backgroundClip = computedStyle[BACKGROUND_CLIP$1]; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
           if (p) {
@@ -21526,10 +21534,10 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
+        var res = _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
 
         if (isNil$7(__cacheStyle[STROKE_WIDTH$1])) {
           __cacheStyle[STROKE_WIDTH$1] = true;
@@ -21563,23 +21571,24 @@
           if (isNil$7(__cacheStyle[k])) {
             var v = currentStyle[k];
             computedStyle[k] = v;
-            var res = [];
+            var _res = [];
 
             if (Array.isArray(v)) {
               v.forEach(function (item) {
                 if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-                  res.push(_this2.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
+                  _res.push(_this2.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
                 } else if (item[3] > 0) {
-                  res.push(int2rgba$3(item));
+                  _res.push(int2rgba$3(item));
                 } else {
-                  res.push('none');
+                  _res.push('none');
                 }
               });
             }
 
-            __cacheStyle[k] = res;
+            __cacheStyle[k] = _res;
           }
         });
+        return res;
       }
     }, {
       key: "__calContent",
@@ -22345,7 +22354,11 @@
     var sr = cp.shadowRoot;
 
     if (sr instanceof Xom$2) {
-      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', '__bx1', '__by1', '__bx2', '__by2', '__computedStyle'].forEach(function (k) {
+      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', // '__bx1',
+      // '__by1',
+      // '__bx2',
+      // '__by2',
+      '__computedStyle'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
       sr.__config[NODE_COMPUTED_STYLE$1] = oldSr.computedStyle;

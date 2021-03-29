@@ -199,12 +199,12 @@ class Geom extends Xom {
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
-    super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
+    let res = super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,
-      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2);
+      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
       let strokeWidth = currentStyle[STROKE_WIDTH] || [];
@@ -257,6 +257,7 @@ class Geom extends Xom {
         __cacheStyle[k] = res;
       }
     });
+    return res;
   }
 
   __calContent(renderMode, lv, currentStyle, computedStyle) {

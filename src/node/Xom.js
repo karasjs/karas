@@ -749,11 +749,43 @@ class Xom extends Node {
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
-             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2) {
+             x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
+    let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
     if(lv >= REPAINT) {
       let isInline = this.__isRealInline();
       if(isInline && !this.contentBoxList.length) {
         isInline = false;
+      }
+      // 这些直接赋值的不需要再算缓存
+      [
+        OPACITY,
+        Z_INDEX,
+        BORDER_TOP_STYLE,
+        BORDER_RIGHT_STYLE,
+        BORDER_BOTTOM_STYLE,
+        BORDER_LEFT_STYLE,
+        BACKGROUND_REPEAT,
+        FILTER,
+        OVERFLOW,
+        MIX_BLEND_MODE,
+        TEXT_OVERFLOW,
+        BACKGROUND_CLIP,
+      ].forEach(k => {
+        computedStyle[k] = currentStyle[k];
+      });
+      let backgroundClip = computedStyle[BACKGROUND_CLIP];
+      // 默认border-box
+      if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+        bx1 = x2;
+        by1 = y2;
+        bx2 = x5;
+        by2 = y5;
+      }
+      else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
+        bx1 = x3;
+        by1 = y3;
+        bx2 = x4;
+        by2 = y4;
       }
       if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_X] = true;
@@ -837,23 +869,6 @@ class Xom extends Node {
         __cacheStyle[BOX_SHADOW] = true;
         computedStyle[BOX_SHADOW] = currentStyle[BOX_SHADOW];
       }
-      // 这些直接赋值的不需要再算缓存
-      [
-        OPACITY,
-        Z_INDEX,
-        BORDER_TOP_STYLE,
-        BORDER_RIGHT_STYLE,
-        BORDER_BOTTOM_STYLE,
-        BORDER_LEFT_STYLE,
-        BACKGROUND_REPEAT,
-        FILTER,
-        OVERFLOW,
-        MIX_BLEND_MODE,
-        TEXT_OVERFLOW,
-        BACKGROUND_CLIP,
-      ].forEach(k => {
-        computedStyle[k] = currentStyle[k];
-      });
       [
         BACKGROUND_COLOR,
         BORDER_TOP_COLOR,
@@ -966,6 +981,10 @@ class Xom extends Node {
       if(contain(lv, FT)) {
         computedStyle[FILTER] = currentStyle[FILTER];
       }
+      bx1 = this.__bx1;
+      by1 = this.__by1;
+      bx2 = this.__bx2;
+      by2 = this.__by2;
     }
     // 强制计算继承性的
     let parentComputedStyle = parent && parent.computedStyle;
@@ -998,6 +1017,7 @@ class Xom extends Node {
       computedStyle[POINTER_EVENTS] = currentStyle[POINTER_EVENTS][0];
     }
     __cacheStyle[POINTER_EVENTS] = computedStyle[POINTER_EVENTS];
+    return [bx1, by1, bx2, by2];
   }
 
   __calContent(renderMode, lv, currentStyle, computedStyle) {
@@ -1129,7 +1149,6 @@ class Xom extends Node {
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-      [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
     let isRealInline = this.__isRealInline();
     // 考虑mpb的6个坐标，inline比较特殊单独计算
@@ -1162,25 +1181,7 @@ class Xom extends Node {
       y5 = this.__sy5 = y4 + paddingBottom;
       y6 = this.__sy6 = y5 + borderBottomWidth;
     }
-    // 默认border-box
-    let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
-    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-      bx1 = x2;
-      by1 = y2;
-      bx2 = x5;
-      by2 = y5;
-    }
-    else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
-      bx1 = x3;
-      by1 = y3;
-      bx2 = x4;
-      by2 = y4;
-    }
-    this.__bx1 = bx1;
-    this.__by1 = by1;
-    this.__bx2 = bx2;
-    this.__by2 = by2;
-    let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2 };
+    let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
@@ -1241,13 +1242,17 @@ class Xom extends Node {
       res.dy = dy;
     }
     // 计算好cacheStyle的内容，以及位图缓存指数
-    this.__calCache(renderMode, lv, ctx, defs, this.parent,
+    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, defs, this.parent,
         __cacheStyle, currentStyle, computedStyle,
         clientWidth, clientHeight, offsetWidth, offsetHeight,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         paddingTop, paddingRight, paddingBottom, paddingLeft,
-        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, bx1, by1, bx2, by2
+        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
       );
+    res.bx1 = bx1;
+    res.by1 = by1;
+    res.bx2 = bx2;
+    res.by2 = by2;
     let {
       [BACKGROUND_COLOR]: backgroundColor,
       [BORDER_TOP_COLOR]: borderTopColor,
@@ -1267,6 +1272,7 @@ class Xom extends Node {
       [BOX_SHADOW]: boxShadow,
       [OVERFLOW]: overflow,
       [MIX_BLEND_MODE]: mixBlendMode,
+      [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {

@@ -111,10 +111,10 @@ function updateCp(cp, props, state) {
       '__sy4',
       '__sy5',
       '__sy6',
-      '__bx1',
-      '__by1',
-      '__bx2',
-      '__by2',
+      // '__bx1',
+      // '__by1',
+      // '__bx2',
+      // '__by2',
       '__computedStyle',
     ].forEach(k => {
       sr[k] = oldSr[k];

@@ -215,6 +215,13 @@ class LineBoxManager {
     }
     return 0;
   }
+
+  get lineBox() {
+    let list = this.__list;
+    if(list.length) {
+      return list[list.length - 1];
+    }
+  }
 }
 
 export default LineBoxManager;

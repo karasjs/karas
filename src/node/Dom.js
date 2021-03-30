@@ -695,6 +695,7 @@ class Dom extends Xom {
       this.__ioSize(w, this.height);
       return;
     }
+    let { [WHITE_SPACE]: whiteSpace } = computedStyle;
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
     let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
@@ -726,7 +727,7 @@ class Dom extends Xom {
         // inline和ib能互相嵌套，形成的LineBox中则是TextBox和节点混合
         if(isInlineBlock || isInline) {
           // x开头，不用考虑是否放得下直接放
-          if(x === data.x) {
+          if(x === data.x || isInline && whiteSpace === 'nowrap') {
             item.__layout({
               x,
               y,
@@ -1616,13 +1617,6 @@ class Dom extends Xom {
    */
   __layoutInline(data, isVirtual, isInline) {
     let { flowChildren, currentStyle, computedStyle } = this;
-    let {
-      [WIDTH]: width,
-    } = currentStyle;
-    let {
-      [TEXT_ALIGN]: textAlign,
-      [WHITE_SPACE]: whiteSpace,
-    } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h, lx, lineBoxManager, nowrap, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
     if(fixedWidth && isVirtual) {
@@ -1630,6 +1624,13 @@ class Dom extends Xom {
       this.__ioSize(w, this.height);
       return;
     }
+    let {
+      [WIDTH]: width,
+    } = currentStyle;
+    let {
+      [TEXT_ALIGN]: textAlign,
+      [WHITE_SPACE]: whiteSpace,
+    } = computedStyle;
     if(isInline && !this.__isRealInline()) {
       isInline = false;
     }
@@ -1674,7 +1675,7 @@ class Dom extends Xom {
           inject.warn('Inline can not contain block/flex');
         }
         // x开头，不用考虑是否放得下直接放，i为0强制不换行
-        if(x === lx || !i) {
+        if(x === lx || !i || isInline2 && whiteSpace === 'nowrap') {
           item.__layout({
             x,
             y,

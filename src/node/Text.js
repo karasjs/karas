@@ -195,7 +195,6 @@ class Text extends Node {
     let lastChar;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
-      // count = 0; // 不换行时，首行统计从0开始
       let isTextOverflow;
       // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
       let bp = this.__bp;
@@ -288,11 +287,11 @@ class Text extends Node {
       }
       // 默认clip跟随overflow:hidden，无需感知
       else {
-        let textBox = new TextBox(this, textBoxes.length, x, y, count, lineHeight,
+        let textBox = new TextBox(this, textBoxes.length, x, y, count - firstLineSpace, lineHeight,
           content, charWidthList);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox);
-        maxW = count;
+        maxW = count - firstLineSpace;
         y += lineHeight;
       }
     }
@@ -377,7 +376,7 @@ class Text extends Node {
           let textBox;
           if(!lineCount) {
             maxW = width - firstLineSpace;
-            textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+            textBox = new TextBox(this, textBoxes.length, x, y, maxW - firstLineSpace, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
           }
           else {
             textBox = new TextBox(this, textBoxes.length, lx, y, width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));

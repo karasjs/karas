@@ -8619,7 +8619,6 @@
         var lastChar; // 不换行特殊对待，同时考虑overflow和textOverflow
 
         if (whiteSpace === 'nowrap') {
-          // count = 0; // 不换行时，首行统计从0开始
           var isTextOverflow; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
 
           var bp = this.__bp;
@@ -8714,11 +8713,11 @@
             }
           } // 默认clip跟随overflow:hidden，无需感知
           else {
-              var _textBox2 = new TextBox(this, textBoxes.length, x, y, count, lineHeight, content, charWidthList);
+              var _textBox2 = new TextBox(this, textBoxes.length, x, y, count - firstLineSpace, lineHeight, content, charWidthList);
 
               textBoxes.push(_textBox2);
               lineBoxManager.addItem(_textBox2);
-              maxW = count;
+              maxW = count - firstLineSpace;
               y += lineHeight;
             }
         } // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
@@ -8814,7 +8813,7 @@
 
                 if (!lineCount) {
                   maxW = _width - firstLineSpace;
-                  _textBox4 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  _textBox4 = new TextBox(this, textBoxes.length, x, y, maxW - firstLineSpace, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
                 } else {
                   _textBox4 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
                   maxW = Math.max(maxW, _width);

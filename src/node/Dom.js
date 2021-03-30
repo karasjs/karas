@@ -878,7 +878,7 @@ class Dom extends Xom {
       // 文字和inline类似
       else {
         // x开头，不用考虑是否放得下直接放
-        if(x === data.x) {
+        if(x === data.x || whiteSpace === 'nowrap') {
           item.__layout({
             x,
             y,
@@ -1766,7 +1766,7 @@ class Dom extends Xom {
       else {
         let n = lineBoxManager.size;
         // i为0时强制不换行
-        if(x === lx || !i) {
+        if(x === lx || !i || whiteSpace === 'nowrap') {
           item.__layout({
             x,
             y,

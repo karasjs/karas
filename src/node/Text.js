@@ -88,11 +88,11 @@ class Text extends Node {
     let pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
     let parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
     if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(parentComputedStyle);
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
+        ctx.font = css.setFontStyle(parentComputedStyle);
         parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
-        // wait.hash[ELLIPSIS] = true;
       }
+      ctx.font = css.setFontStyle(computedStyle);
     }
     else if(renderMode === mode.SVG) {
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
@@ -306,7 +306,7 @@ class Text extends Node {
         // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
         if(needReduce) {
           let char = content[i];
-          if(char === lastChar && padding[char]) {
+          if(char === lastChar && padding.hasOwnProperty(char) && padding[char]) {
             let hasCache, p = textCache.padding[__key] = textCache.padding[__key] || {};
             if(textCache.padding.hasOwnProperty(__key)) {
               if(p.hasOwnProperty(char)) {

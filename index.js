@@ -8486,11 +8486,12 @@
         var parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
 
         if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(parentComputedStyle);
-
           if (!parentCache.hasOwnProperty(ELLIPSIS)) {
-            parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width; // wait.hash[ELLIPSIS] = true;
+            ctx.font = css.setFontStyle(parentComputedStyle);
+            parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
           }
+
+          ctx.font = css.setFontStyle(computedStyle);
         } else if (renderMode === mode.SVG) {
           if (!parentCache.hasOwnProperty(ELLIPSIS)) {
             parentCache[ELLIPSIS] = 0;
@@ -8732,7 +8733,7 @@
               if (needReduce) {
                 var _char2 = content[i];
 
-                if (_char2 === lastChar && padding[_char2]) {
+                if (_char2 === lastChar && padding.hasOwnProperty(_char2) && padding[_char2]) {
                   var hasCache = void 0,
                       p = textCache.padding[__key] = textCache.padding[__key] || {};
 
@@ -19225,7 +19226,7 @@
           } // 文字和inline类似
           else {
               // x开头，不用考虑是否放得下直接放
-              if (x === data.x) {
+              if (x === data.x || whiteSpace === 'nowrap') {
                 item.__layout({
                   x: x,
                   y: y,
@@ -20190,7 +20191,7 @@
           else {
               var n = lineBoxManager.size; // i为0时强制不换行
 
-              if (x === lx || !i) {
+              if (x === lx || !i || whiteSpace === 'nowrap') {
                 item.__layout({
                   x: x,
                   y: y,

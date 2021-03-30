@@ -376,7 +376,7 @@ class Text extends Node {
           let textBox;
           if(!lineCount) {
             maxW = width - firstLineSpace;
-            textBox = new TextBox(this, textBoxes.length, x, y, maxW - firstLineSpace, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+            textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
           }
           else {
             textBox = new TextBox(this, textBoxes.length, lx, y, width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));

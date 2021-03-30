@@ -8813,7 +8813,7 @@
 
                 if (!lineCount) {
                   maxW = _width - firstLineSpace;
-                  _textBox4 = new TextBox(this, textBoxes.length, x, y, maxW - firstLineSpace, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  _textBox4 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
                 } else {
                   _textBox4 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
                   maxW = Math.max(maxW, _width);

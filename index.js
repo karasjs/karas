@@ -16462,7 +16462,7 @@
               props: [],
               children: [{
                 tagName: 'path',
-                props: [['d', "M".concat(x1, ",").concat(y1, "L").concat(x + offsetWidth, ",").concat(y, "L").concat(x + offsetWidth, ",").concat(y + offsetHeight, "L").concat(x, ",").concat(y + offsetHeight, ",L").concat(x, ",").concat(y)]]
+                props: [['d', "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1)]]
               }]
             };
             var id = defs.add(v);
@@ -30578,7 +30578,7 @@
     Cache: Cache
   };
 
-  var version = "0.54.1";
+  var version = "0.54.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

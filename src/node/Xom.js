@@ -1426,7 +1426,7 @@ class Xom extends Node {
             {
               tagName: 'path',
               props: [
-                ['d', `M${x1},${y1}L${x + offsetWidth},${y}L${x + offsetWidth},${y + offsetHeight}L${x},${y + offsetHeight},L${x},${y}`],
+                ['d', `M${x1},${y1}L${x1 + offsetWidth},${y1}L${x1 + offsetWidth},${y1 + offsetHeight}L${x1},${y1 + offsetHeight},L${x1},${y1}`],
               ],
             }
           ],

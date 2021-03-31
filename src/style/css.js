@@ -772,7 +772,7 @@ function normalize(style, reset = []) {
   temp = style.lineClamp;
   if(temp !== undefined) {
     temp = parseInt(temp) || 0;
-    res[LINE_CLAMP] = [Math.max(0, temp), NUMBER];
+    res[LINE_CLAMP] = Math.max(0, temp);
   }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;

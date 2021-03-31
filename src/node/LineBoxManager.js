@@ -72,11 +72,15 @@ class LineBoxManager {
       item.__contentBoxList.push(o);
     });
     lineBox.add(o);
-    // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
-    this.__lastX = o.x + o.outerWidth;
-    this.__lastY = o.y;
+    // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock，当next新行时注意位置
     if(nextNewLine) {
       this.__isNewLine = true;
+      this.__lastX = o.x;
+      this.__lastY = o.y + o.outerHeight;
+    }
+    else {
+      this.__lastX = o.x + o.outerWidth;
+      this.__lastY = o.y;
     }
     return lineBox;
   }

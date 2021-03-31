@@ -18,10 +18,8 @@ const { STYLE_KEY: {
  * 另外本类还会被LineBoxManager添加到LineBox里，LineBox为一行中的inline/文本组合，之间需要进行垂直对齐
  * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
  */
-let uuid = 0;
 class TextBox {
   constructor(parent, index, x, y, w, h, content, wList) {
-    this.uuid = uuid++;
     this.__parent = parent;
     this.__index = index;
     this.__x = x;

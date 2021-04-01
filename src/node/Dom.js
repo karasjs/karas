@@ -440,7 +440,7 @@ class Dom extends Xom {
             let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
             if(isDirectionRow) {
               min = Math.max(min, min2);
-              max = Math.max(max, max2);
+              max += Math.max(max, max2);
             }
             else {
               min += min2;
@@ -449,7 +449,7 @@ class Dom extends Xom {
           }
           else if(isDirectionRow) {
             min = Math.max(min, item.charWidth);
-            max = Math.max(max, item.textWidth);
+            max += Math.max(max, item.textWidth);
           }
           else {
             item.__layout({
@@ -459,8 +459,8 @@ class Dom extends Xom {
               h,
               lineBoxManager,
             });
-            min = Math.max(min, item.height);
-            max = Math.max(max, item.height);
+            min += item.height;
+            max += item.height;
           }
         });
       }
@@ -482,7 +482,7 @@ class Dom extends Xom {
           }
           else if(isDirectionRow) {
             min = Math.max(min, item.charWidth);
-            max = Math.max(max, item.textWidth);
+            max += Math.max(max, item.textWidth);
           }
           else {
             item.__layout({
@@ -492,8 +492,8 @@ class Dom extends Xom {
               h,
               lineBoxManager,
             });
-            min = Math.max(min, item.height);
-            max = Math.max(max, item.height);
+            min += item.height;
+            max += item.height;
           }
         });
       }
@@ -630,7 +630,7 @@ class Dom extends Xom {
           let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
           if(isDirectionRow) {
             min = Math.max(min, min2);
-            max = Math.max(max, max2);
+            max += Math.max(max, max2);
           }
           else {
             min += min2;
@@ -639,7 +639,7 @@ class Dom extends Xom {
         }
         else if(isDirectionRow) {
           min = Math.max(min, item.charWidth);
-          max = Math.max(max, item.textWidth);
+          max += Math.max(max, item.textWidth);
         }
         else {
           item.__layout({

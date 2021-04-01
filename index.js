@@ -30709,7 +30709,7 @@
     Cache: Cache
   };
 
-  var version = "0.55.0";
+  var version = "0.55.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

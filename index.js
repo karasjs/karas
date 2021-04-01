@@ -9716,7 +9716,7 @@
           var style = css.normalize(this.props.style);
           var keys = Object.keys(style);
           extend$1(sr.style, style, keys);
-          extend$1(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
+          extend$1(sr.currentStyle, style, keys); // 事件添加到sr
 
           Object.keys(this.props).forEach(function (k) {
             var v = _this3.props[k];
@@ -9724,17 +9724,23 @@
             if (/^on[a-zA-Z]/.test(k)) {
               k = k.slice(2).toLowerCase();
               sr.listener[k] = v;
-            } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
-              k = k.slice(3);
-
-              _this3.on(k, v);
             }
           });
         } else if (!(sr instanceof Component)) {
           // 本身build是递归的，子cp已经初始化了
           throw new Error('Component render() must return a dom/text: ' + this);
-        } // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
+        } // 自定义事件无视返回强制添加
 
+
+        Object.keys(this.props).forEach(function (k) {
+          var v = _this3.props[k];
+
+          if (/^on-[a-zA-Z\d_$]/.test(k)) {
+            k = k.slice(3);
+
+            _this3.on(k, v);
+          }
+        }); // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
 
         this.__shadow = sr;
         sr.__host = this;
@@ -9781,9 +9787,7 @@
 
         if (this.shadowRoot) {
           this.shadowRoot.__destroy();
-        } // this.__shadow = null;
-        // this.__shadowRoot = null;
-
+        }
 
         this.__parent = null;
       }

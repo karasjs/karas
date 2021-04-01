@@ -122,16 +122,12 @@ class Component extends Event {
       let keys = Object.keys(style);
       extend(sr.style, style, keys);
       extend(sr.currentStyle, style, keys);
-      // 事件添加到sr，以及自定义事件
+      // 事件添加到sr
       Object.keys(this.props).forEach(k => {
         let v = this.props[k];
         if(/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
           sr.listener[k] = v;
-        }
-        else if(/^on-[a-zA-Z\d_$]/.test(k)) {
-          k = k.slice(3);
-          this.on(k, v);
         }
       });
     }
@@ -139,6 +135,14 @@ class Component extends Event {
       // 本身build是递归的，子cp已经初始化了
       throw new Error('Component render() must return a dom/text: ' + this);
     }
+    // 自定义事件无视返回强制添加
+    Object.keys(this.props).forEach(k => {
+      let v = this.props[k];
+      if(/^on-[a-zA-Z\d_$]/.test(k)) {
+        k = k.slice(3);
+        this.on(k, v);
+      }
+    });
     // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
     this.__shadow = sr;
     sr.__host = this;
@@ -176,8 +180,6 @@ class Component extends Event {
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
     }
-    // this.__shadow = null;
-    // this.__shadowRoot = null;
     this.__parent = null;
   }
 

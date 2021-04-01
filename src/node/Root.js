@@ -1278,7 +1278,6 @@ class Root extends Dom {
       this.__deepScan(function(node, options) {
         if(node.hasOwnProperty('__uniqueReflowId')) {
           let o = reflowHash[node.__uniqueReflowId];
-          // delete node.__uniqueReflowId; // 清除掉
           if(o.lv >= LAYOUT) {
             options.uniqueList.push(o);
           }
@@ -1361,13 +1360,9 @@ class Root extends Dom {
             if(!container) {
               container = root;
             }
-            // 由setState引发的传入component自身，layout引发的传入sr
-            if(component) {
-              parent.__layoutAbs(container, null, component);
-            }
-            else {
-              parent.__layoutAbs(container, null, node);
-            }
+            // 由setState引发的要检查是cp自身还是更上层，如果cp被abs包含，那么node是cp的父亲，否则node是cp的sr
+            // 而这种情况下传cp或node都一样，所以最终统一传node
+            parent.__layoutAbs(container, null, node);
             // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
             if(isLastAbs) {
               if(component) {

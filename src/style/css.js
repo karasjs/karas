@@ -1013,7 +1013,16 @@ function computeMeasure(node, isHost) {
   let parentComputedStyle = !isHost && parent.computedStyle;
   MEASURE_KEY_SET.forEach(k => {
     let v = currentStyle[k];
-    if(v[1] === INHERIT) {
+    // ff特殊处理
+    if(k === FONT_FAMILY) {
+      if(v[1] === INHERIT) {
+        computedStyle[k] = getFontFamily(isHost ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
+      }
+      else {
+        computedStyle[k] = getFontFamily(v[0]);
+      }
+    }
+    else if(v[1] === INHERIT) {
       computedStyle[k] = isHost ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
     }
     // 只有fontSize会有%
@@ -1053,7 +1062,6 @@ function computeReflow(node, isHost) {
     ALIGN_SELF,
     FLEX_GROW,
     FLEX_SHRINK,
-    // BACKGROUND_CLIP,
     LINE_CLAMP,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
@@ -1117,28 +1125,14 @@ function getFontFamily(str) {
 
 function getBaseLine(style) {
   let fontSize = style[FONT_SIZE];
-  let ff = style[FONT_FAMILY].split(',');
-  let f = 'arial';
-  for(let i = 0, len = ff.length; i < len; i++) {
-    if(font.support(ff[i])) {
-      f = ff[i];
-      break;
-    }
-  }
-  let normal = fontSize * (font.info[f] || font.info.arial).lhr;
+  let ff = getFontFamily(style[FONT_FAMILY]);
+  let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
   return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
 }
 
 function calNormalLineHeight(style) {
-  let ff = style[FONT_FAMILY].split(',');
-  let f = 'arial';
-  for(let i = 0, len = ff.length; i < len; i++) {
-    if(font.support(ff[i])) {
-      f = ff[i];
-      break;
-    }
-  }
-  return style[FONT_SIZE] * (font.info[f] || font.info.arial).lhr;
+  let ff = getFontFamily(style[FONT_FAMILY]);
+  return style[FONT_SIZE] * (font.info[ff] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {

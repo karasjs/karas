@@ -429,8 +429,8 @@ class Text extends Node {
     for(; i >= begin; i--) {
       count -= charWidthList[i];
       if(count + ew + endSpace <= w) {
-        maxW = count - beginSpace;
-        let textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight,
+        maxW = count - (lineCount ? 0 : beginSpace);
+        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
           content.slice(begin, i), charWidthList.slice(begin, i));
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, true);
@@ -444,8 +444,8 @@ class Text extends Node {
       let lineBox = lineBoxManager.lineBox;
       // lineBox为空是行首，至少放1个字符
       if(count + ew <= w || !lineBox.size) {
-        maxW = count - beginSpace;
-        let textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight,
+        maxW = count - (lineCount ? 0 : beginSpace);
+        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
           content.charAt(begin), charWidthList.slice(begin, begin + 1));
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, true);

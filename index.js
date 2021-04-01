@@ -9934,7 +9934,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -16773,8 +16773,9 @@
                     lastContentBox = contentBox;
                     lastLineBox = contentBox.parentLineBox;
                   })();
-                } // 最后一个特殊判断
+                }
 
+                console.log(_this4.tagName, i, length); // 最后一个特殊判断
 
                 if (i === length - 1) {
                   (function () {

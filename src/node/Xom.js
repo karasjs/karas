@@ -1670,7 +1670,7 @@ class Xom extends Node {
             lastContentBox = contentBox;
             lastLineBox = contentBox.parentLineBox;
             count++;
-          }
+          }console.log(this.tagName,i,length);
           // 最后一个特殊判断
           if(i === length - 1) {
             let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,

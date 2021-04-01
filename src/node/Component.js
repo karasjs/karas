@@ -360,6 +360,9 @@ Object.keys(change.GEOM).concat([
   '__structure',
   '__modifyStruct',
   '__updateStruct',
+  'flowChildren',
+  'absChildren',
+  '__isRealInline',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

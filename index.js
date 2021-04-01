@@ -7818,9 +7818,15 @@
         parent = node.parent;
     var parentComputedStyle = !isHost && parent.computedStyle;
     MEASURE_KEY_SET$1.forEach(function (k) {
-      var v = currentStyle[k];
+      var v = currentStyle[k]; // ff特殊处理
 
-      if (v[1] === INHERIT$2) {
+      if (k === FONT_FAMILY) {
+        if (v[1] === INHERIT$2) {
+          computedStyle[k] = getFontFamily(isHost ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k]);
+        } else {
+          computedStyle[k] = getFontFamily(v[0]);
+        }
+      } else if (v[1] === INHERIT$2) {
         computedStyle[k] = isHost ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
       } // 只有fontSize会有%
       else if (v[1] === PERCENT$1) {
@@ -7847,8 +7853,7 @@
       // border-width不支持百分比
       computedStyle[k] = currentStyle[k][1] === PX$2 ? Math.max(0, currentStyle[k][0]) : 0;
     });
-    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, // BACKGROUND_CLIP,
-    LINE_CLAMP].forEach(function (k) {
+    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     var textAlign = currentStyle[TEXT_ALIGN];
@@ -7912,32 +7917,14 @@
 
   function getBaseLine(style) {
     var fontSize = style[FONT_SIZE];
-    var ff = style[FONT_FAMILY].split(',');
-    var f = 'arial';
-
-    for (var i = 0, len = ff.length; i < len; i++) {
-      if (o.support(ff[i])) {
-        f = ff[i];
-        break;
-      }
-    }
-
-    var normal = fontSize * (o.info[f] || o.info.arial).lhr;
+    var ff = getFontFamily(style[FONT_FAMILY]);
+    var normal = fontSize * (o.info[ff] || o.info.arial).lhr;
     return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (o.info[ff] || o.info.arial).blr;
   }
 
   function calNormalLineHeight(style) {
-    var ff = style[FONT_FAMILY].split(',');
-    var f = 'arial';
-
-    for (var i = 0, len = ff.length; i < len; i++) {
-      if (o.support(ff[i])) {
-        f = ff[i];
-        break;
-      }
-    }
-
-    return style[FONT_SIZE] * (o.info[f] || o.info.arial).lhr;
+    var ff = getFontFamily(style[FONT_FAMILY]);
+    return style[FONT_SIZE] * (o.info[ff] || o.info.arial).lhr;
   }
 
   function calRelativePercent(n, parent, k) {

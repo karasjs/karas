@@ -20,4 +20,4 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-input.value = JSON.stringify(o.virtualDom);
+input.value = JSON.stringify(o.virtualDom) + document.querySelector('svg').innerHTML;

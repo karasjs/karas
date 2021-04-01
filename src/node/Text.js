@@ -197,7 +197,6 @@ class Text extends Node {
     let lineCount = 0;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
-      lineCount++;
       let isTextOverflow;
       // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
       let bp = this.__bp;
@@ -225,7 +224,6 @@ class Text extends Node {
       if(isTextOverflow && textOverflow === 'ellipsis') {
         [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount,
           lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
-        lineCount++;
       }
       // 默认clip跟随overflow:hidden，无需感知
       else {
@@ -429,21 +427,24 @@ class Text extends Node {
     for(; i >= begin; i--) {
       count -= charWidthList[i];
       if(count + ew + endSpace <= w) {
-        maxW = count - (lineCount ? 0 : beginSpace);
-        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
-          content.slice(begin, i), charWidthList.slice(begin, i));
-        textBoxes.push(textBox);
-        lineBoxManager.addItem(textBox, true);
-        y += Math.max(lineHeight, lineBoxManager.lineHeight);
-        this.__ellipsis = true;
-        break;
+        // 至少1个字符不用回退，到0也没找到需要回退
+        if(i) {
+          maxW = count - (lineCount ? 0 : beginSpace);
+          let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
+            content.slice(begin, i), charWidthList.slice(begin, i));
+          textBoxes.push(textBox);
+          lineBoxManager.addItem(textBox, true);
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+          this.__ellipsis = true;
+          break;
+        }
       }
     }
     // 最后也没找到，看是否要查找前一个inline节点，还是本身是行首兜底首字母
     if(i < 0) {
       let lineBox = lineBoxManager.lineBox;
       // lineBox为空是行首，至少放1个字符
-      if(count + ew <= w || !lineBox.size) {
+      if(!lineBox.size) {
         maxW = count - (lineCount ? 0 : beginSpace);
         let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
           content.charAt(begin), charWidthList.slice(begin, begin + 1));

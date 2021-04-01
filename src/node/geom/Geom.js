@@ -105,13 +105,14 @@ class Geom extends Xom {
     let {
       [WIDTH]: width,
       [HEIGHT]: height,
+      [DISPLAY]: display,
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     // 只绝对值生效，%不生效，依旧要判断
     if(main[1] === PX) {
       min = max = main[0];
     }
-    return this.__addMp(isDirectionRow, data.w, currentStyle, [min, max]);
+    return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
   }
 
   __calBasis(isDirectionRow, data) {

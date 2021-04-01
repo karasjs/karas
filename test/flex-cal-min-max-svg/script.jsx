@@ -42,7 +42,6 @@ let o = karas.render(
                             "style": {
                               "display": "inline-block",
                               "fontSize": 36,
-                              "fontFamily": "AlibabaSans102-Bold",
                               "lineHeight": 1.4,
                               "color": "rgba(255,255,255,1)",
                               "textAlign": "left",
@@ -58,7 +57,6 @@ let o = karas.render(
                             "style": {
                               "display": "inline-block",
                               "fontSize": 36,
-                              "fontFamily": "PingFangSC-Semibold",
                               "lineHeight": 1.4,
                               "color": "rgba(255,255,255,1)",
                               "textAlign": "left",
@@ -82,7 +80,6 @@ let o = karas.render(
                             "style": {
                               "display": "inline-block",
                               "fontSize": 24,
-                              "fontFamily": "PingFangSC-Regular",
                               "lineHeight": 1.4,
                               "color": "rgba(255, 255, 255, 1)",
                               "textAlign": "left",
@@ -133,7 +130,6 @@ let o = karas.render(
                                 "style": {
                                   "display": "inline-block",
                                   "fontSize": 36,
-                                  "fontFamily": "AlibabaSans102-Bold",
                                   "lineHeight": 1.4,
                                   "color": "rgba(255,255,255,1)",
                                   "textAlign": "left",
@@ -149,7 +145,6 @@ let o = karas.render(
                                 "style": {
                                   "display": "inline-block",
                                   "fontSize": 36,
-                                  "fontFamily": "PingFangSC-Semibold",
                                   "lineHeight": 1.4,
                                   "color": "rgba(255,255,255,1)",
                                   "textAlign": "left",
@@ -173,7 +168,6 @@ let o = karas.render(
                                 "style": {
                                   "display": "inline-block",
                                   "fontSize": 24,
-                                  "fontFamily": "PingFangSC-Regular",
                                   "lineHeight": 1.4,
                                   "color": "rgba(255, 255, 255, 1)",
                                   "textAlign": "left",
@@ -228,7 +222,6 @@ let o = karas.render(
                             "style": {
                               "display": "inline-block",
                               "fontSize": 36,
-                              "fontFamily": "PingFangSC-Medium",
                               "lineHeight": 1.4,
                               "color": "rgba(255,255,255,1)",
                               "textAlign": "left",
@@ -260,7 +253,6 @@ let o = karas.render(
                                 "style": {
                                   "display": "inline-block",
                                   "fontSize": 24,
-                                  "fontFamily": "AlibabaSans102-Bold",
                                   "lineHeight": 1.4,
                                   "color": "rgba(255,255,255,1)",
                                   "textAlign": "right",
@@ -288,7 +280,6 @@ let o = karas.render(
                         "style": {
                           "display": "inline-block",
                           "fontSize": 24,
-                          "fontFamily": "PingFangSC-Regular",
                           "lineHeight": 1.4,
                           "color": "rgba(255, 255, 255, 1)",
                           "textAlign": "left",
@@ -312,4 +303,4 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-input.value = JSON.stringify(o.virtualDom);
+input.value = document.querySelector('svg').innerHTML;

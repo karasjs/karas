@@ -21686,14 +21686,15 @@
         var currentStyle = this.currentStyle; // 计算需考虑style的属性
 
         var width = currentStyle[WIDTH$6],
-            height = currentStyle[HEIGHT$6];
+            height = currentStyle[HEIGHT$6],
+            display = currentStyle[DISPLAY$6];
         var main = isDirectionRow ? width : height; // 只绝对值生效，%不生效，依旧要判断
 
         if (main[1] === PX$9) {
           min = max = main[0];
         }
 
-        return this.__addMp(isDirectionRow, data.w, currentStyle, [min, max]);
+        return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
       }
     }, {
       key: "__calBasis",

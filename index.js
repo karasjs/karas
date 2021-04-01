@@ -7572,7 +7572,7 @@
 
     if (temp !== undefined) {
       temp = parseInt(temp) || 0;
-      res[LINE_CLAMP] = [Math.max(0, temp), NUMBER];
+      res[LINE_CLAMP] = Math.max(0, temp);
     } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
@@ -8216,18 +8216,21 @@
    * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
    * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
    * 另外本类还会被LineBoxManager添加到LineBox里，LineBox为一行中的inline/文本组合，之间需要进行垂直对齐
+   * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
    */
 
   var TextBox = /*#__PURE__*/function () {
-    function TextBox(parent, x, y, w, h, content) {
+    function TextBox(parent, index, x, y, w, h, content, wList) {
       _classCallCheck(this, TextBox);
 
       this.__parent = parent;
+      this.__index = index;
       this.__x = x;
       this.__y = y;
       this.__width = w;
       this.__height = h;
       this.__content = content;
+      this.__wList = wList;
       this.__virtualDom = {};
     }
     /**
@@ -8238,23 +8241,25 @@
      * @param cacheStyle Text父节点Dom的缓存样式，相比computedStyle可以直接用，比如color被缓存为style字符串
      * @param dx
      * @param dy
-     * @param index
-     * @param charWidthList
      */
 
 
     _createClass(TextBox, [{
       key: "render",
-      value: function render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList) {
+      value: function render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
         var content = this.content,
             x = this.x,
             y = this.y,
-            parent = this.parent;
+            parent = this.parent,
+            wList = this.wList,
+            width = this.width;
         var ox = parent.ox,
             oy = parent.oy;
         y += css.getBaseLine(computedStyle);
         x += ox + dx;
         y += oy + dy;
+        this.__endX = x + width;
+        this.__endY = y;
         var letterSpacing = computedStyle[LETTER_SPACING$1];
         var i = 0,
             length = content.length;
@@ -8263,7 +8268,7 @@
           if (letterSpacing) {
             for (; i < length; i++) {
               ctx.fillText(content.charAt(i), x, y);
-              x += charWidthList[index + i] + letterSpacing;
+              x += wList[i] + letterSpacing;
             }
           } else {
             ctx.fillText(content, x, y);
@@ -8302,6 +8307,16 @@
       key: "y",
       get: function get() {
         return this.__y;
+      }
+    }, {
+      key: "endX",
+      get: function get() {
+        return this.__endX;
+      }
+    }, {
+      key: "endY",
+      get: function get() {
+        return this.__endY;
       }
     }, {
       key: "width",
@@ -8348,6 +8363,11 @@
       get: function get() {
         return this.__parentLineBox;
       }
+    }, {
+      key: "wList",
+      get: function get() {
+        return this.__wList;
+      }
     }]);
 
     return TextBox;
@@ -8358,6 +8378,7 @@
       LINE_HEIGHT$1 = _enums$STYLE_KEY$4.LINE_HEIGHT,
       FONT_SIZE$2 = _enums$STYLE_KEY$4.FONT_SIZE,
       FONT_FAMILY$2 = _enums$STYLE_KEY$4.FONT_FAMILY,
+      FONT_STYLE$2 = _enums$STYLE_KEY$4.FONT_STYLE,
       FONT_WEIGHT$2 = _enums$STYLE_KEY$4.FONT_WEIGHT,
       COLOR$2 = _enums$STYLE_KEY$4.COLOR,
       VISIBILITY$1 = _enums$STYLE_KEY$4.VISIBILITY,
@@ -8424,26 +8445,57 @@
         };
         var cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
         var sum = 0;
-        var needMeasure = false; // text-overflow:ellipse需要，即便没有也要先测量
+        var needMeasure = false; // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
+
+        var bp = this.parent;
+
+        while (bp.currentStyle[DISPLAY$1] === 'inline') {
+          bp = bp.domParent;
+        }
+
+        this.__bp = bp;
+        var parentComputedStyle = bp.computedStyle;
+        var pff = 'arial';
+
+        for (var _i = 0, pffs = parentComputedStyle[FONT_FAMILY$2].split(','), _len = pffs.length; _i < _len; _i++) {
+          if (inject.checkSupportFontFamily(pffs[_i])) {
+            ff = ffs[_i];
+            break;
+          }
+        }
+
+        var pfs = parentComputedStyle[FONT_SIZE$2];
+        var pfw = parentComputedStyle[FONT_WEIGHT$2];
+        var pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
+        var parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
 
         if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(computedStyle);
-
-          if (!cache.hasOwnProperty(ELLIPSIS)) {
-            cache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
-            wait.hash[ELLIPSIS] = true;
+          if (!parentCache.hasOwnProperty(ELLIPSIS)) {
+            ctx.font = css.setFontStyle(parentComputedStyle);
+            parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
           }
+
+          ctx.font = css.setFontStyle(computedStyle);
         } else if (renderMode === mode.SVG) {
-          if (!cache.hasOwnProperty(ELLIPSIS)) {
-            cache[ELLIPSIS] = 0;
-            wait.s += ELLIPSIS;
+          if (!parentCache.hasOwnProperty(ELLIPSIS)) {
+            parentCache[ELLIPSIS] = 0;
+
+            var _wait = textCache.data[pKey] = textCache.data[pKey] || {
+              ff: pff,
+              fs: pfs,
+              fw: pfw,
+              hash: {},
+              s: ''
+            };
+
+            _wait.s += ELLIPSIS;
             needMeasure = true;
           }
         } // 逐字测量，canvas可瞬间得到信息，svg先预存统一进行
 
 
-        for (var _i = 0, length = content.length; _i < length; _i++) {
-          var _char = content.charAt(_i);
+        for (var _i2 = 0, length = content.length; _i2 < length; _i2++) {
+          var _char = content.charAt(_i2);
 
           var mw = void 0;
 
@@ -8498,7 +8550,8 @@
        * text在virtual时和普通一样，无需特殊处理
        * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和
        * 即便宽度不足，每行还是强制渲染一个字符，换行依据lx开始，因为x可能是从中间开始的，非inline则两个相等
-       * 最后一个字符排版时要考虑末尾mpb，排不下的话回退删掉这个字符，如果最后一个字符另起开头，排不下也强制排
+       * 最后一个字符排版时要考虑末尾mpb，排不下的话回退删掉这个字符，如果最后一个字符另起开头，排不下也强制排，每行至少1个字符
+       * 在textOverflow时很特殊，多个inline同行，回退可能到前一个inline节点，这个通过x和lx判断是否行首，决定至少1个字符规则
        * @param data
        * @private
        */
@@ -8512,7 +8565,12 @@
             _data$lx = data.lx,
             lx = _data$lx === void 0 ? x : _data$lx,
             lineBoxManager = data.lineBoxManager,
-            endSpace = data.endSpace;
+            _data$endSpace = data.endSpace,
+            endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace,
+            _data$lineClamp = data.lineClamp,
+            lineClamp = _data$lineClamp === void 0 ? 0 : _data$lineClamp,
+            _data$lineClampCount = data.lineClampCount,
+            lineClampCount = _data$lineClampCount === void 0 ? 0 : _data$lineClampCount;
         this.__x = this.__sx1 = x;
         this.__y = this.__sy1 = y;
         var isDestroyed = this.isDestroyed,
@@ -8523,25 +8581,22 @@
             charWidthList = this.charWidthList,
             root = this.root,
             __ff = this.__ff,
-            __key = this.__key; // 空内容w/h都为0可以提前跳出
+            __key = this.__key;
+        textBoxes.splice(0); // 空内容w/h都为0可以提前跳出
 
-        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || !content) {
-          return;
+        if (isDestroyed || currentStyle[DISPLAY$1] === 'none' || !content) {
+          return lineClampCount;
         }
 
-        this.__ox = this.__oy = 0;
-        textBoxes.splice(0); // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
+        this.__ox = this.__oy = 0; // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
 
         var begin = 0;
         var i = 0;
-        var firstLineSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
+        var beginSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
 
-        var count = firstLineSpace;
+        var count = beginSpace;
         var length = content.length;
         var maxW = 0;
-        var display = currentStyle[DISPLAY$1],
-            overflow = currentStyle[OVERFLOW],
-            textOverflow = currentStyle[TEXT_OVERFLOW$1];
         var lineHeight = computedStyle[LINE_HEIGHT$1],
             letterSpacing = computedStyle[LETTER_SPACING$2],
             whiteSpace = computedStyle[WHITE_SPACE$1],
@@ -8550,66 +8605,54 @@
 
         var padding = o.info[__ff].padding;
         var needReduce = !!padding;
-        var lastChar; // 不换行特殊对待，同时考虑overflow和textOverflow
+        var lastChar;
+        var ew = textCache.charWidth[this.__pKey][ELLIPSIS];
+        var lineCount = 0; // 不换行特殊对待，同时考虑overflow和textOverflow
 
         if (whiteSpace === 'nowrap') {
-          count = 0; // 不换行时，首行统计从0开始
+          var isTextOverflow; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
 
-          var isTextOverflow;
+          var bp = this.__bp;
+          var _bp$currentStyle = bp.currentStyle,
+              overflow = _bp$currentStyle[OVERFLOW],
+              textOverflow = _bp$currentStyle[TEXT_OVERFLOW$1]; // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
 
-          while (i < length) {
-            count += charWidthList[i] + letterSpacing; // overflow必须hidden才生效文字裁剪
+          if (overflow === 'hidden') {
+            while (i < length) {
+              count += charWidthList[i] + letterSpacing;
 
-            if (overflow === 'hidden' && count > w && (textOverflow === 'clip' || textOverflow === 'ellipsis')) {
-              isTextOverflow = true;
-              break;
-            }
-
-            i++;
-          } // 仅block/inline的ellipsis需要做...截断，默认clip跟随overflow:hidden，且ellipsis也跟随overflow:hidden截取并至少1个字符
-
-
-          if (isTextOverflow && textOverflow === 'ellipsis' && (display === 'block' || display === 'inlineBlock' || display === 'flex')) {
-            var ew = textCache.charWidth[this.__key][ELLIPSIS];
-
-            for (; i > 0; i--) {
-              count -= charWidthList[i - 1];
-              var ww = count + ew;
-
-              if (ww <= w) {
-                var textBox = new TextBox(this, x, y, ww, lineHeight, content.slice(0, i) + ELLIPSIS);
-                textBoxes.push(textBox);
-                lineBoxManager.addItem(textBox, true);
-                maxW = ww;
-                y += lineHeight;
+              if (count > w) {
+                isTextOverflow = true;
                 break;
               }
-            } // 最后也没找到，宽度极短情况，兜底首字母
 
-
-            if (i === 0) {
-              var _ww = charWidthList[0] + ew;
-
-              var _textBox = new TextBox(this, x, y, _ww, lineHeight, content.charAt(0) + ELLIPSIS);
-
-              textBoxes.push(_textBox);
-              lineBoxManager.addItem(_textBox, true);
-              maxW = _ww;
-              y += lineHeight;
+              i++;
             }
           } else {
-            var _textBox2 = new TextBox(this, x, y, count, lineHeight, content.slice(0, i));
+            while (i < length) {
+              count += charWidthList[i++] + letterSpacing;
+            }
+          } // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
 
-            textBoxes.push(_textBox2);
-            lineBoxManager.addItem(_textBox2);
-            maxW = count;
-            y += lineHeight;
-          }
+
+          if (isTextOverflow && textOverflow === 'ellipsis') {
+            var _this$__lineBack = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
+
+            var _this$__lineBack2 = _slicedToArray(_this$__lineBack, 2);
+
+            y = _this$__lineBack2[0];
+            maxW = _this$__lineBack2[1];
+          } // 默认clip跟随overflow:hidden，无需感知
+          else {
+              var textBox = new TextBox(this, textBoxes.length, x, y, count - beginSpace, lineHeight, content, charWidthList);
+              textBoxes.push(textBox);
+              lineBoxManager.addItem(textBox);
+              maxW = count - beginSpace;
+              y += lineHeight;
+            }
         } // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
         // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
         else {
-            var lineCount = 0;
-
             while (i < length) {
               var cw = charWidthList[i] + letterSpacing;
               count += cw; // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
@@ -8617,7 +8660,7 @@
               if (needReduce) {
                 var _char2 = content[i];
 
-                if (_char2 === lastChar && padding[_char2]) {
+                if (_char2 === lastChar && padding.hasOwnProperty(_char2) && padding[_char2]) {
                   var hasCache = void 0,
                       p = textCache.padding[__key] = textCache.padding[__key] || {};
 
@@ -8658,58 +8701,87 @@
 
 
               if (count === w) {
-                var _textBox3 = void 0; // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb
+                // 多行文本截断，这里肯定需要回退
+                if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+                  var _this$__lineBack3 = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
+
+                  var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
+
+                  y = _this$__lineBack4[0];
+                  maxW = _this$__lineBack4[1];
+                  lineCount++;
+                  break;
+                }
+
+                var _textBox = void 0; // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb，要防止i为0的情况首个字符特殊不回退，无需看开头mpb
 
 
                 if (i === length - 1 && count > w - endSpace && i) {
-                  count -= charWidthList[i - 1];
-                  i--;
+                  count -= charWidthList[i--];
                 }
 
+                i++;
+
                 if (!lineCount) {
-                  maxW = count - firstLineSpace;
-                  _textBox3 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i + 1));
+                  maxW = count - beginSpace;
+                  _textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
                 } else {
-                  _textBox3 = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, i + 1));
+                  _textBox = new TextBox(this, textBoxes.length, lx, y, count, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
                   maxW = Math.max(maxW, count);
                 } // 必须先添加再设置y，当有diff的lineHeight时，第一个换行不影响，再换行时第2个换行即第3行会被第1行影响
 
 
-                textBoxes.push(_textBox3);
-                lineBoxManager.addItem(_textBox3, true);
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                begin = i + 1;
-                i = begin;
-                count = 0;
-                lineCount++;
-              } else if (count > w) {
-                var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
-                // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里条件
-
-                if (i === begin) {
-                  i = begin + 1;
-                  width = count;
-                } else {
-                  width = count - charWidthList[i];
-                }
-
-                var _textBox4 = void 0;
-
-                if (!lineCount) {
-                  maxW = width - firstLineSpace;
-                  _textBox4 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, i));
-                } else {
-                  _textBox4 = new TextBox(this, lx, y, width, lineHeight, content.slice(begin, i));
-                  maxW = Math.max(maxW, width);
-                } // 必须先添加再设置y，同上
-
-
-                textBoxes.push(_textBox4);
-                lineBoxManager.addItem(_textBox4, true);
+                textBoxes.push(_textBox);
+                lineBoxManager.addItem(_textBox, true);
                 y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 begin = i;
                 count = 0;
                 lineCount++;
+                lastChar = null; // 换行后连续字符reduce不生效重新计数
+              } else if (count > w) {
+                // 多行文本截断，这里肯定需要回退
+                if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+                  var _this$__lineBack5 = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
+
+                  var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
+
+                  y = _this$__lineBack6[0];
+                  maxW = _this$__lineBack6[1];
+                  lineCount++;
+                  break;
+                } // 普通非多行文本阶段逻辑
+
+
+                var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
+                // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里，这个if只有0或1个字符的情况
+
+                if (i <= begin) {
+                  width = count;
+                } // 超过2个字符回退1个
+                else {
+                    width = count - charWidthList[i--];
+                  }
+
+                i++; // 根据是否第一行分开处理行首空白
+
+                var _textBox2 = void 0;
+
+                if (!lineCount) {
+                  maxW = width - beginSpace;
+                  _textBox2 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                } else {
+                  _textBox2 = new TextBox(this, textBoxes.length, lx, y, width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  maxW = Math.max(maxW, width);
+                } // 必须先添加再设置y，同上
+
+
+                textBoxes.push(_textBox2);
+                lineBoxManager.addItem(_textBox2, true);
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                begin = i;
+                count = 0;
+                lineCount++;
+                lastChar = null;
               } else {
                 i++;
               }
@@ -8719,10 +8791,11 @@
             if (!lineCount) {
               this.__x = this.__sx1 = lx;
             } // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
+            // 声明了lineClamp时特殊考虑，这里一定是最后一行，要对比行数不能超过，超过忽略掉这些文本
 
 
-            if (begin < length) {
-              var _textBox5;
+            if (begin < length && (!lineClamp || lineCount + lineClampCount < lineClamp)) {
+              var _textBox3;
 
               if (!lineCount) {
                 var needBack; // 防止开头第一个begin=0时回退，这在inline有padding且是第一个child时会发生
@@ -8732,20 +8805,21 @@
                   count -= charWidthList[length - 1];
                 }
 
-                maxW = count - firstLineSpace;
-                _textBox5 = new TextBox(this, x, y, maxW, lineHeight, content.slice(begin, needBack ? length - 1 : length));
-                textBoxes.push(_textBox5);
-                lineBoxManager.addItem(_textBox5);
+                maxW = count - beginSpace;
+                _textBox3 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, needBack ? length - 1 : length), charWidthList.slice(begin, needBack ? length - 1 : length));
+                textBoxes.push(_textBox3);
+                lineBoxManager.addItem(_textBox3);
                 y += Math.max(lineHeight, lineBoxManager.lineHeight);
 
                 if (needBack) {
                   var _width = charWidthList[length - 1];
-                  _textBox5 = new TextBox(this, lx, y, _width, lineHeight, content.slice(length - 1));
+                  _textBox3 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(length - 1), charWidthList.slice(length - 1));
                   maxW = Math.max(maxW, _width);
-                  textBoxes.push(_textBox5);
+                  textBoxes.push(_textBox3);
                   lineBoxManager.setNewLine();
-                  lineBoxManager.addItem(_textBox5);
+                  lineBoxManager.addItem(_textBox3);
                   y += lineHeight;
+                  lineCount++;
                 }
               } else {
                 var _needBack; // 防止begin在结尾时回退，必须要有个字符，这在最后一行1个字符排不下时会出现
@@ -8756,20 +8830,21 @@
                   count -= charWidthList[length - 1];
                 }
 
-                _textBox5 = new TextBox(this, lx, y, count, lineHeight, content.slice(begin, _needBack ? length - 1 : length));
+                _textBox3 = new TextBox(this, textBoxes.length, lx, y, count, lineHeight, content.slice(begin, _needBack ? length - 1 : length), charWidthList.slice(begin, _needBack ? length - 1 : length));
                 maxW = Math.max(maxW, count);
-                textBoxes.push(_textBox5);
-                lineBoxManager.addItem(_textBox5);
+                textBoxes.push(_textBox3);
+                lineBoxManager.addItem(_textBox3);
                 y += Math.max(lineHeight, lineBoxManager.lineHeight);
 
                 if (_needBack) {
                   var _width2 = charWidthList[length - 1];
-                  _textBox5 = new TextBox(this, lx, y, _width2, lineHeight, content.slice(length - 1));
+                  _textBox3 = new TextBox(this, textBoxes.length, lx, y, _width2, lineHeight, content.slice(length - 1), charWidthList.slice(length - 1));
                   maxW = Math.max(maxW, _width2);
-                  textBoxes.push(_textBox5);
+                  textBoxes.push(_textBox3);
                   lineBoxManager.setNewLine();
-                  lineBoxManager.addItem(_textBox5);
+                  lineBoxManager.addItem(_textBox3);
                   y += lineHeight;
+                  lineCount++;
                 }
               }
             }
@@ -8778,6 +8853,82 @@
         this.__width = maxW;
         this.__height = y - data.y;
         this.__baseLine = css.getBaseLine(computedStyle);
+        return lineCount;
+      } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
+
+    }, {
+      key: "__lineBack",
+      value: function __lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager) {
+        for (; i >= begin; i--) {
+          count -= charWidthList[i];
+
+          if (count + ew + endSpace <= w) {
+            // 至少1个字符不用回退，到0也没找到需要回退
+            if (i) {
+              maxW = count - (lineCount ? 0 : beginSpace);
+              var textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+              textBoxes.push(textBox);
+              lineBoxManager.addItem(textBox, true);
+              y += Math.max(lineHeight, lineBoxManager.lineHeight);
+              this.__ellipsis = true;
+              break;
+            }
+          }
+        } // 最后也没找到，看是否要查找前一个inline节点，还是本身是行首兜底首字母
+
+
+        if (i < 0) {
+          var lineBox = lineBoxManager.lineBox; // lineBox为空是行首，至少放1个字符
+
+          if (!lineBox.size) {
+            maxW = count - (lineCount ? 0 : beginSpace);
+
+            var _textBox4 = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight, content.charAt(begin), charWidthList.slice(begin, begin + 1));
+
+            textBoxes.push(_textBox4);
+            lineBoxManager.addItem(_textBox4, true);
+            y += Math.max(lineHeight, lineBoxManager.lineHeight);
+            this.__ellipsis = true;
+          } // 向前查找inline节点，可能会有前面inline嵌套，因此直接用lineBox，不会出现inlineBlock，
+          // 这里和css不同，ib强制超限换行不会同行
+          else {
+              var list = lineBox.list;
+
+              outer: for (var j = list.length - 1; j >= 0; j--) {
+                var tb = list[j];
+                var _content = tb.content,
+                    wList = tb.wList,
+                    width = tb.width; // 整体减去可以说明可能在这个tb中，只要最后发现不是空文本节点就行，否则继续；第0个强制进入保证1字符
+
+                if (count - width + ew <= w || !j) {
+                  // 找到可以跳出outer循环，找不到继续，注意第0个且1个字符判断
+                  for (var k = wList.length - 1; k >= 0; k--) {
+                    if (!k && !j || count + ew <= w) {
+                      tb.__content = _content;
+                      tb.__width = width;
+                      tb.parent.__ellipsis = true;
+                      break outer;
+                    } else {
+                      var w2 = wList[k];
+                      tb.__endY -= w2;
+                      width -= w2;
+                      _content = _content.slice(0, k);
+                      count -= w2;
+                      wList.pop();
+                    }
+                  }
+                } // 不够则看前一个tb并且删掉这个
+                else {
+                    count -= width;
+                  }
+
+                list.pop();
+                tb.parent.textBoxes.pop();
+              }
+            }
+        }
+
+        return [y, maxW];
       }
     }, {
       key: "__offsetX",
@@ -8850,9 +9001,10 @@
             computedStyle = this.computedStyle,
             textBoxes = this.textBoxes,
             cacheStyle = this.cacheStyle,
-            charWidthList = this.charWidthList;
+            __ellipsis = this.__ellipsis,
+            __bp = this.__bp;
 
-        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden') {
+        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden' || !textBoxes.length) {
           return false;
         }
 
@@ -8868,18 +9020,49 @@
           if (ctx.fillStyle !== color) {
             ctx.fillStyle = color;
           }
-        }
+        } // 可能为空，整个是个ellipsis
 
-        var index = 0;
+
         textBoxes.forEach(function (item) {
-          item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy, index, charWidthList);
-          index += item.content.length;
+          item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
         });
 
         if (renderMode === mode.SVG) {
           this.virtualDom.children = textBoxes.map(function (textBox) {
             return textBox.virtualDom;
           });
+        } // textOverflow的省略号font使用最近非inline的父节点
+
+
+        if (__ellipsis) {
+          var last = textBoxes[textBoxes.length - 1];
+          var endX = last.endX,
+              endY = last.endY;
+          var _computedStyle = __bp.computedStyle;
+
+          if (renderMode === mode.CANVAS) {
+            var _font2 = css.setFontStyle(_computedStyle);
+
+            if (ctx.font !== _font2) {
+              ctx.font = _font2;
+            }
+
+            var _color = __bp.__cacheStyle[COLOR$2];
+
+            if (ctx.fillStyle !== _color) {
+              ctx.fillStyle = _color;
+            }
+
+            ctx.fillText(ELLIPSIS, endX, endY);
+          } else if (renderMode === mode.SVG) {
+            var props = [['x', endX], ['y', endY], ['fill', __bp.__cacheStyle[COLOR$2]], ['font-family', _computedStyle[FONT_FAMILY$2]], ['font-weight', _computedStyle[FONT_WEIGHT$2]], ['font-style', _computedStyle[FONT_STYLE$2]], ['font-size', _computedStyle[FONT_SIZE$2] + 'px']];
+            this.virtualDom.children.push({
+              type: 'item',
+              tagName: 'text',
+              props: props,
+              content: ELLIPSIS
+            });
+          }
         }
 
         return true;
@@ -11110,7 +11293,7 @@
       TRANSFORM$2 = _enums$STYLE_KEY$8.TRANSFORM,
       COLOR$3 = _enums$STYLE_KEY$8.COLOR,
       FONT_WEIGHT$3 = _enums$STYLE_KEY$8.FONT_WEIGHT,
-      FONT_STYLE$2 = _enums$STYLE_KEY$8.FONT_STYLE,
+      FONT_STYLE$3 = _enums$STYLE_KEY$8.FONT_STYLE,
       FONT_FAMILY$3 = _enums$STYLE_KEY$8.FONT_FAMILY,
       TEXT_ALIGN$1 = _enums$STYLE_KEY$8.TEXT_ALIGN,
       MATRIX$2 = _enums$STYLE_KEY$8.MATRIX,
@@ -11212,7 +11395,7 @@
             style[k] = [computedStyle[k], PX$5];
           } else if (k === FONT_WEIGHT$3) {
             style[k] = [computedStyle[k], NUMBER$2];
-          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$1) {
+          } else if (k === FONT_STYLE$3 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$1) {
             style[k] = [computedStyle[k], STRING$2];
           }
         }
@@ -14900,7 +15083,7 @@
       BORDER_BOTTOM_COLOR = _enums$STYLE_KEY$c.BORDER_BOTTOM_COLOR,
       BORDER_LEFT_COLOR = _enums$STYLE_KEY$c.BORDER_LEFT_COLOR,
       BORDER_RIGHT_COLOR = _enums$STYLE_KEY$c.BORDER_RIGHT_COLOR,
-      FONT_STYLE$3 = _enums$STYLE_KEY$c.FONT_STYLE,
+      FONT_STYLE$4 = _enums$STYLE_KEY$c.FONT_STYLE,
       COLOR$4 = _enums$STYLE_KEY$c.COLOR,
       VISIBILITY$2 = _enums$STYLE_KEY$c.VISIBILITY,
       POINTER_EVENTS$1 = _enums$STYLE_KEY$c.POINTER_EVENTS,
@@ -15821,13 +16004,13 @@
 
         var parentComputedStyle = parent && parent.computedStyle;
 
-        if (currentStyle[FONT_STYLE$3][1] === INHERIT$4) {
-          computedStyle[FONT_STYLE$3] = parent ? parentComputedStyle[FONT_STYLE$3] : 'normal';
-        } else if (!__cacheStyle[FONT_STYLE$3]) {
-          computedStyle[FONT_STYLE$3] = currentStyle[FONT_STYLE$3][0];
+        if (currentStyle[FONT_STYLE$4][1] === INHERIT$4) {
+          computedStyle[FONT_STYLE$4] = parent ? parentComputedStyle[FONT_STYLE$4] : 'normal';
+        } else if (!__cacheStyle[FONT_STYLE$4]) {
+          computedStyle[FONT_STYLE$4] = currentStyle[FONT_STYLE$4][0];
         }
 
-        __cacheStyle[FONT_STYLE$3] = computedStyle[FONT_STYLE$3];
+        __cacheStyle[FONT_STYLE$4] = computedStyle[FONT_STYLE$4];
 
         if (currentStyle[COLOR$4][1] === INHERIT$4) {
           computedStyle[COLOR$4] = parent ? parentComputedStyle[COLOR$4] : [0, 0, 0, 1];
@@ -16285,7 +16468,7 @@
 
         var offScreenOverflow;
 
-        if (overflow === 'hidden') {
+        if (overflow === 'hidden' && display !== 'inline') {
           if (renderMode === mode.CANVAS && !cache) {
             if (offScreenFilter || offScreenMask) {
               offScreenOverflow = offScreenFilter || offScreenMask;
@@ -17866,13 +18049,15 @@
           item.__contentBoxList.push(o);
         });
 
-        lineBox.add(o); // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock
-
-        this.__lastX = o.x + o.outerWidth;
-        this.__lastY = o.y;
+        lineBox.add(o); // 设置结束x的位置给next的inline标记用，o可能是TextBox或inlineBlock，当next新行时注意位置
 
         if (nextNewLine) {
           this.__isNewLine = true;
+          this.__lastX = o.x;
+          this.__lastY = o.y + o.outerHeight;
+        } else {
+          this.__lastX = o.x + o.outerWidth;
+          this.__lastY = o.y;
         }
 
         return lineBox;
@@ -18047,6 +18232,15 @@
 
         return 0;
       }
+    }, {
+      key: "lineBox",
+      get: function get() {
+        var list = this.__list;
+
+        if (list.length) {
+          return list[list.length - 1];
+        }
+      }
     }]);
 
     return LineBoxManager;
@@ -18109,6 +18303,7 @@
       Z_INDEX$3 = _enums$STYLE_KEY$e.Z_INDEX,
       WHITE_SPACE$2 = _enums$STYLE_KEY$e.WHITE_SPACE,
       LINE_HEIGHT$4 = _enums$STYLE_KEY$e.LINE_HEIGHT,
+      LINE_CLAMP$1 = _enums$STYLE_KEY$e.LINE_CLAMP,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -18849,7 +19044,6 @@
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-        var textAlign = computedStyle[TEXT_ALIGN$2];
 
         var _this$__preLayout = this.__preLayout(data),
             fixedWidth = _this$__preLayout.fixedWidth,
@@ -18866,9 +19060,15 @@
           this.__ioSize(w, this.height);
 
           return;
-        } // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
-        // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
+        }
 
+        var textAlign = computedStyle[TEXT_ALIGN$2],
+            whiteSpace = computedStyle[WHITE_SPACE$2],
+            lineClamp = computedStyle[LINE_CLAMP$1]; // 只有>=1的正整数才有效
+
+        lineClamp = lineClamp || 0;
+        var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
+        // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
 
         var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
@@ -18903,15 +19103,17 @@
             // inline和ib能互相嵌套，形成的LineBox中则是TextBox和节点混合
             if (isInlineBlock || isInline) {
               // x开头，不用考虑是否放得下直接放
-              if (x === data.x) {
+              if (x === data.x || isInline && whiteSpace === 'nowrap') {
                 item.__layout({
                   x: x,
                   y: y,
                   w: w,
                   h: h,
                   lx: data.x,
-                  lineBoxManager: lineBoxManager // ib内部新生成会内部判断，这里不管统一传入
-
+                  lineBoxManager: lineBoxManager,
+                  // ib内部新生成会内部判断，这里不管统一传入
+                  lineClamp: lineClamp,
+                  lineClampCount: lineClampCount
                 }, isVirtual); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
 
 
@@ -18944,7 +19146,9 @@
                     w: w,
                     h: h,
                     lx: data.x,
-                    lineBoxManager: lineBoxManager
+                    lineBoxManager: lineBoxManager,
+                    lineClamp: lineClamp,
+                    lineClampCount: lineClampCount
                   }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
 
@@ -18953,19 +19157,20 @@
                   y = lineBoxManager.lastY;
                 } // 放不下处理之前的lineBox，并重新开头
                 else {
+                    lineClampCount++;
                     x = data.x;
                     y = lineBoxManager.endY;
                     lineBoxManager.setNewLine();
-
-                    item.__layout({
+                    lineClampCount = item.__layout({
                       x: x,
                       y: y,
                       w: w,
                       h: h,
                       lx: data.x,
-                      lineBoxManager: lineBoxManager
+                      lineBoxManager: lineBoxManager,
+                      lineClamp: lineClamp,
+                      lineClampCount: lineClampCount
                     }, isVirtual); // 重新开头的ib和上面开头处一样逻辑
-
 
                     if (item.__isIbFull) {
                       x = data.x;
@@ -18991,6 +19196,11 @@
               }
             } // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
             else {
+                // 非开头，说明之前的text未换行，需要增加行数
+                if (x !== data.x && flowChildren[i - 1] instanceof Text) {
+                  lineClampCount++;
+                }
+
                 x = data.x;
 
                 if (lineBoxManager.isEnd) {
@@ -19067,17 +19277,23 @@
               }
           } // 文字和inline类似
           else {
-              // x开头，不用考虑是否放得下直接放
-              if (x === data.x) {
-                item.__layout({
+              // lineClamp作用域为block下的inline（同LineBox上下文）
+              if (lineClamp && lineClampCount >= lineClamp) {
+                return;
+              } // x开头，不用考虑是否放得下直接放
+
+
+              if (x === data.x || whiteSpace === 'nowrap') {
+                lineClampCount = item.__layout({
                   x: x,
                   y: y,
                   w: w,
                   h: h,
                   lx: data.x,
-                  lineBoxManager: lineBoxManager
+                  lineBoxManager: lineBoxManager,
+                  lineClamp: lineClamp,
+                  lineClampCount: lineClampCount
                 }, isVirtual);
-
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
 
@@ -19092,32 +19308,34 @@
 
 
                 if (_fw >= 0) {
-                  item.__layout({
+                  lineClampCount = item.__layout({
                     x: x,
                     y: y,
                     w: w,
                     h: h,
                     lx: data.x,
-                    lineBoxManager: lineBoxManager
+                    lineBoxManager: lineBoxManager,
+                    lineClamp: lineClamp,
+                    lineClampCount: lineClampCount
                   }, isVirtual);
-
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 } // 放不下处理之前的lineBox，并重新开头
                 else {
+                    lineClampCount++;
                     x = data.x;
                     y = lineBoxManager.endY;
                     lineBoxManager.setNewLine();
-
-                    item.__layout({
+                    lineClampCount = item.__layout({
                       x: x,
                       y: y,
                       w: w,
                       h: h,
                       lx: data.x,
-                      lineBoxManager: lineBoxManager
+                      lineBoxManager: lineBoxManager,
+                      lineClamp: lineClamp,
+                      lineClampCount: lineClampCount
                     }, isVirtual);
-
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY;
 
@@ -19168,10 +19386,8 @@
         var _this4 = this;
 
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle;
-        var flexDirection = currentStyle[FLEX_DIRECTION$2],
-            justifyContent = currentStyle[JUSTIFY_CONTENT$1],
-            alignItems = currentStyle[ALIGN_ITEMS$1];
+            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle;
 
         var _this$__preLayout2 = this.__preLayout(data),
             fixedWidth = _this$__preLayout2.fixedWidth,
@@ -19189,6 +19405,13 @@
           return;
         }
 
+        var flexDirection = currentStyle[FLEX_DIRECTION$2],
+            justifyContent = currentStyle[JUSTIFY_CONTENT$1],
+            alignItems = currentStyle[ALIGN_ITEMS$1];
+        var lineClamp = computedStyle[LINE_CLAMP$1]; // 只有>=1的正整数才有效
+
+        lineClamp = lineClamp || 0;
+        var lineClampCount = 0;
         var maxX = 0;
         var isDirectionRow = flexDirection !== 'column'; // 计算伸缩基数
 
@@ -19201,7 +19424,7 @@
         flowChildren.forEach(function (item) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _currentStyle3 = item.currentStyle,
-                computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+                _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
             if (_currentStyle3[DISPLAY$4] === 'inline' || _currentStyle3[DISPLAY$4] === 'inlineBlock') {
               _currentStyle3[DISPLAY$4] = 'block';
@@ -19231,7 +19454,7 @@
 
             var flexGrow = _currentStyle3[FLEX_GROW$1],
                 flexShrink = _currentStyle3[FLEX_SHRINK$1];
-            computedStyle[FLEX_BASIS$2] = b;
+            _computedStyle[FLEX_BASIS$2] = b;
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
@@ -19268,7 +19491,9 @@
                   y: y,
                   w: w,
                   h: _h,
-                  lineBoxManager: lineBoxManager
+                  lineBoxManager: lineBoxManager,
+                  lineClamp: lineClamp,
+                  lineClampCount: lineClampCount
                 });
 
                 var _h = item.height;
@@ -19476,7 +19701,9 @@
               y: y,
               w: isDirectionRow ? main : w,
               h: isDirectionRow ? h : main,
-              lineBoxManager: lineBoxManager
+              lineBoxManager: lineBoxManager,
+              lineClamp: lineClamp,
+              lineClampCount: lineClampCount
             });
           }
 
@@ -19627,18 +19854,18 @@
                     item.__offsetY(_diff7, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var computedStyle = item.computedStyle,
+                  var _computedStyle2 = item.computedStyle,
                       height = item.currentStyle[HEIGHT$4];
-                  var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-                      borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
-                      marginTop = computedStyle[MARGIN_TOP$2],
-                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
-                      paddingTop = computedStyle[PADDING_TOP$3],
-                      paddingBottom = computedStyle[PADDING_BOTTOM$3];
+                  var borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
+                      borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
+                      marginTop = _computedStyle2[MARGIN_TOP$2],
+                      marginBottom = _computedStyle2[MARGIN_BOTTOM$2],
+                      paddingTop = _computedStyle2[PADDING_TOP$3],
+                      paddingBottom = _computedStyle2[PADDING_BOTTOM$3];
 
                   if (height[1] === AUTO$4) {
                     var old = item.height;
-                    var v = item.__height = computedStyle[HEIGHT$4] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var v = item.__height = _computedStyle2[HEIGHT$4] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
                     item.__clientHeight += d;
                     item.__outerHeight += d;
@@ -19658,19 +19885,19 @@
                     item.__offsetX(_diff9, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle = item.computedStyle,
+                  var _computedStyle3 = item.computedStyle,
                       width = item.currentStyle[WIDTH$4];
-                  var borderRightWidth = _computedStyle[BORDER_RIGHT_WIDTH$5],
-                      borderLeftWidth = _computedStyle[BORDER_LEFT_WIDTH$5],
-                      marginRight = _computedStyle[MARGIN_RIGHT$4],
-                      marginLeft = _computedStyle[MARGIN_LEFT$4],
-                      paddingRight = _computedStyle[PADDING_RIGHT$5],
-                      paddingLeft = _computedStyle[PADDING_LEFT$5];
+                  var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$5],
+                      borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
+                      marginRight = _computedStyle3[MARGIN_RIGHT$4],
+                      marginLeft = _computedStyle3[MARGIN_LEFT$4],
+                      paddingRight = _computedStyle3[PADDING_RIGHT$5],
+                      paddingLeft = _computedStyle3[PADDING_LEFT$5];
 
                   if (width[1] === AUTO$4) {
                     var _old2 = item.width;
 
-                    var _v2 = item.__width = _computedStyle[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v2 = item.__width = _computedStyle3[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                     var _d2 = _v2 - _old2;
 
@@ -19699,18 +19926,18 @@
                     item.__offsetY(_diff11 * 0.5, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var computedStyle = item.computedStyle,
+                  var _computedStyle4 = item.computedStyle,
                       height = item.currentStyle[HEIGHT$4];
-                  var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-                      borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
-                      marginTop = computedStyle[MARGIN_TOP$2],
-                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
-                      paddingTop = computedStyle[PADDING_TOP$3],
-                      paddingBottom = computedStyle[PADDING_BOTTOM$3];
+                  var borderTopWidth = _computedStyle4[BORDER_TOP_WIDTH$3],
+                      borderBottomWidth = _computedStyle4[BORDER_BOTTOM_WIDTH$3],
+                      marginTop = _computedStyle4[MARGIN_TOP$2],
+                      marginBottom = _computedStyle4[MARGIN_BOTTOM$2],
+                      paddingTop = _computedStyle4[PADDING_TOP$3],
+                      paddingBottom = _computedStyle4[PADDING_BOTTOM$3];
 
                   if (height[1] === AUTO$4) {
                     var old = item.height;
-                    var v = item.__height = computedStyle[HEIGHT$4] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var v = item.__height = _computedStyle4[HEIGHT$4] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
                     item.__clientHeight += d;
                     item.__outerHeight += d;
@@ -19730,19 +19957,19 @@
                     item.__offsetX(_diff13 * 0.5, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle2 = item.computedStyle,
+                  var _computedStyle5 = item.computedStyle,
                       width = item.currentStyle[WIDTH$4];
-                  var borderRightWidth = _computedStyle2[BORDER_RIGHT_WIDTH$5],
-                      borderLeftWidth = _computedStyle2[BORDER_LEFT_WIDTH$5],
-                      marginRight = _computedStyle2[MARGIN_RIGHT$4],
-                      marginLeft = _computedStyle2[MARGIN_LEFT$4],
-                      paddingRight = _computedStyle2[PADDING_RIGHT$5],
-                      paddingLeft = _computedStyle2[PADDING_LEFT$5];
+                  var borderRightWidth = _computedStyle5[BORDER_RIGHT_WIDTH$5],
+                      borderLeftWidth = _computedStyle5[BORDER_LEFT_WIDTH$5],
+                      marginRight = _computedStyle5[MARGIN_RIGHT$4],
+                      marginLeft = _computedStyle5[MARGIN_LEFT$4],
+                      paddingRight = _computedStyle5[PADDING_RIGHT$5],
+                      paddingLeft = _computedStyle5[PADDING_LEFT$5];
 
                   if (width[1] === AUTO$4) {
                     var _old3 = item.width;
 
-                    var _v3 = item.__width = _computedStyle2[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v3 = item.__width = _computedStyle5[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                     var _d3 = _v3 - _old3;
 
@@ -19777,18 +20004,18 @@
                     item.__offsetY(_diff16, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var computedStyle = item.computedStyle,
+                  var _computedStyle6 = item.computedStyle,
                       height = item.currentStyle[HEIGHT$4];
-                  var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-                      borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
-                      marginTop = computedStyle[MARGIN_TOP$2],
-                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
-                      paddingTop = computedStyle[PADDING_TOP$3],
-                      paddingBottom = computedStyle[PADDING_BOTTOM$3];
+                  var borderTopWidth = _computedStyle6[BORDER_TOP_WIDTH$3],
+                      borderBottomWidth = _computedStyle6[BORDER_BOTTOM_WIDTH$3],
+                      marginTop = _computedStyle6[MARGIN_TOP$2],
+                      marginBottom = _computedStyle6[MARGIN_BOTTOM$2],
+                      paddingTop = _computedStyle6[PADDING_TOP$3],
+                      paddingBottom = _computedStyle6[PADDING_BOTTOM$3];
 
                   if (height[1] === AUTO$4) {
                     var old = item.height;
-                    var v = item.__height = item.__height = computedStyle[HEIGHT$4] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var v = item.__height = item.__height = _computedStyle6[HEIGHT$4] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
                     item.__clientHeight += d;
                     item.__outerHeight += d;
@@ -19808,19 +20035,19 @@
                     item.__offsetX(_diff18, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle3 = item.computedStyle,
+                  var _computedStyle7 = item.computedStyle,
                       width = item.currentStyle[WIDTH$4];
-                  var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$5],
-                      borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
-                      marginRight = _computedStyle3[MARGIN_RIGHT$4],
-                      marginLeft = _computedStyle3[MARGIN_LEFT$4],
-                      paddingRight = _computedStyle3[PADDING_RIGHT$5],
-                      paddingLeft = _computedStyle3[PADDING_LEFT$5];
+                  var borderRightWidth = _computedStyle7[BORDER_RIGHT_WIDTH$5],
+                      borderLeftWidth = _computedStyle7[BORDER_LEFT_WIDTH$5],
+                      marginRight = _computedStyle7[MARGIN_RIGHT$4],
+                      marginLeft = _computedStyle7[MARGIN_LEFT$4],
+                      paddingRight = _computedStyle7[PADDING_RIGHT$5],
+                      paddingLeft = _computedStyle7[PADDING_LEFT$5];
 
                   if (width[1] === AUTO$4) {
                     var _old4 = item.width;
 
-                    var _v4 = item.__width = _computedStyle3[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v4 = item.__width = _computedStyle7[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                     var _d4 = _v4 - _old4;
 
@@ -19861,9 +20088,6 @@
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-        var width = currentStyle[WIDTH$4];
-        var textAlign = computedStyle[TEXT_ALIGN$2],
-            whiteSpace = computedStyle[WHITE_SPACE$2];
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),
             fixedWidth = _this$__preLayout3.fixedWidth,
@@ -19887,6 +20111,12 @@
           return;
         }
 
+        var width = currentStyle[WIDTH$4];
+        var textAlign = computedStyle[TEXT_ALIGN$2],
+            whiteSpace = computedStyle[WHITE_SPACE$2],
+            lineClamp = computedStyle[LINE_CLAMP$1];
+        var lineClampCount = data.lineClampCount || 0;
+
         if (isInline && !this.__isRealInline()) {
           isInline = false;
         } // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
@@ -19899,10 +20129,12 @@
           var baseLine = css.getBaseLine(computedStyle);
 
           lineBoxManager.__setLB(lineHeight, baseLine);
+
+          lineClamp = data.lineClamp || 0;
         } else {
           lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
           lx = x;
-          endSpace = selfEndSpace = 0;
+          endSpace = selfEndSpace = lineClampCount = 0;
         } // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
 
 
@@ -19939,17 +20171,18 @@
             } // x开头，不用考虑是否放得下直接放，i为0强制不换行
 
 
-            if (x === lx || !i) {
-              item.__layout({
+            if (x === lx || !i || isInline2 && whiteSpace === 'nowrap') {
+              lineClampCount = item.__layout({
                 x: x,
                 y: y,
                 w: w,
                 h: h,
                 lx: lx,
                 lineBoxManager: lineBoxManager,
-                endSpace: endSpace
+                endSpace: endSpace,
+                lineClamp: lineClamp,
+                lineClampCount: lineClampCount
               }, isVirtual); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
-
 
               if (item.__isIbFull) {
                 isInlineBlock && w[1] === AUTO$4 && (isIbFull = true);
@@ -19973,7 +20206,7 @@
               var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
 
               if (fw >= 0) {
-                item.__layout({
+                lineClampCount = item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -19981,29 +20214,31 @@
                   lx: lx,
                   nowrap: whiteSpace === 'nowrap',
                   lineBoxManager: lineBoxManager,
-                  endSpace: endSpace
+                  endSpace: endSpace,
+                  lineClamp: lineClamp,
+                  lineClampCount: lineClampCount
                 }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
-
 
                 (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
               else {
+                  isInline2 && lineClampCount++;
                   x = lx;
                   y = lineBoxManager.endY;
                   lineBoxManager.setNewLine();
-
-                  item.__layout({
+                  lineClampCount = item.__layout({
                     x: x,
                     y: y,
                     w: w,
                     h: h,
                     lx: lx,
                     lineBoxManager: lineBoxManager,
-                    endSpace: endSpace
+                    endSpace: endSpace,
+                    lineClamp: lineClamp,
+                    lineClampCount: lineClampCount
                   }, isVirtual); // 重新开头的ib和上面开头处一样逻辑
-
 
                   if (item.__isIbFull) {
                     lineBoxManager.addItem(item);
@@ -20032,17 +20267,18 @@
           else {
               var n = lineBoxManager.size; // i为0时强制不换行
 
-              if (x === lx || !i) {
-                item.__layout({
+              if (x === lx || !i || whiteSpace === 'nowrap') {
+                lineClampCount = item.__layout({
                   x: x,
                   y: y,
                   w: w,
                   h: h,
                   lx: lx,
                   lineBoxManager: lineBoxManager,
-                  endSpace: endSpace
+                  endSpace: endSpace,
+                  lineClamp: lineClamp,
+                  lineClampCount: lineClampCount
                 }, isVirtual);
-
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
@@ -20069,34 +20305,36 @@
 
 
                 if (_fw2 >= 0) {
-                  item.__layout({
+                  lineClampCount = item.__layout({
                     x: x,
                     y: y,
                     w: w,
                     h: h,
                     lx: lx,
                     lineBoxManager: lineBoxManager,
-                    endSpace: endSpace
+                    endSpace: endSpace,
+                    lineClamp: lineClamp,
+                    lineClampCount: lineClampCount
                   }, isVirtual);
-
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY; // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
                 } // 放不下处理之前的lineBox，并重新开头
                 else {
+                    lineClampCount++;
                     x = lx;
                     y = lineBoxManager.endY;
                     lineBoxManager.setNewLine();
-
-                    item.__layout({
+                    lineClampCount = item.__layout({
                       x: x,
                       y: y,
                       w: w,
                       h: h,
                       lx: lx,
                       lineBoxManager: lineBoxManager,
-                      endSpace: endSpace
+                      endSpace: endSpace,
+                      lineClamp: lineClamp,
+                      lineClampCount: lineClampCount
                     }, isVirtual);
-
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY; // ib情况发生折行
 
@@ -20158,7 +20396,10 @@
           lineBoxManager.domList.forEach(function (item) {
             item.__inlineSize(lineBoxManager);
           });
-        }
+        } // inlineBlock新开上下文，但父级block遇到要处理换行
+
+
+        return isInline ? lineClampCount : 0;
       }
       /**
        * inline的尺寸计算非常特殊，并非一个矩形区域，而是由字体行高结合节点下多个LineBox中的内容决定，
@@ -20508,8 +20749,7 @@
             w2: w2,
             // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
             h2: h2
-          }, false, true); // item.__layoutAbs(item, data);
-
+          }, false, true);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);

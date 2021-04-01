@@ -115,13 +115,11 @@ let inject = {
     div.innerHTML = html;
     let cns = div.childNodes;
     let { charWidth } = textCache;
-    let count = 0, index = 0, key, ff, fs;
+    let count = 0, index = 0, key;
     for(let i = 0, len = cns.length; i < len; i++) {
       let node = cns[i];
       if(count === 0) {
         key = keys[index];
-        ff = ffs[index];
-        fs = fss[index];
       }
       if(++count === lengths[index]) {
         index++;

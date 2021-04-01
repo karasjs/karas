@@ -1396,7 +1396,7 @@ class Xom extends Node {
     }
     // overflow:hidden，最后判断，filter/mask优先
     let offScreenOverflow;
-    if(overflow === 'hidden') {
+    if(overflow === 'hidden' && display !== 'inline') {
       if(renderMode === mode.CANVAS && !cache) {
         if(offScreenFilter || offScreenMask) {
           offScreenOverflow = offScreenFilter || offScreenMask;

@@ -364,7 +364,6 @@ class Text extends Node {
       // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
       // 声明了lineClamp时特殊考虑，这里一定是最后一行，要对比行数不能超过，超过忽略掉这些文本
       if(begin < length && (!lineClamp || lineCount + lineClampCount < lineClamp)) {
-        lineCount++;
         let textBox;
         if(!lineCount) {
           let needBack;

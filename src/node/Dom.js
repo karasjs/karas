@@ -784,10 +784,11 @@ class Dom extends Xom {
             }
             // 放不下处理之前的lineBox，并重新开头
             else {
+              lineClampCount++;
               x = data.x;
               y = lineBoxManager.endY;
               lineBoxManager.setNewLine();
-              item.__layout({
+              lineClampCount = item.__layout({
                 x,
                 y,
                 w,
@@ -822,6 +823,10 @@ class Dom extends Xom {
         }
         // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
         else {
+          // 非开头，说明之前的text未换行，需要增加行数
+          if(x !== data.x && flowChildren[i - 1] instanceof Text) {
+            lineClampCount++;
+          }
           x = data.x;
           if(lineBoxManager.isEnd) {
             y = lineBoxManager.endY;
@@ -888,7 +893,7 @@ class Dom extends Xom {
       }
       // 文字和inline类似
       else {
-        // lineClamp作用域为block下的inline（同LineBox上下文），flex不生效
+        // lineClamp作用域为block下的inline（同LineBox上下文）
         if(lineClamp && lineClampCount >= lineClamp) {
           return;
         }
@@ -932,6 +937,7 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineBox，并重新开头
           else {
+            lineClampCount++;
             x = data.x;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
@@ -1647,7 +1653,7 @@ class Dom extends Xom {
   __layoutInline(data, isVirtual, isInline) {
     let { flowChildren, currentStyle, computedStyle } = this;
     let { fixedWidth, fixedHeight, x, y, w, h, lx,
-      lineBoxManager, nowrap, endSpace, selfEndSpace, lineClampCount } = this.__preLayout(data, isInline);
+      lineBoxManager, nowrap, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
     if(fixedWidth && isVirtual) {
       this.__width = w;
@@ -1662,6 +1668,7 @@ class Dom extends Xom {
       [WHITE_SPACE]: whiteSpace,
       [LINE_CLAMP]: lineClamp,
     } = computedStyle;
+    let lineClampCount = data.lineClampCount || 0;
     if(isInline && !this.__isRealInline()) {
       isInline = false;
     }
@@ -1708,7 +1715,7 @@ class Dom extends Xom {
         }
         // x开头，不用考虑是否放得下直接放，i为0强制不换行
         if(x === lx || !i || isInline2 && whiteSpace === 'nowrap') {
-          item.__layout({
+          lineClampCount = item.__layout({
             x,
             y,
             w,
@@ -1743,7 +1750,7 @@ class Dom extends Xom {
           let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
           // 放得下继续
           if(fw >= 0) {
-            item.__layout({
+            lineClampCount = item.__layout({
               x,
               y,
               w,
@@ -1762,10 +1769,11 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineBox，并重新开头
           else {
+            isInline2 && lineClampCount++;
             x = lx;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
-            item.__layout({
+            lineClampCount = item.__layout({
               x,
               y,
               w,
@@ -1805,7 +1813,7 @@ class Dom extends Xom {
         let n = lineBoxManager.size;
         // i为0时强制不换行
         if(x === lx || !i || whiteSpace === 'nowrap') {
-          item.__layout({
+          lineClampCount = item.__layout({
             x,
             y,
             w,
@@ -1838,7 +1846,7 @@ class Dom extends Xom {
           }
           // 放得下继续
           if(fw >= 0) {
-            item.__layout({
+            lineClampCount = item.__layout({
               x,
               y,
               w,
@@ -1855,10 +1863,11 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineBox，并重新开头
           else {
+            lineClampCount++;
             x = lx;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
-            item.__layout({
+            lineClampCount = item.__layout({
               x,
               y,
               w,
@@ -1925,6 +1934,8 @@ class Dom extends Xom {
         item.__inlineSize(lineBoxManager);
       });
     }
+    // inlineBlock新开上下文，但父级block遇到要处理换行
+    return isInline ? lineClampCount : 0;
   }
 
   /**

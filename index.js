@@ -8797,8 +8797,6 @@
 
 
             if (begin < length && (!lineClamp || lineCount + lineClampCount < lineClamp)) {
-              lineCount++;
-
               var _textBox3;
 
               if (!lineCount) {
@@ -19158,11 +19156,11 @@
                   y = lineBoxManager.lastY;
                 } // 放不下处理之前的lineBox，并重新开头
                 else {
+                    lineClampCount++;
                     x = data.x;
                     y = lineBoxManager.endY;
                     lineBoxManager.setNewLine();
-
-                    item.__layout({
+                    lineClampCount = item.__layout({
                       x: x,
                       y: y,
                       w: w,
@@ -19172,7 +19170,6 @@
                       lineClamp: lineClamp,
                       lineClampCount: lineClampCount
                     }, isVirtual); // 重新开头的ib和上面开头处一样逻辑
-
 
                     if (item.__isIbFull) {
                       x = data.x;
@@ -19198,6 +19195,11 @@
               }
             } // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
             else {
+                // 非开头，说明之前的text未换行，需要增加行数
+                if (x !== data.x && flowChildren[i - 1] instanceof Text) {
+                  lineClampCount++;
+                }
+
                 x = data.x;
 
                 if (lineBoxManager.isEnd) {
@@ -19274,7 +19276,7 @@
               }
           } // 文字和inline类似
           else {
-              // lineClamp作用域为block下的inline（同LineBox上下文），flex不生效
+              // lineClamp作用域为block下的inline（同LineBox上下文）
               if (lineClamp && lineClampCount >= lineClamp) {
                 return;
               } // x开头，不用考虑是否放得下直接放
@@ -19319,6 +19321,7 @@
                   y = lineBoxManager.lastY;
                 } // 放不下处理之前的lineBox，并重新开头
                 else {
+                    lineClampCount++;
                     x = data.x;
                     y = lineBoxManager.endY;
                     lineBoxManager.setNewLine();
@@ -20096,8 +20099,7 @@
             lineBoxManager = _this$__preLayout3.lineBoxManager,
             nowrap = _this$__preLayout3.nowrap,
             endSpace = _this$__preLayout3.endSpace,
-            selfEndSpace = _this$__preLayout3.selfEndSpace,
-            lineClampCount = _this$__preLayout3.lineClampCount; // abs虚拟布局需预知width，固定可提前返回
+            selfEndSpace = _this$__preLayout3.selfEndSpace; // abs虚拟布局需预知width，固定可提前返回
 
 
         if (fixedWidth && isVirtual) {
@@ -20112,6 +20114,7 @@
         var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2],
             lineClamp = computedStyle[LINE_CLAMP$1];
+        var lineClampCount = data.lineClampCount || 0;
 
         if (isInline && !this.__isRealInline()) {
           isInline = false;
@@ -20168,7 +20171,7 @@
 
 
             if (x === lx || !i || isInline2 && whiteSpace === 'nowrap') {
-              item.__layout({
+              lineClampCount = item.__layout({
                 x: x,
                 y: y,
                 w: w,
@@ -20179,7 +20182,6 @@
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
               }, isVirtual); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
-
 
               if (item.__isIbFull) {
                 isInlineBlock && w[1] === AUTO$4 && (isIbFull = true);
@@ -20203,7 +20205,7 @@
               var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
 
               if (fw >= 0) {
-                item.__layout({
+                lineClampCount = item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -20216,17 +20218,16 @@
                   lineClampCount: lineClampCount
                 }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
-
                 (isInlineBlock || isImg) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
               else {
+                  isInline2 && lineClampCount++;
                   x = lx;
                   y = lineBoxManager.endY;
                   lineBoxManager.setNewLine();
-
-                  item.__layout({
+                  lineClampCount = item.__layout({
                     x: x,
                     y: y,
                     w: w,
@@ -20237,7 +20238,6 @@
                     lineClamp: lineClamp,
                     lineClampCount: lineClampCount
                   }, isVirtual); // 重新开头的ib和上面开头处一样逻辑
-
 
                   if (item.__isIbFull) {
                     lineBoxManager.addItem(item);
@@ -20267,7 +20267,7 @@
               var n = lineBoxManager.size; // i为0时强制不换行
 
               if (x === lx || !i || whiteSpace === 'nowrap') {
-                item.__layout({
+                lineClampCount = item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -20278,7 +20278,6 @@
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
                 }, isVirtual);
-
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
@@ -20305,7 +20304,7 @@
 
 
                 if (_fw2 >= 0) {
-                  item.__layout({
+                  lineClampCount = item.__layout({
                     x: x,
                     y: y,
                     w: w,
@@ -20316,16 +20315,15 @@
                     lineClamp: lineClamp,
                     lineClampCount: lineClampCount
                   }, isVirtual);
-
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY; // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
                 } // 放不下处理之前的lineBox，并重新开头
                 else {
+                    lineClampCount++;
                     x = lx;
                     y = lineBoxManager.endY;
                     lineBoxManager.setNewLine();
-
-                    item.__layout({
+                    lineClampCount = item.__layout({
                       x: x,
                       y: y,
                       w: w,
@@ -20336,7 +20334,6 @@
                       lineClamp: lineClamp,
                       lineClampCount: lineClampCount
                     }, isVirtual);
-
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY; // ib情况发生折行
 
@@ -20398,7 +20395,10 @@
           lineBoxManager.domList.forEach(function (item) {
             item.__inlineSize(lineBoxManager);
           });
-        }
+        } // inlineBlock新开上下文，但父级block遇到要处理换行
+
+
+        return isInline ? lineClampCount : 0;
       }
       /**
        * inline的尺寸计算非常特殊，并非一个矩形区域，而是由字体行高结合节点下多个LineBox中的内容决定，

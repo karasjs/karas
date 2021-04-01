@@ -122,6 +122,16 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
   }
 }
 
+function clearUniqueReflowId(hash) {
+  for(let i in hash) {
+    if(hash.hasOwnProperty(i)) {
+      let { node } = hash[i];
+      delete node.__uniqueReflowId;
+    }
+  }
+}
+
 export default {
   offsetAndResizeByNodeOnY,
+  clearUniqueReflowId,
 };

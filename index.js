@@ -25811,8 +25811,18 @@
     }
   }
 
+  function clearUniqueReflowId(hash) {
+    for (var i in hash) {
+      if (hash.hasOwnProperty(i)) {
+        var node = hash[i].node;
+        delete node.__uniqueReflowId;
+      }
+    }
+  }
+
   var reflow = {
-    offsetAndResizeByNodeOnY: offsetAndResizeByNodeOnY
+    offsetAndResizeByNodeOnY: offsetAndResizeByNodeOnY,
+    clearUniqueReflowId: clearUniqueReflowId
   };
 
   var _DIRECTION_HASH;
@@ -27265,9 +27275,7 @@
         this.__reflowList = []; // 有root提前跳出
 
         if (hasRoot) {
-          reflowList.forEach(function (item) {
-            return delete item.node.__uniqueReflowId;
-          }); // 布局分为两步，普通流和定位流，互相递归
+          reflow.clearUniqueReflowId(reflowHash); // 布局分为两步，普通流和定位流，互相递归
 
           this.__layout({
             x: 0,
@@ -27993,9 +28001,7 @@
             } // 清除id
 
 
-            reflowList.forEach(function (item) {
-              return delete item.node.__uniqueReflowId;
-            });
+            reflow.clearUniqueReflowId(reflowHash);
           }
       } // 特殊覆盖方法，不需要super()计算自己，因为放在每次checkRoot()做过了
 

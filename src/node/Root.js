@@ -1250,7 +1250,7 @@ class Root extends Dom {
     this.__reflowList = [];
     // 有root提前跳出
     if(hasRoot) {
-      reflowList.forEach(item => delete item.node.__uniqueReflowId);
+      reflow.clearUniqueReflowId(reflowHash);
       // 布局分为两步，普通流和定位流，互相递归
       this.__layout({
         x: 0,
@@ -1832,7 +1832,7 @@ class Root extends Dom {
         }
       }
       // 清除id
-      reflowList.forEach(item => delete item.node.__uniqueReflowId);
+      reflow.clearUniqueReflowId(reflowHash);
     }
   }
 

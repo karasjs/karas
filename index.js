@@ -18690,13 +18690,16 @@
         if (main[1] === PX$7) {
           min = max = main[0];
         } else {
+          var countMin = 0,
+              countMax = 0;
+
           if (display === 'flex') {
             var isRow = flexDirection !== 'column';
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
                 var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-                if (_currentStyle[DISPLAY$4] === 'inline' || _currentStyle[DISPLAY$4] === 'inlineBlock') {
+                if (_currentStyle[DISPLAY$4] !== 'block' && _currentStyle[DISPLAY$4] !== 'flex') {
                   _currentStyle[DISPLAY$4] = 'block';
                 }
 
@@ -18707,8 +18710,9 @@
                   h: h
                 }),
                     _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
-                    min2 = _item$__calMinMax2[0],
-                    max2 = _item$__calMinMax2[1];
+                    _item$__calMinMax2$ = _slicedToArray(_item$__calMinMax2[1], 2),
+                    min2 = _item$__calMinMax2$[0],
+                    max2 = _item$__calMinMax2$[1];
 
                 if (isDirectionRow) {
                   if (isRow) {
@@ -18767,19 +18771,36 @@
                   lineBoxManager: lineBoxManager
                 }),
                     _item$__calMinMax4 = _slicedToArray(_item$__calMinMax3, 2),
-                    min2 = _item$__calMinMax4[0],
-                    max2 = _item$__calMinMax4[1];
+                    _display = _item$__calMinMax4[0],
+                    _item$__calMinMax4$ = _slicedToArray(_item$__calMinMax4[1], 2),
+                    min2 = _item$__calMinMax4$[0],
+                    max2 = _item$__calMinMax4$[1];
 
                 if (isDirectionRow) {
-                  min = Math.max(min, min2);
-                  max += Math.max(max, max2);
+                  if (_display === 'block' || _display === 'flex') {
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
+                    countMin = countMax = 0;
+                  } else {
+                    countMin += min2;
+                    countMax += max2;
+                    min = Math.max(min, countMin);
+                    max = Math.max(max, countMax);
+                  }
                 } else {
-                  min += min2;
-                  max += max2;
+                  if (_display === 'block' || _display === 'flex') {
+                    min += min2;
+                    max += max2;
+                  } else {
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
+                  }
                 }
               } else if (isDirectionRow) {
-                min = Math.max(min, item.charWidth);
-                max += Math.max(max, item.textWidth);
+                countMin += item.charWidth;
+                countMax += item.textWidth;
+                min = Math.max(min, countMin);
+                max = Math.max(max, countMax);
               } else {
                 item.__layout({
                   x: x,
@@ -18789,8 +18810,8 @@
                   lineBoxManager: lineBoxManager
                 });
 
-                min += item.height;
-                max += item.height;
+                min = Math.max(min, item.height);
+                max = Math.max(max, item.height);
               }
             });
           } else {
@@ -18808,8 +18829,9 @@
                   lineBoxManager: lineBoxManager
                 }),
                     _item$__calMinMax6 = _slicedToArray(_item$__calMinMax5, 2),
-                    min2 = _item$__calMinMax6[0],
-                    max2 = _item$__calMinMax6[1];
+                    _item$__calMinMax6$ = _slicedToArray(_item$__calMinMax6[1], 2),
+                    min2 = _item$__calMinMax6$[0],
+                    max2 = _item$__calMinMax6$[1];
 
                 if (isDirectionRow) {
                   min += min2;
@@ -18819,8 +18841,8 @@
                   max = Math.max(max, max2);
                 }
               } else if (isDirectionRow) {
-                min = Math.max(min, item.charWidth);
-                max += Math.max(max, item.textWidth);
+                min += item.charWidth;
+                max += item.textWidth;
               } else {
                 item.__layout({
                   x: x,
@@ -18830,14 +18852,14 @@
                   lineBoxManager: lineBoxManager
                 });
 
-                min += item.height;
-                max += item.height;
+                min = Math.max(min, item.height);
+                max = Math.max(max, item.height);
               }
             });
           }
         }
 
-        return this.__addMp(isDirectionRow, w, currentStyle, [min, max]);
+        return [display, this.__addMp(isDirectionRow, w, currentStyle, [min, max])];
       }
       /**
        * flex布局时，计算basis尺寸，如果有固定声明则以其为标准，content为内容最大尺寸，auto依赖w/h或降级content
@@ -18900,8 +18922,10 @@
           } // 非固定尺寸的basis为auto时降级为content
           else if (isAuto) {
               isContent = true;
-            } // flex的item还是flex时
+            }
 
+        var countMin = 0,
+            countMax = 0; // flex的item还是flex时
 
         if (display === 'flex') {
           var isRow = flexDirection !== 'column';
@@ -18909,7 +18933,7 @@
             if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
               var _currentStyle2 = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-              if (_currentStyle2[DISPLAY$4] === 'inline' || _currentStyle2[DISPLAY$4] === 'inlineBlock') {
+              if (_currentStyle2[DISPLAY$4] !== 'block' && _currentStyle2[DISPLAY$4] !== 'flex') {
                 _currentStyle2[DISPLAY$4] = 'block';
               }
 
@@ -18920,8 +18944,9 @@
                 h: h
               }),
                   _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
-                  min2 = _item$__calMinMax8[0],
-                  max2 = _item$__calMinMax8[1];
+                  _item$__calMinMax8$ = _slicedToArray(_item$__calMinMax8[1], 2),
+                  min2 = _item$__calMinMax8$[0],
+                  max2 = _item$__calMinMax8$[1];
 
               if (isDirectionRow) {
                 if (isRow) {
@@ -18981,19 +19006,36 @@
                   lineBoxManager: lineBoxManager
                 }),
                     _item$__calMinMax10 = _slicedToArray(_item$__calMinMax9, 2),
-                    min2 = _item$__calMinMax10[0],
-                    max2 = _item$__calMinMax10[1];
+                    _display2 = _item$__calMinMax10[0],
+                    _item$__calMinMax10$ = _slicedToArray(_item$__calMinMax10[1], 2),
+                    min2 = _item$__calMinMax10$[0],
+                    max2 = _item$__calMinMax10$[1];
 
                 if (isDirectionRow) {
-                  min = Math.max(min, min2);
-                  max += Math.max(max, max2);
+                  if (_display2 === 'block' || _display2 === 'flex') {
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
+                    countMin = countMax = 0;
+                  } else {
+                    countMin += min2;
+                    countMax += max2;
+                    min = Math.max(min, countMin);
+                    max = Math.max(max, countMax);
+                  }
                 } else {
-                  min += min2;
-                  max += max2;
+                  if (_display2 === 'block' || _display2 === 'flex') {
+                    min += min2;
+                    max += max2;
+                  } else {
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
+                  }
                 }
               } else if (isDirectionRow) {
-                min = Math.max(min, item.charWidth);
-                max += Math.max(max, item.textWidth);
+                countMin += item.charWidth;
+                countMax += item.textWidth;
+                min = Math.max(min, countMin);
+                max = Math.max(max, countMax);
               } else {
                 item.__layout({
                   x: x,
@@ -19003,8 +19045,8 @@
                   lineBoxManager: lineBoxManager
                 });
 
-                min += item.height;
-                max += item.height;
+                min = Math.max(min, item.height);
+                max = Math.max(max, item.height);
               }
             });
           }
@@ -19430,7 +19472,7 @@
             var _currentStyle3 = item.currentStyle,
                 _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-            if (_currentStyle3[DISPLAY$4] === 'inline' || _currentStyle3[DISPLAY$4] === 'inlineBlock') {
+            if (_currentStyle3[DISPLAY$4] !== 'block' && _currentStyle3[DISPLAY$4] !== 'flex') {
               _currentStyle3[DISPLAY$4] = 'block';
             } // abs虚拟布局计算时纵向也是看横向宽度
 

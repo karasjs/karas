@@ -373,16 +373,17 @@ class Dom extends Xom {
       min = max = main[0];
     }
     else {
+      let countMin = 0, countMax = 0;
       if(display === 'flex') {
         let isRow = flexDirection !== 'column';
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let { currentStyle } = item;
             // flex的child如果是inline，变为block，在计算autoBasis前就要
-            if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
+            if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
               currentStyle[DISPLAY] = 'block';
             }
-            let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h });
+            let [, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
             if(isDirectionRow) {
               if(isRow) {
                 min += min2;
@@ -438,19 +439,36 @@ class Dom extends Xom {
         lineBoxManager = new LineBoxManager(x, y);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
+            let [display, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
             if(isDirectionRow) {
-              min = Math.max(min, min2);
-              max += Math.max(max, max2);
+              if(display === 'block' || display === 'flex') {
+                min = Math.max(min, min2);
+                max = Math.max(max, max2);
+                countMin = countMax = 0;
+              }
+              else {
+                countMin += min2;
+                countMax += max2;
+                min = Math.max(min, countMin);
+                max = Math.max(max, countMax);
+              }
             }
             else {
-              min += min2;
-              max += max2;
+              if(display === 'block' || display === 'flex') {
+                min += min2;
+                max += max2;
+              }
+              else {
+                min = Math.max(min, min2);
+                max = Math.max(max, max2);
+              }
             }
           }
           else if(isDirectionRow) {
-            min = Math.max(min, item.charWidth);
-            max += Math.max(max, item.textWidth);
+            countMin += item.charWidth;
+            countMax += item.textWidth;
+            min = Math.max(min, countMin);
+            max = Math.max(max, countMax);
           }
           else {
             item.__layout({
@@ -460,8 +478,8 @@ class Dom extends Xom {
               h,
               lineBoxManager,
             });
-            min += item.height;
-            max += item.height;
+            min = Math.max(min, item.height);
+            max = Math.max(max, item.height);
           }
         });
       }
@@ -471,7 +489,7 @@ class Dom extends Xom {
         }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
+            let [, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
             if(isDirectionRow) {
               min += min2;
               max += max2;
@@ -482,8 +500,8 @@ class Dom extends Xom {
             }
           }
           else if(isDirectionRow) {
-            min = Math.max(min, item.charWidth);
-            max += Math.max(max, item.textWidth);
+            min += item.charWidth;
+            max += item.textWidth;
           }
           else {
             item.__layout({
@@ -493,13 +511,13 @@ class Dom extends Xom {
               h,
               lineBoxManager,
             });
-            min += item.height;
-            max += item.height;
+            min = Math.max(min, item.height);
+            max = Math.max(max, item.height);
           }
         });
       }
     }
-    return this.__addMp(isDirectionRow, w, currentStyle, [min, max]);
+    return [display, this.__addMp(isDirectionRow, w, currentStyle, [min, max])];
   }
 
   /**
@@ -561,6 +579,7 @@ class Dom extends Xom {
     else if(isAuto) {
       isContent = true;
     }
+    let countMin = 0, countMax = 0;
     // flex的item还是flex时
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
@@ -568,10 +587,10 @@ class Dom extends Xom {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let { currentStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
-          if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
+          if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
             currentStyle[DISPLAY] = 'block';
           }
-          let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h });
+          let [, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
           if(isDirectionRow) {
             if(isRow) {
               min += min2;
@@ -628,19 +647,36 @@ class Dom extends Xom {
       let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-          let [min2, max2] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
+          let [display, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
           if(isDirectionRow) {
-            min = Math.max(min, min2);
-            max += Math.max(max, max2);
+            if(display === 'block' || display === 'flex') {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+              countMin = countMax = 0;
+            }
+            else {
+              countMin += min2;
+              countMax += max2;
+              min = Math.max(min, countMin);
+              max = Math.max(max, countMax);
+            }
           }
           else {
-            min += min2;
-            max += max2;
+            if(display === 'block' || display === 'flex') {
+              min += min2;
+              max += max2;
+            }
+            else {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+            }
           }
         }
         else if(isDirectionRow) {
-          min = Math.max(min, item.charWidth);
-          max += Math.max(max, item.textWidth);
+          countMin += item.charWidth;
+          countMax += item.textWidth;
+          min = Math.max(min, countMin);
+          max = Math.max(max, countMax);
         }
         else {
           item.__layout({
@@ -650,8 +686,8 @@ class Dom extends Xom {
             h,
             lineBoxManager,
           });
-          min += item.height;
-          max += item.height;
+          min = Math.max(min, item.height);
+          max = Math.max(max, item.height);
         }
       });
     }
@@ -1022,7 +1058,7 @@ class Dom extends Xom {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
-        if(currentStyle[DISPLAY] === 'inline' || currentStyle[DISPLAY] === 'inlineBlock') {
+        if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
           currentStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度

@@ -28,7 +28,6 @@ let o = karas.render(
                   "tagName": "div",
                   "id": "62B0D3A7-9E8E-420B-AD30-450AEF4EFEF1",
                   "name": "编组 27",
-                  "props": { "style": { "margin": "0 0 0 0" } },
                   "children": [
                     {
                       "tagName": "div",
@@ -63,10 +62,9 @@ let o = karas.render(
                               "letterSpacing": 0
                             }
                           },
-                          "children": ["亿"]
+                          "children": ["y"]
                         }
-                      ],
-                      "props": { "style": { "margin": "0 0 0 0" } }
+                      ]
                     },
                     {
                       "tagName": "div",
@@ -86,15 +84,9 @@ let o = karas.render(
                               "letterSpacing": 0
                             }
                           },
-                          "children": ["管理规模"]
+                          "children": ["aaa"]
                         }
-                      ],
-                      "props": {
-                        "style": {
-                          "opacity": 0.550000011920929,
-                          "margin": "1 51 0 0"
-                        }
-                      }
+                      ]
                     }
                   ]
                 }
@@ -110,13 +102,11 @@ let o = karas.render(
                   "tagName": "div",
                   "id": "43237700-7057-433E-8013-9D32C4DC8EEF",
                   "name": "大字号利率备份 3",
-                  "props": { "style": { "margin": "0 0 0 0" } },
                   "children": [
                     {
                       "tagName": "div",
                       "id": "BBF8380E-3CE0-4606-A82A-7EC83CC22078",
                       "name": "编组 28",
-                      "props": { "style": { "margin": "0 0 0 0" } },
                       "children": [
                         {
                           "tagName": "div",
@@ -151,10 +141,9 @@ let o = karas.render(
                                   "letterSpacing": 0
                                 }
                               },
-                              "children": ["年"]
+                              "children": ["y"]
                             }
-                          ],
-                          "props": { "style": { "margin": "0 19 0 0" } }
+                          ]
                         },
                         {
                           "tagName": "div",
@@ -174,15 +163,9 @@ let o = karas.render(
                                   "letterSpacing": 0
                                 }
                               },
-                              "children": ["从业年限"]
+                              "children": ["bbbb"]
                             }
-                          ],
-                          "props": {
-                            "style": {
-                              "opacity": 0.550000011920929,
-                              "margin": "1 0 0 0"
-                            }
-                          }
+                          ]
                         }
                       ]
                     }
@@ -230,8 +213,7 @@ let o = karas.render(
                           },
                           "children": ["36.44"]
                         }
-                      ],
-                      "props": { "style": { "margin": "0 0 0 0" } }
+                      ]
                     },
                     {
                       "tagName": "div",
@@ -261,8 +243,7 @@ let o = karas.render(
                               },
                               "children": ["%"]
                             }
-                          ],
-                          "props": { "style": { "margin": "0 0 0 0" } }
+                          ]
                         }
                       ]
                     }
@@ -286,12 +267,9 @@ let o = karas.render(
                           "letterSpacing": 0
                         }
                       },
-                      "children": ["年化回报"]
+                      "children": ["ccccc"]
                     }
-                  ],
-                  "props": {
-                    "style": { "opacity": 0.550000011920929, "margin": "-1 18 0 7" }
-                  }
+                  ]
                 }
               ]
             }

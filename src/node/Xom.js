@@ -231,6 +231,7 @@ class Xom extends Node {
     config[NODE_MATRIX_EVENT] = [];
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
     this.__frameAnimateList = [];
+    this.__contentBoxList = []; // inline存储内容用
   }
 
   __structure(i, lv, j) {
@@ -1670,7 +1671,7 @@ class Xom extends Node {
             lastContentBox = contentBox;
             lastLineBox = contentBox.parentLineBox;
             count++;
-          }console.log(this.tagName,i,length);
+          }
           // 最后一个特殊判断
           if(i === length - 1) {
             let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
@@ -2412,7 +2413,7 @@ class Xom extends Node {
   }
 
   __isRealInline() {
-    return this.currentStyle[DISPLAY] === 'inline';
+    return this.currentStyle[DISPLAY] === 'inline' && this.currentStyle[POSITION] !== 'absolute';
   }
 
   get tagName() {
@@ -2506,6 +2507,9 @@ class Xom extends Node {
     return !this.parent && this.host && this.host !== this.root;
   }
 
+  get contentBoxList() {
+    return this.__contentBoxList;
+  }
 }
 
 export default Xom;

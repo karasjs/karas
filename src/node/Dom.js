@@ -2461,10 +2461,6 @@ class Dom extends Xom {
   get parentLineBox() {
     return this.__parentLineBox;
   }
-
-  get contentBoxList() {
-    return this.__contentBoxList;
-  }
 }
 
 export default Dom;

@@ -9923,7 +9923,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
+  Object.keys(o$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config', 'contentBoxList']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -15251,6 +15251,8 @@
       config[NODE_MATRIX_EVENT] = [];
       config[NODE_DEFS_CACHE$3] = _this.__cacheDefs;
       _this.__frameAnimateList = [];
+      _this.__contentBoxList = []; // inline存储内容用
+
       return _this;
     }
 
@@ -16773,9 +16775,8 @@
                     lastContentBox = contentBox;
                     lastLineBox = contentBox.parentLineBox;
                   })();
-                }
+                } // 最后一个特殊判断
 
-                console.log(_this4.tagName, i, length); // 最后一个特殊判断
 
                 if (i === length - 1) {
                   (function () {
@@ -17648,7 +17649,7 @@
     }, {
       key: "__isRealInline",
       value: function __isRealInline() {
-        return this.currentStyle[DISPLAY$2] === 'inline';
+        return this.currentStyle[DISPLAY$2] === 'inline' && this.currentStyle[POSITION$1] !== 'absolute';
       }
     }, {
       key: "tagName",
@@ -17764,6 +17765,11 @@
       key: "isShadowRoot",
       get: function get() {
         return !this.parent && this.host && this.host !== this.root;
+      }
+    }, {
+      key: "contentBoxList",
+      get: function get() {
+        return this.__contentBoxList;
       }
     }]);
 
@@ -20997,11 +21003,6 @@
       key: "parentLineBox",
       get: function get() {
         return this.__parentLineBox;
-      }
-    }, {
-      key: "contentBoxList",
-      get: function get() {
-        return this.__contentBoxList;
       }
     }]);
 

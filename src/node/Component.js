@@ -325,6 +325,7 @@ Object.keys(change.GEOM).concat([
   'visibilityAnimating',
   'bbox',
   '__config',
+  'contentBoxList',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

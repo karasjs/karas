@@ -18,8 +18,6 @@ const {
     BORDER_RIGHT_WIDTH,
     BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH,
-    PADDING_TOP,
-    PADDING_LEFT,
     BORDER_TOP_LEFT_RADIUS,
     BORDER_TOP_RIGHT_RADIUS,
     BORDER_BOTTOM_RIGHT_RADIUS,
@@ -49,7 +47,7 @@ const { canvasPolygon, svgPolygon } = painter;
 class Img extends Dom {
   constructor(tagName, props) {
     super(tagName, props);
-    let src = this.props.src;
+    let src = this.__src = this.props.src;
     let loadImg = this.__loadImg = {};
     // 空url用错误图代替
     if(!src) {

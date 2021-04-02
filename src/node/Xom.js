@@ -406,7 +406,7 @@ class Xom extends Node {
     if(display === 'flex') {
       this.__layoutFlex(data, isVirtual);
     }
-    else if(display === 'inlineBlock') {
+    else if(display === 'inlineBlock' || display === 'inline-block') {
       this.__layoutInline(data, isVirtual);
     }
     else if(display === 'inline') {

@@ -145,6 +145,7 @@ class Dom extends Xom {
       block: true,
       inline: true,
       inlineBlock: true,
+      'inline-block': true,
       none: true,
     }.hasOwnProperty(style.display)) {
       if(tag.INLINE.hasOwnProperty(this.tagName)) {
@@ -485,7 +486,7 @@ class Dom extends Xom {
         });
       }
       else {
-        if(display === 'inlineBlock') {
+        if(display === 'inlineBlock' || display === 'inline-block') {
           lineBoxManager = new LineBoxManager(x, y);
         }
         flowChildren.forEach(item => {
@@ -750,7 +751,7 @@ class Dom extends Xom {
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      let isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
       let isImg = item.tagName === 'img';
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
       if((!isXom || isInline || isInlineBlock)) {
@@ -1737,7 +1738,7 @@ class Dom extends Xom {
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      let isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
       let isImg = item.tagName === 'img';
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
       let isEnd = isInline && (i === length - 1);

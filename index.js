@@ -15434,7 +15434,7 @@
 
         if (display === 'flex') {
           this.__layoutFlex(data, isVirtual);
-        } else if (display === 'inlineBlock') {
+        } else if (display === 'inlineBlock' || display === 'inline-block') {
           this.__layoutInline(data, isVirtual);
         } else if (display === 'inline') {
           this.__layoutInline(data, isVirtual, true);
@@ -18609,6 +18609,7 @@
         block: true,
         inline: true,
         inlineBlock: true,
+        'inline-block': true,
         none: true
       }.hasOwnProperty(style.display)) {
         if (tag.INLINE.hasOwnProperty(_this.tagName)) {
@@ -19002,7 +19003,7 @@
               }
             });
           } else {
-            if (display === 'inlineBlock') {
+            if (display === 'inlineBlock' || display === 'inline-block') {
               lineBoxManager = new LineBoxManager(x, y);
             }
 
@@ -19314,7 +19315,7 @@
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
           var isInline = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock = isXom && item.currentStyle[DISPLAY$5] === 'inlineBlock';
+          var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
           var isImg = item.tagName === 'img'; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
 
           if (!isXom || isInline || isInlineBlock) {
@@ -20387,7 +20388,7 @@
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
           var isInline2 = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock = isXom && item.currentStyle[DISPLAY$5] === 'inlineBlock';
+          var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
           var isImg = item.tagName === 'img'; // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
 
           var isEnd = isInline && i === length - 1;
@@ -21197,8 +21198,6 @@
       BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
       BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
-      PADDING_TOP$4 = _enums$STYLE_KEY$g.PADDING_TOP,
-      PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
       BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_LEFT_RADIUS,
       BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_RIGHT_RADIUS,
       BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_RIGHT_RADIUS,
@@ -21235,7 +21234,7 @@
       _classCallCheck(this, Img);
 
       _this = _super.call(this, tagName, props);
-      var src = _this.props.src;
+      var src = _this.__src = _this.props.src;
       var loadImg = _this.__loadImg = {}; // 空url用错误图代替
 
       if (!src) {
@@ -21766,10 +21765,10 @@
       MARGIN_RIGHT$5 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
       MARGIN_BOTTOM$3 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
       MARGIN_LEFT$5 = _enums$STYLE_KEY$h.MARGIN_LEFT,
-      PADDING_TOP$5 = _enums$STYLE_KEY$h.PADDING_TOP,
+      PADDING_TOP$4 = _enums$STYLE_KEY$h.PADDING_TOP,
       PADDING_RIGHT$6 = _enums$STYLE_KEY$h.PADDING_RIGHT,
       PADDING_BOTTOM$4 = _enums$STYLE_KEY$h.PADDING_BOTTOM,
-      PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
+      PADDING_LEFT$6 = _enums$STYLE_KEY$h.PADDING_LEFT,
       WIDTH$6 = _enums$STYLE_KEY$h.WIDTH,
       HEIGHT$7 = _enums$STYLE_KEY$h.HEIGHT,
       BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
@@ -21894,8 +21893,8 @@
             marginTop = currentStyle[MARGIN_TOP$3],
             marginRight = currentStyle[MARGIN_RIGHT$5],
             marginBottom = currentStyle[MARGIN_BOTTOM$3],
-            paddingLeft = currentStyle[PADDING_LEFT$7],
-            paddingTop = currentStyle[PADDING_TOP$5],
+            paddingLeft = currentStyle[PADDING_LEFT$6],
+            paddingTop = currentStyle[PADDING_TOP$4],
             paddingRight = currentStyle[PADDING_RIGHT$6],
             paddingBottom = currentStyle[PADDING_BOTTOM$4],
             borderTopWidth = currentStyle[BORDER_TOP_WIDTH$5],
@@ -22056,8 +22055,8 @@
             display = computedStyle[DISPLAY$7],
             marginTop = computedStyle[MARGIN_TOP$3],
             marginLeft = computedStyle[MARGIN_LEFT$5],
-            paddingTop = computedStyle[PADDING_TOP$5],
-            paddingLeft = computedStyle[PADDING_LEFT$7],
+            paddingTop = computedStyle[PADDING_TOP$4],
+            paddingLeft = computedStyle[PADDING_LEFT$6],
             visibility = computedStyle[VISIBILITY$4];
         var originX = x + borderLeftWidth + marginLeft + paddingLeft;
         var originY = y + borderTopWidth + marginTop + paddingTop;
@@ -25864,8 +25863,8 @@
       MARGIN_TOP$4 = _enums$STYLE_KEY$j.MARGIN_TOP,
       MARGIN_LEFT$6 = _enums$STYLE_KEY$j.MARGIN_LEFT,
       MARGIN_BOTTOM$4 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
-      PADDING_TOP$6 = _enums$STYLE_KEY$j.PADDING_TOP,
-      PADDING_LEFT$8 = _enums$STYLE_KEY$j.PADDING_LEFT,
+      PADDING_TOP$5 = _enums$STYLE_KEY$j.PADDING_TOP,
+      PADDING_LEFT$7 = _enums$STYLE_KEY$j.PADDING_LEFT,
       PADDING_BOTTOM$5 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
       BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
@@ -26031,7 +26030,7 @@
   function checkInfluence(root, reflowHash, node, component) {
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (node.currentStyle[DISPLAY$9] === 'inline' || node.computedStyle[DISPLAY$9] === 'inline' || node.currentStyle[DISPLAY$9] === 'inlineBlock' || node.computedStyle[DISPLAY$9] === 'inlineBlock') {
+    if (['inline', 'inlineBlock', 'inline-block'].indexOf(node.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(node.computedStyle[DISPLAY$9]) > -1) {
       var _parent = node.domParent;
 
       do {
@@ -26060,7 +26059,7 @@
 
 
         _parent = _parent.domParent;
-      } while (_parent && (_parent.currentStyle[DISPLAY$9] === 'inline' || _parent.computedStyle[DISPLAY$9] === 'inline' || _parent.currentStyle[DISPLAY$9] === 'inlineBlock' || _parent.computedStyle[DISPLAY$9] === 'inlineBlock')); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
+      } while (_parent && (['inline', 'inlineBlock', 'inline-block'].indexOf(_parent.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(_parent.computedStyle[DISPLAY$9]) > -1)); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
 
 
       if (isFixedSize(target, true)) {
@@ -27410,10 +27409,10 @@
                   y += ref.outerHeight;
                 } else {
                   y = parent.y;
-                  y += _computedStyle[MARGIN_TOP$4] + _computedStyle[BORDER_TOP_WIDTH$6] + _computedStyle[PADDING_TOP$6];
+                  y += _computedStyle[MARGIN_TOP$4] + _computedStyle[BORDER_TOP_WIDTH$6] + _computedStyle[PADDING_TOP$5];
                 }
 
-                _x += _computedStyle[MARGIN_LEFT$6] + _computedStyle[BORDER_LEFT_WIDTH$8] + _computedStyle[PADDING_LEFT$8]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
+                _x += _computedStyle[MARGIN_LEFT$6] + _computedStyle[BORDER_LEFT_WIDTH$8] + _computedStyle[PADDING_LEFT$7]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
                 var container = node;
 
@@ -27719,7 +27718,7 @@
                 var _cs = isXom && item.currentStyle;
 
                 var isInline = isXom && _cs[DISPLAY$9] === 'inline';
-                var isInlineBlock = isXom && _cs[DISPLAY$9] === 'inlineBlock';
+                var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$9]) > -1;
                 lastChild = item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
                 if (!isXom || isInline || isInlineBlock) {
@@ -27748,7 +27747,7 @@
                     var _item$computedStyle = item.computedStyle,
                         marginTop = _item$computedStyle[MARGIN_TOP$4],
                         marginBottom = _item$computedStyle[MARGIN_BOTTOM$4],
-                        paddingTop = _item$computedStyle[PADDING_TOP$6],
+                        paddingTop = _item$computedStyle[PADDING_TOP$5],
                         paddingBottom = _item$computedStyle[PADDING_BOTTOM$5],
                         _height = _item$computedStyle[HEIGHT$8],
                         borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$6],
@@ -27809,7 +27808,7 @@
               var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
               if (height[1] === AUTO$8) {
-                var oldH = parent.height + parent.computedStyle[PADDING_TOP$6];
+                var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
                 var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
                 var _diff5 = nowH - oldH; // 调整next以及非固定PX的abs，再递归向上

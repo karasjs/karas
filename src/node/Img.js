@@ -43,12 +43,15 @@ const {
 } = enums;
 const { AUTO, PX, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
+const { isFunction } = util;
 
 class Img extends Dom {
   constructor(tagName, props) {
     super(tagName, props);
-    let src = this.__src = this.props.src;
-    let loadImg = this.__loadImg = {};
+    let src = this.props.src;
+    let loadImg = this.__loadImg = {
+      src,
+    };
     // 空url用错误图代替
     if(!src) {
       loadImg.error = true;
@@ -85,10 +88,9 @@ class Img extends Dom {
     let loadImg = this.__loadImg;
     // 可能已提前加载好了，或有缓存，为减少刷新直接使用
     if(!loadImg.error) {
-      let src = this.props.src;
+      let src = loadImg.src;
       let cache = inject.IMG[src];
       if(cache && cache.state === inject.LOADED) {
-        loadImg.url = src;
         loadImg.source = cache.source;
         loadImg.width = cache.width;
         loadImg.height = cache.height;
@@ -149,13 +151,9 @@ class Img extends Dom {
     if(!res) {
       let {
         __loadImg: loadImg,
-        props: {
-          src,
-          placeholder,
-        }
       } = this;
       if(computedStyle[VISIBILITY] !== 'hidden' && (computedStyle[WIDTH] || computedStyle[HEIGHT])
-        && (loadImg.error || ((loadImg.url === src || placeholder) && loadImg.source))) {
+        && loadImg.source) {
         res = true;
       }
     }
@@ -170,7 +168,6 @@ class Img extends Dom {
     let {
       width, height, isDestroyed,
       props: {
-        src,
         placeholder,
       },
       computedStyle,
@@ -194,86 +191,9 @@ class Img extends Dom {
     if(renderMode === mode.CANVAS && cache) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
-    if(loadImg.url !== src && !loadImg.error) {
-      loadImg.url = src;
-      loadImg.source = null;
-      loadImg.error = null;
-      loadImg.cache = false;
-      inject.measureImg(src, data => {
-        let self = this;
-        // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-        if(data.url === loadImg.url && !self.isDestroyed) {
-          function reload() {
-            let { currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
-            root.delRefreshTask(self.__task);
-            if(width[1] !== AUTO && height[1] !== AUTO) {
-              root.addRefreshTask(self.__task = {
-                __before() {
-                  if(self.isDestroyed) {
-                    return;
-                  }
-                  // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                  let res = {};
-                  res[UPDATE_NODE] = self;
-                  res[UPDATE_FOCUS] = level.REPAINT;
-                  res[UPDATE_CONFIG] = self.__config;
-                  root.__addUpdate(self, self.__config, root, root.__config, res);
-                },
-              });
-            }
-            else {
-              root.addRefreshTask(self.__task = {
-                __before() {
-                  if(self.isDestroyed) {
-                    return;
-                  }
-                  // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                  let res = {};
-                  res[UPDATE_NODE] = self;
-                  res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
-                  res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化
-                  res[UPDATE_CONFIG] = self.__config;
-                  root.__addUpdate(self, self.__config, root, root.__config, res);
-                },
-              });
-            }
-          }
-          if(data.success) {
-            loadImg.source = data.source;
-            loadImg.width = data.width;
-            loadImg.height = data.height;
-          }
-          else if(placeholder) {
-            inject.measureImg(placeholder, data => {
-              if(data.success) {
-                loadImg.error = true;
-                loadImg.source = data.source;
-                loadImg.width = data.width;
-                loadImg.height = data.height;
-                reload();
-              }
-            }, {
-              ctx,
-              root,
-              width,
-              height,
-            });
-            return;
-          }
-          else {
-            loadImg.error = true;
-          }
-          // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
-          if(computedStyle[DISPLAY] !== 'none') {
-            reload();
-          }
-        }
-      }, {
-        ctx,
-        root,
-        width,
-        height,
-      });
+    // 没source且不error时加载图片
+    if(!loadImg.source && !loadImg.error) {
+      this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return res;
@@ -285,6 +205,8 @@ class Img extends Dom {
     let originX, originY;
     originX = res.x3;
     originY = res.y3;
+    // 根据配置以及占位图显示error
+    let source = loadImg.source;
     if(loadImg.error && !placeholder && Img.showError) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
@@ -357,69 +279,32 @@ class Img extends Dom {
         ]);
       }
     }
-    else if((loadImg.url === src || placeholder) && loadImg.source) {
-      let source = loadImg.source;
-      // 无source不绘制
-      if(source) {
-        // 圆角需要生成一个mask
-        let list = border.calRadius(originX, originY, width, height,
-          borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-        if(renderMode === mode.CANVAS) {
-          // 有border-radius需模拟遮罩裁剪
-          if(list) {
-            ctx.save();
-            ctx.beginPath();
-            canvasPolygon(ctx, list);
-            ctx.clip();
-            ctx.closePath();
-            ctx.drawImage(source, originX, originY, width, height);
-            ctx.restore();
-          }
-          else {
-            ctx.drawImage(source, originX, originY, width, height);
-          }
+    else if(source) {
+      // 圆角需要生成一个mask
+      let list = border.calRadius(originX, originY, width, height,
+        borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+      if(renderMode === mode.CANVAS) {
+        // 有border-radius需模拟遮罩裁剪
+        if(list) {
+          ctx.save();
+          ctx.beginPath();
+          canvasPolygon(ctx, list);
+          ctx.clip();
+          ctx.closePath();
+          ctx.drawImage(source, originX, originY, width, height);
+          ctx.restore();
         }
-        else if(renderMode === mode.SVG) {
-          // img没有变化无需diff，直接用上次的vd
-          if(loadImg.cache) {
-            loadImg.cache.cache = true;
-            virtualDom.children = [loadImg.cache];
-            // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
-            if(!virtualDom.cache && list) {
-              let d = svgPolygon(list);
-              let v = {
-                tagName: 'clipPath',
-                props: [],
-                children: [
-                  {
-                    type: 'item',
-                    tagName: 'path',
-                    props: [
-                      ['d', d],
-                      ['fill', '#FFF'],
-                    ],
-                  }
-                ],
-              };
-              let id = defs.add(v);
-              __config[NODE_DEFS_CACHE].push(v);
-              virtualDom.conClip = 'url(#' + id + ')';
-            }
-            return;
-          }
-          // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
-          let matrix;
-          if(width !== loadImg.width || height !== loadImg.height) {
-            matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
-          }
-          let props = [
-            ['xlink:href', loadImg.error ? placeholder : src],
-            ['x', originX],
-            ['y', originY],
-            ['width', loadImg.width],
-            ['height', loadImg.height]
-          ];
-          if(list) {
+        else {
+          ctx.drawImage(source, originX, originY, width, height);
+        }
+      }
+      else if(renderMode === mode.SVG) {
+        // img没有变化无需diff，直接用上次的vd
+        if(loadImg.cache) {
+          loadImg.cache.cache = true;
+          virtualDom.children = [loadImg.cache];
+          // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
+          if(!virtualDom.cache && list) {
             let d = svgPolygon(list);
             let v = {
               tagName: 'clipPath',
@@ -430,7 +315,7 @@ class Img extends Dom {
                   tagName: 'path',
                   props: [
                     ['d', d],
-                    ['fill', '#FFF']
+                    ['fill', '#FFF'],
                   ],
                 }
               ],
@@ -438,19 +323,52 @@ class Img extends Dom {
             let id = defs.add(v);
             __config[NODE_DEFS_CACHE].push(v);
             virtualDom.conClip = 'url(#' + id + ')';
-            delete virtualDom.cache;
           }
-          if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-            props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
-          }
-          let vd = {
-            type: 'img',
-            tagName: 'image',
-            props,
-          };
-          virtualDom.children = [vd];
-          loadImg.cache = vd;
+          return;
         }
+        // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+        let matrix;
+        if(width !== loadImg.width || height !== loadImg.height) {
+          matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
+        }
+        let props = [
+          ['xlink:href', loadImg.error ? placeholder : loadImg.src],
+          ['x', originX],
+          ['y', originY],
+          ['width', loadImg.width],
+          ['height', loadImg.height]
+        ];
+        if(list) {
+          let d = svgPolygon(list);
+          let v = {
+            tagName: 'clipPath',
+            props: [],
+            children: [
+              {
+                type: 'item',
+                tagName: 'path',
+                props: [
+                  ['d', d],
+                  ['fill', '#FFF']
+                ],
+              }
+            ],
+          };
+          let id = defs.add(v);
+          __config[NODE_DEFS_CACHE].push(v);
+          virtualDom.conClip = 'url(#' + id + ')';
+          delete virtualDom.cache;
+        }
+        if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+          props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
+        }
+        let vd = {
+          type: 'img',
+          tagName: 'image',
+          props,
+        };
+        virtualDom.children = [vd];
+        loadImg.cache = vd;
       }
     }
     return res;
@@ -467,6 +385,132 @@ class Img extends Dom {
     return false;
   }
 
+  __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
+    let self = this;
+    inject.measureImg(loadImg.src, data => {
+      // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+      if(data.url === loadImg.src && !self.isDestroyed) {
+        loadImg.cache && (loadImg.cache.cache = false);
+        function reload() {
+          let { currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
+          root.delRefreshTask(self.__task);
+          if(width[1] !== AUTO && height[1] !== AUTO) {
+            root.addRefreshTask(self.__task = {
+              __before() {
+                if(self.isDestroyed) {
+                  return;
+                }
+                // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+                let res = {};
+                res[UPDATE_NODE] = self;
+                res[UPDATE_FOCUS] = level.REPAINT;
+                res[UPDATE_CONFIG] = self.__config;
+                root.__addUpdate(self, self.__config, root, root.__config, res);
+              },
+              __after() {
+                if(isFunction(cb)) {
+                  cb.call(self);
+                }
+              },
+            });
+          }
+          else {
+            root.addRefreshTask(self.__task = {
+              __before() {
+                if(self.isDestroyed) {
+                  return;
+                }
+                // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+                let res = {};
+                res[UPDATE_NODE] = self;
+                res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
+                res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化
+                res[UPDATE_CONFIG] = self.__config;
+                root.__addUpdate(self, self.__config, root, root.__config, res);
+              },
+              __after() {
+                if(isFunction(cb)) {
+                  cb.call(self);
+                }
+              },
+            });
+          }
+        }
+        if(data.success) {
+          loadImg.source = data.source;
+          loadImg.width = data.width;
+          loadImg.height = data.height;
+        }
+        else if(placeholder) {
+          inject.measureImg(placeholder, data => {
+            if(data.success) {
+              loadImg.error = true;
+              loadImg.source = data.source;
+              loadImg.width = data.width;
+              loadImg.height = data.height;
+              reload();
+            }
+          }, {
+            ctx,
+            root,
+            width,
+            height,
+          });
+          return;
+        }
+        else {
+          loadImg.error = true;
+        }
+        // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
+        if(computedStyle[DISPLAY] !== 'none') {
+          reload();
+        }
+      }
+    }, {
+      ctx,
+      root,
+      width,
+      height,
+    });
+  }
+
+  updateSrc(v, cb) {
+    let self = this;
+    let loadImg = self.__loadImg;
+    let root = this.root;
+    // 相等或空且当前error直接返回
+    if(v === loadImg.src || !v && loadImg.error) {
+      if(isFunction(cb)) {
+        cb.call(self);
+      }
+    }
+    else if(v) {
+      loadImg.src = v;
+      self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
+    }
+    else {
+      loadImg.error = true;
+      root.addRefreshTask(self.__task = {
+        __before() {
+          if(self.isDestroyed) {
+            return;
+          }
+          let res = {};
+          res[UPDATE_NODE] = self;
+          res[UPDATE_FOCUS] = level.REFLOW;
+          res[UPDATE_IMG] = true;
+          res[UPDATE_CONFIG] = self.__config;
+          root.__addUpdate(self, self.__config, root, self.__config, res);
+        },
+        __after() {
+          if(isFunction(cb)) {
+            cb.call(self);
+          }
+        },
+      });
+    }
+  }
+
   get baseLine() {
     return this.height;
   }
@@ -477,6 +521,10 @@ class Img extends Dom {
 
   get isClip() {
     return this.__isClip;
+  }
+
+  get src() {
+    return this.__loadImg.src;
   }
 
   static showError = true;

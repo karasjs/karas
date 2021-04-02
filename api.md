@@ -875,6 +875,23 @@ karas.render(
 * **说明**  
 是否作为反向遮罩影响前面兄弟节点。优先级比mask高。
 
+#### baseLine
+* **类型** `number` 只读
+* **说明**  
+即高度。
+
+### 类方法method
+
+#### updateSrc
+* **类型** `Function`
+* **参数**
+  * src `String`
+    修改的新url。
+  * handle `Function`
+    修改完的回调。
+* **说明**
+异步修改图片的url。
+
 <a name="Component"></a>
 ## Component
 * **类型** `class`

@@ -65,13 +65,6 @@ class Component extends Event {
       let state = clone(self.state);
       n = extend(state, n);
     }
-    // 防止didUpdate中无限调用之类，相等不执行
-    if(util.equal(n, self.__nextState || self.state)) {
-      if(isFunction(cb)) {
-        cb.call(self);
-      }
-      return;
-    }
     let root = self.root;
     if(root && self.__isMounted) {
       // 一帧之内多次调用，需合并

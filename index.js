@@ -9648,15 +9648,6 @@
 
           var state = clone$1(self.state);
           n = extend$1(state, n);
-        } // 防止didUpdate中无限调用之类，相等不执行
-
-
-        if (util.equal(n, self.__nextState || self.state)) {
-          if (isFunction$2(cb)) {
-            cb.call(self);
-          }
-
-          return;
         }
 
         var root = self.root;

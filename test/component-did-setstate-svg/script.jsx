@@ -3,14 +3,16 @@ let input = document.querySelector('#base64');
 class Component extends karas.Component {
   componentDidMount() {
     this.setState({
-      text: `bc`,
+      text: 'bc',
     });
   }
   componentDidUpdate() {
     input.value += document.querySelector('svg').innerHTML;
-    this.setState({
-      text: `def`,
-    });
+    if(this.state.text !== 'def') {
+      this.setState({
+        text: 'def',
+      });
+    }
   }
 
   render() {

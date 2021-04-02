@@ -4721,7 +4721,7 @@
       return new Date(obj);
     }
 
-    if (!isPlainObject(obj)) {
+    if (!isPlainObject(obj) && !Array.isArray(obj)) {
       return obj;
     }
 

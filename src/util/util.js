@@ -283,7 +283,7 @@ function clone(obj) {
   if(util.isDate(obj)) {
     return new Date(obj);
   }
-  if(!isPlainObject(obj)) {
+  if(!isPlainObject(obj) && !Array.isArray(obj)) {
     return obj;
   }
   let n = Array.isArray(obj) ? [] : {};

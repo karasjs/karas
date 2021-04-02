@@ -1599,7 +1599,7 @@ class Root extends Dom {
           // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
           if((!isXom || isInline || isInlineBlock)) {
             if(mergeMarginBottomList.length && mergeMarginTopList.length && isStart) {
-              let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+              let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REFLOW);
@@ -1639,7 +1639,7 @@ class Root extends Dom {
               if(mergeMarginBottomList.length) {
                 mergeMarginTopList.push(marginTop);
                 if(isStart) {
-                  let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+                  let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
                   // 需要合并的情况，根据记录数和索引向上向下遍历节点设置偏移，同时设置总偏移量供父级使用
                   if(diff) {
                     for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
@@ -1655,7 +1655,7 @@ class Root extends Dom {
             }
             // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0，最后一个一定有不必判断isStart
             else if(i === length - 1) {
-              let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+              let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REFLOW);

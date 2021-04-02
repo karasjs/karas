@@ -18,6 +18,10 @@ let isNumber = isType('Number');
 let isBoolean = isType('Boolean');
 let isDate = isType('Date');
 
+let hasOwn = {}.hasOwnProperty;
+let fnToString = hasOwn.toString;
+let ObjectFunctionString = fnToString.call(Object);
+
 function isNil(v) {
   return v === undefined || v === null;
 }
@@ -279,6 +283,9 @@ function clone(obj) {
   if(util.isDate(obj)) {
     return new Date(obj);
   }
+  if(!isPlainObject(obj)) {
+    return obj;
+  }
   let n = Array.isArray(obj) ? [] : {};
   Object.keys(obj).forEach(i => {
     n[i] = clone(obj[i]);
@@ -477,7 +484,7 @@ function cloneStyle(style, keys) {
     // 渐变特殊处理
     if(k === STYLE_KEY.BACKGROUND_IMAGE) {
       if(v.k) {
-        res[k] = util.clone(v);
+        res[k] = clone(v);
       }
       else {
         res[k] = v;
@@ -508,32 +515,16 @@ function cloneStyle(style, keys) {
   return res;
 }
 
-function getMergeMarginTB(topList, bottomList) {
-  let total = 0;
-  let max = topList[0];
-  let min = topList[0];
-  topList.forEach(item => {
-    total += item;
-    max = Math.max(max, item);
-    min = Math.min(min, item);
-  });
-  bottomList.forEach(item => {
-    total += item;
-    max = Math.max(max, item);
-    min = Math.min(min, item);
-  });
-  // 正数取最大，负数取最小，正负则相加
-  let diff = 0;
-  if(max > 0 && min > 0) {
-    diff = Math.max(max, min) - total;
+function isPlainObject(obj) {
+  if(!obj || toString.call( obj ) !== '[object Object]') {
+    return false;
   }
-  else if(max < 0 && min < 0) {
-    diff = Math.min(max, min) - total;
+  let proto = Object.getPrototypeOf(obj);
+  if(!proto) {
+    return true;
   }
-  else if(max !== 0 || min !== 0) {
-    diff = max + min - total;
-  }
-  return diff;
+  let Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
+  return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
 }
 
 let util = {
@@ -551,6 +542,7 @@ let util = {
   isAuto(v) {
     return isNil(v) || v === 'auto';
   },
+  isPlainObject,
   stringify,
   joinSourceArray(arr) {
     return joinSourceArray(arr);
@@ -572,7 +564,6 @@ let util = {
   joinArr,
   extendAnimate,
   transformBbox,
-  getMergeMarginTB,
 };
 
 export default util;

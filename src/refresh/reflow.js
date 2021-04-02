@@ -131,7 +131,36 @@ function clearUniqueReflowId(hash) {
   }
 }
 
+function getMergeMarginTB(topList, bottomList) {
+  let total = 0;
+  let max = topList[0];
+  let min = topList[0];
+  topList.forEach(item => {
+    total += item;
+    max = Math.max(max, item);
+    min = Math.min(min, item);
+  });
+  bottomList.forEach(item => {
+    total += item;
+    max = Math.max(max, item);
+    min = Math.min(min, item);
+  });
+  // 正数取最大，负数取最小，正负则相加
+  let diff = 0;
+  if(max > 0 && min > 0) {
+    diff = Math.max(max, min) - total;
+  }
+  else if(max < 0 && min < 0) {
+    diff = Math.min(max, min) - total;
+  }
+  else if(max !== 0 || min !== 0) {
+    diff = max + min - total;
+  }
+  return diff;
+}
+
 export default {
   offsetAndResizeByNodeOnY,
   clearUniqueReflowId,
+  getMergeMarginTB,
 };

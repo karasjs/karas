@@ -10,6 +10,7 @@ import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
+import reflow from '../refresh/reflow';
 
 const {
   STYLE_KEY: {
@@ -754,7 +755,7 @@ class Dom extends Xom {
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
       if((!isXom || isInline || isInlineBlock)) {
         if(mergeMarginBottomList.length && mergeMarginTopList.length) {
-          let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+          let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
           if(diff) {
             y += diff;
           }
@@ -908,7 +909,7 @@ class Dom extends Xom {
             // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
             if(mergeMarginBottomList.length) {
               mergeMarginTopList.push(marginTop);
-              let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+              let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 item.__offsetY(diff, true);
                 y += diff;
@@ -920,7 +921,7 @@ class Dom extends Xom {
           }
           // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
           else if(i === length - 1) {
-            let diff = util.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+            let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
             if(diff) {
               y += diff;
             }

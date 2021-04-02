@@ -9636,7 +9636,6 @@
         if (isNil$4(n)) {
           n = {};
         } else if (isFunction$2(n)) {
-          cb.call(self);
           return;
         } else {
           if (Object.keys(n).length === 0) {
@@ -9649,6 +9648,15 @@
 
           var state = clone$1(self.state);
           n = extend$1(state, n);
+        } // 防止didUpdate中无限调用之类，相等不执行
+
+
+        if (util.equal(n, self.__nextState || self.state)) {
+          if (isFunction$2(cb)) {
+            cb.call(self);
+          }
+
+          return;
         }
 
         var root = self.root;
@@ -9671,6 +9679,7 @@
                 setUpdateFlag(_this2);
               },
               __after: function __after() {
+                self.__nextState = null;
                 list.forEach(function (cb) {
                   if (isFunction$2(cb)) {
                     cb.call(self);

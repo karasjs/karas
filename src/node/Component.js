@@ -53,7 +53,6 @@ class Component extends Event {
       n = {};
     }
     else if(isFunction(n)) {
-      cb.call(self);
       return;
     }
     else {
@@ -65,6 +64,13 @@ class Component extends Event {
       }
       let state = clone(self.state);
       n = extend(state, n);
+    }
+    // 防止didUpdate中无限调用之类，相等不执行
+    if(util.equal(n, self.__nextState || self.state)) {
+      if(isFunction(cb)) {
+        cb.call(self);
+      }
+      return;
     }
     let root = self.root;
     if(root && self.__isMounted) {
@@ -85,6 +91,7 @@ class Component extends Event {
             setUpdateFlag(this);
           },
           __after: () => {
+            self.__nextState = null;
             list.forEach(cb => {
               if(isFunction(cb)) {
                 cb.call(self);

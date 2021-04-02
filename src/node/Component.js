@@ -364,6 +364,8 @@ Object.keys(change.GEOM).concat([
   'flowChildren',
   'absChildren',
   '__isRealInline',
+  '__calBasis',
+  '__calMinMax',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

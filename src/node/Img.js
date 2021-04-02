@@ -385,14 +385,8 @@ class Img extends Dom {
     return false;
   }
 
-  __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height) {
+  __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
     let self = this;
-    placeholder = placeholder || self.props.placeholder;
-    root = root || self.root;
-    ctx = ctx || root.ctx;
-    computedStyle = computedStyle || self.computedStyle;
-    width = width || self.width;
-    height = height || self.height;
     inject.measureImg(loadImg.src, data => {
       // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
       if(data.url === loadImg.src && !self.isDestroyed) {
@@ -413,6 +407,11 @@ class Img extends Dom {
                 res[UPDATE_CONFIG] = self.__config;
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
+              __after() {
+                if(isFunction(cb)) {
+                  cb.call(self);
+                }
+              },
             });
           }
           else {
@@ -428,6 +427,11 @@ class Img extends Dom {
                 res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化
                 res[UPDATE_CONFIG] = self.__config;
                 root.__addUpdate(self, self.__config, root, root.__config, res);
+              },
+              __after() {
+                if(isFunction(cb)) {
+                  cb.call(self);
+                }
               },
             });
           }
@@ -471,26 +475,39 @@ class Img extends Dom {
   }
 
   updateSrc(v, cb) {
-    let loadImg = this.__loadImg;
+    let self = this;
+    let loadImg = self.__loadImg;
     let root = this.root;
     // 相等或空且当前error直接返回
     if(v === loadImg.src || !v && loadImg.error) {
       if(isFunction(cb)) {
-        cb.call(this);
+        cb.call(self);
       }
     }
     else if(v) {
       loadImg.src = v;
-      this.__loadAndRefresh(loadImg, root);
+      self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
     }
     else {
       loadImg.error = true;
-      let res = {};
-      res[UPDATE_NODE] = this;
-      res[UPDATE_FOCUS] = level.REFLOW;
-      res[UPDATE_IMG] = true;
-      res[UPDATE_CONFIG] = this.__config;
-      root.__addUpdate(this, this.__config, root, this.__config, res);
+      root.addRefreshTask(self.__task = {
+        __before() {
+          if(self.isDestroyed) {
+            return;
+          }
+          let res = {};
+          res[UPDATE_NODE] = self;
+          res[UPDATE_FOCUS] = level.REFLOW;
+          res[UPDATE_IMG] = true;
+          res[UPDATE_CONFIG] = self.__config;
+          root.__addUpdate(self, self.__config, root, self.__config, res);
+        },
+        __after() {
+          if(isFunction(cb)) {
+            cb.call(self);
+          }
+        },
+      });
     }
   }
 

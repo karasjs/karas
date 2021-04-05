@@ -63,6 +63,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   WHITE_SPACE,
   TEXT_OVERFLOW,
   LINE_CLAMP,
+  ORDER,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -648,6 +649,10 @@ function normalize(style, reset = []) {
       res[FLEX_BASIS] = [0, AUTO];
     }
   }
+  temp = style.order;
+  if(!isNil(temp)) {
+    res[ORDER] = parseInt(temp) || 0;
+  }
   temp = style.color;
   if(!isNil(temp)) {
     if(temp === 'inherit') {
@@ -1063,6 +1068,7 @@ function computeReflow(node, isHost) {
     FLEX_GROW,
     FLEX_SHRINK,
     LINE_CLAMP,
+    ORDER,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

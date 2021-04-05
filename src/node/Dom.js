@@ -47,6 +47,7 @@ const {
     WHITE_SPACE,
     LINE_HEIGHT,
     LINE_CLAMP,
+    ORDER,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -135,10 +136,37 @@ function genZIndexChildren(dom) {
   return normal;
 }
 
+// flex布局阶段顺序，不是渲染也和struct结构无关，可以无视mask
+function genOrderChildren(flowChildren) {
+  let normal = [];
+  flowChildren.forEach((item, i) => {
+    let child = item;
+    if(item instanceof Component) {
+      item = item.shadowRoot;
+    }
+    if(item instanceof Xom) {
+      child.__order = item.currentStyle[ORDER];
+    }
+    else {
+      child.__order = 0;
+    }
+    normal.push(child);
+    child.__iIndex = i;
+  });
+  normal.sort(function(a, b) {
+    if(a.__order !== b.__order) {
+      return a.__order - b.__order;
+    }
+    // order相等时看节点索引
+    // 都相等看索引
+    return a.__iIndex - b.__iIndex;
+  });
+  return normal;
+}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
-    this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
     let { style } = this;
     if(!style.display || !{
       flex: true,
@@ -1056,7 +1084,8 @@ class Dom extends Xom {
     let basisSum = 0;
     let maxSum = 0;
     let minSum = 0;
-    flowChildren.forEach(item => {
+    let orderChildren = genOrderChildren(flowChildren);
+    orderChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
@@ -1280,7 +1309,7 @@ class Dom extends Xom {
       }
     }
     let maxCross = 0;
-    flowChildren.forEach((item, i) => {
+    orderChildren.forEach((item, i) => {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(isDirectionRow) {
@@ -1327,31 +1356,31 @@ class Dom extends Xom {
     let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
     // 主轴侧轴对齐方式
     if(!isOverflow && growSum === 0 && diff > 0) {
-      let len = flowChildren.length;
+      let len = orderChildren.length;
       if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
         }
       }
       else if(justifyContent === 'center') {
         let center = diff * 0.5;
         for(let i = 0; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
         }
       }
       else if(justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
         let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
         }
       }
       else if(justifyContent === 'spaceAround' || justifyContent === 'space-around') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
         }
       }
@@ -1373,7 +1402,7 @@ class Dom extends Xom {
     if(!isVirtual) {
       if(alignItems === 'stretch') {
         // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-        flowChildren.forEach(item => {
+        orderChildren.forEach(item => {
           let { computedStyle, currentStyle: {
             [DISPLAY]: display,
             [FLEX_DIRECTION]: flexDirection,
@@ -1447,7 +1476,7 @@ class Dom extends Xom {
         });
       }
       else if(alignItems === 'center') {
-        flowChildren.forEach(item => {
+        orderChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {
             if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
@@ -1521,7 +1550,7 @@ class Dom extends Xom {
         });
       }
       else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
-        flowChildren.forEach(item => {
+        orderChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {
             if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
@@ -1595,7 +1624,7 @@ class Dom extends Xom {
         });
       }
       else {
-        flowChildren.forEach(item => {
+        orderChildren.forEach(item => {
           let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
           if(isDirectionRow) {
             if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
@@ -2438,10 +2467,6 @@ class Dom extends Xom {
 
   get zIndexChildren() {
     return this.__zIndexChildren;
-  }
-
-  get lineGroups() {
-    return this.__lineGroups;
   }
 
   get lineBoxManager() {

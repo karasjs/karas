@@ -48,6 +48,7 @@ const DOM = {
   flexShrink: 1,
   flexBasis: 'auto',
   flexDirection: 'row',
+  order: 0,
   justifyContent: 'flexStart',
   alignItems: 'stretch',
   alignSelf: 'auto',

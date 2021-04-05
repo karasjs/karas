@@ -313,22 +313,25 @@
     TEXT_OVERFLOW: 71,
     LETTER_SPACING: 72,
     LINE_CLAMP: 73,
+    ORDER: 74,
+    FLEX_WRAP: 75,
+    ALIGN_CONTENT: 76,
     // GEOM
-    FILL: 74,
-    STROKE: 75,
-    STROKE_WIDTH: 76,
-    STROKE_DASHARRAY: 77,
-    STROKE_DASHARRAY_STR: 78,
-    STROKE_LINECAP: 79,
-    STROKE_LINEJOIN: 80,
-    STROKE_MITERLIMIT: 81,
-    FILL_RULE: 82,
+    FILL: 77,
+    STROKE: 78,
+    STROKE_WIDTH: 79,
+    STROKE_DASHARRAY: 80,
+    STROKE_DASHARRAY_STR: 81,
+    STROKE_LINECAP: 82,
+    STROKE_LINEJOIN: 83,
+    STROKE_MITERLIMIT: 84,
+    FILL_RULE: 85,
     // 无此样式，仅cache需要
-    MATRIX: 83,
-    BORDER_TOP: 84,
-    BORDER_RIGHT: 85,
-    BORDER_BOTTOM: 86,
-    BORDER_LEFT: 87
+    MATRIX: 86,
+    BORDER_TOP: 87,
+    BORDER_RIGHT: 88,
+    BORDER_BOTTOM: 89,
+    BORDER_LEFT: 90
   };
 
   function style2Lower(s) {
@@ -6219,6 +6222,7 @@
     flexShrink: 1,
     flexBasis: 'auto',
     flexDirection: 'row',
+    order: 0,
     justifyContent: 'flexStart',
     alignItems: 'stretch',
     alignSelf: 'auto',
@@ -6838,7 +6842,8 @@
       BACKGROUND_CLIP = _enums$STYLE_KEY$2.BACKGROUND_CLIP,
       WHITE_SPACE = _enums$STYLE_KEY$2.WHITE_SPACE,
       TEXT_OVERFLOW = _enums$STYLE_KEY$2.TEXT_OVERFLOW,
-      LINE_CLAMP = _enums$STYLE_KEY$2.LINE_CLAMP;
+      LINE_CLAMP = _enums$STYLE_KEY$2.LINE_CLAMP,
+      ORDER = _enums$STYLE_KEY$2.ORDER;
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -7440,6 +7445,12 @@
       }
     }
 
+    temp = style.order;
+
+    if (!isNil$3(temp)) {
+      res[ORDER] = parseInt(temp) || 0;
+    }
+
     temp = style.color;
 
     if (!isNil$3(temp)) {
@@ -7847,7 +7858,7 @@
       // border-width不支持百分比
       computedStyle[k] = currentStyle[k][1] === PX$2 ? Math.max(0, currentStyle[k][0]) : 0;
     });
-    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP].forEach(function (k) {
+    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP, ORDER].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     var textAlign = currentStyle[TEXT_ALIGN];
@@ -18495,6 +18506,7 @@
       WHITE_SPACE$2 = _enums$STYLE_KEY$f.WHITE_SPACE,
       LINE_HEIGHT$4 = _enums$STYLE_KEY$f.LINE_HEIGHT,
       LINE_CLAMP$1 = _enums$STYLE_KEY$f.LINE_CLAMP,
+      ORDER$1 = _enums$STYLE_KEY$f.ORDER,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -18586,6 +18598,37 @@
     }
 
     return normal;
+  } // flex布局阶段顺序，不是渲染也和struct结构无关，可以无视mask
+
+
+  function genOrderChildren(flowChildren) {
+    var normal = [];
+    flowChildren.forEach(function (item, i) {
+      var child = item;
+
+      if (item instanceof Component$1) {
+        item = item.shadowRoot;
+      }
+
+      if (item instanceof Xom$1) {
+        child.__order = item.currentStyle[ORDER$1];
+      } else {
+        child.__order = 0;
+      }
+
+      normal.push(child);
+      child.__iIndex = i;
+    });
+    normal.sort(function (a, b) {
+      if (a.__order !== b.__order) {
+        return a.__order - b.__order;
+      } // order相等时看节点索引
+      // 都相等看索引
+
+
+      return a.__iIndex - b.__iIndex;
+    });
+    return normal;
   }
 
   var Dom$1 = /*#__PURE__*/function (_Xom) {
@@ -18599,7 +18642,6 @@
       _classCallCheck(this, Dom);
 
       _this = _super.call(this, tagName, props);
-      _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style;
@@ -19655,7 +19697,8 @@
         var maxList = [];
         var minList = [];
         var growSum = 0;
-        flowChildren.forEach(function (item) {
+        var orderChildren = genOrderChildren(flowChildren);
+        orderChildren.forEach(function (item) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _currentStyle3 = item.currentStyle,
                 _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
@@ -19904,7 +19947,7 @@
         }
 
         var maxCross = 0;
-        flowChildren.forEach(function (item, i) {
+        orderChildren.forEach(function (item, i) {
           var main = targetMainList[i];
 
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -19953,32 +19996,32 @@
         var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴侧轴对齐方式
 
         if (!isOverflow && growSum === 0 && diff > 0) {
-          var len = flowChildren.length;
+          var len = orderChildren.length;
 
           if (justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
             for (var i = 0; i < len; i++) {
-              var child = flowChildren[i];
+              var child = orderChildren[i];
               isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
             }
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
             for (var _i2 = 0; _i2 < len; _i2++) {
-              var _child = flowChildren[_i2];
+              var _child = orderChildren[_i2];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
             for (var _i3 = 1; _i3 < len; _i3++) {
-              var _child2 = flowChildren[_i3];
+              var _child2 = orderChildren[_i3];
               isDirectionRow ? _child2.__offsetX(between * _i3, true) : _child2.__offsetY(between * _i3, true);
             }
           } else if (justifyContent === 'spaceAround' || justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
             for (var _i4 = 0; _i4 < len; _i4++) {
-              var _child3 = flowChildren[_i4];
+              var _child3 = orderChildren[_i4];
               isDirectionRow ? _child3.__offsetX(around * (_i4 + 1), true) : _child3.__offsetY(around * (_i4 + 1), true);
             }
           }
@@ -20002,7 +20045,7 @@
         if (!isVirtual) {
           if (alignItems === 'stretch') {
             // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-            flowChildren.forEach(function (item) {
+            orderChildren.forEach(function (item) {
               var computedStyle = item.computedStyle,
                   _item$currentStyle = item.currentStyle,
                   display = _item$currentStyle[DISPLAY$5],
@@ -20077,7 +20120,7 @@
               }
             });
           } else if (alignItems === 'center') {
-            flowChildren.forEach(function (item) {
+            orderChildren.forEach(function (item) {
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
               if (isDirectionRow) {
@@ -20149,7 +20192,7 @@
               }
             });
           } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
-            flowChildren.forEach(function (item) {
+            orderChildren.forEach(function (item) {
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
               if (isDirectionRow) {
@@ -20221,7 +20264,7 @@
               }
             });
           } else {
-            flowChildren.forEach(function (item) {
+            orderChildren.forEach(function (item) {
               var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
               if (isDirectionRow) {
@@ -21156,11 +21199,6 @@
       key: "zIndexChildren",
       get: function get() {
         return this.__zIndexChildren;
-      }
-    }, {
-      key: "lineGroups",
-      get: function get() {
-        return this.__lineGroups;
       }
     }, {
       key: "lineBoxManager",

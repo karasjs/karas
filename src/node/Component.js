@@ -326,6 +326,10 @@ Object.keys(change.GEOM).concat([
   'bbox',
   '__config',
   'contentBoxList',
+  'listener',
+  'matrix',
+  'matrixEvent',
+  'renderMatrix',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

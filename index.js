@@ -7781,7 +7781,7 @@
     } // 直接赋值的string类型
 
 
-    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
       }
@@ -19709,7 +19709,6 @@
         var basisList = [];
         var maxList = [];
         var minList = [];
-        var growSum = 0;
         var orderChildren = genOrderChildren(flowChildren);
         orderChildren.forEach(function (item) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -19746,8 +19745,7 @@
                 flexShrink = _currentStyle3[FLEX_SHRINK$1];
             _computedStyle[FLEX_BASIS$2] = b;
             growList.push(flexGrow);
-            shrinkList.push(flexShrink);
-            growSum += flexGrow;
+            shrinkList.push(flexShrink); // 根据basis不同，计算方式不同
 
             basisList.push(b);
             maxList.push(max);
@@ -19802,23 +19800,17 @@
         }
 
         var containerSize = isDirectionRow ? w : h;
-        var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap);
+        var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
         /**
-         * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
-         * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
-         * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
-         * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
-         * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
-         * 先收集basis和假设主尺寸，以及判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
+         * 判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
+         * 当多行时，由于每行一定有最小限制，所以每行一般情况都不是shrink状态，
+         * 但也有极端情况，比如一行只能放下1个元素时，且此元素比容器小，会是shrink
          */
 
-        var hypotheticalSum = 0,
-            hypotheticalList = [],
-            line = [],
+        var line = [],
             sum = 0;
         basisList.forEach(function (item, i) {
-          var min = minList[i],
-              max = maxList[i];
+          var min = minList[i];
 
           if (isMultiLine) {
             var size = Math.max(item, min); // 超过尺寸时，要防止sum为0即1个也会超过尺寸
@@ -19844,6 +19836,57 @@
           } else {
             line.push(orderChildren[i]);
           }
+        });
+
+        if (line.length) {
+          __flexLine.push(line);
+        }
+
+        var offset = 0;
+
+        __flexLine.forEach(function (item) {
+          var length = item.length;
+
+          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize, fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, offset + length), item, growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length), minList.slice(offset, offset + length), maxList.slice(offset, offset + length)),
+              _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 2),
+              x1 = _this4$__layoutFlexLi2[0],
+              y1 = _this4$__layoutFlexLi2[1];
+
+          if (isDirectionRow) {
+            y = y1;
+          } else {
+            x = x1;
+          }
+
+          offset += length;
+        });
+
+        var tw = this.__width = w;
+        var th = this.__height = fixedHeight ? h : y - data.y;
+
+        this.__ioSize(tw, th);
+
+        this.__marginAuto(currentStyle, data);
+      }
+      /**
+       * 计算获取子元素的b/min/max完毕后，尝试进行flex每行布局
+       * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
+       * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
+       * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
+       * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
+       * 先收集basis和假设主尺寸
+       */
+
+    }, {
+      key: "__layoutFlexLine",
+      value: function __layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize, fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, minList, maxList) {
+        var _this5 = this;
+
+        var hypotheticalSum = 0,
+            hypotheticalList = [];
+        basisList.forEach(function (item, i) {
+          var min = minList[i],
+              max = maxList[i];
 
           if (item < min) {
             hypotheticalSum += min;
@@ -19855,13 +19898,7 @@
             hypotheticalSum += item;
             hypotheticalList.push(item);
           }
-        });
-
-        if (line.length) {
-          __flexLine.push(line);
-        } // console.log(__flexLine);
-        // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
-
+        }); // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
 
         var isOverflow = hypotheticalSum >= containerSize;
         var targetMainList = [];
@@ -20019,7 +20056,7 @@
               });
             }
           } else {
-            var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y);
+            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y);
 
             item.__layout({
               x: x,
@@ -20041,9 +20078,9 @@
           }
         }); // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
 
-        var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴侧轴对齐方式
+        var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式
 
-        if (!isOverflow && growSum === 0 && diff > 0) {
+        if (!isOverflow && diff > 0) {
           var len = orderChildren.length;
 
           if (justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
@@ -20162,7 +20199,7 @@
                   var _d = _v - _old;
 
                   item.__clientWidth += _d;
-                  _this4.__offsetWidth += _d;
+                  _this5.__offsetWidth += _d;
                   item.__outerWidth += _d;
                 }
               }
@@ -20179,18 +20216,18 @@
                     item.__offsetY(_diff7, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle2 = item.computedStyle,
+                  var computedStyle = item.computedStyle,
                       height = item.currentStyle[HEIGHT$5];
-                  var borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
-                      borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
-                      marginTop = _computedStyle2[MARGIN_TOP$2],
-                      marginBottom = _computedStyle2[MARGIN_BOTTOM$2],
-                      paddingTop = _computedStyle2[PADDING_TOP$3],
-                      paddingBottom = _computedStyle2[PADDING_BOTTOM$3];
+                  var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+                      borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
+                      marginTop = computedStyle[MARGIN_TOP$2],
+                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                      paddingTop = computedStyle[PADDING_TOP$3],
+                      paddingBottom = computedStyle[PADDING_BOTTOM$3];
 
                   if (height[1] === AUTO$5) {
                     var old = item.height;
-                    var v = item.__height = _computedStyle2[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var v = item.__height = computedStyle[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
                     item.__clientHeight += d;
                     item.__outerHeight += d;
@@ -20210,24 +20247,24 @@
                     item.__offsetX(_diff9, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle3 = item.computedStyle,
+                  var _computedStyle2 = item.computedStyle,
                       width = item.currentStyle[WIDTH$4];
-                  var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$5],
-                      borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
-                      marginRight = _computedStyle3[MARGIN_RIGHT$4],
-                      marginLeft = _computedStyle3[MARGIN_LEFT$4],
-                      paddingRight = _computedStyle3[PADDING_RIGHT$5],
-                      paddingLeft = _computedStyle3[PADDING_LEFT$5];
+                  var borderRightWidth = _computedStyle2[BORDER_RIGHT_WIDTH$5],
+                      borderLeftWidth = _computedStyle2[BORDER_LEFT_WIDTH$5],
+                      marginRight = _computedStyle2[MARGIN_RIGHT$4],
+                      marginLeft = _computedStyle2[MARGIN_LEFT$4],
+                      paddingRight = _computedStyle2[PADDING_RIGHT$5],
+                      paddingLeft = _computedStyle2[PADDING_LEFT$5];
 
                   if (width[1] === AUTO$5) {
                     var _old2 = item.width;
 
-                    var _v2 = item.__width = _computedStyle3[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v2 = item.__width = _computedStyle2[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                     var _d2 = _v2 - _old2;
 
                     item.__clientWidth += _d2;
-                    _this4.__offsetWidth += _d2;
+                    _this5.__offsetWidth += _d2;
                     item.__outerWidth += _d2;
                   }
                 } else {
@@ -20251,18 +20288,18 @@
                     item.__offsetY(_diff11 * 0.5, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle4 = item.computedStyle,
+                  var computedStyle = item.computedStyle,
                       height = item.currentStyle[HEIGHT$5];
-                  var borderTopWidth = _computedStyle4[BORDER_TOP_WIDTH$3],
-                      borderBottomWidth = _computedStyle4[BORDER_BOTTOM_WIDTH$3],
-                      marginTop = _computedStyle4[MARGIN_TOP$2],
-                      marginBottom = _computedStyle4[MARGIN_BOTTOM$2],
-                      paddingTop = _computedStyle4[PADDING_TOP$3],
-                      paddingBottom = _computedStyle4[PADDING_BOTTOM$3];
+                  var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+                      borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
+                      marginTop = computedStyle[MARGIN_TOP$2],
+                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                      paddingTop = computedStyle[PADDING_TOP$3],
+                      paddingBottom = computedStyle[PADDING_BOTTOM$3];
 
                   if (height[1] === AUTO$5) {
                     var old = item.height;
-                    var v = item.__height = _computedStyle4[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var v = item.__height = computedStyle[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
                     item.__clientHeight += d;
                     item.__outerHeight += d;
@@ -20282,24 +20319,24 @@
                     item.__offsetX(_diff13 * 0.5, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle5 = item.computedStyle,
+                  var _computedStyle3 = item.computedStyle,
                       width = item.currentStyle[WIDTH$4];
-                  var borderRightWidth = _computedStyle5[BORDER_RIGHT_WIDTH$5],
-                      borderLeftWidth = _computedStyle5[BORDER_LEFT_WIDTH$5],
-                      marginRight = _computedStyle5[MARGIN_RIGHT$4],
-                      marginLeft = _computedStyle5[MARGIN_LEFT$4],
-                      paddingRight = _computedStyle5[PADDING_RIGHT$5],
-                      paddingLeft = _computedStyle5[PADDING_LEFT$5];
+                  var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$5],
+                      borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
+                      marginRight = _computedStyle3[MARGIN_RIGHT$4],
+                      marginLeft = _computedStyle3[MARGIN_LEFT$4],
+                      paddingRight = _computedStyle3[PADDING_RIGHT$5],
+                      paddingLeft = _computedStyle3[PADDING_LEFT$5];
 
                   if (width[1] === AUTO$5) {
                     var _old3 = item.width;
 
-                    var _v3 = item.__width = _computedStyle5[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v3 = item.__width = _computedStyle3[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                     var _d3 = _v3 - _old3;
 
                     item.__clientWidth += _d3;
-                    _this4.__offsetWidth += _d3;
+                    _this5.__offsetWidth += _d3;
                     item.__outerWidth += _d3;
                   }
                 } else {
@@ -20329,18 +20366,18 @@
                     item.__offsetY(_diff16, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle6 = item.computedStyle,
+                  var computedStyle = item.computedStyle,
                       height = item.currentStyle[HEIGHT$5];
-                  var borderTopWidth = _computedStyle6[BORDER_TOP_WIDTH$3],
-                      borderBottomWidth = _computedStyle6[BORDER_BOTTOM_WIDTH$3],
-                      marginTop = _computedStyle6[MARGIN_TOP$2],
-                      marginBottom = _computedStyle6[MARGIN_BOTTOM$2],
-                      paddingTop = _computedStyle6[PADDING_TOP$3],
-                      paddingBottom = _computedStyle6[PADDING_BOTTOM$3];
+                  var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+                      borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
+                      marginTop = computedStyle[MARGIN_TOP$2],
+                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                      paddingTop = computedStyle[PADDING_TOP$3],
+                      paddingBottom = computedStyle[PADDING_BOTTOM$3];
 
                   if (height[1] === AUTO$5) {
                     var old = item.height;
-                    var v = item.__height = item.__height = _computedStyle6[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var v = item.__height = item.__height = computedStyle[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
                     item.__clientHeight += d;
                     item.__outerHeight += d;
@@ -20360,24 +20397,24 @@
                     item.__offsetX(_diff18, true);
                   }
                 } else if (alignSelf === 'stretch') {
-                  var _computedStyle7 = item.computedStyle,
+                  var _computedStyle4 = item.computedStyle,
                       width = item.currentStyle[WIDTH$4];
-                  var borderRightWidth = _computedStyle7[BORDER_RIGHT_WIDTH$5],
-                      borderLeftWidth = _computedStyle7[BORDER_LEFT_WIDTH$5],
-                      marginRight = _computedStyle7[MARGIN_RIGHT$4],
-                      marginLeft = _computedStyle7[MARGIN_LEFT$4],
-                      paddingRight = _computedStyle7[PADDING_RIGHT$5],
-                      paddingLeft = _computedStyle7[PADDING_LEFT$5];
+                  var borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$5],
+                      borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
+                      marginRight = _computedStyle4[MARGIN_RIGHT$4],
+                      marginLeft = _computedStyle4[MARGIN_LEFT$4],
+                      paddingRight = _computedStyle4[PADDING_RIGHT$5],
+                      paddingLeft = _computedStyle4[PADDING_LEFT$5];
 
                   if (width[1] === AUTO$5) {
                     var _old4 = item.width;
 
-                    var _v4 = item.__width = _computedStyle7[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v4 = item.__width = _computedStyle4[WIDTH$4] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                     var _d4 = _v4 - _old4;
 
                     item.__clientWidth += _d4;
-                    _this4.__offsetWidth += _d4;
+                    _this5.__offsetWidth += _d4;
                     item.__outerWidth += _d4;
                   }
                 }
@@ -20386,12 +20423,7 @@
           }
         }
 
-        var tw = this.__width = w;
-        var th = this.__height = fixedHeight ? h : y - data.y;
-
-        this.__ioSize(tw, th);
-
-        this.__marginAuto(currentStyle, data);
+        return [x, y];
       }
       /**
        * inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移

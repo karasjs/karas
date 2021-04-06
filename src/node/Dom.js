@@ -1085,11 +1085,6 @@ class Dom extends Xom {
     let basisList = [];
     let maxList = [];
     let minList = [];
-    let growSum = 0;
-    let shrinkSum = 0;
-    let basisSum = 0;
-    let maxSum = 0;
-    let minSum = 0;
     let orderChildren = genOrderChildren(flowChildren);
     orderChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1113,15 +1108,10 @@ class Dom extends Xom {
         computedStyle[FLEX_BASIS] = b;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
-        growSum += flexGrow;
-        shrinkSum += flexShrink;
         // 根据basis不同，计算方式不同
         basisList.push(b);
-        basisSum += b;
         maxList.push(max);
-        maxSum += max;
         minList.push(min);
-        minSum += min;
       }
       // 文本
       else {
@@ -1136,16 +1126,12 @@ class Dom extends Xom {
         }
         growList.push(0);
         shrinkList.push(1);
-        shrinkSum += 1;
         if(isDirectionRow) {
           let cw = item.charWidth;
           let tw = item.textWidth;
           basisList.push(tw);
-          basisSum += tw;
           maxList.push(tw);
-          maxSum += tw;
           minList.push(cw);
-          minSum += cw;
         }
         else {
           let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
@@ -1160,10 +1146,7 @@ class Dom extends Xom {
           });
           let h = item.height;
           basisList.push(h);
-          basisSum += h;
-          maxSum += h;
           minList.push(h);
-          minSum += h;
         }
       }
     });
@@ -1174,16 +1157,13 @@ class Dom extends Xom {
       return;
     }
     let containerSize = isDirectionRow ? w : h;
-    let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap);
+    let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
     /**
-     * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
-     * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
-     * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
-     * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
-     * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
-     * 先收集basis和假设主尺寸，以及判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
+     * 判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
+     * 当多行时，由于每行一定有最小限制，所以每行一般情况都不是shrink状态，
+     * 但也有极端情况，比如一行只能放下1个元素时，且此元素比容器小，会是shrink
      */
-    let hypotheticalSum = 0, hypotheticalList = [], line = [], sum = 0;
+    let line = [], sum = 0;
     basisList.forEach((item, i) => {
       let min = minList[i], max = maxList[i];
       if(isMultiLine) {
@@ -1209,6 +1189,47 @@ class Dom extends Xom {
       else {
         line.push(orderChildren[i]);
       }
+    });
+    if(line.length) {
+      __flexLine.push(line);
+    }
+    let offset = 0;
+    __flexLine.forEach(item => {
+      let length = item.length;
+      let [x1, y1] = this.__layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize,
+        fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount,
+        justifyContent, alignItems, orderChildren.slice(offset, offset + length), item,
+        growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length),
+        minList.slice(offset, offset + length), maxList.slice(offset, offset + length));
+      if(isDirectionRow) {
+        y = y1;
+      }
+      else {
+        x = x1;
+      }
+      offset += length;
+    });
+    let tw = this.__width = w;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__ioSize(tw, th);
+    this.__marginAuto(currentStyle, data);
+  }
+
+  /**
+   * 计算获取子元素的b/min/max完毕后，尝试进行flex每行布局
+   * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
+   * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
+   * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
+   * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
+   * 先收集basis和假设主尺寸
+   */
+  __layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize,
+                   fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount,
+                   justifyContent, alignItems, orderChildren, flexLine,
+                   growList, shrinkList, basisList, minList, maxList) {
+    let hypotheticalSum = 0, hypotheticalList = [];
+    basisList.forEach((item, i) => {
+      let min = minList[i], max = maxList[i];
       if(item < min) {
         hypotheticalSum += min;
         hypotheticalList.push(min);
@@ -1222,10 +1243,6 @@ class Dom extends Xom {
         hypotheticalList.push(item);
       }
     });
-    if(line.length) {
-      __flexLine.push(line);
-    }
-    // console.log(__flexLine);
     // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
     let isOverflow = hypotheticalSum >= containerSize;
     let targetMainList = [];
@@ -1389,8 +1406,8 @@ class Dom extends Xom {
     });
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
-    // 主轴侧轴对齐方式
-    if(!isOverflow && growSum === 0 && diff > 0) {
+    // 主轴对齐方式
+    if(!isOverflow && diff > 0) {
       let len = orderChildren.length;
       if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
@@ -1733,10 +1750,7 @@ class Dom extends Xom {
         });
       }
     }
-    let tw = this.__width = w;
-    let th = this.__height = fixedHeight ? h : y - data.y;
-    this.__ioSize(tw, th);
-    this.__marginAuto(currentStyle, data);
+    return [x, y];
   }
 
   /**

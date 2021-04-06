@@ -1173,13 +1173,14 @@ class Dom extends Xom {
           if(sum) {
             __flexLine.push(line);
             line = [orderChildren[i]];
+            sum = size;
           }
           else {
             line.push(orderChildren[i]);
             __flexLine.push(line);
             line = [];
+            sum = 0;
           }
-          sum = 0;
         }
         else {
           line.push(orderChildren[i]);
@@ -1194,9 +1195,10 @@ class Dom extends Xom {
       __flexLine.push(line);
     }
     let offset = 0, clone = { x, y, w, h };
+    let maxCrossList = [];
     __flexLine.forEach(item => {
       let length = item.length;
-      let [x1, y1] = this.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize,
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize,
         fixedWidth, fixedHeight, lineClamp, lineClampCount,
         justifyContent, alignItems, orderChildren.slice(offset, offset + length), item,
         growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length),
@@ -1209,11 +1211,113 @@ class Dom extends Xom {
       }
       x = Math.max(x, x1);
       y = Math.max(y, y1);
+      maxCrossList.push(maxCross);
       offset += length;
     });
     let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
+    // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
+    // 先做整体的，得出交叉轴空白再均分给每一行做单行的，整体的只有1行忽略
+    let length = __flexLine.length, per;
+    if(!isVirtual && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
+      let diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x);
+      // 有空余时才进行对齐
+      if(diff > 0) {
+        if(alignContent === 'center') {
+          let per = diff * 0.5;
+          orderChildren.forEach(item => {
+            if(isDirectionRow) {
+              item.__offsetY(per, true);
+            }
+            else {
+              item.__offsetX(per, true);
+            }
+          });
+        }
+        else if(alignContent === 'flex-start' || alignContent === 'flexStart') {}
+        else if(alignContent === 'flex-end' || alignContent === 'flexEnd') {
+          orderChildren.forEach(item => {
+            if(isDirectionRow) {
+              item.__offsetY(diff, true);
+            }
+            else {
+              item.__offsetX(diff, true);
+            }
+          });
+        }
+        else if(alignContent === 'space-between' || alignContent === 'spaceBetween') {
+          let between = diff / (length - 1);
+          // 除了第1行其它进行偏移
+          __flexLine.forEach((item, i) => {
+            if(i) {
+              item.forEach(item => {
+                if(isDirectionRow) {
+                  item.__offsetY(between, true);
+                }
+                else {
+                  item.__offsetX(between, true);
+                }
+              });
+            }
+          });
+        }
+        else if(alignContent === 'space-around' || alignContent === 'spaceAround') {
+          let around = diff / (length + 1);
+          __flexLine.forEach((item, i) => {
+            item.forEach(item => {
+              if(isDirectionRow) {
+                item.__offsetY(around * (i + 1), true);
+              }
+              else {
+                item.__offsetX(around * (i + 1), true);
+              }
+            });
+          });
+        }
+        // 默认stretch
+        else {
+          per = diff / length;
+          // 除了第1行其它进行偏移
+          __flexLine.forEach((item, i) => {
+            if(i) {
+              item.forEach(item => {
+                if(isDirectionRow) {
+                  item.__offsetY(per, true);
+                }
+                else {
+                  item.__offsetX(per, true);
+                }
+              });
+            }
+          });
+        }
+      }
+    }
+    // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
+    if(!isVirtual) {
+      if(isMultiLine) {
+        __flexLine.forEach((item, i) => {
+          let maxCross = maxCrossList[i];
+          if(per) {
+            maxCross += per;
+          }
+          this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+        });
+      }
+      else if(length) {
+        let maxCross = maxCrossList[0];
+        if(isDirectionRow) {
+          if(fixedHeight) {
+            maxCross = h;
+          }
+        }
+        else {
+          maxCross = w;
+        }
+        this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
+      }
+    }
     this.__marginAuto(currentStyle, data);
   }
 
@@ -1408,7 +1512,7 @@ class Dom extends Xom {
       }
     });
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
-    let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
+    let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
     // 主轴对齐方式
     if(!isOverflow && diff > 0) {
       let len = orderChildren.length;
@@ -1440,64 +1544,40 @@ class Dom extends Xom {
         }
       }
     }
-    // 子元素侧轴伸展
     if(isDirectionRow) {
-      // 父元素固定高度，子元素可能超过，侧轴最大长度取固定高度
-      if(fixedHeight) {
-        maxCross = h;
-      }
       y += maxCross;
     }
     else {
-      if(fixedWidth) {
-        maxCross = w;
-      }
+      x += maxCross;
     }
-    // 侧轴对齐
-    if(!isVirtual) {
-      if(alignItems === 'stretch') {
-        // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-        orderChildren.forEach(item => {
-          let { computedStyle, currentStyle: {
-            [DISPLAY]: display,
-            [FLEX_DIRECTION]: flexDirection,
-            [ALIGN_SELF]: alignSelf,
-            [WIDTH]: width,
-            [HEIGHT]: height,
-          } } = item;
-          // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
-          if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-            item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+    return [x, y, maxCross];
+  }
+
+  // 每个flexLine的侧轴对齐，单行时就是一行对齐
+  __crossAlign(line, alignItems, isDirectionRow, maxCross) {
+    if(alignItems === 'center') {
+      line.forEach(item => {
+        let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+        if(isDirectionRow) {
+          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
           }
-          let {
-            [BORDER_TOP_WIDTH]: borderTopWidth,
-            [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-            [MARGIN_TOP]: marginTop,
-            [MARGIN_BOTTOM]: marginBottom,
-            [PADDING_TOP]: paddingTop,
-            [PADDING_BOTTOM]: paddingBottom,
-            [BORDER_RIGHT_WIDTH]: borderRightWidth,
-            [BORDER_LEFT_WIDTH]: borderLeftWidth,
-            [MARGIN_RIGHT]: marginRight,
-            [MARGIN_LEFT]: marginLeft,
-            [PADDING_RIGHT]: paddingRight,
-            [PADDING_LEFT]: paddingLeft,
-          } = computedStyle;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
+          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
             }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-            else if(height[1] === AUTO) {
+          }
+          else if(alignSelf === 'stretch') {
+            let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
+            let {
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+            } = computedStyle;
+            if(height[1] === AUTO) {
               let old = item.height;
               let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
@@ -1506,20 +1586,32 @@ class Dom extends Xom {
             }
           }
           else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff * 0.5, true);
             }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff, true);
-              }
+          }
+        }
+        else {
+          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+          }
+          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+            let diff = maxCross - item.outerWidth;
+            if(diff !== 0) {
+              item.__offsetX(diff, true);
             }
-            else if(width[1] === AUTO) {
+          }
+          else if(alignSelf === 'stretch') {
+            let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+            let {
+              [BORDER_RIGHT_WIDTH]: borderRightWidth,
+              [BORDER_LEFT_WIDTH]: borderLeftWidth,
+              [MARGIN_RIGHT]: marginRight,
+              [MARGIN_LEFT]: marginLeft,
+              [PADDING_RIGHT]: paddingRight,
+              [PADDING_LEFT]: paddingLeft,
+            } = computedStyle;
+            if(width[1] === AUTO) {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
@@ -1528,232 +1620,166 @@ class Dom extends Xom {
               item.__outerWidth += d;
             }
           }
-        });
-      }
-      else if(alignItems === 'center') {
-        orderChildren.forEach(item => {
-          let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-              let {
-                [BORDER_TOP_WIDTH]: borderTopWidth,
-                [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-                [MARGIN_TOP]: marginTop,
-                [MARGIN_BOTTOM]: marginBottom,
-                [PADDING_TOP]: paddingTop,
-                [PADDING_BOTTOM]: paddingBottom,
-              } = computedStyle;
-              if(height[1] === AUTO) {
-                let old = item.height;
-                let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                let d = v - old;
-                item.__clientHeight += d;
-                item.__outerHeight += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-          }
           else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-              let {
-                [BORDER_RIGHT_WIDTH]: borderRightWidth,
-                [BORDER_LEFT_WIDTH]: borderLeftWidth,
-                [MARGIN_RIGHT]: marginRight,
-                [MARGIN_LEFT]: marginLeft,
-                [PADDING_RIGHT]: paddingRight,
-                [PADDING_LEFT]: paddingLeft,
-              } = computedStyle;
-              if(width[1] === AUTO) {
-                let old = item.width;
-                let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-                let d = v - old;
-                item.__clientWidth += d;
-                this.__offsetWidth += d;
-                item.__outerWidth += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
+            let diff = maxCross - item.outerWidth;
+            if(diff !== 0) {
+              item.__offsetX(diff * 0.5, true);
             }
           }
-        });
-      }
-      else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
-        orderChildren.forEach(item => {
-          let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-              let {
-                [BORDER_TOP_WIDTH]: borderTopWidth,
-                [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-                [MARGIN_TOP]: marginTop,
-                [MARGIN_BOTTOM]: marginBottom,
-                [PADDING_TOP]: paddingTop,
-                [PADDING_BOTTOM]: paddingBottom,
-              } = computedStyle;
-              if(height[1] === AUTO) {
-                let old = item.height;
-                let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                let d = v - old;
-                item.__clientHeight += d;
-                item.__outerHeight += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-          }
-          else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-              let {
-                [BORDER_RIGHT_WIDTH]: borderRightWidth,
-                [BORDER_LEFT_WIDTH]: borderLeftWidth,
-                [MARGIN_RIGHT]: marginRight,
-                [MARGIN_LEFT]: marginLeft,
-                [PADDING_RIGHT]: paddingRight,
-                [PADDING_LEFT]: paddingLeft,
-              } = computedStyle;
-              if(width[1] === AUTO) {
-                let old = item.width;
-                let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-                let d = v - old;
-                item.__clientWidth += d;
-                this.__offsetWidth += d;
-                item.__outerWidth += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-          }
-        });
-      }
-      else {
-        orderChildren.forEach(item => {
-          let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-              let {
-                [BORDER_TOP_WIDTH]: borderTopWidth,
-                [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-                [MARGIN_TOP]: marginTop,
-                [MARGIN_BOTTOM]: marginBottom,
-                [PADDING_TOP]: paddingTop,
-                [PADDING_BOTTOM]: paddingBottom,
-              } = computedStyle;
-              if(height[1] === AUTO) {
-                let old = item.height;
-                let v = item.__height = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                let d = v - old;
-                item.__clientHeight += d;
-                item.__outerHeight += d;
-              }
-            }
-          }
-          else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-              let {
-                [BORDER_RIGHT_WIDTH]: borderRightWidth,
-                [BORDER_LEFT_WIDTH]: borderLeftWidth,
-                [MARGIN_RIGHT]: marginRight,
-                [MARGIN_LEFT]: marginLeft,
-                [PADDING_RIGHT]: paddingRight,
-                [PADDING_LEFT]: paddingLeft,
-              } = computedStyle;
-              if(width[1] === AUTO) {
-                let old = item.width;
-                let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-                let d = v - old;
-                item.__clientWidth += d;
-                this.__offsetWidth += d;
-                item.__outerWidth += d;
-              }
-            }
-          }
-        });
-      }
+        }
+      });
     }
-    return [x, y];
+    else if(alignItems === 'flexStart' || alignItems === 'flex-start') {}
+    else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+      line.forEach(item => {
+        let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+        if(isDirectionRow) {
+          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+          }
+          else if(alignSelf === 'center') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff * 0.5, true);
+            }
+          }
+          else if(alignSelf === 'stretch') {
+            let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
+            let {
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+            } = computedStyle;
+            if(height[1] === AUTO) {
+              let old = item.height;
+              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              let d = v - old;
+              item.__clientHeight += d;
+              item.__outerHeight += d;
+            }
+          }
+          else {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+        }
+        else {
+          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+          }
+          else if(alignSelf === 'center') {
+            let diff = maxCross - item.outerWidth;
+            if(diff !== 0) {
+              item.__offsetX(diff * 0.5, true);
+            }
+          }
+          else if(alignSelf === 'stretch') {
+            let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+            let {
+              [BORDER_RIGHT_WIDTH]: borderRightWidth,
+              [BORDER_LEFT_WIDTH]: borderLeftWidth,
+              [MARGIN_RIGHT]: marginRight,
+              [MARGIN_LEFT]: marginLeft,
+              [PADDING_RIGHT]: paddingRight,
+              [PADDING_LEFT]: paddingLeft,
+            } = computedStyle;
+            if(width[1] === AUTO) {
+              let old = item.width;
+              let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+              let d = v - old;
+              item.__clientWidth += d;
+              this.__offsetWidth += d;
+              item.__outerWidth += d;
+            }
+          }
+          else {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+        }
+      });
+    }
+    else if(alignItems === 'baseline') {}
+    else {
+      // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
+      line.forEach(item => {
+        let { computedStyle, currentStyle: {
+          [DISPLAY]: display,
+          [FLEX_DIRECTION]: flexDirection,
+          [ALIGN_SELF]: alignSelf,
+          [WIDTH]: width,
+          [HEIGHT]: height,
+        } } = item;
+        // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+        if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+          item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+        }
+        let {
+          [BORDER_TOP_WIDTH]: borderTopWidth,
+          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+          [MARGIN_TOP]: marginTop,
+          [MARGIN_BOTTOM]: marginBottom,
+          [PADDING_TOP]: paddingTop,
+          [PADDING_BOTTOM]: paddingBottom,
+          [BORDER_RIGHT_WIDTH]: borderRightWidth,
+          [BORDER_LEFT_WIDTH]: borderLeftWidth,
+          [MARGIN_RIGHT]: marginRight,
+          [MARGIN_LEFT]: marginLeft,
+          [PADDING_RIGHT]: paddingRight,
+          [PADDING_LEFT]: paddingLeft,
+        } = computedStyle;
+        if(isDirectionRow) {
+          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+          else if(alignSelf === 'center') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff * 0.5, true);
+            }
+          }
+          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          else if(height[1] === AUTO) {
+            let old = item.height;
+            let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            let d = v - old;
+            item.__clientHeight += d;
+            item.__outerHeight += d;
+          }
+        }
+        else {
+          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+          else if(alignSelf === 'center') {
+            let diff = maxCross - item.outerWidth;
+            if(diff !== 0) {
+              item.__offsetX(diff * 0.5, true);
+            }
+          }
+          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+            let diff = maxCross - item.outerWidth;
+            if(diff !== 0) {
+              item.__offsetX(diff, true);
+            }
+          }
+          else if(width[1] === AUTO) {
+            let old = item.width;
+            let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+            let d = v - old;
+            item.__clientWidth += d;
+            this.__offsetWidth += d;
+            item.__outerWidth += d;
+          }
+        }
+      });
+    }
   }
 
   /**

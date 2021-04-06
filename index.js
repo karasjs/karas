@@ -19842,22 +19842,30 @@
           __flexLine.push(line);
         }
 
-        var offset = 0;
+        var offset = 0,
+            clone = {
+          x: x,
+          y: y,
+          w: w,
+          h: h
+        };
 
         __flexLine.forEach(function (item) {
           var length = item.length;
 
-          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize, fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, offset + length), item, growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length), minList.slice(offset, offset + length), maxList.slice(offset, offset + length)),
+          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, offset + length), item, growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length), minList.slice(offset, offset + length), maxList.slice(offset, offset + length)),
               _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 2),
               x1 = _this4$__layoutFlexLi2[0],
               y1 = _this4$__layoutFlexLi2[1];
 
           if (isDirectionRow) {
-            y = y1;
+            clone.y = y1;
           } else {
-            x = x1;
+            clone.x = x1;
           }
 
+          x = Math.max(x, x1);
+          y = Math.max(y, y1);
           offset += length;
         });
 
@@ -19879,9 +19887,13 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize, fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, minList, maxList) {
+      value: function __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, minList, maxList) {
         var _this5 = this;
 
+        var x = data.x,
+            y = data.y,
+            w = data.w,
+            h = data.h;
         var hypotheticalSum = 0,
             hypotheticalList = [];
         basisList.forEach(function (item, i) {

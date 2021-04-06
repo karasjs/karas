@@ -1193,20 +1193,22 @@ class Dom extends Xom {
     if(line.length) {
       __flexLine.push(line);
     }
-    let offset = 0;
+    let offset = 0, clone = { x, y, w, h };
     __flexLine.forEach(item => {
       let length = item.length;
-      let [x1, y1] = this.__layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize,
-        fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount,
+      let [x1, y1] = this.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize,
+        fixedWidth, fixedHeight, lineClamp, lineClampCount,
         justifyContent, alignItems, orderChildren.slice(offset, offset + length), item,
         growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length),
         minList.slice(offset, offset + length), maxList.slice(offset, offset + length));
       if(isDirectionRow) {
-        y = y1;
+        clone.y = y1;
       }
       else {
-        x = x1;
+        clone.x = x1;
       }
+      x = Math.max(x, x1);
+      y = Math.max(y, y1);
       offset += length;
     });
     let tw = this.__width = w;
@@ -1223,10 +1225,11 @@ class Dom extends Xom {
    * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
    * 先收集basis和假设主尺寸
    */
-  __layoutFlexLine(data, isVirtual, isDirectionRow, w, h, containerSize,
-                   fixedWidth, fixedHeight, x, y, lineClamp, lineClampCount,
+  __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize,
+                   fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    justifyContent, alignItems, orderChildren, flexLine,
                    growList, shrinkList, basisList, minList, maxList) {
+    let { x, y, w, h } = data;
     let hypotheticalSum = 0, hypotheticalList = [];
     basisList.forEach((item, i) => {
       let min = minList[i], max = maxList[i];

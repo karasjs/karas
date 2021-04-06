@@ -48,6 +48,8 @@ const {
     LINE_HEIGHT,
     LINE_CLAMP,
     ORDER,
+    FLEX_WRAP,
+    ALIGN_CONTENT,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -158,7 +160,6 @@ function genOrderChildren(flowChildren) {
       return a.__order - b.__order;
     }
     // order相等时看节点索引
-    // 都相等看索引
     return a.__iIndex - b.__iIndex;
   });
   return normal;
@@ -190,6 +191,7 @@ class Dom extends Xom {
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = util.extend({}, this.__style);
     this.__children = children || [];
+    this.__flexLine = []; // flex布局多行模式时存储行
     let config = this.__config;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;
     config[NODE_STYLE] = this.__style;
@@ -1055,19 +1057,23 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data, isVirtual) {
-    let { flowChildren, currentStyle, computedStyle } = this;
+    let { flowChildren, currentStyle, computedStyle, __flexLine } = this;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     if(fixedWidth && isVirtual) {
       this.__width = w;
       this.__ioSize(w, this.height);
       return;
     }
+    // 每次布局情况多行内容
+    __flexLine.splice(0);
     let {
       [FLEX_DIRECTION]: flexDirection,
       [JUSTIFY_CONTENT]: justifyContent,
       [ALIGN_ITEMS]: alignItems,
-    } = currentStyle;
-    let lineClamp = computedStyle[LINE_CLAMP];
+      [LINE_CLAMP]: lineClamp,
+      [FLEX_WRAP]: flexWrap,
+      [ALIGN_CONTENT]: alignContent,
+    } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
@@ -1167,17 +1173,42 @@ class Dom extends Xom {
       this.__ioSize(tw, this.height);
       return;
     }
+    let containerSize = isDirectionRow ? w : h;
+    let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap);
     /**
      * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
      * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
      * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
      * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
      * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
-     * 先收集basis和假设主尺寸
+     * 先收集basis和假设主尺寸，以及判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
      */
-    let hypotheticalSum = 0, hypotheticalList = [];
+    let hypotheticalSum = 0, hypotheticalList = [], line = [], sum = 0;
     basisList.forEach((item, i) => {
       let min = minList[i], max = maxList[i];
+      if(isMultiLine) {
+        let size = Math.max(item, min);
+        // 超过尺寸时，要防止sum为0即1个也会超过尺寸
+        if(sum + size > containerSize) {
+          if(sum) {
+            __flexLine.push(line);
+            line = [orderChildren[i]];
+          }
+          else {
+            line.push(orderChildren[i]);
+            __flexLine.push(line);
+            line = [];
+          }
+          sum = 0;
+        }
+        else {
+          line.push(orderChildren[i]);
+          sum += size;
+        }
+      }
+      else {
+        line.push(orderChildren[i]);
+      }
       if(item < min) {
         hypotheticalSum += min;
         hypotheticalList.push(min);
@@ -1191,8 +1222,12 @@ class Dom extends Xom {
         hypotheticalList.push(item);
       }
     });
+    if(line.length) {
+      __flexLine.push(line);
+    }
+    // console.log(__flexLine);
     // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
-    let isOverflow = hypotheticalSum >= (isDirectionRow ? w : h);
+    let isOverflow = hypotheticalSum >= containerSize;
     let targetMainList = [];
     basisList.forEach((item, i) => {
       if(isOverflow) {

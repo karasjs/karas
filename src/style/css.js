@@ -64,6 +64,8 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   TEXT_OVERFLOW,
   LINE_CLAMP,
   ORDER,
+  FLEX_WRAP,
+  ALIGN_CONTENT,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -1069,6 +1071,8 @@ function computeReflow(node, isHost) {
     FLEX_SHRINK,
     LINE_CLAMP,
     ORDER,
+    FLEX_WRAP,
+    ALIGN_CONTENT,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

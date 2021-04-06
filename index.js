@@ -6222,10 +6222,12 @@
     flexShrink: 1,
     flexBasis: 'auto',
     flexDirection: 'row',
+    flexWrap: 'nowrap',
     order: 0,
     justifyContent: 'flexStart',
     alignItems: 'stretch',
     alignSelf: 'auto',
+    alignContent: 'stretch',
     textAlign: 'inherit',
     letterSpacing: 'inherit',
     transformOrigin: 'center',
@@ -6843,7 +6845,9 @@
       WHITE_SPACE = _enums$STYLE_KEY$2.WHITE_SPACE,
       TEXT_OVERFLOW = _enums$STYLE_KEY$2.TEXT_OVERFLOW,
       LINE_CLAMP = _enums$STYLE_KEY$2.LINE_CLAMP,
-      ORDER = _enums$STYLE_KEY$2.ORDER;
+      ORDER = _enums$STYLE_KEY$2.ORDER,
+      FLEX_WRAP = _enums$STYLE_KEY$2.FLEX_WRAP,
+      ALIGN_CONTENT = _enums$STYLE_KEY$2.ALIGN_CONTENT;
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -7858,7 +7862,7 @@
       // border-width不支持百分比
       computedStyle[k] = currentStyle[k][1] === PX$2 ? Math.max(0, currentStyle[k][0]) : 0;
     });
-    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP, ORDER].forEach(function (k) {
+    [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP, ORDER, FLEX_WRAP, ALIGN_CONTENT].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     var textAlign = currentStyle[TEXT_ALIGN];
@@ -18507,6 +18511,8 @@
       LINE_HEIGHT$4 = _enums$STYLE_KEY$f.LINE_HEIGHT,
       LINE_CLAMP$1 = _enums$STYLE_KEY$f.LINE_CLAMP,
       ORDER$1 = _enums$STYLE_KEY$f.ORDER,
+      FLEX_WRAP$1 = _enums$STYLE_KEY$f.FLEX_WRAP,
+      ALIGN_CONTENT$1 = _enums$STYLE_KEY$f.ALIGN_CONTENT,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -18623,7 +18629,6 @@
       if (a.__order !== b.__order) {
         return a.__order - b.__order;
       } // order相等时看节点索引
-      // 都相等看索引
 
 
       return a.__iIndex - b.__iIndex;
@@ -18669,6 +18674,8 @@
 
       _this.__currentStyle = util.extend({}, _this.__style);
       _this.__children = children || [];
+      _this.__flexLine = []; // flex布局多行模式时存储行
+
       var config = _this.__config;
       config[NODE_CURRENT_STYLE$1] = _this.__currentStyle;
       config[NODE_STYLE$1] = _this.__style;
@@ -19663,7 +19670,8 @@
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            __flexLine = this.__flexLine;
 
         var _this$__preLayout2 = this.__preLayout(data),
             fixedWidth = _this$__preLayout2.fixedWidth,
@@ -19679,12 +19687,17 @@
           this.__ioSize(w, this.height);
 
           return;
-        }
+        } // 每次布局情况多行内容
 
-        var flexDirection = currentStyle[FLEX_DIRECTION$2],
-            justifyContent = currentStyle[JUSTIFY_CONTENT$1],
-            alignItems = currentStyle[ALIGN_ITEMS$1];
-        var lineClamp = computedStyle[LINE_CLAMP$1]; // 只有>=1的正整数才有效
+
+        __flexLine.splice(0);
+
+        var flexDirection = computedStyle[FLEX_DIRECTION$2],
+            justifyContent = computedStyle[JUSTIFY_CONTENT$1],
+            alignItems = computedStyle[ALIGN_ITEMS$1],
+            lineClamp = computedStyle[LINE_CLAMP$1],
+            flexWrap = computedStyle[FLEX_WRAP$1],
+            alignContent = computedStyle[ALIGN_CONTENT$1]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
@@ -19787,21 +19800,50 @@
 
           return;
         }
+
+        var containerSize = isDirectionRow ? w : h;
+        var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap);
         /**
          * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
          * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
          * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
          * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
          * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
-         * 先收集basis和假设主尺寸
+         * 先收集basis和假设主尺寸，以及判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
          */
 
-
         var hypotheticalSum = 0,
-            hypotheticalList = [];
+            hypotheticalList = [],
+            line = [],
+            sum = 0;
         basisList.forEach(function (item, i) {
           var min = minList[i],
               max = maxList[i];
+
+          if (isMultiLine) {
+            var size = Math.max(item, min); // 超过尺寸时，要防止sum为0即1个也会超过尺寸
+
+            if (sum + size > containerSize) {
+              if (sum) {
+                __flexLine.push(line);
+
+                line = [orderChildren[i]];
+              } else {
+                line.push(orderChildren[i]);
+
+                __flexLine.push(line);
+
+                line = [];
+              }
+
+              sum = 0;
+            } else {
+              line.push(orderChildren[i]);
+              sum += size;
+            }
+          } else {
+            line.push(orderChildren[i]);
+          }
 
           if (item < min) {
             hypotheticalSum += min;
@@ -19813,9 +19855,15 @@
             hypotheticalSum += item;
             hypotheticalList.push(item);
           }
-        }); // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
+        });
 
-        var isOverflow = hypotheticalSum >= (isDirectionRow ? w : h);
+        if (line.length) {
+          __flexLine.push(line);
+        } // console.log(__flexLine);
+        // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
+
+
+        var isOverflow = hypotheticalSum >= containerSize;
         var targetMainList = [];
         basisList.forEach(function (item, i) {
           if (isOverflow) {

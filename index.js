@@ -21841,7 +21841,7 @@
       value: function __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
         var self = this; // 先清空之前可能的
 
-        if (loadImg.source) {
+        if (loadImg.source || loadImg.error) {
           root.delRefreshTask(self.__task);
           root.addRefreshTask(self.__task = {
             __before: function __before() {

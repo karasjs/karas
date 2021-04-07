@@ -405,7 +405,6 @@ class Dom extends Xom {
       min = max = main[0];
     }
     else {
-      let countMin = 0, countMax = 0;
       if(display === 'flex') {
         let isRow = flexDirection !== 'column';
         flowChildren.forEach(item => {
@@ -468,6 +467,7 @@ class Dom extends Xom {
         });
       }
       else if(display === 'block') {
+        let countMin = 0, countMax = 0;
         lineBoxManager = new LineBoxManager(x, y);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -611,7 +611,6 @@ class Dom extends Xom {
     else if(isAuto) {
       isContent = true;
     }
-    let countMin = 0, countMax = 0;
     // flex的item还是flex时
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
@@ -676,6 +675,7 @@ class Dom extends Xom {
     }
     // flex的item是block/inline时，inline也会变成block统一对待
     else {
+      let countMin = 0, countMax = 0;
       let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {

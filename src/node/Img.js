@@ -8,6 +8,7 @@ import image from '../style/image';
 import border from '../style/border';
 import enums from '../util/enums';
 import level from '../refresh/level';
+import css from '../style/css';
 
 const {
   STYLE_KEY: {
@@ -27,6 +28,14 @@ const {
     BACKGROUND_COLOR,
     BOX_SHADOW,
     MIX_BLEND_MODE,
+    MARGIN_TOP,
+    MARGIN_RIGHT,
+    MARGIN_BOTTOM,
+    MARGIN_LEFT,
+    PADDING_TOP,
+    PADDING_RIGHT,
+    PADDING_BOTTOM,
+    PADDING_LEFT,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -41,7 +50,7 @@ const {
     NODE_IS_MASK,
   },
 } = enums;
-const { AUTO, PX, RGBA } = unit;
+const { AUTO, PX, PERCENT, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const { isFunction } = util;
 
@@ -249,7 +258,6 @@ class Img extends Dom {
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        // virtualDom.children = [];
         this.__addGeom('rect', [
           ['x', originX],
           ['y', originY],
@@ -385,8 +393,94 @@ class Img extends Dom {
     return false;
   }
 
+  __calBasis(isDirectionRow, data) {
+    let b = 0;
+    let min = 0;
+    let max = 0;
+    let { currentStyle, __loadImg } = this;
+    let { w, h } = data;
+    // 计算需考虑style的属性
+    let {
+      [WIDTH]: width,
+      [HEIGHT]: height,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_RIGHT]: marginRight,
+      [MARGIN_BOTTOM]: marginBottom,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_TOP]: paddingTop,
+      [PADDING_RIGHT]: paddingRight,
+      [PADDING_BOTTOM]: paddingBottom,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    } = currentStyle;
+    let main = isDirectionRow ? width : height;
+    let cross = isDirectionRow ? height : width;
+    if(main[1] !== AUTO) {
+      b = max = min = main[0];
+    }
+    else if(main[1] === PERCENT) {
+      b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+    }
+    // 固定尺寸比例计算
+    else if(__loadImg.source || __loadImg.error) {
+      if(cross[1] !== AUTO) {
+        cross = cross[1] === PX ? cross[0] : cross[0] * 0.01 * (isDirectionRow ? h : w);
+        let ratio = __loadImg.width / __loadImg.height;
+        b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
+      }
+    }
+    // border也得计算在内
+    if(isDirectionRow) {
+      let mp = this.__calMp(marginLeft, w)
+        + this.__calMp(marginRight, w)
+        + this.__calMp(paddingLeft, w)
+        + this.__calMp(paddingRight, w);
+      let w2 = borderLeftWidth[0] + borderRightWidth[0] + mp;
+      b += w2;
+      max += w2;
+      min += w2;
+    }
+    else {
+      let mp = this.__calMp(marginTop, w)
+        + this.__calMp(marginBottom, w)
+        + this.__calMp(paddingTop, w)
+        + this.__calMp(paddingBottom, w);
+      let h2 = borderTopWidth[0] + borderBottomWidth[0] + mp;
+      b += h2;
+      max += h2;
+      min += h2;
+    }
+    return [b, min, max];
+  }
+
   __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
     let self = this;
+    // 先清空之前可能的
+    loadImg.source = null;
+    root.delRefreshTask(self.__task);
+    root.addRefreshTask(self.__task = {
+      __before() {
+        if(self.isDestroyed) {
+          return;
+        }
+        // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        let res = {};
+        res[UPDATE_NODE] = self;
+        res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
+        res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化，focus不起效
+        res[UPDATE_CONFIG] = self.__config;
+        root.__addUpdate(self, self.__config, root, root.__config, res);
+      },
+      __after() {
+        if(isFunction(cb)) {
+          cb.call(self);
+        }
+      },
+    });
+    // 再测量，可能瞬间完成替换掉上面的
     inject.measureImg(loadImg.src, data => {
       // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
       if(data.url === loadImg.src && !self.isDestroyed) {
@@ -424,7 +518,7 @@ class Img extends Dom {
                 let res = {};
                 res[UPDATE_NODE] = self;
                 res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
-                res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化
+                res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化，focus不起效
                 res[UPDATE_CONFIG] = self.__config;
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
@@ -489,7 +583,10 @@ class Img extends Dom {
       self.__loadAndRefresh(loadImg, root, root.ctx, self.props.placeholder, self.computedStyle, self.width, self.height, cb);
     }
     else {
+      loadImg.src = v;
+      loadImg.source = null;
       loadImg.error = true;
+      root.delRefreshTask(self.__task);
       root.addRefreshTask(self.__task = {
         __before() {
           if(self.isDestroyed) {

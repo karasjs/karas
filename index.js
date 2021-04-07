@@ -9908,7 +9908,7 @@
       key: "register",
       value: function register(name, obj) {
         if (!name || !util.isString(name) || !/^[A-Z]/.test(name) || !obj.prototype || !(obj.prototype instanceof Component)) {
-          throw new Error('Invalid param');
+          throw new Error('Invalid param: Component register');
         }
 
         if (Component.hasRegister(name)) {
@@ -21610,7 +21610,7 @@
     }, {
       key: "baseLine",
       get: function get() {
-        if (!this.lineBoxManager.size) {
+        if (!this.lineBoxManager || !this.lineBoxManager.size) {
           return this.offsetHeight;
         }
 
@@ -21623,7 +21623,7 @@
     }, {
       key: "firstBaseLine",
       get: function get() {
-        if (!this.lineBoxManager.size) {
+        if (!this.lineBoxManager || !this.lineBoxManager.size) {
           return this.offsetHeight;
         }
 

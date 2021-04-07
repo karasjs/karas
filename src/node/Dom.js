@@ -2821,7 +2821,7 @@ class Dom extends Xom {
   }
 
   get baseLine() {
-    if(!this.lineBoxManager.size) {
+    if(!this.lineBoxManager || !this.lineBoxManager.size) {
       return this.offsetHeight;
     }
     let {
@@ -2833,7 +2833,7 @@ class Dom extends Xom {
   }
 
   get firstBaseLine() {
-    if(!this.lineBoxManager.size) {
+    if(!this.lineBoxManager || !this.lineBoxManager.size) {
       return this.offsetHeight;
     }
     let {

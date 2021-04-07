@@ -275,7 +275,7 @@ class Component extends Event {
   static register(name, obj) {
     if(!name || !util.isString(name) || !/^[A-Z]/.test(name)
       || !obj.prototype || !(obj.prototype instanceof Component)) {
-      throw new Error('Invalid param');
+      throw new Error('Invalid param: Component register');
     }
     if(Component.hasRegister(name)) {
       throw new Error(`Component has already register: ${name}`);

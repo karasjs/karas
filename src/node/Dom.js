@@ -407,6 +407,7 @@ class Dom extends Xom {
     else {
       if(display === 'flex') {
         let isRow = flexDirection !== 'column';
+        flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let { currentStyle } = item;
@@ -487,12 +488,22 @@ class Dom extends Xom {
             }
             else {
               if(display === 'block' || display === 'flex') {
+                // 之前行积累的极值，并清空
+                min += countMin;
+                max += countMax;
+                countMin = countMax = 0;
+                // 本身的
                 min += min2;
                 max += max2;
               }
               else {
-                min = Math.max(min, min2);
-                max = Math.max(max, max2);
+                // 行内取极值，最后一个记得应用
+                countMin = Math.max(countMin, min2);
+                countMax = Math.max(countMax, max2);
+                if(i === length - 1) {
+                  min += countMin;
+                  max += countMax;
+                }
               }
             }
           }
@@ -510,8 +521,13 @@ class Dom extends Xom {
               h,
               lineBoxManager,
             });
-            min = Math.max(min, item.height);
-            max = Math.max(max, item.height);
+            // 行内取极值，最后一个记得应用
+            countMin = Math.max(countMin, min2);
+            countMax = Math.max(countMax, max2);
+            if(i === length - 1) {
+              min += countMin;
+              max += countMax;
+            }
           }
         });
       }
@@ -614,6 +630,7 @@ class Dom extends Xom {
     // flex的item还是flex时
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
+      flowChildren = genOrderChildren(flowChildren);
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let { currentStyle } = item;
@@ -677,7 +694,8 @@ class Dom extends Xom {
     else {
       let countMin = 0, countMax = 0;
       let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
-      flowChildren.forEach(item => {
+      let length = flowChildren.length;
+      flowChildren.forEach((item, i) => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let [display, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
           if(isDirectionRow) {
@@ -695,12 +713,22 @@ class Dom extends Xom {
           }
           else {
             if(display === 'block' || display === 'flex') {
+              // 之前行积累的极值，并清空
+              min += countMin;
+              max += countMax;
+              countMin = countMax = 0;
+              // 本身的
               min += min2;
               max += max2;
             }
             else {
-              min = Math.max(min, min2);
-              max = Math.max(max, max2);
+              // 行内取极值，最后一个记得应用
+              countMin = Math.max(countMin, min2);
+              countMax = Math.max(countMax, max2);
+              if(i === length - 1) {
+                min += countMin;
+                max += countMax;
+              }
             }
           }
         }
@@ -718,8 +746,13 @@ class Dom extends Xom {
             h,
             lineBoxManager,
           });
-          min = Math.max(min, item.height);
-          max = Math.max(max, item.height);
+          // 行内取极值，最后一个记得应用
+          countMin = Math.max(countMin, min2);
+          countMax = Math.max(countMax, max2);
+          if(i === length - 1) {
+            min += countMin;
+            max += countMax;
+          }
         }
       });
     }
@@ -1165,7 +1198,7 @@ class Dom extends Xom {
      */
     let line = [], sum = 0;
     basisList.forEach((item, i) => {
-      let min = minList[i], max = maxList[i];
+      let min = minList[i];
       if(isMultiLine) {
         let size = Math.max(item, min);
         // 超过尺寸时，要防止sum为0即1个也会超过尺寸

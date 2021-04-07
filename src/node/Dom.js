@@ -1217,9 +1217,19 @@ class Dom extends Xom {
     let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
+    // wrap-reverse时交换主轴序，需要2行及以上才行
+    let length = __flexLine.length;
+    if(['wrapReverse', 'wrap-reverse'].indexOf(flexWrap) > -1 && length > 1) {
+      let crossSum = 0, crossSumList = [];
+      maxCrossList.forEach(item => {
+        crossSumList.push(crossSum);
+        crossSum += item;
+      });
+      // console.log(maxCrossList, crossSumList);
+    }
     // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
     // 先做整体的，得出交叉轴空白再均分给每一行做单行的，整体的只有1行忽略
-    let length = __flexLine.length, per;
+    let per;
     if(!isVirtual && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
       let diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x);
       // 有空余时才进行对齐
@@ -1283,10 +1293,10 @@ class Dom extends Xom {
             if(i) {
               item.forEach(item => {
                 if(isDirectionRow) {
-                  item.__offsetY(per, true);
+                  item.__offsetY(per * i, true);
                 }
                 else {
-                  item.__offsetX(per, true);
+                  item.__offsetX(per * i, true);
                 }
               });
             }
@@ -1563,6 +1573,12 @@ class Dom extends Xom {
       let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
       if(isDirectionRow) {
         if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+        else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+          let diff = maxCross - item.outerHeight;
+          if(diff !== 0) {
+            item.__offsetY(diff, true);
+          }
+        }
         else if(alignSelf === 'center') {
           let diff = maxCross - item.outerHeight;
           if(diff !== 0) {
@@ -1647,7 +1663,12 @@ class Dom extends Xom {
       }
       // column
       else {
-        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+        else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+          let diff = maxCross - item.outerWidth;
+          if(diff !== 0) {
+            item.__offsetX(diff, true);
+          }
         }
         else if(alignSelf === 'center') {
           let diff = maxCross - item.outerWidth;

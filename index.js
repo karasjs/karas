@@ -19886,12 +19886,23 @@
         var tw = this.__width = w;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__ioSize(tw, th); // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
+        this.__ioSize(tw, th); // wrap-reverse时交换主轴序，需要2行及以上才行
+
+
+        var length = __flexLine.length;
+
+        if (['wrapReverse', 'wrap-reverse'].indexOf(flexWrap) > -1 && length > 1) {
+          var crossSum = 0,
+              crossSumList = [];
+          maxCrossList.forEach(function (item) {
+            crossSumList.push(crossSum);
+            crossSum += item;
+          }); // console.log(maxCrossList, crossSumList);
+        } // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
         // 先做整体的，得出交叉轴空白再均分给每一行做单行的，整体的只有1行忽略
 
 
-        var length = __flexLine.length,
-            per;
+        var per;
 
         if (!isVirtual && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
           var diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x); // 有空余时才进行对齐
@@ -19949,9 +19960,9 @@
                   if (i) {
                     item.forEach(function (item) {
                       if (isDirectionRow) {
-                        item.__offsetY(per, true);
+                        item.__offsetY(per * i, true);
                       } else {
-                        item.__offsetX(per, true);
+                        item.__offsetX(per * i, true);
                       }
                     });
                   }
@@ -20257,11 +20268,17 @@
           var alignSelf = item.currentStyle[ALIGN_SELF$1];
 
           if (isDirectionRow) {
-            if (alignSelf === 'flexStart' || alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+            if (alignSelf === 'flexStart' || alignSelf === 'flex-start') ; else if (alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
               var diff = maxCross - item.outerHeight;
 
               if (diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
+                item.__offsetY(diff, true);
+              }
+            } else if (alignSelf === 'center') {
+              var _diff3 = maxCross - item.outerHeight;
+
+              if (_diff3 !== 0) {
+                item.__offsetY(_diff3 * 0.5, true);
               }
             } else if (alignSelf === 'stretch') {
               var computedStyle = item.computedStyle,
@@ -20282,30 +20299,30 @@
                 item.__outerHeight += d;
               }
             } else if (alignSelf === 'baseline') {
-              var _diff3 = baseLine - item.firstBaseLine;
+              var _diff4 = baseLine - item.firstBaseLine;
 
-              if (_diff3 !== 0) {
-                item.__offsetY(_diff3, true);
+              if (_diff4 !== 0) {
+                item.__offsetY(_diff4, true);
               }
             } // 默认auto，取alignItems
             else {
                 if (alignItems === 'flexStart' || alignSelf === 'flex-start') ; else if (alignItems === 'center') {
-                  var _diff4 = maxCross - item.outerHeight;
-
-                  if (_diff4 !== 0) {
-                    item.__offsetY(_diff4 * 0.5, true);
-                  }
-                } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
                   var _diff5 = maxCross - item.outerHeight;
 
                   if (_diff5 !== 0) {
-                    item.__offsetY(_diff5, true);
+                    item.__offsetY(_diff5 * 0.5, true);
                   }
-                } else if (alignItems === 'baseline') {
-                  var _diff6 = baseLine - item.firstBaseLine;
+                } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
+                  var _diff6 = maxCross - item.outerHeight;
 
                   if (_diff6 !== 0) {
                     item.__offsetY(_diff6, true);
+                  }
+                } else if (alignItems === 'baseline') {
+                  var _diff7 = baseLine - item.firstBaseLine;
+
+                  if (_diff7 !== 0) {
+                    item.__offsetY(_diff7, true);
                   }
                 } // 默认stretch
                 else {
@@ -20343,11 +20360,17 @@
               }
           } // column
           else {
-              if (alignSelf === 'flexStart' || alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
-                var _diff7 = maxCross - item.outerWidth;
+              if (alignSelf === 'flexStart' || alignSelf === 'flex-start') ; else if (alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+                var _diff8 = maxCross - item.outerWidth;
 
-                if (_diff7 !== 0) {
-                  item.__offsetX(_diff7 * 0.5, true);
+                if (_diff8 !== 0) {
+                  item.__offsetX(_diff8, true);
+                }
+              } else if (alignSelf === 'center') {
+                var _diff9 = maxCross - item.outerWidth;
+
+                if (_diff9 !== 0) {
+                  item.__offsetX(_diff9 * 0.5, true);
                 }
               } else if (alignSelf === 'stretch') {
                 var _computedStyle3 = item.computedStyle,
@@ -20371,30 +20394,30 @@
                   item.__outerWidth += _d2;
                 }
               } else if (alignItems === 'baseline') {
-                var _diff8 = baseLine - item.firstBaseLine;
+                var _diff10 = baseLine - item.firstBaseLine;
 
-                if (_diff8 !== 0) {
-                  item.__offsetY(_diff8, true);
+                if (_diff10 !== 0) {
+                  item.__offsetY(_diff10, true);
                 }
               } // 默认auto，取alignItems
               else {
                   if (alignItems === 'flexStart' || alignSelf === 'flex-start') ; else if (alignItems === 'center') {
-                    var _diff9 = maxCross - item.outerHeight;
-
-                    if (_diff9 !== 0) {
-                      item.__offsetY(_diff9 * 0.5, true);
-                    }
-                  } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
-                    var _diff10 = maxCross - item.outerHeight;
-
-                    if (_diff10 !== 0) {
-                      item.__offsetY(_diff10, true);
-                    }
-                  } else if (alignItems === 'baseline') {
-                    var _diff11 = baseLine - item.firstBaseLine;
+                    var _diff11 = maxCross - item.outerHeight;
 
                     if (_diff11 !== 0) {
-                      item.__offsetY(_diff11, true);
+                      item.__offsetY(_diff11 * 0.5, true);
+                    }
+                  } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
+                    var _diff12 = maxCross - item.outerHeight;
+
+                    if (_diff12 !== 0) {
+                      item.__offsetY(_diff12, true);
+                    }
+                  } else if (alignItems === 'baseline') {
+                    var _diff13 = baseLine - item.firstBaseLine;
+
+                    if (_diff13 !== 0) {
+                      item.__offsetY(_diff13, true);
                     }
                   } // 默认stretch
                   else {

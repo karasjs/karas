@@ -2510,6 +2510,14 @@ class Xom extends Node {
   get contentBoxList() {
     return this.__contentBoxList;
   }
+
+  get baseLine() {
+    return this.offsetHeight;
+  }
+
+  get firstBaseLine() {
+    return this.offsetHeight;
+  }
 }
 
 export default Xom;

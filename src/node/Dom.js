@@ -47,6 +47,9 @@ const {
     WHITE_SPACE,
     LINE_HEIGHT,
     LINE_CLAMP,
+    ORDER,
+    FLEX_WRAP,
+    ALIGN_CONTENT,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -135,10 +138,36 @@ function genZIndexChildren(dom) {
   return normal;
 }
 
+// flex布局阶段顺序，不是渲染也和struct结构无关，可以无视mask
+function genOrderChildren(flowChildren) {
+  let normal = [];
+  flowChildren.forEach((item, i) => {
+    let child = item;
+    if(item instanceof Component) {
+      item = item.shadowRoot;
+    }
+    if(item instanceof Xom) {
+      child.__order = item.currentStyle[ORDER];
+    }
+    else {
+      child.__order = 0;
+    }
+    normal.push(child);
+    child.__iIndex = i;
+  });
+  normal.sort(function(a, b) {
+    if(a.__order !== b.__order) {
+      return a.__order - b.__order;
+    }
+    // order相等时看节点索引
+    return a.__iIndex - b.__iIndex;
+  });
+  return normal;
+}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
-    this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
     let { style } = this;
     if(!style.display || !{
       flex: true,
@@ -162,6 +191,7 @@ class Dom extends Xom {
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = util.extend({}, this.__style);
     this.__children = children || [];
+    this.__flexLine = []; // flex布局多行模式时存储行
     let config = this.__config;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;
     config[NODE_STYLE] = this.__style;
@@ -375,7 +405,6 @@ class Dom extends Xom {
       min = max = main[0];
     }
     else {
-      let countMin = 0, countMax = 0;
       if(display === 'flex') {
         let isRow = flexDirection !== 'column';
         flowChildren.forEach(item => {
@@ -438,6 +467,7 @@ class Dom extends Xom {
         });
       }
       else if(display === 'block') {
+        let countMin = 0, countMax = 0;
         lineBoxManager = new LineBoxManager(x, y);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -581,7 +611,6 @@ class Dom extends Xom {
     else if(isAuto) {
       isContent = true;
     }
-    let countMin = 0, countMax = 0;
     // flex的item还是flex时
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
@@ -646,6 +675,7 @@ class Dom extends Xom {
     }
     // flex的item是block/inline时，inline也会变成block统一对待
     else {
+      let countMin = 0, countMax = 0;
       let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1027,19 +1057,23 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data, isVirtual) {
-    let { flowChildren, currentStyle, computedStyle } = this;
+    let { flowChildren, currentStyle, computedStyle, __flexLine } = this;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     if(fixedWidth && isVirtual) {
       this.__width = w;
       this.__ioSize(w, this.height);
       return;
     }
+    // 每次布局情况多行内容
+    __flexLine.splice(0);
     let {
       [FLEX_DIRECTION]: flexDirection,
       [JUSTIFY_CONTENT]: justifyContent,
       [ALIGN_ITEMS]: alignItems,
-    } = currentStyle;
-    let lineClamp = computedStyle[LINE_CLAMP];
+      [LINE_CLAMP]: lineClamp,
+      [FLEX_WRAP]: flexWrap,
+      [ALIGN_CONTENT]: alignContent,
+    } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
@@ -1051,12 +1085,8 @@ class Dom extends Xom {
     let basisList = [];
     let maxList = [];
     let minList = [];
-    let growSum = 0;
-    let shrinkSum = 0;
-    let basisSum = 0;
-    let maxSum = 0;
-    let minSum = 0;
-    flowChildren.forEach(item => {
+    let orderChildren = genOrderChildren(flowChildren);
+    orderChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
@@ -1078,15 +1108,10 @@ class Dom extends Xom {
         computedStyle[FLEX_BASIS] = b;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
-        growSum += flexGrow;
-        shrinkSum += flexShrink;
         // 根据basis不同，计算方式不同
         basisList.push(b);
-        basisSum += b;
         maxList.push(max);
-        maxSum += max;
         minList.push(min);
-        minSum += min;
       }
       // 文本
       else {
@@ -1101,16 +1126,12 @@ class Dom extends Xom {
         }
         growList.push(0);
         shrinkList.push(1);
-        shrinkSum += 1;
         if(isDirectionRow) {
           let cw = item.charWidth;
           let tw = item.textWidth;
           basisList.push(tw);
-          basisSum += tw;
           maxList.push(tw);
-          maxSum += tw;
           minList.push(cw);
-          minSum += cw;
         }
         else {
           let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
@@ -1125,10 +1146,7 @@ class Dom extends Xom {
           });
           let h = item.height;
           basisList.push(h);
-          basisSum += h;
-          maxSum += h;
           minList.push(h);
-          minSum += h;
         }
       }
     });
@@ -1138,14 +1156,210 @@ class Dom extends Xom {
       this.__ioSize(tw, this.height);
       return;
     }
+    let containerSize = isDirectionRow ? w : h;
+    let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
     /**
-     * 计算获取子元素的b/min/max完毕后，尝试进行flex布局
-     * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
-     * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
-     * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
-     * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
-     * 先收集basis和假设主尺寸
+     * 判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
+     * 当多行时，由于每行一定有最小限制，所以每行一般情况都不是shrink状态，
+     * 但也有极端情况，比如一行只能放下1个元素时，且此元素比容器小，会是shrink
      */
+    let line = [], sum = 0;
+    basisList.forEach((item, i) => {
+      let min = minList[i], max = maxList[i];
+      if(isMultiLine) {
+        let size = Math.max(item, min);
+        // 超过尺寸时，要防止sum为0即1个也会超过尺寸
+        if(sum + size > containerSize) {
+          if(sum) {
+            __flexLine.push(line);
+            line = [orderChildren[i]];
+            sum = size;
+          }
+          else {
+            line.push(orderChildren[i]);
+            __flexLine.push(line);
+            line = [];
+            sum = 0;
+          }
+        }
+        else {
+          line.push(orderChildren[i]);
+          sum += size;
+        }
+      }
+      else {
+        line.push(orderChildren[i]);
+      }
+    });
+    if(line.length) {
+      __flexLine.push(line);
+    }
+    let offset = 0, clone = { x, y, w, h };
+    let maxCrossList = [];
+    __flexLine.forEach(item => {
+      let length = item.length;
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize,
+        fixedWidth, fixedHeight, lineClamp, lineClampCount,
+        justifyContent, alignItems, orderChildren.slice(offset, offset + length), item,
+        growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length),
+        minList.slice(offset, offset + length), maxList.slice(offset, offset + length));
+      if(isDirectionRow) {
+        clone.y = y1;
+      }
+      else {
+        clone.x = x1;
+      }
+      x = Math.max(x, x1);
+      y = Math.max(y, y1);
+      maxCrossList.push(maxCross);
+      offset += length;
+    });
+    let tw = this.__width = w;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__ioSize(tw, th);
+    // wrap-reverse时交换主轴序，需要2行及以上才行
+    let length = __flexLine.length;
+    if(['wrapReverse', 'wrap-reverse'].indexOf(flexWrap) > -1 && length > 1) {
+      let crossSum = 0, crossSumList = [];
+      maxCrossList.forEach(item => {
+        crossSumList.push(crossSum);
+        crossSum += item;
+      });
+      let count = 0;
+      for(let i = length - 1; i >= 0; i--) {
+        let line = __flexLine[i];
+        let source = crossSumList[i];
+        let diff = count - source;
+        if(diff) {
+          line.forEach(item => {
+            if(isDirectionRow) {
+              item.__offsetY(diff, true);
+            }
+            else {
+            }
+          });
+        }
+        count += maxCrossList[i];
+      }
+      __flexLine.reverse();
+    }
+    // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
+    // 先做整体的，得出交叉轴空白再均分给每一行做单行的，整体的只有1行忽略
+    let per;
+    if(!isVirtual && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
+      let diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x);
+      // 有空余时才进行对齐
+      if(diff > 0) {
+        if(alignContent === 'center') {
+          let per = diff * 0.5;
+          orderChildren.forEach(item => {
+            if(isDirectionRow) {
+              item.__offsetY(per, true);
+            }
+            else {
+              item.__offsetX(per, true);
+            }
+          });
+        }
+        else if(alignContent === 'flex-start' || alignContent === 'flexStart') {}
+        else if(alignContent === 'flex-end' || alignContent === 'flexEnd') {
+          orderChildren.forEach(item => {
+            if(isDirectionRow) {
+              item.__offsetY(diff, true);
+            }
+            else {
+              item.__offsetX(diff, true);
+            }
+          });
+        }
+        else if(alignContent === 'space-between' || alignContent === 'spaceBetween') {
+          let between = diff / (length - 1);
+          // 除了第1行其它进行偏移
+          __flexLine.forEach((item, i) => {
+            if(i) {
+              item.forEach(item => {
+                if(isDirectionRow) {
+                  item.__offsetY(between, true);
+                }
+                else {
+                  item.__offsetX(between, true);
+                }
+              });
+            }
+          });
+        }
+        else if(alignContent === 'space-around' || alignContent === 'spaceAround') {
+          let around = diff / (length + 1);
+          __flexLine.forEach((item, i) => {
+            item.forEach(item => {
+              if(isDirectionRow) {
+                item.__offsetY(around * (i + 1), true);
+              }
+              else {
+                item.__offsetX(around * (i + 1), true);
+              }
+            });
+          });
+        }
+        // 默认stretch
+        else {
+          per = diff / length;
+          // 除了第1行其它进行偏移
+          __flexLine.forEach((item, i) => {
+            if(i) {
+              item.forEach(item => {
+                if(isDirectionRow) {
+                  item.__offsetY(per * i, true);
+                }
+                else {
+                  item.__offsetX(per * i, true);
+                }
+              });
+            }
+          });
+        }
+      }
+    }
+    // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
+    if(!isVirtual) {
+      if(length > 1) {
+        __flexLine.forEach((item, i) => {
+          let maxCross = maxCrossList[i];
+          if(per) {
+            maxCross += per;
+          }
+          this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+        });
+      }
+      else if(length) {
+        let maxCross = maxCrossList[0];
+        if(isDirectionRow) {
+          if(fixedHeight) {
+            maxCross = h;
+          }
+        }
+        else {
+          maxCross = w;
+        }
+        this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
+      }
+    }
+    this.__marginAuto(currentStyle, data);
+  }
+
+  /**
+   * 计算获取子元素的b/min/max完毕后，尝试进行flex每行布局
+   * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
+   * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
+   * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
+   * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
+   * 先收集basis和假设主尺寸
+   */
+  __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize,
+                   fixedWidth, fixedHeight, lineClamp, lineClampCount,
+                   justifyContent, alignItems, orderChildren, flexLine,
+                   growList, shrinkList, basisList, minList, maxList) {
+    let { x, y, w, h } = data;
     let hypotheticalSum = 0, hypotheticalList = [];
     basisList.forEach((item, i) => {
       let min = minList[i], max = maxList[i];
@@ -1163,7 +1377,7 @@ class Dom extends Xom {
       }
     });
     // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
-    let isOverflow = hypotheticalSum >= (isDirectionRow ? w : h);
+    let isOverflow = hypotheticalSum >= containerSize;
     let targetMainList = [];
     basisList.forEach((item, i) => {
       if(isOverflow) {
@@ -1280,7 +1494,7 @@ class Dom extends Xom {
       }
     }
     let maxCross = 0;
-    flowChildren.forEach((item, i) => {
+    orderChildren.forEach((item, i) => {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(isDirectionRow) {
@@ -1324,67 +1538,71 @@ class Dom extends Xom {
       }
     });
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
-    let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
-    // 主轴侧轴对齐方式
-    if(!isOverflow && growSum === 0 && diff > 0) {
-      let len = flowChildren.length;
+    let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
+    // 主轴对齐方式
+    if(!isOverflow && diff > 0) {
+      let len = orderChildren.length;
       if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
         }
       }
       else if(justifyContent === 'center') {
         let center = diff * 0.5;
         for(let i = 0; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
         }
       }
       else if(justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
         let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
         }
       }
       else if(justifyContent === 'spaceAround' || justifyContent === 'space-around') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
-          let child = flowChildren[i];
+          let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
         }
       }
     }
-    // 子元素侧轴伸展
     if(isDirectionRow) {
-      // 父元素固定高度，子元素可能超过，侧轴最大长度取固定高度
-      if(fixedHeight) {
-        maxCross = h;
-      }
       y += maxCross;
     }
     else {
-      if(fixedWidth) {
-        maxCross = w;
-      }
+      x += maxCross;
     }
-    // 侧轴对齐
-    if(!isVirtual) {
-      if(alignItems === 'stretch') {
-        // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-        flowChildren.forEach(item => {
-          let { computedStyle, currentStyle: {
-            [DISPLAY]: display,
-            [FLEX_DIRECTION]: flexDirection,
-            [ALIGN_SELF]: alignSelf,
-            [WIDTH]: width,
-            [HEIGHT]: height,
-          } } = item;
-          // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
-          if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-            item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+    return [x, y, maxCross];
+  }
+
+  // 每个flexLine的侧轴对齐，单行时就是一行对齐
+  __crossAlign(line, alignItems, isDirectionRow, maxCross) {
+    let baseLine = 0;
+    line.forEach(item => {
+      baseLine = Math.max(baseLine, item.firstBaseLine);
+    });
+    line.forEach(item => {
+      let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+      if(isDirectionRow) {
+        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+        else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+          let diff = maxCross - item.outerHeight;
+          if(diff !== 0) {
+            item.__offsetY(diff, true);
           }
+        }
+        else if(alignSelf === 'center') {
+          let diff = maxCross - item.outerHeight;
+          if(diff !== 0) {
+            item.__offsetY(diff * 0.5, true);
+          }
+        }
+        else if(alignSelf === 'stretch') {
+          let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
           let {
             [BORDER_TOP_WIDTH]: borderTopWidth,
             [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -1392,6 +1610,91 @@ class Dom extends Xom {
             [MARGIN_BOTTOM]: marginBottom,
             [PADDING_TOP]: paddingTop,
             [PADDING_BOTTOM]: paddingBottom,
+          } = computedStyle;
+          if(height[1] === AUTO) {
+            let old = item.height;
+            let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            let d = v - old;
+            item.__clientHeight += d;
+            item.__offsetHeight += d;
+            item.__outerHeight += d;
+          }
+        }
+        else if(alignSelf === 'baseline') {
+          let diff = baseLine - item.firstBaseLine;
+          if(diff !== 0) {
+            item.__offsetY(diff, true);
+          }
+        }
+        // 默认auto，取alignItems
+        else {
+          if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
+          else if(alignItems === 'center') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff * 0.5, true);
+            }
+          }
+          else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          else if(alignItems === 'baseline') {
+            let diff = baseLine - item.firstBaseLine;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          // 默认stretch
+          else {
+            let { computedStyle, currentStyle: {
+              [DISPLAY]: display,
+              [FLEX_DIRECTION]: flexDirection,
+              [HEIGHT]: height,
+            } } = item;
+            // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+            if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+            }
+            let {
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+            } = computedStyle;
+            if(height[1] === AUTO) {
+              let old = item.height;
+              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              let d = v - old;
+              item.__clientHeight += d;
+              item.__offsetHeight += d;
+              item.__outerHeight += d;
+            }
+          }
+        }
+      }
+      // column
+      else {
+        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+        else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+          let diff = maxCross - item.outerWidth;
+          if(diff !== 0) {
+            item.__offsetX(diff, true);
+          }
+        }
+        else if(alignSelf === 'center') {
+          let diff = maxCross - item.outerWidth;
+          if(diff !== 0) {
+            item.__offsetX(diff * 0.5, true);
+          }
+        }
+        else if(alignSelf === 'stretch') {
+          let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+          let {
             [BORDER_RIGHT_WIDTH]: borderRightWidth,
             [BORDER_LEFT_WIDTH]: borderLeftWidth,
             [MARGIN_RIGHT]: marginRight,
@@ -1399,280 +1702,67 @@ class Dom extends Xom {
             [PADDING_RIGHT]: paddingRight,
             [PADDING_LEFT]: paddingLeft,
           } = computedStyle;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-            else if(height[1] === AUTO) {
-              let old = item.height;
-              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-              let d = v - old;
-              item.__clientHeight += d;
-              item.__outerHeight += d;
+          if(width[1] === AUTO) {
+            let old = item.width;
+            let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+            let d = v - old;
+            item.__clientWidth += d;
+            item.__offsetWidth += d;
+            item.__outerWidth += d;
+          }
+        }
+        else if(alignItems === 'baseline') {
+          let diff = baseLine - item.firstBaseLine;
+          if(diff !== 0) {
+            item.__offsetY(diff, true);
+          }
+        }
+        // 默认auto，取alignItems
+        else {
+          if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
+          else if(alignItems === 'center') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff * 0.5, true);
             }
           }
+          else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          else if(alignItems === 'baseline') {
+            let diff = baseLine - item.firstBaseLine;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          // 默认stretch
           else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff, true);
-              }
-            }
-            else if(width[1] === AUTO) {
+            let { computedStyle, currentStyle: {
+              [WIDTH]: width,
+            } } = item;
+            let {
+              [BORDER_RIGHT_WIDTH]: borderRightWidth,
+              [BORDER_LEFT_WIDTH]: borderLeftWidth,
+              [MARGIN_RIGHT]: marginRight,
+              [MARGIN_LEFT]: marginLeft,
+              [PADDING_RIGHT]: paddingRight,
+              [PADDING_LEFT]: paddingLeft,
+            } = computedStyle;
+            if(width[1] === AUTO) {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
               item.__clientWidth += d;
-              this.__offsetWidth += d;
+              item.__offsetWidth += d;
               item.__outerWidth += d;
             }
           }
-        });
+        }
       }
-      else if(alignItems === 'center') {
-        flowChildren.forEach(item => {
-          let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-              let {
-                [BORDER_TOP_WIDTH]: borderTopWidth,
-                [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-                [MARGIN_TOP]: marginTop,
-                [MARGIN_BOTTOM]: marginBottom,
-                [PADDING_TOP]: paddingTop,
-                [PADDING_BOTTOM]: paddingBottom,
-              } = computedStyle;
-              if(height[1] === AUTO) {
-                let old = item.height;
-                let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                let d = v - old;
-                item.__clientHeight += d;
-                item.__outerHeight += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-          }
-          else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-              let {
-                [BORDER_RIGHT_WIDTH]: borderRightWidth,
-                [BORDER_LEFT_WIDTH]: borderLeftWidth,
-                [MARGIN_RIGHT]: marginRight,
-                [MARGIN_LEFT]: marginLeft,
-                [PADDING_RIGHT]: paddingRight,
-                [PADDING_LEFT]: paddingLeft,
-              } = computedStyle;
-              if(width[1] === AUTO) {
-                let old = item.width;
-                let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-                let d = v - old;
-                item.__clientWidth += d;
-                this.__offsetWidth += d;
-                item.__outerWidth += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
-            }
-          }
-        });
-      }
-      else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
-        flowChildren.forEach(item => {
-          let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-              let {
-                [BORDER_TOP_WIDTH]: borderTopWidth,
-                [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-                [MARGIN_TOP]: marginTop,
-                [MARGIN_BOTTOM]: marginBottom,
-                [PADDING_TOP]: paddingTop,
-                [PADDING_BOTTOM]: paddingBottom,
-              } = computedStyle;
-              if(height[1] === AUTO) {
-                let old = item.height;
-                let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                let d = v - old;
-                item.__clientHeight += d;
-                item.__outerHeight += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-          }
-          else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-              let {
-                [BORDER_RIGHT_WIDTH]: borderRightWidth,
-                [BORDER_LEFT_WIDTH]: borderLeftWidth,
-                [MARGIN_RIGHT]: marginRight,
-                [MARGIN_LEFT]: marginLeft,
-                [PADDING_RIGHT]: paddingRight,
-                [PADDING_LEFT]: paddingLeft,
-              } = computedStyle;
-              if(width[1] === AUTO) {
-                let old = item.width;
-                let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-                let d = v - old;
-                item.__clientWidth += d;
-                this.__offsetWidth += d;
-                item.__outerWidth += d;
-              }
-            }
-            else {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-          }
-        });
-      }
-      else {
-        flowChildren.forEach(item => {
-          let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-          if(isDirectionRow) {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerHeight;
-              if(diff !== 0) {
-                item.__offsetY(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-              let {
-                [BORDER_TOP_WIDTH]: borderTopWidth,
-                [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-                [MARGIN_TOP]: marginTop,
-                [MARGIN_BOTTOM]: marginBottom,
-                [PADDING_TOP]: paddingTop,
-                [PADDING_BOTTOM]: paddingBottom,
-              } = computedStyle;
-              if(height[1] === AUTO) {
-                let old = item.height;
-                let v = item.__height = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                let d = v - old;
-                item.__clientHeight += d;
-                item.__outerHeight += d;
-              }
-            }
-          }
-          else {
-            if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-            }
-            else if(alignSelf === 'center') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff * 0.5, true);
-              }
-            }
-            else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-              let diff = maxCross - item.outerWidth;
-              if(diff !== 0) {
-                item.__offsetX(diff, true);
-              }
-            }
-            else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-              let {
-                [BORDER_RIGHT_WIDTH]: borderRightWidth,
-                [BORDER_LEFT_WIDTH]: borderLeftWidth,
-                [MARGIN_RIGHT]: marginRight,
-                [MARGIN_LEFT]: marginLeft,
-                [PADDING_RIGHT]: paddingRight,
-                [PADDING_LEFT]: paddingLeft,
-              } = computedStyle;
-              if(width[1] === AUTO) {
-                let old = item.width;
-                let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-                let d = v - old;
-                item.__clientWidth += d;
-                this.__offsetWidth += d;
-                item.__outerWidth += d;
-              }
-            }
-          }
-        });
-      }
-    }
-    let tw = this.__width = w;
-    let th = this.__height = fixedHeight ? h : y - data.y;
-    this.__ioSize(tw, th);
-    this.__marginAuto(currentStyle, data);
+    });
   }
 
   /**
@@ -2440,17 +2530,13 @@ class Dom extends Xom {
     return this.__zIndexChildren;
   }
 
-  get lineGroups() {
-    return this.__lineGroups;
-  }
-
   get lineBoxManager() {
     return this.__lineBoxManager;
   }
 
   get baseLine() {
-    if(!this.lineBoxManager.size) {
-      return this.outerHeight;
+    if(!this.lineBoxManager || !this.lineBoxManager.size) {
+      return this.offsetHeight;
     }
     let {
       [MARGIN_TOP]: marginTop,
@@ -2458,6 +2544,18 @@ class Dom extends Xom {
       [PADDING_TOP]: paddingTop,
     } = this.computedStyle;
     return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
+  }
+
+  get firstBaseLine() {
+    if(!this.lineBoxManager || !this.lineBoxManager.size) {
+      return this.offsetHeight;
+    }
+    let {
+      [MARGIN_TOP]: marginTop,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [PADDING_TOP]: paddingTop,
+    } = this.computedStyle;
+    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseLine;
   }
 
   get parentLineBox() {

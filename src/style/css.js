@@ -63,6 +63,9 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   WHITE_SPACE,
   TEXT_OVERFLOW,
   LINE_CLAMP,
+  ORDER,
+  FLEX_WRAP,
+  ALIGN_CONTENT,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -195,6 +198,11 @@ function normalize(style, reset = []) {
   temp = style.flex;
   if(temp) {
     abbr.toFull(style, 'flex');
+  }
+  // flex-flow
+  temp = style.flexFlow;
+  if(temp) {
+    abbr.toFull(style, 'flexFlow');
   }
   temp = style.margin;
   if(!isNil(temp)) {
@@ -648,6 +656,10 @@ function normalize(style, reset = []) {
       res[FLEX_BASIS] = [0, AUTO];
     }
   }
+  temp = style.order;
+  if(!isNil(temp)) {
+    res[ORDER] = parseInt(temp) || 0;
+  }
   temp = style.color;
   if(!isNil(temp)) {
     if(temp === 'inherit') {
@@ -951,9 +963,11 @@ function normalize(style, reset = []) {
     'position',
     'display',
     'flexDirection',
+    'flexWrap',
     'justifyContent',
     'alignItems',
     'alignSelf',
+    'alignContent',
     'overflow',
     'mixBlendMode',
     'borderTopStyle',
@@ -1063,6 +1077,9 @@ function computeReflow(node, isHost) {
     FLEX_GROW,
     FLEX_SHRINK,
     LINE_CLAMP,
+    ORDER,
+    FLEX_WRAP,
+    ALIGN_CONTENT,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

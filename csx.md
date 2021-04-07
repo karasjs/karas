@@ -59,6 +59,17 @@
   * auto 默认
   * px
   * %
+* flexWrap
+  * nowrap 默认
+  * wrap
+  * wrap-reverse
+* alignContent
+  * stretch 默认
+  * flexStart
+  * flexEnd
+  * spaceBetween
+  * spaceAround
+  * center
 * flexDirection
   * row 默认
   * column
@@ -73,12 +84,14 @@
   * center
   * flexStart
   * flexEnd
+  * baseline
 * alignSelf
   * auto 默认
   * stretch
   * center
   * flexStart
   * flexEnd
+  * baseline
 * fontSize
   * inherit 默认，根元素为16px
   * px
@@ -275,6 +288,7 @@
 * margin
 * padding
 * flex
+* flexFlow
 * border
 * background
 * backgroundSize

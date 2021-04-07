@@ -204,10 +204,11 @@ class LineBoxManager {
     return 0;
   }
 
-  get marginBottom() {
+  get firstBaseLine() {
     let list = this.__list;
-    if(list.length) {
-      return list[list.length - 1].marginBottom;
+    let length = list.length;
+    if(length) {
+      return list[0].baseLine;
     }
     return 0;
   }

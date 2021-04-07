@@ -216,6 +216,17 @@ export default {
         parseFlex(style, 0, 1, 'auto');
       }
     }
+    else if(k === 'flexFlow') {
+      v = v.toString().split(/\s+/);
+      if(v.length) {
+        if(isNil(style.flexDirection)) {
+        }
+        style.flexDirection = v[0];
+        if(v.length > 1) {
+          style.flexWrap = v[1];
+        }
+      }
+    }
     else if(k === 'borderRadius') {
       // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
       v = v.toString().split('/');

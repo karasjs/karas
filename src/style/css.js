@@ -199,6 +199,11 @@ function normalize(style, reset = []) {
   if(temp) {
     abbr.toFull(style, 'flex');
   }
+  // flex-flow
+  temp = style.flexFlow;
+  if(temp) {
+    abbr.toFull(style, 'flexFlow');
+  }
   temp = style.margin;
   if(!isNil(temp)) {
     abbr.toFull(style, 'margin');

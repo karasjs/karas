@@ -6541,6 +6541,18 @@
         } else {
           parseFlex(style, 0, 1, 'auto');
         }
+      } else if (k === 'flexFlow') {
+        v = v.toString().split(/\s+/);
+
+        if (v.length) {
+          if (isNil$2(style.flexDirection)) ;
+
+          style.flexDirection = v[0];
+
+          if (v.length > 1) {
+            style.flexWrap = v[1];
+          }
+        }
       } else if (k === 'borderRadius') {
         // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
         v = v.toString().split('/');
@@ -6998,6 +7010,13 @@
 
     if (temp) {
       abbr.toFull(style, 'flex');
+    } // flex-flow
+
+
+    temp = style.flexFlow;
+
+    if (temp) {
+      abbr.toFull(style, 'flexFlow');
     }
 
     temp = style.margin;
@@ -21579,7 +21598,7 @@
         } // 没source且不error时加载图片
 
 
-        if (!loadImg.source && !loadImg.error) {
+        if (!loadImg.source && !loadImg.error && !loadImg.loading) {
           this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
         }
 
@@ -21840,13 +21859,9 @@
             res[UPDATE_CONFIG$2] = self.__config;
 
             root.__addUpdate(self, self.__config, root, root.__config, res);
-          },
-          __after: function __after() {
-            if (isFunction$5(cb)) {
-              cb.call(self);
-            }
           }
-        }); // 再测量，可能瞬间完成替换掉上面的
+        });
+        loadImg.loading = true; // 再测量，可能瞬间完成替换掉上面的
 
         inject.measureImg(loadImg.src, function (data) {
           // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
@@ -21906,6 +21921,7 @@
             };
 
             loadImg.cache && (loadImg.cache.cache = false);
+            loadImg.loading = false;
 
             if (data.success) {
               loadImg.source = data.source;

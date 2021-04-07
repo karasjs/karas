@@ -201,7 +201,7 @@ class Img extends Dom {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
     // 没source且不error时加载图片
-    if(!loadImg.source && !loadImg.error) {
+    if(!loadImg.source && !loadImg.error && !loadImg.loading) {
       this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -474,17 +474,14 @@ class Img extends Dom {
         res[UPDATE_CONFIG] = self.__config;
         root.__addUpdate(self, self.__config, root, root.__config, res);
       },
-      __after() {
-        if(isFunction(cb)) {
-          cb.call(self);
-        }
-      },
     });
+    loadImg.loading = true;
     // 再测量，可能瞬间完成替换掉上面的
     inject.measureImg(loadImg.src, data => {
       // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
       if(data.url === loadImg.src && !self.isDestroyed) {
         loadImg.cache && (loadImg.cache.cache = false);
+        loadImg.loading = false;
         function reload() {
           let { currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           root.delRefreshTask(self.__task);

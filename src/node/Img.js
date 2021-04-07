@@ -459,22 +459,24 @@ class Img extends Dom {
   __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
     let self = this;
     // 先清空之前可能的
-    loadImg.source = null;
-    root.delRefreshTask(self.__task);
-    root.addRefreshTask(self.__task = {
-      __before() {
-        if(self.isDestroyed) {
-          return;
-        }
-        // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-        let res = {};
-        res[UPDATE_NODE] = self;
-        res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
-        res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化，focus不起效
-        res[UPDATE_CONFIG] = self.__config;
-        root.__addUpdate(self, self.__config, root, root.__config, res);
-      },
-    });
+    if(loadImg.source) {
+      root.delRefreshTask(self.__task);
+      root.addRefreshTask(self.__task = {
+        __before() {
+          if(self.isDestroyed) {
+            return;
+          }
+          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+          let res = {};
+          res[UPDATE_NODE] = self;
+          res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
+          res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化，focus不起效
+          res[UPDATE_CONFIG] = self.__config;
+          root.__addUpdate(self, self.__config, root, root.__config, res);
+        },
+      });
+      loadImg.source = null;
+    }
     loadImg.loading = true;
     // 再测量，可能瞬间完成替换掉上面的
     inject.measureImg(loadImg.src, data => {

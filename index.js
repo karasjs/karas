@@ -21841,26 +21841,29 @@
       value: function __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {
         var self = this; // 先清空之前可能的
 
-        loadImg.source = null;
-        root.delRefreshTask(self.__task);
-        root.addRefreshTask(self.__task = {
-          __before: function __before() {
-            if (self.isDestroyed) {
-              return;
-            } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        if (loadImg.source) {
+          root.delRefreshTask(self.__task);
+          root.addRefreshTask(self.__task = {
+            __before: function __before() {
+              if (self.isDestroyed) {
+                return;
+              } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-            var res = {};
-            res[UPDATE_NODE$2] = self;
-            res[UPDATE_FOCUS$1] = o$2.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+              var res = {};
+              res[UPDATE_NODE$2] = self;
+              res[UPDATE_FOCUS$1] = o$2.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
-            res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化，focus不起效
+              res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化，focus不起效
 
-            res[UPDATE_CONFIG$2] = self.__config;
+              res[UPDATE_CONFIG$2] = self.__config;
 
-            root.__addUpdate(self, self.__config, root, root.__config, res);
-          }
-        });
+              root.__addUpdate(self, self.__config, root, root.__config, res);
+            }
+          });
+          loadImg.source = null;
+        }
+
         loadImg.loading = true; // 再测量，可能瞬间完成替换掉上面的
 
         inject.measureImg(loadImg.src, function (data) {

@@ -1296,7 +1296,7 @@ class Dom extends Xom {
     }
     // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
     if(!isVirtual) {
-      if(isMultiLine) {
+      if(length > 1) {
         __flexLine.forEach((item, i) => {
           let maxCross = maxCrossList[i];
           if(per) {
@@ -1555,231 +1555,479 @@ class Dom extends Xom {
 
   // 每个flexLine的侧轴对齐，单行时就是一行对齐
   __crossAlign(line, alignItems, isDirectionRow, maxCross) {
-    if(alignItems === 'center') {
-      line.forEach(item => {
-        let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-        if(isDirectionRow) {
-          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-          }
-          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff, true);
-            }
-          }
-          else if(alignSelf === 'stretch') {
-            let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-            let {
-              [BORDER_TOP_WIDTH]: borderTopWidth,
-              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-              [MARGIN_TOP]: marginTop,
-              [MARGIN_BOTTOM]: marginBottom,
-              [PADDING_TOP]: paddingTop,
-              [PADDING_BOTTOM]: paddingBottom,
-            } = computedStyle;
-            if(height[1] === AUTO) {
-              let old = item.height;
-              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-              let d = v - old;
-              item.__clientHeight += d;
-              item.__outerHeight += d;
-            }
-          }
-          else {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff * 0.5, true);
-            }
+    let baseLine = 0;
+    line.forEach(item => {
+      baseLine = Math.max(baseLine, item.firstBaseLine);
+    });
+    line.forEach(item => {
+      let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+      if(isDirectionRow) {
+        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+        else if(alignSelf === 'center') {
+          let diff = maxCross - item.outerHeight;
+          if(diff !== 0) {
+            item.__offsetY(diff * 0.5, true);
           }
         }
-        else {
-          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-          }
-          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-            let diff = maxCross - item.outerWidth;
-            if(diff !== 0) {
-              item.__offsetX(diff, true);
-            }
-          }
-          else if(alignSelf === 'stretch') {
-            let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-            let {
-              [BORDER_RIGHT_WIDTH]: borderRightWidth,
-              [BORDER_LEFT_WIDTH]: borderLeftWidth,
-              [MARGIN_RIGHT]: marginRight,
-              [MARGIN_LEFT]: marginLeft,
-              [PADDING_RIGHT]: paddingRight,
-              [PADDING_LEFT]: paddingLeft,
-            } = computedStyle;
-            if(width[1] === AUTO) {
-              let old = item.width;
-              let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-              let d = v - old;
-              item.__clientWidth += d;
-              this.__offsetWidth += d;
-              item.__outerWidth += d;
-            }
-          }
-          else {
-            let diff = maxCross - item.outerWidth;
-            if(diff !== 0) {
-              item.__offsetX(diff * 0.5, true);
-            }
-          }
-        }
-      });
-    }
-    else if(alignItems === 'flexStart' || alignItems === 'flex-start') {}
-    else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
-      line.forEach(item => {
-        let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
-        if(isDirectionRow) {
-          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-          }
-          else if(alignSelf === 'center') {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff * 0.5, true);
-            }
-          }
-          else if(alignSelf === 'stretch') {
-            let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
-            let {
-              [BORDER_TOP_WIDTH]: borderTopWidth,
-              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-              [MARGIN_TOP]: marginTop,
-              [MARGIN_BOTTOM]: marginBottom,
-              [PADDING_TOP]: paddingTop,
-              [PADDING_BOTTOM]: paddingBottom,
-            } = computedStyle;
-            if(height[1] === AUTO) {
-              let old = item.height;
-              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-              let d = v - old;
-              item.__clientHeight += d;
-              item.__outerHeight += d;
-            }
-          }
-          else {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff, true);
-            }
-          }
-        }
-        else {
-          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
-          }
-          else if(alignSelf === 'center') {
-            let diff = maxCross - item.outerWidth;
-            if(diff !== 0) {
-              item.__offsetX(diff * 0.5, true);
-            }
-          }
-          else if(alignSelf === 'stretch') {
-            let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
-            let {
-              [BORDER_RIGHT_WIDTH]: borderRightWidth,
-              [BORDER_LEFT_WIDTH]: borderLeftWidth,
-              [MARGIN_RIGHT]: marginRight,
-              [MARGIN_LEFT]: marginLeft,
-              [PADDING_RIGHT]: paddingRight,
-              [PADDING_LEFT]: paddingLeft,
-            } = computedStyle;
-            if(width[1] === AUTO) {
-              let old = item.width;
-              let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
-              let d = v - old;
-              item.__clientWidth += d;
-              this.__offsetWidth += d;
-              item.__outerWidth += d;
-            }
-          }
-          else {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff, true);
-            }
-          }
-        }
-      });
-    }
-    else if(alignItems === 'baseline') {}
-    else {
-      // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-      line.forEach(item => {
-        let { computedStyle, currentStyle: {
-          [DISPLAY]: display,
-          [FLEX_DIRECTION]: flexDirection,
-          [ALIGN_SELF]: alignSelf,
-          [WIDTH]: width,
-          [HEIGHT]: height,
-        } } = item;
-        // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
-        if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-          item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
-        }
-        let {
-          [BORDER_TOP_WIDTH]: borderTopWidth,
-          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-          [MARGIN_TOP]: marginTop,
-          [MARGIN_BOTTOM]: marginBottom,
-          [PADDING_TOP]: paddingTop,
-          [PADDING_BOTTOM]: paddingBottom,
-          [BORDER_RIGHT_WIDTH]: borderRightWidth,
-          [BORDER_LEFT_WIDTH]: borderLeftWidth,
-          [MARGIN_RIGHT]: marginRight,
-          [MARGIN_LEFT]: marginLeft,
-          [PADDING_RIGHT]: paddingRight,
-          [PADDING_LEFT]: paddingLeft,
-        } = computedStyle;
-        if(isDirectionRow) {
-          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-          else if(alignSelf === 'center') {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff * 0.5, true);
-            }
-          }
-          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-            let diff = maxCross - item.outerHeight;
-            if(diff !== 0) {
-              item.__offsetY(diff, true);
-            }
-          }
-          else if(height[1] === AUTO) {
+        else if(alignSelf === 'stretch') {
+          let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
+          let {
+            [BORDER_TOP_WIDTH]: borderTopWidth,
+            [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+            [MARGIN_TOP]: marginTop,
+            [MARGIN_BOTTOM]: marginBottom,
+            [PADDING_TOP]: paddingTop,
+            [PADDING_BOTTOM]: paddingBottom,
+          } = computedStyle;
+          if(height[1] === AUTO) {
             let old = item.height;
             let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
             let d = v - old;
             item.__clientHeight += d;
+            item.__offsetHeight += d;
             item.__outerHeight += d;
           }
         }
+        else if(alignSelf === 'baseline') {
+          let diff = baseLine - item.firstBaseLine;
+          if(diff !== 0) {
+            item.__offsetY(diff, true);
+          }
+        }
+        // 默认auto，取alignItems
         else {
-          if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-          else if(alignSelf === 'center') {
-            let diff = maxCross - item.outerWidth;
+          if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
+          else if(alignItems === 'center') {
+            let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetX(diff * 0.5, true);
+              item.__offsetY(diff * 0.5, true);
             }
           }
-          else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
-            let diff = maxCross - item.outerWidth;
+          else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+            let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetX(diff, true);
+              item.__offsetY(diff, true);
             }
           }
-          else if(width[1] === AUTO) {
+          else if(alignItems === 'baseline') {
+            let diff = baseLine - item.firstBaseLine;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          // 默认stretch
+          else {
+            let { computedStyle, currentStyle: {
+              [DISPLAY]: display,
+              [FLEX_DIRECTION]: flexDirection,
+              [HEIGHT]: height,
+            } } = item;
+            // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+            if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+            }
+            let {
+              [BORDER_TOP_WIDTH]: borderTopWidth,
+              [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+              [MARGIN_TOP]: marginTop,
+              [MARGIN_BOTTOM]: marginBottom,
+              [PADDING_TOP]: paddingTop,
+              [PADDING_BOTTOM]: paddingBottom,
+            } = computedStyle;
+            if(height[1] === AUTO) {
+              let old = item.height;
+              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              let d = v - old;
+              item.__clientHeight += d;
+              item.__offsetHeight += d;
+              item.__outerHeight += d;
+            }
+          }
+        }
+      }
+      // column
+      else {
+        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+        }
+        else if(alignSelf === 'center') {
+          let diff = maxCross - item.outerWidth;
+          if(diff !== 0) {
+            item.__offsetX(diff * 0.5, true);
+          }
+        }
+        else if(alignSelf === 'stretch') {
+          let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+          let {
+            [BORDER_RIGHT_WIDTH]: borderRightWidth,
+            [BORDER_LEFT_WIDTH]: borderLeftWidth,
+            [MARGIN_RIGHT]: marginRight,
+            [MARGIN_LEFT]: marginLeft,
+            [PADDING_RIGHT]: paddingRight,
+            [PADDING_LEFT]: paddingLeft,
+          } = computedStyle;
+          if(width[1] === AUTO) {
             let old = item.width;
             let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
             let d = v - old;
             item.__clientWidth += d;
-            this.__offsetWidth += d;
+            item.__offsetWidth += d;
             item.__outerWidth += d;
           }
         }
-      });
-    }
+        else if(alignItems === 'baseline') {
+          let diff = baseLine - item.firstBaseLine;
+          if(diff !== 0) {
+            item.__offsetY(diff, true);
+          }
+        }
+        // 默认auto，取alignItems
+        else {
+          if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
+          else if(alignItems === 'center') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff * 0.5, true);
+            }
+          }
+          else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+            let diff = maxCross - item.outerHeight;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          else if(alignItems === 'baseline') {
+            let diff = baseLine - item.firstBaseLine;
+            if(diff !== 0) {
+              item.__offsetY(diff, true);
+            }
+          }
+          // 默认stretch
+          else {
+            let { computedStyle, currentStyle: {
+              [WIDTH]: width,
+            } } = item;
+            let {
+              [BORDER_RIGHT_WIDTH]: borderRightWidth,
+              [BORDER_LEFT_WIDTH]: borderLeftWidth,
+              [MARGIN_RIGHT]: marginRight,
+              [MARGIN_LEFT]: marginLeft,
+              [PADDING_RIGHT]: paddingRight,
+              [PADDING_LEFT]: paddingLeft,
+            } = computedStyle;
+            if(width[1] === AUTO) {
+              let old = item.width;
+              let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+              let d = v - old;
+              item.__clientWidth += d;
+              item.__offsetWidth += d;
+              item.__outerWidth += d;
+            }
+          }
+        }
+      }
+    });
+    // if(alignItems === 'center') {
+    //   line.forEach(item => {
+    //     let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+    //     if(isDirectionRow) {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+    //       }
+    //       else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'stretch') {
+    //         let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
+    //         let {
+    //           [BORDER_TOP_WIDTH]: borderTopWidth,
+    //           [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+    //           [MARGIN_TOP]: marginTop,
+    //           [MARGIN_BOTTOM]: marginBottom,
+    //           [PADDING_TOP]: paddingTop,
+    //           [PADDING_BOTTOM]: paddingBottom,
+    //         } = computedStyle;
+    //         if(height[1] === AUTO) {
+    //           let old = item.height;
+    //           let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+    //           let d = v - old;
+    //           item.__clientHeight += d;
+    //           item.__outerHeight += d;
+    //         }
+    //       }
+    //       else {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff * 0.5, true);
+    //         }
+    //       }
+    //     }
+    //     else {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+    //       }
+    //       else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+    //         let diff = maxCross - item.outerWidth;
+    //         if(diff !== 0) {
+    //           item.__offsetX(diff, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'stretch') {
+    //         let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+    //         let {
+    //           [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    //           [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    //           [MARGIN_RIGHT]: marginRight,
+    //           [MARGIN_LEFT]: marginLeft,
+    //           [PADDING_RIGHT]: paddingRight,
+    //           [PADDING_LEFT]: paddingLeft,
+    //         } = computedStyle;
+    //         if(width[1] === AUTO) {
+    //           let old = item.width;
+    //           let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+    //           let d = v - old;
+    //           item.__clientWidth += d;
+    //           this.__offsetWidth += d;
+    //           item.__outerWidth += d;
+    //         }
+    //       }
+    //       else {
+    //         let diff = maxCross - item.outerWidth;
+    //         if(diff !== 0) {
+    //           item.__offsetX(diff * 0.5, true);
+    //         }
+    //       }
+    //     }
+    //   });
+    // }
+    // else if(alignItems === 'flexStart' || alignItems === 'flex-start') {}
+    // else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+    //   line.forEach(item => {
+    //     let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+    //     if(isDirectionRow) {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+    //       }
+    //       else if(alignSelf === 'center') {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff * 0.5, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'stretch') {
+    //         let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
+    //         let {
+    //           [BORDER_TOP_WIDTH]: borderTopWidth,
+    //           [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+    //           [MARGIN_TOP]: marginTop,
+    //           [MARGIN_BOTTOM]: marginBottom,
+    //           [PADDING_TOP]: paddingTop,
+    //           [PADDING_BOTTOM]: paddingBottom,
+    //         } = computedStyle;
+    //         if(height[1] === AUTO) {
+    //           let old = item.height;
+    //           let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+    //           let d = v - old;
+    //           item.__clientHeight += d;
+    //           item.__outerHeight += d;
+    //         }
+    //       }
+    //       else {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff, true);
+    //         }
+    //       }
+    //     }
+    //     else {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+    //       }
+    //       else if(alignSelf === 'center') {
+    //         let diff = maxCross - item.outerWidth;
+    //         if(diff !== 0) {
+    //           item.__offsetX(diff * 0.5, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'stretch') {
+    //         let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+    //         let {
+    //           [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    //           [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    //           [MARGIN_RIGHT]: marginRight,
+    //           [MARGIN_LEFT]: marginLeft,
+    //           [PADDING_RIGHT]: paddingRight,
+    //           [PADDING_LEFT]: paddingLeft,
+    //         } = computedStyle;
+    //         if(width[1] === AUTO) {
+    //           let old = item.width;
+    //           let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+    //           let d = v - old;
+    //           item.__clientWidth += d;
+    //           this.__offsetWidth += d;
+    //           item.__outerWidth += d;
+    //         }
+    //       }
+    //       else {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff, true);
+    //         }
+    //       }
+    //     }
+    //   });
+    // }
+    // else if(alignItems === 'baseline') {
+    //   let baseLine = 0;
+    //   line.forEach(item => {
+    //     baseLine = Math.max(baseLine, item.firstBaseLine);
+    //   });
+    //   line.forEach(item => {
+    //     let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
+    //     if(isDirectionRow) {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+    //       }
+    //       else if(alignSelf === 'center') {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff * 0.5, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'stretch') {
+    //         let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
+    //         let {
+    //           [BORDER_TOP_WIDTH]: borderTopWidth,
+    //           [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+    //           [MARGIN_TOP]: marginTop,
+    //           [MARGIN_BOTTOM]: marginBottom,
+    //           [PADDING_TOP]: paddingTop,
+    //           [PADDING_BOTTOM]: paddingBottom,
+    //         } = computedStyle;
+    //         if(height[1] === AUTO) {
+    //           let old = item.height;
+    //           let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+    //           let d = v - old;
+    //           item.__clientHeight += d;
+    //           item.__outerHeight += d;
+    //         }
+    //       }
+    //       else {
+    //         let diff = baseLine - item.firstBaseLine;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff, true);
+    //         }
+    //       }
+    //     }
+    //     else {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {
+    //       }
+    //       else if(alignSelf === 'center') {
+    //         let diff = maxCross - item.outerWidth;
+    //         if(diff !== 0) {
+    //           item.__offsetX(diff * 0.5, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'stretch') {
+    //         let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
+    //         let {
+    //           [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    //           [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    //           [MARGIN_RIGHT]: marginRight,
+    //           [MARGIN_LEFT]: marginLeft,
+    //           [PADDING_RIGHT]: paddingRight,
+    //           [PADDING_LEFT]: paddingLeft,
+    //         } = computedStyle;
+    //         if(width[1] === AUTO) {
+    //           let old = item.width;
+    //           let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+    //           let d = v - old;
+    //           item.__clientWidth += d;
+    //           this.__offsetWidth += d;
+    //           item.__outerWidth += d;
+    //         }
+    //       }
+    //       else {
+    //         let diff = baseLine - item.firstBaseLine;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff, true);
+    //         }
+    //       }
+    //     }
+    //   });
+    // }
+    // else {
+    //   // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
+    //   line.forEach(item => {
+    //     let { computedStyle, currentStyle: {
+    //       [DISPLAY]: display,
+    //       [FLEX_DIRECTION]: flexDirection,
+    //       [ALIGN_SELF]: alignSelf,
+    //       [WIDTH]: width,
+    //       [HEIGHT]: height,
+    //     } } = item;
+    //     // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+    //     if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+    //       item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
+    //     }
+    //     let {
+    //       [BORDER_TOP_WIDTH]: borderTopWidth,
+    //       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+    //       [MARGIN_TOP]: marginTop,
+    //       [MARGIN_BOTTOM]: marginBottom,
+    //       [PADDING_TOP]: paddingTop,
+    //       [PADDING_BOTTOM]: paddingBottom,
+    //       [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    //       [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    //       [MARGIN_RIGHT]: marginRight,
+    //       [MARGIN_LEFT]: marginLeft,
+    //       [PADDING_RIGHT]: paddingRight,
+    //       [PADDING_LEFT]: paddingLeft,
+    //     } = computedStyle;
+    //     if(isDirectionRow) {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+    //       else if(alignSelf === 'center') {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff * 0.5, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+    //         let diff = maxCross - item.outerHeight;
+    //         if(diff !== 0) {
+    //           item.__offsetY(diff, true);
+    //         }
+    //       }
+    //       else if(height[1] === AUTO) {
+    //         let old = item.height;
+    //         let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+    //         let d = v - old;
+    //         item.__clientHeight += d;
+    //         item.__outerHeight += d;
+    //       }
+    //     }
+    //     else {
+    //       if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
+    //       else if(alignSelf === 'center') {
+    //         let diff = maxCross - item.outerWidth;
+    //         if(diff !== 0) {
+    //           item.__offsetX(diff * 0.5, true);
+    //         }
+    //       }
+    //       else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+    //         let diff = maxCross - item.outerWidth;
+    //         if(diff !== 0) {
+    //           item.__offsetX(diff, true);
+    //         }
+    //       }
+    //       else if(width[1] === AUTO) {
+    //         let old = item.width;
+    //         let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+    //         let d = v - old;
+    //         item.__clientWidth += d;
+    //         this.__offsetWidth += d;
+    //         item.__outerWidth += d;
+    //       }
+    //     }
+    //   });
+    // }
   }
 
   /**
@@ -2553,7 +2801,7 @@ class Dom extends Xom {
 
   get baseLine() {
     if(!this.lineBoxManager.size) {
-      return this.outerHeight;
+      return this.offsetHeight;
     }
     let {
       [MARGIN_TOP]: marginTop,
@@ -2561,6 +2809,18 @@ class Dom extends Xom {
       [PADDING_TOP]: paddingTop,
     } = this.computedStyle;
     return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
+  }
+
+  get firstBaseLine() {
+    if(!this.lineBoxManager.size) {
+      return this.offsetHeight;
+    }
+    let {
+      [MARGIN_TOP]: marginTop,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [PADDING_TOP]: paddingTop,
+    } = this.computedStyle;
+    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseLine;
   }
 
   get parentLineBox() {

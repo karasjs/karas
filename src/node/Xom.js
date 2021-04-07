@@ -2514,6 +2514,10 @@ class Xom extends Node {
   get baseLine() {
     return this.offsetHeight;
   }
+
+  get firstBaseLine() {
+    return this.offsetHeight;
+  }
 }
 
 export default Xom;

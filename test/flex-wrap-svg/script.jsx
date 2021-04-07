@@ -25,25 +25,37 @@ let o = karas.render(
       <span style={{width:30,background:'#0F0'}}>3</span>
       <span style={{width:30,background:'#00F'}}>4</span>
     </div>
-    <div style={{position:'absolute',left:120,top:0,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC',alignContent:'space-between'}}>
+    <div style={{position:'absolute',left:100,top:0,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC',alignContent:'space-between'}}>
       <span style={{width:30,background:'#F00'}}>2</span>
       <span style={{width:30,background:'#0F0'}}>3</span>
       <span style={{width:30,background:'#00F'}}>4</span>
     </div>
-    <div style={{position:'absolute',left:120,top:75,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC',alignContent:'space-around'}}>
+    <div style={{position:'absolute',left:100,top:75,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC',alignContent:'space-around'}}>
       <span style={{width:30,background:'#F00'}}>2</span>
       <span style={{width:30,background:'#0F0'}}>3</span>
       <span style={{width:30,background:'#00F'}}>4</span>
     </div>
-    <div style={{position:'absolute',left:120,top:150,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC'}}>
+    <div style={{position:'absolute',left:100,top:150,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC'}}>
       <span style={{width:30,height:40,background:'#F00'}}>2</span>
       <span style={{width:30,background:'#0F0'}}>3</span>
       <span style={{width:30,background:'#00F'}}>4</span>
     </div>
-    <div style={{position:'absolute',left:120,top:225,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC',alignContent:'center'}}>
+    <div style={{position:'absolute',left:100,top:225,display:'flex',flexWrap:'wrap',width:70,height:70,background:'#CCC',alignContent:'center'}}>
       <span style={{width:30,height:40,background:'#F00'}}>2</span>
       <span style={{width:30,background:'#0F0'}}>3</span>
       <span style={{width:30,background:'#00F'}}>4</span>
+    </div>
+    <div style={{position:'absolute',left:200,top:0,display:'flex',flexWrap:'wrap',width:120,height:70,background:'#CCC'}}>
+      <span style={{width:30,background:'#F00'}}>2</span>
+      <span style={{width:30,background:'#0F0'}}>3333</span>
+      <span style={{width:30,background:'#00F',borderBottom:'10px solid #000',marginBottom:10}}>4</span>
+      <span style={{width:30,background:'#FF0',fontSize:50}}>4</span>
+    </div>
+    <div style={{position:'absolute',left:200,top:100,display:'flex',flexWrap:'wrap',width:120,height:70,background:'#CCC',alignItems:'baseline'}}>
+      <span style={{width:30,background:'#F00'}}>2</span>
+      <span style={{width:30,background:'#0F0'}}>3333</span>
+      <span style={{width:30,background:'#00F',borderBottom:'10px solid #000',marginBottom:10}}>4</span>
+      <span style={{width:30,background:'#FF0',fontSize:50}}>4</span>
     </div>
   </svg>,
   '#test'

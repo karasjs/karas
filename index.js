@@ -18624,11 +18624,11 @@
     }); // 将遮罩插入到对应顺序上
 
     if (hasMc) {
-      for (var _i = normal.length - 1; _i >= 0; _i--) {
-        var idx = normal[_i].__iIndex;
+      for (var i = normal.length - 1; i >= 0; i--) {
+        var idx = normal[i].__iIndex;
 
         if (mcHash.hasOwnProperty(idx)) {
-          normal.splice.apply(normal, [_i + 1, 0].concat(_toConsumableArray(mcHash[idx])));
+          normal.splice.apply(normal, [i + 1, 0].concat(_toConsumableArray(mcHash[idx])));
         }
       }
     }
@@ -18789,15 +18789,15 @@
         var arr = [];
         var source = [];
 
-        for (var _i2 = index + 1; _i2 <= index + total; _i2++) {
-          var child = structs[_i2];
+        for (var i = index + 1; i <= index + total; i++) {
+          var child = structs[i];
           var o = {
             child: child,
             list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + child[STRUCT_TOTAL] + 1)
           };
           arr.push(o);
           source.push(o);
-          _i2 += child[STRUCT_TOTAL] || 0;
+          i += child[STRUCT_TOTAL] || 0;
         }
 
         arr.sort(function (a, b) {
@@ -18806,8 +18806,8 @@
 
         var needSort;
 
-        for (var _i3 = 0, len = source.length; _i3 < len; _i3++) {
-          if (source[_i3] !== arr[_i3]) {
+        for (var _i = 0, len = source.length; _i < len; _i++) {
+          if (source[_i] !== arr[_i]) {
             needSort = true;
             break;
           }
@@ -18863,13 +18863,13 @@
               return w - total * width[0] * 0.01;
             }
 
-            for (var _i4 = 0; _i4 < flowChildren.length; _i4++) {
+            for (var i = 0; i < flowChildren.length; i++) {
               // 当放不下时直接返回，无需继续多余的尝试计算
               if (w < 0) {
                 return w;
               }
 
-              var item = flowChildren[_i4];
+              var item = flowChildren[i];
 
               if (item instanceof Xom$1 || item instanceof Component$1) {
                 w -= item.__tryLayInline(w, total);
@@ -18976,24 +18976,24 @@
                 }),
                     _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
                     _item$__calMinMax2$ = _slicedToArray(_item$__calMinMax2[1], 2),
-                    _min = _item$__calMinMax2$[0],
-                    _max = _item$__calMinMax2$[1];
+                    min2 = _item$__calMinMax2$[0],
+                    max2 = _item$__calMinMax2$[1];
 
                 if (isDirectionRow) {
                   if (isRow) {
-                    min += _min;
-                    max += _max;
+                    min += min2;
+                    max += max2;
                   } else {
-                    min = Math.max(min, _min);
-                    max = Math.max(max, _max);
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
                   }
                 } else {
                   if (isRow) {
-                    min = Math.max(min, _min);
-                    max = Math.max(max, _max);
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
                   } else {
-                    min += _min;
-                    max += _max;
+                    min += min2;
+                    max += max2;
                   }
                 }
               } else if (isDirectionRow) {
@@ -19028,7 +19028,8 @@
             var countMin = 0,
                 countMax = 0;
             lineBoxManager = new LineBoxManager(x, y);
-            flowChildren.forEach(function (item) {
+            var length = flowChildren.length;
+            flowChildren.forEach(function (item, i) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
                 var _item$__calMinMax3 = item.__calMinMax(isDirectionRow, {
                   x: x,
@@ -19040,17 +19041,17 @@
                     _item$__calMinMax4 = _slicedToArray(_item$__calMinMax3, 2),
                     _display = _item$__calMinMax4[0],
                     _item$__calMinMax4$ = _slicedToArray(_item$__calMinMax4[1], 2),
-                    _min2 = _item$__calMinMax4$[0],
-                    _max2 = _item$__calMinMax4$[1];
+                    min2 = _item$__calMinMax4$[0],
+                    max2 = _item$__calMinMax4$[1];
 
                 if (isDirectionRow) {
                   if (_display === 'block' || _display === 'flex') {
-                    min = Math.max(min, _min2);
-                    max = Math.max(max, _max2);
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
                     countMin = countMax = 0;
                   } else {
-                    countMin += _min2;
-                    countMax += _max2;
+                    countMin += min2;
+                    countMax += max2;
                     min = Math.max(min, countMin);
                     max = Math.max(max, countMax);
                   }
@@ -19061,12 +19062,12 @@
                     max += countMax;
                     countMin = countMax = 0; // 本身的
 
-                    min += _min2;
-                    max += _max2;
+                    min += min2;
+                    max += max2;
                   } else {
                     // 行内取极值，最后一个记得应用
-                    countMin = Math.max(countMin, _min2);
-                    countMax = Math.max(countMax, _max2);
+                    countMin = Math.max(countMin, min2);
+                    countMax = Math.max(countMax, max2);
 
                     if (i === length - 1) {
                       min += countMin;
@@ -19089,8 +19090,8 @@
                 }); // 行内取极值，最后一个记得应用
 
 
-                countMin = Math.max(countMin, min2);
-                countMax = Math.max(countMax, max2);
+                countMin = Math.max(countMin, item.height);
+                countMax = Math.max(countMax, item.height);
 
                 if (i === length - 1) {
                   min += countMin;
@@ -19114,15 +19115,15 @@
                 }),
                     _item$__calMinMax6 = _slicedToArray(_item$__calMinMax5, 2),
                     _item$__calMinMax6$ = _slicedToArray(_item$__calMinMax6[1], 2),
-                    _min3 = _item$__calMinMax6$[0],
-                    _max3 = _item$__calMinMax6$[1];
+                    min2 = _item$__calMinMax6$[0],
+                    max2 = _item$__calMinMax6$[1];
 
                 if (isDirectionRow) {
-                  min += _min3;
-                  max += _max3;
+                  min += min2;
+                  max += max2;
                 } else {
-                  min = Math.max(min, _min3);
-                  max = Math.max(max, _max3);
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
                 }
               } else if (isDirectionRow) {
                 min += item.charWidth;
@@ -19228,24 +19229,24 @@
               }),
                   _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
                   _item$__calMinMax8$ = _slicedToArray(_item$__calMinMax8[1], 2),
-                  _min4 = _item$__calMinMax8$[0],
-                  _max4 = _item$__calMinMax8$[1];
+                  min2 = _item$__calMinMax8$[0],
+                  max2 = _item$__calMinMax8$[1];
 
               if (isDirectionRow) {
                 if (isRow) {
-                  min += _min4;
-                  max += _max4;
+                  min += min2;
+                  max += max2;
                 } else {
-                  min = Math.max(min, _min4);
-                  max = Math.max(max, _max4);
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
                 }
               } else {
                 if (isRow) {
-                  min = Math.max(min, _min4);
-                  max = Math.max(max, _max4);
+                  min = Math.max(min, min2);
+                  max = Math.max(max, max2);
                 } else {
-                  min += _min4;
-                  max += _max4;
+                  min += min2;
+                  max += max2;
                 }
               }
             } else if (isDirectionRow) {
@@ -19281,7 +19282,7 @@
             var countMin = 0,
                 countMax = 0;
             var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
-            var _length = flowChildren.length;
+            var length = flowChildren.length;
             flowChildren.forEach(function (item, i) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
                 var _item$__calMinMax9 = item.__calMinMax(isDirectionRow, {
@@ -19294,17 +19295,17 @@
                     _item$__calMinMax10 = _slicedToArray(_item$__calMinMax9, 2),
                     _display2 = _item$__calMinMax10[0],
                     _item$__calMinMax10$ = _slicedToArray(_item$__calMinMax10[1], 2),
-                    _min5 = _item$__calMinMax10$[0],
-                    _max5 = _item$__calMinMax10$[1];
+                    min2 = _item$__calMinMax10$[0],
+                    max2 = _item$__calMinMax10$[1];
 
                 if (isDirectionRow) {
                   if (_display2 === 'block' || _display2 === 'flex') {
-                    min = Math.max(min, _min5);
-                    max = Math.max(max, _max5);
+                    min = Math.max(min, min2);
+                    max = Math.max(max, max2);
                     countMin = countMax = 0;
                   } else {
-                    countMin += _min5;
-                    countMax += _max5;
+                    countMin += min2;
+                    countMax += max2;
                     min = Math.max(min, countMin);
                     max = Math.max(max, countMax);
                   }
@@ -19315,14 +19316,14 @@
                     max += countMax;
                     countMin = countMax = 0; // 本身的
 
-                    min += _min5;
-                    max += _max5;
+                    min += min2;
+                    max += max2;
                   } else {
                     // 行内取极值，最后一个记得应用
-                    countMin = Math.max(countMin, _min5);
-                    countMax = Math.max(countMax, _max5);
+                    countMin = Math.max(countMin, min2);
+                    countMax = Math.max(countMax, max2);
 
-                    if (i === _length - 1) {
+                    if (i === length - 1) {
                       min += countMin;
                       max += countMax;
                     }
@@ -19343,10 +19344,10 @@
                 }); // 行内取极值，最后一个记得应用
 
 
-                countMin = Math.max(countMin, min2);
-                countMax = Math.max(countMax, max2);
+                countMin = Math.max(countMin, item.height);
+                countMax = Math.max(countMax, item.height);
 
-                if (i === _length - 1) {
+                if (i === length - 1) {
                   min += countMin;
                   max += countMax;
                 }
@@ -19955,9 +19956,9 @@
           });
           var count = 0;
 
-          var _loop = function _loop(_i5) {
-            var line = __flexLine[_i5];
-            var source = crossSumList[_i5];
+          var _loop = function _loop(i) {
+            var line = __flexLine[i];
+            var source = crossSumList[i];
             var diff = count - source;
 
             if (diff) {
@@ -19968,11 +19969,11 @@
               });
             }
 
-            count += maxCrossList[_i5];
+            count += maxCrossList[i];
           };
 
-          for (var _i5 = length - 1; _i5 >= 0; _i5--) {
-            _loop(_i5);
+          for (var i = length - 1; i >= 0; i--) {
+            _loop(i);
           }
 
           __flexLine.reverse();
@@ -20298,30 +20299,30 @@
           var len = orderChildren.length;
 
           if (justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
-            for (var _i6 = 0; _i6 < len; _i6++) {
-              var child = orderChildren[_i6];
+            for (var i = 0; i < len; i++) {
+              var child = orderChildren[i];
               isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
             }
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
-            for (var _i7 = 0; _i7 < len; _i7++) {
-              var _child = orderChildren[_i7];
+            for (var _i2 = 0; _i2 < len; _i2++) {
+              var _child = orderChildren[_i2];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
-            for (var _i8 = 1; _i8 < len; _i8++) {
-              var _child2 = orderChildren[_i8];
-              isDirectionRow ? _child2.__offsetX(between * _i8, true) : _child2.__offsetY(between * _i8, true);
+            for (var _i3 = 1; _i3 < len; _i3++) {
+              var _child2 = orderChildren[_i3];
+              isDirectionRow ? _child2.__offsetX(between * _i3, true) : _child2.__offsetY(between * _i3, true);
             }
           } else if (justifyContent === 'spaceAround' || justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
-            for (var _i9 = 0; _i9 < len; _i9++) {
-              var _child3 = orderChildren[_i9];
-              isDirectionRow ? _child3.__offsetX(around * (_i9 + 1), true) : _child3.__offsetY(around * (_i9 + 1), true);
+            for (var _i4 = 0; _i4 < len; _i4++) {
+              var _child3 = orderChildren[_i4];
+              isDirectionRow ? _child3.__offsetX(around * (_i4 + 1), true) : _child3.__offsetY(around * (_i4 + 1), true);
             }
           }
         }
@@ -21313,8 +21314,8 @@
         } // child触发则parent一定触发
 
 
-        for (var _i10 = zIndexChildren.length - 1; _i10 >= 0; _i10--) {
-          var child = zIndexChildren[_i10];
+        for (var i = zIndexChildren.length - 1; i >= 0; i--) {
+          var child = zIndexChildren[i];
 
           if (child instanceof Xom$1 || child instanceof Component$1 && child.shadowRoot instanceof Xom$1) {
             if (child.__emitEvent(e)) {

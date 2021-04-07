@@ -470,7 +470,8 @@ class Dom extends Xom {
       else if(display === 'block') {
         let countMin = 0, countMax = 0;
         lineBoxManager = new LineBoxManager(x, y);
-        flowChildren.forEach(item => {
+        let length = flowChildren.length;
+        flowChildren.forEach((item, i) => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [display, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
             if(isDirectionRow) {
@@ -522,8 +523,8 @@ class Dom extends Xom {
               lineBoxManager,
             });
             // 行内取极值，最后一个记得应用
-            countMin = Math.max(countMin, min2);
-            countMax = Math.max(countMax, max2);
+            countMin = Math.max(countMin, item.height);
+            countMax = Math.max(countMax, item.height);
             if(i === length - 1) {
               min += countMin;
               max += countMax;
@@ -747,8 +748,8 @@ class Dom extends Xom {
             lineBoxManager,
           });
           // 行内取极值，最后一个记得应用
-          countMin = Math.max(countMin, min2);
-          countMax = Math.max(countMax, max2);
+          countMin = Math.max(countMin, item.height);
+          countMax = Math.max(countMax, item.height);
           if(i === length - 1) {
             min += countMin;
             max += countMax;

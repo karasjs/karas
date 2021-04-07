@@ -511,10 +511,6 @@ class Img extends Dom {
     }
   }
 
-  get baseLine() {
-    return this.height;
-  }
-
   get isMask() {
     return this.__isMask;
   }

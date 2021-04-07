@@ -827,10 +827,6 @@ class Geom extends Xom {
     return false;
   }
 
-  get baseLine() {
-    return this.height;
-  }
-
   get isMulti() {
     return this.__isMulti;
   }

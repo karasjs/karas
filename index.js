@@ -17780,6 +17780,11 @@
       get: function get() {
         return this.__contentBoxList;
       }
+    }, {
+      key: "baseLine",
+      get: function get() {
+        return this.offsetHeight;
+      }
     }]);
 
     return Xom;
@@ -21869,11 +21874,6 @@
         }
       }
     }, {
-      key: "baseLine",
-      get: function get() {
-        return this.height;
-      }
-    }, {
       key: "isMask",
       get: function get() {
         return this.__isMask;
@@ -22848,11 +22848,6 @@
       key: "__isRealInline",
       value: function __isRealInline() {
         return false;
-      }
-    }, {
-      key: "baseLine",
-      get: function get() {
-        return this.height;
       }
     }, {
       key: "isMulti",

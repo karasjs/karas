@@ -1209,18 +1209,18 @@ class Dom extends Xom {
     let line = [], sum = 0, hypotheticalList = [];
     basisList.forEach((item, i) => {
       let min = minList[i], max = maxList[i];
+      let hypothetical;
+      if(item < min) {
+        hypothetical = min;
+      }
+      else if(item > max) {
+        hypothetical = max;
+      }
+      else {
+        hypothetical = item;
+      }
+      hypotheticalList.push(hypothetical);
       if(isMultiLine) {
-        let hypothetical;
-        if(item < min) {
-          hypothetical = min;
-        }
-        else if(item > max) {
-          hypothetical = max;
-        }
-        else {
-          hypothetical = item;
-        }
-        hypotheticalList.push(hypothetical);
         // 超过尺寸时，要防止sum为0即1个也会超过尺寸
         if(sum + hypothetical > containerSize) {
           if(sum) {
@@ -1252,11 +1252,11 @@ class Dom extends Xom {
     __flexLine.forEach(item => {
       let length = item.length;
       let end = offset + length;
-      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize,
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, containerSize,
         fixedWidth, fixedHeight, lineClamp, lineClampCount,
         justifyContent, alignItems, orderChildren.slice(offset, end), item,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
-        hypotheticalList.slice(offset, end), minList.slice(offset, end), maxList.slice(offset, end));
+        hypotheticalList.slice(offset, end), minList.slice(offset, end));
       if(isDirectionRow) {
         clone.y = y1;
       }
@@ -1409,10 +1409,10 @@ class Dom extends Xom {
    * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
    * 先收集basis和假设主尺寸
    */
-  __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize,
+  __layoutFlexLine(data, isDirectionRow, containerSize,
                    fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    justifyContent, alignItems, orderChildren, flexLine,
-                   growList, shrinkList, basisList, hypotheticalList, minList, maxList) {
+                   growList, shrinkList, basisList, hypotheticalList, minList) {
     let { x, y, w, h } = data;
     let hypotheticalSum = 0;
     hypotheticalList.forEach(item => {

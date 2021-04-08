@@ -15335,12 +15335,12 @@
 
     }, {
       key: "__calMp",
-      value: function __calMp(v, w, onlyAbsValue) {
+      value: function __calMp(v, w) {
         var n = 0;
 
         if (v[1] === PX$6) {
           n += v[0];
-        } else if (v[1] === PERCENT$6 && !onlyAbsValue) {
+        } else if (v[1] === PERCENT$6) {
           v[0] *= w * 0.01;
           v[1] = PX$6;
           n += v[0];
@@ -15351,7 +15351,7 @@
 
     }, {
       key: "__addMp",
-      value: function __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
+      value: function __addMp(isDirectionRow, w, currentStyle, res) {
         var marginLeft = currentStyle[MARGIN_LEFT$2],
             marginTop = currentStyle[MARGIN_TOP$1],
             marginRight = currentStyle[MARGIN_RIGHT$2],
@@ -15367,14 +15367,14 @@
         var mpb;
 
         if (isDirectionRow) {
-          var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
+          var mp = this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w);
 
           mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
           res = res.map(function (item) {
             return item + mpb;
           });
         } else {
-          var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
+          var _mp = this.__calMp(marginTop, w) + this.__calMp(marginBottom, w) + this.__calMp(paddingTop, w) + this.__calMp(paddingBottom, w);
 
           mpb = borderTopWidth[0] + borderBottomWidth[0] + _mp;
           res = res.map(function (item) {
@@ -19372,10 +19372,9 @@
 
         if (isContent) {
           b = max;
-        } // 直接item的mpb影响basis
+        }
 
-
-        return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], true);
+        return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max]);
       }
     }, {
       key: "__layoutNone",

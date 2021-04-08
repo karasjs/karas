@@ -280,12 +280,12 @@ class Xom extends Node {
   }
 
   // 换算margin/padding为px单位，onlyAbsValue只考虑绝对值，不考虑百分比等
-  __calMp(v, w, onlyAbsValue) {
+  __calMp(v, w) {
     let n = 0;
     if(v[1] === PX) {
       n += v[0];
     }
-    else if(v[1] === PERCENT && !onlyAbsValue) {
+    else if(v[1] === PERCENT) {
       v[0] *= w * 0.01;
       v[1] = PX;
       n += v[0];
@@ -294,7 +294,7 @@ class Xom extends Node {
   }
 
   // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
-  __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
+  __addMp(isDirectionRow, w, currentStyle, res) {
     let {
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_TOP]: marginTop,
@@ -311,18 +311,18 @@ class Xom extends Node {
     } = currentStyle;
     let mpb;
     if(isDirectionRow) {
-      let mp = this.__calMp(marginLeft, w, !isDirectItem)
-        + this.__calMp(marginRight, w, !isDirectItem)
-        + this.__calMp(paddingLeft, w, !isDirectItem)
-        + this.__calMp(paddingRight, w, !isDirectItem);
+      let mp = this.__calMp(marginLeft, w)
+        + this.__calMp(marginRight, w)
+        + this.__calMp(paddingLeft, w)
+        + this.__calMp(paddingRight, w);
       mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
       res = res.map(item => item + mpb);
     }
     else {
-      let mp = this.__calMp(marginTop, w, !isDirectItem)
-        + this.__calMp(marginBottom, w, !isDirectItem)
-        + this.__calMp(paddingTop, w, !isDirectItem)
-        + this.__calMp(paddingBottom, w, !isDirectItem);
+      let mp = this.__calMp(marginTop, w)
+        + this.__calMp(marginBottom, w)
+        + this.__calMp(paddingTop, w)
+        + this.__calMp(paddingBottom, w);
       mpb = borderTopWidth[0] + borderBottomWidth[0] + mp;
       res = res.map(item => item + mpb);
     }

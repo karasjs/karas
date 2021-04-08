@@ -15331,16 +15331,16 @@
         this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$2] + computedStyle[BORDER_BOTTOM_WIDTH$2];
         this.__outerWidth = w + computedStyle[MARGIN_LEFT$2] + computedStyle[MARGIN_RIGHT$2];
         this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[MARGIN_BOTTOM$1];
-      } // 换算margin/padding为px单位，onlyAbsValue只考虑绝对值，不考虑百分比等
+      } // 换算margin/padding为px单位，onlyFixedValue只考虑绝对值，不考虑百分比等
 
     }, {
       key: "__calMp",
-      value: function __calMp(v, w) {
+      value: function __calMp(v, w, onlyFixedValue) {
         var n = 0;
 
         if (v[1] === PX$6) {
           n += v[0];
-        } else if (v[1] === PERCENT$6) {
+        } else if (v[1] === PERCENT$6 && !onlyFixedValue) {
           v[0] *= w * 0.01;
           v[1] = PX$6;
           n += v[0];
@@ -15351,7 +15351,7 @@
 
     }, {
       key: "__addMp",
-      value: function __addMp(isDirectionRow, w, currentStyle, res) {
+      value: function __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
         var marginLeft = currentStyle[MARGIN_LEFT$2],
             marginTop = currentStyle[MARGIN_TOP$1],
             marginRight = currentStyle[MARGIN_RIGHT$2],
@@ -15367,14 +15367,14 @@
         var mpb;
 
         if (isDirectionRow) {
-          var mp = this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w);
+          var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
 
           mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
           res = res.map(function (item) {
             return item + mpb;
           });
         } else {
-          var _mp = this.__calMp(marginTop, w) + this.__calMp(marginBottom, w) + this.__calMp(paddingTop, w) + this.__calMp(paddingBottom, w);
+          var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
 
           mpb = borderTopWidth[0] + borderBottomWidth[0] + _mp;
           res = res.map(function (item) {
@@ -19372,9 +19372,10 @@
 
         if (isContent) {
           b = max;
-        }
+        } // 直接item的mpb影响basis
 
-        return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max]);
+
+        return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], true);
       }
     }, {
       key: "__layoutNone",
@@ -31114,7 +31115,7 @@
     Cache: Cache
   };
 
-  var version = "0.56.2";
+  var version = "0.56.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

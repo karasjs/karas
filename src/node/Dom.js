@@ -773,7 +773,8 @@ class Dom extends Xom {
     if(isContent) {
       b = max;
     }
-    return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max]);
+    // 直接item的mpb影响basis
+    return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], true);
   }
 
   __layoutNone() {

@@ -8,6 +8,10 @@ let o = karas.render(
       <span style={{flex:'1 1 auto',background:'#F00'}}><strong style={{display:'block',padding:'0 5'}}>2</strong></span>
       <span style={{flex:'1 1 auto',background:'#00F'}}><strong style={{display:'block'}}>3</strong></span>
     </div>
+    <div style={{display:'flex',width:100}}>
+      <span style={{flex:'1 1 auto',background:'#F00'}}><strong style={{display:'block',padding:'0 5%'}}>2</strong></span>
+      <span style={{flex:'1 1 auto',background:'#00F'}}><strong style={{display:'block'}}>3</strong></span>
+    </div>
   </svg>,
   '#test'
 );

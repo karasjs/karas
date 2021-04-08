@@ -448,7 +448,7 @@ class Dom extends Xom {
             }
           }
           else {
-            lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+            let lineBoxManager = new LineBoxManager(x, y);
             item.__layout({
               x,
               y,
@@ -469,11 +469,16 @@ class Dom extends Xom {
       }
       else if(display === 'block') {
         let countMin = 0, countMax = 0;
-        lineBoxManager = new LineBoxManager(x, y);
+        let lineBoxManager = new LineBoxManager(x, y);
         let length = flowChildren.length;
         flowChildren.forEach((item, i) => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [display, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
+            // 块级查看之前是否有行内元素，设置换行
+            if((display === 'block' || display === 'flex') && lineBoxManager.isEnd) {
+              lineBoxManager.setNotEnd();
+              lineBoxManager.setNewLine();
+            }
             if(isDirectionRow) {
               if(display === 'block' || display === 'flex') {
                 min = Math.max(min, min2);
@@ -672,7 +677,7 @@ class Dom extends Xom {
           }
         }
         else {
-          let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+          let lineBoxManager = new LineBoxManager(x, y);
           item.__layout({
             x,
             y,
@@ -699,6 +704,11 @@ class Dom extends Xom {
       flowChildren.forEach((item, i) => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let [display, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
+          // 块级查看之前是否有行内元素，设置换行
+          if((display === 'block' || display === 'flex') && lineBoxManager.isEnd) {
+            lineBoxManager.setNotEnd();
+            lineBoxManager.setNewLine();
+          }
           if(isDirectionRow) {
             if(display === 'block' || display === 'flex') {
               min = Math.max(min, min2);
@@ -1168,7 +1178,7 @@ class Dom extends Xom {
           minList.push(cw);
         }
         else {
-          let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+          let lineBoxManager = new LineBoxManager(x, y);
           item.__layout({
             x,
             y,

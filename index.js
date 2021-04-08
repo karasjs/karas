@@ -18935,8 +18935,6 @@
     }, {
       key: "__calMinMax",
       value: function __calMinMax(isDirectionRow, data) {
-        var _this2 = this;
-
         css.computeReflow(this, this.isShadowRoot);
         var min = 0;
         var max = 0;
@@ -19005,14 +19003,14 @@
                   max = Math.max(max, item.textWidth);
                 }
               } else {
-                lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y);
+                var _lineBoxManager = new LineBoxManager(x, y);
 
                 item.__layout({
                   x: x,
                   y: y,
                   w: w,
                   h: h,
-                  lineBoxManager: lineBoxManager
+                  lineBoxManager: _lineBoxManager
                 });
 
                 if (isRow) {
@@ -19027,7 +19025,9 @@
           } else if (display === 'block') {
             var countMin = 0,
                 countMax = 0;
-            lineBoxManager = new LineBoxManager(x, y);
+
+            var _lineBoxManager2 = new LineBoxManager(x, y);
+
             var length = flowChildren.length;
             flowChildren.forEach(function (item, i) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -19036,13 +19036,20 @@
                   y: y,
                   w: w,
                   h: h,
-                  lineBoxManager: lineBoxManager
+                  lineBoxManager: _lineBoxManager2
                 }),
                     _item$__calMinMax4 = _slicedToArray(_item$__calMinMax3, 2),
                     _display = _item$__calMinMax4[0],
                     _item$__calMinMax4$ = _slicedToArray(_item$__calMinMax4[1], 2),
                     min2 = _item$__calMinMax4$[0],
-                    max2 = _item$__calMinMax4$[1];
+                    max2 = _item$__calMinMax4$[1]; // 块级查看之前是否有行内元素，设置换行
+
+
+                if ((_display === 'block' || _display === 'flex') && _lineBoxManager2.isEnd) {
+                  _lineBoxManager2.setNotEnd();
+
+                  _lineBoxManager2.setNewLine();
+                }
 
                 if (isDirectionRow) {
                   if (_display === 'block' || _display === 'flex') {
@@ -19086,7 +19093,7 @@
                   y: y,
                   w: w,
                   h: h,
-                  lineBoxManager: lineBoxManager
+                  lineBoxManager: _lineBoxManager2
                 }); // 行内取极值，最后一个记得应用
 
 
@@ -19166,8 +19173,6 @@
     }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, data, isVirtual) {
-        var _this3 = this;
-
         css.computeReflow(this, this.isShadowRoot);
         var b = 0;
         var min = 0;
@@ -19258,7 +19263,7 @@
                 max = Math.max(max, item.textWidth);
               }
             } else {
-              var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y);
+              var lineBoxManager = new LineBoxManager(x, y);
 
               item.__layout({
                 x: x,
@@ -19296,7 +19301,13 @@
                     _display2 = _item$__calMinMax10[0],
                     _item$__calMinMax10$ = _slicedToArray(_item$__calMinMax10[1], 2),
                     min2 = _item$__calMinMax10$[0],
-                    max2 = _item$__calMinMax10$[1];
+                    max2 = _item$__calMinMax10$[1]; // 块级查看之前是否有行内元素，设置换行
+
+
+                if ((_display2 === 'block' || _display2 === 'flex') && lineBoxManager.isEnd) {
+                  lineBoxManager.setNotEnd();
+                  lineBoxManager.setNewLine();
+                }
 
                 if (isDirectionRow) {
                   if (_display2 === 'block' || _display2 === 'flex') {
@@ -19733,7 +19744,7 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isVirtual) {
-        var _this4 = this;
+        var _this2 = this;
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
@@ -19839,7 +19850,7 @@
                 maxList.push(_tw);
                 minList.push(cw);
               } else {
-                var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y);
+                var lineBoxManager = new LineBoxManager(x, y);
 
                 item.__layout({
                   x: x,
@@ -19921,11 +19932,11 @@
         __flexLine.forEach(function (item) {
           var length = item.length;
 
-          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, offset + length), item, growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length), minList.slice(offset, offset + length), maxList.slice(offset, offset + length)),
-              _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 3),
-              x1 = _this4$__layoutFlexLi2[0],
-              y1 = _this4$__layoutFlexLi2[1],
-              maxCross = _this4$__layoutFlexLi2[2];
+          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, offset + length), item, growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length), minList.slice(offset, offset + length), maxList.slice(offset, offset + length)),
+              _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
+              x1 = _this2$__layoutFlexLi2[0],
+              y1 = _this2$__layoutFlexLi2[1],
+              maxCross = _this2$__layoutFlexLi2[2];
 
           if (isDirectionRow) {
             clone.y = y1;
@@ -20060,7 +20071,7 @@
                 maxCross += per;
               }
 
-              _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+              _this2.__crossAlign(item, alignItems, isDirectionRow, maxCross);
             });
           } else if (length) {
             var maxCross = maxCrossList[0];
@@ -20091,7 +20102,7 @@
     }, {
       key: "__layoutFlexLine",
       value: function __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, minList, maxList) {
-        var _this5 = this;
+        var _this3 = this;
 
         var x = data.x,
             y = data.y,
@@ -20271,7 +20282,7 @@
               });
             }
           } else {
-            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y);
+            var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y);
 
             item.__layout({
               x: x,

@@ -19879,25 +19879,37 @@
         var containerSize = isDirectionRow ? w : h;
         var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
         /**
-         * 判断是否需要分行，根据Math.max(basis, min)来统计尺寸和计算
+         * 判断是否需要分行，根据假设主尺寸来统计尺寸和计算，假设主尺寸是clamp(min_main_size, flex_base_size, max_main_size)
          * 当多行时，由于每行一定有最小限制，所以每行一般情况都不是shrink状态，
          * 但也有极端情况，比如一行只能放下1个元素时，且此元素比容器小，会是shrink
          */
 
         var line = [],
-            sum = 0;
+            sum = 0,
+            hypotheticalList = [];
         basisList.forEach(function (item, i) {
-          var min = minList[i];
+          var min = minList[i],
+              max = maxList[i];
 
           if (isMultiLine) {
-            var size = Math.max(item, min); // 超过尺寸时，要防止sum为0即1个也会超过尺寸
+            var hypothetical;
 
-            if (sum + size > containerSize) {
+            if (item < min) {
+              hypothetical = min;
+            } else if (item > max) {
+              hypothetical = max;
+            } else {
+              hypothetical = item;
+            }
+
+            hypotheticalList.push(hypothetical); // 超过尺寸时，要防止sum为0即1个也会超过尺寸
+
+            if (sum + hypothetical > containerSize) {
               if (sum) {
                 __flexLine.push(line);
 
                 line = [orderChildren[i]];
-                sum = size;
+                sum = hypothetical;
               } else {
                 line.push(orderChildren[i]);
 
@@ -19908,7 +19920,7 @@
               }
             } else {
               line.push(orderChildren[i]);
-              sum += size;
+              sum += hypothetical;
             }
           } else {
             line.push(orderChildren[i]);
@@ -19930,8 +19942,9 @@
 
         __flexLine.forEach(function (item) {
           var length = item.length;
+          var end = offset + length;
 
-          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, offset + length), item, growList.slice(offset, offset + length), shrinkList.slice(offset, offset + length), basisList.slice(offset, offset + length), minList.slice(offset, offset + length), maxList.slice(offset, offset + length)),
+          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren.slice(offset, end), item, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end), maxList.slice(offset, end)),
               _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
               x1 = _this2$__layoutFlexLi2[0],
               y1 = _this2$__layoutFlexLi2[1],
@@ -20092,7 +20105,7 @@
       /**
        * 计算获取子元素的b/min/max完毕后，尝试进行flex每行布局
        * https://www.w3.org/TR/css-flexbox-1/#layout-algorithm
-       * 先计算hypothetical_main_size假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
+       * 假想主尺寸，其为clamp(min_main_size, flex_base_size, max_main_size)
        * 随后按算法一步步来 https://zhuanlan.zhihu.com/p/354567655
        * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
        * 先收集basis和假设主尺寸
@@ -20100,29 +20113,16 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, minList, maxList) {
+      value: function __layoutFlexLine(data, isVirtual, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, hypotheticalList, minList, maxList) {
         var _this3 = this;
 
         var x = data.x,
             y = data.y,
             w = data.w,
             h = data.h;
-        var hypotheticalSum = 0,
-            hypotheticalList = [];
-        basisList.forEach(function (item, i) {
-          var min = minList[i],
-              max = maxList[i];
-
-          if (item < min) {
-            hypotheticalSum += min;
-            hypotheticalList.push(min);
-          } else if (item > max) {
-            hypotheticalSum += max;
-            hypotheticalList.push(max);
-          } else {
-            hypotheticalSum += item;
-            hypotheticalList.push(item);
-          }
+        var hypotheticalSum = 0;
+        hypotheticalList.forEach(function (item) {
+          hypotheticalSum += item;
         }); // 根据假设尺寸确定使用grow还是shrink，冻结非弹性项并设置target尺寸，确定剩余未冻结数量
 
         var isOverflow = hypotheticalSum >= containerSize;

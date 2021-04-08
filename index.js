@@ -19989,6 +19989,8 @@
               line.forEach(function (item) {
                 if (isDirectionRow) {
                   item.__offsetY(diff, true);
+                } else {
+                  item.__offsetX(diff, true);
                 }
               });
             }
@@ -31115,7 +31117,7 @@
     Cache: Cache
   };
 
-  var version = "0.56.3";
+  var version = "0.56.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -1291,6 +1291,7 @@ class Dom extends Xom {
               item.__offsetY(diff, true);
             }
             else {
+              item.__offsetX(diff, true);
             }
           });
         }

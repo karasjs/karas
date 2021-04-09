@@ -165,5 +165,4 @@ export default {
   int2convolution,
   inverse,
   isE,
-  inverse4,
 };

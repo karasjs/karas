@@ -24784,7 +24784,7 @@
 
 
       if (_i === 0) {
-        lastList.push(node);
+        lastList.push(__config);
       } else if (lv > lastLv) {
         parentMatrix = lastConfig[NODE_MATRIX_EVENT$2];
 
@@ -24795,7 +24795,7 @@
         matrixList.push(parentMatrix);
         parentOpacity = lastConfig[NODE_OPACITY$2];
         opacityList.push(parentOpacity);
-        lastList.push(node);
+        lastList.push(__config);
       } else if (lv < lastLv) {
         var diff = lastLv - lv;
         matrixList.splice(-diff);

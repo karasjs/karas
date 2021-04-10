@@ -457,7 +457,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
     if(i === 0) {
-      lastList.push(node);
+      lastList.push(__config);
     }
     else if(lv > lastLv) {
       parentMatrix = lastConfig[NODE_MATRIX_EVENT];
@@ -467,7 +467,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       matrixList.push(parentMatrix);
       parentOpacity = lastConfig[NODE_OPACITY];
       opacityList.push(parentOpacity);
-      lastList.push(node);
+      lastList.push(__config);
     }
     else if(lv < lastLv) {
       let diff = lastLv - lv;

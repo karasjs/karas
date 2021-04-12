@@ -264,10 +264,10 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
 }
 
 function mergeBbox(bbox, t) {
-  bbox[0] = Math.min(bbox[0], bbox[0] + t[0]);
-  bbox[1] = Math.min(bbox[1], bbox[1] + t[1]);
-  bbox[2] = Math.max(bbox[2], bbox[2] + t[2]);
-  bbox[3] = Math.max(bbox[3], bbox[3] + t[3]);
+  bbox[0] = Math.min(bbox[0], t[0]);
+  bbox[1] = Math.min(bbox[1], t[1]);
+  bbox[2] = Math.max(bbox[2], t[2]);
+  bbox[3] = Math.max(bbox[3], t[3]);
 }
 
 function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {

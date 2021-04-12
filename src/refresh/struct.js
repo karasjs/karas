@@ -245,12 +245,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
             list.push(i);
             i += total;
           }
-          if(!bboxTotal) {
-            bboxTotal = bbox;
-          }
-          else {
-            mergeBbox(bboxTotal, bbox);
-          }
+          mergeBbox(bboxTotal, bbox, sx1, sy1);
         }
       }
     });
@@ -263,11 +258,11 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   return bboxTotal;
 }
 
-function mergeBbox(bbox, t) {
-  bbox[0] = Math.min(bbox[0], t[0]);
-  bbox[1] = Math.min(bbox[1], t[1]);
-  bbox[2] = Math.max(bbox[2], t[2]);
-  bbox[3] = Math.max(bbox[3], t[3]);
+function mergeBbox(bbox, t, sx1, sy1) {
+  bbox[0] = Math.min(bbox[0], sx1 + t[0]);
+  bbox[1] = Math.min(bbox[1], sy1 + t[1]);
+  bbox[2] = Math.max(bbox[2], sx1 + t[2]);
+  bbox[3] = Math.max(bbox[3], sy1 + t[3]);
 }
 
 function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {

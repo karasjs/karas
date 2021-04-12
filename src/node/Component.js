@@ -295,6 +295,8 @@ Object.keys(change.GEOM).concat([
   'oy',
   'sx',
   'sy',
+  '__sx1',
+  '__sy1',
   'width',
   'height',
   'outerWidth',

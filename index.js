@@ -25775,26 +25775,9 @@
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
-          var m = __config[NODE_MATRIX$1];
+          var _m = __config[NODE_MATRIX$1];
 
-          if (matrix && m) {
-            m[0] = matrix[0];
-            m[1] = matrix[1];
-            m[2] = matrix[2];
-            m[3] = matrix[3];
-            m[4] = matrix[4];
-            m[5] = matrix[5];
-          }
-        } else {
-          matrix = __config[NODE_MATRIX$1];
-        }
-
-        if (parentMatrix && matrix) {
-          matrix = multiply$2(parentMatrix, matrix); // 恶心的v8性能优化
-
-          var _m = __config[NODE_MATRIX_EVENT$2];
-
-          if (_m && matrix) {
+          if (matrix && _m) {
             _m[0] = matrix[0];
             _m[1] = matrix[1];
             _m[2] = matrix[2];
@@ -25802,6 +25785,24 @@
             _m[4] = matrix[4];
             _m[5] = matrix[5];
           }
+        } else {
+          matrix = __config[NODE_MATRIX$1];
+        }
+
+        if (parentMatrix) {
+          matrix = multiply$2(parentMatrix, matrix);
+        } // 恶心的v8性能优化
+
+
+        var m = __config[NODE_MATRIX_EVENT$2];
+
+        if (m && matrix) {
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
         }
 
         var opacity;

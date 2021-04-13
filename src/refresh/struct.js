@@ -1205,18 +1205,18 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       else {
         matrix = __config[NODE_MATRIX];
       }
-      if(parentMatrix && matrix) {
+      if(parentMatrix) {
         matrix = multiply(parentMatrix, matrix);
-        // 恶心的v8性能优化
-        let m = __config[NODE_MATRIX_EVENT];
-        if(m && matrix) {
-          m[0] = matrix[0];
-          m[1] = matrix[1];
-          m[2] = matrix[2];
-          m[3] = matrix[3];
-          m[4] = matrix[4];
-          m[5] = matrix[5];
-        }
+      }
+      // 恶心的v8性能优化
+      let m = __config[NODE_MATRIX_EVENT];
+      if(m && matrix) {
+        m[0] = matrix[0];
+        m[1] = matrix[1];
+        m[2] = matrix[2];
+        m[3] = matrix[3];
+        m[4] = matrix[4];
+        m[5] = matrix[5];
       }
       let opacity;
       if(contain(__refreshLevel, OP)) {

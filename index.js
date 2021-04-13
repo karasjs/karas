@@ -25746,9 +25746,7 @@
 
       var __refreshLevel = __config[NODE_REFRESH_LV$1],
           __cache = __config[NODE_CACHE$4],
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-          __blurValue = __config[NODE_BLUR_VALUE$1],
-          __limitCache = __config[NODE_LIMIT_CACHE$1];
+          __cacheTotal = __config[NODE_CACHE_TOTAL$3];
       var hasRecordAsMask = void 0;
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -25816,9 +25814,11 @@
 
         __config[NODE_OPACITY$2] = parentOpacity * opacity;
 
+        var _blurValue;
+
         if (contain$2(__refreshLevel, FT$1)) {
           var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
-          __blurValue = __config[NODE_BLUR_VALUE$1] = 0;
+          _blurValue = __config[NODE_BLUR_VALUE$1] = 0;
 
           if (Array.isArray(filter)) {
             filter.forEach(function (item) {
@@ -25827,7 +25827,7 @@
                   v = _item3[1];
 
               if (k === 'blur') {
-                __blurValue = __config[NODE_BLUR_VALUE$1] = v;
+                _blurValue = __config[NODE_BLUR_VALUE$1] = v;
               }
             });
           } // let bbox = node.bbox;
@@ -25853,12 +25853,12 @@
             __cacheFilter.release();
           }
 
-          if (__blurValue) {
+          if (_blurValue) {
             // 防重
             if (hasRecordAsMask) {
-              mergeList[6] = __blurValue;
+              mergeList[6] = _blurValue;
             } else {
-              hasRecordAsMask = [_i7, lv, total, node, __config, null, __blurValue];
+              hasRecordAsMask = [_i7, lv, total, node, __config, null, _blurValue];
               mergeList.push(hasRecordAsMask);
             }
           }
@@ -25897,6 +25897,8 @@
       lastConfig = __config;
       lastLv = lv; // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
+      var __blurValue = __config[NODE_BLUR_VALUE$1],
+          __limitCache = __config[NODE_LIMIT_CACHE$1];
       var position = computedStyle[POSITION$4],
           overflow = computedStyle[OVERFLOW$2],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];

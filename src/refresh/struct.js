@@ -1166,9 +1166,6 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
-      [NODE_BLUR_VALUE]: __blurValue,
-      [NODE_LIMIT_CACHE]: __limitCache,
-      // [NODE_IS_MASK]: isMask,
     } = __config;
     let hasRecordAsMask;
     /**
@@ -1229,6 +1226,7 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
         opacity = computedStyle[OPACITY];
       }
       __config[NODE_OPACITY] = parentOpacity * opacity;
+      let __blurValue;
       if(contain(__refreshLevel, FT)) {
         let filter = computedStyle[FILTER] = currentStyle[FILTER];
         __blurValue = __config[NODE_BLUR_VALUE] = 0;
@@ -1300,6 +1298,10 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
     lastConfig = __config;
     lastLv = lv;
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
+    let {
+      [NODE_BLUR_VALUE]: __blurValue,
+      [NODE_LIMIT_CACHE]: __limitCache,
+    } = __config;
     let {
       [POSITION]: position,
       [OVERFLOW]: overflow,

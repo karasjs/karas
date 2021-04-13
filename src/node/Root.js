@@ -454,7 +454,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
     if(prev && prev.__config[NODE_CACHE_MASK]) {
       prev.__config[NODE_CACHE_MASK].release();
-      prev.__config[NODE_CACHE_MASK] = null;
+      // prev.__config[NODE_CACHE_MASK] = null;
     }
   }
   // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
@@ -787,7 +787,7 @@ class Root extends Dom {
       this.__clear(ctx);
       // 利用list循环代替tree递归快速渲染
       if(this.cache) {
-        struct.renderCacheCanvas(renderMode, ctx, defs, this);
+        struct.renderCacheCanvas2(renderMode, ctx, defs, this);
       }
       else {
         struct.renderCanvas(renderMode, ctx, defs, this);

@@ -1200,7 +1200,7 @@ class Xom extends Node {
         else {
           __cache = Cache.getInstance(bbox);
         }
-        // 有可能超过最大尺寸限制不使用缓存
+        // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
           __cache.__appendData(x1, y1);

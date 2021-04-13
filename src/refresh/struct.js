@@ -166,8 +166,8 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           [STRUCT_NODE]: node2,
           [STRUCT_TOTAL]: total,
         } = __structs[i];
-        // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算；另外mask也不占bbox位置
-        if(node2 instanceof Text || node2.isMask) {
+        // mask也不占bbox位置
+        if(node2.isMask) {
           continue;
         }
         let {
@@ -201,9 +201,9 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         parentIndexHash[i] = parentIndex;
         opacityHash[i] = opacityHash[parentIndex] * opacity;
         // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算
-        // if(node2 instanceof Text) {
-        //   continue;
-        // }
+        if(node2 instanceof Text) {
+          continue;
+        }
         let bbox, dx = 0, dy = 0;
         if(__cacheTotal && __cacheTotal.available) {
           bbox = __cacheTotal.bbox.slice(0);
@@ -1130,12 +1130,7 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       continue;
     }
     let __config = node.__config;
-    let {
-      [NODE_REFRESH_LV]: __refreshLevel,
-      [NODE_CACHE]: __cache,
-      [NODE_COMPUTED_STYLE]: computedStyle,
-      // [NODE_IS_MASK]: isMask,
-    } = __config;
+    let computedStyle = __config[NODE_COMPUTED_STYLE];
     // 跳过display:none元素和它的所有子节点
     if(computedStyle[DISPLAY] === 'none') {
       i += (total || 0);
@@ -1167,6 +1162,15 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       lastConfig = configList[lv];
     }
     // else{} 不变是同级兄弟，无需特殊处理
+    let {
+      [NODE_REFRESH_LV]: __refreshLevel,
+      [NODE_CACHE]: __cache,
+      [NODE_CACHE_TOTAL]: __cacheTotal,
+      [NODE_BLUR_VALUE]: __blurValue,
+      [NODE_LIMIT_CACHE]: __limitCache,
+      // [NODE_IS_MASK]: isMask,
+    } = __config;
+    let hasRecordAsMask;
     /**
      * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
      * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
@@ -1176,7 +1180,6 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
      */
     if(__refreshLevel < REPAINT) {
       __config[NODE_REFRESH_LV] = NONE;
-      let hasRecordAsMask;
       if(hasMask) {
         let cacheMask = __config[NODE_CACHE_MASK];
         if(!cacheMask || !cacheMask.available) {
@@ -1186,11 +1189,11 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       }
       let {
         [NODE_CURRENT_STYLE]: currentStyle,
-        [NODE_COMPUTED_STYLE]: computedStyle,
         [NODE_CACHE_STYLE]: __cacheStyle,
       } = __config;
+      let matrix;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
+        matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         if(matrix && m) {
@@ -1201,11 +1204,14 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
           m[4] = matrix[4];
           m[5] = matrix[5];
         }
-        if(parentMatrix && matrix) {
-          matrix = multiply(parentMatrix, matrix);
-        }
+      }
+      else {
+        matrix = __config[NODE_MATRIX];
+      }
+      if(parentMatrix && matrix) {
+        matrix = multiply(parentMatrix, matrix);
         // 恶心的v8性能优化
-        m = __config[NODE_MATRIX_EVENT];
+        let m = __config[NODE_MATRIX_EVENT];
         if(m && matrix) {
           m[0] = matrix[0];
           m[1] = matrix[1];
@@ -1215,19 +1221,22 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
           m[5] = matrix[5];
         }
       }
+      let opacity;
       if(contain(__refreshLevel, OP)) {
-        let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
-        __config[NODE_OPACITY] = parentOpacity * opacity;
+        opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
       }
-      let __cacheTotal = __config[NODE_CACHE_TOTAL];
+      else {
+        opacity = computedStyle[OPACITY];
+      }
+      __config[NODE_OPACITY] = parentOpacity * opacity;
       if(contain(__refreshLevel, FT)) {
         let filter = computedStyle[FILTER] = currentStyle[FILTER];
-        let bv = __config[NODE_BLUR_VALUE] = 0;
+        __blurValue = __config[NODE_BLUR_VALUE] = 0;
         if(Array.isArray(filter)) {
           filter.forEach(item => {
             let [k, v] = item;
             if(k === 'blur') {
-              bv = __config[NODE_BLUR_VALUE] = v;
+              __blurValue = __config[NODE_BLUR_VALUE] = v;
             }
           });
         }
@@ -1250,13 +1259,14 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
         if(__cacheFilter && __cacheFilter.available) {
           __cacheFilter.release();
         }
-        if(bv) {
+        if(__blurValue) {
           // 防重
           if(hasRecordAsMask) {
-            mergeList[6] = bv;
+            mergeList[6] = __blurValue;
           }
           else {
-            mergeList.push([i, lv, total, node, __config, null, bv]);
+            hasRecordAsMask = [i, lv, total, node, __config, null, __blurValue];
+            mergeList.push(hasRecordAsMask);
           }
         }
       }
@@ -1266,6 +1276,7 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
+        continue;
       }
     }
     /**
@@ -1285,24 +1296,25 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       else {
         node.render(renderMode, __refreshLevel, ctx, defs, true);
       }
-      let {
-        // [NODE_HAS_CONTENT]: __hasContent,
-        [NODE_BLUR_VALUE]: __blurValue,
-        [NODE_LIMIT_CACHE]: __limitCache,
-      } = __config;
-      let {
-        [DISPLAY]: display,
-        [POSITION]: position,
-        [OVERFLOW]: overflow,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      } = computedStyle;
-      if(display !== 'none' && !__limitCache
-        && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
-        mergeList.push([i, lv, total, node, __config, hasMask, __blurValue, overflow]);
-      }
     }
     lastConfig = __config;
     lastLv = lv;
+    // 每个元素检查cacheTotal生成，已有的上面会continue跳过
+    let {
+      [POSITION]: position,
+      [OVERFLOW]: overflow,
+      [MIX_BLEND_MODE]: mixBlendMode,
+    } = computedStyle;
+    if(!__limitCache && (hasMask || position === 'absolute'
+      || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      if(hasRecordAsMask) {
+        hasRecordAsMask[6] = __blurValue;
+        hasRecordAsMask[7] = overflow;
+      }
+      else {
+        mergeList.push([i, lv, total, node, __config, hasMask, __blurValue, overflow]);
+      }
+    }
   }
   // 根据收集的需要合并局部根的索引，尝试合并，按照层级从小到大，索引从小到大的顺序，这样保证子节点在前
   if(mergeList.length) {

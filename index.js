@@ -24583,9 +24583,9 @@
         for (var i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
           var _structs$i2 = __structs[i],
               node2 = _structs$i2[STRUCT_NODE$1],
-              _total = _structs$i2[STRUCT_TOTAL$1]; // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算；另外mask也不占bbox位置
+              _total = _structs$i2[STRUCT_TOTAL$1]; // mask也不占bbox位置
 
-          if (node2 instanceof Text || node2.isMask) {
+          if (node2.isMask) {
             continue;
           }
 
@@ -24619,9 +24619,10 @@
 
           parentIndexHash[i] = parentIndex;
           opacityHash[i] = opacityHash[parentIndex] * opacity; // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算
-          // if(node2 instanceof Text) {
-          //   continue;
-          // }
+
+          if (node2 instanceof Text) {
+            continue;
+          }
 
           var bbox = void 0,
               dx = 0,
@@ -25708,9 +25709,7 @@
       }
 
       var __config = node.__config;
-      var __refreshLevel = __config[NODE_REFRESH_LV$1],
-          __cache = __config[NODE_CACHE$4],
-          computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
+      var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
 
       if (computedStyle[DISPLAY$8] === 'none') {
         _i7 += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
@@ -25744,6 +25743,13 @@
           lastConfig = configList[lv];
         } // else{} 不变是同级兄弟，无需特殊处理
 
+
+      var __refreshLevel = __config[NODE_REFRESH_LV$1],
+          __cache = __config[NODE_CACHE$4],
+          __cacheTotal = __config[NODE_CACHE_TOTAL$3],
+          __blurValue = __config[NODE_BLUR_VALUE$1],
+          __limitCache = __config[NODE_LIMIT_CACHE$1];
+      var hasRecordAsMask = void 0;
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
        * 可能有cacheTotal，为之前生成的局部根，清除逻辑在更新检查是否>=REPAINT那里，小变化不动
@@ -25752,10 +25758,8 @@
        * 如果没有或无效，直接添加，无视节点本身变化，后面防重即可
        */
 
-
       if (__refreshLevel < REPAINT$2) {
         __config[NODE_REFRESH_LV$1] = NONE$2;
-        var hasRecordAsMask;
 
         if (hasMask) {
           var cacheMask = __config[NODE_CACHE_MASK$2];
@@ -25767,12 +25771,11 @@
         }
 
         var currentStyle = __config[NODE_CURRENT_STYLE$3],
-            _computedStyle2 = __config[NODE_COMPUTED_STYLE$2],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
+        var matrix;
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
-          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, _computedStyle2); // 恶心的v8性能优化
-
+          matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
           var m = __config[NODE_MATRIX$1];
 
@@ -25784,34 +25787,38 @@
             m[4] = matrix[4];
             m[5] = matrix[5];
           }
+        } else {
+          matrix = __config[NODE_MATRIX$1];
+        }
 
-          if (parentMatrix && matrix) {
-            matrix = multiply$2(parentMatrix, matrix);
-          } // 恶心的v8性能优化
+        if (parentMatrix && matrix) {
+          matrix = multiply$2(parentMatrix, matrix); // 恶心的v8性能优化
 
+          var _m = __config[NODE_MATRIX_EVENT$2];
 
-          m = __config[NODE_MATRIX_EVENT$2];
-
-          if (m && matrix) {
-            m[0] = matrix[0];
-            m[1] = matrix[1];
-            m[2] = matrix[2];
-            m[3] = matrix[3];
-            m[4] = matrix[4];
-            m[5] = matrix[5];
+          if (_m && matrix) {
+            _m[0] = matrix[0];
+            _m[1] = matrix[1];
+            _m[2] = matrix[2];
+            _m[3] = matrix[3];
+            _m[4] = matrix[4];
+            _m[5] = matrix[5];
           }
         }
 
+        var opacity;
+
         if (contain$2(__refreshLevel, OP$1)) {
-          var opacity = _computedStyle2[OPACITY$5] = currentStyle[OPACITY$5];
-          __config[NODE_OPACITY$2] = parentOpacity * opacity;
+          opacity = computedStyle[OPACITY$5] = currentStyle[OPACITY$5];
+        } else {
+          opacity = computedStyle[OPACITY$5];
         }
 
-        var __cacheTotal = __config[NODE_CACHE_TOTAL$3];
+        __config[NODE_OPACITY$2] = parentOpacity * opacity;
 
         if (contain$2(__refreshLevel, FT$1)) {
-          var filter = _computedStyle2[FILTER$5] = currentStyle[FILTER$5];
-          var bv = __config[NODE_BLUR_VALUE$1] = 0;
+          var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
+          __blurValue = __config[NODE_BLUR_VALUE$1] = 0;
 
           if (Array.isArray(filter)) {
             filter.forEach(function (item) {
@@ -25820,7 +25827,7 @@
                   v = _item3[1];
 
               if (k === 'blur') {
-                bv = __config[NODE_BLUR_VALUE$1] = v;
+                __blurValue = __config[NODE_BLUR_VALUE$1] = v;
               }
             });
           } // let bbox = node.bbox;
@@ -25846,23 +25853,26 @@
             __cacheFilter.release();
           }
 
-          if (bv) {
+          if (__blurValue) {
             // 防重
             if (hasRecordAsMask) {
-              mergeList[6] = bv;
+              mergeList[6] = __blurValue;
             } else {
-              mergeList.push([_i7, lv, total, node, __config, null, bv]);
+              hasRecordAsMask = [_i7, lv, total, node, __config, null, __blurValue];
+              mergeList.push(hasRecordAsMask);
             }
           }
         }
 
         if (contain$2(__refreshLevel, MBM)) {
-          _computedStyle2[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
+          computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
         } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 
         if (__cacheTotal && __cacheTotal.available) {
           _i7 += total || 0;
+          _i6 = _i7;
+          return "continue";
         }
       }
       /**
@@ -25882,21 +25892,24 @@
           } else {
             node.render(renderMode, __refreshLevel, ctx, defs, true);
           }
-
-          var __blurValue = __config[NODE_BLUR_VALUE$1],
-              __limitCache = __config[NODE_LIMIT_CACHE$1];
-          var display = computedStyle[DISPLAY$8],
-              position = computedStyle[POSITION$4],
-              overflow = computedStyle[OVERFLOW$2],
-              mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
-
-          if (display !== 'none' && !__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
-            mergeList.push([_i7, lv, total, node, __config, hasMask, __blurValue, overflow]);
-          }
         }
 
       lastConfig = __config;
-      lastLv = lv;
+      lastLv = lv; // 每个元素检查cacheTotal生成，已有的上面会continue跳过
+
+      var position = computedStyle[POSITION$4],
+          overflow = computedStyle[OVERFLOW$2],
+          mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
+
+      if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+        if (hasRecordAsMask) {
+          hasRecordAsMask[6] = __blurValue;
+          hasRecordAsMask[7] = overflow;
+        } else {
+          mergeList.push([_i7, lv, total, node, __config, hasMask, __blurValue, overflow]);
+        }
+      }
+
       _i6 = _i7;
     };
 
@@ -27004,9 +27017,9 @@
               else if (tagName === 'image') {
                   var hasTransform = -1;
 
-                  for (var _m = 0, _len8 = props.length; _m < _len8; _m++) {
-                    if (props[_m][0] === 'transform') {
-                      hasTransform = _m;
+                  for (var _m2 = 0, _len8 = props.length; _m2 < _len8; _m2++) {
+                    if (props[_m2][0] === 'transform') {
+                      hasTransform = _m2;
                       break;
                     }
                   }

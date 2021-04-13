@@ -24443,6 +24443,7 @@
       contain$2 = o$2.contain,
       MBM = o$2.MIX_BLEND_MODE;
   var isE$2 = mx.isE,
+      inverse$1 = mx.inverse,
       multiply$2 = mx.multiply;
   /**
    * 广度遍历，每层后序遍历形成链表，遇到cacheTotal跳出
@@ -26974,10 +26975,8 @@
                 }
 
                 var _matrix2 = _node3.renderMatrix;
-
-                var _inverse = _inverse(dom.renderMatrix);
-
-                _matrix2 = multiply$2(_inverse, _matrix2); // path没有transform属性，在vd上，需要弥补
+                var ivs = inverse$1(dom.renderMatrix);
+                _matrix2 = multiply$2(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
 
                 props.push(['transform', "matrix(".concat(_matrix2.join(','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
@@ -26996,19 +26995,19 @@
                   }
 
                   if (hasTransform === -1) {
-                    var _inverse2 = _inverse2(dom.renderMatrix);
+                    var _ivs = inverse$1(dom.renderMatrix);
 
-                    if (!isE$2(_inverse2)) {
-                      props.push(['transform', "matrix(".concat(_inverse2.join(','), ")")]);
+                    if (!isE$2(_ivs)) {
+                      props.push(['transform', "matrix(".concat(_ivs.join(','), ")")]);
                     }
                   } else {
                     var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                       return parseFloat(i);
                     });
 
-                    var _inverse3 = _inverse3(dom.renderMatrix);
+                    var _ivs2 = inverse$1(dom.renderMatrix);
 
-                    _matrix3 = multiply$2(_inverse3, _matrix3);
+                    _matrix3 = multiply$2(_ivs2, _matrix3);
                     props[hasTransform][1] = "matrix(".concat(_matrix3.join(','), ")");
                   }
                 }

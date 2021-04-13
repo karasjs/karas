@@ -2209,8 +2209,8 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
                 }
               }
               let matrix = node.renderMatrix;
-              let inverse = inverse(dom.renderMatrix);
-              matrix = multiply(inverse, matrix);
+              let ivs = inverse(dom.renderMatrix);
+              matrix = multiply(ivs, matrix);
               // path没有transform属性，在vd上，需要弥补
               props.push(['transform', `matrix(${matrix.join(',')})`]);
               // path没有opacity属性，在vd上，需要弥补
@@ -2228,15 +2228,15 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
                 }
               }
               if(hasTransform === -1) {
-                let inverse = inverse(dom.renderMatrix);
-                if(!isE(inverse)) {
-                  props.push(['transform', `matrix(${inverse.join(',')})`]);
+                let ivs = inverse(dom.renderMatrix);
+                if(!isE(ivs)) {
+                  props.push(['transform', `matrix(${ivs.join(',')})`]);
                 }
               }
               else {
                 let matrix = props[hasTransform][1].match(/[\d.]+/g).map(i => parseFloat(i));
-                let inverse = inverse(dom.renderMatrix);
-                matrix = multiply(inverse, matrix);
+                let ivs = inverse(dom.renderMatrix);
+                matrix = multiply(ivs, matrix);
                 props[hasTransform][1] = `matrix(${matrix.join(',')})`;
               }
             }

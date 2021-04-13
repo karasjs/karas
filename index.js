@@ -14395,6 +14395,8 @@
     }, {
       key: "genBlur",
       value: function genBlur(cache, v) {
+        var d = mx.int2convolution(v);
+
         var _cache$coords = _slicedToArray(cache.coords, 2),
             x = _cache$coords[0],
             y = _cache$coords[1],
@@ -14406,22 +14408,27 @@
             height = cache.height,
             bbox = cache.bbox;
 
-        var offScreen = inject.getCacheCanvas(width, height);
+        bbox = bbox.slice(0);
+        bbox[0] -= d;
+        bbox[1] -= d;
+        bbox[2] += d;
+        bbox[3] += d;
+        var offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2);
         offScreen.ctx.filter = "blur(".concat(v, "px)");
-        offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
+        offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, d, d, width, height);
         offScreen.ctx.filter = 'none';
         offScreen.draw();
         offScreen.bbox = bbox;
         offScreen.coords = [1, 1];
         offScreen.size = size;
-        offScreen.sx1 = sx1;
-        offScreen.sy1 = sy1;
+        offScreen.sx1 = sx1 - d;
+        offScreen.sy1 = sy1 - d;
         offScreen.dx = cache.dx;
         offScreen.dy = cache.dy;
         offScreen.dbx = cache.dbx;
         offScreen.dby = cache.dby;
-        offScreen.width = width;
-        offScreen.height = height;
+        offScreen.width = width + d * 2;
+        offScreen.height = height + d * 2;
         return offScreen;
       }
     }, {
@@ -17684,8 +17691,8 @@
         }
       }
     }, {
-      key: "__spreadByBoxShadowAndFilter",
-      value: function __spreadByBoxShadowAndFilter(boxShadow, filter) {
+      key: "__spreadBbox",
+      value: function __spreadBbox(boxShadow) {
         var ox = 0,
             oy = 0;
 
@@ -17707,22 +17714,33 @@
           });
         }
 
-        if (Array.isArray(filter)) {
-          for (var i = 0, len = filter.length; i < len; i++) {
-            var _filter$i = _slicedToArray(filter[i], 2),
-                k = _filter$i[0],
-                v = _filter$i[1];
-
-            if (k === 'blur') {
-              var d = mx.int2convolution(v);
-              ox = Math.max(ox, d);
-              oy = Math.max(oy, d);
-            }
-          }
-        }
-
         return [ox, oy];
-      }
+      } // __spreadByBoxShadowAndFilter(boxShadow, filter) {
+      //   let ox = 0, oy = 0;
+      //   if(Array.isArray(boxShadow)) {
+      //     boxShadow.forEach(item => {
+      //       let [x, y, blur, spread, , inset] = item;
+      //       if(inset !== 'inset') {
+      //         let d = mx.int2convolution(blur);
+      //         d += spread;
+      //         ox = Math.max(ox, x + d);
+      //         oy = Math.max(oy, y + d);
+      //       }
+      //     });
+      //   }
+      //   if(Array.isArray(filter)) {
+      //     for(let i = 0, len = filter.length; i < len; i++) {
+      //       let [k, v] = filter[i];
+      //       if(k === 'blur') {
+      //         let d = mx.int2convolution(v);
+      //         ox = Math.max(ox, d);
+      //         oy = Math.max(oy, d);
+      //       }
+      //     }
+      //   }
+      //   return [ox, oy];
+      // }
+
     }, {
       key: "__releaseWhenEmpty",
       value: function __releaseWhenEmpty(__cache) {
@@ -17845,13 +17863,12 @@
             borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$3],
             borderBottomWidth = _this$currentStyle[BORDER_BOTTOM_WIDTH$2],
             borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$3],
-            boxShadow = _this$currentStyle[BOX_SHADOW$2],
-            filter = _this$currentStyle[FILTER$3];
+            boxShadow = _this$currentStyle[BOX_SHADOW$2];
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         clientWidth += borderLeftWidth[0] + borderRightWidth[0];
         clientHeight += borderTopWidth[0] + borderBottomWidth[0];
@@ -26195,7 +26212,7 @@
               } // geom传递上述offScreen的新ctx渲染，因为自定义不可控
 
 
-              if (node instanceof Geom$1) {
+              if (__limitCache && node instanceof Geom$1) {
                 node.render(renderMode, node.__refreshLevel, ctx, defs);
               }
             } // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
@@ -29864,7 +29881,6 @@
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
             boxShadow = _this$currentStyle[BOX_SHADOW$4],
-            filter = _this$currentStyle[FILTER$7],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         this.buildCache(originX, originY);
@@ -29882,10 +29898,10 @@
           half = Math.max(item[0], half);
         });
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         ox += half;
         oy += half;
@@ -30443,7 +30459,6 @@
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
             boxShadow = _this$currentStyle[BOX_SHADOW$5],
-            filter = _this$currentStyle[FILTER$8],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         this.buildCache(originX, originY);
@@ -30455,10 +30470,10 @@
           half = Math.max(item[0], half);
         });
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         ox += half;
         oy += half;
@@ -30934,8 +30949,7 @@
             height = this.height,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
-            boxShadow = _this$currentStyle[BOX_SHADOW$6],
-            filter = _this$currentStyle[FILTER$9];
+            boxShadow = _this$currentStyle[BOX_SHADOW$6];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -30960,10 +30974,10 @@
           half = Math.max(item[0], half);
         });
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         ox += half;
         oy += half;
@@ -31137,8 +31151,7 @@
             height = this.height,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$5],
-            boxShadow = _this$currentStyle[BOX_SHADOW$7],
-            filter = _this$currentStyle[FILTER$a];
+            boxShadow = _this$currentStyle[BOX_SHADOW$7];
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
@@ -31148,10 +31161,10 @@
           half = Math.max(item[0], half);
         });
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         ox += half;
         oy += half;
@@ -31268,8 +31281,7 @@
             height = this.height,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$6],
-            boxShadow = _this$currentStyle[BOX_SHADOW$8],
-            filter = _this$currentStyle[FILTER$b];
+            boxShadow = _this$currentStyle[BOX_SHADOW$8];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -31294,10 +31306,10 @@
           half = Math.max(item[0], half);
         });
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         ox += half;
         oy += half;
@@ -31466,8 +31478,7 @@
             height = this.height,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
-            boxShadow = _this$currentStyle[BOX_SHADOW$9],
-            filter = _this$currentStyle[FILTER$c];
+            boxShadow = _this$currentStyle[BOX_SHADOW$9];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -31497,10 +31508,10 @@
           half = Math.max(item[0], half);
         });
 
-        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
-            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
-            ox = _this$__spreadByBoxSh2[0],
-            oy = _this$__spreadByBoxSh2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+            ox = _this$__spreadBbox2[0],
+            oy = _this$__spreadBbox2[1];
 
         ox += half;
         oy += half;

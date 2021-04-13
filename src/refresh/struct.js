@@ -1569,7 +1569,7 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
             ctx = offScreenOverflow.target.ctx;
           }
           // geom传递上述offScreen的新ctx渲染，因为自定义不可控
-          if(node instanceof Geom) {
+          if(__limitCache && node instanceof Geom) {
             node.render(renderMode, node.__refreshLevel, ctx, defs);
           }
         }

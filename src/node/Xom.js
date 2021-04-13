@@ -2335,7 +2335,7 @@ class Xom extends Node {
     }
   }
 
-  __spreadByBoxShadowAndFilter(boxShadow, filter) {
+  __spreadBbox(boxShadow) {
     let ox = 0, oy = 0;
     if(Array.isArray(boxShadow)) {
       boxShadow.forEach(item => {
@@ -2348,18 +2348,34 @@ class Xom extends Node {
         }
       });
     }
-    if(Array.isArray(filter)) {
-      for(let i = 0, len = filter.length; i < len; i++) {
-        let [k, v] = filter[i];
-        if(k === 'blur') {
-          let d = mx.int2convolution(v);
-          ox = Math.max(ox, d);
-          oy = Math.max(oy, d);
-        }
-      }
-    }
     return [ox, oy];
   }
+
+  // __spreadByBoxShadowAndFilter(boxShadow, filter) {
+  //   let ox = 0, oy = 0;
+  //   if(Array.isArray(boxShadow)) {
+  //     boxShadow.forEach(item => {
+  //       let [x, y, blur, spread, , inset] = item;
+  //       if(inset !== 'inset') {
+  //         let d = mx.int2convolution(blur);
+  //         d += spread;
+  //         ox = Math.max(ox, x + d);
+  //         oy = Math.max(oy, y + d);
+  //       }
+  //     });
+  //   }
+  //   if(Array.isArray(filter)) {
+  //     for(let i = 0, len = filter.length; i < len; i++) {
+  //       let [k, v] = filter[i];
+  //       if(k === 'blur') {
+  //         let d = mx.int2convolution(v);
+  //         ox = Math.max(ox, d);
+  //         oy = Math.max(oy, d);
+  //       }
+  //     }
+  //   }
+  //   return [ox, oy];
+  // }
 
   __releaseWhenEmpty(__cache) {
     if(__cache && __cache.available) {
@@ -2462,10 +2478,9 @@ class Xom extends Node {
         [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
         [BORDER_LEFT_WIDTH]: borderLeftWidth,
         [BOX_SHADOW]: boxShadow,
-        [FILTER]: filter,
       },
     } = this;
-    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    let [ox, oy] = this.__spreadBbox(boxShadow);
     clientWidth += borderLeftWidth[0] + borderRightWidth[0];
     clientHeight += borderTopWidth[0] + borderBottomWidth[0];
     return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];

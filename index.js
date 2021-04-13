@@ -16530,13 +16530,6 @@
 
         if (renderMode === mode.SVG) {
           virtualDom.visibility = visibility;
-        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
-
-
-        if (renderMode === mode.CANVAS && cache && (__config[NODE_LIMIT_CACHE] || res["break"])) {
-          return {
-            limitCache: true
-          };
         } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
 
 
@@ -16589,6 +16582,13 @@
               }
             }
           });
+        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
+
+
+        if (renderMode === mode.CANVAS && cache && __config[NODE_LIMIT_CACHE]) {
+          return {
+            limitCache: true
+          };
         }
 
         var offScreenMask;
@@ -24667,7 +24667,8 @@
               matrixHash[i] = matrix;
             }
 
-            bbox = util.transformBbox(bbox, matrix, blur, blur); // 有孩子才继续存入下层级广度运算
+            var d = mx.int2convolution(blur);
+            bbox = util.transformBbox(bbox, matrix, d, d); // 有孩子才继续存入下层级广度运算
 
             if (_total) {
               blurHash[i] = blur;

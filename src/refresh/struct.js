@@ -243,7 +243,8 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           if(matrix) {
             matrixHash[i] = matrix;
           }
-          bbox = util.transformBbox(bbox, matrix, blur, blur);
+          let d = mx.int2convolution(blur);
+          bbox = util.transformBbox(bbox, matrix, d, d);
           // 有孩子才继续存入下层级广度运算
           if(total) {
             blurHash[i] = blur;

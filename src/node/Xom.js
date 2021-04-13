@@ -1316,10 +1316,6 @@ class Xom extends Node {
     if(renderMode === mode.SVG) {
       virtualDom.visibility = visibility;
     }
-    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
-    if(renderMode === mode.CANVAS && cache && (__config[NODE_LIMIT_CACHE] || res.break)) {
-      return { limitCache: true };
-    }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
     let offScreenFilter;
     __config[NODE_BLUR_VALUE] = 0;
@@ -1374,6 +1370,10 @@ class Xom extends Node {
           }
         }
       });
+    }
+    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
+    if(renderMode === mode.CANVAS && cache && __config[NODE_LIMIT_CACHE]) {
+      return { limitCache: true };
     }
     let offScreenMask;
     if(__hasMask) {

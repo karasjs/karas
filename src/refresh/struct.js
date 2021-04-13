@@ -1324,7 +1324,7 @@ function renderCacheCanvas2(renderMode, ctx, defs, root) {
       if(a[1] === b[1]) {
         return a[0] - b[0];
       }
-      return a[1] - b[1];
+      return b[1] - a[1];
     });
     mergeList.forEach(item => {
       let [i, lv,  total, node, __config, hasMask, __blurValue, overflow] = item;

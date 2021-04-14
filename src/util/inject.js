@@ -51,6 +51,7 @@ function cache(key, width, height, hash, message) {
     draw() {
       // 空函数，仅对小程序提供hook特殊处理，flush缓冲
     },
+    enabled: true,
     available: true,
     release() {
       if(hash === CANVAS) {
@@ -61,6 +62,7 @@ function cache(key, width, height, hash, message) {
       }
       this.canvas = null;
       this.ctx = null;
+      this.available = false;
     },
   };
 }

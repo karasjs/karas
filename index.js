@@ -5203,6 +5203,7 @@
       ctx: hash === CANVAS ? o.getContext('2d') : o.getContext('webgl') || o.getContext('experimental-webgl'),
       draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
       },
+      enabled: true,
       available: true,
       release: function release() {
         if (hash === CANVAS) {
@@ -5213,6 +5214,7 @@
 
         this.canvas = null;
         this.ctx = null;
+        this.available = false;
       }
     };
   }

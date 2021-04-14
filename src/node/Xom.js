@@ -1200,7 +1200,7 @@ class Xom extends Node {
         else {
           __cache = Cache.getInstance(bbox);
         }
-        // 有可能超过最大尺寸限制不使用缓存
+        // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
           __cache.__appendData(x1, y1);
@@ -1316,10 +1316,6 @@ class Xom extends Node {
     if(renderMode === mode.SVG) {
       virtualDom.visibility = visibility;
     }
-    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
-    if(renderMode === mode.CANVAS && cache && (__config[NODE_LIMIT_CACHE] || res.break)) {
-      return { limitCache: true };
-    }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
     let offScreenFilter;
     __config[NODE_BLUR_VALUE] = 0;
@@ -1374,6 +1370,10 @@ class Xom extends Node {
           }
         }
       });
+    }
+    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
+    if(renderMode === mode.CANVAS && cache && __config[NODE_LIMIT_CACHE]) {
+      return { limitCache: true };
     }
     let offScreenMask;
     if(__hasMask) {
@@ -2335,7 +2335,7 @@ class Xom extends Node {
     }
   }
 
-  __spreadByBoxShadowAndFilter(boxShadow, filter) {
+  __spreadBbox(boxShadow) {
     let ox = 0, oy = 0;
     if(Array.isArray(boxShadow)) {
       boxShadow.forEach(item => {
@@ -2348,18 +2348,34 @@ class Xom extends Node {
         }
       });
     }
-    if(Array.isArray(filter)) {
-      for(let i = 0, len = filter.length; i < len; i++) {
-        let [k, v] = filter[i];
-        if(k === 'blur') {
-          let d = mx.int2convolution(v);
-          ox = Math.max(ox, d);
-          oy = Math.max(oy, d);
-        }
-      }
-    }
     return [ox, oy];
   }
+
+  // __spreadByBoxShadowAndFilter(boxShadow, filter) {
+  //   let ox = 0, oy = 0;
+  //   if(Array.isArray(boxShadow)) {
+  //     boxShadow.forEach(item => {
+  //       let [x, y, blur, spread, , inset] = item;
+  //       if(inset !== 'inset') {
+  //         let d = mx.int2convolution(blur);
+  //         d += spread;
+  //         ox = Math.max(ox, x + d);
+  //         oy = Math.max(oy, y + d);
+  //       }
+  //     });
+  //   }
+  //   if(Array.isArray(filter)) {
+  //     for(let i = 0, len = filter.length; i < len; i++) {
+  //       let [k, v] = filter[i];
+  //       if(k === 'blur') {
+  //         let d = mx.int2convolution(v);
+  //         ox = Math.max(ox, d);
+  //         oy = Math.max(oy, d);
+  //       }
+  //     }
+  //   }
+  //   return [ox, oy];
+  // }
 
   __releaseWhenEmpty(__cache) {
     if(__cache && __cache.available) {
@@ -2462,10 +2478,9 @@ class Xom extends Node {
         [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
         [BORDER_LEFT_WIDTH]: borderLeftWidth,
         [BOX_SHADOW]: boxShadow,
-        [FILTER]: filter,
       },
     } = this;
-    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    let [ox, oy] = this.__spreadBbox(boxShadow);
     clientWidth += borderLeftWidth[0] + borderRightWidth[0];
     clientHeight += borderTopWidth[0] + borderBottomWidth[0];
     return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];

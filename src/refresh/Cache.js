@@ -194,23 +194,29 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genBlur(cache, v) {
+    let d = mx.int2convolution(v);
     let { coords: [x, y], size, canvas, sx1, sy1, width, height, bbox } = cache;
-    let offScreen = inject.getCacheCanvas(width, height);
+    bbox = bbox.slice(0);
+    bbox[0] -= d;
+    bbox[1] -= d;
+    bbox[2] += d;
+    bbox[3] += d;
+    let offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2);
     offScreen.ctx.filter = `blur(${v}px)`;
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
+    offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, d, d, width, height);
     offScreen.ctx.filter = 'none';
     offScreen.draw();
     offScreen.bbox = bbox;
     offScreen.coords = [1, 1];
     offScreen.size = size;
-    offScreen.sx1 = sx1;
-    offScreen.sy1 = sy1;
+    offScreen.sx1 = sx1 - d;
+    offScreen.sy1 = sy1 - d;
     offScreen.dx = cache.dx;
     offScreen.dy = cache.dy;
     offScreen.dbx = cache.dbx;
     offScreen.dby = cache.dby;
-    offScreen.width = width;
-    offScreen.height = height;
+    offScreen.width = width + d * 2;
+    offScreen.height = height + d * 2;
     return offScreen;
   }
 

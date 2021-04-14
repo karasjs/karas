@@ -454,7 +454,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
     if(prev && prev.__config[NODE_CACHE_MASK]) {
       prev.__config[NODE_CACHE_MASK].release();
-      prev.__config[NODE_CACHE_MASK] = null;
     }
   }
   // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化

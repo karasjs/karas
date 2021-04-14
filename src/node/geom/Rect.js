@@ -126,7 +126,6 @@ class Rect extends Geom {
       currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
-        [FILTER]: filter,
       } } = this;
     this.buildCache(originX, originY);
     let bbox = super.bbox;
@@ -134,7 +133,7 @@ class Rect extends Geom {
     strokeWidth.forEach(item => {
       half = Math.max(item[0], half);
     });
-    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    let [ox, oy] = this.__spreadBbox(boxShadow);
     ox += half;
     oy += half;
     bbox[0] = Math.min(bbox[0], originX - ox);

@@ -329,7 +329,6 @@ class Sector extends Geom {
       currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,
-        [FILTER]: filter,
       } } = this;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
@@ -350,7 +349,7 @@ class Sector extends Geom {
     strokeWidth.forEach(item => {
       half = Math.max(item[0], half);
     });
-    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    let [ox, oy] = this.__spreadBbox(boxShadow);
     ox += half;
     oy += half;
     let xa = cx - r - ox;

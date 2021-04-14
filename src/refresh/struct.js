@@ -209,6 +209,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           bbox = __cacheTotal.bbox.slice(0);
           dx = __cacheTotal.dbx;
           dy = __cacheTotal.dby;
+          i += total || 0;
         }
         else if(__cache && __cache.available) {
           bbox = __cache.bbox.slice(0);

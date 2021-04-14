@@ -429,7 +429,7 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
       let x = list[i], y = list[i + 1];
       [x, y] = mx.calPoint([x, y], matrix);
       xa = Math.min(xa, x);
-      xb = Math.max(xa, x);
+      xb = Math.max(xb, x);
       ya = Math.min(ya, y);
       yb = Math.max(yb, y);
     }

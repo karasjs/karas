@@ -2091,7 +2091,8 @@ class Dom extends Xom {
       }
     }
     else {
-      tw = this.__width = (fixedWidth || isIbFull) ? w : maxW;
+      // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+      tw = this.__width = fixedWidth ? w : (isIbFull ? Math.max(w, maxW) : maxW);
       th = this.__height = fixedHeight ? h : y - data.y;
       this.__ioSize(tw, th);
     }
@@ -2252,6 +2253,7 @@ class Dom extends Xom {
       [MARGIN_TOP]: marginTop,
       [MARGIN_LEFT]: marginLeft,
       [PADDING_LEFT]: paddingLeft,
+      [PADDING_TOP]: paddingTop,
     } = computedStyle;
     if(isDestroyed || display === 'none') {
       this.__layoutNone();
@@ -2383,7 +2385,7 @@ class Dom extends Xom {
       }
       // 未声明y的找到之前的流布局child，紧随其下
       else {
-        y2 = y;
+        y2 = y + paddingTop;
         let prev = item.prev;
         while(prev) {
           // 目前不考虑margin合并，直接以前面的flow的最近的prev末尾为准
@@ -2399,7 +2401,7 @@ class Dom extends Xom {
       }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
       let needCalWidth;
-      if(display === 'block' && w2 === undefined) {
+      if((display === 'block' || ['inlineBlock', 'inline-block'].indexOf(display) > -1) && w2 === undefined) {
         needCalWidth = true;
       }
       else if(display === 'flex') {

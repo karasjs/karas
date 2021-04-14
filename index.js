@@ -792,6 +792,10 @@
   }
 
   function int2convolution(v) {
+    if (v <= 0) {
+      return 0;
+    }
+
     var d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
     d *= 3;
 
@@ -5023,7 +5027,7 @@
         x = _mx$calPoint4[0];
         y = _mx$calPoint4[1];
         xa = Math.min(xa, x);
-        xb = Math.max(xa, x);
+        xb = Math.max(xb, x);
         ya = Math.min(ya, y);
         yb = Math.max(yb, y);
       }
@@ -20973,7 +20977,8 @@
             this.__inlineSize(lineBoxManager);
           }
         } else {
-          tw = this.__width = fixedWidth || isIbFull ? w : maxW;
+          // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+          tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
           th = this.__height = fixedHeight ? h : y - data.y;
 
           this.__ioSize(tw, th);
@@ -21148,7 +21153,8 @@
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             marginTop = computedStyle[MARGIN_TOP$2],
             marginLeft = computedStyle[MARGIN_LEFT$4],
-            paddingLeft = computedStyle[PADDING_LEFT$5];
+            paddingLeft = computedStyle[PADDING_LEFT$5],
+            paddingTop = computedStyle[PADDING_TOP$3];
 
         if (isDestroyed || display === 'none') {
           this.__layoutNone();
@@ -21288,7 +21294,7 @@
             onlyBottom = true;
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
-              y2 = y;
+              y2 = y + paddingTop;
               var prev = item.prev;
 
               while (prev) {
@@ -21309,7 +21315,7 @@
 
           var needCalWidth;
 
-          if (display === 'block' && w2 === undefined) {
+          if ((display === 'block' || ['inlineBlock', 'inline-block'].indexOf(display) > -1) && w2 === undefined) {
             needCalWidth = true;
           } else if (display === 'flex') {
             if (w2 === undefined) {
@@ -24632,6 +24638,7 @@
             bbox = __cacheTotal.bbox.slice(0);
             dx = __cacheTotal.dbx;
             dy = __cacheTotal.dby;
+            i += _total || 0;
           } else if (__cache && __cache.available) {
             bbox = __cache.bbox.slice(0);
             dx = __cache.dbx;

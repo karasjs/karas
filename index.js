@@ -27144,12 +27144,12 @@
             struct.renderCanvas(renderMode, ctx, defs, this);
           }
         } // svg的特殊diff需要
-        else if (renderMode === mode.SVG) {
+        else if (renderMode === mode.SVG && !this.props.noRender) {
             struct.renderSvg(renderMode, ctx, defs, this, isFirst);
             var nvd = this.virtualDom;
             nvd.defs = defs.value;
 
-            if (this.dom.__root) {
+            if (this.dom.__vd) {
               // console.log(this.dom.__vd);
               // console.log(nvd);
               diff(this.dom, this.dom.__vd, nvd);
@@ -31109,7 +31109,7 @@
     Cache: Cache
   };
 
-  var version = "0.56.7";
+  var version = "0.57.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

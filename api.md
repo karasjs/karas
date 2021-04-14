@@ -701,6 +701,23 @@ let root = karas.render(
 console.log(root);
 ```
 
+### html属性attribute
+
+#### width
+* **类型** `Number`
+* **说明**  
+根节点画布逻辑宽度。
+
+#### height
+* **类型** `Number`
+* **说明**  
+根节点画布逻辑高度。
+
+#### noRender
+* **类型** `boolean`
+* **说明**  
+是否不渲染，仅布局。此举在特殊场景下如仅测量节点大小时会用到。
+
 <a name="Geom"></a>
 ## Geom
 * **类型** `class`

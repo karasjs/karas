@@ -17186,15 +17186,9 @@
             var hasEmitMask;
 
             while (next && next.isMask) {
-              if (isClip) {
-                if (next.willResponseEvent(e, true)) {
-                  return;
-                }
-              } else {
-                if (next.willResponseEvent(e, true)) {
-                  hasEmitMask = true;
-                  break;
-                }
+              if (next.willResponseEvent(e, true)) {
+                hasEmitMask = true;
+                break;
               }
 
               next = next.next;
@@ -31159,7 +31153,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.0";
+  var version = "0.57.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

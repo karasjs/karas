@@ -1883,16 +1883,9 @@ class Xom extends Node {
         let isClip = next.isClip;
         let hasEmitMask;
         while(next && next.isMask) {
-          if(isClip) {
-            if(next.willResponseEvent(e, true)) {
-              return;
-            }
-          }
-          else {
-            if(next.willResponseEvent(e, true)) {
-              hasEmitMask = true;
-              break;
-            }
+          if(next.willResponseEvent(e, true)) {
+            hasEmitMask = true;
+            break;
           }
           next = next.next;
         }

@@ -12,12 +12,12 @@ module.exports = {
       .moveToElement('svg', 40, 40)
       .mouseButtonClick(0)
       .assert.value('input', '0')
-      .moveToElement('svg', 160, 160)
-      .mouseButtonClick(0)
-      .assert.value('input', '0')
-      .moveToElement('svg', 140, 140)
+      .moveToElement('svg', 60, 160)
       .mouseButtonClick(0)
       .assert.value('input', '1')
+      .moveToElement('svg', 40, 140)
+      .mouseButtonClick(0)
+      .assert.value('input', '2')
       .end();
   }
 };

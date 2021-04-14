@@ -786,7 +786,7 @@ class Root extends Dom {
       this.__clear(ctx);
       // 利用list循环代替tree递归快速渲染
       if(this.cache) {
-        struct.renderCacheCanvas2(renderMode, ctx, defs, this);
+        struct.renderCacheCanvas(renderMode, ctx, defs, this);
       }
       else {
         struct.renderCanvas(renderMode, ctx, defs, this);

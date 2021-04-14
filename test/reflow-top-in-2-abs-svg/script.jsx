@@ -11,9 +11,6 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-o.ref.middle.updateStyle({
-  // position: 'absolute',
-});
 o.ref.inner.updateStyle({
   position: 'absolute',
   padding: 30,

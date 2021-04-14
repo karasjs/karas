@@ -27586,8 +27586,7 @@
       }
 
       if (prev && prev.__config[NODE_CACHE_MASK$3]) {
-        prev.__config[NODE_CACHE_MASK$3].release(); // prev.__config[NODE_CACHE_MASK] = null;
-
+        prev.__config[NODE_CACHE_MASK$3].release();
       }
     } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
 

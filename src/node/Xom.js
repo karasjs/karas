@@ -1857,12 +1857,12 @@ class Xom extends Node {
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
-    let { isDestroyed, computedStyle } = this;
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation) {
+    let { isDestroyed, computedStyle, isMask } = this;
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
       return;
     }
     let { event: { type } } = e;
-    let { listener } = this;
+    let { listener, __hasMask } = this;
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];
@@ -1877,6 +1877,29 @@ class Xom extends Node {
     }
     // 非force的判断事件坐标是否在节点内
     if(this.willResponseEvent(e)) {
+      // 如果有mask，点在mask上才行，点在clip外才行
+      if(__hasMask) {
+        let next = this.next;
+        let isClip = next.isClip;
+        let hasEmitMask;
+        while(next && next.isMask) {
+          if(isClip) {
+            if(next.willResponseEvent(e, true)) {
+              return;
+            }
+          }
+          else {
+            if(next.willResponseEvent(e, true)) {
+              hasEmitMask = true;
+              break;
+            }
+          }
+          next = next.next;
+        }
+        if(!isClip && !hasEmitMask) {
+          return;
+        }
+      }
       if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
@@ -1884,7 +1907,7 @@ class Xom extends Node {
     }
   }
 
-  willResponseEvent(e) {
+  willResponseEvent(e, ignore) {
     let { x, y } = e;
     let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent,
       computedStyle: { [POINTER_EVENTS]: pointerEvents } } = this;
@@ -1900,7 +1923,7 @@ class Xom extends Node {
       matrixEvent
     );
     if(inThis) {
-      if(!e.target) {
+      if(!e.target && !ignore) {
         e.target = this;
         // 缓存target给move用
         if(e.event.type === 'touchstart') {

@@ -871,6 +871,12 @@ class Geom extends Xom {
   static hasRegister(name) {
     return name && REGISTER.hasOwnProperty(name);
   }
+
+  static delRegister(name) {
+    if(Geom.hasRegister(name)) {
+      delete REGISTER[name];
+    }
+  }
 }
 
 export default Geom;

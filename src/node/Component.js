@@ -286,6 +286,12 @@ class Component extends Event {
   static hasRegister(name) {
     return name && REGISTER.hasOwnProperty(name);
   }
+
+  static delRegister(name) {
+    if(Component.hasRegister(name)) {
+      delete REGISTER[name];
+    }
+  }
 }
 
 Object.keys(change.GEOM).concat([

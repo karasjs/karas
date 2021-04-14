@@ -10056,6 +10056,13 @@
         return name && REGISTER.hasOwnProperty(name);
       }
     }, {
+      key: "delRegister",
+      value: function delRegister(name) {
+        if (Component.hasRegister(name)) {
+          delete REGISTER[name];
+        }
+      }
+    }, {
       key: "REGISTER",
       get: function get() {
         return REGISTER;
@@ -17143,14 +17150,16 @@
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var isDestroyed = this.isDestroyed,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            isMask = this.isMask;
 
-        if (isDestroyed || computedStyle[DISPLAY$2] === 'none' || e.__stopPropagation) {
+        if (isDestroyed || computedStyle[DISPLAY$2] === 'none' || e.__stopPropagation || isMask) {
           return;
         }
 
         var type = e.event.type;
-        var listener = this.listener;
+        var listener = this.listener,
+            __hasMask = this.__hasMask;
         var cb;
 
         if (listener.hasOwnProperty(type)) {
@@ -17170,6 +17179,32 @@
 
 
         if (this.willResponseEvent(e)) {
+          // 如果有mask，点在mask上才行，点在clip外才行
+          if (__hasMask) {
+            var next = this.next;
+            var isClip = next.isClip;
+            var hasEmitMask;
+
+            while (next && next.isMask) {
+              if (isClip) {
+                if (next.willResponseEvent(e, true)) {
+                  return;
+                }
+              } else {
+                if (next.willResponseEvent(e, true)) {
+                  hasEmitMask = true;
+                  break;
+                }
+              }
+
+              next = next.next;
+            }
+
+            if (!isClip && !hasEmitMask) {
+              return;
+            }
+          }
+
           if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
             cb.call(this, e);
           }
@@ -17179,7 +17214,7 @@
       }
     }, {
       key: "willResponseEvent",
-      value: function willResponseEvent(e) {
+      value: function willResponseEvent(e, ignore) {
         var x = e.x,
             y = e.y;
         var __sx1 = this.__sx1,
@@ -17196,7 +17231,7 @@
         var inThis = tf.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
 
         if (inThis) {
-          if (!e.target) {
+          if (!e.target && !ignore) {
             e.target = this; // 缓存target给move用
 
             if (e.event.type === 'touchstart') {
@@ -18674,6 +18709,7 @@
       ORDER$1 = _enums$STYLE_KEY$f.ORDER,
       FLEX_WRAP$1 = _enums$STYLE_KEY$f.FLEX_WRAP,
       ALIGN_CONTENT$1 = _enums$STYLE_KEY$f.ALIGN_CONTENT,
+      OVERFLOW$2 = _enums$STYLE_KEY$f.OVERFLOW,
       _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
@@ -21444,11 +21480,18 @@
         }
 
         var isDestroyed = this.isDestroyed,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            isMask = this.isMask;
 
-        if (isDestroyed || computedStyle[DISPLAY$5] === 'none' || e.__stopPropagation) {
+        if (isDestroyed || computedStyle[DISPLAY$5] === 'none' || e.__stopPropagation || isMask) {
           return;
-        }
+        } // overflow:hidden时还需要判断是否超出范围外，如果是则无效
+
+
+        if (computedStyle[OVERFLOW$2] === 'hidden' && !this.willResponseEvent(e, true)) {
+          return;
+        } // 找到对应的callback
+
 
         var type = e.event.type;
         var listener = this.listener,
@@ -23216,6 +23259,13 @@
         return name && REGISTER$1.hasOwnProperty(name);
       }
     }, {
+      key: "delRegister",
+      value: function delRegister(name) {
+        if (Geom.hasRegister(name)) {
+          delete REGISTER$1[name];
+        }
+      }
+    }, {
       key: "REGISTER",
       get: function get() {
         return REGISTER$1;
@@ -24431,7 +24481,7 @@
       OPACITY$5 = _enums$STYLE_KEY$i.OPACITY,
       VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$i.FILTER,
-      OVERFLOW$2 = _enums$STYLE_KEY$i.OVERFLOW,
+      OVERFLOW$3 = _enums$STYLE_KEY$i.OVERFLOW,
       MIX_BLEND_MODE$3 = _enums$STYLE_KEY$i.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$i.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$i.TRANSFORM,
@@ -25037,7 +25087,7 @@
       var __blurValue = __config[NODE_BLUR_VALUE$1],
           __limitCache = __config[NODE_LIMIT_CACHE$1];
       var position = computedStyle[POSITION$4],
-          overflow = computedStyle[OVERFLOW$2],
+          overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
 
       if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
@@ -25138,7 +25188,7 @@
           _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
           display = _node$__config2$NODE_[DISPLAY$8],
           visibility = _node$__config2$NODE_[VISIBILITY$5],
-          overflow = _node$__config2$NODE_[OVERFLOW$2],
+          overflow = _node$__config2$NODE_[OVERFLOW$3],
           mixBlendMode = _node$__config2$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的
 
       if (node instanceof Text) {

@@ -50,6 +50,7 @@ const {
     ORDER,
     FLEX_WRAP,
     ALIGN_CONTENT,
+    OVERFLOW,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -2509,10 +2510,15 @@ class Dom extends Xom {
     if(force) {
       return super.__emitEvent(e, force);
     }
-    let { isDestroyed, computedStyle } = this;
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation) {
+    let { isDestroyed, computedStyle, isMask } = this;
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
       return;
     }
+    // overflow:hidden时还需要判断是否超出范围外，如果是则无效
+    if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
+      return;
+    }
+    // 找到对应的callback
     let { event: { type } } = e;
     let { listener, zIndexChildren } = this;
     let cb;

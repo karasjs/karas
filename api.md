@@ -846,6 +846,14 @@ karas.render(
 * **说明**  
 注册前先检查是否已经被注册过。
 
+#### delRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+    已经被注册为矢量图形对象的名称。
+* **说明**  
+删除注册过的图形对象，未注册什么也不发生。
+
 ## Img
 <a name="Img"></a>
 * **类型** `class`
@@ -1759,6 +1767,14 @@ parse的json中首字母大写的tagName为组件，任何parse的组件都需�
   返回名字为name是否已经被注册为组件。
 * **说明**  
 注册前先检查是否已经被注册过。
+
+#### delRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+    已经被注册为组件的名称。
+* **说明**  
+删除注册过的组件，未注册什么也不发生。
 
 ### html属性attribute
 

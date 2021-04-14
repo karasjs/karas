@@ -782,7 +782,7 @@ class Root extends Dom {
     // 获取所有字体和大小测量，仅svg需要，canvas直接做
     inject.measureText();
     this.__checkReflow(width, height);
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS && !this.props.noRender) {
       this.__clear(ctx);
       // 利用list循环代替tree递归快速渲染
       if(this.cache) {

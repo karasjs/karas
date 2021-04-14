@@ -27134,7 +27134,7 @@
 
         this.__checkReflow(width, height);
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS && !this.props.noRender) {
           this.__clear(ctx); // 利用list循环代替tree递归快速渲染
 
 

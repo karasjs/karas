@@ -777,47 +777,19 @@
   }
 
   function calPoint(point, m) {
-    var _point = _slicedToArray(point, 3),
+    var _point = _slicedToArray(point, 2),
         x = _point[0],
-        y = _point[1],
-        z = _point[2];
+        y = _point[1];
 
-    if (m.length === 6) {
-      var _m = _slicedToArray(m, 6),
-          a = _m[0],
-          b = _m[1],
-          c = _m[2],
-          d = _m[3],
-          e = _m[4],
-          f = _m[5];
+    var _m = _slicedToArray(m, 6),
+        a = _m[0],
+        b = _m[1],
+        c = _m[2],
+        d = _m[3],
+        e = _m[4],
+        f = _m[5];
 
-      return [a * x + c * y + e, b * x + d * y + f];
-    } else if (m.length === 16) {
-      z = z || 0;
-
-      var _m2 = _slicedToArray(m, 16),
-          a1 = _m2[0],
-          b1 = _m2[1],
-          c1 = _m2[2],
-          d1 = _m2[3],
-          a2 = _m2[4],
-          b2 = _m2[5],
-          c2 = _m2[6],
-          d2 = _m2[7],
-          a3 = _m2[8],
-          b3 = _m2[9],
-          c3 = _m2[10],
-          d3 = _m2[11],
-          a4 = _m2[12],
-          b4 = _m2[13],
-          c4 = _m2[14],
-          d4 = _m2[15];
-
-      var w = x * d1 + y * d2 + z * d3 + d4;
-      return [(x * a1 + y * a2 + z * a3 + a4) / w, (x * b1 + y * b2 + z * b3 + b4) / w, (x * c1 + y * c2 + z * c3 + c4) / w];
-    }
-
-    return point;
+    return [a * x + c * y + e, b * x + d * y + f];
   }
 
   function int2convolution(v) {
@@ -847,13 +819,13 @@
       return inverse4(m);
     }
 
-    var _m3 = _slicedToArray(m, 6),
-        a = _m3[0],
-        b = _m3[1],
-        c = _m3[2],
-        d = _m3[3],
-        e = _m3[4],
-        f = _m3[5];
+    var _m2 = _slicedToArray(m, 6),
+        a = _m2[0],
+        b = _m2[1],
+        c = _m2[2],
+        d = _m2[3],
+        e = _m2[4],
+        f = _m2[5];
 
     if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
       return m;
@@ -5223,326 +5195,6 @@
     ELLIPSIS: '…'
   };
 
-  var ca = {
-    alpha: true,
-    antialias: true,
-    depth: true,
-    stencil: true
-  };
-
-  var calPoint$1 = mx.calPoint;
-  /**
-   * 初始化 shader
-   * @param gl GL context
-   * @param vshader vertex shader (string)
-   * @param fshader fragment shader (string)
-   * @return true, if the program object was created and successfully made current
-   */
-
-  function initShaders(gl, vshader, fshader) {
-    var program = createProgram(gl, vshader, fshader);
-
-    if (!program) {
-      inject.error('Failed to create program');
-      return false;
-    }
-
-    gl.useProgram(program);
-    gl.program = program; // 要开启透明度，用以绘制透明的图形
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    return true;
-  }
-  /**
-   * Create the linked program object
-   * @param gl GL context
-   * @param vshader a vertex shader program (string)
-   * @param fshader a fragment shader program (string)
-   * @return created program object, or null if the creation has failed
-   */
-
-  function createProgram(gl, vshader, fshader) {
-    // Create shader object
-    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
-    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-
-    if (!vertexShader || !fragmentShader) {
-      return null;
-    } // Create a program object
-
-
-    var program = gl.createProgram();
-
-    if (!program) {
-      return null;
-    } // Attach the shader objects
-
-
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.vertexShader = vertexShader;
-    gl.fragmentShader = fragmentShader; // Link the program object
-
-    gl.linkProgram(program); // Check the result of linking
-
-    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-
-    if (!linked) {
-      var error = gl.getProgramInfoLog(program);
-      inject.error('Failed to link program: ' + error);
-      gl.deleteProgram(program);
-      gl.deleteShader(fragmentShader);
-      gl.deleteShader(vertexShader);
-      return null;
-    }
-
-    return program;
-  }
-  /**
-   * Create a shader object
-   * @param gl GL context
-   * @param type the type of the shader object to be created
-   * @param source shader program (string)
-   * @return created shader object, or null if the creation has failed.
-   */
-
-
-  function loadShader(gl, type, source) {
-    // Create shader object
-    var shader = gl.createShader(type);
-
-    if (shader == null) {
-      inject.error('unable to create shader');
-      return null;
-    } // Set the shader program
-
-
-    gl.shaderSource(shader, source); // Compile the shader
-
-    gl.compileShader(shader); // Check the result of compilation
-
-    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-    if (!compiled) {
-      var error = gl.getShaderInfoLog(shader);
-      inject.error('Failed to compile shader: ' + error);
-      gl.deleteShader(shader);
-      return null;
-    }
-
-    return shader;
-  }
-
-  function convertCoords2Gl(x, y, cx, cy) {
-    if (x === cx) {
-      x = 0;
-    } else {
-      x = (x - cx) / cx;
-    }
-
-    if (y === cy) {
-      y = 0;
-    } else {
-      y = (y - cy) / cy;
-    }
-
-    return [x, y];
-  }
-
-  function createTexture(gl, tex) {
-    var n = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var texture = gl.createTexture(); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
-
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.activeTexture(gl['TEXTURE' + n]);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    var u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-    gl.uniform1i(u_texture, n);
-    return texture;
-  }
-
-  function deleteTexture(gl, tex) {
-    gl.deleteTexture(tex);
-  }
-
-  function initVertexBuffers(gl, infos, hash, cx, cy) {
-    var count = 0;
-    var count2 = 0;
-    var length = 0;
-    infos.forEach(function (info) {
-      length += info.length;
-    });
-    var vtPoint = new Float32Array(length * 12);
-    var vtTex = new Float32Array(length * 12);
-    var vtOpacity = new Float32Array(length * 6);
-    var vtIndex = new Float32Array(length * 6);
-    infos.forEach(function (info) {
-      info.forEach(function (item) {
-        var _item = _slicedToArray(item, 3),
-            cache = _item[0],
-            opacity = _item[1],
-            matrix = _item[2]; // y反转
-
-
-        revertMatrixY(matrix);
-
-        var _cache$coords = _slicedToArray(cache.coords, 2),
-            x = _cache$coords[0],
-            y = _cache$coords[1],
-            sx1 = cache.sx1,
-            sy1 = cache.sy1,
-            width = cache.width,
-            height = cache.height,
-            fullSize = cache.fullSize; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-
-
-        var _convertCoords2Gl = convertCoords2Gl(sx1 - 1, sy1 - 1 + height, cx, cy),
-            _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
-            x1 = _convertCoords2Gl2[0],
-            y1 = _convertCoords2Gl2[1];
-
-        var _convertCoords2Gl3 = convertCoords2Gl(sx1 - 1 + width, sy1 - 1, cx, cy),
-            _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
-            x2 = _convertCoords2Gl4[0],
-            y2 = _convertCoords2Gl4[1];
-
-        var _calPoint = calPoint$1([x1, y1], matrix);
-
-        var _calPoint2 = _slicedToArray(_calPoint, 2);
-
-        x1 = _calPoint2[0];
-        y1 = _calPoint2[1];
-
-        var _calPoint3 = calPoint$1([x2, y2], matrix);
-
-        var _calPoint4 = _slicedToArray(_calPoint3, 2);
-
-        x2 = _calPoint4[0];
-        y2 = _calPoint4[1];
-        vtPoint[count] = x1;
-        vtPoint[count + 1] = y1;
-        vtPoint[count + 2] = x1;
-        vtPoint[count + 3] = y2;
-        vtPoint[count + 4] = x2;
-        vtPoint[count + 5] = y1;
-        vtPoint[count + 6] = x1;
-        vtPoint[count + 7] = y2;
-        vtPoint[count + 8] = x2;
-        vtPoint[count + 9] = y1;
-        vtPoint[count + 10] = x2;
-        vtPoint[count + 11] = y2;
-        var tx1 = (x - 1) / fullSize,
-            ty1 = (y - 1 + height) / fullSize;
-        var tx2 = (x - 1 + width) / fullSize,
-            ty2 = (y - 1) / fullSize;
-        vtTex[count] = tx1;
-        vtTex[count + 1] = ty1;
-        vtTex[count + 2] = tx1;
-        vtTex[count + 3] = ty2;
-        vtTex[count + 4] = tx2;
-        vtTex[count + 5] = ty1;
-        vtTex[count + 6] = tx1;
-        vtTex[count + 7] = ty2;
-        vtTex[count + 8] = tx2;
-        vtTex[count + 9] = ty1;
-        vtTex[count + 10] = tx2;
-        vtTex[count + 11] = ty2;
-        vtOpacity[count2] = opacity;
-        vtOpacity[count2 + 1] = opacity;
-        vtOpacity[count2 + 2] = opacity;
-        vtOpacity[count2 + 3] = opacity;
-        vtOpacity[count2 + 4] = opacity;
-        vtOpacity[count2 + 5] = opacity;
-        var index = hash[cache.page.__uuid];
-        vtIndex[count2] = index;
-        vtIndex[count2 + 1] = index;
-        vtIndex[count2 + 2] = index;
-        vtIndex[count2 + 3] = index;
-        vtIndex[count2 + 4] = index;
-        vtIndex[count2 + 5] = index;
-        count += 12;
-        count2 += 6;
-      });
-    });
-    var PER = 6; // 顶点buffer
-
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(gl.program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
-
-    var opacityBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
-    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
-    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_opacity); // 索引buffer
-
-    var indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtIndex, gl.STATIC_DRAW);
-    var a_index = gl.getAttribLocation(gl.program, 'a_index');
-    gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_index);
-    return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
-  } // y反转
-
-
-  function revertMatrixY(matrix) {
-    matrix[1] = -matrix[1];
-    matrix[5] = -matrix[5];
-    matrix[9] = -matrix[9];
-    matrix[13] = -matrix[13];
-  }
-
-  function drawTextureCache(gl, infos, hash, cx, cy) {
-    var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
-        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 6),
-        n = _initVertexBuffers2[0],
-        count = _initVertexBuffers2[1],
-        pointBuffer = _initVertexBuffers2[2],
-        texBuffer = _initVertexBuffers2[3],
-        opacityBuffer = _initVertexBuffers2[4],
-        indexBuffer = _initVertexBuffers2[5];
-
-    if (n < 0 || count < 0) {
-      inject.error('Failed to set the positions of the vertices');
-      return;
-    }
-
-    gl.drawArrays(gl.TRIANGLES, 0, n * count);
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.deleteBuffer(opacityBuffer);
-    gl.deleteBuffer(indexBuffer);
-  }
-
-  var webgl = {
-    initShaders: initShaders,
-    createTexture: createTexture,
-    deleteTexture: deleteTexture,
-    drawTextureCache: drawTextureCache
-  };
-
-  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n}\n";
-
-  var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index = int(v_index);\n  float opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
-
   var SPF = 1000 / 60;
   var CANVAS = {};
   var WEBGL = {};
@@ -5587,18 +5239,9 @@
       document.body.appendChild(o);
     }
 
-    var ctx;
-
-    if (hash === CANVAS) {
-      ctx = o.getContext('2d');
-    } else {
-      ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
-      webgl.initShaders(ctx, vertex, fragment);
-    }
-
     return {
       canvas: o,
-      ctx: ctx,
+      ctx: hash === CANVAS ? o.getContext('2d') : o.getContext('webgl') || o.getContext('experimental-webgl'),
       draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
       },
       enabled: true,
@@ -9062,11 +8705,6 @@
         return [x * size, y * size];
       }
     }, {
-      key: "uuid",
-      get: function get() {
-        return this.__uuid;
-      }
-    }, {
       key: "size",
       get: function get() {
         return this.__size;
@@ -9543,7 +9181,7 @@
   var matrix = math.matrix,
       geom$1 = math.geom;
   var identity$1 = matrix.identity,
-      calPoint$2 = matrix.calPoint,
+      calPoint$1 = matrix.calPoint,
       multiply$1 = matrix.multiply,
       isE$1 = matrix.isE;
   var d2r$2 = geom$1.d2r,
@@ -9628,28 +9266,28 @@
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !isE$1(matrix)) {
-      var _calPoint = calPoint$2([x1, y1], matrix);
+      var _calPoint = calPoint$1([x1, y1], matrix);
 
       var _calPoint2 = _slicedToArray(_calPoint, 2);
 
       x1 = _calPoint2[0];
       y1 = _calPoint2[1];
 
-      var _calPoint3 = calPoint$2([x2, y2], matrix);
+      var _calPoint3 = calPoint$1([x2, y2], matrix);
 
       var _calPoint4 = _slicedToArray(_calPoint3, 2);
 
       x2 = _calPoint4[0];
       y2 = _calPoint4[1];
 
-      var _calPoint5 = calPoint$2([x3, y3], matrix);
+      var _calPoint5 = calPoint$1([x3, y3], matrix);
 
       var _calPoint6 = _slicedToArray(_calPoint5, 2);
 
       x3 = _calPoint6[0];
       y3 = _calPoint6[1];
 
-      var _calPoint7 = calPoint$2([x4, y4], matrix);
+      var _calPoint7 = calPoint$1([x4, y4], matrix);
 
       var _calPoint8 = _slicedToArray(_calPoint7, 2);
 
@@ -9801,7 +9439,6 @@
         this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
 
         this.dby = sy1 - bbox[1];
-        this.update();
       }
     }, {
       key: "update",
@@ -9901,11 +9538,6 @@
         return this.page.size;
       }
     }, {
-      key: "fullSize",
-      get: function get() {
-        return this.page.fullSize;
-      }
-    }, {
       key: "width",
       get: function get() {
         return this.__width;
@@ -9948,7 +9580,7 @@
         return new Cache(w, h, bbox, page, pos, renderMode);
       }
       /**
-       * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
+       * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
        * @param cache
        * @param v
        * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
@@ -24984,29 +24616,322 @@
     return Controller;
   }();
 
+  var calPoint$2 = mx.calPoint;
+  /**
+   * 初始化 shader
+   * @param gl GL context
+   * @param vshader vertex shader (string)
+   * @param fshader fragment shader (string)
+   * @return true, if the program object was created and successfully made current
+   */
+
+  function initShaders(gl, vshader, fshader) {
+    var program = createProgram(gl, vshader, fshader);
+
+    if (!program) {
+      inject.error('Failed to create program');
+      return false;
+    }
+
+    gl.useProgram(program);
+    gl.program = program; // 要开启透明度，用以绘制透明的图形
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    return true;
+  }
+  /**
+   * Create the linked program object
+   * @param gl GL context
+   * @param vshader a vertex shader program (string)
+   * @param fshader a fragment shader program (string)
+   * @return created program object, or null if the creation has failed
+   */
+
+  function createProgram(gl, vshader, fshader) {
+    // Create shader object
+    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+
+    if (!vertexShader || !fragmentShader) {
+      return null;
+    } // Create a program object
+
+
+    var program = gl.createProgram();
+
+    if (!program) {
+      return null;
+    } // Attach the shader objects
+
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader); // Link the program object
+
+    gl.linkProgram(program); // Check the result of linking
+
+    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+
+    if (!linked) {
+      var error = gl.getProgramInfoLog(program);
+      inject.error('Failed to link program: ' + error);
+      gl.deleteProgram(program);
+      gl.deleteShader(fragmentShader);
+      gl.deleteShader(vertexShader);
+      return null;
+    }
+
+    return program;
+  }
+  /**
+   * Create a shader object
+   * @param gl GL context
+   * @param type the type of the shader object to be created
+   * @param source shader program (string)
+   * @return created shader object, or null if the creation has failed.
+   */
+
+
+  function loadShader(gl, type, source) {
+    // Create shader object
+    var shader = gl.createShader(type);
+
+    if (shader == null) {
+      inject.error('unable to create shader');
+      return null;
+    } // Set the shader program
+
+
+    gl.shaderSource(shader, source); // Compile the shader
+
+    gl.compileShader(shader); // Check the result of compilation
+
+    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+
+    if (!compiled) {
+      var error = gl.getShaderInfoLog(shader);
+      inject.error('Failed to compile shader: ' + error);
+      gl.deleteShader(shader);
+      return null;
+    }
+
+    return shader;
+  }
+
+  function convertCoords2Gl(x, y, cx, cy) {
+    if (x === cx) {
+      x = 0;
+    } else {
+      x = (x - cx) / cx;
+    }
+
+    if (y === cy) {
+      y = 0;
+    } else {
+      y = (y - cy) / cy;
+    }
+
+    return [x, y];
+  }
+
+  function createTexture(gl, tex) {
+    var n = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var texture = gl.createTexture(); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
+
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.activeTexture(gl['TEXTURE' + n]);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+    var u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
+    gl.uniform1i(u_texture, n);
+    return texture;
+  }
+
+  function initVertexBuffers(gl, infos, hash, cx, cy) {
+    var count = 0;
+    var count2 = 0;
+    var length = 0;
+    infos.forEach(function (info) {
+      length += info.length;
+    });
+    var vtPoint = new Float32Array(length * 12);
+    var vtTex = new Float32Array(length * 12);
+    var vtOpacity = new Float32Array(length * 6);
+    var vtIndex = new Float32Array(length * 6);
+    infos.forEach(function (info) {
+      info.forEach(function (item) {
+        var _item = _slicedToArray(item, 3),
+            cache = _item[0],
+            opacity = _item[1],
+            matrix = _item[2]; // y反转
+
+
+        revertMatrixY(matrix);
+
+        var _cache$coords = _slicedToArray(cache.coords, 2),
+            x = _cache$coords[0],
+            y = _cache$coords[1],
+            sx1 = cache.sx1,
+            sy1 = cache.sy1,
+            width = cache.width,
+            height = cache.height,
+            fullSize = cache.fullSize; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
+
+
+        var _convertCoords2Gl = convertCoords2Gl(sx1 - 1, sy1 - 1 + height, cx, cy),
+            _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
+            x1 = _convertCoords2Gl2[0],
+            y1 = _convertCoords2Gl2[1];
+
+        var _convertCoords2Gl3 = convertCoords2Gl(sx1 - 1 + width, sy1 - 1, cx, cy),
+            _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
+            x2 = _convertCoords2Gl4[0],
+            y2 = _convertCoords2Gl4[1];
+
+        var _calPoint = calPoint$2([x1, y1], matrix);
+
+        var _calPoint2 = _slicedToArray(_calPoint, 2);
+
+        x1 = _calPoint2[0];
+        y1 = _calPoint2[1];
+
+        var _calPoint3 = calPoint$2([x2, y2], matrix);
+
+        var _calPoint4 = _slicedToArray(_calPoint3, 2);
+
+        x2 = _calPoint4[0];
+        y2 = _calPoint4[1];
+        vtPoint[count] = x1;
+        vtPoint[count + 1] = y1;
+        vtPoint[count + 2] = x1;
+        vtPoint[count + 3] = y2;
+        vtPoint[count + 4] = x2;
+        vtPoint[count + 5] = y1;
+        vtPoint[count + 6] = x1;
+        vtPoint[count + 7] = y2;
+        vtPoint[count + 8] = x2;
+        vtPoint[count + 9] = y1;
+        vtPoint[count + 10] = x2;
+        vtPoint[count + 11] = y2;
+        var tx1 = (x - 1) / fullSize,
+            ty1 = (y - 1 + height) / fullSize;
+        var tx2 = (x - 1 + width) / fullSize,
+            ty2 = (y - 1) / fullSize;
+        vtTex[count] = tx1;
+        vtTex[count + 1] = ty1;
+        vtTex[count + 2] = tx1;
+        vtTex[count + 3] = ty2;
+        vtTex[count + 4] = tx2;
+        vtTex[count + 5] = ty1;
+        vtTex[count + 6] = tx1;
+        vtTex[count + 7] = ty2;
+        vtTex[count + 8] = tx2;
+        vtTex[count + 9] = ty1;
+        vtTex[count + 10] = tx2;
+        vtTex[count + 11] = ty2;
+        vtOpacity[count2] = opacity;
+        vtOpacity[count2 + 1] = opacity;
+        vtOpacity[count2 + 2] = opacity;
+        vtOpacity[count2 + 3] = opacity;
+        vtOpacity[count2 + 4] = opacity;
+        vtOpacity[count2 + 5] = opacity;
+        var index = hash[cache.page.__uuid];
+        vtIndex[count2] = index;
+        vtIndex[count2 + 1] = index;
+        vtIndex[count2 + 2] = index;
+        vtIndex[count2 + 3] = index;
+        vtIndex[count2 + 4] = index;
+        vtIndex[count2 + 5] = index;
+        count += 12;
+        count2 += 6;
+      });
+    });
+    var PER = 6; // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(gl.program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+    var opacityBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
+    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity); // 索引buffer
+
+    var indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtIndex, gl.STATIC_DRAW);
+    var a_index = gl.getAttribLocation(gl.program, 'a_index');
+    gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_index);
+    return [PER, length];
+  } // y反转
+
+
+  function revertMatrixY(matrix) {
+    matrix[1] = -matrix[1];
+    matrix[5] = -matrix[5];
+    matrix[9] = -matrix[9];
+    matrix[13] = -matrix[13];
+  }
+
+  function drawTextureCache(gl, infos, hash, cx, cy) {
+    var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
+        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 2),
+        n = _initVertexBuffers2[0],
+        count = _initVertexBuffers2[1];
+
+    if (n < 0 || count < 0) {
+      inject.error('Failed to set the positions of the vertices');
+      return;
+    }
+
+    gl.drawArrays(gl.TRIANGLES, 0, n * count);
+  }
+
+  var webgl = {
+    initShaders: initShaders,
+    createTexture: createTexture,
+    drawTextureCache: drawTextureCache
+  };
+
   var TexCache = /*#__PURE__*/function () {
     function TexCache(units) {
       _classCallCheck(this, TexCache);
 
-      this.__units = units; // 通道数量限制，8~16
+      this.__units = units;
+      this.__pages = []; // 存当前page列表，管道数量8~16
 
-      this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
+      this.__infos = []; // 存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
 
-      this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
-
-      this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
+      this.__textureChannels = []; // 每个管道还是个数组，下标即纹理单元，内容为[Page, version]
     }
     /**
-     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
-     * 收集的是Page对象（从cache中取得），里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
-     * webgl最少有8个纹理单元最多16个，因此存了一个列表来放这些Page的canvas，刷新后清空，但纹理通道映射记录保留
-     * 当8个纹理单元全部满了，进行绘制并清空这个队列，外部主循环结束时也会检查队列是否还有余留并绘制
+     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，已达到尽可能多的共享纹理，再一次性绘制
+     * 收集的是Page的canvas对象，里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
+     * webgl最少有8个纹理单元，因此存了一个列表来放这些Page的canvas，一次收集理论上最少8个节点，实际一般会很多
+     * 当8个纹理单元全部满了，需要第9个时，进行绘制并清空这个队列，主循环结束时也会检查队列是否还有余留并绘制
      * 初始调用队列为空，存入Page对象，后续调用先查看是否存在以便复用，再决定是否存入Page，直到8个满了
-     * Page上存有update表示是否更新，每次cache绘制时会变true，以此表示是否有贴图更新，删除可以忽视
-     * 还需要一个记录上次纹理通道使用哪个Page的canvas的地方，即映射，清空后队列再次添加时，如果Page之前被添加过，
-     * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
-     * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
-     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
+     * Page上存有version表示版本，每次增加的更新会自增，以此表示是否有贴图更新，删除可以忽视
+     * 还需要一个记录上次纹理单元使用哪个Page的canvas的贴图的地方，清空后队列再次添加时，如果Page之前被添加绘制过，
+     * 此次又被添加且没有变更version，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
+     * 后续接入局部纹理更新也是复用单元号，如果version变更可以选择局部上传纹理而非整个重新上传
+     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其version
      * @param gl
      * @param cache
      * @param opacity
@@ -25022,11 +24947,11 @@
         var pages = this.__pages;
         var infos = this.__infos;
         var page = cache.page;
-        var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
+        var i = pages.indexOf(page); // 找到说明已有，记录info
 
         if (i > -1) {
           infos[i].push([cache, opacity, matrix]);
-        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
+        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制缓存并清空，然后/否则 存入纹理列表
         else {
             i = pages.length;
 
@@ -25041,42 +24966,36 @@
             info.push([cache, opacity, matrix]);
           }
       }
-      /**
-       * 刷新
-       * @param gl
-       * @param cx
-       * @param cy
-       * @param pages
-       * @param infos
-       */
-
     }, {
       key: "refresh",
       value: function refresh(gl, cx, cy, pages, infos) {
         pages = pages || this.__pages;
-        infos = infos || this.__infos; // 防止空调用刷新
+        infos = infos || this.__infos;
 
         if (pages.length) {
-          var textureChannels = this.textureChannels; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
+          var textureChannels = this.__textureChannels; // 先将上次渲染的纹理单元使用的Page和版本形成一个hash，键为uuid，值为纹理单元+version
 
           var lastHash = {};
           textureChannels.forEach(function (item, i) {
             if (item) {
-              var uuid = item[0].uuid;
-              lastHash[uuid] = i;
+              var uuid = item[0].__uuid;
+              lastHash[uuid] = [i, item[1]];
             }
-          }); // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
+          }); // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引即相同下标，不同的按顺序收集放好
 
           var oldList = [],
               newList = [];
           pages.forEach(function (page) {
-            var uuid = page.uuid;
+            var uuid = page.__uuid;
 
             if (lastHash.hasOwnProperty(uuid)) {
-              var index = lastHash[uuid];
-              oldList[index] = page;
+              var _lastHash$uuid = _slicedToArray(lastHash[uuid], 2),
+                  index = _lastHash$uuid[0],
+                  version = _lastHash$uuid[1];
+
+              oldList[index] = [page, version];
             } else {
-              newList.push(page);
+              newList.push([page, page.__version]);
             }
           }); // 以oldList为基准，将newList依次存入oldList的空白处，即新纹理单元索引
 
@@ -25086,7 +25005,7 @@
               var item = oldList[i];
 
               if (item) ; else if (newList.length) {
-                oldList[i] = newList.shift();
+                oldList[i] = newList.pop();
               } else {
                 break;
               }
@@ -25104,22 +25023,18 @@
           var hash = {};
 
           for (var _i = 0, _len = oldList.length; _i < _len; _i++) {
-            var page = oldList[_i];
+            var _item = oldList[_i];
             var last = textureChannels[_i];
 
-            if (!last || last[0] !== page || page.update) {
-              if (last) {
-                webgl.deleteTexture(gl, last[1]);
-              }
-
-              var texture = webgl.createTexture(gl, page.canvas, _i);
-              textureChannels[_i] = [page, texture];
-              hash[page.uuid] = _i;
+            if (!last || last[0] !== _item[0] || last[1] !== _item[1]) {
+              var page = _item[0];
+              webgl.createTexture(gl, page.canvas, _i);
+              textureChannels[_i] = _item;
+              hash[page.__uuid] = _i;
             } else {
-              hash[page.uuid] = _i;
+              var _page = last[0];
+              hash[_page.__uuid] = _i;
             }
-
-            page.update = false;
           } // 再次遍历开始本次渲染并清空
 
 
@@ -25127,20 +25042,6 @@
           pages.splice(0);
           infos.splice(0);
         }
-      }
-    }, {
-      key: "release",
-      value: function release(gl) {
-        this.textureChannels.splice(0).forEach(function (item) {
-          if (item) {
-            webgl.deleteTexture(gl, item[1]);
-          }
-        });
-      }
-    }, {
-      key: "textureChannels",
-      get: function get() {
-        return this.__textureChannels;
       }
     }]);
 
@@ -25268,7 +25169,7 @@
               dx = 0,
               dy = 0,
               hasTotal = void 0;
-          var target = __cacheMask || __cacheOverflow || __cacheFilter;
+          var target = __cacheOverflow || __cacheMask || __cacheFilter;
 
           if (!target || !target.available) {
             target = __cacheTotal;
@@ -25360,7 +25261,7 @@
     if (cacheTop) {
       cacheTop.reset(bboxTotal);
     } else {
-      cacheTop = Cache.getInstance(bboxTotal);
+      cacheTop = __config[NODE_CACHE_TOTAL$3] = Cache.getInstance(bboxTotal);
     } // 创建失败，再次降级
 
 
@@ -25381,7 +25282,7 @@
         ty = _cacheTop$coords[1],
         ctx = _cacheTop.ctx,
         dbx = _cacheTop.dbx,
-        dby = _cacheTop.dby; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
+        dby = _cacheTop.dby; // 先绘制自己的cache，起点所以matrix视作E为空
 
 
     if (cache && cache.available) {
@@ -25399,12 +25300,14 @@
       var _config = _node.__config;
       var parentIndex = parentIndexHash[i];
       var matrix = matrixHash[parentIndex];
-      var opacity = opacityHash[parentIndex]; // 先看text，visibility会在内部判断，display会被parent判断
+      var opacity = opacityHash[i]; // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node instanceof Text) {
-        ctx.globalAlpha = opacity;
-        var m = matrix || [1, 0, 0, 1, 0, 0];
-        ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        ctx.globalAlpha = opacityHash[parentIndex];
+
+        var _matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
+
+        ctx.setTransform(_matrix[0], _matrix[1], _matrix[2], _matrix[3], _matrix[4], _matrix[5]);
 
         _node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -25456,13 +25359,12 @@
             var dy = -sy1 + dby + ty;
             tfo[0] += dx;
             tfo[1] += dy;
-
-            var _m = tf.calMatrixByOrigin(transform, tfo);
+            var m = tf.calMatrixByOrigin(transform, tfo);
 
             if (matrix) {
-              matrix = multiply$2(matrix, _m);
+              matrix = multiply$2(matrix, m);
             } else {
-              matrix = _m;
+              matrix = m;
             }
           }
 
@@ -25470,7 +25372,7 @@
             matrixHash[i] = matrix;
           }
 
-          var target = __cacheMask || __cacheOverflow || __cacheFilter;
+          var target = __cacheOverflow || __cacheMask || __cacheFilter;
 
           if (!target) {
             target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
@@ -25540,6 +25442,8 @@
 
 
   function genTotalWebgl(renderMode, node, __config, index, total, __structs, cacheTop, cache) {
+    console.log('genTotalWebgl');
+
     if (total === 0) {
       return cache;
     } // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
@@ -25552,123 +25456,25 @@
 
     if (!bboxTotal) {
       return;
-    } // if(cacheTop) {
-    //   cacheTop.reset(bboxTotal);
-    // }
-    // else {
-    //   cacheTop = Cache.getInstance(bboxTotal);
-    // }
-    // // 创建失败，再次降级
-    // if(!cacheTop || !cacheTop.enabled) {
-    //   return;
-    // }
-    // let { __sx1: sx1, __sy1: sy1 } = node;
-    // cacheTop.__appendData(sx1, sy1);
-    // cacheTop.__available = true;
-    // let { coords: [tx, ty], ctx, dbx, dby, width, height } = cacheTop;
-    // let webglTop = inject.getCacheWebgl(width, height);
-    // let { ctx: gl } = webglTop;
-    // const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-    // let texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
-    // gl.clearColor(0, 0, 0, 0);
-    // gl.clear(gl.COLOR_BUFFER_BIT);
-    // let cx = width * 0.5, cy = height * 0.5;
-    // // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-    // if(cache && cache.available) {
-    //   let m = mx.m2Mat4([1, 0, 0, 1, 0, 0], cx, cy);
-    //   texCache.addTexAndDrawWhenLimit(gl, cache, 1, m, cx, cy);
-    // }
-    // // 先序遍历汇总到total
-    // for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
-    //   let {
-    //     [STRUCT_NODE]: node,
-    //     [STRUCT_TOTAL]: total,
-    //     [STRUCT_HAS_MASK]: hasMask,
-    //   } = __structs[i];
-    //   let __config = node.__config;
-    //   let parentIndex = parentIndexHash[i];
-    //   let matrix = matrixHash[parentIndex];
-    //   let opacity = opacityHash[parentIndex];
-    //   // 先看text，visibility会在内部判断，display会被parent判断
-    //   if(node instanceof Text) {
-    //     let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-    //     texCache.addTexAndDrawWhenLimit(gl, node.__cache, opacity, m, cx, cy);
-    //   }
-    //   // 再看total缓存/cache，都没有的是无内容的Xom节点
-    //   else {
-    //     let {
-    //       [NODE_CACHE]: __cache,
-    //       [NODE_CACHE_TOTAL]: __cacheTotal,
-    //       [NODE_CACHE_FILTER]: __cacheFilter,
-    //       [NODE_CACHE_MASK]: __cacheMask,
-    //       [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-    //       [NODE_IS_MASK]: isMask,
-    //       [NODE_COMPUTED_STYLE]: {
-    //         [DISPLAY]: display,
-    //         [VISIBILITY]: visibility,
-    //         [TRANSFORM]: transform,
-    //         [TRANSFORM_ORIGIN]: transformOrigin,
-    //         [MIX_BLEND_MODE]: mixBlendMode,
-    //       },
-    //     } = __config;
-    //     if(display === 'none') {
-    //       i += (total || 0);
-    //       if(hasMask) {
-    //         i += hasMask;
-    //       }
-    //       continue;
-    //     }
-    //     if(visibility === 'hidden') {
-    //       continue;
-    //     }
-    //     // mask不能被汇总到top上
-    //     if(isMask) {
-    //       continue;
-    //     }
-    //     if(transform && !isE(transform)) {
-    //       let tfo = transformOrigin.slice(0);
-    //       // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-    //       if(__cache && __cache.available) {
-    //         tfo[0] += __cache.sx1;
-    //         tfo[1] += __cache.sy1;
-    //       }
-    //       else {
-    //         tfo[0] += node.__sx1;
-    //         tfo[1] += node.__sy1;
-    //       }
-    //       let dx = -sx1 + dbx + tx;
-    //       let dy = -sy1 + dby + ty;
-    //       tfo[0] += dx;
-    //       tfo[1] += dy;
-    //       let m = tf.calMatrixByOrigin(transform, tfo);
-    //       if(matrix) {
-    //         matrix = multiply(matrix, m);
-    //       }
-    //       else {
-    //         matrix = m;
-    //       }
-    //     }
-    //     if(matrix) {
-    //       matrixHash[i] = matrix;
-    //     }
-    //     let target = __cacheMask || __cacheOverflow || __cacheFilter;
-    //     if(!target) {
-    //       target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
-    //     }
-    //     if(target) {
-    //       i += (total || 0);
-    //     }
-    //     else if(__cache && __cache.available) {
-    //       target= __cache;
-    //     }
-    //     if(target) {
-    //       let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-    //       texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy);
-    //     }
-    //   }
-    // }
-    // texCache.refresh(gl, cx, cy);
+    }
 
+    if (cacheTop) {
+      cacheTop.reset(bboxTotal);
+    } else {
+      cacheTop = __config[NODE_CACHE_TOTAL$3] = Cache.getInstance(bboxTotal, renderMode);
+    } // 创建失败，再次降级
+
+
+    if (!cacheTop || !cacheTop.enabled) {
+      return;
+    }
+
+    var sx1 = node.__sx1,
+        sy1 = node.__sy1;
+
+    cacheTop.__appendData(sx1, sy1);
+
+    cacheTop.__available = true;
   }
 
   function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -25703,7 +25509,16 @@
         return "continue";
       }
 
-      var __config = node.__config; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
+      var __config = node.__config;
+      var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
+
+      if (computedStyle[DISPLAY$8] === 'none') {
+        _i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
+
+        i = _i;
+        return "continue";
+      } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
+
 
       if (_i === 0) ; else if (lv > lastLv) {
         parentMatrix = lastConfig[NODE_MATRIX_EVENT$2];
@@ -25726,16 +25541,7 @@
 
       var __refreshLevel = __config[NODE_REFRESH_LV$1],
           __cache = __config[NODE_CACHE$4],
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-          computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
-
-      if (computedStyle[DISPLAY$8] === 'none') {
-        _i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
-
-        i = _i;
-        return "continue";
-      }
-
+          __cacheTotal = __config[NODE_CACHE_TOTAL$3];
       var hasRecordAsMask = void 0;
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -25764,15 +25570,15 @@
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
-          var _m2 = __config[NODE_MATRIX$1];
+          var _m = __config[NODE_MATRIX$1];
 
-          if (matrix && _m2) {
-            _m2[0] = matrix[0];
-            _m2[1] = matrix[1];
-            _m2[2] = matrix[2];
-            _m2[3] = matrix[3];
-            _m2[4] = matrix[4];
-            _m2[5] = matrix[5];
+          if (matrix && _m) {
+            _m[0] = matrix[0];
+            _m[1] = matrix[1];
+            _m[2] = matrix[2];
+            _m[3] = matrix[3];
+            _m[4] = matrix[4];
+            _m[5] = matrix[5];
           }
         } else {
           matrix = __config[NODE_MATRIX$1];
@@ -25999,7 +25805,7 @@
         } // 有total的可以直接绘制并跳过子节点索引
 
 
-        var target = __cacheMask || __cacheOverflow || __cacheFilter;
+        var target = __cacheOverflow || __cacheMask || __cacheFilter;
 
         if (!target || !target.available) {
           target = __cacheTotal;
@@ -26263,7 +26069,7 @@
                     offsetHeight = offScreenOverflow.offsetHeight;
                 ctx.globalCompositeOperation = 'destination-in';
                 ctx.globalAlpha = 1;
-                ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath();
                 ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -26273,10 +26079,11 @@
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1) && !blendHash.hasOwnProperty(_i3)) {
                   origin.setTransform(1, 0, 0, 1, 0, 0);
+                  origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                   origin.globalAlpha = 1;
                   origin.drawImage(target.canvas, 0, 0);
-                  target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-                  target.ctx.clearRect(0, 0, width, height);
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
                   ctx = origin;
                 }
@@ -26570,9 +26377,9 @@
             origin.setTransform(1, 0, 0, 1, 0, 0);
             origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
-            target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-            target.ctx.clearRect(0, 0, width, height);
-            inject.releaseCacheCanvas(target.canvas);
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // ctx.clearRect(0, 0, width, height);
+            // inject.releaseCacheCanvas(target.canvas);
+
             ctx = origin;
           }
         });
@@ -26983,11 +26790,11 @@
                   }
                 }
 
-                var _matrix = _node2.renderMatrix;
+                var _matrix2 = _node2.renderMatrix;
                 var ivs = inverse$1(dom.renderMatrix);
-                _matrix = multiply$2(ivs, _matrix); // path没有transform属性，在vd上，需要弥补
+                _matrix2 = multiply$2(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
 
-                props.push(['transform', "matrix(".concat(_matrix.join(','), ")")]); // path没有opacity属性，在vd上，需要弥补
+                props.push(['transform', "matrix(".concat(_matrix2.join(','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
                 if (!util.isNil(_opacity2) && _opacity2 !== 1) {
                   props.push(['opacity', _opacity2]);
@@ -26996,9 +26803,9 @@
               else if (tagName === 'image') {
                   var hasTransform = -1;
 
-                  for (var _m3 = 0, _len5 = props.length; _m3 < _len5; _m3++) {
-                    if (props[_m3][0] === 'transform') {
-                      hasTransform = _m3;
+                  for (var _m2 = 0, _len5 = props.length; _m2 < _len5; _m2++) {
+                    if (props[_m2][0] === 'transform') {
+                      hasTransform = _m2;
                       break;
                     }
                   }
@@ -27010,14 +26817,14 @@
                       props.push(['transform', "matrix(".concat(_ivs.join(','), ")")]);
                     }
                   } else {
-                    var _matrix2 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                    var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                       return parseFloat(i);
                     });
 
                     var _ivs2 = inverse$1(dom.renderMatrix);
 
-                    _matrix2 = multiply$2(_ivs2, _matrix2);
-                    props[hasTransform][1] = "matrix(".concat(_matrix2.join(','), ")");
+                    _matrix3 = multiply$2(_ivs2, _matrix3);
+                    props[hasTransform][1] = "matrix(".concat(_matrix3.join(','), ")");
                   }
                 }
             }
@@ -27072,8 +26879,6 @@
       texCache = root.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
     }
 
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
@@ -27105,6 +26910,15 @@
           total = _structs$_i7[STRUCT_TOTAL$1],
           hasMask = _structs$_i7[STRUCT_HAS_MASK$1];
       var __config = node.__config;
+      var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
+
+      if (computedStyle[DISPLAY$8] === 'none') {
+        _i12 += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
+
+        _i11 = _i12;
+        return "continue";
+      }
+
       var __refreshLevel = __config[NODE_REFRESH_LV$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
       if (_i12 === 0) ; else if (lv > lastLv) {
@@ -27134,10 +26948,10 @@
 
       if (node instanceof Text) {
         if (parentRefreshLevel >= REPAINT$2) {
-          var _cache2 = node.__renderAsTex(); // 有内容无cache说明超限
+          var _cache = node.__renderAsTex(); // 有内容无cache说明超限
 
 
-          if ((!_cache2 || !_cache2.available) && node.content) ;
+          if ((!_cache || !_cache.available) && node.content) ;
         }
 
         _i11 = _i12;
@@ -27145,16 +26959,7 @@
       }
 
       var __cache = __config[NODE_CACHE$4],
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-          computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
-
-      if (computedStyle[DISPLAY$8] === 'none') {
-        _i12 += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
-
-        _i11 = _i12;
-        return "continue";
-      }
-
+          __cacheTotal = __config[NODE_CACHE_TOTAL$3];
       var hasRecordAsMask = void 0;
       /**
        * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -27183,15 +26988,15 @@
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
-          var _m6 = __config[NODE_MATRIX$1];
+          var _m5 = __config[NODE_MATRIX$1];
 
-          if (matrix && _m6) {
-            _m6[0] = matrix[0];
-            _m6[1] = matrix[1];
-            _m6[2] = matrix[2];
-            _m6[3] = matrix[3];
-            _m6[4] = matrix[4];
-            _m6[5] = matrix[5];
+          if (matrix && _m5) {
+            _m5[0] = matrix[0];
+            _m5[1] = matrix[1];
+            _m5[2] = matrix[2];
+            _m5[3] = matrix[3];
+            _m5[4] = matrix[4];
+            _m5[5] = matrix[5];
           }
         } else {
           matrix = __config[NODE_MATRIX$1];
@@ -27202,15 +27007,15 @@
         } // 恶心的v8性能优化
 
 
-        var _m5 = __config[NODE_MATRIX_EVENT$2];
+        var _m4 = __config[NODE_MATRIX_EVENT$2];
 
-        if (_m5 && matrix) {
-          _m5[0] = matrix[0];
-          _m5[1] = matrix[1];
-          _m5[2] = matrix[2];
-          _m5[3] = matrix[3];
-          _m5[4] = matrix[4];
-          _m5[5] = matrix[5];
+        if (_m4 && matrix) {
+          _m4[0] = matrix[0];
+          _m4[1] = matrix[1];
+          _m4[2] = matrix[2];
+          _m4[3] = matrix[3];
+          _m4[4] = matrix[4];
+          _m4[5] = matrix[5];
         }
 
         var opacity;
@@ -27286,6 +27091,11 @@
           } else {
             node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
             __cache = __config[NODE_CACHE$4];
+          } // cache所在page更新，防止被管道缓存位图
+
+
+          if (__cache && __cache.available) {
+            __cache.update();
           }
         }
 
@@ -27367,36 +27177,36 @@
           node = _structs$_i6[STRUCT_NODE$1],
           total = _structs$_i6[STRUCT_TOTAL$1],
           hasMask = _structs$_i6[STRUCT_HAS_MASK$1];
-      var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+      var _node$__config3 = node.__config,
+          __opacity = _node$__config3[NODE_OPACITY$2],
+          matrixEvent = _node$__config3[NODE_MATRIX_EVENT$2],
+          __blurValue = _node$__config3[NODE_BLUR_VALUE$1],
+          __limitCache = _node$__config3[NODE_LIMIT_CACHE$1],
+          __cache = _node$__config3[NODE_CACHE$4],
+          __cacheTotal = _node$__config3[NODE_CACHE_TOTAL$3],
+          __cacheFilter = _node$__config3[NODE_CACHE_FILTER$3],
+          __cacheMask = _node$__config3[NODE_CACHE_MASK$2],
+          __cacheOverflow = _node$__config3[NODE_CACHE_OVERFLOW$3],
+          __refreshLevel = _node$__config3[NODE_REFRESH_LV$1],
+          _node$__config3$NODE_ = _node$__config3[NODE_COMPUTED_STYLE$2],
+          display = _node$__config3$NODE_[DISPLAY$8],
+          visibility = _node$__config3$NODE_[VISIBILITY$5],
+          overflow = _node$__config3$NODE_[OVERFLOW$3],
+          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的
 
       if (node instanceof Text) {
         // text特殊之处，__cache是独有的，__config大部分是复用parent的
-        var _config$NODE_DOM_PAR2 = __config[NODE_DOM_PARENT$4].__config,
-            __opacity = _config$NODE_DOM_PAR2[NODE_OPACITY$2],
-            matrixEvent = _config$NODE_DOM_PAR2[NODE_MATRIX_EVENT$2];
-        var __cache = node.__cache;
+        console.log('a', _i13, node.__config, __cache);
+        __cache = node.__cache;
 
         if (__cache && __cache.available) {
           var m = mx.m2Mat4(matrixEvent, cx, cy);
-          texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, m, cx, cy);
-        }
-      } else {
-        var _opacity3 = __config[NODE_OPACITY$2],
-            _matrixEvent2 = __config[NODE_MATRIX_EVENT$2],
-            __blurValue = __config[NODE_BLUR_VALUE$1],
-            __limitCache = __config[NODE_LIMIT_CACHE$1],
-            _cache = __config[NODE_CACHE$4],
-            __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-            __cacheFilter = __config[NODE_CACHE_FILTER$3],
-            __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3],
-            __refreshLevel = __config[NODE_REFRESH_LV$1],
-            _config$NODE_COMPUTE2 = __config[NODE_COMPUTED_STYLE$2],
-            display = _config$NODE_COMPUTE2[DISPLAY$8],
-            visibility = _config$NODE_COMPUTE2[VISIBILITY$5],
-            overflow = _config$NODE_COMPUTE2[OVERFLOW$3],
-            mixBlendMode = _config$NODE_COMPUTE2[MIX_BLEND_MODE$3];
+          console.log(_i13, matrixEvent, m);
+        } // ctx.globalAlpha = __opacity;
+        // ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
+        // node.render(renderMode, 0, ctx, defs);
 
+      } else {
         if (display === 'none') {
           _i13 += total || 0;
 
@@ -27418,18 +27228,16 @@
         if (target && target.available) ; // 自身cache尝试
         else {
             // console.log(i, node.tagName, __cache && __cache.available, __limitCache);
-            if (_cache && _cache.available || __limitCache) {
-              if (_cache && _cache.available) {
-                var _m4 = mx.m2Mat4(_matrixEvent2, cx, cy);
+            if (__cache && __cache.available || __limitCache) {
+              if (__cache && __cache.available) {
+                var _m3 = mx.m2Mat4(matrixEvent, cx, cy);
 
-                texCache.addTexAndDrawWhenLimit(gl, _cache, _opacity3, _m4, cx, cy);
+                console.log(_i13, matrixEvent, _m3, node.__config, __cache);
               }
             }
           }
       }
     }
-
-    texCache.refresh(gl, cx, cy);
   }
 
   var struct = {
@@ -27438,6 +27246,10 @@
     renderSvg: renderSvg,
     renderWebgl: renderWebgl
   };
+
+  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n//varying float v_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n//  gl_Position = a_matrix * a_position;\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n//  v_matrix = a_matrix;\n}\n";
+
+  var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index;\n  float opacity;\n  index = int(v_index);\n  opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
 
   var _DIRECTION_HASH;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
@@ -28307,7 +28119,12 @@
         } else if (this.tagName === 'svg') {
           this.__renderMode = mode.SVG;
         } else if (this.tagName === 'webgl') {
-          var gl = this.__ctx = this.__dom.getContext('webgl', ca);
+          var gl = this.__ctx = this.__dom.getContext('webgl', {
+            alpha: true,
+            antialias: true,
+            depth: true,
+            stencil: true
+          });
 
           this.__renderMode = mode.WEBGL;
           webgl.initShaders(gl, vertex, fragment);
@@ -28400,24 +28217,6 @@
 
         if (n) {
           n.__root = null;
-        }
-
-        var gl = this.ctx;
-
-        if (this.__texCache && gl) {
-          this.__texCache.release(gl);
-
-          if (gl.program) {
-            gl.deleteProgram(gl.program);
-          }
-
-          if (gl.vertexShader) {
-            gl.deleteShader(gl.vertexShader);
-          }
-
-          if (gl.fragmentShader) {
-            gl.deleteShader(gl.fragmentShader);
-          }
         }
       }
     }, {

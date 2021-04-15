@@ -1,17 +1,25 @@
 import inject from '../util/inject';
+import mode from '../node/mode';
 
-let SIZE   = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
-let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
+let SIZE   = [8,   16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+// let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
+let NUMBER = [128, 64, 32, 16,   8,   4,   2,    1,    1,    1];
 let MAX = SIZE[SIZE.length - 1];
-const HASH = {};
+const HASH_CANVAS = {};
+const HASH_WEBGL = {};
+
+let uuid = 0;
 
 class Page {
-  constructor(size, number) {
+  constructor(size, number, renderMode) {
     this.__size = size;
     this.__number = number;
     this.__free = this.__total = number * number;
     size *= number;
-    let offScreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
+    this.__fullSize = size;
+    let offScreen = this.__canvas = renderMode === mode.WEBGL
+      ? inject.getCacheWebgl(size, size, null, number)
+      : inject.getCacheCanvas(size, size, null, number);
     if(offScreen) {
       this.__offScreen = offScreen;
     }
@@ -20,6 +28,9 @@ class Page {
     for(let i = 0; i < this.__total; i++) {
       this.__grid.push(1);
     }
+    this.__uuid = uuid++;
+    // webgl贴图缓存使用，一旦更新则标识记录，绑定某号纹理单元查看变化才更新贴图
+    this.__update = false;
   }
 
   add() {
@@ -41,6 +52,8 @@ class Page {
   del(pos) {
     this.grid[pos] = 1;
     this.__free++;
+    // 删除暂时不用，因为不会绘制，只有增加时才更新纹理
+    // this.__version++;
   }
 
   getCoords(pos) {
@@ -52,6 +65,10 @@ class Page {
 
   get size() {
     return this.__size;
+  }
+
+  get fullSize() {
+    return this.__fullSize;
   }
 
   get number() {
@@ -82,7 +99,15 @@ class Page {
     return this.offScreen.ctx;
   }
 
-  static getInstance(size) {
+  get update() {
+    return this.__update;
+  }
+
+  set update(v) {
+    this.__update = v;
+  }
+
+  static getInstance(size, renderMode) {
     if(size > MAX) {
       return;
     }
@@ -96,6 +121,7 @@ class Page {
         break;
       }
     }
+    const HASH = renderMode === mode.WEBGL ? HASH_WEBGL : HASH_CANVAS;
     let list = HASH[s] = HASH[s] || [];
     // 从hash列表中尝试取可用的一页，找不到就生成新的页
     let page;
@@ -107,7 +133,7 @@ class Page {
       }
     }
     if(!page) {
-      page = new Page(s, n);
+      page = new Page(s, n, renderMode);
       if(!page.offScreen) {
         inject.error('Can not create off-screen for page');
         return;

@@ -20,6 +20,9 @@ import change from '../refresh/change';
 import level from '../refresh/level';
 import struct from '../refresh/struct';
 import reflow from '../refresh/reflow';
+import vertex from '../gl/vertex.glsl';
+import fragment from '../gl/fragment.glsl';
+import webgl from '../gl/webgl';
 
 const {
   STYLE_KEY: {
@@ -94,6 +97,12 @@ const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { calRelative, isRelativeOrAbsolute, equalStyle } = css;
 const { contain, getLevel, isRepaint, NONE, FILTER, REPAINT, REFLOW, LAYOUT, OFFSET } = level;
 const { isIgnore, isGeom, isMeasure } = change;
+
+const ROOT_DOM_NAME = {
+  canvas: 'canvas',
+  svg: 'svg',
+  webgl: 'canvas',
+};
 
 function getDom(dom) {
   if(util.isString(dom) && dom) {
@@ -625,8 +634,8 @@ class Root extends Dom {
     }
   }
 
-  __genHtml() {
-    let res = `<${this.tagName}`;
+  __genHtml(domName) {
+    let res = `<${domName}`;
     // 拼接处理属性
     Object.keys(this.props).forEach(k => {
       let v = this.props[k];
@@ -635,7 +644,7 @@ class Root extends Dom {
         res += renderProp(k, v);
       }
     });
-    res += `></${this.tagName}>`;
+    res += `></${domName}>`;
     return res;
   }
 
@@ -704,6 +713,8 @@ class Root extends Dom {
     this.__initProps();
     this.__root = this;
     this.cache = !!this.props.cache;
+    let tagName = this.tagName;
+    let domName = ROOT_DOM_NAME[tagName];
     // OffscreenCanvas兼容，包含worker的
     if(typeof window !== 'undefined' && window.OffscreenCanvas && (dom instanceof window.OffscreenCanvas)
       || typeof self !== 'undefined' && self.OffscreenCanvas && (dom instanceof self.OffscreenCanvas)) {
@@ -712,7 +723,7 @@ class Root extends Dom {
       this.__height = dom.height;
     }
     // 已有root节点
-    else if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
+    else if(dom.nodeName.toLowerCase() === domName) {
       this.__dom = dom;
       if(this.width) {
         dom.setAttribute('width', this.width);
@@ -723,10 +734,10 @@ class Root extends Dom {
     }
     // 没有canvas/svg节点则生成一个新的
     else {
-      this.__dom = dom.querySelector(this.tagName);
+      this.__dom = dom.querySelector(domName);
       if(!this.__dom) {
-        dom.innerHTML = this.__genHtml();
-        this.__dom = dom.querySelector(this.tagName);
+        dom.innerHTML = this.__genHtml(domName);
+        this.__dom = dom.querySelector(domName);
       }
     }
     this.__uuid = isNil(this.__dom.__uuid) ? uuid++ : this.__dom.__uuid;
@@ -750,6 +761,16 @@ class Root extends Dom {
     }
     else if(this.tagName === 'svg') {
       this.__renderMode = mode.SVG;
+    }
+    else if(this.tagName === 'webgl') {
+      let gl = this.__ctx = this.__dom.getContext('webgl', {
+        alpha: true,
+        antialias: true,
+        depth: true,
+        stencil: true,
+      });
+      this.__renderMode = mode.WEBGL;
+      webgl.initShaders(gl, vertex, fragment);
     }
     this.refresh(null, true);
     // 第一次节点没有__root，渲染一次就有了才能diff
@@ -807,6 +828,9 @@ class Root extends Dom {
       }
       this.dom.__vd = nvd;
       this.dom.__defs = defs;
+    }
+    else if(renderMode === mode.WEBGL) {
+      struct.renderWebgl(renderMode, ctx, defs, this);
     }
     // 特殊cb，供小程序绘制完回调使用
     if(isFunction(cb)) {

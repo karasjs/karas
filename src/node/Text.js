@@ -7,6 +7,8 @@ import util from '../util/util';
 import textCache from './textCache';
 import inject from '../util/inject';
 import font from '../style/font';
+import level from '../refresh/level';
+import Cache from '../refresh/Cache';
 
 const {
   STYLE_KEY: {
@@ -165,6 +167,10 @@ class Text extends Node {
    * @private
    */
   __layout(data) {
+    let __cache = this.__cache;
+    if(__cache) {
+      __cache.release();
+    }
     let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
@@ -598,6 +604,27 @@ class Text extends Node {
       }
     }
     return true;
+  }
+
+  __renderAsTex() {
+    if(!this.content) {
+      return;
+    }
+    let cache = this.__cache;
+    if(cache && cache.available) {
+      return cache;
+    }
+    let { sx, sy } = this;
+    let bbox = this.bbox;
+    cache = Cache.getInstance(bbox);
+    if(cache && cache.enabled) {
+      this.__cache = cache;
+      cache.__appendData(sx, sy);
+      let [x, y] = cache.coords;
+      this.render(mode.CANVAS, level.REFLOW, cache.ctx, null, -sx + x, -sy + y);
+      cache.__available = true;
+    }
+    return cache;
   }
 
   __deepScan(cb) {

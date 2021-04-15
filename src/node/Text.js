@@ -610,25 +610,35 @@ class Text extends Node {
     if(!this.content) {
       return;
     }
-    let cache = this.__cache;
-    if(cache && cache.available) {
-      return cache;
+    let { sx, sy, __cache, bbox } = this;
+    if(__cache) {
+      __cache.reset(bbox);
     }
-    let { sx, sy } = this;
-    let bbox = this.bbox;
-    cache = Cache.getInstance(bbox);
-    if(cache && cache.enabled) {
-      this.__cache = cache;
-      cache.__appendData(sx, sy);
-      let [x, y] = cache.coords;
-      this.render(mode.CANVAS, level.REFLOW, cache.ctx, null, -sx + x, -sy + y);
-      cache.__available = true;
+    else {
+      __cache = Cache.getInstance(bbox);
     }
-    return cache;
+    if(__cache && __cache.enabled) {
+      this.__cache = __cache;
+      __cache.__appendData(sx, sy);
+      let [x, y] = __cache.coords;
+      this.render(mode.CANVAS, level.REFLOW, __cache.ctx, null, -sx + x, -sy + y);
+      __cache.__available = true;
+    }
+    return __cache;
   }
 
   __deepScan(cb) {
     cb(this);
+  }
+
+  __destroy() {
+    if(this.isDestroyed) {
+      return;
+    }
+    super.__destroy();
+    if(this.__cache) {
+      this.__cache.release();
+    }
   }
 
   get content() {
@@ -664,19 +674,23 @@ class Text extends Node {
   }
 
   get root() {
-    return this.parent.root;
+    return this.domParent.root;
   }
 
   get currentStyle() {
-    return this.parent.currentStyle;
+    return this.domParent.currentStyle;
+  }
+
+  get style() {
+    return this.__style;
   }
 
   get computedStyle() {
-    return this.parent.computedStyle;
+    return this.domParent.computedStyle;
   }
 
   get cacheStyle() {
-    return this.parent.__cacheStyle;
+    return this.domParent.__cacheStyle;
   }
 
   get bbox() {
@@ -687,6 +701,22 @@ class Text extends Node {
     let x1 = sx, y1 = sy;
     let x2 = sx + width, y2 = sy + height;
     return [x1, y1, x2, y2];
+  }
+
+  get isShadowRoot() {
+    return !this.parent && this.host && this.host !== this.root;
+  }
+
+  get matrix() {
+    return this.domParent.matrix;
+  }
+
+  get renderMatrix() {
+    return this.domParent.renderMatrix;
+  }
+
+  get matrixEvent() {
+    return this.domParent.matrix;
   }
 }
 

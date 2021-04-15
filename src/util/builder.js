@@ -188,7 +188,7 @@ function relation(parent, children, options = {}) {
   else if(children instanceof Xom || children instanceof Component || children instanceof Text) {
     children.__parent = parent;
     children.__domParent = parent;
-    // 极为恶心，为了v8的性能优化，text复用parent的style部分，但domParent重设
+    // 极为恶心，为了v8的性能优化，text复用parent的__config部分，但domParent重设
     if(children instanceof Text) {
       Object.assign(children.__config, parent.__config);
     }

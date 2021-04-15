@@ -43,6 +43,7 @@ const {
     NODE_CACHE_STYLE,
     NODE_DEFS_CACHE,
     NODE_IS_MASK,
+    NODE_DOM_PARENT,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -237,40 +238,11 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
       [STRUCT_TOTAL]: total,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
-    let {
-      [NODE_CACHE]: __cache,
-      [NODE_CACHE_TOTAL]: __cacheTotal,
-      [NODE_CACHE_FILTER]: __cacheFilter,
-      [NODE_CACHE_MASK]: __cacheMask,
-      [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-      [NODE_IS_MASK]: isMask,
-      [NODE_COMPUTED_STYLE]: {
-        [DISPLAY]: display,
-        [VISIBILITY]: visibility,
-        [TRANSFORM]: transform,
-        [TRANSFORM_ORIGIN]: transformOrigin,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      },
-    } = node.__config;
-    // mask不能被汇总到top上
-    if(isMask) {
-      continue;
-    }
-    if(display === 'none') {
-      i += (total || 0);
-      if(hasMask) {
-        i += hasMask;
-      }
-      continue;
-    }
-    // 单个不可见节点跳过，其孩子还要继续
-    if(visibility === 'hidden') {
-      continue;
-    }
+    let __config = node.__config;
     let parentIndex = parentIndexHash[i];
     let matrix = matrixHash[parentIndex];
     let opacity = opacityHash[i];
-    // 先看text
+    // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
       ctx.globalAlpha = opacityHash[parentIndex];
       let matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
@@ -279,6 +251,35 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
+      let {
+        [NODE_CACHE]: __cache,
+        [NODE_CACHE_TOTAL]: __cacheTotal,
+        [NODE_CACHE_FILTER]: __cacheFilter,
+        [NODE_CACHE_MASK]: __cacheMask,
+        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+        [NODE_IS_MASK]: isMask,
+        [NODE_COMPUTED_STYLE]: {
+          [DISPLAY]: display,
+          [VISIBILITY]: visibility,
+          [TRANSFORM]: transform,
+          [TRANSFORM_ORIGIN]: transformOrigin,
+          [MIX_BLEND_MODE]: mixBlendMode,
+        },
+      } = __config;
+      if(display === 'none') {
+        i += (total || 0);
+        if(hasMask) {
+          i += hasMask;
+        }
+        continue;
+      }
+      if(visibility === 'hidden') {
+        continue;
+      }
+      // mask不能被汇总到top上
+      if(isMask) {
+        continue;
+      }
       if(transform && !isE(transform)) {
         let tfo = transformOrigin.slice(0);
         // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
@@ -400,7 +401,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   let parentMatrix;
   let opacityList = [];
   let parentOpacity = 1;
-  // let configList = [];
   let lastConfig;
   let lastLv = 0;
   let mergeList = [];
@@ -431,9 +431,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       continue;
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
-    if(i === 0) {
-      // configList.push(__config);
-    }
+    if(i === 0) {}
     else if(lv > lastLv) {
       parentMatrix = lastConfig[NODE_MATRIX_EVENT];
       if(isE(parentMatrix)) {
@@ -442,7 +440,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       matrixList.push(parentMatrix);
       parentOpacity = lastConfig[NODE_OPACITY];
       opacityList.push(parentOpacity);
-      // configList.push(__config);
     }
     // 变小出栈索引需注意，可能不止一层，多层计算diff层级
     else if(lv < lastLv) {
@@ -451,10 +448,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       parentMatrix = matrixList[lv];
       opacityList.splice(-diff);
       parentOpacity = opacityList[lv];
-      // configList.splice(-diff);
-      // lastConfig = configList[lv];
     }
-    // else{} 不变是同级兄弟，无需特殊处理
+    // 不变是同级兄弟，无需特殊处理
+    else {}
     let {
       [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_CACHE]: __cache,
@@ -649,31 +645,36 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       [STRUCT_TOTAL]: total,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
-    let {
-      [NODE_OPACITY]: __opacity,
-      [NODE_MATRIX_EVENT]: matrixEvent,
-      [NODE_BLUR_VALUE]: __blurValue,
-      [NODE_LIMIT_CACHE]: __limitCache,
-      [NODE_CACHE]: __cache,
-      [NODE_CACHE_TOTAL]: __cacheTotal,
-      [NODE_CACHE_FILTER]: __cacheFilter,
-      [NODE_CACHE_MASK]: __cacheMask,
-      [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-      [NODE_REFRESH_LV]: __refreshLevel,
-      [NODE_COMPUTED_STYLE]: {
-        [DISPLAY]: display,
-        [VISIBILITY]: visibility,
-        [OVERFLOW]: overflow,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      },
-    } = node.__config;
-    // text如果不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的
+    let __config = node.__config;
+    // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
+      let {
+        [NODE_OPACITY]: __opacity,
+        [NODE_MATRIX_EVENT]: matrixEvent,
+      } = __config[NODE_DOM_PARENT].__config;
       ctx.globalAlpha = __opacity;
       ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
       node.render(renderMode, 0, ctx, defs);
     }
     else {
+      let {
+        [NODE_OPACITY]: __opacity,
+        [NODE_MATRIX_EVENT]: matrixEvent,
+        [NODE_BLUR_VALUE]: __blurValue,
+        [NODE_LIMIT_CACHE]: __limitCache,
+        [NODE_CACHE]: __cache,
+        [NODE_CACHE_TOTAL]: __cacheTotal,
+        [NODE_CACHE_FILTER]: __cacheFilter,
+        [NODE_CACHE_MASK]: __cacheMask,
+        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+        [NODE_REFRESH_LV]: __refreshLevel,
+        [NODE_COMPUTED_STYLE]: {
+          [DISPLAY]: display,
+          [VISIBILITY]: visibility,
+          [OVERFLOW]: overflow,
+          [MIX_BLEND_MODE]: mixBlendMode,
+        },
+      } = __config;
       if(display === 'none') {
         i += (total || 0);
         if(hasMask) {
@@ -1581,7 +1582,7 @@ function renderWebgl(renderMode, gl, defs, root) {
   let parentOpacity = 1;
   let refreshLevelList = [];
   let parentRefreshLevel;
-  // let configList = [];
+  let lastRefreshLevel;
   let lastConfig;
   let lastLv = 0;
   let mergeList = [];
@@ -1599,14 +1600,6 @@ function renderWebgl(renderMode, gl, defs, root) {
       [STRUCT_TOTAL]: total,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
-    // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
-    // if(node instanceof Text) {
-    //   let __cache = node.__renderAsTex();
-    //   // 有内容无cache说明超限
-    //   if((!__cache || !__cache.available) && node.content) {
-    //   }
-    //   continue;
-    // }
     let __config = node.__config;
     let computedStyle = __config[NODE_COMPUTED_STYLE];
     // 跳过display:none元素和它的所有子节点
@@ -1615,10 +1608,9 @@ function renderWebgl(renderMode, gl, defs, root) {
       // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
       continue;
     }
+    let __refreshLevel = __config[NODE_REFRESH_LV];
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
-    if(i === 0) {
-      // configList.push(__config);
-    }
+    if(i === 0) {}
     else if(lv > lastLv) {
       parentMatrix = lastConfig[NODE_MATRIX_EVENT];
       if(isE(parentMatrix)) {
@@ -1628,9 +1620,8 @@ function renderWebgl(renderMode, gl, defs, root) {
       parentOpacity = lastConfig[NODE_OPACITY];
       opacityList.push(parentOpacity);
       // 要记住parent的refreshLevel供Text判断是否变化用
-      parentRefreshLevel = lastConfig[NODE_REFRESH_LV];
+      parentRefreshLevel = lastRefreshLevel;
       refreshLevelList.push(parentRefreshLevel);
-      // configList.push(__config);
     }
     // 变小出栈索引需注意，可能不止一层，多层计算diff层级
     else if(lv < lastLv) {
@@ -1641,12 +1632,20 @@ function renderWebgl(renderMode, gl, defs, root) {
       parentOpacity = opacityList[lv];
       refreshLevelList.splice(-diff);
       parentRefreshLevel = refreshLevelList[lv];
-      // configList.splice(-diff);
-      // lastConfig = configList[lv];
     }
-    // else{} 不变是同级兄弟，无需特殊处理
+    // 不变是同级兄弟，无需特殊处理
+    else{}
+    // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+    if(node instanceof Text) {
+      if(parentRefreshLevel >= REPAINT) {
+        let __cache = node.__renderAsTex();
+        // 有内容无cache说明超限
+        if((!__cache || !__cache.available) && node.content) {
+        }
+      }
+      continue;
+    }
     let {
-      [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
     } = __config;
@@ -1768,6 +1767,7 @@ function renderWebgl(renderMode, gl, defs, root) {
         __cache.update();
       }
     }
+    lastRefreshLevel = __refreshLevel;
     lastConfig = __config;
     lastLv = lv;
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
@@ -1864,6 +1864,13 @@ function renderWebgl(renderMode, gl, defs, root) {
     } = node.__config;
     // text如果不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的
     if(node instanceof Text) {
+      // text特殊之处，__cache是独有的，__config大部分是复用parent的
+      console.log('a', i, node.__config, __cache);
+      __cache = node.__cache;
+      if(__cache && __cache.available) {
+        let m = mx.m2Mat4(matrixEvent, cx, cy);
+        console.log(i, matrixEvent, m);
+      }
       // ctx.globalAlpha = __opacity;
       // ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
       // node.render(renderMode, 0, ctx, defs);
@@ -1890,7 +1897,8 @@ function renderWebgl(renderMode, gl, defs, root) {
         // console.log(i, node.tagName, __cache && __cache.available, __limitCache);
         if(__cache && __cache.available || __limitCache) {
           if(__cache && __cache.available) {
-            console.log(i, matrixEvent);
+            let m = mx.m2Mat4(matrixEvent, cx, cy);
+            console.log(i, matrixEvent, m, node.__config, __cache);
           }
           else {}
         }

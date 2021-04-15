@@ -166,6 +166,33 @@ function inverse4(m) {
   return adjoint4(m).map(a => a / det);
 }
 
+/**
+ * 转换为webgl的mat4，即4*4矩阵，一维表示，同时位移转成[-1,1]区间表示
+ * @param m
+ * @param width
+ * @param height
+ * @returns {(*|number)[]|number[]|*}
+ */
+function m2Mat4(m, width, height) {
+  if(!m) {
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  }
+  if(m.length === 16) {
+    m[13] /= width;
+    m[14] /= height;
+    return m;
+  }
+  if(m.length === 6) {
+    return [
+      m[0], m[1], 0, 0,
+      m[2], m[3], 0, 0,
+      0, 0, 1, 0,
+      m[4] / width, m[5] / height, 0, 1,
+    ];
+  }
+  return m;
+}
+
 export default {
   identity,
   multiply,
@@ -173,4 +200,5 @@ export default {
   int2convolution,
   inverse,
   isE,
+  m2Mat4,
 };

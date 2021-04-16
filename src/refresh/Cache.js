@@ -366,10 +366,6 @@ class Cache {
     let { coords: [x, y], canvas, sx1, sy1, dbx, dby, width, height } = cache;
     ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
   }
-
-  static drawCacheWebgl(source, target) {
-    console.log(1, target.ctx)
-  }
 }
 
 export default Cache;

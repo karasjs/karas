@@ -2,6 +2,10 @@ import util from './util';
 import debug from './debug';
 import textCache from '../node/textCache';
 import font from '../style/font';
+import ca from '../gl/ca';
+import webgl from '../gl/webgl';
+import vertex from '../gl/vertex.glsl';
+import fragment from '../gl/fragment.glsl';
 
 const SPF = 1000 / 60;
 
@@ -44,10 +48,17 @@ function cache(key, width, height, hash, message) {
     }
     document.body.appendChild(o);
   }
+  let ctx;
+  if(hash === CANVAS) {
+    ctx = o.getContext('2d');
+  }
+  else {
+    ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
+    webgl.initShaders(ctx, vertex, fragment);
+  }
   return {
     canvas: o,
-    ctx: hash === CANVAS ? o.getContext('2d')
-      : (o.getContext('webgl') || o.getContext('experimental-webgl')),
+    ctx,
     draw() {
       // 空函数，仅对小程序提供hook特殊处理，flush缓冲
     },

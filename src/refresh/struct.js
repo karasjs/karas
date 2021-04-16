@@ -225,7 +225,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
   cacheTop.__appendData(sx1, sy1);
   cacheTop.__available = true;
   let { coords: [tx, ty], ctx, dbx, dby } = cacheTop;
-  // 先绘制自己的cache，起点所以matrix视作E为空
+  // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(cache && cache.available) {
     ctx.globalAlpha = 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -367,7 +367,7 @@ function genOverflow(node, cache) {
  * @param cache
  * @returns {*}
  */
-function genTotalWebgl(renderMode, node, __config, index, total, __structs, cacheTop, cache) {console.log('genTotalWebgl')
+function genTotalWebgl(renderMode, node, __config, index, total, __structs, cacheTop, cache) {
   if(total === 0) {
     return cache;
   }
@@ -392,6 +392,11 @@ function genTotalWebgl(renderMode, node, __config, index, total, __structs, cach
   let { __sx1: sx1, __sy1: sy1 } = node;
   cacheTop.__appendData(sx1, sy1);
   cacheTop.__available = true;
+  let { coords: [tx, ty], ctx, dbx, dby } = cacheTop;
+  // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
+  if(cache && cache.available) {
+    Cache.drawCacheWebgl(cache, cacheTop);
+  }
 }
 
 function renderCacheCanvas(renderMode, ctx, defs, root) {

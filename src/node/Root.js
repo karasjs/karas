@@ -23,6 +23,7 @@ import reflow from '../refresh/reflow';
 import vertex from '../gl/vertex.glsl';
 import fragment from '../gl/fragment.glsl';
 import webgl from '../gl/webgl';
+import ca from '../gl/ca';
 
 const {
   STYLE_KEY: {
@@ -763,12 +764,7 @@ class Root extends Dom {
       this.__renderMode = mode.SVG;
     }
     else if(this.tagName === 'webgl') {
-      let gl = this.__ctx = this.__dom.getContext('webgl', {
-        alpha: true,
-        antialias: true,
-        depth: true,
-        stencil: true,
-      });
+      let gl = this.__ctx = this.__dom.getContext('webgl', ca);
       this.__renderMode = mode.WEBGL;
       webgl.initShaders(gl, vertex, fragment);
     }

@@ -118,6 +118,7 @@ class TexCache {
         else {
           hash[page.uuid] = i;
         }
+        page.update = false;
       }
       // 再次遍历开始本次渲染并清空
       webgl.drawTextureCache(gl, infos, hash, cx, cy);

@@ -841,6 +841,9 @@ class Root extends Dom {
     if(n) {
       n.__root = null;
     }
+    if(this.__texCache && this.ctx) {
+      this.__texCache.__destroy(this.ctx);
+    }
   }
 
   scale(x = 1, y = x) {

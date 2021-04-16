@@ -5360,6 +5360,10 @@
     return texture;
   }
 
+  function deleteTexture(gl, tex) {
+    gl.deleteTexture(tex);
+  }
+
   function initVertexBuffers(gl, infos, hash, cx, cy) {
     var count = 0;
     var count2 = 0;
@@ -5516,6 +5520,7 @@
   var webgl = {
     initShaders: initShaders,
     createTexture: createTexture,
+    deleteTexture: deleteTexture,
     drawTextureCache: drawTextureCache
   };
 
@@ -10103,7 +10108,7 @@
       }
     }, {
       key: "drawCache",
-      value: function drawCache(source, target) {
+      value: function drawCache(source, target, transform, matrix, tfo, inverse) {
         var _target$coords = _slicedToArray(target.coords, 2),
             tx = _target$coords[0],
             ty = _target$coords[1],
@@ -10126,6 +10131,26 @@
 
         var ox = tx + sx2 - sx1 + dbx - dbx2;
         var oy = ty + sy2 - sy1 + dby - dby2;
+
+        if (transform && matrix && tfo) {
+          tfo[0] += ox;
+          tfo[1] += oy;
+          var m = tf.calMatrixByOrigin(transform, tfo);
+          matrix = mx.multiply(matrix, m);
+
+          if (inverse) {
+            // 很多情况mask和target相同matrix，可简化计算
+            if (util.equalArr(matrix, inverse)) {
+              matrix = [1, 0, 0, 1, 0, 0];
+            } else {
+              inverse = mx.inverse(inverse);
+              matrix = mx.multiply(inverse, matrix);
+            }
+          }
+
+          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        }
+
         ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
       }
     }, {
@@ -24959,7 +24984,7 @@
 
       this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
 
-      this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
+      this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
     }
     /**
      * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
@@ -25027,7 +25052,7 @@
           var lastHash = {};
           textureChannels.forEach(function (item, i) {
             if (item) {
-              var uuid = item.uuid;
+              var uuid = item[0].uuid;
               lastHash[uuid] = i;
             }
           }); // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
@@ -25072,9 +25097,13 @@
             var page = oldList[_i];
             var last = textureChannels[_i];
 
-            if (!last || last !== page || page.update) {
-              webgl.createTexture(gl, page.canvas, _i);
-              textureChannels[_i] = page;
+            if (!last || last[0] !== page || page.update) {
+              if (last) {
+                webgl.deleteTexture(gl, last[1]);
+              }
+
+              var texture = webgl.createTexture(gl, page.canvas, _i);
+              textureChannels[_i] = [page, texture];
               hash[page.uuid] = _i;
             } else {
               hash[page.uuid] = _i;
@@ -25088,6 +25117,15 @@
           pages.splice(0);
           infos.splice(0);
         }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy(gl) {
+        this.textureChannels.forEach(function (item) {
+          if (item) {
+            webgl.deleteTexture(gl, item[1]);
+          }
+        });
       }
     }, {
       key: "textureChannels",
@@ -26131,7 +26169,7 @@
                     offsetHeight = offScreenOverflow.offsetHeight;
                 ctx.globalCompositeOperation = 'destination-in';
                 ctx.globalAlpha = 1;
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath();
                 ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -26141,11 +26179,10 @@
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1) && !blendHash.hasOwnProperty(_i3)) {
                   origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                   origin.globalAlpha = 1;
                   origin.drawImage(target.canvas, 0, 0);
-                  ctx.setTransform(1, 0, 0, 1, 0, 0);
-                  ctx.clearRect(0, 0, width, height);
+                  target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
                   ctx = origin;
                 }
@@ -26439,9 +26476,9 @@
             origin.setTransform(1, 0, 0, 1, 0, 0);
             origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // ctx.clearRect(0, 0, width, height);
-            // inject.releaseCacheCanvas(target.canvas);
-
+            target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            target.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(target.canvas);
             ctx = origin;
           }
         });
@@ -28267,6 +28304,10 @@
 
         if (n) {
           n.__root = null;
+        }
+
+        if (this.__texCache && this.ctx) {
+          this.__texCache.__destroy(this.ctx);
         }
       }
     }, {

@@ -134,6 +134,10 @@ function createTexture(gl, tex, n = 0) {
   return texture;
 }
 
+function deleteTexture(gl, tex) {
+  gl.deleteTexture(tex);
+}
+
 function initVertexBuffers(gl, infos, hash, cx, cy) {
   let count = 0;
   let count2 = 0;
@@ -251,5 +255,6 @@ function drawTextureCache(gl, infos, hash, cx, cy) {
 export default {
   initShaders,
   createTexture,
+  deleteTexture,
   drawTextureCache,
 };

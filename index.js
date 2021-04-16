@@ -5218,6 +5218,311 @@
     ELLIPSIS: '…'
   };
 
+  var ca = {
+    alpha: true,
+    antialias: true,
+    depth: true,
+    stencil: true
+  };
+
+  var calPoint$1 = mx.calPoint;
+  /**
+   * 初始化 shader
+   * @param gl GL context
+   * @param vshader vertex shader (string)
+   * @param fshader fragment shader (string)
+   * @return true, if the program object was created and successfully made current
+   */
+
+  function initShaders(gl, vshader, fshader) {
+    var program = createProgram(gl, vshader, fshader);
+
+    if (!program) {
+      inject.error('Failed to create program');
+      return false;
+    }
+
+    gl.useProgram(program);
+    gl.program = program; // 要开启透明度，用以绘制透明的图形
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    return true;
+  }
+  /**
+   * Create the linked program object
+   * @param gl GL context
+   * @param vshader a vertex shader program (string)
+   * @param fshader a fragment shader program (string)
+   * @return created program object, or null if the creation has failed
+   */
+
+  function createProgram(gl, vshader, fshader) {
+    // Create shader object
+    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+
+    if (!vertexShader || !fragmentShader) {
+      return null;
+    } // Create a program object
+
+
+    var program = gl.createProgram();
+
+    if (!program) {
+      return null;
+    } // Attach the shader objects
+
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader); // Link the program object
+
+    gl.linkProgram(program); // Check the result of linking
+
+    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+
+    if (!linked) {
+      var error = gl.getProgramInfoLog(program);
+      inject.error('Failed to link program: ' + error);
+      gl.deleteProgram(program);
+      gl.deleteShader(fragmentShader);
+      gl.deleteShader(vertexShader);
+      return null;
+    }
+
+    return program;
+  }
+  /**
+   * Create a shader object
+   * @param gl GL context
+   * @param type the type of the shader object to be created
+   * @param source shader program (string)
+   * @return created shader object, or null if the creation has failed.
+   */
+
+
+  function loadShader(gl, type, source) {
+    // Create shader object
+    var shader = gl.createShader(type);
+
+    if (shader == null) {
+      inject.error('unable to create shader');
+      return null;
+    } // Set the shader program
+
+
+    gl.shaderSource(shader, source); // Compile the shader
+
+    gl.compileShader(shader); // Check the result of compilation
+
+    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+
+    if (!compiled) {
+      var error = gl.getShaderInfoLog(shader);
+      inject.error('Failed to compile shader: ' + error);
+      gl.deleteShader(shader);
+      return null;
+    }
+
+    return shader;
+  }
+
+  function convertCoords2Gl(x, y, cx, cy) {
+    if (x === cx) {
+      x = 0;
+    } else {
+      x = (x - cx) / cx;
+    }
+
+    if (y === cy) {
+      y = 0;
+    } else {
+      y = (y - cy) / cy;
+    }
+
+    return [x, y];
+  }
+
+  function createTexture(gl, tex) {
+    var n = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var texture = gl.createTexture(); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
+
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.activeTexture(gl['TEXTURE' + n]);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+    var u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
+    gl.uniform1i(u_texture, n);
+    return texture;
+  }
+
+  function initVertexBuffers(gl, infos, hash, cx, cy) {
+    var count = 0;
+    var count2 = 0;
+    var length = 0;
+    infos.forEach(function (info) {
+      length += info.length;
+    });
+    var vtPoint = new Float32Array(length * 12);
+    var vtTex = new Float32Array(length * 12);
+    var vtOpacity = new Float32Array(length * 6);
+    var vtIndex = new Float32Array(length * 6);
+    infos.forEach(function (info) {
+      info.forEach(function (item) {
+        var _item = _slicedToArray(item, 3),
+            cache = _item[0],
+            opacity = _item[1],
+            matrix = _item[2]; // y反转
+
+
+        revertMatrixY(matrix);
+
+        var _cache$coords = _slicedToArray(cache.coords, 2),
+            x = _cache$coords[0],
+            y = _cache$coords[1],
+            sx1 = cache.sx1,
+            sy1 = cache.sy1,
+            width = cache.width,
+            height = cache.height,
+            fullSize = cache.fullSize; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
+
+
+        var _convertCoords2Gl = convertCoords2Gl(sx1 - 1, sy1 - 1 + height, cx, cy),
+            _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
+            x1 = _convertCoords2Gl2[0],
+            y1 = _convertCoords2Gl2[1];
+
+        var _convertCoords2Gl3 = convertCoords2Gl(sx1 - 1 + width, sy1 - 1, cx, cy),
+            _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
+            x2 = _convertCoords2Gl4[0],
+            y2 = _convertCoords2Gl4[1];
+
+        var _calPoint = calPoint$1([x1, y1], matrix);
+
+        var _calPoint2 = _slicedToArray(_calPoint, 2);
+
+        x1 = _calPoint2[0];
+        y1 = _calPoint2[1];
+
+        var _calPoint3 = calPoint$1([x2, y2], matrix);
+
+        var _calPoint4 = _slicedToArray(_calPoint3, 2);
+
+        x2 = _calPoint4[0];
+        y2 = _calPoint4[1];
+        vtPoint[count] = x1;
+        vtPoint[count + 1] = y1;
+        vtPoint[count + 2] = x1;
+        vtPoint[count + 3] = y2;
+        vtPoint[count + 4] = x2;
+        vtPoint[count + 5] = y1;
+        vtPoint[count + 6] = x1;
+        vtPoint[count + 7] = y2;
+        vtPoint[count + 8] = x2;
+        vtPoint[count + 9] = y1;
+        vtPoint[count + 10] = x2;
+        vtPoint[count + 11] = y2;
+        var tx1 = (x - 1) / fullSize,
+            ty1 = (y - 1 + height) / fullSize;
+        var tx2 = (x - 1 + width) / fullSize,
+            ty2 = (y - 1) / fullSize;
+        vtTex[count] = tx1;
+        vtTex[count + 1] = ty1;
+        vtTex[count + 2] = tx1;
+        vtTex[count + 3] = ty2;
+        vtTex[count + 4] = tx2;
+        vtTex[count + 5] = ty1;
+        vtTex[count + 6] = tx1;
+        vtTex[count + 7] = ty2;
+        vtTex[count + 8] = tx2;
+        vtTex[count + 9] = ty1;
+        vtTex[count + 10] = tx2;
+        vtTex[count + 11] = ty2;
+        vtOpacity[count2] = opacity;
+        vtOpacity[count2 + 1] = opacity;
+        vtOpacity[count2 + 2] = opacity;
+        vtOpacity[count2 + 3] = opacity;
+        vtOpacity[count2 + 4] = opacity;
+        vtOpacity[count2 + 5] = opacity;
+        var index = hash[cache.page.__uuid];
+        vtIndex[count2] = index;
+        vtIndex[count2 + 1] = index;
+        vtIndex[count2 + 2] = index;
+        vtIndex[count2 + 3] = index;
+        vtIndex[count2 + 4] = index;
+        vtIndex[count2 + 5] = index;
+        count += 12;
+        count2 += 6;
+      });
+    });
+    var PER = 6; // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(gl.program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+    var opacityBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
+    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity); // 索引buffer
+
+    var indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vtIndex, gl.STATIC_DRAW);
+    var a_index = gl.getAttribLocation(gl.program, 'a_index');
+    gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_index);
+    return [PER, length];
+  } // y反转
+
+
+  function revertMatrixY(matrix) {
+    matrix[1] = -matrix[1];
+    matrix[5] = -matrix[5];
+    matrix[9] = -matrix[9];
+    matrix[13] = -matrix[13];
+  }
+
+  function drawTextureCache(gl, infos, hash, cx, cy) {
+    var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
+        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 2),
+        n = _initVertexBuffers2[0],
+        count = _initVertexBuffers2[1];
+
+    if (n < 0 || count < 0) {
+      inject.error('Failed to set the positions of the vertices');
+      return;
+    }
+
+    gl.drawArrays(gl.TRIANGLES, 0, n * count);
+  }
+
+  var webgl = {
+    initShaders: initShaders,
+    createTexture: createTexture,
+    drawTextureCache: drawTextureCache
+  };
+
+  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n//varying float v_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n//  gl_Position = a_matrix * a_position;\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n//  v_matrix = a_matrix;\n}\n";
+
+  var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index = int(v_index);\n  float opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
+
   var SPF = 1000 / 60;
   var CANVAS = {};
   var WEBGL = {};
@@ -5262,9 +5567,18 @@
       document.body.appendChild(o);
     }
 
+    var ctx;
+
+    if (hash === CANVAS) {
+      ctx = o.getContext('2d');
+    } else {
+      ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
+      webgl.initShaders(ctx, vertex, fragment);
+    }
+
     return {
       canvas: o,
-      ctx: hash === CANVAS ? o.getContext('2d') : o.getContext('webgl') || o.getContext('experimental-webgl'),
+      ctx: ctx,
       draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
       },
       enabled: true,
@@ -9209,7 +9523,7 @@
   var matrix = math.matrix,
       geom$1 = math.geom;
   var identity$1 = matrix.identity,
-      calPoint$1 = matrix.calPoint,
+      calPoint$2 = matrix.calPoint,
       multiply$1 = matrix.multiply,
       isE$1 = matrix.isE;
   var d2r$2 = geom$1.d2r,
@@ -9294,28 +9608,28 @@
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !isE$1(matrix)) {
-      var _calPoint = calPoint$1([x1, y1], matrix);
+      var _calPoint = calPoint$2([x1, y1], matrix);
 
       var _calPoint2 = _slicedToArray(_calPoint, 2);
 
       x1 = _calPoint2[0];
       y1 = _calPoint2[1];
 
-      var _calPoint3 = calPoint$1([x2, y2], matrix);
+      var _calPoint3 = calPoint$2([x2, y2], matrix);
 
       var _calPoint4 = _slicedToArray(_calPoint3, 2);
 
       x2 = _calPoint4[0];
       y2 = _calPoint4[1];
 
-      var _calPoint5 = calPoint$1([x3, y3], matrix);
+      var _calPoint5 = calPoint$2([x3, y3], matrix);
 
       var _calPoint6 = _slicedToArray(_calPoint5, 2);
 
       x3 = _calPoint6[0];
       y3 = _calPoint6[1];
 
-      var _calPoint7 = calPoint$1([x4, y4], matrix);
+      var _calPoint7 = calPoint$2([x4, y4], matrix);
 
       var _calPoint8 = _slicedToArray(_calPoint7, 2);
 
@@ -9614,7 +9928,7 @@
         return new Cache(w, h, bbox, page, pos, renderMode);
       }
       /**
-       * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
+       * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
        * @param cache
        * @param v
        * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
@@ -9789,7 +10103,7 @@
       }
     }, {
       key: "drawCache",
-      value: function drawCache(source, target, transform, matrix, tfo, inverse) {
+      value: function drawCache(source, target) {
         var _target$coords = _slicedToArray(target.coords, 2),
             tx = _target$coords[0],
             ty = _target$coords[1],
@@ -9812,26 +10126,6 @@
 
         var ox = tx + sx2 - sx1 + dbx - dbx2;
         var oy = ty + sy2 - sy1 + dby - dby2;
-
-        if (transform && matrix && tfo) {
-          tfo[0] += ox;
-          tfo[1] += oy;
-          var m = tf.calMatrixByOrigin(transform, tfo);
-          matrix = mx.multiply(matrix, m);
-
-          if (inverse) {
-            // 很多情况mask和target相同matrix，可简化计算
-            if (util.equalArr(matrix, inverse)) {
-              matrix = [1, 0, 0, 1, 0, 0];
-            } else {
-              inverse = mx.inverse(inverse);
-              matrix = mx.multiply(inverse, matrix);
-            }
-          }
-
-          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-        }
-
         ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
       }
     }, {
@@ -9852,6 +10146,11 @@
             height = cache.height;
 
         ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
+      }
+    }, {
+      key: "drawCacheWebgl",
+      value: function drawCacheWebgl(source, target) {
+        console.log(1, target.ctx);
       }
     }, {
       key: "MAX",
@@ -24650,300 +24949,6 @@
     return Controller;
   }();
 
-  var calPoint$2 = mx.calPoint;
-  /**
-   * 初始化 shader
-   * @param gl GL context
-   * @param vshader vertex shader (string)
-   * @param fshader fragment shader (string)
-   * @return true, if the program object was created and successfully made current
-   */
-
-  function initShaders(gl, vshader, fshader) {
-    var program = createProgram(gl, vshader, fshader);
-
-    if (!program) {
-      inject.error('Failed to create program');
-      return false;
-    }
-
-    gl.useProgram(program);
-    gl.program = program; // 要开启透明度，用以绘制透明的图形
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    return true;
-  }
-  /**
-   * Create the linked program object
-   * @param gl GL context
-   * @param vshader a vertex shader program (string)
-   * @param fshader a fragment shader program (string)
-   * @return created program object, or null if the creation has failed
-   */
-
-  function createProgram(gl, vshader, fshader) {
-    // Create shader object
-    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
-    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-
-    if (!vertexShader || !fragmentShader) {
-      return null;
-    } // Create a program object
-
-
-    var program = gl.createProgram();
-
-    if (!program) {
-      return null;
-    } // Attach the shader objects
-
-
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader); // Link the program object
-
-    gl.linkProgram(program); // Check the result of linking
-
-    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-
-    if (!linked) {
-      var error = gl.getProgramInfoLog(program);
-      inject.error('Failed to link program: ' + error);
-      gl.deleteProgram(program);
-      gl.deleteShader(fragmentShader);
-      gl.deleteShader(vertexShader);
-      return null;
-    }
-
-    return program;
-  }
-  /**
-   * Create a shader object
-   * @param gl GL context
-   * @param type the type of the shader object to be created
-   * @param source shader program (string)
-   * @return created shader object, or null if the creation has failed.
-   */
-
-
-  function loadShader(gl, type, source) {
-    // Create shader object
-    var shader = gl.createShader(type);
-
-    if (shader == null) {
-      inject.error('unable to create shader');
-      return null;
-    } // Set the shader program
-
-
-    gl.shaderSource(shader, source); // Compile the shader
-
-    gl.compileShader(shader); // Check the result of compilation
-
-    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-    if (!compiled) {
-      var error = gl.getShaderInfoLog(shader);
-      inject.error('Failed to compile shader: ' + error);
-      gl.deleteShader(shader);
-      return null;
-    }
-
-    return shader;
-  }
-
-  function convertCoords2Gl(x, y, cx, cy) {
-    if (x === cx) {
-      x = 0;
-    } else {
-      x = (x - cx) / cx;
-    }
-
-    if (y === cy) {
-      y = 0;
-    } else {
-      y = (y - cy) / cy;
-    }
-
-    return [x, y];
-  }
-
-  function createTexture(gl, tex) {
-    var n = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var texture = gl.createTexture(); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
-
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.activeTexture(gl['TEXTURE' + n]);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    var u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-    gl.uniform1i(u_texture, n);
-    return texture;
-  }
-
-  function initVertexBuffers(gl, infos, hash, cx, cy) {
-    var count = 0;
-    var count2 = 0;
-    var length = 0;
-    infos.forEach(function (info) {
-      length += info.length;
-    });
-    var vtPoint = new Float32Array(length * 12);
-    var vtTex = new Float32Array(length * 12);
-    var vtOpacity = new Float32Array(length * 6);
-    var vtIndex = new Float32Array(length * 6);
-    infos.forEach(function (info) {
-      info.forEach(function (item) {
-        var _item = _slicedToArray(item, 3),
-            cache = _item[0],
-            opacity = _item[1],
-            matrix = _item[2]; // y反转
-
-
-        revertMatrixY(matrix);
-
-        var _cache$coords = _slicedToArray(cache.coords, 2),
-            x = _cache$coords[0],
-            y = _cache$coords[1],
-            sx1 = cache.sx1,
-            sy1 = cache.sy1,
-            width = cache.width,
-            height = cache.height,
-            fullSize = cache.fullSize; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-
-
-        var _convertCoords2Gl = convertCoords2Gl(sx1 - 1, sy1 - 1 + height, cx, cy),
-            _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
-            x1 = _convertCoords2Gl2[0],
-            y1 = _convertCoords2Gl2[1];
-
-        var _convertCoords2Gl3 = convertCoords2Gl(sx1 - 1 + width, sy1 - 1, cx, cy),
-            _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
-            x2 = _convertCoords2Gl4[0],
-            y2 = _convertCoords2Gl4[1];
-
-        var _calPoint = calPoint$2([x1, y1], matrix);
-
-        var _calPoint2 = _slicedToArray(_calPoint, 2);
-
-        x1 = _calPoint2[0];
-        y1 = _calPoint2[1];
-
-        var _calPoint3 = calPoint$2([x2, y2], matrix);
-
-        var _calPoint4 = _slicedToArray(_calPoint3, 2);
-
-        x2 = _calPoint4[0];
-        y2 = _calPoint4[1];
-        vtPoint[count] = x1;
-        vtPoint[count + 1] = y1;
-        vtPoint[count + 2] = x1;
-        vtPoint[count + 3] = y2;
-        vtPoint[count + 4] = x2;
-        vtPoint[count + 5] = y1;
-        vtPoint[count + 6] = x1;
-        vtPoint[count + 7] = y2;
-        vtPoint[count + 8] = x2;
-        vtPoint[count + 9] = y1;
-        vtPoint[count + 10] = x2;
-        vtPoint[count + 11] = y2;
-        var tx1 = (x - 1) / fullSize,
-            ty1 = (y - 1 + height) / fullSize;
-        var tx2 = (x - 1 + width) / fullSize,
-            ty2 = (y - 1) / fullSize;
-        vtTex[count] = tx1;
-        vtTex[count + 1] = ty1;
-        vtTex[count + 2] = tx1;
-        vtTex[count + 3] = ty2;
-        vtTex[count + 4] = tx2;
-        vtTex[count + 5] = ty1;
-        vtTex[count + 6] = tx1;
-        vtTex[count + 7] = ty2;
-        vtTex[count + 8] = tx2;
-        vtTex[count + 9] = ty1;
-        vtTex[count + 10] = tx2;
-        vtTex[count + 11] = ty2;
-        vtOpacity[count2] = opacity;
-        vtOpacity[count2 + 1] = opacity;
-        vtOpacity[count2 + 2] = opacity;
-        vtOpacity[count2 + 3] = opacity;
-        vtOpacity[count2 + 4] = opacity;
-        vtOpacity[count2 + 5] = opacity;
-        var index = hash[cache.page.__uuid];
-        vtIndex[count2] = index;
-        vtIndex[count2 + 1] = index;
-        vtIndex[count2 + 2] = index;
-        vtIndex[count2 + 3] = index;
-        vtIndex[count2 + 4] = index;
-        vtIndex[count2 + 5] = index;
-        count += 12;
-        count2 += 6;
-      });
-    });
-    var PER = 6; // 顶点buffer
-
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(gl.program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
-
-    var opacityBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
-    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
-    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_opacity); // 索引buffer
-
-    var indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vtIndex, gl.STATIC_DRAW);
-    var a_index = gl.getAttribLocation(gl.program, 'a_index');
-    gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_index);
-    return [PER, length];
-  } // y反转
-
-
-  function revertMatrixY(matrix) {
-    matrix[1] = -matrix[1];
-    matrix[5] = -matrix[5];
-    matrix[9] = -matrix[9];
-    matrix[13] = -matrix[13];
-  }
-
-  function drawTextureCache(gl, infos, hash, cx, cy) {
-    var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
-        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 2),
-        n = _initVertexBuffers2[0],
-        count = _initVertexBuffers2[1];
-
-    if (n < 0 || count < 0) {
-      inject.error('Failed to set the positions of the vertices');
-      return;
-    }
-
-    gl.drawArrays(gl.TRIANGLES, 0, n * count);
-  }
-
-  var webgl = {
-    initShaders: initShaders,
-    createTexture: createTexture,
-    drawTextureCache: drawTextureCache
-  };
-
   var TexCache = /*#__PURE__*/function () {
     function TexCache(units) {
       _classCallCheck(this, TexCache);
@@ -25074,6 +25079,8 @@
             } else {
               hash[page.uuid] = _i;
             }
+
+            page.update = false;
           } // 再次遍历开始本次渲染并清空
 
 
@@ -25326,7 +25333,7 @@
         ty = _cacheTop$coords[1],
         ctx = _cacheTop.ctx,
         dbx = _cacheTop.dbx,
-        dby = _cacheTop.dby; // 先绘制自己的cache，起点所以matrix视作E为空
+        dby = _cacheTop.dby; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
 
 
     if (cache && cache.available) {
@@ -25486,8 +25493,6 @@
 
 
   function genTotalWebgl(renderMode, node, __config, index, total, __structs, cacheTop, cache) {
-    console.log('genTotalWebgl');
-
     if (total === 0) {
       return cache;
     } // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
@@ -25519,6 +25524,19 @@
     cacheTop.__appendData(sx1, sy1);
 
     cacheTop.__available = true;
+
+    var _cacheTop2 = cacheTop,
+        _cacheTop2$coords = _slicedToArray(_cacheTop2.coords, 2),
+        tx = _cacheTop2$coords[0],
+        ty = _cacheTop2$coords[1],
+        ctx = _cacheTop2.ctx,
+        dbx = _cacheTop2.dbx,
+        dby = _cacheTop2.dby; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
+
+
+    if (cache && cache.available) {
+      Cache.drawCacheWebgl(cache, cacheTop);
+    }
   }
 
   function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -27288,10 +27306,6 @@
     renderWebgl: renderWebgl
   };
 
-  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n//varying float v_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n//  gl_Position = a_matrix * a_position;\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n//  v_matrix = a_matrix;\n}\n";
-
-  var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index = int(v_index);\n  float opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
-
   var _DIRECTION_HASH;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
       TOP$4 = _enums$STYLE_KEY$j.TOP,
@@ -28160,12 +28174,7 @@
         } else if (this.tagName === 'svg') {
           this.__renderMode = mode.SVG;
         } else if (this.tagName === 'webgl') {
-          var gl = this.__ctx = this.__dom.getContext('webgl', {
-            alpha: true,
-            antialias: true,
-            depth: true,
-            stencil: true
-          });
+          var gl = this.__ctx = this.__dom.getContext('webgl', ca);
 
           this.__renderMode = mode.WEBGL;
           webgl.initShaders(gl, vertex, fragment);

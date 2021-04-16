@@ -27,10 +27,8 @@ uniform sampler2D u_texture15;
 
 void main() {
   vec4 color;
-  int index;
-  float opacity;
-  index = int(v_index);
-  opacity = v_opacity;
+  int index = int(v_index);
+  float opacity = v_opacity;
   if(index == 0) {
     color = texture2D(u_texture0, v_texCoords);
   }

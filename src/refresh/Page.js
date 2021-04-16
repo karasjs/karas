@@ -63,6 +63,10 @@ class Page {
     return [x * size, y * size];
   }
 
+  get uuid() {
+    return this.__uuid;
+  }
+
   get size() {
     return this.__size;
   }

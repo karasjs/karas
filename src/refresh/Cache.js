@@ -80,6 +80,7 @@ class Cache {
     this.dy = yc - bbox[1];
     this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
     this.dby = sy1 - bbox[1];
+    this.update();
   }
 
   update() {
@@ -155,6 +156,10 @@ class Cache {
 
   get size() {
     return this.page.size;
+  }
+
+  get fullSize() {
+    return this.page.fullSize;
   }
 
   get width() {

@@ -1762,10 +1762,6 @@ function renderWebgl(renderMode, gl, defs, root) {
         node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
         __cache = __config[NODE_CACHE];
       }
-      // cache所在page更新，防止被管道缓存位图
-      if(__cache && __cache.available) {
-        __cache.update();
-      }
     }
     lastRefreshLevel = __refreshLevel;
     lastConfig = __config;
@@ -1844,38 +1840,39 @@ function renderWebgl(renderMode, gl, defs, root) {
       [STRUCT_TOTAL]: total,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
-    let {
-      [NODE_OPACITY]: __opacity,
-      [NODE_MATRIX_EVENT]: matrixEvent,
-      [NODE_BLUR_VALUE]: __blurValue,
-      [NODE_LIMIT_CACHE]: __limitCache,
-      [NODE_CACHE]: __cache,
-      [NODE_CACHE_TOTAL]: __cacheTotal,
-      [NODE_CACHE_FILTER]: __cacheFilter,
-      [NODE_CACHE_MASK]: __cacheMask,
-      [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-      [NODE_REFRESH_LV]: __refreshLevel,
-      [NODE_COMPUTED_STYLE]: {
-        [DISPLAY]: display,
-        [VISIBILITY]: visibility,
-        [OVERFLOW]: overflow,
-        [MIX_BLEND_MODE]: mixBlendMode,
-      },
-    } = node.__config;
-    // text如果不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的
+    let __config = node.__config;
+    // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
       // text特殊之处，__cache是独有的，__config大部分是复用parent的
-      console.log('a', i, node.__config, __cache);
-      __cache = node.__cache;
+      let {
+        [NODE_OPACITY]: __opacity,
+        [NODE_MATRIX_EVENT]: matrixEvent,
+      } = __config[NODE_DOM_PARENT].__config;
+      let __cache = node.__cache;
       if(__cache && __cache.available) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        console.log(i, matrixEvent, m);
+        texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, m, cx, cy);
       }
-      // ctx.globalAlpha = __opacity;
-      // ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
-      // node.render(renderMode, 0, ctx, defs);
     }
     else {
+      let {
+        [NODE_OPACITY]: __opacity,
+        [NODE_MATRIX_EVENT]: matrixEvent,
+        [NODE_BLUR_VALUE]: __blurValue,
+        [NODE_LIMIT_CACHE]: __limitCache,
+        [NODE_CACHE]: __cache,
+        [NODE_CACHE_TOTAL]: __cacheTotal,
+        [NODE_CACHE_FILTER]: __cacheFilter,
+        [NODE_CACHE_MASK]: __cacheMask,
+        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+        [NODE_REFRESH_LV]: __refreshLevel,
+        [NODE_COMPUTED_STYLE]: {
+          [DISPLAY]: display,
+          [VISIBILITY]: visibility,
+          [OVERFLOW]: overflow,
+          [MIX_BLEND_MODE]: mixBlendMode,
+        },
+      } = __config;
       if(display === 'none') {
         i += (total || 0);
         if(hasMask) {
@@ -1898,13 +1895,14 @@ function renderWebgl(renderMode, gl, defs, root) {
         if(__cache && __cache.available || __limitCache) {
           if(__cache && __cache.available) {
             let m = mx.m2Mat4(matrixEvent, cx, cy);
-            console.log(i, matrixEvent, m, node.__config, __cache);
+            texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, m, cx, cy);
           }
           else {}
         }
       }
     }
   }
+  texCache.refresh(gl, cx, cy);
 }
 
 export default {

@@ -777,19 +777,42 @@
   }
 
   function calPoint(point, m) {
-    var _point = _slicedToArray(point, 2),
+    var _point = _slicedToArray(point, 3),
         x = _point[0],
-        y = _point[1];
+        y = _point[1],
+        z = _point[2];
 
-    var _m = _slicedToArray(m, 6),
-        a = _m[0],
-        b = _m[1],
-        c = _m[2],
-        d = _m[3],
-        e = _m[4],
-        f = _m[5];
+    if (m.length === 6) {
+      var _m = _slicedToArray(m, 6),
+          a = _m[0],
+          b = _m[1],
+          c = _m[2],
+          d = _m[3],
+          e = _m[4],
+          f = _m[5];
 
-    return [a * x + c * y + e, b * x + d * y + f];
+      return [a * x + c * y + e, b * x + d * y + f];
+    } else if (m.length === 16) {
+      z = z || 0;
+
+      var _m2 = _slicedToArray(m, 15),
+          _a = _m2[0],
+          _b = _m2[1],
+          _c2 = _m2[2],
+          _d = _m2[4],
+          _e = _m2[5],
+          _f = _m2[6],
+          g = _m2[8],
+          h = _m2[9],
+          i = _m2[10],
+          j = _m2[12],
+          k = _m2[13],
+          l = _m2[14];
+
+      return [_a * x + _d * y + g * z + j, _b * x + _e * y + h * z + k, _c2 * x + _f * y + i * z + l];
+    }
+
+    return point;
   }
 
   function int2convolution(v) {
@@ -819,13 +842,13 @@
       return inverse4(m);
     }
 
-    var _m2 = _slicedToArray(m, 6),
-        a = _m2[0],
-        b = _m2[1],
-        c = _m2[2],
-        d = _m2[3],
-        e = _m2[4],
-        f = _m2[5];
+    var _m3 = _slicedToArray(m, 6),
+        a = _m3[0],
+        b = _m3[1],
+        c = _m3[2],
+        d = _m3[3],
+        e = _m3[4],
+        f = _m3[5];
 
     if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
       return m;
@@ -8705,6 +8728,11 @@
         return [x * size, y * size];
       }
     }, {
+      key: "uuid",
+      get: function get() {
+        return this.__uuid;
+      }
+    }, {
       key: "size",
       get: function get() {
         return this.__size;
@@ -9439,6 +9467,7 @@
         this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
 
         this.dby = sy1 - bbox[1];
+        this.update();
       }
     }, {
       key: "update",
@@ -9536,6 +9565,11 @@
       key: "size",
       get: function get() {
         return this.page.size;
+      }
+    }, {
+      key: "fullSize",
+      get: function get() {
+        return this.page.fullSize;
       }
     }, {
       key: "width",
@@ -24914,24 +24948,25 @@
     function TexCache(units) {
       _classCallCheck(this, TexCache);
 
-      this.__units = units;
-      this.__pages = []; // 存当前page列表，管道数量8~16
+      this.__units = units; // 通道数量限制，8~16
 
-      this.__infos = []; // 存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
+      this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
 
-      this.__textureChannels = []; // 每个管道还是个数组，下标即纹理单元，内容为[Page, version]
+      this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
+
+      this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
     }
     /**
-     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，已达到尽可能多的共享纹理，再一次性绘制
-     * 收集的是Page的canvas对象，里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
-     * webgl最少有8个纹理单元，因此存了一个列表来放这些Page的canvas，一次收集理论上最少8个节点，实际一般会很多
-     * 当8个纹理单元全部满了，需要第9个时，进行绘制并清空这个队列，主循环结束时也会检查队列是否还有余留并绘制
+     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
+     * 收集的是Page对象（从cache中取得），里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
+     * webgl最少有8个纹理单元最多16个，因此存了一个列表来放这些Page的canvas，刷新后清空，但纹理通道映射记录保留
+     * 当8个纹理单元全部满了，进行绘制并清空这个队列，外部主循环结束时也会检查队列是否还有余留并绘制
      * 初始调用队列为空，存入Page对象，后续调用先查看是否存在以便复用，再决定是否存入Page，直到8个满了
-     * Page上存有version表示版本，每次增加的更新会自增，以此表示是否有贴图更新，删除可以忽视
-     * 还需要一个记录上次纹理单元使用哪个Page的canvas的贴图的地方，清空后队列再次添加时，如果Page之前被添加绘制过，
-     * 此次又被添加且没有变更version，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
-     * 后续接入局部纹理更新也是复用单元号，如果version变更可以选择局部上传纹理而非整个重新上传
-     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其version
+     * Page上存有update表示是否更新，每次cache绘制时会变true，以此表示是否有贴图更新，删除可以忽视
+     * 还需要一个记录上次纹理通道使用哪个Page的canvas的地方，即映射，清空后队列再次添加时，如果Page之前被添加过，
+     * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
+     * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
+     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
      * @param gl
      * @param cache
      * @param opacity
@@ -24947,11 +24982,11 @@
         var pages = this.__pages;
         var infos = this.__infos;
         var page = cache.page;
-        var i = pages.indexOf(page); // 找到说明已有，记录info
+        var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
 
         if (i > -1) {
           infos[i].push([cache, opacity, matrix]);
-        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制缓存并清空，然后/否则 存入纹理列表
+        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
         else {
             i = pages.length;
 
@@ -24966,36 +25001,42 @@
             info.push([cache, opacity, matrix]);
           }
       }
+      /**
+       * 刷新
+       * @param gl
+       * @param cx
+       * @param cy
+       * @param pages
+       * @param infos
+       */
+
     }, {
       key: "refresh",
       value: function refresh(gl, cx, cy, pages, infos) {
         pages = pages || this.__pages;
-        infos = infos || this.__infos;
+        infos = infos || this.__infos; // 防止空调用刷新
 
         if (pages.length) {
-          var textureChannels = this.__textureChannels; // 先将上次渲染的纹理单元使用的Page和版本形成一个hash，键为uuid，值为纹理单元+version
+          var textureChannels = this.textureChannels; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
 
           var lastHash = {};
           textureChannels.forEach(function (item, i) {
             if (item) {
-              var uuid = item[0].__uuid;
-              lastHash[uuid] = [i, item[1]];
+              var uuid = item.uuid;
+              lastHash[uuid] = i;
             }
-          }); // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引即相同下标，不同的按顺序收集放好
+          }); // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
 
           var oldList = [],
               newList = [];
           pages.forEach(function (page) {
-            var uuid = page.__uuid;
+            var uuid = page.uuid;
 
             if (lastHash.hasOwnProperty(uuid)) {
-              var _lastHash$uuid = _slicedToArray(lastHash[uuid], 2),
-                  index = _lastHash$uuid[0],
-                  version = _lastHash$uuid[1];
-
-              oldList[index] = [page, version];
+              var index = lastHash[uuid];
+              oldList[index] = page;
             } else {
-              newList.push([page, page.__version]);
+              newList.push(page);
             }
           }); // 以oldList为基准，将newList依次存入oldList的空白处，即新纹理单元索引
 
@@ -25005,7 +25046,7 @@
               var item = oldList[i];
 
               if (item) ; else if (newList.length) {
-                oldList[i] = newList.pop();
+                oldList[i] = newList.shift();
               } else {
                 break;
               }
@@ -25023,17 +25064,15 @@
           var hash = {};
 
           for (var _i = 0, _len = oldList.length; _i < _len; _i++) {
-            var _item = oldList[_i];
+            var page = oldList[_i];
             var last = textureChannels[_i];
 
-            if (!last || last[0] !== _item[0] || last[1] !== _item[1]) {
-              var page = _item[0];
+            if (!last || last !== page || page.update) {
               webgl.createTexture(gl, page.canvas, _i);
-              textureChannels[_i] = _item;
-              hash[page.__uuid] = _i;
+              textureChannels[_i] = page;
+              hash[page.uuid] = _i;
             } else {
-              var _page = last[0];
-              hash[_page.__uuid] = _i;
+              hash[page.uuid] = _i;
             }
           } // 再次遍历开始本次渲染并清空
 
@@ -25042,6 +25081,11 @@
           pages.splice(0);
           infos.splice(0);
         }
+      }
+    }, {
+      key: "textureChannels",
+      get: function get() {
+        return this.__textureChannels;
       }
     }]);
 
@@ -26948,10 +26992,10 @@
 
       if (node instanceof Text) {
         if (parentRefreshLevel >= REPAINT$2) {
-          var _cache = node.__renderAsTex(); // 有内容无cache说明超限
+          var _cache2 = node.__renderAsTex(); // 有内容无cache说明超限
 
 
-          if ((!_cache || !_cache.available) && node.content) ;
+          if ((!_cache2 || !_cache2.available) && node.content) ;
         }
 
         _i11 = _i12;
@@ -27091,11 +27135,6 @@
           } else {
             node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
             __cache = __config[NODE_CACHE$4];
-          } // cache所在page更新，防止被管道缓存位图
-
-
-          if (__cache && __cache.available) {
-            __cache.update();
           }
         }
 
@@ -27177,36 +27216,36 @@
           node = _structs$_i6[STRUCT_NODE$1],
           total = _structs$_i6[STRUCT_TOTAL$1],
           hasMask = _structs$_i6[STRUCT_HAS_MASK$1];
-      var _node$__config3 = node.__config,
-          __opacity = _node$__config3[NODE_OPACITY$2],
-          matrixEvent = _node$__config3[NODE_MATRIX_EVENT$2],
-          __blurValue = _node$__config3[NODE_BLUR_VALUE$1],
-          __limitCache = _node$__config3[NODE_LIMIT_CACHE$1],
-          __cache = _node$__config3[NODE_CACHE$4],
-          __cacheTotal = _node$__config3[NODE_CACHE_TOTAL$3],
-          __cacheFilter = _node$__config3[NODE_CACHE_FILTER$3],
-          __cacheMask = _node$__config3[NODE_CACHE_MASK$2],
-          __cacheOverflow = _node$__config3[NODE_CACHE_OVERFLOW$3],
-          __refreshLevel = _node$__config3[NODE_REFRESH_LV$1],
-          _node$__config3$NODE_ = _node$__config3[NODE_COMPUTED_STYLE$2],
-          display = _node$__config3$NODE_[DISPLAY$8],
-          visibility = _node$__config3$NODE_[VISIBILITY$5],
-          overflow = _node$__config3$NODE_[OVERFLOW$3],
-          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$3]; // text如果不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的
+      var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (node instanceof Text) {
         // text特殊之处，__cache是独有的，__config大部分是复用parent的
-        console.log('a', _i13, node.__config, __cache);
-        __cache = node.__cache;
+        var _config$NODE_DOM_PAR2 = __config[NODE_DOM_PARENT$4].__config,
+            __opacity = _config$NODE_DOM_PAR2[NODE_OPACITY$2],
+            matrixEvent = _config$NODE_DOM_PAR2[NODE_MATRIX_EVENT$2];
+        var __cache = node.__cache;
 
         if (__cache && __cache.available) {
           var m = mx.m2Mat4(matrixEvent, cx, cy);
-          console.log(_i13, matrixEvent, m);
-        } // ctx.globalAlpha = __opacity;
-        // ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
-        // node.render(renderMode, 0, ctx, defs);
-
+          texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, m, cx, cy);
+        }
       } else {
+        var _opacity3 = __config[NODE_OPACITY$2],
+            _matrixEvent2 = __config[NODE_MATRIX_EVENT$2],
+            __blurValue = __config[NODE_BLUR_VALUE$1],
+            __limitCache = __config[NODE_LIMIT_CACHE$1],
+            _cache = __config[NODE_CACHE$4],
+            __cacheTotal = __config[NODE_CACHE_TOTAL$3],
+            __cacheFilter = __config[NODE_CACHE_FILTER$3],
+            __cacheMask = __config[NODE_CACHE_MASK$2],
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3],
+            __refreshLevel = __config[NODE_REFRESH_LV$1],
+            _config$NODE_COMPUTE2 = __config[NODE_COMPUTED_STYLE$2],
+            display = _config$NODE_COMPUTE2[DISPLAY$8],
+            visibility = _config$NODE_COMPUTE2[VISIBILITY$5],
+            overflow = _config$NODE_COMPUTE2[OVERFLOW$3],
+            mixBlendMode = _config$NODE_COMPUTE2[MIX_BLEND_MODE$3];
+
         if (display === 'none') {
           _i13 += total || 0;
 
@@ -27228,16 +27267,18 @@
         if (target && target.available) ; // 自身cache尝试
         else {
             // console.log(i, node.tagName, __cache && __cache.available, __limitCache);
-            if (__cache && __cache.available || __limitCache) {
-              if (__cache && __cache.available) {
-                var _m3 = mx.m2Mat4(matrixEvent, cx, cy);
+            if (_cache && _cache.available || __limitCache) {
+              if (_cache && _cache.available) {
+                var _m3 = mx.m2Mat4(_matrixEvent2, cx, cy);
 
-                console.log(_i13, matrixEvent, _m3, node.__config, __cache);
+                texCache.addTexAndDrawWhenLimit(gl, _cache, _opacity3, _m3, cx, cy);
               }
             }
           }
       }
     }
+
+    texCache.refresh(gl, cx, cy);
   }
 
   var struct = {
@@ -27249,7 +27290,7 @@
 
   var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n//varying float v_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n//  gl_Position = a_matrix * a_position;\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n//  v_matrix = a_matrix;\n}\n";
 
-  var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index;\n  float opacity;\n  index = int(v_index);\n  opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
+  var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index = int(v_index);\n  float opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
 
   var _DIRECTION_HASH;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,

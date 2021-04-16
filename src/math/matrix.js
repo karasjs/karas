@@ -50,9 +50,17 @@ function multiply(a, b) {
 }
 
 function calPoint(point, m) {
-  let [x, y] = point;
-  let [a, b, c, d, e, f] = m;
-  return [a * x + c * y + e, b * x + d * y + f];
+  let [x, y, z] = point;
+  if(m.length === 6) {
+    let [a, b, c, d, e, f] = m;
+    return [a * x + c * y + e, b * x + d * y + f];
+  }
+  else if(m.length === 16) {
+    z = z || 0;
+    let [a, b, c, , d, e, f, , g, h, i, , j, k, l] = m;
+    return [a * x + d * y + g * z + j, b * x + e * y + h * z + k, c * x + f * y + i * z + l];
+  }
+  return point;
 }
 
 function int2convolution(v) {

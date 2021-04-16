@@ -5,7 +5,6 @@ import enums from '../util/enums';
 import tf from '../style/transform';
 import mx from '../math/matrix';
 import debug from '../util/debug';
-import mode from '../node/mode';
 
 const {
   STYLE_KEY: {
@@ -39,11 +38,11 @@ function genSingle(cache) {
 }
 
 class Cache {
-  constructor(w, h, bbox, page, pos, renderMode) {
-    this.__init(w, h, bbox, page, pos, renderMode);
+  constructor(w, h, bbox, page, pos) {
+    this.__init(w, h, bbox, page, pos);
   }
 
-  __init(w, h, bbox, page, pos, renderMode) {
+  __init(w, h, bbox, page, pos) {
     this.__width = w;
     this.__height = h;
     this.__bbox = bbox;
@@ -55,18 +54,15 @@ class Cache {
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
-      if(renderMode === mode.WEBGL) {}
-      else {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
-        if(debug.flag) {
-          page.canvas.setAttribute('size', page.size);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-          ctx.beginPath();
-          ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
-          ctx.closePath();
-          ctx.fill();
-        }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      if(debug.flag) {
+        page.canvas.setAttribute('size', page.size);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.beginPath();
+        ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
+        ctx.closePath();
+        ctx.fill();
       }
     }
   }
@@ -81,10 +77,6 @@ class Cache {
     this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
     this.dby = sy1 - bbox[1];
     this.update();
-  }
-
-  update() {
-    this.page.update = true;
   }
 
   clear() {
@@ -178,11 +170,12 @@ class Cache {
     return this.__coords;
   }
 
+  static NUM = 5;
   static get MAX() {
     return Page.MAX - 2;
   }
 
-  static getInstance(bbox, renderMode) {
+  static getInstance(bbox) {
     if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
       return;
     }
@@ -191,16 +184,16 @@ class Cache {
     w += 2;
     h += 2;
     // 防止边的精度问题四周各+1px，宽高即+2px
-    let res = Page.getInstance(Math.max(w, h), renderMode);
+    let res = Page.getInstance(Math.max(w, h));
     if(!res) {
       return;
     }
     let { page, pos } = res;
-    return new Cache(w, h, bbox, page, pos, renderMode);
+    return new Cache(w, h, bbox, page, pos);
   }
 
   /**
-   * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
+   * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
    * @param cache
    * @param v
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}

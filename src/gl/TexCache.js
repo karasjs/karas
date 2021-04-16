@@ -5,7 +5,7 @@ class TexCache {
     this.__units = units; // 通道数量限制，8~16
     this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
     this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
-    this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
+    this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
   }
 
   /**
@@ -67,7 +67,7 @@ class TexCache {
       let lastHash = {};
       textureChannels.forEach((item, i) => {
         if(item) {
-          let uuid = item.uuid;
+          let uuid = item[0].uuid;
           lastHash[uuid] = i;
         }
       });
@@ -110,9 +110,12 @@ class TexCache {
       for(let i = 0, len = oldList.length; i < len; i++) {
         let page = oldList[i];
         let last = textureChannels[i];
-        if(!last || last !== page || page.update) {
-          webgl.createTexture(gl, page.canvas, i);
-          textureChannels[i] = page;
+        if(!last || last[0] !== page || page.update) {
+          if(last) {
+            webgl.deleteTexture(gl, last[1]);
+          }
+          let texture = webgl.createTexture(gl, page.canvas, i);
+          textureChannels[i] = [page, texture];
           hash[page.uuid] = i;
         }
         else {
@@ -125,6 +128,14 @@ class TexCache {
       pages.splice(0);
       infos.splice(0);
     }
+  }
+
+  release(gl) {
+    this.textureChannels.splice(0).forEach(item => {
+      if(item) {
+        webgl.deleteTexture(gl, item[1]);
+      }
+    });
   }
 
   get textureChannels() {

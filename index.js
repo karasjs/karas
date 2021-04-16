@@ -795,21 +795,26 @@
     } else if (m.length === 16) {
       z = z || 0;
 
-      var _m2 = _slicedToArray(m, 15),
-          _a = _m2[0],
-          _b = _m2[1],
-          _c2 = _m2[2],
-          _d = _m2[4],
-          _e = _m2[5],
-          _f = _m2[6],
-          g = _m2[8],
-          h = _m2[9],
-          i = _m2[10],
-          j = _m2[12],
-          k = _m2[13],
-          l = _m2[14];
+      var _m2 = _slicedToArray(m, 16),
+          a1 = _m2[0],
+          b1 = _m2[1],
+          c1 = _m2[2],
+          d1 = _m2[3],
+          a2 = _m2[4],
+          b2 = _m2[5],
+          c2 = _m2[6],
+          d2 = _m2[7],
+          a3 = _m2[8],
+          b3 = _m2[9],
+          c3 = _m2[10],
+          d3 = _m2[11],
+          a4 = _m2[12],
+          b4 = _m2[13],
+          c4 = _m2[14],
+          d4 = _m2[15];
 
-      return [_a * x + _d * y + g * z + j, _b * x + _e * y + h * z + k, _c2 * x + _f * y + i * z + l];
+      var w = x * d1 + y * d2 + z * d3 + d4;
+      return [(x * a1 + y * a2 + z * a3 + a4) / w, (x * b1 + y * b2 + z * b3 + b4) / w, (x * c1 + y * c2 + z * c3 + c4) / w];
     }
 
     return point;
@@ -5275,7 +5280,9 @@
 
 
     gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader); // Link the program object
+    gl.attachShader(program, fragmentShader);
+    gl.vertexShader = vertexShader;
+    gl.fragmentShader = fragmentShader; // Link the program object
 
     gl.linkProgram(program); // Check the result of linking
 
@@ -5358,6 +5365,10 @@
     var u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
     gl.uniform1i(u_texture, n);
     return texture;
+  }
+
+  function deleteTexture(gl, tex) {
+    gl.deleteTexture(tex);
   }
 
   function initVertexBuffers(gl, infos, hash, cx, cy) {
@@ -5488,7 +5499,7 @@
     var a_index = gl.getAttribLocation(gl.program, 'a_index');
     gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_index);
-    return [PER, length];
+    return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
   } // y反转
 
 
@@ -5501,9 +5512,13 @@
 
   function drawTextureCache(gl, infos, hash, cx, cy) {
     var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
-        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 2),
+        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 6),
         n = _initVertexBuffers2[0],
-        count = _initVertexBuffers2[1];
+        count = _initVertexBuffers2[1],
+        pointBuffer = _initVertexBuffers2[2],
+        texBuffer = _initVertexBuffers2[3],
+        opacityBuffer = _initVertexBuffers2[4],
+        indexBuffer = _initVertexBuffers2[5];
 
     if (n < 0 || count < 0) {
       inject.error('Failed to set the positions of the vertices');
@@ -5511,15 +5526,20 @@
     }
 
     gl.drawArrays(gl.TRIANGLES, 0, n * count);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
+    gl.deleteBuffer(indexBuffer);
   }
 
   var webgl = {
     initShaders: initShaders,
     createTexture: createTexture,
+    deleteTexture: deleteTexture,
     drawTextureCache: drawTextureCache
   };
 
-  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n//varying float v_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n//  gl_Position = a_matrix * a_position;\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n//  v_matrix = a_matrix;\n}\n";
+  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n}\n";
 
   var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index = int(v_index);\n  float opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
 
@@ -10103,7 +10123,7 @@
       }
     }, {
       key: "drawCache",
-      value: function drawCache(source, target) {
+      value: function drawCache(source, target, transform, matrix, tfo, inverse) {
         var _target$coords = _slicedToArray(target.coords, 2),
             tx = _target$coords[0],
             ty = _target$coords[1],
@@ -10126,6 +10146,26 @@
 
         var ox = tx + sx2 - sx1 + dbx - dbx2;
         var oy = ty + sy2 - sy1 + dby - dby2;
+
+        if (transform && matrix && tfo) {
+          tfo[0] += ox;
+          tfo[1] += oy;
+          var m = tf.calMatrixByOrigin(transform, tfo);
+          matrix = mx.multiply(matrix, m);
+
+          if (inverse) {
+            // 很多情况mask和target相同matrix，可简化计算
+            if (util.equalArr(matrix, inverse)) {
+              matrix = [1, 0, 0, 1, 0, 0];
+            } else {
+              inverse = mx.inverse(inverse);
+              matrix = mx.multiply(inverse, matrix);
+            }
+          }
+
+          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        }
+
         ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
       }
     }, {
@@ -24959,7 +24999,7 @@
 
       this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
 
-      this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
+      this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
     }
     /**
      * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
@@ -25027,7 +25067,7 @@
           var lastHash = {};
           textureChannels.forEach(function (item, i) {
             if (item) {
-              var uuid = item.uuid;
+              var uuid = item[0].uuid;
               lastHash[uuid] = i;
             }
           }); // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
@@ -25072,9 +25112,13 @@
             var page = oldList[_i];
             var last = textureChannels[_i];
 
-            if (!last || last !== page || page.update) {
-              webgl.createTexture(gl, page.canvas, _i);
-              textureChannels[_i] = page;
+            if (!last || last[0] !== page || page.update) {
+              if (last) {
+                webgl.deleteTexture(gl, last[1]);
+              }
+
+              var texture = webgl.createTexture(gl, page.canvas, _i);
+              textureChannels[_i] = [page, texture];
               hash[page.uuid] = _i;
             } else {
               hash[page.uuid] = _i;
@@ -25088,6 +25132,15 @@
           pages.splice(0);
           infos.splice(0);
         }
+      }
+    }, {
+      key: "release",
+      value: function release(gl) {
+        this.textureChannels.splice(0).forEach(function (item) {
+          if (item) {
+            webgl.deleteTexture(gl, item[1]);
+          }
+        });
       }
     }, {
       key: "textureChannels",
@@ -26131,7 +26184,7 @@
                     offsetHeight = offScreenOverflow.offsetHeight;
                 ctx.globalCompositeOperation = 'destination-in';
                 ctx.globalAlpha = 1;
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath();
                 ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -26141,11 +26194,10 @@
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1) && !blendHash.hasOwnProperty(_i3)) {
                   origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                   origin.globalAlpha = 1;
                   origin.drawImage(target.canvas, 0, 0);
-                  ctx.setTransform(1, 0, 0, 1, 0, 0);
-                  ctx.clearRect(0, 0, width, height);
+                  target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
                   ctx = origin;
                 }
@@ -26439,9 +26491,9 @@
             origin.setTransform(1, 0, 0, 1, 0, 0);
             origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // ctx.clearRect(0, 0, width, height);
-            // inject.releaseCacheCanvas(target.canvas);
-
+            target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            target.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(target.canvas);
             ctx = origin;
           }
         });
@@ -26941,6 +26993,8 @@
       texCache = root.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
     }
 
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
@@ -28267,6 +28321,24 @@
 
         if (n) {
           n.__root = null;
+        }
+
+        var gl = this.ctx;
+
+        if (this.__texCache && gl) {
+          this.__texCache.release(gl);
+
+          if (gl.program) {
+            gl.deleteProgram(gl.program);
+          }
+
+          if (gl.vertexShader) {
+            gl.deleteShader(gl.vertexShader);
+          }
+
+          if (gl.fragmentShader) {
+            gl.deleteShader(gl.fragmentShader);
+          }
         }
       }
     }, {

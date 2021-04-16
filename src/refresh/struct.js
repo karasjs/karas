@@ -1578,6 +1578,8 @@ function renderWebgl(renderMode, gl, defs, root) {
     const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
     texCache = root.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
   }
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
   let { __structs, width, height } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算

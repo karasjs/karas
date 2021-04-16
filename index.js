@@ -795,21 +795,26 @@
     } else if (m.length === 16) {
       z = z || 0;
 
-      var _m2 = _slicedToArray(m, 15),
-          _a = _m2[0],
-          _b = _m2[1],
-          _c2 = _m2[2],
-          _d = _m2[4],
-          _e = _m2[5],
-          _f = _m2[6],
-          g = _m2[8],
-          h = _m2[9],
-          i = _m2[10],
-          j = _m2[12],
-          k = _m2[13],
-          l = _m2[14];
+      var _m2 = _slicedToArray(m, 16),
+          a1 = _m2[0],
+          b1 = _m2[1],
+          c1 = _m2[2],
+          d1 = _m2[3],
+          a2 = _m2[4],
+          b2 = _m2[5],
+          c2 = _m2[6],
+          d2 = _m2[7],
+          a3 = _m2[8],
+          b3 = _m2[9],
+          c3 = _m2[10],
+          d3 = _m2[11],
+          a4 = _m2[12],
+          b4 = _m2[13],
+          c4 = _m2[14],
+          d4 = _m2[15];
 
-      return [_a * x + _d * y + g * z + j, _b * x + _e * y + h * z + k, _c2 * x + _f * y + i * z + l];
+      var w = x * d1 + y * d2 + z * d3 + d4;
+      return [(x * a1 + y * a2 + z * a3 + a4) / w, (x * b1 + y * b2 + z * b3 + b4) / w, (x * c1 + y * c2 + z * c3 + c4) / w];
     }
 
     return point;
@@ -5275,7 +5280,9 @@
 
 
     gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader); // Link the program object
+    gl.attachShader(program, fragmentShader);
+    gl.vertexShader = vertexShader;
+    gl.fragmentShader = fragmentShader; // Link the program object
 
     gl.linkProgram(program); // Check the result of linking
 
@@ -5492,7 +5499,7 @@
     var a_index = gl.getAttribLocation(gl.program, 'a_index');
     gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_index);
-    return [PER, length];
+    return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
   } // y反转
 
 
@@ -5505,9 +5512,13 @@
 
   function drawTextureCache(gl, infos, hash, cx, cy) {
     var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
-        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 2),
+        _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 6),
         n = _initVertexBuffers2[0],
-        count = _initVertexBuffers2[1];
+        count = _initVertexBuffers2[1],
+        pointBuffer = _initVertexBuffers2[2],
+        texBuffer = _initVertexBuffers2[3],
+        opacityBuffer = _initVertexBuffers2[4],
+        indexBuffer = _initVertexBuffers2[5];
 
     if (n < 0 || count < 0) {
       inject.error('Failed to set the positions of the vertices');
@@ -5515,6 +5526,10 @@
     }
 
     gl.drawArrays(gl.TRIANGLES, 0, n * count);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
+    gl.deleteBuffer(indexBuffer);
   }
 
   var webgl = {
@@ -5524,7 +5539,7 @@
     drawTextureCache: drawTextureCache
   };
 
-  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n//varying float v_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n//  gl_Position = a_matrix * a_position;\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n//  v_matrix = a_matrix;\n}\n";
+  var vertex = "#version 100\n\nattribute vec4 a_position;\n\nattribute vec2 a_texCoords;\nvarying vec2 v_texCoords;\n\nattribute mat4 a_matrix;\n\nattribute float a_opacity;\nvarying float v_opacity;\n\nattribute float a_index;\nvarying float v_index;\n\nvoid main() {\n  gl_Position = a_position;\n  v_texCoords = a_texCoords;\n  v_opacity = a_opacity;\n  v_index = a_index;\n}\n";
 
   var fragment = "#version 100\n\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\nvarying vec2 v_texCoords;\nvarying float v_opacity;\nvarying float v_index;\n\nuniform sampler2D u_texture0;\nuniform sampler2D u_texture1;\nuniform sampler2D u_texture2;\nuniform sampler2D u_texture3;\nuniform sampler2D u_texture4;\nuniform sampler2D u_texture5;\nuniform sampler2D u_texture6;\nuniform sampler2D u_texture7;\nuniform sampler2D u_texture8;\nuniform sampler2D u_texture9;\nuniform sampler2D u_texture10;\nuniform sampler2D u_texture11;\nuniform sampler2D u_texture12;\nuniform sampler2D u_texture13;\nuniform sampler2D u_texture14;\nuniform sampler2D u_texture15;\n\nvoid main() {\n  vec4 color;\n  int index = int(v_index);\n  float opacity = v_opacity;\n  if(index == 0) {\n    color = texture2D(u_texture0, v_texCoords);\n  }\n  else if(index == 1) {\n    color = texture2D(u_texture1, v_texCoords);\n  }\n  else if(index == 2) {\n    color = texture2D(u_texture2, v_texCoords);\n  }\n  else if(index == 3) {\n    color = texture2D(u_texture3, v_texCoords);\n  }\n  else if(index == 4) {\n    color = texture2D(u_texture4, v_texCoords);\n  }\n  else if(index == 5) {\n    color = texture2D(u_texture5, v_texCoords);\n  }\n  else if(index == 6) {\n    color = texture2D(u_texture6, v_texCoords);\n  }\n  else if(index == 7) {\n    color = texture2D(u_texture7, v_texCoords);\n  }\n  else if(index == 8) {\n    color = texture2D(u_texture8, v_texCoords);\n  }\n  else if(index == 9) {\n    color = texture2D(u_texture9, v_texCoords);\n  }\n  else if(index == 10) {\n    color = texture2D(u_texture10, v_texCoords);\n  }\n  else if(index == 11) {\n    color = texture2D(u_texture11, v_texCoords);\n  }\n  else if(index == 12) {\n    color = texture2D(u_texture12, v_texCoords);\n  }\n  else if(index == 13) {\n    color = texture2D(u_texture13, v_texCoords);\n  }\n  else if(index == 14) {\n    color = texture2D(u_texture14, v_texCoords);\n  }\n  else if(index == 15) {\n    color = texture2D(u_texture15, v_texCoords);\n  }\n  // 限制一下 alpha 在 [0.0, 1.0] 区间内\n  float alpha = clamp(opacity, 0.0, 1.0);\n  // alpha 为 0 的点，不绘制，直接跳过\n  if(alpha <= 0.0) {\n    discard;\n  }\n  gl_FragColor = vec4(color.rgb, color.a * alpha);\n}\n";
 
@@ -25119,9 +25134,9 @@
         }
       }
     }, {
-      key: "__destroy",
-      value: function __destroy(gl) {
-        this.textureChannels.forEach(function (item) {
+      key: "release",
+      value: function release(gl) {
+        this.textureChannels.splice(0).forEach(function (item) {
           if (item) {
             webgl.deleteTexture(gl, item[1]);
           }
@@ -26978,6 +26993,8 @@
       texCache = root.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
     }
 
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
@@ -28306,8 +28323,22 @@
           n.__root = null;
         }
 
-        if (this.__texCache && this.ctx) {
-          this.__texCache.__destroy(this.ctx);
+        var gl = this.ctx;
+
+        if (this.__texCache && gl) {
+          this.__texCache.release(gl);
+
+          if (gl.program) {
+            gl.deleteProgram(gl.program);
+          }
+
+          if (gl.vertexShader) {
+            gl.deleteShader(gl.vertexShader);
+          }
+
+          if (gl.fragmentShader) {
+            gl.deleteShader(gl.fragmentShader);
+          }
         }
       }
     }, {

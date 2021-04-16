@@ -130,8 +130,8 @@ class TexCache {
     }
   }
 
-  __destroy(gl) {
-    this.textureChannels.forEach(item => {
+  release(gl) {
+    this.textureChannels.splice(0).forEach(item => {
       if(item) {
         webgl.deleteTexture(gl, item[1]);
       }

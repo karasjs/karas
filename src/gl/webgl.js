@@ -52,6 +52,8 @@ function createProgram(gl, vshader, fshader) {
   // Attach the shader objects
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
+  gl.vertexShader = vertexShader;
+  gl.fragmentShader = fragmentShader;
 
   // Link the program object
   gl.linkProgram(program);
@@ -232,7 +234,7 @@ function initVertexBuffers(gl, infos, hash, cx, cy) {
   let a_index = gl.getAttribLocation(gl.program, 'a_index');
   gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_index);
-  return [PER, length];
+  return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
 }
 
 // y反转
@@ -244,12 +246,16 @@ function revertMatrixY(matrix) {
 }
 
 function drawTextureCache(gl, infos, hash, cx, cy) {
-  let [n, count] = initVertexBuffers(gl, infos, hash, cx, cy);
+  let [n, count, pointBuffer, texBuffer, opacityBuffer, indexBuffer] = initVertexBuffers(gl, infos, hash, cx, cy);
   if(n < 0 || count < 0) {
     inject.error('Failed to set the positions of the vertices');
     return;
   }
   gl.drawArrays(gl.TRIANGLES, 0, n * count);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.deleteBuffer(opacityBuffer);
+  gl.deleteBuffer(indexBuffer);
 }
 
 export default {

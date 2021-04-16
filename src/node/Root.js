@@ -841,8 +841,18 @@ class Root extends Dom {
     if(n) {
       n.__root = null;
     }
-    if(this.__texCache && this.ctx) {
-      this.__texCache.__destroy(this.ctx);
+    let gl = this.ctx;
+    if(this.__texCache && gl) {
+      this.__texCache.release(gl);
+      if(gl.program) {
+        gl.deleteProgram(gl.program);
+      }
+      if(gl.vertexShader) {
+        gl.deleteShader(gl.vertexShader);
+      }
+      if(gl.fragmentShader) {
+        gl.deleteShader(gl.fragmentShader);
+      }
     }
   }
 

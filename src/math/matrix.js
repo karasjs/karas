@@ -57,8 +57,13 @@ function calPoint(point, m) {
   }
   else if(m.length === 16) {
     z = z || 0;
-    let [a, b, c, , d, e, f, , g, h, i, , j, k, l] = m;
-    return [a * x + d * y + g * z + j, b * x + e * y + h * z + k, c * x + f * y + i * z + l];
+    let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
+    let w = x * d1 + y * d2 + z * d3 + d4;
+    return [
+      (x * a1 + y * a2 + z * a3 + a4) / w,
+      (x * b1 + y * b2 + z * b3 + b4) / w,
+      (x * c1 + y * c2 + z * c3 + c4) / w
+    ];
   }
   return point;
 }

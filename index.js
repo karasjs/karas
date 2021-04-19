@@ -12709,7 +12709,7 @@
           keys = _this$__init2[2],
           originStyle = _this$__init2[3];
 
-      config[I_FRAMES] = frames;
+      config[I_FRAMES] = config[I_CURRENT_FRAMES] = frames;
       config[I_FRAMES_R] = framesR;
       config[I_KEYS] = keys;
       config[I_ORIGIN_STYLE] = originStyle;
@@ -24592,7 +24592,7 @@
               dx = 0,
               dy = 0,
               hasTotal = void 0;
-          var target = __cacheOverflow || __cacheMask || __cacheFilter;
+          var target = __cacheMask || __cacheOverflow || __cacheFilter;
 
           if (!target || !target.available) {
             target = __cacheTotal;
@@ -24799,7 +24799,7 @@
             matrixHash[i] = matrix;
           }
 
-          var target = __cacheOverflow || __cacheMask || __cacheFilter;
+          var target = __cacheMask || __cacheOverflow || __cacheFilter;
 
           if (!target) {
             target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
@@ -25202,7 +25202,7 @@
         } // 有total的可以直接绘制并跳过子节点索引
 
 
-        var target = __cacheOverflow || __cacheMask || __cacheFilter;
+        var target = __cacheMask || __cacheOverflow || __cacheFilter;
 
         if (!target || !target.available) {
           target = __cacheTotal;
@@ -31153,7 +31153,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.1";
+  var version = "0.57.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

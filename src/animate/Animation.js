@@ -1246,7 +1246,7 @@ class Animation extends Event {
     let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
     let [frames, framesR, keys, originStyle] = this.__init(list, iterations, duration, op.easing, target);
-    config[I_FRAMES] = frames;
+    config[I_FRAMES] = config[I_CURRENT_FRAMES] = frames;
     config[I_FRAMES_R] = framesR;
     config[I_KEYS] = keys;
     config[I_ORIGIN_STYLE] = originStyle;

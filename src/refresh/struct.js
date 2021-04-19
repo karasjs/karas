@@ -131,7 +131,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           continue;
         }
         let bbox, dx = 0, dy = 0, hasTotal;
-        let target = __cacheOverflow || __cacheMask || __cacheFilter;
+        let target = __cacheMask || __cacheOverflow || __cacheFilter;
         if(!target || !target.available) {
           target = __cacheTotal;
         }
@@ -306,7 +306,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
       if(matrix) {
         matrixHash[i] = matrix;
       }
-      let target = __cacheOverflow || __cacheMask || __cacheFilter;
+      let target = __cacheMask || __cacheOverflow || __cacheFilter;
       if(!target) {
         target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
       }
@@ -688,7 +688,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         continue;
       }
       // 有total的可以直接绘制并跳过子节点索引
-      let target = __cacheOverflow || __cacheMask || __cacheFilter;
+      let target = __cacheMask || __cacheOverflow || __cacheFilter;
       if(!target || !target.available) {
         target = __cacheTotal;
       }

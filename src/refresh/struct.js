@@ -387,8 +387,9 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
   }
   let width = bboxTotal[2] - bboxTotal[0];
   let height = bboxTotal[3] - bboxTotal[1];
+  let fullSize = Math.max(width + 2, height + 2);
   // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
-  let texture = webgl.createTexture(gl, null, null, width + 2, height + 2);
+  let texture = webgl.createTexture(gl, null, null, fullSize, fullSize);
   texture.uuid = Page.genUuid();
   let frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
@@ -398,14 +399,14 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
     inject.error('Framebuffer object is incomplete: ' + check.toString());
   }
   // 离屏窗口0开始，上下左右各扩展1px
-  gl.viewport(0, 0, width + 2, height + 2);
+  gl.viewport(0, 0, fullSize, fullSize);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   // 以bboxTotal的左上角为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
-  let dx = -sx1 + 1, dy = -sy1 + 1;
+  let cx = fullSize * 0.5, cy = fullSize * 0.5;
+  let dx = -bboxTotal[0], dy = -bboxTotal[1];
   let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
-  let cx = (width + 2) * 0.5, cy = (height + 2) * 0.5;
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(cache && cache.available) {
     let m = mx.m2Mat4([1, 0, 0, 1, 0, 0], cx, cy);
@@ -503,7 +504,7 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
   texCache.refresh(gl, cx, cy);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, W, H);
-  return new MockCache(texture, sx1, sy1, width + 2, height + 2);
+  return new MockCache(texture, sx1, sy1, width + 2, height + 2, fullSize);
 }
 
 function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -1919,8 +1920,8 @@ function renderWebgl(renderMode, gl, defs, root) {
       } = __config;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        __cacheTotal = __config[NODE_CACHE_TOTAL]
-          = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
+        // __cacheTotal = __config[NODE_CACHE_TOTAL]
+        //   = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
       }
       // 防止失败超限，必须有total结果
       // if(__cacheTotal && __cacheTotal.available) {

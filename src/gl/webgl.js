@@ -152,68 +152,61 @@ function deleteTexture(gl, tex) {
   gl.deleteTexture(tex);
 }
 
-function initVertexBuffers(gl, infos, hash, cx, cy) {
-  let count = 0;
-  let count2 = 0;
-  let length = 0;
-  infos.forEach(info => {
-    length += info.length;
-  });
+function initVertexBuffers(gl, list, hash, cx, cy) {
+  let length = list.length;
   let vtPoint = new Float32Array(length * 12);
   let vtTex = new Float32Array(length * 12);
   let vtOpacity = new Float32Array(length * 6);
   let vtIndex = new Float32Array(length * 6);
-  infos.forEach(info => {
-    info.forEach(item => {
-      let [cache, opacity, matrix, dx, dy] = item;
-      let { coords: [x, y], sx1, sy1, width, height, fullSize } = cache;
-      // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-      let [x1, y1] = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy);
-      let [x2, y2] = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy);
-      [x1, y1] = calPoint([x1, y1], matrix);
-      [x2, y2] = calPoint([x2, y2], matrix);
-      vtPoint[count] = x1;
-      vtPoint[count + 1] = y1;
-      vtPoint[count + 2] = x1;
-      vtPoint[count + 3] = y2;
-      vtPoint[count + 4] = x2;
-      vtPoint[count + 5] = y1;
-      vtPoint[count + 6] = x1;
-      vtPoint[count + 7] = y2;
-      vtPoint[count + 8] = x2;
-      vtPoint[count + 9] = y1;
-      vtPoint[count + 10] = x2;
-      vtPoint[count + 11] = y2;
-      let tx1 = (x - 1) / fullSize, ty1 = (y - 1 + height) / fullSize;
-      let tx2 = (x - 1 + width) / fullSize, ty2 = (y - 1) / fullSize;
-      vtTex[count] = tx1;
-      vtTex[count + 1] = ty1;
-      vtTex[count + 2] = tx1;
-      vtTex[count + 3] = ty2;
-      vtTex[count + 4] = tx2;
-      vtTex[count + 5] = ty1;
-      vtTex[count + 6] = tx1;
-      vtTex[count + 7] = ty2;
-      vtTex[count + 8] = tx2;
-      vtTex[count + 9] = ty1;
-      vtTex[count + 10] = tx2;
-      vtTex[count + 11] = ty2;
-      vtOpacity[count2] = opacity;
-      vtOpacity[count2 + 1] = opacity;
-      vtOpacity[count2 + 2] = opacity;
-      vtOpacity[count2 + 3] = opacity;
-      vtOpacity[count2 + 4] = opacity;
-      vtOpacity[count2 + 5] = opacity;
-      let index = hash[cache.page.uuid];
-      vtIndex[count2] = index;
-      vtIndex[count2 + 1] = index;
-      vtIndex[count2 + 2] = index;
-      vtIndex[count2 + 3] = index;
-      vtIndex[count2 + 4] = index;
-      vtIndex[count2 + 5] = index;
-      count += 12;
-      count2 += 6;
-    });
+  list.forEach((item, i) => {
+    let count = i * 12;
+    let count2 = i * 6;
+    let [cache, opacity, matrix, dx, dy] = item;
+    let { coords: [x, y], sx1, sy1, width, height, fullSize } = cache;
+    // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
+    let [x1, y1] = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy);
+    let [x2, y2] = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy);
+    [x1, y1] = calPoint([x1, y1], matrix);
+    [x2, y2] = calPoint([x2, y2], matrix);
+    vtPoint[count] = x1;
+    vtPoint[count + 1] = y1;
+    vtPoint[count + 2] = x1;
+    vtPoint[count + 3] = y2;
+    vtPoint[count + 4] = x2;
+    vtPoint[count + 5] = y1;
+    vtPoint[count + 6] = x1;
+    vtPoint[count + 7] = y2;
+    vtPoint[count + 8] = x2;
+    vtPoint[count + 9] = y1;
+    vtPoint[count + 10] = x2;
+    vtPoint[count + 11] = y2;
+    let tx1 = (x - 1) / fullSize, ty1 = (y - 1 + height) / fullSize;
+    let tx2 = (x - 1 + width) / fullSize, ty2 = (y - 1) / fullSize;
+    vtTex[count] = tx1;
+    vtTex[count + 1] = ty1;
+    vtTex[count + 2] = tx1;
+    vtTex[count + 3] = ty2;
+    vtTex[count + 4] = tx2;
+    vtTex[count + 5] = ty1;
+    vtTex[count + 6] = tx1;
+    vtTex[count + 7] = ty2;
+    vtTex[count + 8] = tx2;
+    vtTex[count + 9] = ty1;
+    vtTex[count + 10] = tx2;
+    vtTex[count + 11] = ty2;
+    vtOpacity[count2] = opacity;
+    vtOpacity[count2 + 1] = opacity;
+    vtOpacity[count2 + 2] = opacity;
+    vtOpacity[count2 + 3] = opacity;
+    vtOpacity[count2 + 4] = opacity;
+    vtOpacity[count2 + 5] = opacity;
+    let index = hash[cache.page.uuid];
+    vtIndex[count2] = index;
+    vtIndex[count2 + 1] = index;
+    vtIndex[count2 + 2] = index;
+    vtIndex[count2 + 3] = index;
+    vtIndex[count2 + 4] = index;
+    vtIndex[count2 + 5] = index;
   });
   const PER = 6;
   // 顶点buffer
@@ -247,16 +240,8 @@ function initVertexBuffers(gl, infos, hash, cx, cy) {
   return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
 }
 
-// y反转
-function revertMatrixY(matrix) {
-  matrix[1] = -matrix[1];
-  matrix[5] = -matrix[5];
-  matrix[9] = -matrix[9];
-  matrix[13] = -matrix[13];
-}
-
-function drawTextureCache(gl, infos, hash, cx, cy) {
-  let [n, count, pointBuffer, texBuffer, opacityBuffer, indexBuffer] = initVertexBuffers(gl, infos, hash, cx, cy);
+function drawTextureCache(gl, list, hash, cx, cy) {
+  let [n, count, pointBuffer, texBuffer, opacityBuffer, indexBuffer] = initVertexBuffers(gl, list, hash, cx, cy);
   if(n < 0 || count < 0) {
     inject.error('Failed to set the positions of the vertices');
     return;

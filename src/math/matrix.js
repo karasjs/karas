@@ -191,11 +191,13 @@ function m2Mat4(m, width, height) {
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
   }
   if(m.length === 16) {
+    m = m.slice(0);
     m[13] /= width;
     m[14] /= height;
     return m;
   }
   if(m.length === 6) {
+    m = m.slice(0);
     return [
       m[0], m[1], 0, 0,
       m[2], m[3], 0, 0,
@@ -207,6 +209,7 @@ function m2Mat4(m, width, height) {
 }
 
 function revertY(matrix) {
+  matrix = matrix.slice(0);
   if(matrix.length === 9) {
     matrix[1] = -matrix[1];
     matrix[3] = -matrix[3];

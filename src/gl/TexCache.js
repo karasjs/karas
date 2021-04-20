@@ -4,7 +4,7 @@ class TexCache {
   constructor(units) {
     this.__units = units; // 通道数量限制，8~16
     this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
-    this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
+    this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
     this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
   }
 
@@ -30,24 +30,23 @@ class TexCache {
    */
   addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0) {
     let pages = this.__pages;
-    let infos = this.__infos;
+    let list = this.__list;
     let page = cache.page;
     let i = pages.indexOf(page);
     // 找到说明已有page在此索引的通道中，记录下来info
     if(i > -1) {
-      infos[i].push([cache, opacity, matrix, dx, dy]);
+      list.push([cache, opacity, matrix, dx, dy]);
     }
     // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
     else {
       i = pages.length;
       if(i > this.__units) {
         // 绘制且清空，队列索引重新为0
-        this.refresh(gl, cx, cy, pages, infos);
+        this.refresh(gl, cx, cy, pages, list);
         i = 0;
       }
       pages.push(page);
-      let info = infos[i] = infos[i] || [];
-      info.push([cache, opacity, matrix, dx, dy]);
+      list.push([cache, opacity, matrix, dx, dy]);
     }
   }
 
@@ -57,11 +56,11 @@ class TexCache {
    * @param cx
    * @param cy
    * @param pages
-   * @param infos
+   * @param list
    */
-  refresh(gl, cx, cy, pages, infos) {
+  refresh(gl, cx, cy, pages, list) {
     pages = pages || this.__pages;
-    infos = infos || this.__infos;
+    list = list || this.__list;
     // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
     if(pages.length) {
       let channels = this.channels;
@@ -150,9 +149,9 @@ class TexCache {
         page.update = false;
       }
       // 再次遍历开始本次渲染并清空
-      webgl.drawTextureCache(gl, infos, hash, cx, cy);
+      webgl.drawTextureCache(gl, list, hash, cx, cy);
       pages.splice(0);
-      infos.splice(0);
+      list.splice(0);
     }
   }
 

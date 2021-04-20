@@ -990,12 +990,14 @@
     }
 
     if (m.length === 16) {
+      m = m.slice(0);
       m[13] /= width;
       m[14] /= height;
       return m;
     }
 
     if (m.length === 6) {
+      m = m.slice(0);
       return [m[0], m[1], 0, 0, m[2], m[3], 0, 0, 0, 0, 1, 0, m[4] / width, m[5] / height, 0, 1];
     }
 
@@ -1003,6 +1005,8 @@
   }
 
   function revertY(matrix) {
+    matrix = matrix.slice(0);
+
     if (matrix.length === 9) {
       matrix[1] = -matrix[1];
       matrix[3] = -matrix[3];
@@ -5398,103 +5402,97 @@
     gl.deleteTexture(tex);
   }
 
-  function initVertexBuffers(gl, infos, hash, cx, cy) {
-    var count = 0;
-    var count2 = 0;
-    var length = 0;
-    infos.forEach(function (info) {
-      length += info.length;
-    });
+  function initVertexBuffers(gl, list, hash, cx, cy) {
+    var length = list.length;
     var vtPoint = new Float32Array(length * 12);
     var vtTex = new Float32Array(length * 12);
     var vtOpacity = new Float32Array(length * 6);
     var vtIndex = new Float32Array(length * 6);
-    infos.forEach(function (info) {
-      info.forEach(function (item) {
-        var _item = _slicedToArray(item, 5),
-            cache = _item[0],
-            opacity = _item[1],
-            matrix = _item[2],
-            dx = _item[3],
-            dy = _item[4];
+    list.forEach(function (item, i) {
+      var count = i * 12;
+      var count2 = i * 6;
 
-        var _cache$coords = _slicedToArray(cache.coords, 2),
-            x = _cache$coords[0],
-            y = _cache$coords[1],
-            sx1 = cache.sx1,
-            sy1 = cache.sy1,
-            width = cache.width,
-            height = cache.height,
-            fullSize = cache.fullSize; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
+      var _item = _slicedToArray(item, 5),
+          cache = _item[0],
+          opacity = _item[1],
+          matrix = _item[2],
+          dx = _item[3],
+          dy = _item[4];
+
+      var _cache$coords = _slicedToArray(cache.coords, 2),
+          x = _cache$coords[0],
+          y = _cache$coords[1],
+          sx1 = cache.sx1,
+          sy1 = cache.sy1,
+          width = cache.width,
+          height = cache.height,
+          fullSize = cache.fullSize; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
 
 
-        var _convertCoords2Gl = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy),
-            _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
-            x1 = _convertCoords2Gl2[0],
-            y1 = _convertCoords2Gl2[1];
+      var _convertCoords2Gl = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy),
+          _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
+          x1 = _convertCoords2Gl2[0],
+          y1 = _convertCoords2Gl2[1];
 
-        var _convertCoords2Gl3 = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy),
-            _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
-            x2 = _convertCoords2Gl4[0],
-            y2 = _convertCoords2Gl4[1];
+      var _convertCoords2Gl3 = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy),
+          _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
+          x2 = _convertCoords2Gl4[0],
+          y2 = _convertCoords2Gl4[1];
 
-        var _calPoint = calPoint$1([x1, y1], matrix);
+      var _calPoint = calPoint$1([x1, y1], matrix);
 
-        var _calPoint2 = _slicedToArray(_calPoint, 2);
+      var _calPoint2 = _slicedToArray(_calPoint, 2);
 
-        x1 = _calPoint2[0];
-        y1 = _calPoint2[1];
+      x1 = _calPoint2[0];
+      y1 = _calPoint2[1];
 
-        var _calPoint3 = calPoint$1([x2, y2], matrix);
+      var _calPoint3 = calPoint$1([x2, y2], matrix);
 
-        var _calPoint4 = _slicedToArray(_calPoint3, 2);
+      var _calPoint4 = _slicedToArray(_calPoint3, 2);
 
-        x2 = _calPoint4[0];
-        y2 = _calPoint4[1];
-        vtPoint[count] = x1;
-        vtPoint[count + 1] = y1;
-        vtPoint[count + 2] = x1;
-        vtPoint[count + 3] = y2;
-        vtPoint[count + 4] = x2;
-        vtPoint[count + 5] = y1;
-        vtPoint[count + 6] = x1;
-        vtPoint[count + 7] = y2;
-        vtPoint[count + 8] = x2;
-        vtPoint[count + 9] = y1;
-        vtPoint[count + 10] = x2;
-        vtPoint[count + 11] = y2;
-        var tx1 = (x - 1) / fullSize,
-            ty1 = (y - 1 + height) / fullSize;
-        var tx2 = (x - 1 + width) / fullSize,
-            ty2 = (y - 1) / fullSize;
-        vtTex[count] = tx1;
-        vtTex[count + 1] = ty1;
-        vtTex[count + 2] = tx1;
-        vtTex[count + 3] = ty2;
-        vtTex[count + 4] = tx2;
-        vtTex[count + 5] = ty1;
-        vtTex[count + 6] = tx1;
-        vtTex[count + 7] = ty2;
-        vtTex[count + 8] = tx2;
-        vtTex[count + 9] = ty1;
-        vtTex[count + 10] = tx2;
-        vtTex[count + 11] = ty2;
-        vtOpacity[count2] = opacity;
-        vtOpacity[count2 + 1] = opacity;
-        vtOpacity[count2 + 2] = opacity;
-        vtOpacity[count2 + 3] = opacity;
-        vtOpacity[count2 + 4] = opacity;
-        vtOpacity[count2 + 5] = opacity;
-        var index = hash[cache.page.uuid];
-        vtIndex[count2] = index;
-        vtIndex[count2 + 1] = index;
-        vtIndex[count2 + 2] = index;
-        vtIndex[count2 + 3] = index;
-        vtIndex[count2 + 4] = index;
-        vtIndex[count2 + 5] = index;
-        count += 12;
-        count2 += 6;
-      });
+      x2 = _calPoint4[0];
+      y2 = _calPoint4[1];
+      vtPoint[count] = x1;
+      vtPoint[count + 1] = y1;
+      vtPoint[count + 2] = x1;
+      vtPoint[count + 3] = y2;
+      vtPoint[count + 4] = x2;
+      vtPoint[count + 5] = y1;
+      vtPoint[count + 6] = x1;
+      vtPoint[count + 7] = y2;
+      vtPoint[count + 8] = x2;
+      vtPoint[count + 9] = y1;
+      vtPoint[count + 10] = x2;
+      vtPoint[count + 11] = y2;
+      var tx1 = (x - 1) / fullSize,
+          ty1 = (y - 1 + height) / fullSize;
+      var tx2 = (x - 1 + width) / fullSize,
+          ty2 = (y - 1) / fullSize;
+      vtTex[count] = tx1;
+      vtTex[count + 1] = ty1;
+      vtTex[count + 2] = tx1;
+      vtTex[count + 3] = ty2;
+      vtTex[count + 4] = tx2;
+      vtTex[count + 5] = ty1;
+      vtTex[count + 6] = tx1;
+      vtTex[count + 7] = ty2;
+      vtTex[count + 8] = tx2;
+      vtTex[count + 9] = ty1;
+      vtTex[count + 10] = tx2;
+      vtTex[count + 11] = ty2;
+      vtOpacity[count2] = opacity;
+      vtOpacity[count2 + 1] = opacity;
+      vtOpacity[count2 + 2] = opacity;
+      vtOpacity[count2 + 3] = opacity;
+      vtOpacity[count2 + 4] = opacity;
+      vtOpacity[count2 + 5] = opacity;
+      var index = hash[cache.page.uuid];
+      vtIndex[count2] = index;
+      vtIndex[count2 + 1] = index;
+      vtIndex[count2 + 2] = index;
+      vtIndex[count2 + 3] = index;
+      vtIndex[count2 + 4] = index;
+      vtIndex[count2 + 5] = index;
     });
     var PER = 6; // 顶点buffer
 
@@ -5526,10 +5524,10 @@
     gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_index);
     return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
-  } // y反转
+  }
 
-  function drawTextureCache(gl, infos, hash, cx, cy) {
-    var _initVertexBuffers = initVertexBuffers(gl, infos, hash, cx, cy),
+  function drawTextureCache(gl, list, hash, cx, cy) {
+    var _initVertexBuffers = initVertexBuffers(gl, list, hash, cx, cy),
         _initVertexBuffers2 = _slicedToArray(_initVertexBuffers, 6),
         n = _initVertexBuffers2[0],
         count = _initVertexBuffers2[1],
@@ -25022,7 +25020,7 @@
 
       this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
 
-      this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
+      this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
 
       this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
     }
@@ -25054,25 +25052,24 @@
         var dx = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
         var dy = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
         var pages = this.__pages;
-        var infos = this.__infos;
+        var list = this.__list;
         var page = cache.page;
         var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
 
         if (i > -1) {
-          infos[i].push([cache, opacity, matrix, dx, dy]);
+          list.push([cache, opacity, matrix, dx, dy]);
         } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
         else {
             i = pages.length;
 
             if (i > this.__units) {
               // 绘制且清空，队列索引重新为0
-              this.refresh(gl, cx, cy, pages, infos);
+              this.refresh(gl, cx, cy, pages, list);
               i = 0;
             }
 
             pages.push(page);
-            var info = infos[i] = infos[i] || [];
-            info.push([cache, opacity, matrix, dx, dy]);
+            list.push([cache, opacity, matrix, dx, dy]);
           }
       }
       /**
@@ -25081,14 +25078,14 @@
        * @param cx
        * @param cy
        * @param pages
-       * @param infos
+       * @param list
        */
 
     }, {
       key: "refresh",
-      value: function refresh(gl, cx, cy, pages, infos) {
+      value: function refresh(gl, cx, cy, pages, list) {
         pages = pages || this.__pages;
-        infos = infos || this.__infos; // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
+        list = list || this.__list; // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
 
         if (pages.length) {
           var channels = this.channels; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
@@ -25188,9 +25185,9 @@
           } // 再次遍历开始本次渲染并清空
 
 
-          webgl.drawTextureCache(gl, infos, hash, cx, cy);
+          webgl.drawTextureCache(gl, list, hash, cx, cy);
           pages.splice(0);
-          infos.splice(0);
+          list.splice(0);
         }
       }
       /**
@@ -25215,32 +25212,6 @@
     }]);
 
     return TexCache;
-  }();
-
-  var MockCache = /*#__PURE__*/function () {
-    function MockCache(texture, sx1, sy1, width, height) {
-      _classCallCheck(this, MockCache);
-
-      this.__texture = texture;
-      this.coords = [1, 1];
-      this.sx1 = sx1;
-      this.sy1 = sy1;
-      this.width = width;
-      this.height = height;
-      this.fullSize = Math.max(width, height);
-    }
-
-    _createClass(MockCache, [{
-      key: "release",
-      value: function release() {}
-    }, {
-      key: "page",
-      get: function get() {
-        return this.__texture;
-      }
-    }]);
-
-    return MockCache;
   }();
 
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
@@ -25621,176 +25592,6 @@
 
   function genOverflow(node, cache) {
     return node.__config[NODE_CACHE_OVERFLOW$3] = Cache.genOverflow(cache, node);
-  }
-  /**
-   * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，如果超限则不返回
-   * @param renderMode
-   * @param gl
-   * @param texCache
-   * @param node
-   * @param __config
-   * @param index
-   * @param total
-   * @param __structs
-   * @param cache
-   * @param W
-   * @param H
-   * @returns {*}
-   */
-
-
-  function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, __structs, cache, W, H) {
-    if (total === 0) {
-      return cache;
-    } // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
-
-
-    var parentIndexHash = {};
-    var matrixHash = {};
-    var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
-
-    if (!bboxTotal) {
-      return;
-    }
-
-    var width = bboxTotal[2] - bboxTotal[0];
-    var height = bboxTotal[3] - bboxTotal[1]; // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
-
-    var texture = webgl.createTexture(gl, null, null, width + 2, height + 2);
-    texture.uuid = Page.genUuid();
-    var frameBuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-    var check = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-
-    if (check !== gl.FRAMEBUFFER_COMPLETE) {
-      inject.error('Framebuffer object is incomplete: ' + check.toString());
-    } // 离屏窗口0开始，上下左右各扩展1px
-
-
-    gl.viewport(0, 0, width + 2, height + 2);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT); // 以bboxTotal的左上角为原点生成离屏texture
-
-    var sx1 = node.__sx1,
-        sy1 = node.__sy1;
-    var dx = -sx1 + 1,
-        dy = -sy1 + 1;
-    var dbx = sx1 - bboxTotal[0],
-        dby = sy1 - bboxTotal[1];
-    var cx = (width + 2) * 0.5,
-        cy = (height + 2) * 0.5; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-
-    if (cache && cache.available) {
-      var m = mx.m2Mat4([1, 0, 0, 1, 0, 0], cx, cy);
-      texCache.addTexAndDrawWhenLimit(gl, cache, 1, m, cx, cy, dx, dy);
-    } // 先序遍历汇总到total
-
-
-    for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
-      var _structs$i3 = __structs[i],
-          _node2 = _structs$i3[STRUCT_NODE$1],
-          _total3 = _structs$i3[STRUCT_TOTAL$1],
-          hasMask = _structs$i3[STRUCT_HAS_MASK$1];
-      var _config2 = _node2.__config;
-      var parentIndex = parentIndexHash[i];
-      var matrix = matrixHash[parentIndex];
-      var opacity = opacityHash[parentIndex]; // 先看text，visibility会在内部判断，display会被parent判断
-
-      if (_node2 instanceof Text) {
-        var _m2 = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-
-        texCache.addTexAndDrawWhenLimit(gl, _node2.__cache, opacity, _m2, cx, cy, dx, dy);
-      } // 再看total缓存/cache，都没有的是无内容的Xom节点
-      else {
-          var __cache = _config2[NODE_CACHE$4],
-              __cacheTotal = _config2[NODE_CACHE_TOTAL$3],
-              __cacheFilter = _config2[NODE_CACHE_FILTER$3],
-              __cacheMask = _config2[NODE_CACHE_MASK$2],
-              __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$3],
-              isMask = _config2[NODE_IS_MASK$2],
-              _config2$NODE_COMPUTE = _config2[NODE_COMPUTED_STYLE$2],
-              display = _config2$NODE_COMPUTE[DISPLAY$8],
-              visibility = _config2$NODE_COMPUTE[VISIBILITY$5],
-              transform = _config2$NODE_COMPUTE[TRANSFORM$5],
-              transformOrigin = _config2$NODE_COMPUTE[TRANSFORM_ORIGIN$5],
-              mixBlendMode = _config2$NODE_COMPUTE[MIX_BLEND_MODE$3];
-
-          if (display === 'none') {
-            i += _total3 || 0;
-
-            if (hasMask) {
-              i += hasMask;
-            }
-
-            continue;
-          }
-
-          if (visibility === 'hidden') {
-            continue;
-          } // mask不能被汇总到top上
-
-
-          if (isMask) {
-            continue;
-          }
-
-          if (transform && !isE$2(transform)) {
-            var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-
-            if (__cache && __cache.available) {
-              tfo[0] += __cache.sx1;
-              tfo[1] += __cache.sy1;
-            } else {
-              tfo[0] += _node2.__sx1;
-              tfo[1] += _node2.__sy1;
-            }
-
-            var _dx = -sx1 + dbx;
-
-            var _dy = -sy1 + dby;
-
-            tfo[0] += _dx;
-            tfo[1] += _dy;
-
-            var _m3 = tf.calMatrixByOrigin(transform, tfo);
-
-            if (matrix) {
-              matrix = multiply$2(matrix, _m3);
-            } else {
-              matrix = _m3;
-            }
-          }
-
-          if (matrix) {
-            matrixHash[i] = matrix;
-          }
-
-          var target = __cacheMask || __cacheOverflow || __cacheFilter;
-
-          if (!target) {
-            target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
-          }
-
-          if (target) {
-            i += _total3 || 0;
-          } else if (__cache && __cache.available) {
-            target = __cache;
-          }
-
-          if (target) {
-            var _m4 = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-
-            texCache.addTexAndDrawWhenLimit(gl, target, opacity, _m4, cx, cy, dx, dy);
-          }
-        }
-    }
-
-    texCache.refresh(gl, cx, cy);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, W, H);
-    return new MockCache(texture, sx1, sy1, width + 2, height + 2);
   }
 
   function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -27464,9 +27265,7 @@
             __cacheMask = __config[NODE_CACHE_MASK$2],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3]; // 可能没变化，比如被遮罩节点、filter变更等
 
-        if (!__cacheTotal || !__cacheTotal.available) {
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
-        } // 防止失败超限，必须有total结果
+        if (!__cacheTotal || !__cacheTotal.available) ; // 防止失败超限，必须有total结果
         // if(__cacheTotal && __cacheTotal.available) {
         //   let target = __cacheTotal;
         //   if(__blurValue > 0 && (!__cacheFilter || !__cacheFilter.available)) {

@@ -1,15 +1,22 @@
+/**
+ * 一个fbo离屏纹理，mock成cache，当webgl需要局部根节点汇总时生成，即cacheTotal，
+ * 基于此纹理进行filter、mask等后处理渲染
+ */
 class MockCache {
-  constructor(texture, sx1, sy1, width, height) {
+  constructor(texture, sx1, sy1, width, height, fullSize) {
     this.__texture = texture;
     this.coords = [1, 1];
     this.sx1 = sx1;
     this.sy1 = sy1;
     this.width = width;
     this.height = height;
-    this.fullSize = Math.max(width, height);
+    this.fullSize = fullSize;
+    this.available = true;
   }
 
-  release() {}
+  release() {
+    this.available = false;
+  }
 
   get page() {
     return this.__texture;

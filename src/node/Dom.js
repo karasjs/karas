@@ -2124,7 +2124,7 @@ class Dom extends Xom {
    * @private
    */
   __inlineSize(lineBoxManager) {
-    let { contentBoxList, computedStyle } = this;
+    let { contentBoxList, computedStyle, __ox, __oy } = this;
     let {
       [MARGIN_TOP]: marginTop,
       [MARGIN_RIGHT]: marginRight,
@@ -2199,18 +2199,18 @@ class Dom extends Xom {
       this.__offsetHeight = maxFY - minFY;
       this.__outerWidth = maxOX - minOX;
       this.__outerHeight = maxOY - minOY;
-      this.__sx1 = minFX;
-      this.__sy1 = minFY;
-      this.__sx2 = minCX;
-      this.__sy2 = minCY;
-      this.__sx3 = minX;
-      this.__sy3 = minY;
-      this.__sx4 = maxX;
-      this.__sy4 = maxY;
-      this.__sx5 = maxCX;
-      this.__sy5 = maxCY;
-      this.__sx6 = maxFX;
-      this.__sy6 = maxFY;
+      this.__sx1 = minFX + __ox;
+      this.__sy1 = minFY + __oy;
+      this.__sx2 = minCX + __ox;
+      this.__sy2 = minCY + __oy;
+      this.__sx3 = minX + __ox;
+      this.__sy3 = minY + __oy;
+      this.__sx4 = maxX + __ox;
+      this.__sy4 = maxY + __oy;
+      this.__sx5 = maxCX + __ox;
+      this.__sy5 = maxCY + __oy;
+      this.__sx6 = maxFX + __ox;
+      this.__sy6 = maxFY + __oy;
     }
     // 如果没有内容，宽度为0高度为lineHeight
     else {

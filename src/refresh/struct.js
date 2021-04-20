@@ -888,7 +888,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
             ctx.globalCompositeOperation = 'destination-in';
             ctx.globalAlpha = 1;
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
             ctx.fillStyle = '#FFF';
             ctx.beginPath();
             ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -897,11 +897,10 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.globalCompositeOperation = 'source-over';
             if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
               origin.setTransform(1, 0, 0, 1, 0, 0);
-              origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
               origin.globalAlpha = 1;
               origin.drawImage(target.canvas, 0, 0);
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.clearRect(0, 0, width, height);
+              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+              target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
               ctx = origin;
             }
@@ -1129,9 +1128,9 @@ function renderCanvas(renderMode, ctx, defs, root) {
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          // ctx.clearRect(0, 0, width, height);
-          // inject.releaseCacheCanvas(target.canvas);
+          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          target.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(target.canvas);
           ctx = origin;
         }
       });

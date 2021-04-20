@@ -325,7 +325,7 @@ class Sector extends Geom {
   get bbox() {
     let {
       isMulti, __cacheProps,
-      __sx2: originX, __sy2: originY, width, height,
+      __sx3: originX, __sy3: originY, width, height,
       currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,

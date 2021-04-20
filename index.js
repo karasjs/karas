@@ -12709,7 +12709,7 @@
           keys = _this$__init2[2],
           originStyle = _this$__init2[3];
 
-      config[I_FRAMES] = config[I_CURRENT_FRAMES] = frames;
+      config[I_FRAMES] = frames;
       config[I_FRAMES_R] = framesR;
       config[I_KEYS] = keys;
       config[I_ORIGIN_STYLE] = originStyle;
@@ -12733,6 +12733,10 @@
       _this.fill = op.fill;
       _this.iterations = op.iterations;
       _this.direction = op.direction;
+      config[I_CURRENT_FRAMES] = {
+        reverse: true,
+        'alternate-reverse': true
+      }.hasOwnProperty(op.direction) ? framesR : frames;
       return _this;
     }
 
@@ -21049,7 +21053,9 @@
       key: "__inlineSize",
       value: function __inlineSize(lineBoxManager) {
         var contentBoxList = this.contentBoxList,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            __ox = this.__ox,
+            __oy = this.__oy;
         var marginTop = computedStyle[MARGIN_TOP$2],
             marginRight = computedStyle[MARGIN_RIGHT$4],
             marginBottom = computedStyle[MARGIN_BOTTOM$2],
@@ -21123,18 +21129,18 @@
           this.__offsetHeight = maxFY - minFY;
           this.__outerWidth = maxOX - minOX;
           this.__outerHeight = maxOY - minOY;
-          this.__sx1 = minFX;
-          this.__sy1 = minFY;
-          this.__sx2 = minCX;
-          this.__sy2 = minCY;
-          this.__sx3 = minX;
-          this.__sy3 = minY;
-          this.__sx4 = maxX;
-          this.__sy4 = maxY;
-          this.__sx5 = maxCX;
-          this.__sy5 = maxCY;
-          this.__sx6 = maxFX;
-          this.__sy6 = maxFY;
+          this.__sx1 = minFX + __ox;
+          this.__sy1 = minFY + __oy;
+          this.__sx2 = minCX + __ox;
+          this.__sy2 = minCY + __oy;
+          this.__sx3 = minX + __ox;
+          this.__sy3 = minY + __oy;
+          this.__sx4 = maxX + __ox;
+          this.__sy4 = maxY + __oy;
+          this.__sx5 = maxCX + __ox;
+          this.__sy5 = maxCY + __oy;
+          this.__sx6 = maxFX + __ox;
+          this.__sy6 = maxFY + __oy;
         } // 如果没有内容，宽度为0高度为lineHeight
         else {
             var tw = this.__width = computedStyle[WIDTH$4] = 0;
@@ -25466,7 +25472,7 @@
                     offsetHeight = offScreenOverflow.offsetHeight;
                 ctx.globalCompositeOperation = 'destination-in';
                 ctx.globalAlpha = 1;
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath();
                 ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -25476,11 +25482,10 @@
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1) && !blendHash.hasOwnProperty(_i3)) {
                   origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
                   origin.globalAlpha = 1;
                   origin.drawImage(target.canvas, 0, 0);
-                  ctx.setTransform(1, 0, 0, 1, 0, 0);
-                  ctx.clearRect(0, 0, width, height);
+                  target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
                   ctx = origin;
                 }
@@ -25774,9 +25779,9 @@
             origin.setTransform(1, 0, 0, 1, 0, 0);
             origin.globalAlpha = 1;
             origin.drawImage(target.canvas, 0, 0);
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // ctx.clearRect(0, 0, width, height);
-            // inject.releaseCacheCanvas(target.canvas);
-
+            target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            target.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(target.canvas);
             ctx = origin;
           }
         });
@@ -29070,8 +29075,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx2,
-            originY = this.__sy2,
+        var originX = this.__sx3,
+            originY = this.__sy3,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
             boxShadow = _this$currentStyle[BOX_SHADOW$4],
@@ -29127,36 +29132,36 @@
             bbox[3] = Math.max(bbox[3], yb + oy);
           } else if (isNil$9(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-            bbox[0] = Math.min(bbox[0], bezierBox[2] - ox);
-            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-            bbox[1] = Math.min(bbox[1], bezierBox[3] - oy);
-            bbox[2] = Math.max(bbox[2], bezierBox[0] + ox);
-            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-            bbox[3] = Math.max(bbox[3], bezierBox[1] + oy);
-            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox + __ox);
+            bbox[0] = Math.min(bbox[0], bezierBox[2] - ox + __ox);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy + __oy);
+            bbox[1] = Math.min(bbox[1], bezierBox[3] - oy + __oy);
+            bbox[2] = Math.max(bbox[2], bezierBox[0] + ox + __ox);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox + __ox);
+            bbox[3] = Math.max(bbox[3], bezierBox[1] + oy + __oy);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy + __oy);
           } else if (isNil$9(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
-            bbox[0] = Math.min(bbox[0], _bezierBox[2] - ox);
-            bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
-            bbox[1] = Math.min(bbox[1], _bezierBox[3] - oy);
-            bbox[2] = Math.max(bbox[2], _bezierBox[0] + ox);
-            bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
-            bbox[3] = Math.max(bbox[3], _bezierBox[1] + oy);
-            bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
+            bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox + __ox);
+            bbox[0] = Math.min(bbox[0], _bezierBox[2] - ox + __ox);
+            bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy + __oy);
+            bbox[1] = Math.min(bbox[1], _bezierBox[3] - oy + __oy);
+            bbox[2] = Math.max(bbox[2], _bezierBox[0] + ox + __ox);
+            bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox + __ox);
+            bbox[3] = Math.max(bbox[3], _bezierBox[1] + oy + __oy);
+            bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy + __oy);
           } else {
             var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - ox);
-            bbox[0] = Math.min(bbox[0], _bezierBox2[2] - ox);
-            bbox[1] = Math.min(bbox[1], _bezierBox2[1] - oy);
-            bbox[1] = Math.min(bbox[1], _bezierBox2[3] - oy);
-            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + ox);
-            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + ox);
-            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + oy);
-            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + oy);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - ox + __ox);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[2] - ox + __ox);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[1] - oy + __oy);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[3] - oy + __oy);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + ox + __ox);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + ox + __ox);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + oy + __oy);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + oy + __oy);
           }
         });
         return bbox;
@@ -29648,8 +29653,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx2,
-            originY = this.__sy2,
+        var originX = this.__sx3,
+            originY = this.__sy3,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
             boxShadow = _this$currentStyle[BOX_SHADOW$5],
@@ -30137,8 +30142,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            originX = this.__sx2,
-            originY = this.__sy2,
+            originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$currentStyle = this.currentStyle,
@@ -30339,8 +30344,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx2,
-            originY = this.__sy2,
+        var originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$currentStyle = this.currentStyle,
@@ -30666,8 +30671,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            originX = this.__sx2,
-            originY = this.__sy2,
+            originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$currentStyle = this.currentStyle,

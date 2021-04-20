@@ -9010,7 +9010,7 @@
 
   var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]; // let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
 
-  var NUMBER$1 = [128, 2, 2, 2, 8, 4, 2, 1, 1, 1];
+  var NUMBER$1 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1];
   var MAX = SIZE[SIZE.length - 1];
   var HASH_CANVAS = {};
   var HASH_WEBGL = {};
@@ -13979,7 +13979,7 @@
           keys = _this$__init2[2],
           originStyle = _this$__init2[3];
 
-      config[I_FRAMES] = config[I_CURRENT_FRAMES] = frames;
+      config[I_FRAMES] = frames;
       config[I_FRAMES_R] = framesR;
       config[I_KEYS] = keys;
       config[I_ORIGIN_STYLE] = originStyle;
@@ -14003,6 +14003,10 @@
       _this.fill = op.fill;
       _this.iterations = op.iterations;
       _this.direction = op.direction;
+      config[I_CURRENT_FRAMES] = {
+        reverse: true,
+        'alternate-reverse': true
+      }.hasOwnProperty(op.direction) ? framesR : frames;
       return _this;
     }
 

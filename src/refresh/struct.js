@@ -8,9 +8,12 @@ import level from './level';
 import util from '../util/util';
 import inject from '../util/inject';
 import Cache from './Cache';
+import Page from './Page';
 import tf from '../style/transform';
 import enums from '../util/enums';
 import TexCache from '../gl/TexCache';
+import webgl from '../gl/webgl';
+import MockCache from '../gl/MockCache';
 
 const {
   STYLE_KEY: {
@@ -62,7 +65,7 @@ const {
   contain,
   MIX_BLEND_MODE: MBM,
 } = level;
-const { isE, inverse, multiply } = mx;
+const { isE, inverse, multiply, revertY } = mx;
 
 function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash) {
   let { __sx1: sx1, __sy1: sy1, __config } = node;
@@ -215,7 +218,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
     cacheTop.reset(bboxTotal);
   }
   else {
-    cacheTop = __config[NODE_CACHE_TOTAL] = Cache.getInstance(bboxTotal);
+    cacheTop = Cache.getInstance(bboxTotal);
   }
   // 创建失败，再次降级
   if(!cacheTop || !cacheTop.enabled) {
@@ -241,12 +244,12 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
     let __config = node.__config;
     let parentIndex = parentIndexHash[i];
     let matrix = matrixHash[parentIndex];
-    let opacity = opacityHash[i];
+    let opacity = opacityHash[parentIndex];
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
-      ctx.globalAlpha = opacityHash[parentIndex];
-      let matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      ctx.globalAlpha = opacity;
+      let m = matrix || [1, 0, 0, 1, 0, 0];
+      ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
       node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -358,18 +361,21 @@ function genOverflow(node, cache) {
 /**
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，如果超限则不返回
  * @param renderMode
+ * @param gl
+ * @param texCache
  * @param node
  * @param __config
  * @param index
  * @param total
  * @param __structs
- * @param cacheTop
  * @param cache
+ * @param W
+ * @param H
  * @returns {*}
  */
-function genTotalWebgl(renderMode, node, __config, index, total, __structs, cacheTop, cache) {
+function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, __structs, cache, W, H) {
   if(total === 0) {
-    return cache;
+    // return cache;
   }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
@@ -379,24 +385,125 @@ function genTotalWebgl(renderMode, node, __config, index, total, __structs, cach
   if(!bboxTotal) {
     return;
   }
-  if(cacheTop) {
-    cacheTop.reset(bboxTotal);
+  let width = bboxTotal[2] - bboxTotal[0];
+  let height = bboxTotal[3] - bboxTotal[1];
+  // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
+  let texture = webgl.createTexture(gl, null, null, width + 2, height + 2);
+  texture.uuid = Page.genUuid();
+  let frameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  let check = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  if(check !== gl.FRAMEBUFFER_COMPLETE) {
+    inject.error('Framebuffer object is incomplete: ' + check.toString());
   }
-  else {
-    cacheTop = __config[NODE_CACHE_TOTAL] = Cache.getInstance(bboxTotal, renderMode);
-  }
-  // 创建失败，再次降级
-  if(!cacheTop || !cacheTop.enabled) {
-    return;
-  }
+  // 离屏窗口0开始，上下左右各扩展1px
+  gl.viewport(0, 0, width + 2, height + 2);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  // 以bboxTotal的左上角为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
-  cacheTop.__appendData(sx1, sy1);
-  cacheTop.__available = true;
-  let { coords: [tx, ty], ctx, dbx, dby } = cacheTop;
+  let dx = -sx1 + 1, dy = -sy1 + 1;
+  let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
+  let cx = (width + 2) * 0.5, cy = (height + 2) * 0.5;
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(cache && cache.available) {
-    Cache.drawCacheWebgl(cache, cacheTop);
+    let m = mx.m2Mat4([1, 0, 0, 1, 0, 0], cx, cy);
+    texCache.addTexAndDrawWhenLimit(gl, cache, 1, m, cx, cy, dx, dy);
   }
+  // 先序遍历汇总到total
+  for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+    let {
+      [STRUCT_NODE]: node,
+      [STRUCT_TOTAL]: total,
+      [STRUCT_HAS_MASK]: hasMask,
+    } = __structs[i];
+    let __config = node.__config;
+    let parentIndex = parentIndexHash[i];
+    let matrix = matrixHash[parentIndex];
+    let opacity = opacityHash[parentIndex];
+    // 先看text，visibility会在内部判断，display会被parent判断
+    if(node instanceof Text) {
+      let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+      texCache.addTexAndDrawWhenLimit(gl, node.__cache, opacity, m, cx, cy, dx, dy);
+    }
+    // 再看total缓存/cache，都没有的是无内容的Xom节点
+    else {
+      let {
+        [NODE_CACHE]: __cache,
+        [NODE_CACHE_TOTAL]: __cacheTotal,
+        [NODE_CACHE_FILTER]: __cacheFilter,
+        [NODE_CACHE_MASK]: __cacheMask,
+        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+        [NODE_IS_MASK]: isMask,
+        [NODE_COMPUTED_STYLE]: {
+          [DISPLAY]: display,
+          [VISIBILITY]: visibility,
+          [TRANSFORM]: transform,
+          [TRANSFORM_ORIGIN]: transformOrigin,
+          [MIX_BLEND_MODE]: mixBlendMode,
+        },
+      } = __config;
+      if(display === 'none') {
+        i += (total || 0);
+        if(hasMask) {
+          i += hasMask;
+        }
+        continue;
+      }
+      if(visibility === 'hidden') {
+        continue;
+      }
+      // mask不能被汇总到top上
+      if(isMask) {
+        continue;
+      }
+      if(transform && !isE(transform)) {
+        let tfo = transformOrigin.slice(0);
+        // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+        if(__cache && __cache.available) {
+          tfo[0] += __cache.sx1;
+          tfo[1] += __cache.sy1;
+        }
+        else {
+          tfo[0] += node.__sx1;
+          tfo[1] += node.__sy1;
+        }
+        let dx = -sx1 + dbx;
+        let dy = -sy1 + dby;
+        tfo[0] += dx;
+        tfo[1] += dy;
+        let m = tf.calMatrixByOrigin(transform, tfo);
+        if(matrix) {
+          matrix = multiply(matrix, m);
+        }
+        else {
+          matrix = m;
+        }
+      }
+      if(matrix) {
+        matrixHash[i] = matrix;
+      }
+      let target = __cacheMask || __cacheOverflow || __cacheFilter;
+      if(!target) {
+        target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
+      }
+      if(target) {
+        i += (total || 0);
+      }
+      else if(__cache && __cache.available) {
+        target= __cache;
+      }
+      if(target) {
+        let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+        texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
+      }
+    }
+  }
+  texCache.refresh(gl, cx, cy);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  return new MockCache(texture, sx1, sy1, width + 2, height + 2);
 }
 
 function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -428,13 +535,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       continue;
     }
     let __config = node.__config;
-    let computedStyle = __config[NODE_COMPUTED_STYLE];
-    // 跳过display:none元素和它的所有子节点
-    if(computedStyle[DISPLAY] === 'none') {
-      i += (total || 0);
-      // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
-      continue;
-    }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
     if(i === 0) {}
     else if(lv > lastLv) {
@@ -460,7 +560,14 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
+      [NODE_COMPUTED_STYLE]: computedStyle,
     } = __config;
+    // 跳过display:none元素和它的所有子节点
+    if(computedStyle[DISPLAY] === 'none') {
+      i += (total || 0);
+      // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
+      continue;
+    }
     let hasRecordAsMask;
     /**
      * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -913,7 +1020,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
             ctx.globalCompositeOperation = 'destination-in';
             ctx.globalAlpha = 1;
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
             ctx.fillStyle = '#FFF';
             ctx.beginPath();
             ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -922,11 +1029,10 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.globalCompositeOperation = 'source-over';
             if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
               origin.setTransform(1, 0, 0, 1, 0, 0);
-              origin.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
               origin.globalAlpha = 1;
               origin.drawImage(target.canvas, 0, 0);
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.clearRect(0, 0, width, height);
+              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+              target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
               ctx = origin;
             }
@@ -1154,9 +1260,9 @@ function renderCanvas(renderMode, ctx, defs, root) {
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          // ctx.clearRect(0, 0, width, height);
-          // inject.releaseCacheCanvas(target.canvas);
+          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          target.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(target.canvas);
           ctx = origin;
         }
       });
@@ -1608,13 +1714,6 @@ function renderWebgl(renderMode, gl, defs, root) {
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
-    let computedStyle = __config[NODE_COMPUTED_STYLE];
-    // 跳过display:none元素和它的所有子节点
-    if(computedStyle[DISPLAY] === 'none') {
-      i += (total || 0);
-      // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
-      continue;
-    }
     let __refreshLevel = __config[NODE_REFRESH_LV];
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
     if(i === 0) {}
@@ -1655,7 +1754,14 @@ function renderWebgl(renderMode, gl, defs, root) {
     let {
       [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
+      [NODE_COMPUTED_STYLE]: computedStyle,
     } = __config;
+    // 跳过display:none元素和它的所有子节点
+    if(computedStyle[DISPLAY] === 'none') {
+      i += (total || 0);
+      // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
+      continue;
+    }
     let hasRecordAsMask;
     /**
      * lv<REPAINT，一般会有__cache，跳过渲染过程，快速运算，没有cache则是自身超限或无内容，目前不感知
@@ -1814,7 +1920,7 @@ function renderWebgl(renderMode, gl, defs, root) {
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
         __cacheTotal = __config[NODE_CACHE_TOTAL]
-          = genTotalWebgl(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+          = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
       }
       // 防止失败超限，必须有total结果
       // if(__cacheTotal && __cacheTotal.available) {
@@ -1858,7 +1964,7 @@ function renderWebgl(renderMode, gl, defs, root) {
       let __cache = node.__cache;
       if(__cache && __cache.available) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, m, cx, cy);
+        texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, revertY(m), cx, cy);
       }
     }
     else {
@@ -1888,21 +1994,22 @@ function renderWebgl(renderMode, gl, defs, root) {
         continue;
       }
       // 有total的可以直接绘制并跳过子节点索引
-      let target = __cacheOverflow || __cacheMask || __cacheFilter;
-      if(!target || !target.available) {
-        target = __cacheTotal;
-      }
+      // let target = __cacheOverflow || __cacheMask || __cacheFilter;
+      // if(!target || !target.available) {
+      //   target = __cacheTotal;
+      // }
       // total的尝试
-      if(target && target.available) {
-        //
+      if(__cacheTotal) {
+        let m = mx.m2Mat4(matrixEvent, cx, cy);
+        texCache.addTexAndDrawWhenLimit(gl, __cacheTotal, __opacity, revertY(m), cx, cy);
+        i += total || 0;
       }
       // 自身cache尝试
       else {
-        // console.log(i, node.tagName, __cache && __cache.available, __limitCache);
         if(__cache && __cache.available || __limitCache) {
           if(__cache && __cache.available) {
             let m = mx.m2Mat4(matrixEvent, cx, cy);
-            texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, m, cx, cy);
+            texCache.addTexAndDrawWhenLimit(gl, __cache, __opacity, revertY(m), cx, cy);
           }
           else {}
         }

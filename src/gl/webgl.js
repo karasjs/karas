@@ -1,8 +1,6 @@
 import inject from '../util/inject';
-import util from '../util/util';
 import mx from '../math/matrix';
 
-const equalArr = util.equalArr;
 const calPoint = mx.calPoint;
 
 /**
@@ -120,20 +118,34 @@ function convertCoords2Gl(x, y, cx, cy) {
   return [x, y];
 }
 
-function createTexture(gl, tex, n = 0) {
+function createTexture(gl, tex, n, width, height) {
   let texture = gl.createTexture();
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
-  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-  gl.activeTexture(gl['TEXTURE' + n]);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+  // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  if(width) {
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+  }
+  else {
+    bindTexture(gl, texture, n);
+    // gl.activeTexture(gl['TEXTURE' + n]);
+    // gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+    // let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
+    // gl.uniform1i(u_texture, n);
+  }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+  return texture;
+}
+
+function bindTexture(gl, texture, n) {
+  gl.activeTexture(gl['TEXTURE' + n]);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
   let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
   gl.uniform1i(u_texture, n);
-  return texture;
 }
 
 function deleteTexture(gl, tex) {
@@ -153,13 +165,11 @@ function initVertexBuffers(gl, infos, hash, cx, cy) {
   let vtIndex = new Float32Array(length * 6);
   infos.forEach(info => {
     info.forEach(item => {
-      let [cache, opacity, matrix] = item;
-      // y反转
-      revertMatrixY(matrix);
+      let [cache, opacity, matrix, dx, dy] = item;
       let { coords: [x, y], sx1, sy1, width, height, fullSize } = cache;
       // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-      let [x1, y1] = convertCoords2Gl(sx1 - 1, sy1 - 1 + height, cx, cy);
-      let [x2, y2] = convertCoords2Gl(sx1 - 1 + width, sy1 - 1, cx, cy);
+      let [x1, y1] = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy);
+      let [x2, y2] = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy);
       [x1, y1] = calPoint([x1, y1], matrix);
       [x2, y2] = calPoint([x2, y2], matrix);
       vtPoint[count] = x1;
@@ -194,7 +204,7 @@ function initVertexBuffers(gl, infos, hash, cx, cy) {
       vtOpacity[count2 + 3] = opacity;
       vtOpacity[count2 + 4] = opacity;
       vtOpacity[count2 + 5] = opacity;
-      let index = hash[cache.page.__uuid];
+      let index = hash[cache.page.uuid];
       vtIndex[count2] = index;
       vtIndex[count2 + 1] = index;
       vtIndex[count2 + 2] = index;
@@ -261,6 +271,7 @@ function drawTextureCache(gl, infos, hash, cx, cy) {
 export default {
   initShaders,
   createTexture,
+  bindTexture,
   deleteTexture,
   drawTextureCache,
 };

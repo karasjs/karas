@@ -5,7 +5,7 @@ class TexCache {
     this.__units = units; // 通道数量限制，8~16
     this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
     this.__infos = []; // 同上存[cache, opacity, matrix]，1个page中会有多个要绘制的cache
-    this.__textureChannels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
+    this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
   }
 
   /**
@@ -25,15 +25,17 @@ class TexCache {
    * @param matrix
    * @param cx
    * @param cy
+   * @param dx
+   * @param dy
    */
-  addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy) {
+  addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0) {
     let pages = this.__pages;
     let infos = this.__infos;
     let page = cache.page;
     let i = pages.indexOf(page);
     // 找到说明已有page在此索引的通道中，记录下来info
     if(i > -1) {
-      infos[i].push([cache, opacity, matrix]);
+      infos[i].push([cache, opacity, matrix, dx, dy]);
     }
     // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
     else {
@@ -45,7 +47,7 @@ class TexCache {
       }
       pages.push(page);
       let info = infos[i] = infos[i] || [];
-      info.push([cache, opacity, matrix]);
+      info.push([cache, opacity, matrix, dx, dy]);
     }
   }
 
@@ -60,19 +62,20 @@ class TexCache {
   refresh(gl, cx, cy, pages, infos) {
     pages = pages || this.__pages;
     infos = infos || this.__infos;
-    // 防止空调用刷新
+    // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
     if(pages.length) {
-      let textureChannels = this.textureChannels;
+      let channels = this.channels;
       // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
       let lastHash = {};
-      textureChannels.forEach((item, i) => {
+      channels.forEach((item, i) => {
         if(item) {
           let uuid = item[0].uuid;
           lastHash[uuid] = i;
         }
       });
-      // 本次再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
-      let oldList = [], newList = [];
+      let units = this.__units;
+      // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
+      let oldList = new Array(units), newList = [];
       pages.forEach(page => {
         let uuid = page.uuid;
         if(lastHash.hasOwnProperty(uuid)) {
@@ -83,39 +86,62 @@ class TexCache {
           newList.push(page);
         }
       });
-      // 以oldList为基准，将newList依次存入oldList的空白处，即新纹理单元索引
+      /**
+       * 以oldList为基准，将newList依次存入oldList中
+       * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
+       * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page TODO
+       */
       if(newList.length) {
-        let count = 0;
-        for(let i = 0, len = oldList.length; i < len; i++) {
-          let item = oldList[i];
-          if(item) {
-            count++;
-          }
-          else if(newList.length) {
+        // 先循环找空的，oldList空且channels空
+        for(let i = 0; i < units; i++) {
+          if(!oldList[i] && !channels[i]) {
             oldList[i] = newList.shift();
+            if(!newList.length) {
+              break;
+            }
           }
-          else {
-            break;
+        }
+        if(newList.length) {
+          // 再循环依次填
+          for(let i = 0; i < units; i++) {
+            if(!oldList[i]) {
+              oldList[i] = newList.shift();
+              if(!newList.length) {
+                break;
+              }
+            }
           }
         }
         // 可能上面遍历会有新的没放完，出现在一开始没用光所有纹理单元的情况，追加到尾部即可
-        if(newList.length) {
-          oldList = oldList.concat(newList);
-        }
+        // if(newList.length) {
+        //   oldList = oldList.concat(newList);
+        // }
       }
-      // 对比上帧渲染的和这次纹理单元情况，Page相同且version相同可以省略更新，其它均重新赋值纹理
-      // 后续局部更新Page相同但version不同，会出现没有上帧的情况如初始渲染，此时先创建纹理单元再更新
-      // 将新的数据赋给老的，可能新的一帧使用的少于上一帧，老的没用到的需继续保留
+      /**
+       * 对比上帧渲染的和这次纹理单元情况，Page相同且!update可以省略更新，其它均重新赋值纹理
+       * 后续局部更新Page相同但有update，会出现没有上帧的情况如初始渲染，此时先创建纹理单元再更新
+       * 将新的数据赋给老的，可能新的一帧使用的少于上一帧，老的没用到的需继续保留
+       */
       let hash = {};
       for(let i = 0, len = oldList.length; i < len; i++) {
         let page = oldList[i];
-        let last = textureChannels[i];
+        // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
+        if(!page) {
+          continue;
+        }
+        let last = channels[i];
         if(!last || last[0] !== page || page.update) {
-          if(last) {
-            webgl.deleteTexture(gl, last[1]);
+          // if(last) {
+          //   webgl.deleteTexture(gl, last[1]);
+          // }
+          if(page instanceof WebGLTexture) {
+            webgl.bindTexture(gl, page, i);
+            channels[i] = [page, page];
           }
-          let texture = webgl.createTexture(gl, page.canvas, i);
-          textureChannels[i] = [page, texture];
+          else {
+            let texture = webgl.createTexture(gl, page.canvas, i);
+            channels[i] = [page, texture];
+          }
           hash[page.uuid] = i;
         }
         else {
@@ -130,16 +156,20 @@ class TexCache {
     }
   }
 
+  /**
+   * 释放纹理单元
+   * @param gl
+   */
   release(gl) {
-    this.textureChannels.splice(0).forEach(item => {
+    this.channels.forEach(item => {
       if(item) {
         webgl.deleteTexture(gl, item[1]);
       }
     });
   }
 
-  get textureChannels() {
-    return this.__textureChannels;
+  get channels() {
+    return this.__channels;
   }
 }
 

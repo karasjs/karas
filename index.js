@@ -27026,7 +27026,20 @@
           node = _structs$_i7[STRUCT_NODE$1],
           lv = _structs$_i7[STRUCT_LV$2],
           total = _structs$_i7[STRUCT_TOTAL$1],
-          hasMask = _structs$_i7[STRUCT_HAS_MASK$1];
+          hasMask = _structs$_i7[STRUCT_HAS_MASK$1]; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+
+      if (node instanceof Text) {
+        if (parentRefreshLevel >= REPAINT$2) {
+          var _cache2 = node.__renderAsTex(); // 有内容无cache说明超限
+
+
+          if ((!_cache2 || !_cache2.available) && node.content) ;
+        }
+
+        _i11 = _i12;
+        return "continue";
+      }
+
       var __config = node.__config;
       var __refreshLevel = __config[NODE_REFRESH_LV$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
@@ -27052,20 +27065,7 @@
           parentOpacity = opacityList[lv];
           refreshLevelList.splice(-diff);
           parentRefreshLevel = refreshLevelList[lv];
-        } // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
-
-
-      if (node instanceof Text) {
-        if (parentRefreshLevel >= REPAINT$2) {
-          var _cache2 = node.__renderAsTex(); // 有内容无cache说明超限
-
-
-          if ((!_cache2 || !_cache2.available) && node.content) ;
         }
-
-        _i11 = _i12;
-        return "continue";
-      }
 
       var __cache = __config[NODE_CACHE$4],
           __cacheTotal = __config[NODE_CACHE_TOTAL$3],
@@ -27208,7 +27208,6 @@
             }
           } else {
             node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
-            __cache = __config[NODE_CACHE$4];
           }
         }
 

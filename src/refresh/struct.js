@@ -1714,6 +1714,16 @@ function renderWebgl(renderMode, gl, defs, root) {
       [STRUCT_TOTAL]: total,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
+    // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+    if(node instanceof Text) {
+      if(parentRefreshLevel >= REPAINT) {
+        let __cache = node.__renderAsTex();
+        // 有内容无cache说明超限
+        if((!__cache || !__cache.available) && node.content) {
+        }
+      }
+      continue;
+    }
     let __config = node.__config;
     let __refreshLevel = __config[NODE_REFRESH_LV];
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
@@ -1741,17 +1751,7 @@ function renderWebgl(renderMode, gl, defs, root) {
       parentRefreshLevel = refreshLevelList[lv];
     }
     // 不变是同级兄弟，无需特殊处理
-    else{}
-    // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
-    if(node instanceof Text) {
-      if(parentRefreshLevel >= REPAINT) {
-        let __cache = node.__renderAsTex();
-        // 有内容无cache说明超限
-        if((!__cache || !__cache.available) && node.content) {
-        }
-      }
-      continue;
-    }
+    else {}
     let {
       [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -1874,7 +1874,6 @@ function renderWebgl(renderMode, gl, defs, root) {
       }
       else {
         node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
-        __cache = __config[NODE_CACHE];
       }
     }
     lastRefreshLevel = __refreshLevel;

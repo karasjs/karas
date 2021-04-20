@@ -21592,7 +21592,9 @@
       key: "__inlineSize",
       value: function __inlineSize(lineBoxManager) {
         var contentBoxList = this.contentBoxList,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            __ox = this.__ox,
+            __oy = this.__oy;
         var marginTop = computedStyle[MARGIN_TOP$2],
             marginRight = computedStyle[MARGIN_RIGHT$4],
             marginBottom = computedStyle[MARGIN_BOTTOM$2],
@@ -21666,18 +21668,18 @@
           this.__offsetHeight = maxFY - minFY;
           this.__outerWidth = maxOX - minOX;
           this.__outerHeight = maxOY - minOY;
-          this.__sx1 = minFX;
-          this.__sy1 = minFY;
-          this.__sx2 = minCX;
-          this.__sy2 = minCY;
-          this.__sx3 = minX;
-          this.__sy3 = minY;
-          this.__sx4 = maxX;
-          this.__sy4 = maxY;
-          this.__sx5 = maxCX;
-          this.__sy5 = maxCY;
-          this.__sx6 = maxFX;
-          this.__sy6 = maxFY;
+          this.__sx1 = minFX + __ox;
+          this.__sy1 = minFY + __oy;
+          this.__sx2 = minCX + __ox;
+          this.__sy2 = minCY + __oy;
+          this.__sx3 = minX + __ox;
+          this.__sy3 = minY + __oy;
+          this.__sx4 = maxX + __ox;
+          this.__sy4 = maxY + __oy;
+          this.__sx5 = maxCX + __ox;
+          this.__sy5 = maxCY + __oy;
+          this.__sx6 = maxFX + __ox;
+          this.__sy6 = maxFY + __oy;
         } // 如果没有内容，宽度为0高度为lineHeight
         else {
             var tw = this.__width = computedStyle[WIDTH$4] = 0;
@@ -25638,6 +25640,9 @@
 
 
   function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, __structs, cache, W, H) {
+    if (total === 0) {
+      return cache;
+    } // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
 
 
     var parentIndexHash = {};
@@ -30386,8 +30391,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx2,
-            originY = this.__sy2,
+        var originX = this.__sx3,
+            originY = this.__sy3,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
             boxShadow = _this$currentStyle[BOX_SHADOW$4],
@@ -30964,8 +30969,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx2,
-            originY = this.__sy2,
+        var originX = this.__sx3,
+            originY = this.__sy3,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
             boxShadow = _this$currentStyle[BOX_SHADOW$5],
@@ -31453,8 +31458,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            originX = this.__sx2,
-            originY = this.__sy2,
+            originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$currentStyle = this.currentStyle,
@@ -31655,8 +31660,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx2,
-            originY = this.__sy2,
+        var originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$currentStyle = this.currentStyle,
@@ -31982,8 +31987,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            originX = this.__sx2,
-            originY = this.__sy2,
+            originX = this.__sx3,
+            originY = this.__sy3,
             width = this.width,
             height = this.height,
             _this$currentStyle = this.currentStyle,
@@ -32469,7 +32474,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.2";
+  var version = "0.57.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

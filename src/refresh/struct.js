@@ -375,7 +375,7 @@ function genOverflow(node, cache) {
  */
 function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, __structs, cache, W, H) {
   if(total === 0) {
-    // return cache;
+    return cache;
   }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};

@@ -390,7 +390,7 @@ class Polyline extends Geom {
 
   get bbox() {
     let {
-      __sx2: originX, __sy2: originY,
+      __sx3: originX, __sy3: originY,
       currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
         [BOX_SHADOW]: boxShadow,

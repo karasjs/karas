@@ -1,4 +1,6 @@
 import webgl from './webgl';
+import MockPage from './MockPage';
+import inject from '../util/inject';
 
 class TexCache {
   constructor(units) {
@@ -6,6 +8,8 @@ class TexCache {
     this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
     this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
     this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
+    this.__locks = []; // 锁定纹理单元列表，下标即纹理单元，内容true为锁定
+    this.__lockUnits = 0;
   }
 
   /**
@@ -40,10 +44,9 @@ class TexCache {
     // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
     else {
       i = pages.length;
-      if(i > this.__units) {
+      if(i >= this.__units - this.__lockUnits) {
         // 绘制且清空，队列索引重新为0
         this.refresh(gl, cx, cy, pages, list);
-        i = 0;
       }
       pages.push(page);
       list.push([cache, opacity, matrix, dx, dy]);
@@ -64,6 +67,7 @@ class TexCache {
     // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
     if(pages.length) {
       let channels = this.channels;
+      let locks = this.locks;
       // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
       let lastHash = {};
       channels.forEach((item, i) => {
@@ -88,33 +92,41 @@ class TexCache {
       /**
        * 以oldList为基准，将newList依次存入oldList中
        * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
-       * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page TODO
+       * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page，相等则尺寸小的
        */
       if(newList.length) {
-        // 先循环找空的，oldList空且channels空
+        // 先循环找空的，oldList空且channels空且locks空
         for(let i = 0; i < units; i++) {
-          if(!oldList[i] && !channels[i]) {
+          if(!oldList[i] && !channels[i] &&!locks[i]) {
             oldList[i] = newList.shift();
             if(!newList.length) {
               break;
             }
           }
         }
-        if(newList.length) {
-          // 再循环依次填
+        let len = newList.length;
+        if(len) {
+          // 按时间排序已使用channel且未被当前占用的，以便淘汰最久未使用的
+          let cl = [];
           for(let i = 0; i < units; i++) {
-            if(!oldList[i]) {
-              oldList[i] = newList.shift();
-              if(!newList.length) {
-                break;
-              }
+            if(!oldList[i] && !locks[i]) {
+              cl.push([i, channels[i]]);
             }
           }
+          cl.sort(function(a, b) {
+            if(a[1].time !== b[1].time) {
+              return (a[1].time || 0) - (b[1].time || 0);
+            }
+            if(a[1].fullSize !== b[1].fullSize) {
+              return a[1].fullSize - b[1].fullSize;
+            }
+            return a[0] - b[0];
+          });
+          // cl靠前是时间小尺寸小的，优先使用替换
+          for(let i = 0; i < len; i++) {
+            oldList[cl[i][0]] = newList[i];
+          }
         }
-        // 可能上面遍历会有新的没放完，出现在一开始没用光所有纹理单元的情况，追加到尾部即可
-        // if(newList.length) {
-        //   oldList = oldList.concat(newList);
-        // }
       }
       /**
        * 对比上帧渲染的和这次纹理单元情况，Page相同且!update可以省略更新，其它均重新赋值纹理
@@ -130,12 +142,10 @@ class TexCache {
         }
         let last = channels[i];
         if(!last || last[0] !== page || page.update) {
-          // if(last) {
-          //   webgl.deleteTexture(gl, last[1]);
-          // }
-          if(page instanceof WebGLTexture) {
-            webgl.bindTexture(gl, page, i);
-            channels[i] = [page, page];
+          // page可能为一个已有纹理，或者贴图
+          if(page instanceof MockPage) {
+            webgl.bindTexture(gl, page.texture, i);
+            channels[i] = [page, page.texture];
           }
           else {
             let texture = webgl.createTexture(gl, page.canvas, i);
@@ -146,12 +156,68 @@ class TexCache {
         else {
           hash[page.uuid] = i;
         }
+        // 标识没有更新，以及最后使用时间
         page.update = false;
-      }
+        page.time = inject.now();
+      }console.log(channels.slice(0),locks.slice(0),hash);
       // 再次遍历开始本次渲染并清空
       webgl.drawTextureCache(gl, list, hash, cx, cy);
       pages.splice(0);
       list.splice(0);
+    }
+  }
+
+  clearChannel(n) {
+    if(n) {
+      this.channels[n] = null;
+    }
+    else {
+      this.channels.splice(0);
+    }
+  }
+
+  lockOneChannel() {
+    // 优先返回空单元
+    let channels = this.channels;
+    let locks = this.locks;
+    for(let i = 0; i < this.__units; i++) {
+      if(!channels[i] && !locks[i]) {
+        locks[i] = true;
+        this.__lockUnits++;
+        return i;
+      }
+    }
+    // 根据NRU返回最久未使用的
+    let units = this.__units;
+    let cl = [];
+    for(let i = 0; i < units; i++) {
+      if(!locks[i]) {
+        cl.push([i, channels[i]]);
+      }
+    }
+    if(cl.length) {
+      cl.sort(function(a, b) {
+        if(a[1].time !== b[1].time) {
+          return (a[1].time || 0) - (b[1].time || 0);
+        }
+        if(a[1].fullSize !== b[1].fullSize) {
+          return a[1].fullSize - b[1].fullSize;
+        }
+        return a[0] - b[0];
+      });
+      let i = cl[0][0];
+      channels[i] = null;
+      locks[i] = true;
+      this.__lockUnits++;
+      return i;
+    }
+    throw new Error('No free texture unit');
+  }
+
+  releaseLockChannel(i) {
+    if(this.locks[i]) {
+      this.locks[i] = false;
+      this.__lockUnits--;
     }
   }
 
@@ -169,6 +235,10 @@ class TexCache {
 
   get channels() {
     return this.__channels;
+  }
+
+  get locks() {
+    return this.__locks;
   }
 }
 

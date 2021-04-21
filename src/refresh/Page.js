@@ -31,6 +31,7 @@ class Page {
     this.__uuid = uuid++;
     // webgl贴图缓存使用，一旦更新则标识记录，绑定某号纹理单元查看变化才更新贴图
     this.__update = false;
+    this.time = 0;
   }
 
   add() {

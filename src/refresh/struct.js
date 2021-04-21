@@ -375,7 +375,7 @@ function genOverflow(node, cache) {
  */
 function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, __structs, cache, W, H) {
   if(total === 0) {
-    return cache;
+    // return cache;
   }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
@@ -388,9 +388,12 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
   let width = bboxTotal[2] - bboxTotal[0];
   let height = bboxTotal[3] - bboxTotal[1];
   let fullSize = Math.max(width + 2, height + 2);
+  // let n = texCache.lockOneChannel();
+  // console.log(n);
+  // texCache.clearChannel(0);
   // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
-  let texture = webgl.createTexture(gl, null, null, fullSize, fullSize);
-  texture.uuid = Page.genUuid();
+  let texture = webgl.createTexture(gl, null, 0, fullSize, fullSize);
+  // texCache.releaseLockChannel(n);
   let frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -486,10 +489,10 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
         matrixHash[i] = matrix;
       }
       let target = __cacheMask || __cacheOverflow || __cacheFilter;
-      if(!target) {
+      if(!target || !target.available) {
         target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
       }
-      if(target) {
+      if(target && target.available) {
         i += (total || 0);
       }
       else if(__cache && __cache.available) {
@@ -504,7 +507,24 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
   texCache.refresh(gl, cx, cy);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, W, H);
+  gl.deleteFramebuffer(frameBuffer);
   return new MockCache(texture, sx1, sy1, width + 2, height + 2, fullSize);
+}
+
+function genMaskWebgl(renderMode, gl, texCache, node, cache, maskNum, isClip) {
+  // console.log(maskNum, cache);
+  let { width, height, fullSize } = cache;
+  // let texture = webgl.createTexture(gl, null, null, fullSize, fullSize);
+  // texture.uuid = Page.genUuid();
+  // let frameBuffer = gl.createFramebuffer();
+  // gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  // let check = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  // if(check !== gl.FRAMEBUFFER_COMPLETE) {
+  //   inject.error('Framebuffer object is incomplete: ' + check.toString());
+  // }
+  // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // gl.deleteFramebuffer(frameBuffer);
 }
 
 function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -1679,12 +1699,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
 }
 
 function renderWebgl(renderMode, gl, defs, root) {
-  let texCache = root.__texCache;
-  // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
-  if(!texCache) {
-    const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-    texCache = root.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);
-  }
+  let texCache = root.texCache;
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   let { __structs, width, height } = root;
@@ -1866,7 +1881,7 @@ function renderWebgl(renderMode, gl, defs, root) {
      */
     else {
       if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, gl, defs, true);
+        node.__renderSelfData = node.__renderSelf(mode.CANVAS, __refreshLevel, gl, defs, true);
         __cache = __config[NODE_CACHE];
         if(__cache && __cache.available) {
           node.render(mode.CANVAS, __refreshLevel, __cache.ctx, defs, true);
@@ -1919,25 +1934,27 @@ function renderWebgl(renderMode, gl, defs, root) {
       } = __config;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        // __cacheTotal = __config[NODE_CACHE_TOTAL]
-        //   = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
+        __cacheTotal = __config[NODE_CACHE_TOTAL]
+          = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
+        // console.log(i, __cacheTotal);
       }
       // 防止失败超限，必须有total结果
-      // if(__cacheTotal && __cacheTotal.available) {
-      //   let target = __cacheTotal;
+      if(__cacheTotal && __cacheTotal.available) {
+        let target = __cacheTotal;
       //   if(__blurValue > 0 && (!__cacheFilter || !__cacheFilter.available)) {
       //     target = __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
       //   }
       //   if(overflow === 'hidden' && (!__cacheOverflow || !__cacheOverflow.available)) {
       //     target = __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
       //   }
-      //   if(hasMask && (!__cacheMask || !__cacheMask.available)) {
-      //     let isClip = node.next.isClip;
-      //     __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
-      //   }
-      // }
+        if(hasMask && (!__cacheMask || !__cacheMask.available)) {
+          let isClip = node.next.isClip;
+          __config[NODE_CACHE_MASK] = genMaskWebgl(renderMode, gl, texCache, node, target, hasMask, isClip);
+        }
+      }
     });
   }
+  // console.error('render');return;
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
    * 超尺寸的依旧要走无cache逻辑render，这部分和无cache渲染很像
@@ -1993,15 +2010,15 @@ function renderWebgl(renderMode, gl, defs, root) {
         }
         continue;
       }
-      // 有total的可以直接绘制并跳过子节点索引
-      // let target = __cacheOverflow || __cacheMask || __cacheFilter;
-      // if(!target || !target.available) {
-      //   target = __cacheTotal;
-      // }
+      // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元不宜使用
+      let target = __cacheOverflow || __cacheMask || __cacheFilter;
+      if(!target || !target.available) {
+        target = __cacheTotal;
+      }
       // total的尝试
-      if(__cacheTotal) {
+      if(target && target.available) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        texCache.addTexAndDrawWhenLimit(gl, __cacheTotal, __opacity, revertY(m), cx, cy);
+        texCache.addTexAndDrawWhenLimit(gl, target, __opacity, revertY(m), cx, cy);
         i += total || 0;
       }
       // 自身cache尝试

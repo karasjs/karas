@@ -1,4 +1,3 @@
-import inject from '../util/inject';
 import mx from '../math/matrix';
 
 const calPoint = mx.calPoint;
@@ -8,21 +7,20 @@ const calPoint = mx.calPoint;
  * @param gl GL context
  * @param vshader vertex shader (string)
  * @param fshader fragment shader (string)
+ * @param k
  * @return true, if the program object was created and successfully made current
  */
-export function initShaders(gl, vshader, fshader) {
+export function initShaders(gl, vshader, fshader, k = 'program') {
   let program = createProgram(gl, vshader, fshader);
   if(!program) {
-    inject.error('Failed to create program');
-    return false;
+    throw new Error('Failed to create program');
   }
 
   gl.useProgram(program);
-  gl.program = program;
+  gl[k] = program;
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
   return true;
 }
 
@@ -31,9 +29,11 @@ export function initShaders(gl, vshader, fshader) {
  * @param gl GL context
  * @param vshader a vertex shader program (string)
  * @param fshader a fragment shader program (string)
+ * @param kv
+ * @param kf
  * @return created program object, or null if the creation has failed
  */
-function createProgram(gl, vshader, fshader) {
+function createProgram(gl, vshader, fshader, kv = 'vertexShader', kf = 'fragmentShader') {
   // Create shader object
   let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
   let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
@@ -50,8 +50,8 @@ function createProgram(gl, vshader, fshader) {
   // Attach the shader objects
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
-  gl.vertexShader = vertexShader;
-  gl.fragmentShader = fragmentShader;
+  gl[kv] = vertexShader;
+  gl[kf] = fragmentShader;
 
   // Link the program object
   gl.linkProgram(program);
@@ -60,11 +60,10 @@ function createProgram(gl, vshader, fshader) {
   let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
   if(!linked) {
     let error = gl.getProgramInfoLog(program);
-    inject.error('Failed to link program: ' + error);
     gl.deleteProgram(program);
     gl.deleteShader(fragmentShader);
     gl.deleteShader(vertexShader);
-    return null;
+    throw new Error('Failed to link program: ' + error);
   }
   return program;
 }
@@ -80,8 +79,7 @@ export function loadShader(gl, type, source) {
   // Create shader object
   let shader = gl.createShader(type);
   if(shader == null) {
-    inject.error('unable to create shader');
-    return null;
+    throw new Error('unable to create shader');
   }
 
   // Set the shader program
@@ -94,9 +92,8 @@ export function loadShader(gl, type, source) {
   let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if(!compiled) {
     let error = gl.getShaderInfoLog(shader);
-    inject.error('Failed to compile shader: ' + error);
     gl.deleteShader(shader);
-    return null;
+    throw new Error('Failed to compile shader: ' + error);
   }
 
   return shader;
@@ -123,6 +120,7 @@ function createTexture(gl, tex, n, width, height) {
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
   // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   if(width) {
+    // gl.activeTexture(gl['TEXTURE' + n]);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
   }
@@ -208,6 +206,7 @@ function initVertexBuffers(gl, list, hash, cx, cy) {
     vtIndex[count2 + 4] = index;
     vtIndex[count2 + 5] = index;
   });
+  console.log(vtPoint);console.log(vtIndex);
   const PER = 6;
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
@@ -242,10 +241,6 @@ function initVertexBuffers(gl, list, hash, cx, cy) {
 
 function drawTextureCache(gl, list, hash, cx, cy) {
   let [n, count, pointBuffer, texBuffer, opacityBuffer, indexBuffer] = initVertexBuffers(gl, list, hash, cx, cy);
-  if(n < 0 || count < 0) {
-    inject.error('Failed to set the positions of the vertices');
-    return;
-  }
   gl.drawArrays(gl.TRIANGLES, 0, n * count);
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);

@@ -1,6 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import { uglify } from 'rollup-plugin-uglify';
-import { string } from 'rollup-plugin-string';
+import glslify from 'rollup-plugin-glslify';
 import json from '@rollup/plugin-json';
 
 export default [{
@@ -17,10 +17,7 @@ export default [{
       runtimeHelpers: true
     }),
     json(),
-    string({
-      include: '**/*.glsl',
-      exclude: ['node_modules/**']
-    }),
+    glslify(),
   ],
 }, {
   input: 'src/index.js',
@@ -38,9 +35,6 @@ export default [{
       sourcemap: true,
     }),
     json(),
-    string({
-      include: '**/*.glsl',
-      exclude: ['node_modules/**']
-    }),
+    glslify(),
   ],
 }];

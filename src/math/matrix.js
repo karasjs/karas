@@ -209,7 +209,6 @@ function m2Mat4(m, width, height) {
 }
 
 function revertY(matrix) {
-  matrix = matrix.slice(0);
   if(matrix.length === 9) {
     matrix[1] = -matrix[1];
     matrix[3] = -matrix[3];

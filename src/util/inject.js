@@ -4,8 +4,6 @@ import textCache from '../node/textCache';
 import font from '../style/font';
 import ca from '../gl/ca';
 import webgl from '../gl/webgl';
-import vertex from '../gl/vertex.glsl';
-import fragment from '../gl/fragment.glsl';
 
 const SPF = 1000 / 60;
 
@@ -54,7 +52,6 @@ function cache(key, width, height, hash, message) {
   }
   else {
     ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
-    webgl.initShaders(ctx, vertex, fragment);
   }
   return {
     canvas: o,

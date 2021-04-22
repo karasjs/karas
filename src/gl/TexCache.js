@@ -159,7 +159,7 @@ class TexCache {
         // 标识没有更新，以及最后使用时间
         page.update = false;
         page.time = inject.now();
-      }console.log(channels.slice(0),locks.slice(0),hash);
+      }
       // 再次遍历开始本次渲染并清空
       webgl.drawTextureCache(gl, list, hash, cx, cy);
       pages.splice(0);
@@ -176,6 +176,10 @@ class TexCache {
     }
   }
 
+  /**
+   * 获取并锁定一个纹理单元优先使用空的，其次最久未使用的
+   * @returns {number|*}
+   */
   lockOneChannel() {
     // 优先返回空单元
     let channels = this.channels;
@@ -214,10 +218,18 @@ class TexCache {
     throw new Error('No free texture unit');
   }
 
-  releaseLockChannel(i) {
+  /**
+   * 释放掉i单元，并且设置内容到缓存channel中
+   * @param i
+   * @param setToChannel
+   */
+  releaseLockChannel(i, setToChannel) {
     if(this.locks[i]) {
       this.locks[i] = false;
       this.__lockUnits--;
+      if(setToChannel) {
+        this.channels[i] = setToChannel;
+      }
     }
   }
 

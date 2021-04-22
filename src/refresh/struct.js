@@ -388,12 +388,9 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
   let width = bboxTotal[2] - bboxTotal[0];
   let height = bboxTotal[3] - bboxTotal[1];
   let fullSize = Math.max(width + 2, height + 2);
-  // let n = texCache.lockOneChannel();
-  // console.log(n);
-  // texCache.clearChannel(0);
+  let n = texCache.lockOneChannel();
   // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
-  let texture = webgl.createTexture(gl, null, 0, fullSize, fullSize);
-  // texCache.releaseLockChannel(n);
+  let texture = webgl.createTexture(gl, null, n, fullSize, fullSize);
   let frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -505,10 +502,12 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
     }
   }
   texCache.refresh(gl, cx, cy);
+  let mockCache = new MockCache(texture, sx1, sy1, width + 2, height + 2, fullSize);
+  texCache.releaseLockChannel(n, [mockCache.page, texture]);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
-  return new MockCache(texture, sx1, sy1, width + 2, height + 2, fullSize);
+  return mockCache;
 }
 
 function genMaskWebgl(renderMode, gl, texCache, node, cache, maskNum, isClip) {
@@ -1900,11 +1899,11 @@ function renderWebgl(renderMode, gl, defs, root) {
       [NODE_LIMIT_CACHE]: __limitCache,
     } = __config;
     let {
-      [POSITION]: position,
+      // [POSITION]: position,
       [OVERFLOW]: overflow,
       [MIX_BLEND_MODE]: mixBlendMode,
     } = computedStyle;
-    if(!__limitCache && (hasMask || position === 'absolute'
+    if(!__limitCache && (hasMask// || position === 'absolute'
       || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
       if(hasRecordAsMask) {
         hasRecordAsMask[6] = __blurValue;

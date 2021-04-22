@@ -10,7 +10,7 @@ const calPoint = mx.calPoint;
  * @param k
  * @return true, if the program object was created and successfully made current
  */
-export function initShaders(gl, vshader, fshader, k = 'program') {
+function initShaders(gl, vshader, fshader, k = 'program') {
   let program = createProgram(gl, vshader, fshader);
   if(!program) {
     throw new Error('Failed to create program');
@@ -120,7 +120,7 @@ function createTexture(gl, tex, n, width, height) {
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
   // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   if(width) {
-    // gl.activeTexture(gl['TEXTURE' + n]);
+    gl.activeTexture(gl['TEXTURE' + n]);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
   }
@@ -150,102 +150,76 @@ function deleteTexture(gl, tex) {
   gl.deleteTexture(tex);
 }
 
-function initVertexBuffers(gl, list, hash, cx, cy) {
-  let length = list.length;
-  let vtPoint = new Float32Array(length * 12);
-  let vtTex = new Float32Array(length * 12);
-  let vtOpacity = new Float32Array(length * 6);
-  let vtIndex = new Float32Array(length * 6);
+function drawTextureCache(gl, list, hash, cx, cy) {
+  let vtPoint = [], vtTex = [], vtOpacity = [];
+  let lastChannel;
+  let record = [0]; // [num, channel]
+  let stack = [record];
   list.forEach((item, i) => {
-    let count = i * 12;
-    let count2 = i * 6;
     let [cache, opacity, matrix, dx, dy] = item;
+    if(i) {
+      let channel = hash[cache.page.uuid];
+      if(lastChannel !== channel) {
+        lastChannel = channel;
+        record = [0, lastChannel];
+        stack.push(record);
+      }
+    }
+    else {
+      lastChannel = hash[cache.page.uuid];
+      record[1] = lastChannel;
+    }
     let { coords: [x, y], sx1, sy1, width, height, fullSize } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let [x1, y1] = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy);
     let [x2, y2] = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy);
     [x1, y1] = calPoint([x1, y1], matrix);
     [x2, y2] = calPoint([x2, y2], matrix);
-    vtPoint[count] = x1;
-    vtPoint[count + 1] = y1;
-    vtPoint[count + 2] = x1;
-    vtPoint[count + 3] = y2;
-    vtPoint[count + 4] = x2;
-    vtPoint[count + 5] = y1;
-    vtPoint[count + 6] = x1;
-    vtPoint[count + 7] = y2;
-    vtPoint[count + 8] = x2;
-    vtPoint[count + 9] = y1;
-    vtPoint[count + 10] = x2;
-    vtPoint[count + 11] = y2;
+    vtPoint.push(x1, y1, x1, y2, x2, y1,  x1, y2, x2, y1, x2, y2);
     let tx1 = (x - 1) / fullSize, ty1 = (y - 1 + height) / fullSize;
     let tx2 = (x - 1 + width) / fullSize, ty2 = (y - 1) / fullSize;
-    vtTex[count] = tx1;
-    vtTex[count + 1] = ty1;
-    vtTex[count + 2] = tx1;
-    vtTex[count + 3] = ty2;
-    vtTex[count + 4] = tx2;
-    vtTex[count + 5] = ty1;
-    vtTex[count + 6] = tx1;
-    vtTex[count + 7] = ty2;
-    vtTex[count + 8] = tx2;
-    vtTex[count + 9] = ty1;
-    vtTex[count + 10] = tx2;
-    vtTex[count + 11] = ty2;
-    vtOpacity[count2] = opacity;
-    vtOpacity[count2 + 1] = opacity;
-    vtOpacity[count2 + 2] = opacity;
-    vtOpacity[count2 + 3] = opacity;
-    vtOpacity[count2 + 4] = opacity;
-    vtOpacity[count2 + 5] = opacity;
-    let index = hash[cache.page.uuid];
-    vtIndex[count2] = index;
-    vtIndex[count2 + 1] = index;
-    vtIndex[count2 + 2] = index;
-    vtIndex[count2 + 3] = index;
-    vtIndex[count2 + 4] = index;
-    vtIndex[count2 + 5] = index;
+    vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
+    vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
+    record[0]++;
   });
-  console.log(vtPoint);console.log(vtIndex);
-  const PER = 6;
+  let [pointBuffer, texBuffer, opacityBuffer] = initVertexBuffers(gl, vtPoint, vtTex, vtOpacity);
+  let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+  let count = 0;
+  stack.forEach(record => {
+    let [num, channel] = record;
+    gl.uniform1i(u_texture, channel);
+    num *= 6;
+    gl.drawArrays(gl.TRIANGLES, count, num);
+    count += num;
+  });
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.deleteBuffer(opacityBuffer);
+}
+
+function initVertexBuffers(gl, vtPoint, vtTex, vtOpacity) {
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtPoint, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
   let a_position = gl.getAttribLocation(gl.program, 'a_position');
   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position);
   // 纹理buffer
   let texBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtTex, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
   let a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // opacity buffer
   let opacityBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtOpacity, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
   let a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
   gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_opacity);
-  // 索引buffer
-  let indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vtIndex, gl.STATIC_DRAW);
-  let a_index = gl.getAttribLocation(gl.program, 'a_index');
-  gl.vertexAttribPointer(a_index, 1, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(a_index);
-  return [PER, length, pointBuffer, texBuffer, opacityBuffer, indexBuffer];
-}
-
-function drawTextureCache(gl, list, hash, cx, cy) {
-  let [n, count, pointBuffer, texBuffer, opacityBuffer, indexBuffer] = initVertexBuffers(gl, list, hash, cx, cy);
-  gl.drawArrays(gl.TRIANGLES, 0, n * count);
-  gl.deleteBuffer(pointBuffer);
-  gl.deleteBuffer(texBuffer);
-  gl.deleteBuffer(opacityBuffer);
-  gl.deleteBuffer(indexBuffer);
+  return [pointBuffer, texBuffer, opacityBuffer];
 }
 
 export default {

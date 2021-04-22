@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.57.3",
+  "version": "0.57.4",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg.",
   "maintainers": [
     {
@@ -11,6 +11,7 @@
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js --watch",
+    "build:test": "gulp build-test",
     "test": "mocha test/event.js -R spec && gulp build-test && nightwatch --filter test.js"
   },
   "repository": {

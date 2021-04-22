@@ -8,7 +8,6 @@ import image from '../style/image';
 import border from '../style/border';
 import enums from '../util/enums';
 import level from '../refresh/level';
-import css from '../style/css';
 
 const {
   STYLE_KEY: {

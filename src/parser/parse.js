@@ -49,12 +49,13 @@ function replaceVars(target, vars) {
         }
         let k2 = k.slice(4);
         // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
-        if(v.id && vars.hasOwnProperty(v.id)) {
+        if(k2 && v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
           // undefined和null意义不同
           if(value === undefined) {
             return;
           }
+          let currentTarget = target;
           // 如果有.则特殊处理子属性
           if(k2.indexOf('.') > -1) {
             let list = k2.split('.');
@@ -62,8 +63,8 @@ function replaceVars(target, vars) {
             for(let i = 0; i < len - 1; i++) {
               k2 = list[i];
               // 避免异常
-              if(target[k2]) {
-                target = target[k2];
+              if(currentTarget[k2]) {
+                currentTarget = currentTarget[k2];
               }
               else {
                 inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
@@ -75,7 +76,59 @@ function replaceVars(target, vars) {
           if(isFunction(value)) {
             value = value(v);
           }
-          target[k2] = value;
+          currentTarget[k2] = value;
+        }
+      }
+    });
+  }
+}
+
+function replaceLibraryVars(target, hash, vars) {
+  if (target && hash && vars) {
+    Object.keys(target).forEach(k => {
+      if (k.indexOf('var-library.') === 0) {
+        let v = target[k];
+        if (!v) return;
+        let k2 = k.slice(12);
+        // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+        if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+          let value = vars[v.id];
+          if (value === undefined) {
+            return;
+          }
+          let list = k2.split('.');
+          let libraryId = list[0];
+          if (list.length > 1) {
+            let currentTarget = hash[libraryId];
+            // 替换library内的子属性
+            let len = list.length;
+            for(let i = 1; i < len -1; i++) {
+              k2 = list[i];
+              // 避免异常
+              if(currentTarget[k2]) {
+                currentTarget = currentTarget[k2];
+              }
+              else {
+                inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+              }
+            }
+            if (isFunction(value)) {
+              value = value(v);
+            }
+            currentTarget[k2] = value;
+            // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+            delete target[k];
+          } else {
+            if (isFunction(value)) {
+              value = value(v);
+            }
+            hash[libraryId] = {
+              id: libraryId,
+              ...value,
+            };
+            // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+            delete target[k];
+          }
         }
       }
     });
@@ -168,6 +221,8 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     library.forEach(item => {
       linkLibrary(item, hash);
     });
+    // 替换library插槽
+    replaceLibraryVars(json, hash, vars);
     json.library = null;
   }
   let { tagName, props = {}, children = [], animate = [] } = json;

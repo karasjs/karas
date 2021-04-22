@@ -57,6 +57,40 @@
     return obj;
   }
 
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -94,7 +128,7 @@
     if (typeof Proxy === "function") return true;
 
     try {
-      Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
+      Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
       return true;
     } catch (e) {
       return false;
@@ -183,18 +217,21 @@
   }
 
   function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
   }
 
   function _iterableToArrayLimit(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _i = arr && (typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]);
+
+    if (_i == null) return;
     var _arr = [];
     var _n = true;
     var _d = false;
-    var _e = undefined;
+
+    var _s, _e;
 
     try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
         _arr.push(_s.value);
 
         if (i && _arr.length === i) break;
@@ -10025,6 +10062,11 @@
         return this.__isDestroyed;
       }
     }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER;
+      }
+    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
@@ -10061,11 +10103,6 @@
         if (Component.hasRegister(name)) {
           delete REGISTER[name];
         }
-      }
-    }, {
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER;
       }
     }]);
 
@@ -14153,6 +14190,12 @@
       }
     }, {
       key: "CONFIG",
+      get: function get() {
+        return {
+          SIZE: SIZE,
+          NUMBER: NUMBER$3
+        };
+      },
       set: function set(v) {
         if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
           return;
@@ -14161,12 +14204,6 @@
         SIZE = v.SIZE;
         NUMBER$3 = v.NUMBER;
         MAX = SIZE[SIZE.length - 1];
-      },
-      get: function get() {
-        return {
-          SIZE: SIZE,
-          NUMBER: NUMBER$3
-        };
       }
     }, {
       key: "MAX",
@@ -14381,6 +14418,11 @@
         return this.__coords;
       }
     }], [{
+      key: "MAX",
+      get: function get() {
+        return Page.MAX - 2;
+      }
+    }, {
       key: "getInstance",
       value: function getInstance(bbox) {
         if (isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
@@ -14641,11 +14683,6 @@
             height = cache.height;
 
         ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
-      }
-    }, {
-      key: "MAX",
-      get: function get() {
-        return Page.MAX - 2;
       }
     }]);
 
@@ -23228,6 +23265,11 @@
         return this.__currentProps;
       }
     }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER$1;
+      }
+    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || name.charAt(0) !== '$') {
@@ -23264,11 +23306,6 @@
         if (Geom.hasRegister(name)) {
           delete REGISTER$1[name];
         }
-      }
-    }, {
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER$1;
       }
     }]);
 
@@ -24409,16 +24446,16 @@
         }]);
       }
     }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
       key: "__set",
       value: function __set(key, value) {
         this.list.forEach(function (item) {
           item[key] = value;
         });
-      }
-    }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
       }
     }, {
       key: "playbackRate",
@@ -27820,7 +27857,7 @@
 
                 var parent = node.domParent;
                 var _parent$__layoutData = parent.__layoutData,
-                    _x = _parent$__layoutData.x,
+                    x = _parent$__layoutData.x,
                     y = _parent$__layoutData.y,
                     h = _parent$__layoutData.h,
                     _width = parent.width,
@@ -27842,7 +27879,7 @@
                   y += _computedStyle[MARGIN_TOP$5] + _computedStyle[BORDER_TOP_WIDTH$6] + _computedStyle[PADDING_TOP$6];
                 }
 
-                _x += _computedStyle[MARGIN_LEFT$7] + _computedStyle[BORDER_LEFT_WIDTH$8] + _computedStyle[PADDING_LEFT$8]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
+                x += _computedStyle[MARGIN_LEFT$7] + _computedStyle[BORDER_LEFT_WIDTH$8] + _computedStyle[PADDING_LEFT$8]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
                 var container = node;
 
@@ -27902,7 +27939,7 @@
                 } // 现在是普通流，不管之前是啥直接布局
                 else {
                     node.__layout({
-                      x: _x,
+                      x: x,
                       y: y,
                       w: _width,
                       h: h
@@ -27936,7 +27973,7 @@
 
                     if (node instanceof Dom$1) {
                       node.__layoutAbs(container, {
-                        x: _x,
+                        x: x,
                         y: y,
                         w: _width,
                         h: h
@@ -30841,13 +30878,14 @@
 
           var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
 
-          if (v.id && vars.hasOwnProperty(v.id)) {
+          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id]; // undefined和null意义不同
 
             if (value === undefined) {
               return;
-            } // 如果有.则特殊处理子属性
+            }
 
+            var currentTarget = target; // 如果有.则特殊处理子属性
 
             if (k2.indexOf('.') > -1) {
               var list = k2.split('.');
@@ -30856,8 +30894,8 @@
               for (var i = 0; i < len - 1; i++) {
                 k2 = list[i]; // 避免异常
 
-                if (target[k2]) {
-                  target = target[k2];
+                if (currentTarget[k2]) {
+                  currentTarget = currentTarget[k2];
                 } else {
                   inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
                 }
@@ -30871,7 +30909,64 @@
               value = value(v);
             }
 
-            target[k2] = value;
+            currentTarget[k2] = value;
+          }
+        }
+      });
+    }
+  }
+
+  function replaceLibraryVars(target, hash, vars) {
+    if (target && hash && vars) {
+      Object.keys(target).forEach(function (k) {
+        if (k.indexOf('var-library.') === 0) {
+          var v = target[k];
+          if (!v) return;
+          var k2 = k.slice(12); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+
+          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+            var value = vars[v.id];
+
+            if (value === undefined) {
+              return;
+            }
+
+            var list = k2.split('.');
+            var libraryId = list[0];
+
+            if (list.length > 1) {
+              var currentTarget = hash[libraryId]; // 替换library内的子属性
+
+              var len = list.length;
+
+              for (var i = 1; i < len - 1; i++) {
+                k2 = list[i]; // 避免异常
+
+                if (currentTarget[k2]) {
+                  currentTarget = currentTarget[k2];
+                } else {
+                  inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                }
+              }
+
+              if (isFunction$8(value)) {
+                value = value(v);
+              }
+
+              currentTarget[k2] = value; // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+
+              delete target[k];
+            } else {
+              if (isFunction$8(value)) {
+                value = value(v);
+              }
+
+              hash[libraryId] = _objectSpread2({
+                id: libraryId
+              }, value); // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+
+              delete target[k];
+            }
           }
         }
       });
@@ -30973,7 +31068,9 @@
       hash = {};
       library.forEach(function (item) {
         linkLibrary(item, hash);
-      });
+      }); // 替换library插槽
+
+      replaceLibraryVars(json, hash, vars);
       json.library = null;
     }
 

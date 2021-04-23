@@ -68,6 +68,7 @@ function replaceVars(target, vars) {
               }
               else {
                 inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                return;
               }
             }
             k2 = list[len - 1];
@@ -84,25 +85,29 @@ function replaceVars(target, vars) {
 }
 
 function replaceLibraryVars(target, hash, vars) {
-  if (target && hash && vars) {
+  if(target && hash && vars) {
     Object.keys(target).forEach(k => {
-      if (k.indexOf('var-library.') === 0) {
+      if(k.indexOf('var-library.') === 0) {
         let v = target[k];
-        if (!v) return;
+        // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+        delete target[k];
+        if(!v) {
+          return;
+        }
         let k2 = k.slice(12);
         // 有id且变量里面传入了替换的值
-        if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+        if(k2 && v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
-          if (value === undefined) {
+          if(value === undefined) {
             return;
           }
           let list = k2.split('.');
           let libraryId = list[0];
-          if (list.length > 1) {
+          if(list.length > 1) {
             let currentTarget = hash[libraryId];
             // 替换library内的子属性
             let len = list.length;
-            for(let i = 1; i < len -1; i++) {
+            for(let i = 1; i < len - 1; i++) {
               k2 = list[i];
               // 避免异常
               if(currentTarget[k2]) {
@@ -110,16 +115,16 @@ function replaceLibraryVars(target, hash, vars) {
               }
               else {
                 inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                return;
               }
             }
-            if (isFunction(value)) {
+            if(isFunction(value)) {
               value = value(v);
             }
             currentTarget[k2] = value;
-            // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
-            delete target[k];
-          } else {
-            if (isFunction(value)) {
+          }
+          else {
+            if(isFunction(value)) {
               value = value(v);
             }
             // 替换图层的值必须是一个有tagName的对象
@@ -130,8 +135,8 @@ function replaceLibraryVars(target, hash, vars) {
               id: libraryId,
               ...value,
             };
-            // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
-            delete target[k];
+            value.id = libraryId;
+            hash[libraryId] = value;
           }
         }
       }

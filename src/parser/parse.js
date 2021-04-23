@@ -93,7 +93,7 @@ function replaceLibraryVars(target, hash, vars) {
         // 有id且变量里面传入了替换的值
         if (k2 && v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
-          if (value === undefined ) {
+          if (value === undefined) {
             return;
           }
           let list = k2.split('.');

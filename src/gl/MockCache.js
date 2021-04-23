@@ -5,12 +5,13 @@ import MockPage from './MockPage';
  * 基于此纹理进行filter、mask等后处理渲染
  */
 class MockCache {
-  constructor(texture, sx1, sy1, width, height, fullSize) {
+  constructor(texture, sx1, sy1, width, height, fullSize, bbox) {
     this.coords = [1, 1];
     this.sx1 = sx1;
     this.sy1 = sy1;
     this.width = width;
     this.height = height;
+    this.bbox = bbox;
     this.available = true;
     this.__page = new MockPage(texture, fullSize);
   }

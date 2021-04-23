@@ -22,6 +22,8 @@ import struct from '../refresh/struct';
 import reflow from '../refresh/reflow';
 import vertex from '../gl/main.vert';
 import fragment from '../gl/main.frag';
+import vertexMask from '../gl/mask.vert';
+import fragmentMask from '../gl/mask.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
 import TexCache from '../gl/TexCache';
@@ -767,7 +769,8 @@ class Root extends Dom {
     else if(this.tagName === 'webgl') {
       let gl = this.__ctx = this.__dom.getContext('webgl', ca);
       this.__renderMode = mode.WEBGL;
-      webgl.initShaders(gl, vertex, fragment);
+      webgl.initShaders(gl, vertex, fragment, true);
+      webgl.initShaders(gl, vertexMask, fragmentMask, false,'programMask');
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
       this.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);

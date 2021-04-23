@@ -145,11 +145,15 @@ class TexCache {
           // page可能为一个已有纹理，或者贴图
           if(page instanceof MockPage) {
             webgl.bindTexture(gl, page.texture, i);
-            channels[i] = [page, page.texture];
+            channels[i] = page;
           }
           else {
-            let texture = webgl.createTexture(gl, page.canvas, i);
-            channels[i] = [page, texture];
+            // 可能老的先删除
+            if(last) {
+              webgl.deleteTexture(gl, last.texture);
+            }
+            page.texture = webgl.createTexture(gl, page.canvas, i);
+            channels[i] = page;
           }
           hash[page.uuid] = i;
         }
@@ -167,13 +171,8 @@ class TexCache {
     }
   }
 
-  clearChannel(n) {
-    if(n) {
-      this.channels[n] = null;
-    }
-    else {
-      this.channels.splice(0);
-    }
+  findExistTexChannel(page) {
+    return this.channels.indexOf(page);
   }
 
   /**
@@ -240,7 +239,7 @@ class TexCache {
   release(gl) {
     this.channels.forEach(item => {
       if(item) {
-        webgl.deleteTexture(gl, item[1]);
+        webgl.deleteTexture(gl, item.texture);
       }
     });
   }

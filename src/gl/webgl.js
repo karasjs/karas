@@ -7,16 +7,19 @@ const calPoint = mx.calPoint;
  * @param gl GL context
  * @param vshader vertex shader (string)
  * @param fshader fragment shader (string)
+ * @param use
  * @param k
  * @return true, if the program object was created and successfully made current
  */
-function initShaders(gl, vshader, fshader, k = 'program') {
+function initShaders(gl, vshader, fshader, use, k = 'program') {
   let program = createProgram(gl, vshader, fshader);
   if(!program) {
     throw new Error('Failed to create program');
   }
 
-  gl.useProgram(program);
+  if(use) {
+    gl.useProgram(program);
+  }
   gl[k] = program;
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
@@ -29,11 +32,9 @@ function initShaders(gl, vshader, fshader, k = 'program') {
  * @param gl GL context
  * @param vshader a vertex shader program (string)
  * @param fshader a fragment shader program (string)
- * @param kv
- * @param kf
  * @return created program object, or null if the creation has failed
  */
-function createProgram(gl, vshader, fshader, kv = 'vertexShader', kf = 'fragmentShader') {
+function createProgram(gl, vshader, fshader) {
   // Create shader object
   let vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
   let fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
@@ -50,8 +51,6 @@ function createProgram(gl, vshader, fshader, kv = 'vertexShader', kf = 'fragment
   // Attach the shader objects
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
-  gl[kv] = vertexShader;
-  gl[kf] = fragmentShader;
 
   // Link the program object
   gl.linkProgram(program);
@@ -117,15 +116,15 @@ function convertCoords2Gl(x, y, cx, cy) {
 
 function createTexture(gl, tex, n, width, height) {
   let texture = gl.createTexture();
+  bindTexture(gl, texture, n);
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
   // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-  if(width) {
-    gl.activeTexture(gl['TEXTURE' + n]);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+  if(width || height) {
+    // gl.activeTexture(gl['TEXTURE' + n]);
+    // gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
   }
   else {
-    bindTexture(gl, texture, n);
     // gl.activeTexture(gl['TEXTURE' + n]);
     // gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
@@ -142,23 +141,34 @@ function createTexture(gl, tex, n, width, height) {
 function bindTexture(gl, texture, n) {
   gl.activeTexture(gl['TEXTURE' + n]);
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-  gl.uniform1i(u_texture, n);
+  // let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
+  // gl.uniform1i(u_texture, n);
 }
 
 function deleteTexture(gl, tex) {
   gl.deleteTexture(tex);
 }
 
+/**
+ * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
+ * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
+ * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
+ * @param gl
+ * @param list
+ * @param hash
+ * @param cx
+ * @param cy
+ */
 function drawTextureCache(gl, list, hash, cx, cy) {
   let vtPoint = [], vtTex = [], vtOpacity = [];
-  let lastChannel;
-  let record = [0]; // [num, channel]
-  let stack = [record];
+  let lastChannel; // 上一个dom的单元号
+  let record = [0]; // [num, channel]每一批的数量和单元号记录
+  let stack = [record]; // 所有批的数据记录集合
   list.forEach((item, i) => {
     let [cache, opacity, matrix, dx, dy] = item;
     if(i) {
       let channel = hash[cache.page.uuid];
+      // 和上一个单元号不同时，生成新的批次记录
       if(lastChannel !== channel) {
         lastChannel = channel;
         record = [0, lastChannel];
@@ -185,6 +195,7 @@ function drawTextureCache(gl, list, hash, cx, cy) {
   let [pointBuffer, texBuffer, opacityBuffer] = initVertexBuffers(gl, vtPoint, vtTex, vtOpacity);
   let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
   let count = 0;
+  // 循环按批次渲染
   stack.forEach(record => {
     let [num, channel] = record;
     gl.uniform1i(u_texture, channel);

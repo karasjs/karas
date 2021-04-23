@@ -17,6 +17,8 @@ const {
     NODE_CACHE,
     NODE_CACHE_FILTER,
     NODE_CACHE_OVERFLOW,
+    NODE_HAS_CONTENT,
+    NODE_COMPUTED_STYLE,
   },
 } = enums;
 
@@ -74,10 +76,10 @@ class Cache {
   __appendData(sx1, sy1) {
     this.sx1 = sx1; // 去除margin的左上角原点坐标
     this.sy1 = sy1;
-    let [xc, yc] = this.coords;
+    let [x, y] = this.coords;
     let bbox = this.bbox;
-    this.dx = xc - bbox[0]; // cache坐标和box原点的差值
-    this.dy = yc - bbox[1];
+    this.dx = x - bbox[0]; // cache坐标和box原点的差值
+    this.dy = y - bbox[1];
     this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
     this.dby = sy1 - bbox[1];
     this.update();
@@ -184,6 +186,7 @@ class Cache {
 
   static getInstance(bbox, renderMode) {
     if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
+      inject.error('Cache.getInstance failed: ' + bbox);
       return;
     }
     let w = Math.ceil(bbox[2] - bbox[0]);
@@ -258,14 +261,14 @@ class Cache {
         ctx.globalAlpha = __config[NODE_OPACITY];
         Cache.drawCache(
           source, cacheMask,
-          item.computedStyle[TRANSFORM],
+          __config[NODE_COMPUTED_STYLE][TRANSFORM],
           [1, 0, 0, 1, 0, 0],
-          item.computedStyle[TRANSFORM_ORIGIN].slice(0),
+          __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN].slice(0),
           inverse
         );
       }
-      // 没有内容或者img没加载成功导致没有内容，不要报错
-      else if(item.__hasContent) {
+      // 没有内容或者img没加载成功导致没有内容，有内容则是超限
+      else if(__config[NODE_HAS_CONTENT]) {
         inject.error('CacheMask is oversize');
       }
     });

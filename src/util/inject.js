@@ -346,6 +346,7 @@ let inject = {
     context.fillStyle = '#000';
     context.textBaseline = 'middle';
     if(!defaultFontFamilyData) {
+      context.clearRect(0, 0, 16, 16);
       context.font = '16px arial';
       context.fillText('a', 8, 8);
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;

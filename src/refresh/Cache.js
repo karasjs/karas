@@ -21,9 +21,9 @@ const {
 } = enums;
 
 // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
-function genSingle(cache) {
+function genSingle(cache, message) {
   let { size, sx1, sy1, width, height, bbox } = cache;
-  let offScreen = inject.getCacheCanvas(width, height);
+  let offScreen = inject.getCacheCanvas(width, height, null, message);
   offScreen.coords = [1, 1];
   offScreen.bbox = bbox;
   offScreen.size = size;
@@ -213,7 +213,7 @@ class Cache {
     bbox[1] -= d;
     bbox[2] += d;
     bbox[3] += d;
-    let offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2);
+    let offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
     offScreen.ctx.filter = `blur(${v}px)`;
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, d, d, width, height);
     offScreen.ctx.filter = 'none';
@@ -233,7 +233,7 @@ class Cache {
   }
 
   static genMask(target, next, isClip, transform, tfo) {
-    let cacheMask = genSingle(target);
+    let cacheMask = genSingle(target, 'mask1');
     let list = [];
     while(next && (next.isMask)) {
       list.push(next);
@@ -287,7 +287,7 @@ class Cache {
     let xe = sx + outerWidth;
     let ye = sy + outerHeight;
     if(bbox[0] < sx || bbox[1] < sy || bbox[2] > xe || bbox[3] > ye) {
-      let cacheOverflow = genSingle(target);
+      let cacheOverflow = genSingle(target, 'overflow');
       let ctx = cacheOverflow.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;

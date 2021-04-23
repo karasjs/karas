@@ -1329,7 +1329,7 @@ class Xom extends Node {
           // 非cache模式返回offScreen，cache模式会生成cacheFilter识别
           if(renderMode === mode.CANVAS && v > 0  && !cache) {
             let { width, height } = root;
-            let c = inject.getCacheCanvas(width, height);
+            let c = inject.getCacheCanvas(width, height, null, 'filter');
             if(c.ctx) {
               offScreenFilter = {
                 ctx,
@@ -1385,7 +1385,7 @@ class Xom extends Node {
         }
         else {
           let { width, height } = root;
-          let c = inject.getCacheCanvas(width, height);
+          let c = inject.getCacheCanvas(width, height, null, 'mask1');
           if(c.ctx) {
             offScreenMask = {
               ctx,
@@ -1406,7 +1406,7 @@ class Xom extends Node {
         }
         else {
           let { width, height } = root;
-          let c = inject.getCacheCanvas(width, height);
+          let c = inject.getCacheCanvas(width, height, null, 'overflow');
           if(c.ctx) {
             offScreenOverflow = {
               ctx,
@@ -1449,7 +1449,7 @@ class Xom extends Node {
       }
       else {
         let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height);
+        let c = inject.getCacheCanvas(width, height, null, 'blend');
         offScreenBlend = {
           ctx,
           target: c,

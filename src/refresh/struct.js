@@ -853,7 +853,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(__cache && __cache.available || __limitCache) {
           if(__cache && __cache.available) {
             if(__blurValue) {
-              let c = inject.getCacheCanvas(width, height);
+              let c = inject.getCacheCanvas(width, height, null, 'filter');
               if(c.ctx) {
                 offScreenFilter = {
                   ctx,
@@ -873,7 +873,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
                 offScreenMask = offScreenFilter;
               }
               else {
-                let c = inject.getCacheCanvas(width, height);
+                let c = inject.getCacheCanvas(width, height, null, 'mask1');
                 if(c.ctx) {
                   offScreenMask = {
                     ctx,
@@ -888,7 +888,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
                 offScreenOverflow = offScreenFilter || offScreenMask;
               }
               else {
-                let c = inject.getCacheCanvas(width, height);
+                let c = inject.getCacheCanvas(width, height, null, 'overflow');
                 if(c.ctx) {
                   offScreenOverflow = {
                     ctx,
@@ -903,7 +903,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
                 offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
               }
               else {
-                let c = inject.getCacheCanvas(width, height);
+                let c = inject.getCacheCanvas(width, height, null, 'blend');
                 offScreenBlend = {
                   ctx,
                   target: c,
@@ -969,7 +969,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               }
               j++;
             }
-            let mask = inject.getCacheCanvas(width, height);
+            let mask = inject.getCacheCanvas(width, height, null, 'mask2');
             maskStartHash[startIndex] = mask;
             // 有start一定有end
             maskEndHash[endIndex] = {
@@ -1009,7 +1009,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let { target, ctx: origin, blur } = offScreenFilter;
             // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
             if(ctx.filter) {
-              let apply = inject.getCacheCanvas(width, height, null);
+              let apply = inject.getCacheCanvas(width, height, null, 'filter');
               apply.ctx.filter = `blur(${blur}px)`;
               apply.ctx.drawImage(target.canvas, 0, 0);
               apply.ctx.filter = 'none';
@@ -1203,7 +1203,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         }
         j++;
       }
-      let mask = inject.getCacheCanvas(width, height);
+      let mask = inject.getCacheCanvas(width, height, null, 'mask2');
       maskStartHash[startIndex] = mask;
       // 有start一定有end
       maskEndHash[endIndex] = {
@@ -1238,7 +1238,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         let { target, ctx: origin, blur } = offScreenFilter;
         // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
         if(ctx.filter) {
-          let apply = inject.getCacheCanvas(width, height, null);
+          let apply = inject.getCacheCanvas(width, height, null, 'filter');
           apply.ctx.filter = `blur(${blur}px)`;
           apply.ctx.drawImage(target.canvas, 0, 0);
           apply.ctx.filter = 'none';

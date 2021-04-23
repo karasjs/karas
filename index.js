@@ -25517,6 +25517,8 @@
                   isClip = _maskEndHash$_i.isClip;
 
               if (isClip) {
+                _offScreenMask.target.draw();
+
                 ctx = _mask.ctx;
                 ctx.globalCompositeOperation = 'source-out';
                 ctx.globalAlpha = 1;
@@ -25541,23 +25543,25 @@
 
                 inject.releaseCacheCanvas(_mask.canvas);
               } else {
-                ctx = _offScreenMask.target.ctx;
+                _mask.draw();
+
+                var _target = _offScreenMask.target;
+                ctx = _target.ctx;
                 ctx.globalCompositeOperation = 'destination-in';
                 ctx.globalAlpha = 1;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.drawImage(_mask.canvas, 0, 0);
-
-                _mask.draw();
-
                 ctx.globalCompositeOperation = 'source-over';
 
                 _mask.ctx.clearRect(0, 0, width, height);
 
                 inject.releaseCacheCanvas(_mask.canvas);
+
+                _target.draw();
+
                 ctx = _offScreenMask.ctx;
                 ctx.globalAlpha = 1;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
-                var _target = _offScreenMask.target;
                 ctx.drawImage(_target.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
                 ctx.globalCompositeOperation = 'source-over';
@@ -25812,6 +25816,8 @@
             isClip = _maskEndHash$_i2.isClip;
 
         if (isClip) {
+          _offScreenMask2.target.draw();
+
           ctx = _mask2.ctx;
           ctx.globalCompositeOperation = 'source-out';
           ctx.globalAlpha = 1;
@@ -25836,23 +25842,23 @@
 
           inject.releaseCacheCanvas(_mask2.canvas);
         } else {
-          ctx = _offScreenMask2.target.ctx;
+          _mask2.draw();
+
+          var target = _offScreenMask2.target;
+          ctx = target.ctx;
           ctx.globalCompositeOperation = 'destination-in';
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.drawImage(_mask2.canvas, 0, 0);
-
-          _mask2.draw();
-
           ctx.globalCompositeOperation = 'source-over';
 
           _mask2.ctx.clearRect(0, 0, width, height);
 
           inject.releaseCacheCanvas(_mask2.canvas);
+          target.draw();
           ctx = _offScreenMask2.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          var target = _offScreenMask2.target;
           ctx.drawImage(target.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
           ctx.globalCompositeOperation = 'source-over';

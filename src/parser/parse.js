@@ -90,10 +90,10 @@ function replaceLibraryVars(target, hash, vars) {
         let v = target[k];
         if (!v) return;
         let k2 = k.slice(12);
-        // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+        // 有id且变量里面传入了替换的值
         if (k2 && v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
-          if (value === undefined) {
+          if (value === undefined ) {
             return;
           }
           let list = k2.split('.');
@@ -121,6 +121,10 @@ function replaceLibraryVars(target, hash, vars) {
           } else {
             if (isFunction(value)) {
               value = value(v);
+            }
+            // 替换图层的值必须是一个有tagName的对象
+            if (!value || !value.tagName) {
+              return;
             }
             hash[libraryId] = {
               id: libraryId,

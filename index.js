@@ -57,40 +57,6 @@
     return obj;
   }
 
-  function ownKeys(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function (key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
-  }
-
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -128,7 +94,7 @@
     if (typeof Proxy === "function") return true;
 
     try {
-      Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
+      Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
       return true;
     } catch (e) {
       return false;
@@ -217,21 +183,18 @@
   }
 
   function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
+    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
   }
 
   function _iterableToArrayLimit(arr, i) {
-    var _i = arr && (typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]);
-
-    if (_i == null) return;
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
     var _arr = [];
     var _n = true;
     var _d = false;
-
-    var _s, _e;
+    var _e = undefined;
 
     try {
-      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
         _arr.push(_s.value);
 
         if (i && _arr.length === i) break;
@@ -5589,6 +5552,7 @@
       context.textBaseline = 'middle';
 
       if (!defaultFontFamilyData) {
+        context.clearRect(0, 0, 16, 16);
         context.font = '16px arial';
         context.fillText('a', 8, 8);
         defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
@@ -10062,11 +10026,6 @@
         return this.__isDestroyed;
       }
     }], [{
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER;
-      }
-    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
@@ -10103,6 +10062,11 @@
         if (Component.hasRegister(name)) {
           delete REGISTER[name];
         }
+      }
+    }, {
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER;
       }
     }]);
 
@@ -14190,12 +14154,6 @@
       }
     }, {
       key: "CONFIG",
-      get: function get() {
-        return {
-          SIZE: SIZE,
-          NUMBER: NUMBER$3
-        };
-      },
       set: function set(v) {
         if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
           return;
@@ -14204,6 +14162,12 @@
         SIZE = v.SIZE;
         NUMBER$3 = v.NUMBER;
         MAX = SIZE[SIZE.length - 1];
+      },
+      get: function get() {
+        return {
+          SIZE: SIZE,
+          NUMBER: NUMBER$3
+        };
       }
     }, {
       key: "MAX",
@@ -14224,14 +14188,14 @@
       NODE_CACHE_FILTER = _enums$NODE_KEY$1.NODE_CACHE_FILTER,
       NODE_CACHE_OVERFLOW = _enums$NODE_KEY$1.NODE_CACHE_OVERFLOW; // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
 
-  function genSingle(cache) {
+  function genSingle(cache, message) {
     var size = cache.size,
         sx1 = cache.sx1,
         sy1 = cache.sy1,
         width = cache.width,
         height = cache.height,
         bbox = cache.bbox;
-    var offScreen = inject.getCacheCanvas(width, height);
+    var offScreen = inject.getCacheCanvas(width, height, null, message);
     offScreen.coords = [1, 1];
     offScreen.bbox = bbox;
     offScreen.size = size;
@@ -14418,11 +14382,6 @@
         return this.__coords;
       }
     }], [{
-      key: "MAX",
-      get: function get() {
-        return Page.MAX - 2;
-      }
-    }, {
       key: "getInstance",
       value: function getInstance(bbox) {
         if (isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
@@ -14472,7 +14431,7 @@
         bbox[1] -= d;
         bbox[2] += d;
         bbox[3] += d;
-        var offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2);
+        var offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
         offScreen.ctx.filter = "blur(".concat(v, "px)");
         offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, d, d, width, height);
         offScreen.ctx.filter = 'none';
@@ -14493,7 +14452,7 @@
     }, {
       key: "genMask",
       value: function genMask(target, next, isClip, transform, tfo) {
-        var cacheMask = genSingle(target);
+        var cacheMask = genSingle(target, 'mask1');
         var list = [];
 
         while (next && next.isMask) {
@@ -14559,7 +14518,7 @@
         var ye = sy + outerHeight;
 
         if (bbox[0] < sx || bbox[1] < sy || bbox[2] > xe || bbox[3] > ye) {
-          var cacheOverflow = genSingle(target);
+          var cacheOverflow = genSingle(target, 'overflow');
           var ctx = cacheOverflow.ctx;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
@@ -14683,6 +14642,11 @@
             height = cache.height;
 
         ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
+      }
+    }, {
+      key: "MAX",
+      get: function get() {
+        return Page.MAX - 2;
       }
     }]);
 
@@ -15632,15 +15596,16 @@
                 break;
             }
           }
-        } // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
+        }
 
+        var lineClampCount = 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
 
         if (display === 'flex') {
           this.__layoutFlex(data, isVirtual);
         } else if (display === 'inlineBlock' || display === 'inline-block') {
-          this.__layoutInline(data, isVirtual);
+          lineClampCount = this.__layoutInline(data, isVirtual);
         } else if (display === 'inline') {
-          this.__layoutInline(data, isVirtual, true);
+          lineClampCount = this.__layoutInline(data, isVirtual, true);
         } else {
           this.__layoutBlock(data, isVirtual);
         } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
@@ -15723,6 +15688,8 @@
               ac.__playAuto();
             }
         }
+
+        return lineClampCount;
       }
     }, {
       key: "__layoutNone",
@@ -16602,7 +16569,7 @@
               if (renderMode === mode.CANVAS && v > 0 && !cache) {
                 var _width = root.width,
                     _height = root.height;
-                var c = inject.getCacheCanvas(_width, _height);
+                var c = inject.getCacheCanvas(_width, _height, null, 'filter');
 
                 if (c.ctx) {
                   offScreenFilter = {
@@ -16654,7 +16621,7 @@
             } else {
               var _width2 = root.width,
                   _height2 = root.height;
-              var c = inject.getCacheCanvas(_width2, _height2);
+              var c = inject.getCacheCanvas(_width2, _height2, null, 'mask1');
 
               if (c.ctx) {
                 offScreenMask = {
@@ -16679,7 +16646,7 @@
               var _width3 = root.width,
                   _height3 = root.height;
 
-              var _c = inject.getCacheCanvas(_width3, _height3);
+              var _c = inject.getCacheCanvas(_width3, _height3, null, 'overflow');
 
               if (_c.ctx) {
                 offScreenOverflow = {
@@ -16723,7 +16690,7 @@
             var _width4 = root.width,
                 _height4 = root.height;
 
-            var _c2 = inject.getCacheCanvas(_width4, _height4);
+            var _c2 = inject.getCacheCanvas(_width4, _height4, null, 'blend');
 
             offScreenBlend = {
               ctx: ctx,
@@ -23265,11 +23232,6 @@
         return this.__currentProps;
       }
     }], [{
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER$1;
-      }
-    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || name.charAt(0) !== '$') {
@@ -23306,6 +23268,11 @@
         if (Geom.hasRegister(name)) {
           delete REGISTER$1[name];
         }
+      }
+    }, {
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER$1;
       }
     }]);
 
@@ -24446,16 +24413,16 @@
         }]);
       }
     }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
-      }
-    }, {
       key: "__set",
       value: function __set(key, value) {
         this.list.forEach(function (item) {
           item[key] = value;
         });
+      }
+    }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
       }
     }, {
       key: "playbackRate",
@@ -25288,7 +25255,7 @@
             if (__cache && __cache.available || __limitCache) {
               if (__cache && __cache.available) {
                 if (__blurValue) {
-                  var c = inject.getCacheCanvas(width, height);
+                  var c = inject.getCacheCanvas(width, height, null, 'filter');
 
                   if (c.ctx) {
                     offScreenFilter = {
@@ -25312,7 +25279,7 @@
                   if (offScreenFilter) {
                     offScreenMask = offScreenFilter;
                   } else {
-                    var _c = inject.getCacheCanvas(width, height);
+                    var _c = inject.getCacheCanvas(width, height, null, 'mask1');
 
                     if (_c.ctx) {
                       offScreenMask = {
@@ -25328,7 +25295,7 @@
                   if (offScreenFilter || offScreenMask) {
                     offScreenOverflow = offScreenFilter || offScreenMask;
                   } else {
-                    var _c2 = inject.getCacheCanvas(width, height);
+                    var _c2 = inject.getCacheCanvas(width, height, null, 'overflow');
 
                     if (_c2.ctx) {
                       offScreenOverflow = {
@@ -25344,7 +25311,7 @@
                   if (offScreenFilter || offScreenMask || offScreenOverflow) {
                     offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
                   } else {
-                    var _c3 = inject.getCacheCanvas(width, height);
+                    var _c3 = inject.getCacheCanvas(width, height, null, 'blend');
 
                     offScreenBlend = {
                       ctx: ctx,
@@ -25417,7 +25384,7 @@
                   _j3++;
                 }
 
-                var mask = inject.getCacheCanvas(width, height);
+                var mask = inject.getCacheCanvas(width, height, null, 'mask2');
                 maskStartHash[startIndex] = mask; // 有start一定有end
 
                 maskEndHash[endIndex] = {
@@ -25469,7 +25436,7 @@
                     blur = offScreenFilter.blur; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
 
                 if (ctx.filter) {
-                  var apply = inject.getCacheCanvas(width, height, null);
+                  var apply = inject.getCacheCanvas(width, height, null, 'filter');
                   apply.ctx.filter = "blur(".concat(blur, "px)");
                   apply.ctx.drawImage(target.canvas, 0, 0);
                   apply.ctx.filter = 'none';
@@ -25716,7 +25683,7 @@
           _j6++;
         }
 
-        var mask = inject.getCacheCanvas(width, height);
+        var mask = inject.getCacheCanvas(width, height, null, 'mask2');
         maskStartHash[startIndex] = mask; // 有start一定有end
 
         maskEndHash[endIndex] = {
@@ -25764,7 +25731,7 @@
               blur = offScreenFilter.blur; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
 
           if (ctx.filter) {
-            var apply = inject.getCacheCanvas(width, height, null);
+            var apply = inject.getCacheCanvas(width, height, null, 'filter');
             apply.ctx.filter = "blur(".concat(blur, "px)");
             apply.ctx.drawImage(target.canvas, 0, 0);
             apply.ctx.filter = 'none';
@@ -27857,7 +27824,7 @@
 
                 var parent = node.domParent;
                 var _parent$__layoutData = parent.__layoutData,
-                    x = _parent$__layoutData.x,
+                    _x = _parent$__layoutData.x,
                     y = _parent$__layoutData.y,
                     h = _parent$__layoutData.h,
                     _width = parent.width,
@@ -27879,7 +27846,7 @@
                   y += _computedStyle[MARGIN_TOP$5] + _computedStyle[BORDER_TOP_WIDTH$6] + _computedStyle[PADDING_TOP$6];
                 }
 
-                x += _computedStyle[MARGIN_LEFT$7] + _computedStyle[BORDER_LEFT_WIDTH$8] + _computedStyle[PADDING_LEFT$8]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
+                _x += _computedStyle[MARGIN_LEFT$7] + _computedStyle[BORDER_LEFT_WIDTH$8] + _computedStyle[PADDING_LEFT$8]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
                 var container = node;
 
@@ -27939,7 +27906,7 @@
                 } // 现在是普通流，不管之前是啥直接布局
                 else {
                     node.__layout({
-                      x: x,
+                      x: _x,
                       y: y,
                       w: _width,
                       h: h
@@ -27973,7 +27940,7 @@
 
                     if (node instanceof Dom$1) {
                       node.__layoutAbs(container, {
-                        x: x,
+                        x: _x,
                         y: y,
                         w: _width,
                         h: h
@@ -30898,6 +30865,7 @@
                   currentTarget = currentTarget[k2];
                 } else {
                   inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  return;
                 }
               }
 
@@ -30920,8 +30888,14 @@
     if (target && hash && vars) {
       Object.keys(target).forEach(function (k) {
         if (k.indexOf('var-library.') === 0) {
-          var v = target[k];
-          if (!v) return;
+          var v = target[k]; // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+
+          delete target[k];
+
+          if (!v) {
+            return;
+          }
+
           var k2 = k.slice(12); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
 
           if (k2 && v.id && vars.hasOwnProperty(v.id)) {
@@ -30946,6 +30920,7 @@
                   currentTarget = currentTarget[k2];
                 } else {
                   inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  return;
                 }
               }
 
@@ -30953,19 +30928,14 @@
                 value = value(v);
               }
 
-              currentTarget[k2] = value; // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
-
-              delete target[k];
+              currentTarget[k2] = value;
             } else {
               if (isFunction$8(value)) {
                 value = value(v);
               }
 
-              hash[libraryId] = _objectSpread2({
-                id: libraryId
-              }, value); // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
-
-              delete target[k];
+              value.libraryId = libraryId;
+              hash[libraryId] = value;
             }
           }
         }
@@ -31255,7 +31225,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.3";
+  var version = "0.57.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

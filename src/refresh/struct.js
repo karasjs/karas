@@ -497,21 +497,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             }
           });
         }
-        // let bbox = node.bbox;
-        // if(__cache) {
-        //   __cache = Cache.updateCache(__cache, bbox);
-        // }
-        // else {
-        //   __cache = Cache.getInstance(bbox);
-        // }
-        // __config[NODE_CACHE] = __cache;
-        // if(!__cache.enabled) {
-        //   inject.warn('Downgrade for cache-filter change error');
-        // }
-        // else if(bv) {
-        //   mergeList.push([i, lv, total, node, __config, null, bv]);
-        //   // __config[NODE_CACHE_FILTER] = genFilter(node, __cacheTotal, bv);
-        // }
         let __cacheFilter = __config[NODE_CACHE_FILTER];
         if(__cacheFilter && __cacheFilter.available) {
           __cacheFilter.release();
@@ -861,20 +846,20 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
               apply.ctx.filter = `blur(${blur}px)`;
               apply.ctx.drawImage(target.canvas, 0, 0);
               apply.ctx.filter = 'none';
+              apply.draw();
               target.ctx.globalAlpha = 1;
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
               target.ctx.drawImage(apply.canvas, 0, 0);
+              target.draw();
               apply.ctx.clearRect(0, 0, width, height);
             }
             if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
-              origin.globalAlpha = 1;
               origin.setTransform(1, 0, 0, 1, 0, 0);
+              origin.globalAlpha = 1;
               origin.drawImage(target.canvas, 0, 0);
-              target.draw();
-              target.ctx.filter = 'none';
-              target.ctx.globalAlpha = 1;
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+              target.ctx.globalAlpha = 1;
               target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
               ctx = origin;
@@ -896,6 +881,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.closePath();
             ctx.globalCompositeOperation = 'source-over';
             if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
+              target.draw();
               origin.setTransform(1, 0, 0, 1, 0, 0);
               origin.globalAlpha = 1;
               origin.drawImage(target.canvas, 0, 0);
@@ -913,13 +899,16 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let target = offScreenBlend.target;
             offScreenBlend.ctx.globalCompositeOperation = offScreenBlend.mixBlendMode;
             if(!maskStartHash.hasOwnProperty(i + 1)) {
-              offScreenBlend.ctx.drawImage(target.canvas, 0, 0);
               target.draw();
+              let origin = offScreenBlend.ctx;
+              origin.setTransform(1, 0, 0, 1, 0, 0);
+              origin.globalAlpha = 1;
+              origin.drawImage(target.canvas, 0, 0);
               target.ctx.globalAlpha = 1;
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
-              ctx = offScreenBlend.ctx;
+              ctx = origin;
               ctx.globalCompositeOperation = 'source-over';
             }
           });
@@ -933,7 +922,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.globalAlpha = 1;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.drawImage(offScreenMask.target.canvas, 0, 0);
-            mask.draw(ctx);
+            mask.draw();
             ctx.globalCompositeOperation = 'source-over';
             offScreenMask.target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(offScreenMask.target.canvas);
@@ -943,7 +932,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.drawImage(mask.canvas, 0, 0);
             // blendMode前面会修改主屏的，这里应用完后恢复正常
             ctx.globalCompositeOperation = 'source-over';
-            mask.draw(ctx);
             mask.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(mask.canvas);
           }
@@ -953,7 +941,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.globalAlpha = 1;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.drawImage(mask.canvas, 0, 0);
-            mask.draw(ctx);
+            mask.draw();
             ctx.globalCompositeOperation = 'source-over';
             mask.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(mask.canvas);
@@ -964,9 +952,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.drawImage(target.canvas, 0, 0);
             // blendMode前面会修改主屏的，这里应用完后恢复正常
             ctx.globalCompositeOperation = 'source-over';
-            target.draw(ctx);
             target.ctx.clearRect(0, 0, width, height);
-            inject.releaseCacheCanvas(offScreenMask.target.canvas);
+            inject.releaseCacheCanvas(target.canvas);
           }
         }
       }
@@ -1090,18 +1077,18 @@ function renderCanvas(renderMode, ctx, defs, root) {
           apply.ctx.filter = `blur(${blur}px)`;
           apply.ctx.drawImage(target.canvas, 0, 0);
           apply.ctx.filter = 'none';
+          apply.draw();
           target.ctx.globalAlpha = 1;
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.clearRect(0, 0, width, height);
           target.ctx.drawImage(apply.canvas, 0, 0);
+          target.draw();
           apply.ctx.clearRect(0, 0, width, height);
         }
         if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
-          target.draw();
-          target.ctx.filter = 'none';
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.globalAlpha = 1;
           target.ctx.clearRect(0, 0, width, height);
@@ -1125,6 +1112,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.closePath();
         ctx.globalCompositeOperation = 'source-over';
         if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
+          target.draw();
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
@@ -1142,11 +1130,11 @@ function renderCanvas(renderMode, ctx, defs, root) {
         let target = offScreenBlend.target;
         offScreenBlend.ctx.globalCompositeOperation = offScreenBlend.mixBlendMode;
         if(!maskStartHash.hasOwnProperty(i + 1)) {
+          target.draw();
           let origin = offScreenBlend.ctx;
           origin.setTransform(1, 0, 0, 1, 0, 0);
           origin.globalAlpha = 1;
           origin.drawImage(target.canvas, 0, 0);
-          target.draw();
           target.ctx.globalAlpha = 1;
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.clearRect(0, 0, width, height);
@@ -1165,7 +1153,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(offScreenMask.target.canvas, 0, 0);
-        mask.draw(ctx);
+        mask.draw();
         ctx.globalCompositeOperation = 'source-over';
         offScreenMask.target.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(offScreenMask.target.canvas);
@@ -1175,7 +1163,6 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.drawImage(mask.canvas, 0, 0);
         // blendMode前面会修改主屏的，这里应用完后恢复正常
         ctx.globalCompositeOperation = 'source-over';
-        mask.draw(ctx);
         mask.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(mask.canvas);
       }
@@ -1185,7 +1172,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(mask.canvas, 0, 0);
-        mask.draw(ctx);
+        mask.draw();
         ctx.globalCompositeOperation = 'source-over';
         mask.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(mask.canvas);
@@ -1196,9 +1183,8 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.drawImage(target.canvas, 0, 0);
         // blendMode前面会修改主屏的，这里应用完后恢复正常
         ctx.globalCompositeOperation = 'source-over';
-        target.draw(ctx);
         target.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(offScreenMask.target.canvas);
+        inject.releaseCacheCanvas(target.canvas);
       }
     }
   }

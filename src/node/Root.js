@@ -192,28 +192,28 @@ function checkInfluence(root, reflowHash, node, component) {
     do {
       target = parent;
       // 父到root提前跳出
-      if(parent === root) {
+      if(target === root) {
         return true;
       }
       // 父已有LAYOUT跳出防重
-      if(isLAYOUT(parent, reflowHash)) {
+      if(isLAYOUT(target, reflowHash)) {
         return;
       }
       // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
-      if(parent.currentStyle[POSITION] === 'absolute' || parent.computedStyle[POSITION] === 'absolute') {
-        setLAYOUT(parent, reflowHash, component);
+      if(target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute') {
+        setLAYOUT(target, reflowHash, component);
         return;
       }
       // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
-      if(isFixedSize(parent, true)) {
-        setLAYOUT(parent, reflowHash, component);
+      if(isFixedSize(target, true)) {
+        setLAYOUT(target, reflowHash, component);
         return;
       }
       // 继续向上
-      parent = parent.domParent;
+      target = target.domParent;
     }
-    while(parent && (['inline', 'inlineBlock', 'inline-block'].indexOf(parent.currentStyle[DISPLAY]) > -1
-      || ['inline', 'inlineBlock', 'inline-block'].indexOf(parent.computedStyle[DISPLAY]) > -1));
+    while(target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY]) > -1
+      || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY]) > -1));
     // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
     if(isFixedSize(target, true)) {
       setLAYOUT(target, reflowHash, component);

@@ -7,6 +7,8 @@ import MockPage from './MockPage';
 class MockCache {
   constructor(texture, sx1, sy1, width, height, fullSize, bbox) {
     this.coords = [1, 1];
+    this.x = 0;
+    this.y = 0;
     this.sx1 = sx1;
     this.sy1 = sy1;
     this.width = width;
@@ -17,6 +19,7 @@ class MockCache {
   }
 
   release() {
+    // TODO: webgl.deleteTexture
     this.available = false;
   }
 

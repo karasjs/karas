@@ -51,11 +51,11 @@ function multiply(a, b) {
 
 function calPoint(point, m) {
   let [x, y, z] = point;
-  if(m.length === 6) {
+  if(m && m.length === 6) {
     let [a, b, c, d, e, f] = m;
     return [a * x + c * y + e, b * x + d * y + f];
   }
-  else if(m.length === 16) {
+  else if(m && m.length === 16) {
     z = z || 0;
     let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
     let w = x * d1 + y * d2 + z * d3 + d4;
@@ -65,7 +65,7 @@ function calPoint(point, m) {
       (x * c1 + y * c2 + z * c3 + c4) / w
     ];
   }
-  return point;
+  return [x, y, z];
 }
 
 function int2convolution(v) {

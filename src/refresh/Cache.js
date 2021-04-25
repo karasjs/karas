@@ -52,6 +52,8 @@ class Cache {
     this.__page = page;
     this.__pos = pos;
     let [x, y] = page.getCoords(pos);
+    this.__x = x;
+    this.__y = y;
     // 四周各+1px的扩展
     this.__coords = [x + 1, y + 1];
     if(page.canvas) {
@@ -162,6 +164,14 @@ class Cache {
 
   get fullSize() {
     return this.page.fullSize;
+  }
+
+  get x() {
+    return this.__x;
+  }
+
+  get y() {
+    return this.__y;
   }
 
   get width() {

@@ -53,8 +53,6 @@ class Page {
   del(pos) {
     this.grid[pos] = 1;
     this.__free++;
-    // 删除暂时不用，因为不会绘制，只有增加时才更新纹理
-    // this.__version++;
   }
 
   getCoords(pos) {

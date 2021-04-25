@@ -769,8 +769,9 @@ class Root extends Dom {
     else if(this.tagName === 'webgl') {
       let gl = this.__ctx = this.__dom.getContext('webgl', ca);
       this.__renderMode = mode.WEBGL;
-      webgl.initShaders(gl, vertex, fragment, true);
-      webgl.initShaders(gl, vertexMask, fragmentMask, false,'programMask');
+      gl.program = webgl.initShaders(gl, vertex, fragment);
+      gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
+      gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
       this.__texCache = new TexCache(MAX_TEXTURE_IMAGE_UNITS);

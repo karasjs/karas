@@ -7,7 +7,7 @@ class TexCache {
     this.__units = units; // 通道数量限制，8~16
     this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
     this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
-    this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为[Page,texture]
+    this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
     this.__locks = []; // 锁定纹理单元列表，下标即纹理单元，内容true为锁定
     this.__lockUnits = 0;
   }
@@ -72,7 +72,7 @@ class TexCache {
       let lastHash = {};
       channels.forEach((item, i) => {
         if(item) {
-          let uuid = item[0].uuid;
+          let uuid = item.uuid;
           lastHash[uuid] = i;
         }
       });
@@ -229,6 +229,17 @@ class TexCache {
       if(setToChannel) {
         this.channels[i] = setToChannel;
       }
+    }
+  }
+
+  // 指定锁定一个单元
+  lockChannel(i) {
+    let channels = this.channels;
+    let locks = this.locks;
+    if(!locks[i]) {
+      channels[i] = null;
+      locks[i] = true;
+      this.__lockUnits++;
     }
   }
 

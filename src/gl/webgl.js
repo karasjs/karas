@@ -7,24 +7,18 @@ const calPoint = mx.calPoint;
  * @param gl GL context
  * @param vshader vertex shader (string)
  * @param fshader fragment shader (string)
- * @param use
- * @param k
- * @return true, if the program object was created and successfully made current
+ * @return program, if the program object was created and successfully made current
  */
-function initShaders(gl, vshader, fshader, use, k = 'program') {
+function initShaders(gl, vshader, fshader) {
   let program = createProgram(gl, vshader, fshader);
   if(!program) {
     throw new Error('Failed to create program');
   }
 
-  if(use) {
-    gl.useProgram(program);
-  }
-  gl[k] = program;
   // 要开启透明度，用以绘制透明的图形
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-  return true;
+  return program;
 }
 
 /**
@@ -179,36 +173,20 @@ function drawTextureCache(gl, list, hash, cx, cy) {
       lastChannel = hash[cache.page.uuid];
       record[1] = lastChannel;
     }
-    let { coords: [x, y], sx1, sy1, width, height, fullSize } = cache;
+    let { x, y, width, height, fullSize, bbox } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-    let [x1, y1] = convertCoords2Gl(sx1 - 1 + dx, sy1 - 1 + dy + height, cx, cy);
-    let [x2, y2] = convertCoords2Gl(sx1 - 1 + dx + width, sy1 - 1 + dy, cx, cy);
+    let bx = bbox[0], by = bbox[1];
+    let [x1, y1] = convertCoords2Gl(bx - 1 + (dx || 0), by - 1 + height + (dy || 0), cx, cy);
+    let [x2, y2] = convertCoords2Gl(bx - 1 + width + (dx || 0), by - 1 + (dy || 0), cx, cy);
     [x1, y1] = calPoint([x1, y1], matrix);
     [x2, y2] = calPoint([x2, y2], matrix);
-    vtPoint.push(x1, y1, x1, y2, x2, y1,  x1, y2, x2, y1, x2, y2);
-    let tx1 = (x - 1) / fullSize, ty1 = (y - 1 + height) / fullSize;
-    let tx2 = (x - 1 + width) / fullSize, ty2 = (y - 1) / fullSize;
+    vtPoint.push(x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2);
+    let tx1 = x / fullSize, ty1 = (y + height) / fullSize;
+    let tx2 = (x + width) / fullSize, ty2 = y / fullSize;
     vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
     record[0]++;
   });
-  let [pointBuffer, texBuffer, opacityBuffer] = initVertexBuffers(gl, vtPoint, vtTex, vtOpacity);
-  let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
-  let count = 0;
-  // 循环按批次渲染
-  stack.forEach(record => {
-    let [num, channel] = record;
-    gl.uniform1i(u_texture, channel);
-    num *= 6;
-    gl.drawArrays(gl.TRIANGLES, count, num);
-    count += num;
-  });
-  gl.deleteBuffer(pointBuffer);
-  gl.deleteBuffer(texBuffer);
-  gl.deleteBuffer(opacityBuffer);
-}
-
-function initVertexBuffers(gl, vtPoint, vtTex, vtOpacity) {
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -230,7 +208,64 @@ function initVertexBuffers(gl, vtPoint, vtTex, vtOpacity) {
   let a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
   gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_opacity);
-  return [pointBuffer, texBuffer, opacityBuffer];
+  // 纹理单元
+  let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+  let count = 0;
+  // 循环按批次渲染
+  stack.forEach(record => {
+    let [num, channel] = record;
+    gl.uniform1i(u_texture, channel);
+    num *= 6;
+    gl.drawArrays(gl.TRIANGLES, count, num);
+    count += num;
+  });
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.deleteBuffer(opacityBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
+  gl.disableVertexAttribArray(a_opacity);
+}
+
+function drawMask(gl, i, j) {
+  // 顶点buffer
+  let pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+    -1, 1,
+    1, -1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_position = gl.getAttribLocation(gl.programMask, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  let texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 0,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(gl.programMask, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  let u_texture1 = gl.getUniformLocation(gl.programMask, 'u_texture1');
+  gl.uniform1i(u_texture1, j);
+  let u_texture2 = gl.getUniformLocation(gl.programMask, 'u_texture2');
+  gl.uniform1i(u_texture2, i);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
 }
 
 export default {
@@ -239,4 +274,5 @@ export default {
   bindTexture,
   deleteTexture,
   drawTextureCache,
+  drawMask,
 };

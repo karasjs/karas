@@ -1446,6 +1446,7 @@ class Xom extends Node {
     if(mixBlendMode !== 'normal' && !cache) {
       if(offScreenFilter || offScreenMask || offScreenOverflow) {
         offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
+        offScreenBlend.mixBlendMode = mixBlendMode;
       }
       else {
         let { width, height } = root;

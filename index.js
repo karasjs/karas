@@ -27631,8 +27631,7 @@
               node = _reflowList$i.node,
               style = _reflowList$i.style,
               img = _reflowList$i.img,
-              component = _reflowList$i.component;
-          console.log(i, node.tagName); // root提前跳出，完全重新布局
+              component = _reflowList$i.component; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -27777,8 +27776,7 @@
             uniqueList.forEach(function (item) {
               var node = item.node,
                   lv = item.lv,
-                  component = item.component;
-              console.log(node.tagName); // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               if (lv >= LAYOUT) {
                 var cps = node.computedStyle,

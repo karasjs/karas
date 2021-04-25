@@ -131,12 +131,8 @@ function replaceLibraryVars(target, hash, vars) {
             if (!value || !value.tagName) {
               return;
             }
-            hash[libraryId] = {
-              id: libraryId,
-              ...value,
-            };
-            value.id = libraryId;
-            hash[libraryId] = value;
+            // library对象也要加上id，与正常的library保持一致
+            hash[libraryId] = Object.assign({ id: libraryId }, value);
           }
         }
       }

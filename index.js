@@ -26458,11 +26458,9 @@
   function checkInfluence(root, reflowHash, node, component) {
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (['inline', 'inlineBlock', 'inline-block'].indexOf(node.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(node.computedStyle[DISPLAY$9]) > -1) {
-      var _parent = node.domParent;
-
+    if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1) {
       do {
-        target = _parent; // 父到root提前跳出
+        target = target.domParent; // 父到root提前跳出
 
         if (target === root) {
           return true;
@@ -26477,17 +26475,8 @@
         if (target.currentStyle[POSITION$5] === 'absolute' || target.computedStyle[POSITION$5] === 'absolute') {
           setLAYOUT(target, reflowHash, component);
           return;
-        } // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
-
-
-        if (isFixedSize(target, true)) {
-          setLAYOUT(target, reflowHash, component);
-          return;
-        } // 继续向上
-
-
-        target = target.domParent;
-      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1)); // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
+        }
+      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
 
 
       if (isFixedSize(target, true)) {
@@ -26497,34 +26486,24 @@
     } // 此时target指向node，如果原本是inline则是其flow的非inline父
 
 
-    var parent = target.domParent;
-
-    if (!parent) {
-      return;
-    } // parent有LAYOUT跳出，已被包含
-
+    var parent = target.domParent; // parent有LAYOUT跳出，已被包含
 
     if (isLAYOUT(parent, reflowHash)) {
       return;
-    } // parent是root的flex/absolute特殊处理
-
-
-    if (parent === root && (parent.computedStyle[DISPLAY$9] === 'flex' || parent.currentStyle[DISPLAY$9] === 'flex' || parent.computedStyle[POSITION$5] === 'absolute' || parent.currentStyle[POSITION$5] === 'absolute')) {
-      return true;
     } // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
 
 
     var topFlex;
 
     do {
-      // 父到root提前跳出
-      if (parent === root) {
-        break;
-      } // 父已有LAYOUT跳出防重
-
-
+      // 父已有LAYOUT跳出防重
       if (isLAYOUT(parent, reflowHash)) {
         return;
+      } // flex相关，包含变化或不变化
+
+
+      if (parent.computedStyle[DISPLAY$9] === 'flex' || parent.currentStyle[DISPLAY$9] === 'flex') {
+        topFlex = parent;
       } // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
 
 
@@ -26535,11 +26514,6 @@
 
       if (isFixedSize(parent, true)) {
         break;
-      } // flex相关，包含变化或不变化
-
-
-      if (parent.computedStyle[DISPLAY$9] === 'flex' || parent.currentStyle[DISPLAY$9] === 'flex') {
-        topFlex = parent;
       }
 
       parent = parent.domParent;
@@ -26552,13 +26526,18 @@
 
     if (target === root) {
       return true;
-    } // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
+    }
 
+    parent = target; // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
 
     while (parent) {
       // 无论新老absolute，不变化则设置，变化一定会出现在列表中
       if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
-        // 固定尺寸的不用设置，需要跳出循环
+        if (parent === root) {
+          break;
+        } // 固定尺寸的不用设置，需要跳出循环
+
+
         if (isFixedSize(parent)) {
           break;
         } else {
@@ -27572,9 +27551,9 @@
 
           if (isInherit) {
             while (parent && parent !== root) {
-              var _parent2 = parent,
-                  _uniqueUpdateId = _parent2.__config[NODE_UNIQUE_UPDATE_ID],
-                  currentStyle = _parent2.currentStyle;
+              var _parent = parent,
+                  _uniqueUpdateId = _parent.__config[NODE_UNIQUE_UPDATE_ID],
+                  currentStyle = _parent.currentStyle;
 
               var _isInherit = void 0;
 
@@ -27652,7 +27631,8 @@
               node = _reflowList$i.node,
               style = _reflowList$i.style,
               img = _reflowList$i.img,
-              component = _reflowList$i.component; // root提前跳出，完全重新布局
+              component = _reflowList$i.component;
+          console.log(i, node.tagName); // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -27797,7 +27777,8 @@
             uniqueList.forEach(function (item) {
               var node = item.node,
                   lv = item.lv,
-                  component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  component = item.component;
+              console.log(node.tagName); // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               if (lv >= LAYOUT) {
                 var cps = node.computedStyle,
@@ -28044,22 +28025,22 @@
                       l = _node2$computedStyle[LEFT$3],
                       _computedStyle2 = _node2.computedStyle;
 
-                  var _parent3;
+                  var _parent2;
 
                   if (node === _this5) {
-                    _parent3 = node;
+                    _parent2 = node;
                   } else {
-                    _parent3 = node.domParent;
+                    _parent2 = node.domParent;
                   }
 
                   var newY = 0;
 
                   if (top[1] !== AUTO$8) {
-                    newY = calRelative$2(_currentStyle2, 'top', top, _parent3);
+                    newY = calRelative$2(_currentStyle2, 'top', top, _parent2);
                     _computedStyle2[TOP$4] = newY;
                     _computedStyle2[BOTTOM$4] = 'auto';
                   } else if (bottom[1] !== AUTO$8) {
-                    newY = -calRelative$2(_currentStyle2, 'bottom', bottom, _parent3);
+                    newY = -calRelative$2(_currentStyle2, 'bottom', bottom, _parent2);
                     _computedStyle2[BOTTOM$4] = -newY;
                     _computedStyle2[TOP$4] = 'auto';
                   } else {
@@ -28081,11 +28062,11 @@
                   var newX = 0;
 
                   if (left[1] !== AUTO$8) {
-                    newX = calRelative$2(_currentStyle2, 'left', left, _parent3);
+                    newX = calRelative$2(_currentStyle2, 'left', left, _parent2);
                     _computedStyle2[LEFT$3] = newX;
                     _computedStyle2[RIGHT$3] = 'auto';
                   } else if (right[1] !== AUTO$8) {
-                    newX = -calRelative$2(_currentStyle2, 'right', right, _parent3);
+                    newX = -calRelative$2(_currentStyle2, 'right', right, _parent2);
                     _computedStyle2[RIGHT$3] = -newX;
                     _computedStyle2[LEFT$3] = 'auto';
                   } else {

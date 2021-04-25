@@ -186,11 +186,10 @@ function addLAYOUT(node, hash, component) {
 function checkInfluence(root, reflowHash, node, component) {
   let target = node;
   // inline新老都影响，节点变为最近的父非inline
-  if(['inline', 'inlineBlock', 'inline-block'].indexOf(node.currentStyle[DISPLAY]) > -1
-    || ['inline', 'inlineBlock', 'inline-block'].indexOf(node.computedStyle[DISPLAY]) > -1) {
-    let parent = node.domParent;
+  if(['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY]) > -1
+    || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY]) > -1) {
     do {
-      target = parent;
+      target = target.domParent;
       // 父到root提前跳出
       if(target === root) {
         return true;
@@ -204,17 +203,10 @@ function checkInfluence(root, reflowHash, node, component) {
         setLAYOUT(target, reflowHash, component);
         return;
       }
-      // 父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
-      if(isFixedSize(target, true)) {
-        setLAYOUT(target, reflowHash, component);
-        return;
-      }
-      // 继续向上
-      target = target.domParent;
     }
     while(target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY]) > -1
       || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY]) > -1));
-    // 结束后target至少是node的flow的parent且非inline，如果固定尺寸提前跳出
+    // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
     if(isFixedSize(target, true)) {
       setLAYOUT(target, reflowHash, component);
       return;
@@ -222,31 +214,20 @@ function checkInfluence(root, reflowHash, node, component) {
   }
   // 此时target指向node，如果原本是inline则是其flow的非inline父
   let parent = target.domParent;
-  if(!parent) {
-    return;
-  }
   // parent有LAYOUT跳出，已被包含
   if(isLAYOUT(parent, reflowHash)) {
     return;
   }
-  // parent是root的flex/absolute特殊处理
-  if(parent === root
-    && (parent.computedStyle[DISPLAY] === 'flex'
-      || parent.currentStyle[DISPLAY] === 'flex'
-      || parent.computedStyle[POSITION] === 'absolute'
-      || parent.currentStyle[POSITION] === 'absolute')) {
-    return true;
-  }
   // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
   let topFlex;
   do {
-    // 父到root提前跳出
-    if(parent === root) {
-      break;
-    }
     // 父已有LAYOUT跳出防重
     if(isLAYOUT(parent, reflowHash)) {
       return;
+    }
+    // flex相关，包含变化或不变化
+    if(parent.computedStyle[DISPLAY] === 'flex' || parent.currentStyle[DISPLAY] === 'flex') {
+      topFlex = parent;
     }
     // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
     if(parent.currentStyle[POSITION] === 'absolute' || parent.computedStyle[POSITION] === 'absolute') {
@@ -255,10 +236,6 @@ function checkInfluence(root, reflowHash, node, component) {
     // 父固定宽高跳出
     if(isFixedSize(parent, true)) {
       break;
-    }
-    // flex相关，包含变化或不变化
-    if(parent.computedStyle[DISPLAY] === 'flex' || parent.currentStyle[DISPLAY] === 'flex') {
-      topFlex = parent;
     }
     parent = parent.domParent;
   }
@@ -270,10 +247,14 @@ function checkInfluence(root, reflowHash, node, component) {
   if(target === root) {
     return true;
   }
+  parent = target;
   // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
   while(parent) {
     // 无论新老absolute，不变化则设置，变化一定会出现在列表中
     if(parent.currentStyle[POSITION] === 'absolute' || parent.computedStyle[POSITION] === 'absolute') {
+      if(parent === root) {
+        break;
+      }
       // 固定尺寸的不用设置，需要跳出循环
       if(isFixedSize(parent)) {
         break;
@@ -1185,7 +1166,7 @@ class Root extends Dom {
     let reflowHash = {};
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, style, img, component } = reflowList[i];
+      let { node, style, img, component } = reflowList[i];console.log(i,node.tagName);
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
@@ -1309,7 +1290,7 @@ class Root extends Dom {
       let mergeOffsetList = [];
       let __uniqueMergeOffsetId = 0;
       uniqueList.forEach(item => {
-        let { node, lv, component } = item;
+        let { node, lv, component } = item;console.log(node.tagName);
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
           let cps = node.computedStyle, cts = node.currentStyle;

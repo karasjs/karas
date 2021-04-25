@@ -73,11 +73,12 @@ function int2convolution(v) {
     return 0;
   }
   let d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
-  d *= 3;
   if(d % 2 === 0) {
-    d++;
+    return d * 2 + 1;
   }
-  return d;
+  else {
+    return d * 3;
+  }
 }
 
 /**

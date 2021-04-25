@@ -30869,7 +30869,7 @@
             return;
           }
 
-          var k2 = k.slice(12); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+          var k2 = k.slice(12); // 有id且变量里面传入了替换的值
 
           if (k2 && v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
@@ -30905,10 +30905,17 @@
             } else {
               if (isFunction$8(value)) {
                 value = value(v);
-              }
+              } // 替换图层的值必须是一个有tagName的对象
 
-              value.libraryId = libraryId;
-              hash[libraryId] = value;
+
+              if (!value || !value.tagName) {
+                return;
+              } // library对象也要加上id，与正常的library保持一致
+
+
+              hash[libraryId] = Object.assign({
+                id: libraryId
+              }, value);
             }
           }
         }
@@ -31198,7 +31205,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.6";
+  var version = "0.57.7";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

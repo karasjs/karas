@@ -477,7 +477,7 @@
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
         var struct = this.__config[NODE_STRUCT];
-        return [struct, 1];
+        return [struct, 0];
       }
     }, {
       key: "__offsetX",
@@ -32913,7 +32913,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.8";
+  var version = "0.57.9";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

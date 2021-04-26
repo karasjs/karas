@@ -43,7 +43,7 @@ class Node {
 
   __modifyStruct(root, offset = 0) {
     let struct = this.__config[NODE_STRUCT];
-    return [struct, 1];
+    return [struct, 0];
   }
 
   __offsetX(diff, isLayout) {

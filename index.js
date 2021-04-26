@@ -5506,6 +5506,32 @@
 
   function drawBlur(gl, i, j, f1, f2, spread, d, sigma) {
     console.log(i, j, f1, f2, spread, d, sigma); // 第一次将total绘制到blur上，此时尺寸存在spread差值
+
+    var a = -f1 / f2;
+    var b = -a;
+    console.log(a, b); // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([a, a, a, b, b, a, a, b, b, a, b, b]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(gl.programMask, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(gl.programMask, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(gl.programMask, 'u_texture');
+    gl.uniform1i(u_texture, j);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
   }
 
   function drawMask(gl, i, j) {
@@ -9762,7 +9788,7 @@
     return Math.floor(d * 0.5) * 3;
   }
   /**
-   * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组，注意只有一半，因为是对称的
+   * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
    * @param sigma
    * @param d
    */
@@ -9785,8 +9811,6 @@
       list.push(_n);
       total += _n;
     }
-
-    console.log(list, total);
 
     if (total !== 1) {
       for (var _i2 = 0; _i2 < d; _i2++) {
@@ -25710,12 +25734,12 @@
     }
 
     var spread = blur.outerSizeByD(d);
-    var fullSize2 = fullSize + spread;
+    var fullSize2 = fullSize + spread * 2;
     var dx = -bbox[0] + 1 + d,
         dy = -bbox[1] + 1 + d;
     console.log(sigma, d, spread, max, fullSize, fullSize2, texCache.channels, texCache.locks); // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
 
-    var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, fullSize),
+    var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, fullSize2),
         _genFrameBufferWithTe4 = _slicedToArray(_genFrameBufferWithTe3, 3),
         i = _genFrameBufferWithTe4[0],
         frameBuffer = _genFrameBufferWithTe4[1],
@@ -25740,7 +25764,16 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer);
-    return cache;
+    texCache.releaseLockChannel(i); // 同total一样生成一个mockCache
+
+    var b = bbox.slice(0);
+    b[0] -= spread;
+    b[1] -= spread;
+    b[2] += spread;
+    b[3] += spread;
+    var filterCache = new MockCache(texture, sx1, sy1, fullSize2, fullSize2, fullSize2, b);
+    texCache.releaseLockChannel(j, filterCache.page);
+    return filterCache;
   }
 
   function genMaskWebgl(gl, texCache, node, cache, W, H) {
@@ -27617,9 +27650,9 @@
 
   var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);gl_FragColor=vec4(color1.rgb,color1.a*color2.a);}"; // eslint-disable-line
 
-  var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
+  var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;varying vec2 v_texCoordsBlur[3];void main(){gl_Position=a_position;v_texCoordsBlur[0]=a_texCoords+vec2(0.0,-0.01);v_texCoordsBlur[1]=a_texCoords;v_texCoordsBlur[2]=a_texCoords+vec2(0.0,0.01);v_texCoords=a_texCoords;}"; // eslint-disable-line
 
-  var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);gl_FragColor=vec4(color1.rgb,color1.a*color2.a);}"; // eslint-disable-line
+  var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;varying vec2 v_texCoordsBlur[3];uniform sampler2D u_texture;void main(){gl_FragColor=vec4(0.0);gl_FragColor+=texture2D(u_texture,v_texCoordsBlur[0])*0.3;gl_FragColor+=texture2D(u_texture,v_texCoordsBlur[1])*0.4;gl_FragColor+=texture2D(u_texture,v_texCoordsBlur[2])*0.3;}"; // eslint-disable-line
 
   var TexCache = /*#__PURE__*/function () {
     function TexCache(units) {

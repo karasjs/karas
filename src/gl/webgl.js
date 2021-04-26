@@ -230,6 +230,45 @@ function drawTextureCache(gl, list, hash, cx, cy) {
 function drawBlur(gl, i, j, f1, f2, spread, d, sigma) {
   console.log(i, j, f1, f2, spread, d, sigma);
   // 第一次将total绘制到blur上，此时尺寸存在spread差值
+  let a = -f1 / f2;
+  let b = -a;
+  console.log(a, b);
+  // 顶点buffer
+  let pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    a, a,
+    a, b,
+    b, a,
+    a, b,
+    b, a,
+    b, b,
+  ]), gl.STATIC_DRAW);
+  let a_position = gl.getAttribLocation(gl.programMask, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer
+  let texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 0,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(gl.programMask, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  let u_texture = gl.getUniformLocation(gl.programMask, 'u_texture');
+  gl.uniform1i(u_texture, j);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.deleteBuffer(pointBuffer);
+  gl.deleteBuffer(texBuffer);
+  gl.disableVertexAttribArray(a_position);
+  gl.disableVertexAttribArray(a_texCoords);
 }
 
 function drawMask(gl, i, j) {

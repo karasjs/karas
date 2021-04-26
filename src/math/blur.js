@@ -37,7 +37,7 @@ function outerSizeByD(d) {
 }
 
 /**
- * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组，注意只有一半，因为是对称的
+ * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
  * @param sigma
  * @param d
  */
@@ -56,7 +56,7 @@ function gaussianWeight(sigma, d) {
       / (sigma * Math.sqrt(2 * Math.PI));
     list.push(n);
     total += n;
-  }console.log(list, total);
+  }
   if(total !== 1) {
     for(let i = 0; i < d; i++) {
       list[i] /= total;

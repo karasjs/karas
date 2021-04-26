@@ -29382,16 +29382,18 @@
 
                 while (component && current.isShadowRoot) {
                   current = current.host;
-                } // y使用prev或者parent的，首个节点无prev
+                } // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的
 
 
                 var ref = current.prev;
 
                 if (ref) {
                   y = ref.y;
-                  y += ref.outerHeight;
+
+                  if (ref instanceof Text || ref.computedStyle[POSITION$5] !== 'absolute') {
+                    y += ref.outerHeight;
+                  }
                 } else {
-                  y = parent.y;
                   y += _computedStyle[MARGIN_TOP$5] + _computedStyle[BORDER_TOP_WIDTH$6] + _computedStyle[PADDING_TOP$6];
                 }
 
@@ -29448,10 +29450,14 @@
                     }
 
                     return;
-                  } // 标识flow变abs，可能引发zIndex变更，重设struct
+                  } // 标识flow变abs，可能引发zIndex变更，重设struct和svg
 
 
                   parent.__updateStruct(root.__structs);
+
+                  if (_this5.renderMode === mode.SVG) {
+                    cleanSvgCache(parent);
+                  }
                 } // 现在是普通流，不管之前是啥直接布局
                 else {
                     node.__layout({
@@ -32786,7 +32792,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.7";
+  var version = "0.57.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

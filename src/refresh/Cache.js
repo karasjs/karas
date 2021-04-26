@@ -6,6 +6,7 @@ import tf from '../style/transform';
 import mx from '../math/matrix';
 import debug from '../util/debug';
 import mode from '../node/mode';
+import blur from '../style/blur';
 
 const {
   STYLE_KEY: {
@@ -219,7 +220,7 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genBlur(cache, v) {
-    let d = mx.int2convolution(v);
+    let d = blur.outerSize(v);
     let { coords: [x, y], size, canvas, sx1, sy1, width, height, bbox } = cache;
     bbox = bbox.slice(0);
     bbox[0] -= d;

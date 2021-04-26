@@ -8,12 +8,11 @@ import level from './level';
 import util from '../util/util';
 import inject from '../util/inject';
 import Cache from './Cache';
-import Page from './Page';
 import tf from '../style/transform';
 import enums from '../util/enums';
-import TexCache from '../gl/TexCache';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';
+import blur from '../style/blur';
 
 const {
   STYLE_KEY: {
@@ -93,7 +92,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   }
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
   let list = [index];
-  let d = mx.int2convolution(blurValue);
+  let d = blur.outerSize(blurValue);
   opacityHash[index] = 1;
   while(list.length) {
     list.splice(0).forEach(parentIndex => {
@@ -1598,7 +1597,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
             let [k, v] = item;
             if(k === 'blur') {
               if(v > 0) {
-                let d = mx.int2convolution(v);
+                let d = blur.outerSize(v);
                 let { outerWidth, outerHeight } = node;
                 let o = {
                   tagName: 'filter',

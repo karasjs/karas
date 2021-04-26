@@ -7,6 +7,7 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import bg from '../style/bg';
+import blur from '../style/blur';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -1344,7 +1345,7 @@ class Xom extends Node {
             && (lv >= REPAINT || contain(lv, FT))) {
             // 模糊框卷积尺寸 #66
             if(v > 0 && width > 0 && height > 0) {
-              let d = mx.int2convolution(v);
+              let d = blur.outerSize(v);
               let o = {
                 tagName: 'filter',
                 props: [
@@ -2358,9 +2359,9 @@ class Xom extends Node {
     let ox = 0, oy = 0;
     if(Array.isArray(boxShadow)) {
       boxShadow.forEach(item => {
-        let [x, y, blur, spread, , inset] = item;
+        let [x, y, sigma, spread, , inset] = item;
         if(inset !== 'inset') {
-          let d = mx.int2convolution(blur);
+          let d = blur.outerSize(sigma);
           d += spread;
           ox = Math.max(ox, x + d);
           oy = Math.max(oy, y + d);
@@ -2369,32 +2370,6 @@ class Xom extends Node {
     }
     return [ox, oy];
   }
-
-  // __spreadByBoxShadowAndFilter(boxShadow, filter) {
-  //   let ox = 0, oy = 0;
-  //   if(Array.isArray(boxShadow)) {
-  //     boxShadow.forEach(item => {
-  //       let [x, y, blur, spread, , inset] = item;
-  //       if(inset !== 'inset') {
-  //         let d = mx.int2convolution(blur);
-  //         d += spread;
-  //         ox = Math.max(ox, x + d);
-  //         oy = Math.max(oy, y + d);
-  //       }
-  //     });
-  //   }
-  //   if(Array.isArray(filter)) {
-  //     for(let i = 0, len = filter.length; i < len; i++) {
-  //       let [k, v] = filter[i];
-  //       if(k === 'blur') {
-  //         let d = mx.int2convolution(v);
-  //         ox = Math.max(ox, d);
-  //         oy = Math.max(oy, d);
-  //       }
-  //     }
-  //   }
-  //   return [ox, oy];
-  // }
 
   __releaseWhenEmpty(__cache) {
     if(__cache && __cache.available) {

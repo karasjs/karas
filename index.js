@@ -820,31 +820,6 @@
     return [x, y, z];
   }
   /**
-   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
-   * 根据模糊sigma求卷积核尺寸
-   * @param v
-   * @returns {number}
-   */
-
-
-  function int2convolution(v) {
-    if (v <= 0) {
-      return 0;
-    }
-
-    if (v < 2) {
-      return 5;
-    }
-
-    var d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
-
-    if (d % 2 === 0) {
-      return d + 1;
-    }
-
-    return d;
-  }
-  /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度
    * https://blog.csdn.net/iloveas2014/article/details/82930946
    * @param m
@@ -1032,7 +1007,6 @@
     identity: identity,
     multiply: multiply,
     calPoint: calPoint,
-    int2convolution: int2convolution,
     inverse: inverse,
     isE: isE,
     m2Mat4: m2Mat4,
@@ -9739,6 +9713,51 @@
     pointInQuadrilateral: pointInQuadrilateral
   };
 
+  /**
+   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+   * 根据模糊参数sigma求卷积核尺寸
+   * @param sigma
+   * @returns {number}
+   */
+  function kernelSize(sigma) {
+    if (sigma <= 0) {
+      return 0;
+    }
+
+    if (sigma < 2) {
+      return 5;
+    }
+
+    var d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+
+    if (d < 2) {
+      d = 2;
+    }
+
+    if (d % 2 === 0) {
+      d++;
+    }
+
+    return d;
+  }
+  /**
+   * 根据sigma求模糊扩展尺寸，卷积核求得后为d，再求半径/2，然后因为算法要执行3次，所以*3
+   * 比如本来d为5，半径2.5算上自身像素点则各方向扩展2，*3则扩展6
+   * @param sigma
+   * @returns {number}
+   */
+
+
+  function outerSize(sigma) {
+    var d = kernelSize(sigma);
+    return Math.floor(d * 1.5);
+  }
+
+  var blur = {
+    kernelSize: kernelSize,
+    outerSize: outerSize
+  };
+
   var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$6.TRANSFORM_ORIGIN,
       TRANSFORM$2 = _enums$STYLE_KEY$6.TRANSFORM,
@@ -10002,7 +10021,7 @@
     }, {
       key: "genBlur",
       value: function genBlur(cache, v) {
-        var d = mx.int2convolution(v);
+        var d = blur.outerSize(v);
 
         var _cache$coords = _slicedToArray(cache.coords, 2),
             x = _cache$coords[0],
@@ -15223,19 +15242,19 @@
     var _data = _slicedToArray(data, 6),
         x = _data[0],
         y = _data[1],
-        blur = _data[2],
+        sigma = _data[2],
         spread = _data[3],
         color = _data[4],
         inset = _data[5];
 
     var c = int2rgba$1(color);
-    var n = Math.abs(blur) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2; // box本身坐标顺时针
+    var n = Math.abs(sigma) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2; // box本身坐标顺时针
 
     var box = [[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]]; // 算上各种偏移/扩散的最外层坐标，且逆时针
 
     var outer = [[x1 - n, y1 - n], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n]];
 
-    if (color[3] > 0 && (blur > 0 || spread > 0)) {
+    if (color[3] > 0 && (sigma > 0 || spread > 0)) {
       if (renderMode === mode.CANVAS) {
         ctx.save();
         ctx.beginPath(); // inset裁剪box外面
@@ -15282,7 +15301,7 @@
             }
 
             ctx.shadowColor = c;
-            ctx.shadowBlur = blur; // 画在外围的空心矩形，宽度要比blur大，n考虑了这一情况取了最大值
+            ctx.shadowBlur = sigma; // 画在外围的空心矩形，宽度要比blur大，n考虑了这一情况取了最大值
 
             canvasPolygon$4(ctx, [[xa, ya], [xb, ya], [xb, yb], [x1 - n, yb], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, yb], [xa, yb], [xa, ya]]);
           } else {
@@ -15298,7 +15317,7 @@
             ctx.shadowOffsetX = x;
             ctx.shadowOffsetY = y;
             ctx.shadowColor = c;
-            ctx.shadowBlur = blur;
+            ctx.shadowBlur = sigma;
             canvasPolygon$4(ctx, [[x1, y1], [x2, y1], [x2, y2], [x1 - n, y2], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y2], [x1, y2], [x1, y1]]);
           }
         } // outset需裁减掉box本身的内容，clip()非零环绕显示box外的阴影内容，fill()绘制在内无效
@@ -15351,7 +15370,7 @@
               }
 
               ctx.shadowColor = c;
-              ctx.shadowBlur = blur;
+              ctx.shadowBlur = sigma;
               canvasPolygon$4(ctx, blurBox);
             } else {
               canvasPolygon$4(ctx, box);
@@ -15367,7 +15386,7 @@
               ctx.shadowOffsetX = x;
               ctx.shadowOffsetY = y;
               ctx.shadowColor = c;
-              ctx.shadowBlur = blur;
+              ctx.shadowBlur = sigma;
               canvasPolygon$4(ctx, box);
             }
           }
@@ -15376,7 +15395,7 @@
         ctx.closePath();
         ctx.restore();
       } else if (renderMode === mode.SVG) {
-        var d = mx.int2convolution(blur);
+        var d = blur.outerSize(sigma);
 
         if (inset === 'inset') {
           var _xa2 = x1 + x + spread;
@@ -15403,7 +15422,7 @@
               props: [['x', -d / w], ['y', -d / h], ['width', 1 + d * 2 / w], ['height', 1 + d * 2 / h]],
               children: [{
                 tagName: 'feDropShadow',
-                props: [['dx', 0], ['dy', 0], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+                props: [['dx', 0], ['dy', 0], ['stdDeviation', sigma * 0.5], ['flood-color', c]]
               }]
             };
 
@@ -15448,7 +15467,7 @@
               props: [['x', -d / w], ['y', -d / h], ['width', 1 + d * 2 / w], ['height', 1 + d * 2 / h]],
               children: [{
                 tagName: 'feDropShadow',
-                props: [['dx', x], ['dy', y], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+                props: [['dx', x], ['dy', y], ['stdDeviation', sigma * 0.5], ['flood-color', c]]
               }]
             };
 
@@ -15493,7 +15512,7 @@
               props: [['x', -d / w], ['y', -d / h], ['width', 1 + d * 2 / w], ['height', 1 + d * 2 / h]],
               children: [{
                 tagName: 'feDropShadow',
-                props: [['dx', 0], ['dy', 0], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+                props: [['dx', 0], ['dy', 0], ['stdDeviation', sigma * 0.5], ['flood-color', c]]
               }]
             };
 
@@ -15540,7 +15559,7 @@
               props: [['x', -d / w], ['y', -d / h], ['width', 1 + d * 2 / w], ['height', 1 + d * 2 / h]],
               children: [{
                 tagName: 'feDropShadow',
-                props: [['dx', x], ['dy', y], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+                props: [['dx', x], ['dy', y], ['stdDeviation', sigma * 0.5], ['flood-color', c]]
               }]
             };
 
@@ -17142,7 +17161,7 @@
               } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
                 // 模糊框卷积尺寸 #66
                 if (v > 0 && width > 0 && height > 0) {
-                  var d = mx.int2convolution(v);
+                  var d = blur.outerSize(v);
                   var o = {
                     tagName: 'filter',
                     props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
@@ -18304,12 +18323,12 @@
             var _item2 = _slicedToArray(item, 6),
                 x = _item2[0],
                 y = _item2[1],
-                blur = _item2[2],
+                sigma = _item2[2],
                 spread = _item2[3],
                 inset = _item2[5];
 
             if (inset !== 'inset') {
-              var d = mx.int2convolution(blur);
+              var d = blur.outerSize(sigma);
               d += spread;
               ox = Math.max(ox, x + d);
               oy = Math.max(oy, y + d);
@@ -18318,32 +18337,7 @@
         }
 
         return [ox, oy];
-      } // __spreadByBoxShadowAndFilter(boxShadow, filter) {
-      //   let ox = 0, oy = 0;
-      //   if(Array.isArray(boxShadow)) {
-      //     boxShadow.forEach(item => {
-      //       let [x, y, blur, spread, , inset] = item;
-      //       if(inset !== 'inset') {
-      //         let d = mx.int2convolution(blur);
-      //         d += spread;
-      //         ox = Math.max(ox, x + d);
-      //         oy = Math.max(oy, y + d);
-      //       }
-      //     });
-      //   }
-      //   if(Array.isArray(filter)) {
-      //     for(let i = 0, len = filter.length; i < len; i++) {
-      //       let [k, v] = filter[i];
-      //       if(k === 'blur') {
-      //         let d = mx.int2convolution(v);
-      //         ox = Math.max(ox, d);
-      //         oy = Math.max(oy, d);
-      //       }
-      //     }
-      //   }
-      //   return [ox, oy];
-      // }
-
+      }
     }, {
       key: "__releaseWhenEmpty",
       value: function __releaseWhenEmpty(__cache) {
@@ -25048,321 +25042,6 @@
     this.fullSize = fullSize;
   };
 
-  var TexCache = /*#__PURE__*/function () {
-    function TexCache(units) {
-      _classCallCheck(this, TexCache);
-
-      this.__units = units; // 通道数量限制，8~16
-
-      this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
-
-      this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
-
-      this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
-
-      this.__locks = []; // 锁定纹理单元列表，下标即纹理单元，内容true为锁定
-
-      this.__lockUnits = 0;
-    }
-    /**
-     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
-     * 收集的是Page对象（从cache中取得），里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
-     * webgl最少有8个纹理单元最多16个，因此存了一个列表来放这些Page的canvas，刷新后清空，但纹理通道映射记录保留
-     * 当8个纹理单元全部满了，进行绘制并清空这个队列，外部主循环结束时也会检查队列是否还有余留并绘制
-     * 初始调用队列为空，存入Page对象，后续调用先查看是否存在以便复用，再决定是否存入Page，直到8个满了
-     * Page上存有update表示是否更新，每次cache绘制时会变true，以此表示是否有贴图更新，删除可以忽视
-     * 还需要一个记录上次纹理通道使用哪个Page的canvas的地方，即映射，清空后队列再次添加时，如果Page之前被添加过，
-     * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
-     * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
-     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
-     * @param gl
-     * @param cache
-     * @param opacity
-     * @param matrix
-     * @param cx
-     * @param cy
-     * @param dx
-     * @param dy
-     */
-
-
-    _createClass(TexCache, [{
-      key: "addTexAndDrawWhenLimit",
-      value: function addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy) {
-        var dx = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
-        var dy = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
-        var pages = this.__pages;
-        var list = this.__list;
-        var page = cache.page;
-        var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
-
-        if (i > -1) {
-          list.push([cache, opacity, matrix, dx, dy]);
-        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
-        else {
-            i = pages.length;
-
-            if (i >= this.__units - this.__lockUnits) {
-              // 绘制且清空，队列索引重新为0
-              this.refresh(gl, cx, cy, pages, list);
-            }
-
-            pages.push(page);
-            list.push([cache, opacity, matrix, dx, dy]);
-          }
-      }
-      /**
-       * 刷新
-       * @param gl
-       * @param cx
-       * @param cy
-       * @param pages
-       * @param list
-       */
-
-    }, {
-      key: "refresh",
-      value: function refresh(gl, cx, cy, pages, list) {
-        pages = pages || this.__pages;
-        list = list || this.__list; // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
-
-        if (pages.length) {
-          var channels = this.channels;
-          var locks = this.locks; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
-
-          var lastHash = {};
-          channels.forEach(function (item, i) {
-            if (item) {
-              var uuid = item.uuid;
-              lastHash[uuid] = i;
-            }
-          });
-          var units = this.__units; // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
-
-          var oldList = new Array(units),
-              newList = [];
-          pages.forEach(function (page) {
-            var uuid = page.uuid;
-
-            if (lastHash.hasOwnProperty(uuid)) {
-              var index = lastHash[uuid];
-              oldList[index] = page;
-            } else {
-              newList.push(page);
-            }
-          });
-          /**
-           * 以oldList为基准，将newList依次存入oldList中
-           * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
-           * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page，相等则尺寸小的
-           */
-
-          if (newList.length) {
-            // 先循环找空的，oldList空且channels空且locks空
-            for (var i = 0; i < units; i++) {
-              if (!oldList[i] && !channels[i] && !locks[i]) {
-                oldList[i] = newList.shift();
-
-                if (!newList.length) {
-                  break;
-                }
-              }
-            }
-
-            var len = newList.length;
-
-            if (len) {
-              // 按时间排序已使用channel且未被当前占用的，以便淘汰最久未使用的
-              var cl = [];
-
-              for (var _i = 0; _i < units; _i++) {
-                if (!oldList[_i] && !locks[_i]) {
-                  cl.push([_i, channels[_i]]);
-                }
-              }
-
-              cl.sort(function (a, b) {
-                if (a[1].time !== b[1].time) {
-                  return (a[1].time || 0) - (b[1].time || 0);
-                }
-
-                if (a[1].fullSize !== b[1].fullSize) {
-                  return a[1].fullSize - b[1].fullSize;
-                }
-
-                return a[0] - b[0];
-              }); // cl靠前是时间小尺寸小的，优先使用替换
-
-              for (var _i2 = 0; _i2 < len; _i2++) {
-                oldList[cl[_i2][0]] = newList[_i2];
-              }
-            }
-          }
-          /**
-           * 对比上帧渲染的和这次纹理单元情况，Page相同且!update可以省略更新，其它均重新赋值纹理
-           * 后续局部更新Page相同但有update，会出现没有上帧的情况如初始渲染，此时先创建纹理单元再更新
-           * 将新的数据赋给老的，可能新的一帧使用的少于上一帧，老的没用到的需继续保留
-           */
-
-
-          var hash = {};
-
-          for (var _i3 = 0, _len = oldList.length; _i3 < _len; _i3++) {
-            var page = oldList[_i3]; // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
-
-            if (!page) {
-              continue;
-            }
-
-            var last = channels[_i3];
-
-            if (!last || last[0] !== page || page.update) {
-              // page可能为一个已有纹理，或者贴图
-              if (page instanceof MockPage) {
-                webgl.bindTexture(gl, page.texture, _i3);
-                channels[_i3] = page;
-              } else {
-                // 可能老的先删除
-                if (last) {
-                  webgl.deleteTexture(gl, last.texture);
-                }
-
-                page.texture = webgl.createTexture(gl, page.canvas, _i3);
-                channels[_i3] = page;
-              }
-
-              hash[page.uuid] = _i3;
-            } else {
-              hash[page.uuid] = _i3;
-            } // 标识没有更新，以及最后使用时间
-
-
-            page.update = false;
-            page.time = inject.now();
-          } // 再次遍历开始本次渲染并清空
-
-
-          webgl.drawTextureCache(gl, list, hash, cx, cy);
-          pages.splice(0);
-          list.splice(0);
-        }
-      }
-    }, {
-      key: "findExistTexChannel",
-      value: function findExistTexChannel(page) {
-        return this.channels.indexOf(page);
-      }
-      /**
-       * 获取并锁定一个纹理单元优先使用空的，其次最久未使用的
-       * @returns {number|*}
-       */
-
-    }, {
-      key: "lockOneChannel",
-      value: function lockOneChannel() {
-        // 优先返回空单元
-        var channels = this.channels;
-        var locks = this.locks;
-
-        for (var i = 0; i < this.__units; i++) {
-          if (!channels[i] && !locks[i]) {
-            locks[i] = true;
-            this.__lockUnits++;
-            return i;
-          }
-        } // 根据NRU返回最久未使用的
-
-
-        var units = this.__units;
-        var cl = [];
-
-        for (var _i4 = 0; _i4 < units; _i4++) {
-          if (!locks[_i4]) {
-            cl.push([_i4, channels[_i4]]);
-          }
-        }
-
-        if (cl.length) {
-          cl.sort(function (a, b) {
-            if (a[1].time !== b[1].time) {
-              return (a[1].time || 0) - (b[1].time || 0);
-            }
-
-            if (a[1].fullSize !== b[1].fullSize) {
-              return a[1].fullSize - b[1].fullSize;
-            }
-
-            return a[0] - b[0];
-          });
-          var _i5 = cl[0][0];
-          channels[_i5] = null;
-          locks[_i5] = true;
-          this.__lockUnits++;
-          return _i5;
-        }
-
-        throw new Error('No free texture unit');
-      }
-      /**
-       * 释放掉i单元，并且设置内容到缓存channel中
-       * @param i
-       * @param setToChannel
-       */
-
-    }, {
-      key: "releaseLockChannel",
-      value: function releaseLockChannel(i, setToChannel) {
-        if (this.locks[i]) {
-          this.locks[i] = false;
-          this.__lockUnits--;
-
-          if (setToChannel) {
-            this.channels[i] = setToChannel;
-          }
-        }
-      } // 指定锁定一个单元
-
-    }, {
-      key: "lockChannel",
-      value: function lockChannel(i) {
-        var channels = this.channels;
-        var locks = this.locks;
-
-        if (!locks[i]) {
-          channels[i] = null;
-          locks[i] = true;
-          this.__lockUnits++;
-        }
-      }
-      /**
-       * 释放纹理单元
-       * @param gl
-       */
-
-    }, {
-      key: "release",
-      value: function release(gl) {
-        this.channels.forEach(function (item) {
-          if (item) {
-            webgl.deleteTexture(gl, item.texture);
-          }
-        });
-      }
-    }, {
-      key: "channels",
-      get: function get() {
-        return this.__channels;
-      }
-    }, {
-      key: "locks",
-      get: function get() {
-        return this.__locks;
-      }
-    }]);
-
-    return TexCache;
-  }();
-
   /**
    * 一个fbo离屏纹理，mock成cache，当webgl需要局部根节点汇总时生成，即cacheTotal，
    * 基于此纹理进行filter、mask等后处理渲染
@@ -25480,7 +25159,7 @@
 
 
     var list = [index];
-    var d = mx.int2convolution(blurValue);
+    var d = blur.outerSize(blurValue);
     opacityHash[index] = 1;
 
     while (list.length) {
@@ -27257,7 +26936,7 @@
 
               if (k === 'blur') {
                 if (v > 0) {
-                  var d = mx.int2convolution(v);
+                  var d = blur.outerSize(v);
                   var outerWidth = node.outerWidth,
                       outerHeight = node.outerHeight;
                   var o = {
@@ -27826,6 +27505,321 @@
   var vertexMask = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
   var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);gl_FragColor=vec4(color1.rgb,color1.a*color2.a);}"; // eslint-disable-line
+
+  var TexCache = /*#__PURE__*/function () {
+    function TexCache(units) {
+      _classCallCheck(this, TexCache);
+
+      this.__units = units; // 通道数量限制，8~16
+
+      this.__pages = []; // 存当前page列表，通道数量8~16，缓存收留尽可能多的page
+
+      this.__list = []; // 本次渲染暂存的数据，[cache, opacity, matrix, dx, dy]
+
+      this.__channels = []; // 每个纹理通道记录还是个数组，下标即纹理单元，内容为Page
+
+      this.__locks = []; // 锁定纹理单元列表，下标即纹理单元，内容true为锁定
+
+      this.__lockUnits = 0;
+    }
+    /**
+     * webgl每次绘制为添加纹理并绘制，此处尝试尽可能收集所有纹理贴图，以达到尽可能多的共享纹理，再一次性绘制
+     * 收集的是Page对象（从cache中取得），里面包含了若干个节点的贴图，canvas本身是2的幂次方大小
+     * webgl最少有8个纹理单元最多16个，因此存了一个列表来放这些Page的canvas，刷新后清空，但纹理通道映射记录保留
+     * 当8个纹理单元全部满了，进行绘制并清空这个队列，外部主循环结束时也会检查队列是否还有余留并绘制
+     * 初始调用队列为空，存入Page对象，后续调用先查看是否存在以便复用，再决定是否存入Page，直到8个满了
+     * Page上存有update表示是否更新，每次cache绘制时会变true，以此表示是否有贴图更新，删除可以忽视
+     * 还需要一个记录上次纹理通道使用哪个Page的canvas的地方，即映射，清空后队列再次添加时，如果Page之前被添加过，
+     * 此次又被添加且没有变更update，可以直接复用上次的纹理单元号且无需再次上传纹理，节省性能
+     * 后续接入局部纹理更新也是复用单元号，如果update变更可以选择局部上传纹理而非整个重新上传
+     * 判断上传的逻辑在收集满8个后绘制前进行，因为添加队列过程中可能会变更Page及其update
+     * @param gl
+     * @param cache
+     * @param opacity
+     * @param matrix
+     * @param cx
+     * @param cy
+     * @param dx
+     * @param dy
+     */
+
+
+    _createClass(TexCache, [{
+      key: "addTexAndDrawWhenLimit",
+      value: function addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy) {
+        var dx = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
+        var dy = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
+        var pages = this.__pages;
+        var list = this.__list;
+        var page = cache.page;
+        var i = pages.indexOf(page); // 找到说明已有page在此索引的通道中，记录下来info
+
+        if (i > -1) {
+          list.push([cache, opacity, matrix, dx, dy]);
+        } // 找不到说明是新的纹理贴图，此时看是否超过纹理单元限制，超过则刷新绘制并清空，然后/否则 存入纹理列表
+        else {
+            i = pages.length;
+
+            if (i >= this.__units - this.__lockUnits) {
+              // 绘制且清空，队列索引重新为0
+              this.refresh(gl, cx, cy, pages, list);
+            }
+
+            pages.push(page);
+            list.push([cache, opacity, matrix, dx, dy]);
+          }
+      }
+      /**
+       * 刷新
+       * @param gl
+       * @param cx
+       * @param cy
+       * @param pages
+       * @param list
+       */
+
+    }, {
+      key: "refresh",
+      value: function refresh(gl, cx, cy, pages, list) {
+        pages = pages || this.__pages;
+        list = list || this.__list; // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
+
+        if (pages.length) {
+          var channels = this.channels;
+          var locks = this.locks; // 先将上次渲染的纹理单元使用的Page形成一个hash，键为page的uuid，值为纹理单元
+
+          var lastHash = {};
+          channels.forEach(function (item, i) {
+            if (item) {
+              var uuid = item.uuid;
+              lastHash[uuid] = i;
+            }
+          });
+          var units = this.__units; // 再遍历，查找相同的Page并保持其使用的纹理单元不变，存入相同索引下标oldList，不同的按顺序收集放newList
+
+          var oldList = new Array(units),
+              newList = [];
+          pages.forEach(function (page) {
+            var uuid = page.uuid;
+
+            if (lastHash.hasOwnProperty(uuid)) {
+              var index = lastHash[uuid];
+              oldList[index] = page;
+            } else {
+              newList.push(page);
+            }
+          });
+          /**
+           * 以oldList为基准，将newList依次存入oldList中
+           * 优先使用未用过的纹理单元，以便用过的可能下次用到无需重新上传
+           * 找不到未用过的后，尝试NRU算法，优先淘汰最近未使用的Page，相等则尺寸小的
+           */
+
+          if (newList.length) {
+            // 先循环找空的，oldList空且channels空且locks空
+            for (var i = 0; i < units; i++) {
+              if (!oldList[i] && !channels[i] && !locks[i]) {
+                oldList[i] = newList.shift();
+
+                if (!newList.length) {
+                  break;
+                }
+              }
+            }
+
+            var len = newList.length;
+
+            if (len) {
+              // 按时间排序已使用channel且未被当前占用的，以便淘汰最久未使用的
+              var cl = [];
+
+              for (var _i = 0; _i < units; _i++) {
+                if (!oldList[_i] && !locks[_i]) {
+                  cl.push([_i, channels[_i]]);
+                }
+              }
+
+              cl.sort(function (a, b) {
+                if (a[1].time !== b[1].time) {
+                  return (a[1].time || 0) - (b[1].time || 0);
+                }
+
+                if (a[1].fullSize !== b[1].fullSize) {
+                  return a[1].fullSize - b[1].fullSize;
+                }
+
+                return a[0] - b[0];
+              }); // cl靠前是时间小尺寸小的，优先使用替换
+
+              for (var _i2 = 0; _i2 < len; _i2++) {
+                oldList[cl[_i2][0]] = newList[_i2];
+              }
+            }
+          }
+          /**
+           * 对比上帧渲染的和这次纹理单元情况，Page相同且!update可以省略更新，其它均重新赋值纹理
+           * 后续局部更新Page相同但有update，会出现没有上帧的情况如初始渲染，此时先创建纹理单元再更新
+           * 将新的数据赋给老的，可能新的一帧使用的少于上一帧，老的没用到的需继续保留
+           */
+
+
+          var hash = {};
+
+          for (var _i3 = 0, _len = oldList.length; _i3 < _len; _i3++) {
+            var page = oldList[_i3]; // 可能为空，不满的情况下前面单元保留老tex先用的后面的单元
+
+            if (!page) {
+              continue;
+            }
+
+            var last = channels[_i3];
+
+            if (!last || last[0] !== page || page.update) {
+              // page可能为一个已有纹理，或者贴图
+              if (page instanceof MockPage) {
+                webgl.bindTexture(gl, page.texture, _i3);
+                channels[_i3] = page;
+              } else {
+                // 可能老的先删除
+                if (last) {
+                  webgl.deleteTexture(gl, last.texture);
+                }
+
+                page.texture = webgl.createTexture(gl, page.canvas, _i3);
+                channels[_i3] = page;
+              }
+
+              hash[page.uuid] = _i3;
+            } else {
+              hash[page.uuid] = _i3;
+            } // 标识没有更新，以及最后使用时间
+
+
+            page.update = false;
+            page.time = inject.now();
+          } // 再次遍历开始本次渲染并清空
+
+
+          webgl.drawTextureCache(gl, list, hash, cx, cy);
+          pages.splice(0);
+          list.splice(0);
+        }
+      }
+    }, {
+      key: "findExistTexChannel",
+      value: function findExistTexChannel(page) {
+        return this.channels.indexOf(page);
+      }
+      /**
+       * 获取并锁定一个纹理单元优先使用空的，其次最久未使用的
+       * @returns {number|*}
+       */
+
+    }, {
+      key: "lockOneChannel",
+      value: function lockOneChannel() {
+        // 优先返回空单元
+        var channels = this.channels;
+        var locks = this.locks;
+
+        for (var i = 0; i < this.__units; i++) {
+          if (!channels[i] && !locks[i]) {
+            locks[i] = true;
+            this.__lockUnits++;
+            return i;
+          }
+        } // 根据NRU返回最久未使用的
+
+
+        var units = this.__units;
+        var cl = [];
+
+        for (var _i4 = 0; _i4 < units; _i4++) {
+          if (!locks[_i4]) {
+            cl.push([_i4, channels[_i4]]);
+          }
+        }
+
+        if (cl.length) {
+          cl.sort(function (a, b) {
+            if (a[1].time !== b[1].time) {
+              return (a[1].time || 0) - (b[1].time || 0);
+            }
+
+            if (a[1].fullSize !== b[1].fullSize) {
+              return a[1].fullSize - b[1].fullSize;
+            }
+
+            return a[0] - b[0];
+          });
+          var _i5 = cl[0][0];
+          channels[_i5] = null;
+          locks[_i5] = true;
+          this.__lockUnits++;
+          return _i5;
+        }
+
+        throw new Error('No free texture unit');
+      }
+      /**
+       * 释放掉i单元，并且设置内容到缓存channel中
+       * @param i
+       * @param setToChannel
+       */
+
+    }, {
+      key: "releaseLockChannel",
+      value: function releaseLockChannel(i, setToChannel) {
+        if (this.locks[i]) {
+          this.locks[i] = false;
+          this.__lockUnits--;
+
+          if (setToChannel) {
+            this.channels[i] = setToChannel;
+          }
+        }
+      } // 指定锁定一个单元
+
+    }, {
+      key: "lockChannel",
+      value: function lockChannel(i) {
+        var channels = this.channels;
+        var locks = this.locks;
+
+        if (!locks[i]) {
+          channels[i] = null;
+          locks[i] = true;
+          this.__lockUnits++;
+        }
+      }
+      /**
+       * 释放纹理单元
+       * @param gl
+       */
+
+    }, {
+      key: "release",
+      value: function release(gl) {
+        this.channels.forEach(function (item) {
+          if (item) {
+            webgl.deleteTexture(gl, item.texture);
+          }
+        });
+      }
+    }, {
+      key: "channels",
+      get: function get() {
+        return this.__channels;
+      }
+    }, {
+      key: "locks",
+      get: function get() {
+        return this.__locks;
+      }
+    }]);
+
+    return TexCache;
+  }();
 
   var _DIRECTION_HASH;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,

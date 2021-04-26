@@ -227,6 +227,11 @@ function drawTextureCache(gl, list, hash, cx, cy) {
   gl.disableVertexAttribArray(a_opacity);
 }
 
+function drawBlur(gl, i, j, f1, f2, spread, d, sigma) {
+  console.log(i, j, f1, f2, spread, d, sigma);
+  // 第一次将total绘制到blur上，此时尺寸存在spread差值
+}
+
 function drawMask(gl, i, j) {
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
@@ -274,5 +279,6 @@ export default {
   bindTexture,
   deleteTexture,
   drawTextureCache,
+  drawBlur,
   drawMask,
 };

@@ -6,7 +6,7 @@ import tf from '../style/transform';
 import mx from '../math/matrix';
 import debug from '../util/debug';
 import mode from '../node/mode';
-import blur from '../style/blur';
+import blur from '../math/blur';
 
 const {
   STYLE_KEY: {

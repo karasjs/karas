@@ -12,7 +12,7 @@ import tf from '../style/transform';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';
-import blur from '../style/blur';
+import blur from '../math/blur';
 
 const {
   STYLE_KEY: {
@@ -381,7 +381,6 @@ function genFrameBufferWithTexture(gl, texCache, fullSize) {
 
 /**
  * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，如果超限则不返回
- * @param renderMode
  * @param gl
  * @param texCache
  * @param node
@@ -394,7 +393,7 @@ function genFrameBufferWithTexture(gl, texCache, fullSize) {
  * @param H
  * @returns {*}
  */
-function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, __structs, cache, W, H) {
+function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, cache, W, H) {
   if(total === 0) {
     return cache;
   }
@@ -516,7 +515,44 @@ function genTotalWebgl(renderMode, gl, texCache, node, __config, index, total, _
   return mockCache;
 }
 
-function genMaskWebgl(renderMode, gl, texCache, node, cache, W, H) {
+function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
+  console.log(cache);
+  let { sx1, sy1, width, height, fullSize, bbox } = cache;
+  // cache一定是total，fullSize还要算上blur扩展
+  let d = blur.kernelSize(sigma);
+  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
+  while(d > max) {
+    d -= 2;
+  }
+  let spread = blur.outerSizeByD(d);
+  let fullSize2 = fullSize + spread;
+  let cx = fullSize * 0.5, cy = fullSize * 0.5;
+  let dx = -bbox[0] + 1 + d, dy = -bbox[1] + 1 + d;
+  console.log(sigma, d, spread, max, fullSize, fullSize2, texCache.channels, texCache.locks);
+  // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, fullSize);
+  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  let j = texCache.findExistTexChannel(cache.page);
+  if(j === -1) {
+    // 直接绑定，因为一定是个mockCache
+    j = texCache.lockOneChannel();
+    webgl.bindTexture(gl, cache.page.texture, j);
+  }
+  else {
+    texCache.lockChannel(j);
+  }
+  console.log(i, j, texCache.channels, texCache.locks);
+  gl.useProgram(gl.programBlur);
+  webgl.drawBlur(gl, i, j, fullSize, fullSize2, spread, d, sigma);
+  // 切换回主程序
+  gl.useProgram(gl.program);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.deleteFramebuffer(frameBuffer);
+  return cache;
+}
+
+function genMaskWebgl(gl, texCache, node, cache, W, H) {
   let { sx1, sy1, width, height, bbox } = cache;
   // cache可能是普通cache，也可能是mockCache，为兼容必须重新计算fullSize，取width/height最大值
   let fullSize = Math.max(width, height);
@@ -806,11 +842,17 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
         let target = __cacheTotal;
-        if(__blurValue > 0 && (!__cacheFilter || !__cacheFilter.available)) {
-          target = __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
+        if(__blurValue > 0) {
+          if(!__cacheFilter || !__cacheFilter.available) {
+            __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
+          }
+          target = __config[NODE_CACHE_FILTER];
         }
-        if(overflow === 'hidden' && (!__cacheOverflow || !__cacheOverflow.available)) {
-          target = __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
+        if(overflow === 'hidden') {
+          if(!__cacheOverflow || !__cacheOverflow.available) {
+            __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
+          }
+          target = __config[NODE_CACHE_OVERFLOW];
         }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           let isClip = node.next.isClip;
@@ -1993,21 +2035,27 @@ function renderWebgl(renderMode, gl, defs, root) {
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
         __cacheTotal = __config[NODE_CACHE_TOTAL]
-          = genTotalWebgl(renderMode, gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
+          = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
         // console.log(i, __cacheTotal);
       }
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
         let target = __cacheTotal;
-      //   if(__blurValue > 0 && (!__cacheFilter || !__cacheFilter.available)) {
-      //     target = __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
-      //   }
+        if(__blurValue > 0) {
+          if(!__cacheFilter || !__cacheFilter.available) {
+            __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+          }
+          target = __config[NODE_CACHE_FILTER];
+        }
       //   if(overflow === 'hidden' && (!__cacheOverflow || !__cacheOverflow.available)) {
       //     target = __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
       //   }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
-          __config[NODE_CACHE_MASK] = genMaskWebgl(renderMode, gl, texCache, node, target, width, height);
+          __config[NODE_CACHE_MASK] = genMaskWebgl(gl, texCache, node, target, width, height);
         }
+      }
+      else {
+        inject.error('Merge error for oversize');
       }
     });
   }

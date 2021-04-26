@@ -1,6 +1,6 @@
 import mode from '../node/mode';
 import geom from '../math/geom';
-import blur from '../style/blur';
+import blur from '../math/blur';
 import util from '../util/util';
 import painter from '../util/painter';
 import enums from '../util/enums';

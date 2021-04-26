@@ -477,7 +477,7 @@
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
         var struct = this.__config[NODE_STRUCT];
-        return [struct, 1];
+        return [struct, 0];
       }
     }, {
       key: "__offsetX",

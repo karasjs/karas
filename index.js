@@ -819,19 +819,30 @@
 
     return [x, y, z];
   }
+  /**
+   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+   * 根据模糊sigma求卷积核尺寸
+   * @param v
+   * @returns {number}
+   */
+
 
   function int2convolution(v) {
     if (v <= 0) {
       return 0;
     }
 
+    if (v < 2) {
+      return 5;
+    }
+
     var d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
 
     if (d % 2 === 0) {
-      return d * 2 + 1;
-    } else {
-      return d * 3;
+      return d + 1;
     }
+
+    return d;
   }
   /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度

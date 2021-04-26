@@ -1310,14 +1310,15 @@ class Root extends Dom {
           while(component && current.isShadowRoot) {
             current = current.host;
           }
-          // y使用prev或者parent的，首个节点无prev
+          // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的
           let ref = current.prev;
           if(ref) {
             y = ref.y;
-            y += ref.outerHeight;
+            if(ref instanceof Text || ref.computedStyle[POSITION] !== 'absolute') {
+              y += ref.outerHeight;
+            }
           }
           else {
-            y = parent.y;
             y += computedStyle[MARGIN_TOP] + computedStyle[BORDER_TOP_WIDTH] + computedStyle[PADDING_TOP];
           }
           x += computedStyle[MARGIN_LEFT] + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[PADDING_LEFT];
@@ -1365,8 +1366,11 @@ class Root extends Dom {
               }
               return;
             }
-            // 标识flow变abs，可能引发zIndex变更，重设struct
+            // 标识flow变abs，可能引发zIndex变更，重设struct和svg
             parent.__updateStruct(root.__structs);
+            if(this.renderMode === mode.SVG) {
+              cleanSvgCache(parent);
+            }
           }
           // 现在是普通流，不管之前是啥直接布局
           else {

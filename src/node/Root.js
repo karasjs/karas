@@ -1354,15 +1354,20 @@ class Root extends Dom {
           while(component && current.isShadowRoot) {
             current = current.host;
           }
-          // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的
+          // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的和display:none的
           let ref = current.prev;
-          if(ref) {
-            y = ref.y;
-            if(ref instanceof Text || ref.computedStyle[POSITION] !== 'absolute') {
-              y += ref.outerHeight;
+          let hasFlowPrev;
+          while(ref) {
+            if(ref instanceof Text
+              || (ref.computedStyle[POSITION] !== 'absolute' && ref.computedStyle[DISPLAY] !== 'none')) {
+              y = ref.y + ref.outerHeight;
+              hasFlowPrev = true;
+              break;
             }
+            ref = ref.prev;
           }
-          else {
+          // 找不到prev以parent为基准
+          if(!hasFlowPrev) {
             y += computedStyle[MARGIN_TOP] + computedStyle[BORDER_TOP_WIDTH] + computedStyle[PADDING_TOP];
           }
           x += computedStyle[MARGIN_LEFT] + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[PADDING_LEFT];

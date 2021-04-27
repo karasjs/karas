@@ -2069,7 +2069,6 @@ function renderWebgl(renderMode, gl, defs, root) {
       if(!__cacheTotal || !__cacheTotal.available) {
         __cacheTotal = __config[NODE_CACHE_TOTAL]
           = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
-        // console.log(i, __cacheTotal);
       }
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
@@ -2080,9 +2079,12 @@ function renderWebgl(renderMode, gl, defs, root) {
           }
           target = __config[NODE_CACHE_FILTER];
         }
-      //   if(overflow === 'hidden' && (!__cacheOverflow || !__cacheOverflow.available)) {
-      //     target = __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
-      //   }
+        if(overflow === 'hidden') {
+          if(!__cacheOverflow || !__cacheOverflow.available) {
+            __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+          }
+          target = __config[NODE_CACHE_OVERFLOW];
+        }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMaskWebgl(gl, texCache, node, target, width, height);
         }

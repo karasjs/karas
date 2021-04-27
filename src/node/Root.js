@@ -98,8 +98,8 @@ const DIRECTION_HASH = {
 };
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
-const { calRelative, isRelativeOrAbsolute, equalStyle } = css;
-const { contain, getLevel, isRepaint, NONE, FILTER, REPAINT, REFLOW, LAYOUT, OFFSET } = level;
+const { isRelativeOrAbsolute, equalStyle } = css;
+const { contain, getLevel, isRepaint, NONE, FILTER, REPAINT, REFLOW } = level;
 const { isIgnore, isGeom, isMeasure } = change;
 
 const ROOT_DOM_NAME = {

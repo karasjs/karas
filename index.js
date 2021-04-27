@@ -27648,7 +27648,7 @@
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3]; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height); // console.log(i, __cacheTotal);
+          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
         } // 防止失败超限，必须有total结果
 
 
@@ -27661,10 +27661,15 @@
             }
 
             target = __config[NODE_CACHE_FILTER$3];
-          } //   if(overflow === 'hidden' && (!__cacheOverflow || !__cacheOverflow.available)) {
-          //     target = __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
-          //   }
+          }
 
+          if (overflow === 'hidden') {
+            if (!__cacheOverflow || !__cacheOverflow.available) {
+              __config[NODE_CACHE_FILTER$3] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+            }
+
+            target = __config[NODE_CACHE_OVERFLOW$3];
+          }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
             __config[NODE_CACHE_MASK$2] = genMaskWebgl(gl, texCache, node, target, width, height);
@@ -28153,9 +28158,7 @@
       NONE$3 = o$2.NONE,
       FILTER$6 = o$2.FILTER,
       REPAINT$3 = o$2.REPAINT,
-      REFLOW$2 = o$2.REFLOW,
-      LAYOUT = o$2.LAYOUT,
-      OFFSET = o$2.OFFSET;
+      REFLOW$2 = o$2.REFLOW;
   var isIgnore = o$1.isIgnore,
       isGeom$3 = o$1.isGeom,
       isMeasure = o$1.isMeasure;

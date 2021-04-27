@@ -9299,7 +9299,14 @@
 
   Text.prototype.__renderByMask = Text.prototype.render;
 
-  var NODE_DOM_PARENT = enums.NODE_KEY.NODE_DOM_PARENT;
+  var _enums$NODE_KEY$1 = enums.NODE_KEY,
+      NODE_DOM_PARENT = _enums$NODE_KEY$1.NODE_DOM_PARENT,
+      NODE_STYLE = _enums$NODE_KEY$1.NODE_STYLE,
+      NODE_CURRENT_STYLE = _enums$NODE_KEY$1.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE = _enums$NODE_KEY$1.NODE_COMPUTED_STYLE,
+      NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
+      NODE_MATRIX = _enums$NODE_KEY$1.NODE_MATRIX,
+      NODE_MATRIX_EVENT = _enums$NODE_KEY$1.NODE_MATRIX_EVENT;
   var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
       TYPE_CP$1 = $$type.TYPE_CP;
@@ -9510,7 +9517,9 @@
       children.__domParent = parent; // 极为恶心，为了v8的性能优化，text复用parent的style部分，但domParent重设
 
       if (children instanceof Text) {
-        Object.assign(children.__config, parent.__config);
+        [NODE_STYLE, NODE_CURRENT_STYLE, NODE_COMPUTED_STYLE, NODE_OPACITY, NODE_MATRIX, NODE_MATRIX_EVENT].forEach(function (k) {
+          children.__config[k] = parent.__config[k];
+        });
       }
 
       if (children.__config) {
@@ -9529,7 +9538,9 @@
 
         if (sr instanceof Text) {
           sr.__parent = parent;
-          Object.assign(sr.__config, parent.__config);
+          [NODE_STYLE, NODE_CURRENT_STYLE, NODE_COMPUTED_STYLE, NODE_OPACITY, NODE_MATRIX, NODE_MATRIX_EVENT].forEach(function (k) {
+            children.__config[k] = parent.__config[k];
+          });
         }
 
         sr.__domParent = parent;
@@ -14184,11 +14195,11 @@
   var _enums$STYLE_KEY$a = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$a.TRANSFORM_ORIGIN,
       TRANSFORM$3 = _enums$STYLE_KEY$a.TRANSFORM,
-      _enums$NODE_KEY$1 = enums.NODE_KEY,
-      NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
-      NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
-      NODE_CACHE_FILTER = _enums$NODE_KEY$1.NODE_CACHE_FILTER,
-      NODE_CACHE_OVERFLOW = _enums$NODE_KEY$1.NODE_CACHE_OVERFLOW; // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
+      _enums$NODE_KEY$2 = enums.NODE_KEY,
+      NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY,
+      NODE_CACHE = _enums$NODE_KEY$2.NODE_CACHE,
+      NODE_CACHE_FILTER = _enums$NODE_KEY$2.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW; // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
 
   function genSingle(cache, message) {
     var size = cache.size,
@@ -14489,7 +14500,7 @@
           }
 
           if (source) {
-            ctx.globalAlpha = __config[NODE_OPACITY];
+            ctx.globalAlpha = __config[NODE_OPACITY$1];
             Cache.drawCache(source, cacheMask, item.computedStyle[TRANSFORM$3], [1, 0, 0, 1, 0, 0], item.computedStyle[TRANSFORM_ORIGIN$3].slice(0), inverse);
           } // 没有内容或者img没加载成功导致没有内容，不要报错
           else if (item.__hasContent) {
@@ -15270,28 +15281,28 @@
       UPDATE_KEYS$1 = _enums$UPDATE_KEY$1.UPDATE_KEYS,
       UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
       STRUCT_HAS_MASK = enums.STRUCT_KEY.STRUCT_HAS_MASK,
-      _enums$NODE_KEY$2 = enums.NODE_KEY,
-      NODE_TAG_NAME = _enums$NODE_KEY$2.NODE_TAG_NAME,
-      NODE_CACHE_STYLE = _enums$NODE_KEY$2.NODE_CACHE_STYLE,
-      NODE_CURRENT_STYLE = _enums$NODE_KEY$2.NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE = _enums$NODE_KEY$2.NODE_COMPUTED_STYLE,
-      NODE_STYLE = _enums$NODE_KEY$2.NODE_STYLE,
-      NODE_STRUCT$1 = _enums$NODE_KEY$2.NODE_STRUCT,
-      NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY,
-      NODE_MATRIX_EVENT = _enums$NODE_KEY$2.NODE_MATRIX_EVENT,
-      NODE_MATRIX = _enums$NODE_KEY$2.NODE_MATRIX,
-      NODE_LIMIT_CACHE = _enums$NODE_KEY$2.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE = _enums$NODE_KEY$2.NODE_BLUR_VALUE,
-      NODE_HAS_CONTENT = _enums$NODE_KEY$2.NODE_HAS_CONTENT,
-      NODE_REFRESH_LV = _enums$NODE_KEY$2.NODE_REFRESH_LV,
-      NODE_CACHE$1 = _enums$NODE_KEY$2.NODE_CACHE,
-      NODE_CACHE_TOTAL = _enums$NODE_KEY$2.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$1 = _enums$NODE_KEY$2.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK = _enums$NODE_KEY$2.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW,
-      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$2.NODE_IS_DESTROYED,
-      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$2.NODE_DEFS_CACHE,
-      NODE_DOM_PARENT$1 = _enums$NODE_KEY$2.NODE_DOM_PARENT;
+      _enums$NODE_KEY$3 = enums.NODE_KEY,
+      NODE_TAG_NAME = _enums$NODE_KEY$3.NODE_TAG_NAME,
+      NODE_CACHE_STYLE = _enums$NODE_KEY$3.NODE_CACHE_STYLE,
+      NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$3.NODE_COMPUTED_STYLE,
+      NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
+      NODE_STRUCT$1 = _enums$NODE_KEY$3.NODE_STRUCT,
+      NODE_OPACITY$2 = _enums$NODE_KEY$3.NODE_OPACITY,
+      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$3.NODE_MATRIX_EVENT,
+      NODE_MATRIX$1 = _enums$NODE_KEY$3.NODE_MATRIX,
+      NODE_LIMIT_CACHE = _enums$NODE_KEY$3.NODE_LIMIT_CACHE,
+      NODE_BLUR_VALUE = _enums$NODE_KEY$3.NODE_BLUR_VALUE,
+      NODE_HAS_CONTENT = _enums$NODE_KEY$3.NODE_HAS_CONTENT,
+      NODE_REFRESH_LV = _enums$NODE_KEY$3.NODE_REFRESH_LV,
+      NODE_CACHE$1 = _enums$NODE_KEY$3.NODE_CACHE,
+      NODE_CACHE_TOTAL = _enums$NODE_KEY$3.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$1 = _enums$NODE_KEY$3.NODE_CACHE_FILTER,
+      NODE_CACHE_MASK = _enums$NODE_KEY$3.NODE_CACHE_MASK,
+      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$3.NODE_CACHE_OVERFLOW,
+      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$3.NODE_IS_DESTROYED,
+      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$3.NODE_DEFS_CACHE,
+      NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT;
   var AUTO$3 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$6 = unit.PERCENT,
@@ -15407,11 +15418,11 @@
       var config = _this.__config;
       config[NODE_TAG_NAME] = tagName;
       config[NODE_CACHE_STYLE] = _this.__cacheStyle;
-      config[NODE_CURRENT_STYLE] = _this.__currentStyle;
-      config[NODE_COMPUTED_STYLE] = _this.__computedStyle;
+      config[NODE_CURRENT_STYLE$1] = _this.__currentStyle;
+      config[NODE_COMPUTED_STYLE$1] = _this.__computedStyle;
       config[NODE_REFRESH_LV] = REFLOW;
-      config[NODE_STYLE] = _this.__style;
-      config[NODE_MATRIX_EVENT] = [];
+      config[NODE_STYLE$1] = _this.__style;
+      config[NODE_MATRIX_EVENT$1] = [];
       config[NODE_DEFS_CACHE$3] = _this.__cacheDefs;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
@@ -16294,8 +16305,8 @@
             __config = this.__config;
         var __cache = __config[NODE_CACHE$1];
         var __cacheStyle = __config[NODE_CACHE_STYLE];
-        var currentStyle = __config[NODE_CURRENT_STYLE];
-        var computedStyle = __config[NODE_COMPUTED_STYLE]; // geom特殊处理，每次>=REPAINT重新渲染生成
+        var currentStyle = __config[NODE_CURRENT_STYLE$1];
+        var computedStyle = __config[NODE_COMPUTED_STYLE$1]; // geom特殊处理，每次>=REPAINT重新渲染生成
 
         this.__renderSelfData = null; // 渲染完认为完全无变更，等布局/动画/更新重置
 
@@ -16507,10 +16518,10 @@
 
         if (renderMode === mode.CANVAS) {
           if (p) {
-            opacity *= p.__config[NODE_OPACITY$1];
+            opacity *= p.__config[NODE_OPACITY$2];
           }
 
-          __config[NODE_OPACITY$1] = opacity;
+          __config[NODE_OPACITY$2] = opacity;
         } else if (renderMode === mode.SVG) {
           if (opacity === 1) {
             delete virtualDom.opacity;
@@ -16526,7 +16537,7 @@
         } // canvas/svg/事件需要3种不同的matrix
 
 
-        var matrix = this.__matrix = __config[NODE_MATRIX] = __cacheStyle[MATRIX$3];
+        var matrix = this.__matrix = __config[NODE_MATRIX$1] = __cacheStyle[MATRIX$3];
         var renderMatrix = this.__renderMatrix = matrix; // 变换对事件影响，canvas要设置渲染
 
         if (p) {
@@ -16534,7 +16545,7 @@
         } // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
 
 
-        var m = this.__matrixEvent = __config[NODE_MATRIX_EVENT];
+        var m = this.__matrixEvent = __config[NODE_MATRIX_EVENT$1];
         m[0] = matrix[0];
         m[1] = matrix[1];
         m[2] = matrix[2];
@@ -18715,11 +18726,11 @@
       FLEX_WRAP$1 = _enums$STYLE_KEY$f.FLEX_WRAP,
       ALIGN_CONTENT$1 = _enums$STYLE_KEY$f.ALIGN_CONTENT,
       OVERFLOW$2 = _enums$STYLE_KEY$f.OVERFLOW,
-      _enums$NODE_KEY$3 = enums.NODE_KEY,
-      NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
-      NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
-      NODE_STRUCT$2 = _enums$NODE_KEY$3.NODE_STRUCT,
-      NODE_DOM_PARENT$2 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
+      _enums$NODE_KEY$4 = enums.NODE_KEY,
+      NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
+      NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
+      NODE_STRUCT$2 = _enums$NODE_KEY$4.NODE_STRUCT,
+      NODE_DOM_PARENT$2 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -18879,8 +18890,8 @@
       _this.__flexLine = []; // flex布局多行模式时存储行
 
       var config = _this.__config;
-      config[NODE_CURRENT_STYLE$1] = _this.__currentStyle;
-      config[NODE_STYLE$1] = _this.__style;
+      config[NODE_CURRENT_STYLE$2] = _this.__currentStyle;
+      config[NODE_STYLE$2] = _this.__style;
       return _this;
     }
 
@@ -21647,11 +21658,11 @@
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
       UPDATE_IMG = _enums$UPDATE_KEY$2.UPDATE_IMG,
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
-      _enums$NODE_KEY$4 = enums.NODE_KEY,
-      NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
-      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
-      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
-      NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK;
+      _enums$NODE_KEY$5 = enums.NODE_KEY,
+      NODE_CACHE$2 = _enums$NODE_KEY$5.NODE_CACHE,
+      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$5.NODE_CACHE_TOTAL,
+      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$5.NODE_DEFS_CACHE,
+      NODE_IS_MASK = _enums$NODE_KEY$5.NODE_IS_MASK;
   var AUTO$6 = unit.AUTO,
       PX$9 = unit.PX,
       PERCENT$9 = unit.PERCENT,
@@ -22356,18 +22367,18 @@
       STROKE_DASHARRAY_STR = _enums$STYLE_KEY$h.STROKE_DASHARRAY_STR,
       FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
       VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
-      _enums$NODE_KEY$5 = enums.NODE_KEY,
-      NODE_CACHE_PROPS = _enums$NODE_KEY$5.NODE_CACHE_PROPS,
-      NODE_CURRENT_PROPS = _enums$NODE_KEY$5.NODE_CURRENT_PROPS,
-      NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$5.NODE_CURRENT_STYLE,
-      NODE_IS_MASK$1 = _enums$NODE_KEY$5.NODE_IS_MASK,
-      NODE_STYLE$2 = _enums$NODE_KEY$5.NODE_STYLE,
-      NODE_CACHE$3 = _enums$NODE_KEY$5.NODE_CACHE,
-      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$5.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$5.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK$1 = _enums$NODE_KEY$5.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW,
-      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$5.NODE_DEFS_CACHE;
+      _enums$NODE_KEY$6 = enums.NODE_KEY,
+      NODE_CACHE_PROPS = _enums$NODE_KEY$6.NODE_CACHE_PROPS,
+      NODE_CURRENT_PROPS = _enums$NODE_KEY$6.NODE_CURRENT_PROPS,
+      NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$6.NODE_CURRENT_STYLE,
+      NODE_IS_MASK$1 = _enums$NODE_KEY$6.NODE_IS_MASK,
+      NODE_STYLE$3 = _enums$NODE_KEY$6.NODE_STYLE,
+      NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
+      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$6.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$6.NODE_CACHE_FILTER,
+      NODE_CACHE_MASK$1 = _enums$NODE_KEY$6.NODE_CACHE_MASK,
+      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$6.NODE_CACHE_OVERFLOW,
+      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$6.NODE_DEFS_CACHE;
   var AUTO$7 = unit.AUTO,
       PX$a = unit.PX,
       PERCENT$a = unit.PERCENT;
@@ -22409,9 +22420,9 @@
       var config = _this.__config;
       config[NODE_CACHE_PROPS] = _this.__cacheProps = {};
       config[NODE_CURRENT_PROPS] = _this.__currentProps;
-      config[NODE_CURRENT_STYLE$2] = _this.__currentStyle;
+      config[NODE_CURRENT_STYLE$3] = _this.__currentStyle;
       config[NODE_IS_MASK$1] = isMask;
-      config[NODE_STYLE$2] = _this.__style;
+      config[NODE_STYLE$3] = _this.__style;
       return _this;
     }
 
@@ -23282,11 +23293,11 @@
     return Geom;
   }(Xom$1);
 
-  var _enums$NODE_KEY$6 = enums.NODE_KEY,
-      NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$6.NODE_COMPUTED_STYLE,
-      NODE_DOM_PARENT$3 = _enums$NODE_KEY$6.NODE_DOM_PARENT,
-      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$6.NODE_MATRIX_EVENT,
-      NODE_STRUCT$3 = _enums$NODE_KEY$6.NODE_STRUCT;
+  var _enums$NODE_KEY$7 = enums.NODE_KEY,
+      NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
+      NODE_DOM_PARENT$3 = _enums$NODE_KEY$7.NODE_DOM_PARENT,
+      NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$7.NODE_MATRIX_EVENT,
+      NODE_STRUCT$3 = _enums$NODE_KEY$7.NODE_STRUCT;
   var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,
       TYPE_CP$2 = $$type.TYPE_CP;
@@ -23379,9 +23390,9 @@
       '__computedStyle'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
-      sr.__config[NODE_COMPUTED_STYLE$1] = oldSr.computedStyle;
+      sr.__config[NODE_COMPUTED_STYLE$2] = oldSr.computedStyle;
     } else {
-      sr.__config[NODE_MATRIX_EVENT$1] = oldSr.__config[NODE_MATRIX_EVENT$1];
+      sr.__config[NODE_MATRIX_EVENT$2] = oldSr.__config[NODE_MATRIX_EVENT$2];
     }
 
     ['__x', '__y', '__width', '__height', '__sx1', // text和xom
@@ -24493,24 +24504,24 @@
       FILL$2 = _enums$STYLE_KEY$i.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$i.TRANSFORM,
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
-      _enums$NODE_KEY$7 = enums.NODE_KEY,
-      NODE_CACHE$4 = _enums$NODE_KEY$7.NODE_CACHE,
-      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
-      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$7.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$2 = _enums$NODE_KEY$7.NODE_CACHE_MASK,
-      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$7.NODE_CACHE_FILTER,
-      NODE_MATRIX$1 = _enums$NODE_KEY$7.NODE_MATRIX,
-      NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$7.NODE_MATRIX_EVENT,
-      NODE_OPACITY$2 = _enums$NODE_KEY$7.NODE_OPACITY,
-      NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
-      NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
-      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$7.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$7.NODE_BLUR_VALUE,
-      NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
-      NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
-      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
-      NODE_DEFS_CACHE$6 = _enums$NODE_KEY$7.NODE_DEFS_CACHE,
-      NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
+      _enums$NODE_KEY$8 = enums.NODE_KEY,
+      NODE_CACHE$4 = _enums$NODE_KEY$8.NODE_CACHE,
+      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$8.NODE_CACHE_TOTAL,
+      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$8.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$2 = _enums$NODE_KEY$8.NODE_CACHE_MASK,
+      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$8.NODE_CACHE_FILTER,
+      NODE_MATRIX$2 = _enums$NODE_KEY$8.NODE_MATRIX,
+      NODE_MATRIX_EVENT$3 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
+      NODE_OPACITY$3 = _enums$NODE_KEY$8.NODE_OPACITY,
+      NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
+      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
+      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$8.NODE_LIMIT_CACHE,
+      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$8.NODE_BLUR_VALUE,
+      NODE_REFRESH_LV$1 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
+      NODE_HAS_CONTENT$1 = _enums$NODE_KEY$8.NODE_HAS_CONTENT,
+      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
+      NODE_DEFS_CACHE$6 = _enums$NODE_KEY$8.NODE_DEFS_CACHE,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
@@ -24573,7 +24584,7 @@
               __cacheFilter = _node2$__config[NODE_CACHE_FILTER$3],
               __cacheMask = _node2$__config[NODE_CACHE_MASK$2],
               __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$3],
-              _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$2],
+              _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$3],
               display = _node2$__config$NODE_[DISPLAY$8],
               visibility = _node2$__config$NODE_[VISIBILITY$5],
               transform = _node2$__config$NODE_[TRANSFORM$5],
@@ -24744,7 +24755,7 @@
           __cacheMask = _node$__config[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config[NODE_CACHE_OVERFLOW$3],
           isMask = _node$__config[NODE_IS_MASK$2],
-          _node$__config$NODE_C = _node$__config[NODE_COMPUTED_STYLE$2],
+          _node$__config$NODE_C = _node$__config[NODE_COMPUTED_STYLE$3],
           display = _node$__config$NODE_C[DISPLAY$8],
           visibility = _node$__config$NODE_C[VISIBILITY$5],
           transform = _node$__config$NODE_C[TRANSFORM$5],
@@ -24902,7 +24913,7 @@
       }
 
       var __config = node.__config;
-      var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 跳过display:none元素和它的所有子节点
+      var computedStyle = __config[NODE_COMPUTED_STYLE$3]; // 跳过display:none元素和它的所有子节点
 
       if (computedStyle[DISPLAY$8] === 'none') {
         _i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
@@ -24915,14 +24926,14 @@
       if (_i === 0) {
         configList.push(__config);
       } else if (lv > lastLv) {
-        parentMatrix = lastConfig[NODE_MATRIX_EVENT$2];
+        parentMatrix = lastConfig[NODE_MATRIX_EVENT$3];
 
         if (isE$2(parentMatrix)) {
           parentMatrix = null;
         }
 
         matrixList.push(parentMatrix);
-        parentOpacity = lastConfig[NODE_OPACITY$2];
+        parentOpacity = lastConfig[NODE_OPACITY$3];
         opacityList.push(parentOpacity);
         configList.push(__config);
       } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
@@ -24961,14 +24972,14 @@
           }
         }
 
-        var currentStyle = __config[NODE_CURRENT_STYLE$3],
+        var currentStyle = __config[NODE_CURRENT_STYLE$4],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
         var matrix;
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
-          var _m = __config[NODE_MATRIX$1];
+          var _m = __config[NODE_MATRIX$2];
 
           if (matrix && _m) {
             _m[0] = matrix[0];
@@ -24979,7 +24990,7 @@
             _m[5] = matrix[5];
           }
         } else {
-          matrix = __config[NODE_MATRIX$1];
+          matrix = __config[NODE_MATRIX$2];
         }
 
         if (parentMatrix) {
@@ -24987,7 +24998,7 @@
         } // 恶心的v8性能优化
 
 
-        var m = __config[NODE_MATRIX_EVENT$2];
+        var m = __config[NODE_MATRIX_EVENT$3];
 
         if (m && matrix) {
           m[0] = matrix[0];
@@ -25006,7 +25017,7 @@
           opacity = computedStyle[OPACITY$5];
         }
 
-        __config[NODE_OPACITY$2] = parentOpacity * opacity;
+        __config[NODE_OPACITY$3] = parentOpacity * opacity;
 
         var _blurValue;
 
@@ -25167,8 +25178,8 @@
           total = _structs$_i2[STRUCT_TOTAL$1],
           hasMask = _structs$_i2[STRUCT_HAS_MASK$1];
       var _node$__config2 = node.__config,
-          __opacity = _node$__config2[NODE_OPACITY$2],
-          matrixEvent = _node$__config2[NODE_MATRIX_EVENT$2],
+          __opacity = _node$__config2[NODE_OPACITY$3],
+          matrixEvent = _node$__config2[NODE_MATRIX_EVENT$3],
           __blurValue = _node$__config2[NODE_BLUR_VALUE$1],
           __limitCache = _node$__config2[NODE_LIMIT_CACHE$1],
           __cache = _node$__config2[NODE_CACHE$4],
@@ -25177,7 +25188,7 @@
           __cacheMask = _node$__config2[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config2[NODE_CACHE_OVERFLOW$3],
           __refreshLevel = _node$__config2[NODE_REFRESH_LV$1],
-          _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
+          _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$3],
           display = _node$__config2$NODE_[DISPLAY$8],
           visibility = _node$__config2$NODE_[VISIBILITY$5],
           overflow = _node$__config2$NODE_[OVERFLOW$3],
@@ -25600,7 +25611,7 @@
           total = _structs$_i3[STRUCT_TOTAL$1],
           hasMask = _structs$_i3[STRUCT_HAS_MASK$1];
       var _node$__config3 = node.__config,
-          computedStyle = _node$__config3[NODE_COMPUTED_STYLE$2],
+          computedStyle = _node$__config3[NODE_COMPUTED_STYLE$3],
           __refreshLevel = _node$__config3[NODE_REFRESH_LV$1]; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏，开始聚集所有mask元素的绘制
 
       if (maskStartHash.hasOwnProperty(_i5)) {
@@ -26007,15 +26018,15 @@
           }
         }
 
-        var currentStyle = __config[NODE_CURRENT_STYLE$3],
-            computedStyle = __config[NODE_COMPUTED_STYLE$2],
+        var currentStyle = __config[NODE_CURRENT_STYLE$4],
+            computedStyle = __config[NODE_COMPUTED_STYLE$3],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
 
-          var m = __config[NODE_MATRIX$1];
+          var m = __config[NODE_MATRIX$2];
 
           if (matrix && m) {
             m[0] = matrix[0];
@@ -26037,7 +26048,7 @@
           } // 恶心的v8性能优化
 
 
-          m = __config[NODE_MATRIX_EVENT$2];
+          m = __config[NODE_MATRIX_EVENT$3];
 
           if (m && matrix) {
             m[0] = matrix[0];
@@ -26114,7 +26125,7 @@
 
         virtualDom.lv = __refreshLevel;
       } else {
-        // >=REPAINT会调用render，重新生成defsCache
+        // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
         __config[NODE_DEFS_CACHE$6] && __config[NODE_DEFS_CACHE$6].splice(0);
 
         if (node instanceof Geom$1) {
@@ -26255,7 +26266,7 @@
       }
 
       if (_i8 === 0) {
-        parentMatrix = __config[NODE_MATRIX$1];
+        parentMatrix = __config[NODE_MATRIX$2];
         parentVd = virtualDom;
       }
 
@@ -26308,26 +26319,26 @@
       UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$3.UPDATE_OVERWRITE,
       UPDATE_LIST = _enums$UPDATE_KEY$3.UPDATE_LIST,
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
-      _enums$NODE_KEY$8 = enums.NODE_KEY,
-      NODE_TAG_NAME$1 = _enums$NODE_KEY$8.NODE_TAG_NAME,
-      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
-      NODE_CACHE_PROPS$1 = _enums$NODE_KEY$8.NODE_CACHE_PROPS,
-      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
-      NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
-      NODE_DOM_PARENT$4 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
-      NODE_IS_MASK$3 = _enums$NODE_KEY$8.NODE_IS_MASK,
-      NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
-      NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
-      NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
-      NODE_UPDATE_HASH = _enums$NODE_KEY$8.NODE_UPDATE_HASH,
-      NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$8.NODE_UNIQUE_UPDATE_ID,
-      NODE_CACHE$5 = _enums$NODE_KEY$8.NODE_CACHE,
-      NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$8.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$8.NODE_CACHE_FILTER,
-      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$8.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$3 = _enums$NODE_KEY$8.NODE_CACHE_MASK,
-      NODE_STRUCT$4 = _enums$NODE_KEY$8.NODE_STRUCT,
+      _enums$NODE_KEY$9 = enums.NODE_KEY,
+      NODE_TAG_NAME$1 = _enums$NODE_KEY$9.NODE_TAG_NAME,
+      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
+      NODE_CACHE_PROPS$1 = _enums$NODE_KEY$9.NODE_CACHE_PROPS,
+      NODE_CURRENT_STYLE$5 = _enums$NODE_KEY$9.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE$4 = _enums$NODE_KEY$9.NODE_COMPUTED_STYLE,
+      NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$9.NODE_CURRENT_PROPS,
+      NODE_DOM_PARENT$4 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
+      NODE_IS_MASK$3 = _enums$NODE_KEY$9.NODE_IS_MASK,
+      NODE_REFRESH_LV$2 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
+      NODE_IS_DESTROYED$2 = _enums$NODE_KEY$9.NODE_IS_DESTROYED,
+      NODE_STYLE$4 = _enums$NODE_KEY$9.NODE_STYLE,
+      NODE_UPDATE_HASH = _enums$NODE_KEY$9.NODE_UPDATE_HASH,
+      NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$9.NODE_UNIQUE_UPDATE_ID,
+      NODE_CACHE$5 = _enums$NODE_KEY$9.NODE_CACHE,
+      NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$3 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
+      NODE_STRUCT$4 = _enums$NODE_KEY$9.NODE_STRUCT,
       _enums$STRUCT_KEY$3 = enums.STRUCT_KEY,
       STRUCT_INDEX$3 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
       STRUCT_TOTAL$2 = _enums$STRUCT_KEY$3.STRUCT_TOTAL,
@@ -26575,7 +26586,7 @@
 
 
     if (overwrite) {
-      Object.assign(__config[NODE_STYLE$3], overwrite);
+      Object.assign(__config[NODE_STYLE$4], overwrite);
     } // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
 
 
@@ -26598,7 +26609,7 @@
         });
 
         if (overwrite) {
-          Object.assign(__config[NODE_STYLE$3], overwrite);
+          Object.assign(__config[NODE_STYLE$4], overwrite);
         }
 
         if (style2) {
@@ -26615,8 +26626,8 @@
     var tagName = __config[NODE_TAG_NAME$1],
         __cacheStyle = __config[NODE_CACHE_STYLE$2],
         __cacheProps = __config[NODE_CACHE_PROPS$1],
-        currentStyle = __config[NODE_CURRENT_STYLE$4],
-        computedStyle = __config[NODE_COMPUTED_STYLE$3],
+        currentStyle = __config[NODE_CURRENT_STYLE$5],
+        computedStyle = __config[NODE_COMPUTED_STYLE$4],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$4],
         isMask = __config[NODE_IS_MASK$3];
@@ -26701,7 +26712,7 @@
             _node = _structs$_i[STRUCT_NODE$2],
             total = _structs$_i[STRUCT_TOTAL$2];
         var _config = _node.__config;
-        var _currentStyle = _config[NODE_CURRENT_STYLE$4];
+        var _currentStyle = _config[NODE_CURRENT_STYLE$5];
 
         var _need = void 0; // text的style指向parent，因此text一定变更
 
@@ -26752,7 +26763,7 @@
     if (hasDisplay && parent) {
       var _config2 = parent.__config;
 
-      if (_config2[NODE_CURRENT_STYLE$4][DISPLAY$9] === 'none' || _config2[NODE_COMPUTED_STYLE$3][DISPLAY$9] === 'none') {
+      if (_config2[NODE_CURRENT_STYLE$5][DISPLAY$9] === 'none' || _config2[NODE_COMPUTED_STYLE$4][DISPLAY$9] === 'none') {
         computedStyle[DISPLAY$9] = 'none';
         return false;
       }
@@ -27804,18 +27815,24 @@
 
                 while (component && current.isShadowRoot) {
                   current = current.host;
-                } // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的
+                } // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的和display:none的
 
 
                 var ref = current.prev;
+                var hasFlowPrev;
 
-                if (ref) {
-                  y = ref.y;
-
-                  if (ref instanceof Text || ref.computedStyle[POSITION$5] !== 'absolute') {
-                    y += ref.outerHeight;
+                while (ref) {
+                  if (ref instanceof Text || ref.computedStyle[POSITION$5] !== 'absolute' && ref.computedStyle[DISPLAY$9] !== 'none') {
+                    y = ref.y + ref.outerHeight;
+                    hasFlowPrev = true;
+                    break;
                   }
-                } else {
+
+                  ref = ref.prev;
+                } // 找不到prev以parent为基准
+
+
+                if (!hasFlowPrev) {
                   y += _computedStyle[MARGIN_TOP$5] + _computedStyle[BORDER_TOP_WIDTH$6] + _computedStyle[PADDING_TOP$6];
                 }
 

@@ -1415,7 +1415,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
       virtualDom.lv = __refreshLevel;
     }
     else {
-      // >=REPAINT会调用render，重新生成defsCache
+      // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
       if(node instanceof Geom) {
         node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);

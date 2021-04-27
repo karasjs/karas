@@ -3,7 +3,15 @@ import util from './util';
 import $$type from './$$type';
 import enums from './enums';
 
-const { NODE_KEY: { NODE_DOM_PARENT } } = enums;
+const { NODE_KEY: {
+  NODE_DOM_PARENT,
+  NODE_STYLE,
+  NODE_CURRENT_STYLE,
+  NODE_COMPUTED_STYLE,
+  NODE_OPACITY,
+  NODE_MATRIX,
+  NODE_MATRIX_EVENT,
+} } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
@@ -190,7 +198,16 @@ function relation(parent, children, options = {}) {
     children.__domParent = parent;
     // 极为恶心，为了v8的性能优化，text复用parent的style部分，但domParent重设
     if(children instanceof Text) {
-      Object.assign(children.__config, parent.__config);
+      [
+        NODE_STYLE,
+        NODE_CURRENT_STYLE,
+        NODE_COMPUTED_STYLE,
+        NODE_OPACITY,
+        NODE_MATRIX,
+        NODE_MATRIX_EVENT,
+      ].forEach(k => {
+        children.__config[k] = parent.__config[k];
+      });
     }
     if(children.__config) {
       children.__config[NODE_DOM_PARENT] = parent;
@@ -205,7 +222,16 @@ function relation(parent, children, options = {}) {
       let sr = children.shadowRoot;
       if(sr instanceof Text) {
         sr.__parent = parent;
-        Object.assign(sr.__config, parent.__config);
+        [
+          NODE_STYLE,
+          NODE_CURRENT_STYLE,
+          NODE_COMPUTED_STYLE,
+          NODE_OPACITY,
+          NODE_MATRIX,
+          NODE_MATRIX_EVENT,
+        ].forEach(k => {
+          children.__config[k] = parent.__config[k];
+        });
       }
       sr.__domParent = parent;
       if(sr.__config) {

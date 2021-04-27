@@ -258,7 +258,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
       ctx.globalAlpha = opacity;
       let m = matrix || [1, 0, 0, 1, 0, 0];
       ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
-      node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
+      node.render(renderMode, 0, ctx, tx - sx1 + dbx, ty - sy1 + dby);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
@@ -2094,7 +2094,7 @@ function renderWebgl(renderMode, gl, root) {
       }
     });
   }
-  console.error('render');
+  // console.error('render');
   // return;
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text

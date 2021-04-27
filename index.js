@@ -25506,7 +25506,7 @@
         var m = matrix || [1, 0, 0, 1, 0, 0];
         ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
 
-        _node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
+        _node.render(renderMode, 0, ctx, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
           var __cache = _config[NODE_CACHE$4],
@@ -27675,14 +27675,14 @@
           inject.error('Merge error for oversize');
         }
       });
-    }
-
-    console.error('render'); // return;
+    } // console.error('render');
+    // return;
 
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 超尺寸的给出警告，无法像canvas那样做降级
      */
+
 
     for (var _i15 = 0, _len6 = __structs.length; _i15 < _len6; _i15++) {
       var _structs$_i6 = __structs[_i15],

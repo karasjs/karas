@@ -5531,7 +5531,7 @@
 
 
   function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy, spread, d, sigma) {
-    // 第一次将total绘制到blur上，此时尺寸存在spread差值，且无matrix变更，但要处理y颠倒
+    // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
     var _convertCoords2Gl5 = convertCoords2Gl(spread, height - spread, cx, cy),
         _convertCoords2Gl6 = _slicedToArray(_convertCoords2Gl5, 2),
         x1 = _convertCoords2Gl6[0],
@@ -5555,10 +5555,10 @@
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
     var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // direction
+    gl.enableVertexAttribArray(a_texCoords); // direction全0，即无模糊
 
     var u_direction = gl.getUniformLocation(program, 'u_direction');
-    gl.uniform2f(u_direction, 1, 0); // 纹理单元
+    gl.uniform2f(u_direction, 0, 0); // 纹理单元
 
     var u_texture = gl.getUniformLocation(program, 'u_texture');
     gl.uniform1i(u_texture, j);
@@ -5568,16 +5568,46 @@
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    gl.uniform2f(u_direction, 0, 1);
-    gl.uniform1i(u_texture, i);
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // 反复执行共3次，这里是后面2次，坐标等均不变，只是切换fbo绑定对象和纹理单元
+    /**
+     * 反复执行共3次，坐标等均不变，只是切换fbo绑定对象和纹理单元
+     * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
+     * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
+     * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
+     */
+
+    var max = 100 / Math.max(width, height);
+    var ratio = width / height;
+
+    for (var k = 0; k < 3; k++) {
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+
+      if (width >= height) {
+        gl.uniform2f(u_direction, max, 0);
+      } else {
+        gl.uniform2f(u_direction, max * ratio, 0);
+      }
+
+      gl.uniform1i(u_texture, i);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+
+      if (width >= height) {
+        gl.uniform2f(u_direction, 0, max * ratio);
+      } else {
+        gl.uniform2f(u_direction, 0, max);
+      }
+
+      gl.uniform1i(u_texture, j);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    } // 回收
 
 
     gl.deleteBuffer(pointBuffer);
     gl.deleteBuffer(texBuffer);
     gl.disableVertexAttribArray(a_position);
     gl.disableVertexAttribArray(a_texCoords);
-    return tex3;
+    deleteTexture(gl, tex3);
+    return tex1;
   }
 
   function drawMask(gl, i, j) {
@@ -25776,7 +25806,6 @@
   }
 
   function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
-    console.log(cache);
     var sx1 = cache.sx1,
         sy1 = cache.sy1,
         width = cache.width,
@@ -25795,7 +25824,6 @@
     height += spread * 2;
     var cx = width * 0.5,
         cy = height * 0.5;
-    console.log(sigma, d, spread, width, height, texCache.channels, texCache.locks);
     /**
      * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
      * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
@@ -25827,8 +25855,6 @@
 
     vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
     frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-    console.log(vert);
-    console.log(frag);
     var program = webgl.initShaders(gl, vert, frag);
     gl.useProgram(program); // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
 
@@ -25849,7 +25875,6 @@
       texCache.lockChannel(j);
     }
 
-    console.log(i, j, texCache.channels, texCache.locks);
     texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma); // 切换回主程序并销毁这个临时program
 
     gl.useProgram(gl.program);
@@ -25857,7 +25882,7 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer);
-    texCache.releaseLockChannel(i); // 同total一样生成一个mockCache
+    texCache.releaseLockChannel(j); // 同total一样生成一个mockCache
 
     var b = bbox.slice(0);
     b[0] -= spread;
@@ -25865,7 +25890,7 @@
     b[2] += spread;
     b[3] += spread;
     var filterCache = new MockCache(texture, sx1, sy1, width, height, b);
-    texCache.releaseLockChannel(j, filterCache.page);
+    texCache.releaseLockChannel(i, filterCache.page);
     return filterCache;
   }
 

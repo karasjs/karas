@@ -517,7 +517,6 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
 }
 
 function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
-  console.log(cache);
   let { sx1, sy1, width, height, bbox } = cache;
   // cache一定是total，fullSize还要算上blur扩展
   let d = blur.kernelSize(sigma);
@@ -529,7 +528,6 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   width += spread * 2;
   height += spread * 2;
   let cx = width * 0.5, cy = height * 0.5;
-  console.log(sigma, d, spread, width, height, texCache.channels, texCache.locks);
   /**
    * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
    * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
@@ -555,7 +553,6 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   }
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
-  console.log(vert);console.log(frag);
   let program = webgl.initShaders(gl, vert, frag);
   gl.useProgram(program);
   // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
@@ -570,7 +567,6 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   else {
     texCache.lockChannel(j);
   }
-  console.log(i, j, texCache.channels, texCache.locks);
   texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma);
   // 切换回主程序并销毁这个临时program
   gl.useProgram(gl.program);
@@ -578,7 +574,7 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
-  texCache.releaseLockChannel(i);
+  texCache.releaseLockChannel(j);
   // 同total一样生成一个mockCache
   let b = bbox.slice(0);
   b[0] -= spread;
@@ -586,7 +582,7 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   b[2] += spread;
   b[3] += spread;
   let filterCache = new MockCache(texture, sx1, sy1, width, height, b);
-  texCache.releaseLockChannel(j, filterCache.page);
+  texCache.releaseLockChannel(i, filterCache.page);
   return filterCache;
 }
 

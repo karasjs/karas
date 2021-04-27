@@ -253,7 +253,7 @@ function drawTextureCache(gl, list, hash, cx, cy) {
  * @param sigma
  */
 function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy, spread, d, sigma) {
-  // 第一次将total绘制到blur上，此时尺寸存在spread差值，且无matrix变更，但要处理y颠倒
+  // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
   let [x1, y2] = convertCoords2Gl(spread, height - spread, cx, cy);
   let [x2, y1] = convertCoords2Gl(width - spread, spread, cx, cy);
   // 顶点buffer
@@ -284,9 +284,9 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
-  // direction
+  // direction全0，即无模糊
   let u_direction = gl.getUniformLocation(program, 'u_direction');
-  gl.uniform2f(u_direction, 1, 0);
+  gl.uniform2f(u_direction, 0, 0);
   // 纹理单元
   let u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, j);
@@ -303,26 +303,41 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
     1, -1,
     1, 1,
   ]), gl.STATIC_DRAW);
-  gl.uniform2f(u_direction, 0, 1);
-  gl.uniform1i(u_texture, i);
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-  // 反复执行共3次，这里是后面2次，坐标等均不变，只是切换fbo绑定对象和纹理单元
-  for(let k = 0; k < 2; k++) {
-    // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
-    // gl.uniform2f(u_direction, 1, 0);
-    // gl.uniform1i(u_texture, j);
-    // gl.drawArrays(gl.TRIANGLES, 0, 6);
-    // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
-    // gl.uniform2f(u_direction, 0, 1);
-    // gl.uniform1i(u_texture, i);
-    // gl.drawArrays(gl.TRIANGLES, 0, 6);
+  /**
+   * 反复执行共3次，坐标等均不变，只是切换fbo绑定对象和纹理单元
+   * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
+   * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
+   * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
+   */
+  let max = 100 / Math.max(width, height);
+  let ratio = width / height;
+  for(let k = 0; k < 3; k++) {
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+    if(width >= height) {
+      gl.uniform2f(u_direction, max, 0);
+    }
+    else {
+      gl.uniform2f(u_direction, max * ratio, 0);
+    }
+    gl.uniform1i(u_texture, i);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+    if(width >= height) {
+      gl.uniform2f(u_direction, 0, max * ratio);
+    }
+    else {
+      gl.uniform2f(u_direction, 0, max);
+    }
+    gl.uniform1i(u_texture, j);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
   // 回收
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  return tex3;
+  deleteTexture(gl, tex3);
+  return tex1;
 }
 
 function drawMask(gl, i, j) {

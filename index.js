@@ -5508,24 +5508,26 @@
     console.log(i, j, f1, f2, spread, d, sigma); // 第一次将total绘制到blur上，此时尺寸存在spread差值
 
     var a = -f1 / f2;
-    var b = -a;
-    console.log(a, b); // 顶点buffer
+    var b = -a; // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([a, a, a, b, b, a, a, b, b, a, b, b]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(gl.programMask, 'a_position');
+    var a_position = gl.getAttribLocation(gl.programBlur, 'a_position');
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_position); // 纹理buffer
 
     var texBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(gl.programMask, 'a_texCoords');
+    var a_texCoords = gl.getAttribLocation(gl.programBlur, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+    gl.enableVertexAttribArray(a_texCoords); // direction
 
-    var u_texture = gl.getUniformLocation(gl.programMask, 'u_texture');
+    var u_direction = gl.getUniformLocation(gl.programBlur, 'u_direction');
+    gl.uniform2f(u_direction, 0, 1); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(gl.programBlur, 'u_texture');
     gl.uniform1i(u_texture, j);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.deleteBuffer(pointBuffer);
@@ -27650,7 +27652,7 @@
 
   var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);gl_FragColor=vec4(color1.rgb,color1.a*color2.a);}"; // eslint-disable-line
 
-  var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;varying vec2 v_texCoordsBlur[3];void main(){gl_Position=a_position;v_texCoordsBlur[0]=a_texCoords+vec2(0.0,-0.01);v_texCoordsBlur[1]=a_texCoords;v_texCoordsBlur[2]=a_texCoords+vec2(0.0,0.01);v_texCoords=a_texCoords;}"; // eslint-disable-line
+  var vertexBlur = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;varying vec2 v_texCoordsBlur[3];uniform vec2 u_direction;void main(){gl_Position=a_position;v_texCoordsBlur[0]=a_texCoords+vec2(-0.01,-0.01)*u_direction;v_texCoordsBlur[1]=a_texCoords;v_texCoordsBlur[2]=a_texCoords+vec2(0.01,0.01)*u_direction;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
   var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;varying vec2 v_texCoordsBlur[3];uniform sampler2D u_texture;void main(){gl_FragColor=vec4(0.0);gl_FragColor+=texture2D(u_texture,v_texCoordsBlur[0])*0.3;gl_FragColor+=texture2D(u_texture,v_texCoordsBlur[1])*0.4;gl_FragColor+=texture2D(u_texture,v_texCoordsBlur[2])*0.3;}"; // eslint-disable-line
 

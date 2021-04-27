@@ -168,8 +168,8 @@ class Img extends Dom {
     return res;
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     let {
       offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend,
     } = res;
@@ -196,7 +196,7 @@ class Img extends Dom {
       ctx = (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend).target.ctx;
     }
     // img无children所以total就是cache避免多余生成
-    if(renderMode === mode.CANVAS && cache) {
+    if(renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
     // 没source且不error时加载图片
@@ -230,7 +230,7 @@ class Img extends Dom {
         [originX + width * 0.9, originY + height * 0.8],
         [originX + width * 0.15, originY + height * 0.8]
       ];
-      if(renderMode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         ctx.strokeStyle = stroke;
         ctx.lineWidth = strokeWidth;
         ctx.fillStyle = fill;
@@ -290,7 +290,7 @@ class Img extends Dom {
       // 圆角需要生成一个mask
       let list = border.calRadius(originX, originY, width, height,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-      if(renderMode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         // 有border-radius需模拟遮罩裁剪
         if(list) {
           ctx.save();
@@ -327,7 +327,7 @@ class Img extends Dom {
                 }
               ],
             };
-            let id = defs.add(v);
+            let id = ctx.add(v);
             __config[NODE_DEFS_CACHE].push(v);
             virtualDom.conClip = 'url(#' + id + ')';
           }
@@ -361,7 +361,7 @@ class Img extends Dom {
               }
             ],
           };
-          let id = defs.add(v);
+          let id = ctx.add(v);
           __config[NODE_DEFS_CACHE].push(v);
           virtualDom.conClip = 'url(#' + id + ')';
           delete virtualDom.cache;

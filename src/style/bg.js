@@ -21,7 +21,7 @@ const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { AUTO, PX, PERCENT, STRING } = unit;
 
-function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
+function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
   let matrix, cx, cy;
   if(Array.isArray(color)) {
@@ -59,7 +59,7 @@ function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bb
       return arr;
     });
   }
-  if(renderMode === mode.CANVAS) {
+  if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
     if(matrix) {
       ctx.save();
       let me = xom.matrixEvent;
@@ -146,7 +146,7 @@ function calBackgroundPosition(position, container, size) {
   return 0;
 }
 
-function renderImage(xom, renderMode, ctx, defs, loadBgi,
+function renderImage(xom, renderMode, ctx, loadBgi,
                      bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
                      currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
   let source = loadBgi.source;
@@ -329,10 +329,10 @@ function renderImage(xom, renderMode, ctx, defs, loadBgi,
         }
       }
     }
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(needMask) {
         ctx.save();
-        renderBgc(this, renderMode, ctx, defs, '#FFF',
+        renderBgc(this, renderMode, ctx, '#FFF',
           bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
       }
       // 先画不考虑repeat的中心声明的
@@ -377,7 +377,7 @@ function renderImage(xom, renderMode, ctx, defs, loadBgi,
             ],
           }],
         };
-        let id = defs.add(v);
+        let id = ctx.add(v);
         __config[NODE_DEFS_CACHE].push(v);
         props.push(['clip-path', 'url(#' + id + ')']);
       }
@@ -410,7 +410,7 @@ function renderImage(xom, renderMode, ctx, defs, loadBgi,
             props: copy,
           });
         });
-        return defs.add(v);
+        return ctx.add(v);
       }
       else {
         // 先画不考虑repeat的中心声明的

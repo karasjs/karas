@@ -362,13 +362,13 @@ class Polyline extends Geom {
     return rebuild || rebuildSE;
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(res.break) {
       return res;
     }
     this.buildCache(res.originX, res.originY);
-    this.__renderPolygon(renderMode, ctx, defs, res);
+    this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
 

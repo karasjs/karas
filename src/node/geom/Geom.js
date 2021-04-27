@@ -196,12 +196,12 @@ class Geom extends Xom {
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
-  __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+  __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
-    let res = super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+    let res = super.__calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,
@@ -245,7 +245,7 @@ class Geom extends Xom {
         if(Array.isArray(v)) {
           v.forEach(item => {
             if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-              res.push(this.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
+              res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
             }
             else if(item[3] > 0) {
               res.push(int2rgba(item));
@@ -381,9 +381,9 @@ class Geom extends Xom {
     }
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
+  render(renderMode, lv, ctx, cache) {
     // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
-    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, defs, cache);
+    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, cache);
     let __config = this.__config;
     let {
       [NODE_CACHE]: __cache,
@@ -413,7 +413,7 @@ class Geom extends Xom {
     return Object.assign(res, preData);
   }
 
-  __renderPolygon(renderMode, ctx, defs, res) {
+  __renderPolygon(renderMode, ctx, res) {
     let {
       fill: fills,
       fillRule: fillRules,
@@ -444,7 +444,7 @@ class Geom extends Xom {
         dy,
         bbox,
       };
-      this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+      this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
     }
     // 多个需要fill在下面，stroke在上面，依次循环
     else {
@@ -458,7 +458,7 @@ class Geom extends Xom {
             dy,
             bbox,
           };
-          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
         }
       }
       for(let i = 0, len = strokes.length; i < len; i++) {
@@ -476,13 +476,13 @@ class Geom extends Xom {
             dy,
             bbox,
           };
-          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
         }
       }
     }
   }
 
-  __renderOnePolygon(renderMode, ctx, defs, isMulti, list, res) {
+  __renderOnePolygon(renderMode, ctx, isMulti, list, res) {
     let {
       fill,
       stroke,
@@ -495,41 +495,41 @@ class Geom extends Xom {
     let isStrokeRE = strokeWidth && strokeWidth > 0 && stroke && stroke.k === 'radial' && Array.isArray(stroke.v);
     if(isFillCE || isStrokeCE) {
       if(isFillCE) {
-        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+        this.__conicGradient(renderMode, ctx, list, isMulti, res);
       }
       else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
       }
       if(strokeWidth && strokeWidth > 0 && isStrokeCE) {
         inject.warn('Stroke style can not use conic-gradient');
       }
       else if(strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
       }
     }
     else if(isFillRE || isStrokeRE) {
       if(isFillRE) {
-        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+        this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
       }
       else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
       }
       // stroke椭圆渐变matrix会变形，降级为圆
       if(strokeWidth && strokeWidth > 0 && isStrokeRE) {
         inject.warn('Stroke style can not use radial-gradient for ellipse');
         res.stroke.v = res.stroke.v[0];
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
       }
       else if(strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
       }
     }
     else {
-      this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, true);
+      this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, true);
     }
   }
 
-  __drawPolygon(renderMode, ctx, defs, isMulti, list, res, isFill, isStroke) {
+  __drawPolygon(renderMode, ctx, isMulti, list, res, isFill, isStroke) {
     let {
       fill,
       stroke,
@@ -631,7 +631,7 @@ class Geom extends Xom {
     }
   }
 
-  __radialEllipse(renderMode, ctx, defs, list, isMulti, res, method) {
+  __radialEllipse(renderMode, ctx, list, isMulti, res, method) {
     let {
       strokeWidth,
       strokeDasharrayStr,
@@ -697,7 +697,7 @@ class Geom extends Xom {
     }
   }
 
-  __conicGradient(renderMode, ctx, defs, list, isMulti, res) {
+  __conicGradient(renderMode, ctx, list, isMulti, res) {
     let {
       fill,
       bbox,
@@ -746,7 +746,7 @@ class Geom extends Xom {
               ],
             }],
           };
-          let clip = defs.add(v);
+          let clip = ctx.add(v);
           this.__config[NODE_DEFS_CACHE].push(v);
           color.forEach(item => {
             this.virtualDom.bb.push({
@@ -771,7 +771,7 @@ class Geom extends Xom {
             ],
           }],
         };
-        let clip = defs.add(v);
+        let clip = ctx.add(v);
         this.__config[NODE_DEFS_CACHE].push(v);
         color.forEach(item => {
           this.virtualDom.bb.push({

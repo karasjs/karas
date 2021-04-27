@@ -2485,8 +2485,8 @@ class Dom extends Xom {
     });
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }

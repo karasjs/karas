@@ -787,15 +787,15 @@ class Root extends Dom {
       this.__clear(ctx);
       // 利用list循环代替tree递归快速渲染
       if(this.cache) {
-        struct.renderCacheCanvas(renderMode, ctx, defs, this);
+        struct.renderCacheCanvas(renderMode, ctx, this);
       }
       else {
-        struct.renderCanvas(renderMode, ctx, defs, this);
+        struct.renderCanvas(renderMode, ctx, this);
       }
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG && !this.props.noRender) {
-      struct.renderSvg(renderMode, ctx, defs, this, isFirst);
+      struct.renderSvg(renderMode, defs, this, isFirst);
       let nvd = this.virtualDom;
       nvd.defs = defs.value;
       if(this.dom.__vd) {
@@ -810,7 +810,7 @@ class Root extends Dom {
       this.dom.__defs = defs;
     }
     else if(renderMode === mode.WEBGL) {
-      struct.renderWebgl(renderMode, ctx, defs, this);
+      struct.renderWebgl(renderMode, ctx, this);
     }
     // 特殊cb，供小程序绘制完回调使用
     if(isFunction(cb)) {
@@ -1003,7 +1003,7 @@ class Root extends Dom {
     computedStyle[WIDTH] = width;
     computedStyle[HEIGHT] = height;
     // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       dom.width = width;
       dom.height = height;
     }

@@ -652,7 +652,7 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
   return maskCache;
 }
 
-function renderCacheCanvas(renderMode, ctx, defs, root) {
+function renderCacheCanvas(renderMode, ctx, root) {
   let { __structs, width, height } = root;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let matrixList = [];
@@ -817,14 +817,14 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
      */
     else {
       if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
+        node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, true);
         __cache = __config[NODE_CACHE];
         if(__cache && __cache.available) {
-          node.render(renderMode, __refreshLevel, __cache.ctx, defs, true);
+          node.render(renderMode, __refreshLevel, __cache.ctx, true);
         }
       }
       else {
-        node.render(renderMode, __refreshLevel, ctx, defs, true);
+        node.render(renderMode, __refreshLevel, ctx, true);
       }
     }
     lastConfig = __config;
@@ -918,7 +918,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       } = __config[NODE_DOM_PARENT].__config;
       ctx.globalAlpha = __opacity;
       ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
-      node.render(renderMode, 0, ctx, defs);
+      node.render(renderMode, 0, ctx);
     }
     else {
       let {
@@ -1048,10 +1048,10 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           else {
             let res;
             if(node instanceof Geom) {
-              res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
+              res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx);
             }
             else {
-              res = node.render(renderMode, __refreshLevel, ctx, defs);
+              res = node.render(renderMode, __refreshLevel, ctx);
             }
             res = res || {};
             offScreenFilter = res.offScreenFilter;
@@ -1124,7 +1124,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           }
           // geom传递上述offScreen的新ctx渲染，因为自定义不可控
           if(__limitCache && node instanceof Geom) {
-            node.render(renderMode, node.__refreshLevel, ctx, defs);
+            node.render(renderMode, node.__refreshLevel, ctx);
           }
         }
         // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
@@ -1259,7 +1259,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   }
 }
 
-function renderCanvas(renderMode, ctx, defs, root) {
+function renderCanvas(renderMode, ctx, root) {
   let { __structs, width, height } = root;
   let filterHash = {};
   let overflowHash = {};
@@ -1282,10 +1282,10 @@ function renderCanvas(renderMode, ctx, defs, root) {
     }
     let res;
     if(node instanceof Geom) {
-      res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
+      res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx);
     }
     else {
-      res = node.render(renderMode, __refreshLevel, ctx, defs);
+      res = node.render(renderMode, __refreshLevel, ctx);
     }
     // render后判断可见状态，此时computedStyle才有值，以及svg的virtualDom也要生成
     if(computedStyle[DISPLAY] === 'none') {
@@ -1362,7 +1362,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
     }
     // geom传递上述offScreen的新ctx渲染，因为自定义不可控
     if(node instanceof Geom) {
-      node.render(renderMode, __refreshLevel, ctx, defs);
+      node.render(renderMode, __refreshLevel, ctx);
     }
     // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
     if(filterHash.hasOwnProperty(i)) {
@@ -1490,7 +1490,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
   }
 }
 
-function renderSvg(renderMode, ctx, defs, root, isFirst) {
+function renderSvg(renderMode, ctx, root, isFirst) {
   let { __structs, width, height } = root;
   // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
   let maskEffectHash = {};
@@ -1523,7 +1523,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
           if(!contain(__refreshLevel, TRANSFORM_ALL) && v < REPAINT && !contain(v, TRANSFORM_ALL)) {
             defsCache.forEach(item => {
               if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-                defs.addCache(item);
+                ctx.addCache(item);
               }
             });
           }
@@ -1532,7 +1532,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
         else {
           defsCache.forEach(item => {
             if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-              defs.addCache(item);
+              ctx.addCache(item);
             }
           });
         }
@@ -1663,7 +1663,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
         for(let i = defsCache.length - 1; i >= 0; i--) {
           let item = defsCache[i];
           if(item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
-            defs.removeCache(item);
+            ctx.removeCache(item);
             break;
           }
         }
@@ -1691,7 +1691,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
                     }
                   ],
                 };
-                let id = defs.add(o);
+                let id = ctx.add(o);
                 __config[NODE_DEFS_CACHE].push(o);
                 virtualDom.filter = 'url(#' + id + ')';
               }
@@ -1714,9 +1714,9 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
       if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
+        node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx);
       }
-      node.render(renderMode, __refreshLevel, ctx, defs);
+      node.render(renderMode, __refreshLevel, ctx);
       virtualDom = node.virtualDom;
       if(display === 'none') {
         i += (total || 0);
@@ -1813,7 +1813,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
         props: [],
         children: mChildren,
       };
-      let id = defs.add(o);
+      let id = ctx.add(o);
       defsCache.push(o);
       id = 'url(#' + id + ')';
       dom.virtualDom.mask = id;
@@ -1831,7 +1831,7 @@ function renderSvg(renderMode, ctx, defs, root, isFirst) {
   }
 }
 
-function renderWebgl(renderMode, gl, defs, root) {
+function renderWebgl(renderMode, gl, root) {
   let texCache = root.texCache;
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -2014,14 +2014,14 @@ function renderWebgl(renderMode, gl, defs, root) {
      */
     else {
       if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(mode.CANVAS, __refreshLevel, gl, defs, true);
+        node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, gl, true);
         __cache = __config[NODE_CACHE];
         if(__cache && __cache.available) {
-          node.render(mode.CANVAS, __refreshLevel, __cache.ctx, defs, true);
+          node.render(mode.CANVAS, __refreshLevel, __cache.ctx, true);
         }
       }
       else {
-        node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
+        node.render(renderMode, __refreshLevel, gl, true);
       }
     }
     lastRefreshLevel = __refreshLevel;
@@ -2079,12 +2079,12 @@ function renderWebgl(renderMode, gl, defs, root) {
           }
           target = __config[NODE_CACHE_FILTER];
         }
-        if(overflow === 'hidden') {
-          if(!__cacheOverflow || !__cacheOverflow.available) {
-            __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
-          }
-          target = __config[NODE_CACHE_OVERFLOW];
-        }
+        // if(overflow === 'hidden') {
+        //   if(!__cacheOverflow || !__cacheOverflow.available) {
+        //     __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+        //   }
+        //   target = __config[NODE_CACHE_OVERFLOW];
+        // }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMaskWebgl(gl, texCache, node, target, width, height);
         }

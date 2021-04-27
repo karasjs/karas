@@ -613,7 +613,7 @@ function calConicRadius(v, deg, position, x1, y1, x2, y2) {
   return [cx, cy, r, deg];
 }
 
-function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
+function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
   if(!list) {
@@ -625,7 +625,7 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
       [x, y],
     ];
   }
-  if(renderMode === mode.CANVAS) {
+  if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
     let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
     let imgData = offscreen.ctx.getImageData(0,0, w, h);
     gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
@@ -657,7 +657,7 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
           ],
         });
       });
-      return defs.add(v);
+      return ctx.add(v);
     }
     else {
       let v = {
@@ -670,7 +670,7 @@ function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bb
         }],
       };
       xom.__config[NODE_DEFS_CACHE].push(v);
-      let clip = defs.add(v);
+      let clip = ctx.add(v);
       res.forEach(item => {
         xom.virtualDom.bb.push({
           type: 'item',

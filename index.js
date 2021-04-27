@@ -4561,7 +4561,7 @@
   }
 
   function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
-    if (renderMode === mode.CANVAS) {
+    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       ctx.beginPath();
 
       if (ctx.fillStyle !== color) {
@@ -6720,7 +6720,7 @@
     return [cx, cy, r, deg];
   }
 
-  function renderConic(xom, renderMode, ctx, defs, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
+  function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bblr, isInline) {
     // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
     var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
 
@@ -6728,7 +6728,7 @@
       list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
     }
 
-    if (renderMode === mode.CANVAS) {
+    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       var offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
       var imgData = offscreen.ctx.getImageData(0, 0, w, h);
       gradient.getConicGradientImage(res.cx - x, res.cy - y, res.w, res.h, res.stop, imgData.data);
@@ -6758,7 +6758,7 @@
             props: [['d', svgPolygon$2(item[0])], ['fill', item[1]]]
           });
         });
-        return defs.add(v);
+        return ctx.add(v);
       } else {
         var _v = {
           tagName: 'clipPath',
@@ -6770,7 +6770,7 @@
 
         xom.__config[NODE_DEFS_CACHE].push(_v);
 
-        var clip = defs.add(_v);
+        var clip = ctx.add(_v);
         res.forEach(function (item) {
           xom.virtualDom.bb.push({
             type: 'item',
@@ -8910,7 +8910,7 @@
         var i = 0,
             length = content.length;
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (letterSpacing) {
             for (; i < length; i++) {
               ctx.fillText(content.charAt(i), x, y);
@@ -10503,7 +10503,7 @@
         var pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
         var parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (!parentCache.hasOwnProperty(ELLIPSIS)) {
             ctx.font = css.setFontStyle(parentComputedStyle);
             parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
@@ -10538,7 +10538,7 @@
             charWidthList.push(mw);
             sum += mw;
             this.__charWidth = Math.max(this.charWidth, mw);
-          } else if (renderMode === mode.CANVAS) {
+          } else if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
             mw = cache[_char] = ctx.measureText(_char).width;
             charWidthList.push(mw);
             sum += mw;
@@ -11026,9 +11026,9 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs) {
-        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+      value: function render(renderMode, lv, ctx) {
+        var dx = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+        var dy = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
 
         if (renderMode === mode.SVG) {
           this.__virtualDom = {
@@ -11048,7 +11048,7 @@
           return false;
         }
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           var _font = css.setFontStyle(computedStyle);
 
           if (ctx.font !== _font) {
@@ -11080,7 +11080,7 @@
               endY = last.endY;
           var _computedStyle = __bp.computedStyle;
 
-          if (renderMode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
             var _font2 = css.setFontStyle(_computedStyle);
 
             if (ctx.font !== _font2) {
@@ -12108,9 +12108,9 @@
       PERCENT$4 = unit.PERCENT,
       STRING$1 = unit.STRING;
 
-  function renderBgc(xom, renderMode, ctx, defs, color, x, y, w, h, btlr, btrr, bbrr, bblr) {
-    var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
-    var isInline = arguments.length > 14 ? arguments[14] : undefined;
+  function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bblr) {
+    var method = arguments.length > 12 && arguments[12] !== undefined ? arguments[12] : 'fill';
+    var isInline = arguments.length > 13 ? arguments[13] : undefined;
     // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
     var matrix, cx, cy;
 
@@ -12150,7 +12150,7 @@
       });
     }
 
-    if (renderMode === mode.CANVAS) {
+    if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if (matrix) {
         ctx.save();
         var me = xom.matrixEvent;
@@ -12231,7 +12231,7 @@
     return 0;
   }
 
-  function renderImage(xom, renderMode, ctx, defs, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
+  function renderImage(xom, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
     var source = loadBgi.source; // 无source不绘制，可能错误或加载中
 
     if (source) {
@@ -12428,10 +12428,10 @@
         }
       }
 
-      if (renderMode === mode.CANVAS) {
+      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         if (needMask) {
           ctx.save();
-          renderBgc(this, renderMode, ctx, defs, '#FFF', bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
+          renderBgc(this, renderMode, ctx, '#FFF', bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
         } // 先画不考虑repeat的中心声明的
 
 
@@ -12471,7 +12471,7 @@
               props: [['d', "M".concat(p1[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p1[1], "L").concat(p2[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p2[1], "L").concat(p1[0], ",").concat(p1[1])], ['fill', '#FFF']]
             }]
           };
-          var id = defs.add(v);
+          var id = ctx.add(v);
 
           __config[NODE_DEFS_CACHE$1].push(v);
 
@@ -12511,7 +12511,7 @@
               props: copy
             });
           });
-          return defs.add(_v);
+          return ctx.add(_v);
         } else {
           // 先画不考虑repeat的中心声明的
           xom.virtualDom.bb.push({
@@ -15395,7 +15395,7 @@
   var canvasPolygon$4 = painter.canvasPolygon,
       svgPolygon$4 = painter.svgPolygon;
 
-  function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h) {
+  function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
     var _data = _slicedToArray(data, 6),
         x = _data[0],
         y = _data[1],
@@ -15412,7 +15412,7 @@
     var outer = [[x1 - n, y1 - n], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n]];
 
     if (color[3] > 0 && (sigma > 0 || spread > 0)) {
-      if (renderMode === mode.CANVAS) {
+      if (renderMode === mode.CANVAS | renderMode === mode.WEBGL) {
         ctx.save();
         ctx.beginPath(); // inset裁剪box外面
 
@@ -15585,7 +15585,7 @@
 
             xom.__config[NODE_DEFS_CACHE$2].push(v);
 
-            var filter = defs.add(v);
+            var filter = ctx.add(v);
             var v2 = {
               tagName: 'clipPath',
               children: [{
@@ -15593,7 +15593,7 @@
                 props: [['d', svgPolygon$4(_cross2) + svgPolygon$4(box.slice(0).reverse())], ['fill', '#FFF']]
               }]
             };
-            var clip = defs.add(v2);
+            var clip = ctx.add(v2);
 
             xom.__config[NODE_DEFS_CACHE$2].push(v2);
 
@@ -15609,7 +15609,7 @@
                 props: [['d', svgPolygon$4(_cross2)], ['fill', '#FFF']]
               }]
             };
-            clip = defs.add(v);
+            clip = ctx.add(v);
 
             xom.__config[NODE_DEFS_CACHE$2].push(v);
 
@@ -15628,7 +15628,7 @@
               }]
             };
 
-            var _filter = defs.add(_v);
+            var _filter = ctx.add(_v);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v);
 
@@ -15640,7 +15640,7 @@
               }]
             };
 
-            var _clip = defs.add(_v);
+            var _clip = ctx.add(_v);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v);
 
@@ -15673,7 +15673,7 @@
               }]
             };
 
-            var _filter2 = defs.add(_v2);
+            var _filter2 = ctx.add(_v2);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v2);
 
@@ -15685,7 +15685,7 @@
               }]
             };
 
-            var _clip2 = defs.add(_v2);
+            var _clip2 = ctx.add(_v2);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v2);
 
@@ -15701,7 +15701,7 @@
                 props: [['d', (_cross3 ? svgPolygon$4([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$4(box) + svgPolygon$4(_blurBox) + svgPolygon$4(outer)], ['fill', '#FFF']]
               }]
             };
-            _clip2 = defs.add(_v2);
+            _clip2 = ctx.add(_v2);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v2);
 
@@ -15720,7 +15720,7 @@
               }]
             };
 
-            var _filter3 = defs.add(_v3);
+            var _filter3 = ctx.add(_v3);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v3);
 
@@ -15732,7 +15732,7 @@
               }]
             };
 
-            var _clip3 = defs.add(_v3);
+            var _clip3 = ctx.add(_v3);
 
             xom.__config[NODE_DEFS_CACHE$2].push(_v3);
 
@@ -16690,7 +16690,7 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
+      value: function __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
         var _this3 = this;
 
         var bx1 = x1,
@@ -16798,7 +16798,7 @@
 
                 return true;
               } else if (!isInline && bgi.k) {
-                return _this3.__gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, bgi);
+                return _this3.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
               }
             });
           }
@@ -16945,7 +16945,7 @@
     }, {
       key: "__calContent",
       value: function __calContent(renderMode, lv, currentStyle, computedStyle) {
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (lv < REPAINT$1) {
             return this.__hasContent;
           }
@@ -17004,8 +17004,7 @@
        * 渲染基础方法，Dom/Geom公用
        * @param renderMode
        * @param lv
-       * @param ctx
-       * @param defs
+       * @param ctx canvas/svg/webgl共用
        * @param cache 是否开启缓存
        * @return Object
        * x1/x2/x3/x4/y1/y2/y3/y4 坐标
@@ -17019,7 +17018,7 @@
 
     }, {
       key: "__renderSelf",
-      value: function __renderSelf(renderMode, lv, ctx, defs, cache) {
+      value: function __renderSelf(renderMode, lv, ctx, cache) {
         var _this4 = this;
 
         var isDestroyed = this.isDestroyed,
@@ -17152,7 +17151,7 @@
         var dx = 0,
             dy = 0;
 
-        if (cache && renderMode === mode.CANVAS) {
+        if (cache && renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
           if (!hasContent && this.__releaseWhenEmpty(__cache)) {
             res["break"] = true;
@@ -17207,7 +17206,7 @@
         } // 计算好cacheStyle的内容，以及位图缓存指数
 
 
-        var _this$__calCache = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6),
+        var _this$__calCache = this.__calCache(renderMode, lv, ctx, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6),
             _this$__calCache2 = _slicedToArray(_this$__calCache, 4),
             bx1 = _this$__calCache2[0],
             by1 = _this$__calCache2[1],
@@ -17238,7 +17237,7 @@
             mixBlendMode = computedStyle[MIX_BLEND_MODE],
             backgroundClip = computedStyle[BACKGROUND_CLIP$1]; // 先设置透明度，canvas可以向上累积
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (p) {
             opacity *= p.__config[NODE_OPACITY$2];
           }
@@ -17301,7 +17300,7 @@
             if (k === 'blur') {
               __config[NODE_BLUR_VALUE] = v; // 非cache模式返回offScreen，cache模式会生成cacheFilter识别
 
-              if (renderMode === mode.CANVAS && v > 0 && !cache) {
+              if ((renderMode === mode.CANVAS && v > 0 || renderMode === mode.WEBGL) && !cache) {
                 var _width = root.width,
                     _height = root.height;
                 var c = inject.getCacheCanvas(_width, _height, null, 'filter');
@@ -17327,7 +17326,7 @@
                       props: [['stdDeviation', v]]
                     }]
                   };
-                  var id = defs.add(o);
+                  var id = ctx.add(o);
 
                   __config[NODE_DEFS_CACHE$3].push(o);
 
@@ -17406,7 +17405,7 @@
                 props: [['d', "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1)]]
               }]
             };
-            var id = defs.add(v);
+            var id = ctx.add(v);
 
             __config[NODE_DEFS_CACHE$3].push(v);
 
@@ -17449,7 +17448,7 @@
         } // 隐藏不渲染
 
 
-        if (visibility === 'hidden' && renderMode === mode.CANVAS) {
+        if (visibility === 'hidden' && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
           res["break"] = true;
           return res;
         } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
@@ -17523,7 +17522,7 @@
                   ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
                 }
 
-                if (renderMode === mode.CANVAS) {
+                if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
                   offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
                 }
 
@@ -17539,24 +17538,24 @@
                     var loadBgi = _this4.__loadBgi[i];
 
                     if (loadBgi.url === backgroundImage[i]) {
-                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx, defs, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
+                      var uuid = bg.renderImage(_this4, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
 
                       if (renderMode === mode.SVG && uuid) {
                         svgBgSymbol.push(uuid);
                       }
                     }
                   } else if (bgi.k) {
-                    var gd = _this4.__gradient(renderMode, ctx, defs, 0, 0, iw, ih, bgi);
+                    var gd = _this4.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi);
 
                     if (gd) {
                       if (gd.k === 'conic') {
-                        var _uuid = gradient$1.renderConic(_this4, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
+                        var _uuid = gradient$1.renderConic(_this4, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
 
                         if (renderMode === mode.SVG && _uuid) {
                           svgBgSymbol.push(_uuid);
                         }
                       } else {
-                        var _uuid2 = bg.renderBgc(_this4, renderMode, offscreen && offscreen.ctx, defs, gd.v, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
+                        var _uuid2 = bg.renderBgc(_this4, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
 
                         if (renderMode === mode.SVG && _uuid2) {
                           svgBgSymbol.push(_uuid2);
@@ -17604,12 +17603,12 @@
                     }
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                      bg.renderBgc(_this4, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
 
-                    if (renderMode === mode.CANVAS && offscreen) {
+                    if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && offscreen) {
                       ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
                     } //svg则特殊判断
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
@@ -17623,7 +17622,7 @@
                                 props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
-                            var clip = defs.add(_v2);
+                            var clip = ctx.add(_v2);
 
                             __config[NODE_DEFS_CACHE$3].push(_v2);
 
@@ -17640,7 +17639,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                        bs.renderBoxShadow(_this4, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
                       });
                     }
 
@@ -17705,12 +17704,12 @@
                     bx2 += n;
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this4, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+                      bg.renderBgc(_this4, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
 
-                    if (renderMode === mode.CANVAS && offscreen) {
+                    if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && offscreen) {
                       ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
                     } //svg则特殊判断
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
@@ -17724,7 +17723,7 @@
                                 props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
-                            var clip = defs.add(_v3);
+                            var clip = ctx.add(_v3);
 
                             __config[NODE_DEFS_CACHE$3].push(_v3);
 
@@ -17739,7 +17738,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                        bs.renderBoxShadow(_this4, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
                       });
                     }
 
@@ -17801,7 +17800,7 @@
 
 
         if (backgroundColor[3] > 0) {
-          bg.renderBgc(this, renderMode, ctx, defs, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+          bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
         } // 渐变或图片叠加
 
 
@@ -17818,16 +17817,16 @@
               var loadBgi = _this4.__loadBgi[i];
 
               if (loadBgi.url === backgroundImage[i]) {
-                bg.renderImage(_this4, renderMode, ctx, defs, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                bg.renderImage(_this4, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
               }
             } else if (bgi.k) {
               var gd = __cacheStyle[BACKGROUND_IMAGE$1][i];
 
               if (gd) {
                 if (gd.k === 'conic') {
-                  gradient$1.renderConic(_this4, renderMode, ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                  gradient$1.renderConic(_this4, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
                 } else {
-                  bg.renderBgc(_this4, renderMode, ctx, defs, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                  bg.renderBgc(_this4, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
                 }
               }
             }
@@ -17837,7 +17836,7 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            bs.renderBoxShadow(_this4, renderMode, ctx, defs, item, x1, y1, x6, y6, x6 - x1, y6 - y1);
+            bs.renderBoxShadow(_this4, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1);
           });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -17862,8 +17861,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        return this.__renderSelf(renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        return this.__renderSelf(renderMode, lv, ctx, cache);
       }
     }, {
       key: "__destroy",
@@ -17982,7 +17981,7 @@
       }
     }, {
       key: "__gradient",
-      value: function __gradient(renderMode, ctx, defs, bx1, by1, bx2, by2, bgi) {
+      value: function __gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi) {
         var iw = bx2 - bx1;
         var ih = by2 - by1;
         var k = bgi.k,
@@ -17999,12 +17998,12 @@
 
         if (k === 'linear') {
           var gd = gradient$1.getLinear(v, d, bx1, by1, cx, cy, iw, ih);
-          res.v = this.__getLg(renderMode, ctx, defs, gd);
+          res.v = this.__getLg(renderMode, ctx, gd);
         } else if (k === 'radial') {
           var _gd = gradient$1.getRadial(v, s, z, p, bx1, by1, bx2, by2);
 
           if (_gd) {
-            res.v = this.__getRg(renderMode, ctx, defs, _gd);
+            res.v = this.__getRg(renderMode, ctx, _gd);
 
             if (_gd.matrix) {
               res.v = [res.v, _gd.matrix, _gd.cx, _gd.cy];
@@ -18017,15 +18016,15 @@
 
           var _gd2 = gradient$1.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2);
 
-          res.v = this.__getCg(renderMode, ctx, defs, _gd2);
+          res.v = this.__getCg(renderMode, ctx, _gd2);
         }
 
         return res;
       }
     }, {
       key: "__getLg",
-      value: function __getLg(renderMode, ctx, defs, gd) {
-        if (renderMode === mode.CANVAS) {
+      value: function __getLg(renderMode, ctx, gd) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           var lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach(function (item) {
             lg.addColorStop(item[1], int2rgba$2(item[0]));
@@ -18042,7 +18041,7 @@
               };
             })
           };
-          var uuid = defs.add(v);
+          var uuid = ctx.add(v);
 
           this.__config[NODE_DEFS_CACHE$3].push(v);
 
@@ -18051,8 +18050,8 @@
       }
     }, {
       key: "__getRg",
-      value: function __getRg(renderMode, ctx, defs, gd) {
-        if (renderMode === mode.CANVAS) {
+      value: function __getRg(renderMode, ctx, gd) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
           gd.stop.forEach(function (item) {
             rg.addColorStop(item[1], int2rgba$2(item[0]));
@@ -18069,7 +18068,7 @@
               };
             })
           };
-          var uuid = defs.add(v);
+          var uuid = ctx.add(v);
 
           this.__config[NODE_DEFS_CACHE$3].push(v);
 
@@ -18078,7 +18077,7 @@
       }
     }, {
       key: "__getCg",
-      value: function __getCg(renderMode, ctx, defs, gd) {
+      value: function __getCg(renderMode, ctx, gd) {
         var cx = gd.cx,
             cy = gd.cy,
             r = gd.r,
@@ -18097,7 +18096,7 @@
 
         var res = [];
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           return gd;
         } else if (renderMode === mode.SVG) {
           var offset = 0.5;
@@ -18166,7 +18165,7 @@
                   props: [['stop-color', int2rgba$2([cur[4], cur[5], cur[6], cur[7]])], ['offset', '100%']]
                 }]
               };
-              var uuid = defs.add(v);
+              var uuid = ctx.add(v);
 
               this.__config[NODE_DEFS_CACHE$3].push(v);
 
@@ -22162,8 +22161,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (renderMode === mode.SVG) {
           this.virtualDom.type = 'dom';
@@ -22506,8 +22505,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         var offScreenFilter = res.offScreenFilter,
             offScreenMask = res.offScreenMask,
@@ -22535,7 +22534,7 @@
         } // img无children所以total就是cache避免多余生成
 
 
-        if (renderMode === mode.CANVAS && cache) {
+        if (renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
           __config[NODE_CACHE_TOTAL$1] = __config[NODE_CACHE$2];
         } // 没source且不error时加载图片
 
@@ -22569,7 +22568,7 @@
           var r = strokeWidth * 5;
           var pts = [[originX + width * 0.15, originY + height * 0.7], [originX + width * 0.3, originY + height * 0.4], [originX + width * 0.5, originY + height * 0.6], [originX + width * 0.6, originY + height * 0.5], [originX + width * 0.9, originY + height * 0.8], [originX + width * 0.15, originY + height * 0.8]];
 
-          if (renderMode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
             ctx.strokeStyle = stroke;
             ctx.lineWidth = strokeWidth;
             ctx.fillStyle = fill;
@@ -22619,7 +22618,7 @@
           // 圆角需要生成一个mask
           var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
-          if (renderMode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
             // 有border-radius需模拟遮罩裁剪
             if (list) {
               ctx.save();
@@ -22649,7 +22648,7 @@
                     props: [['d', d], ['fill', '#FFF']]
                   }]
                 };
-                var id = defs.add(v);
+                var id = ctx.add(v);
 
                 __config[NODE_DEFS_CACHE$4].push(v);
 
@@ -22681,7 +22680,7 @@
                 }]
               };
 
-              var _id = defs.add(_v);
+              var _id = ctx.add(_v);
 
               __config[NODE_DEFS_CACHE$4].push(_v);
 
@@ -23258,10 +23257,10 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
+      value: function __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
         var _this2 = this;
 
-        var res = _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
+        var res = _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
 
         if (isNil$7(__cacheStyle[STROKE_WIDTH$1])) {
           __cacheStyle[STROKE_WIDTH$1] = true;
@@ -23300,7 +23299,7 @@
             if (Array.isArray(v)) {
               v.forEach(function (item) {
                 if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-                  _res.push(_this2.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
+                  _res.push(_this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
                 } else if (item[3] > 0) {
                   _res.push(int2rgba$3(item));
                 } else {
@@ -23432,9 +23431,9 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
+      value: function render(renderMode, lv, ctx, cache) {
         // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
-        var res = this.__renderSelfData || _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+        var res = this.__renderSelfData || _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         var __config = this.__config;
         var __cache = __config[NODE_CACHE$3],
@@ -23467,7 +23466,7 @@
       }
     }, {
       key: "__renderPolygon",
-      value: function __renderPolygon(renderMode, ctx, defs, res) {
+      value: function __renderPolygon(renderMode, ctx, res) {
         var fills = res.fill,
             fillRules = res.fillRule,
             strokes = res.stroke,
@@ -23499,7 +23498,7 @@
             bbox: bbox
           };
 
-          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
         } // 多个需要fill在下面，stroke在上面，依次循环
         else {
             for (var i = 0, len = fills.length; i < len; i++) {
@@ -23514,7 +23513,7 @@
                   bbox: bbox
                 };
 
-                this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, _o);
+                this.__renderOnePolygon(renderMode, ctx, isMulti, list, _o);
               }
             }
 
@@ -23535,14 +23534,14 @@
                   bbox: bbox
                 };
 
-                this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, _o2);
+                this.__renderOnePolygon(renderMode, ctx, isMulti, list, _o2);
               }
             }
           }
       }
     }, {
       key: "__renderOnePolygon",
-      value: function __renderOnePolygon(renderMode, ctx, defs, isMulti, list, res) {
+      value: function __renderOnePolygon(renderMode, ctx, isMulti, list, res) {
         var fill = res.fill,
             stroke = res.stroke,
             strokeWidth = res.strokeWidth;
@@ -23554,21 +23553,21 @@
 
         if (isFillCE || isStrokeCE) {
           if (isFillCE) {
-            this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+            this.__conicGradient(renderMode, ctx, list, isMulti, res);
           } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
           }
 
           if (strokeWidth && strokeWidth > 0 && isStrokeCE) {
             inject.warn('Stroke style can not use conic-gradient');
           } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
           }
         } else if (isFillRE || isStrokeRE) {
           if (isFillRE) {
-            this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+            this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
           } else if (fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
           } // stroke椭圆渐变matrix会变形，降级为圆
 
 
@@ -23576,17 +23575,17 @@
             inject.warn('Stroke style can not use radial-gradient for ellipse');
             res.stroke.v = res.stroke.v[0];
 
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
           } else if (strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
           }
         } else {
-          this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, true);
+          this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, true);
         }
       }
     }, {
       key: "__drawPolygon",
-      value: function __drawPolygon(renderMode, ctx, defs, isMulti, list, res, isFill, isStroke) {
+      value: function __drawPolygon(renderMode, ctx, isMulti, list, res, isFill, isStroke) {
         var fill = res.fill,
             stroke = res.stroke,
             strokeWidth = res.strokeWidth,
@@ -23704,7 +23703,7 @@
       }
     }, {
       key: "__radialEllipse",
-      value: function __radialEllipse(renderMode, ctx, defs, list, isMulti, res, method) {
+      value: function __radialEllipse(renderMode, ctx, list, isMulti, res, method) {
         var strokeWidth = res.strokeWidth,
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
@@ -23783,7 +23782,7 @@
       }
     }, {
       key: "__conicGradient",
-      value: function __conicGradient(renderMode, ctx, defs, list, isMulti, res) {
+      value: function __conicGradient(renderMode, ctx, list, isMulti, res) {
         var _this3 = this;
 
         var fill = res.fill,
@@ -23839,7 +23838,7 @@
                   props: [['d', svgPolygon$6(item)]]
                 }]
               };
-              var clip = defs.add(v);
+              var clip = ctx.add(v);
 
               _this3.__config[NODE_DEFS_CACHE$5].push(v);
 
@@ -23859,7 +23858,7 @@
                 props: [['d', svgPolygon$6(list)]]
               }]
             };
-            var clip = defs.add(v);
+            var clip = ctx.add(v);
 
             this.__config[NODE_DEFS_CACHE$5].push(v);
 
@@ -25976,7 +25975,7 @@
     return maskCache;
   }
 
-  function renderCacheCanvas(renderMode, ctx, defs, root) {
+  function renderCacheCanvas(renderMode, ctx, root) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
@@ -26163,14 +26162,14 @@
        */
       else {
           if (node instanceof Geom$1) {
-            node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
+            node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, true);
             __cache = __config[NODE_CACHE$4];
 
             if (__cache && __cache.available) {
-              node.render(renderMode, __refreshLevel, __cache.ctx, defs, true);
+              node.render(renderMode, __refreshLevel, __cache.ctx, true);
             }
           } else {
-            node.render(renderMode, __refreshLevel, ctx, defs, true);
+            node.render(renderMode, __refreshLevel, ctx, true);
           }
         }
 
@@ -26282,7 +26281,7 @@
             matrixEvent = _config$NODE_DOM_PAR[NODE_MATRIX_EVENT$3];
         ctx.globalAlpha = __opacity;
         ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
-        node.render(renderMode, 0, ctx, defs);
+        node.render(renderMode, 0, ctx);
       } else {
         var _opacity = __config[NODE_OPACITY$3],
             _matrixEvent = __config[NODE_MATRIX_EVENT$3],
@@ -26424,9 +26423,9 @@
                 var res;
 
                 if (node instanceof Geom$1) {
-                  res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
+                  res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx);
                 } else {
-                  res = node.render(renderMode, __refreshLevel, ctx, defs);
+                  res = node.render(renderMode, __refreshLevel, ctx);
                 }
 
                 res = res || {};
@@ -26514,7 +26513,7 @@
 
 
               if (__limitCache && node instanceof Geom$1) {
-                node.render(renderMode, node.__refreshLevel, ctx, defs);
+                node.render(renderMode, node.__refreshLevel, ctx);
               }
             } // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
             else if (hasMask) {
@@ -26691,7 +26690,7 @@
     }
   }
 
-  function renderCanvas(renderMode, ctx, defs, root) {
+  function renderCanvas(renderMode, ctx, root) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height;
@@ -26717,9 +26716,9 @@
       var res = void 0;
 
       if (node instanceof Geom$1) {
-        res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
+        res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx);
       } else {
-        res = node.render(renderMode, __refreshLevel, ctx, defs);
+        res = node.render(renderMode, __refreshLevel, ctx);
       } // render后判断可见状态，此时computedStyle才有值，以及svg的virtualDom也要生成
 
 
@@ -26817,7 +26816,7 @@
 
 
       if (node instanceof Geom$1) {
-        node.render(renderMode, __refreshLevel, ctx, defs);
+        node.render(renderMode, __refreshLevel, ctx);
       } // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
 
 
@@ -26984,7 +26983,7 @@
     }
   }
 
-  function renderSvg(renderMode, ctx, defs, root, isFirst) {
+  function renderSvg(renderMode, ctx, root, isFirst) {
     var __structs = root.__structs,
         width = root.width,
         height = root.height; // mask节点很特殊，本身有matrix会影响，本身没改变但对象节点有改变也需要计算逆矩阵应用顶点
@@ -27022,7 +27021,7 @@
               if (!contain$2(__refreshLevel, TRANSFORM_ALL$2) && v < REPAINT$2 && !contain$2(v, TRANSFORM_ALL$2)) {
                 defsCache.forEach(function (item) {
                   if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-                    defs.addCache(item);
+                    ctx.addCache(item);
                   }
                 });
               }
@@ -27030,7 +27029,7 @@
             else {
                 defsCache.forEach(function (item) {
                   if (!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-                    defs.addCache(item);
+                    ctx.addCache(item);
                   }
                 });
               }
@@ -27174,7 +27173,7 @@
             var item = defsCache[_i11];
 
             if (item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
-              defs.removeCache(item);
+              ctx.removeCache(item);
               break;
             }
           }
@@ -27198,7 +27197,7 @@
                       props: [['stdDeviation', v]]
                     }]
                   };
-                  var id = defs.add(o);
+                  var id = ctx.add(o);
 
                   __config[NODE_DEFS_CACHE$6].push(o);
 
@@ -27225,10 +27224,10 @@
         __config[NODE_DEFS_CACHE$6] && __config[NODE_DEFS_CACHE$6].splice(0);
 
         if (node instanceof Geom$1) {
-          node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
+          node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx);
         }
 
-        node.render(renderMode, __refreshLevel, ctx, defs);
+        node.render(renderMode, __refreshLevel, ctx);
         virtualDom = node.virtualDom;
 
         if (display === 'none') {
@@ -27350,7 +27349,7 @@
           props: [],
           children: mChildren
         };
-        var id = defs.add(o);
+        var id = ctx.add(o);
         defsCache.push(o);
         id = 'url(#' + id + ')';
         dom.virtualDom.mask = id;
@@ -27376,7 +27375,7 @@
     }
   }
 
-  function renderWebgl(renderMode, gl, defs, root) {
+  function renderWebgl(renderMode, gl, root) {
     var texCache = root.texCache;
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -27583,14 +27582,14 @@
        */
       else {
           if (node instanceof Geom$1) {
-            node.__renderSelfData = node.__renderSelf(mode.CANVAS, __refreshLevel, gl, defs, true);
+            node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, gl, true);
             __cache = __config[NODE_CACHE$4];
 
             if (__cache && __cache.available) {
-              node.render(mode.CANVAS, __refreshLevel, __cache.ctx, defs, true);
+              node.render(mode.CANVAS, __refreshLevel, __cache.ctx, true);
             }
           } else {
-            node.render(mode.CANVAS, __refreshLevel, gl, defs, true);
+            node.render(renderMode, __refreshLevel, gl, true);
           }
         }
 
@@ -27661,15 +27660,13 @@
             }
 
             target = __config[NODE_CACHE_FILTER$3];
-          }
+          } // if(overflow === 'hidden') {
+          //   if(!__cacheOverflow || !__cacheOverflow.available) {
+          //     __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+          //   }
+          //   target = __config[NODE_CACHE_OVERFLOW];
+          // }
 
-          if (overflow === 'hidden') {
-            if (!__cacheOverflow || !__cacheOverflow.available) {
-              __config[NODE_CACHE_FILTER$3] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
-            }
-
-            target = __config[NODE_CACHE_OVERFLOW$3];
-          }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
             __config[NODE_CACHE_MASK$2] = genMaskWebgl(gl, texCache, node, target, width, height);
@@ -28982,13 +28979,13 @@
 
 
           if (this.cache) {
-            struct.renderCacheCanvas(renderMode, ctx, defs, this);
+            struct.renderCacheCanvas(renderMode, ctx, this);
           } else {
-            struct.renderCanvas(renderMode, ctx, defs, this);
+            struct.renderCanvas(renderMode, ctx, this);
           }
         } // svg的特殊diff需要
         else if (renderMode === mode.SVG && !this.props.noRender) {
-            struct.renderSvg(renderMode, ctx, defs, this, isFirst);
+            struct.renderSvg(renderMode, defs, this, isFirst);
             var nvd = this.virtualDom;
             nvd.defs = defs.value;
 
@@ -29003,7 +29000,7 @@
             this.dom.__vd = nvd;
             this.dom.__defs = defs;
           } else if (renderMode === mode.WEBGL) {
-            struct.renderWebgl(renderMode, ctx, defs, this);
+            struct.renderWebgl(renderMode, ctx, this);
           } // 特殊cb，供小程序绘制完回调使用
 
 
@@ -29245,7 +29242,7 @@
         computedStyle[WIDTH$7] = width;
         computedStyle[HEIGHT$8] = height; // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           dom.width = width;
           dom.height = height;
         } else if (renderMode === mode.SVG) {
@@ -30549,10 +30546,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs) {
+      value: function render(renderMode, lv, ctx) {
         var _this3 = this;
 
-        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx);
 
         if (res["break"]) {
           return res;
@@ -31310,8 +31307,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (res["break"]) {
           return res;
@@ -31319,7 +31316,7 @@
 
         this.buildCache(res.originX, res.originY);
 
-        this.__renderPolygon(renderMode, ctx, defs, res);
+        this.__renderPolygon(renderMode, ctx, res);
 
         return res;
       }
@@ -31654,8 +31651,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (res["break"]) {
           return res;
@@ -31693,7 +31690,7 @@
             dy: dy
           };
 
-          this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, o);
+          this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
         } // 多个需要fill在下面，stroke在上面，依次循环
         else {
             for (var i = 0, len = fills.length; i < len; i++) {
@@ -31707,7 +31704,7 @@
                   dy: dy
                 };
 
-                this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, _o);
+                this.__renderOneSector(renderMode, ctx, isMulti, list, sList, _o);
               }
             }
 
@@ -31727,7 +31724,7 @@
                   dy: dy
                 };
 
-                this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, sList, _o2);
+                this.__renderOnePolygon(renderMode, ctx, isMulti, list, sList, _o2);
               }
             }
           }
@@ -31736,7 +31733,7 @@
       }
     }, {
       key: "__renderOneSector",
-      value: function __renderOneSector(renderMode, ctx, defs, isMulti, list, sList, res) {
+      value: function __renderOneSector(renderMode, ctx, isMulti, list, sList, res) {
         var fill = res.fill,
             stroke = res.stroke,
             strokeWidth = res.strokeWidth;
@@ -31747,21 +31744,21 @@
 
         if (isFillCE || isStrokeCE) {
           if (isFillCE) {
-            this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+            this.__conicGradient(renderMode, ctx, list, isMulti, res);
           } else if (fill && fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
           }
 
           if (strokeWidth > 0 && isStrokeCE) {
             inject.warn('Stroke style can not use conic-gradient');
           } else if (strokeWidth > 0 && stroke && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
           }
         } else if (isFillRE || isStrokeRE) {
           if (isFillRE) {
-            this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+            this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
           } else if (fill && fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
           } // stroke椭圆渐变matrix会变形，降级为圆
 
 
@@ -31769,17 +31766,17 @@
             inject.warn('Stroke style can not use radial-gradient for ellipse');
             res.stroke = res.stroke.v[0];
 
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
           } else if (strokeWidth > 0 && stroke && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
           }
         } else {
           if (fill && fill !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, false);
+            this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, false);
           }
 
           if (stroke && stroke !== 'none') {
-            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+            this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
           }
         }
       }
@@ -32011,8 +32008,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (res["break"]) {
           return res;
@@ -32020,7 +32017,7 @@
 
         this.buildCache(res.originX, res.originY);
 
-        this.__renderPolygon(renderMode, ctx, defs, res);
+        this.__renderPolygon(renderMode, ctx, res);
 
         return res;
       }
@@ -32144,8 +32141,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (res["break"]) {
           return res;
@@ -32153,7 +32150,7 @@
 
         this.buildCache(res.cx, res.cy);
 
-        this.__renderPolygon(renderMode, ctx, defs, res);
+        this.__renderPolygon(renderMode, ctx, res);
 
         return res;
       }
@@ -32336,8 +32333,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs, cache) {
-        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+      value: function render(renderMode, lv, ctx, cache) {
+        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (res["break"]) {
           return res;
@@ -32345,7 +32342,7 @@
 
         this.buildCache(res.cx, res.cy);
 
-        this.__renderPolygon(renderMode, ctx, defs, res);
+        this.__renderPolygon(renderMode, ctx, res);
 
         return res;
       }

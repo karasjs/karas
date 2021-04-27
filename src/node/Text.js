@@ -89,7 +89,7 @@ class Text extends Node {
     let pfw = parentComputedStyle[FONT_WEIGHT];
     let pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
     let parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
         ctx.font = css.setFontStyle(parentComputedStyle);
         parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
@@ -120,7 +120,7 @@ class Text extends Node {
         sum += mw;
         this.__charWidth = Math.max(this.charWidth, mw);
       }
-      else if(renderMode === mode.CANVAS) {
+      else if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         mw = cache[char] = ctx.measureText(char).width;
         charWidthList.push(mw);
         sum += mw;
@@ -540,7 +540,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, lv, ctx, defs, dx = 0, dy = 0) {
+  render(renderMode, lv, ctx, dx = 0, dy = 0) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
@@ -552,7 +552,7 @@ class Text extends Node {
       || !textBoxes.length) {
       return false;
     }
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {
         ctx.font = font;
@@ -574,7 +574,7 @@ class Text extends Node {
       let last = textBoxes[textBoxes.length - 1];
       let { endX, endY } = last;
       let computedStyle = __bp.computedStyle;
-      if(renderMode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         let font = css.setFontStyle(computedStyle);
         if(ctx.font !== font) {
           ctx.font = font;

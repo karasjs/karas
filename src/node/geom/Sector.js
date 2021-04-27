@@ -149,8 +149,8 @@ class Sector extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(res.break) {
       return res;
     }
@@ -184,7 +184,7 @@ class Sector extends Geom {
         dx,
         dy,
       };
-      this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, o);
+      this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
     }
     // 多个需要fill在下面，stroke在上面，依次循环
     else {
@@ -197,7 +197,7 @@ class Sector extends Geom {
             dx,
             dy,
           };
-          this.__renderOneSector(renderMode, ctx, defs, isMulti, list, sList, o);
+          this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
         }
       }
       for(let i = 0, len = strokes.length; i < len; i++) {
@@ -214,14 +214,14 @@ class Sector extends Geom {
             dx,
             dy,
           };
-          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, sList, o);
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, sList, o);
         }
       }
     }
     return res;
   }
 
-  __renderOneSector(renderMode, ctx, defs, isMulti, list, sList, res) {
+  __renderOneSector(renderMode, ctx, isMulti, list, sList, res) {
     let {
       fill,
       stroke,
@@ -233,41 +233,41 @@ class Sector extends Geom {
     let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
     if(isFillCE || isStrokeCE) {
       if(isFillCE) {
-        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+        this.__conicGradient(renderMode, ctx, list, isMulti, res);
       }
       else if(fill && fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
       }
       if(strokeWidth > 0 && isStrokeCE) {
         inject.warn('Stroke style can not use conic-gradient');
       }
       else if(strokeWidth > 0 && stroke && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
       }
     }
     else if(isFillRE || isStrokeRE) {
       if(isFillRE) {
-        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+        this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
       }
       else if(fill && fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
       }
       // stroke椭圆渐变matrix会变形，降级为圆
       if(strokeWidth > 0 && isStrokeRE) {
         inject.warn('Stroke style can not use radial-gradient for ellipse');
         res.stroke = res.stroke.v[0];
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
       }
       else if(strokeWidth > 0 && stroke && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
       }
     }
     else {
       if(fill && fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, false);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, false);
       }
       if(stroke && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
       }
     }
   }

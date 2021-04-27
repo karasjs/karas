@@ -12187,7 +12187,7 @@
 
         xom.__config[NODE_DEFS_CACHE$1].push(v);
 
-        return defs.add(v);
+        return ctx.add(v);
       } else {
         xom.virtualDom.bb.push({
           type: 'item',

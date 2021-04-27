@@ -95,7 +95,7 @@ function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bb
         ],
       };
       xom.__config[NODE_DEFS_CACHE].push(v);
-      return defs.add(v);
+      return ctx.add(v);
     }
     else {
       xom.virtualDom.bb.push({

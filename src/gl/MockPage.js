@@ -2,11 +2,12 @@ import Page from '../refresh/Page';
 import inject from '../util/inject';
 
 class MockPage {
-  constructor(texture, fullSize) {
+  constructor(texture, width, height) {
     this.uuid = Page.genUuid();
     this.time = inject.now();
     this.texture = texture;
-    this.fullSize = fullSize;
+    this.width = width;
+    this.height = height;
   }
 }
 

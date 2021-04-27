@@ -5,7 +5,7 @@ import MockPage from './MockPage';
  * 基于此纹理进行filter、mask等后处理渲染
  */
 class MockCache {
-  constructor(texture, sx1, sy1, width, height, fullSize, bbox) {
+  constructor(texture, sx1, sy1, width, height, bbox) {
     this.coords = [1, 1];
     this.x = 0;
     this.y = 0;
@@ -15,7 +15,7 @@ class MockCache {
     this.height = height;
     this.bbox = bbox;
     this.available = true;
-    this.__page = new MockPage(texture, fullSize);
+    this.__page = new MockPage(texture, width, height);
   }
 
   release() {
@@ -25,10 +25,6 @@ class MockCache {
 
   get page() {
     return this.__page;
-  }
-
-  get fullSize() {
-    return this.page.fullSize;
   }
 }
 

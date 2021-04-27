@@ -754,7 +754,7 @@ class Root extends Dom {
       this.__renderMode = mode.WEBGL;
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-      gl.programBlur = webgl.initShaders(gl, vertexBlur, fragmentBlur);
+      // gl.programBlur = webgl.initShaders(gl, vertexBlur, fragmentBlur);
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));

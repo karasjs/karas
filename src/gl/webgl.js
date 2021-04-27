@@ -173,7 +173,7 @@ function drawTextureCache(gl, list, hash, cx, cy) {
       lastChannel = hash[cache.page.uuid];
       record[1] = lastChannel;
     }
-    let { x, y, width, height, fullSize, bbox } = cache;
+    let { x, y, width, height, page, bbox } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let bx = bbox[0], by = bbox[1];
     let [x1, y1] = convertCoords2Gl(bx - 1 + (dx || 0), by - 1 + height + (dy || 0), cx, cy);
@@ -181,8 +181,8 @@ function drawTextureCache(gl, list, hash, cx, cy) {
     [x1, y1] = calPoint([x1, y1], matrix);
     [x2, y2] = calPoint([x2, y2], matrix);
     vtPoint.push(x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2);
-    let tx1 = x / fullSize, ty1 = (y + height) / fullSize;
-    let tx2 = (x + width) / fullSize, ty2 = y / fullSize;
+    let tx1 = x / page.width, ty1 = (y + height) / page.height;
+    let tx2 = (x + width) / page.width, ty2 = y / page.height;
     vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
     record[0]++;
@@ -227,23 +227,47 @@ function drawTextureCache(gl, list, hash, cx, cy) {
   gl.disableVertexAttribArray(a_opacity);
 }
 
-function drawBlur(gl, i, j, f1, f2, spread, d, sigma) {
-  console.log(i, j, f1, f2, spread, d, sigma);
-  // 第一次将total绘制到blur上，此时尺寸存在spread差值
-  let a = -f1 / f2;
-  let b = -a;
+/**
+ * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+ * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核扩大3倍性能慢
+ * x/y方向分开执行，加速性能，计算次数由d*d变为d+d，d为卷积核大小
+ * spread由d和sigma计算得出，d由sigma计算得出，sigma即css的blur()参数
+ * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+ * i和j为total和filter的纹理单元，3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
+ * 由total变为filter时cache会各方向上扩展spread的大小到width/height
+ * 因此第一次绘制时坐标非1，后面则固定1
+ * @param gl
+ * @param program
+ * @param frameBuffer
+ * @param texCache
+ * @param tex1 初次绘制目标纹理
+ * @param tex2 初次绘制源纹理
+ * @param i 初次绘制目标纹理单元
+ * @param j 初次绘制源纹理单元
+ * @param width
+ * @param height
+ * @param cx
+ * @param cy
+ * @param spread
+ * @param d
+ * @param sigma
+ */
+function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy, spread, d, sigma) {
+  // 第一次将total绘制到blur上，此时尺寸存在spread差值，且无matrix变更，但要处理y颠倒
+  let [x1, y2] = convertCoords2Gl(spread, height - spread, cx, cy);
+  let [x2, y1] = convertCoords2Gl(width - spread, spread, cx, cy);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    a, a,
-    a, b,
-    b, a,
-    a, b,
-    b, a,
-    b, b,
+    x1, y1,
+    x1, y2,
+    x2, y1,
+    x1, y2,
+    x2, y1,
+    x2, y2,
   ]), gl.STATIC_DRAW);
-  let a_position = gl.getAttribLocation(gl.programBlur, 'a_position');
+  let a_position = gl.getAttribLocation(program, 'a_position');
   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position);
   // 纹理buffer
@@ -257,20 +281,48 @@ function drawBlur(gl, i, j, f1, f2, spread, d, sigma) {
     1, 0,
     1, 1,
   ]), gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(gl.programBlur, 'a_texCoords');
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // direction
-  let u_direction = gl.getUniformLocation(gl.programBlur, 'u_direction');
-  gl.uniform2f(u_direction, 0, 1);
+  let u_direction = gl.getUniformLocation(program, 'u_direction');
+  gl.uniform2f(u_direction, 1, 0);
   // 纹理单元
-  let u_texture = gl.getUniformLocation(gl.programBlur, 'u_texture');
+  let u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, j);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
+  // fbo绑定切换纹理对象和单元索引，同时注意不能向源纹理绘制，因为源是cacheTotal，需要重新生成一个，y方向再来一次
+  let tex3 = createTexture(gl, null, j, width, height);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+    -1, 1,
+    1, -1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  gl.uniform2f(u_direction, 0, 1);
+  gl.uniform1i(u_texture, i);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  // 反复执行共3次，这里是后面2次，坐标等均不变，只是切换fbo绑定对象和纹理单元
+  for(let k = 0; k < 2; k++) {
+    // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+    // gl.uniform2f(u_direction, 1, 0);
+    // gl.uniform1i(u_texture, j);
+    // gl.drawArrays(gl.TRIANGLES, 0, 6);
+    // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+    // gl.uniform2f(u_direction, 0, 1);
+    // gl.uniform1i(u_texture, i);
+    // gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+  // 回收
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
+  return tex3;
 }
 
 function drawMask(gl, i, j) {

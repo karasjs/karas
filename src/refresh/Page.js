@@ -16,7 +16,8 @@ class Page {
     this.__number = number;
     this.__free = this.__total = number * number;
     size *= number;
-    this.__fullSize = size;
+    this.__width = size;
+    this.__height = size;
     let offScreen = this.__canvas = renderMode === mode.WEBGL
       ? inject.getCacheWebgl(size, size, null, number)
       : inject.getCacheCanvas(size, size, null, number);
@@ -70,8 +71,12 @@ class Page {
     return this.__size;
   }
 
-  get fullSize() {
-    return this.__fullSize;
+  get width() {
+    return this.__width;
+  }
+
+  get height() {
+    return this.__height;
   }
 
   get number() {

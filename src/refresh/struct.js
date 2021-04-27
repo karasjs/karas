@@ -13,6 +13,8 @@ import enums from '../util/enums';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';
 import blur from '../math/blur';
+import vertexBlur from '../gl/blur.vert';
+import fragmentBlur from '../gl/blur.frag';
 
 const {
   STYLE_KEY: {
@@ -362,9 +364,9 @@ function genOverflow(node, cache) {
 }
 
 // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
-function genFrameBufferWithTexture(gl, texCache, fullSize) {
+function genFrameBufferWithTexture(gl, texCache, width, height) {
   let n = texCache.lockOneChannel();
-  let texture = webgl.createTexture(gl, null, n, fullSize, fullSize);
+  let texture = webgl.createTexture(gl, null, n, width, height);
   let frameBuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -373,7 +375,7 @@ function genFrameBufferWithTexture(gl, texCache, fullSize) {
     inject.error('Framebuffer object is incomplete: ' + check.toString());
   }
   // 离屏窗口0开始，上下左右各扩展1px
-  gl.viewport(0, 0, fullSize, fullSize);
+  gl.viewport(0, 0, width, height);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
   return [n, frameBuffer, texture];
@@ -405,13 +407,12 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   if(!bboxTotal) {
     return;
   }
-  let width = bboxTotal[2] - bboxTotal[0];
-  let height = bboxTotal[3] - bboxTotal[1];
-  let fullSize = Math.max(width + 2, height + 2);
-  let [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, fullSize);
+  let width = bboxTotal[2] - bboxTotal[0] + 2;
+  let height = bboxTotal[3] - bboxTotal[1] + 2;
+  let [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 以bboxTotal的左上角-1px为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
-  let cx = fullSize * 0.5, cy = fullSize * 0.5;
+  let cx = width * 0.5, cy = height * 0.5;
   let dx = -bboxTotal[0] + 1, dy = -bboxTotal[1] + 1;
   let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
@@ -510,14 +511,14 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
-  let mockCache = new MockCache(texture, sx1, sy1, width + 2, height + 2, fullSize, bboxTotal);
+  let mockCache = new MockCache(texture, sx1, sy1, width, height, bboxTotal);
   texCache.releaseLockChannel(n, mockCache.page);
   return mockCache;
 }
 
 function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   console.log(cache);
-  let { sx1, sy1, width, height, fullSize, bbox } = cache;
+  let { sx1, sy1, width, height, bbox } = cache;
   // cache一定是total，fullSize还要算上blur扩展
   let d = blur.kernelSize(sigma);
   let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
@@ -525,12 +526,40 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
     d -= 2;
   }
   let spread = blur.outerSizeByD(d);
-  let fullSize2 = fullSize + spread * 2;
-  let cx = fullSize * 0.5, cy = fullSize * 0.5;
-  let dx = -bbox[0] + 1 + d, dy = -bbox[1] + 1 + d;
-  console.log(sigma, d, spread, max, fullSize, fullSize2, texCache.channels, texCache.locks);
+  width += spread * 2;
+  height += spread * 2;
+  let cx = width * 0.5, cy = height * 0.5;
+  console.log(sigma, d, spread, width, height, texCache.channels, texCache.locks);
+  /**
+   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+   * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
+   * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+   * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
+   * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
+   */
+  let weights = blur.gaussianWeight(sigma, d);
+  let vert = '';
+  let frag = '';
+  let r = Math.floor(d * 0.5);
+  for(let i = 0; i < r; i++) {
+    let c = (r - i) * 0.01;
+    vert += `\nv_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;`;
+    frag += `\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};`;
+  }
+  vert += `\nv_texCoordsBlur[${r}] = a_texCoords;`;
+  frag += `\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};`;
+  for(let i = 0; i < r; i++) {
+    let c = (i + 1) * 0.01;
+    vert += `\nv_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;`;
+    frag += `\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};`;
+  }
+  vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
+  frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
+  console.log(vert);console.log(frag);
+  let program = webgl.initShaders(gl, vert, frag);
+  gl.useProgram(program);
   // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
-  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, fullSize2);
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
   let j = texCache.findExistTexChannel(cache.page);
   if(j === -1) {
@@ -542,10 +571,10 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
     texCache.lockChannel(j);
   }
   console.log(i, j, texCache.channels, texCache.locks);
-  gl.useProgram(gl.programBlur);
-  webgl.drawBlur(gl, i, j, fullSize, fullSize2, spread, d, sigma);
-  // 切换回主程序
+  texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma);
+  // 切换回主程序并销毁这个临时program
   gl.useProgram(gl.program);
+  gl.deleteProgram(program);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
@@ -556,19 +585,18 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   b[1] -= spread;
   b[2] += spread;
   b[3] += spread;
-  let filterCache = new MockCache(texture, sx1, sy1, fullSize2, fullSize2, fullSize2, b);
+  let filterCache = new MockCache(texture, sx1, sy1, width, height, b);
   texCache.releaseLockChannel(j, filterCache.page);
   return filterCache;
 }
 
 function genMaskWebgl(gl, texCache, node, cache, W, H) {
   let { sx1, sy1, width, height, bbox } = cache;
-  // cache可能是普通cache，也可能是mockCache，为兼容必须重新计算fullSize，取width/height最大值
-  let fullSize = Math.max(width, height);
-  let cx = fullSize * 0.5, cy = fullSize * 0.5;
+  // cache一定是mockCache，可能是total/filter/overflow一种
+  let cx = width * 0.5, cy = height * 0.5;
   let dx = -bbox[0] + 1, dy = -bbox[1] + 1;
   // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
-  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, fullSize);
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   let next = node.next;
   while(next && next.isMask) {
     let __config = next.__config;
@@ -611,7 +639,7 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
     texCache.lockChannel(j);
   }
   // 生成最终纹理，汇总total和maskCache
-  let [n, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, fullSize);
+  let [n, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
   gl.useProgram(gl.programMask);
   webgl.drawMask(gl, i, j);
   webgl.deleteTexture(gl, texture);
@@ -623,7 +651,7 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer2);
   // 同total一样生成一个mockCache
-  let maskCache = new MockCache(texture2, sx1, sy1, width, height, fullSize, bbox);
+  let maskCache = new MockCache(texture2, sx1, sy1, width, height, bbox);
   texCache.releaseLockChannel(n, maskCache.page);
   return maskCache;
 }
@@ -2068,7 +2096,7 @@ function renderWebgl(renderMode, gl, defs, root) {
       }
     });
   }
-  // console.error('render');
+  console.error('render');
   // return;
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text

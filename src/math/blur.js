@@ -8,9 +8,6 @@ function kernelSize(sigma) {
   if(sigma <= 0) {
     return 0;
   }
-  if(sigma < 2) {
-    return 5;
-  }
   let d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
   if(d < 2) {
     d = 2;

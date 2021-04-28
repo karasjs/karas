@@ -328,7 +328,7 @@ class Geom extends Xom {
       strokeMiterlimit,
       fill,
     } = res;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(fill) {
         if(fill.k === 'linear') {
           ctx.fillStyle = fill.v;
@@ -391,7 +391,7 @@ class Geom extends Xom {
       [NODE_CACHE_MASK]: __cacheMask,
       [NODE_CACHE_OVERFLOW]: __cacheOverflow,
     } = __config;
-    if(renderMode === mode.CANVAS && cache) {
+    if(renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
     // 存在老的缓存认为可提前跳出
@@ -542,7 +542,7 @@ class Geom extends Xom {
       dx,
       dy,
     } = res;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
@@ -648,7 +648,7 @@ class Geom extends Xom {
     let t = mx.inverse(matrix);
     list = this.__inversePtList(list, isMulti, t);
     // 用正向matrix渲染
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(matrix) {
         ctx.save();
         let me = this.matrixEvent;
@@ -705,7 +705,7 @@ class Geom extends Xom {
       dy = 0,
     } = res;
     let color = fill.v;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       let [x1, y1, x2, y2] = bbox;
       let w = x2 - x1, h = y2 - y1;
       let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');

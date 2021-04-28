@@ -5606,6 +5606,44 @@
     deleteTexture(gl, tex3);
     return tex1;
   }
+  /**
+   * 根据total/filter生成overflow
+   * @param gl
+   * @param i 输入纹理单元
+   * @param dx 二者偏移值
+   * @param dy
+   * @param width 最终大小
+   * @param height
+   * @param w 输入纹理大小
+   * @param h
+   */
+
+
+  function drawOverflow(gl, i, dx, dy, width, height, w, h) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(gl.programOverflow, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer，原本大小width/height，使用其中的w/h
+
+    var x1 = dx / w,
+        y1 = dy / h,
+        x2 = (width + dx) / w,
+        y2 = (height + dy) / h;
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(gl.programOverflow, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(gl.programOverflow, 'u_texture');
+    gl.uniform1i(u_texture, i);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+  }
 
   function drawMask(gl, i, j) {
     // 顶点buffer
@@ -5641,6 +5679,7 @@
     deleteTexture: deleteTexture,
     drawTextureCache: drawTextureCache,
     drawBlur: drawBlur,
+    drawOverflow: drawOverflow,
     drawMask: drawMask
   };
 
@@ -17322,10 +17361,10 @@
               }
             }
           });
-        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
+        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl则忽略绘制
 
 
-        if (renderMode === mode.CANVAS && cache && __config[NODE_LIMIT_CACHE]) {
+        if ((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE]) {
           return {
             limitCache: true
           };
@@ -23366,7 +23405,7 @@
             strokeMiterlimit = res.strokeMiterlimit,
             fill = res.fill;
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (fill) {
             if (fill.k === 'linear') {
               ctx.fillStyle = fill.v;
@@ -23425,7 +23464,7 @@
             __cacheMask = __config[NODE_CACHE_MASK$1],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2];
 
-        if (renderMode === mode.CANVAS && cache) {
+        if (renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
           __config[NODE_CACHE_TOTAL$2] = __config[NODE_CACHE$3];
         } // 存在老的缓存认为可提前跳出
 
@@ -23581,7 +23620,7 @@
             dx = res.dx,
             dy = res.dy;
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           this.__preSetCanvas(renderMode, ctx, res);
 
           ctx.beginPath();
@@ -23708,7 +23747,7 @@
         var t = mx.inverse(matrix);
         list = this.__inversePtList(list, isMulti, t); // 用正向matrix渲染
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (matrix) {
             ctx.save();
             var me = this.matrixEvent;
@@ -23777,7 +23816,7 @@
             dy = _res$dy === void 0 ? 0 : _res$dy;
         var color = fill.v;
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           var _bbox = _slicedToArray(bbox, 4),
               x1 = _bbox[0],
               y1 = _bbox[1],
@@ -25592,18 +25631,25 @@
   }
 
   function genFilter(node, cache, v) {
-    return node.__config[NODE_CACHE_FILTER$3] = Cache.genBlur(cache, v);
+    return Cache.genBlur(cache, v);
   }
 
   function genMask(node, cache, isClip) {
     var _node$computedStyle = node.computedStyle,
         transform = _node$computedStyle[TRANSFORM$5],
         transformOrigin = _node$computedStyle[TRANSFORM_ORIGIN$5];
-    return node.__config[NODE_CACHE_MASK$2] = Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
+    return Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
   }
 
   function genOverflow(node, cache) {
-    return node.__config[NODE_CACHE_OVERFLOW$3] = Cache.genOverflow(cache, node);
+    var sbox = node.bbox;
+    var bbox = cache.bbox; // 没超过无需生成
+
+    if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
+      return cache;
+    }
+
+    return Cache.genOverflow(cache, node);
   } // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
 
 
@@ -25875,6 +25921,50 @@
     return filterCache;
   }
 
+  function genOverflowWebgl(gl, texCache, node, cache, W, H) {
+    var sbox = node.bbox;
+    var bbox = cache.bbox;
+    console.log(bbox, sbox); // 没超过无需生成
+
+    if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
+      return cache;
+    }
+
+    var width = sbox[2] - sbox[0],
+        height = sbox[3] - sbox[1]; // 生成最终纹理，尺寸为被遮罩节点大小
+
+    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
+        i = _genFrameBufferWithTe6[0],
+        frameBuffer = _genFrameBufferWithTe6[1],
+        texture = _genFrameBufferWithTe6[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+
+
+    var j = texCache.findExistTexChannel(cache.page);
+
+    if (j === -1) {
+      // 直接绑定，因为一定是个mockCache
+      j = texCache.lockOneChannel();
+      webgl.bindTexture(gl, cache.page.texture, j);
+    } else {
+      texCache.lockChannel(j);
+    } // 绘制，根据坐标裁剪使用原本纹理的一部分
+
+
+    gl.useProgram(gl.programOverflow);
+    webgl.drawOverflow(gl, j, sbox[0] - bbox[0], sbox[1] - bbox[1], width, height, cache.width, cache.height);
+    texCache.releaseLockChannel(j); // 切回
+
+    gl.useProgram(gl.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, W, H);
+    gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
+
+    var overflowCache = new MockCache(texture, cache.sx1, cache.sy1, width, height, sbox);
+    texCache.releaseLockChannel(i, overflowCache.page);
+    return overflowCache;
+  }
+
   function genMaskWebgl(gl, texCache, node, cache, W, H) {
     var sx1 = cache.sx1,
         sy1 = cache.sy1,
@@ -25887,11 +25977,11 @@
     var dx = -bbox[0] + 1,
         dy = -bbox[1] + 1; // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
 
-    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
-        i = _genFrameBufferWithTe6[0],
-        frameBuffer = _genFrameBufferWithTe6[1],
-        texture = _genFrameBufferWithTe6[2];
+    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
+        i = _genFrameBufferWithTe8[0],
+        frameBuffer = _genFrameBufferWithTe8[1],
+        texture = _genFrameBufferWithTe8[2];
 
     var next = node.next;
 
@@ -25937,11 +26027,11 @@
     } // 生成最终纹理，汇总total和maskCache
 
 
-    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
-        n = _genFrameBufferWithTe8[0],
-        frameBuffer2 = _genFrameBufferWithTe8[1],
-        texture2 = _genFrameBufferWithTe8[2];
+    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
+        n = _genFrameBufferWithTe10[0],
+        frameBuffer2 = _genFrameBufferWithTe10[1],
+        texture2 = _genFrameBufferWithTe10[2];
 
     gl.useProgram(gl.programMask);
     webgl.drawMask(gl, i, j);
@@ -27570,7 +27660,7 @@
             __cache = __config[NODE_CACHE$4];
 
             if (__cache && __cache.available) {
-              node.render(mode.CANVAS, __refreshLevel, __cache.ctx, true);
+              node.render(renderMode, __refreshLevel, __cache.ctx, true);
             }
           } else {
             node.render(renderMode, __refreshLevel, gl, true);
@@ -27644,13 +27734,15 @@
             }
 
             target = __config[NODE_CACHE_FILTER$3];
-          } // if(overflow === 'hidden') {
-          //   if(!__cacheOverflow || !__cacheOverflow.available) {
-          //     __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
-          //   }
-          //   target = __config[NODE_CACHE_OVERFLOW];
-          // }
+          }
 
+          if (overflow === 'hidden') {
+            if (!__cacheOverflow || !__cacheOverflow.available) {
+              __config[NODE_CACHE_FILTER$3] = genOverflowWebgl(gl, texCache, node, target, width, height);
+            }
+
+            target = __config[NODE_CACHE_OVERFLOW$3];
+          }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
             __config[NODE_CACHE_MASK$2] = genMaskWebgl(gl, texCache, node, target, width, height);
@@ -27659,14 +27751,14 @@
           inject.error('Merge error for oversize');
         }
       });
-    } // console.error('render');
-    // return;
+    }
+
+    console.error('render'); // return;
 
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 超尺寸的给出警告，无法像canvas那样做降级
      */
-
 
     for (var _i15 = 0, _len6 = __structs.length; _i15 < _len6; _i15++) {
       var _structs$_i6 = __structs[_i15],
@@ -27750,6 +27842,10 @@
   var vertexMask = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
   var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);gl_FragColor=vec4(color1.rgb,color1.a*color2.a);}"; // eslint-disable-line
+
+  var vertexOverflow = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
+
+  var fragmentOverflow = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;void main(){gl_FragColor=texture2D(u_texture,v_texCoords);}"; // eslint-disable-line
 
   var TexCache = /*#__PURE__*/function () {
     function TexCache(units) {
@@ -28908,8 +29004,8 @@
 
           this.__renderMode = mode.WEBGL;
           gl.program = webgl.initShaders(gl, vertex, fragment);
-          gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask); // gl.programBlur = webgl.initShaders(gl, vertexBlur, fragmentBlur);
-
+          gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
+          gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
           gl.useProgram(gl.program); // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
 
           var MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
@@ -28983,7 +29079,7 @@
 
             this.dom.__vd = nvd;
             this.dom.__defs = defs;
-          } else if (renderMode === mode.WEBGL) {
+          } else if (renderMode === mode.WEBGL && !this.props.noRender) {
             struct.renderWebgl(renderMode, ctx, this);
           } // 特殊cb，供小程序绘制完回调使用
 
@@ -30613,7 +30709,7 @@
           __cacheProps.d = d;
         }
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           strokes.forEach(function (stroke, i) {
             var strokeWidth = strokeWidths[i];
             var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);

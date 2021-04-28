@@ -24,6 +24,8 @@ import vertex from '../gl/main.vert';
 import fragment from '../gl/main.frag';
 import vertexMask from '../gl/mask.vert';
 import fragmentMask from '../gl/mask.frag';
+import vertexOverflow from '../gl/overflow.vert';
+import fragmentOverflow from '../gl/overflow.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
 import TexCache from '../gl/TexCache';
@@ -746,7 +748,7 @@ class Root extends Dom {
       this.__renderMode = mode.WEBGL;
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-      // gl.programBlur = webgl.initShaders(gl, vertexBlur, fragmentBlur);
+      gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
@@ -809,7 +811,7 @@ class Root extends Dom {
       this.dom.__vd = nvd;
       this.dom.__defs = defs;
     }
-    else if(renderMode === mode.WEBGL) {
+    else if(renderMode === mode.WEBGL && !this.props.noRender) {
       struct.renderWebgl(renderMode, ctx, this);
     }
     // 特殊cb，供小程序绘制完回调使用

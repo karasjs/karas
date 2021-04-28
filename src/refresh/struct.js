@@ -351,16 +351,22 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
 }
 
 function genFilter(node, cache, v) {
-  return node.__config[NODE_CACHE_FILTER] = Cache.genBlur(cache, v);
+  return Cache.genBlur(cache, v);
 }
 
 function genMask(node, cache, isClip) {
   let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: transformOrigin } = node.computedStyle;
-  return node.__config[NODE_CACHE_MASK] = Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
+  return Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
 }
 
 function genOverflow(node, cache) {
-  return node.__config[NODE_CACHE_OVERFLOW] = Cache.genOverflow(cache, node);
+  let sbox = node.bbox;
+  let bbox = cache.bbox;
+  // 没超过无需生成
+  if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
+    return cache;
+  }
+  return Cache.genOverflow(cache, node);
 }
 
 // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
@@ -584,6 +590,42 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   let filterCache = new MockCache(texture, sx1, sy1, width, height, b);
   texCache.releaseLockChannel(i, filterCache.page);
   return filterCache;
+}
+
+function genOverflowWebgl(gl, texCache, node, cache, W, H) {
+  let sbox = node.bbox;
+  let bbox = cache.bbox;
+  console.log(bbox, sbox);
+  // 没超过无需生成
+  if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
+    return cache;
+  }
+  let width = sbox[2] - sbox[0], height = sbox[3] - sbox[1];
+  // 生成最终纹理，尺寸为被遮罩节点大小
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  let j = texCache.findExistTexChannel(cache.page);
+  if(j === -1) {
+    // 直接绑定，因为一定是个mockCache
+    j = texCache.lockOneChannel();
+    webgl.bindTexture(gl, cache.page.texture, j);
+  }
+  else {
+    texCache.lockChannel(j);
+  }
+  // 绘制，根据坐标裁剪使用原本纹理的一部分
+  gl.useProgram(gl.programOverflow);
+  webgl.drawOverflow(gl, j, sbox[0] - bbox[0], sbox[1] - bbox[1], width, height, cache.width, cache.height);
+  texCache.releaseLockChannel(j);
+  // 切回
+  gl.useProgram(gl.program);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.deleteFramebuffer(frameBuffer);
+  // 同total一样生成一个mockCache
+  let overflowCache = new MockCache(texture, cache.sx1, cache.sy1, width, height, sbox);
+  texCache.releaseLockChannel(i, overflowCache.page);
+  return overflowCache;
 }
 
 function genMaskWebgl(gl, texCache, node, cache, W, H) {
@@ -2017,7 +2059,7 @@ function renderWebgl(renderMode, gl, root) {
         node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, gl, true);
         __cache = __config[NODE_CACHE];
         if(__cache && __cache.available) {
-          node.render(mode.CANVAS, __refreshLevel, __cache.ctx, true);
+          node.render(renderMode, __refreshLevel, __cache.ctx, true);
         }
       }
       else {
@@ -2079,12 +2121,12 @@ function renderWebgl(renderMode, gl, root) {
           }
           target = __config[NODE_CACHE_FILTER];
         }
-        // if(overflow === 'hidden') {
-        //   if(!__cacheOverflow || !__cacheOverflow.available) {
-        //     __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
-        //   }
-        //   target = __config[NODE_CACHE_OVERFLOW];
-        // }
+        if(overflow === 'hidden') {
+          if(!__cacheOverflow || !__cacheOverflow.available) {
+            __config[NODE_CACHE_FILTER] = genOverflowWebgl(gl, texCache, node, target, width, height);
+          }
+          target = __config[NODE_CACHE_OVERFLOW];
+        }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMaskWebgl(gl, texCache, node, target, width, height);
         }
@@ -2094,7 +2136,7 @@ function renderWebgl(renderMode, gl, root) {
       }
     });
   }
-  // console.error('render');
+  console.error('render');
   // return;
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text

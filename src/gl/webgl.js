@@ -334,6 +334,54 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
   return tex1;
 }
 
+/**
+ * 根据total/filter生成overflow
+ * @param gl
+ * @param i 输入纹理单元
+ * @param dx 二者偏移值
+ * @param dy
+ * @param width 最终大小
+ * @param height
+ * @param w 输入纹理大小
+ * @param h
+ */
+function drawOverflow(gl, i, dx, dy, width, height, w, h) {
+  // 顶点buffer
+  let pointBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+    -1, 1,
+    1, -1,
+    -1, 1,
+    1, -1,
+    1, 1,
+  ]), gl.STATIC_DRAW);
+  let a_position = gl.getAttribLocation(gl.programOverflow, 'a_position');
+  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_position);
+  // 纹理buffer，原本大小width/height，使用其中的w/h
+  let x1 = dx / w, y1 = dy / h, x2 = (width + dx) / w, y2 = (height + dy) /h;
+  let texBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    x1, y1,
+    x1, y2,
+    x2, y1,
+    x1, y2,
+    x2, y1,
+    x2, y2,
+  ]), gl.STATIC_DRAW);
+  let a_texCoords = gl.getAttribLocation(gl.programOverflow, 'a_texCoords');
+  gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_texCoords);
+  // 纹理单元
+  let u_texture = gl.getUniformLocation(gl.programOverflow, 'u_texture');
+  gl.uniform1i(u_texture, i);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.deleteBuffer(pointBuffer);
+}
+
 function drawMask(gl, i, j) {
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
@@ -382,5 +430,6 @@ export default {
   deleteTexture,
   drawTextureCache,
   drawBlur,
+  drawOverflow,
   drawMask,
 };

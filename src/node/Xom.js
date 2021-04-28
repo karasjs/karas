@@ -1373,8 +1373,8 @@ class Xom extends Node {
         }
       });
     }
-    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制
-    if(renderMode === mode.CANVAS && cache && __config[NODE_LIMIT_CACHE]) {
+    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl则忽略绘制
+    if((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE]) {
       return { limitCache: true };
     }
     let offScreenMask;

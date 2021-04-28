@@ -612,14 +612,13 @@ class Text extends Node {
     }
     let { sx, sy, __cache, bbox } = this;
     if(__cache) {
-      __cache.reset(bbox);
+      __cache.reset(bbox, sx, sy);
     }
     else {
-      __cache = Cache.getInstance(bbox);
+      __cache = Cache.getInstance(bbox, sx, sy);
     }
     if(__cache && __cache.enabled) {
       this.__cache = __cache;
-      __cache.__appendData(sx, sy);
       this.render(mode.CANVAS, level.REFLOW, __cache.ctx, null, -sx + __cache.x, -sy + __cache.y);
       __cache.__available = true;
     }

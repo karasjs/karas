@@ -44,11 +44,11 @@ function genSingle(cache, message) {
 }
 
 class Cache {
-  constructor(w, h, bbox, page, pos, renderMode) {
-    this.__init(w, h, bbox, page, pos, renderMode);
+  constructor(w, h, bbox, page, pos, x1, y1) {
+    this.__init(w, h, bbox, page, pos, x1, y1);
   }
 
-  __init(w, h, bbox, page, pos, renderMode) {
+  __init(w, h, bbox, page, pos, x1, y1) {
     this.__width = w;
     this.__height = h;
     this.__bbox = bbox;
@@ -57,23 +57,19 @@ class Cache {
     let [x, y] = page.getCoords(pos);
     this.__x = x;
     this.__y = y;
-    // 四周各+1px的扩展
-    // this.__coords = [x + 1, y + 1];
+    this.__appendData(x1, y1);
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
-      if(renderMode === mode.WEBGL) {}
-      else {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
-        if(debug.flag) {
-          page.canvas.setAttribute('size', page.size);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-          ctx.beginPath();
-          ctx.rect(x, y, page.size, page.size);
-          ctx.closePath();
-          ctx.fill();
-        }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      if(debug.flag) {
+        page.canvas.setAttribute('size', page.size);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.beginPath();
+        ctx.rect(x, y, page.size, page.size);
+        ctx.closePath();
+        ctx.fill();
       }
     }
   }
@@ -81,7 +77,6 @@ class Cache {
   __appendData(sx1, sy1) {
     this.sx1 = sx1; // 去除margin的左上角原点坐标
     this.sy1 = sy1;
-    // let [x, y] = this.coords;
     let bbox = this.bbox;
     this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
     this.dy = this.y - bbox[1];
@@ -114,7 +109,7 @@ class Cache {
     }
   }
 
-  reset(bbox) {
+  reset(bbox, x1, y1) {
     // 尺寸没变复用之前的并清空
     if(util.equalArr(this.bbox, bbox) && this.enabled) {
       this.clear();
@@ -132,7 +127,7 @@ class Cache {
       return;
     }
     let { page, pos } = res;
-    this.__init(w, h, bbox, page, pos);
+    this.__init(w, h, bbox, page, pos, x1, y1);
   }
 
   // 是否功能可用，生成离屏canvas及尺寸超限
@@ -189,30 +184,24 @@ class Cache {
     return this.__pos;
   }
 
-  // get coords() {
-  //   return this.__coords;
-  // }
-
   static get MAX() {
     return Page.MAX - 2;
   }
 
-  static getInstance(bbox, renderMode) {
+  static getInstance(bbox, x1, y1) {
     if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
       inject.error('Cache.getInstance failed: ' + bbox);
       return;
     }
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    // w += 2;
-    // h += 2;
     // 防止边的精度问题四周各+1px，宽高即+2px
-    let res = Page.getInstance(Math.max(w, h), renderMode);
+    let res = Page.getInstance(Math.max(w, h));
     if(!res) {
       return;
     }
     let { page, pos } = res;
-    return new Cache(w, h, bbox, page, pos, renderMode);
+    return new Cache(w, h, bbox, page, pos, x1, y1);
   }
 
   /**
@@ -237,7 +226,6 @@ class Cache {
     offScreen.bbox = bbox;
     offScreen.x = 0;
     offScreen.y = 0;
-    // offScreen.coords = [1, 1];
     offScreen.size = size;
     offScreen.sx1 = sx1 - d;
     offScreen.sy1 = sy1 - d;

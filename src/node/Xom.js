@@ -1197,15 +1197,14 @@ class Xom extends Node {
       else if(!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
         let bbox = this.bbox;
         if(__cache) {
-          __cache.reset(bbox);
+          __cache.reset(bbox, x1, y1);
         }
         else {
-          __cache = Cache.getInstance(bbox);
+          __cache = Cache.getInstance(bbox, x1, y1);
         }
         // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
-          __cache.__appendData(x1, y1);
           ctx = __cache.ctx;
           dx = __cache.dx;
           dy = __cache.dy;

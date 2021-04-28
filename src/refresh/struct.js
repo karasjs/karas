@@ -221,18 +221,17 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
   if(!bboxTotal) {
     return;
   }
+  let { __sx1: sx1, __sy1: sy1 } = node;
   if(cacheTop) {
-    cacheTop.reset(bboxTotal);
+    cacheTop.reset(bboxTotal, sx1, sy1);
   }
   else {
-    cacheTop = Cache.getInstance(bboxTotal);
+    cacheTop = Cache.getInstance(bboxTotal, sx1, sy1);
   }
   // 创建失败，再次降级
   if(!cacheTop || !cacheTop.enabled) {
     return;
   }
-  let { __sx1: sx1, __sy1: sy1 } = node;
-  cacheTop.__appendData(sx1, sy1);
   cacheTop.__available = true;
   let { x: tx, y: ty, ctx, dbx, dby } = cacheTop;
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1

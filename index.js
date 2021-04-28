@@ -9134,11 +9134,10 @@
   var NUMBER$1 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1];
   var MAX = SIZE[SIZE.length - 1];
   var HASH_CANVAS = {};
-  var HASH_WEBGL = {};
   var uuid = 0;
 
   var Page = /*#__PURE__*/function () {
-    function Page(size, number, renderMode) {
+    function Page(size, number) {
       _classCallCheck(this, Page);
 
       this.__size = size;
@@ -9147,7 +9146,7 @@
       size *= number;
       this.__width = size;
       this.__height = size;
-      var offScreen = this.__canvas = renderMode === mode.WEBGL ? inject.getCacheWebgl(size, size, null, number) : inject.getCacheCanvas(size, size, null, number);
+      var offScreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
 
       if (offScreen) {
         this.__offScreen = offScreen;
@@ -9267,7 +9266,7 @@
       }
     }], [{
       key: "getInstance",
-      value: function getInstance(size, renderMode) {
+      value: function getInstance(size) {
         if (size > MAX) {
           return;
         }
@@ -9284,8 +9283,7 @@
           }
         }
 
-        var HASH = renderMode === mode.WEBGL ? HASH_WEBGL : HASH_CANVAS;
-        var list = HASH[s] = HASH[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页
+        var list = HASH_CANVAS[s] = HASH_CANVAS[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页
 
         var page;
 
@@ -9299,7 +9297,7 @@
         }
 
         if (!page) {
-          page = new Page(s, n, renderMode);
+          page = new Page(s, n);
 
           if (!page.offScreen) {
             inject.error('Can not create off-screen for page');
@@ -9976,15 +9974,15 @@
   }
 
   var Cache = /*#__PURE__*/function () {
-    function Cache(w, h, bbox, page, pos, renderMode) {
+    function Cache(w, h, bbox, page, pos, x1, y1) {
       _classCallCheck(this, Cache);
 
-      this.__init(w, h, bbox, page, pos, renderMode);
+      this.__init(w, h, bbox, page, pos, x1, y1);
     }
 
     _createClass(Cache, [{
       key: "__init",
-      value: function __init(w, h, bbox, page, pos, renderMode) {
+      value: function __init(w, h, bbox, page, pos, x1, y1) {
         this.__width = w;
         this.__height = h;
         this.__bbox = bbox;
@@ -9997,25 +9995,23 @@
             y = _page$getCoords2[1];
 
         this.__x = x;
-        this.__y = y; // 四周各+1px的扩展
-        // this.__coords = [x + 1, y + 1];
+        this.__y = y;
+
+        this.__appendData(x1, y1);
 
         if (page.canvas) {
           this.__enabled = true;
           var ctx = page.ctx;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.globalAlpha = 1;
 
-          if (renderMode === mode.WEBGL) ; else {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.globalAlpha = 1;
-
-            if (debug.flag) {
-              page.canvas.setAttribute('size', page.size);
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-              ctx.beginPath();
-              ctx.rect(x, y, page.size, page.size);
-              ctx.closePath();
-              ctx.fill();
-            }
+          if (debug.flag) {
+            page.canvas.setAttribute('size', page.size);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.beginPath();
+            ctx.rect(x, y, page.size, page.size);
+            ctx.closePath();
+            ctx.fill();
           }
         }
       }
@@ -10024,8 +10020,7 @@
       value: function __appendData(sx1, sy1) {
         this.sx1 = sx1; // 去除margin的左上角原点坐标
 
-        this.sy1 = sy1; // let [x, y] = this.coords;
-
+        this.sy1 = sy1;
         var bbox = this.bbox;
         this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
 
@@ -10067,7 +10062,7 @@
       }
     }, {
       key: "reset",
-      value: function reset(bbox) {
+      value: function reset(bbox, x1, y1) {
         // 尺寸没变复用之前的并清空
         if (util.equalArr(this.bbox, bbox) && this.enabled) {
           this.clear();
@@ -10090,7 +10085,7 @@
         var page = res.page,
             pos = res.pos;
 
-        this.__init(w, h, bbox, page, pos);
+        this.__init(w, h, bbox, page, pos, x1, y1);
       } // 是否功能可用，生成离屏canvas及尺寸超限
 
     }, {
@@ -10158,24 +10153,19 @@
       key: "pos",
       get: function get() {
         return this.__pos;
-      } // get coords() {
-      //   return this.__coords;
-      // }
-
+      }
     }], [{
       key: "getInstance",
-      value: function getInstance(bbox, renderMode) {
+      value: function getInstance(bbox, x1, y1) {
         if (isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
           inject.error('Cache.getInstance failed: ' + bbox);
           return;
         }
 
         var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]); // w += 2;
-        // h += 2;
-        // 防止边的精度问题四周各+1px，宽高即+2px
+        var h = Math.ceil(bbox[3] - bbox[1]); // 防止边的精度问题四周各+1px，宽高即+2px
 
-        var res = Page.getInstance(Math.max(w, h), renderMode);
+        var res = Page.getInstance(Math.max(w, h));
 
         if (!res) {
           return;
@@ -10183,7 +10173,7 @@
 
         var page = res.page,
             pos = res.pos;
-        return new Cache(w, h, bbox, page, pos, renderMode);
+        return new Cache(w, h, bbox, page, pos, x1, y1);
       }
       /**
        * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
@@ -10217,8 +10207,7 @@
         offScreen.draw();
         offScreen.bbox = bbox;
         offScreen.x = 0;
-        offScreen.y = 0; // offScreen.coords = [1, 1];
-
+        offScreen.y = 0;
         offScreen.size = size;
         offScreen.sx1 = sx1 - d;
         offScreen.sy1 = sy1 - d;
@@ -11134,16 +11123,13 @@
             bbox = this.bbox;
 
         if (__cache) {
-          __cache.reset(bbox);
+          __cache.reset(bbox, sx, sy);
         } else {
-          __cache = Cache.getInstance(bbox);
+          __cache = Cache.getInstance(bbox, sx, sy);
         }
 
         if (__cache && __cache.enabled) {
           this.__cache = __cache;
-
-          __cache.__appendData(sx, sy);
-
           this.render(mode.CANVAS, o$2.REFLOW, __cache.ctx, null, -sx + __cache.x, -sy + __cache.y);
           __cache.__available = true;
         }
@@ -17159,17 +17145,14 @@
               var bbox = this.bbox;
 
               if (__cache) {
-                __cache.reset(bbox);
+                __cache.reset(bbox, x1, y1);
               } else {
-                __cache = Cache.getInstance(bbox);
+                __cache = Cache.getInstance(bbox, x1, y1);
               } // cache成功设置坐标偏移，否则为超过最大尺寸限制不使用缓存
 
 
               if (__cache && __cache.enabled) {
                 __cache.__bbox = bbox;
-
-                __cache.__appendData(x1, y1);
-
                 ctx = __cache.ctx;
                 dx = __cache.dx;
                 dy = __cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
@@ -25454,21 +25437,19 @@
       return;
     }
 
+    var sx1 = node.__sx1,
+        sy1 = node.__sy1;
+
     if (cacheTop) {
-      cacheTop.reset(bboxTotal);
+      cacheTop.reset(bboxTotal, sx1, sy1);
     } else {
-      cacheTop = Cache.getInstance(bboxTotal);
+      cacheTop = Cache.getInstance(bboxTotal, sx1, sy1);
     } // 创建失败，再次降级
 
 
     if (!cacheTop || !cacheTop.enabled) {
       return;
     }
-
-    var sx1 = node.__sx1,
-        sy1 = node.__sy1;
-
-    cacheTop.__appendData(sx1, sy1);
 
     cacheTop.__available = true;
     var _cacheTop = cacheTop,

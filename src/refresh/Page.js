@@ -6,21 +6,18 @@ let SIZE   = [8,   16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 let NUMBER = [128, 64, 32, 16,   8,   4,   2,    1,    1,    1];
 let MAX = SIZE[SIZE.length - 1];
 const HASH_CANVAS = {};
-const HASH_WEBGL = {};
 
 let uuid = 0;
 
 class Page {
-  constructor(size, number, renderMode) {
+  constructor(size, number) {
     this.__size = size;
     this.__number = number;
     this.__free = this.__total = number * number;
     size *= number;
     this.__width = size;
     this.__height = size;
-    let offScreen = this.__canvas = renderMode === mode.WEBGL
-      ? inject.getCacheWebgl(size, size, null, number)
-      : inject.getCacheCanvas(size, size, null, number);
+    let offScreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
     if(offScreen) {
       this.__offScreen = offScreen;
     }
@@ -115,7 +112,7 @@ class Page {
     this.__update = v;
   }
 
-  static getInstance(size, renderMode) {
+  static getInstance(size) {
     if(size > MAX) {
       return;
     }
@@ -129,8 +126,7 @@ class Page {
         break;
       }
     }
-    const HASH = renderMode === mode.WEBGL ? HASH_WEBGL : HASH_CANVAS;
-    let list = HASH[s] = HASH[s] || [];
+    let list = HASH_CANVAS[s] = HASH_CANVAS[s] || [];
     // 从hash列表中尝试取可用的一页，找不到就生成新的页
     let page;
     for(let i = 0, len = list.length; i < len; i++) {
@@ -141,7 +137,7 @@ class Page {
       }
     }
     if(!page) {
-      page = new Page(s, n, renderMode);
+      page = new Page(s, n);
       if(!page.offScreen) {
         inject.error('Can not create off-screen for page');
         return;

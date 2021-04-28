@@ -2282,8 +2282,8 @@ class Xom extends Node {
     }
   }
 
-  __computeMeasure(renderMode, ctx, isHost, cb) {
-    css.computeMeasure(this, isHost);
+  __computeMeasure(renderMode, ctx, cb) {
+    css.computeMeasure(this);
     if(util.isFunction(cb)) {
       cb(this);
     }

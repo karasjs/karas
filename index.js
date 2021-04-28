@@ -8459,8 +8459,8 @@
   function computeMeasure(node, isHost) {
     var currentStyle = node.currentStyle,
         computedStyle = node.computedStyle,
-        parent = node.parent;
-    var parentComputedStyle = !isHost && parent.computedStyle;
+        domParent = node.domParent;
+    var parentComputedStyle = !isHost && domParent.computedStyle;
     MEASURE_KEY_SET$1.forEach(function (k) {
       var v = currentStyle[k]; // ff特殊处理
 
@@ -11928,18 +11928,6 @@
         }
       }
     }, {
-      key: "__computeMeasure",
-      value: function __computeMeasure(renderMode, ctx, isHost, cb) {
-        var sr = this.shadowRoot;
-
-        if (sr instanceof Text) {
-          sr.__computeMeasure(renderMode, ctx);
-        } // 其它类型为Xom或Component
-        else {
-            sr.__computeMeasure(renderMode, ctx, true, cb);
-          }
-      }
-    }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
@@ -12061,7 +12049,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -18379,8 +18367,8 @@
       }
     }, {
       key: "__computeMeasure",
-      value: function __computeMeasure(renderMode, ctx, isHost, cb) {
-        css.computeMeasure(this, isHost);
+      value: function __computeMeasure(renderMode, ctx, cb) {
+        css.computeMeasure(this);
 
         if (util.isFunction(cb)) {
           cb(this);
@@ -22142,19 +22130,18 @@
        * 首次检查为整树遍历，后续检查是节点自发局部检查，不再进入
        * @param renderMode
        * @param ctx
-       * @param isHost
        * @param cb
        * @private
        */
 
     }, {
       key: "__computeMeasure",
-      value: function __computeMeasure(renderMode, ctx, isHost, cb) {
-        _get(_getPrototypeOf(Dom.prototype), "__computeMeasure", this).call(this, renderMode, ctx, isHost, cb); // 即便自己不需要计算，但children还要继续递归检查
+      value: function __computeMeasure(renderMode, ctx, cb) {
+        _get(_getPrototypeOf(Dom.prototype), "__computeMeasure", this).call(this, renderMode, ctx, cb); // 即便自己不需要计算，但children还要继续递归检查
 
 
         this.children.forEach(function (item) {
-          item.__computeMeasure(renderMode, ctx, false, cb);
+          item.__computeMeasure(renderMode, ctx, cb);
         });
       }
     }, {
@@ -28561,6 +28548,7 @@
 
 
     var isRp = !component && isRepaint(lv);
+    console.log(isRp, hasMeasure);
 
     if (isRp) {
       // zIndex变化需清空svg缓存

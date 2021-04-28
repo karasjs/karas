@@ -1023,8 +1023,8 @@ function normalize(style, reset = []) {
  * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
  */
 function computeMeasure(node, isHost) {
-  let { currentStyle, computedStyle, parent } = node;
-  let parentComputedStyle = !isHost && parent.computedStyle;
+  let { currentStyle, computedStyle, domParent } = node;
+  let parentComputedStyle = !isHost && domParent.computedStyle;
   MEASURE_KEY_SET.forEach(k => {
     let v = currentStyle[k];
     // ff特殊处理

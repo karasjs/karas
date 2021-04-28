@@ -2473,15 +2473,14 @@ class Dom extends Xom {
    * 首次检查为整树遍历，后续检查是节点自发局部检查，不再进入
    * @param renderMode
    * @param ctx
-   * @param isHost
    * @param cb
    * @private
    */
-  __computeMeasure(renderMode, ctx, isHost, cb) {
-    super.__computeMeasure(renderMode, ctx, isHost, cb);
+  __computeMeasure(renderMode, ctx, cb) {
+    super.__computeMeasure(renderMode, ctx, cb);
     // 即便自己不需要计算，但children还要继续递归检查
     this.children.forEach(item => {
-      item.__computeMeasure(renderMode, ctx, false, cb);
+      item.__computeMeasure(renderMode, ctx, cb);
     });
   }
 

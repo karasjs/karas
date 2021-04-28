@@ -195,17 +195,6 @@ class Component extends Event {
     }
   }
 
-  __computeMeasure(renderMode, ctx, isHost, cb) {
-    let sr = this.shadowRoot;
-    if(sr instanceof Text) {
-      sr.__computeMeasure(renderMode, ctx);
-    }
-    // 其它类型为Xom或Component
-    else {
-      sr.__computeMeasure(renderMode, ctx, true, cb);
-    }
-  }
-
   get tagName() {
     return this.__tagName;
   }
@@ -378,6 +367,7 @@ Object.keys(change.GEOM).concat([
   '__isRealInline',
   '__calBasis',
   '__calMinMax',
+  '__computeMeasure',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

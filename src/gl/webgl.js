@@ -179,7 +179,7 @@ function drawTextureCache(gl, list, hash, cx, cy) {
     let tx2 = (x + width) / page.width, ty2 = y / page.height;
     vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
-    record[0]++;console.log(opacity);
+    record[0]++;
   });
   // 顶点buffer
   let pointBuffer = gl.createBuffer();

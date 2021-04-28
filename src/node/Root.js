@@ -460,7 +460,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
   }
   // reflow/repaint/measure相关的记录下来
-  let isRp = !component && isRepaint(lv); console.log(isRp, hasMeasure);
+  let isRp = !component && isRepaint(lv);
   if(isRp) {
     // zIndex变化需清空svg缓存
     if(hasZ && renderMode === mode.SVG) {

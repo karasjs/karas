@@ -5457,7 +5457,6 @@
       vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
       vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
       record[0]++;
-      console.log(opacity);
     }); // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
@@ -8452,29 +8451,29 @@
    * 影响文字测量的只有字体和大小和重量，需要提前处理
    * 继承相关的计算
    * @param node 对象节点
-   * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
+   * @param isRoot 是否是根节点，无继承需使用默认值
    */
 
 
-  function computeMeasure(node, isHost) {
+  function computeMeasure(node, isRoot) {
     var currentStyle = node.currentStyle,
         computedStyle = node.computedStyle,
         domParent = node.domParent;
-    var parentComputedStyle = !isHost && domParent.computedStyle;
+    var parentComputedStyle = !isRoot && domParent.computedStyle;
     MEASURE_KEY_SET$1.forEach(function (k) {
       var v = currentStyle[k]; // ff特殊处理
 
       if (k === FONT_FAMILY) {
         if (v[1] === INHERIT$2) {
-          computedStyle[k] = getFontFamily(isHost ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k]);
+          computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k]);
         } else {
           computedStyle[k] = getFontFamily(v[0]);
         }
       } else if (v[1] === INHERIT$2) {
-        computedStyle[k] = isHost ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
       } // 只有fontSize会有%
       else if (v[1] === PERCENT$1) {
-          computedStyle[k] = isHost ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k] * v[1] * 0.01;
+          computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k] * v[0] * 0.01;
         } else {
           computedStyle[k] = v[0];
         }
@@ -28548,7 +28547,6 @@
 
 
     var isRp = !component && isRepaint(lv);
-    console.log(isRp, hasMeasure);
 
     if (isRp) {
       // zIndex变化需清空svg缓存

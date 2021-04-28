@@ -6,7 +6,6 @@ const {
     STRUCT_INDEX,
     STRUCT_CHILD_INDEX,
     STRUCT_LV,
-    STRUCT_CONFIG,
   },
   NODE_KEY: {
     NODE_IS_DESTROYED,
@@ -34,13 +33,11 @@ class Node {
   }
 
   __structure(i, lv, j) {
-    let config = this.__config;
-    return config[NODE_STRUCT] = {
+    return this.__config[NODE_STRUCT] = {
       [STRUCT_NODE]: this,
       [STRUCT_INDEX]: i,
       [STRUCT_CHILD_INDEX]: j,
       [STRUCT_LV]: lv,
-      [STRUCT_CONFIG]: config,
     };
   }
 

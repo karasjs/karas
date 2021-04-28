@@ -51,7 +51,6 @@ const {
   STRUCT_KEY: {
     STRUCT_NODE,
     STRUCT_TOTAL,
-    STRUCT_CONFIG,
     STRUCT_HAS_MASK,
     STRUCT_LV,
   },
@@ -713,13 +712,13 @@ function renderCacheCanvas(renderMode, ctx, root) {
       [STRUCT_NODE]: node,
       [STRUCT_LV]: lv,
       [STRUCT_TOTAL]: total,
-      [STRUCT_CONFIG]: __config,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
     if(node instanceof Text) {
       continue;
     }
+    let __config = node.__config;
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
     if(i === 0) {}
     else if(lv > lastLv) {
@@ -946,9 +945,9 @@ function renderCacheCanvas(renderMode, ctx, root) {
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
-      [STRUCT_CONFIG]: __config,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
+    let __config = node.__config;
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
       let {
@@ -1537,15 +1536,14 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
-        // [STRUCT_NODE]: node,
+        [STRUCT_NODE]: node,
         [STRUCT_TOTAL]: total,
-        [STRUCT_CONFIG]: __config,
         [STRUCT_HAS_MASK]: hasMask,
       } = __structs[i];
       let {
         [NODE_REFRESH_LV]: __refreshLevel,
         [NODE_DEFS_CACHE]: defsCache,
-      } = __config;
+      } = node.__config;
       // 只要涉及到matrix和opacity就影响mask
       let hasEffectMask = hasMask && (__refreshLevel >= REPAINT || contain(__refreshLevel, TRANSFORM_ALL | OP));
       if(hasEffectMask) {
@@ -1900,7 +1898,6 @@ function renderWebgl(renderMode, gl, root) {
       [STRUCT_NODE]: node,
       [STRUCT_LV]: lv,
       [STRUCT_TOTAL]: total,
-      [STRUCT_CONFIG]: __config,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
@@ -1913,6 +1910,7 @@ function renderWebgl(renderMode, gl, root) {
       }
       continue;
     }
+    let __config = node.__config;
     let __refreshLevel = __config[NODE_REFRESH_LV];
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
     if(i === 0) {}
@@ -2144,9 +2142,9 @@ function renderWebgl(renderMode, gl, root) {
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
-      [STRUCT_CONFIG]: __config,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
+    let __config = node.__config;
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
       // text特殊之处，__cache是独有的，__config大部分是复用parent的

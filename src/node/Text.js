@@ -90,6 +90,9 @@ class Text extends Node {
     let pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
     let parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if(renderMode === mode.WEBGL) {
+        ctx = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__').ctx;
+      }
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
         ctx.font = css.setFontStyle(parentComputedStyle);
         parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
@@ -619,7 +622,7 @@ class Text extends Node {
     }
     if(__cache && __cache.enabled) {
       this.__cache = __cache;
-      this.render(mode.CANVAS, level.REFLOW, __cache.ctx, null, -sx + __cache.x, -sy + __cache.y);
+      this.render(mode.CANVAS, level.REFLOW, __cache.ctx, -sx + __cache.x, -sy + __cache.y);
       __cache.__available = true;
     }
     return __cache;

@@ -415,9 +415,10 @@
     STRUCT_INDEX: 1,
     STRUCT_CHILD_INDEX: 2,
     STRUCT_LV: 3,
-    STRUCT_NUM: 4,
-    STRUCT_TOTAL: 5,
-    STRUCT_HAS_MASK: 6
+    STRUCT_CONFIG: 4,
+    STRUCT_NUM: 5,
+    STRUCT_TOTAL: 6,
+    STRUCT_HAS_MASK: 7
   };
   var enums = {
     STYLE_KEY: STYLE_KEY,
@@ -441,6 +442,7 @@
       STRUCT_INDEX = _enums$STRUCT_KEY.STRUCT_INDEX,
       STRUCT_CHILD_INDEX = _enums$STRUCT_KEY.STRUCT_CHILD_INDEX,
       STRUCT_LV = _enums$STRUCT_KEY.STRUCT_LV,
+      STRUCT_CONFIG = _enums$STRUCT_KEY.STRUCT_CONFIG,
       _enums$NODE_KEY = enums.NODE_KEY,
       NODE_IS_DESTROYED = _enums$NODE_KEY.NODE_IS_DESTROYED,
       NODE_STRUCT = _enums$NODE_KEY.NODE_STRUCT;
@@ -469,9 +471,10 @@
     _createClass(Node, [{
       key: "__structure",
       value: function __structure(i, lv, j) {
-        var _this$__config$NODE_S;
+        var _config$NODE_STRUCT;
 
-        return this.__config[NODE_STRUCT] = (_this$__config$NODE_S = {}, _defineProperty(_this$__config$NODE_S, STRUCT_NODE, this), _defineProperty(_this$__config$NODE_S, STRUCT_INDEX, i), _defineProperty(_this$__config$NODE_S, STRUCT_CHILD_INDEX, j), _defineProperty(_this$__config$NODE_S, STRUCT_LV, lv), _this$__config$NODE_S);
+        var config = this.__config;
+        return config[NODE_STRUCT] = (_config$NODE_STRUCT = {}, _defineProperty(_config$NODE_STRUCT, STRUCT_NODE, this), _defineProperty(_config$NODE_STRUCT, STRUCT_INDEX, i), _defineProperty(_config$NODE_STRUCT, STRUCT_CHILD_INDEX, j), _defineProperty(_config$NODE_STRUCT, STRUCT_LV, lv), _defineProperty(_config$NODE_STRUCT, STRUCT_CONFIG, config), _config$NODE_STRUCT);
       }
     }, {
       key: "__modifyStruct",
@@ -10507,6 +10510,10 @@
         var parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+          if (renderMode === mode.WEBGL) {
+            ctx = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__').ctx;
+          }
+
           if (!parentCache.hasOwnProperty(ELLIPSIS)) {
             ctx.font = css.setFontStyle(parentComputedStyle);
             parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
@@ -11130,7 +11137,7 @@
 
         if (__cache && __cache.enabled) {
           this.__cache = __cache;
-          this.render(mode.CANVAS, o$2.REFLOW, __cache.ctx, null, -sx + __cache.x, -sy + __cache.y);
+          this.render(mode.CANVAS, o$2.REFLOW, __cache.ctx, -sx + __cache.x, -sy + __cache.y);
           __cache.__available = true;
         }
 
@@ -25252,8 +25259,8 @@
       NODE_DOM_PARENT$4 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
-      STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
+      STRUCT_CONFIG$1 = _enums$STRUCT_KEY$2.STRUCT_CONFIG,
       STRUCT_HAS_MASK$1 = _enums$STRUCT_KEY$2.STRUCT_HAS_MASK,
       STRUCT_LV$2 = _enums$STRUCT_KEY$2.STRUCT_LV;
   var NONE$2 = o$2.NONE,
@@ -26025,14 +26032,14 @@
           node = _structs$_i[STRUCT_NODE$1],
           lv = _structs$_i[STRUCT_LV$2],
           total = _structs$_i[STRUCT_TOTAL$1],
+          __config = _structs$_i[STRUCT_CONFIG$1],
           hasMask = _structs$_i[STRUCT_HAS_MASK$1]; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
       if (node instanceof Text) {
         i = _i3;
         return "continue";
-      }
+      } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
-      var __config = node.__config; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
       if (_i3 === 0) ; else if (lv > lastLv) {
         parentMatrix = lastConfig[NODE_MATRIX_EVENT$3];
@@ -26297,8 +26304,8 @@
       var _structs$_i2 = __structs[_i5],
           node = _structs$_i2[STRUCT_NODE$1],
           total = _structs$_i2[STRUCT_TOTAL$1],
-          hasMask = _structs$_i2[STRUCT_HAS_MASK$1];
-      var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          __config = _structs$_i2[STRUCT_CONFIG$1],
+          hasMask = _structs$_i2[STRUCT_HAS_MASK$1]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (node instanceof Text) {
         var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT$4].__config,
@@ -27019,12 +27026,11 @@
       // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
       for (var _i8 = 0, len = __structs.length; _i8 < len; _i8++) {
         var _structs$_i4 = __structs[_i8],
-            node = _structs$_i4[STRUCT_NODE$1],
             total = _structs$_i4[STRUCT_TOTAL$1],
+            __config = _structs$_i4[STRUCT_CONFIG$1],
             hasMask = _structs$_i4[STRUCT_HAS_MASK$1];
-        var _node$__config2 = node.__config,
-            __refreshLevel = _node$__config2[NODE_REFRESH_LV$1],
-            defsCache = _node$__config2[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
+        var __refreshLevel = __config[NODE_REFRESH_LV$1],
+            defsCache = __config[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
 
         var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$2 || contain$2(__refreshLevel, TRANSFORM_ALL$2 | OP$1));
 
@@ -27433,6 +27439,7 @@
           node = _structs$_i7[STRUCT_NODE$1],
           lv = _structs$_i7[STRUCT_LV$2],
           total = _structs$_i7[STRUCT_TOTAL$1],
+          __config = _structs$_i7[STRUCT_CONFIG$1],
           hasMask = _structs$_i7[STRUCT_HAS_MASK$1]; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
       if (node instanceof Text) {
@@ -27447,7 +27454,6 @@
         return "continue";
       }
 
-      var __config = node.__config;
       var __refreshLevel = __config[NODE_REFRESH_LV$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
       if (_i14 === 0) ; else if (lv > lastLv) {
@@ -27624,11 +27630,11 @@
 
       var __blurValue = __config[NODE_BLUR_VALUE$1],
           __limitCache = __config[NODE_LIMIT_CACHE$1];
-      var position = computedStyle[POSITION$4],
-          overflow = computedStyle[OVERFLOW$3],
+      var overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
 
-      if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      if (!__limitCache && (hasMask // || position === 'absolute'
+      || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
         if (hasRecordAsMask) {
           hasRecordAsMask[6] = __blurValue;
           hasRecordAsMask[7] = overflow;
@@ -27715,8 +27721,8 @@
       var _structs$_i6 = __structs[_i15],
           node = _structs$_i6[STRUCT_NODE$1],
           total = _structs$_i6[STRUCT_TOTAL$1],
-          hasMask = _structs$_i6[STRUCT_HAS_MASK$1];
-      var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          __config = _structs$_i6[STRUCT_CONFIG$1],
+          hasMask = _structs$_i6[STRUCT_HAS_MASK$1]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (node instanceof Text) {
         // text特殊之处，__cache是独有的，__config大部分是复用parent的
@@ -28167,7 +28173,7 @@
       NODE_CACHE_MASK$3 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
       NODE_STRUCT$4 = _enums$NODE_KEY$9.NODE_STRUCT,
       _enums$STRUCT_KEY$3 = enums.STRUCT_KEY,
-      STRUCT_INDEX$3 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
+      STRUCT_INDEX$2 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
       STRUCT_TOTAL$2 = _enums$STRUCT_KEY$3.STRUCT_TOTAL,
       STRUCT_NODE$2 = _enums$STRUCT_KEY$3.STRUCT_NODE;
   var DIRECTION_HASH = (_DIRECTION_HASH = {}, _defineProperty(_DIRECTION_HASH, TOP$4, true), _defineProperty(_DIRECTION_HASH, RIGHT$3, true), _defineProperty(_DIRECTION_HASH, BOTTOM$4, true), _defineProperty(_DIRECTION_HASH, LEFT$3, true), _DIRECTION_HASH);
@@ -28530,7 +28536,7 @@
 
 
     if (hasVisibility || hasColor) {
-      for (var __structs = root.__structs, __struct = node.__config[NODE_STRUCT$4], _i = __struct[STRUCT_INDEX$3] + 1, _len = _i + __struct[STRUCT_TOTAL$2]; _i < _len; _i++) {
+      for (var __structs = root.__structs, __struct = node.__config[NODE_STRUCT$4], _i = __struct[STRUCT_INDEX$2] + 1, _len = _i + __struct[STRUCT_TOTAL$2]; _i < _len; _i++) {
         var _structs$_i = __structs[_i],
             _node = _structs$_i[STRUCT_NODE$2],
             total = _structs$_i[STRUCT_TOTAL$2];
@@ -30147,14 +30153,14 @@
 
               if (isFirst) {
                 isFirst = false;
-                lastIndex = ns[STRUCT_INDEX$3] + (ns[STRUCT_TOTAL$2] || 0) + 1;
+                lastIndex = ns[STRUCT_INDEX$2] + (ns[STRUCT_TOTAL$2] || 0) + 1;
                 diff += d;
               } // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
               else {
-                  var j = ns[STRUCT_INDEX$3] + (ns[STRUCT_TOTAL$2] || 0) + 1 + diff;
+                  var j = ns[STRUCT_INDEX$2] + (ns[STRUCT_TOTAL$2] || 0) + 1 + diff;
 
                   for (var _i6 = lastIndex; _i6 < j; _i6++) {
-                    structs[_i6][STRUCT_INDEX$3] += diff;
+                    structs[_i6][STRUCT_INDEX$2] += diff;
                   }
 
                   lastIndex = j;
@@ -30164,7 +30170,7 @@
 
             if (diff) {
               for (var _i7 = lastIndex, _len5 = structs.length; _i7 < _len5; _i7++) {
-                structs[_i7][STRUCT_INDEX$3] += diff;
+                structs[_i7][STRUCT_INDEX$2] += diff;
               }
             } // 清除id
 

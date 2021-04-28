@@ -6,7 +6,7 @@ import MockPage from './MockPage';
  */
 class MockCache {
   constructor(texture, sx1, sy1, width, height, bbox) {
-    this.coords = [1, 1];
+    // this.coords = [1, 1];
     this.x = 0;
     this.y = 0;
     this.sx1 = sx1;

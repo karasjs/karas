@@ -2,7 +2,6 @@ import Geom from '../node/geom/Geom';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
-import mode from '../node/mode';
 import mx from '../math/matrix';
 import level from './level';
 import util from '../util/util';
@@ -235,7 +234,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
   let { __sx1: sx1, __sy1: sy1 } = node;
   cacheTop.__appendData(sx1, sy1);
   cacheTop.__available = true;
-  let { coords: [tx, ty], ctx, dbx, dby } = cacheTop;
+  let { x: tx, y: ty, ctx, dbx, dby } = cacheTop;
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(cache && cache.available) {
     ctx.globalAlpha = 1;
@@ -413,8 +412,8 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   if(!bboxTotal) {
     return;
   }
-  let width = bboxTotal[2] - bboxTotal[0] + 2;
-  let height = bboxTotal[3] - bboxTotal[1] + 2;
+  let width = bboxTotal[2] - bboxTotal[0];
+  let height = bboxTotal[3] - bboxTotal[1];
   let [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 以bboxTotal的左上角-1px为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
@@ -595,7 +594,6 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   let sbox = node.bbox;
   let bbox = cache.bbox;
-  console.log(bbox, sbox);
   // 没超过无需生成
   if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
     return cache;

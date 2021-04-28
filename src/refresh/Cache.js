@@ -27,7 +27,9 @@ const {
 function genSingle(cache, message) {
   let { size, sx1, sy1, width, height, bbox } = cache;
   let offScreen = inject.getCacheCanvas(width, height, null, message);
-  offScreen.coords = [1, 1];
+  offScreen.x = 0;
+  offScreen.y = 0;
+  // offScreen.coords = [1, 1];
   offScreen.bbox = bbox;
   offScreen.size = size;
   offScreen.sx1 = sx1;
@@ -56,7 +58,7 @@ class Cache {
     this.__x = x;
     this.__y = y;
     // 四周各+1px的扩展
-    this.__coords = [x + 1, y + 1];
+    // this.__coords = [x + 1, y + 1];
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
@@ -68,7 +70,7 @@ class Cache {
           page.canvas.setAttribute('size', page.size);
           ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
           ctx.beginPath();
-          ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
+          ctx.rect(x, y, page.size, page.size);
           ctx.closePath();
           ctx.fill();
         }
@@ -79,10 +81,10 @@ class Cache {
   __appendData(sx1, sy1) {
     this.sx1 = sx1; // 去除margin的左上角原点坐标
     this.sy1 = sy1;
-    let [x, y] = this.coords;
+    // let [x, y] = this.coords;
     let bbox = this.bbox;
-    this.dx = x - bbox[0]; // cache坐标和box原点的差值
-    this.dy = y - bbox[1];
+    this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
+    this.dy = this.y - bbox[1];
     this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
     this.dby = sy1 - bbox[1];
     this.update();
@@ -96,9 +98,9 @@ class Cache {
     let ctx = this.ctx;
     if(this.enabled && ctx && this.available) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      let [x, y] = this.coords;
+      let { x, y } = this;
       let size = this.page.size;
-      ctx.clearRect(x - 1, y - 1, size, size);
+      ctx.clearRect(x, y, size, size);
     }
     this.__available = false;
   }
@@ -121,8 +123,8 @@ class Cache {
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    w += 2;
-    h += 2;
+    // w += 2;
+    // h += 2;
     // 防止边的精度问题四周各+1px，宽高即+2px
     let res = Page.getInstance(Math.max(w, h));
     if(!res) {
@@ -187,9 +189,9 @@ class Cache {
     return this.__pos;
   }
 
-  get coords() {
-    return this.__coords;
-  }
+  // get coords() {
+  //   return this.__coords;
+  // }
 
   static get MAX() {
     return Page.MAX - 2;
@@ -202,8 +204,8 @@ class Cache {
     }
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    w += 2;
-    h += 2;
+    // w += 2;
+    // h += 2;
     // 防止边的精度问题四周各+1px，宽高即+2px
     let res = Page.getInstance(Math.max(w, h), renderMode);
     if(!res) {
@@ -221,7 +223,7 @@ class Cache {
    */
   static genBlur(cache, v) {
     let d = blur.outerSize(v);
-    let { coords: [x, y], size, canvas, sx1, sy1, width, height, bbox } = cache;
+    let { x, y, size, canvas, sx1, sy1, width, height, bbox } = cache;
     bbox = bbox.slice(0);
     bbox[0] -= d;
     bbox[1] -= d;
@@ -229,11 +231,13 @@ class Cache {
     bbox[3] += d;
     let offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
     offScreen.ctx.filter = `blur(${v}px)`;
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, d, d, width, height);
+    offScreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offScreen.ctx.filter = 'none';
     offScreen.draw();
     offScreen.bbox = bbox;
-    offScreen.coords = [1, 1];
+    offScreen.x = 0;
+    offScreen.y = 0;
+    // offScreen.coords = [1, 1];
     offScreen.size = size;
     offScreen.sx1 = sx1 - d;
     offScreen.sy1 = sy1 - d;
@@ -253,7 +257,7 @@ class Cache {
       list.push(next);
       next = next.next;
     }
-    let { coords: [x, y], ctx, dbx, dby } = cacheMask;
+    let { x, y, ctx, dbx, dby } = cacheMask;
     tfo[0] += x + dbx;
     tfo[1] += y + dby;
     let inverse = tf.calMatrixByOrigin(transform, tfo);
@@ -310,7 +314,7 @@ class Cache {
       ctx.globalCompositeOperation = 'destination-in';
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
-      ctx.rect(sx - bbox[0] + 1, sy - bbox[1] + 1, outerWidth, outerHeight);
+      ctx.rect(sx - bbox[0], sy - bbox[1], outerWidth, outerHeight);
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';
@@ -330,15 +334,15 @@ class Cache {
       let dy = old[1] - bbox[1];
       let newCache = Cache.getInstance(bbox);
       if(newCache && newCache.enabled) {
-        let { coords: [ox, oy], canvas, width, height } = cache;
-        let { coords: [nx, ny] } = newCache;
+        let { x: ox, y: oy, canvas, width, height } = cache;
+        let { x: nx, y: ny } = newCache;
         newCache.sx1 = cache.sx1;
         newCache.sy1 = cache.sy1;
         newCache.dx = cache.dx + dx;
         newCache.dy = cache.dy + dy;
         newCache.dbx = cache.dbx + dx;
         newCache.dby = cache.dby + dy;
-        newCache.ctx.drawImage(canvas, ox - 1, oy - 1, width, height, dx + nx - 1, dy + ny - 1, width, height);
+        newCache.ctx.drawImage(canvas, ox, oy, width, height, dx + nx, dy + ny, width, height);
         newCache.__available = true;
         cache.release();
         return newCache;
@@ -350,8 +354,8 @@ class Cache {
   }
 
   static drawCache(source, target, transform, matrix, tfo, inverse) {
-    let { coords: [tx, ty], sx1, sy1, ctx, dbx, dby } = target;
-    let { coords: [x, y], canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
+    let { x: tx, y: ty, sx1, sy1, ctx, dbx, dby } = target;
+    let { x, y, canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
     let ox = tx + sx2 - sx1 + dbx - dbx2;
     let oy = ty + sy2 - sy1 + dby - dby2;
     if(transform && matrix && tfo) {
@@ -371,14 +375,14 @@ class Cache {
       }
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
-    ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
+    ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
   }
 
   static draw(ctx, opacity, matrix, cache) {
     ctx.globalAlpha = opacity;
     ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-    let { coords: [x, y], canvas, sx1, sy1, dbx, dby, width, height } = cache;
-    ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
+    let { x, y, canvas, sx1, sy1, dbx, dby, width, height } = cache;
+    ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
   }
 }
 

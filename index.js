@@ -5426,12 +5426,12 @@
       var bx = bbox[0],
           by = bbox[1];
 
-      var _convertCoords2Gl = convertCoords2Gl(bx - 1 + (dx || 0), by - 1 + height + (dy || 0), cx, cy),
+      var _convertCoords2Gl = convertCoords2Gl(bx + (dx || 0), by + height + (dy || 0), cx, cy),
           _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2),
           x1 = _convertCoords2Gl2[0],
           y1 = _convertCoords2Gl2[1];
 
-      var _convertCoords2Gl3 = convertCoords2Gl(bx - 1 + width + (dx || 0), by - 1 + (dy || 0), cx, cy),
+      var _convertCoords2Gl3 = convertCoords2Gl(bx + width + (dx || 0), by + (dy || 0), cx, cy),
           _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2),
           x2 = _convertCoords2Gl4[0],
           y2 = _convertCoords2Gl4[1];
@@ -9959,7 +9959,9 @@
         height = cache.height,
         bbox = cache.bbox;
     var offScreen = inject.getCacheCanvas(width, height, null, message);
-    offScreen.coords = [1, 1];
+    offScreen.x = 0;
+    offScreen.y = 0; // offScreen.coords = [1, 1];
+
     offScreen.bbox = bbox;
     offScreen.size = size;
     offScreen.sx1 = sx1;
@@ -9996,8 +9998,7 @@
 
         this.__x = x;
         this.__y = y; // 四周各+1px的扩展
-
-        this.__coords = [x + 1, y + 1];
+        // this.__coords = [x + 1, y + 1];
 
         if (page.canvas) {
           this.__enabled = true;
@@ -10011,7 +10012,7 @@
               page.canvas.setAttribute('size', page.size);
               ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
               ctx.beginPath();
-              ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
+              ctx.rect(x, y, page.size, page.size);
               ctx.closePath();
               ctx.fill();
             }
@@ -10023,16 +10024,12 @@
       value: function __appendData(sx1, sy1) {
         this.sx1 = sx1; // 去除margin的左上角原点坐标
 
-        this.sy1 = sy1;
-
-        var _this$coords = _slicedToArray(this.coords, 2),
-            x = _this$coords[0],
-            y = _this$coords[1];
+        this.sy1 = sy1; // let [x, y] = this.coords;
 
         var bbox = this.bbox;
-        this.dx = x - bbox[0]; // cache坐标和box原点的差值
+        this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
 
-        this.dy = y - bbox[1];
+        this.dy = this.y - bbox[1];
         this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
 
         this.dby = sy1 - bbox[1];
@@ -10050,13 +10047,10 @@
 
         if (this.enabled && ctx && this.available) {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-          var _this$coords2 = _slicedToArray(this.coords, 2),
-              x = _this$coords2[0],
-              y = _this$coords2[1];
-
+          var x = this.x,
+              y = this.y;
           var size = this.page.size;
-          ctx.clearRect(x - 1, y - 1, size, size);
+          ctx.clearRect(x, y, size, size);
         }
 
         this.__available = false;
@@ -10082,9 +10076,9 @@
 
         this.release();
         var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]);
-        w += 2;
-        h += 2; // 防止边的精度问题四周各+1px，宽高即+2px
+        var h = Math.ceil(bbox[3] - bbox[1]); // w += 2;
+        // h += 2;
+        // 防止边的精度问题四周各+1px，宽高即+2px
 
         var res = Page.getInstance(Math.max(w, h));
 
@@ -10164,12 +10158,10 @@
       key: "pos",
       get: function get() {
         return this.__pos;
-      }
-    }, {
-      key: "coords",
-      get: function get() {
-        return this.__coords;
-      }
+      } // get coords() {
+      //   return this.__coords;
+      // }
+
     }], [{
       key: "getInstance",
       value: function getInstance(bbox, renderMode) {
@@ -10179,9 +10171,9 @@
         }
 
         var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]);
-        w += 2;
-        h += 2; // 防止边的精度问题四周各+1px，宽高即+2px
+        var h = Math.ceil(bbox[3] - bbox[1]); // w += 2;
+        // h += 2;
+        // 防止边的精度问题四周各+1px，宽高即+2px
 
         var res = Page.getInstance(Math.max(w, h), renderMode);
 
@@ -10204,10 +10196,8 @@
       key: "genBlur",
       value: function genBlur(cache, v) {
         var d = blur.outerSize(v);
-
-        var _cache$coords = _slicedToArray(cache.coords, 2),
-            x = _cache$coords[0],
-            y = _cache$coords[1],
+        var x = cache.x,
+            y = cache.y,
             size = cache.size,
             canvas = cache.canvas,
             sx1 = cache.sx1,
@@ -10215,7 +10205,6 @@
             width = cache.width,
             height = cache.height,
             bbox = cache.bbox;
-
         bbox = bbox.slice(0);
         bbox[0] -= d;
         bbox[1] -= d;
@@ -10223,11 +10212,13 @@
         bbox[3] += d;
         var offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
         offScreen.ctx.filter = "blur(".concat(v, "px)");
-        offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, d, d, width, height);
+        offScreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offScreen.ctx.filter = 'none';
         offScreen.draw();
         offScreen.bbox = bbox;
-        offScreen.coords = [1, 1];
+        offScreen.x = 0;
+        offScreen.y = 0; // offScreen.coords = [1, 1];
+
         offScreen.size = size;
         offScreen.sx1 = sx1 - d;
         offScreen.sy1 = sy1 - d;
@@ -10250,13 +10241,11 @@
           next = next.next;
         }
 
-        var _cacheMask$coords = _slicedToArray(cacheMask.coords, 2),
-            x = _cacheMask$coords[0],
-            y = _cacheMask$coords[1],
+        var x = cacheMask.x,
+            y = cacheMask.y,
             ctx = cacheMask.ctx,
             dbx = cacheMask.dbx,
             dby = cacheMask.dby;
-
         tfo[0] += x + dbx;
         tfo[1] += y + dby;
         var inverse = tf.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
@@ -10317,7 +10306,7 @@
           ctx.globalCompositeOperation = 'destination-in';
           ctx.fillStyle = '#FFF';
           ctx.beginPath();
-          ctx.rect(sx - bbox[0] + 1, sy - bbox[1] + 1, outerWidth, outerHeight);
+          ctx.rect(sx - bbox[0], sy - bbox[1], outerWidth, outerHeight);
           ctx.fill();
           ctx.closePath();
           ctx.globalCompositeOperation = 'source-over';
@@ -10341,24 +10330,20 @@
           var newCache = Cache.getInstance(bbox);
 
           if (newCache && newCache.enabled) {
-            var _cache$coords2 = _slicedToArray(cache.coords, 2),
-                ox = _cache$coords2[0],
-                oy = _cache$coords2[1],
+            var ox = cache.x,
+                oy = cache.y,
                 canvas = cache.canvas,
                 width = cache.width,
                 height = cache.height;
-
-            var _newCache$coords = _slicedToArray(newCache.coords, 2),
-                nx = _newCache$coords[0],
-                ny = _newCache$coords[1];
-
+            var nx = newCache.x,
+                ny = newCache.y;
             newCache.sx1 = cache.sx1;
             newCache.sy1 = cache.sy1;
             newCache.dx = cache.dx + dx;
             newCache.dy = cache.dy + dy;
             newCache.dbx = cache.dbx + dx;
             newCache.dby = cache.dby + dy;
-            newCache.ctx.drawImage(canvas, ox - 1, oy - 1, width, height, dx + nx - 1, dy + ny - 1, width, height);
+            newCache.ctx.drawImage(canvas, ox, oy, width, height, dx + nx, dy + ny, width, height);
             newCache.__available = true;
             cache.release();
             return newCache;
@@ -10370,18 +10355,15 @@
     }, {
       key: "drawCache",
       value: function drawCache(source, target, transform, matrix, tfo, inverse) {
-        var _target$coords = _slicedToArray(target.coords, 2),
-            tx = _target$coords[0],
-            ty = _target$coords[1],
+        var tx = target.x,
+            ty = target.y,
             sx1 = target.sx1,
             sy1 = target.sy1,
             ctx = target.ctx,
             dbx = target.dbx,
             dby = target.dby;
-
-        var _source$coords = _slicedToArray(source.coords, 2),
-            x = _source$coords[0],
-            y = _source$coords[1],
+        var x = source.x,
+            y = source.y,
             canvas = source.canvas,
             sx2 = source.sx1,
             sy2 = source.sy1,
@@ -10389,7 +10371,6 @@
             dby2 = source.dby,
             width = source.width,
             height = source.height;
-
         var ox = tx + sx2 - sx1 + dbx - dbx2;
         var oy = ty + sy2 - sy1 + dby - dby2;
 
@@ -10412,17 +10393,15 @@
           ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         }
 
-        ctx.drawImage(canvas, x - 1, y - 1, width, height, ox - 1, oy - 1, width, height);
+        ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
       }
     }, {
       key: "draw",
       value: function draw(ctx, opacity, matrix, cache) {
         ctx.globalAlpha = opacity;
         ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-
-        var _cache$coords3 = _slicedToArray(cache.coords, 2),
-            x = _cache$coords3[0],
-            y = _cache$coords3[1],
+        var x = cache.x,
+            y = cache.y,
             canvas = cache.canvas,
             sx1 = cache.sx1,
             sy1 = cache.sy1,
@@ -10430,8 +10409,7 @@
             dby = cache.dby,
             width = cache.width,
             height = cache.height;
-
-        ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
+        ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
       }
     }, {
       key: "MAX",
@@ -11166,11 +11144,7 @@
 
           __cache.__appendData(sx, sy);
 
-          var _cache$coords = _slicedToArray(__cache.coords, 2),
-              x = _cache$coords[0],
-              y = _cache$coords[1];
-
-          this.render(mode.CANVAS, o$2.REFLOW, __cache.ctx, null, -sx + x, -sy + y);
+          this.render(mode.CANVAS, o$2.REFLOW, __cache.ctx, null, -sx + __cache.x, -sy + __cache.y);
           __cache.__available = true;
         }
 
@@ -25231,7 +25205,7 @@
     function MockCache(texture, sx1, sy1, width, height, bbox) {
       _classCallCheck(this, MockCache);
 
-      this.coords = [1, 1];
+      // this.coords = [1, 1];
       this.x = 0;
       this.y = 0;
       this.sx1 = sx1;
@@ -25497,15 +25471,12 @@
     cacheTop.__appendData(sx1, sy1);
 
     cacheTop.__available = true;
-
     var _cacheTop = cacheTop,
-        _cacheTop$coords = _slicedToArray(_cacheTop.coords, 2),
-        tx = _cacheTop$coords[0],
-        ty = _cacheTop$coords[1],
+        tx = _cacheTop.x,
+        ty = _cacheTop.y,
         ctx = _cacheTop.ctx,
         dbx = _cacheTop.dbx,
         dby = _cacheTop.dby; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
-
 
     if (cache && cache.available) {
       ctx.globalAlpha = 1;
@@ -25702,8 +25673,8 @@
       return;
     }
 
-    var width = bboxTotal[2] - bboxTotal[0] + 2;
-    var height = bboxTotal[3] - bboxTotal[1] + 2;
+    var width = bboxTotal[2] - bboxTotal[0];
+    var height = bboxTotal[3] - bboxTotal[1];
 
     var _genFrameBufferWithTe = genFrameBufferWithTexture(gl, texCache, width, height),
         _genFrameBufferWithTe2 = _slicedToArray(_genFrameBufferWithTe, 3),
@@ -25923,8 +25894,7 @@
 
   function genOverflowWebgl(gl, texCache, node, cache, W, H) {
     var sbox = node.bbox;
-    var bbox = cache.bbox;
-    console.log(bbox, sbox); // 没超过无需生成
+    var bbox = cache.bbox; // 没超过无需生成
 
     if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
       return cache;

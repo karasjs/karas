@@ -170,8 +170,8 @@ function drawTextureCache(gl, list, hash, cx, cy) {
     let { x, y, width, height, page, bbox } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let bx = bbox[0], by = bbox[1];
-    let [x1, y1] = convertCoords2Gl(bx - 1 + (dx || 0), by - 1 + height + (dy || 0), cx, cy);
-    let [x2, y2] = convertCoords2Gl(bx - 1 + width + (dx || 0), by - 1 + (dy || 0), cx, cy);
+    let [x1, y1] = convertCoords2Gl(bx + (dx || 0), by + height + (dy || 0), cx, cy);
+    let [x2, y2] = convertCoords2Gl(bx + width + (dx || 0), by + (dy || 0), cx, cy);
     [x1, y1] = calPoint([x1, y1], matrix);
     [x2, y2] = calPoint([x2, y2], matrix);
     vtPoint.push(x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2);

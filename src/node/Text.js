@@ -620,8 +620,7 @@ class Text extends Node {
     if(__cache && __cache.enabled) {
       this.__cache = __cache;
       __cache.__appendData(sx, sy);
-      let [x, y] = __cache.coords;
-      this.render(mode.CANVAS, level.REFLOW, __cache.ctx, null, -sx + x, -sy + y);
+      this.render(mode.CANVAS, level.REFLOW, __cache.ctx, null, -sx + __cache.x, -sy + __cache.y);
       __cache.__available = true;
     }
     return __cache;

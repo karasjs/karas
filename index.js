@@ -25668,8 +25668,8 @@
         sy1 = node.__sy1;
     var cx = width * 0.5,
         cy = height * 0.5;
-    var dx = -bboxTotal[0] + 1,
-        dy = -bboxTotal[1] + 1;
+    var dx = -bboxTotal[0],
+        dy = -bboxTotal[1];
     var dbx = sx1 - bboxTotal[0],
         dby = sy1 - bboxTotal[1]; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
 
@@ -25925,8 +25925,8 @@
 
     var cx = width * 0.5,
         cy = height * 0.5;
-    var dx = -bbox[0] + 1,
-        dy = -bbox[1] + 1; // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
+    var dx = -bbox[0],
+        dy = -bbox[1]; // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
 
     var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
         _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
@@ -27702,14 +27702,14 @@
           inject.error('Merge error for oversize');
         }
       });
-    }
-
-    console.error('render'); // return;
+    } // console.error('render');
+    // return;
 
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 超尺寸的给出警告，无法像canvas那样做降级
      */
+
 
     for (var _i15 = 0, _len6 = __structs.length; _i15 < _len6; _i15++) {
       var _structs$_i6 = __structs[_i15],

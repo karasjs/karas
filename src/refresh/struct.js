@@ -417,7 +417,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   // 以bboxTotal的左上角-1px为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
   let cx = width * 0.5, cy = height * 0.5;
-  let dx = -bboxTotal[0] + 1, dy = -bboxTotal[1] + 1;
+  let dx = -bboxTotal[0], dy = -bboxTotal[1];
   let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(cache && cache.available) {
@@ -629,7 +629,7 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
   let { sx1, sy1, width, height, bbox } = cache;
   // cache一定是mockCache，可能是total/filter/overflow一种
   let cx = width * 0.5, cy = height * 0.5;
-  let dx = -bbox[0] + 1, dy = -bbox[1] + 1;
+  let dx = -bbox[0], dy = -bbox[1];
   // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   let next = node.next;
@@ -2133,7 +2133,7 @@ function renderWebgl(renderMode, gl, root) {
       }
     });
   }
-  console.error('render');
+  // console.error('render');
   // return;
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text

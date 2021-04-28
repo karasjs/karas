@@ -5226,7 +5226,8 @@
 
   var ca = {
     alpha: true,
-    antialias: true // depth: true,
+    antialias: true,
+    premultipliedAlpha: true // depth: true,
     // stencil: true,
 
   };
@@ -5347,17 +5348,13 @@
   function createTexture(gl, tex, n, width, height) {
     var texture = gl.createTexture();
     bindTexture(gl, texture, n); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
-    // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
     if (width || height) {
-      // gl.activeTexture(gl['TEXTURE' + n]);
-      // gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
     } else {
-      // gl.activeTexture(gl['TEXTURE' + n]);
-      // gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex); // let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-      // gl.uniform1i(u_texture, n);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
     }
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -5460,6 +5457,7 @@
       vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
       vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
       record[0]++;
+      console.log(opacity);
     }); // 顶点buffer
 
     var pointBuffer = gl.createBuffer();
@@ -27761,7 +27759,7 @@
 
   var vertex = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;attribute float a_opacity;varying float v_opacity;void main(){gl_Position=a_position;v_texCoords=a_texCoords;v_opacity=a_opacity;}"; // eslint-disable-line
 
-  var fragment = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;varying float v_opacity;uniform sampler2D u_texture;void main(){float opacity=v_opacity;if(opacity<=0.0){discard;}opacity=clamp(opacity,0.0,1.0);vec4 color=texture2D(u_texture,v_texCoords);gl_FragColor=vec4(color.rgb,color.a*opacity);}"; // eslint-disable-line
+  var fragment = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;varying float v_opacity;uniform sampler2D u_texture;void main(){float opacity=v_opacity;if(opacity<=0.0){discard;}opacity=clamp(opacity,0.0,1.0);vec4 color=texture2D(u_texture,v_texCoords);gl_FragColor=color*opacity;}"; // eslint-disable-line
 
   var vertexMask = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 

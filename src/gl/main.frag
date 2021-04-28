@@ -18,5 +18,5 @@ void main() {
   // 限制一下 opacity 在 [0.0, 1.0] 区间内
   opacity = clamp(opacity, 0.0, 1.0);
   vec4 color = texture2D(u_texture, v_texCoords);
-  gl_FragColor = vec4(color.rgb, color.a * opacity);
+  gl_FragColor = color * opacity;
 }

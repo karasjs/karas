@@ -112,18 +112,12 @@ function createTexture(gl, tex, n, width, height) {
   let texture = gl.createTexture();
   bindTexture(gl, texture, n);
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
-  // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   if(width || height) {
-    // gl.activeTexture(gl['TEXTURE' + n]);
-    // gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
   }
   else {
-    // gl.activeTexture(gl['TEXTURE' + n]);
-    // gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    // let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-    // gl.uniform1i(u_texture, n);
   }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -185,7 +179,7 @@ function drawTextureCache(gl, list, hash, cx, cy) {
     let tx2 = (x + width) / page.width, ty2 = y / page.height;
     vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
     vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
-    record[0]++;
+    record[0]++;console.log(opacity);
   });
   // 顶点buffer
   let pointBuffer = gl.createBuffer();

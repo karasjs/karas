@@ -25449,17 +25449,18 @@
                 }
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1) && !overflowHash.hasOwnProperty(_i3) && !blendHash.hasOwnProperty(_i3)) {
-                  origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.globalAlpha = 1;
-                  origin.drawImage(target.canvas, 0, 0);
+                  ctx = origin;
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.globalAlpha = 1;
+                  ctx.drawImage(target.canvas, 0, 0);
+                  ctx.draw && ctx.draw(true);
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.globalAlpha = 1;
                   target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
-                  ctx = origin;
                 }
               });
-            } // 降级overflow在filter后面
+            } // overflow在filter后面
 
 
             if (overflowHash.hasOwnProperty(_i3)) {
@@ -25485,13 +25486,14 @@
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1) && !blendHash.hasOwnProperty(_i3)) {
                   target.draw();
-                  origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.globalAlpha = 1;
-                  origin.drawImage(target.canvas, 0, 0);
+                  ctx = origin;
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.globalAlpha = 1;
+                  ctx.drawImage(target.canvas, 0, 0);
+                  ctx.draw && ctx.draw(true);
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
-                  ctx = origin;
                 }
               });
             } // 混合模式
@@ -25506,16 +25508,16 @@
 
                 if (!maskStartHash.hasOwnProperty(_i3 + 1)) {
                   target.draw();
-                  var origin = offScreenBlend.ctx;
-                  origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.globalAlpha = 1;
-                  origin.drawImage(target.canvas, 0, 0);
+                  ctx = offScreenBlend.ctx;
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.globalAlpha = 1;
+                  ctx.drawImage(target.canvas, 0, 0);
+                  ctx.globalCompositeOperation = 'source-over';
+                  ctx.draw && ctx.draw(true);
                   target.ctx.globalAlpha = 1;
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
-                  ctx = origin;
-                  ctx.globalCompositeOperation = 'source-over';
                 }
               });
             } // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
@@ -25549,6 +25551,7 @@
                 ctx.drawImage(_mask.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
                 ctx.globalCompositeOperation = 'source-over';
+                ctx.draw && ctx.draw(true);
 
                 _mask.ctx.clearRect(0, 0, width, height);
 
@@ -25576,6 +25579,7 @@
                 ctx.drawImage(_target.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
                 ctx.globalCompositeOperation = 'source-over';
+                ctx.draw && ctx.draw(true);
 
                 _target.ctx.clearRect(0, 0, width, height);
 
@@ -25748,14 +25752,15 @@
           }
 
           if (!maskStartHash.hasOwnProperty(_i5 + 1) && !overflowHash.hasOwnProperty(_i5) && !blendHash.hasOwnProperty(_i5)) {
-            origin.setTransform(1, 0, 0, 1, 0, 0);
-            origin.globalAlpha = 1;
-            origin.drawImage(target.canvas, 0, 0);
+            ctx = origin;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.drawImage(target.canvas, 0, 0);
+            ctx.draw && ctx.draw(true);
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.globalAlpha = 1;
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
           }
         });
       } // overflow在filter后面
@@ -25784,13 +25789,14 @@
 
           if (!maskStartHash.hasOwnProperty(_i5 + 1) && !blendHash.hasOwnProperty(_i5)) {
             target.draw();
-            origin.setTransform(1, 0, 0, 1, 0, 0);
-            origin.globalAlpha = 1;
-            origin.drawImage(target.canvas, 0, 0);
+            ctx = origin;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.drawImage(target.canvas, 0, 0);
+            ctx.draw && ctx.draw(true);
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
           }
         });
       } // 混合模式
@@ -25805,16 +25811,16 @@
 
           if (!maskStartHash.hasOwnProperty(_i5 + 1)) {
             target.draw();
-            var origin = offScreenBlend.ctx;
-            origin.setTransform(1, 0, 0, 1, 0, 0);
-            origin.globalAlpha = 1;
-            origin.drawImage(target.canvas, 0, 0);
+            ctx = offScreenBlend.ctx;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.drawImage(target.canvas, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.draw && ctx.draw(true);
             target.ctx.globalAlpha = 1;
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
-            ctx.globalCompositeOperation = 'source-over';
           }
         });
       } // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
@@ -25848,6 +25854,7 @@
           ctx.drawImage(_mask2.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
           ctx.globalCompositeOperation = 'source-over';
+          ctx.draw && ctx.draw(true);
 
           _mask2.ctx.clearRect(0, 0, width, height);
 
@@ -25873,6 +25880,7 @@
           ctx.drawImage(target.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
           ctx.globalCompositeOperation = 'source-over';
+          ctx.draw && ctx.draw(true);
           target.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);
         }

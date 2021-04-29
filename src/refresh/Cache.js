@@ -160,10 +160,6 @@ class Cache {
     return this.page.size;
   }
 
-  get fullSize() {
-    return this.page.fullSize;
-  }
-
   get x() {
     return this.__x;
   }

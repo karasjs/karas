@@ -14,6 +14,8 @@ import MockCache from '../gl/MockCache';
 import blur from '../math/blur';
 import vertexBlur from '../gl/blur.vert';
 import fragmentBlur from '../gl/blur.frag';
+import vertexMbm from '../gl/mbm.vert';
+import fragmentMultiply from '../gl/multiply.frag';
 
 const {
   STYLE_KEY: {
@@ -690,6 +692,42 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
   let maskCache = new MockCache(texture2, sx1, sy1, width, height, bbox);
   texCache.releaseLockChannel(n, maskCache.page);
   return maskCache;
+}
+
+/**
+ * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，
+ * 先生成一个新的fbo记B，将A和待混合节点进行对应的mbm模式混合，结果绘制到B中，然后返回B来替换A，包括纹理单元
+ * @param gl
+ * @param texCache
+ * @param i 之前已有的fbo和纹理单元
+ * @param j 当前节点绘制的fbo和纹理单元
+ * @param mbm
+ * @param fbo 之前舞台绑定的fbo和纹理
+ * @param tex
+ * @param W
+ * @param H
+ * @returns {number|*}
+ */
+function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
+  let frag;
+  if(mbm === 'multiply') {
+    frag = fragmentMultiply;
+  }
+  let program = webgl.initShaders(gl, vertexMbm, frag);
+  gl.useProgram(program);
+  // 生成新的fbo，将混合结果绘入
+  let [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, W, H);
+  webgl.drawMbm(gl, program, i, j, W, H);
+  // 切换回主程序并销毁这个临时program
+  gl.useProgram(gl.program);
+  gl.deleteShader(program.vertexShader);
+  gl.deleteShader(program.fragmentShader);
+  gl.deleteProgram(program);
+  gl.deleteFramebuffer(fbo);
+  gl.deleteTexture(tex);
+  texCache.releaseLockChannel(i);
+  texCache.releaseLockChannel(j);
+  return [n, frameBuffer, texture];
 }
 
 function renderCacheCanvas(renderMode, ctx, root) {
@@ -2201,7 +2239,16 @@ function renderWebgl(renderMode, gl, root) {
       // total的尝试
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        if(mixBlendMode !== 'normal') {}
+        // 有mbm先刷新，然后后面这个节点绘入一个等画布尺寸的fbo中，再进行2者mbm合成
+        if(mixBlendMode !== 'normal') {
+          texCache.refresh(gl, cx, cy);
+          let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
+          texCache.addTexAndDrawWhenLimit(gl, target, __opacity, revertY(m), cx, cy);
+          texCache.refresh(gl, cx, cy);
+          [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mixBlendMode, width, height);
+          gl.deleteFramebuffer(frameBuffer2);
+          gl.deleteTexture(texture2);
+        }
         else {
           texCache.addTexAndDrawWhenLimit(gl, target, __opacity, revertY(m), cx, cy);
         }

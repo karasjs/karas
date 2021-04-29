@@ -5674,6 +5674,33 @@
     gl.disableVertexAttribArray(a_texCoords);
   }
 
+  function drawMbm(gl, program, i, j, W, H) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture1 = gl.getUniformLocation(program, 'u_texture1');
+    gl.uniform1i(u_texture1, i);
+    var u_texture2 = gl.getUniformLocation(program, 'u_texture2');
+    gl.uniform1i(u_texture2, j);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+  }
+
   var webgl = {
     initShaders: initShaders,
     createTexture: createTexture,
@@ -5682,7 +5709,8 @@
     drawTextureCache: drawTextureCache,
     drawBlur: drawBlur,
     drawOverflow: drawOverflow,
-    drawMask: drawMask
+    drawMask: drawMask,
+    drawMbm: drawMbm
   };
 
   var SPF = 1000 / 60;
@@ -10125,11 +10153,6 @@
       key: "size",
       get: function get() {
         return this.page.size;
-      }
-    }, {
-      key: "fullSize",
-      get: function get() {
-        return this.page.fullSize;
       }
     }, {
       key: "x",
@@ -25226,6 +25249,10 @@
 
   var fragmentBlur = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoordsBlur[3];uniform sampler2D u_texture;void main(){gl_FragColor=vec4(0.0);}"; // eslint-disable-line
 
+  var vertexMbm = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
+
+  var fragmentMultiply = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=color1*color2;}}"; // eslint-disable-line
+
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$i.POSITION,
       DISPLAY$8 = _enums$STYLE_KEY$i.DISPLAY,
@@ -26005,6 +26032,50 @@
     var maskCache = new MockCache(texture2, sx1, sy1, width, height, bbox);
     texCache.releaseLockChannel(n, maskCache.page);
     return maskCache;
+  }
+  /**
+   * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，
+   * 先生成一个新的fbo记B，将A和待混合节点进行对应的mbm模式混合，结果绘制到B中，然后返回B来替换A，包括纹理单元
+   * @param gl
+   * @param texCache
+   * @param i 之前已有的fbo和纹理单元
+   * @param j 当前节点绘制的fbo和纹理单元
+   * @param mbm
+   * @param fbo 之前舞台绑定的fbo和纹理
+   * @param tex
+   * @param W
+   * @param H
+   * @returns {number|*}
+   */
+
+
+  function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
+    var frag;
+
+    if (mbm === 'multiply') {
+      frag = fragmentMultiply;
+    }
+
+    var program = webgl.initShaders(gl, vertexMbm, frag);
+    gl.useProgram(program); // 生成新的fbo，将混合结果绘入
+
+    var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, W, H),
+        _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3),
+        n = _genFrameBufferWithTe12[0],
+        frameBuffer = _genFrameBufferWithTe12[1],
+        texture = _genFrameBufferWithTe12[2];
+
+    webgl.drawMbm(gl, program, i, j, W, H); // 切换回主程序并销毁这个临时program
+
+    gl.useProgram(gl.program);
+    gl.deleteShader(program.vertexShader);
+    gl.deleteShader(program.fragmentShader);
+    gl.deleteProgram(program);
+    gl.deleteFramebuffer(fbo);
+    gl.deleteTexture(tex);
+    texCache.releaseLockChannel(i);
+    texCache.releaseLockChannel(j);
+    return [n, frameBuffer, texture];
   }
 
   function renderCacheCanvas(renderMode, ctx, root) {
@@ -27729,13 +27800,13 @@
     var n, frameBuffer, texture;
 
     if (hasMbm) {
-      var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height);
+      var _genFrameBufferWithTe13 = genFrameBufferWithTexture(gl, texCache, width, height);
 
-      var _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3);
+      var _genFrameBufferWithTe14 = _slicedToArray(_genFrameBufferWithTe13, 3);
 
-      n = _genFrameBufferWithTe12[0];
-      frameBuffer = _genFrameBufferWithTe12[1];
-      texture = _genFrameBufferWithTe12[2];
+      n = _genFrameBufferWithTe14[0];
+      frameBuffer = _genFrameBufferWithTe14[1];
+      texture = _genFrameBufferWithTe14[2];
     }
 
     for (var _i15 = 0, _len6 = __structs.length; _i15 < _len6; _i15++) {
@@ -27787,9 +27858,31 @@
         var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal]); // total的尝试
 
         if (target) {
-          var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
+          var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新，然后后面这个节点绘入一个等画布尺寸的fbo中，再进行2者mbm合成
 
-          if (mixBlendMode !== 'normal') ; else {
+
+          if (mixBlendMode !== 'normal') {
+            texCache.refresh(gl, cx, cy);
+
+            var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe16 = _slicedToArray(_genFrameBufferWithTe15, 3),
+                n2 = _genFrameBufferWithTe16[0],
+                frameBuffer2 = _genFrameBufferWithTe16[1],
+                texture2 = _genFrameBufferWithTe16[2];
+
+            texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, revertY$1(_m7), cx, cy);
+            texCache.refresh(gl, cx, cy);
+
+            var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mixBlendMode, width, height);
+
+            var _genMbmWebgl2 = _slicedToArray(_genMbmWebgl, 3);
+
+            n = _genMbmWebgl2[0];
+            frameBuffer = _genMbmWebgl2[1];
+            texture = _genMbmWebgl2[2];
+            gl.deleteFramebuffer(frameBuffer2);
+            gl.deleteTexture(texture2);
+          } else {
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, revertY$1(_m7), cx, cy);
           }
 

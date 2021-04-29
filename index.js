@@ -32729,22 +32729,35 @@
           var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
 
           if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id];
-            var currentTarget = target; // 如果有chidren\.\d+则特殊处理，可替换某个child
+            var value = vars[v.id]; // undefined和null意义不同
 
-            if (/^children\.\d+/.test(k2)) {
-              k2 = parseInt(k2.slice(9));
-              currentTarget = target.children;
+            if (value === undefined) {
+              return;
+            }
+
+            var currentTarget = target; // 如果有.则特殊处理子属性
+
+            if (k2.indexOf('.') > -1) {
+              var list = k2.split('.');
+              var len = list.length;
+
+              for (var i = 0; i < len - 1; i++) {
+                k2 = list[i]; // 避免异常
+
+                if (currentTarget[k2]) {
+                  currentTarget = currentTarget[k2];
+                } else {
+                  inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  return;
+                }
+              }
+
+              k2 = list[len - 1];
             } // 支持函数模式和值模式
 
 
             if (isFunction$8(value)) {
               value = value(v);
-            } // undefined和null意义不同
-
-
-            if (value === undefined) {
-              return;
             }
 
             currentTarget[k2] = value;

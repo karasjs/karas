@@ -415,10 +415,9 @@
     STRUCT_INDEX: 1,
     STRUCT_CHILD_INDEX: 2,
     STRUCT_LV: 3,
-    STRUCT_CONFIG: 4,
-    STRUCT_NUM: 5,
-    STRUCT_TOTAL: 6,
-    STRUCT_HAS_MASK: 7
+    STRUCT_NUM: 4,
+    STRUCT_TOTAL: 5,
+    STRUCT_HAS_MASK: 6
   };
   var enums = {
     STYLE_KEY: STYLE_KEY,
@@ -442,7 +441,6 @@
       STRUCT_INDEX = _enums$STRUCT_KEY.STRUCT_INDEX,
       STRUCT_CHILD_INDEX = _enums$STRUCT_KEY.STRUCT_CHILD_INDEX,
       STRUCT_LV = _enums$STRUCT_KEY.STRUCT_LV,
-      STRUCT_CONFIG = _enums$STRUCT_KEY.STRUCT_CONFIG,
       _enums$NODE_KEY = enums.NODE_KEY,
       NODE_IS_DESTROYED = _enums$NODE_KEY.NODE_IS_DESTROYED,
       NODE_STRUCT = _enums$NODE_KEY.NODE_STRUCT;
@@ -471,10 +469,9 @@
     _createClass(Node, [{
       key: "__structure",
       value: function __structure(i, lv, j) {
-        var _config$NODE_STRUCT;
+        var _this$__config$NODE_S;
 
-        var config = this.__config;
-        return config[NODE_STRUCT] = (_config$NODE_STRUCT = {}, _defineProperty(_config$NODE_STRUCT, STRUCT_NODE, this), _defineProperty(_config$NODE_STRUCT, STRUCT_INDEX, i), _defineProperty(_config$NODE_STRUCT, STRUCT_CHILD_INDEX, j), _defineProperty(_config$NODE_STRUCT, STRUCT_LV, lv), _defineProperty(_config$NODE_STRUCT, STRUCT_CONFIG, config), _config$NODE_STRUCT);
+        return this.__config[NODE_STRUCT] = (_this$__config$NODE_S = {}, _defineProperty(_this$__config$NODE_S, STRUCT_NODE, this), _defineProperty(_this$__config$NODE_S, STRUCT_INDEX, i), _defineProperty(_this$__config$NODE_S, STRUCT_CHILD_INDEX, j), _defineProperty(_this$__config$NODE_S, STRUCT_LV, lv), _this$__config$NODE_S);
       }
     }, {
       key: "__modifyStruct",
@@ -5279,8 +5276,10 @@
 
     if (!program) {
       return null;
-    } // Attach the shader objects
+    }
 
+    program.vertexShader = vertexShader;
+    program.fragmentShader = fragmentShader; // Attach the shader objects
 
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader); // Link the program object
@@ -25260,7 +25259,6 @@
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
-      STRUCT_CONFIG$1 = _enums$STRUCT_KEY$2.STRUCT_CONFIG,
       STRUCT_HAS_MASK$1 = _enums$STRUCT_KEY$2.STRUCT_HAS_MASK,
       STRUCT_LV$2 = _enums$STRUCT_KEY$2.STRUCT_LV;
   var NONE$2 = o$2.NONE,
@@ -25864,6 +25862,8 @@
     texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma); // 切换回主程序并销毁这个临时program
 
     gl.useProgram(gl.program);
+    gl.deleteShader(program.vertexShader);
+    gl.deleteShader(program.fragmentShader);
     gl.deleteProgram(program);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, W, H);
@@ -26032,14 +26032,14 @@
           node = _structs$_i[STRUCT_NODE$1],
           lv = _structs$_i[STRUCT_LV$2],
           total = _structs$_i[STRUCT_TOTAL$1],
-          __config = _structs$_i[STRUCT_CONFIG$1],
           hasMask = _structs$_i[STRUCT_HAS_MASK$1]; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
       if (node instanceof Text) {
         i = _i3;
         return "continue";
-      } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
+      }
 
+      var __config = node.__config; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
       if (_i3 === 0) ; else if (lv > lastLv) {
         parentMatrix = lastConfig[NODE_MATRIX_EVENT$3];
@@ -26304,8 +26304,8 @@
       var _structs$_i2 = __structs[_i5],
           node = _structs$_i2[STRUCT_NODE$1],
           total = _structs$_i2[STRUCT_TOTAL$1],
-          __config = _structs$_i2[STRUCT_CONFIG$1],
-          hasMask = _structs$_i2[STRUCT_HAS_MASK$1]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          hasMask = _structs$_i2[STRUCT_HAS_MASK$1];
+      var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (node instanceof Text) {
         var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT$4].__config,
@@ -27026,11 +27026,12 @@
       // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
       for (var _i8 = 0, len = __structs.length; _i8 < len; _i8++) {
         var _structs$_i4 = __structs[_i8],
+            node = _structs$_i4[STRUCT_NODE$1],
             total = _structs$_i4[STRUCT_TOTAL$1],
-            __config = _structs$_i4[STRUCT_CONFIG$1],
             hasMask = _structs$_i4[STRUCT_HAS_MASK$1];
-        var __refreshLevel = __config[NODE_REFRESH_LV$1],
-            defsCache = __config[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
+        var _node$__config2 = node.__config,
+            __refreshLevel = _node$__config2[NODE_REFRESH_LV$1],
+            defsCache = _node$__config2[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
 
         var hasEffectMask = hasMask && (__refreshLevel >= REPAINT$2 || contain$2(__refreshLevel, TRANSFORM_ALL$2 | OP$1));
 
@@ -27426,6 +27427,8 @@
     var lastConfig;
     var lastLv = 0;
     var mergeList = [];
+    var hasMbm; // 是否有混合模式出现
+
     /**
      * 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和已有的缓存以及局部根缓存，
      * 根据refreshLevel进行等级区分，可能是<REPAINT或>=REPAINT，REFLOW布局已前置处理完。
@@ -27439,7 +27442,6 @@
           node = _structs$_i7[STRUCT_NODE$1],
           lv = _structs$_i7[STRUCT_LV$2],
           total = _structs$_i7[STRUCT_TOTAL$1],
-          __config = _structs$_i7[STRUCT_CONFIG$1],
           hasMask = _structs$_i7[STRUCT_HAS_MASK$1]; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
       if (node instanceof Text) {
@@ -27454,6 +27456,7 @@
         return "continue";
       }
 
+      var __config = node.__config;
       var __refreshLevel = __config[NODE_REFRESH_LV$1]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点是第一个特殊处理
 
       if (_i14 === 0) ; else if (lv > lastLv) {
@@ -27635,6 +27638,10 @@
 
       if (!__limitCache && (hasMask // || position === 'absolute'
       || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+        if (mixBlendMode !== 'normal') {
+          hasMbm = true;
+        }
+
         if (hasRecordAsMask) {
           hasRecordAsMask[6] = __blurValue;
           hasRecordAsMask[7] = overflow;
@@ -27713,16 +27720,30 @@
 
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
+     * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
+     * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
      * 超尺寸的给出警告，无法像canvas那样做降级
      */
 
+
+    var n, frameBuffer, texture;
+
+    if (hasMbm) {
+      var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height);
+
+      var _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3);
+
+      n = _genFrameBufferWithTe12[0];
+      frameBuffer = _genFrameBufferWithTe12[1];
+      texture = _genFrameBufferWithTe12[2];
+    }
 
     for (var _i15 = 0, _len6 = __structs.length; _i15 < _len6; _i15++) {
       var _structs$_i6 = __structs[_i15],
           node = _structs$_i6[STRUCT_NODE$1],
           total = _structs$_i6[STRUCT_TOTAL$1],
-          __config = _structs$_i6[STRUCT_CONFIG$1],
-          hasMask = _structs$_i6[STRUCT_HAS_MASK$1]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          hasMask = _structs$_i6[STRUCT_HAS_MASK$1];
+      var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (node instanceof Text) {
         // text特殊之处，__cache是独有的，__config大部分是复用parent的
@@ -27768,7 +27789,10 @@
         if (target) {
           var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
 
-          texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, revertY$1(_m7), cx, cy);
+          if (mixBlendMode !== 'normal') ; else {
+            texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, revertY$1(_m7), cx, cy);
+          }
+
           _i15 += total || 0;
           _i15 += hasMask || 0;
         } // 自身cache尝试
@@ -27782,7 +27806,44 @@
       }
     }
 
-    texCache.refresh(gl, cx, cy);
+    texCache.refresh(gl, cx, cy); // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
+
+    if (hasMbm) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      texCache.releaseLockChannel(n);
+      gl.deleteFramebuffer(frameBuffer); // 顶点buffer
+
+      var pointBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+      var a_position = gl.getAttribLocation(gl.program, 'a_position');
+      gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+      var texBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+      var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+      gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+      var opacityBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
+      var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+      gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(a_opacity); // 纹理单元
+
+      var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+      gl.uniform1i(u_texture, n);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      gl.deleteBuffer(pointBuffer);
+      gl.deleteBuffer(texBuffer);
+      gl.deleteBuffer(opacityBuffer);
+      gl.disableVertexAttribArray(a_position);
+      gl.disableVertexAttribArray(a_texCoords);
+      gl.deleteTexture(texture);
+    }
   }
 
   var struct = {
@@ -29064,15 +29125,21 @@
           this.__texCache.release(gl);
 
           if (gl.program) {
+            gl.deleteShader(gl.program.vertexShader);
+            gl.deleteShader(gl.program.fragmentShader);
             gl.deleteProgram(gl.program);
           }
 
-          if (gl.vertexShader) {
-            gl.deleteShader(gl.vertexShader);
+          if (gl.programMask) {
+            gl.deleteShader(gl.programMask.vertexShader);
+            gl.deleteShader(gl.programMask.fragmentShader);
+            gl.deleteProgram(gl.programMask);
           }
 
-          if (gl.fragmentShader) {
-            gl.deleteShader(gl.fragmentShader);
+          if (gl.programOverflow) {
+            gl.deleteShader(gl.programOverflow.vertexShader);
+            gl.deleteShader(gl.programOverflow.fragmentShader);
+            gl.deleteProgram(gl.programOverflow);
           }
         }
       }

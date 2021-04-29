@@ -573,6 +573,8 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma);
   // 切换回主程序并销毁这个临时program
   gl.useProgram(gl.program);
+  gl.deleteShader(program.vertexShader);
+  gl.deleteShader(program.fragmentShader);
   gl.deleteProgram(program);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, W, H);
@@ -1886,6 +1888,7 @@ function renderWebgl(renderMode, gl, root) {
   let lastConfig;
   let lastLv = 0;
   let mergeList = [];
+  let hasMbm; // 是否有混合模式出现
   /**
    * 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和已有的缓存以及局部根缓存，
    * 根据refreshLevel进行等级区分，可能是<REPAINT或>=REPAINT，REFLOW布局已前置处理完。
@@ -2077,6 +2080,9 @@ function renderWebgl(renderMode, gl, root) {
     } = computedStyle;
     if(!__limitCache && (hasMask// || position === 'absolute'
       || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      if(mixBlendMode !== 'normal') {
+        hasMbm = true;
+      }
       if(hasRecordAsMask) {
         hasRecordAsMask[6] = __blurValue;
         hasRecordAsMask[7] = overflow;
@@ -2136,8 +2142,14 @@ function renderWebgl(renderMode, gl, root) {
   // return;
   /**
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
+   * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
+   * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
    * 超尺寸的给出警告，无法像canvas那样做降级
    */
+  let n, frameBuffer, texture;
+  if(hasMbm) {
+    [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  }
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
       [STRUCT_NODE]: node,
@@ -2189,7 +2201,10 @@ function renderWebgl(renderMode, gl, root) {
       // total的尝试
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        texCache.addTexAndDrawWhenLimit(gl, target, __opacity, revertY(m), cx, cy);
+        if(mixBlendMode !== 'normal') {}
+        else {
+          texCache.addTexAndDrawWhenLimit(gl, target, __opacity, revertY(m), cx, cy);
+        }
         i += total || 0;
         i += hasMask || 0;
       }
@@ -2203,6 +2218,57 @@ function renderWebgl(renderMode, gl, root) {
     }
   }
   texCache.refresh(gl, cx, cy);
+  // 有mbm时将汇总的fbo绘入主画布，否则本身就是到主画布无需多余操作
+  if(hasMbm) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    texCache.releaseLockChannel(n);
+    gl.deleteFramebuffer(frameBuffer);
+    // 顶点buffer
+    let pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -1, -1,
+      -1, 1,
+      1, -1,
+      -1, 1,
+      1, -1,
+      1, 1,
+    ]), gl.STATIC_DRAW);
+    let a_position = gl.getAttribLocation(gl.program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position);
+    // 纹理buffer
+    let texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      0, 0,
+      0, 1,
+      1, 0,
+      0, 1,
+      1, 0,
+      1, 1,
+    ]), gl.STATIC_DRAW);
+    let a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords);
+    // opacity buffer
+    let opacityBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1, 1, 1, 1, 1, 1]), gl.STATIC_DRAW);
+    let a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity);
+    // 纹理单元
+    let u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+    gl.uniform1i(u_texture, n);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    gl.deleteTexture(texture);
+  }
 }
 
 export default {

@@ -831,13 +831,19 @@ class Root extends Dom {
     if(this.__texCache && gl) {
       this.__texCache.release(gl);
       if(gl.program) {
+        gl.deleteShader(gl.program.vertexShader);
+        gl.deleteShader(gl.program.fragmentShader);
         gl.deleteProgram(gl.program);
       }
-      if(gl.vertexShader) {
-        gl.deleteShader(gl.vertexShader);
+      if(gl.programMask) {
+        gl.deleteShader(gl.programMask.vertexShader);
+        gl.deleteShader(gl.programMask.fragmentShader);
+        gl.deleteProgram(gl.programMask);
       }
-      if(gl.fragmentShader) {
-        gl.deleteShader(gl.fragmentShader);
+      if(gl.programOverflow) {
+        gl.deleteShader(gl.programOverflow.vertexShader);
+        gl.deleteShader(gl.programOverflow.fragmentShader);
+        gl.deleteProgram(gl.programOverflow);
       }
     }
   }

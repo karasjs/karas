@@ -41,6 +41,8 @@ function createProgram(gl, vshader, fshader) {
   if(!program) {
     return null;
   }
+  program.vertexShader = vertexShader;
+  program.fragmentShader = fragmentShader;
 
   // Attach the shader objects
   gl.attachShader(program, vertexShader);

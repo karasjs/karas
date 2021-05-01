@@ -15,17 +15,18 @@ import blur from '../math/blur';
 import vertexBlur from '../gl/blur.vert';
 import fragmentBlur from '../gl/blur.frag';
 import vertexMbm from '../gl/mbm.vert';
-import fragmentMultiply from '../gl/multiply.frag';
-import fragmentScreen from '../gl/screen.frag';
-import fragmentOverlay from '../gl/overlay.frag';
-import fragmentDarken from '../gl/darken.frag';
-import fragmentLighten from '../gl/lighten.frag';
-import fragmentColorDodge from '../gl/color-dodge.frag';
-import fragmentColorBurn from '../gl/color-burn.frag';
-import fragmentHardLight from '../gl/hard-light.frag';
-import fragmentSoftLight from '../gl/soft-light.frag';
-import fragmentDifference from '../gl/difference.frag';
-import fragmentExclusion from '../gl/exclusion.frag';
+import fragmentMultiply from '../gl/mbm/multiply.frag';
+import fragmentScreen from '../gl/mbm/screen.frag';
+import fragmentOverlay from '../gl/mbm/overlay.frag';
+import fragmentDarken from '../gl/mbm/darken.frag';
+import fragmentLighten from '../gl/mbm/lighten.frag';
+import fragmentColorDodge from '../gl/mbm/color-dodge.frag';
+import fragmentColorBurn from '../gl/mbm/color-burn.frag';
+import fragmentHardLight from '../gl/mbm/hard-light.frag';
+import fragmentSoftLight from '../gl/mbm/soft-light.frag';
+import fragmentDifference from '../gl/mbm/difference.frag';
+import fragmentExclusion from '../gl/mbm/exclusion.frag';
+import fragmentHue from '../gl/mbm/hue.frag';
 
 const {
   STYLE_KEY: {
@@ -755,6 +756,9 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   }
   else if(mbm === 'exclusion') {
     frag = fragmentExclusion;
+  }
+  else if(mbm === 'hue') {
+    frag = fragmentHue;
   }
   let program = webgl.initShaders(gl, vertexMbm, frag);
   gl.useProgram(program);

@@ -16,6 +16,16 @@ import vertexBlur from '../gl/blur.vert';
 import fragmentBlur from '../gl/blur.frag';
 import vertexMbm from '../gl/mbm.vert';
 import fragmentMultiply from '../gl/multiply.frag';
+import fragmentScreen from '../gl/screen.frag';
+import fragmentOverlay from '../gl/overlay.frag';
+import fragmentDarken from '../gl/darken.frag';
+import fragmentLighten from '../gl/lighten.frag';
+import fragmentColorDodge from '../gl/color-dodge.frag';
+import fragmentColorBurn from '../gl/color-burn.frag';
+import fragmentHardLight from '../gl/hard-light.frag';
+import fragmentSoftLight from '../gl/soft-light.frag';
+import fragmentDifference from '../gl/difference.frag';
+import fragmentExclusion from '../gl/exclusion.frag';
 
 const {
   STYLE_KEY: {
@@ -710,8 +720,41 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
  */
 function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   let frag;
+  mbm = mbm.replace(/[A-Z]/, function($0) {
+    return '-' + $0.toLowerCase();
+  });
   if(mbm === 'multiply') {
     frag = fragmentMultiply;
+  }
+  else if(mbm === 'screen') {
+    frag = fragmentScreen;
+  }
+  else if(mbm === 'overlay') {
+    frag = fragmentOverlay;
+  }
+  else if(mbm === 'darken') {
+    frag = fragmentDarken;
+  }
+  else if(mbm === 'lighten') {
+    frag = fragmentLighten;
+  }
+  else if(mbm === 'color-dodge') {
+    frag = fragmentColorDodge;
+  }
+  else if(mbm === 'color-burn') {
+    frag = fragmentColorBurn;
+  }
+  else if(mbm === 'hard-light') {
+    frag = fragmentHardLight;
+  }
+  else if(mbm === 'soft-light') {
+    frag = fragmentSoftLight;
+  }
+  else if(mbm === 'difference') {
+    frag = fragmentDifference;
+  }
+  else if(mbm === 'exclusion') {
+    frag = fragmentExclusion;
   }
   let program = webgl.initShaders(gl, vertexMbm, frag);
   gl.useProgram(program);
@@ -2180,7 +2223,7 @@ function renderWebgl(renderMode, gl, root) {
         }
       }
       else {
-        inject.error('Merge error for oversize');
+        // inject.error('Merge error for oversize');
       }
     });
   }

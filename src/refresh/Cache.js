@@ -5,7 +5,6 @@ import enums from '../util/enums';
 import tf from '../style/transform';
 import mx from '../math/matrix';
 import debug from '../util/debug';
-import mode from '../node/mode';
 import blur from '../math/blur';
 
 const {
@@ -64,12 +63,7 @@ class Cache {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
       if(debug.flag) {
-        page.canvas.setAttribute('size', page.size);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-        ctx.beginPath();
-        ctx.rect(x, y, page.size, page.size);
-        ctx.closePath();
-        ctx.fill();
+        page.canvas.setAttribute && page.canvas.setAttribute('size', page.size);
       }
     }
   }

@@ -10036,12 +10036,7 @@
           ctx.globalAlpha = 1;
 
           if (debug.flag) {
-            page.canvas.setAttribute('size', page.size);
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.beginPath();
-            ctx.rect(x, y, page.size, page.size);
-            ctx.closePath();
-            ctx.fill();
+            page.canvas.setAttribute && page.canvas.setAttribute('size', page.size);
           }
         }
       }
@@ -17428,6 +17423,10 @@
         var offScreenBlend;
 
         if (mixBlendMode !== 'normal' && !cache) {
+          mixBlendMode = mixBlendMode.replace(/[A-Z]/, function ($0) {
+            return '-' + $0.toLowerCase();
+          });
+
           if (offScreenFilter || offScreenMask || offScreenOverflow) {
             offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
             offScreenBlend.mixBlendMode = mixBlendMode;
@@ -25253,6 +25252,26 @@
 
   var fragmentMultiply = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=color1*color2;}}"; // eslint-disable-line
 
+  var fragmentScreen = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return 1.0-(1.0-a)*(1.0-b);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentOverlay = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return a<0.5 ?(2.0*a*b):(1.0-2.0*(1.0-a)*(1.0-b));}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentDarken = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return min(a,b);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentLighten = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return max(a,b);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentColorDodge = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){if(b==1.0){return a==0.0 ? a : 1.0;}return a+a*b/(1.0-b);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentColorBurn = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){if(b==0.0){return a==1.0 ? a : 0.0;}return a-(1.0-a)*(1.0-b)/b;}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentHardLight = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return a<0.5 ?(2.0*a*b):(1.0-2.0*(1.0-a)*(1.0-b));}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color2.r,color1.r),op(color2.g,color1.g),op(color2.b,color1.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentSoftLight = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return b<0.5 ?(2.0*a*b+a*a*(1.0-2.0*b)):(sqrt(a)*(2.0*b-1.0)+2.0*a*(1.0-b));}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentDifference = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return abs(a-b);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
+  var fragmentExclusion = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float op(float a,float b){return a+b-2.0*a*b;}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{gl_FragColor=vec4(op(color1.r,color2.r),op(color1.g,color2.g),op(color1.b,color2.b),1.0);}}"; // eslint-disable-line
+
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$i.POSITION,
       DISPLAY$8 = _enums$STYLE_KEY$i.DISPLAY,
@@ -26051,9 +26070,32 @@
 
   function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
     var frag;
+    mbm = mbm.replace(/[A-Z]/, function ($0) {
+      return '-' + $0.toLowerCase();
+    });
 
     if (mbm === 'multiply') {
       frag = fragmentMultiply;
+    } else if (mbm === 'screen') {
+      frag = fragmentScreen;
+    } else if (mbm === 'overlay') {
+      frag = fragmentOverlay;
+    } else if (mbm === 'darken') {
+      frag = fragmentDarken;
+    } else if (mbm === 'lighten') {
+      frag = fragmentLighten;
+    } else if (mbm === 'color-dodge') {
+      frag = fragmentColorDodge;
+    } else if (mbm === 'color-burn') {
+      frag = fragmentColorBurn;
+    } else if (mbm === 'hard-light') {
+      frag = fragmentHardLight;
+    } else if (mbm === 'soft-light') {
+      frag = fragmentSoftLight;
+    } else if (mbm === 'difference') {
+      frag = fragmentDifference;
+    } else if (mbm === 'exclusion') {
+      frag = fragmentExclusion;
     }
 
     var program = webgl.initShaders(gl, vertexMbm, frag);
@@ -26647,17 +26689,18 @@
                 }
 
                 if (!maskStartHash.hasOwnProperty(_i5 + 1) && !overflowHash.hasOwnProperty(_i5) && !blendHash.hasOwnProperty(_i5)) {
-                  origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.globalAlpha = 1;
-                  origin.drawImage(target.canvas, 0, 0);
+                  ctx = origin;
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.globalAlpha = 1;
+                  ctx.drawImage(target.canvas, 0, 0);
+                  ctx.draw && ctx.draw(true);
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.globalAlpha = 1;
                   target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
-                  ctx = origin;
                 }
               });
-            } // 降级overflow在filter后面
+            } // overflow在filter后面
 
 
             if (overflowHash.hasOwnProperty(_i5)) {
@@ -26683,13 +26726,14 @@
 
                 if (!maskStartHash.hasOwnProperty(_i5 + 1) && !blendHash.hasOwnProperty(_i5)) {
                   target.draw();
-                  origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.globalAlpha = 1;
-                  origin.drawImage(target.canvas, 0, 0);
+                  ctx = origin;
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.globalAlpha = 1;
+                  ctx.drawImage(target.canvas, 0, 0);
+                  ctx.draw && ctx.draw(true);
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
-                  ctx = origin;
                 }
               });
             } // 混合模式
@@ -26704,16 +26748,16 @@
 
                 if (!maskStartHash.hasOwnProperty(_i5 + 1)) {
                   target.draw();
-                  var origin = offScreenBlend.ctx;
-                  origin.setTransform(1, 0, 0, 1, 0, 0);
-                  origin.globalAlpha = 1;
-                  origin.drawImage(target.canvas, 0, 0);
+                  ctx = offScreenBlend.ctx;
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  ctx.globalAlpha = 1;
+                  ctx.drawImage(target.canvas, 0, 0);
+                  ctx.globalCompositeOperation = 'source-over';
+                  ctx.draw && ctx.draw(true);
                   target.ctx.globalAlpha = 1;
                   target.ctx.setTransform(1, 0, 0, 1, 0, 0);
                   target.ctx.clearRect(0, 0, width, height);
                   inject.releaseCacheCanvas(target.canvas);
-                  ctx = origin;
-                  ctx.globalCompositeOperation = 'source-over';
                 }
               });
             } // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
@@ -26747,6 +26791,7 @@
                 ctx.drawImage(_mask.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
                 ctx.globalCompositeOperation = 'source-over';
+                ctx.draw && ctx.draw(true);
 
                 _mask.ctx.clearRect(0, 0, width, height);
 
@@ -26774,6 +26819,7 @@
                 ctx.drawImage(_target.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
                 ctx.globalCompositeOperation = 'source-over';
+                ctx.draw && ctx.draw(true);
 
                 _target.ctx.clearRect(0, 0, width, height);
 
@@ -26946,14 +26992,15 @@
           }
 
           if (!maskStartHash.hasOwnProperty(_i7 + 1) && !overflowHash.hasOwnProperty(_i7) && !blendHash.hasOwnProperty(_i7)) {
-            origin.setTransform(1, 0, 0, 1, 0, 0);
-            origin.globalAlpha = 1;
-            origin.drawImage(target.canvas, 0, 0);
+            ctx = origin;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.drawImage(target.canvas, 0, 0);
+            ctx.draw && ctx.draw(true);
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.globalAlpha = 1;
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
           }
         });
       } // overflow在filter后面
@@ -26982,13 +27029,14 @@
 
           if (!maskStartHash.hasOwnProperty(_i7 + 1) && !blendHash.hasOwnProperty(_i7)) {
             target.draw();
-            origin.setTransform(1, 0, 0, 1, 0, 0);
-            origin.globalAlpha = 1;
-            origin.drawImage(target.canvas, 0, 0);
+            ctx = origin;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.drawImage(target.canvas, 0, 0);
+            ctx.draw && ctx.draw(true);
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
           }
         });
       } // 混合模式
@@ -27003,16 +27051,16 @@
 
           if (!maskStartHash.hasOwnProperty(_i7 + 1)) {
             target.draw();
-            var origin = offScreenBlend.ctx;
-            origin.setTransform(1, 0, 0, 1, 0, 0);
-            origin.globalAlpha = 1;
-            origin.drawImage(target.canvas, 0, 0);
+            ctx = offScreenBlend.ctx;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.drawImage(target.canvas, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.draw && ctx.draw(true);
             target.ctx.globalAlpha = 1;
             target.ctx.setTransform(1, 0, 0, 1, 0, 0);
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
-            ctx.globalCompositeOperation = 'source-over';
           }
         });
       } // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
@@ -27046,6 +27094,7 @@
           ctx.drawImage(_mask2.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
           ctx.globalCompositeOperation = 'source-over';
+          ctx.draw && ctx.draw(true);
 
           _mask2.ctx.clearRect(0, 0, width, height);
 
@@ -27071,6 +27120,7 @@
           ctx.drawImage(target.canvas, 0, 0); // blendMode前面会修改主屏的，这里应用完后恢复正常
 
           ctx.globalCompositeOperation = 'source-over';
+          ctx.draw && ctx.draw(true);
           target.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);
         }
@@ -27782,8 +27832,6 @@
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
             __config[NODE_CACHE_MASK$2] = genMaskWebgl(gl, texCache, node, target, width, height);
           }
-        } else {
-          inject.error('Merge error for oversize');
         }
       });
     } // console.error('render');
@@ -33085,7 +33133,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.10";
+  var version = "0.57.11";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

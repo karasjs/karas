@@ -1443,6 +1443,9 @@ class Xom extends Node {
     }
     let offScreenBlend;
     if(mixBlendMode !== 'normal' && !cache) {
+      mixBlendMode = mixBlendMode.replace(/[A-Z]/, function($0) {
+        return '-' + $0.toLowerCase();
+      });
       if(offScreenFilter || offScreenMask || offScreenOverflow) {
         offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
         offScreenBlend.mixBlendMode = mixBlendMode;

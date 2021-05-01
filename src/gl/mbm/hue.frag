@@ -9,10 +9,6 @@ varying vec2 v_texCoords;
 uniform sampler2D u_texture1;
 uniform sampler2D u_texture2;
 
-float rgb2hsl() {
-  return 0.0;
-}
-
 float hue2rgb(float p, float q, float t) {
   if(t < 0.0) {
     t += 1.0;

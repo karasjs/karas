@@ -37,7 +37,7 @@ vec3 op(vec3 a, vec3 b) {
     hb = 0.0;
   }
   else {
-    if (b[0] == maxB) {
+    if(b[0] == maxB) {
       float segment = (b[1] - b[2]) / cb;
       float shift = 0.0;
       if(segment < 0.0) {
@@ -45,7 +45,7 @@ vec3 op(vec3 a, vec3 b) {
       }
       hb = segment + shift;
     }
-    else if (b[1] == maxB) {
+    else if(b[1] == maxB) {
       hb = 2.0 + (b[2] - b[0]) / cb;
     }
     else {

@@ -26,7 +26,6 @@ import fragmentHardLight from '../gl/mbm/hard-light.frag';
 import fragmentSoftLight from '../gl/mbm/soft-light.frag';
 import fragmentDifference from '../gl/mbm/difference.frag';
 import fragmentExclusion from '../gl/mbm/exclusion.frag';
-import fragmentHue from '../gl/mbm/hue.frag';
 
 const {
   STYLE_KEY: {
@@ -78,6 +77,25 @@ const {
   MIX_BLEND_MODE: MBM,
 } = level;
 const { isE, inverse, multiply, revertY } = mx;
+const MBM_HASH = {
+  multiply: true,
+  screen: true,
+  overlay: true,
+  darken: true,
+  lighten: true,
+  'color-dodge': true,
+  'color-burn': true,
+  'hard-light': true,
+  'soft-light': true,
+  difference: true,
+  exclusion: true,
+};
+
+function mbmName(v) {
+  return v.replace(/[A-Z]/, function($0) {
+    return '-' + $0.toLowerCase();
+  });
+}
 
 // 依次从list获取首个available可用的cache
 function getCache(list) {
@@ -721,9 +739,7 @@ function genMaskWebgl(gl, texCache, node, cache, W, H) {
  */
 function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   let frag;
-  mbm = mbm.replace(/[A-Z]/, function($0) {
-    return '-' + $0.toLowerCase();
-  });
+  mbm = mbmName(mbm);
   if(mbm === 'multiply') {
     frag = fragmentMultiply;
   }
@@ -756,9 +772,6 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   }
   else if(mbm === 'exclusion') {
     frag = fragmentExclusion;
-  }
-  else if(mbm === 'hue') {
-    frag = fragmentHue;
   }
   let program = webgl.initShaders(gl, vertexMbm, frag);
   gl.useProgram(program);
@@ -2295,7 +2308,7 @@ function renderWebgl(renderMode, gl, root) {
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
         // 有mbm先刷新，然后后面这个节点绘入一个等画布尺寸的fbo中，再进行2者mbm合成
-        if(mixBlendMode !== 'normal') {
+        if(hasMbm && mixBlendMode && mixBlendMode !== 'normal' && MBM_HASH.hasOwnProperty(mbmName(mixBlendMode))) {
           texCache.refresh(gl, cx, cy);
           let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
           texCache.addTexAndDrawWhenLimit(gl, target, __opacity, revertY(m), cx, cy);

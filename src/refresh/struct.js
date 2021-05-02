@@ -26,6 +26,7 @@ import fragmentHardLight from '../gl/mbm/hard-light.frag';
 import fragmentSoftLight from '../gl/mbm/soft-light.frag';
 import fragmentDifference from '../gl/mbm/difference.frag';
 import fragmentExclusion from '../gl/mbm/exclusion.frag';
+import fragmentHue from '../gl/mbm/hue.frag';
 
 const {
   STYLE_KEY: {
@@ -89,6 +90,7 @@ const MBM_HASH = {
   'soft-light': true,
   difference: true,
   exclusion: true,
+  hue: true,
 };
 
 function mbmName(v) {
@@ -772,6 +774,9 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   }
   else if(mbm === 'exclusion') {
     frag = fragmentExclusion;
+  }
+  else if(mbm === 'hue') {
+    frag = fragmentHue;
   }
   let program = webgl.initShaders(gl, vertexMbm, frag);
   gl.useProgram(program);

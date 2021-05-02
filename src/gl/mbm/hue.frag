@@ -9,68 +9,141 @@ varying vec2 v_texCoords;
 uniform sampler2D u_texture1;
 uniform sampler2D u_texture2;
 
-float hue2rgb(float p, float q, float t) {
-  if(t < 0.0) {
-    t += 1.0;
+float getLuminosity(vec3 color) {
+  return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2];
+}
+
+float clipLowest(float channel, float lowestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * luminosity) / (luminosity - lowestChannel);
+}
+
+float clipHighest(float channel, float highestChannel, float luminosity) {
+  return luminosity + ((channel - luminosity) * (1.0 - luminosity)) / (highestChannel - luminosity);
+}
+
+vec3 clipColor(vec3 rgb) {
+  float luminosity = getLuminosity(rgb);
+  float lowestChannel = min(rgb[0], min(rgb[1], rgb[2]));
+  float highestChannel = max(rgb[0], max(rgb[1], rgb[2]));
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  if(lowestChannel < 0.0) {
+    r = clipLowest(r, lowestChannel, luminosity);
+    g = clipLowest(g, lowestChannel, luminosity);
+    b = clipLowest(b, lowestChannel, luminosity);
   }
-  else if(t > 1.0) {
-    t -= 1.0;
+  if(highestChannel > 1.0) {
+    r = clipHighest(r, highestChannel, luminosity);
+    g = clipHighest(g, highestChannel, luminosity);
+    b = clipHighest(b, highestChannel, luminosity);
   }
-  if(t < 1.0 / 6.0) {
-    return p + (q - p) * 6.0 * t;
+  return vec3(r, g, b);
+}
+
+vec3 setLuminosity(vec3 rgb, float luminosity) {
+  float delta = luminosity - getLuminosity(rgb);
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  return clipColor(vec3(r + delta, g + delta, b + delta));
+}
+
+float getSaturation(vec3 rgb) {
+  return max(rgb[0], max(rgb[1], rgb[2])) - min(rgb[0], min(rgb[1], rgb[2]));
+}
+
+vec3 setSaturation(vec3 rgb, float saturation) {
+  float r = rgb[0], g = rgb[1], b = rgb[2];
+  float maxC = 0.0, minC = 0.0, midC = 0.0;
+  int maxI = 0, minI = 0, midI = 0;
+  if(r >= g && r >= b) {
+    maxI = 0;
+    maxC = r;
+    if(g >= b) {
+      minI = 2;
+      midI = 1;
+      minC = b;
+      midC = g;
+    }
+    else {
+      minI = 1;
+      midI = 2;
+      minC = g;
+      midC = b;
+    }
   }
-  if(t < 1.0 / 2.0) {
-    return q;
+  else if(g >= r && g >= b) {
+    maxI = 1;
+    maxC = g;
+    if(r >= b) {
+      minI = 2;
+      midI = 0;
+      minC = b;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 2;
+      minC = r;
+      midC = b;
+    }
   }
-  if(t < 2.0 / 3.0) {
-    return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+  else if(b >= r && b >= g) {
+    maxI = 2;
+    maxC = b;
+    if(r >= g) {
+      minI = 1;
+      midI = 0;
+      minC = g;
+      midC = r;
+    }
+    else {
+      minI = 0;
+      midI = 1;
+      minC = r;
+      midC = g;
+    }
   }
-  return p;
+  vec3 result = vec3(r, g, b);
+  if(maxC > minC) {
+    midC = (midC - minC) * saturation / (maxC - minC);
+    maxC = saturation;
+  }
+  else {
+    maxC = midC = 0.0;
+  }
+  minC = 0.0;
+  if(maxI == 0) {
+    result[0] = maxC;
+  }
+  else if(maxI == 1) {
+    result[1] = maxC;
+  }
+  else if(maxI == 2) {
+    result[2] = maxC;
+  }
+  if(minI == 0) {
+    result[0] = minC;
+  }
+  else if(minI == 1) {
+    result[1] = minC;
+  }
+  else if(minI == 2) {
+    result[2] = minC;
+  }
+  if(midI == 0) {
+    result[0] = midC;
+  }
+  else if(midI == 1) {
+    result[1] = midC;
+  }
+  else if(midI == 2) {
+    result[2] = midC;
+  }
+  return result;
 }
 
 vec3 op(vec3 a, vec3 b) {
-  float maxB = max(b[0], max(b[1], b[2]));
-  float minB = min(b[0], min(b[1], b[2]));
-  float cb = maxB - minB;
-  float hb;
-  if(cb == 0.0) {
-    hb = 0.0;
-  }
-  else {
-    if(b[0] == maxB) {
-      float segment = (b[1] - b[2]) / cb;
-      float shift = 0.0;
-      if(segment < 0.0) {
-        shift = 6.0;
-      }
-      hb = segment + shift;
-    }
-    else if(b[1] == maxB) {
-      hb = 2.0 + (b[2] - b[0]) / cb;
-    }
-    else {
-      hb = 4.0 + (b[0] - b[1] / cb);
-    }
-    hb /= 6.0;
-  }
-  float maxA = max(a[0], max(a[1], a[2]));
-  float minA = min(a[0], min(a[1], a[2]));
-  float la = (maxA + minA) * 0.5;
-  float sa = 0.0;
-  if(maxA != minA) {
-    if(la < 0.5) {
-      sa = (maxA - minA) / (maxA + minA);
-    }
-    else {
-      sa = (maxA - minA) / (2.0 - (maxA + minA));
-    }
-  }
-  if(sa == 0.0) {
-    return vec3(la, la, la);
-  }
-  float q = la < 0.5 ? la * (1.0 + sa) : la + sa - la * sa;
-  float p = 2.0 * la - q;
-  return vec3(hue2rgb(p, q, hb + 1.0 / 3.0), hue2rgb(p, q, hb), hue2rgb(p, q, hb - 1.0 / 3.0));
+  float s = getSaturation(a);
+  float l = getLuminosity(a);
+  return setLuminosity(setSaturation(b, s), l);
 }
 
 void main() {

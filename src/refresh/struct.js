@@ -27,6 +27,9 @@ import fragmentSoftLight from '../gl/mbm/soft-light.frag';
 import fragmentDifference from '../gl/mbm/difference.frag';
 import fragmentExclusion from '../gl/mbm/exclusion.frag';
 import fragmentHue from '../gl/mbm/hue.frag';
+import fragmentSaturation from '../gl/mbm/saturation.frag';
+import fragmentColor from '../gl/mbm/color.frag';
+import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 
 const {
   STYLE_KEY: {
@@ -91,6 +94,9 @@ const MBM_HASH = {
   difference: true,
   exclusion: true,
   hue: true,
+  saturation: true,
+  color: true,
+  luminosity: true,
 };
 
 function mbmName(v) {
@@ -777,6 +783,15 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   }
   else if(mbm === 'hue') {
     frag = fragmentHue;
+  }
+  else if(mbm === 'saturation') {
+    frag = fragmentSaturation;
+  }
+  else if(mbm === 'color') {
+    frag = fragmentColor;
+  }
+  else if(mbm === 'luminosity') {
+    frag = fragmentLuminosity;
   }
   let program = webgl.initShaders(gl, vertexMbm, frag);
   gl.useProgram(program);

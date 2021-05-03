@@ -13,7 +13,19 @@ float op(float a, float b) {
   if(b == 0.0) {
     return a == 1.0 ? a : 0.0;
   }
-  return a - (1.0 - a) * (1.0 - b) / b;
+  return 1.0 - min(1.0, (1.0 - a) / b);
+}
+
+vec3 premultipliedAlpha(vec4 color) {
+  float a = color.a;
+  if(a == 0.0) {
+    return vec3(0.0, 0.0, 0.0);
+  }
+  return vec3(color.r / a, color.g / a, color.b / a);
+}
+
+float alphaCompose(float a1, float a2, float a3, float c1, float c2, float c3) {
+  return (1.0 - a2 / a3) * c1 + a2 / a3 * ((1.0 - a1) * c2 + a1 * c3);
 }
 
 void main() {
@@ -26,6 +38,15 @@ void main() {
     gl_FragColor = color1;
   }
   else {
-    gl_FragColor = vec4(op(color1.r, color2.r), op(color1.g, color2.g), op(color1.b, color2.b), 1.0);
+    vec3 bottom = premultipliedAlpha(color1);
+    vec3 top = premultipliedAlpha(color2);
+    vec3 res = vec3(op(bottom.r, top.r), op(bottom.g, top.g), op(bottom.b, top.b));
+    float a = color1.a + color2.a - color1.a * color2.a;
+    gl_FragColor = vec4(
+      alphaCompose(color1.a, color2.a, a, bottom.r, top.r, res.r) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.g, top.g, res.g) * a,
+      alphaCompose(color1.a, color2.a, a, bottom.b, top.b, res.b) * a,
+      a
+    );
   }
 }

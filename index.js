@@ -5227,7 +5227,8 @@
   var ca = {
     alpha: true,
     antialias: true,
-    premultipliedAlpha: true // depth: true,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: true // depth: true,
     // stencil: true,
 
   };

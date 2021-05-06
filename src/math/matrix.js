@@ -62,7 +62,7 @@ function calPoint(point, m) {
     return [
       (x * a1 + y * a2 + z * a3 + a4) / w,
       (x * b1 + y * b2 + z * b3 + b4) / w,
-      (x * c1 + y * c2 + z * c3 + c4) / w
+      (x * c1 + y * c2 + z * c3 + c4) / w,
     ];
   }
   return [x, y, z];

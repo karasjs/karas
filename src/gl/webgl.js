@@ -172,11 +172,13 @@ function drawTextureCache(gl, list, hash, cx, cy) {
     let { x, y, width, height, page, bbox } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let bx = bbox[0], by = bbox[1];
-    let [x1, y1] = convertCoords2Gl(bx + (dx || 0), by + height + (dy || 0), cx, cy);
-    let [x2, y2] = convertCoords2Gl(bx + width + (dx || 0), by + (dy || 0), cx, cy);
-    [x1, y1] = calPoint([x1, y1], matrix);
-    [x2, y2] = calPoint([x2, y2], matrix);
-    vtPoint.push(x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2);
+    let [xa, ya] = convertCoords2Gl(bx + (dx || 0), by + height + (dy || 0), cx, cy);
+    let [xb, yb] = convertCoords2Gl(bx + width + (dx || 0), by + (dy || 0), cx, cy);
+    let [x1, y1] = calPoint([xa, ya], matrix);
+    let [x2, y2] = calPoint([xb, ya], matrix);
+    let [x3, y3] = calPoint([xb, yb], matrix);
+    let [x4, y4] = calPoint([xa, yb], matrix);
+    vtPoint.push(x1, y1, x4, y4, x2, y2, x4, y4, x2, y2, x3, y3);
     let tx1 = x / page.width, ty1 = (y + height) / page.height;
     let tx2 = (x + width) / page.width, ty2 = y / page.height;
     vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);

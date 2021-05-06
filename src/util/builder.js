@@ -8,9 +8,9 @@ const { NODE_KEY: {
   NODE_STYLE,
   NODE_CURRENT_STYLE,
   NODE_COMPUTED_STYLE,
-  NODE_OPACITY,
   NODE_MATRIX,
   NODE_MATRIX_EVENT,
+  NODE_MATRIX_GL,
 } } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
@@ -202,9 +202,9 @@ function relation(parent, children, options = {}) {
         NODE_STYLE,
         NODE_CURRENT_STYLE,
         NODE_COMPUTED_STYLE,
-        NODE_OPACITY,
         NODE_MATRIX,
         NODE_MATRIX_EVENT,
+        NODE_MATRIX_GL,
       ].forEach(k => {
         children.__config[k] = parent.__config[k];
       });
@@ -226,9 +226,9 @@ function relation(parent, children, options = {}) {
           NODE_STYLE,
           NODE_CURRENT_STYLE,
           NODE_COMPUTED_STYLE,
-          NODE_OPACITY,
           NODE_MATRIX,
           NODE_MATRIX_EVENT,
+          NODE_MATRIX_GL,
         ].forEach(k => {
           children.__config[k] = parent.__config[k];
         });

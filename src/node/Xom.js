@@ -128,6 +128,7 @@ const {
     NODE_IS_DESTROYED,
     NODE_DEFS_CACHE,
     NODE_DOM_PARENT,
+    NODE_MATRIX_GL,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
@@ -229,8 +230,10 @@ class Xom extends Node {
     config[NODE_COMPUTED_STYLE] = this.__computedStyle;
     config[NODE_REFRESH_LV] = REFLOW;
     config[NODE_STYLE] = this.__style;
+    config[NODE_MATRIX] = [];
     config[NODE_MATRIX_EVENT] = [];
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
+    config[NODE_MATRIX_GL] = [];
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
   }
@@ -1290,14 +1293,21 @@ class Xom extends Node {
       }
     }
     // canvas/svg/事件需要3种不同的matrix
-    let matrix = this.__matrix = __config[NODE_MATRIX] = __cacheStyle[MATRIX];
-    let renderMatrix = this.__renderMatrix = matrix;
-    // 变换对事件影响，canvas要设置渲染
+    let matrix = __cacheStyle[MATRIX];
+    let m = __config[NODE_MATRIX];
+    m[0] = matrix[0];
+    m[1] = matrix[1];
+    m[2] = matrix[2];
+    m[3] = matrix[3];
+    m[4] = matrix[4];
+    m[5] = matrix[5];
+    let renderMatrix = matrix;
+    // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
     if(p) {
       matrix = mx.multiply(p.matrixEvent, matrix);
     }
     // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
-    let m = this.__matrixEvent = __config[NODE_MATRIX_EVENT];
+    m = __config[NODE_MATRIX_EVENT];
     m[0] = matrix[0];
     m[1] = matrix[1];
     m[2] = matrix[2];
@@ -1313,8 +1323,6 @@ class Xom extends Node {
       else {
         delete virtualDom.transform;
       }
-    }
-    if(renderMode === mode.SVG) {
       virtualDom.visibility = visibility;
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
@@ -2486,15 +2494,15 @@ class Xom extends Node {
   }
 
   get matrix() {
-    return this.__matrix;
+    return this.__config[NODE_MATRIX];
   }
 
   get matrixEvent() {
-    return this.__matrixEvent;
+    return this.__config[NODE_MATRIX_EVENT];
   }
 
   get renderMatrix() {
-    return this.__renderMatrix;
+    return this.matrix;
   }
 
   get style() {

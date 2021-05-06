@@ -25,6 +25,9 @@ const {
     WHITE_SPACE,
     TEXT_OVERFLOW,
   },
+  NODE_KEY: {
+    NODE_CACHE,
+  },
 } = enums;
 
 const ELLIPSIS = textCache.ELLIPSIS;
@@ -543,7 +546,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, lv, ctx, dx = 0, dy = 0) {
+  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
@@ -556,6 +559,24 @@ class Text extends Node {
       return false;
     }
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      // webgl借用离屏canvas绘制文本
+      if(renderMode === mode.WEBGL && cache) {
+        renderMode = mode.CANVAS;
+        let { sx, sy, __cache, bbox } = this;
+        if(__cache) {
+          __cache.reset(bbox, sx, sy);
+        }
+        else {
+          __cache = Cache.getInstance(bbox, sx, sy);
+        }
+        if(__cache && __cache.enabled) {
+          this.__config[NODE_CACHE] = __cache;
+          __cache.__available = true;
+          ctx = __cache.ctx;
+          dx = -sx + __cache.x;
+          dy = -sy + __cache.y;
+        }
+      }
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {
         ctx.font = font;
@@ -607,25 +628,6 @@ class Text extends Node {
       }
     }
     return true;
-  }
-
-  __renderAsTex() {
-    if(!this.content) {
-      return;
-    }
-    let { sx, sy, __cache, bbox } = this;
-    if(__cache) {
-      __cache.reset(bbox, sx, sy);
-    }
-    else {
-      __cache = Cache.getInstance(bbox, sx, sy);
-    }
-    if(__cache && __cache.enabled) {
-      this.__cache = __cache;
-      this.render(mode.CANVAS, level.REFLOW, __cache.ctx, -sx + __cache.x, -sy + __cache.y);
-      __cache.__available = true;
-    }
-    return __cache;
   }
 
   __deepScan(cb) {

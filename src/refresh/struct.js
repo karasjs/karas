@@ -285,9 +285,8 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
-    let parentIndex = parentIndexHash[i];
-    let matrix = matrixHash[parentIndex];
-    let opacity = opacityHash[parentIndex];
+    let matrix = matrixHash[i];
+    let opacity = opacityHash[i];
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
       ctx.globalAlpha = opacity;
@@ -460,9 +459,8 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
-    let parentIndex = parentIndexHash[i];
-    let matrix = matrixHash[parentIndex];
-    let opacity = opacityHash[parentIndex];
+    let matrix = matrixHash[i];
+    let opacity = opacityHash[i];
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
       let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
@@ -868,9 +866,9 @@ function renderCacheCanvas(renderMode, ctx, root) {
     else if(lv < lastLv) {
       let diff = lastLv - lv;
       matrixList.splice(-diff);
-      parentMatrix = matrixList[lv];
+      parentMatrix = matrixList[lv - 1];
       opacityList.splice(-diff);
-      parentOpacity = opacityList[lv];
+      parentOpacity = opacityList[lv - 1];
     }
     // 不变是同级兄弟，无需特殊处理
     else {}
@@ -2070,11 +2068,11 @@ function renderWebgl(renderMode, gl, root) {
     else if(lv < lastLv) {
       let diff = lastLv - lv;
       matrixList.splice(-diff);
-      parentMatrix = matrixList[lv];
+      parentMatrix = matrixList[lv - 1];
       opacityList.splice(-diff);
-      parentOpacity = opacityList[lv];
+      parentOpacity = opacityList[lv - 1];
       refreshLevelList.splice(-diff);
-      parentRefreshLevel = refreshLevelList[lv];
+      parentRefreshLevel = refreshLevelList[lv - 1];
     }
     // 不变是同级兄弟，无需特殊处理
     else {}

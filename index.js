@@ -25599,9 +25599,8 @@
           _total2 = _structs$i2[STRUCT_TOTAL$1],
           hasMask = _structs$i2[STRUCT_HAS_MASK$1];
       var _config = _node.__config;
-      var parentIndex = parentIndexHash[i];
-      var matrix = matrixHash[parentIndex];
-      var opacity = opacityHash[parentIndex]; // 先看text，visibility会在内部判断，display会被parent判断
+      var matrix = matrixHash[i];
+      var opacity = opacityHash[i]; // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node instanceof Text) {
         ctx.globalAlpha = opacity;
@@ -25801,9 +25800,8 @@
           _total3 = _structs$i3[STRUCT_TOTAL$1],
           hasMask = _structs$i3[STRUCT_HAS_MASK$1];
       var _config2 = _node2.__config;
-      var parentIndex = parentIndexHash[i];
-      var matrix = matrixHash[parentIndex];
-      var opacity = opacityHash[parentIndex]; // 先看text，visibility会在内部判断，display会被parent判断
+      var matrix = matrixHash[i];
+      var opacity = opacityHash[i]; // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node2 instanceof Text) {
         var m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
@@ -26263,9 +26261,9 @@
       else if (lv < lastLv) {
           var diff = lastLv - lv;
           matrixList.splice(-diff);
-          parentMatrix = matrixList[lv];
+          parentMatrix = matrixList[lv - 1];
           opacityList.splice(-diff);
-          parentOpacity = opacityList[lv];
+          parentOpacity = opacityList[lv - 1];
         }
 
       var __refreshLevel = __config[NODE_REFRESH_LV$1],
@@ -27686,11 +27684,11 @@
       else if (lv < lastLv) {
           var diff = lastLv - lv;
           matrixList.splice(-diff);
-          parentMatrix = matrixList[lv];
+          parentMatrix = matrixList[lv - 1];
           opacityList.splice(-diff);
-          parentOpacity = opacityList[lv];
+          parentOpacity = opacityList[lv - 1];
           refreshLevelList.splice(-diff);
-          parentRefreshLevel = refreshLevelList[lv];
+          parentRefreshLevel = refreshLevelList[lv - 1];
         }
 
       var __cache = __config[NODE_CACHE$5],

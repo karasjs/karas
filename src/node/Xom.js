@@ -128,7 +128,6 @@ const {
     NODE_IS_DESTROYED,
     NODE_DEFS_CACHE,
     NODE_DOM_PARENT,
-    NODE_MATRIX_GL,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
@@ -233,7 +232,6 @@ class Xom extends Node {
     config[NODE_MATRIX] = [];
     config[NODE_MATRIX_EVENT] = [];
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
-    config[NODE_MATRIX_GL] = [];
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
   }

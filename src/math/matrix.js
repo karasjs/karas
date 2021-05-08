@@ -51,19 +51,21 @@ function multiply(a, b) {
 
 function calPoint(point, m) {
   let [x, y, z] = point;
-  if(m && m.length === 6) {
-    let [a, b, c, d, e, f] = m;
-    return [a * x + c * y + e, b * x + d * y + f];
-  }
-  else if(m && m.length === 16) {
-    z = z || 0;
-    let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
-    let w = x * d1 + y * d2 + z * d3 + d4;
-    return [
-      (x * a1 + y * a2 + z * a3 + a4) / w,
-      (x * b1 + y * b2 + z * b3 + b4) / w,
-      (x * c1 + y * c2 + z * c3 + c4) / w,
-    ];
+  if(m && !isE(m)) {
+    if(m && m.length === 6) {
+      let [a, b, c, d, e, f] = m;
+      return [a * x + c * y + e, b * x + d * y + f, z];
+    }
+    else if(m && m.length === 16) {
+      z = z || 0;
+      let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
+      let w = x * d1 + y * d2 + z * d3 + d4;
+      return [
+        (x * a1 + y * a2 + z * a3 + a4) / w,
+        (x * b1 + y * b2 + z * b3 + b4) / w,
+        (x * c1 + y * c2 + z * c3 + c4) / w,
+      ];
+    }
   }
   return [x, y, z];
 }
@@ -91,6 +93,12 @@ function inverse(m) {
 }
 
 function isE(m) {
+  if(m.length === 16) {
+    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
+      && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
+      && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0
+      && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
+  }
   return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
 }
 
@@ -175,28 +183,27 @@ function inverse4(m) {
  * @returns {(*|number)[]|number[]|*}
  */
 function m2Mat4(m, width, height) {
-  if(!m) {
-    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-  }
-  if(m.length === 16) {
+  if(m && m.length === 16) {
     m = m.slice(0);
     m[13] /= width;
     m[14] /= height;
     return m;
   }
-  if(m.length === 6) {
+  if(m && m.length === 6) {
     m = m.slice(0);
     return [
       m[0], m[1], 0, 0,
       m[2], m[3], 0, 0,
       0, 0, 1, 0,
-      m[4] / width, m[5] / height, 0, 1,
+      // m[4] / width, m[5] / height, 0, 1,
+      m[4], m[5], 0, 1,
     ];
   }
   return m;
 }
 
 function revertY(matrix) {
+  matrix = matrix.slice(0);
   if(matrix.length === 9) {
     matrix[1] = -matrix[1];
     matrix[3] = -matrix[3];

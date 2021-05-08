@@ -94,7 +94,7 @@ export function loadShader(gl, type, source) {
   return shader;
 }
 
-function convertCoords2Gl(x, y, cx, cy) {
+function convertCoords2Gl([x, y], cx, cy, revertY) {
   if(x === cx) {
     x = 0;
   }
@@ -106,6 +106,9 @@ function convertCoords2Gl(x, y, cx, cy) {
   }
   else {
     y = (y - cy) / cy;
+    if(revertY) {
+      y = -y;
+    }
   }
   return [x, y];
 }
@@ -148,8 +151,9 @@ function deleteTexture(gl, tex) {
  * @param hash
  * @param cx
  * @param cy
+ * @param revertY
  */
-function drawTextureCache(gl, list, hash, cx, cy) {
+function drawTextureCache(gl, list, hash, cx, cy, revertY) {
   let vtPoint = [], vtTex = [], vtOpacity = [];
   let lastChannel; // 上一个dom的单元号
   let record = [0]; // [num, channel]每一批的数量和单元号记录
@@ -172,12 +176,16 @@ function drawTextureCache(gl, list, hash, cx, cy) {
     let { x, y, width, height, page, bbox } = cache;
     // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
     let bx = bbox[0], by = bbox[1];
-    let [xa, ya] = convertCoords2Gl(bx + (dx || 0), by + height + (dy || 0), cx, cy);
-    let [xb, yb] = convertCoords2Gl(bx + width + (dx || 0), by + (dy || 0), cx, cy);
+    let [xa, ya] = [bx + (dx || 0), by + height + (dy || 0)];
+    let [xb, yb] = [bx + width + (dx || 0), by + (dy || 0)];
     let [x1, y1] = calPoint([xa, ya], matrix);
     let [x2, y2] = calPoint([xb, ya], matrix);
     let [x3, y3] = calPoint([xb, yb], matrix);
     let [x4, y4] = calPoint([xa, yb], matrix);
+    [x1, y1] = convertCoords2Gl([x1, y1], cx, cy, revertY);
+    [x2, y2] = convertCoords2Gl([x2, y2], cx, cy, revertY);
+    [x3, y3] = convertCoords2Gl([x3, y3], cx, cy, revertY);
+    [x4, y4] = convertCoords2Gl([x4, y4], cx, cy, revertY);
     vtPoint.push(x1, y1, x4, y4, x2, y2, x4, y4, x2, y2, x3, y3);
     let tx1 = x / page.width, ty1 = (y + height) / page.height;
     let tx2 = (x + width) / page.width, ty2 = y / page.height;
@@ -252,8 +260,8 @@ function drawTextureCache(gl, list, hash, cx, cy) {
  */
 function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy, spread, d, sigma) {
   // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-  let [x1, y2] = convertCoords2Gl(spread, height - spread, cx, cy);
-  let [x2, y1] = convertCoords2Gl(width - spread, spread, cx, cy);
+  let [x1, y2] = convertCoords2Gl([spread, height - spread], cx, cy);
+  let [x2, y1] = convertCoords2Gl([width - spread, spread], cx, cy);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);

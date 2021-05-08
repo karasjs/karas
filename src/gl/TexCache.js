@@ -32,7 +32,7 @@ class TexCache {
    * @param dx
    * @param dy
    */
-  addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0) {
+  addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0, revertY) {
     let pages = this.__pages;
     let list = this.__list;
     let page = cache.page;
@@ -46,7 +46,7 @@ class TexCache {
       i = pages.length;
       if(i >= this.__units - this.__lockUnits) {
         // 绘制且清空，队列索引重新为0
-        this.refresh(gl, cx, cy, pages, list);
+        this.refresh(gl, cx, cy, revertY);
       }
       pages.push(page);
       list.push([cache, opacity, matrix, dx, dy]);
@@ -58,12 +58,11 @@ class TexCache {
    * @param gl
    * @param cx
    * @param cy
-   * @param pages
-   * @param list
+   * @param revertY
    */
-  refresh(gl, cx, cy, pages, list) {
-    pages = pages || this.__pages;
-    list = list || this.__list;
+  refresh(gl, cx, cy, revertY) {
+    let pages = this.__pages;
+    let list = this.__list;
     // 防止空调用刷新，struct循环结尾会强制调用一次防止有未渲染的
     if(pages.length) {
       let channels = this.channels;
@@ -165,7 +164,7 @@ class TexCache {
         page.time = inject.now();
       }
       // 再次遍历开始本次渲染并清空
-      webgl.drawTextureCache(gl, list, hash, cx, cy);
+      webgl.drawTextureCache(gl, list, hash, cx, cy, revertY);
       pages.splice(0);
       list.splice(0);
     }

@@ -54,7 +54,7 @@ function calPoint(point, m) {
   if(m && !isE(m)) {
     if(m && m.length === 6) {
       let [a, b, c, d, e, f] = m;
-      return [a * x + c * y + e, b * x + d * y + f, z];
+      return [a * x + c * y + e, b * x + d * y + f];
     }
     else if(m && m.length === 16) {
       z = z || 0;
@@ -67,7 +67,7 @@ function calPoint(point, m) {
       ];
     }
   }
-  return [x, y, z];
+  return point.slice(0);
 }
 
 /**

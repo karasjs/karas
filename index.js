@@ -792,7 +792,7 @@
             e = _m[4],
             f = _m[5];
 
-        return [a * x + c * y + e, b * x + d * y + f, z];
+        return [a * x + c * y + e, b * x + d * y + f];
       } else if (m && m.length === 16) {
         z = z || 0;
 
@@ -819,7 +819,7 @@
       }
     }
 
-    return [x, y, z];
+    return point.slice(0);
   }
   /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度

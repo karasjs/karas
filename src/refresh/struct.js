@@ -114,7 +114,7 @@ function getCache(list) {
   }
 }
 
-function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash) {
+function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
   let { __sx1: sx1, __sy1: sy1, __config } = node;
   let {
     [NODE_CACHE]: cache,
@@ -132,6 +132,8 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let list = [index];
   let d = blur.outerSize(blurValue);
   opacityHash[index] = 1;
+  // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
+  let matrixHash = {};
   while(list.length) {
     list.splice(0).forEach(parentIndex => {
       let total = __structs[parentIndex][STRUCT_TOTAL] || 0;
@@ -252,9 +254,8 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
   }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
-  let matrixHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
   if(!bboxTotal) {
     return;
   }
@@ -277,6 +278,8 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     Cache.drawCache(cache, cacheTop);
   }
+  // 因为cacheTotal不总是以左上角原点为开始，所以必须每个节点重算matrix，合并box时计算的无法用到
+  let matrixHash = {};
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
@@ -285,8 +288,9 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
-    let matrix = matrixHash[i];
-    let opacity = opacityHash[i];
+    let parentIndex = parentIndexHash[i];
+    let matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
+    let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
       ctx.globalAlpha = opacity;
@@ -433,9 +437,8 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   // }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
-  let matrixHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
   if(!bboxTotal) {
     return;
   }
@@ -451,6 +454,8 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   if(cache && cache.available) {
     texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy);
   }
+  // 因为cacheTotal不总是以左上角原点为开始，所以必须每个节点重算matrix，合并box时计算的无法用到
+  let matrixHash = {};
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
@@ -459,8 +464,9 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
     let __config = node.__config;
-    let matrix = matrixHash[i];
-    let opacity = opacityHash[i];
+    let parentIndex = parentIndexHash[i];
+    let matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
+    let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
       let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);

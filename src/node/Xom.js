@@ -1047,7 +1047,7 @@ class Xom extends Node {
         for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
           let k = list[i];
           if(computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
-            && currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][3] > 0) {
+            && currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][0][3] > 0) {
             return true;
           }
         }
@@ -1832,6 +1832,7 @@ class Xom extends Node {
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
+      console.log(renderMode, ctx);
       border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR]);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {

@@ -24,7 +24,7 @@ import vertex from '../gl/main.vert';
 import fragment from '../gl/main.frag';
 import vertexMask from '../gl/mask.vert';
 import fragmentMask from '../gl/mask.frag';
-import vertexOverflow from '../gl/overflow.vert';
+import fragmentClip from '../gl/clip.frag';
 import fragmentOverflow from '../gl/overflow.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
@@ -748,7 +748,8 @@ class Root extends Dom {
       this.__renderMode = mode.WEBGL;
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-      gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
+      gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
+      gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow);
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));

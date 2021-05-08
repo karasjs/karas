@@ -394,7 +394,7 @@ function drawOverflow(gl, i, dx, dy, width, height, w, h) {
   gl.deleteBuffer(pointBuffer);
 }
 
-function drawMask(gl, i, j) {
+function drawMask(gl, i, j, program) {
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -406,7 +406,7 @@ function drawMask(gl, i, j) {
     1, -1,
     1, 1,
   ]), gl.STATIC_DRAW);
-  let a_position = gl.getAttribLocation(gl.programMask, 'a_position');
+  let a_position = gl.getAttribLocation(program, 'a_position');
   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position);
   // 纹理buffer
@@ -420,13 +420,13 @@ function drawMask(gl, i, j) {
     1, 0,
     1, 1,
   ]), gl.STATIC_DRAW);
-  let a_texCoords = gl.getAttribLocation(gl.programMask, 'a_texCoords');
+  let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
   // 纹理单元
-  let u_texture1 = gl.getUniformLocation(gl.programMask, 'u_texture1');
+  let u_texture1 = gl.getUniformLocation(program, 'u_texture1');
   gl.uniform1i(u_texture1, j);
-  let u_texture2 = gl.getUniformLocation(gl.programMask, 'u_texture2');
+  let u_texture2 = gl.getUniformLocation(program, 'u_texture2');
   gl.uniform1i(u_texture2, i);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   gl.deleteBuffer(pointBuffer);

@@ -384,8 +384,9 @@ function genFilter(node, cache, v) {
   return Cache.genBlur(cache, v);
 }
 
-function genMask(node, cache, isClip) {
+function genMask(node, cache) {
   let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: transformOrigin } = node.computedStyle;
+  let isClip = node.next.isClip;
   return Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
 }
 
@@ -733,8 +734,16 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
   }
   // 生成最终纹理，汇总total和maskCache
   let [n, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
-  gl.useProgram(gl.programMask);
-  webgl.drawMask(gl, i, j);
+  let isClip = node.next.isClip;
+  let program;
+  if(isClip) {
+    program = gl.programClip;
+  }
+  else {
+    program = gl.programMask;
+  }
+  gl.useProgram(program);
+  webgl.drawMask(gl, i, j, program);
   webgl.deleteTexture(gl, texture);
   texCache.releaseLockChannel(i);
   texCache.releaseLockChannel(j);
@@ -1061,8 +1070,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           target = __config[NODE_CACHE_OVERFLOW];
         }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
-          let isClip = node.next.isClip;
-          __config[NODE_CACHE_MASK] = genMask(node, target, isClip);
+          __config[NODE_CACHE_MASK] = genMask(node, target);
         }
       }
     });

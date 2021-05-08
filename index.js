@@ -5690,25 +5690,25 @@
     gl.deleteBuffer(pointBuffer);
   }
 
-  function drawMask(gl, i, j) {
+  function drawMask(gl, i, j, program) {
     // 顶点buffer
     var pointBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(gl.programMask, 'a_position');
+    var a_position = gl.getAttribLocation(program, 'a_position');
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_position); // 纹理buffer
 
     var texBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(gl.programMask, 'a_texCoords');
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_texCoords); // 纹理单元
 
-    var u_texture1 = gl.getUniformLocation(gl.programMask, 'u_texture1');
+    var u_texture1 = gl.getUniformLocation(program, 'u_texture1');
     gl.uniform1i(u_texture1, j);
-    var u_texture2 = gl.getUniformLocation(gl.programMask, 'u_texture2');
+    var u_texture2 = gl.getUniformLocation(program, 'u_texture2');
     gl.uniform1i(u_texture2, i);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.deleteBuffer(pointBuffer);
@@ -17028,7 +17028,7 @@
             for (var list = ['Top', 'Right', 'Bottom', 'Left'], _i = 0, _len = list.length; _i < _len; _i++) {
               var k = list[_i];
 
-              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
+              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][0][3] > 0) {
                 return true;
               }
             }
@@ -17897,6 +17897,7 @@
 
 
         if (borderTopWidth > 0 && borderTopColor[3] > 0) {
+          console.log(renderMode, ctx);
           border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR]);
         }
 
@@ -25709,10 +25710,11 @@
     return Cache.genBlur(cache, v);
   }
 
-  function genMask(node, cache, isClip) {
+  function genMask(node, cache) {
     var _node$computedStyle = node.computedStyle,
         transform = _node$computedStyle[TRANSFORM$5],
         transformOrigin = _node$computedStyle[TRANSFORM_ORIGIN$5];
+    var isClip = node.next.isClip;
     return Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
   }
 
@@ -26134,8 +26136,17 @@
         frameBuffer2 = _genFrameBufferWithTe10[1],
         texture2 = _genFrameBufferWithTe10[2];
 
-    gl.useProgram(gl.programMask);
-    webgl.drawMask(gl, i, j);
+    var isClip = node.next.isClip;
+    var program;
+
+    if (isClip) {
+      program = gl.programClip;
+    } else {
+      program = gl.programMask;
+    }
+
+    gl.useProgram(program);
+    webgl.drawMask(gl, i, j, program);
     webgl.deleteTexture(gl, texture);
     texCache.releaseLockChannel(i);
     texCache.releaseLockChannel(j); // 切换回主程序
@@ -26492,8 +26503,7 @@
           }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
-            var isClip = node.next.isClip;
-            __config[NODE_CACHE_MASK$2] = genMask(node, target, isClip);
+            __config[NODE_CACHE_MASK$2] = genMask(node, target);
           }
         }
       });
@@ -28089,9 +28099,9 @@
 
   var vertexMask = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
 
-  var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);gl_FragColor=vec4(color1.rgb,color1.a*color2.a);}"; // eslint-disable-line
+  var fragmentMask = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);float a=color1.a*color2.a;gl_FragColor=vec4(color1.rgb*color2.a,a);}"; // eslint-disable-line
 
-  var vertexOverflow = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
+  var fragmentClip = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);float a=color1.a*(1.0-color2.a);gl_FragColor=vec4(color1.rgb*(1.0-color2.a),a);}"; // eslint-disable-line
 
   var fragmentOverflow = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;void main(){gl_FragColor=texture2D(u_texture,v_texCoords);}"; // eslint-disable-line
 
@@ -29253,7 +29263,8 @@
           this.__renderMode = mode.WEBGL;
           gl.program = webgl.initShaders(gl, vertex, fragment);
           gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
-          gl.programOverflow = webgl.initShaders(gl, vertexOverflow, fragmentOverflow);
+          gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
+          gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow);
           gl.useProgram(gl.program); // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
 
           var MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));

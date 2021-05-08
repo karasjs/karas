@@ -16624,7 +16624,11 @@
       }
     }, {
       key: "__calMatrix",
-      value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight) {
+      value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight, isRealInline) {
+        if (isRealInline) {
+          return __cacheStyle[MATRIX$3] = [1, 0, 0, 1, 0, 0];
+        }
+
         var matrixCache = __cacheStyle[MATRIX$3]; // tx/ty变化特殊优化
 
         if (matrixCache && lv < REFLOW && !contain(lv, TF)) {
@@ -17194,7 +17198,7 @@
 
         var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT$1] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
 
-        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight); // canvas特殊申请离屏缓存
+        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight, isRealInline); // canvas特殊申请离屏缓存
 
 
         var dx = 0,
@@ -17897,7 +17901,6 @@
 
 
         if (borderTopWidth > 0 && borderTopColor[3] > 0) {
-          console.log(renderMode, ctx);
           border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR]);
         }
 

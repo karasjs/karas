@@ -625,7 +625,10 @@ class Xom extends Node {
     }
   }
 
-  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight) {
+  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight, isRealInline) {
+    if(isRealInline) {
+      return __cacheStyle[MATRIX] = [1, 0, 0, 1, 0, 0];
+    }
     let matrixCache = __cacheStyle[MATRIX];
     // tx/ty变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
@@ -1185,7 +1188,7 @@ class Xom extends Node {
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
-    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight);
+    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight, isRealInline);
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -1832,7 +1835,6 @@ class Xom extends Node {
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
-      console.log(renderMode, ctx);
       border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR]);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {

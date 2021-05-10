@@ -407,7 +407,8 @@
     NODE_STYLE: 22,
     NODE_UPDATE_HASH: 23,
     NODE_UNIQUE_UPDATE_ID: 24,
-    NODE_DEFS_CACHE: 25
+    NODE_DEFS_CACHE: 25,
+    NODE_IS_INLINE: 26
   }; // struct用
 
   var STRUCT_KEY = {
@@ -16072,7 +16073,8 @@
       NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$3.NODE_CACHE_OVERFLOW,
       NODE_IS_DESTROYED$1 = _enums$NODE_KEY$3.NODE_IS_DESTROYED,
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$3.NODE_DEFS_CACHE,
-      NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT;
+      NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
+      NODE_IS_INLINE = _enums$NODE_KEY$3.NODE_IS_INLINE;
   var AUTO$3 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$6 = unit.PERCENT,
@@ -16326,7 +16328,8 @@
           lx: data.lx
         };
         __config[NODE_REFRESH_LV] = REFLOW;
-        __config[NODE_LIMIT_CACHE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
+        __config[NODE_LIMIT_CACHE] = false;
+        __config[NODE_IS_INLINE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
 
         if (!isVirtual) {
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -16439,17 +16442,28 @@
           }
         } else if (currentStyle[POSITION$1] !== 'absolute') {
           computedStyle[TOP$1] = computedStyle[BOTTOM$1] = computedStyle[LEFT$1] = computedStyle[RIGHT$1] = 'auto';
+        } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
+
+
+        if (!__config[NODE_IS_INLINE]) {
+          var x = this.__sx = this.x + this.ox;
+          x = this.__sx1 = x + computedStyle[MARGIN_LEFT$2];
+          x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH$3];
+          x = this.__sx3 = x + computedStyle[PADDING_LEFT$3];
+          x = this.__sx4 = x + this.width;
+          x = this.__sx5 = x + computedStyle[PADDING_RIGHT$3];
+          this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH$3];
+          var y = this.__sy = this.y + this.oy;
+          y = this.__sy1 = y + computedStyle[MARGIN_TOP$1];
+          y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH$2];
+          y = this.__sy3 = y + computedStyle[PADDING_TOP$2];
+          y = this.__sy4 = y + this.height;
+          y = this.__sy5 = y + computedStyle[PADDING_BOTTOM$2];
+          this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH$2];
         }
 
-        this.__sx = this.x + this.ox;
-        this.__sy = this.y + this.oy; // 计算结果存入computedStyle，inline在其inlineSize特殊处理
-
         computedStyle[WIDTH$3] = this.width;
-        computedStyle[HEIGHT$3] = this.height; // virtual时计算返回给abs布局用，普通的在各自layout做
-        // if(isVirtual) {
-        //   this.__ioSize(tw, th);
-        // }
-        // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+        computedStyle[HEIGHT$3] = this.height; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
         var ar = this.__animateRecords;
 
@@ -17135,9 +17149,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             __hasMask = this.__hasMask;
-        var marginTop = computedStyle[MARGIN_TOP$1],
-            marginLeft = computedStyle[MARGIN_LEFT$2],
-            paddingTop = computedStyle[PADDING_TOP$2],
+        var paddingTop = computedStyle[PADDING_TOP$2],
             paddingRight = computedStyle[PADDING_RIGHT$3],
             paddingBottom = computedStyle[PADDING_BOTTOM$2],
             paddingLeft = computedStyle[PADDING_LEFT$3],
@@ -17145,40 +17157,20 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
+        var isRealInline = __config[NODE_IS_INLINE]; // 考虑mpb的6个坐标，inline比较特殊单独计算
 
-        var isRealInline = this.__isRealInline(); // 考虑mpb的6个坐标，inline比较特殊单独计算
-
-
-        var x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6;
-
-        if (isRealInline) {
-          x1 = this.__sx1;
-          x2 = this.__sx2;
-          x3 = this.__sx3;
-          x4 = this.__sx4;
-          x5 = this.__sx5;
-          x6 = this.__sx6;
-          y1 = this.__sy1;
-          y2 = this.__sy2;
-          y3 = this.__sy3;
-          y4 = this.__sy4;
-          y5 = this.__sy5;
-          y6 = this.__sy6;
-        } else {
-          x1 = this.__sx1 = x + marginLeft;
-          x2 = this.__sx2 = x1 + borderLeftWidth;
-          x3 = this.__sx3 = x2 + paddingLeft;
-          x4 = this.__sx4 = x3 + width;
-          x5 = this.__sx5 = x4 + paddingRight;
-          x6 = this.__sx6 = x5 + borderRightWidth;
-          y1 = this.__sy1 = y + marginTop;
-          y2 = this.__sy2 = y1 + borderTopWidth;
-          y3 = this.__sy3 = y2 + paddingTop;
-          y4 = this.__sy4 = y3 + height;
-          y5 = this.__sy5 = y4 + paddingBottom;
-          y6 = this.__sy6 = y5 + borderBottomWidth;
-        }
-
+        var x1 = this.__sx1;
+        var x2 = this.__sx2;
+        var x3 = this.__sx3;
+        var x4 = this.__sx4;
+        var x5 = this.__sx5;
+        var x6 = this.__sx6;
+        var y1 = this.__sy1;
+        var y2 = this.__sy2;
+        var y3 = this.__sy3;
+        var y4 = this.__sy4;
+        var y5 = this.__sy5;
+        var y6 = this.__sy6;
         var res = {
           x1: x1,
           x2: x2,
@@ -18611,11 +18603,12 @@
           bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
           points: [p1, p2, p3, p4]
         };
-      }
+      } // img和geom返回false，在inline布局时判断是否是真的inline
+
     }, {
       key: "__isRealInline",
       value: function __isRealInline() {
-        return this.currentStyle[DISPLAY$2] === 'inline' && this.currentStyle[POSITION$1] !== 'absolute';
+        return true;
       }
     }, {
       key: "tagName",
@@ -19486,6 +19479,7 @@
       NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
       NODE_STRUCT$2 = _enums$NODE_KEY$4.NODE_STRUCT,
       NODE_DOM_PARENT$2 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
+      NODE_IS_INLINE$1 = _enums$NODE_KEY$4.NODE_IS_INLINE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -21532,6 +21526,7 @@
 
 
         if (isInline) {
+          this.__config[NODE_IS_INLINE$1] = true;
           this.__lineBoxManager = lineBoxManager;
           var lineHeight = computedStyle[LINE_HEIGHT$4];
           var baseLine = css.getBaseLine(computedStyle);
@@ -22003,7 +21998,7 @@
 
           item.__mp(currentStyle, computedStyle, clientWidth);
 
-          if (currentStyle[DISPLAY$5] === 'inline') {
+          if (currentStyle[DISPLAY$5] !== 'block' && currentStyle[DISPLAY$5] !== 'flex') {
             currentStyle[DISPLAY$5] = computedStyle[DISPLAY$5] = item.style.display = 'block';
           }
 
@@ -26438,7 +26433,7 @@
           overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
 
-      if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' && total || mixBlendMode !== 'normal')) {
         if (hasRecordAsMask) {
           hasRecordAsMask[6] = __blurValue;
           hasRecordAsMask[7] = overflow;
@@ -27866,7 +27861,7 @@
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
 
       if (!__limitCache && (hasMask // || position === 'absolute'
-      || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      || __blurValue > 0 || overflow === 'hidden' && total || mixBlendMode !== 'normal')) {
         if (mixBlendMode !== 'normal' && MBM_HASH.hasOwnProperty(mixBlendMode)) {
           hasMbm = true;
         }

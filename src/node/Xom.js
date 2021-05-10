@@ -128,6 +128,7 @@ const {
     NODE_IS_DESTROYED,
     NODE_DEFS_CACHE,
     NODE_DOM_PARENT,
+    NODE_IS_INLINE,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
@@ -354,6 +355,7 @@ class Xom extends Node {
     };
     __config[NODE_REFRESH_LV] = REFLOW;
     __config[NODE_LIMIT_CACHE] = false;
+    __config[NODE_IS_INLINE] = false;
     // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
     if(!isVirtual) {
       let { next } = this;
@@ -456,15 +458,25 @@ class Xom extends Node {
     else if(currentStyle[POSITION] !== 'absolute') {
       computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
     }
-    this.__sx = this.x + this.ox;
-    this.__sy = this.y + this.oy;
-    // 计算结果存入computedStyle，inline在其inlineSize特殊处理
+    // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
+    if(!__config[NODE_IS_INLINE]) {
+      let x = this.__sx = this.x + this.ox;
+      x = this.__sx1 = x + computedStyle[MARGIN_LEFT];
+      x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH];
+      x = this.__sx3 = x + computedStyle[PADDING_LEFT];
+      x = this.__sx4 = x + this.width;
+      x = this.__sx5 = x + computedStyle[PADDING_RIGHT];
+      this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH];
+      let y = this.__sy = this.y + this.oy;
+      y = this.__sy1 = y + computedStyle[MARGIN_TOP];
+      y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH];
+      y = this.__sy3 = y + computedStyle[PADDING_TOP];
+      y = this.__sy4 = y + this.height;
+      y = this.__sy5 = y + computedStyle[PADDING_BOTTOM];
+      this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH];
+    }
     computedStyle[WIDTH] = this.width;
     computedStyle[HEIGHT] = this.height;
-    // virtual时计算返回给abs布局用，普通的在各自layout做
-    // if(isVirtual) {
-    //   this.__ioSize(tw, th);
-    // }
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -1142,8 +1154,6 @@ class Xom extends Node {
       __hasMask,
     } = this;
     let {
-      [MARGIN_TOP]: marginTop,
-      [MARGIN_LEFT]: marginLeft,
       [PADDING_TOP]: paddingTop,
       [PADDING_RIGHT]: paddingRight,
       [PADDING_BOTTOM]: paddingBottom,
@@ -1153,37 +1163,20 @@ class Xom extends Node {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
     } = computedStyle;
-    let isRealInline = this.__isRealInline();
+    let isRealInline = __config[NODE_IS_INLINE];
     // 考虑mpb的6个坐标，inline比较特殊单独计算
-    let x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6;
-    if(isRealInline) {
-      x1 = this.__sx1;
-      x2 = this.__sx2;
-      x3 = this.__sx3;
-      x4 = this.__sx4;
-      x5 = this.__sx5;
-      x6 = this.__sx6;
-      y1 = this.__sy1;
-      y2 = this.__sy2;
-      y3 = this.__sy3;
-      y4 = this.__sy4;
-      y5 = this.__sy5;
-      y6 = this.__sy6;
-    }
-    else {
-      x1 = this.__sx1 = x + marginLeft;
-      x2 = this.__sx2 = x1 + borderLeftWidth;
-      x3 = this.__sx3 = x2 + paddingLeft;
-      x4 = this.__sx4 = x3 + width;
-      x5 = this.__sx5 = x4 + paddingRight;
-      x6 = this.__sx6 = x5 + borderRightWidth;
-      y1 = this.__sy1 = y + marginTop;
-      y2 = this.__sy2 = y1 + borderTopWidth;
-      y3 = this.__sy3 = y2 + paddingTop;
-      y4 = this.__sy4 = y3 + height;
-      y5 = this.__sy5 = y4 + paddingBottom;
-      y6 = this.__sy6 = y5 + borderBottomWidth;
-    }
+    let x1 = this.__sx1;
+    let x2 = this.__sx2;
+    let x3 = this.__sx3;
+    let x4 = this.__sx4;
+    let x5 = this.__sx5;
+    let x6 = this.__sx6;
+    let y1 = this.__sy1;
+    let y2 = this.__sy2;
+    let y3 = this.__sy3;
+    let y4 = this.__sy4;
+    let y5 = this.__sy5;
+    let y6 = this.__sy6;
     let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
@@ -2432,8 +2425,9 @@ class Xom extends Node {
     };
   }
 
+  // img和geom返回false，在inline布局时判断是否是真的inline
   __isRealInline() {
-    return this.currentStyle[DISPLAY] === 'inline' && this.currentStyle[POSITION] !== 'absolute';
+    return true;
   }
 
   get tagName() {

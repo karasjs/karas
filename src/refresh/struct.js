@@ -1022,7 +1022,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       [MIX_BLEND_MODE]: mixBlendMode,
     } = computedStyle;
     if(!__limitCache && (hasMask || position === 'absolute'
-      || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      || __blurValue > 0 || (overflow === 'hidden' && total) || mixBlendMode !== 'normal')) {
       if(hasRecordAsMask) {
         hasRecordAsMask[6] = __blurValue;
         hasRecordAsMask[7] = overflow;
@@ -2229,7 +2229,7 @@ function renderWebgl(renderMode, gl, root) {
       [MIX_BLEND_MODE]: mixBlendMode,
     } = computedStyle;
     if(!__limitCache && (hasMask// || position === 'absolute'
-      || __blurValue > 0 || overflow === 'hidden' || mixBlendMode !== 'normal')) {
+      || __blurValue > 0 || (overflow === 'hidden' && total) || mixBlendMode !== 'normal')) {
       if(mixBlendMode !== 'normal' && MBM_HASH.hasOwnProperty(mixBlendMode)) {
         hasMbm = true;
       }

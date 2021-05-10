@@ -6,7 +6,6 @@ let o = karas.parse(
       height: 360,
     },
     children: [{
-      "name": "分层1.png",
       "animate": [
         {
           "v": [

@@ -57,6 +57,7 @@ const {
     NODE_STYLE,
     NODE_STRUCT,
     NODE_DOM_PARENT,
+    NODE_IS_INLINE,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -1848,6 +1849,7 @@ class Dom extends Xom {
     // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
     // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
     if(isInline) {
+      this.__config[NODE_IS_INLINE] = true;
       this.__lineBoxManager = lineBoxManager;
       let lineHeight = computedStyle[LINE_HEIGHT];
       let baseLine = css.getBaseLine(computedStyle);
@@ -2282,7 +2284,7 @@ class Dom extends Xom {
       }
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, clientWidth);
-      if(currentStyle[DISPLAY] === 'inline') {
+      if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
         currentStyle[DISPLAY] = computedStyle[DISPLAY] = item.style.display = 'block';
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,

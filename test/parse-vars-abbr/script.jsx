@@ -6,7 +6,7 @@ let o = karas.parse({
   },
   children: [
     {
-      tagName: 'span',
+      tagName: 'div',
       props: {},
       animate: {
         value: [

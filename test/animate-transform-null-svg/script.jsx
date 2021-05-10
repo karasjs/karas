@@ -1,6 +1,6 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <span ref="t">123</span>
+    <div ref="t">123</div>
   </svg>,
   '#test'
 );

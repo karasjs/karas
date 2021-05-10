@@ -308,7 +308,7 @@ class Dom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } } = this;
     // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
-    if(this.__config[NODE_IS_INLINE]) {
+    if(display === 'inline') {
       if(flowChildren.length) {
         let first = flowChildren[0];
         if(first instanceof Xom || first instanceof Component) {

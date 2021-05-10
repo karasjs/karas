@@ -19778,7 +19778,7 @@
             paddingLeft = _this$currentStyle[PADDING_LEFT$5],
             borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$5]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
-        if (this.__config[NODE_IS_INLINE$1]) {
+        if (display === 'inline') {
           if (flowChildren.length) {
             var first = flowChildren[0];
 
@@ -21797,29 +21797,13 @@
           if (isVirtual) {
             this.__inlineSize();
           }
-        } // else {
-        //   // inline-block的所有inline计算size
-        //   lineBoxManager.domList.forEach(item => {
-        //     item.__inlineSize();
-        //   });
-        //   // 遍历所有
-        //   // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
-        //   let th = this.__height = fixedHeight ? h : y - data.y;
-        //   this.__ioSize(tw, th);
-        //   if(!isVirtual) {
-        //     lineBoxManager.verticalAlign();
-        //     if(['center', 'right'].indexOf(textAlign) > -1) {
-        //       lineBoxManager.horizonAlign(tw, textAlign);
-        //     }
-        //   }
-        // }
-        else {
-            // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
-            tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
-            th = this.__height = fixedHeight ? h : y - data.y;
+        } else {
+          // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+          tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
+          th = this.__height = fixedHeight ? h : y - data.y;
 
-            this.__ioSize(tw, th);
-          } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
+          this.__ioSize(tw, th);
+        } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
 
 
         if (!isVirtual && !isInline) {

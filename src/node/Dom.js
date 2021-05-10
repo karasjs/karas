@@ -1866,8 +1866,6 @@ class Dom extends Xom {
       lineBoxManager.pushContentBoxList(this);
     }
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值，仅在ib时统计
-    let maxW = 0;
-    let cw = 0;
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;
     flowChildren.forEach((item, i) => {
@@ -1912,10 +1910,6 @@ class Dom extends Xom {
             (isInlineBlock || isImg) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
-          }
-          if(!isInline) {
-            cw = item.outerWidth;
-            maxW = Math.max(maxW, cw);
           }
         }
         else {
@@ -1970,13 +1964,6 @@ class Dom extends Xom {
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
-            if(!isInline) {
-              cw = 0;
-            }
-          }
-          if(!isInline) {
-            cw += item.outerWidth;
-            maxW = Math.max(maxW, cw);
           }
         }
       }
@@ -2003,8 +1990,6 @@ class Dom extends Xom {
           if(!isInline && (lineBoxManager.size - n) > 1 && width[1] === AUTO) {
             isIbFull = true;
           }
-          cw = item.width;
-          maxW = Math.max(maxW, cw);
         }
         else {
           // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
@@ -2057,10 +2042,7 @@ class Dom extends Xom {
             if(!isInline && (lineBoxManager.size - n) > 1 && width[1] === AUTO) {
               isIbFull = true;
             }
-            cw = 0;
           }
-          cw += item.width;
-          maxW = Math.max(maxW, cw);
         }
       }
     });
@@ -2093,6 +2075,7 @@ class Dom extends Xom {
     }
     else {
       // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+      let maxW = lineBoxManager.__maxX - data.x;
       tw = this.__width = fixedWidth ? w : (isIbFull ? Math.max(w, maxW) : maxW);
       th = this.__height = fixedHeight ? h : y - data.y;
       this.__ioSize(tw, th);

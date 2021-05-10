@@ -18201,6 +18201,7 @@
       this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
 
       this.__y = this.__lastY = y;
+      this.__maxX = x;
       this.__domList = [];
       this.__domStack = [];
       this.__list = []; // 包含若干LineBox
@@ -18291,6 +18292,7 @@
           this.__lastY = o.y;
         }
 
+        this.__maxX = Math.max(this.__maxX, o.x + o.outerWidth);
         return lineBox;
       }
     }, {
@@ -20799,8 +20801,6 @@
         } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，自动w时赋值，仅在ib时统计
 
 
-        var maxW = 0;
-        var cw = 0;
         var isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
 
         var length = flowChildren.length;
@@ -20849,11 +20849,6 @@
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 }
-
-              if (!isInline) {
-                cw = item.outerWidth;
-                maxW = Math.max(maxW, cw);
-              }
             } else {
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
               var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
@@ -20904,16 +20899,7 @@
                       x = lineBoxManager.lastX;
                       y = lineBoxManager.lastY;
                     }
-
-                  if (!isInline) {
-                    cw = 0;
-                  }
                 }
-
-              if (!isInline) {
-                cw += item.outerWidth;
-                maxW = Math.max(maxW, cw);
-              }
             }
           } // inline里的其它只有文本，可能开始紧跟着之前的x，也可能换行后从lx行头开始
           // 紧跟着x可能出现在前面有节点换行后第2行，此时不一定放得下，因此不能作为判断依据，开头仅有lx
@@ -20938,9 +20924,6 @@
                 if (!isInline && lineBoxManager.size - n > 1 && width[1] === AUTO$5) {
                   isIbFull = true;
                 }
-
-                cw = item.width;
-                maxW = Math.max(maxW, cw);
               } else {
                 // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
                 // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
@@ -20994,12 +20977,7 @@
                     if (!isInline && lineBoxManager.size - n > 1 && width[1] === AUTO$5) {
                       isIbFull = true;
                     }
-
-                    cw = 0;
                   }
-
-                cw += item.width;
-                maxW = Math.max(maxW, cw);
               }
             }
         }); // 同block结尾，不过这里一定是lineBox结束，无需判断
@@ -21032,6 +21010,7 @@
           }
         } else {
           // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+          var maxW = lineBoxManager.__maxX - data.x;
           tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
           th = this.__height = fixedHeight ? h : y - data.y;
 
@@ -31234,7 +31213,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.12";
+  var version = "0.57.13";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

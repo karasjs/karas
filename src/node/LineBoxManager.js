@@ -9,6 +9,7 @@ class LineBoxManager {
   constructor(x, y) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
+    this.__maxX = x;
     this.__domList = [];
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
@@ -82,6 +83,7 @@ class LineBoxManager {
       this.__lastX = o.x + o.outerWidth;
       this.__lastY = o.y;
     }
+    this.__maxX = Math.max(this.__maxX, o.x + o.outerWidth);
     return lineBox;
   }
 

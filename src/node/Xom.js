@@ -459,15 +459,15 @@ class Xom extends Node {
       computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
     }
     // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
+    let x = this.__sx = this.x + this.ox;
+    let y = this.__sy = this.y + this.oy;
     if(!__config[NODE_IS_INLINE]) {
-      let x = this.__sx = this.x + this.ox;
       x = this.__sx1 = x + computedStyle[MARGIN_LEFT];
       x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH];
       x = this.__sx3 = x + computedStyle[PADDING_LEFT];
       x = this.__sx4 = x + this.width;
       x = this.__sx5 = x + computedStyle[PADDING_RIGHT];
       this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH];
-      let y = this.__sy = this.y + this.oy;
       y = this.__sy1 = y + computedStyle[MARGIN_TOP];
       y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH];
       y = this.__sy3 = y + computedStyle[PADDING_TOP];

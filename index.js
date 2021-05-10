@@ -16445,15 +16445,16 @@
         } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
 
 
+        var x = this.__sx = this.x + this.ox;
+        var y = this.__sy = this.y + this.oy;
+
         if (!__config[NODE_IS_INLINE]) {
-          var x = this.__sx = this.x + this.ox;
           x = this.__sx1 = x + computedStyle[MARGIN_LEFT$2];
           x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH$3];
           x = this.__sx3 = x + computedStyle[PADDING_LEFT$3];
           x = this.__sx4 = x + this.width;
           x = this.__sx5 = x + computedStyle[PADDING_RIGHT$3];
           this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH$3];
-          var y = this.__sy = this.y + this.oy;
           y = this.__sy1 = y + computedStyle[MARGIN_TOP$1];
           y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH$2];
           y = this.__sy3 = y + computedStyle[PADDING_TOP$2];

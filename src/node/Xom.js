@@ -2337,6 +2337,9 @@ class Xom extends Node {
     this.__offsetWidth += diff;
     this.__outerWidth += diff;
     this.__layoutData.w += diff;
+    this.__sx4 += diff;
+    this.__sx5 += diff;
+    this.__sx6 += diff;
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
     }
@@ -2351,6 +2354,9 @@ class Xom extends Node {
     this.__offsetHeight += diff;
     this.__outerHeight += diff;
     this.__layoutData.h += diff;
+    this.__sy4 += diff;
+    this.__sy5 += diff;
+    this.__sy6 += diff;
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
     }

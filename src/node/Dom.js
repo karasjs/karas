@@ -1772,7 +1772,7 @@ class Dom extends Xom {
         else if(alignItems === 'baseline') {
           let diff = baseLine - item.firstBaseLine;
           if(diff !== 0) {
-            item.__offsetY(diff, true);
+            item.__offsetX(diff, true);
           }
         }
         // 默认auto，取alignItems
@@ -1781,19 +1781,19 @@ class Dom extends Xom {
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetY(diff * 0.5, true);
+              item.__offsetX(diff * 0.5, true);
             }
           }
           else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
-              item.__offsetY(diff, true);
+              item.__offsetX(diff, true);
             }
           }
           else if(alignItems === 'baseline') {
             let diff = baseLine - item.firstBaseLine;
             if(diff !== 0) {
-              item.__offsetY(diff, true);
+              item.__offsetX(diff, true);
             }
           }
           // 默认stretch

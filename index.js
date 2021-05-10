@@ -21442,7 +21442,7 @@
                 var _diff10 = baseLine - item.firstBaseLine;
 
                 if (_diff10 !== 0) {
-                  item.__offsetY(_diff10, true);
+                  item.__offsetX(_diff10, true);
                 }
               } // 默认auto，取alignItems
               else {
@@ -21450,19 +21450,19 @@
                     var _diff11 = maxCross - item.outerHeight;
 
                     if (_diff11 !== 0) {
-                      item.__offsetY(_diff11 * 0.5, true);
+                      item.__offsetX(_diff11 * 0.5, true);
                     }
                   } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
                     var _diff12 = maxCross - item.outerHeight;
 
                     if (_diff12 !== 0) {
-                      item.__offsetY(_diff12, true);
+                      item.__offsetX(_diff12, true);
                     }
                   } else if (alignItems === 'baseline') {
                     var _diff13 = baseLine - item.firstBaseLine;
 
                     if (_diff13 !== 0) {
-                      item.__offsetY(_diff13, true);
+                      item.__offsetX(_diff13, true);
                     }
                   } // 默认stretch
                   else {

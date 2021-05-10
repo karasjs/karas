@@ -16329,7 +16329,7 @@
         };
         __config[NODE_REFRESH_LV] = REFLOW;
         __config[NODE_LIMIT_CACHE] = false;
-        __config[NODE_IS_INLINE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
+        var isRealInline = __config[NODE_IS_INLINE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
 
         if (!isVirtual) {
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -16370,7 +16370,7 @@
 
 
         if (width[1] !== AUTO$3) {
-          if (this.__isRealInline()) {
+          if (isRealInline) {
             width[1] = AUTO$3;
           } else {
             switch (width[1]) {
@@ -16638,8 +16638,8 @@
       }
     }, {
       key: "__calMatrix",
-      value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight, isRealInline) {
-        if (isRealInline) {
+      value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
+        if (__config[NODE_IS_INLINE]) {
           return __cacheStyle[MATRIX$3] = [1, 0, 0, 1, 0, 0];
         }
 
@@ -17190,7 +17190,7 @@
 
         var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT$1] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
 
-        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight, isRealInline); // canvas特殊申请离屏缓存
+        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight); // canvas特殊申请离屏缓存
 
 
         var dx = 0,
@@ -26323,7 +26323,7 @@
         var matrix;
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
-          matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
+          matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
           var _m4 = __config[NODE_MATRIX$2];
           _m4[0] = matrix[0];
@@ -26484,20 +26484,20 @@
         if (__cacheTotal && __cacheTotal.available) {
           var target = __cacheTotal;
 
-          if (__blurValue > 0) {
-            if (!__cacheFilter || !__cacheFilter.available) {
-              __config[NODE_CACHE_FILTER$3] = genFilter(node, target, __blurValue);
-            }
-
-            target = __config[NODE_CACHE_FILTER$3];
-          }
-
           if (overflow === 'hidden') {
             if (!__cacheOverflow || !__cacheOverflow.available) {
               __config[NODE_CACHE_OVERFLOW$3] = genOverflow(node, target);
             }
 
             target = __config[NODE_CACHE_OVERFLOW$3];
+          }
+
+          if (__blurValue > 0) {
+            if (!__cacheFilter || !__cacheFilter.available) {
+              __config[NODE_CACHE_FILTER$3] = genFilter(node, target, __blurValue);
+            }
+
+            target = __config[NODE_CACHE_FILTER$3];
           }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
@@ -27376,7 +27376,7 @@
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
-          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
+          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
 
           var m = __config[NODE_MATRIX$2];
@@ -27746,7 +27746,7 @@
         var matrix;
 
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
-          matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
+          matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
           var _m8 = __config[NODE_MATRIX$2];
           _m8[0] = matrix[0];
@@ -27916,20 +27916,20 @@
         if (__cacheTotal && __cacheTotal.available) {
           var target = __cacheTotal;
 
-          if (__blurValue > 0) {
-            if (!__cacheFilter || !__cacheFilter.available) {
-              __config[NODE_CACHE_FILTER$3] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
-            }
-
-            target = __config[NODE_CACHE_FILTER$3];
-          }
-
           if (overflow === 'hidden') {
             if (!__cacheOverflow || !__cacheOverflow.available) {
               __config[NODE_CACHE_FILTER$3] = genOverflowWebgl(gl, texCache, node, target, width, height);
             }
 
             target = __config[NODE_CACHE_OVERFLOW$3];
+          }
+
+          if (__blurValue > 0) {
+            if (!__cacheFilter || !__cacheFilter.available) {
+              __config[NODE_CACHE_FILTER$3] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+            }
+
+            target = __config[NODE_CACHE_FILTER$3];
           }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
@@ -28002,10 +28002,12 @@
           }
 
           continue;
-        } // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元
+        } // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
+        // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
+        // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
 
 
-        var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal, _cache]); // total的尝试
+        var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, _cache]); // total的尝试
 
         if (target) {
           var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后后面这个节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成

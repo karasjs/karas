@@ -355,7 +355,7 @@ class Xom extends Node {
     };
     __config[NODE_REFRESH_LV] = REFLOW;
     __config[NODE_LIMIT_CACHE] = false;
-    __config[NODE_IS_INLINE] = false;
+    let isRealInline = __config[NODE_IS_INLINE] = false;
     // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
     if(!isVirtual) {
       let { next } = this;
@@ -392,7 +392,7 @@ class Xom extends Node {
     }
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
-      if(this.__isRealInline()) {
+      if(isRealInline) {
         width[1] = AUTO;
       }
       else {
@@ -637,8 +637,8 @@ class Xom extends Node {
     }
   }
 
-  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx1, sy1, offsetWidth, offsetHeight, isRealInline) {
-    if(isRealInline) {
+  __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
+    if(__config[NODE_IS_INLINE]) {
       return __cacheStyle[MATRIX] = [1, 0, 0, 1, 0, 0];
     }
     let matrixCache = __cacheStyle[MATRIX];
@@ -1181,7 +1181,7 @@ class Xom extends Node {
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
-    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, x1, y1, offsetWidth, offsetHeight, isRealInline);
+    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && renderMode === mode.CANVAS || renderMode === mode.WEBGL) {

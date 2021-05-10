@@ -922,7 +922,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       } = __config;
       let matrix;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
+        matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         m[0] = matrix[0];
@@ -1057,17 +1057,17 @@ function renderCacheCanvas(renderMode, ctx, root) {
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
         let target = __cacheTotal;
-        if(__blurValue > 0) {
-          if(!__cacheFilter || !__cacheFilter.available) {
-            __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
-          }
-          target = __config[NODE_CACHE_FILTER];
-        }
         if(overflow === 'hidden') {
           if(!__cacheOverflow || !__cacheOverflow.available) {
             __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
           }
           target = __config[NODE_CACHE_OVERFLOW];
+        }
+        if(__blurValue > 0) {
+          if(!__cacheFilter || !__cacheFilter.available) {
+            __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
+          }
+          target = __config[NODE_CACHE_FILTER];
         }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMask(node, target);
@@ -1805,7 +1805,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         [NODE_CACHE_STYLE]: __cacheStyle,
       } = __config;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
+        let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         if(matrix && m) {
@@ -2124,7 +2124,7 @@ function renderWebgl(renderMode, gl, root) {
       } = __config;
       let matrix;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
+        matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         m[0] = matrix[0];
@@ -2267,17 +2267,17 @@ function renderWebgl(renderMode, gl, root) {
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
         let target = __cacheTotal;
-        if(__blurValue > 0) {
-          if(!__cacheFilter || !__cacheFilter.available) {
-            __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
-          }
-          target = __config[NODE_CACHE_FILTER];
-        }
         if(overflow === 'hidden') {
           if(!__cacheOverflow || !__cacheOverflow.available) {
             __config[NODE_CACHE_FILTER] = genOverflowWebgl(gl, texCache, node, target, width, height);
           }
           target = __config[NODE_CACHE_OVERFLOW];
+        }
+        if(__blurValue > 0) {
+          if(!__cacheFilter || !__cacheFilter.available) {
+            __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
+          }
+          target = __config[NODE_CACHE_FILTER];
         }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMaskWebgl(gl, texCache, node, __config, target, width, height);
@@ -2350,8 +2350,10 @@ function renderWebgl(renderMode, gl, root) {
         }
         continue;
       }
-      // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元
-      let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal, __cache]);
+      // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
+      // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
+      // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
+      let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cache]);
       // total的尝试
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);

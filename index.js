@@ -16257,7 +16257,7 @@
             for (var list = ['Top', 'Right', 'Bottom', 'Left'], _i = 0, _len = list.length; _i < _len; _i++) {
               var k = list[_i];
 
-              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
+              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][0][3] > 0) {
                 return true;
               }
             }
@@ -20672,7 +20672,7 @@
                 var _diff10 = baseLine - item.firstBaseLine;
 
                 if (_diff10 !== 0) {
-                  item.__offsetY(_diff10, true);
+                  item.__offsetX(_diff10, true);
                 }
               } // 默认auto，取alignItems
               else {
@@ -20680,19 +20680,19 @@
                     var _diff11 = maxCross - item.outerHeight;
 
                     if (_diff11 !== 0) {
-                      item.__offsetY(_diff11 * 0.5, true);
+                      item.__offsetX(_diff11 * 0.5, true);
                     }
                   } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
                     var _diff12 = maxCross - item.outerHeight;
 
                     if (_diff12 !== 0) {
-                      item.__offsetY(_diff12, true);
+                      item.__offsetX(_diff12, true);
                     }
                   } else if (alignItems === 'baseline') {
                     var _diff13 = baseLine - item.firstBaseLine;
 
                     if (_diff13 !== 0) {
-                      item.__offsetY(_diff13, true);
+                      item.__offsetX(_diff13, true);
                     }
                   } // 默认stretch
                   else {
@@ -24940,11 +24940,11 @@
       else if (lv < lastLv) {
           var diff = lastLv - lv;
           matrixList.splice(-diff);
-          parentMatrix = matrixList[lv];
+          parentMatrix = matrixList[lv - 1];
           opacityList.splice(-diff);
-          parentOpacity = opacityList[lv];
+          parentOpacity = opacityList[lv - 1];
           configList.splice(-diff);
-          lastConfig = configList[lv];
+          lastConfig = configList[lv - 1];
         } // else{} 不变是同级兄弟，无需特殊处理
 
 

@@ -414,11 +414,11 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     else if(lv < lastLv) {
       let diff = lastLv - lv;
       matrixList.splice(-diff);
-      parentMatrix = matrixList[lv];
+      parentMatrix = matrixList[lv - 1];
       opacityList.splice(-diff);
-      parentOpacity = opacityList[lv];
+      parentOpacity = opacityList[lv - 1];
       configList.splice(-diff);
-      lastConfig = configList[lv];
+      lastConfig = configList[lv - 1];
     }
     // else{} 不变是同级兄弟，无需特殊处理
     let {

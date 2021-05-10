@@ -1045,7 +1045,7 @@ class Xom extends Node {
         for(let list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
           let k = list[i];
           if(computedStyle[STYLE_KEY[style2Upper('border' + k + 'Width')]] > 0
-            && currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][3] > 0) {
+            && currentStyle[STYLE_KEY[style2Upper('border' + k + 'Color')]][0][3] > 0) {
             return true;
           }
         }

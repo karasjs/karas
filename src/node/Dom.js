@@ -1124,7 +1124,7 @@ class Dom extends Xom {
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
     let maxX = 0;
-    let isDirectionRow = flexDirection !== 'column';
+    let isDirectionRow = ['column', 'column-reverse'].indexOf(flexDirection) === -1;
     // 计算伸缩基数
     let growList = [];
     let shrinkList = [];
@@ -1260,6 +1260,7 @@ class Dom extends Xom {
         justifyContent, alignItems, orderChildren.slice(offset, end), item,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
         hypotheticalList.slice(offset, end), minList.slice(offset, end));
+      // 下一行/列更新坐标
       if(isDirectionRow) {
         clone.y = y1;
       }
@@ -1274,7 +1275,30 @@ class Dom extends Xom {
     let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    // wrap-reverse时交换主轴序，需要2行及以上才行
+    // flexDirection当有reverse时交换每line的主轴序
+    if(flexDirection === 'row-reverse' || flexDirection === 'rowReverse') {
+      __flexLine.forEach(line => {
+        line.forEach(item => {
+          // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
+          let diff = tw - item.outerWidth - (item.x - data.x) * 2;
+          if(diff) {
+            item.__offsetX(diff, true);
+          }
+        });
+      });
+    }
+    else if(flexDirection === 'column-reverse' || flexDirection === 'columnReverse') {
+      __flexLine.forEach(line => {
+        line.forEach(item => {
+          // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
+          let diff = th - item.outerHeight - (item.y - data.y) * 2;
+          if(diff) {
+            item.__offsetY(diff, true);
+          }
+        });
+      });
+    }
+    // wrap-reverse且多轴线时交换轴线序，需要2行及以上才行
     let length = __flexLine.length;
     if(['wrapReverse', 'wrap-reverse'].indexOf(flexWrap) > -1 && length > 1) {
       let crossSum = 0, crossSumList = [];
@@ -1779,13 +1803,13 @@ class Dom extends Xom {
         else {
           if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
           else if(alignItems === 'center') {
-            let diff = maxCross - item.outerHeight;
+            let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
               item.__offsetX(diff * 0.5, true);
             }
           }
           else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
-            let diff = maxCross - item.outerHeight;
+            let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
               item.__offsetX(diff, true);
             }

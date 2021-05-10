@@ -20723,7 +20723,7 @@
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
         var maxX = 0;
-        var isDirectionRow = flexDirection !== 'column'; // 计算伸缩基数
+        var isDirectionRow = ['column', 'column-reverse'].indexOf(flexDirection) === -1; // 计算伸缩基数
 
         var growList = [];
         var shrinkList = [];
@@ -20892,7 +20892,8 @@
               _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
               x1 = _this2$__layoutFlexLi2[0],
               y1 = _this2$__layoutFlexLi2[1],
-              maxCross = _this2$__layoutFlexLi2[2];
+              maxCross = _this2$__layoutFlexLi2[2]; // 下一行/列更新坐标
+
 
           if (isDirectionRow) {
             clone.y = y1;
@@ -20909,7 +20910,32 @@
         var tw = this.__width = w;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__ioSize(tw, th); // wrap-reverse时交换主轴序，需要2行及以上才行
+        this.__ioSize(tw, th); // flexDirection当有reverse时交换每line的主轴序
+
+
+        if (flexDirection === 'row-reverse' || flexDirection === 'rowReverse') {
+          __flexLine.forEach(function (line) {
+            line.forEach(function (item) {
+              // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
+              var diff = tw - item.outerWidth - (item.x - data.x) * 2;
+
+              if (diff) {
+                item.__offsetX(diff, true);
+              }
+            });
+          });
+        } else if (flexDirection === 'column-reverse' || flexDirection === 'columnReverse') {
+          __flexLine.forEach(function (line) {
+            line.forEach(function (item) {
+              // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
+              var diff = th - item.outerHeight - (item.y - data.y) * 2;
+
+              if (diff) {
+                item.__offsetY(diff, true);
+              }
+            });
+          });
+        } // wrap-reverse且多轴线时交换轴线序，需要2行及以上才行
 
 
         var length = __flexLine.length;
@@ -21449,13 +21475,13 @@
               } // 默认auto，取alignItems
               else {
                   if (alignItems === 'flexStart' || alignSelf === 'flex-start') ; else if (alignItems === 'center') {
-                    var _diff11 = maxCross - item.outerHeight;
+                    var _diff11 = maxCross - item.outerWidth;
 
                     if (_diff11 !== 0) {
                       item.__offsetX(_diff11 * 0.5, true);
                     }
                   } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
-                    var _diff12 = maxCross - item.outerHeight;
+                    var _diff12 = maxCross - item.outerWidth;
 
                     if (_diff12 !== 0) {
                       item.__offsetX(_diff12, true);
@@ -33235,7 +33261,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.11";
+  var version = "0.57.12";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

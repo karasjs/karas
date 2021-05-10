@@ -392,7 +392,8 @@ class Xom extends Node {
     }
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
-      if(isRealInline) {
+      if(this.__isRealInline() && currentStyle[DISPLAY] === 'inline') {
+        width[0] = 0;
         width[1] = AUTO;
       }
       else {

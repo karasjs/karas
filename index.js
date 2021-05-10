@@ -16370,7 +16370,8 @@
 
 
         if (width[1] !== AUTO$3) {
-          if (isRealInline) {
+          if (this.__isRealInline() && currentStyle[DISPLAY$2] === 'inline') {
+            width[0] = 0;
             width[1] = AUTO$3;
           } else {
             switch (width[1]) {

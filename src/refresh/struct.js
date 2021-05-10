@@ -61,7 +61,7 @@ const {
 } = level;
 const { isE, inverse, multiply } = mx;
 
-function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash) {
+function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
   let { __sx1: sx1, __sy1: sy1, __config } = node;
   let {
     [NODE_CACHE]: cache,
@@ -80,6 +80,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let blurHash = {
     [index]: blurValue,
   };
+  let matrixHash = {};
   opacityHash[index] = 1;
   while(list.length) {
     list.splice(0).forEach(parentIndex => {
@@ -209,9 +210,8 @@ function genTotal(renderMode, node, __config, lv, index, total, __structs, cache
   }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
-  let matrixHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
   if(!bboxTotal) {
     return;
   }
@@ -235,6 +235,7 @@ function genTotal(renderMode, node, __config, lv, index, total, __structs, cache
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     Cache.drawCache(cache, cacheTop);
   }
+  let matrixHash = {};
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
@@ -278,8 +279,8 @@ function genTotal(renderMode, node, __config, lv, index, total, __structs, cache
     // 先看text
     if(node instanceof Text) {
       ctx.globalAlpha = opacityHash[parentIndex];
-      let matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      let m = matrix || [1, 0, 0, 1, 0, 0];
+      ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
       node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点

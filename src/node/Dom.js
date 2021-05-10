@@ -1766,13 +1766,13 @@ class Dom extends Xom {
         else {
           if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
           else if(alignItems === 'center') {
-            let diff = maxCross - item.outerHeight;
+            let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
               item.__offsetX(diff * 0.5, true);
             }
           }
           else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
-            let diff = maxCross - item.outerHeight;
+            let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
               item.__offsetX(diff, true);
             }

@@ -20677,13 +20677,13 @@
               } // 默认auto，取alignItems
               else {
                   if (alignItems === 'flexStart' || alignSelf === 'flex-start') ; else if (alignItems === 'center') {
-                    var _diff11 = maxCross - item.outerHeight;
+                    var _diff11 = maxCross - item.outerWidth;
 
                     if (_diff11 !== 0) {
                       item.__offsetX(_diff11 * 0.5, true);
                     }
                   } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
-                    var _diff12 = maxCross - item.outerHeight;
+                    var _diff12 = maxCross - item.outerWidth;
 
                     if (_diff12 !== 0) {
                       item.__offsetX(_diff12, true);
@@ -24539,7 +24539,7 @@
       inverse$1 = mx.inverse,
       multiply$2 = mx.multiply;
 
-  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash) {
+  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
     var sx1 = node.__sx1,
         sy1 = node.__sy1,
         __config = node.__config;
@@ -24559,6 +24559,7 @@
 
     var blurHash = _defineProperty({}, index, blurValue);
 
+    var matrixHash = {};
     opacityHash[index] = 1;
 
     while (list.length) {
@@ -24701,9 +24702,8 @@
 
 
     var parentIndexHash = {};
-    var matrixHash = {};
     var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, matrixHash);
+    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
 
     if (!bboxTotal) {
       return;
@@ -24740,8 +24740,9 @@
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       Cache.drawCache(cache, cacheTop);
-    } // 先序遍历汇总到total
+    }
 
+    var matrixHash = {}; // 先序遍历汇总到total
 
     for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i2 = __structs[i],
@@ -24787,10 +24788,8 @@
 
       if (_node instanceof Text) {
         ctx.globalAlpha = opacityHash[parentIndex];
-
-        var _matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
-
-        ctx.setTransform(_matrix[0], _matrix[1], _matrix[2], _matrix[3], _matrix[4], _matrix[5]);
+        var m = matrix || [1, 0, 0, 1, 0, 0];
+        ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
 
         _node.render(renderMode, 0, ctx, null, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -24810,12 +24809,13 @@
             var dy = -sy1 + dby + ty;
             tfo[0] += dx;
             tfo[1] += dy;
-            var m = tf.calMatrixByOrigin(transform, tfo);
+
+            var _m = tf.calMatrixByOrigin(transform, tfo);
 
             if (matrix) {
-              matrix = multiply$2(matrix, m);
+              matrix = multiply$2(matrix, _m);
             } else {
-              matrix = m;
+              matrix = _m;
             }
           }
 
@@ -24979,15 +24979,15 @@
         if (contain$2(__refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
-          var _m = __config[NODE_MATRIX$2];
+          var _m2 = __config[NODE_MATRIX$2];
 
-          if (matrix && _m) {
-            _m[0] = matrix[0];
-            _m[1] = matrix[1];
-            _m[2] = matrix[2];
-            _m[3] = matrix[3];
-            _m[4] = matrix[4];
-            _m[5] = matrix[5];
+          if (matrix && _m2) {
+            _m2[0] = matrix[0];
+            _m2[1] = matrix[1];
+            _m2[2] = matrix[2];
+            _m2[3] = matrix[3];
+            _m2[4] = matrix[4];
+            _m2[5] = matrix[5];
           }
         } else {
           matrix = __config[NODE_MATRIX$2];
@@ -26207,11 +26207,11 @@
                   }
                 }
 
-                var _matrix2 = _node2.renderMatrix;
+                var _matrix = _node2.renderMatrix;
                 var ivs = inverse$1(dom.renderMatrix);
-                _matrix2 = multiply$2(ivs, _matrix2); // path没有transform属性，在vd上，需要弥补
+                _matrix = multiply$2(ivs, _matrix); // path没有transform属性，在vd上，需要弥补
 
-                props.push(['transform', "matrix(".concat(_matrix2.join(','), ")")]); // path没有opacity属性，在vd上，需要弥补
+                props.push(['transform', "matrix(".concat(_matrix.join(','), ")")]); // path没有opacity属性，在vd上，需要弥补
 
                 if (!util.isNil(_opacity) && _opacity !== 1) {
                   props.push(['opacity', _opacity]);
@@ -26220,9 +26220,9 @@
               else if (tagName === 'image') {
                   var hasTransform = -1;
 
-                  for (var _m2 = 0, _len5 = props.length; _m2 < _len5; _m2++) {
-                    if (props[_m2][0] === 'transform') {
-                      hasTransform = _m2;
+                  for (var _m3 = 0, _len5 = props.length; _m3 < _len5; _m3++) {
+                    if (props[_m3][0] === 'transform') {
+                      hasTransform = _m3;
                       break;
                     }
                   }
@@ -26234,14 +26234,14 @@
                       props.push(['transform', "matrix(".concat(_ivs.join(','), ")")]);
                     }
                   } else {
-                    var _matrix3 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
+                    var _matrix2 = props[hasTransform][1].match(/[\d.]+/g).map(function (i) {
                       return parseFloat(i);
                     });
 
                     var _ivs2 = inverse$1(dom.renderMatrix);
 
-                    _matrix3 = multiply$2(_ivs2, _matrix3);
-                    props[hasTransform][1] = "matrix(".concat(_matrix3.join(','), ")");
+                    _matrix2 = multiply$2(_ivs2, _matrix2);
+                    props[hasTransform][1] = "matrix(".concat(_matrix2.join(','), ")");
                   }
                 }
             }

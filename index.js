@@ -16108,7 +16108,7 @@
         if (child.flowChildren.length) {
           n += getFirstEmptyInlineWidth(child);
           break;
-        } else if (child.__isRealInline()) {
+        } else if (child.__config[NODE_IS_INLINE]) {
           n += child.outerWidth;
         }
       } else {
@@ -16640,6 +16640,7 @@
       key: "__calMatrix",
       value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
         if (__config[NODE_IS_INLINE]) {
+          computedStyle[TRANSFORM_ORIGIN$4] = [0, 0];
           return __cacheStyle[MATRIX$3] = [1, 0, 0, 1, 0, 0];
         }
 
@@ -16779,7 +16780,7 @@
         }
 
         if (lv >= REPAINT$1) {
-          var isInline = this.__isRealInline();
+          var isInline = this.__config[NODE_IS_INLINE];
 
           if (isInline && !this.contentBoxList.length) {
             isInline = false;
@@ -19777,7 +19778,7 @@
             paddingLeft = _this$currentStyle[PADDING_LEFT$5],
             borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$5]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
-        if (this.__isRealInline()) {
+        if (this.__config[NODE_IS_INLINE$1]) {
           if (flowChildren.length) {
             var first = flowChildren[0];
 
@@ -19838,7 +19839,7 @@
         _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv); // 记得偏移LineBox
 
 
-        if (isLayout && !this.__isRealInline() && this.lineBoxManager) {
+        if (isLayout && !this.__config[NODE_IS_INLINE$1] && this.lineBoxManager) {
           this.lineBoxManager.__offsetX(diff);
         }
 
@@ -19853,7 +19854,7 @@
       value: function __offsetY(diff, isLayout, lv) {
         _get(_getPrototypeOf(Dom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
 
-        if (isLayout && !this.__isRealInline() && this.lineBoxManager) {
+        if (isLayout && !this.__config[NODE_IS_INLINE$1] && this.lineBoxManager) {
           this.lineBoxManager.__offsetY(diff);
         }
 
@@ -20666,7 +20667,7 @@
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(lineBoxManager);
+            item.__inlineSize();
           });
 
           this.__marginAuto(currentStyle, data);
@@ -21318,6 +21319,10 @@
                 var old = item.height;
                 var v = item.__height = computedStyle[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 var d = v - old;
+                item.__sy4 += d;
+                item.__sy5 += d;
+                item.__sy6 += d;
+                item.__height += d;
                 item.__clientHeight += d;
                 item.__offsetHeight += d;
                 item.__outerHeight += d;
@@ -21376,6 +21381,10 @@
 
                       var _d = _v - _old;
 
+                      item.__sy4 += _d;
+                      item.__sy5 += _d;
+                      item.__sy6 += _d;
+                      item.__height += _d;
                       item.__clientHeight += _d;
                       item.__offsetHeight += _d;
                       item.__outerHeight += _d;
@@ -21413,6 +21422,10 @@
 
                   var _d2 = _v2 - _old2;
 
+                  item.__sx4 += _d2;
+                  item.__sx5 += _d2;
+                  item.__sx6 += _d2;
+                  item.__width += _d2;
                   item.__clientWidth += _d2;
                   item.__offsetWidth += _d2;
                   item.__outerWidth += _d2;
@@ -21461,6 +21474,10 @@
 
                         var _d3 = _v3 - _old3;
 
+                        item.__sx4 += _d3;
+                        item.__sx5 += _d3;
+                        item.__sx6 += _d3;
+                        item.__width += _d3;
                         item.__clientWidth += _d3;
                         item.__offsetWidth += _d3;
                         item.__outerWidth += _d3;
@@ -21778,15 +21795,31 @@
           lineBoxManager.popContentBoxList(); // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
 
           if (isVirtual) {
-            this.__inlineSize(lineBoxManager);
+            this.__inlineSize();
           }
-        } else {
-          // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
-          tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
-          th = this.__height = fixedHeight ? h : y - data.y;
+        } // else {
+        //   // inline-block的所有inline计算size
+        //   lineBoxManager.domList.forEach(item => {
+        //     item.__inlineSize();
+        //   });
+        //   // 遍历所有
+        //   // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+        //   let th = this.__height = fixedHeight ? h : y - data.y;
+        //   this.__ioSize(tw, th);
+        //   if(!isVirtual) {
+        //     lineBoxManager.verticalAlign();
+        //     if(['center', 'right'].indexOf(textAlign) > -1) {
+        //       lineBoxManager.horizonAlign(tw, textAlign);
+        //     }
+        //   }
+        // }
+        else {
+            // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
+            tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
+            th = this.__height = fixedHeight ? h : y - data.y;
 
-          this.__ioSize(tw, th);
-        } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
+            this.__ioSize(tw, th);
+          } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
 
 
         if (!isVirtual && !isInline) {
@@ -21798,7 +21831,7 @@
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(lineBoxManager);
+            item.__inlineSize();
           });
         } // inlineBlock新开上下文，但父级block遇到要处理换行
 
@@ -21813,13 +21846,12 @@
        * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseLine得来，并非LineBox全部
        * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
        * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
-       * @param lineBoxManager
        * @private
        */
 
     }, {
       key: "__inlineSize",
-      value: function __inlineSize(lineBoxManager) {
+      value: function __inlineSize() {
         var contentBoxList = this.contentBoxList,
             computedStyle = this.computedStyle,
             __ox = this.__ox,
@@ -25721,7 +25753,7 @@
     var bbox = cache.bbox; // 没超过无需生成
 
     if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
-      return cache;
+      return;
     }
 
     return Cache.genOverflow(cache, node);
@@ -25998,7 +26030,7 @@
     var bbox = cache.bbox; // 没超过无需生成
 
     if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
-      return cache;
+      return;
     }
 
     var width = sbox[2] - sbox[0],
@@ -26489,7 +26521,7 @@
               __config[NODE_CACHE_OVERFLOW$3] = genOverflow(node, target);
             }
 
-            target = __config[NODE_CACHE_OVERFLOW$3];
+            target = __config[NODE_CACHE_OVERFLOW$3] || target;
           }
 
           if (__blurValue > 0) {
@@ -26497,7 +26529,7 @@
               __config[NODE_CACHE_FILTER$3] = genFilter(node, target, __blurValue);
             }
 
-            target = __config[NODE_CACHE_FILTER$3];
+            target = __config[NODE_CACHE_FILTER$3] || target;
           }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {
@@ -27921,7 +27953,7 @@
               __config[NODE_CACHE_FILTER$3] = genOverflowWebgl(gl, texCache, node, target, width, height);
             }
 
-            target = __config[NODE_CACHE_OVERFLOW$3];
+            target = __config[NODE_CACHE_OVERFLOW$3] || target;
           }
 
           if (__blurValue > 0) {
@@ -27929,7 +27961,7 @@
               __config[NODE_CACHE_FILTER$3] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
             }
 
-            target = __config[NODE_CACHE_FILTER$3];
+            target = __config[NODE_CACHE_FILTER$3] || target;
           }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available)) {

@@ -160,7 +160,7 @@ function getFirstEmptyInlineWidth(xom) {
         n += getFirstEmptyInlineWidth(child);
         break;
       }
-      else if(child.__isRealInline()) {
+      else if(child.__config[NODE_IS_INLINE]) {
         n += child.outerWidth;
       }
     }
@@ -639,6 +639,7 @@ class Xom extends Node {
 
   __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
     if(__config[NODE_IS_INLINE]) {
+      computedStyle[TRANSFORM_ORIGIN] = [0, 0];
       return __cacheStyle[MATRIX] = [1, 0, 0, 1, 0, 0];
     }
     let matrixCache = __cacheStyle[MATRIX];
@@ -786,7 +787,7 @@ class Xom extends Node {
       by2 = y4;
     }
     if(lv >= REPAINT) {
-      let isInline = this.__isRealInline();
+      let isInline = this.__config[NODE_IS_INLINE];
       if(isInline && !this.contentBoxList.length) {
         isInline = false;
       }

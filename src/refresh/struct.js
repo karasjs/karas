@@ -395,7 +395,7 @@ function genOverflow(node, cache) {
   let bbox = cache.bbox;
   // 没超过无需生成
   if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
-    return cache;
+    return;
   }
   return Cache.genOverflow(cache, node);
 }
@@ -625,7 +625,7 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   let bbox = cache.bbox;
   // 没超过无需生成
   if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
-    return cache;
+    return;
   }
   let width = sbox[2] - sbox[0], height = sbox[3] - sbox[1];
   // 生成最终纹理，尺寸为被遮罩节点大小
@@ -1061,13 +1061,13 @@ function renderCacheCanvas(renderMode, ctx, root) {
           if(!__cacheOverflow || !__cacheOverflow.available) {
             __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
           }
-          target = __config[NODE_CACHE_OVERFLOW];
+          target = __config[NODE_CACHE_OVERFLOW] || target;
         }
         if(__blurValue > 0) {
           if(!__cacheFilter || !__cacheFilter.available) {
             __config[NODE_CACHE_FILTER] = genFilter(node, target, __blurValue);
           }
-          target = __config[NODE_CACHE_FILTER];
+          target = __config[NODE_CACHE_FILTER] || target;
         }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMask(node, target);
@@ -2271,13 +2271,13 @@ function renderWebgl(renderMode, gl, root) {
           if(!__cacheOverflow || !__cacheOverflow.available) {
             __config[NODE_CACHE_FILTER] = genOverflowWebgl(gl, texCache, node, target, width, height);
           }
-          target = __config[NODE_CACHE_OVERFLOW];
+          target = __config[NODE_CACHE_OVERFLOW] || target;
         }
         if(__blurValue > 0) {
           if(!__cacheFilter || !__cacheFilter.available) {
             __config[NODE_CACHE_FILTER] = genFilterWebgl(gl, texCache, node, target, __blurValue, width, height);
           }
-          target = __config[NODE_CACHE_FILTER];
+          target = __config[NODE_CACHE_FILTER] || target;
         }
         if(hasMask && (!__cacheMask || !__cacheMask.available)) {
           __config[NODE_CACHE_MASK] = genMaskWebgl(gl, texCache, node, __config, target, width, height);

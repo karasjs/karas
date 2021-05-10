@@ -308,7 +308,7 @@ class Dom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } } = this;
     // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
-    if(this.__isRealInline()) {
+    if(this.__config[NODE_IS_INLINE]) {
       if(flowChildren.length) {
         let first = flowChildren[0];
         if(first instanceof Xom || first instanceof Component) {
@@ -365,7 +365,7 @@ class Dom extends Xom {
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout, lv);
     // 记得偏移LineBox
-    if(isLayout && !this.__isRealInline() && this.lineBoxManager) {
+    if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
       this.lineBoxManager.__offsetX(diff);
     }
     this.flowChildren.forEach(item => {
@@ -377,7 +377,7 @@ class Dom extends Xom {
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout, lv);
-    if(isLayout && !this.__isRealInline() && this.lineBoxManager) {
+    if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
       this.lineBoxManager.__offsetY(diff);
     }
     this.flowChildren.forEach(item => {
@@ -1095,7 +1095,7 @@ class Dom extends Xom {
       }
       // 所有inline计算size
       lineBoxManager.domList.forEach(item => {
-        item.__inlineSize(lineBoxManager);
+        item.__inlineSize();
       });
       this.__marginAuto(currentStyle, data);
     }
@@ -1661,6 +1661,10 @@ class Dom extends Xom {
             let old = item.height;
             let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
             let d = v - old;
+            item.__sy4 += d;
+            item.__sy5 += d;
+            item.__sy6 += d;
+            item.__height += d;
             item.__clientHeight += d;
             item.__offsetHeight += d;
             item.__outerHeight += d;
@@ -1716,6 +1720,10 @@ class Dom extends Xom {
               let old = item.height;
               let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
+              item.__sy4 += d;
+              item.__sy5 += d;
+              item.__sy6 += d;
+              item.__height += d;
               item.__clientHeight += d;
               item.__offsetHeight += d;
               item.__outerHeight += d;
@@ -1752,6 +1760,10 @@ class Dom extends Xom {
             let old = item.width;
             let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
             let d = v - old;
+            item.__sx4 += d;
+            item.__sx5 += d;
+            item.__sx6 += d;
+            item.__width += d;
             item.__clientWidth += d;
             item.__offsetWidth += d;
             item.__outerWidth += d;
@@ -1801,6 +1813,10 @@ class Dom extends Xom {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
+              item.__sx4 += d;
+              item.__sx5 += d;
+              item.__sx6 += d;
+              item.__width += d;
               item.__clientWidth += d;
               item.__offsetWidth += d;
               item.__outerWidth += d;
@@ -2090,7 +2106,7 @@ class Dom extends Xom {
       lineBoxManager.popContentBoxList();
       // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
       if(isVirtual) {
-        this.__inlineSize(lineBoxManager);
+        this.__inlineSize();
       }
     }
     else {
@@ -2107,7 +2123,7 @@ class Dom extends Xom {
       }
       // block的所有inline计算size
       lineBoxManager.domList.forEach(item => {
-        item.__inlineSize(lineBoxManager);
+        item.__inlineSize();
       });
     }
     // inlineBlock新开上下文，但父级block遇到要处理换行
@@ -2122,10 +2138,9 @@ class Dom extends Xom {
    * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseLine得来，并非LineBox全部
    * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
    * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
-   * @param lineBoxManager
    * @private
    */
-  __inlineSize(lineBoxManager) {
+  __inlineSize() {
     let { contentBoxList, computedStyle, __ox, __oy } = this;
     let {
       [MARGIN_TOP]: marginTop,

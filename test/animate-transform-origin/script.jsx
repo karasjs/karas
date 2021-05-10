@@ -1,6 +1,6 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <div ref="t">123</div>
+    <span style={{display:'inlineBlock'}} ref="t">123</span>
   </canvas>,
   '#test'
 );

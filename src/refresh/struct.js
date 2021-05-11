@@ -1313,7 +1313,34 @@ function renderCacheCanvas(renderMode, ctx, root) {
         else if(hasMask) {
           i += (total || 0) + hasMask;
         }
-        // 最后一个节点检查filter，有则应用，可能有多个包含自己
+        // overflow最先检查，所有其它效果基于它上
+        if(overflowHash.hasOwnProperty(i)) {
+          let list = overflowHash[i];
+          list.forEach(offScreenOverflow => {
+            let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.globalAlpha = 1;
+            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.rect(x, y, offsetWidth, offsetHeight);
+            ctx.fill();
+            ctx.closePath();
+            ctx.globalCompositeOperation = 'source-over';
+            if(!maskStartHash.hasOwnProperty(i + 1) && !filterHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
+              target.draw();
+              ctx = origin;
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+              ctx.globalAlpha = 1;
+              ctx.drawImage(target.canvas, 0, 0);
+              ctx.draw && ctx.draw(true);
+              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+              target.ctx.clearRect(0, 0, width, height);
+              inject.releaseCacheCanvas(target.canvas);
+            }
+          });
+        }
+        // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
         if(filterHash.hasOwnProperty(i)) {
           let list = filterHash[i];
           list.forEach(offScreenFilter => {
@@ -1332,7 +1359,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
               target.draw();
               apply.ctx.clearRect(0, 0, width, height);
             }
-            if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
+            if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
               ctx = origin;
               ctx.setTransform(1, 0, 0, 1, 0, 0);
               ctx.globalAlpha = 1;
@@ -1340,33 +1367,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
               ctx.draw && ctx.draw(true);
               target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.globalAlpha = 1;
-              target.ctx.clearRect(0, 0, width, height);
-              inject.releaseCacheCanvas(target.canvas);
-            }
-          });
-        }
-        // overflow在filter后面
-        if(overflowHash.hasOwnProperty(i)) {
-          let list = overflowHash[i];
-          list.forEach(offScreenOverflow => {
-            let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.globalAlpha = 1;
-            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-            ctx.fillStyle = '#FFF';
-            ctx.beginPath();
-            ctx.rect(x, y, offsetWidth, offsetHeight);
-            ctx.fill();
-            ctx.closePath();
-            ctx.globalCompositeOperation = 'source-over';
-            if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
-              target.draw();
-              ctx = origin;
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.globalAlpha = 1;
-              ctx.drawImage(target.canvas, 0, 0);
-              ctx.draw && ctx.draw(true);
-              target.ctx.setTransform(1, 0, 0, 1, 0, 0);
               target.ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
             }
@@ -1543,12 +1543,40 @@ function renderCanvas(renderMode, ctx, root) {
     if(offScreenOverflow) {
       let j = i + (total || 0);
       let list = overflowHash[j] = overflowHash[j] || [];
+      // 多个节点可能共用最后一个孩子节点的索引，存时逆序，使得子节点首先应用
       list.unshift(offScreenOverflow);
       ctx = offScreenOverflow.target.ctx;
     }
     // geom传递上述offScreen的新ctx渲染，因为自定义不可控
     if(node instanceof Geom) {
       node.render(renderMode, __refreshLevel, ctx);
+    }
+    // overflow最先检查，所有其它效果基于它上
+    if(overflowHash.hasOwnProperty(i)) {
+      let list = overflowHash[i];
+      list.forEach(offScreenOverflow => {
+        let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.rect(x, y, offsetWidth, offsetHeight);
+        ctx.fill();
+        ctx.closePath();
+        ctx.globalCompositeOperation = 'source-over';
+        if(!maskStartHash.hasOwnProperty(i + 1) && !filterHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
+          target.draw();
+          ctx = origin;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.globalAlpha = 1;
+          ctx.drawImage(target.canvas, 0, 0);
+          ctx.draw && ctx.draw(true);
+          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          target.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(target.canvas);
+        }
+      });
     }
     // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
     if(filterHash.hasOwnProperty(i)) {
@@ -1569,7 +1597,7 @@ function renderCanvas(renderMode, ctx, root) {
           target.draw();
           apply.ctx.clearRect(0, 0, width, height);
         }
-        if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
+        if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
           ctx = origin;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
@@ -1577,33 +1605,6 @@ function renderCanvas(renderMode, ctx, root) {
           ctx.draw && ctx.draw(true);
           target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.globalAlpha = 1;
-          target.ctx.clearRect(0, 0, width, height);
-          inject.releaseCacheCanvas(target.canvas);
-        }
-      });
-    }
-    // overflow在filter后面
-    if(overflowHash.hasOwnProperty(i)) {
-      let list = overflowHash[i];
-      list.forEach(offScreenOverflow => {
-        let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.globalAlpha = 1;
-        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-        ctx.fillStyle = '#FFF';
-        ctx.beginPath();
-        ctx.rect(x, y, offsetWidth, offsetHeight);
-        ctx.fill();
-        ctx.closePath();
-        ctx.globalCompositeOperation = 'source-over';
-        if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
-          target.draw();
-          ctx = origin;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.globalAlpha = 1;
-          ctx.drawImage(target.canvas, 0, 0);
-          ctx.draw && ctx.draw(true);
-          target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           target.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);
         }

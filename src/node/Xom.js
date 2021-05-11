@@ -1143,8 +1143,6 @@ class Xom extends Node {
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {
-      sx: x,
-      sy: y,
       width,
       height,
       clientWidth,

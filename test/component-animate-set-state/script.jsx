@@ -2,7 +2,7 @@ let input = document.querySelector('input');
 
 class Component extends karas.Component {
   componentDidMount() {
-    input.value = this.state.t;
+    input.value += this.state.t;
   }
   constructor(...data) {
     super(...data);
@@ -28,11 +28,11 @@ let a = c.shadowRoot.animate([{
 }, {
   translateX: 100,
 }], {
-  duration: 100,
+  duration: 50,
   fill: 'both',
 });
 a.on('finish', () => {
-  input.value = c.shadowRoot.getComputedStyle().translateX;
+  input.value += c.shadowRoot.getComputedStyle().translateX;
 });
 c.setState({
   t: 456,

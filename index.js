@@ -16636,35 +16636,35 @@
               y = 0;
 
           if (contain(lv, TX)) {
-            var _v = currentStyle[TRANSLATE_X$4];
+            var v = currentStyle[TRANSLATE_X$4];
 
-            if (isNil$6(_v)) {
-              _v = 0;
-            } else if (_v[1] === PERCENT$6) {
-              _v = _v[0] * this.offsetWidth * 0.01;
+            if (isNil$6(v)) {
+              v = 0;
+            } else if (v[1] === PERCENT$6) {
+              v = v[0] * this.offsetWidth * 0.01;
             } else {
-              _v = _v[0];
+              v = v[0];
             }
 
-            x = _v - (computedStyle[TRANSLATE_X$4] || 0);
-            computedStyle[TRANSLATE_X$4] = _v;
+            x = v - (computedStyle[TRANSLATE_X$4] || 0);
+            computedStyle[TRANSLATE_X$4] = v;
             computedStyle[TRANSFORM$4][4] += x;
             matrixCache[4] += x;
           }
 
           if (contain(lv, TY)) {
-            var _v2 = currentStyle[TRANSLATE_Y$3];
+            var _v = currentStyle[TRANSLATE_Y$3];
 
-            if (isNil$6(_v2)) {
-              _v2 = 0;
-            } else if (_v2[1] === PERCENT$6) {
-              _v2 = _v2[0] * this.offsetHeight * 0.01;
+            if (isNil$6(_v)) {
+              _v = 0;
+            } else if (_v[1] === PERCENT$6) {
+              _v = _v[0] * this.offsetHeight * 0.01;
             } else {
-              _v2 = _v2[0];
+              _v = _v[0];
             }
 
-            y = _v2 - (computedStyle[TRANSLATE_Y$3] || 0);
-            computedStyle[TRANSLATE_Y$3] = _v2;
+            y = _v - (computedStyle[TRANSLATE_Y$3] || 0);
+            computedStyle[TRANSLATE_Y$3] = _v;
             computedStyle[TRANSFORM$4][5] += y;
             matrixCache[5] += y;
           }
@@ -17395,7 +17395,7 @@
             ctx = _c2.ctx;
           } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
             // 模糊框卷积尺寸 #66
-            if (v > 0 && width > 0 && height > 0) {
+            if (__config[NODE_BLUR_VALUE] > 0 && width > 0 && height > 0) {
               var d = blur.outerSize(__config[NODE_BLUR_VALUE]);
               var o$1 = {
                 tagName: 'filter',
@@ -17437,7 +17437,7 @@
             offScreenOverflow.offsetWidth = offsetWidth;
             offScreenOverflow.offsetHeight = offsetHeight;
           } else if (renderMode === mode.SVG) {
-            var _v3 = {
+            var v = {
               tagName: 'clipPath',
               props: [],
               children: [{
@@ -17446,9 +17446,9 @@
               }]
             };
 
-            var _id = ctx.add(_v3);
+            var _id = ctx.add(v);
 
-            __config[NODE_DEFS_CACHE$3].push(_v3);
+            __config[NODE_DEFS_CACHE$3].push(v);
 
             virtualDom.overflow = 'url(#' + _id + ')';
           }
@@ -17633,7 +17633,7 @@
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
                         svgBgSymbol.forEach(function (symbol) {
                           if (symbol) {
-                            var _v4 = {
+                            var _v2 = {
                               tagName: 'clipPath',
                               props: [],
                               children: [{
@@ -17641,9 +17641,9 @@
                                 props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
-                            var clip = ctx.add(_v4);
+                            var clip = ctx.add(_v2);
 
-                            __config[NODE_DEFS_CACHE$3].push(_v4);
+                            __config[NODE_DEFS_CACHE$3].push(_v2);
 
                             virtualDom.bb.push({
                               type: 'item',
@@ -17734,7 +17734,7 @@
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
                         svgBgSymbol.forEach(function (symbol) {
                           if (symbol) {
-                            var _v5 = {
+                            var _v3 = {
                               tagName: 'clipPath',
                               props: [],
                               children: [{
@@ -17742,9 +17742,9 @@
                                 props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
-                            var clip = ctx.add(_v5);
+                            var clip = ctx.add(_v3);
 
-                            __config[NODE_DEFS_CACHE$3].push(_v5);
+                            __config[NODE_DEFS_CACHE$3].push(_v3);
 
                             virtualDom.bb.push({
                               type: 'item',
@@ -18050,7 +18050,7 @@
           });
           return lg;
         } else if (renderMode === mode.SVG) {
-          var _v6 = {
+          var v = {
             tagName: 'linearGradient',
             props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
             children: gd.stop.map(function (item) {
@@ -18060,9 +18060,9 @@
               };
             })
           };
-          var uuid = ctx.add(_v6);
+          var uuid = ctx.add(v);
 
-          this.__config[NODE_DEFS_CACHE$3].push(_v6);
+          this.__config[NODE_DEFS_CACHE$3].push(v);
 
           return 'url(#' + uuid + ')';
         }
@@ -18077,7 +18077,7 @@
           });
           return rg;
         } else if (renderMode === mode.SVG) {
-          var _v7 = {
+          var v = {
             tagName: 'radialGradient',
             props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
             children: gd.stop.map(function (item) {
@@ -18087,9 +18087,9 @@
               };
             })
           };
-          var uuid = ctx.add(_v7);
+          var uuid = ctx.add(v);
 
-          this.__config[NODE_DEFS_CACHE$3].push(_v7);
+          this.__config[NODE_DEFS_CACHE$3].push(v);
 
           return 'url(#' + uuid + ')';
         }
@@ -18173,7 +18173,7 @@
             var cur = list[_i3];
 
             if (prev) {
-              var _v8 = {
+              var v = {
                 tagName: 'linearGradient',
                 props: [['x1', prev[0]], ['y1', prev[1]], ['x2', cur[2]], ['y2', cur[3]]],
                 children: [{
@@ -18184,9 +18184,9 @@
                   props: [['stop-color', int2rgba$2([cur[4], cur[5], cur[6], cur[7]])], ['offset', '100%']]
                 }]
               };
-              var uuid = ctx.add(_v8);
+              var uuid = ctx.add(v);
 
-              this.__config[NODE_DEFS_CACHE$3].push(_v8);
+              this.__config[NODE_DEFS_CACHE$3].push(v);
 
               res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], 'url(#' + uuid + ')']);
             }

@@ -445,6 +445,11 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   }
   let width = bboxTotal[2] - bboxTotal[0];
   let height = bboxTotal[3] - bboxTotal[1];
+  // 防止超限，webgl最大纹理尺寸限制
+  let limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  if(width > limit || height > limit) {
+    return;
+  }
   let [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 以bboxTotal的左上角为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
@@ -559,6 +564,11 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   let spread = blur.outerSizeByD(d);
   width += spread * 2;
   height += spread * 2;
+  // 防止超限，webgl最大纹理尺寸限制
+  let limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  if(width > limit || height > limit) {
+    return;
+  }
   let cx = width * 0.5, cy = height * 0.5;
   /**
    * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement

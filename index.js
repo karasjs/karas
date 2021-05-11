@@ -25939,7 +25939,13 @@
     }
 
     var width = bboxTotal[2] - bboxTotal[0];
-    var height = bboxTotal[3] - bboxTotal[1];
+    var height = bboxTotal[3] - bboxTotal[1]; // 防止超限，webgl最大纹理尺寸限制
+
+    var limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+
+    if (width > limit || height > limit) {
+      return;
+    }
 
     var _genFrameBufferWithTe = genFrameBufferWithTexture(gl, texCache, width, height),
         _genFrameBufferWithTe2 = _slicedToArray(_genFrameBufferWithTe, 3),
@@ -26081,7 +26087,14 @@
 
     var spread = blur.outerSizeByD(d);
     width += spread * 2;
-    height += spread * 2;
+    height += spread * 2; // 防止超限，webgl最大纹理尺寸限制
+
+    var limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+
+    if (width > limit || height > limit) {
+      return;
+    }
+
     var cx = width * 0.5,
         cy = height * 0.5;
     /**
@@ -33397,7 +33410,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.13";
+  var version = "0.58.0-alpha1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

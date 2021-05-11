@@ -1320,57 +1320,12 @@ class Xom extends Node {
       virtualDom.visibility = visibility;
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let offScreenFilter;
     __config[NODE_BLUR_VALUE] = 0;
     if(Array.isArray(filter)) {
       filter.forEach(item => {
         let [k, v] = item;
         if(k === 'blur') {
           __config[NODE_BLUR_VALUE] = v;
-          // 非cache模式返回offScreen，cache模式会生成cacheFilter识别
-          if((renderMode === mode.CANVAS && v > 0 || renderMode === mode.WEBGL)  && !cache) {
-            let { width, height } = root;
-            let c = inject.getCacheCanvas(width, height, null, 'filter');
-            if(c.ctx) {
-              offScreenFilter = {
-                ctx,
-                blur: v,
-                target: c,
-                matrix,
-              };
-              ctx = c.ctx;
-            }
-          }
-          else if(renderMode === mode.SVG
-            && (lv >= REPAINT || contain(lv, FT))) {
-            // 模糊框卷积尺寸 #66
-            if(v > 0 && width > 0 && height > 0) {
-              let d = blur.outerSize(v);
-              let o = {
-                tagName: 'filter',
-                props: [
-                  ['x', -d / outerWidth],
-                  ['y', -d / outerHeight],
-                  ['width', 1 + d * 2 / outerWidth],
-                  ['height', 1 + d * 2 / outerHeight],
-                ],
-                children: [
-                  {
-                    tagName: 'feGaussianBlur',
-                    props: [
-                      ['stdDeviation', v],
-                    ],
-                  }
-                ],
-              };
-              let id = ctx.add(o);
-              __config[NODE_DEFS_CACHE].push(o);
-              virtualDom.filter = 'url(#' + id + ')';
-            }
-            else {
-              delete virtualDom.filter;
-            }
-          }
         }
       });
     }
@@ -1378,23 +1333,76 @@ class Xom extends Node {
     if((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE]) {
       return { limitCache: true };
     }
+    // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
+    let offScreenBlend;
+    if(mixBlendMode !== 'normal' && !cache) {
+      mixBlendMode = mixBlendMode.replace(/[A-Z]/, function($0) {
+        return '-' + $0.toLowerCase();
+      });
+      let { width, height } = root;
+      let c = inject.getCacheCanvas(width, height, null, 'blend');
+      offScreenBlend = {
+        ctx,
+        target: c,
+        mixBlendMode,
+        matrix,
+      };
+      ctx = c.ctx;
+    }
     let offScreenMask;
     if(__hasMask) {
       if(renderMode === mode.CANVAS && !cache) {
-        if(offScreenFilter) {
-          offScreenMask = offScreenFilter;
+        let { width, height } = root;
+        let c = inject.getCacheCanvas(width, height, null, 'mask1');
+        offScreenMask = {
+          ctx,
+          target: c,
+          matrix,
+        };
+        ctx = c.ctx;
+      }
+    }
+    let offScreenFilter;
+    if(__config[NODE_BLUR_VALUE] > 0) {
+      if(renderMode === mode.CANVAS && !cache) {
+        let { width, height } = root;
+        let c = inject.getCacheCanvas(width, height, null, 'filter');
+        offScreenFilter = {
+          ctx,
+          blur: __config[NODE_BLUR_VALUE],
+          target: c,
+          matrix,
+        };
+        ctx = c.ctx;
+      }
+      else if(renderMode === mode.SVG
+        && (lv >= REPAINT || contain(lv, FT))) {
+        // 模糊框卷积尺寸 #66
+        if(v > 0 && width > 0 && height > 0) {
+          let d = blur.outerSize(__config[NODE_BLUR_VALUE]);
+          let o = {
+            tagName: 'filter',
+            props: [
+              ['x', -d / outerWidth],
+              ['y', -d / outerHeight],
+              ['width', 1 + d * 2 / outerWidth],
+              ['height', 1 + d * 2 / outerHeight],
+            ],
+            children: [
+              {
+                tagName: 'feGaussianBlur',
+                props: [
+                  ['stdDeviation', __config[NODE_BLUR_VALUE]],
+                ],
+              }
+            ],
+          };
+          let id = ctx.add(o);
+          __config[NODE_DEFS_CACHE].push(o);
+          virtualDom.filter = 'url(#' + id + ')';
         }
         else {
-          let { width, height } = root;
-          let c = inject.getCacheCanvas(width, height, null, 'mask1');
-          if(c.ctx) {
-            offScreenMask = {
-              ctx,
-              target: c,
-              matrix,
-            };
-            ctx = c.ctx;
-          }
+          delete virtualDom.filter;
         }
       }
     }
@@ -1402,21 +1410,14 @@ class Xom extends Node {
     let offScreenOverflow;
     if(overflow === 'hidden' && display !== 'inline') {
       if(renderMode === mode.CANVAS && !cache) {
-        if(offScreenFilter || offScreenMask) {
-          offScreenOverflow = offScreenFilter || offScreenMask;
-        }
-        else {
-          let { width, height } = root;
-          let c = inject.getCacheCanvas(width, height, null, 'overflow');
-          if(c.ctx) {
-            offScreenOverflow = {
-              ctx,
-              target: c,
-              matrix,
-            };
-            ctx = c.ctx;
-          }
-        }
+        let { width, height } = root;
+        let c = inject.getCacheCanvas(width, height, null, 'overflow');
+        offScreenOverflow = {
+          ctx,
+          target: c,
+          matrix,
+        };
+        ctx = c.ctx;
         offScreenOverflow.x = x1;
         offScreenOverflow.y = y1;
         offScreenOverflow.offsetWidth = offsetWidth;
@@ -1442,27 +1443,6 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       delete virtualDom.overflow;
-    }
-    let offScreenBlend;
-    if(mixBlendMode !== 'normal' && !cache) {
-      mixBlendMode = mixBlendMode.replace(/[A-Z]/, function($0) {
-        return '-' + $0.toLowerCase();
-      });
-      if(offScreenFilter || offScreenMask || offScreenOverflow) {
-        offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
-        offScreenBlend.mixBlendMode = mixBlendMode;
-      }
-      else {
-        let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'blend');
-        offScreenBlend = {
-          ctx,
-          target: c,
-          mixBlendMode,
-          matrix,
-        };
-        ctx = c.ctx;
-      }
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && !cache) {

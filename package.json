@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.57.13",
+  "version": "0.58.0-alpha1",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg.",
   "maintainers": [
     {
@@ -24,7 +24,7 @@
     "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@babel/preset-env": "^7.8.7",
     "@rollup/plugin-json": "^4.0.3",
-    "chromedriver": "^89.0.0",
+    "chromedriver": "^90.0.0",
     "expect.js": "^0.3.1",
     "gulp": "^4.0.0",
     "gulp-rename": "^1.4.0",

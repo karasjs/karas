@@ -202,21 +202,6 @@ function m2Mat4(m, width, height) {
   return m;
 }
 
-function revertY(matrix) {
-  matrix = matrix.slice(0);
-  if(matrix.length === 9) {
-    matrix[1] = -matrix[1];
-    matrix[3] = -matrix[3];
-  }
-  else if(matrix.length === 16) {
-    matrix[1] = -matrix[1];
-    matrix[5] = -matrix[5];
-    matrix[9] = -matrix[9];
-    matrix[13] = -matrix[13];
-  }
-  return matrix;
-}
-
 export default {
   identity,
   multiply,
@@ -224,5 +209,4 @@ export default {
   inverse,
   isE,
   m2Mat4,
-  revertY,
 };

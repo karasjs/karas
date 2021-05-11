@@ -25508,7 +25508,7 @@
               dx = 0,
               dy = 0,
               hasTotal = void 0;
-          var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal]);
+          var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
 
           if (target) {
             bbox = target.bbox.slice(0);
@@ -25700,7 +25700,7 @@
             matrixHash[i] = matrix;
           }
 
-          var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal, __cache]);
+          var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
 
           if (target) {
             if (mixBlendMode !== 'normal') {
@@ -25904,7 +25904,7 @@
             matrixHash[i] = matrix;
           }
 
-          var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal, __cache]);
+          var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
 
           if (target) {
             var _m3 = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
@@ -26114,9 +26114,10 @@
 
       if (display === 'none' || visibility === 'hidden') {
         continue;
-      }
+      } // total无用，都是单节点
 
-      var target = getCache([__cacheOverflow, __cacheFilter, __cache]);
+
+      var target = getCache([__cacheFilter, __cacheOverflow, __cache]);
 
       if (target) {
         var m = void 0;
@@ -26589,7 +26590,7 @@
         } // 有total的可以直接绘制并跳过子节点索引
 
 
-        var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal]); // total的尝试
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]); // total的尝试
 
         if (target) {
           if (mixBlendMode === 'normal') {
@@ -28035,7 +28036,7 @@
         // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
 
 
-        var target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, _cache]); // total的尝试
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cache]); // total的尝试
 
         if (target) {
           var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后后面这个节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -33261,7 +33262,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.12";
+  var version = "0.57.13";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

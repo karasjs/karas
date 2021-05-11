@@ -183,7 +183,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           continue;
         }
         let bbox, dx = 0, dy = 0, hasTotal;
-        let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal]);
+        let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
         if(target) {
           bbox = target.bbox.slice(0);
           dx = target.dbx;
@@ -352,7 +352,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
       if(matrix) {
         matrixHash[i] = matrix;
       }
-      let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal, __cache]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       if(target) {
         if(mixBlendMode !== 'normal') {
           ctx.globalCompositeOperation = 'source-over';
@@ -526,7 +526,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       if(matrix) {
         matrixHash[i] = matrix;
       }
-      let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal, __cache]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       if(target) {
         let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
         texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
@@ -698,7 +698,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
     if(display === 'none' || visibility === 'hidden') {
       continue;
     }
-    let target = getCache([__cacheOverflow, __cacheFilter, __cache]);
+    // total无用，都是单节点
+    let target = getCache([__cacheFilter, __cacheOverflow, __cache]);
     if(target) {
       let m;
       if(isE(transform)) {
@@ -1128,7 +1129,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
         continue;
       }
       // 有total的可以直接绘制并跳过子节点索引
-      let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cacheTotal]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
       // total的尝试
       if(target) {
         if(mixBlendMode === 'normal') {
@@ -2353,7 +2354,7 @@ function renderWebgl(renderMode, gl, root) {
       // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
       // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
       // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
-      let target = getCache([__cacheMask, __cacheOverflow, __cacheFilter, __cache]);
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cache]);
       // total的尝试
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);

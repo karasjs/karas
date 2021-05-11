@@ -86,12 +86,51 @@ class Geom extends Xom {
 
   __tryLayInline(w, total) {
     // 无children，直接以style的width为宽度，不定义则为0
-    let { currentStyle: { [WIDTH]: width } } = this;
+    let { currentStyle: {
+      [WIDTH]: width,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } } = this;
     if(width[1] === PX) {
-      return w - width[0];
+      w -= width[0];
     }
     else if(width[1] === PERCENT) {
-      return w - total * width[0] * 0.01;
+      w -= total * width[0] * 0.01;
+    }
+    // 减去水平mbp
+    if(marginLeft[1] === PX) {
+      w -= marginLeft[0];
+    }
+    else if(marginLeft[1] === PERCENT) {
+      w -= marginLeft[0] * total * 0.01;
+    }
+    if(paddingLeft[1] === PX) {
+      w -= paddingLeft[0];
+    }
+    else if(paddingLeft[1] === PERCENT) {
+      w -= paddingLeft[0] * total * 0.01;
+    }
+    if(borderLeftWidth[1] === PX) {
+      w -= borderLeftWidth[0];
+    }
+    if(marginRight[1] === PX) {
+      w -= marginRight[0];
+    }
+    else if(marginRight[1] === PERCENT) {
+      w -= marginRight[0] * total * 0.01;
+    }
+    if(paddingRight[1] === PX) {
+      w -= paddingRight[0];
+    }
+    else if(paddingRight[1] === PERCENT) {
+      w -= paddingRight[0] * total * 0.01;
+    }
+    if(borderRightWidth[1] === PX) {
+      w -= borderRightWidth[0];
     }
     return w;
   }

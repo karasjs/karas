@@ -4,6 +4,7 @@ import painter from '../../util/painter';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -202,29 +203,29 @@ class Line extends Geom {
     }
   }
 
-  buildCache(originX, originY) {
+  buildCache(originX, originY, focus) {
     let { width, height, __cacheProps, isMulti } = this;
     let rebuild;
     ['x1', 'x2'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = reBuild(this[k], originX, width, isMulti);
       }
     });
     ['y1', 'y2'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = reBuild(this[k], originY, height, isMulti);
       }
     });
     ['controlA', 'controlB'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = reBuildC(this[k], originX, originY, width, height, isMulti);
       }
     });
     ['start', 'end'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = this[k];
       }
@@ -232,8 +233,8 @@ class Line extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx) {
-    let res = super.render(renderMode, lv, ctx);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(res.break) {
       return res;
     }
@@ -251,7 +252,7 @@ class Line extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    let rebuild = this.buildCache(originX, originY);
+    let rebuild = this.buildCache(originX, originY, level.isReflow(lv));
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {

@@ -62,7 +62,7 @@
 * flexWrap
   * nowrap 默认
   * wrap
-  * wrap-reverse
+  * wrapReverse
 * alignContent
   * stretch 默认
   * flexStart
@@ -72,7 +72,9 @@
   * center
 * flexDirection
   * row 默认
+  * rowReverse
   * column
+  * columnReverse
 * justifyContent
   * flexStart 默认
   * flexEnd

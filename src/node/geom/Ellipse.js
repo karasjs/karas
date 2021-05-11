@@ -2,6 +2,7 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -50,10 +51,10 @@ class Ellipse extends Geom {
     }
   }
 
-  buildCache(cx, cy) {
+  buildCache(cx, cy, focus) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
-    if(isNil(__cacheProps.rx)) {
+    if(isNil(__cacheProps.rx) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.rx = rx.map(i => i * width * 0.5);
@@ -62,7 +63,7 @@ class Ellipse extends Geom {
         __cacheProps.rx = rx * width * 0.5;
       }
     }
-    if(isNil(__cacheProps.ry)) {
+    if(isNil(__cacheProps.ry) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.ry = ry.map(i => i * height * 0.5);
@@ -88,7 +89,7 @@ class Ellipse extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.cx, res.cy);
+    this.buildCache(res.cx, res.cy, level.isReflow(lv));
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

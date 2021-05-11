@@ -304,15 +304,21 @@ class Dom extends Xom {
       [DISPLAY]: display,
       [WIDTH]: width,
       [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
       [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
     } } = this;
     // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
     if(display === 'inline') {
       if(flowChildren.length) {
         let first = flowChildren[0];
-        if(first instanceof Xom || first instanceof Component) {
-          w -= first.__tryLayInline(w, total);
+        if(first instanceof Component) {
+          first = first.shadowRoot;
+        }
+        if(first instanceof Xom) {
+          w = first.__tryLayInline(w, total);
         }
         else {
           w -= first.firstCharWidth;
@@ -322,24 +328,45 @@ class Dom extends Xom {
     // inlineBlock尝试所有孩子在一行上
     else {
       if(width[1] === PX) {
-        return w - width[0];
+        w -= width[0];
       }
       else if(width[1] === PERCENT) {
-        return w - total * width[0] * 0.01;
+         w -= total * width[0] * 0.01;
       }
-      for(let i = 0; i < flowChildren.length; i++) {
-        // 当放不下时直接返回，无需继续多余的尝试计算
-        if(w < 0) {
-          return w;
+      else {
+        for(let i = 0; i < flowChildren.length; i++) {
+          // 当放不下时直接返回，无需继续多余的尝试计算
+          if(w < 0) {
+            return w;
+          }
+          let item = flowChildren[i];
+          if(item instanceof Component) {
+            item = item.shadowRoot;
+          }
+          if(item instanceof Xom) {
+            w = item.__tryLayInline(w, total);
+          }
+          // text强制一行，否则非头就是放不下，需从头开始
+          else {
+            w -= item.textWidth;
+          }
         }
-        let item = flowChildren[i];
-        if(item instanceof Xom || item instanceof Component) {
-          w -= item.__tryLayInline(w, total);
-        }
-        // text强制一行，否则非头就是放不下，需从头开始
-        else {
-          w -= item.textWidth;
-        }
+      }
+      // ib要减去末尾mpb
+      if(marginRight[1] === PX) {
+        w -= marginRight[0];
+      }
+      else if(marginRight[1] === PERCENT) {
+        w -= marginRight[0] * total * 0.01;
+      }
+      if(paddingRight[1] === PX) {
+        w -= paddingRight[0];
+      }
+      else if(paddingRight[1] === PERCENT) {
+        w -= paddingRight[0] * total * 0.01;
+      }
+      if(borderRightWidth[1] === PX) {
+        w -= borderRightWidth[0];
       }
     }
     // 还要减去开头的mpb
@@ -1912,17 +1939,17 @@ class Dom extends Xom {
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
-      let isImg = item.tagName === 'img';
+      let isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
+      let isRealInline = isXom && item.__isRealInline();
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
       let isEnd = isInline && (i === length - 1);
       if(isEnd) {
         endSpace += selfEndSpace;
       }
       if(isXom) {
-        if(!isInline2 && !isInlineBlock) {
+        if(!isInline2 && !isInlineBlock2) {
           item.currentStyle[DISPLAY] = item.computedStyle[DISPLAY] = 'inlineBlock';
-          isInlineBlock = true;
+          isInlineBlock2 = true;
           inject.warn('Inline can not contain block/flex');
         }
         // x开头，不用考虑是否放得下直接放，i为0强制不换行
@@ -1940,15 +1967,15 @@ class Dom extends Xom {
           }, isVirtual);
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
-            isInlineBlock && (w[1] === AUTO) && (isIbFull = true);
+            isInlineBlock2 && (w[1] === AUTO) && (isIbFull = true);
             lineBoxManager.addItem(item);
             x = lx;
             y += item.outerHeight;
             lineBoxManager.setNotEnd();
           }
-          // inline和不折行的ib，其中ib需要手动存入当前lb中
+          // inline和不折行的ib，其中ib需要手动存入当前lb中，以计算宽度
           else {
-            (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+            (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -1971,7 +1998,7 @@ class Dom extends Xom {
               lineClampCount,
             }, isVirtual);
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
-            (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+            (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -2001,7 +2028,7 @@ class Dom extends Xom {
             }
             // inline和不折行的ib，其中ib需要手动存入当前lb中
             else {
-              (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+              (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }

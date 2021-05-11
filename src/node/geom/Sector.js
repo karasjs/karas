@@ -3,6 +3,7 @@ import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
 import inject from '../../util/inject';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -70,18 +71,18 @@ class Sector extends Geom {
     }
   }
 
-  buildCache(cx, cy) {
+  buildCache(cx, cy, focus) {
     let { width, begin, end, r, edge, closure, __cacheProps, isMulti } = this;
     let rebuild;
-    if(isNil(__cacheProps.begin)) {
+    if(isNil(__cacheProps.begin) || focus) {
       rebuild = true;
       __cacheProps.begin = (begin || 0) % 360;
     }
-    if(isNil(__cacheProps.end)) {
+    if(isNil(__cacheProps.end) || focus) {
       rebuild = true;
       __cacheProps.end = (end || 0) % 360;
     }
-    if(isNil(__cacheProps.r)) {
+    if(isNil(__cacheProps.r) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.r = r.map(r => r * width * 0.5);
@@ -91,11 +92,11 @@ class Sector extends Geom {
       }
     }
     r = __cacheProps.r;
-    if(isNil(__cacheProps.edge)) {
+    if(isNil(__cacheProps.edge) || focus) {
       rebuild = true;
       __cacheProps.edge = edge;
     }
-    if(isNil(__cacheProps.closure)) {
+    if(isNil(__cacheProps.closure) || focus) {
       rebuild = true;
       __cacheProps.closure = closure;
     }
@@ -154,7 +155,7 @@ class Sector extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.cx, res.cy);
+    this.buildCache(res.cx, res.cy, level.isReflow(lv));
     let {
       fill: fills,
       fillRule: fillRules,

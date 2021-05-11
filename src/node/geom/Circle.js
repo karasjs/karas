@@ -2,6 +2,7 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -39,9 +40,9 @@ class Circle extends Geom {
     }
   }
 
-  buildCache(cx, cy) {
+  buildCache(cx, cy, focus) {
     let { width, r, __cacheProps, isMulti } = this;
-    if(isNil(__cacheProps.r)) {
+    if(isNil(__cacheProps.r) || focus) {
       if(isMulti) {
         __cacheProps.r = r.map(i => i * width * 0.5);
         __cacheProps.list = __cacheProps.r.map(r => geom.ellipsePoints(cx, cy, r));
@@ -58,7 +59,7 @@ class Circle extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.cx, res.cy);
+    this.buildCache(res.cx, res.cy, level.isReflow(lv));
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

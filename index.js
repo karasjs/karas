@@ -19783,15 +19783,22 @@
             display = _this$currentStyle[DISPLAY$5],
             width = _this$currentStyle[WIDTH$4],
             marginLeft = _this$currentStyle[MARGIN_LEFT$4],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$4],
             paddingLeft = _this$currentStyle[PADDING_LEFT$5],
-            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$5]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
+            paddingRight = _this$currentStyle[PADDING_RIGHT$5],
+            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$5],
+            borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$5]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
         if (display === 'inline') {
           if (flowChildren.length) {
             var first = flowChildren[0];
 
-            if (first instanceof Xom$1 || first instanceof Component$1) {
-              w -= first.__tryLayInline(w, total);
+            if (first instanceof Component$1) {
+              first = first.shadowRoot;
+            }
+
+            if (first instanceof Xom$1) {
+              w = first.__tryLayInline(w, total);
             } else {
               w -= first.firstCharWidth;
             }
@@ -19799,25 +19806,46 @@
         } // inlineBlock尝试所有孩子在一行上
         else {
             if (width[1] === PX$8) {
-              return w - width[0];
+              w -= width[0];
             } else if (width[1] === PERCENT$8) {
-              return w - total * width[0] * 0.01;
+              w -= total * width[0] * 0.01;
+            } else {
+              for (var i = 0; i < flowChildren.length; i++) {
+                // 当放不下时直接返回，无需继续多余的尝试计算
+                if (w < 0) {
+                  return w;
+                }
+
+                var item = flowChildren[i];
+
+                if (item instanceof Component$1) {
+                  item = item.shadowRoot;
+                }
+
+                if (item instanceof Xom$1) {
+                  w = item.__tryLayInline(w, total);
+                } // text强制一行，否则非头就是放不下，需从头开始
+                else {
+                    w -= item.textWidth;
+                  }
+              }
+            } // ib要减去末尾mpb
+
+
+            if (marginRight[1] === PX$8) {
+              w -= marginRight[0];
+            } else if (marginRight[1] === PERCENT$8) {
+              w -= marginRight[0] * total * 0.01;
             }
 
-            for (var i = 0; i < flowChildren.length; i++) {
-              // 当放不下时直接返回，无需继续多余的尝试计算
-              if (w < 0) {
-                return w;
-              }
+            if (paddingRight[1] === PX$8) {
+              w -= paddingRight[0];
+            } else if (paddingRight[1] === PERCENT$8) {
+              w -= paddingRight[0] * total * 0.01;
+            }
 
-              var item = flowChildren[i];
-
-              if (item instanceof Xom$1 || item instanceof Component$1) {
-                w -= item.__tryLayInline(w, total);
-              } // text强制一行，否则非头就是放不下，需从头开始
-              else {
-                  w -= item.textWidth;
-                }
+            if (borderRightWidth[1] === PX$8) {
+              w -= borderRightWidth[0];
             }
           } // 还要减去开头的mpb
 
@@ -21605,8 +21633,10 @@
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
           var isInline2 = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
-          var isImg = item.tagName === 'img'; // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
+          var isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
+
+          var isRealInline = isXom && item.__isRealInline(); // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
+
 
           var isEnd = isInline && i === length - 1;
 
@@ -21615,9 +21645,9 @@
           }
 
           if (isXom) {
-            if (!isInline2 && !isInlineBlock) {
+            if (!isInline2 && !isInlineBlock2) {
               item.currentStyle[DISPLAY$5] = item.computedStyle[DISPLAY$5] = 'inlineBlock';
-              isInlineBlock = true;
+              isInlineBlock2 = true;
               inject.warn('Inline can not contain block/flex');
             } // x开头，不用考虑是否放得下直接放，i为0强制不换行
 
@@ -21636,14 +21666,14 @@
               }, isVirtual); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
 
               if (item.__isIbFull) {
-                isInlineBlock && w[1] === AUTO$5 && (isIbFull = true);
+                isInlineBlock2 && w[1] === AUTO$5 && (isIbFull = true);
                 lineBoxManager.addItem(item);
                 x = lx;
                 y += item.outerHeight;
                 lineBoxManager.setNotEnd();
-              } // inline和不折行的ib，其中ib需要手动存入当前lb中
+              } // inline和不折行的ib，其中ib需要手动存入当前lb中，以计算宽度
               else {
-                  (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                  (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 }
@@ -21665,7 +21695,7 @@
                   lineClampCount: lineClampCount
                 }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
-                (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
@@ -21693,7 +21723,7 @@
                     lineBoxManager.setNotEnd();
                   } // inline和不折行的ib，其中ib需要手动存入当前lb中
                   else {
-                      (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                      (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
                       x = lineBoxManager.lastX;
                       y = lineBoxManager.lastY;
                     }
@@ -22795,6 +22825,73 @@
       key: "__isRealInline",
       value: function __isRealInline() {
         return false;
+      } // overwrite
+
+    }, {
+      key: "__tryLayInline",
+      value: function __tryLayInline(w, total) {
+        var _this$currentStyle = this.currentStyle,
+            width = _this$currentStyle[WIDTH$5],
+            height = _this$currentStyle[HEIGHT$6],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$5],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$5],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$6],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$6],
+            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$6],
+            borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$6];
+
+        if (width[1] === PX$9) {
+          w -= width[0];
+        } else if (width[1] === PERCENT$9) {
+          w -= total * width[0] * 0.01;
+        } else {
+          var loadImg = this.__loadImg; // 加载成功计算缩放后的宽度
+
+          if (loadImg.source) {
+            if (height[1] === PX$9) {
+              w -= loadImg.width * height[0] / loadImg.height;
+            } else if (height[1] === PERCENT$9) {
+              w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
+            } else {
+              w -= loadImg.width;
+            }
+          }
+        } // 减去水平mbp
+
+
+        if (marginLeft[1] === PX$9) {
+          w -= marginLeft[0];
+        } else if (marginLeft[1] === PERCENT$9) {
+          w -= marginLeft[0] * total * 0.01;
+        }
+
+        if (paddingLeft[1] === PX$9) {
+          w -= paddingLeft[0];
+        } else if (paddingLeft[1] === PERCENT$9) {
+          w -= paddingLeft[0] * total * 0.01;
+        }
+
+        if (borderLeftWidth[1] === PX$9) {
+          w -= borderLeftWidth[0];
+        }
+
+        if (marginRight[1] === PX$9) {
+          w -= marginRight[0];
+        } else if (marginRight[1] === PERCENT$9) {
+          w -= marginRight[0] * total * 0.01;
+        }
+
+        if (paddingRight[1] === PX$9) {
+          w -= paddingRight[0];
+        } else if (paddingRight[1] === PERCENT$9) {
+          w -= paddingRight[0] * total * 0.01;
+        }
+
+        if (borderRightWidth[1] === PX$9) {
+          w -= borderRightWidth[0];
+        }
+
+        return w;
       }
     }, {
       key: "__calBasis",
@@ -23205,12 +23302,52 @@
       key: "__tryLayInline",
       value: function __tryLayInline(w, total) {
         // 无children，直接以style的width为宽度，不定义则为0
-        var width = this.currentStyle[WIDTH$6];
+        var _this$currentStyle = this.currentStyle,
+            width = _this$currentStyle[WIDTH$6],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$6],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$6],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$7],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$7],
+            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$7],
+            borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$7];
 
         if (width[1] === PX$a) {
-          return w - width[0];
+          w -= width[0];
         } else if (width[1] === PERCENT$a) {
-          return w - total * width[0] * 0.01;
+          w -= total * width[0] * 0.01;
+        } // 减去水平mbp
+
+
+        if (marginLeft[1] === PX$a) {
+          w -= marginLeft[0];
+        } else if (marginLeft[1] === PERCENT$a) {
+          w -= marginLeft[0] * total * 0.01;
+        }
+
+        if (paddingLeft[1] === PX$a) {
+          w -= paddingLeft[0];
+        } else if (paddingLeft[1] === PERCENT$a) {
+          w -= paddingLeft[0] * total * 0.01;
+        }
+
+        if (borderLeftWidth[1] === PX$a) {
+          w -= borderLeftWidth[0];
+        }
+
+        if (marginRight[1] === PX$a) {
+          w -= marginRight[0];
+        } else if (marginRight[1] === PERCENT$a) {
+          w -= marginRight[0] * total * 0.01;
+        }
+
+        if (paddingRight[1] === PX$a) {
+          w -= paddingRight[0];
+        } else if (paddingRight[1] === PERCENT$a) {
+          w -= paddingRight[0] * total * 0.01;
+        }
+
+        if (borderRightWidth[1] === PX$a) {
+          w -= borderRightWidth[0];
         }
 
         return w;
@@ -30883,7 +31020,7 @@
 
     _createClass(Line, [{
       key: "buildCache",
-      value: function buildCache(originX, originY) {
+      value: function buildCache(originX, originY, focus) {
         var _this2 = this;
 
         var width = this.width,
@@ -30892,25 +31029,25 @@
             isMulti = this.isMulti;
         var rebuild;
         ['x1', 'x2'].forEach(function (k) {
-          if (isNil$9(__cacheProps[k])) {
+          if (isNil$9(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = reBuild(_this2[k], originX, width, isMulti);
           }
         });
         ['y1', 'y2'].forEach(function (k) {
-          if (isNil$9(__cacheProps[k])) {
+          if (isNil$9(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = reBuild(_this2[k], originY, height, isMulti);
           }
         });
         ['controlA', 'controlB'].forEach(function (k) {
-          if (isNil$9(__cacheProps[k])) {
+          if (isNil$9(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = reBuildC(_this2[k], originX, originY, width, height, isMulti);
           }
         });
         ['start', 'end'].forEach(function (k) {
-          if (isNil$9(__cacheProps[k])) {
+          if (isNil$9(__cacheProps[k]) || focus) {
             rebuild = true;
             __cacheProps[k] = _this2[k];
           }
@@ -30919,10 +31056,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx) {
+      value: function render(renderMode, lv, ctx, cache) {
         var _this3 = this;
 
-        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx);
+        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
         if (res["break"]) {
           return res;
@@ -30941,7 +31078,7 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild = this.buildCache(originX, originY);
+        var rebuild = this.buildCache(originX, originY, o$2.isReflow(lv));
 
         if (rebuild && renderMode === mode.SVG) {
           var d = '';
@@ -31570,7 +31707,7 @@
       }
     }, {
       key: "buildCache",
-      value: function buildCache(originX, originY) {
+      value: function buildCache(originX, originY, focus) {
         var _this2 = this;
 
         var width = this.width,
@@ -31583,7 +31720,7 @@
             isMulti = this.isMulti;
         var rebuild, rebuildSE;
 
-        if (isNil$a(__cacheProps.points)) {
+        if (isNil$a(__cacheProps.points) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -31597,7 +31734,7 @@
           }
         }
 
-        if (isNil$a(__cacheProps.controls)) {
+        if (isNil$a(__cacheProps.controls) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -31687,7 +31824,7 @@
           return res;
         }
 
-        this.buildCache(res.originX, res.originY);
+        this.buildCache(res.originX, res.originY, o$2.isReflow(lv));
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -31921,7 +32058,7 @@
 
     _createClass(Sector, [{
       key: "buildCache",
-      value: function buildCache(cx, cy) {
+      value: function buildCache(cx, cy, focus) {
         var width = this.width,
             begin = this.begin,
             end = this.end,
@@ -31932,17 +32069,17 @@
             isMulti = this.isMulti;
         var rebuild;
 
-        if (isNil$b(__cacheProps.begin)) {
+        if (isNil$b(__cacheProps.begin) || focus) {
           rebuild = true;
           __cacheProps.begin = (begin || 0) % 360;
         }
 
-        if (isNil$b(__cacheProps.end)) {
+        if (isNil$b(__cacheProps.end) || focus) {
           rebuild = true;
           __cacheProps.end = (end || 0) % 360;
         }
 
-        if (isNil$b(__cacheProps.r)) {
+        if (isNil$b(__cacheProps.r) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -31956,12 +32093,12 @@
 
         r = __cacheProps.r;
 
-        if (isNil$b(__cacheProps.edge)) {
+        if (isNil$b(__cacheProps.edge) || focus) {
           rebuild = true;
           __cacheProps.edge = edge;
         }
 
-        if (isNil$b(__cacheProps.closure)) {
+        if (isNil$b(__cacheProps.closure) || focus) {
           rebuild = true;
           __cacheProps.closure = closure;
         }
@@ -32031,7 +32168,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy);
+        this.buildCache(res.cx, res.cy, o$2.isReflow(lv));
         var fills = res.fill,
             fillRules = res.fillRule,
             strokes = res.stroke,
@@ -32260,8 +32397,7 @@
 
   var _enums$STYLE_KEY$n = enums.STYLE_KEY,
       STROKE_WIDTH$5 = _enums$STYLE_KEY$n.STROKE_WIDTH,
-      BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW,
-      FILTER$a = _enums$STYLE_KEY$n.FILTER;
+      BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW;
   var isNil$c = util.isNil;
 
   function genVertex(x, y, width, height) {
@@ -32331,7 +32467,7 @@
 
     _createClass(Rect, [{
       key: "buildCache",
-      value: function buildCache(originX, originY) {
+      value: function buildCache(originX, originY, focus) {
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -32340,7 +32476,7 @@
             isMulti = this.isMulti;
         var rebuild;
 
-        if (isNil$c(__cacheProps.rx)) {
+        if (isNil$c(__cacheProps.rx) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -32352,7 +32488,7 @@
           }
         }
 
-        if (isNil$c(__cacheProps.ry)) {
+        if (isNil$c(__cacheProps.ry) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -32388,7 +32524,7 @@
           return res;
         }
 
-        this.buildCache(res.originX, res.originY);
+        this.buildCache(res.originX, res.originY, o$2.isReflow(lv));
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -32444,7 +32580,7 @@
   var _enums$STYLE_KEY$o = enums.STYLE_KEY,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
       BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
-      FILTER$b = _enums$STYLE_KEY$o.FILTER;
+      FILTER$a = _enums$STYLE_KEY$o.FILTER;
   var isNil$d = util.isNil;
 
   function getR$2(v) {
@@ -32492,13 +32628,13 @@
 
     _createClass(Circle, [{
       key: "buildCache",
-      value: function buildCache(cx, cy) {
+      value: function buildCache(cx, cy, focus) {
         var width = this.width,
             r = this.r,
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
 
-        if (isNil$d(__cacheProps.r)) {
+        if (isNil$d(__cacheProps.r) || focus) {
           if (isMulti) {
             __cacheProps.r = r.map(function (i) {
               return i * width * 0.5;
@@ -32521,7 +32657,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy);
+        this.buildCache(res.cx, res.cy, o$2.isReflow(lv));
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -32593,7 +32729,7 @@
   var _enums$STYLE_KEY$p = enums.STYLE_KEY,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
       BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
-      FILTER$c = _enums$STYLE_KEY$p.FILTER;
+      FILTER$b = _enums$STYLE_KEY$p.FILTER;
   var isNil$e = util.isNil;
 
   function getR$3(v) {
@@ -32656,7 +32792,7 @@
 
     _createClass(Ellipse, [{
       key: "buildCache",
-      value: function buildCache(cx, cy) {
+      value: function buildCache(cx, cy, focus) {
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -32665,7 +32801,7 @@
             isMulti = this.isMulti;
         var rebuild;
 
-        if (isNil$e(__cacheProps.rx)) {
+        if (isNil$e(__cacheProps.rx) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -32677,7 +32813,7 @@
           }
         }
 
-        if (isNil$e(__cacheProps.ry)) {
+        if (isNil$e(__cacheProps.ry) || focus) {
           rebuild = true;
 
           if (isMulti) {
@@ -32713,7 +32849,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy);
+        this.buildCache(res.cx, res.cy, o$2.isReflow(lv));
 
         this.__renderPolygon(renderMode, ctx, res);
 

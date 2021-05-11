@@ -2,6 +2,7 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -277,10 +278,10 @@ class Polyline extends Geom {
     });
   }
 
-  buildCache(originX, originY) {
+  buildCache(originX, originY, focus) {
     let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
     let rebuild, rebuildSE;
-    if(isNil(__cacheProps.points)) {
+    if(isNil(__cacheProps.points) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.points = points.map(item => {
@@ -293,7 +294,7 @@ class Polyline extends Geom {
         __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
       }
     }
-    if(isNil(__cacheProps.controls)) {
+    if(isNil(__cacheProps.controls) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.controls = controls.map(item => {
@@ -367,7 +368,7 @@ class Polyline extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.originX, res.originY);
+    this.buildCache(res.originX, res.originY, level.isReflow(lv));
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

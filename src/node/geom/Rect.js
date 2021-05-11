@@ -2,11 +2,11 @@ import Geom from './Geom';
 import util from "../../util/util";
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
-  FILTER,
 } } = enums;
 const { isNil } = util;
 
@@ -69,10 +69,10 @@ class Rect extends Geom {
     }
   }
 
-  buildCache(originX, originY) {
+  buildCache(originX, originY, focus) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
-    if(isNil(__cacheProps.rx)) {
+    if(isNil(__cacheProps.rx) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.rx = rx.map(rx => Math.min(rx, 0.5) * width);
@@ -81,7 +81,7 @@ class Rect extends Geom {
         __cacheProps.rx = Math.min(rx, 0.5) * width;
       }
     }
-    if(isNil(__cacheProps.ry)) {
+    if(isNil(__cacheProps.ry) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.ry = rx.map(ry => Math.min(ry, 0.5) * height);
@@ -107,7 +107,7 @@ class Rect extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.originX, res.originY);
+    this.buildCache(res.originX, res.originY, level.isReflow(lv));
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

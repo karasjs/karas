@@ -392,6 +392,73 @@ class Img extends Dom {
     return false;
   }
 
+  // overwrite
+  __tryLayInline(w, total) {
+    let { currentStyle: {
+      [WIDTH]: width,
+      [HEIGHT]: height,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } } = this;
+    if(width[1] === PX) {
+      w -= width[0];
+    }
+    else if(width[1] === PERCENT) {
+      w -= total * width[0] * 0.01;
+    }
+    else {
+      let loadImg = this.__loadImg;
+      // 加载成功计算缩放后的宽度
+      if(loadImg.source) {
+        if(height[1] === PX) {
+          w -= loadImg.width * height[0] / loadImg.height;
+        }
+        else if(height[1] === PERCENT) {
+          w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
+        }
+        else {
+          w -= loadImg.width;
+        }
+      }
+    }
+    // 减去水平mbp
+    if(marginLeft[1] === PX) {
+      w -= marginLeft[0];
+    }
+    else if(marginLeft[1] === PERCENT) {
+      w -= marginLeft[0] * total * 0.01;
+    }
+    if(paddingLeft[1] === PX) {
+      w -= paddingLeft[0];
+    }
+    else if(paddingLeft[1] === PERCENT) {
+      w -= paddingLeft[0] * total * 0.01;
+    }
+    if(borderLeftWidth[1] === PX) {
+      w -= borderLeftWidth[0];
+    }
+    if(marginRight[1] === PX) {
+      w -= marginRight[0];
+    }
+    else if(marginRight[1] === PERCENT) {
+      w -= marginRight[0] * total * 0.01;
+    }
+    if(paddingRight[1] === PX) {
+      w -= paddingRight[0];
+    }
+    else if(paddingRight[1] === PERCENT) {
+      w -= paddingRight[0] * total * 0.01;
+    }
+    if(borderRightWidth[1] === PX) {
+      w -= borderRightWidth[0];
+    }
+    return w;
+  }
+
   __calBasis(isDirectionRow, data) {
     let b = 0;
     let min = 0;

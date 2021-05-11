@@ -6,6 +6,7 @@ let o = karas.parse(
       height: 360,
     },
     children: [{
+      "name": "分层1.png",
       "animate": [
         {
           "v": [
@@ -33,6 +34,18 @@ let o = karas.parse(
           ],
           "o": {
             "dt": 200,
+            "f": "forwards",
+            "i": 1
+          }
+        },
+        {
+          "v": [
+            {
+              "to": "110 110"
+            }
+          ],
+          "o": {
+            "dt": 4000,
             "f": "forwards",
             "i": 1
           }

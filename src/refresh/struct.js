@@ -100,7 +100,19 @@ function getCache(list) {
   }
 }
 
-function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
+/**
+ * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
+ * 如果某个子节点超限，则视为整个超限，超限返回空
+ * @param node
+ * @param __structs
+ * @param index
+ * @param total
+ * @param parentIndexHash
+ * @param opacityHash
+ * @param MAX
+ * @returns {*}
+ */
+function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, MAX) {
   let { __sx1: sx1, __sy1: sy1, __config } = node;
   let {
     [NODE_CACHE]: cache,
@@ -221,7 +233,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
       }
     }
   }
-  if((bboxTotal[2] - bboxTotal[0]) > Cache.MAX || (bboxTotal[3] - bboxTotal[1]) > Cache.MAX) {
+  if((bboxTotal[2] - bboxTotal[0]) > MAX || (bboxTotal[3] - bboxTotal[1]) > MAX) {
     // 标识后续不再尝试生成，重新布局会清空标识
     __config[NODE_LIMIT_CACHE] = true;
     return;
@@ -243,7 +255,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, Cache.MAX);
   if(!bboxTotal) {
     return;
   }
@@ -425,17 +437,12 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, gl.getParameter(gl.MAX_TEXTURE_SIZE));
   if(!bboxTotal) {
     return;
   }
   let width = bboxTotal[2] - bboxTotal[0];
   let height = bboxTotal[3] - bboxTotal[1];
-  // 防止超限，webgl最大纹理尺寸限制
-  let limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-  if(width > limit || height > limit) {
-    return;
-  }
   let [n, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 以bboxTotal的左上角为原点生成离屏texture
   let { __sx1: sx1, __sy1: sy1 } = node;
@@ -478,6 +485,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
           [VISIBILITY]: visibility,
           [TRANSFORM]: transform,
           [TRANSFORM_ORIGIN]: transformOrigin,
+          [MIX_BLEND_MODE]: mixBlendMode,
         },
       } = __config;
       if(display === 'none') {

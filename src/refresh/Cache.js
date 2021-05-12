@@ -175,7 +175,7 @@ class Cache {
   }
 
   static get MAX() {
-    return Page.MAX - 2;
+    return Page.MAX;
   }
 
   static getInstance(bbox, x1, y1) {

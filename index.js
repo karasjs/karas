@@ -10452,7 +10452,7 @@
     }, {
       key: "MAX",
       get: function get() {
-        return Page.MAX - 2;
+        return Page.MAX;
       }
     }]);
 
@@ -25552,8 +25552,21 @@
       }
     }
   }
+  /**
+   * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
+   * 如果某个子节点超限，则视为整个超限，超限返回空
+   * @param node
+   * @param __structs
+   * @param index
+   * @param total
+   * @param parentIndexHash
+   * @param opacityHash
+   * @param MAX
+   * @returns {*}
+   */
 
-  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
+
+  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, MAX) {
     var sx1 = node.__sx1,
         sy1 = node.__sy1,
         __config = node.__config;
@@ -25687,7 +25700,7 @@
       }
     }
 
-    if (bboxTotal[2] - bboxTotal[0] > Cache.MAX || bboxTotal[3] - bboxTotal[1] > Cache.MAX) {
+    if (bboxTotal[2] - bboxTotal[0] > MAX || bboxTotal[3] - bboxTotal[1] > MAX) {
       // 标识后续不再尝试生成，重新布局会清空标识
       __config[NODE_LIMIT_CACHE$1] = true;
       return;
@@ -25711,7 +25724,7 @@
 
     var parentIndexHash = {};
     var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
+    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, Cache.MAX);
 
     if (!bboxTotal) {
       return;
@@ -25920,20 +25933,14 @@
     // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
     var parentIndexHash = {};
     var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
+    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
     if (!bboxTotal) {
       return;
     }
 
     var width = bboxTotal[2] - bboxTotal[0];
-    var height = bboxTotal[3] - bboxTotal[1]; // 防止超限，webgl最大纹理尺寸限制
-
-    var limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-
-    if (width > limit || height > limit) {
-      return;
-    }
+    var height = bboxTotal[3] - bboxTotal[1];
 
     var _genFrameBufferWithTe = genFrameBufferWithTexture(gl, texCache, width, height),
         _genFrameBufferWithTe2 = _slicedToArray(_genFrameBufferWithTe, 3),
@@ -25985,7 +25992,8 @@
               display = _config2$NODE_COMPUTE[DISPLAY$8],
               visibility = _config2$NODE_COMPUTE[VISIBILITY$5],
               transform = _config2$NODE_COMPUTE[TRANSFORM$5],
-              transformOrigin = _config2$NODE_COMPUTE[TRANSFORM_ORIGIN$5];
+              transformOrigin = _config2$NODE_COMPUTE[TRANSFORM_ORIGIN$5],
+              mixBlendMode = _config2$NODE_COMPUTE[MIX_BLEND_MODE$3];
 
           if (display === 'none') {
             i += _total4 || 0;

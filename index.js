@@ -25527,6 +25527,10 @@
     return v.replace(/[A-Z]/, function ($0) {
       return '-' + $0.toLowerCase();
     });
+  }
+
+  function isValidMbm(v) {
+    return MBM_HASH.hasOwnProperty(mbmName(v));
   } // 依次从list获取首个available可用的cache
 
 
@@ -25811,12 +25815,10 @@
           var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
 
           if (target) {
-            if (mixBlendMode !== 'normal') {
-              ctx.globalCompositeOperation = 'source-over';
+            if (isValidMbm(mixBlendMode)) {
+              ctx.globalCompositeOperation = mbmName(mixBlendMode);
             } else {
-              ctx.globalCompositeOperation = mixBlendMode.replace(/[A-Z]/, function ($0) {
-                return '-' + $0.toLowerCase();
-              });
+              ctx.globalCompositeOperation = 'source-over';
             }
 
             ctx.globalAlpha = opacity;
@@ -26583,7 +26585,7 @@
           overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
 
-      if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' && total || mixBlendMode !== 'normal')) {
+      if (!__limitCache && (hasMask || position === 'absolute' || __blurValue > 0 || overflow === 'hidden' && total || isValidMbm(mixBlendMode))) {
         if (hasRecordAsMask) {
           hasRecordAsMask[6] = __blurValue;
           hasRecordAsMask[7] = overflow;
@@ -26714,13 +26716,10 @@
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]); // total的尝试
 
         if (target) {
-          if (mixBlendMode === 'normal') {
-            ctx.globalCompositeOperation = 'source-over';
+          if (isValidMbm(mixBlendMode)) {
+            ctx.globalCompositeOperation = mbmName(mixBlendMode);
           } else {
-            ctx.globalCompositeOperation = mixBlendMode.replace(/[A-Z]/, function ($0) {
-              _i4 = _i5;
-              return '-' + $0.toLowerCase();
-            });
+            ctx.globalCompositeOperation = 'source-over';
           }
 
           if (hasMask) {
@@ -26801,7 +26800,7 @@
                   }
                 }
 
-                if (mixBlendMode !== 'normal') {
+                if (isValidMbm(mixBlendMode)) {
                   if (offScreenFilter || offScreenMask || offScreenOverflow) {
                     offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
                   } else {
@@ -26810,7 +26809,7 @@
                     offScreenBlend = {
                       ctx: ctx,
                       target: _c4,
-                      mixBlendMode: mixBlendMode
+                      mixBlendMode: mbmName(mixBlendMode)
                     };
                     ctx = _c4.ctx;
                   }
@@ -27384,136 +27383,7 @@
         if (hasMask) {
           _i6 += hasMask;
         }
-      } // // overflow最先检查，所有其它效果基于它上
-      // if(overflowHash.hasOwnProperty(i)) {
-      //   let list = overflowHash[i];
-      //   list.forEach(offScreenOverflow => {
-      //     let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offScreenOverflow;
-      //     ctx.globalCompositeOperation = 'destination-in';
-      //     ctx.globalAlpha = 1;
-      //     ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-      //     ctx.fillStyle = '#FFF';
-      //     ctx.beginPath();
-      //     ctx.rect(x, y, offsetWidth, offsetHeight);
-      //     ctx.fill();
-      //     ctx.closePath();
-      //     ctx.globalCompositeOperation = 'source-over';
-      //     if(!maskStartHash.hasOwnProperty(i + 1) && !filterHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
-      //       target.draw();
-      //       ctx = origin;
-      //       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       ctx.globalAlpha = 1;
-      //       ctx.drawImage(target.canvas, 0, 0);
-      //       ctx.draw && ctx.draw(true);
-      //       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       target.ctx.clearRect(0, 0, width, height);
-      //       inject.releaseCacheCanvas(target.canvas);
-      //     }
-      //   });
-      // }
-      // // 最后一个节点检查filter，有则应用，可能有多个嵌套包含自己
-      // if(filterHash.hasOwnProperty(i)) {
-      //   let list = filterHash[i];
-      //   list.forEach(offScreenFilter => {
-      //     let { target, ctx: origin, blur } = offScreenFilter;
-      //     // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
-      //     if(ctx.filter) {
-      //       let apply = inject.getCacheCanvas(width, height, null, 'filter');
-      //       apply.ctx.filter = `blur(${blur}px)`;
-      //       apply.ctx.drawImage(target.canvas, 0, 0);
-      //       apply.ctx.filter = 'none';
-      //       apply.draw();
-      //       target.ctx.globalAlpha = 1;
-      //       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       target.ctx.clearRect(0, 0, width, height);
-      //       target.ctx.drawImage(apply.canvas, 0, 0);
-      //       target.draw();
-      //       apply.ctx.clearRect(0, 0, width, height);
-      //     }
-      //     if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
-      //       ctx = origin;
-      //       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       ctx.globalAlpha = 1;
-      //       ctx.drawImage(target.canvas, 0, 0);
-      //       ctx.draw && ctx.draw(true);
-      //       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       target.ctx.globalAlpha = 1;
-      //       target.ctx.clearRect(0, 0, width, height);
-      //       inject.releaseCacheCanvas(target.canvas);
-      //     }
-      //   });
-      // }
-      // // 混合模式
-      // if(blendHash.hasOwnProperty(i)) {
-      //   let list = blendHash[i];
-      //   console.log(i, list, maskStartHash);
-      //   list.forEach(offScreenBlend => {
-      //     console.log(offScreenBlend);
-      //     let target = offScreenBlend.target;
-      //     offScreenBlend.ctx.globalCompositeOperation = offScreenBlend.mixBlendMode;
-      //     if(!maskStartHash.hasOwnProperty(i + 1)) {
-      //       target.draw();
-      //       ctx = offScreenBlend.ctx;
-      //       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       ctx.globalAlpha = 1;
-      //       ctx.drawImage(target.canvas, 0, 0);
-      //       ctx.globalCompositeOperation = 'source-over';
-      //       ctx.draw && ctx.draw(true);
-      //       target.ctx.globalAlpha = 1;
-      //       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //       target.ctx.clearRect(0, 0, width, height);
-      //       inject.releaseCacheCanvas(target.canvas);
-      //     }
-      //   });
-      // }
-      // // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
-      // if(maskEndHash.hasOwnProperty(i)) {
-      //   let { mask, offScreenMask, isClip } = maskEndHash[i];
-      //   if(isClip) {
-      //     offScreenMask.target.draw();
-      //     ctx = mask.ctx;
-      //     ctx.globalCompositeOperation = 'source-out';
-      //     ctx.globalAlpha = 1;
-      //     ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //     ctx.drawImage(offScreenMask.target.canvas, 0, 0);
-      //     mask.draw();
-      //     ctx.globalCompositeOperation = 'source-over';
-      //     offScreenMask.target.ctx.clearRect(0, 0, width, height);
-      //     inject.releaseCacheCanvas(offScreenMask.target.canvas);
-      //     ctx = offScreenMask.ctx;
-      //     ctx.globalAlpha = 1;
-      //     ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //     ctx.drawImage(mask.canvas, 0, 0);
-      //     // blendMode前面会修改主屏的，这里应用完后恢复正常
-      //     ctx.globalCompositeOperation = 'source-over';
-      //     ctx.draw && ctx.draw(true);
-      //     mask.ctx.clearRect(0, 0, width, height);
-      //     inject.releaseCacheCanvas(mask.canvas);
-      //   }
-      //   else {
-      //     mask.draw();
-      //     let target = offScreenMask.target;
-      //     ctx = target.ctx;
-      //     ctx.globalCompositeOperation = 'destination-in';
-      //     ctx.globalAlpha = 1;
-      //     ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //     ctx.drawImage(mask.canvas, 0, 0);
-      //     ctx.globalCompositeOperation = 'source-over';
-      //     mask.ctx.clearRect(0, 0, width, height);
-      //     inject.releaseCacheCanvas(mask.canvas);
-      //     target.draw();
-      //     ctx = offScreenMask.ctx;
-      //     ctx.globalAlpha = 1;
-      //     ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //     ctx.drawImage(target.canvas, 0, 0);
-      //     // blendMode前面会修改主屏的，这里应用完后恢复正常
-      //     ctx.globalCompositeOperation = 'source-over';
-      //     ctx.draw && ctx.draw(true);
-      //     target.ctx.clearRect(0, 0, width, height);
-      //     inject.releaseCacheCanvas(target.canvas);
-      //   }
-      // }
-
+      }
     }
   }
 
@@ -27745,8 +27615,8 @@
         if (contain$2(__refreshLevel, MBM)) {
           var mixBlendMode = computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
 
-          if (mixBlendMode !== 'normal') {
-            virtualDom.mixBlendMode = mixBlendMode;
+          if (isValidMbm(mixBlendMode)) {
+            virtualDom.mixBlendMode = mbmName(mixBlendMode);
           } else {
             delete virtualDom.mixBlendMode;
           }
@@ -28135,10 +28005,11 @@
           __limitCache = __config[NODE_LIMIT_CACHE$1];
       var overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
+      var validMbm = isValidMbm(mixBlendMode);
 
       if (!__limitCache && (hasMask // || position === 'absolute'
-      || __blurValue > 0 || overflow === 'hidden' && total || mixBlendMode !== 'normal')) {
-        if (mixBlendMode !== 'normal' && MBM_HASH.hasOwnProperty(mixBlendMode)) {
+      || __blurValue > 0 || overflow === 'hidden' && total || validMbm)) {
+        if (validMbm) {
           hasMbm = true;
         }
 
@@ -28289,7 +28160,7 @@
           var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后后面这个节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
 
 
-          if (hasMbm && mixBlendMode !== 'normal' && MBM_HASH.hasOwnProperty(mbmName(mixBlendMode))) {
+          if (hasMbm && isValidMbm(mixBlendMode)) {
             texCache.refresh(gl, cx, cy, true);
 
             var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height),
@@ -28301,7 +28172,7 @@
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, _m6, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
-            var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mixBlendMode, width, height);
+            var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
 
             var _genMbmWebgl2 = _slicedToArray(_genMbmWebgl, 3);
 

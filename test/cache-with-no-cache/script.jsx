@@ -1,5 +1,5 @@
 karas.refresh.Page.CONFIG = {
-  SIZE: [8, 16, 32, 64, 128],
+  SIZE:   [8, 16, 32, 64, 128],
   NUMBER: [8,  8,  8,  8,   8],
 };
 

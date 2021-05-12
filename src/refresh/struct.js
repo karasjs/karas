@@ -121,7 +121,9 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
   let matrixHash = {};
   while(list.length) {
-    list.splice(0).forEach(parentIndex => {
+    let arr = list.splice(0);
+    for(let i = 0, len = arr.length; i < len; i++) {
+      let parentIndex = arr[i];
       let total = __structs[parentIndex][STRUCT_TOTAL] || 0;
       for(let i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
         let {
@@ -217,7 +219,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           mergeBbox(bboxTotal, bbox, sx1, sy1);
         }
       }
-    });
+    }
   }
   if((bboxTotal[2] - bboxTotal[0]) > Cache.MAX || (bboxTotal[3] - bboxTotal[1]) > Cache.MAX) {
     // 标识后续不再尝试生成，重新布局会清空标识
@@ -1260,24 +1262,28 @@ function renderCacheCanvas(renderMode, ctx, root) {
         Cache.draw(ctx, __opacity, matrixEvent, target);
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
+        // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
+        if(offscreenHash.hasOwnProperty(i)) {
+          ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
+        }
       }
       // 自身cache尝试
       else {
+        if(maskStartHash.hasOwnProperty(i)) {
+          let [n, offscreenMask] = maskStartHash[i];
+          let target = inject.getCacheCanvas(width, height, null, 'mask2');
+          offscreenMask.mask = target; // 应用mask用到
+          let j = i + n - 1 + (total || 0);
+          let list = offscreenHash[j];
+          list.push([j, lv, OFFSCREEN_MASK2, {
+            ctx, // 保存等待OFFSCREEN_MASK2时还原
+            target,
+          }]);
+          ctx = target.ctx;
+        }
         let offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow;
         // 这里比较特殊，可能会有__cache但超限没被汇聚到total上，需mock出离屏对象数据，还有可能本身就超限
         if(__cache && __cache.available || __limitCache) {
-          if(maskStartHash.hasOwnProperty(i)) {
-            let [n, offscreenMask] = maskStartHash[i];
-            let target = inject.getCacheCanvas(width, height, null, 'mask2');
-            offscreenMask.mask = target; // 应用mask用到
-            let j = i + n - 1 + (total || 0);
-            let list = offscreenHash[j];
-            list.push([j, lv, OFFSCREEN_MASK2, {
-              ctx, // 保存等待OFFSCREEN_MASK2时还原
-              target,
-            }]);
-            ctx = target.ctx;
-          }
           if(__cache && __cache.available) {
             // 有cache但没生成total的都在这
             if(isValidMbm(mixBlendMode)) {
@@ -1315,8 +1321,15 @@ function renderCacheCanvas(renderMode, ctx, root) {
                 ctx,
                 target: c,
                 matrix: matrixEvent,
+                x: __cache.sx1,
+                y: __cache.sy1,
+                offsetWidth: node.offsetWidth,
+                offsetHeight: node.offsetHeight,
               };
               ctx = c.ctx;
+            }
+            if(visibility !== 'hidden') {
+              Cache.draw(ctx, __opacity, matrixEvent, __cache);
             }
           }
           else {
@@ -1366,11 +1379,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
             list.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
             ctx = offscreenOverflow.target.ctx;
           }
-          // 2种情况的绘制
-          if(__cache && __cache.available && visibility !== 'hidden') {
-            Cache.draw(ctx, __opacity, matrixEvent, __cache);
-          }
-          else if(__limitCache && node instanceof Geom) {
+          if(__limitCache && node instanceof Geom) {
             node.render(renderMode, __refreshLevel, ctx);
           }
         }
@@ -1383,11 +1392,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
         }
         if(display === 'none') {
-          i += (total || 0);
-          // display:none要跳过后面的mask
-          if(hasMask) {
-            i += hasMask;
-          }
+          i += (total || 0) + (hasMask || 0);
         }
       }
     }
@@ -1489,11 +1494,7 @@ function renderCanvas(renderMode, ctx, root) {
     }
     // render后判断可见状态，此时computedStyle才有值，以及svg的virtualDom也要生成
     if(computedStyle[DISPLAY] === 'none') {
-      i += (total || 0);
-      // display:none要跳过后面的mask
-      if(hasMask) {
-        i += hasMask;
-      }
+      i += (total || 0) + (hasMask || 0);
     }
   }
 }

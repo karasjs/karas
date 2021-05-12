@@ -5581,7 +5581,7 @@
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
     var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
     gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // direction全0，即无模糊
+    gl.enableVertexAttribArray(a_texCoords); // direction全0，即无模糊，此时只是进行扩展尺寸操作，还没到模糊所以传0
 
     var u_direction = gl.getUniformLocation(program, 'u_direction');
     gl.uniform2f(u_direction, 0, 0); // 纹理单元
@@ -5590,8 +5590,6 @@
     gl.uniform1i(u_texture, j);
     gl.drawArrays(gl.TRIANGLES, 0, 6); // fbo绑定切换纹理对象和单元索引，同时注意不能向源纹理绘制，因为源是cacheTotal，需要重新生成一个，y方向再来一次
 
-    var tex3 = createTexture(gl, null, j, width, height);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
     /**
@@ -5603,8 +5601,10 @@
 
     var max = 100 / Math.max(width, height);
     var ratio = width / height;
+    var recycle = [tex1]; // 3次过程中新生成的中间纹理需要回收
 
     for (var k = 0; k < 3; k++) {
+      var tex3 = createTexture(gl, null, j, width, height);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
 
       if (width >= height) {
@@ -5615,7 +5615,10 @@
 
       gl.uniform1i(u_texture, i);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+
+      var _tex = createTexture(gl, null, i, width, height);
+
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, _tex, 0);
 
       if (width >= height) {
         gl.uniform2f(u_direction, 0, max * ratio);
@@ -5625,14 +5628,20 @@
 
       gl.uniform1i(u_texture, j);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      tex1 = _tex;
+      recycle.push(tex3, _tex);
     } // 回收
 
 
     gl.deleteBuffer(pointBuffer);
     gl.deleteBuffer(texBuffer);
     gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-    deleteTexture(gl, tex3);
+    gl.disableVertexAttribArray(a_texCoords); // 最后一个是多的，是返回的tex1，不能回收
+
+    recycle.pop();
+    recycle.forEach(function (item) {
+      return deleteTexture(gl, item);
+    });
     return tex1;
   }
   /**
@@ -26125,7 +26134,7 @@
     vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
     frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
     var program = webgl.initShaders(gl, vert, frag);
-    gl.useProgram(program); // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
+    gl.useProgram(program); // 先将cache绘制到一个单独的纹理中，尺寸为fullSize，以便应用cache时纹理尺寸是扩展后的
 
     var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, width, height),
         _genFrameBufferWithTe4 = _slicedToArray(_genFrameBufferWithTe3, 3),

@@ -290,7 +290,7 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_texCoords);
-  // direction全0，即无模糊
+  // direction全0，即无模糊，此时只是进行扩展尺寸操作，还没到模糊所以传0
   let u_direction = gl.getUniformLocation(program, 'u_direction');
   gl.uniform2f(u_direction, 0, 0);
   // 纹理单元
@@ -298,8 +298,6 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
   gl.uniform1i(u_texture, j);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   // fbo绑定切换纹理对象和单元索引，同时注意不能向源纹理绘制，因为源是cacheTotal，需要重新生成一个，y方向再来一次
-  let tex3 = createTexture(gl, null, j, width, height);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
     -1, -1,
@@ -317,7 +315,9 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
    */
   let max = 100 / Math.max(width, height);
   let ratio = width / height;
+  let recycle = [tex1]; // 3次过程中新生成的中间纹理需要回收
   for(let k = 0; k < 3; k++) {
+    let tex3 = createTexture(gl, null, j, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
     if(width >= height) {
       gl.uniform2f(u_direction, max, 0);
@@ -327,7 +327,8 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
     }
     gl.uniform1i(u_texture, i);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex1, 0);
+    let tex2 = createTexture(gl, null, i, width, height);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex2, 0);
     if(width >= height) {
       gl.uniform2f(u_direction, 0, max * ratio);
     }
@@ -336,13 +337,17 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
     }
     gl.uniform1i(u_texture, j);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+    tex1 = tex2;
+    recycle.push(tex3, tex2);
   }
   // 回收
   gl.deleteBuffer(pointBuffer);
   gl.deleteBuffer(texBuffer);
   gl.disableVertexAttribArray(a_position);
   gl.disableVertexAttribArray(a_texCoords);
-  deleteTexture(gl, tex3);
+  // 最后一个是多的，是返回的tex1，不能回收
+  recycle.pop();
+  recycle.forEach(item => deleteTexture(gl, item));
   return tex1;
 }
 

@@ -591,7 +591,7 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
   let program = webgl.initShaders(gl, vert, frag);
   gl.useProgram(program);
-  // 先将cache绘制到一个单独的纹理中，尺寸为fullSize
+  // 先将cache绘制到一个单独的纹理中，尺寸为fullSize，以便应用cache时纹理尺寸是扩展后的
   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
   let j = texCache.findExistTexChannel(cache.page);

@@ -1365,7 +1365,8 @@ function cloneStyle(style, keys) {
     else if(k === FILL || k === STROKE) {
       res[k] = v.map(item => {
         // 渐变
-        if(item.k) {
+        // 可能非法为空
+        if(item && item.k) {
           return util.clone(item);
         }
         // 颜色

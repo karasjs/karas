@@ -17,9 +17,9 @@ class Page {
     size *= number;
     this.__width = size;
     this.__height = size;
-    let offScreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
-    if(offScreen) {
-      this.__offScreen = offScreen;
+    let offscreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
+    if(offscreen) {
+      this.__offscreen = offscreen;
     }
     // 1/0标识n*n个单元格是否空闲可用，一维数组表示
     this.__grid = [];
@@ -92,16 +92,16 @@ class Page {
     return this.__grid;
   }
 
-  get offScreen() {
-    return this.__offScreen;
+  get offscreen() {
+    return this.__offscreen;
   }
 
   get canvas() {
-    return this.offScreen.canvas;
+    return this.offscreen.canvas;
   }
 
   get ctx() {
-    return this.offScreen.ctx;
+    return this.offscreen.ctx;
   }
 
   get update() {
@@ -138,7 +138,7 @@ class Page {
     }
     if(!page) {
       page = new Page(s, n);
-      if(!page.offScreen) {
+      if(!page.offscreen) {
         inject.error('Can not create off-screen for page');
         return;
       }

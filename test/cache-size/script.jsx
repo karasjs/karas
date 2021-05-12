@@ -1,30 +1,13 @@
 karas.refresh.Page.CONFIG = {
-  SIZE: [8, 16, 32, 64, 128, 256],
-  NUMBER: [8,  8,  8,  8,   8,   4],
+  SIZE:   [8, 16, 32, 64],
+  NUMBER: [8,  8,  8,  8],
 };
 
-let json = {
-  tagName: 'canvas',
-  props: {
-    cache: true,
-    width: 360,
-    height: 360,
-  },
-  children: [{
-    tagName: 'div',
-    props: {
-      style: {
-        margin: 2,
-        padding: 2,
-        width: 300,
-        height: 300,
-        background: '#F00',
-      },
-    },
-    children: [
-      'a',
-    ],
-  }]
-};
-
-karas.parse(json, '#test');
+karas.render(
+  <canvas width="360" height="360" cache="1">
+    <div style={{width:300,height:300,background:'#F00'}}>
+      <div style={{width:100,height:100,background:'#00F',filter:'blur(2)'}}>a</div>
+    </div>
+  </canvas>,
+  '#test'
+);

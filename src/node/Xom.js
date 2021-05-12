@@ -20,6 +20,7 @@ import level from '../refresh/level';
 import Cache from '../refresh/Cache';
 import font from '../style/font';
 import bs from '../style/bs';
+import mbm from '../style/mbm';
 import inline from './inline';
 
 const {
@@ -135,6 +136,7 @@ const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
+const { mbmName, isValidMbm } = mbm;
 
 const {
   contain,
@@ -1092,10 +1094,10 @@ class Xom extends Node {
    * x1/x2/x3/x4/y1/y2/y3/y4 坐标
    * break svg判断无变化提前跳出
    * cacheError 离屏申请失败，仅canvas
-   * offScreenBlend 无cache时的离屏canvas，仅canvas
-   * offScreenFilter 无cache时的离屏canvas，仅canvas
-   * offScreenMask 无cache时的离屏canvas，仅canvas
-   * offScreenOverflow 无cache时的离屏canvas，仅canvas
+   * offscreenBlend 无cache时的离屏canvas，仅canvas
+   * offscreenFilter 无cache时的离屏canvas，仅canvas
+   * offscreenMask 无cache时的离屏canvas，仅canvas
+   * offscreenOverflow 无cache时的离屏canvas，仅canvas
    */
   __renderSelf(renderMode, lv, ctx, cache) {
     let {
@@ -1334,14 +1336,12 @@ class Xom extends Node {
       return { limitCache: true };
     }
     // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
-    let offScreenBlend;
-    if(mixBlendMode !== 'normal' && !cache) {
-      mixBlendMode = mixBlendMode.replace(/[A-Z]/, function($0) {
-        return '-' + $0.toLowerCase();
-      });
+    let offscreenBlend;
+    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode) && !cache) {
+      mixBlendMode = mbmName(mixBlendMode);
       let { width, height } = root;
       let c = inject.getCacheCanvas(width, height, null, 'blend');
-      offScreenBlend = {
+      offscreenBlend = {
         ctx,
         target: c,
         mixBlendMode,
@@ -1349,12 +1349,12 @@ class Xom extends Node {
       };
       ctx = c.ctx;
     }
-    let offScreenMask;
+    let offscreenMask;
     if(__hasMask) {
       if(renderMode === mode.CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'mask1');
-        offScreenMask = {
+        offscreenMask = {
           ctx,
           target: c,
           matrix,
@@ -1362,12 +1362,12 @@ class Xom extends Node {
         ctx = c.ctx;
       }
     }
-    let offScreenFilter;
+    let offscreenFilter;
     if(__config[NODE_BLUR_VALUE] > 0) {
       if(renderMode === mode.CANVAS && !cache) {
         let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'filter');
-        offScreenFilter = {
+        let c = inject.getCacheCanvas(width, height, null, 'filter1');
+        offscreenFilter = {
           ctx,
           blur: __config[NODE_BLUR_VALUE],
           target: c,
@@ -1407,21 +1407,21 @@ class Xom extends Node {
       }
     }
     // overflow:hidden，最后判断，filter/mask优先
-    let offScreenOverflow;
+    let offscreenOverflow;
     if(overflow === 'hidden' && display !== 'inline') {
       if(renderMode === mode.CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'overflow');
-        offScreenOverflow = {
+        offscreenOverflow = {
           ctx,
           target: c,
           matrix,
         };
         ctx = c.ctx;
-        offScreenOverflow.x = x1;
-        offScreenOverflow.y = y1;
-        offScreenOverflow.offsetWidth = offsetWidth;
-        offScreenOverflow.offsetHeight = offsetHeight;
+        offscreenOverflow.x = x1;
+        offscreenOverflow.y = y1;
+        offscreenOverflow.offsetWidth = offsetWidth;
+        offscreenOverflow.offsetHeight = offsetHeight;
       }
       else if(renderMode === mode.SVG) {
         let v = {
@@ -1446,10 +1446,10 @@ class Xom extends Node {
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && !cache) {
-      res.offScreenFilter = offScreenFilter;
-      res.offScreenMask = offScreenMask;
-      res.offScreenOverflow = offScreenOverflow;
-      res.offScreenBlend = offScreenBlend;
+      res.offscreenBlend = offscreenBlend;
+      res.offscreenMask = offscreenMask;
+      res.offscreenFilter = offscreenFilter;
+      res.offscreenOverflow = offscreenOverflow;
       ctx.globalAlpha = opacity;
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }

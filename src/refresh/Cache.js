@@ -25,21 +25,21 @@ const {
 // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
 function genSingle(cache, message) {
   let { size, sx1, sy1, width, height, bbox } = cache;
-  let offScreen = inject.getCacheCanvas(width, height, null, message);
-  offScreen.x = 0;
-  offScreen.y = 0;
-  // offScreen.coords = [1, 1];
-  offScreen.bbox = bbox;
-  offScreen.size = size;
-  offScreen.sx1 = sx1;
-  offScreen.sy1 = sy1;
-  offScreen.dx = cache.dx;
-  offScreen.dy = cache.dy;
-  offScreen.dbx = cache.dbx;
-  offScreen.dby = cache.dby;
-  offScreen.width = width;
-  offScreen.height = height;
-  return offScreen;
+  let offscreen = inject.getCacheCanvas(width, height, null, message);
+  offscreen.x = 0;
+  offscreen.y = 0;
+  // offscreen.coords = [1, 1];
+  offscreen.bbox = bbox;
+  offscreen.size = size;
+  offscreen.sx1 = sx1;
+  offscreen.sy1 = sy1;
+  offscreen.dx = cache.dx;
+  offscreen.dy = cache.dy;
+  offscreen.dbx = cache.dbx;
+  offscreen.dby = cache.dby;
+  offscreen.width = width;
+  offscreen.height = height;
+  return offscreen;
 }
 
 class Cache {
@@ -208,24 +208,24 @@ class Cache {
     bbox[1] -= d;
     bbox[2] += d;
     bbox[3] += d;
-    let offScreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
-    offScreen.ctx.filter = `blur(${v}px)`;
-    offScreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
-    offScreen.ctx.filter = 'none';
-    offScreen.draw();
-    offScreen.bbox = bbox;
-    offScreen.x = 0;
-    offScreen.y = 0;
-    offScreen.size = size;
-    offScreen.sx1 = sx1 - d;
-    offScreen.sy1 = sy1 - d;
-    offScreen.dx = cache.dx;
-    offScreen.dy = cache.dy;
-    offScreen.dbx = cache.dbx;
-    offScreen.dby = cache.dby;
-    offScreen.width = width + d * 2;
-    offScreen.height = height + d * 2;
-    return offScreen;
+    let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter1');
+    offscreen.ctx.filter = `blur(${v}px)`;
+    offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
+    offscreen.ctx.filter = 'none';
+    offscreen.draw();
+    offscreen.bbox = bbox;
+    offscreen.x = 0;
+    offscreen.y = 0;
+    offscreen.size = size;
+    offscreen.sx1 = sx1 - d;
+    offscreen.sy1 = sy1 - d;
+    offscreen.dx = cache.dx;
+    offscreen.dy = cache.dy;
+    offscreen.dbx = cache.dbx;
+    offscreen.dby = cache.dby;
+    offscreen.width = width + d * 2;
+    offscreen.height = height + d * 2;
+    return offscreen;
   }
 
   static genMask(target, next, isClip, transform, tfo) {

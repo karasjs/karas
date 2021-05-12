@@ -171,7 +171,7 @@ class Img extends Dom {
   render(renderMode, lv, ctx, cache) {
     let res = super.render(renderMode, lv, ctx, cache);
     let {
-      offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend,
+      offscreenFilter, offscreenMask, offscreenOverflow, offscreenBlend,
     } = res;
     let {
       width, height, isDestroyed,
@@ -192,8 +192,8 @@ class Img extends Dom {
       __loadImg: loadImg,
       root,
     } = this;
-    if(!cache && (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend)) {
-      ctx = (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend).target.ctx;
+    if(!cache && (offscreenFilter || offscreenMask || offscreenOverflow || offscreenBlend)) {
+      ctx = (offscreenFilter || offscreenMask || offscreenOverflow || offscreenBlend).target.ctx;
     }
     // img无children所以total就是cache避免多余生成
     if(renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {

@@ -11842,7 +11842,7 @@
                 setUpdateFlag(_this2);
               },
               __after: function __after() {
-                self.__nextState = null;
+                // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
                 list.forEach(function (cb) {
                   if (isFunction$2(cb)) {
                     cb.call(self);
@@ -24248,7 +24248,8 @@
   function updateCp(cp, props, state) {
     cp.props = props;
     cp.__state = state;
-    cp.__nextState = null;
+    cp.__nextState = null; // 同步在refresh前清除component的新state标识，这样frame动画在after回调中可以新设
+
     var oldS = cp.shadow;
     var oldSr = cp.shadowRoot;
     var oldJson = cp.__cd;
@@ -24614,7 +24615,6 @@
     },
     updateList: updateList,
     check: check,
-    checkCp: checkCp,
     did: did
   };
 

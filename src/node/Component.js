@@ -84,7 +84,7 @@ class Component extends Event {
             setUpdateFlag(this);
           },
           __after: () => {
-            self.__nextState = null;
+            // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
             list.forEach(cb => {
               if(isFunction(cb)) {
                 cb.call(self);

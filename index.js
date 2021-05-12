@@ -9832,7 +9832,7 @@
                 setUpdateFlag(_this2);
               },
               __after: function __after() {
-                self.__nextState = null;
+                // self.__nextState = null;
                 list.forEach(function (cb) {
                   if (isFunction$2(cb)) {
                     cb.call(self);
@@ -24815,7 +24815,7 @@
           }
 
           if (target) {
-            if (mixBlendMode !== 'normal') {
+            if (mixBlendMode === 'normal') {
               ctx.globalCompositeOperation = 'source-over';
             } else {
               ctx.globalCompositeOperation = mixBlendMode.replace(/[A-Z]/, function ($0) {
@@ -31213,7 +31213,7 @@
     Cache: Cache
   };
 
-  var version = "0.57.13";
+  var version = "0.57.14";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

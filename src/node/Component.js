@@ -84,7 +84,7 @@ class Component extends Event {
             setUpdateFlag(this);
           },
           __after: () => {
-            self.__nextState = null;
+            // self.__nextState = null;
             list.forEach(cb => {
               if(isFunction(cb)) {
                 cb.call(self);

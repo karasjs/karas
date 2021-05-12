@@ -322,7 +322,7 @@ function genTotal(renderMode, node, __config, lv, index, total, __structs, cache
         target= __cache;
       }
       if(target) {
-        if(mixBlendMode !== 'normal') {
+        if(mixBlendMode === 'normal') {
           ctx.globalCompositeOperation = 'source-over';
         }
         else {

@@ -1052,11 +1052,12 @@ function renderCacheCanvas(renderMode, ctx, root) {
       }
     }
   }
-  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从小到大的顺序，这样保证子节点在前，前节点在前
+  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+  // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
     mergeList.sort(function(a, b) {
       if(a[1] === b[1]) {
-        return a[0] - b[0];
+        return b[0] - a[0];
       }
       return b[1] - a[1];
     });
@@ -2251,11 +2252,12 @@ function renderWebgl(renderMode, gl, root) {
       }
     }
   }
-  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从小到大，索引从小到大的顺序，这样保证子节点在前
+  // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+  // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
   if(mergeList.length) {
     mergeList.sort(function(a, b) {
       if(a[1] === b[1]) {
-        return a[0] - b[0];
+        return b[0] - a[0];
       }
       return b[1] - a[1];
     });

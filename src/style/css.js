@@ -1353,7 +1353,8 @@ function cloneStyle(style, keys) {
     // 渐变特殊处理
     if(k === BACKGROUND_IMAGE) {
       res[k] = v.map(item => {
-        if(item.k) {
+        // 可能为null
+        if(item && item.k) {
           return util.clone(item);
         }
         else {

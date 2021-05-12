@@ -8263,7 +8263,8 @@
 
       if (k === BACKGROUND_IMAGE) {
         res[k] = v.map(function (item) {
-          if (item.k) {
+          // 可能为null
+          if (item && item.k) {
             return util.clone(item);
           } else {
             return item;

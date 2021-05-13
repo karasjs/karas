@@ -150,7 +150,7 @@ class TexCache {
           else {
             // 可能老的先删除
             if(last) {
-              webgl.deleteTexture(gl, last.texture);
+              gl.deleteTexture(last.texture);
             }
             page.texture = webgl.createTexture(gl, page.canvas, i);
             channels[i] = page;
@@ -250,7 +250,7 @@ class TexCache {
   release(gl) {
     this.channels.forEach(item => {
       if(item) {
-        webgl.deleteTexture(gl, item.texture);
+        gl.deleteTexture(item.texture);
       }
     });
   }

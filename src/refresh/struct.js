@@ -130,7 +130,6 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let list = [index];
   let d = blur.outerSize(blurValue);
   opacityHash[index] = 1;
-  console.warn(node.tagName, bboxTotal);
   // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
   let matrixHash = {};
   while(list.length) {
@@ -555,7 +554,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
-  let mockCache = new MockCache(texture, sx1, sy1, width, height, bboxTotal);
+  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
   texCache.releaseLockChannel(n, mockCache.page);
   return mockCache;
 }
@@ -632,7 +631,7 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   b[1] -= spread;
   b[2] += spread;
   b[3] += spread;
-  let filterCache = new MockCache(texture, sx1, sy1, width, height, b);
+  let filterCache = new MockCache(gl, texture, sx1, sy1, width, height, b);
   texCache.releaseLockChannel(i, filterCache.page);
   return filterCache;
 }
@@ -667,7 +666,7 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   // 同total一样生成一个mockCache
-  let overflowCache = new MockCache(texture, cache.sx1, cache.sy1, width, height, sbox);
+  let overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, width, height, sbox);
   texCache.releaseLockChannel(i, overflowCache.page);
   return overflowCache;
 }
@@ -762,7 +761,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
   }
   gl.useProgram(program);
   webgl.drawMask(gl, i, j, program);
-  webgl.deleteTexture(gl, texture);
+  gl.deleteTexture(texture);
   texCache.releaseLockChannel(i);
   texCache.releaseLockChannel(j);
   // 切换回主程序
@@ -771,7 +770,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer2);
   // 同total一样生成一个mockCache
-  let maskCache = new MockCache(texture2, sx1, sy1, width, height, bbox);
+  let maskCache = new MockCache(gl, texture2, sx1, sy1, width, height, bbox);
   texCache.releaseLockChannel(n, maskCache.page);
   return maskCache;
 }
@@ -1862,10 +1861,9 @@ function renderSvg(renderMode, ctx, root, isFirst) {
 }
 
 function renderWebgl(renderMode, gl, root) {
-  let texCache = root.texCache;
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
-  let { __structs, width, height } = root;
+  let { __structs, width, height, texCache } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let matrixList = [];
@@ -2137,7 +2135,7 @@ function renderWebgl(renderMode, gl, root) {
    * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
    * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
    * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
-   * 超尺寸的给出警告，无法像canvas那样做降级
+   * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
    */
   let n, frameBuffer, texture;
   if(hasMbm) {
@@ -2146,6 +2144,7 @@ function renderWebgl(renderMode, gl, root) {
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
       [STRUCT_NODE]: node,
+      [STRUCT_LV]: lv,
       [STRUCT_TOTAL]: total,
       [STRUCT_HAS_MASK]: hasMask,
     } = __structs[i];
@@ -2155,9 +2154,9 @@ function renderWebgl(renderMode, gl, root) {
       // text特殊之处，__config部分是复用parent的
       let {
         [NODE_CACHE]: __cache,
-        [NODE_MATRIX_EVENT]: matrixEvent,
         [NODE_DOM_PARENT]: {
           __config: {
+            [NODE_MATRIX_EVENT]: matrixEvent,
             [NODE_OPACITY]: __opacity,
           },
         },
@@ -2187,17 +2186,14 @@ function renderWebgl(renderMode, gl, root) {
         },
       } = __config;
       if(display === 'none') {
-        i += (total || 0);
-        if(hasMask) {
-          i += hasMask;
-        }
+        i += (total || 0) + (hasMask || 0);
         continue;
       }
       // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
       // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
       // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cache]);
-      // total的尝试
+      // total和自身cache的尝试
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
         // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -2213,9 +2209,6 @@ function renderWebgl(renderMode, gl, root) {
         }
         else {
           texCache.addTexAndDrawWhenLimit(gl, target, __opacity, m, cx, cy, 0, 0, true);
-        }
-        if(target !== __cache) {
-          i += (total || 0) + (hasMask || 0);
         }
       }
     }

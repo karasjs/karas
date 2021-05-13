@@ -1,9 +1,7 @@
 import inject from '../util/inject';
-import mode from '../node/mode';
 
-let SIZE   = [8,   16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
-// let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
-let NUMBER = [128, 64, 32, 16,   8,   4,   2,    1,    1,    1];
+let SIZE   = [8,   16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+let NUMBER = [128, 64, 32, 16,   8,   4,   2,    1,    1,    1,    1];
 let MAX = SIZE[SIZE.length - 1];
 const HASH_CANVAS = {};
 

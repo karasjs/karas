@@ -5368,10 +5368,6 @@
     gl.activeTexture(gl['TEXTURE' + n]);
     gl.bindTexture(gl.TEXTURE_2D, texture);
   }
-
-  function deleteTexture(gl, tex) {
-    gl.deleteTexture(tex);
-  }
   /**
    * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
    * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
@@ -5639,7 +5635,7 @@
 
     recycle.pop();
     recycle.forEach(function (item) {
-      return deleteTexture(gl, item);
+      return gl.deleteTexture(item);
     });
     return tex1;
   }
@@ -5740,7 +5736,6 @@
     initShaders: initShaders,
     createTexture: createTexture,
     bindTexture: bindTexture,
-    deleteTexture: deleteTexture,
     drawTextureCache: drawTextureCache,
     drawBlur: drawBlur,
     drawOverflow: drawOverflow,
@@ -9122,9 +9117,8 @@
     return TextBox;
   }();
 
-  var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]; // let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
-
-  var NUMBER$1 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1];
+  var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+  var NUMBER$1 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1, 1];
   var MAX = SIZE[SIZE.length - 1];
   var HASH_CANVAS = {};
   var uuid = 0;
@@ -25467,10 +25461,10 @@
    */
 
   var MockCache = /*#__PURE__*/function () {
-    function MockCache(texture, sx1, sy1, width, height, bbox) {
+    function MockCache(gl, texture, sx1, sy1, width, height, bbox) {
       _classCallCheck(this, MockCache);
 
-      // this.coords = [1, 1];
+      this.gl = gl;
       this.x = 0;
       this.y = 0;
       this.sx1 = sx1;
@@ -25489,8 +25483,8 @@
     _createClass(MockCache, [{
       key: "release",
       value: function release() {
-        // TODO: webgl.deleteTexture
         this.available = false;
+        this.gl.deleteTexture(this.page.texture);
       }
     }, {
       key: "page",
@@ -25632,8 +25626,7 @@
 
     var list = [index];
     var d = blur.outerSize(blurValue);
-    opacityHash[index] = 1;
-    console.warn(node.tagName, bboxTotal); // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
+    opacityHash[index] = 1; // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
 
     var matrixHash = {};
 
@@ -26134,7 +26127,7 @@
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer); // 生成的纹理对象本身已绑定一个纹理单元了，释放lock的同时可以给texCache的channel缓存，避免重复上传
 
-    var mockCache = new MockCache(texture, sx1, sy1, width, height, bboxTotal);
+    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
     texCache.releaseLockChannel(n, mockCache.page);
     return mockCache;
   }
@@ -26232,7 +26225,7 @@
     b[1] -= spread;
     b[2] += spread;
     b[3] += spread;
-    var filterCache = new MockCache(texture, sx1, sy1, width, height, b);
+    var filterCache = new MockCache(gl, texture, sx1, sy1, width, height, b);
     texCache.releaseLockChannel(i, filterCache.page);
     return filterCache;
   }
@@ -26275,7 +26268,7 @@
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
 
-    var overflowCache = new MockCache(texture, cache.sx1, cache.sy1, width, height, sbox);
+    var overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, width, height, sbox);
     texCache.releaseLockChannel(i, overflowCache.page);
     return overflowCache;
   }
@@ -26390,7 +26383,7 @@
 
     gl.useProgram(program);
     webgl.drawMask(gl, i, j, program);
-    webgl.deleteTexture(gl, texture);
+    gl.deleteTexture(texture);
     texCache.releaseLockChannel(i);
     texCache.releaseLockChannel(j); // 切换回主程序
 
@@ -26399,7 +26392,7 @@
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer2); // 同total一样生成一个mockCache
 
-    var maskCache = new MockCache(texture2, sx1, sy1, width, height, bbox);
+    var maskCache = new MockCache(gl, texture2, sx1, sy1, width, height, bbox);
     texCache.releaseLockChannel(n, maskCache.page);
     return maskCache;
   }
@@ -27666,12 +27659,12 @@
   }
 
   function renderWebgl(renderMode, gl, root) {
-    var texCache = root.texCache;
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     var __structs = root.__structs,
         width = root.width,
-        height = root.height;
+        height = root.height,
+        texCache = root.texCache;
     var cx = width * 0.5,
         cy = height * 0.5; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 
@@ -27978,7 +27971,7 @@
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
      * 前面循环时有记录是否出现mbm，只有出现才申请，否则不浪费直接输出到主画布
-     * 超尺寸的给出警告，无法像canvas那样做降级
+     * 超尺寸的要走无cache逻辑render，和canvas很像，除了离屏canvas超限，汇总total也会纹理超限
      */
 
 
@@ -27997,6 +27990,7 @@
     for (var _i14 = 0, _len7 = __structs.length; _i14 < _len7; _i14++) {
       var _structs$_i7 = __structs[_i14],
           node = _structs$_i7[STRUCT_NODE$1],
+          lv = _structs$_i7[STRUCT_LV$2],
           total = _structs$_i7[STRUCT_TOTAL$1],
           hasMask = _structs$_i7[STRUCT_HAS_MASK$1];
       var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
@@ -28004,8 +27998,9 @@
       if (node instanceof Text) {
         // text特殊之处，__config部分是复用parent的
         var __cache = __config[NODE_CACHE$5],
-            matrixEvent = __config[NODE_MATRIX_EVENT$3],
-            __opacity = __config[NODE_DOM_PARENT$4].__config[NODE_OPACITY$2];
+            _config$NODE_DOM_PAR2 = __config[NODE_DOM_PARENT$4].__config,
+            matrixEvent = _config$NODE_DOM_PAR2[NODE_MATRIX_EVENT$3],
+            __opacity = _config$NODE_DOM_PAR2[NODE_OPACITY$2];
 
         if (__cache && __cache.available) {
           var m = mx.m2Mat4(matrixEvent, cx, cy);
@@ -28029,19 +28024,14 @@
             mixBlendMode = _config$NODE_COMPUTE3[MIX_BLEND_MODE$3];
 
         if (display === 'none') {
-          _i14 += total || 0;
-
-          if (hasMask) {
-            _i14 += hasMask;
-          }
-
+          _i14 += (total || 0) + (hasMask || 0);
           continue;
         } // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
         // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
         // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
 
 
-        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cache]); // total的尝试
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cache]); // total和自身cache的尝试
 
         if (target) {
           var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -28070,10 +28060,6 @@
             gl.deleteTexture(texture2);
           } else {
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, _m6, cx, cy, 0, 0, true);
-          }
-
-          if (target !== _cache) {
-            _i14 += (total || 0) + (hasMask || 0);
           }
         }
       }
@@ -28315,7 +28301,7 @@
               } else {
                 // 可能老的先删除
                 if (last) {
-                  webgl.deleteTexture(gl, last.texture);
+                  gl.deleteTexture(last.texture);
                 }
 
                 page.texture = webgl.createTexture(gl, page.canvas, _i3);
@@ -28435,7 +28421,7 @@
       value: function release(gl) {
         this.channels.forEach(function (item) {
           if (item) {
-            webgl.deleteTexture(gl, item.texture);
+            gl.deleteTexture(item.texture);
           }
         });
       }

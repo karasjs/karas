@@ -136,10 +136,6 @@ function bindTexture(gl, texture, n) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
 }
 
-function deleteTexture(gl, tex) {
-  gl.deleteTexture(tex);
-}
-
 /**
  * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
  * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
@@ -345,7 +341,7 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
   gl.disableVertexAttribArray(a_texCoords);
   // 最后一个是多的，是返回的tex1，不能回收
   recycle.pop();
-  recycle.forEach(item => deleteTexture(gl, item));
+  recycle.forEach(item => gl.deleteTexture(item));
   return tex1;
 }
 
@@ -483,7 +479,6 @@ export default {
   initShaders,
   createTexture,
   bindTexture,
-  deleteTexture,
   drawTextureCache,
   drawBlur,
   drawOverflow,

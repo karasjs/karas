@@ -5,8 +5,8 @@ import MockPage from './MockPage';
  * 基于此纹理进行filter、mask等后处理渲染
  */
 class MockCache {
-  constructor(texture, sx1, sy1, width, height, bbox) {
-    // this.coords = [1, 1];
+  constructor(gl, texture, sx1, sy1, width, height, bbox) {
+    this.gl = gl;
     this.x = 0;
     this.y = 0;
     this.sx1 = sx1;
@@ -23,8 +23,8 @@ class MockCache {
   }
 
   release() {
-    // TODO: webgl.deleteTexture
     this.available = false;
+    this.gl.deleteTexture(this.page.texture);
   }
 
   get page() {

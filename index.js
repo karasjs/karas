@@ -11108,7 +11108,8 @@
             textBoxes = this.textBoxes,
             cacheStyle = this.cacheStyle,
             __ellipsis = this.__ellipsis,
-            __bp = this.__bp;
+            __bp = this.__bp,
+            __config = this.__config;
 
         if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden' || !textBoxes.length) {
           return false;

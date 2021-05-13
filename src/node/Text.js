@@ -553,7 +553,7 @@ class Text extends Node {
         children: [],
       };
     }
-    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp } = this;
+    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
       return false;

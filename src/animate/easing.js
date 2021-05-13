@@ -122,6 +122,23 @@ let easing = {
   ease: bezier(0.25, 0.1, 0.25, 1),
   easeInOut: bezier(0.42, 0, 0.58, 1),
   cubicBezier: bezier,
+  getInstance(v) {
+    if(Array.isArray(v) && v.length === 4) {
+      return bezier(v[0], v[1], v[2], v[3]);
+    }
+    else if(v) {
+      v = v.toString();
+      let timingFunction;
+      if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(v)) {
+        v = v.match(/[\d.]+/g);
+        timingFunction = bezier(v[0], v[1], v[2], v[3]);
+      }
+      else if(v !== 'getInstance') {
+        timingFunction = this[v];
+      }
+      return timingFunction;
+    }
+  },
 };
 
 easing['ease-in'] = easing.easeIn;

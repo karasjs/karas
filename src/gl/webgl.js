@@ -118,7 +118,7 @@ function createTexture(gl, tex, n, width, height) {
   bindTexture(gl, texture, n);
   // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-  if(width || height) {
+  if(width && height) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
   }
   else {
@@ -134,8 +134,6 @@ function createTexture(gl, tex, n, width, height) {
 function bindTexture(gl, texture, n) {
   gl.activeTexture(gl['TEXTURE' + n]);
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  // let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-  // gl.uniform1i(u_texture, n);
 }
 
 function deleteTexture(gl, tex) {

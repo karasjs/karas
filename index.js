@@ -5351,7 +5351,7 @@
 
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
-    if (width || height) {
+    if (width && height) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
     } else {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
@@ -5366,8 +5366,7 @@
 
   function bindTexture(gl, texture, n) {
     gl.activeTexture(gl['TEXTURE' + n]);
-    gl.bindTexture(gl.TEXTURE_2D, texture); // let u_texture = gl.getUniformLocation(gl.program, 'u_texture' + n);
-    // gl.uniform1i(u_texture, n);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
   }
 
   function deleteTexture(gl, tex) {
@@ -9123,80 +9122,6 @@
     return TextBox;
   }();
 
-  var _TRANSFORMS;
-  var STYLE_KEY$5 = enums.STYLE_KEY,
-      _enums$STYLE_KEY$4 = enums.STYLE_KEY,
-      TRANSLATE_X$1 = _enums$STYLE_KEY$4.TRANSLATE_X,
-      TRANSLATE_Y$1 = _enums$STYLE_KEY$4.TRANSLATE_Y,
-      OPACITY$1 = _enums$STYLE_KEY$4.OPACITY,
-      FILTER$1 = _enums$STYLE_KEY$4.FILTER;
-  var ENUM = {
-    // 低4位表示repaint级别
-    NONE: 0,
-    //                                          0
-    TRANSLATE_X: 1,
-    //                                   1
-    TRANSLATE_Y: 2,
-    //                                  10
-    TRANSFORM: 4,
-    //                                   100
-    TRANSFORM_ALL: 7,
-    //                               111
-    OPACITY: 8,
-    //                                    1000
-    FILTER: 16,
-    //                                   10000
-    MIX_BLEND_MODE: 32,
-    //                          100000
-    REPAINT: 64,
-    //                                1000000
-    // 高位表示reflow
-    REFLOW: 128 //                               10000000
-
-  };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM_ORIGIN, true), _TRANSFORMS);
-  var o$2 = Object.assign({
-    contain: function contain(lv, value) {
-      return (lv & value) > 0;
-    },
-
-    /**
-     * 得出等级
-     * @param k
-     * @returns {number|*}
-     */
-    getLevel: function getLevel(k) {
-      if (o$1.isIgnore(k)) {
-        return ENUM.NONE;
-      }
-
-      if (k === TRANSLATE_X$1) {
-        return ENUM.TRANSLATE_X;
-      } else if (k === TRANSLATE_Y$1) {
-        return ENUM.TRANSLATE_Y;
-      } else if (TRANSFORMS.hasOwnProperty(k)) {
-        return ENUM.TRANSFORM;
-      } else if (k === OPACITY$1) {
-        return ENUM.OPACITY;
-      } else if (k === FILTER$1) {
-        return ENUM.FILTER;
-      }
-
-      if (o$1.isRepaint(k)) {
-        return ENUM.REPAINT;
-      }
-
-      return ENUM.REFLOW;
-    },
-    isReflow: function isReflow(lv) {
-      return !this.isRepaint(lv);
-    },
-    isRepaint: function isRepaint(lv) {
-      return lv < ENUM.REFLOW;
-    }
-  }, ENUM);
-  o$2.TRANSFORMS = TRANSFORMS;
-
   var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]; // let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
 
   var NUMBER$1 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1];
@@ -9746,15 +9671,15 @@
     geom: geom
   };
 
-  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
-      TRANSLATE_X$2 = _enums$STYLE_KEY$5.TRANSLATE_X,
-      TRANSLATE_Y$2 = _enums$STYLE_KEY$5.TRANSLATE_Y,
-      SCALE_X$1 = _enums$STYLE_KEY$5.SCALE_X,
-      SCALE_Y$1 = _enums$STYLE_KEY$5.SCALE_Y,
-      SKEW_X$1 = _enums$STYLE_KEY$5.SKEW_X,
-      SKEW_Y$1 = _enums$STYLE_KEY$5.SKEW_Y,
-      ROTATE_Z$1 = _enums$STYLE_KEY$5.ROTATE_Z,
-      MATRIX$1 = _enums$STYLE_KEY$5.MATRIX;
+  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
+      TRANSLATE_X$1 = _enums$STYLE_KEY$4.TRANSLATE_X,
+      TRANSLATE_Y$1 = _enums$STYLE_KEY$4.TRANSLATE_Y,
+      SCALE_X$1 = _enums$STYLE_KEY$4.SCALE_X,
+      SCALE_Y$1 = _enums$STYLE_KEY$4.SCALE_Y,
+      SKEW_X$1 = _enums$STYLE_KEY$4.SKEW_X,
+      SKEW_Y$1 = _enums$STYLE_KEY$4.SKEW_Y,
+      ROTATE_Z$1 = _enums$STYLE_KEY$4.ROTATE_Z,
+      MATRIX$1 = _enums$STYLE_KEY$4.MATRIX;
   var PX$3 = unit.PX,
       PERCENT$2 = unit.PERCENT;
   var matrix = math.matrix,
@@ -9767,9 +9692,9 @@
       pointInPolygon$1 = geom$1.pointInPolygon;
 
   function calSingle(t, k, v) {
-    if (k === TRANSLATE_X$2) {
+    if (k === TRANSLATE_X$1) {
       t[4] = v;
-    } else if (k === TRANSLATE_Y$2) {
+    } else if (k === TRANSLATE_Y$1) {
       t[5] = v;
     } else if (k === SCALE_X$1) {
       t[0] = v;
@@ -9879,11 +9804,11 @@
   }
 
   function normalizeSingle(k, v, ow, oh) {
-    if (k === TRANSLATE_X$2) {
+    if (k === TRANSLATE_X$1) {
       if (v[1] === PERCENT$2) {
         return v[0] * ow * 0.01;
       }
-    } else if (k === TRANSLATE_Y$2) {
+    } else if (k === TRANSLATE_Y$1) {
       if (v[1] === PERCENT$2) {
         return v[0] * oh * 0.01;
       }
@@ -10006,9 +9931,9 @@
     gaussianWeight: gaussianWeight
   };
 
-  var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
-      TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$6.TRANSFORM_ORIGIN,
-      TRANSFORM$2 = _enums$STYLE_KEY$6.TRANSFORM,
+  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
+      TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$5.TRANSFORM_ORIGIN,
+      TRANSFORM$2 = _enums$STYLE_KEY$5.TRANSFORM,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
@@ -10468,20 +10393,22 @@
     return Cache;
   }();
 
-  var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
-      DISPLAY$1 = _enums$STYLE_KEY$7.DISPLAY,
-      LINE_HEIGHT$1 = _enums$STYLE_KEY$7.LINE_HEIGHT,
-      FONT_SIZE$2 = _enums$STYLE_KEY$7.FONT_SIZE,
-      FONT_FAMILY$2 = _enums$STYLE_KEY$7.FONT_FAMILY,
-      FONT_STYLE$2 = _enums$STYLE_KEY$7.FONT_STYLE,
-      FONT_WEIGHT$2 = _enums$STYLE_KEY$7.FONT_WEIGHT,
-      COLOR$2 = _enums$STYLE_KEY$7.COLOR,
-      VISIBILITY$1 = _enums$STYLE_KEY$7.VISIBILITY,
-      LETTER_SPACING$2 = _enums$STYLE_KEY$7.LETTER_SPACING,
-      OVERFLOW = _enums$STYLE_KEY$7.OVERFLOW,
-      WHITE_SPACE$1 = _enums$STYLE_KEY$7.WHITE_SPACE,
-      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$7.TEXT_OVERFLOW,
-      NODE_CACHE$1 = enums.NODE_KEY.NODE_CACHE;
+  var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
+      DISPLAY$1 = _enums$STYLE_KEY$6.DISPLAY,
+      LINE_HEIGHT$1 = _enums$STYLE_KEY$6.LINE_HEIGHT,
+      FONT_SIZE$2 = _enums$STYLE_KEY$6.FONT_SIZE,
+      FONT_FAMILY$2 = _enums$STYLE_KEY$6.FONT_FAMILY,
+      FONT_STYLE$2 = _enums$STYLE_KEY$6.FONT_STYLE,
+      FONT_WEIGHT$2 = _enums$STYLE_KEY$6.FONT_WEIGHT,
+      COLOR$2 = _enums$STYLE_KEY$6.COLOR,
+      VISIBILITY$1 = _enums$STYLE_KEY$6.VISIBILITY,
+      LETTER_SPACING$2 = _enums$STYLE_KEY$6.LETTER_SPACING,
+      OVERFLOW = _enums$STYLE_KEY$6.OVERFLOW,
+      WHITE_SPACE$1 = _enums$STYLE_KEY$6.WHITE_SPACE,
+      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$6.TEXT_OVERFLOW,
+      _enums$NODE_KEY$2 = enums.NODE_KEY,
+      NODE_CACHE$1 = _enums$NODE_KEY$2.NODE_CACHE,
+      NODE_LIMIT_CACHE = _enums$NODE_KEY$2.NODE_LIMIT_CACHE;
   var ELLIPSIS = textCache.ELLIPSIS;
 
   var Text = /*#__PURE__*/function (_Node) {
@@ -10688,7 +10615,9 @@
             root = this.root,
             __ff = this.__ff,
             __key = this.__key;
-        textBoxes.splice(0); // 空内容w/h都为0可以提前跳出
+        textBoxes.splice(0);
+        var __config = this.__config;
+        __config[NODE_LIMIT_CACHE] = false; // 空内容w/h都为0可以提前跳出
 
         if (isDestroyed || currentStyle[DISPLAY$1] === 'none' || !content) {
           return lineClampCount;
@@ -11134,8 +11063,11 @@
               this.__config[NODE_CACHE$1] = __cache;
               __cache.__available = true;
               ctx = __cache.ctx;
-              dx = -sx + __cache.x;
-              dy = -sy + __cache.y;
+              dx += -sx + __cache.x;
+              dy += -sy + __cache.y;
+              __config[NODE_LIMIT_CACHE] = false;
+            } else {
+              __config[NODE_LIMIT_CACHE] = true;
             }
           }
 
@@ -11322,13 +11254,13 @@
 
   Text.prototype.__renderByMask = Text.prototype.render;
 
-  var _enums$NODE_KEY$2 = enums.NODE_KEY,
-      NODE_DOM_PARENT = _enums$NODE_KEY$2.NODE_DOM_PARENT,
-      NODE_STYLE = _enums$NODE_KEY$2.NODE_STYLE,
-      NODE_CURRENT_STYLE = _enums$NODE_KEY$2.NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$2.NODE_COMPUTED_STYLE,
-      NODE_MATRIX = _enums$NODE_KEY$2.NODE_MATRIX,
-      NODE_MATRIX_EVENT = _enums$NODE_KEY$2.NODE_MATRIX_EVENT;
+  var _enums$NODE_KEY$3 = enums.NODE_KEY,
+      NODE_DOM_PARENT = _enums$NODE_KEY$3.NODE_DOM_PARENT,
+      NODE_STYLE = _enums$NODE_KEY$3.NODE_STYLE,
+      NODE_CURRENT_STYLE = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$3.NODE_COMPUTED_STYLE,
+      NODE_MATRIX = _enums$NODE_KEY$3.NODE_MATRIX,
+      NODE_MATRIX_EVENT = _enums$NODE_KEY$3.NODE_MATRIX_EVENT;
   var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
       TYPE_CP$1 = $$type.TYPE_CP;
@@ -12117,9 +12049,9 @@
     };
   });
 
-  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
-      SCALE_X$2 = _enums$STYLE_KEY$8.SCALE_X,
-      SCALE_Y$2 = _enums$STYLE_KEY$8.SCALE_Y;
+  var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
+      SCALE_X$2 = _enums$STYLE_KEY$7.SCALE_X,
+      SCALE_Y$2 = _enums$STYLE_KEY$7.SCALE_Y;
   var PERCENT$3 = unit.PERCENT,
       NUMBER$2 = unit.NUMBER;
 
@@ -12139,9 +12071,9 @@
     matrixResize: matrixResize
   };
 
-  var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
-      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
+  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
+      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
       NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$2 = util.clone,
       joinArr$1 = util.joinArr;
@@ -12920,47 +12852,64 @@
     easeOut: bezier(0, 0, 0.58, 1),
     ease: bezier(0.25, 0.1, 0.25, 1),
     easeInOut: bezier(0.42, 0, 0.58, 1),
-    cubicBezier: bezier
+    cubicBezier: bezier,
+    getInstance: function getInstance(v) {
+      if (Array.isArray(v) && v.length === 4) {
+        return bezier(v[0], v[1], v[2], v[3]);
+      } else if (v) {
+        v = v.toString();
+        var timingFunction;
+
+        if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(v)) {
+          v = v.match(/[\d.]+/g);
+          timingFunction = bezier(v[0], v[1], v[2], v[3]);
+        } else if (v !== 'getInstance') {
+          timingFunction = this[v];
+        }
+
+        return timingFunction;
+      }
+    }
   };
   easing['ease-in'] = easing.easeIn;
   easing['ease-out'] = easing.easeOut;
   easing['ease-in-out'] = easing.easeInOut;
 
-  var _enums$STYLE_KEY$a = enums.STYLE_KEY,
-      FILTER$2 = _enums$STYLE_KEY$a.FILTER,
-      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$a.TRANSFORM_ORIGIN,
-      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_Y,
-      BOX_SHADOW$1 = _enums$STYLE_KEY$a.BOX_SHADOW,
-      TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
-      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$a.BACKGROUND_SIZE,
-      FONTSIZE = _enums$STYLE_KEY$a.FONTSIZE,
-      FLEX_BASIS$1 = _enums$STYLE_KEY$a.FLEX_BASIS,
-      FLEX_DIRECTION$1 = _enums$STYLE_KEY$a.FLEX_DIRECTION,
-      WIDTH$2 = _enums$STYLE_KEY$a.WIDTH,
-      HEIGHT$2 = _enums$STYLE_KEY$a.HEIGHT,
-      MARGIN_RIGHT = _enums$STYLE_KEY$a.MARGIN_RIGHT,
-      MARGIN_TOP = _enums$STYLE_KEY$a.MARGIN_TOP,
-      MARGIN_LEFT = _enums$STYLE_KEY$a.MARGIN_LEFT,
-      MARGIN_BOTTOM = _enums$STYLE_KEY$a.MARGIN_BOTTOM,
-      PADDING_LEFT$1 = _enums$STYLE_KEY$a.PADDING_LEFT,
-      PADDING_BOTTOM$1 = _enums$STYLE_KEY$a.PADDING_BOTTOM,
-      PADDING_RIGHT$1 = _enums$STYLE_KEY$a.PADDING_RIGHT,
-      PADDING_TOP$1 = _enums$STYLE_KEY$a.PADDING_TOP,
-      TOP = _enums$STYLE_KEY$a.TOP,
-      RIGHT = _enums$STYLE_KEY$a.RIGHT,
-      BOTTOM = _enums$STYLE_KEY$a.BOTTOM,
-      LEFT = _enums$STYLE_KEY$a.LEFT,
-      LINE_HEIGHT$2 = _enums$STYLE_KEY$a.LINE_HEIGHT,
-      OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
-      Z_INDEX$1 = _enums$STYLE_KEY$a.Z_INDEX,
-      TRANSFORM$3 = _enums$STYLE_KEY$a.TRANSFORM,
-      COLOR$3 = _enums$STYLE_KEY$a.COLOR,
-      FONT_WEIGHT$3 = _enums$STYLE_KEY$a.FONT_WEIGHT,
-      FONT_STYLE$3 = _enums$STYLE_KEY$a.FONT_STYLE,
-      FONT_FAMILY$3 = _enums$STYLE_KEY$a.FONT_FAMILY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$a.TEXT_ALIGN,
-      MATRIX$2 = _enums$STYLE_KEY$a.MATRIX,
+  var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
+      FILTER$1 = _enums$STYLE_KEY$9.FILTER,
+      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
+      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
+      BOX_SHADOW$1 = _enums$STYLE_KEY$9.BOX_SHADOW,
+      TRANSLATE_X$2 = _enums$STYLE_KEY$9.TRANSLATE_X,
+      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$9.BACKGROUND_SIZE,
+      FONTSIZE = _enums$STYLE_KEY$9.FONTSIZE,
+      FLEX_BASIS$1 = _enums$STYLE_KEY$9.FLEX_BASIS,
+      FLEX_DIRECTION$1 = _enums$STYLE_KEY$9.FLEX_DIRECTION,
+      WIDTH$2 = _enums$STYLE_KEY$9.WIDTH,
+      HEIGHT$2 = _enums$STYLE_KEY$9.HEIGHT,
+      MARGIN_RIGHT = _enums$STYLE_KEY$9.MARGIN_RIGHT,
+      MARGIN_TOP = _enums$STYLE_KEY$9.MARGIN_TOP,
+      MARGIN_LEFT = _enums$STYLE_KEY$9.MARGIN_LEFT,
+      MARGIN_BOTTOM = _enums$STYLE_KEY$9.MARGIN_BOTTOM,
+      PADDING_LEFT$1 = _enums$STYLE_KEY$9.PADDING_LEFT,
+      PADDING_BOTTOM$1 = _enums$STYLE_KEY$9.PADDING_BOTTOM,
+      PADDING_RIGHT$1 = _enums$STYLE_KEY$9.PADDING_RIGHT,
+      PADDING_TOP$1 = _enums$STYLE_KEY$9.PADDING_TOP,
+      TOP = _enums$STYLE_KEY$9.TOP,
+      RIGHT = _enums$STYLE_KEY$9.RIGHT,
+      BOTTOM = _enums$STYLE_KEY$9.BOTTOM,
+      LEFT = _enums$STYLE_KEY$9.LEFT,
+      LINE_HEIGHT$2 = _enums$STYLE_KEY$9.LINE_HEIGHT,
+      OPACITY$1 = _enums$STYLE_KEY$9.OPACITY,
+      Z_INDEX$1 = _enums$STYLE_KEY$9.Z_INDEX,
+      TRANSFORM$3 = _enums$STYLE_KEY$9.TRANSFORM,
+      COLOR$3 = _enums$STYLE_KEY$9.COLOR,
+      FONT_WEIGHT$3 = _enums$STYLE_KEY$9.FONT_WEIGHT,
+      FONT_STYLE$3 = _enums$STYLE_KEY$9.FONT_STYLE,
+      FONT_FAMILY$3 = _enums$STYLE_KEY$9.FONT_FAMILY,
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$9.TEXT_ALIGN,
+      MATRIX$2 = _enums$STYLE_KEY$9.MATRIX,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_STYLE = _enums$UPDATE_KEY.UPDATE_STYLE,
@@ -13162,7 +13111,7 @@
 
       res[1] = [nm[0] - pm[0], nm[1] - pm[1], nm[2] - pm[2], nm[3] - pm[3], nm[4] - pm[4], nm[5] - pm[5]];
       return res;
-    } else if (k === FILTER$2) {
+    } else if (k === FILTER$1) {
       // 目前只有1个blur，可以简单处理
       if (!p || !p.length) {
         res[1] = n[0][1];
@@ -13271,7 +13220,7 @@
 
         res[1] = _v6;
       } else if (p[1] === PX$5 && n[1] === PERCENT$5) {
-        var _v7 = n[0] * 0.01 * target[k === TRANSLATE_X$3 ? 'outerWidth' : 'outerHeight'];
+        var _v7 = n[0] * 0.01 * target[k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight'];
 
         _v7 = _v7 - p[0];
 
@@ -13281,7 +13230,7 @@
 
         res[1] = _v7;
       } else if (p[1] === PERCENT$5 && n[1] === PX$5) {
-        var _v8 = n[0] * 100 / target[k === TRANSLATE_X$3 ? 'outerWidth' : 'outerHeight'];
+        var _v8 = n[0] * 100 / target[k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight'];
 
         _v8 = _v8 - p[0];
 
@@ -13735,7 +13684,7 @@
                 res[1] = n - p;
               }
             }
-    } else if (k === OPACITY$2 || k === Z_INDEX$1) {
+    } else if (k === OPACITY$1 || k === Z_INDEX$1) {
       if (n === p) {
         return;
       }
@@ -13788,10 +13737,7 @@
     var timingFunction;
 
     if (ea) {
-      if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
-        var v = ea.match(/[\d.]+/g);
-        timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
-      } else if (timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea)) {
+      if (timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea)) {
         var steps = parseInt(timingFunction[1]);
         var stepsD = timingFunction[2];
 
@@ -13806,7 +13752,7 @@
           return percent;
         };
       } else {
-        timingFunction = easing[ea];
+        timingFunction = easing.getInstance(ea);
       }
     }
 
@@ -13853,7 +13799,7 @@
         if (v) {
           st[0] += v * percent;
         }
-      } else if (k === FILTER$2) {
+      } else if (k === FILTER$1) {
         // 只有1个样式声明了filter另外一个为空
         if (!st) {
           st = style[k] = [['blur', 0]];
@@ -14051,7 +13997,7 @@
               }
             }
           }
-        } else if (k === OPACITY$2 || k === Z_INDEX$1) {
+        } else if (k === OPACITY$1 || k === Z_INDEX$1) {
           style[k] += v * percent;
         }
     };
@@ -15434,6 +15380,80 @@
     return Animation;
   }(Event);
 
+  var _TRANSFORMS;
+  var STYLE_KEY$5 = enums.STYLE_KEY,
+      _enums$STYLE_KEY$a = enums.STYLE_KEY,
+      TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
+      TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
+      OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
+      FILTER$2 = _enums$STYLE_KEY$a.FILTER;
+  var ENUM = {
+    // 低4位表示repaint级别
+    NONE: 0,
+    //                                          0
+    TRANSLATE_X: 1,
+    //                                   1
+    TRANSLATE_Y: 2,
+    //                                  10
+    TRANSFORM: 4,
+    //                                   100
+    TRANSFORM_ALL: 7,
+    //                               111
+    OPACITY: 8,
+    //                                    1000
+    FILTER: 16,
+    //                                   10000
+    MIX_BLEND_MODE: 32,
+    //                          100000
+    REPAINT: 64,
+    //                                1000000
+    // 高位表示reflow
+    REFLOW: 128 //                               10000000
+
+  };
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var o$2 = Object.assign({
+    contain: function contain(lv, value) {
+      return (lv & value) > 0;
+    },
+
+    /**
+     * 得出等级
+     * @param k
+     * @returns {number|*}
+     */
+    getLevel: function getLevel(k) {
+      if (o$1.isIgnore(k)) {
+        return ENUM.NONE;
+      }
+
+      if (k === TRANSLATE_X$3) {
+        return ENUM.TRANSLATE_X;
+      } else if (k === TRANSLATE_Y$2) {
+        return ENUM.TRANSLATE_Y;
+      } else if (TRANSFORMS.hasOwnProperty(k)) {
+        return ENUM.TRANSFORM;
+      } else if (k === OPACITY$2) {
+        return ENUM.OPACITY;
+      } else if (k === FILTER$2) {
+        return ENUM.FILTER;
+      }
+
+      if (o$1.isRepaint(k)) {
+        return ENUM.REPAINT;
+      }
+
+      return ENUM.REFLOW;
+    },
+    isReflow: function isReflow(lv) {
+      return !this.isRepaint(lv);
+    },
+    isRepaint: function isRepaint(lv) {
+      return lv < ENUM.REFLOW;
+    }
+  }, ENUM);
+  o$2.TRANSFORMS = TRANSFORMS;
+
   var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
   var canvasPolygon$4 = painter.canvasPolygon,
@@ -15814,9 +15834,11 @@
   };
 
   function mbmName(v) {
-    return v.replace(/[A-Z]/, function ($0) {
-      return '-' + $0.toLowerCase();
-    });
+    if (v) {
+      return v.replace(/[A-Z]/, function ($0) {
+        return '-' + $0.toLowerCase();
+      });
+    }
   }
 
   function isValidMbm(v) {
@@ -16080,29 +16102,29 @@
       UPDATE_KEYS$1 = _enums$UPDATE_KEY$1.UPDATE_KEYS,
       UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
       STRUCT_HAS_MASK = enums.STRUCT_KEY.STRUCT_HAS_MASK,
-      _enums$NODE_KEY$3 = enums.NODE_KEY,
-      NODE_TAG_NAME = _enums$NODE_KEY$3.NODE_TAG_NAME,
-      NODE_CACHE_STYLE = _enums$NODE_KEY$3.NODE_CACHE_STYLE,
-      NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$3.NODE_COMPUTED_STYLE,
-      NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
-      NODE_STRUCT$1 = _enums$NODE_KEY$3.NODE_STRUCT,
-      NODE_OPACITY$1 = _enums$NODE_KEY$3.NODE_OPACITY,
-      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$3.NODE_MATRIX_EVENT,
-      NODE_MATRIX$1 = _enums$NODE_KEY$3.NODE_MATRIX,
-      NODE_LIMIT_CACHE = _enums$NODE_KEY$3.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE = _enums$NODE_KEY$3.NODE_BLUR_VALUE,
-      NODE_HAS_CONTENT$1 = _enums$NODE_KEY$3.NODE_HAS_CONTENT,
-      NODE_REFRESH_LV = _enums$NODE_KEY$3.NODE_REFRESH_LV,
-      NODE_CACHE$2 = _enums$NODE_KEY$3.NODE_CACHE,
-      NODE_CACHE_TOTAL = _enums$NODE_KEY$3.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$1 = _enums$NODE_KEY$3.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK = _enums$NODE_KEY$3.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$3.NODE_CACHE_OVERFLOW,
-      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$3.NODE_IS_DESTROYED,
-      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$3.NODE_DEFS_CACHE,
-      NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
-      NODE_IS_INLINE = _enums$NODE_KEY$3.NODE_IS_INLINE;
+      _enums$NODE_KEY$4 = enums.NODE_KEY,
+      NODE_TAG_NAME = _enums$NODE_KEY$4.NODE_TAG_NAME,
+      NODE_CACHE_STYLE = _enums$NODE_KEY$4.NODE_CACHE_STYLE,
+      NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$4.NODE_COMPUTED_STYLE,
+      NODE_STYLE$1 = _enums$NODE_KEY$4.NODE_STYLE,
+      NODE_STRUCT$1 = _enums$NODE_KEY$4.NODE_STRUCT,
+      NODE_OPACITY$1 = _enums$NODE_KEY$4.NODE_OPACITY,
+      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$4.NODE_MATRIX_EVENT,
+      NODE_MATRIX$1 = _enums$NODE_KEY$4.NODE_MATRIX,
+      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$4.NODE_LIMIT_CACHE,
+      NODE_BLUR_VALUE = _enums$NODE_KEY$4.NODE_BLUR_VALUE,
+      NODE_HAS_CONTENT$1 = _enums$NODE_KEY$4.NODE_HAS_CONTENT,
+      NODE_REFRESH_LV = _enums$NODE_KEY$4.NODE_REFRESH_LV,
+      NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
+      NODE_CACHE_TOTAL = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$1 = _enums$NODE_KEY$4.NODE_CACHE_FILTER,
+      NODE_CACHE_MASK = _enums$NODE_KEY$4.NODE_CACHE_MASK,
+      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$4.NODE_CACHE_OVERFLOW,
+      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$4.NODE_IS_DESTROYED,
+      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
+      NODE_DOM_PARENT$1 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
+      NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE;
   var AUTO$3 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$6 = unit.PERCENT,
@@ -16358,7 +16380,7 @@
           lx: data.lx
         };
         __config[NODE_REFRESH_LV] = REFLOW;
-        __config[NODE_LIMIT_CACHE] = false;
+        __config[NODE_LIMIT_CACHE$1] = false;
         var isRealInline = __config[NODE_IS_INLINE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
 
         if (!isVirtual) {
@@ -17231,9 +17253,9 @@
           // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
           if (!hasContent && this.__releaseWhenEmpty(__cache)) {
             res["break"] = true;
-            __config[NODE_LIMIT_CACHE] = false;
+            __config[NODE_LIMIT_CACHE$1] = false;
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-          else if (!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
+          else if (!__config[NODE_LIMIT_CACHE$1] && (!__cache || !__cache.available)) {
               var bbox = this.bbox;
 
               if (__cache) {
@@ -17267,7 +17289,7 @@
                   res.y6 = y6 += dy;
                 }
               } else {
-                __config[NODE_LIMIT_CACHE] = true;
+                __config[NODE_LIMIT_CACHE$1] = true;
                 __cache = null;
               }
 
@@ -17381,7 +17403,7 @@
         } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl则忽略绘制
 
 
-        if ((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE]) {
+        if ((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE$1]) {
           return {
             limitCache: true
           };
@@ -18511,7 +18533,7 @@
         this.__sx6 += diff;
 
         if (diff < 0) {
-          this.__config[NODE_LIMIT_CACHE] = false;
+          this.__config[NODE_LIMIT_CACHE$1] = false;
         }
 
         if (lv !== undefined) {
@@ -18531,7 +18553,7 @@
         this.__sy6 += diff;
 
         if (diff < 0) {
-          this.__config[NODE_LIMIT_CACHE] = false;
+          this.__config[NODE_LIMIT_CACHE$1] = false;
         }
 
         if (lv !== undefined) {
@@ -19495,12 +19517,12 @@
       FLEX_WRAP$1 = _enums$STYLE_KEY$f.FLEX_WRAP,
       ALIGN_CONTENT$1 = _enums$STYLE_KEY$f.ALIGN_CONTENT,
       OVERFLOW$2 = _enums$STYLE_KEY$f.OVERFLOW,
-      _enums$NODE_KEY$4 = enums.NODE_KEY,
-      NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
-      NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
-      NODE_STRUCT$2 = _enums$NODE_KEY$4.NODE_STRUCT,
-      NODE_DOM_PARENT$2 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
-      NODE_IS_INLINE$1 = _enums$NODE_KEY$4.NODE_IS_INLINE,
+      _enums$NODE_KEY$5 = enums.NODE_KEY,
+      NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$5.NODE_CURRENT_STYLE,
+      NODE_STYLE$2 = _enums$NODE_KEY$5.NODE_STYLE,
+      NODE_STRUCT$2 = _enums$NODE_KEY$5.NODE_STRUCT,
+      NODE_DOM_PARENT$2 = _enums$NODE_KEY$5.NODE_DOM_PARENT,
+      NODE_IS_INLINE$1 = _enums$NODE_KEY$5.NODE_IS_INLINE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -22475,11 +22497,11 @@
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
       UPDATE_IMG = _enums$UPDATE_KEY$2.UPDATE_IMG,
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
-      _enums$NODE_KEY$5 = enums.NODE_KEY,
-      NODE_CACHE$3 = _enums$NODE_KEY$5.NODE_CACHE,
-      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$5.NODE_CACHE_TOTAL,
-      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$5.NODE_DEFS_CACHE,
-      NODE_IS_MASK = _enums$NODE_KEY$5.NODE_IS_MASK;
+      _enums$NODE_KEY$6 = enums.NODE_KEY,
+      NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
+      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$6.NODE_CACHE_TOTAL,
+      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
+      NODE_IS_MASK = _enums$NODE_KEY$6.NODE_IS_MASK;
   var AUTO$6 = unit.AUTO,
       PX$9 = unit.PX,
       PERCENT$9 = unit.PERCENT,
@@ -23263,18 +23285,18 @@
       STROKE_DASHARRAY_STR = _enums$STYLE_KEY$h.STROKE_DASHARRAY_STR,
       FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
       VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
-      _enums$NODE_KEY$6 = enums.NODE_KEY,
-      NODE_CACHE_PROPS = _enums$NODE_KEY$6.NODE_CACHE_PROPS,
-      NODE_CURRENT_PROPS = _enums$NODE_KEY$6.NODE_CURRENT_PROPS,
-      NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$6.NODE_CURRENT_STYLE,
-      NODE_IS_MASK$1 = _enums$NODE_KEY$6.NODE_IS_MASK,
-      NODE_STYLE$3 = _enums$NODE_KEY$6.NODE_STYLE,
-      NODE_CACHE$4 = _enums$NODE_KEY$6.NODE_CACHE,
-      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$6.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$6.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK$1 = _enums$NODE_KEY$6.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$6.NODE_CACHE_OVERFLOW,
-      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$6.NODE_DEFS_CACHE;
+      _enums$NODE_KEY$7 = enums.NODE_KEY,
+      NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
+      NODE_CURRENT_PROPS = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
+      NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
+      NODE_IS_MASK$1 = _enums$NODE_KEY$7.NODE_IS_MASK,
+      NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
+      NODE_CACHE$4 = _enums$NODE_KEY$7.NODE_CACHE,
+      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$7.NODE_CACHE_FILTER,
+      NODE_CACHE_MASK$1 = _enums$NODE_KEY$7.NODE_CACHE_MASK,
+      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$7.NODE_CACHE_OVERFLOW,
+      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE;
   var AUTO$7 = unit.AUTO,
       PX$a = unit.PX,
       PERCENT$a = unit.PERCENT;
@@ -24229,11 +24251,11 @@
     return Geom;
   }(Xom$1);
 
-  var _enums$NODE_KEY$7 = enums.NODE_KEY,
-      NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
-      NODE_DOM_PARENT$3 = _enums$NODE_KEY$7.NODE_DOM_PARENT,
-      NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$7.NODE_MATRIX_EVENT,
-      NODE_STRUCT$3 = _enums$NODE_KEY$7.NODE_STRUCT;
+  var _enums$NODE_KEY$8 = enums.NODE_KEY,
+      NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
+      NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
+      NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
+      NODE_STRUCT$3 = _enums$NODE_KEY$8.NODE_STRUCT;
   var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,
       TYPE_CP$2 = $$type.TYPE_CP;
@@ -25458,6 +25480,10 @@
       this.bbox = bbox;
       this.available = true;
       this.__page = new MockPage(texture, width, height);
+      this.dx = -bbox[0];
+      this.dy = -bbox[1];
+      this.dbx = sx1 - bbox[0];
+      this.dby = sy1 - bbox[1];
     }
 
     _createClass(MockCache, [{
@@ -25523,24 +25549,24 @@
       FILL$2 = _enums$STYLE_KEY$i.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$i.TRANSFORM,
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
-      _enums$NODE_KEY$8 = enums.NODE_KEY,
-      NODE_CACHE$5 = _enums$NODE_KEY$8.NODE_CACHE,
-      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$8.NODE_CACHE_TOTAL,
-      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$8.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$2 = _enums$NODE_KEY$8.NODE_CACHE_MASK,
-      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$8.NODE_CACHE_FILTER,
-      NODE_MATRIX$2 = _enums$NODE_KEY$8.NODE_MATRIX,
-      NODE_MATRIX_EVENT$3 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
-      NODE_OPACITY$2 = _enums$NODE_KEY$8.NODE_OPACITY,
-      NODE_COMPUTED_STYLE$4 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
-      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
-      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$8.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$8.NODE_BLUR_VALUE,
-      NODE_REFRESH_LV$1 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
-      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
-      NODE_DEFS_CACHE$6 = _enums$NODE_KEY$8.NODE_DEFS_CACHE,
-      NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
-      NODE_DOM_PARENT$4 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
+      _enums$NODE_KEY$9 = enums.NODE_KEY,
+      NODE_CACHE$5 = _enums$NODE_KEY$9.NODE_CACHE,
+      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
+      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$2 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
+      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
+      NODE_MATRIX$2 = _enums$NODE_KEY$9.NODE_MATRIX,
+      NODE_MATRIX_EVENT$3 = _enums$NODE_KEY$9.NODE_MATRIX_EVENT,
+      NODE_OPACITY$2 = _enums$NODE_KEY$9.NODE_OPACITY,
+      NODE_COMPUTED_STYLE$4 = _enums$NODE_KEY$9.NODE_COMPUTED_STYLE,
+      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$9.NODE_CURRENT_STYLE,
+      NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$9.NODE_LIMIT_CACHE,
+      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$9.NODE_BLUR_VALUE,
+      NODE_REFRESH_LV$1 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
+      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
+      NODE_DEFS_CACHE$6 = _enums$NODE_KEY$9.NODE_DEFS_CACHE,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$9.NODE_IS_MASK,
+      NODE_DOM_PARENT$4 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
@@ -25606,7 +25632,8 @@
 
     var list = [index];
     var d = blur.outerSize(blurValue);
-    opacityHash[index] = 1; // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
+    opacityHash[index] = 1;
+    console.warn(node.tagName, bboxTotal); // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
 
     var matrixHash = {};
 
@@ -25630,7 +25657,7 @@
           var __sx1 = node2.__sx1,
               __sy1 = node2.__sy1,
               _node2$__config = node2.__config,
-              __limitCache = _node2$__config[NODE_LIMIT_CACHE$1],
+              __limitCache = _node2$__config[NODE_LIMIT_CACHE$2],
               __cache = _node2$__config[NODE_CACHE$5],
               __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$3],
               __cacheFilter = _node2$__config[NODE_CACHE_FILTER$3],
@@ -25724,7 +25751,7 @@
 
     if (bboxTotal[2] - bboxTotal[0] > MAX || bboxTotal[3] - bboxTotal[1] > MAX) {
       // 标识后续不再尝试生成，重新布局会清空标识
-      __config[NODE_LIMIT_CACHE$1] = true;
+      __config[NODE_LIMIT_CACHE$2] = true;
       return;
     }
 
@@ -26066,13 +26093,36 @@
           var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
 
           if (target) {
-            var _m3 = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+            var _m3 = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy); // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
 
-            texCache.addTexAndDrawWhenLimit(gl, target, opacity, _m3, cx, cy, dx, dy);
+
+            if (isValidMbm$2(mixBlendMode)) {
+              texCache.refresh(gl, cx, cy);
+
+              var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, width, height),
+                  _genFrameBufferWithTe4 = _slicedToArray(_genFrameBufferWithTe3, 3),
+                  n2 = _genFrameBufferWithTe4[0],
+                  frameBuffer2 = _genFrameBufferWithTe4[1],
+                  texture2 = _genFrameBufferWithTe4[2];
+
+              texCache.addTexAndDrawWhenLimit(gl, target, opacity, _m3, cx, cy, dx, dy);
+              texCache.refresh(gl, cx, cy); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
+
+              var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
+
+              var _genMbmWebgl2 = _slicedToArray(_genMbmWebgl, 3);
+
+              n = _genMbmWebgl2[0];
+              frameBuffer = _genMbmWebgl2[1];
+              texture = _genMbmWebgl2[2];
+              gl.deleteFramebuffer(frameBuffer2);
+              gl.deleteTexture(texture2);
+            } else {
+              texCache.addTexAndDrawWhenLimit(gl, target, opacity, _m3, cx, cy, dx, dy);
+            }
 
             if (target !== __cache) {
-              i += _total4 || 0;
-              i += hasMask || 0;
+              i += (_total4 || 0) + (hasMask || 0);
             }
           }
         }
@@ -26149,11 +26199,11 @@
     var program = webgl.initShaders(gl, vert, frag);
     gl.useProgram(program); // 先将cache绘制到一个单独的纹理中，尺寸为fullSize，以便应用cache时纹理尺寸是扩展后的
 
-    var _genFrameBufferWithTe3 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe4 = _slicedToArray(_genFrameBufferWithTe3, 3),
-        i = _genFrameBufferWithTe4[0],
-        frameBuffer = _genFrameBufferWithTe4[1],
-        texture = _genFrameBufferWithTe4[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
+        i = _genFrameBufferWithTe6[0],
+        frameBuffer = _genFrameBufferWithTe6[1],
+        texture = _genFrameBufferWithTe6[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -26198,11 +26248,11 @@
     var width = sbox[2] - sbox[0],
         height = sbox[3] - sbox[1]; // 生成最终纹理，尺寸为被遮罩节点大小
 
-    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
-        i = _genFrameBufferWithTe6[0],
-        frameBuffer = _genFrameBufferWithTe6[1],
-        texture = _genFrameBufferWithTe6[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
+        i = _genFrameBufferWithTe8[0],
+        frameBuffer = _genFrameBufferWithTe8[1],
+        texture = _genFrameBufferWithTe8[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -26258,11 +26308,11 @@
 
     inverse = mx.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
 
-    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
-        i = _genFrameBufferWithTe8[0],
-        frameBuffer = _genFrameBufferWithTe8[1],
-        texture = _genFrameBufferWithTe8[2];
+    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
+        i = _genFrameBufferWithTe10[0],
+        frameBuffer = _genFrameBufferWithTe10[1],
+        texture = _genFrameBufferWithTe10[2];
 
     var next = node.next;
 
@@ -26302,7 +26352,7 @@
         m = mx.m2Mat4(m, cx, cy);
         texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
       } // 异常情况超限
-      else if (_config3[NODE_LIMIT_CACHE$1]) {
+      else if (_config3[NODE_LIMIT_CACHE$2]) {
           return;
         }
 
@@ -26323,11 +26373,11 @@
     } // 生成最终纹理，汇总total和maskCache
 
 
-    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
-        n = _genFrameBufferWithTe10[0],
-        frameBuffer2 = _genFrameBufferWithTe10[1],
-        texture2 = _genFrameBufferWithTe10[2];
+    var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3),
+        n = _genFrameBufferWithTe12[0],
+        frameBuffer2 = _genFrameBufferWithTe12[1],
+        texture2 = _genFrameBufferWithTe12[2];
 
     var isClip = node.next.isClip;
     var program;
@@ -26408,11 +26458,11 @@
     var program = webgl.initShaders(gl, vertexMbm, frag);
     gl.useProgram(program); // 生成新的fbo，将混合结果绘入
 
-    var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, W, H),
-        _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3),
-        n = _genFrameBufferWithTe12[0],
-        frameBuffer = _genFrameBufferWithTe12[1],
-        texture = _genFrameBufferWithTe12[2];
+    var _genFrameBufferWithTe13 = genFrameBufferWithTexture(gl, texCache, W, H),
+        _genFrameBufferWithTe14 = _slicedToArray(_genFrameBufferWithTe13, 3),
+        n = _genFrameBufferWithTe14[0],
+        frameBuffer = _genFrameBufferWithTe14[1],
+        texture = _genFrameBufferWithTe14[2];
 
     webgl.drawMbm(gl, program, i, j, W, H); // 切换回主程序并销毁这个临时program
 
@@ -26777,7 +26827,7 @@
       lastLv = lv; // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
       var __blurValue = __config[NODE_BLUR_VALUE$1],
-          __limitCache = __config[NODE_LIMIT_CACHE$1];
+          __limitCache = __config[NODE_LIMIT_CACHE$2];
       var position = computedStyle[POSITION$4],
           overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
@@ -26888,7 +26938,7 @@
         var _opacity = __config[NODE_OPACITY$2],
             _matrixEvent = __config[NODE_MATRIX_EVENT$3],
             __blurValue = __config[NODE_BLUR_VALUE$1],
-            __limitCache = __config[NODE_LIMIT_CACHE$1],
+            __limitCache = __config[NODE_LIMIT_CACHE$2],
             __cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cacheFilter = __config[NODE_CACHE_FILTER$3],
@@ -27655,9 +27705,9 @@
       if (node instanceof Text) {
         if (parentRefreshLevel >= REPAINT$2) {
           var _cache2 = node.render(renderMode, 0, gl, true); // 有内容无cache说明超限
+          // if((!__cache || !__cache.available) && node.content) {
+          // }
 
-
-          if ((!_cache2 || !_cache2.available) && node.content) ;
         }
 
         _i12 = _i13;
@@ -27838,7 +27888,7 @@
       lastLv = lv; // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
       var __blurValue = __config[NODE_BLUR_VALUE$1],
-          __limitCache = __config[NODE_LIMIT_CACHE$1];
+          __limitCache = __config[NODE_LIMIT_CACHE$2];
       var overflow = computedStyle[OVERFLOW$3],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
       var validMbm = isValidMbm$2(mixBlendMode);
@@ -27935,13 +27985,13 @@
     var n, frameBuffer, texture;
 
     if (hasMbm) {
-      var _genFrameBufferWithTe13 = genFrameBufferWithTexture(gl, texCache, width, height);
+      var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height);
 
-      var _genFrameBufferWithTe14 = _slicedToArray(_genFrameBufferWithTe13, 3);
+      var _genFrameBufferWithTe16 = _slicedToArray(_genFrameBufferWithTe15, 3);
 
-      n = _genFrameBufferWithTe14[0];
-      frameBuffer = _genFrameBufferWithTe14[1];
-      texture = _genFrameBufferWithTe14[2];
+      n = _genFrameBufferWithTe16[0];
+      frameBuffer = _genFrameBufferWithTe16[1];
+      texture = _genFrameBufferWithTe16[2];
     }
 
     for (var _i14 = 0, _len7 = __structs.length; _i14 < _len7; _i14++) {
@@ -27965,7 +28015,7 @@
         var _opacity3 = __config[NODE_OPACITY$2],
             _matrixEvent2 = __config[NODE_MATRIX_EVENT$3],
             __blurValue = __config[NODE_BLUR_VALUE$1],
-            __limitCache = __config[NODE_LIMIT_CACHE$1],
+            __limitCache = __config[NODE_LIMIT_CACHE$2],
             _cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cacheFilter = __config[NODE_CACHE_FILTER$3],
@@ -27994,28 +28044,28 @@
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cache]); // total的尝试
 
         if (target) {
-          var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后后面这个节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+          var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
 
 
           if (hasMbm && isValidMbm$2(mixBlendMode)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe16 = _slicedToArray(_genFrameBufferWithTe15, 3),
-                n2 = _genFrameBufferWithTe16[0],
-                frameBuffer2 = _genFrameBufferWithTe16[1],
-                texture2 = _genFrameBufferWithTe16[2];
+            var _genFrameBufferWithTe17 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe18 = _slicedToArray(_genFrameBufferWithTe17, 3),
+                n2 = _genFrameBufferWithTe18[0],
+                frameBuffer2 = _genFrameBufferWithTe18[1],
+                texture2 = _genFrameBufferWithTe18[2];
 
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, _m6, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
-            var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
+            var _genMbmWebgl3 = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
 
-            var _genMbmWebgl2 = _slicedToArray(_genMbmWebgl, 3);
+            var _genMbmWebgl4 = _slicedToArray(_genMbmWebgl3, 3);
 
-            n = _genMbmWebgl2[0];
-            frameBuffer = _genMbmWebgl2[1];
-            texture = _genMbmWebgl2[2];
+            n = _genMbmWebgl4[0];
+            frameBuffer = _genMbmWebgl4[1];
+            texture = _genMbmWebgl4[2];
             gl.deleteFramebuffer(frameBuffer2);
             gl.deleteTexture(texture2);
           } else {
@@ -28023,8 +28073,7 @@
           }
 
           if (target !== _cache) {
-            _i14 += total || 0;
-            _i14 += hasMask || 0;
+            _i14 += (total || 0) + (hasMask || 0);
           }
         }
       }
@@ -28124,6 +28173,7 @@
      * @param cy
      * @param dx
      * @param dy
+     * @param revertY
      */
 
 
@@ -28437,26 +28487,26 @@
       UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$3.UPDATE_OVERWRITE,
       UPDATE_LIST = _enums$UPDATE_KEY$3.UPDATE_LIST,
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
-      _enums$NODE_KEY$9 = enums.NODE_KEY,
-      NODE_TAG_NAME$1 = _enums$NODE_KEY$9.NODE_TAG_NAME,
-      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
-      NODE_CACHE_PROPS$1 = _enums$NODE_KEY$9.NODE_CACHE_PROPS,
-      NODE_CURRENT_STYLE$5 = _enums$NODE_KEY$9.NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE$5 = _enums$NODE_KEY$9.NODE_COMPUTED_STYLE,
-      NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$9.NODE_CURRENT_PROPS,
-      NODE_DOM_PARENT$5 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
-      NODE_IS_MASK$3 = _enums$NODE_KEY$9.NODE_IS_MASK,
-      NODE_REFRESH_LV$2 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
-      NODE_IS_DESTROYED$2 = _enums$NODE_KEY$9.NODE_IS_DESTROYED,
-      NODE_STYLE$4 = _enums$NODE_KEY$9.NODE_STYLE,
-      NODE_UPDATE_HASH = _enums$NODE_KEY$9.NODE_UPDATE_HASH,
-      NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$9.NODE_UNIQUE_UPDATE_ID,
-      NODE_CACHE$6 = _enums$NODE_KEY$9.NODE_CACHE,
-      NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
-      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$3 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
-      NODE_STRUCT$4 = _enums$NODE_KEY$9.NODE_STRUCT,
+      _enums$NODE_KEY$a = enums.NODE_KEY,
+      NODE_TAG_NAME$1 = _enums$NODE_KEY$a.NODE_TAG_NAME,
+      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$a.NODE_CACHE_STYLE,
+      NODE_CACHE_PROPS$1 = _enums$NODE_KEY$a.NODE_CACHE_PROPS,
+      NODE_CURRENT_STYLE$5 = _enums$NODE_KEY$a.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE$5 = _enums$NODE_KEY$a.NODE_COMPUTED_STYLE,
+      NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$a.NODE_CURRENT_PROPS,
+      NODE_DOM_PARENT$5 = _enums$NODE_KEY$a.NODE_DOM_PARENT,
+      NODE_IS_MASK$3 = _enums$NODE_KEY$a.NODE_IS_MASK,
+      NODE_REFRESH_LV$2 = _enums$NODE_KEY$a.NODE_REFRESH_LV,
+      NODE_IS_DESTROYED$2 = _enums$NODE_KEY$a.NODE_IS_DESTROYED,
+      NODE_STYLE$4 = _enums$NODE_KEY$a.NODE_STYLE,
+      NODE_UPDATE_HASH = _enums$NODE_KEY$a.NODE_UPDATE_HASH,
+      NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$a.NODE_UNIQUE_UPDATE_ID,
+      NODE_CACHE$6 = _enums$NODE_KEY$a.NODE_CACHE,
+      NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$a.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$a.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$a.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$3 = _enums$NODE_KEY$a.NODE_CACHE_MASK,
+      NODE_STRUCT$4 = _enums$NODE_KEY$a.NODE_STRUCT,
       _enums$STRUCT_KEY$3 = enums.STRUCT_KEY,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
       STRUCT_TOTAL$2 = _enums$STRUCT_KEY$3.STRUCT_TOTAL,

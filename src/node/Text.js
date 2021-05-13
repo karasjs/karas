@@ -7,7 +7,6 @@ import util from '../util/util';
 import textCache from './textCache';
 import inject from '../util/inject';
 import font from '../style/font';
-import level from '../refresh/level';
 import Cache from '../refresh/Cache';
 
 const {
@@ -27,6 +26,7 @@ const {
   },
   NODE_KEY: {
     NODE_CACHE,
+    NODE_LIMIT_CACHE,
   },
 } = enums;
 
@@ -182,6 +182,8 @@ class Text extends Node {
     this.__y = this.__sy1 = y;
     let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
     textBoxes.splice(0);
+    let __config = this.__config;
+    __config[NODE_LIMIT_CACHE] = false;
     // 空内容w/h都为0可以提前跳出
     if(isDestroyed || currentStyle[DISPLAY] === 'none' || !content) {
       return lineClampCount;
@@ -573,8 +575,12 @@ class Text extends Node {
           this.__config[NODE_CACHE] = __cache;
           __cache.__available = true;
           ctx = __cache.ctx;
-          dx = -sx + __cache.x;
-          dy = -sy + __cache.y;
+          dx += -sx + __cache.x;
+          dy += -sy + __cache.y;
+          __config[NODE_LIMIT_CACHE] = false;
+        }
+        else {
+          __config[NODE_LIMIT_CACHE] = true;
         }
       }
       let font = css.setFontStyle(computedStyle);

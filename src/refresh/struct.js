@@ -130,6 +130,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let list = [index];
   let d = blur.outerSize(blurValue);
   opacityHash[index] = 1;
+  console.warn(node.tagName, bboxTotal);
   // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
   let matrixHash = {};
   while(list.length) {
@@ -528,10 +529,22 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       if(target) {
         let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-        texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
+        // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+        if(isValidMbm(mixBlendMode)) {
+          texCache.refresh(gl, cx, cy);
+          let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
+          texCache.refresh(gl, cx, cy);
+          // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
+          [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
+          gl.deleteFramebuffer(frameBuffer2);
+          gl.deleteTexture(texture2);
+        }
+        else {
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
+        }
         if(target !== __cache) {
-          i += total || 0;
-          i += hasMask || 0;
+          i += (total || 0) + (hasMask || 0);
         }
       }
     }
@@ -1885,8 +1898,8 @@ function renderWebgl(renderMode, gl, root) {
       if(parentRefreshLevel >= REPAINT) {
         let __cache = node.render(renderMode, 0, gl, true);
         // 有内容无cache说明超限
-        if((!__cache || !__cache.available) && node.content) {
-        }
+        // if((!__cache || !__cache.available) && node.content) {
+        // }
       }
       continue;
     }
@@ -2187,7 +2200,7 @@ function renderWebgl(renderMode, gl, root) {
       // total的尝试
       if(target) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        // 有mbm先刷新当前fbo，然后后面这个节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+        // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(hasMbm && isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy, true);
           let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
@@ -2202,8 +2215,7 @@ function renderWebgl(renderMode, gl, root) {
           texCache.addTexAndDrawWhenLimit(gl, target, __opacity, m, cx, cy, 0, 0, true);
         }
         if(target !== __cache) {
-          i += total || 0;
-          i += hasMask || 0;
+          i += (total || 0) + (hasMask || 0);
         }
       }
     }

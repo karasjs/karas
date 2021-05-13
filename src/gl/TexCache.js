@@ -31,6 +31,7 @@ class TexCache {
    * @param cy
    * @param dx
    * @param dy
+   * @param revertY
    */
   addTexAndDrawWhenLimit(gl, cache, opacity, matrix, cx, cy, dx = 0, dy = 0, revertY) {
     let pages = this.__pages;

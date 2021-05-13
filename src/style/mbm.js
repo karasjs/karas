@@ -17,9 +17,11 @@ const MBM_HASH = {
 };
 
 function mbmName(v) {
-  return v.replace(/[A-Z]/, function($0) {
-    return '-' + $0.toLowerCase();
-  });
+  if(v) {
+    return v.replace(/[A-Z]/, function($0) {
+      return '-' + $0.toLowerCase();
+    });
+  }
 }
 
 function isValidMbm(v) {

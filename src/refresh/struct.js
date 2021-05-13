@@ -2210,6 +2210,9 @@ function renderWebgl(renderMode, gl, root) {
         else {
           texCache.addTexAndDrawWhenLimit(gl, target, __opacity, m, cx, cy, 0, 0, true);
         }
+        if(target !== __cache) {
+          i += (total || 0) + (hasMask || 0);
+        }
       }
     }
   }

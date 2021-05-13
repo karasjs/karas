@@ -28061,6 +28061,10 @@
           } else {
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity3, _m6, cx, cy, 0, 0, true);
           }
+
+          if (target !== _cache) {
+            _i14 += (total || 0) + (hasMask || 0);
+          }
         }
       }
     }

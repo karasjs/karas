@@ -22840,7 +22840,7 @@
     }, {
       key: "__releaseWhenEmpty",
       value: function __releaseWhenEmpty(__cache) {
-        if (!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
+        if (!this.__loadImg.error && !this.__loadImg.source) {
           return _get(_getPrototypeOf(Img.prototype), "__releaseWhenEmpty", this).call(this, __cache);
         }
       }

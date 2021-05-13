@@ -392,7 +392,7 @@ class Img extends Dom {
 
   // img没加载时，清空，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
   __releaseWhenEmpty(__cache) {
-    if(!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
+    if(!this.__loadImg.error && !this.__loadImg.source) {
       return super.__releaseWhenEmpty(__cache);
     }
   }

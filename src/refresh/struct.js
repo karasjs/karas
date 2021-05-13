@@ -1894,10 +1894,7 @@ function renderWebgl(renderMode, gl, root) {
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
       if(parentRefreshLevel >= REPAINT) {
-        let __cache = node.render(renderMode, 0, gl, true);
-        // 有内容无cache说明超限
-        // if((!__cache || !__cache.available) && node.content) {
-        // }
+        node.render(renderMode, 0, gl, true);
       }
       continue;
     }
@@ -2047,6 +2044,7 @@ function renderWebgl(renderMode, gl, root) {
         node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, gl, true);
         __cache = __config[NODE_CACHE];
         if(__cache && __cache.available) {
+          // geom特殊绘制在离屏canvas上
           node.render(renderMode, refreshLevel, __cache.ctx, true);
         }
       }
@@ -2154,6 +2152,7 @@ function renderWebgl(renderMode, gl, root) {
       // text特殊之处，__config部分是复用parent的
       let {
         [NODE_CACHE]: __cache,
+        [NODE_LIMIT_CACHE]: limitCache,
         [NODE_DOM_PARENT]: {
           __config: {
             [NODE_MATRIX_EVENT]: matrixEvent,
@@ -2161,9 +2160,23 @@ function renderWebgl(renderMode, gl, root) {
           },
         },
       } = __config;
+      let m = mx.m2Mat4(matrixEvent, cx, cy);
       if(__cache && __cache.available) {
-        let m = mx.m2Mat4(matrixEvent, cx, cy);
         texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, m, cx, cy, true);
+      }
+      else if(limitCache) {
+        let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+        let ctx = c.ctx;
+        node.render(renderMode, 0, ctx);
+        let j = texCache.lockOneChannel();
+        let texture = webgl.createTexture(gl, c.canvas, j);
+        let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
+        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
+        texCache.refresh(gl, cx, cy, true);
+        ctx.clearRect(0, 0, width, height);
+        c.release();
+        mockCache.release();
+        texCache.releaseLockChannel(j);
       }
     }
     else {
@@ -2213,6 +2226,26 @@ function renderWebgl(renderMode, gl, root) {
         if(target !== __cache) {
           i += (total || 0) + (hasMask || 0);
         }
+      }
+      // 超限的情况，这里是普通节点超限，没有合成total后再合成特殊cache如filter之类的，
+      // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
+      else if(limitCache) {
+        let m = mx.m2Mat4(matrixEvent, cx, cy);
+        let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+        let ctx = c.ctx;
+        if(node instanceof Geom) {
+          node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
+        }
+        node.render(renderMode, refreshLevel, ctx);
+        let j = texCache.lockOneChannel();
+        let texture = webgl.createTexture(gl, c.canvas, j);
+        let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
+        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
+        texCache.refresh(gl, cx, cy, true);
+        ctx.clearRect(0, 0, width, height);
+        c.release();
+        mockCache.release();
+        texCache.releaseLockChannel(j);
       }
     }
   }

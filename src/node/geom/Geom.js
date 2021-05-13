@@ -423,22 +423,10 @@ class Geom extends Xom {
   render(renderMode, lv, ctx, cache) {
     // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
     let res = this.__renderSelfData || super.render(renderMode, lv, ctx, cache);
+    this.__renderSelfData = null;
     let __config = this.__config;
-    let {
-      [NODE_CACHE]: __cache,
-      [NODE_CACHE_FILTER]: __cacheFilter,
-      [NODE_CACHE_MASK]: __cacheMask,
-      [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-    } = __config;
     if(renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
-    }
-    // 存在老的缓存认为可提前跳出
-    if(lv < level.REPAINT
-      && (__cache && __cache.available
-        || !level.contain(lv, level.FILTER) && __cacheFilter
-        || __cacheMask || __cacheOverflow)) {
-      res.break = true; // geom子类标识可以跳过自定义render()
     }
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';

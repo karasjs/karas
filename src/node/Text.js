@@ -558,7 +558,7 @@ class Text extends Node {
     let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
-      return false;
+      return;
     }
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       // webgl借用离屏canvas绘制文本
@@ -581,6 +581,7 @@ class Text extends Node {
         }
         else {
           __config[NODE_LIMIT_CACHE] = true;
+          return;
         }
       }
       let font = css.setFontStyle(computedStyle);
@@ -633,7 +634,6 @@ class Text extends Node {
         });
       }
     }
-    return true;
   }
 
   __deepScan(cb) {

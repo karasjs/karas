@@ -5349,13 +5349,14 @@
     var texture = gl.createTexture();
     bindTexture(gl, texture, n); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
 
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // 传入高宽时是绑定fbo，且tex一定为null
 
     if (width && height) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    }
+    } // 普通将canvas对象作为纹理
+    else {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+      }
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -5803,10 +5804,12 @@
       enabled: true,
       available: true,
       release: function release() {
-        if (hash === CANVAS) {
-          CANVAS_LIST.push(this.canvas);
-        } else {
-          WEBGL_LIST.push(this.canvas);
+        if (!key) {
+          if (hash === CANVAS) {
+            CANVAS_LIST.push(this.canvas);
+          } else {
+            WEBGL_LIST.push(this.canvas);
+          }
         }
 
         this.canvas = null;
@@ -11035,7 +11038,7 @@
             __config = this.__config;
 
         if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden' || !textBoxes.length) {
-          return false;
+          return;
         }
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -11062,6 +11065,7 @@
               __config[NODE_LIMIT_CACHE] = false;
             } else {
               __config[NODE_LIMIT_CACHE] = true;
+              return;
             }
           }
 
@@ -11120,8 +11124,6 @@
             });
           }
         }
-
-        return true;
       }
     }, {
       key: "__deepScan",
@@ -16914,7 +16916,8 @@
 
                 return true;
               } else if (!isInline && bgi.k) {
-                return _this3.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
+                // gradient在渲染时才生成
+                return true;
               }
             });
           }
@@ -17143,9 +17146,7 @@
         var __cache = __config[NODE_CACHE$2];
         var __cacheStyle = __config[NODE_CACHE_STYLE];
         var currentStyle = __config[NODE_CURRENT_STYLE$1];
-        var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // geom特殊处理，每次>=REPAINT重新渲染生成
-
-        this.__renderSelfData = null; // 渲染完认为完全无变更，等布局/动画/更新重置
+        var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 渲染完认为完全无变更，等布局/动画/更新重置
 
         __config[NODE_REFRESH_LV] = NONE;
 
@@ -17243,7 +17244,7 @@
         var dx = 0,
             dy = 0;
 
-        if (cache && renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+        if (cache && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
           // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
           if (!hasContent && this.__releaseWhenEmpty(__cache)) {
             res["break"] = true;
@@ -17394,10 +17395,10 @@
               __config[NODE_BLUR_VALUE] = v;
             }
           });
-        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl则忽略绘制
+        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
 
 
-        if ((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE$1]) {
+        if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache && __config[NODE_LIMIT_CACHE$1]) {
           return {
             limitCache: true
           };
@@ -17900,7 +17901,7 @@
                 bg.renderImage(_this4, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
               }
             } else if (bgi.k) {
-              var gd = __cacheStyle[BACKGROUND_IMAGE$1][i];
+              var gd = _this4.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
 
               if (gd) {
                 if (gd.k === 'conic') {
@@ -23691,19 +23692,11 @@
         // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
         var res = this.__renderSelfData || _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
+        this.__renderSelfData = null;
         var __config = this.__config;
-        var __cache = __config[NODE_CACHE$4],
-            __cacheFilter = __config[NODE_CACHE_FILTER$2],
-            __cacheMask = __config[NODE_CACHE_MASK$1],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2];
 
         if (renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
           __config[NODE_CACHE_TOTAL$2] = __config[NODE_CACHE$4];
-        } // 存在老的缓存认为可提前跳出
-
-
-        if (lv < o$2.REPAINT && (__cache && __cache.available || !o$2.contain(lv, o$2.FILTER) && __cacheFilter || __cacheMask || __cacheOverflow)) {
-          res["break"] = true; // geom子类标识可以跳过自定义render()
         }
 
         if (renderMode === mode.SVG) {
@@ -27698,10 +27691,7 @@
 
       if (node instanceof Text) {
         if (parentRefreshLevel >= REPAINT$2) {
-          var _cache2 = node.render(renderMode, 0, gl, true); // 有内容无cache说明超限
-          // if((!__cache || !__cache.available) && node.content) {
-          // }
-
+          node.render(renderMode, 0, gl, true);
         }
 
         _i12 = _i13;
@@ -27774,13 +27764,13 @@
         if (contain$2(refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
-          var _m8 = __config[NODE_MATRIX$2];
-          _m8[0] = matrix[0];
-          _m8[1] = matrix[1];
-          _m8[2] = matrix[2];
-          _m8[3] = matrix[3];
-          _m8[4] = matrix[4];
-          _m8[5] = matrix[5]; // webgl中心点特殊
+          var _m9 = __config[NODE_MATRIX$2];
+          _m9[0] = matrix[0];
+          _m9[1] = matrix[1];
+          _m9[2] = matrix[2];
+          _m9[3] = matrix[3];
+          _m9[4] = matrix[4];
+          _m9[5] = matrix[5]; // webgl中心点特殊
 
           var tfo = computedStyle[TRANSFORM_ORIGIN$5].slice(0);
           tfo[0] += (node.__sx1 || 0) - cx;
@@ -27795,13 +27785,13 @@
         } // 恶心的v8性能优化
 
 
-        var _m7 = __config[NODE_MATRIX_EVENT$3];
-        _m7[0] = matrix[0];
-        _m7[1] = matrix[1];
-        _m7[2] = matrix[2];
-        _m7[3] = matrix[3];
-        _m7[4] = matrix[4];
-        _m7[5] = matrix[5];
+        var _m8 = __config[NODE_MATRIX_EVENT$3];
+        _m8[0] = matrix[0];
+        _m8[1] = matrix[1];
+        _m8[2] = matrix[2];
+        _m8[3] = matrix[3];
+        _m8[4] = matrix[4];
+        _m8[5] = matrix[5];
 
         var _opacity5;
 
@@ -27871,6 +27861,7 @@
             __cache = __config[NODE_CACHE$5];
 
             if (__cache && __cache.available) {
+              // geom特殊绘制在离屏canvas上
               node.render(renderMode, refreshLevel, __cache.ctx, true);
             }
           } else {
@@ -28000,19 +27991,35 @@
       if (node instanceof Text) {
         // text特殊之处，__config部分是复用parent的
         var __cache = __config[NODE_CACHE$5],
+            limitCache = __config[NODE_LIMIT_CACHE$2],
             _config$NODE_DOM_PAR2 = __config[NODE_DOM_PARENT$4].__config,
             matrixEvent = _config$NODE_DOM_PAR2[NODE_MATRIX_EVENT$3],
             opacity = _config$NODE_DOM_PAR2[NODE_OPACITY$2];
+        var m = mx.m2Mat4(matrixEvent, cx, cy);
 
         if (__cache && __cache.available) {
-          var m = mx.m2Mat4(matrixEvent, cx, cy);
           texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, m, cx, cy, true);
+        } else if (limitCache) {
+          var c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+          var ctx = c.ctx;
+          node.render(renderMode, 0, ctx);
+          var j = texCache.lockOneChannel();
+
+          var _texture = webgl.createTexture(gl, c.canvas, j);
+
+          var mockCache = new MockCache(gl, _texture, 0, 0, width, height, [0, 0, width, height]);
+          texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
+          texCache.refresh(gl, cx, cy, true);
+          ctx.clearRect(0, 0, width, height);
+          c.release();
+          mockCache.release();
+          texCache.releaseLockChannel(j);
         }
       } else {
         var _opacity4 = __config[NODE_OPACITY$2],
             _matrixEvent2 = __config[NODE_MATRIX_EVENT$3],
             blurValue = __config[NODE_BLUR_VALUE$1],
-            limitCache = __config[NODE_LIMIT_CACHE$2],
+            _limitCache = __config[NODE_LIMIT_CACHE$2],
             _cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cacheFilter = __config[NODE_CACHE_FILTER$3],
@@ -28067,7 +28074,38 @@
           if (target !== _cache) {
             _i14 += (total || 0) + (hasMask || 0);
           }
-        }
+        } // 超限的情况，这里是普通节点超限，没有合成total后再合成特殊cache如filter之类的，
+        // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
+        else if (_limitCache) {
+            var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
+
+            var _c5 = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+
+            var _ctx = _c5.ctx;
+
+            if (node instanceof Geom$1) {
+              node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, _ctx);
+            }
+
+            node.render(renderMode, refreshLevel, _ctx);
+
+            var _j10 = texCache.lockOneChannel();
+
+            var _texture2 = webgl.createTexture(gl, _c5.canvas, _j10);
+
+            var _mockCache = new MockCache(gl, _texture2, 0, 0, width, height, [0, 0, width, height]);
+
+            texCache.addTexAndDrawWhenLimit(gl, _mockCache, _opacity4, _m7, cx, cy, 0, 0, true);
+            texCache.refresh(gl, cx, cy, true);
+
+            _ctx.clearRect(0, 0, width, height);
+
+            _c5.release();
+
+            _mockCache.release();
+
+            texCache.releaseLockChannel(_j10);
+          }
       }
     }
 
@@ -30598,8 +30636,7 @@
 
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
       STROKE_WIDTH$2 = _enums$STYLE_KEY$k.STROKE_WIDTH,
-      BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW,
-      FILTER$7 = _enums$STYLE_KEY$k.FILTER;
+      BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW;
   var isNil$9 = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
@@ -31234,8 +31271,7 @@
 
   var _enums$STYLE_KEY$l = enums.STYLE_KEY,
       STROKE_WIDTH$3 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-      BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW,
-      FILTER$8 = _enums$STYLE_KEY$l.FILTER;
+      BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW;
   var isNil$a = util.isNil;
 
   function concatPointAndControl(point, control) {
@@ -31823,8 +31859,7 @@
 
   var _enums$STYLE_KEY$m = enums.STYLE_KEY,
       STROKE_WIDTH$4 = _enums$STYLE_KEY$m.STROKE_WIDTH,
-      BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW,
-      FILTER$9 = _enums$STYLE_KEY$m.FILTER;
+      BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
 
@@ -32440,8 +32475,7 @@
 
   var _enums$STYLE_KEY$o = enums.STYLE_KEY,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
-      BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
-      FILTER$a = _enums$STYLE_KEY$o.FILTER;
+      BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW;
   var isNil$d = util.isNil;
 
   function getR$2(v) {
@@ -32589,8 +32623,7 @@
 
   var _enums$STYLE_KEY$p = enums.STYLE_KEY,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
-      BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
-      FILTER$b = _enums$STYLE_KEY$p.FILTER;
+      BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW;
   var isNil$e = util.isNil;
 
   function getR$3(v) {

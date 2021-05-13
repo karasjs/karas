@@ -885,7 +885,8 @@ class Xom extends Node {
             return true;
           }
           else if(!isInline && bgi.k) {
-            return this.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
+            // gradient在渲染时才生成
+            return true;
           }
         });
       }
@@ -1109,8 +1110,6 @@ class Xom extends Node {
     let __cacheStyle = __config[NODE_CACHE_STYLE];
     let currentStyle = __config[NODE_CURRENT_STYLE];
     let computedStyle = __config[NODE_COMPUTED_STYLE];
-    // geom特殊处理，每次>=REPAINT重新渲染生成
-    this.__renderSelfData = null;
     // 渲染完认为完全无变更，等布局/动画/更新重置
     __config[NODE_REFRESH_LV] = NONE;
     if(isDestroyed) {
@@ -1186,7 +1185,7 @@ class Xom extends Node {
     this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
-    if(cache && renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(cache && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
       if(!hasContent && this.__releaseWhenEmpty(__cache)) {
         res.break = true;
@@ -1233,6 +1232,10 @@ class Xom extends Node {
       }
       res.dx = dx;
       res.dy = dy;
+    }
+    // 降级的webgl绘制，ctx传入为一个离屏canvas
+    else if(renderMode === mode.WEBGL) {
+      // renderMode = mode.CANVAS;
     }
     // 计算好cacheStyle的内容，以及位图缓存指数
     let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, this.parent,
@@ -1331,8 +1334,8 @@ class Xom extends Node {
         }
       });
     }
-    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl则忽略绘制
-    if((renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) && __config[NODE_LIMIT_CACHE]) {
+    // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
+    if(((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache) && __config[NODE_LIMIT_CACHE]) {
       return { limitCache: true };
     }
     // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
@@ -1786,7 +1789,7 @@ class Xom extends Node {
           }
         }
         else if(bgi.k) {
-          let gd = __cacheStyle[BACKGROUND_IMAGE][i];
+          let gd = this.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
           if(gd) {
             if(gd.k === 'conic') {
               gradient.renderConic(this, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1,

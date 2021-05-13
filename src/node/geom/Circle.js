@@ -7,7 +7,6 @@ import level from '../../refresh/level';
 const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
-  FILTER,
 } } = enums;
 const { isNil } = util;
 

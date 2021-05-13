@@ -22628,10 +22628,10 @@
       value: function render(renderMode, lv, ctx, cache) {
         var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
-        var offscreenFilter = res.offscreenFilter,
+        var offscreenBlend = res.offscreenBlend,
             offscreenMask = res.offscreenMask,
-            offscreenOverflow = res.offscreenOverflow,
-            offscreenBlend = res.offscreenBlend;
+            offscreenFilter = res.offscreenFilter,
+            offscreenOverflow = res.offscreenOverflow;
         var width = this.width,
             height = this.height,
             isDestroyed = this.isDestroyed,
@@ -22649,8 +22649,20 @@
             loadImg = this.__loadImg,
             root = this.root;
 
-        if (!cache && (offscreenFilter || offscreenMask || offscreenOverflow || offscreenBlend)) {
-          ctx = (offscreenFilter || offscreenMask || offscreenOverflow || offscreenBlend).target.ctx;
+        if (offscreenBlend) {
+          ctx = offscreenBlend.target.ctx;
+        }
+
+        if (offscreenMask) {
+          ctx = offscreenMask.target.ctx;
+        }
+
+        if (offscreenFilter) {
+          ctx = offscreenFilter.target.ctx;
+        }
+
+        if (offscreenOverflow) {
+          ctx = offscreenOverflow.target.ctx;
         } // img无children所以total就是cache避免多余生成
 
 

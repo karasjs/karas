@@ -11015,6 +11015,9 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, cache) {
+        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+
         if (renderMode === mode.SVG) {
           this.__virtualDom = {
             type: 'text',
@@ -11033,9 +11036,6 @@
         if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden' || !textBoxes.length) {
           return;
         }
-
-        var dx = 0,
-            dy = 0;
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
@@ -11056,8 +11056,8 @@
                 this.__config[NODE_CACHE$1] = __cache;
                 __cache.__available = true;
                 ctx = __cache.ctx;
-                dx = -sx + __cache.x;
-                dy = -sy + __cache.y;
+                dx += -sx + __cache.x;
+                dy += -sy + __cache.y;
                 __config[NODE_LIMIT_CACHE] = false;
               } else {
                 __config[NODE_LIMIT_CACHE] = true;

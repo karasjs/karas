@@ -551,7 +551,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, lv, ctx, cache) {
+  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
@@ -563,7 +563,6 @@ class Text extends Node {
       || !textBoxes.length) {
       return;
     }
-    let dx = 0, dy = 0;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
       if(renderMode === mode.WEBGL) {
@@ -579,8 +578,8 @@ class Text extends Node {
             this.__config[NODE_CACHE] = __cache;
             __cache.__available = true;
             ctx = __cache.ctx;
-            dx = -sx + __cache.x;
-            dy = -sy + __cache.y;
+            dx += -sx + __cache.x;
+            dy += -sy + __cache.y;
             __config[NODE_LIMIT_CACHE] = false;
           }
           else {

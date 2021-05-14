@@ -1100,7 +1100,7 @@ class Xom extends Node {
    * offscreenMask 无cache时的离屏canvas，仅canvas
    * offscreenOverflow 无cache时的离屏canvas，仅canvas
    */
-  __renderSelf(renderMode, lv, ctx, cache) {
+  render(renderMode, lv, ctx, cache) {
     let {
       isDestroyed,
       root,
@@ -1829,10 +1829,6 @@ class Xom extends Node {
       border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR]);
     }
     return res;
-  }
-
-  render(renderMode, lv, ctx, cache) {
-    return this.__renderSelf(renderMode, lv, ctx, cache);
   }
 
   __destroy() {

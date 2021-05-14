@@ -401,11 +401,10 @@ class Geom extends Xom {
   }
 
   render(renderMode, lv, ctx, cache) {
-    // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
-    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, cache);
-    this.__renderSelfData = null;
+    let res = super.render(renderMode, lv, ctx, cache);
+    // this.__renderSelfData = null;
     let __config = this.__config;
-    if(renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
+    if((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
     if(renderMode === mode.SVG) {
@@ -703,7 +702,7 @@ class Geom extends Xom {
       let w = x2 - x1, h = y2 - y1;
       let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
       let imgData = offscreen.ctx.getImageData(0,0, w, h);
-      let data = gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
+      gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
       offscreen.ctx.putImageData(imgData, 0, 0);
       if(isMulti) {
         list.forEach(item => {

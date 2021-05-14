@@ -1140,16 +1140,17 @@ function renderCacheCanvas(renderMode, ctx, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx, true);
-        __cache = __config[NODE_CACHE];
-        if(__cache && __cache.available) {
-          node.render(renderMode, refreshLevel, __cache.ctx, true);
-        }
-      }
-      else {
-        node.render(renderMode, refreshLevel, ctx, true);
-      }
+      // if(node instanceof Geom) {
+      //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx, true);
+      //   __cache = __config[NODE_CACHE];
+      //   if(__cache && __cache.available) {
+      //     node.render(renderMode, refreshLevel, __cache.ctx, true);
+      //   }
+      // }
+      // else {
+      //   node.render(renderMode, refreshLevel, ctx, true);
+      // }
+      node.render(renderMode, refreshLevel, ctx, true);
     }
     lastConfig = __config;
     lastLv = lv;
@@ -1354,14 +1355,14 @@ function renderCacheCanvas(renderMode, ctx, root) {
           }
           else {
             // 连cache都没生成的超限
-            let res;
-            if(node instanceof Geom) {
-              res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-            }
-            else {
-              res = node.render(renderMode, refreshLevel, ctx);
-            }
-            res = res || {};
+            let res = node.render(renderMode, refreshLevel, ctx) || {};
+            // if(node instanceof Geom) {
+            //   res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
+            // }
+            // else {
+            //   res = node.render(renderMode, refreshLevel, ctx);
+            // }
+            // res = res || {};
             offscreenBlend = res.offscreenBlend;
             offscreenMask = res.offscreenMask;
             offscreenFilter = res.offscreenFilter;
@@ -1463,13 +1464,13 @@ function renderCanvas(renderMode, ctx, root) {
       }]);
       ctx = target.ctx;
     }
-    let res;
-    if(node instanceof Geom) {
-      res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-    }
-    else {
-      res = node.render(renderMode, refreshLevel, ctx);
-    }
+    let res = node.render(renderMode, refreshLevel, ctx);
+    // if(node instanceof Geom) {
+    //   res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
+    // }
+    // else {
+    //   res = node.render(renderMode, refreshLevel, ctx);
+    // }
     let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
     // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
     if(offscreenBlend) {
@@ -1504,9 +1505,9 @@ function renderCanvas(renderMode, ctx, root) {
       ctx = offscreenOverflow.target.ctx;
     }
     // geom传递上述offscreen的新ctx渲染，因为自定义不可控
-    if(node instanceof Geom) {
-      node.render(renderMode, refreshLevel, ctx);
-    }
+    // if(node instanceof Geom) {
+    //   node.render(renderMode, refreshLevel, ctx);
+    // }
     // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
     // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
     if(offscreenHash.hasOwnProperty(i)) {
@@ -1742,9 +1743,9 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     else {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
-      if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-      }
+      // if(node instanceof Geom) {
+      //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
+      // }
       node.render(renderMode, refreshLevel, ctx);
       virtualDom = node.virtualDom;
       if(display === 'none') {
@@ -2040,17 +2041,18 @@ function renderWebgl(renderMode, gl, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      if(node instanceof Geom) {
-        node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, gl, true);
-        __cache = __config[NODE_CACHE];
-        if(__cache && __cache.available) {
-          // geom特殊绘制在离屏canvas上
-          node.render(renderMode, refreshLevel, __cache.ctx, true);
-        }
-      }
-      else {
-        node.render(renderMode, refreshLevel, gl, true);
-      }
+      // if(node instanceof Geom) {
+      //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, gl, true);
+      //   __cache = __config[NODE_CACHE];
+      //   if(__cache && __cache.available) {
+      //     // geom特殊绘制在离屏canvas上
+      //     node.render(renderMode, refreshLevel, __cache.ctx, true);
+      //   }
+      // }
+      // else {
+      //   node.render(renderMode, refreshLevel, gl, true);
+      // }
+      node.render(renderMode, refreshLevel, gl, true);
     }
     lastRefreshLevel = refreshLevel;
     lastConfig = __config;
@@ -2233,9 +2235,9 @@ function renderWebgl(renderMode, gl, root) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
         let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
         let ctx = c.ctx;
-        if(node instanceof Geom) {
-          node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-        }
+        // if(node instanceof Geom) {
+        //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
+        // }
         node.render(renderMode, refreshLevel, ctx);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);

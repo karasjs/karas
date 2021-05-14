@@ -3,6 +3,7 @@ import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
 import level from '../../refresh/level';
+import mode from '../mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -59,6 +60,9 @@ class Circle extends Geom {
       return res;
     }
     this.buildCache(res.cx, res.cy, level.isReflow(lv));
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      ctx = res.ctx;
+    }
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

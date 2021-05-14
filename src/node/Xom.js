@@ -1228,14 +1228,15 @@ class Xom extends Node {
         else {
           __config[NODE_LIMIT_CACHE] = true;
           __cache = null;
-          res.limitCache = true;
+          res.limitCache = res.break = true;
         }
         __config[NODE_CACHE] = __cache;
       }
     }
-    // 降级的webgl绘制，ctx传入为一个离屏canvas
+    // 降级的webgl绘制
     else if(renderMode === mode.WEBGL) {
-      // renderMode = mode.CANVAS;
+      let c = inject.getCacheCanvas(root.width, root.height, '__$$OUT_OF_SIZE$$__');
+      res.ctx = ctx = c.ctx;
     }
     res.dx = dx;
     res.dy = dy;

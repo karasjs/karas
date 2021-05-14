@@ -369,9 +369,7 @@ class Polyline extends Geom {
       return res;
     }
     this.buildCache(res.x3, res.y3, level.isReflow(lv));
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-      ctx = res.ctx;
-    }
+    ctx = res.ctx;
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

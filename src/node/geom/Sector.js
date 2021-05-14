@@ -156,9 +156,7 @@ class Sector extends Geom {
       return res;
     }
     this.buildCache(res.cx, res.cy, level.isReflow(lv));
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-      ctx = res.ctx;
-    }
+    ctx = res.ctx;
     let {
       fill: fills,
       fillRule: fillRules,

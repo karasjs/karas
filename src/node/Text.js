@@ -27,6 +27,9 @@ const {
   NODE_KEY: {
     NODE_CACHE,
     NODE_LIMIT_CACHE,
+    NODE_DOM_PARENT,
+    NODE_MATRIX_EVENT,
+    NODE_OPACITY,
   },
 } = enums;
 
@@ -548,7 +551,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
+  render(renderMode, lv, ctx, cache) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
@@ -560,28 +563,45 @@ class Text extends Node {
       || !textBoxes.length) {
       return;
     }
+    let dx = 0, dy = 0;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-      // webgl借用离屏canvas绘制文本
-      if(renderMode === mode.WEBGL && cache) {
-        renderMode = mode.CANVAS;
-        let { sx, sy, __cache, bbox } = this;
-        if(__cache) {
-          __cache.reset(bbox, sx, sy);
+      // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
+      if(renderMode === mode.WEBGL) {
+        if(cache) {
+          let { sx, sy, __cache, bbox } = this;
+          if(__cache) {
+            __cache.reset(bbox, sx, sy);
+          }
+          else {
+            __cache = Cache.getInstance(bbox, sx, sy);
+          }
+          if(__cache && __cache.enabled) {
+            this.__config[NODE_CACHE] = __cache;
+            __cache.__available = true;
+            ctx = __cache.ctx;
+            dx = -sx + __cache.x;
+            dy = -sy + __cache.y;
+            __config[NODE_LIMIT_CACHE] = false;
+          }
+          else {
+            __config[NODE_LIMIT_CACHE] = true;
+            return;
+          }
         }
         else {
-          __cache = Cache.getInstance(bbox, sx, sy);
-        }
-        if(__cache && __cache.enabled) {
-          this.__config[NODE_CACHE] = __cache;
-          __cache.__available = true;
-          ctx = __cache.ctx;
-          dx += -sx + __cache.x;
-          dy += -sy + __cache.y;
-          __config[NODE_LIMIT_CACHE] = false;
-        }
-        else {
-          __config[NODE_LIMIT_CACHE] = true;
-          return;
+          let root = this.root;
+          let c = inject.getCacheCanvas(root.width, root.height, '__$$OUT_OF_SIZE$$__');
+          ctx = c.ctx;
+          let {
+            [NODE_DOM_PARENT]: {
+              __config: {
+                [NODE_MATRIX_EVENT]: m,
+                [NODE_OPACITY]: opacity,
+              },
+            },
+          } = __config;
+          ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+          ctx.globalAlpha = opacity;
         }
       }
       let font = css.setFontStyle(computedStyle);

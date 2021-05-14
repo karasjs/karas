@@ -2168,14 +2168,15 @@ function renderWebgl(renderMode, gl, root) {
       }
       else if(limitCache) {
         let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
-        let ctx = c.ctx;
-        node.render(renderMode, 0, ctx);
+        node.render(renderMode, 0, gl);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
         texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
-        ctx.clearRect(0, 0, width, height);
+        c.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        c.ctx.globalAlpha = 1;
+        c.ctx.clearRect(0, 0, width, height);
         c.release();
         mockCache.release();
         texCache.releaseLockChannel(j);
@@ -2234,17 +2235,15 @@ function renderWebgl(renderMode, gl, root) {
       else if(limitCache) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
         let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
-        let ctx = c.ctx;
-        // if(node instanceof Geom) {
-        //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-        // }
-        node.render(renderMode, refreshLevel, ctx);
+        node.render(renderMode, refreshLevel, gl);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
         texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
-        ctx.clearRect(0, 0, width, height);
+        c.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        c.ctx.globalAlpha = 1;
+        c.ctx.clearRect(0, 0, width, height);
         c.release();
         mockCache.release();
         texCache.releaseLockChannel(j);

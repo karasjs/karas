@@ -238,8 +238,8 @@ class Line extends Geom {
       return res;
     }
     let {
-      originX,
-      originY,
+      x3,
+      y3,
       stroke: strokes,
       strokeWidth: strokeWidths,
       strokeDasharray: strokeDasharrays,
@@ -251,7 +251,7 @@ class Line extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    let rebuild = this.buildCache(originX, originY, level.isReflow(lv));
+    let rebuild = this.buildCache(x3, y3, level.isReflow(lv));
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {

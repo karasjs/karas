@@ -17335,12 +17335,6 @@
           } else {
             virtualDom.opacity = opacity;
           }
-
-          if (mixBlendMode !== 'normal') {
-            virtualDom.mixBlendMode = mixBlendMode;
-          } else {
-            delete virtualDom.mixBlendMode;
-          }
         } // canvas/svg/事件需要3种不同的matrix
 
 
@@ -17379,7 +17373,7 @@
         } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
 
 
-        __config[NODE_BLUR_VALUE] = 0;
+        var blurValue = __config[NODE_BLUR_VALUE] = 0;
 
         if (Array.isArray(filter)) {
           filter.forEach(function (item) {
@@ -17388,7 +17382,7 @@
                 v = _item[1];
 
             if (k === 'blur') {
-              __config[NODE_BLUR_VALUE] = v;
+              blurValue = __config[NODE_BLUR_VALUE] = v;
             }
           });
         } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
@@ -17401,19 +17395,27 @@
 
         var offscreenBlend;
 
-        if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode) && !cache) {
+        if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
-          var _width = root.width,
-              _height = root.height;
-          var c = inject.getCacheCanvas(_width, _height, null, 'blend');
-          offscreenBlend = {
-            ctx: ctx,
-            target: c,
-            mixBlendMode: mixBlendMode,
-            matrix: matrix
-          };
-          ctx = c.ctx;
-        }
+
+          if (renderMode === mode.CANVAS && !cache) {
+            var _width = root.width,
+                _height = root.height;
+            var c = inject.getCacheCanvas(_width, _height, null, 'blend');
+            offscreenBlend = {
+              ctx: ctx,
+              target: c,
+              mixBlendMode: mixBlendMode,
+              matrix: matrix
+            };
+            ctx = c.ctx;
+          } else if (renderMode === mode.SVG) {
+            virtualDom.mixBlendMode = mixBlendMode;
+          }
+        } // svg特殊没有mbm删除
+        else if (renderMode === mode.SVG) {
+            delete virtualDom.mixBlendMode;
+          }
 
         var offscreenMask;
 
@@ -17435,7 +17437,7 @@
 
         var offscreenFilter;
 
-        if (__config[NODE_BLUR_VALUE] > 0) {
+        if (blurValue > 0) {
           if (renderMode === mode.CANVAS && !cache) {
             var _width3 = root.width,
                 _height3 = root.height;
@@ -17444,7 +17446,7 @@
 
             offscreenFilter = {
               ctx: ctx,
-              blur: __config[NODE_BLUR_VALUE],
+              blur: blurValue,
               target: _c2,
               matrix: matrix
             };
@@ -17452,13 +17454,13 @@
           } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
             // 模糊框卷积尺寸 #66
             if (__config[NODE_BLUR_VALUE] > 0 && width > 0 && height > 0) {
-              var d = blur.outerSize(__config[NODE_BLUR_VALUE]);
+              var d = blur.outerSize(blurValue);
               var o$1 = {
                 tagName: 'filter',
                 props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
                 children: [{
                   tagName: 'feGaussianBlur',
-                  props: [['stdDeviation', __config[NODE_BLUR_VALUE]]]
+                  props: [['stdDeviation', blurValue]]
                 }]
               };
               var id = ctx.add(o$1);
@@ -17518,6 +17520,7 @@
           res.offscreenMask = offscreenMask;
           res.offscreenFilter = offscreenFilter;
           res.offscreenOverflow = offscreenOverflow;
+          res.ctx = ctx;
           ctx.globalAlpha = opacity;
           ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         } // 隐藏不渲染
@@ -23572,25 +23575,13 @@
       }
     }, {
       key: "__preSet",
-      value: function __preSet() {
-        var x = this.sx,
-            y = this.sy,
-            width = this.width,
+      value: function __preSet(res) {
+        var width = this.width,
             height = this.height,
             __cacheStyle = this.__cacheStyle,
             computedStyle = this.computedStyle;
-        var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$5],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$7],
-            display = computedStyle[DISPLAY$7],
-            marginTop = computedStyle[MARGIN_TOP$4],
-            marginLeft = computedStyle[MARGIN_LEFT$6],
-            paddingTop = computedStyle[PADDING_TOP$5],
-            paddingLeft = computedStyle[PADDING_LEFT$7],
-            visibility = computedStyle[VISIBILITY$4];
-        var originX = x + borderLeftWidth + marginLeft + paddingLeft;
-        var originY = y + borderTopWidth + marginTop + paddingTop;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
+        var cx = res.x3 + width * 0.5;
+        var cy = res.y3 + height * 0.5;
         var fill = __cacheStyle[FILL$1],
             stroke = __cacheStyle[STROKE$1],
             strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
@@ -23601,15 +23592,8 @@
             strokeDasharray = computedStyle[STROKE_DASHARRAY$1],
             fillRule = computedStyle[FILL_RULE];
         return {
-          x: x,
-          y: y,
-          originX: originX,
-          originY: originY,
-          width: width,
-          height: height,
           cx: cx,
           cy: cy,
-          display: display,
           stroke: stroke,
           strokeWidth: strokeWidth,
           strokeDasharray: strokeDasharray,
@@ -23618,7 +23602,6 @@
           strokeLinejoin: strokeLinejoin,
           strokeMiterlimit: strokeMiterlimit,
           fill: fill,
-          visibility: visibility,
           fillRule: fillRule
         };
       }
@@ -23703,7 +23686,7 @@
         } // data在无cache时没有提前设置
 
 
-        var preData = this.__preSet();
+        var preData = this.__preSet(res);
 
         return Object.assign(res, preData);
       }
@@ -30957,8 +30940,8 @@
           return res;
         }
 
-        var originX = res.originX,
-            originY = res.originY,
+        var x3 = res.x3,
+            y3 = res.y3,
             strokes = res.stroke,
             strokeWidths = res.strokeWidth,
             strokeDasharrays = res.strokeDasharray,
@@ -30970,7 +30953,7 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild = this.buildCache(originX, originY, o$2.isReflow(lv));
+        var rebuild = this.buildCache(x3, y3, o$2.isReflow(lv));
 
         if (rebuild && renderMode === mode.SVG) {
           var d = '';
@@ -31715,7 +31698,7 @@
           return res;
         }
 
-        this.buildCache(res.originX, res.originY, o$2.isReflow(lv));
+        this.buildCache(res.x3, res.y3, o$2.isReflow(lv));
 
         this.__renderPolygon(renderMode, ctx, res);
 
@@ -32414,7 +32397,7 @@
           return res;
         }
 
-        this.buildCache(res.originX, res.originY, o$2.isReflow(lv));
+        this.buildCache(res.x3, res.y3, o$2.isReflow(lv));
 
         this.__renderPolygon(renderMode, ctx, res);
 

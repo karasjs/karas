@@ -305,22 +305,10 @@ class Geom extends Xom {
     return computedStyle[VISIBILITY] !== 'hidden';
   }
 
-  __preSet() {
-    let { sx: x, sy: y, width, height, __cacheStyle, computedStyle } = this;
-    let {
-      [BORDER_TOP_WIDTH]: borderTopWidth,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [DISPLAY]: display,
-      [MARGIN_TOP]: marginTop,
-      [MARGIN_LEFT]: marginLeft,
-      [PADDING_TOP]: paddingTop,
-      [PADDING_LEFT]: paddingLeft,
-      [VISIBILITY]: visibility,
-    } = computedStyle;
-    let originX = x + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = y + borderTopWidth + marginTop + paddingTop;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
+  __preSet(res) {
+    let { width, height, __cacheStyle, computedStyle } = this;
+    let cx = res.x3 + width * 0.5;
+    let cy = res.y3 + height * 0.5;
     let {
       [FILL]: fill,
       [STROKE]: stroke,
@@ -335,15 +323,8 @@ class Geom extends Xom {
       [FILL_RULE]: fillRule,
     } = computedStyle;
     return {
-      x,
-      y,
-      originX,
-      originY,
-      width,
-      height,
       cx,
       cy,
-      display,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -352,7 +333,6 @@ class Geom extends Xom {
       strokeLinejoin,
       strokeMiterlimit,
       fill,
-      visibility,
       fillRule,
     };
   }
@@ -436,7 +416,7 @@ class Geom extends Xom {
       return res;
     }
     // data在无cache时没有提前设置
-    let preData = this.__preSet();
+    let preData = this.__preSet(res);
     return Object.assign(res, preData);
   }
 

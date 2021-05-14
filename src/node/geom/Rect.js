@@ -107,7 +107,7 @@ class Rect extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.originX, res.originY, level.isReflow(lv));
+    this.buildCache(res.x3, res.y3, level.isReflow(lv));
     this.__renderPolygon(renderMode, ctx, res);
     return res;
   }

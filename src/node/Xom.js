@@ -1286,12 +1286,6 @@ class Xom extends Node {
       else {
         virtualDom.opacity = opacity;
       }
-      if(mixBlendMode !== 'normal') {
-        virtualDom.mixBlendMode = mixBlendMode;
-      }
-      else {
-        delete virtualDom.mixBlendMode;
-      }
     }
     // canvas/svg/事件需要3种不同的matrix
     let matrix = __cacheStyle[MATRIX];
@@ -1327,12 +1321,12 @@ class Xom extends Node {
       virtualDom.visibility = visibility;
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    __config[NODE_BLUR_VALUE] = 0;
+    let blurValue = __config[NODE_BLUR_VALUE] = 0;
     if(Array.isArray(filter)) {
       filter.forEach(item => {
         let [k, v] = item;
         if(k === 'blur') {
-          __config[NODE_BLUR_VALUE] = v;
+          blurValue = __config[NODE_BLUR_VALUE] = v;
         }
       });
     }
@@ -1342,17 +1336,26 @@ class Xom extends Node {
     }
     // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
     let offscreenBlend;
-    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode) && !cache) {
+    if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
       mixBlendMode = mbmName(mixBlendMode);
-      let { width, height } = root;
-      let c = inject.getCacheCanvas(width, height, null, 'blend');
-      offscreenBlend = {
-        ctx,
-        target: c,
-        mixBlendMode,
-        matrix,
-      };
-      ctx = c.ctx;
+      if(renderMode === mode.CANVAS && !cache) {
+        let { width, height } = root;
+        let c = inject.getCacheCanvas(width, height, null, 'blend');
+        offscreenBlend = {
+          ctx,
+          target: c,
+          mixBlendMode,
+          matrix,
+        };
+        ctx = c.ctx;
+      }
+      else if(renderMode === mode.SVG) {
+        virtualDom.mixBlendMode = mixBlendMode;
+      }
+    }
+    // svg特殊没有mbm删除
+    else if(renderMode === mode.SVG) {
+      delete virtualDom.mixBlendMode;
     }
     let offscreenMask;
     if(__hasMask) {
@@ -1368,13 +1371,13 @@ class Xom extends Node {
       }
     }
     let offscreenFilter;
-    if(__config[NODE_BLUR_VALUE] > 0) {
+    if(blurValue > 0) {
       if(renderMode === mode.CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'filter1');
         offscreenFilter = {
           ctx,
-          blur: __config[NODE_BLUR_VALUE],
+          blur: blurValue,
           target: c,
           matrix,
         };
@@ -1384,7 +1387,7 @@ class Xom extends Node {
         && (lv >= REPAINT || contain(lv, FT))) {
         // 模糊框卷积尺寸 #66
         if(__config[NODE_BLUR_VALUE] > 0 && width > 0 && height > 0) {
-          let d = blur.outerSize(__config[NODE_BLUR_VALUE]);
+          let d = blur.outerSize(blurValue);
           let o = {
             tagName: 'filter',
             props: [
@@ -1397,7 +1400,7 @@ class Xom extends Node {
               {
                 tagName: 'feGaussianBlur',
                 props: [
-                  ['stdDeviation', __config[NODE_BLUR_VALUE]],
+                  ['stdDeviation', blurValue],
                 ],
               }
             ],
@@ -1455,6 +1458,7 @@ class Xom extends Node {
       res.offscreenMask = offscreenMask;
       res.offscreenFilter = offscreenFilter;
       res.offscreenOverflow = offscreenOverflow;
+      res.ctx = ctx;
       ctx.globalAlpha = opacity;
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }

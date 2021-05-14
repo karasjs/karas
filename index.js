@@ -5942,7 +5942,7 @@
         });
         return;
       } else if (!url || !util.isString(url)) {
-        inject.error('Measure img invalid: ' + url);
+        inject.warn('Measure img invalid: ' + url);
         cb && cb({
           state: LOADED,
           success: false,
@@ -5979,7 +5979,6 @@
         };
 
         img.onerror = function (e) {
-          inject.error('Measure img failed: ' + url);
           cache.state = LOADED;
           cache.success = false;
           cache.url = url;
@@ -10137,14 +10136,8 @@
     }], [{
       key: "getInstance",
       value: function getInstance(bbox, x1, y1) {
-        if (isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
-          inject.error('Cache.getInstance failed: ' + bbox);
-          return;
-        }
-
         var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]); // 防止边的精度问题四周各+1px，宽高即+2px
-
+        var h = Math.ceil(bbox[3] - bbox[1]);
         var res = Page.getInstance(Math.max(w, h));
 
         if (!res) {
@@ -17231,7 +17224,8 @@
           y3: y3,
           y4: y4,
           y5: y5,
-          y6: y6
+          y6: y6,
+          ctx: ctx
         }; // 防止cp直接返回cp嵌套，拿到真实dom的parent
 
         var p = __config[NODE_DOM_PARENT$1];
@@ -17283,18 +17277,20 @@
                   res.y5 = y5 += dy;
                   res.y6 = y6 += dy;
                 }
+
+                res.ctx = ctx;
               } else {
                 __config[NODE_LIMIT_CACHE$1] = true;
                 __cache = null;
+                res.limitCache = true;
               }
 
               __config[NODE_CACHE$2] = __cache;
             }
+        }
 
-          res.dx = dx;
-          res.dy = dy;
-        } // 计算好cacheStyle的内容，以及位图缓存指数
-
+        res.dx = dx;
+        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数
 
         var _this$__calCache = this.__calCache(renderMode, lv, ctx, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6),
             _this$__calCache2 = _slicedToArray(_this$__calCache, 4),
@@ -17398,10 +17394,8 @@
         } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
 
 
-        if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache && __config[NODE_LIMIT_CACHE$1]) {
-          return {
-            limitCache: true
-          };
+        if (res.limitCache) {
+          return res;
         } // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
 
 
@@ -24617,7 +24611,7 @@
         if (!util.isNil(key) && key !== '') {
           // 重复key错误警告
           if (hash.hasOwnProperty(key)) {
-            inject.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+            inject.warn('Component ' + vd.tagName + ' has duplicate key: ' + key);
           }
 
           hash[key] = {
@@ -32953,7 +32947,7 @@
                 if (currentTarget[k2]) {
                   currentTarget = currentTarget[k2];
                 } else {
-                  inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
                   return;
                 }
               }

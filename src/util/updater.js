@@ -397,7 +397,7 @@ function getKeyHash(json, hash, vd) {
       if(!util.isNil(key) && key !== '') {
         // 重复key错误警告
         if(hash.hasOwnProperty(key)) {
-          inject.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+          inject.warn('Component ' + vd.tagName + ' has duplicate key: ' + key);
         }
         hash[key] = {
           json,

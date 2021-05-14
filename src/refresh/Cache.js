@@ -179,13 +179,8 @@ class Cache {
   }
 
   static getInstance(bbox, x1, y1) {
-    if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
-      inject.error('Cache.getInstance failed: ' + bbox);
-      return;
-    }
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    // 防止边的精度问题四周各+1px，宽高即+2px
     let res = Page.getInstance(Math.max(w, h));
     if(!res) {
       return;

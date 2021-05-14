@@ -184,7 +184,7 @@ let inject = {
       return;
     }
     else if(!url || !util.isString(url)) {
-      inject.error('Measure img invalid: ' + url);
+      inject.warn('Measure img invalid: ' + url);
       cb && cb({
         state: LOADED,
         success: false,
@@ -217,7 +217,6 @@ let inject = {
         list.forEach(cb => cb(cache));
       };
       img.onerror = function(e) {
-        inject.error('Measure img failed: ' + url);
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;

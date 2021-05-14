@@ -1178,7 +1178,7 @@ class Xom extends Node {
     let y4 = this.__sy4;
     let y5 = this.__sy5;
     let y6 = this.__sy6;
-    let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6 };
+    let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, ctx };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
@@ -1223,20 +1223,22 @@ class Xom extends Node {
             res.y5 = y5 += dy;
             res.y6 = y6 += dy;
           }
+          res.ctx = ctx;
         }
         else {
           __config[NODE_LIMIT_CACHE] = true;
           __cache = null;
+          res.limitCache = true;
         }
         __config[NODE_CACHE] = __cache;
       }
-      res.dx = dx;
-      res.dy = dy;
     }
     // 降级的webgl绘制，ctx传入为一个离屏canvas
     else if(renderMode === mode.WEBGL) {
       // renderMode = mode.CANVAS;
     }
+    res.dx = dx;
+    res.dy = dy;
     // 计算好cacheStyle的内容，以及位图缓存指数
     let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, this.parent,
       __cacheStyle, currentStyle, computedStyle,
@@ -1335,8 +1337,8 @@ class Xom extends Node {
       });
     }
     // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
-    if(((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache) && __config[NODE_LIMIT_CACHE]) {
-      return { limitCache: true };
+    if(res.limitCache) {
+      return res;
     }
     // 按照顺序依次检查生成offscreen离屏功能，顺序在structs中渲染离屏时用到，多个离屏时隔离并且后面有前面的ctx引用
     let offscreenBlend;

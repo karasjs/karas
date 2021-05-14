@@ -67,7 +67,7 @@ function replaceVars(target, vars) {
                 currentTarget = currentTarget[k2];
               }
               else {
-                inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
                 return;
               }
             }

@@ -17453,7 +17453,7 @@
             ctx = _c2.ctx;
           } else if (renderMode === mode.SVG && (lv >= REPAINT$1 || contain(lv, FT))) {
             // 模糊框卷积尺寸 #66
-            if (__config[NODE_BLUR_VALUE] > 0 && width > 0 && height > 0) {
+            if (blurValue > 0 && width > 0 && height > 0) {
               var d = blur.outerSize(blurValue);
               var o$1 = {
                 tagName: 'filter',
@@ -23701,9 +23701,7 @@
             strokeDasharrayStrs = res.strokeDasharrayStr,
             strokeLinecaps = res.strokeLinecap,
             strokeLinejoins = res.strokeLinejoin,
-            strokeMiterlimits = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+            strokeMiterlimits = res.strokeMiterlimit;
         var list = this.__cacheProps.list,
             isMulti = this.isMulti,
             bbox = this.bbox; // 普通情况下只有1个，按普通情况走
@@ -23719,8 +23717,6 @@
             strokeLinecap: strokeLinecaps[0],
             strokeLinejoin: strokeLinejoins[0],
             strokeMiterlimit: strokeMiterlimits[0],
-            dx: dx,
-            dy: dy,
             bbox: bbox
           };
 
@@ -23734,8 +23730,6 @@
                 var _o = {
                   fill: fill,
                   fillRule: fillRules[i],
-                  dx: dx,
-                  dy: dy,
                   bbox: bbox
                 };
 
@@ -23755,8 +23749,6 @@
                   strokeLinecap: strokeLinecaps[_i],
                   strokeLinejoin: strokeLinejoins[_i],
                   strokeMiterlimit: strokeMiterlimits[_i],
-                  dx: dx,
-                  dy: dy,
                   bbox: bbox
                 };
 
@@ -23819,9 +23811,7 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+            strokeMiterlimit = res.strokeMiterlimit;
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           this.__preSetCanvas(renderMode, ctx, res);
@@ -23830,10 +23820,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return canvasPolygon$6(ctx, item, dx, dy);
+              return canvasPolygon$6(ctx, item);
             });
           } else {
-            canvasPolygon$6(ctx, list, dx, dy);
+            canvasPolygon$6(ctx, list);
           }
 
           if (isFill && fill && fill !== 'none') {
@@ -23934,9 +23924,7 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+            strokeMiterlimit = res.strokeMiterlimit;
 
         var _res$method$v = _slicedToArray(res[method].v, 4),
             color = _res$method$v[0],
@@ -23966,10 +23954,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item, dx, dy);
+              return painter.canvasPolygon(ctx, item);
             });
           } else {
-            canvasPolygon$6(ctx, list, dx, dy);
+            canvasPolygon$6(ctx, list);
           }
 
           ctx[method]();
@@ -24012,11 +24000,7 @@
         var _this3 = this;
 
         var fill = res.fill,
-            bbox = res.bbox,
-            _res$dx = res.dx,
-            dx = _res$dx === void 0 ? 0 : _res$dx,
-            _res$dy = res.dy,
-            dy = _res$dy === void 0 ? 0 : _res$dy;
+            bbox = res.bbox;
         var color = fill.v;
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -24037,19 +24021,19 @@
             list.forEach(function (item) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$6(ctx, item, dx, dy);
+              canvasPolygon$6(ctx, item);
               ctx.clip();
               ctx.closePath();
-              ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
+              ctx.drawImage(offscreen.canvas, x1, y1);
               ctx.restore();
             });
           } else {
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$6(ctx, list, dx, dy);
+            canvasPolygon$6(ctx, list);
             ctx.clip();
             ctx.closePath();
-            ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
+            ctx.drawImage(offscreen.canvas, x1, y1);
             ctx.restore();
           }
 
@@ -31086,7 +31070,7 @@
                   _controlB = _getNewPoint8[5];
                 }
 
-                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
+                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve);
               }
 
               ctx.stroke();
@@ -32050,9 +32034,7 @@
             strokeDasharrayStrs = res.strokeDasharrayStr,
             strokeLinecaps = res.strokeLinecap,
             strokeLinejoins = res.strokeLinejoin,
-            strokeMiterlimits = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+            strokeMiterlimits = res.strokeMiterlimit;
         var _this$__cacheProps = this.__cacheProps,
             list = _this$__cacheProps.list,
             sList = _this$__cacheProps.sList,
@@ -32068,9 +32050,7 @@
             strokeDasharrayStr: strokeDasharrayStrs[0],
             strokeLinecap: strokeLinecaps[0],
             strokeLinejoin: strokeLinejoins[0],
-            strokeMiterlimit: strokeMiterlimits[0],
-            dx: dx,
-            dy: dy
+            strokeMiterlimit: strokeMiterlimits[0]
           };
 
           this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
@@ -32082,9 +32062,7 @@
               if (fill) {
                 var _o = {
                   fill: fill,
-                  fillRule: fillRules[i],
-                  dx: dx,
-                  dy: dy
+                  fillRule: fillRules[i]
                 };
 
                 this.__renderOneSector(renderMode, ctx, isMulti, list, sList, _o);
@@ -32102,9 +32080,7 @@
                   strokeDasharrayStr: strokeDasharrayStrs[_i],
                   strokeLinecap: strokeLinecaps[_i],
                   strokeLinejoin: strokeLinejoins[_i],
-                  strokeMiterlimit: strokeMiterlimits[_i],
-                  dx: dx,
-                  dy: dy
+                  strokeMiterlimit: strokeMiterlimits[_i]
                 };
 
                 this.__renderOnePolygon(renderMode, ctx, isMulti, list, sList, _o2);

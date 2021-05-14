@@ -1386,7 +1386,7 @@ class Xom extends Node {
       else if(renderMode === mode.SVG
         && (lv >= REPAINT || contain(lv, FT))) {
         // 模糊框卷积尺寸 #66
-        if(__config[NODE_BLUR_VALUE] > 0 && width > 0 && height > 0) {
+        if(blurValue > 0 && width > 0 && height > 0) {
           let d = blur.outerSize(blurValue);
           let o = {
             tagName: 'filter',

@@ -165,8 +165,6 @@ class Sector extends Geom {
       strokeLinecap: strokeLinecaps,
       strokeLinejoin: strokeLinejoins,
       strokeMiterlimit: strokeMiterlimits,
-      dx,
-      dy,
     } = res;
     let { __cacheProps: { list, sList }, isMulti } = this;
     // 普通情况下只有1个，按普通情况走
@@ -181,8 +179,6 @@ class Sector extends Geom {
         strokeLinecap: strokeLinecaps[0],
         strokeLinejoin: strokeLinejoins[0],
         strokeMiterlimit: strokeMiterlimits[0],
-        dx,
-        dy,
       };
       this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
     }
@@ -194,8 +190,6 @@ class Sector extends Geom {
           let o = {
             fill,
             fillRule: fillRules[i],
-            dx,
-            dy,
           };
           this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
         }
@@ -211,8 +205,6 @@ class Sector extends Geom {
             strokeLinecap: strokeLinecaps[i],
             strokeLinejoin: strokeLinejoins[i],
             strokeMiterlimit: strokeMiterlimits[i],
-            dx,
-            dy,
           };
           this.__renderOnePolygon(renderMode, ctx, isMulti, list, sList, o);
         }

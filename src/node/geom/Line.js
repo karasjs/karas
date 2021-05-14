@@ -319,7 +319,7 @@ class Line extends Geom {
             if(start !== 0 || end !== 1) {
               [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
             }
-            painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve, dx, dy);
+            painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve);
           }
           ctx.stroke();
           ctx.closePath();

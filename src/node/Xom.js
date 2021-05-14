@@ -1235,7 +1235,7 @@ class Xom extends Node {
     }
     // 降级的webgl绘制
     else if(renderMode === mode.WEBGL) {
-      let c = inject.getCacheCanvas(root.width, root.height, '__$$OUT_OF_SIZE$$__');
+      let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
       res.ctx = ctx = c.ctx;
     }
     res.dx = dx;

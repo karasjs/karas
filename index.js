@@ -11065,7 +11065,7 @@
               }
             } else {
               var root = this.root;
-              var c = inject.getCacheCanvas(root.width, root.height, '__$$OUT_OF_SIZE$$__');
+              var c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
               ctx = c.ctx;
               var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT].__config,
                   m = _config$NODE_DOM_PAR[NODE_MATRIX_EVENT],
@@ -17302,7 +17302,7 @@
             }
         } // 降级的webgl绘制
         else if (renderMode === mode.WEBGL) {
-            var c = inject.getCacheCanvas(root.width, root.height, '__$$OUT_OF_SIZE$$__');
+            var c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
             res.ctx = ctx = c.ctx;
           }
 
@@ -27971,7 +27971,7 @@
         if (__cache && __cache.available) {
           texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, m, cx, cy, true);
         } else if (limitCache) {
-          var c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+          var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
           node.render(renderMode, 0, gl);
           var j = texCache.lockOneChannel();
 
@@ -28051,7 +28051,7 @@
         else if (_limitCache) {
             var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
 
-            var _c5 = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+            var _c5 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
             node.render(renderMode, refreshLevel, gl);
 

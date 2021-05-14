@@ -2167,7 +2167,7 @@ function renderWebgl(renderMode, gl, root) {
         texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, m, cx, cy, true);
       }
       else if(limitCache) {
-        let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
         node.render(renderMode, 0, gl);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
@@ -2234,7 +2234,7 @@ function renderWebgl(renderMode, gl, root) {
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if(limitCache) {
         let m = mx.m2Mat4(matrixEvent, cx, cy);
-        let c = inject.getCacheCanvas(width, height, '__$$OUT_OF_SIZE$$__');
+        let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
         node.render(renderMode, refreshLevel, gl);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);

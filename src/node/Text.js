@@ -590,7 +590,7 @@ class Text extends Node {
         }
         else {
           let root = this.root;
-          let c = inject.getCacheCanvas(root.width, root.height, '__$$OUT_OF_SIZE$$__');
+          let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
           ctx = c.ctx;
           let {
             [NODE_DOM_PARENT]: {

@@ -853,7 +853,7 @@ function getEasing(ea) {
       };
     }
     else {
-      timingFunction = easing.getInstance(ea);
+      timingFunction = easing.getEasing(ea);
     }
   }
   return timingFunction;

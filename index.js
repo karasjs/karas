@@ -25583,11 +25583,12 @@
    * @param parentIndexHash
    * @param opacityHash
    * @param MAX
+   * @param includeLimitCache webgl时即便超限也要强制生成total，所以标识不能跳出
    * @returns {*}
    */
 
 
-  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, MAX) {
+  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, MAX, includeLimitCache) {
     var sx1 = node.__sx1,
         sy1 = node.__sy1,
         __config = node.__config;
@@ -25640,9 +25641,9 @@
               visibility = _node2$__config$NODE_[VISIBILITY$5],
               transform = _node2$__config$NODE_[TRANSFORM$5],
               transformOrigin = _node2$__config$NODE_[TRANSFORM_ORIGIN$5],
-              opacity = _node2$__config$NODE_[OPACITY$5];
+              opacity = _node2$__config$NODE_[OPACITY$5]; // webgl不能跳过超限
 
-          if (limitCache) {
+          if (limitCache && !includeLimitCache) {
             return;
           } // display:none跳过整个节点树，visibility只跳过自身
 
@@ -25939,7 +25940,8 @@
     return [n, frameBuffer, texture];
   }
   /**
-   * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，如果超限则不返回
+   * 局部根节点复合图层生成，汇总所有子节点到一颗局部树上的位图缓存，包含超限特殊情况
+   * 即便只有自己一个也要返回，因为webgl生成total的原因是有类似filter/mask等必须离屏处理的东西
    * @param gl
    * @param texCache
    * @param node
@@ -25948,23 +25950,28 @@
    * @param total
    * @param __structs
    * @param cache
+   * @param limitCache
    * @param W
    * @param H
    * @returns {*}
    */
 
 
-  function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, cache, W, H) {
-    // if(total === 0) {
-    //   return cache;
-    // }
+  function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, cache, limitCache, W, H) {
     // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
     var parentIndexHash = {};
     var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, gl.getParameter(gl.MAX_TEXTURE_SIZE), limitCache); // 可能局部根节点合成过程中发现整体超限
+
+    var totalLimitCache;
 
     if (!bboxTotal) {
-      return;
+      totalLimitCache = true;
+    } // 超限情况生成画布大小的特殊纹理
+
+
+    if (limitCache || totalLimitCache) {
+      bboxTotal = [0, 0, W, H];
     }
 
     var width = bboxTotal[2] - bboxTotal[0];
@@ -25988,7 +25995,26 @@
 
     if (cache && cache.available) {
       texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy);
-    } // 因为cacheTotal不总是以左上角原点为开始，所以必须每个节点重算matrix，合并box时计算的无法用到
+    } // limitCache无cache需先绘制到统一的离屏画布上
+    else if (limitCache) {
+        var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+        node.render(mode.WEBGL, 0, gl);
+        var j = texCache.lockOneChannel();
+
+        var _texture = webgl.createTexture(gl, c.canvas, j);
+
+        var _mockCache = new MockCache(gl, _texture, 0, 0, width, height, [0, 0, width, height]);
+
+        texCache.addTexAndDrawWhenLimit(gl, _mockCache, 1, null, cx, cy, 0, 0);
+        texCache.refresh(gl, cx, cy);
+        c.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        c.ctx.globalAlpha = 1;
+        c.ctx.clearRect(0, 0, width, height);
+
+        _mockCache.release();
+
+        texCache.releaseLockChannel(j);
+      } // 因为cacheTotal不总是以左上角原点为开始，所以必须每个节点重算matrix，合并box时计算的无法用到
 
 
     var matrixHash = {}; // 先序遍历汇总到total
@@ -26115,7 +26141,7 @@
 
     var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bboxTotal);
     texCache.releaseLockChannel(n, mockCache.page);
-    return mockCache;
+    return [limitCache || totalLimitCache, mockCache];
   }
 
   function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
@@ -27729,7 +27755,7 @@
           var cacheMask = __config[NODE_CACHE_MASK$2];
 
           if (!cacheMask || !cacheMask.available) {
-            hasRecordAsMask = [_i13, lv, total, node, __config, hasMask];
+            hasRecordAsMask = [_i13, lv, total, node, __config, null, hasMask];
             mergeList.push(hasRecordAsMask);
           }
         }
@@ -27741,13 +27767,13 @@
         if (contain$2(refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
-          var _m9 = __config[NODE_MATRIX$2];
-          _m9[0] = matrix[0];
-          _m9[1] = matrix[1];
-          _m9[2] = matrix[2];
-          _m9[3] = matrix[3];
-          _m9[4] = matrix[4];
-          _m9[5] = matrix[5]; // webgl中心点特殊
+          var _m10 = __config[NODE_MATRIX$2];
+          _m10[0] = matrix[0];
+          _m10[1] = matrix[1];
+          _m10[2] = matrix[2];
+          _m10[3] = matrix[3];
+          _m10[4] = matrix[4];
+          _m10[5] = matrix[5]; // webgl中心点特殊
 
           var tfo = computedStyle[TRANSFORM_ORIGIN$5].slice(0);
           tfo[0] += (node.__sx1 || 0) - cx;
@@ -27762,13 +27788,13 @@
         } // 恶心的v8性能优化
 
 
-        var _m8 = __config[NODE_MATRIX_EVENT$4];
-        _m8[0] = matrix[0];
-        _m8[1] = matrix[1];
-        _m8[2] = matrix[2];
-        _m8[3] = matrix[3];
-        _m8[4] = matrix[4];
-        _m8[5] = matrix[5];
+        var _m9 = __config[NODE_MATRIX_EVENT$4];
+        _m9[0] = matrix[0];
+        _m9[1] = matrix[1];
+        _m9[2] = matrix[2];
+        _m9[3] = matrix[3];
+        _m9[4] = matrix[4];
+        _m9[5] = matrix[5];
 
         var _opacity5;
 
@@ -27807,9 +27833,9 @@
           if (_blurValue2) {
             // 防重
             if (hasRecordAsMask) {
-              mergeList[6] = _blurValue2;
+              mergeList[7] = _blurValue2;
             } else {
-              hasRecordAsMask = [_i13, lv, total, node, __config, null, _blurValue2];
+              hasRecordAsMask = [_i13, lv, total, node, __config, null, null, _blurValue2];
               mergeList.push(hasRecordAsMask);
             }
           }
@@ -27844,17 +27870,18 @@
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
       var validMbm = isValidMbm$2(mixBlendMode);
 
-      if (!limitCache && (hasMask // || position === 'absolute'
-      || blurValue > 0 || overflow === 'hidden' && total || validMbm)) {
+      if (hasMask // || position === 'absolute'
+      || blurValue > 0 || overflow === 'hidden' && total || validMbm) {
         if (validMbm) {
           hasMbm = true;
         }
 
         if (hasRecordAsMask) {
-          hasRecordAsMask[6] = blurValue;
-          hasRecordAsMask[7] = overflow;
+          hasRecordAsMask[5] = limitCache;
+          hasRecordAsMask[7] = blurValue;
+          hasRecordAsMask[8] = overflow;
         } else {
-          mergeList.push([_i13, lv, total, node, __config, hasMask, blurValue, overflow]);
+          mergeList.push([_i13, lv, total, node, __config, limitCache, hasMask, blurValue, overflow]);
         }
       }
 
@@ -27865,9 +27892,10 @@
       var _ret2 = _loop3(len, _i12);
 
       if (_ret2 === "continue") continue;
-    } // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
-    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
+    }
 
+    var limitHash = {}; // 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
+    // 这样保证子节点在前，后节点在前，后节点是为了mask先应用自身如filter之后再进行遮罩
 
     if (mergeList.length) {
       mergeList.sort(function (a, b) {
@@ -27878,14 +27906,15 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item7 = _slicedToArray(item, 8),
+        var _item7 = _slicedToArray(item, 9),
             i = _item7[0],
             total = _item7[2],
             node = _item7[3],
             __config = _item7[4],
-            hasMask = _item7[5],
-            blurValue = _item7[6],
-            overflow = _item7[7];
+            limitCache = _item7[5],
+            hasMask = _item7[6],
+            blurValue = _item7[7],
+            overflow = _item7[8];
 
         var __cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
@@ -27894,37 +27923,56 @@
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3]; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, width, height);
-        } // 防止失败超限，必须有total结果
+          var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, width, height),
+              _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
+              limit = _genTotalWebgl2[0],
+              res = _genTotalWebgl2[1];
 
+          __cacheTotal = res;
+          limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
-        if (__cacheTotal && __cacheTotal.available) {
-          var target = __cacheTotal;
-
-          if (overflow === 'hidden') {
-            if (!__cacheOverflow || !__cacheOverflow.available) {
-              __config[NODE_CACHE_FILTER$3] = genOverflowWebgl(gl, texCache, node, target, width, height);
-            }
-
-            target = __config[NODE_CACHE_OVERFLOW$3] || target;
+          if (!limitCache) {
+            __config[NODE_CACHE_TOTAL$3] = res;
           }
+        } // 即使超限，也有total结果
 
-          if (blurValue > 0) {
-            if (!__cacheFilter || !__cacheFilter.available) {
-              __config[NODE_CACHE_FILTER$3] = genFilterWebgl(gl, texCache, node, target, blurValue, width, height);
+
+        var target = __cacheTotal;
+
+        if (overflow === 'hidden') {
+          if (!__cacheOverflow || !__cacheOverflow.available) {
+            target = genOverflowWebgl(gl, texCache, node, target, width, height);
+
+            if (!limitCache) {
+              __config[NODE_CACHE_FILTER$3] = target;
             }
-
-            target = __config[NODE_CACHE_FILTER$3] || target;
-          }
-
-          if (hasMask && (!__cacheMask || !__cacheMask.available)) {
-            __config[NODE_CACHE_MASK$2] = genMaskWebgl(gl, texCache, node, __config, target, width, height);
           }
         }
-      });
-    } // console.error('render');
-    // return;
 
+        if (blurValue > 0) {
+          if (!__cacheFilter || !__cacheFilter.available) {
+            target = genFilterWebgl(gl, texCache, node, target, blurValue, width, height);
+
+            if (!limitCache) {
+              __config[NODE_CACHE_FILTER$3] = target;
+            }
+          }
+        }
+
+        if (hasMask && (!__cacheMask || !__cacheMask.available)) {
+          target = genMaskWebgl(gl, texCache, node, __config, target, width, height);
+
+          if (!limitCache) {
+            __config[NODE_CACHE_MASK$2] = target;
+          }
+        } // 保存临时的局部根节点
+
+
+        if (limitCache) {
+          limitHash[i] = target;
+        }
+      });
+    }
     /**
      * 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
      * 由于mixBlendMode的存在，需先申请个fbo纹理，所有绘制默认向该纹理绘制，最后fbo纹理再进入主画布
@@ -27948,7 +27996,6 @@
     for (var _i14 = 0, _len7 = __structs.length; _i14 < _len7; _i14++) {
       var _structs$_i7 = __structs[_i14],
           node = _structs$_i7[STRUCT_NODE$1],
-          lv = _structs$_i7[STRUCT_LV$2],
           total = _structs$_i7[STRUCT_TOTAL$1],
           hasMask = _structs$_i7[STRUCT_HAS_MASK$1];
       var __config = node.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
@@ -27964,30 +28011,28 @@
 
         if (__cache && __cache.available) {
           texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, m, cx, cy, true);
-        } else if (limitCache) {
-          var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-          node.render(renderMode, 0, gl);
-          var j = texCache.lockOneChannel();
+        } // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
+        else if (limitCache) {
+            var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
+            node.render(renderMode, 0, gl);
+            var j = texCache.lockOneChannel();
 
-          var _texture = webgl.createTexture(gl, c.canvas, j);
+            var _texture2 = webgl.createTexture(gl, c.canvas, j);
 
-          var mockCache = new MockCache(gl, _texture, 0, 0, width, height, [0, 0, width, height]);
-          texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
-          texCache.refresh(gl, cx, cy, true);
-          c.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          c.ctx.globalAlpha = 1;
-          c.ctx.clearRect(0, 0, width, height);
-          c.release();
-          mockCache.release();
-          texCache.releaseLockChannel(j);
-        }
+            var mockCache = new MockCache(gl, _texture2, 0, 0, width, height, [0, 0, width, height]);
+            texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
+            texCache.refresh(gl, cx, cy, true);
+            c.ctx.setTransform(1, 0, 0, 1, 0, 0);
+            c.ctx.globalAlpha = 1;
+            c.ctx.clearRect(0, 0, width, height);
+            mockCache.release();
+            texCache.releaseLockChannel(j);
+          }
       } else {
         var _opacity4 = __config[NODE_OPACITY$3],
             _matrixEvent2 = __config[NODE_MATRIX_EVENT$4],
-            blurValue = __config[NODE_BLUR_VALUE$1],
             _limitCache = __config[NODE_LIMIT_CACHE$2],
             _cache = __config[NODE_CACHE$5],
-            __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cacheFilter = __config[NODE_CACHE_FILTER$3],
             __cacheMask = __config[NODE_CACHE_MASK$2],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3],
@@ -27995,7 +28040,6 @@
             _config$NODE_COMPUTE3 = __config[NODE_COMPUTED_STYLE$4],
             display = _config$NODE_COMPUTE3[DISPLAY$8],
             visibility = _config$NODE_COMPUTE3[VISIBILITY$5],
-            overflow = _config$NODE_COMPUTE3[OVERFLOW$3],
             mixBlendMode = _config$NODE_COMPUTE3[MIX_BLEND_MODE$3];
 
         if (display === 'none') {
@@ -28040,10 +28084,41 @@
           if (target !== _cache) {
             _i14 += (total || 0) + (hasMask || 0);
           }
-        } // 超限的情况，这里是普通节点超限，没有合成total后再合成特殊cache如filter之类的，
+        } else if (limitHash.hasOwnProperty(_i14)) {
+          var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
+
+          var _target5 = limitHash[_i14];
+
+          if (hasMbm && isValidMbm$2(mixBlendMode)) {
+            texCache.refresh(gl, cx, cy, true);
+
+            var _genFrameBufferWithTe19 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe20 = _slicedToArray(_genFrameBufferWithTe19, 3),
+                _n = _genFrameBufferWithTe20[0],
+                _frameBuffer = _genFrameBufferWithTe20[1],
+                _texture3 = _genFrameBufferWithTe20[2];
+
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity4, _m7, cx, cy, 0, 0, true);
+            texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
+
+            var _genMbmWebgl5 = genMbmWebgl(gl, texCache, n, _n, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
+
+            var _genMbmWebgl6 = _slicedToArray(_genMbmWebgl5, 3);
+
+            n = _genMbmWebgl6[0];
+            frameBuffer = _genMbmWebgl6[1];
+            texture = _genMbmWebgl6[2];
+            gl.deleteFramebuffer(_frameBuffer);
+            gl.deleteTexture(_texture3);
+          } else {
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity4, _m7, cx, cy, 0, 0, true);
+          }
+
+          _i14 += (total || 0) + (hasMask || 0);
+        } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
         // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
-        else if (_limitCache) {
-            var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
+        else if (_limitCache && display !== 'none' && visibility !== 'hidden') {
+            var _m8 = mx.m2Mat4(_matrixEvent2, cx, cy);
 
             var _c5 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
@@ -28051,22 +28126,20 @@
 
             var _j10 = texCache.lockOneChannel();
 
-            var _texture2 = webgl.createTexture(gl, _c5.canvas, _j10);
+            var _texture4 = webgl.createTexture(gl, _c5.canvas, _j10);
 
-            var _mockCache = new MockCache(gl, _texture2, 0, 0, width, height, [0, 0, width, height]);
+            var _mockCache2 = new MockCache(gl, _texture4, 0, 0, width, height, [0, 0, width, height]);
 
-            texCache.addTexAndDrawWhenLimit(gl, _mockCache, _opacity4, _m7, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _mockCache2, _opacity4, _m8, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true);
 
             _c5.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
             _c5.ctx.globalAlpha = 1;
 
-            _c5.ctx.clearRect(0, 0, width, height);
-
             _c5.release();
 
-            _mockCache.release();
+            _mockCache2.release();
 
             texCache.releaseLockChannel(_j10);
           }

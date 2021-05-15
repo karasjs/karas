@@ -122,9 +122,9 @@ let easing = {
   ease: bezier(0.25, 0.1, 0.25, 1),
   easeInOut: bezier(0.42, 0, 0.58, 1),
   cubicBezier: bezier,
-  getInstance(v) {
-    if(Array.isArray(v) && v.length === 4) {
-      return bezier(v[0], v[1], v[2], v[3]);
+  getEasing(v, v1, v2, v3) {
+    if(arguments.length === 4) {
+      return bezier(v, v1, v2, v3);
     }
     else if(v) {
       v = v.toString();
@@ -133,7 +133,7 @@ let easing = {
         v = v.match(/[\d.]+/g);
         timingFunction = bezier(v[0], v[1], v[2], v[3]);
       }
-      else if(v !== 'getInstance') {
+      else if(v !== 'getEasing') {
         timingFunction = this[v];
       }
       return timingFunction;

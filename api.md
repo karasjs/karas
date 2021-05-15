@@ -2314,6 +2314,20 @@ let easeInOut = karas.animate.easing.cubicBezier(0.42, 0, 0.58, 1);
 easeInOut(0.5); // 返回0.0197224535483112
 ```
 
+#### getEasing
+* **类型** `Function`
+* **参数**
+  * v `String`
+* **说明**  
+快捷综合的获取缓动曲线生成，可以传4个数值参数（此时等同cubicBezier方法），也可以传1个固定类型的string或css值。
+* **示例**
+```jsx
+// 
+karas.animate.easing.getEasing(0.42, 0, 0.58, 1);
+karas.animate.easing.getEasing('easeOut');
+karas.animate.easing.getEasing('cubic-bezier(0.42, 0, 0.58, 1)');
+```
+
 ### frame
 帧动画工具。详见[frame](#frame)。
 

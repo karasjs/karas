@@ -47,8 +47,10 @@ class Page {
   }
 
   del(pos) {
-    this.grid[pos] = 1;
-    this.__free++;
+    if(!this.grid[pos]) {
+      this.grid[pos] = 1;
+      this.__free++;
+    }
   }
 
   getCoords(pos) {

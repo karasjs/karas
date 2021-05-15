@@ -508,12 +508,10 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
     if(__config[NODE_CACHE_OVERFLOW]) {
       __config[NODE_CACHE_OVERFLOW].release();
-      __config[NODE_CACHE_OVERFLOW] = null;
     }
   }
   if((need || contain(lv, FILTER)) && __config[NODE_CACHE_FILTER]) {
     __config[NODE_CACHE_FILTER].release();
-    __config[NODE_CACHE_FILTER] = null;
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
   while(parent) {
@@ -530,7 +528,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     else {
       cacheHash[uniqueUpdateId] = true;
       __config[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId++;
-      cacheList.push(parent);
+      cacheList.push(__config);
     }
     let lv = __config[NODE_REFRESH_LV];
     let need = lv >= REPAINT;
@@ -543,15 +541,12 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
     if(__config[NODE_CACHE_FILTER]) {
       __config[NODE_CACHE_FILTER].release();
-      __config[NODE_CACHE_FILTER] = null;
     }
     if(__config[NODE_CACHE_MASK]) {
       __config[NODE_CACHE_MASK].release();
-      __config[NODE_CACHE_MASK] = null;
     }
     if(__config[NODE_CACHE_OVERFLOW]) {
       __config[NODE_CACHE_OVERFLOW].release();
-      __config[NODE_CACHE_OVERFLOW] = null;
     }
     parent = __config[NODE_DOM_PARENT];
   }
@@ -1120,8 +1115,8 @@ class Root extends Dom {
     root.__reflowList = reflowList;
     uniqueUpdateId = 0;
     root.__updateHash = root.__config[NODE_UPDATE_HASH] = {};
-    cacheList.forEach(item => {
-      delete item.__config[NODE_UNIQUE_UPDATE_ID];
+    cacheList.forEach(__config => {
+      delete __config[NODE_UNIQUE_UPDATE_ID];
     });
     // zIndex改变的汇总修改，防止重复操作
     zList.forEach(item => {

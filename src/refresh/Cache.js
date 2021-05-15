@@ -84,14 +84,13 @@ class Cache {
   }
 
   clear() {
-    let ctx = this.ctx;
-    if(this.enabled && ctx && this.available) {
+    if(this.available) {
+      let ctx = this.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      let { x, y } = this;
       let size = this.page.size;
-      ctx.clearRect(x, y, size, size);
+      ctx.clearRect(this.x, this.y, size, size);
+      this.__available = false;
     }
-    this.__available = false;
   }
 
   release() {

@@ -233,11 +233,6 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
       }
     }
   }
-  if((bboxTotal[2] - bboxTotal[0]) > MAX || (bboxTotal[3] - bboxTotal[1]) > MAX) {
-    // 标识后续不再尝试生成，重新布局会清空标识
-    __config[NODE_LIMIT_CACHE] = true;
-    return;
-  }
   return bboxTotal;
 }
 
@@ -248,6 +243,18 @@ function mergeBbox(bbox, t, sx1, sy1) {
   bbox[3] = Math.max(bbox[3], sy1 + t[3]);
 }
 
+/**
+ * 生成局部根节点离屏缓存，当超限时返回空
+ * @param renderMode
+ * @param node
+ * @param __config
+ * @param index
+ * @param total
+ * @param __structs
+ * @param cacheTop
+ * @param cache
+ * @returns {{enabled}|Cache|*}
+ */
 function genTotal(renderMode, node, __config, index, total, __structs, cacheTop, cache) {
   if(total === 0) {
     return cache;
@@ -1134,22 +1141,10 @@ function renderCacheCanvas(renderMode, ctx, root) {
       }
     }
     /**
-     * >=REPAINT重新渲染，并根据结果判断是否离屏限制错误
-     * geom特殊对待，因可能被开发人员继承实现自定义图形，render()传递ctx要使其无感知切换，
-     * 先执行Xom的renderSelf()逻辑，实现__cache离屏ctx能力，然后再调用Geom/子类的render()，其依据renderSelfData
+     * >=REPAINT重新渲染，并根据结果判断是否离屏限制limitCache
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      // if(node instanceof Geom) {
-      //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx, true);
-      //   __cache = __config[NODE_CACHE];
-      //   if(__cache && __cache.available) {
-      //     node.render(renderMode, refreshLevel, __cache.ctx, true);
-      //   }
-      // }
-      // else {
-      //   node.render(renderMode, refreshLevel, ctx, true);
-      // }
       node.render(renderMode, refreshLevel, ctx, true);
     }
     lastConfig = __config;
@@ -2036,22 +2031,9 @@ function renderWebgl(renderMode, gl, root) {
     }
     /**
      * >=REPAINT重新渲染，并根据结果判断是否离屏限制错误
-     * geom特殊对待，因可能被开发人员继承实现自定义图形，render()传递ctx要使其无感知切换，
-     * 先执行Xom的renderSelf()逻辑，实现__cache离屏ctx能力，然后再调用Geom/子类的render()，其依据renderSelfData
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      // if(node instanceof Geom) {
-      //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, gl, true);
-      //   __cache = __config[NODE_CACHE];
-      //   if(__cache && __cache.available) {
-      //     // geom特殊绘制在离屏canvas上
-      //     node.render(renderMode, refreshLevel, __cache.ctx, true);
-      //   }
-      // }
-      // else {
-      //   node.render(renderMode, refreshLevel, gl, true);
-      // }
       node.render(renderMode, refreshLevel, gl, true);
     }
     lastRefreshLevel = refreshLevel;

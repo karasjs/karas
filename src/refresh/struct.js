@@ -2275,7 +2275,7 @@ function renderWebgl(renderMode, gl, root) {
         texCache.refresh(gl, cx, cy, true);
         c.ctx.setTransform(1, 0, 0, 1, 0, 0);
         c.ctx.globalAlpha = 1;
-        c.release();
+        c.ctx.clearRect(0, 0, width, height);
         mockCache.release();
         texCache.releaseLockChannel(j);
       }

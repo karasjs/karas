@@ -28137,7 +28137,7 @@
 
             _c5.ctx.globalAlpha = 1;
 
-            _c5.release();
+            _c5.ctx.clearRect(0, 0, width, height);
 
             _mockCache2.release();
 

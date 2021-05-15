@@ -12868,6 +12868,8 @@
     getEasing: function getEasing(v, v1, v2, v3) {
       if (arguments.length === 4) {
         return bezier(v, v1, v2, v3);
+      } else if (Array.isArray(v)) {
+        return bezier(v[0], v[1], v[2], v[3]);
       } else if (v) {
         v = v.toString();
         var timingFunction;
@@ -13764,7 +13766,7 @@
           return percent;
         };
       } else {
-        timingFunction = easing.getInstance(ea);
+        timingFunction = easing.getEasing(ea);
       }
     }
 

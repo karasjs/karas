@@ -768,8 +768,7 @@ function normalize(style, reset = []) {
       res[LETTER_SPACING] = [parseFloat(temp), PX];
     }
     else {
-      let n = Math.max(0, parseFloat(temp)) || 0;
-      res[LETTER_SPACING] = [n, PX];
+      res[LETTER_SPACING] = [parseFloat(temp) || 0, PX];
     }
   }
   temp = style.whiteSpace;

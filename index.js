@@ -8296,9 +8296,7 @@
       } else if (/px$/i.test(temp)) {
         res[LETTER_SPACING] = [parseFloat(temp), PX$2];
       } else {
-        var _n = Math.max(0, parseFloat(temp)) || 0;
-
-        res[LETTER_SPACING] = [_n, PX$2];
+        res[LETTER_SPACING] = [parseFloat(temp) || 0, PX$2];
       }
     }
 
@@ -8908,27 +8906,27 @@
             res[k] = util.clone(v);
           } // 其余皆是数组或空
           else if (v) {
-              var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
               if (k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-                for (var _i8 = 0, _len5 = _n2.length; _i8 < _len5; _i8++) {
-                  _n2[_i8] = _n2[_i8].slice(0);
+                for (var _i8 = 0, _len5 = _n.length; _i8 < _len5; _i8++) {
+                  _n[_i8] = _n[_i8].slice(0);
                 }
               } else if (k === BACKGROUND_SIZE) {
-                for (var _i9 = 0, _len6 = _n2.length; _i9 < _len6; _i9++) {
-                  _n2[_i9] = _n2[_i9].slice(0);
-                  _n2[_i9][0] = _n2[_i9][0].slice(0);
-                  _n2[_i9][1] = _n2[_i9][1].slice(0);
+                for (var _i9 = 0, _len6 = _n.length; _i9 < _len6; _i9++) {
+                  _n[_i9] = _n[_i9].slice(0);
+                  _n[_i9][0] = _n[_i9][0].slice(0);
+                  _n[_i9][1] = _n[_i9][1].slice(0);
                 }
               } else if (ARRAY_0$1.hasOwnProperty(k)) {
-                _n2[0] = _n2[0].slice(0);
+                _n[0] = _n[0].slice(0);
               } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
-                _n2[0] = _n2[0].slice(0);
-                _n2[1] = _n2[1].slice(0);
+                _n[0] = _n[0].slice(0);
+                _n[1] = _n[1].slice(0);
               } else if (k === TRANSFORM$1) {
-                for (var _i10 = 0, _len7 = _n2.length; _i10 < _len7; _i10++) {
-                  _n2[_i10] = _n2[_i10].slice(0);
+                for (var _i10 = 0, _len7 = _n.length; _i10 < _len7; _i10++) {
+                  _n[_i10] = _n[_i10].slice(0);
                 }
               }
             }

@@ -26780,18 +26780,17 @@
 
           var _cacheFilter = __config[NODE_CACHE_FILTER$3];
 
-          if (_cacheFilter && _cacheFilter.available) {
+          if (_cacheFilter) {
             _cacheFilter.release();
-          }
+          } // 防重
 
-          if (_blurValue) {
-            // 防重
-            if (hasRecordAsMask) {
-              mergeList[6] = _blurValue;
-            } else {
-              hasRecordAsMask = [_i4, lv, total, node, __config, null, _blurValue];
-              mergeList.push(hasRecordAsMask);
-            }
+
+          if (hasRecordAsMask) {
+            hasRecordAsMask[6] = _blurValue;
+          } else {
+            // 强制存hasMask，因为filter改变影响mask
+            hasRecordAsMask = [_i4, lv, total, node, __config, hasMask, _blurValue];
+            mergeList.push(hasRecordAsMask);
           }
         }
 
@@ -27825,18 +27824,17 @@
 
           var _cacheFilter2 = __config[NODE_CACHE_FILTER$3];
 
-          if (_cacheFilter2 && _cacheFilter2.available) {
+          if (_cacheFilter2) {
             _cacheFilter2.release();
-          }
+          } // 防重
 
-          if (_blurValue2) {
-            // 防重
-            if (hasRecordAsMask) {
-              mergeList[7] = _blurValue2;
-            } else {
-              hasRecordAsMask = [_i13, lv, total, node, __config, null, null, _blurValue2];
-              mergeList.push(hasRecordAsMask);
-            }
+
+          if (hasRecordAsMask) {
+            hasRecordAsMask[7] = _blurValue2;
+          } else {
+            // 强制存hasMask，因为filter改变影响mask
+            hasRecordAsMask = [_i13, lv, total, node, __config, null, hasMask, _blurValue2];
+            mergeList.push(hasRecordAsMask);
           }
         }
 

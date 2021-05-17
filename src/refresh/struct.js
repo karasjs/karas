@@ -1140,18 +1140,17 @@ function renderCacheCanvas(renderMode, ctx, root) {
           });
         }
         let __cacheFilter = __config[NODE_CACHE_FILTER];
-        if(__cacheFilter && __cacheFilter.available) {
+        if(__cacheFilter) {
           __cacheFilter.release();
         }
-        if(blurValue) {
-          // 防重
-          if(hasRecordAsMask) {
-            mergeList[6] = blurValue;
-          }
-          else {
-            hasRecordAsMask = [i, lv, total, node, __config, null, blurValue];
-            mergeList.push(hasRecordAsMask);
-          }
+        // 防重
+        if(hasRecordAsMask) {
+          hasRecordAsMask[6] = blurValue;
+        }
+        else {
+          // 强制存hasMask，因为filter改变影响mask
+          hasRecordAsMask = [i, lv, total, node, __config, hasMask, blurValue];
+          mergeList.push(hasRecordAsMask);
         }
       }
       if(contain(refreshLevel, MBM)) {
@@ -2032,18 +2031,17 @@ function renderWebgl(renderMode, gl, root) {
           });
         }
         let __cacheFilter = __config[NODE_CACHE_FILTER];
-        if(__cacheFilter && __cacheFilter.available) {
+        if(__cacheFilter) {
           __cacheFilter.release();
         }
-        if(blurValue) {
-          // 防重
-          if(hasRecordAsMask) {
-            mergeList[7] = blurValue;
-          }
-          else {
-            hasRecordAsMask = [i, lv, total, node, __config, null, null, blurValue];
-            mergeList.push(hasRecordAsMask);
-          }
+        // 防重
+        if(hasRecordAsMask) {
+          hasRecordAsMask[7] = blurValue;
+        }
+        else {
+          // 强制存hasMask，因为filter改变影响mask
+          hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, blurValue];
+          mergeList.push(hasRecordAsMask);
         }
       }
       if(contain(refreshLevel, MBM)) {

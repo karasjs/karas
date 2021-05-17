@@ -428,7 +428,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       if(need) {
         __config[NODE_REFRESH_LV] |= REPAINT;
         if(node instanceof Xom) {
-          node.__cancelCache();
+          node.clearCache();
         }
       }
       else {
@@ -1441,7 +1441,7 @@ class Root extends Dom {
               let cs = target.computedStyle;
               if(cs[POSITION] !== 'absolute' && cs[DISPLAY] !== 'none') {
                 target.__offsetY(diff, true, REFLOW);
-                target.__cancelCache();
+                target.clearCache();
               }
               next = next.next;
             }
@@ -1517,7 +1517,7 @@ class Root extends Dom {
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REFLOW);
-                  flowChildren[j].__cancelCache();
+                  flowChildren[j].clearCache();
                 }
               }
             }
@@ -1558,7 +1558,7 @@ class Root extends Dom {
                   if(diff) {
                     for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                       flowChildren[j].__offsetY(diff, true, REFLOW);
-                      flowChildren[j].__cancelCache();
+                      flowChildren[j].clearCache();
                     }
                   }
                 }
@@ -1573,7 +1573,7 @@ class Root extends Dom {
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REFLOW);
-                  flowChildren[j].__cancelCache();
+                  flowChildren[j].clearCache();
                 }
               }
             }
@@ -1611,7 +1611,7 @@ class Root extends Dom {
                       let d = y - item.y;
                       if(d) {
                         item.__offsetY(d, true, REFLOW);
-                        item.__cancelCache();
+                        item.clearCache();
                       }
                       break;
                     }
@@ -1620,19 +1620,19 @@ class Root extends Dom {
                 }
                 else if(bottom[1] === PX) {
                   item.__offsetY(diff, true, REFLOW);
-                  item.__cancelCache();
+                  item.clearCache();
                 }
                 else if(bottom[1] === PERCENT) {
                   let v = (1 - bottom[0] * 0.01) * diff;
                   item.__offsetY(v, true, REFLOW);
-                  item.__cancelCache();
+                  item.clearCache();
                 }
               }
               else if(top[1] === PERCENT) {
                 if(isContainer) {
                   let v = top[0] * 0.01 * diff;
                   item.__offsetY(v, true, REFLOW);
-                  item.__cancelCache();
+                  item.clearCache();
                 }
                 // 非容器的特殊处理
                 else {
@@ -1652,7 +1652,7 @@ class Root extends Dom {
                   if(container.currentStyle[HEIGHT][1] !== PX) {
                     let v = top[0] * 0.01 * diff;
                     item.__offsetY(v, true, REFLOW);
-                    item.__cancelCache();
+                    item.clearCache();
                   }
                 }
               }
@@ -1703,7 +1703,7 @@ class Root extends Dom {
                 let d = y - item.y;
                 if(d) {
                   item.__offsetY(d, true, REFLOW);
-                  item.__cancelCache();
+                  item.clearCache();
                 }
                 break;
               }

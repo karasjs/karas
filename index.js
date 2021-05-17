@@ -12049,7 +12049,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -16381,9 +16381,7 @@
         var display = computedStyle[DISPLAY$2];
         var width = currentStyle[WIDTH$3],
             position = currentStyle[POSITION$1];
-
-        this.__cancelCache();
-
+        this.clearCache();
         this.__layoutData = {
           x: data.x,
           y: data.y,
@@ -17987,8 +17985,7 @@
         root.delRefreshTask(this.__loadBgi.cb);
         root.delRefreshTask(this.__task);
         this.__matrix = this.__matrixEvent = this.__root = null;
-
-        this.__cancelCache();
+        this.clearCache();
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {
@@ -18282,8 +18279,8 @@
       } // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
 
     }, {
-      key: "__cancelCache",
-      value: function __cancelCache(onlyTotal) {
+      key: "clearCache",
+      value: function clearCache(onlyTotal) {
         var __config = this.__config;
         var __cacheTotal = __config[NODE_CACHE_TOTAL];
         var __cacheFilter = __config[NODE_CACHE_FILTER$1];
@@ -18304,17 +18301,20 @@
         }
 
         if (__cacheFilter) {
-          inject.releaseCacheCanvas(__cacheFilter.canvas);
+          __cacheFilter.release();
+
           __config[NODE_CACHE_FILTER$1] = null;
         }
 
         if (__cacheMask) {
-          inject.releaseCacheCanvas(__cacheMask.canvas);
+          __cacheMask.release();
+
           __config[NODE_CACHE_MASK] = null;
         }
 
         if (__cacheOverflow) {
-          inject.releaseCacheCanvas(__cacheOverflow.canvas);
+          __cacheOverflow.release();
+
           __config[NODE_CACHE_OVERFLOW$1] = null;
         }
       }
@@ -19356,20 +19356,20 @@
                 if (bottom[1] === AUTO$4 || bottom[1] === PX$7) {
                   next.__offsetY(dy, true, REFLOW$1);
 
-                  next.__cancelCache();
+                  next.clearCache();
                 } else if (bottom[1] === PERCENT$7) {
                   var v = (1 - bottom[0] * 0.01) * dy;
 
                   next.__offsetY(v, true, REFLOW$1);
 
-                  next.__cancelCache();
+                  next.clearCache();
                 }
               } else if (top[1] === PERCENT$7) {
                 var _v = top[0] * 0.01 * dy;
 
                 next.__offsetY(_v, true, REFLOW$1);
 
-                next.__cancelCache();
+                next.clearCache();
               } // 高度百分比需发生变化的重新布局，需要在容器内
 
 
@@ -19401,7 +19401,7 @@
             } else {
               next.__offsetY(dy, true, REFLOW$1);
 
-              next.__cancelCache();
+              next.clearCache();
             }
           }
 
@@ -19432,7 +19432,7 @@
         if (need) {
           node.__resizeY(dy, REFLOW$1);
 
-          node.__cancelCache();
+          node.clearCache();
         } // abs或者高度不需要继续向上调整提前跳出
         else {
             break;
@@ -19445,8 +19445,7 @@
 
 
       while (last) {
-        last.__cancelCache(true);
-
+        last.clearCache(true);
         last = last.domParent;
       }
     }
@@ -26688,7 +26687,6 @@
         }
 
       var refreshLevel = __config[NODE_REFRESH_LV$1],
-          __cache = __config[NODE_CACHE$5],
           __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
@@ -27726,8 +27724,7 @@
           parentRefreshLevel = refreshLevelList[lv - 1];
         }
 
-      var __cache = __config[NODE_CACHE$5],
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3],
+      var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
       if (computedStyle[DISPLAY$8] === 'none') {
@@ -28958,7 +28955,7 @@
           _config[NODE_REFRESH_LV$2] |= REPAINT$3;
 
           if (_node instanceof Xom$1) {
-            _node.__cancelCache();
+            _node.clearCache();
           }
         } else {
           _i += total || 0;
@@ -30188,7 +30185,7 @@
                     if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$9] !== 'none') {
                       target.__offsetY(_diff, true, REFLOW$2);
 
-                      target.__cancelCache();
+                      target.clearCache();
                     }
 
                     next = next.next;
@@ -30278,7 +30275,7 @@
                       for (var j = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); j < length; j++) {
                         flowChildren[j].__offsetY(_diff2, true, REFLOW$2);
 
-                        flowChildren[j].__cancelCache();
+                        flowChildren[j].clearCache();
                       }
                     }
                   }
@@ -30327,7 +30324,7 @@
                           for (var _j = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); _j < length; _j++) {
                             flowChildren[_j].__offsetY(_diff3, true, REFLOW$2);
 
-                            flowChildren[_j].__cancelCache();
+                            flowChildren[_j].clearCache();
                           }
                         }
                       }
@@ -30344,7 +30341,7 @@
                         for (var _j2 = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); _j2 < length; _j2++) {
                           flowChildren[_j2].__offsetY(_diff4, true, REFLOW$2);
 
-                          flowChildren[_j2].__cancelCache();
+                          flowChildren[_j2].clearCache();
                         }
                       }
                     }
@@ -30399,7 +30396,7 @@
                             if (d) {
                               _item.__offsetY(d, true, REFLOW$2);
 
-                              _item.__cancelCache();
+                              _item.clearCache();
                             }
 
                             break;
@@ -30410,13 +30407,13 @@
                       } else if (bottom[1] === PX$b) {
                         _item.__offsetY(_diff5, true, REFLOW$2);
 
-                        _item.__cancelCache();
+                        _item.clearCache();
                       } else if (bottom[1] === PERCENT$b) {
                         var v = (1 - bottom[0] * 0.01) * _diff5;
 
                         _item.__offsetY(v, true, REFLOW$2);
 
-                        _item.__cancelCache();
+                        _item.clearCache();
                       }
                     } else if (top[1] === PERCENT$b) {
                       if (isContainer) {
@@ -30424,7 +30421,7 @@
 
                         _item.__offsetY(_v, true, REFLOW$2);
 
-                        _item.__cancelCache();
+                        _item.clearCache();
                       } // 非容器的特殊处理
                       else {
                           if (!container) {
@@ -30450,7 +30447,7 @@
 
                             _item.__offsetY(_v2, true, REFLOW$2);
 
-                            _item.__cancelCache();
+                            _item.clearCache();
                           }
                         }
                     } // 高度百分比需发生变化的重新布局，需要在容器内
@@ -30520,7 +30517,7 @@
                       if (_d) {
                         _item2.__offsetY(_d, true, REFLOW$2);
 
-                        _item2.__cancelCache();
+                        _item2.clearCache();
                       }
 
                       break;

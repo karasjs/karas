@@ -347,7 +347,7 @@ class Xom extends Node {
       [WIDTH]: width,
       [POSITION]: position,
     } = currentStyle;
-    this.__cancelCache();
+    this.clearCache();
     this.__layoutData = {
       x: data.x,
       y: data.y,
@@ -1845,7 +1845,7 @@ class Xom extends Node {
     root.delRefreshTask(this.__loadBgi.cb);
     root.delRefreshTask(this.__task);
     this.__matrix = this.__matrixEvent = this.__root = null;
-    this.__cancelCache();
+    this.clearCache();
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
@@ -2108,7 +2108,7 @@ class Xom extends Node {
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
-  __cancelCache(onlyTotal) {
+  clearCache(onlyTotal) {
     let __config = this.__config;
     let __cacheTotal = __config[NODE_CACHE_TOTAL];
     let __cacheFilter = __config[NODE_CACHE_FILTER];
@@ -2125,15 +2125,15 @@ class Xom extends Node {
       __cacheTotal.release();
     }
     if(__cacheFilter) {
-      inject.releaseCacheCanvas(__cacheFilter.canvas);
+      __cacheFilter.release();
       __config[NODE_CACHE_FILTER] = null;
     }
     if(__cacheMask) {
-      inject.releaseCacheCanvas(__cacheMask.canvas);
+      __cacheMask.release();
       __config[NODE_CACHE_MASK] = null;
     }
     if(__cacheOverflow) {
-      inject.releaseCacheCanvas(__cacheOverflow.canvas);
+      __cacheOverflow.release();
       __config[NODE_CACHE_OVERFLOW] = null;
     }
   }

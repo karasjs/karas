@@ -1062,7 +1062,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
     else {}
     let {
       [NODE_REFRESH_LV]: refreshLevel,
-      [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_COMPUTED_STYLE]: computedStyle,
     } = __config;
@@ -1947,7 +1946,6 @@ function renderWebgl(renderMode, gl, root) {
     // 不变是同级兄弟，无需特殊处理
     else {}
     let {
-      [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_COMPUTED_STYLE]: computedStyle,
     } = __config;

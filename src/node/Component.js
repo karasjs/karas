@@ -368,7 +368,7 @@ Object.keys(change.GEOM).concat([
   'getBoundingClientRect',
   'getComputedStyle',
   '__deepScan',
-  '__cancelCache',
+  'clearCache',
   '__structure',
   '__modifyStruct',
   '__updateStruct',

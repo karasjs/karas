@@ -538,7 +538,7 @@ root.ref.rect.removeAnimate(animate);
   * cb `Function`
     动画回调。
 * **说明**  
-  开始执行一段帧动画并将结果存入frameAnimateList中。在节点销毁时自动停止。
+  开始执行一段帧动画，在节点销毁时自动停止。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -633,6 +633,14 @@ root.ref.div.updateFormatStyleNoOverwrite({
   console.log('updateStyle');
 });
 ```
+
+#### clearCache
+* **类型** `Function`
+* **参数**
+  * onlyTotal `boolean`
+    只清楚局部根节点。
+* **说明**  
+清除当前节点的缓存，以及向上查找清除所有缓存本节点的节点。在canvas的`cache`的渲染模式和webgl模式时，每个节点都尽可能缓存自己，一些特殊效果节点（如filter）还会生成局部根节点缓存（即以自己未根将所有子节点包括进来形成位图缓存）。在需要的时候可以用这个方法清除缓存重新生成。
 
 ### html属性attribute
 

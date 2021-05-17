@@ -26877,8 +26877,8 @@
         if (__cacheTotal && __cacheTotal.available) {
           var target = __cacheTotal;
 
-          if (overflow === 'hidden' || needGen) {
-            if (!__cacheOverflow || !__cacheOverflow.available) {
+          if (overflow === 'hidden') {
+            if (!__cacheOverflow || !__cacheOverflow.available || needGen) {
               __config[NODE_CACHE_OVERFLOW$3] = genOverflow(node, target);
               needGen = true;
             }

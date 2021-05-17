@@ -1221,8 +1221,8 @@ function renderCacheCanvas(renderMode, ctx, root) {
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
         let target = __cacheTotal;
-        if(overflow === 'hidden' || needGen) {
-          if(!__cacheOverflow || !__cacheOverflow.available) {
+        if(overflow === 'hidden') {
+          if(!__cacheOverflow || !__cacheOverflow.available || needGen) {
             __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
             needGen = true;
           }

@@ -12,6 +12,7 @@ let fullCssProperty = {
   overflow: 'of',
   backgroundClip: 'bp',
   textOverflow: 'tof',
+  flexWrap: 'fp',
 };
 
 let abbrCssProperty = {

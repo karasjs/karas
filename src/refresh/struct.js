@@ -419,7 +419,7 @@ function genFrameBufferWithTexture(gl, texCache, width, height) {
   if(check !== gl.FRAMEBUFFER_COMPLETE) {
     inject.error('Framebuffer object is incomplete: ' + check.toString());
   }
-  // 离屏窗口0开始，上下左右各扩展1px
+  // 离屏窗口0开始
   gl.viewport(0, 0, width, height);
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -2058,7 +2058,7 @@ function renderWebgl(renderMode, gl, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      node.render(renderMode, refreshLevel, gl, true);
+      let res = node.render(renderMode, refreshLevel, gl, true);
     }
     lastRefreshLevel = refreshLevel;
     lastConfig = __config;

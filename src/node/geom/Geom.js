@@ -5,7 +5,6 @@ import unit from '../../style/unit';
 import enums from '../../util/enums';
 import mode from '../mode';
 import util from '../../util/util';
-import level from '../../refresh/level';
 import painter from '../../util/painter';
 import transform from '../../style/transform';
 import mx from '../../math/matrix';
@@ -48,9 +47,6 @@ const {
     NODE_STYLE,
     NODE_CACHE,
     NODE_CACHE_TOTAL,
-    NODE_CACHE_FILTER,
-    NODE_CACHE_MASK,
-    NODE_CACHE_OVERFLOW,
     NODE_DEFS_CACHE,
   }
 } = enums;
@@ -402,9 +398,9 @@ class Geom extends Xom {
 
   render(renderMode, lv, ctx, cache) {
     let res = super.render(renderMode, lv, ctx, cache);
-    // this.__renderSelfData = null;
     let __config = this.__config;
-    if((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache) {
+    // canvas的cache因为只有1个节点可共用，webgl不行要生成单独的fbo的texture
+    if(renderMode === mode.CANVAS && cache) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
     if(renderMode === mode.SVG) {

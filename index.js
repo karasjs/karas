@@ -23264,9 +23264,6 @@
       NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
       NODE_CACHE$4 = _enums$NODE_KEY$7.NODE_CACHE,
       NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$7.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK$1 = _enums$NODE_KEY$7.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$7.NODE_CACHE_OVERFLOW,
       NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE;
   var AUTO$7 = unit.AUTO,
       PX$a = unit.PX,
@@ -23645,12 +23642,11 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, cache) {
-        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache); // this.__renderSelfData = null;
+        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
+        var __config = this.__config; // canvas的cache因为只有1个节点可共用，webgl不行要生成单独的fbo的texture
 
-        var __config = this.__config;
-
-        if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && cache) {
+        if (renderMode === mode.CANVAS && cache) {
           __config[NODE_CACHE_TOTAL$2] = __config[NODE_CACHE$4];
         }
 
@@ -25478,9 +25474,9 @@
       _enums$NODE_KEY$9 = enums.NODE_KEY,
       NODE_CACHE$5 = _enums$NODE_KEY$9.NODE_CACHE,
       NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
-      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$2 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
-      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$1 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
+      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
       NODE_MATRIX$2 = _enums$NODE_KEY$9.NODE_MATRIX,
       NODE_MATRIX_EVENT$4 = _enums$NODE_KEY$9.NODE_MATRIX_EVENT,
       NODE_OPACITY$3 = _enums$NODE_KEY$9.NODE_OPACITY,
@@ -25586,9 +25582,9 @@
               limitCache = _node2$__config[NODE_LIMIT_CACHE$2],
               __cache = _node2$__config[NODE_CACHE$5],
               __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$3],
-              __cacheFilter = _node2$__config[NODE_CACHE_FILTER$3],
-              __cacheMask = _node2$__config[NODE_CACHE_MASK$2],
-              __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$3],
+              __cacheFilter = _node2$__config[NODE_CACHE_FILTER$2],
+              __cacheMask = _node2$__config[NODE_CACHE_MASK$1],
+              __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$2],
               _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$4],
               display = _node2$__config$NODE_[DISPLAY$8],
               visibility = _node2$__config$NODE_[VISIBILITY$5],
@@ -25765,9 +25761,9 @@
       else {
           var __cache = _config[NODE_CACHE$5],
               __cacheTotal = _config[NODE_CACHE_TOTAL$3],
-              __cacheFilter = _config[NODE_CACHE_FILTER$3],
-              __cacheMask = _config[NODE_CACHE_MASK$2],
-              __cacheOverflow = _config[NODE_CACHE_OVERFLOW$3],
+              __cacheFilter = _config[NODE_CACHE_FILTER$2],
+              __cacheMask = _config[NODE_CACHE_MASK$1],
+              __cacheOverflow = _config[NODE_CACHE_OVERFLOW$2],
               isMask = _config[NODE_IS_MASK$2],
               _config$NODE_COMPUTED = _config[NODE_COMPUTED_STYLE$4],
               display = _config$NODE_COMPUTED[DISPLAY$8],
@@ -25884,7 +25880,7 @@
 
     if (check !== gl.FRAMEBUFFER_COMPLETE) {
       inject.error('Framebuffer object is incomplete: ' + check.toString());
-    } // 离屏窗口0开始，上下左右各扩展1px
+    } // 离屏窗口0开始
 
 
     gl.viewport(0, 0, width, height);
@@ -25991,9 +25987,9 @@
       else {
           var __cache = _config2[NODE_CACHE$5],
               __cacheTotal = _config2[NODE_CACHE_TOTAL$3],
-              __cacheFilter = _config2[NODE_CACHE_FILTER$3],
-              __cacheMask = _config2[NODE_CACHE_MASK$2],
-              __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$3],
+              __cacheFilter = _config2[NODE_CACHE_FILTER$2],
+              __cacheMask = _config2[NODE_CACHE_MASK$1],
+              __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$2],
               isMask = _config2[NODE_IS_MASK$2],
               _config2$NODE_COMPUTE = _config2[NODE_COMPUTED_STYLE$4],
               display = _config2$NODE_COMPUTE[DISPLAY$8],
@@ -26277,8 +26273,8 @@
     while (next && next.isMask) {
       var _config3 = next.__config;
       var __cache = _config3[NODE_CACHE$5],
-          __cacheFilter = _config3[NODE_CACHE_FILTER$3],
-          __cacheOverflow = _config3[NODE_CACHE_OVERFLOW$3],
+          __cacheFilter = _config3[NODE_CACHE_FILTER$2],
+          __cacheOverflow = _config3[NODE_CACHE_OVERFLOW$2],
           _config3$NODE_COMPUTE = _config3[NODE_COMPUTED_STYLE$4],
           display = _config3$NODE_COMPUTE[DISPLAY$8],
           visibility = _config3$NODE_COMPUTE[VISIBILITY$5],
@@ -26666,7 +26662,7 @@
         __config[NODE_REFRESH_LV$1] = NONE$2;
 
         if (hasMask) {
-          var cacheMask = __config[NODE_CACHE_MASK$2];
+          var cacheMask = __config[NODE_CACHE_MASK$1];
 
           if (!cacheMask || !cacheMask.available) {
             hasRecordAsMask = [_i4, lv, total, node, __config, hasMask];
@@ -26734,7 +26730,7 @@
             });
           }
 
-          var _cacheFilter = __config[NODE_CACHE_FILTER$3];
+          var _cacheFilter = __config[NODE_CACHE_FILTER$2];
 
           if (_cacheFilter) {
             _cacheFilter.release();
@@ -26818,9 +26814,9 @@
 
         var __cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-            __cacheFilter = __config[NODE_CACHE_FILTER$3],
-            __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3];
+            __cacheFilter = __config[NODE_CACHE_FILTER$2],
+            __cacheMask = __config[NODE_CACHE_MASK$1],
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2];
         var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
@@ -26834,24 +26830,24 @@
 
           if (overflow === 'hidden') {
             if (!__cacheOverflow || !__cacheOverflow.available || needGen) {
-              __config[NODE_CACHE_OVERFLOW$3] = genOverflow(node, target);
+              __config[NODE_CACHE_OVERFLOW$2] = genOverflow(node, target);
               needGen = true;
             }
 
-            target = __config[NODE_CACHE_OVERFLOW$3] || target;
+            target = __config[NODE_CACHE_OVERFLOW$2] || target;
           }
 
           if (blurValue > 0) {
             if (!__cacheFilter || !__cacheFilter.available || needGen) {
-              __config[NODE_CACHE_FILTER$3] = genFilter(node, target, blurValue);
+              __config[NODE_CACHE_FILTER$2] = genFilter(node, target, blurValue);
               needGen = true;
             }
 
-            target = __config[NODE_CACHE_FILTER$3] || target;
+            target = __config[NODE_CACHE_FILTER$2] || target;
           }
 
           if (hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
-            __config[NODE_CACHE_MASK$2] = genMask(node, target);
+            __config[NODE_CACHE_MASK$1] = genMask(node, target);
           }
         }
       });
@@ -26891,9 +26887,9 @@
             limitCache = __config[NODE_LIMIT_CACHE$2],
             __cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-            __cacheFilter = __config[NODE_CACHE_FILTER$3],
-            __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3],
+            __cacheFilter = __config[NODE_CACHE_FILTER$2],
+            __cacheMask = __config[NODE_CACHE_MASK$1],
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2],
             refreshLevel = __config[NODE_REFRESH_LV$1],
             _config$NODE_COMPUTE2 = __config[NODE_COMPUTED_STYLE$4],
             display = _config$NODE_COMPUTE2[DISPLAY$8],
@@ -27706,7 +27702,7 @@
         __config[NODE_REFRESH_LV$1] = NONE$2;
 
         if (hasMask) {
-          var cacheMask = __config[NODE_CACHE_MASK$2];
+          var cacheMask = __config[NODE_CACHE_MASK$1];
 
           if (!cacheMask || !cacheMask.available) {
             hasRecordAsMask = [_i13, lv, total, node, __config, null, hasMask];
@@ -27778,7 +27774,7 @@
             });
           }
 
-          var _cacheFilter2 = __config[NODE_CACHE_FILTER$3];
+          var _cacheFilter2 = __config[NODE_CACHE_FILTER$2];
 
           if (_cacheFilter2) {
             _cacheFilter2.release();
@@ -27810,7 +27806,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-          node.render(renderMode, refreshLevel, gl, true);
+          var res = node.render(renderMode, refreshLevel, gl, true);
         }
 
       lastRefreshLevel = refreshLevel;
@@ -27870,9 +27866,9 @@
 
         var __cache = __config[NODE_CACHE$5],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-            __cacheFilter = __config[NODE_CACHE_FILTER$3],
-            __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3];
+            __cacheFilter = __config[NODE_CACHE_FILTER$2],
+            __cacheMask = __config[NODE_CACHE_MASK$1],
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2];
         var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
@@ -27899,7 +27895,7 @@
             needGen = true;
 
             if (!limitCache) {
-              __config[NODE_CACHE_FILTER$3] = target;
+              __config[NODE_CACHE_FILTER$2] = target;
             }
           }
         }
@@ -27910,7 +27906,7 @@
             needGen = true;
 
             if (!limitCache) {
-              __config[NODE_CACHE_FILTER$3] = target;
+              __config[NODE_CACHE_FILTER$2] = target;
             }
           }
         }
@@ -27919,7 +27915,7 @@
           target = genMaskWebgl(gl, texCache, node, __config, target, width, height);
 
           if (!limitCache) {
-            __config[NODE_CACHE_MASK$2] = target;
+            __config[NODE_CACHE_MASK$1] = target;
           }
         } // 保存临时的局部根节点
 
@@ -27989,9 +27985,9 @@
             _matrixEvent2 = __config[NODE_MATRIX_EVENT$4],
             _limitCache = __config[NODE_LIMIT_CACHE$2],
             _cache = __config[NODE_CACHE$5],
-            __cacheFilter = __config[NODE_CACHE_FILTER$3],
-            __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3],
+            __cacheFilter = __config[NODE_CACHE_FILTER$2],
+            __cacheMask = __config[NODE_CACHE_MASK$1],
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2],
             refreshLevel = __config[NODE_REFRESH_LV$1],
             _config$NODE_COMPUTE3 = __config[NODE_COMPUTED_STYLE$4],
             display = _config$NODE_COMPUTE3[DISPLAY$8],
@@ -28526,9 +28522,9 @@
       NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$a.NODE_UNIQUE_UPDATE_ID,
       NODE_CACHE$6 = _enums$NODE_KEY$a.NODE_CACHE,
       NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$a.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$a.NODE_CACHE_FILTER,
-      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$a.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$3 = _enums$NODE_KEY$a.NODE_CACHE_MASK,
+      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$a.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$a.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$2 = _enums$NODE_KEY$a.NODE_CACHE_MASK,
       NODE_STRUCT$4 = _enums$NODE_KEY$a.NODE_STRUCT,
       _enums$STRUCT_KEY$3 = enums.STRUCT_KEY,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
@@ -28932,8 +28928,8 @@
         prev = prev.prev;
       }
 
-      if (prev && prev.__config[NODE_CACHE_MASK$3]) {
-        prev.__config[NODE_CACHE_MASK$3].release();
+      if (prev && prev.__config[NODE_CACHE_MASK$2]) {
+        prev.__config[NODE_CACHE_MASK$2].release();
       }
     } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
 
@@ -29002,19 +28998,19 @@
         __config[NODE_CACHE_TOTAL$4].release();
       }
 
-      if (__config[NODE_CACHE_MASK$3]) {
-        __config[NODE_CACHE_MASK$3].release();
+      if (__config[NODE_CACHE_MASK$2]) {
+        __config[NODE_CACHE_MASK$2].release();
 
-        __config[NODE_CACHE_MASK$3] = null;
+        __config[NODE_CACHE_MASK$2] = null;
       }
 
-      if (__config[NODE_CACHE_OVERFLOW$4]) {
-        __config[NODE_CACHE_OVERFLOW$4].release();
+      if (__config[NODE_CACHE_OVERFLOW$3]) {
+        __config[NODE_CACHE_OVERFLOW$3].release();
       }
     }
 
-    if ((need || contain$3(lv, FILTER$6)) && __config[NODE_CACHE_FILTER$4]) {
-      __config[NODE_CACHE_FILTER$4].release();
+    if ((need || contain$3(lv, FILTER$6)) && __config[NODE_CACHE_FILTER$3]) {
+      __config[NODE_CACHE_FILTER$3].release();
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
 
@@ -29049,16 +29045,16 @@
         _config3[NODE_CACHE_TOTAL$4].release();
       }
 
-      if (_config3[NODE_CACHE_FILTER$4]) {
-        _config3[NODE_CACHE_FILTER$4].release();
+      if (_config3[NODE_CACHE_FILTER$3]) {
+        _config3[NODE_CACHE_FILTER$3].release();
       }
 
-      if (_config3[NODE_CACHE_MASK$3]) {
-        _config3[NODE_CACHE_MASK$3].release();
+      if (_config3[NODE_CACHE_MASK$2]) {
+        _config3[NODE_CACHE_MASK$2].release();
       }
 
-      if (_config3[NODE_CACHE_OVERFLOW$4]) {
-        _config3[NODE_CACHE_OVERFLOW$4].release();
+      if (_config3[NODE_CACHE_OVERFLOW$3]) {
+        _config3[NODE_CACHE_OVERFLOW$3].release();
       }
 
       parent = _config3[NODE_DOM_PARENT$6];

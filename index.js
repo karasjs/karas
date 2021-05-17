@@ -4599,9 +4599,7 @@
     TYPE_CP: TYPE_CP
   };
 
-  var _VALUE, _ARRAY_, _ARRAY_0_;
-  var STYLE_KEY$1 = enums.STYLE_KEY,
-      TRANSFORM = enums.STYLE_KEY.TRANSFORM;
+  var TRANSFORM = enums.STYLE_KEY.TRANSFORM;
   var toString = {}.toString;
 
   function isType(type) {
@@ -5102,47 +5100,6 @@
     return bbox;
   }
 
-  var VALUE = (_VALUE = {}, _defineProperty(_VALUE, STYLE_KEY$1.POSITION, true), _defineProperty(_VALUE, STYLE_KEY$1.DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$1.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, STYLE_KEY$1.FLEX_DIRECTION, true), _defineProperty(_VALUE, STYLE_KEY$1.JUSTIFY_CONTENT, true), _defineProperty(_VALUE, STYLE_KEY$1.ALIGN_ITEMS, true), _defineProperty(_VALUE, STYLE_KEY$1.ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$1.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$1.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$1.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$1.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$1.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$1.FILL_RULE, true), _VALUE);
-  var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, STYLE_KEY$1.BACKGROUND_SIZE, true), _defineProperty(_ARRAY_, STYLE_KEY$1.BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$1.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$1.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$1.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$1.BORDER_LEFT_COLOR, true), _ARRAY_);
-  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$1.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$1.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$1.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$1.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$1.TRANSFORM_ORIGIN, true), _ARRAY_0_);
-
-  function cloneStyle(style, keys) {
-    if (!keys) {
-      keys = Object.keys(style);
-    }
-
-    var res = {};
-    keys.forEach(function (k) {
-      var v = style[k]; // 渐变特殊处理
-
-      if (k === STYLE_KEY$1.BACKGROUND_IMAGE) {
-        if (v.k) {
-          res[k] = clone(v);
-        } else {
-          res[k] = v;
-        }
-      } // position等直接值类型赋值
-      else if (VALUE.hasOwnProperty(k)) {
-          res[k] = v;
-        } // 其余皆是数组
-        else {
-            var n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
-
-            if (ARRAY_0.hasOwnProperty(k)) {
-              n[0] = n[0].slice(0);
-            } else if (ARRAY_0_1.hasOwnProperty(k)) {
-              n[0] = n[0].slice(0);
-              n[1] = n[1].slice(0);
-            } else if (k === TRANSFORM) {
-              for (var i = 0, len = n.length; i < len; i++) {
-                n[i] = n[i].slice(0);
-              }
-            }
-          }
-    });
-    return res;
-  }
-
   function isPlainObject(obj) {
     if (!obj || toString.call(obj) !== '[object Object]') {
       return false;
@@ -5188,7 +5145,6 @@
     arr2hash: arr2hash,
     hash2arr: hash2arr,
     clone: clone,
-    cloneStyle: cloneStyle,
     equalArr: equalArr,
     equal: equal,
     extend: extend,
@@ -7359,11 +7315,11 @@
     }
   };
 
-  var STYLE_KEY$2 = enums.STYLE_KEY;
-  var KEY_COLOR = [[STYLE_KEY$2.BACKGROUND_COLOR], [STYLE_KEY$2.BORDER_BOTTOM_COLOR], [STYLE_KEY$2.BORDER_LEFT_COLOR], [STYLE_KEY$2.BORDER_RIGHT_COLOR], [STYLE_KEY$2.BORDER_TOP_COLOR], [STYLE_KEY$2.COLOR]];
-  var KEY_LENGTH = [[STYLE_KEY$2.FONT_SIZE], [STYLE_KEY$2.BORDER_BOTTOM_WIDTH], [STYLE_KEY$2.BORDER_LEFT_WIDTH], [STYLE_KEY$2.BORDER_RIGHT_WIDTH], [STYLE_KEY$2.BORDER_TOP_WIDTH], [STYLE_KEY$2.LEFT], [STYLE_KEY$2.TOP], [STYLE_KEY$2.RIGHT], [STYLE_KEY$2.BOTTOM], [STYLE_KEY$2.FLEX_BASIS], [STYLE_KEY$2.WIDTH], [STYLE_KEY$2.HEIGHT], [STYLE_KEY$2.LINE_HEIGHT], [STYLE_KEY$2.MARGIN_BOTTOM], [STYLE_KEY$2.MARGIN_LEFT], [STYLE_KEY$2.MARGIN_TOP], [STYLE_KEY$2.MARGIN_RIGHT], [STYLE_KEY$2.PADDING_TOP], [STYLE_KEY$2.PADDING_RIGHT], [STYLE_KEY$2.PADDING_BOTTOM], [STYLE_KEY$2.PADDING_LEFT], [STYLE_KEY$2.STROKE_WIDTH], [STYLE_KEY$2.STROKE_MITERLIMIT], [STYLE_KEY$2.LETTER_SPACING]];
-  var KEY_GRADIENT = [[STYLE_KEY$2.BACKGROUND_IMAGE], [STYLE_KEY$2.FILL], [STYLE_KEY$2.STROKE]];
-  var KEY_RADIUS = [[STYLE_KEY$2.BORDER_TOP_LEFT_RADIUS], [STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS], [STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS], [STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS]];
+  var STYLE_KEY$1 = enums.STYLE_KEY;
+  var KEY_COLOR = [[STYLE_KEY$1.BACKGROUND_COLOR], [STYLE_KEY$1.BORDER_BOTTOM_COLOR], [STYLE_KEY$1.BORDER_LEFT_COLOR], [STYLE_KEY$1.BORDER_RIGHT_COLOR], [STYLE_KEY$1.BORDER_TOP_COLOR], [STYLE_KEY$1.COLOR]];
+  var KEY_LENGTH = [[STYLE_KEY$1.FONT_SIZE], [STYLE_KEY$1.BORDER_BOTTOM_WIDTH], [STYLE_KEY$1.BORDER_LEFT_WIDTH], [STYLE_KEY$1.BORDER_RIGHT_WIDTH], [STYLE_KEY$1.BORDER_TOP_WIDTH], [STYLE_KEY$1.LEFT], [STYLE_KEY$1.TOP], [STYLE_KEY$1.RIGHT], [STYLE_KEY$1.BOTTOM], [STYLE_KEY$1.FLEX_BASIS], [STYLE_KEY$1.WIDTH], [STYLE_KEY$1.HEIGHT], [STYLE_KEY$1.LINE_HEIGHT], [STYLE_KEY$1.MARGIN_BOTTOM], [STYLE_KEY$1.MARGIN_LEFT], [STYLE_KEY$1.MARGIN_TOP], [STYLE_KEY$1.MARGIN_RIGHT], [STYLE_KEY$1.PADDING_TOP], [STYLE_KEY$1.PADDING_RIGHT], [STYLE_KEY$1.PADDING_BOTTOM], [STYLE_KEY$1.PADDING_LEFT], [STYLE_KEY$1.STROKE_WIDTH], [STYLE_KEY$1.STROKE_MITERLIMIT], [STYLE_KEY$1.LETTER_SPACING]];
+  var KEY_GRADIENT = [[STYLE_KEY$1.BACKGROUND_IMAGE], [STYLE_KEY$1.FILL], [STYLE_KEY$1.STROKE]];
+  var KEY_RADIUS = [[STYLE_KEY$1.BORDER_TOP_LEFT_RADIUS], [STYLE_KEY$1.BORDER_TOP_RIGHT_RADIUS], [STYLE_KEY$1.BORDER_BOTTOM_RIGHT_RADIUS], [STYLE_KEY$1.BORDER_BOTTOM_LEFT_RADIUS]];
   var COLOR_HASH = {};
   KEY_COLOR.forEach(function (k) {
     COLOR_HASH[k] = true;
@@ -7385,7 +7341,7 @@
     radial: true,
     conic: true
   };
-  var KEY_EXPAND = [[STYLE_KEY$2.TRANSLATE_X], [STYLE_KEY$2.TRANSLATE_Y], [STYLE_KEY$2.SKEW_X], [STYLE_KEY$2.SKEW_Y], [STYLE_KEY$2.SCALE_X], [STYLE_KEY$2.SCALE_Y], [STYLE_KEY$2.ROTATE_Z]];
+  var KEY_EXPAND = [[STYLE_KEY$1.TRANSLATE_X], [STYLE_KEY$1.TRANSLATE_Y], [STYLE_KEY$1.SKEW_X], [STYLE_KEY$1.SKEW_Y], [STYLE_KEY$1.SCALE_X], [STYLE_KEY$1.SCALE_Y], [STYLE_KEY$1.ROTATE_Z]];
   var EXPAND_HASH = {};
   KEY_EXPAND.forEach(function (k) {
     EXPAND_HASH[k] = true;
@@ -7408,14 +7364,14 @@
   var RESET_DOM = reset.DOM,
       RESET_GEOM = reset.GEOM;
   var INHERIT$1 = unit.INHERIT;
-  var STYLE_KEY$3 = enums.STYLE_KEY;
+  var STYLE_KEY$2 = enums.STYLE_KEY;
   var GEOM$1 = {};
   var GEOM_KEY_SET$1 = [];
 
-  var IGNORE = _defineProperty({}, STYLE_KEY$3.POINTER_EVENTS, true);
+  var IGNORE = _defineProperty({}, STYLE_KEY$2.POINTER_EVENTS, true);
 
-  var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$3.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$3.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$3.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$3.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$3.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$3.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$3.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$3.BACKGROUND_CLIP, true), _REPAINT);
-  var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$3.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_FAMILY, true), _MEASURE);
+  var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$2.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$2.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$2.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_CLIP, true), _REPAINT);
+  var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$2.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$2.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$2.FONT_FAMILY, true), _MEASURE);
   var o$1 = {
     GEOM: GEOM$1,
     GEOM_KEY_SET: GEOM_KEY_SET$1,
@@ -7516,8 +7472,8 @@
   o$1.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
   o$1.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
 
-  var _VALUE$1, _ARRAY_$1, _ARRAY_0_$1;
-  var STYLE_KEY$4 = enums.STYLE_KEY,
+  var _VALUE, _ARRAY_, _ARRAY_0_;
+  var STYLE_KEY$3 = enums.STYLE_KEY,
       STYLE_RV_KEY$1 = enums.STYLE_RV_KEY,
       style2Upper$1 = enums.style2Upper,
       _enums$STYLE_KEY$2 = enums.STYLE_KEY,
@@ -7972,7 +7928,7 @@
       var v = style[k];
 
       if (!isNil$3(v)) {
-        res[STYLE_KEY$4[style2Upper$1(k)]] = [rgba2int$2(v), RGBA];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = [rgba2int$2(v), RGBA];
       }
     }); // border-radius
 
@@ -8001,7 +7957,7 @@
           }
         }
 
-        res[STYLE_KEY$4[style2Upper$1(k)]] = arr;
+        res[STYLE_KEY$3[style2Upper$1(k)]] = arr;
       }
     });
     temp = style.transform;
@@ -8048,8 +8004,8 @@
               _arr2[1] = _arr2[0].slice(0);
             }
 
-            var k1 = STYLE_KEY$4[style2Upper$1(k + 'X')];
-            var _k = STYLE_KEY$4[style2Upper$1(k + 'Y')];
+            var k1 = STYLE_KEY$3[style2Upper$1(k + 'X')];
+            var _k = STYLE_KEY$3[style2Upper$1(k + 'Y')];
             var arr1 = calUnit([k1, _arr2[0]], 1, _arr2[0]);
             var arr2 = calUnit([_k, _arr2[1]], 1, _arr2[1]);
             compatibleTransform(k1, arr1[1]);
@@ -8142,7 +8098,7 @@
         return;
       }
 
-      var k2 = STYLE_KEY$4[style2Upper$1(k)];
+      var k2 = STYLE_KEY$3[style2Upper$1(k)];
       calUnit(res, k2, v);
       v = res[k2]; // 无单位视为px
 
@@ -8516,13 +8472,13 @@
 
     ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = style[k];
       }
     }); // 直接赋值的number类型
 
     ['flexGrow', 'flexShrink'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        res[STYLE_KEY$4[style2Upper$1(k)]] = Math.max(parseFloat(style[k]) || 0, 0);
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Math.max(parseFloat(style[k]) || 0, 0);
       }
     });
     temp = style.zIndex;
@@ -8535,7 +8491,7 @@
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         var _v5 = style[k];
-        res[STYLE_KEY$4[style2Upper$1(k)]] = Array.isArray(_v5) ? _v5 : [_v5];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v5) ? _v5 : [_v5];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -8837,11 +8793,11 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  var VALUE$1 = (_VALUE$1 = {}, _defineProperty(_VALUE$1, POSITION, true), _defineProperty(_VALUE$1, DISPLAY, true), _defineProperty(_VALUE$1, STYLE_KEY$4.BACKGROUND_REPEAT, true), _defineProperty(_VALUE$1, FLEX_DIRECTION, true), _defineProperty(_VALUE$1, FLEX_GROW, true), _defineProperty(_VALUE$1, FLEX_SHRINK, true), _defineProperty(_VALUE$1, JUSTIFY_CONTENT, true), _defineProperty(_VALUE$1, ALIGN_ITEMS, true), _defineProperty(_VALUE$1, ALIGN_SELF, true), _defineProperty(_VALUE$1, STYLE_KEY$4.OVERFLOW, true), _defineProperty(_VALUE$1, STYLE_KEY$4.MIX_BLEND_MODE, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINECAP, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_LINEJOIN, true), _defineProperty(_VALUE$1, STYLE_KEY$4.STROKE_MITERLIMIT, true), _defineProperty(_VALUE$1, STYLE_KEY$4.FILL_RULE, true), _defineProperty(_VALUE$1, OPACITY, true), _defineProperty(_VALUE$1, Z_INDEX, true), _defineProperty(_VALUE$1, BACKGROUND_CLIP, true), _defineProperty(_VALUE$1, TEXT_OVERFLOW, true), _defineProperty(_VALUE$1, LINE_CLAMP, true), _VALUE$1);
-  var ARRAY_0$1 = (_ARRAY_$1 = {}, _defineProperty(_ARRAY_$1, COLOR, true), _defineProperty(_ARRAY_$1, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_$1, STYLE_KEY$4.BORDER_LEFT_COLOR, true), _ARRAY_$1);
-  var ARRAY_0_1$1 = (_ARRAY_0_$1 = {}, _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_$1, STYLE_KEY$4.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_$1, TRANSFORM_ORIGIN$1, true), _ARRAY_0_$1);
+  var VALUE = (_VALUE = {}, _defineProperty(_VALUE, POSITION, true), _defineProperty(_VALUE, DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, FLEX_DIRECTION, true), _defineProperty(_VALUE, FLEX_GROW, true), _defineProperty(_VALUE, FLEX_SHRINK, true), _defineProperty(_VALUE, FLEX_WRAP, true), _defineProperty(_VALUE, JUSTIFY_CONTENT, true), _defineProperty(_VALUE, ALIGN_ITEMS, true), _defineProperty(_VALUE, ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$3.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$3.FILL_RULE, true), _defineProperty(_VALUE, OPACITY, true), _defineProperty(_VALUE, Z_INDEX, true), _defineProperty(_VALUE, BACKGROUND_CLIP, true), _defineProperty(_VALUE, TEXT_OVERFLOW, true), _defineProperty(_VALUE, LINE_CLAMP, true), _VALUE);
+  var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, COLOR, true), _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_);
+  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _ARRAY_0_);
 
-  function cloneStyle$1(style, keys) {
+  function cloneStyle(style, keys) {
     if (!keys) {
       keys = Object.keys(style).map(function (i) {
         if (!GEOM$2.hasOwnProperty(i)) {
@@ -8899,7 +8855,7 @@
           res[k] = v;
         }
       } // position等直接值类型赋值
-      else if (VALUE$1.hasOwnProperty(k)) {
+      else if (VALUE.hasOwnProperty(k)) {
           res[k] = v;
         } // geom自定义属性
         else if (GEOM$2.hasOwnProperty(k)) {
@@ -8919,9 +8875,9 @@
                   _n[_i9][0] = _n[_i9][0].slice(0);
                   _n[_i9][1] = _n[_i9][1].slice(0);
                 }
-              } else if (ARRAY_0$1.hasOwnProperty(k)) {
+              } else if (ARRAY_0.hasOwnProperty(k)) {
                 _n[0] = _n[0].slice(0);
-              } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
+              } else if (ARRAY_0_1.hasOwnProperty(k)) {
                 _n[0] = _n[0].slice(0);
                 _n[1] = _n[1].slice(0);
               } else if (k === TRANSFORM$1) {
@@ -8946,7 +8902,7 @@
     calAbsolute: calAbsolute,
     equalStyle: equalStyle,
     isRelativeOrAbsolute: isRelativeOrAbsolute,
-    cloneStyle: cloneStyle$1
+    cloneStyle: cloneStyle
   };
 
   var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
@@ -12947,7 +12903,7 @@
       clone$3 = util.clone,
       equalArr$2 = util.equalArr;
   var linear = easing.linear;
-  var cloneStyle$2 = css.cloneStyle;
+  var cloneStyle$1 = css.cloneStyle;
   var isGeom$2 = o$1.isGeom,
       GEOM$3 = o$1.GEOM;
   var COLOR_HASH$2 = key.COLOR_HASH,
@@ -13782,7 +13738,7 @@
 
 
   function calIntermediateStyle(frame, keys, percent, target) {
-    var style = cloneStyle$2(frame[FRAME_STYLE], keys);
+    var style = cloneStyle$1(frame[FRAME_STYLE], keys);
     var timingFunction = getEasing(frame[FRAME_EASING]);
 
     if (timingFunction && timingFunction !== linear) {
@@ -14629,10 +14585,10 @@
           // 多次播放时到达最后一帧也会显示
 
           if (stayEnd || !isLastCount) {
-            current = cloneStyle$2(currentFrame[FRAME_STYLE], __config[I_KEYS]);
+            current = cloneStyle$1(currentFrame[FRAME_STYLE], __config[I_KEYS]);
           } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
           else {
-              current = cloneStyle$2(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
+              current = cloneStyle$1(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
             } // 非尾每轮次放完增加次数和计算下轮准备
 
 
@@ -15393,7 +15349,7 @@
   }(Event);
 
   var _TRANSFORMS;
-  var STYLE_KEY$5 = enums.STYLE_KEY,
+  var STYLE_KEY$4 = enums.STYLE_KEY,
       _enums$STYLE_KEY$a = enums.STYLE_KEY,
       TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
       TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
@@ -15423,7 +15379,7 @@
     REFLOW: 128 //                               10000000
 
   };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$5.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
   var o$2 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
@@ -16035,7 +15991,7 @@
     getInlineWidth: getInlineWidth
   };
 
-  var STYLE_KEY$6 = enums.STYLE_KEY,
+  var STYLE_KEY$5 = enums.STYLE_KEY,
       STYLE_RV_KEY$2 = enums.STYLE_RV_KEY,
       style2Upper$2 = enums.style2Upper,
       _enums$STYLE_KEY$c = enums.STYLE_KEY,
@@ -16286,8 +16242,8 @@
         var _this2 = this;
 
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
-          var a = STYLE_KEY$6[style2Upper$2('margin' + k)];
-          var b = STYLE_KEY$6[style2Upper$2('padding' + k)];
+          var a = STYLE_KEY$5[style2Upper$2('margin' + k)];
+          var b = STYLE_KEY$5[style2Upper$2('padding' + k)];
           computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
           computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
         });
@@ -16965,9 +16921,9 @@
           var bblr = computedStyle[BORDER_BOTTOM_LEFT_RADIUS$1];
           ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
             k = 'border' + k;
-            var k2 = STYLE_KEY$6[style2Upper$2(k)];
-            var kw = STYLE_KEY$6[style2Upper$2(k + 'Width')];
-            var ks = STYLE_KEY$6[style2Upper$2(k + 'Style')]; // width/style变更影响border重新计算
+            var k2 = STYLE_KEY$5[style2Upper$2(k)];
+            var kw = STYLE_KEY$5[style2Upper$2(k + 'Width')];
+            var ks = STYLE_KEY$5[style2Upper$2(k + 'Style')]; // width/style变更影响border重新计算
 
             if (__cacheStyle[kw] === undefined) {
               __cacheStyle[kw] = true;
@@ -17112,7 +17068,7 @@
             for (var list = ['Top', 'Right', 'Bottom', 'Left'], _i = 0, _len = list.length; _i < _len; _i++) {
               var k = list[_i];
 
-              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][0][3] > 0) {
+              if (computedStyle[STYLE_KEY$5[style2Upper$2('border' + k + 'Width')]] > 0 && currentStyle[STYLE_KEY$5[style2Upper$2('border' + k + 'Color')]][0][3] > 0) {
                 return true;
               }
             }
@@ -18626,7 +18582,7 @@
           }
 
           keys = keys.map(function (s) {
-            return STYLE_KEY$6[style2Upper$2(s)];
+            return STYLE_KEY$5[style2Upper$2(s)];
           });
         } else {
           keys = Object.keys(computedStyle);
@@ -32858,7 +32814,8 @@
     boxShadow: 'bd',
     overflow: 'of',
     backgroundClip: 'bp',
-    textOverflow: 'tof'
+    textOverflow: 'tof',
+    flexWrap: 'fp'
   };
   var abbrCssProperty = {
     os: 'offset',

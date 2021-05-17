@@ -1306,6 +1306,7 @@ const VALUE = {
   [FLEX_DIRECTION]: true,
   [FLEX_GROW]: true,
   [FLEX_SHRINK]: true,
+  [FLEX_WRAP]: true,
   [JUSTIFY_CONTENT]: true,
   [ALIGN_ITEMS]: true,
   [ALIGN_SELF]: true,

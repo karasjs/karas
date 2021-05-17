@@ -26865,33 +26865,37 @@
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cacheFilter = __config[NODE_CACHE_FILTER$3],
             __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3]; // 可能没变化，比如被遮罩节点、filter变更等
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3];
+        var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
           __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+          needGen = true;
         } // 防止失败超限，必须有total结果
 
 
         if (__cacheTotal && __cacheTotal.available) {
           var target = __cacheTotal;
 
-          if (overflow === 'hidden') {
+          if (overflow === 'hidden' || needGen) {
             if (!__cacheOverflow || !__cacheOverflow.available) {
               __config[NODE_CACHE_OVERFLOW$3] = genOverflow(node, target);
+              needGen = true;
             }
 
             target = __config[NODE_CACHE_OVERFLOW$3] || target;
           }
 
           if (blurValue > 0) {
-            if (!__cacheFilter || !__cacheFilter.available) {
+            if (!__cacheFilter || !__cacheFilter.available || needGen) {
               __config[NODE_CACHE_FILTER$3] = genFilter(node, target, blurValue);
+              needGen = true;
             }
 
             target = __config[NODE_CACHE_FILTER$3] || target;
           }
 
-          if (hasMask && (!__cacheMask || !__cacheMask.available)) {
+          if (hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
             __config[NODE_CACHE_MASK$2] = genMask(node, target);
           }
         }
@@ -27865,8 +27869,7 @@
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
       var validMbm = isValidMbm$2(mixBlendMode);
 
-      if (hasMask // || position === 'absolute'
-      || blurValue > 0 || overflow === 'hidden' && total || validMbm) {
+      if (hasMask || blurValue > 0 || overflow === 'hidden' && total || validMbm) {
         if (validMbm) {
           hasMbm = true;
         }
@@ -27915,7 +27918,8 @@
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cacheFilter = __config[NODE_CACHE_FILTER$3],
             __cacheMask = __config[NODE_CACHE_MASK$2],
-            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3]; // 可能没变化，比如被遮罩节点、filter变更等
+            __cacheOverflow = __config[NODE_CACHE_OVERFLOW$3];
+        var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
           var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, width, height),
@@ -27924,6 +27928,7 @@
               res = _genTotalWebgl2[1];
 
           __cacheTotal = res;
+          needGen = true;
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
@@ -27935,8 +27940,9 @@
         var target = __cacheTotal;
 
         if (overflow === 'hidden') {
-          if (!__cacheOverflow || !__cacheOverflow.available) {
+          if (!__cacheOverflow || !__cacheOverflow.available || needGen) {
             target = genOverflowWebgl(gl, texCache, node, target, width, height);
+            needGen = true;
 
             if (!limitCache) {
               __config[NODE_CACHE_FILTER$3] = target;
@@ -27945,8 +27951,9 @@
         }
 
         if (blurValue > 0) {
-          if (!__cacheFilter || !__cacheFilter.available) {
+          if (!__cacheFilter || !__cacheFilter.available || needGen) {
             target = genFilterWebgl(gl, texCache, node, target, blurValue, width, height);
+            needGen = true;
 
             if (!limitCache) {
               __config[NODE_CACHE_FILTER$3] = target;
@@ -27954,7 +27961,7 @@
           }
         }
 
-        if (hasMask && (!__cacheMask || !__cacheMask.available)) {
+        if (hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
           target = genMaskWebgl(gl, texCache, node, __config, target, width, height);
 
           if (!limitCache) {

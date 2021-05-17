@@ -1211,27 +1211,31 @@ function renderCacheCanvas(renderMode, ctx, root) {
         [NODE_CACHE_MASK]: __cacheMask,
         [NODE_CACHE_OVERFLOW]: __cacheOverflow,
       } = __config;
+      let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
         __cacheTotal = __config[NODE_CACHE_TOTAL]
           = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+        needGen = true;
       }
       // 防止失败超限，必须有total结果
       if(__cacheTotal && __cacheTotal.available) {
         let target = __cacheTotal;
-        if(overflow === 'hidden') {
+        if(overflow === 'hidden' || needGen) {
           if(!__cacheOverflow || !__cacheOverflow.available) {
             __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
+            needGen = true;
           }
           target = __config[NODE_CACHE_OVERFLOW] || target;
         }
         if(blurValue > 0) {
-          if(!__cacheFilter || !__cacheFilter.available) {
+          if(!__cacheFilter || !__cacheFilter.available || needGen) {
             __config[NODE_CACHE_FILTER] = genFilter(node, target, blurValue);
+            needGen = true;
           }
           target = __config[NODE_CACHE_FILTER] || target;
         }
-        if(hasMask && (!__cacheMask || !__cacheMask.available)) {
+        if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
           __config[NODE_CACHE_MASK] = genMask(node, target);
         }
       }
@@ -2067,13 +2071,11 @@ function renderWebgl(renderMode, gl, root) {
       [NODE_LIMIT_CACHE]: limitCache,
     } = __config;
     let {
-      // [POSITION]: position,
       [OVERFLOW]: overflow,
       [MIX_BLEND_MODE]: mixBlendMode,
     } = computedStyle;
     let validMbm = isValidMbm(mixBlendMode);
-    if(hasMask// || position === 'absolute'
-      || blurValue > 0 || (overflow === 'hidden' && total) || validMbm) {
+    if(hasMask || blurValue > 0 || (overflow === 'hidden' && total) || validMbm) {
       if(validMbm) {
         hasMbm = true;
       }
@@ -2106,10 +2108,12 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_CACHE_MASK]: __cacheMask,
         [NODE_CACHE_OVERFLOW]: __cacheOverflow,
       } = __config;
+      let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
         let [limit, res] = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, width, height);
         __cacheTotal = res;
+        needGen = true;
         limitCache = limit;
         // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
         if(!limitCache) {
@@ -2119,22 +2123,24 @@ function renderWebgl(renderMode, gl, root) {
       // 即使超限，也有total结果
       let target = __cacheTotal;
       if(overflow === 'hidden') {
-        if(!__cacheOverflow || !__cacheOverflow.available) {
+        if(!__cacheOverflow || !__cacheOverflow.available || needGen) {
           target = genOverflowWebgl(gl, texCache, node, target, width, height);
+          needGen = true;
           if(!limitCache) {
             __config[NODE_CACHE_FILTER] = target;
           }
         }
       }
       if(blurValue > 0) {
-        if(!__cacheFilter || !__cacheFilter.available) {
+        if(!__cacheFilter || !__cacheFilter.available || needGen) {
           target = genFilterWebgl(gl, texCache, node, target, blurValue, width, height);
+          needGen = true;
           if(!limitCache) {
             __config[NODE_CACHE_FILTER] = target;
           }
         }
       }
-      if(hasMask && (!__cacheMask || !__cacheMask.available)) {
+      if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {
         target = genMaskWebgl(gl, texCache, node, __config, target, width, height);
         if(!limitCache) {
           __config[NODE_CACHE_MASK] = target;

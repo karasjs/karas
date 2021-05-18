@@ -10835,7 +10835,8 @@
             }
           }
 
-        this.__bbox = [x, y, this.__width = maxW, this.__height = y - data.y];
+        this.__width = maxW;
+        this.__height = y - data.y;
         this.__baseLine = css.getBaseLine(computedStyle);
         return lineCount;
       } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
@@ -11171,7 +11172,11 @@
     }, {
       key: "bbox",
       get: function get() {
-        return this.__bbox;
+        var sx = this.sx,
+            sy = this.sy,
+            width = this.width,
+            height = this.height;
+        return [sx, sy, sx + width, sy + height];
       }
     }, {
       key: "isShadowRoot",

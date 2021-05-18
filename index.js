@@ -17853,14 +17853,14 @@
               }
 
               return {
-                v: void 0
+                v: res
               };
             }();
 
             if (_typeof(_ret) === "object") return _ret.v;
           } // 无内容且无尺寸的无需渲染
           else if (bx1 === bx2 || by1 === by2) {
-              return;
+              return res;
             }
         } // block渲染，bgc垫底
 
@@ -27813,7 +27813,7 @@
       else {
           var res = node.render(renderMode, refreshLevel, gl, true); // geom可返回texture纹理，替代原有xom的__cache纹理
 
-          if (inject.isWebGLTexture(res.texture)) {
+          if (res && inject.isWebGLTexture(res.texture)) {
             var sx1 = node.__sx1,
                 sy1 = node.__sy1,
                 w = node.offsetWidth,

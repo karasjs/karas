@@ -1767,11 +1767,11 @@ class Xom extends Node {
         if(offscreen) {
           offscreen.ctx.clearRect(0, 0, iw, ih);
         }
-        return;
+        return res;
       }
       // 无内容且无尺寸的无需渲染
       else if(bx1 === bx2 || by1 === by2) {
-        return;
+        return res;
       }
     }
     // block渲染，bgc垫底

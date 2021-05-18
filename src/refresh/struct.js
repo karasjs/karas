@@ -1990,11 +1990,6 @@ function renderWebgl(renderMode, gl, root) {
         m[3] = matrix[3];
         m[4] = matrix[4];
         m[5] = matrix[5];
-        // webgl中心点特殊
-        let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
-        tfo[0] += (node.__sx1 || 0) - cx;
-        tfo[1] += (node.__sy1 || 0) - cy;
-        matrix = tf.calMatrixByOrigin(computedStyle[TRANSFORM], tfo);
       }
       else {
         matrix = __config[NODE_MATRIX];

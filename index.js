@@ -27728,12 +27728,7 @@
           _m10[2] = matrix[2];
           _m10[3] = matrix[3];
           _m10[4] = matrix[4];
-          _m10[5] = matrix[5]; // webgl中心点特殊
-
-          var tfo = computedStyle[TRANSFORM_ORIGIN$5].slice(0);
-          tfo[0] += (node.__sx1 || 0) - cx;
-          tfo[1] += (node.__sy1 || 0) - cy;
-          matrix = tf.calMatrixByOrigin(computedStyle[TRANSFORM$5], tfo);
+          _m10[5] = matrix[5];
         } else {
           matrix = __config[NODE_MATRIX$2];
         }

@@ -366,6 +366,7 @@ class Polyline extends Geom {
     if(res.break) {
       return res;
     }
+    this.buildCache(res.sx3, res.sy3);
     ctx = res.ctx;
     this.__renderPolygon(renderMode, ctx, res);
     return res;

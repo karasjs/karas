@@ -2,8 +2,6 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
-import level from '../../refresh/level';
-import mode from '../mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -89,7 +87,7 @@ class Ellipse extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.cx, res.cy, level.isReflow(lv));
+    this.buildCache(res.cx, res.cy);
     ctx = res.ctx;
     this.__renderPolygon(renderMode, ctx, res);
     return res;
@@ -104,47 +102,51 @@ class Ellipse extends Geom {
   }
 
   get bbox() {
-    let {
-      isMulti, __cacheProps,
-      __sx3: originX, __sy3: originY, width, height,
-      currentStyle: {
-        [STROKE_WIDTH]: strokeWidth,
-        [BOX_SHADOW]: boxShadow,
-      } } = this;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
-    this.buildCache(cx, cy);
-    let rx = 0, ry = 0;
-    if(isMulti) {
-      let mx = 0, my = 0;
-      __cacheProps.rx.forEach((rx, i) => {
-        mx = Math.max(rx, mx);
-        my = Math.max(ry, __cacheProps.ry[i]);
+    if(!this.__bbox) {
+      let {
+        isMulti, __cacheProps,
+        __sx3: originX, __sy3: originY, width, height,
+        currentStyle: {
+          [STROKE_WIDTH]: strokeWidth,
+          [BOX_SHADOW]: boxShadow,
+        }
+      } = this;
+      let cx = originX + width * 0.5;
+      let cy = originY + height * 0.5;
+      this.buildCache(cx, cy);
+      let rx = 0, ry = 0;
+      if(isMulti) {
+        let mx = 0, my = 0;
+        __cacheProps.rx.forEach((rx, i) => {
+          mx = Math.max(rx, mx);
+          my = Math.max(ry, __cacheProps.ry[i]);
+        });
+        rx = mx;
+        ry = my;
+      }
+      else {
+        rx = __cacheProps.rx;
+        ry = __cacheProps.ry;
+      }
+      let bbox = super.bbox;
+      let half = 0;
+      strokeWidth.forEach(item => {
+        half = Math.max(item[0], half);
       });
-      rx = mx;
-      ry = my;
+      let [ox, oy] = this.__spreadBbox(boxShadow);
+      ox += half;
+      oy += half;
+      let xa = cx - rx - ox;
+      let xb = cx + rx + ox;
+      let ya = cy - ry - oy;
+      let yb = cy + ry + oy;
+      bbox[0] = Math.min(bbox[0], xa);
+      bbox[1] = Math.min(bbox[1], ya);
+      bbox[2] = Math.max(bbox[2], xb);
+      bbox[3] = Math.max(bbox[3], yb);
+      this.__bbox = bbox;
     }
-    else {
-      rx = __cacheProps.rx;
-      ry = __cacheProps.ry;
-    }
-    let bbox = super.bbox;
-    let half = 0;
-    strokeWidth.forEach(item => {
-      half = Math.max(item[0], half);
-    });
-    let [ox, oy] = this.__spreadBbox(boxShadow);
-    ox += half;
-    oy += half;
-    let xa = cx - rx - ox;
-    let xb = cx + rx + ox;
-    let ya = cy - ry - oy;
-    let yb = cy + ry + oy;
-    bbox[0] = Math.min(bbox[0], xa);
-    bbox[1] = Math.min(bbox[1], ya);
-    bbox[2] = Math.max(bbox[2], xb);
-    bbox[3] = Math.max(bbox[3], yb);
-    return bbox;
+    return this.__bbox;
   }
 }
 

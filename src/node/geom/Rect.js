@@ -108,7 +108,7 @@ class Rect extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.x3, res.y3, level.isReflow(lv));
+    this.buildCache(res.sx3, res.sy3);
     ctx = res.ctx;
     this.__renderPolygon(renderMode, ctx, res);
     return res;
@@ -123,26 +123,30 @@ class Rect extends Geom {
   }
 
   get bbox() {
-    let {
-      __sx3: originX, __sy3: originY, width, height,
-      currentStyle: {
-        [STROKE_WIDTH]: strokeWidth,
-        [BOX_SHADOW]: boxShadow,
-      } } = this;
-    this.buildCache(originX, originY);
-    let bbox = super.bbox;
-    let half = 0;
-    strokeWidth.forEach(item => {
-      half = Math.max(item[0], half);
-    });
-    let [ox, oy] = this.__spreadBbox(boxShadow);
-    ox += half;
-    oy += half;
-    bbox[0] = Math.min(bbox[0], originX - ox);
-    bbox[1] = Math.min(bbox[1], originY - oy);
-    bbox[2] = Math.max(bbox[2], originX + width + ox);
-    bbox[3] = Math.max(bbox[3], originY + height + oy);
-    return bbox;
+    if(!this.__bbox) {
+      let {
+        __sx3: originX, __sy3: originY, width, height,
+        currentStyle: {
+          [STROKE_WIDTH]: strokeWidth,
+          [BOX_SHADOW]: boxShadow,
+        }
+      } = this;
+      this.buildCache(originX, originY);
+      let bbox = super.bbox;
+      let half = 0;
+      strokeWidth.forEach(item => {
+        half = Math.max(item[0], half);
+      });
+      let [ox, oy] = this.__spreadBbox(boxShadow);
+      ox += half;
+      oy += half;
+      bbox[0] = Math.min(bbox[0], originX - ox);
+      bbox[1] = Math.min(bbox[1], originY - oy);
+      bbox[2] = Math.max(bbox[2], originX + width + ox);
+      bbox[3] = Math.max(bbox[3], originY + height + oy);
+      this.__bbox = bbox;
+    }
+    return this.__bbox;
   }
 }
 

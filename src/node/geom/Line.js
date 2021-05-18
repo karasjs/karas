@@ -239,8 +239,8 @@ class Line extends Geom {
     }
     ctx = res.ctx;
     let {
-      x3,
-      y3,
+      sx3,
+      sy3,
       stroke: strokes,
       strokeWidth: strokeWidths,
       strokeDasharray: strokeDasharrays,
@@ -252,7 +252,7 @@ class Line extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    let rebuild = this.buildCache(x3, y3, level.isReflow(lv));
+    let rebuild = this.buildCache(sx3, sy3);
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {
@@ -320,7 +320,7 @@ class Line extends Geom {
             if(start !== 0 || end !== 1) {
               [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
             }
-            painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve);
+            painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve, dx, dy);
           }
           ctx.stroke();
           ctx.closePath();

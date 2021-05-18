@@ -432,8 +432,7 @@ class Text extends Node {
         }
       }
     }
-    this.__width = maxW;
-    this.__height = y - data.y;
+    this.__bbox = [x, y, this.__width = maxW, this.__height = y - data.y];
     this.__baseLine = css.getBaseLine(computedStyle);
     return lineCount;
   }
@@ -722,13 +721,7 @@ class Text extends Node {
   }
 
   get bbox() {
-    if(!this.content) {
-      return;
-    }
-    let { sx, sy, width, height } = this;
-    let x1 = sx, y1 = sy;
-    let x2 = sx + width, y2 = sy + height;
-    return [x1, y1, x2, y2];
+    return this.__bbox;
   }
 
   get isShadowRoot() {

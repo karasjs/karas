@@ -357,7 +357,7 @@ class Xom extends Node {
     };
     __config[NODE_REFRESH_LV] = REFLOW;
     __config[NODE_LIMIT_CACHE] = false;
-    let isRealInline = __config[NODE_IS_INLINE] = false;
+    __config[NODE_IS_INLINE] = false;
     // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
     if(!isVirtual) {
       let { next } = this;
@@ -1112,6 +1112,8 @@ class Xom extends Node {
     let computedStyle = __config[NODE_COMPUTED_STYLE];
     // 渲染完认为完全无变更，等布局/动画/更新重置
     __config[NODE_REFRESH_LV] = NONE;
+    // >=REPAINT才会进入这里，清空bbox
+    this.__bbox = null;
     if(isDestroyed) {
       return { isDestroyed, break: true };
     }
@@ -1178,7 +1180,12 @@ class Xom extends Node {
     let y4 = this.__sy4;
     let y5 = this.__sy5;
     let y6 = this.__sy6;
-    let res = { x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6, ctx };
+    let res = {
+      ctx,
+      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6,
+      sx1: x1, sx2: x2, sx3: x3, sx4: x4, sx5: x5, sx6: x6,
+      sy1: y1, sy2: y2, sy3: y3, sy4: y4, sy5: y5, sy6: y6,
+    };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
@@ -2458,22 +2465,25 @@ class Xom extends Node {
     return this.__outerHeight || 0;
   }
 
-  // 不考虑margin的范围
+  // 不考虑margin的范围，>=REPAINT渲染或个别有影响的渲染改变（如blur）清空缓存
   get bbox() {
-    let {
-      __sx1, __sy1, clientWidth, clientHeight,
-      currentStyle: {
-        [BORDER_TOP_WIDTH]: borderTopWidth,
-        [BORDER_RIGHT_WIDTH]: borderRightWidth,
-        [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-        [BORDER_LEFT_WIDTH]: borderLeftWidth,
-        [BOX_SHADOW]: boxShadow,
-      },
-    } = this;
-    let [ox, oy] = this.__spreadBbox(boxShadow);
-    clientWidth += borderLeftWidth[0] + borderRightWidth[0];
-    clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-    return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
+    if(!this.__bbox) {
+      let {
+        __sx1, __sy1, clientWidth, clientHeight,
+        currentStyle: {
+          [BORDER_TOP_WIDTH]: borderTopWidth,
+          [BORDER_RIGHT_WIDTH]: borderRightWidth,
+          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+          [BORDER_LEFT_WIDTH]: borderLeftWidth,
+          [BOX_SHADOW]: boxShadow,
+        },
+      } = this;
+      let [ox, oy] = this.__spreadBbox(boxShadow);
+      clientWidth += borderLeftWidth[0] + borderRightWidth[0];
+      clientHeight += borderTopWidth[0] + borderBottomWidth[0];
+      this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
+    }
+    return this.__bbox;
   }
 
   get listener() {

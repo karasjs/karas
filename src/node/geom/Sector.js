@@ -4,7 +4,6 @@ import enums from '../../util/enums';
 import geom from '../../math/geom';
 import inject from '../../util/inject';
 import level from '../../refresh/level';
-import mode from '../mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -155,7 +154,7 @@ class Sector extends Geom {
     if(res.break) {
       return res;
     }
-    this.buildCache(res.cx, res.cy, level.isReflow(lv));
+    this.buildCache(res.cx, res.cy);
     ctx = res.ctx;
     let {
       fill: fills,
@@ -167,6 +166,8 @@ class Sector extends Geom {
       strokeLinecap: strokeLinecaps,
       strokeLinejoin: strokeLinejoins,
       strokeMiterlimit: strokeMiterlimits,
+      dx,
+      dy,
     } = res;
     let { __cacheProps: { list, sList }, isMulti } = this;
     // 普通情况下只有1个，按普通情况走
@@ -181,6 +182,8 @@ class Sector extends Geom {
         strokeLinecap: strokeLinecaps[0],
         strokeLinejoin: strokeLinejoins[0],
         strokeMiterlimit: strokeMiterlimits[0],
+        dx,
+        dy,
       };
       this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
     }
@@ -192,6 +195,8 @@ class Sector extends Geom {
           let o = {
             fill,
             fillRule: fillRules[i],
+            dx,
+            dy,
           };
           this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
         }
@@ -207,6 +212,8 @@ class Sector extends Geom {
             strokeLinecap: strokeLinecaps[i],
             strokeLinejoin: strokeLinejoins[i],
             strokeMiterlimit: strokeMiterlimits[i],
+            dx,
+            dy,
           };
           this.__renderOnePolygon(renderMode, ctx, isMulti, list, sList, o);
         }
@@ -317,44 +324,48 @@ class Sector extends Geom {
   }
 
   get bbox() {
-    let {
-      isMulti, __cacheProps,
-      __sx3: originX, __sy3: originY, width, height,
-      currentStyle: {
-        [STROKE_WIDTH]: strokeWidth,
-        [BOX_SHADOW]: boxShadow,
-      } } = this;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
-    this.buildCache(cx, cy);
-    let r = 0;
-    if(isMulti) {
-      let max = 0;
-      __cacheProps.r.forEach(r => {
-        max = Math.max(r, max);
+    if(!this.__bbox) {
+      let {
+        isMulti, __cacheProps,
+        __sx3: originX, __sy3: originY, width, height,
+        currentStyle: {
+          [STROKE_WIDTH]: strokeWidth,
+          [BOX_SHADOW]: boxShadow,
+        }
+      } = this;
+      let cx = originX + width * 0.5;
+      let cy = originY + height * 0.5;
+      this.buildCache(cx, cy);
+      let r = 0;
+      if(isMulti) {
+        let max = 0;
+        __cacheProps.r.forEach(r => {
+          max = Math.max(r, max);
+        });
+        r = max;
+      }
+      else {
+        r = __cacheProps.r;
+      }
+      let bbox = super.bbox;
+      let half = 0;
+      strokeWidth.forEach(item => {
+        half = Math.max(item[0], half);
       });
-      r = max;
+      let [ox, oy] = this.__spreadBbox(boxShadow);
+      ox += half;
+      oy += half;
+      let xa = cx - r - ox;
+      let xb = cx + r + ox;
+      let ya = cy - r - oy;
+      let yb = cy + r + oy;
+      bbox[0] = Math.min(bbox[0], xa);
+      bbox[1] = Math.min(bbox[1], ya);
+      bbox[2] = Math.max(bbox[2], xb);
+      bbox[3] = Math.max(bbox[3], yb);
+      this.__bbox = bbox;
     }
-    else {
-      r = __cacheProps.r;
-    }
-    let bbox = super.bbox;
-    let half = 0;
-    strokeWidth.forEach(item => {
-      half = Math.max(item[0], half);
-    });
-    let [ox, oy] = this.__spreadBbox(boxShadow);
-    ox += half;
-    oy += half;
-    let xa = cx - r - ox;
-    let xb = cx + r + ox;
-    let ya = cy - r - oy;
-    let yb = cy + r + oy;
-    bbox[0] = Math.min(bbox[0], xa);
-    bbox[1] = Math.min(bbox[1], ya);
-    bbox[2] = Math.max(bbox[2], xb);
-    bbox[3] = Math.max(bbox[3], yb);
-    return bbox;
+    return this.__bbox;
   }
 }
 

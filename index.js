@@ -10835,8 +10835,7 @@
             }
           }
 
-        this.__width = maxW;
-        this.__height = y - data.y;
+        this.__bbox = [x, y, this.__width = maxW, this.__height = y - data.y];
         this.__baseLine = css.getBaseLine(computedStyle);
         return lineCount;
       } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
@@ -11172,19 +11171,7 @@
     }, {
       key: "bbox",
       get: function get() {
-        if (!this.content) {
-          return;
-        }
-
-        var sx = this.sx,
-            sy = this.sy,
-            width = this.width,
-            height = this.height;
-        var x1 = sx,
-            y1 = sy;
-        var x2 = sx + width,
-            y2 = sy + height;
-        return [x1, y1, x2, y2];
+        return this.__bbox;
       }
     }, {
       key: "isShadowRoot",
@@ -16352,7 +16339,7 @@
         };
         __config[NODE_REFRESH_LV] = REFLOW;
         __config[NODE_LIMIT_CACHE$1] = false;
-        var isRealInline = __config[NODE_IS_INLINE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
+        __config[NODE_IS_INLINE] = false; // 防止display:none不统计mask，isVirtual忽略，abs布局后续会真正来走一遍
 
         if (!isVirtual) {
           var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变，clip也是mask的一种
@@ -17123,7 +17110,9 @@
         var currentStyle = __config[NODE_CURRENT_STYLE$1];
         var computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 渲染完认为完全无变更，等布局/动画/更新重置
 
-        __config[NODE_REFRESH_LV] = NONE;
+        __config[NODE_REFRESH_LV] = NONE; // >=REPAINT才会进入这里，清空bbox
+
+        this.__bbox = null;
 
         if (isDestroyed) {
           return {
@@ -17195,6 +17184,7 @@
         var y5 = this.__sy5;
         var y6 = this.__sy6;
         var res = {
+          ctx: ctx,
           x1: x1,
           x2: x2,
           x3: x3,
@@ -17207,7 +17197,18 @@
           y4: y4,
           y5: y5,
           y6: y6,
-          ctx: ctx
+          sx1: x1,
+          sx2: x2,
+          sx3: x3,
+          sx4: x4,
+          sx5: x5,
+          sx6: x6,
+          sy1: y1,
+          sy2: y2,
+          sy3: y3,
+          sy4: y4,
+          sy5: y5,
+          sy6: y6
         }; // 防止cp直接返回cp嵌套，拿到真实dom的parent
 
         var p = __config[NODE_DOM_PARENT$2];
@@ -18672,30 +18673,34 @@
       key: "outerHeight",
       get: function get() {
         return this.__outerHeight || 0;
-      } // 不考虑margin的范围
+      } // 不考虑margin的范围，>=REPAINT渲染或个别有影响的渲染改变（如blur）清空缓存
 
     }, {
       key: "bbox",
       get: function get() {
-        var __sx1 = this.__sx1,
-            __sy1 = this.__sy1,
-            clientWidth = this.clientWidth,
-            clientHeight = this.clientHeight,
-            _this$currentStyle = this.currentStyle,
-            borderTopWidth = _this$currentStyle[BORDER_TOP_WIDTH$2],
-            borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$3],
-            borderBottomWidth = _this$currentStyle[BORDER_BOTTOM_WIDTH$2],
-            borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$3],
-            boxShadow = _this$currentStyle[BOX_SHADOW$2];
+        if (!this.__bbox) {
+          var __sx1 = this.__sx1,
+              __sy1 = this.__sy1,
+              clientWidth = this.clientWidth,
+              clientHeight = this.clientHeight,
+              _this$currentStyle = this.currentStyle,
+              borderTopWidth = _this$currentStyle[BORDER_TOP_WIDTH$2],
+              borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$3],
+              borderBottomWidth = _this$currentStyle[BORDER_BOTTOM_WIDTH$2],
+              borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$3],
+              boxShadow = _this$currentStyle[BOX_SHADOW$2];
 
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+              ox = _this$__spreadBbox2[0],
+              oy = _this$__spreadBbox2[1];
 
-        clientWidth += borderLeftWidth[0] + borderRightWidth[0];
-        clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-        return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
+          clientWidth += borderLeftWidth[0] + borderRightWidth[0];
+          clientHeight += borderTopWidth[0] + borderBottomWidth[0];
+          this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
+        }
+
+        return this.__bbox;
       }
     }, {
       key: "listener",
@@ -23561,8 +23566,8 @@
             height = this.height,
             __cacheStyle = this.__cacheStyle,
             computedStyle = this.computedStyle;
-        var cx = res.x3 + width * 0.5;
-        var cy = res.y3 + height * 0.5;
+        var cx = res.sx3 + width * 0.5;
+        var cy = res.sy3 + height * 0.5;
         var fill = __cacheStyle[FILL$1],
             stroke = __cacheStyle[STROKE$1],
             strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
@@ -23680,7 +23685,9 @@
             strokeDasharrayStrs = res.strokeDasharrayStr,
             strokeLinecaps = res.strokeLinecap,
             strokeLinejoins = res.strokeLinejoin,
-            strokeMiterlimits = res.strokeMiterlimit;
+            strokeMiterlimits = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var list = this.__cacheProps.list,
             isMulti = this.isMulti,
             bbox = this.bbox; // 普通情况下只有1个，按普通情况走
@@ -23696,6 +23703,8 @@
             strokeLinecap: strokeLinecaps[0],
             strokeLinejoin: strokeLinejoins[0],
             strokeMiterlimit: strokeMiterlimits[0],
+            dx: dx,
+            dy: dy,
             bbox: bbox
           };
 
@@ -23709,6 +23718,8 @@
                 var _o = {
                   fill: fill,
                   fillRule: fillRules[i],
+                  dx: dx,
+                  dy: dy,
                   bbox: bbox
                 };
 
@@ -23728,6 +23739,8 @@
                   strokeLinecap: strokeLinecaps[_i],
                   strokeLinejoin: strokeLinejoins[_i],
                   strokeMiterlimit: strokeMiterlimits[_i],
+                  dx: dx,
+                  dy: dy,
                   bbox: bbox
                 };
 
@@ -23790,7 +23803,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           this.__preSetCanvas(renderMode, ctx, res);
@@ -23799,10 +23814,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return canvasPolygon$6(ctx, item);
+              return canvasPolygon$6(ctx, item, dx, dy);
             });
           } else {
-            canvasPolygon$6(ctx, list);
+            canvasPolygon$6(ctx, list, dx, dy);
           }
 
           if (isFill && fill && fill !== 'none') {
@@ -23903,7 +23918,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
 
         var _res$method$v = _slicedToArray(res[method].v, 4),
             color = _res$method$v[0],
@@ -23933,10 +23950,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
+              return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            canvasPolygon$6(ctx, list);
+            canvasPolygon$6(ctx, list, dx, dy);
           }
 
           ctx[method]();
@@ -23979,7 +23996,11 @@
         var _this3 = this;
 
         var fill = res.fill,
-            bbox = res.bbox;
+            bbox = res.bbox,
+            _res$dx = res.dx,
+            dx = _res$dx === void 0 ? 0 : _res$dx,
+            _res$dy = res.dy,
+            dy = _res$dy === void 0 ? 0 : _res$dy;
         var color = fill.v;
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -24000,19 +24021,19 @@
             list.forEach(function (item) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$6(ctx, item);
+              canvasPolygon$6(ctx, item, dx, dy);
               ctx.clip();
               ctx.closePath();
-              ctx.drawImage(offscreen.canvas, x1, y1);
+              ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
               ctx.restore();
             });
           } else {
             ctx.save();
             ctx.beginPath();
-            canvasPolygon$6(ctx, list);
+            canvasPolygon$6(ctx, list, dx, dy);
             ctx.clip();
             ctx.closePath();
-            ctx.drawImage(offscreen.canvas, x1, y1);
+            ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
             ctx.restore();
           }
 
@@ -26676,19 +26697,20 @@
         }
 
         var currentStyle = __config[NODE_CURRENT_STYLE$4],
-            __cacheStyle = __config[NODE_CACHE_STYLE$1];
+            __cacheStyle = __config[NODE_CACHE_STYLE$1],
+            _matrixEvent2 = __config[NODE_MATRIX_EVENT$4];
         var matrix;
 
         if (contain$2(refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
-          var _m4 = __config[NODE_MATRIX$2];
-          _m4[0] = matrix[0];
-          _m4[1] = matrix[1];
-          _m4[2] = matrix[2];
-          _m4[3] = matrix[3];
-          _m4[4] = matrix[4];
-          _m4[5] = matrix[5];
+          var m = __config[NODE_MATRIX$2];
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
         } else {
           matrix = __config[NODE_MATRIX$2];
         } // 父不为E时要点乘继承父的
@@ -26699,13 +26721,12 @@
         } // 恶心的v8性能优化
 
 
-        var m = __config[NODE_MATRIX_EVENT$4];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
+        _matrixEvent2[0] = matrix[0];
+        _matrixEvent2[1] = matrix[1];
+        _matrixEvent2[2] = matrix[2];
+        _matrixEvent2[3] = matrix[3];
+        _matrixEvent2[4] = matrix[4];
+        _matrixEvent2[5] = matrix[5];
 
         var _opacity2;
 
@@ -26715,11 +26736,12 @@
           _opacity2 = computedStyle[OPACITY$5];
         }
 
-        __config[NODE_OPACITY$3] = parentOpacity * _opacity2;
+        __config[NODE_OPACITY$3] = parentOpacity * _opacity2; // filter会改变bbox范围
 
         var _blurValue;
 
         if (contain$2(refreshLevel, FT$1)) {
+          node.__bbox = null;
           var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
           _blurValue = __config[NODE_BLUR_VALUE$1] = 0;
 
@@ -27543,9 +27565,9 @@
               else if (tagName === 'image') {
                   var hasTransform = -1;
 
-                  for (var _m5 = 0, _len6 = props.length; _m5 < _len6; _m5++) {
-                    if (props[_m5][0] === 'transform') {
-                      hasTransform = _m5;
+                  for (var _m4 = 0, _len6 = props.length; _m4 < _len6; _m4++) {
+                    if (props[_m4][0] === 'transform') {
+                      hasTransform = _m4;
                       break;
                     }
                   }
@@ -27716,19 +27738,20 @@
         }
 
         var currentStyle = __config[NODE_CURRENT_STYLE$4],
-            __cacheStyle = __config[NODE_CACHE_STYLE$1];
+            __cacheStyle = __config[NODE_CACHE_STYLE$1],
+            _matrixEvent4 = __config[NODE_MATRIX_EVENT$4];
         var matrix;
 
         if (contain$2(refreshLevel, TRANSFORM_ALL$2)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
-          var _m10 = __config[NODE_MATRIX$2];
-          _m10[0] = matrix[0];
-          _m10[1] = matrix[1];
-          _m10[2] = matrix[2];
-          _m10[3] = matrix[3];
-          _m10[4] = matrix[4];
-          _m10[5] = matrix[5];
+          var _m8 = __config[NODE_MATRIX$2];
+          _m8[0] = matrix[0];
+          _m8[1] = matrix[1];
+          _m8[2] = matrix[2];
+          _m8[3] = matrix[3];
+          _m8[4] = matrix[4];
+          _m8[5] = matrix[5];
         } else {
           matrix = __config[NODE_MATRIX$2];
         }
@@ -27738,13 +27761,12 @@
         } // 恶心的v8性能优化
 
 
-        var _m9 = __config[NODE_MATRIX_EVENT$4];
-        _m9[0] = matrix[0];
-        _m9[1] = matrix[1];
-        _m9[2] = matrix[2];
-        _m9[3] = matrix[3];
-        _m9[4] = matrix[4];
-        _m9[5] = matrix[5];
+        _matrixEvent4[0] = matrix[0];
+        _matrixEvent4[1] = matrix[1];
+        _matrixEvent4[2] = matrix[2];
+        _matrixEvent4[3] = matrix[3];
+        _matrixEvent4[4] = matrix[4];
+        _matrixEvent4[5] = matrix[5];
 
         var _opacity5;
 
@@ -27754,11 +27776,12 @@
           _opacity5 = computedStyle[OPACITY$5];
         }
 
-        __config[NODE_OPACITY$3] = parentOpacity * _opacity5;
+        __config[NODE_OPACITY$3] = parentOpacity * _opacity5; // filter会改变bbox范围
 
         var _blurValue2;
 
         if (contain$2(refreshLevel, FT$1)) {
+          node.__bbox = null;
           var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
           _blurValue2 = __config[NODE_BLUR_VALUE$1] = 0;
 
@@ -27993,7 +28016,7 @@
           }
       } else {
         var _opacity4 = __config[NODE_OPACITY$3],
-            _matrixEvent2 = __config[NODE_MATRIX_EVENT$4],
+            _matrixEvent3 = __config[NODE_MATRIX_EVENT$4],
             _limitCache = __config[NODE_LIMIT_CACHE$2],
             _cache = __config[NODE_CACHE$5],
             __cacheFilter = __config[NODE_CACHE_FILTER$2],
@@ -28016,7 +28039,7 @@
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cache]); // total和自身cache的尝试
 
         if (target) {
-          var _m6 = mx.m2Mat4(_matrixEvent2, cx, cy); // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
+          var _m5 = mx.m2Mat4(_matrixEvent3, cx, cy); // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
 
 
           if (hasMbm && isValidMbm$2(mixBlendMode)) {
@@ -28028,7 +28051,7 @@
                 frameBuffer2 = _genFrameBufferWithTe18[1],
                 texture2 = _genFrameBufferWithTe18[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity4, _m6, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, target, _opacity4, _m5, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
             var _genMbmWebgl3 = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
@@ -28041,14 +28064,14 @@
             gl.deleteFramebuffer(frameBuffer2);
             gl.deleteTexture(texture2);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity4, _m6, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, target, _opacity4, _m5, cx, cy, 0, 0, true);
           }
 
           if (target !== _cache) {
             _i14 += (total || 0) + (hasMask || 0);
           }
         } else if (limitHash.hasOwnProperty(_i14)) {
-          var _m7 = mx.m2Mat4(_matrixEvent2, cx, cy);
+          var _m6 = mx.m2Mat4(_matrixEvent3, cx, cy);
 
           var _target5 = limitHash[_i14];
 
@@ -28061,7 +28084,7 @@
                 _frameBuffer = _genFrameBufferWithTe20[1],
                 _texture3 = _genFrameBufferWithTe20[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity4, _m7, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity4, _m6, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
             var _genMbmWebgl5 = genMbmWebgl(gl, texCache, n, _n, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
@@ -28074,14 +28097,14 @@
             gl.deleteFramebuffer(_frameBuffer);
             gl.deleteTexture(_texture3);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity4, _m7, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity4, _m6, cx, cy, 0, 0, true);
           }
 
           _i14 += (total || 0) + (hasMask || 0);
         } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
         // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
         else if (_limitCache && display !== 'none' && visibility !== 'hidden') {
-            var _m8 = mx.m2Mat4(_matrixEvent2, cx, cy);
+            var _m7 = mx.m2Mat4(_matrixEvent3, cx, cy);
 
             var _c5 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
@@ -28093,7 +28116,7 @@
 
             var _mockCache2 = new MockCache(gl, _texture4, 0, 0, width, height, [0, 0, width, height]);
 
-            texCache.addTexAndDrawWhenLimit(gl, _mockCache2, _opacity4, _m8, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _mockCache2, _opacity4, _m7, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true);
 
             _c5.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30954,8 +30977,8 @@
         }
 
         ctx = res.ctx;
-        var x3 = res.x3,
-            y3 = res.y3,
+        var sx3 = res.sx3,
+            sy3 = res.sy3,
             strokes = res.stroke,
             strokeWidths = res.strokeWidth,
             strokeDasharrays = res.strokeDasharray,
@@ -30967,7 +30990,7 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild = this.buildCache(x3, y3, o$2.isReflow(lv));
+        var rebuild = this.buildCache(sx3, sy3);
 
         if (rebuild && renderMode === mode.SVG) {
           var d = '';
@@ -31100,7 +31123,7 @@
                   _controlB = _getNewPoint8[5];
                 }
 
-                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve);
+                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
               }
 
               ctx.stroke();
@@ -31595,7 +31618,7 @@
       }
     }, {
       key: "buildCache",
-      value: function buildCache(originX, originY, focus) {
+      value: function buildCache(originX, originY) {
         var _this2 = this;
 
         var width = this.width,
@@ -31608,7 +31631,7 @@
             isMulti = this.isMulti;
         var rebuild, rebuildSE;
 
-        if (isNil$a(__cacheProps.points) || focus) {
+        if (isNil$a(__cacheProps.points)) {
           rebuild = true;
 
           if (isMulti) {
@@ -31622,7 +31645,7 @@
           }
         }
 
-        if (isNil$a(__cacheProps.controls) || focus) {
+        if (isNil$a(__cacheProps.controls)) {
           rebuild = true;
 
           if (isMulti) {
@@ -31712,7 +31735,6 @@
           return res;
         }
 
-        this.buildCache(res.x3, res.y3, o$2.isReflow(lv));
         ctx = res.ctx;
 
         this.__renderPolygon(renderMode, ctx, res);
@@ -31742,80 +31764,84 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx3,
-            originY = this.__sy3,
-            _this$currentStyle = this.currentStyle,
-            strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
-            boxShadow = _this$currentStyle[BOX_SHADOW$5],
-            isMulti = this.isMulti,
-            __cacheProps = this.__cacheProps;
-        this.buildCache(originX, originY);
+        if (!this.__bbox) {
+          var originX = this.__sx3,
+              originY = this.__sy3,
+              _this$currentStyle = this.currentStyle,
+              strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
+              boxShadow = _this$currentStyle[BOX_SHADOW$5],
+              isMulti = this.isMulti,
+              __cacheProps = this.__cacheProps;
+          this.buildCache(originX, originY);
 
-        var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
+          var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
 
-        var half = 0;
-        strokeWidth.forEach(function (item) {
-          half = Math.max(item[0], half);
-        });
+          var half = 0;
+          strokeWidth.forEach(function (item) {
+            half = Math.max(item[0], half);
+          });
 
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+              ox = _this$__spreadBbox2[0],
+              oy = _this$__spreadBbox2[1];
 
-        ox += half;
-        oy += half;
-        var points = __cacheProps.points,
-            controls = __cacheProps.controls;
+          ox += half;
+          oy += half;
+          var points = __cacheProps.points,
+              controls = __cacheProps.controls;
 
-        if (!isMulti) {
-          points = [points];
-          controls = [controls];
-        }
-
-        points.forEach(function (pointList, i) {
-          if (!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
-            return;
+          if (!isMulti) {
+            points = [points];
+            controls = [controls];
           }
 
-          var controlList = controls[i] || [];
-
-          var _pointList$ = _slicedToArray(pointList[0], 2),
-              xa = _pointList$[0],
-              ya = _pointList$[1];
-
-          for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
-            var _pointList$_i = _slicedToArray(pointList[_i4], 2),
-                xb = _pointList$_i[0],
-                yb = _pointList$_i[1];
-
-            var c = controlList[_i4 - 1];
-
-            if (c && c.length === 4) {
-              var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-              bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-              bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-              bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-              bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
-            } else if (c && c.length === 2) {
-              var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
-
-              bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
-              bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
-              bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
-              bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
-            } else {
-              bbox[0] = Math.min(bbox[0], xa - ox);
-              bbox[1] = Math.min(bbox[1], ya - oy);
-              bbox[2] = Math.max(bbox[2], xa + ox);
-              bbox[3] = Math.max(bbox[3], ya + oy);
+          points.forEach(function (pointList, i) {
+            if (!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
+              return;
             }
 
-            xa = xb;
-            ya = yb;
-          }
-        });
-        return bbox;
+            var controlList = controls[i] || [];
+
+            var _pointList$ = _slicedToArray(pointList[0], 2),
+                xa = _pointList$[0],
+                ya = _pointList$[1];
+
+            for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
+              var _pointList$_i = _slicedToArray(pointList[_i4], 2),
+                  xb = _pointList$_i[0],
+                  yb = _pointList$_i[1];
+
+              var c = controlList[_i4 - 1];
+
+              if (c && c.length === 4) {
+                var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+                bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+                bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+                bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+                bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+              } else if (c && c.length === 2) {
+                var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+
+                bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
+                bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
+                bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
+                bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
+              } else {
+                bbox[0] = Math.min(bbox[0], xa - ox);
+                bbox[1] = Math.min(bbox[1], ya - oy);
+                bbox[2] = Math.max(bbox[2], xa + ox);
+                bbox[3] = Math.max(bbox[3], ya + oy);
+              }
+
+              xa = xb;
+              ya = yb;
+            }
+          });
+          this.__bbox = bbox;
+        }
+
+        return this.__bbox;
       }
     }]);
 
@@ -32056,7 +32082,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy, o$2.isReflow(lv));
+        this.buildCache(res.cx, res.cy);
         ctx = res.ctx;
         var fills = res.fill,
             fillRules = res.fillRule,
@@ -32066,7 +32092,9 @@
             strokeDasharrayStrs = res.strokeDasharrayStr,
             strokeLinecaps = res.strokeLinecap,
             strokeLinejoins = res.strokeLinejoin,
-            strokeMiterlimits = res.strokeMiterlimit;
+            strokeMiterlimits = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var _this$__cacheProps = this.__cacheProps,
             list = _this$__cacheProps.list,
             sList = _this$__cacheProps.sList,
@@ -32082,7 +32110,9 @@
             strokeDasharrayStr: strokeDasharrayStrs[0],
             strokeLinecap: strokeLinecaps[0],
             strokeLinejoin: strokeLinejoins[0],
-            strokeMiterlimit: strokeMiterlimits[0]
+            strokeMiterlimit: strokeMiterlimits[0],
+            dx: dx,
+            dy: dy
           };
 
           this.__renderOneSector(renderMode, ctx, isMulti, list, sList, o);
@@ -32094,7 +32124,9 @@
               if (fill) {
                 var _o = {
                   fill: fill,
-                  fillRule: fillRules[i]
+                  fillRule: fillRules[i],
+                  dx: dx,
+                  dy: dy
                 };
 
                 this.__renderOneSector(renderMode, ctx, isMulti, list, sList, _o);
@@ -32112,7 +32144,9 @@
                   strokeDasharrayStr: strokeDasharrayStrs[_i],
                   strokeLinecap: strokeLinecaps[_i],
                   strokeLinejoin: strokeLinejoins[_i],
-                  strokeMiterlimit: strokeMiterlimits[_i]
+                  strokeMiterlimit: strokeMiterlimits[_i],
+                  dx: dx,
+                  dy: dy
                 };
 
                 this.__renderOnePolygon(renderMode, ctx, isMulti, list, sList, _o2);
@@ -32221,55 +32255,59 @@
     }, {
       key: "bbox",
       get: function get() {
-        var isMulti = this.isMulti,
-            __cacheProps = this.__cacheProps,
-            originX = this.__sx3,
-            originY = this.__sy3,
-            width = this.width,
-            height = this.height,
-            _this$currentStyle = this.currentStyle,
-            strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
-            boxShadow = _this$currentStyle[BOX_SHADOW$6];
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
-        this.buildCache(cx, cy);
-        var r = 0;
+        if (!this.__bbox) {
+          var isMulti = this.isMulti,
+              __cacheProps = this.__cacheProps,
+              originX = this.__sx3,
+              originY = this.__sy3,
+              width = this.width,
+              height = this.height,
+              _this$currentStyle = this.currentStyle,
+              strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
+              boxShadow = _this$currentStyle[BOX_SHADOW$6];
+          var cx = originX + width * 0.5;
+          var cy = originY + height * 0.5;
+          this.buildCache(cx, cy);
+          var r = 0;
 
-        if (isMulti) {
-          var max = 0;
+          if (isMulti) {
+            var max = 0;
 
-          __cacheProps.r.forEach(function (r) {
-            max = Math.max(r, max);
+            __cacheProps.r.forEach(function (r) {
+              max = Math.max(r, max);
+            });
+
+            r = max;
+          } else {
+            r = __cacheProps.r;
+          }
+
+          var bbox = _get(_getPrototypeOf(Sector.prototype), "bbox", this);
+
+          var half = 0;
+          strokeWidth.forEach(function (item) {
+            half = Math.max(item[0], half);
           });
 
-          r = max;
-        } else {
-          r = __cacheProps.r;
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+              ox = _this$__spreadBbox2[0],
+              oy = _this$__spreadBbox2[1];
+
+          ox += half;
+          oy += half;
+          var xa = cx - r - ox;
+          var xb = cx + r + ox;
+          var ya = cy - r - oy;
+          var yb = cy + r + oy;
+          bbox[0] = Math.min(bbox[0], xa);
+          bbox[1] = Math.min(bbox[1], ya);
+          bbox[2] = Math.max(bbox[2], xb);
+          bbox[3] = Math.max(bbox[3], yb);
+          this.__bbox = bbox;
         }
 
-        var bbox = _get(_getPrototypeOf(Sector.prototype), "bbox", this);
-
-        var half = 0;
-        strokeWidth.forEach(function (item) {
-          half = Math.max(item[0], half);
-        });
-
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
-
-        ox += half;
-        oy += half;
-        var xa = cx - r - ox;
-        var xb = cx + r + ox;
-        var ya = cy - r - oy;
-        var yb = cy + r + oy;
-        bbox[0] = Math.min(bbox[0], xa);
-        bbox[1] = Math.min(bbox[1], ya);
-        bbox[2] = Math.max(bbox[2], xb);
-        bbox[3] = Math.max(bbox[3], yb);
-        return bbox;
+        return this.__bbox;
       }
     }]);
 
@@ -32405,7 +32443,7 @@
           return res;
         }
 
-        this.buildCache(res.x3, res.y3, o$2.isReflow(lv));
+        this.buildCache(res.sx3, res.sy3);
         ctx = res.ctx;
 
         this.__renderPolygon(renderMode, ctx, res);
@@ -32425,34 +32463,38 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx3,
-            originY = this.__sy3,
-            width = this.width,
-            height = this.height,
-            _this$currentStyle = this.currentStyle,
-            strokeWidth = _this$currentStyle[STROKE_WIDTH$5],
-            boxShadow = _this$currentStyle[BOX_SHADOW$7];
-        this.buildCache(originX, originY);
+        if (!this.__bbox) {
+          var originX = this.__sx3,
+              originY = this.__sy3,
+              width = this.width,
+              height = this.height,
+              _this$currentStyle = this.currentStyle,
+              strokeWidth = _this$currentStyle[STROKE_WIDTH$5],
+              boxShadow = _this$currentStyle[BOX_SHADOW$7];
+          this.buildCache(originX, originY);
 
-        var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
+          var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
 
-        var half = 0;
-        strokeWidth.forEach(function (item) {
-          half = Math.max(item[0], half);
-        });
+          var half = 0;
+          strokeWidth.forEach(function (item) {
+            half = Math.max(item[0], half);
+          });
 
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+              ox = _this$__spreadBbox2[0],
+              oy = _this$__spreadBbox2[1];
 
-        ox += half;
-        oy += half;
-        bbox[0] = Math.min(bbox[0], originX - ox);
-        bbox[1] = Math.min(bbox[1], originY - oy);
-        bbox[2] = Math.max(bbox[2], originX + width + ox);
-        bbox[3] = Math.max(bbox[3], originY + height + oy);
-        return bbox;
+          ox += half;
+          oy += half;
+          bbox[0] = Math.min(bbox[0], originX - ox);
+          bbox[1] = Math.min(bbox[1], originY - oy);
+          bbox[2] = Math.max(bbox[2], originX + width + ox);
+          bbox[3] = Math.max(bbox[3], originY + height + oy);
+          this.__bbox = bbox;
+        }
+
+        return this.__bbox;
       }
     }]);
 
@@ -32538,7 +32580,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy, o$2.isReflow(lv));
+        this.buildCache(res.cx, res.cy);
         ctx = res.ctx;
 
         this.__renderPolygon(renderMode, ctx, res);
@@ -32553,55 +32595,59 @@
     }, {
       key: "bbox",
       get: function get() {
-        var isMulti = this.isMulti,
-            __cacheProps = this.__cacheProps,
-            originX = this.__sx3,
-            originY = this.__sy3,
-            width = this.width,
-            height = this.height,
-            _this$currentStyle = this.currentStyle,
-            strokeWidth = _this$currentStyle[STROKE_WIDTH$6],
-            boxShadow = _this$currentStyle[BOX_SHADOW$8];
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
-        this.buildCache(cx, cy);
-        var r = 0;
+        if (!this.__bbox) {
+          var isMulti = this.isMulti,
+              __cacheProps = this.__cacheProps,
+              originX = this.__sx3,
+              originY = this.__sy3,
+              width = this.width,
+              height = this.height,
+              _this$currentStyle = this.currentStyle,
+              strokeWidth = _this$currentStyle[STROKE_WIDTH$6],
+              boxShadow = _this$currentStyle[BOX_SHADOW$8];
+          var cx = originX + width * 0.5;
+          var cy = originY + height * 0.5;
+          this.buildCache(cx, cy);
+          var r = 0;
 
-        if (isMulti) {
-          var max = 0;
+          if (isMulti) {
+            var max = 0;
 
-          __cacheProps.r.forEach(function (r) {
-            max = Math.max(r, max);
+            __cacheProps.r.forEach(function (r) {
+              max = Math.max(r, max);
+            });
+
+            r = max;
+          } else {
+            r = __cacheProps.r;
+          }
+
+          var bbox = _get(_getPrototypeOf(Circle.prototype), "bbox", this);
+
+          var half = 0;
+          strokeWidth.forEach(function (item) {
+            half = Math.max(item[0], half);
           });
 
-          r = max;
-        } else {
-          r = __cacheProps.r;
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+              ox = _this$__spreadBbox2[0],
+              oy = _this$__spreadBbox2[1];
+
+          ox += half;
+          oy += half;
+          var xa = cx - r - ox;
+          var xb = cx + r + ox;
+          var ya = cy - r - oy;
+          var yb = cy + r + oy;
+          bbox[0] = Math.min(bbox[0], xa);
+          bbox[1] = Math.min(bbox[1], ya);
+          bbox[2] = Math.max(bbox[2], xb);
+          bbox[3] = Math.max(bbox[3], yb);
+          this.__bbox = bbox;
         }
 
-        var bbox = _get(_getPrototypeOf(Circle.prototype), "bbox", this);
-
-        var half = 0;
-        strokeWidth.forEach(function (item) {
-          half = Math.max(item[0], half);
-        });
-
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
-
-        ox += half;
-        oy += half;
-        var xa = cx - r - ox;
-        var xb = cx + r + ox;
-        var ya = cy - r - oy;
-        var yb = cy + r + oy;
-        bbox[0] = Math.min(bbox[0], xa);
-        bbox[1] = Math.min(bbox[1], ya);
-        bbox[2] = Math.max(bbox[2], xb);
-        bbox[3] = Math.max(bbox[3], yb);
-        return bbox;
+        return this.__bbox;
       }
     }]);
 
@@ -32730,7 +32776,7 @@
           return res;
         }
 
-        this.buildCache(res.cx, res.cy, o$2.isReflow(lv));
+        this.buildCache(res.cx, res.cy);
         ctx = res.ctx;
 
         this.__renderPolygon(renderMode, ctx, res);
@@ -32750,60 +32796,64 @@
     }, {
       key: "bbox",
       get: function get() {
-        var isMulti = this.isMulti,
-            __cacheProps = this.__cacheProps,
-            originX = this.__sx3,
-            originY = this.__sy3,
-            width = this.width,
-            height = this.height,
-            _this$currentStyle = this.currentStyle,
-            strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
-            boxShadow = _this$currentStyle[BOX_SHADOW$9];
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
-        this.buildCache(cx, cy);
-        var rx = 0,
-            ry = 0;
+        if (!this.__bbox) {
+          var isMulti = this.isMulti,
+              __cacheProps = this.__cacheProps,
+              originX = this.__sx3,
+              originY = this.__sy3,
+              width = this.width,
+              height = this.height,
+              _this$currentStyle = this.currentStyle,
+              strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
+              boxShadow = _this$currentStyle[BOX_SHADOW$9];
+          var cx = originX + width * 0.5;
+          var cy = originY + height * 0.5;
+          this.buildCache(cx, cy);
+          var rx = 0,
+              ry = 0;
 
-        if (isMulti) {
-          var mx = 0,
-              my = 0;
+          if (isMulti) {
+            var mx = 0,
+                my = 0;
 
-          __cacheProps.rx.forEach(function (rx, i) {
-            mx = Math.max(rx, mx);
-            my = Math.max(ry, __cacheProps.ry[i]);
+            __cacheProps.rx.forEach(function (rx, i) {
+              mx = Math.max(rx, mx);
+              my = Math.max(ry, __cacheProps.ry[i]);
+            });
+
+            rx = mx;
+            ry = my;
+          } else {
+            rx = __cacheProps.rx;
+            ry = __cacheProps.ry;
+          }
+
+          var bbox = _get(_getPrototypeOf(Ellipse.prototype), "bbox", this);
+
+          var half = 0;
+          strokeWidth.forEach(function (item) {
+            half = Math.max(item[0], half);
           });
 
-          rx = mx;
-          ry = my;
-        } else {
-          rx = __cacheProps.rx;
-          ry = __cacheProps.ry;
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
+              ox = _this$__spreadBbox2[0],
+              oy = _this$__spreadBbox2[1];
+
+          ox += half;
+          oy += half;
+          var xa = cx - rx - ox;
+          var xb = cx + rx + ox;
+          var ya = cy - ry - oy;
+          var yb = cy + ry + oy;
+          bbox[0] = Math.min(bbox[0], xa);
+          bbox[1] = Math.min(bbox[1], ya);
+          bbox[2] = Math.max(bbox[2], xb);
+          bbox[3] = Math.max(bbox[3], yb);
+          this.__bbox = bbox;
         }
 
-        var bbox = _get(_getPrototypeOf(Ellipse.prototype), "bbox", this);
-
-        var half = 0;
-        strokeWidth.forEach(function (item) {
-          half = Math.max(item[0], half);
-        });
-
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
-
-        ox += half;
-        oy += half;
-        var xa = cx - rx - ox;
-        var xb = cx + rx + ox;
-        var ya = cy - ry - oy;
-        var yb = cy + ry + oy;
-        bbox[0] = Math.min(bbox[0], xa);
-        bbox[1] = Math.min(bbox[1], ya);
-        bbox[2] = Math.max(bbox[2], xb);
-        bbox[3] = Math.max(bbox[3], yb);
-        return bbox;
+        return this.__bbox;
       }
     }]);
 

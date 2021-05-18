@@ -1091,6 +1091,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       let {
         [NODE_CURRENT_STYLE]: currentStyle,
         [NODE_CACHE_STYLE]: __cacheStyle,
+        [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config;
       let matrix;
       if(contain(refreshLevel, TRANSFORM_ALL)) {
@@ -1112,13 +1113,12 @@ function renderCacheCanvas(renderMode, ctx, root) {
         matrix = multiply(parentMatrix, matrix);
       }
       // 恶心的v8性能优化
-      let m = __config[NODE_MATRIX_EVENT];
-      m[0] = matrix[0];
-      m[1] = matrix[1];
-      m[2] = matrix[2];
-      m[3] = matrix[3];
-      m[4] = matrix[4];
-      m[5] = matrix[5];
+      matrixEvent[0] = matrix[0];
+      matrixEvent[1] = matrix[1];
+      matrixEvent[2] = matrix[2];
+      matrixEvent[3] = matrix[3];
+      matrixEvent[4] = matrix[4];
+      matrixEvent[5] = matrix[5];
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1127,8 +1127,10 @@ function renderCacheCanvas(renderMode, ctx, root) {
         opacity = computedStyle[OPACITY];
       }
       __config[NODE_OPACITY] = parentOpacity * opacity;
+      // filter会改变bbox范围
       let blurValue;
       if(contain(refreshLevel, FT)) {
+        node.__bbox = null;
         let filter = computedStyle[FILTER] = currentStyle[FILTER];
         blurValue = __config[NODE_BLUR_VALUE] = 0;
         if(Array.isArray(filter)) {
@@ -1978,6 +1980,7 @@ function renderWebgl(renderMode, gl, root) {
       let {
         [NODE_CURRENT_STYLE]: currentStyle,
         [NODE_CACHE_STYLE]: __cacheStyle,
+        [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config;
       let matrix;
       if(contain(refreshLevel, TRANSFORM_ALL)) {
@@ -1998,13 +2001,12 @@ function renderWebgl(renderMode, gl, root) {
         matrix = multiply(parentMatrix, matrix);
       }
       // 恶心的v8性能优化
-      let m = __config[NODE_MATRIX_EVENT];
-      m[0] = matrix[0];
-      m[1] = matrix[1];
-      m[2] = matrix[2];
-      m[3] = matrix[3];
-      m[4] = matrix[4];
-      m[5] = matrix[5];
+      matrixEvent[0] = matrix[0];
+      matrixEvent[1] = matrix[1];
+      matrixEvent[2] = matrix[2];
+      matrixEvent[3] = matrix[3];
+      matrixEvent[4] = matrix[4];
+      matrixEvent[5] = matrix[5];
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -2013,8 +2015,10 @@ function renderWebgl(renderMode, gl, root) {
         opacity = computedStyle[OPACITY];
       }
       __config[NODE_OPACITY] = parentOpacity * opacity;
+      // filter会改变bbox范围
       let blurValue;
       if(contain(refreshLevel, FT)) {
+        node.__bbox = null;
         let filter = computedStyle[FILTER] = currentStyle[FILTER];
         blurValue = __config[NODE_BLUR_VALUE] = 0;
         if(Array.isArray(filter)) {

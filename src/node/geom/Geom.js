@@ -303,8 +303,8 @@ class Geom extends Xom {
 
   __preSet(res) {
     let { width, height, __cacheStyle, computedStyle } = this;
-    let cx = res.x3 + width * 0.5;
-    let cy = res.y3 + height * 0.5;
+    let cx = res.sx3 + width * 0.5;
+    let cy = res.sy3 + height * 0.5;
     let {
       [FILL]: fill,
       [STROKE]: stroke,
@@ -426,6 +426,8 @@ class Geom extends Xom {
       strokeLinecap: strokeLinecaps,
       strokeLinejoin: strokeLinejoins,
       strokeMiterlimit: strokeMiterlimits,
+      dx,
+      dy,
     } = res;
     let { __cacheProps: { list }, isMulti, bbox } = this;
     // 普通情况下只有1个，按普通情况走
@@ -440,6 +442,8 @@ class Geom extends Xom {
         strokeLinecap: strokeLinecaps[0],
         strokeLinejoin: strokeLinejoins[0],
         strokeMiterlimit: strokeMiterlimits[0],
+        dx,
+        dy,
         bbox,
       };
       this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
@@ -452,6 +456,8 @@ class Geom extends Xom {
           let o = {
             fill,
             fillRule: fillRules[i],
+            dx,
+            dy,
             bbox,
           };
           this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
@@ -468,6 +474,8 @@ class Geom extends Xom {
             strokeLinecap: strokeLinecaps[i],
             strokeLinejoin: strokeLinejoins[i],
             strokeMiterlimit: strokeMiterlimits[i],
+            dx,
+            dy,
             bbox,
           };
           this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
@@ -533,15 +541,17 @@ class Geom extends Xom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
-        list.forEach(item => canvasPolygon(ctx, item));
+        list.forEach(item => canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        canvasPolygon(ctx, list);
+        canvasPolygon(ctx, list, dx, dy);
       }
       if(isFill && fill && fill !== 'none') {
         ctx.fill(fillRule);
@@ -630,6 +640,8 @@ class Geom extends Xom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     let [color, matrix, cx, cy] = res[method].v;
     // 椭圆渐变的转换，顶点逆矩阵变换
@@ -650,10 +662,10 @@ class Geom extends Xom {
         ctx[method + 'Style'] = color;
       }
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item));
+        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        canvasPolygon(ctx, list);
+        canvasPolygon(ctx, list, dx, dy);
       }
       ctx[method]();
       ctx.closePath();
@@ -691,6 +703,8 @@ class Geom extends Xom {
     let {
       fill,
       bbox,
+      dx = 0,
+      dy = 0,
     } = res;
     let color = fill.v;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -704,20 +718,20 @@ class Geom extends Xom {
         list.forEach(item => {
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, item);
+          canvasPolygon(ctx, item, dx, dy);
           ctx.clip();
           ctx.closePath();
-          ctx.drawImage(offscreen.canvas, x1, y1);
+          ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
           ctx.restore();
         });
       }
       else {
         ctx.save();
         ctx.beginPath();
-        canvasPolygon(ctx, list);
+        canvasPolygon(ctx, list, dx, dy);
         ctx.clip();
         ctx.closePath();
-        ctx.drawImage(offscreen.canvas, x1, y1);
+        ctx.drawImage(offscreen.canvas, x1 + dx, y1 + dy);
         ctx.restore();
       }
       offscreen.ctx.clearRect(0, 0, w, h);

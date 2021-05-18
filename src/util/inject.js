@@ -329,6 +329,11 @@ let inject = {
     }
     return false;
   },
+  isWebGLTexture(o) {
+    if(o && typeof WebGLTexture !== 'undefined') {
+      return o instanceof WebGLTexture;
+    }
+  },
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();
     // 强制arial兜底

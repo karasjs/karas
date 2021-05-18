@@ -6085,6 +6085,11 @@
 
       return false;
     },
+    isWebGLTexture: function isWebGLTexture(o) {
+      if (o && typeof WebGLTexture !== 'undefined') {
+        return o instanceof WebGLTexture;
+      }
+    },
     checkSupportFontFamily: function checkSupportFontFamily(ff) {
       ff = ff.toLowerCase(); // 强制arial兜底
 
@@ -27806,7 +27811,18 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-          var res = node.render(renderMode, refreshLevel, gl, true);
+          var res = node.render(renderMode, refreshLevel, gl, true); // geom可返回texture纹理，替代原有xom的__cache纹理
+
+          if (inject.isWebGLTexture(res.texture)) {
+            var sx1 = node.__sx1,
+                sy1 = node.__sy1,
+                w = node.offsetWidth,
+                h = node.offsetHeight,
+                bbox = node.bbox;
+            __config[NODE_CACHE$5] = new MockCache(gl, res.texture, sx1, sy1, w, h, bbox);
+            gl.viewport(0, 0, width, height);
+            gl.useProgram(gl.program);
+          }
         }
 
       lastRefreshLevel = refreshLevel;
@@ -33212,7 +33228,7 @@
         var _json = json,
             tagName = _json.tagName;
 
-        if (['canvas', 'svg'].indexOf(tagName) === -1) {
+        if (['canvas', 'svg', 'webgl'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');
         } // parse直接（非递归）的动画记录
 

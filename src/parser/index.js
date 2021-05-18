@@ -18,7 +18,7 @@ export default {
     // 有dom时parse作为根方法渲染
     if(dom) {
       let { tagName } = json;
-      if(['canvas', 'svg'].indexOf(tagName) === -1) {
+      if(['canvas', 'svg', 'webgl'].indexOf(tagName) === -1) {
         throw new Error('Parse dom must be canvas/svg');
       }
       // parse直接（非递归）的动画记录

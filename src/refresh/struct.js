@@ -2059,6 +2059,13 @@ function renderWebgl(renderMode, gl, root) {
      */
     else {
       let res = node.render(renderMode, refreshLevel, gl, true);
+      // geom可返回texture纹理，替代原有xom的__cache纹理
+      if(inject.isWebGLTexture(res.texture)) {
+        let { __sx1: sx1, __sy1: sy1, offsetWidth: w, offsetHeight: h, bbox } = node;
+        __config[NODE_CACHE] = new MockCache(gl, res.texture, sx1, sy1, w, h, bbox);
+        gl.viewport(0, 0, width, height);
+        gl.useProgram(gl.program);
+      }
     }
     lastRefreshLevel = refreshLevel;
     lastConfig = __config;
@@ -2206,7 +2213,6 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_MATRIX_EVENT]: matrixEvent,
         [NODE_LIMIT_CACHE]: limitCache,
         [NODE_CACHE]: __cache,
-        // [NODE_CACHE_TOTAL]: __cacheTotal,
         [NODE_CACHE_FILTER]: __cacheFilter,
         [NODE_CACHE_MASK]: __cacheMask,
         [NODE_CACHE_OVERFLOW]: __cacheOverflow,

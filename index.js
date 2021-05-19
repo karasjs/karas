@@ -17232,7 +17232,7 @@
             res["break"] = true;
             __config[NODE_LIMIT_CACHE$1] = false;
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-          else if (!__config[NODE_LIMIT_CACHE$1] && (!__cache || !__cache.available)) {
+          else if (!__config[NODE_LIMIT_CACHE$1]) {
               var bbox = this.bbox;
 
               if (__cache) {
@@ -18470,6 +18470,7 @@
 
         if (isLayout) {
           this.__layoutData.x += diff;
+          this.clearCache();
         }
 
         if (lv !== undefined) {
@@ -18490,6 +18491,7 @@
 
         if (isLayout) {
           this.__layoutData.y += diff;
+          this.clearCache();
         }
 
         if (lv !== undefined) {
@@ -18522,6 +18524,8 @@
         if (lv !== undefined) {
           this.__config[NODE_REFRESH_LV] |= lv;
         }
+
+        this.clearCache();
       }
     }, {
       key: "__resizeY",
@@ -18542,6 +18546,8 @@
         if (lv !== undefined) {
           this.__config[NODE_REFRESH_LV] |= lv;
         }
+
+        this.clearCache();
       }
     }, {
       key: "__spreadBbox",
@@ -23659,7 +23665,7 @@
       value: function render(renderMode, lv, ctx, cache) {
         var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
-        var __config = this.__config; // canvas的cache因为只有1个节点可共用，webgl不行要生成单独的fbo的texture
+        var __config = this.__config; // canvas的cache因为只有1个节点可共用total，webgl不可以因为要生成单独的fbo的texture
 
         if (renderMode === mode.CANVAS && cache) {
           __config[NODE_CACHE_TOTAL$2] = __config[NODE_CACHE$4];
@@ -24109,7 +24115,36 @@
 
     }, {
       key: "__releaseWhenEmpty",
-      value: function __releaseWhenEmpty() {}
+      value: function __releaseWhenEmpty() {} // offset/resize时要多一步清空props上记录的缓存
+
+    }, {
+      key: "__offsetX",
+      value: function __offsetX(diff, isLayout, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
+
+        this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff, isLayout, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
+
+        this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+      }
+    }, {
+      key: "__resizeX",
+      value: function __resizeX(diff, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__resizeX", this).call(this, diff, lv);
+
+        this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+      }
+    }, {
+      key: "__resizeY",
+      value: function __resizeY(diff, lv) {
+        _get(_getPrototypeOf(Geom.prototype), "__resizeY", this).call(this, diff, lv);
+
+        this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+      }
     }, {
       key: "addGeom",
       value: function addGeom(tagName, props) {
@@ -30179,9 +30214,8 @@
                     var cs = target.computedStyle;
 
                     if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$9] !== 'none') {
-                      target.__offsetY(_diff, true, REFLOW$2);
+                      target.__offsetY(_diff, true, REPAINT$3); // target.clearCache();
 
-                      target.clearCache();
                     }
 
                     next = next.next;
@@ -30269,9 +30303,8 @@
 
                     if (_diff2) {
                       for (var j = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); j < length; j++) {
-                        flowChildren[j].__offsetY(_diff2, true, REFLOW$2);
+                        flowChildren[j].__offsetY(_diff2, true, REPAINT$3); // flowChildren[j].clearCache();
 
-                        flowChildren[j].clearCache();
                       }
                     }
                   }
@@ -30318,9 +30351,8 @@
 
                         if (_diff3) {
                           for (var _j = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); _j < length; _j++) {
-                            flowChildren[_j].__offsetY(_diff3, true, REFLOW$2);
+                            flowChildren[_j].__offsetY(_diff3, true, REPAINT$3); // flowChildren[j].clearCache();
 
-                            flowChildren[_j].clearCache();
                           }
                         }
                       }
@@ -30335,9 +30367,8 @@
 
                       if (_diff4) {
                         for (var _j2 = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); _j2 < length; _j2++) {
-                          flowChildren[_j2].__offsetY(_diff4, true, REFLOW$2);
+                          flowChildren[_j2].__offsetY(_diff4, true, REPAINT$3); // flowChildren[j].clearCache();
 
-                          flowChildren[_j2].clearCache();
                         }
                       }
                     }
@@ -30357,7 +30388,7 @@
 
 
                 if (_diff5) {
-                  parent.__resizeY(_diff5, REFLOW$2);
+                  parent.__resizeY(_diff5, REPAINT$3);
 
                   var container;
 
@@ -30390,9 +30421,8 @@
                             var d = y - _item.y;
 
                             if (d) {
-                              _item.__offsetY(d, true, REFLOW$2);
+                              _item.__offsetY(d, true, REPAINT$3); // item.clearCache();
 
-                              _item.clearCache();
                             }
 
                             break;
@@ -30401,23 +30431,20 @@
                           prev = prev.prev;
                         }
                       } else if (bottom[1] === PX$b) {
-                        _item.__offsetY(_diff5, true, REFLOW$2);
+                        _item.__offsetY(_diff5, true, REPAINT$3); // item.clearCache();
 
-                        _item.clearCache();
                       } else if (bottom[1] === PERCENT$b) {
                         var v = (1 - bottom[0] * 0.01) * _diff5;
 
-                        _item.__offsetY(v, true, REFLOW$2);
+                        _item.__offsetY(v, true, REPAINT$3); // item.clearCache();
 
-                        _item.clearCache();
                       }
                     } else if (top[1] === PERCENT$b) {
                       if (isContainer) {
                         var _v = top[0] * 0.01 * _diff5;
 
-                        _item.__offsetY(_v, true, REFLOW$2);
+                        _item.__offsetY(_v, true, REPAINT$3); // item.clearCache();
 
-                        _item.clearCache();
                       } // 非容器的特殊处理
                       else {
                           if (!container) {
@@ -30441,9 +30468,8 @@
                           if (container.currentStyle[HEIGHT$8][1] !== PX$b) {
                             var _v2 = top[0] * 0.01 * _diff5;
 
-                            _item.__offsetY(_v2, true, REFLOW$2);
+                            _item.__offsetY(_v2, true, REPAINT$3); // item.clearCache();
 
-                            _item.clearCache();
                           }
                         }
                     } // 高度百分比需发生变化的重新布局，需要在容器内
@@ -30511,9 +30537,8 @@
                       var _d = _y - _item2.y;
 
                       if (_d) {
-                        _item2.__offsetY(_d, true, REFLOW$2);
+                        _item2.__offsetY(_d, true, REPAINT$3); // item.clearCache();
 
-                        _item2.clearCache();
                       }
 
                       break;

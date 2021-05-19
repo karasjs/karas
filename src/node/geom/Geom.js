@@ -399,7 +399,7 @@ class Geom extends Xom {
   render(renderMode, lv, ctx, cache) {
     let res = super.render(renderMode, lv, ctx, cache);
     let __config = this.__config;
-    // canvas的cache因为只有1个节点可共用，webgl不行要生成单独的fbo的texture
+    // canvas的cache因为只有1个节点可共用total，webgl不可以因为要生成单独的fbo的texture
     if(renderMode === mode.CANVAS && cache) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
@@ -807,6 +807,27 @@ class Geom extends Xom {
 
   // geom的cache无内容也不清除
   __releaseWhenEmpty() {}
+
+  // offset/resize时要多一步清空props上记录的缓存
+  __offsetX(diff, isLayout, lv) {
+    super.__offsetX(diff, isLayout, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
+
+  __offsetY(diff, isLayout, lv) {
+    super.__offsetY(diff, isLayout, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
+
+  __resizeX(diff, lv) {
+    super.__resizeX(diff, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
+
+  __resizeY(diff, lv) {
+    super.__resizeY(diff, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
 
   addGeom(tagName, props) {
     props = util.hash2arr(props);

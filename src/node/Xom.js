@@ -1199,7 +1199,7 @@ class Xom extends Node {
         __config[NODE_LIMIT_CACHE] = false;
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      else if(!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
+      else if(!__config[NODE_LIMIT_CACHE]) {
         let bbox = this.bbox;
         if(__cache) {
           __cache.reset(bbox, x1, y1);
@@ -2295,6 +2295,7 @@ class Xom extends Node {
     super.__offsetX(diff, isLayout);
     if(isLayout) {
       this.__layoutData.x += diff;
+      this.clearCache();
     }
     if(lv !== undefined) {
       this.__config[NODE_REFRESH_LV] |= lv;
@@ -2311,6 +2312,7 @@ class Xom extends Node {
     super.__offsetY(diff, isLayout);
     if(isLayout) {
       this.__layoutData.y += diff;
+      this.clearCache();
     }
     if(lv !== undefined) {
       this.__config[NODE_REFRESH_LV] |= lv;
@@ -2338,6 +2340,7 @@ class Xom extends Node {
     if(lv !== undefined) {
       this.__config[NODE_REFRESH_LV] |= lv;
     }
+    this.clearCache();
   }
 
   __resizeY(diff, lv) {
@@ -2355,6 +2358,7 @@ class Xom extends Node {
     if(lv !== undefined) {
       this.__config[NODE_REFRESH_LV] |= lv;
     }
+    this.clearCache();
   }
 
   __spreadBbox(boxShadow) {

@@ -1440,8 +1440,8 @@ class Root extends Dom {
               }
               let cs = target.computedStyle;
               if(cs[POSITION] !== 'absolute' && cs[DISPLAY] !== 'none') {
-                target.__offsetY(diff, true, REFLOW);
-                target.clearCache();
+                target.__offsetY(diff, true, REPAINT);
+                // target.clearCache();
               }
               next = next.next;
             }
@@ -1516,8 +1516,8 @@ class Root extends Dom {
               let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
-                  flowChildren[j].__offsetY(diff, true, REFLOW);
-                  flowChildren[j].clearCache();
+                  flowChildren[j].__offsetY(diff, true, REPAINT);
+                  // flowChildren[j].clearCache();
                 }
               }
             }
@@ -1557,8 +1557,8 @@ class Root extends Dom {
                   // 需要合并的情况，根据记录数和索引向上向下遍历节点设置偏移，同时设置总偏移量供父级使用
                   if(diff) {
                     for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
-                      flowChildren[j].__offsetY(diff, true, REFLOW);
-                      flowChildren[j].clearCache();
+                      flowChildren[j].__offsetY(diff, true, REPAINT);
+                      // flowChildren[j].clearCache();
                     }
                   }
                 }
@@ -1572,8 +1572,8 @@ class Root extends Dom {
               let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
-                  flowChildren[j].__offsetY(diff, true, REFLOW);
-                  flowChildren[j].clearCache();
+                  flowChildren[j].__offsetY(diff, true, REPAINT);
+                  // flowChildren[j].clearCache();
                 }
               }
             }
@@ -1589,7 +1589,7 @@ class Root extends Dom {
           let diff = nowH - oldH;
           // 调整next以及非固定PX的abs，再递归向上
           if(diff) {
-            parent.__resizeY(diff, REFLOW);
+            parent.__resizeY(diff, REPAINT);
             let container;
             for(let i = 0, len = absChildren.length; i < len; i++) {
               let item = absChildren[i];
@@ -1610,8 +1610,8 @@ class Root extends Dom {
                       let y = target.y + target.outerHeight;
                       let d = y - item.y;
                       if(d) {
-                        item.__offsetY(d, true, REFLOW);
-                        item.clearCache();
+                        item.__offsetY(d, true, REPAINT);
+                        // item.clearCache();
                       }
                       break;
                     }
@@ -1619,20 +1619,20 @@ class Root extends Dom {
                   }
                 }
                 else if(bottom[1] === PX) {
-                  item.__offsetY(diff, true, REFLOW);
-                  item.clearCache();
+                  item.__offsetY(diff, true, REPAINT);
+                  // item.clearCache();
                 }
                 else if(bottom[1] === PERCENT) {
                   let v = (1 - bottom[0] * 0.01) * diff;
-                  item.__offsetY(v, true, REFLOW);
-                  item.clearCache();
+                  item.__offsetY(v, true, REPAINT);
+                  // item.clearCache();
                 }
               }
               else if(top[1] === PERCENT) {
                 if(isContainer) {
                   let v = top[0] * 0.01 * diff;
-                  item.__offsetY(v, true, REFLOW);
-                  item.clearCache();
+                  item.__offsetY(v, true, REPAINT);
+                  // item.clearCache();
                 }
                 // 非容器的特殊处理
                 else {
@@ -1651,8 +1651,8 @@ class Root extends Dom {
                   }
                   if(container.currentStyle[HEIGHT][1] !== PX) {
                     let v = top[0] * 0.01 * diff;
-                    item.__offsetY(v, true, REFLOW);
-                    item.clearCache();
+                    item.__offsetY(v, true, REPAINT);
+                    // item.clearCache();
                   }
                 }
               }
@@ -1702,8 +1702,8 @@ class Root extends Dom {
                 let y = target.y + target.outerHeight;
                 let d = y - item.y;
                 if(d) {
-                  item.__offsetY(d, true, REFLOW);
-                  item.clearCache();
+                  item.__offsetY(d, true, REPAINT);
+                  // item.clearCache();
                 }
                 break;
               }

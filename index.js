@@ -23665,12 +23665,6 @@
       value: function render(renderMode, lv, ctx, cache) {
         var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
 
-        var __config = this.__config; // canvas的cache因为只有1个节点可共用total，webgl不可以因为要生成单独的fbo的texture
-
-        if (renderMode === mode.CANVAS && cache) {
-          __config[NODE_CACHE_TOTAL$2] = __config[NODE_CACHE$4];
-        }
-
         if (renderMode === mode.SVG) {
           this.virtualDom.type = 'geom';
         } // 无论canvas/svg，break可提前跳出省略计算
@@ -26704,6 +26698,8 @@
           parentOpacity = opacityList[lv - 1];
         }
 
+      lastConfig = __config;
+      lastLv = lv;
       var refreshLevel = __config[NODE_REFRESH_LV$1],
           __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
@@ -26830,10 +26826,8 @@
        */
       else {
           node.render(renderMode, refreshLevel, ctx, true);
-        }
+        } // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
-      lastConfig = __config;
-      lastLv = lv; // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
       var blurValue = __config[NODE_BLUR_VALUE$1],
           limitCache = __config[NODE_LIMIT_CACHE$2];
@@ -27746,6 +27740,9 @@
           parentRefreshLevel = refreshLevelList[lv - 1];
         }
 
+      lastRefreshLevel = refreshLevel;
+      lastConfig = __config;
+      lastLv = lv;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
@@ -27881,11 +27878,8 @@
             gl.viewport(0, 0, width, height);
             gl.useProgram(gl.program);
           }
-        }
+        } // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
-      lastRefreshLevel = refreshLevel;
-      lastConfig = __config;
-      lastLv = lv; // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
       var blurValue = __config[NODE_BLUR_VALUE$1],
           limitCache = __config[NODE_LIMIT_CACHE$2];

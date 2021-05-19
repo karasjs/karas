@@ -1060,6 +1060,8 @@ function renderCacheCanvas(renderMode, ctx, root) {
     }
     // 不变是同级兄弟，无需特殊处理
     else {}
+    lastConfig = __config;
+    lastLv = lv;
     let {
       [NODE_REFRESH_LV]: refreshLevel,
       [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -1171,8 +1173,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
     else {
       node.render(renderMode, refreshLevel, ctx, true);
     }
-    lastConfig = __config;
-    lastLv = lv;
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
       [NODE_BLUR_VALUE]: blurValue,
@@ -1950,6 +1950,9 @@ function renderWebgl(renderMode, gl, root) {
     }
     // 不变是同级兄弟，无需特殊处理
     else {}
+    lastRefreshLevel = refreshLevel;
+    lastConfig = __config;
+    lastLv = lv;
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_COMPUTED_STYLE]: computedStyle,
@@ -2066,9 +2069,6 @@ function renderWebgl(renderMode, gl, root) {
         gl.useProgram(gl.program);
       }
     }
-    lastRefreshLevel = refreshLevel;
-    lastConfig = __config;
-    lastLv = lv;
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
       [NODE_BLUR_VALUE]: blurValue,

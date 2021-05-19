@@ -398,11 +398,6 @@ class Geom extends Xom {
 
   render(renderMode, lv, ctx, cache) {
     let res = super.render(renderMode, lv, ctx, cache);
-    let __config = this.__config;
-    // canvas的cache因为只有1个节点可共用total，webgl不可以因为要生成单独的fbo的texture
-    if(renderMode === mode.CANVAS && cache) {
-      __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
-    }
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }

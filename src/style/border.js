@@ -10,11 +10,9 @@ const { canvasPolygon, svgPolygon } = painter;
 const {
   STYLE_KEY: {
     BORDER_LEFT_WIDTH,
-    BORDER_RIGHT_WIDTH,
     BORDER_TOP_WIDTH,
     BORDER_BOTTOM_WIDTH,
     PADDING_LEFT,
-    PADDING_RIGHT,
     PADDING_BOTTOM,
     PADDING_TOP,
     BORDER_TOP_LEFT_RADIUS,

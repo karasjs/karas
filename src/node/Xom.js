@@ -2133,15 +2133,12 @@ class Xom extends Node {
     }
     if(__cacheFilter) {
       __cacheFilter.release();
-      __config[NODE_CACHE_FILTER] = null;
     }
     if(__cacheMask) {
       __cacheMask.release();
-      __config[NODE_CACHE_MASK] = null;
     }
     if(__cacheOverflow) {
       __cacheOverflow.release();
-      __config[NODE_CACHE_OVERFLOW] = null;
     }
   }
 

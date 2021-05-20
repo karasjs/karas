@@ -204,10 +204,6 @@ class Img extends Dom {
     if(offscreenOverflow) {
       ctx = offscreenOverflow.target.ctx;
     }
-    // img无children所以total就是cache避免多余生成
-    if(renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
-      __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
-    }
     // 没source且不error时加载图片
     if(!loadImg.source && !loadImg.error && !loadImg.loading) {
       this.__loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height);

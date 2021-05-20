@@ -504,7 +504,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
     if(__config[NODE_CACHE_MASK]) {
       __config[NODE_CACHE_MASK].release();
-      __config[NODE_CACHE_MASK] = null;
     }
     if(__config[NODE_CACHE_OVERFLOW]) {
       __config[NODE_CACHE_OVERFLOW].release();
@@ -782,7 +781,7 @@ class Root extends Dom {
     inject.measureText();
     this.__checkReflow(width, height);
     if(renderMode === mode.CANVAS && !this.props.noRender) {
-      this.__clear(ctx);
+      this.__clear(ctx, renderMode);
       // 利用list循环代替tree递归快速渲染
       if(this.cache) {
         struct.renderCacheCanvas(renderMode, ctx, this);
@@ -808,6 +807,7 @@ class Root extends Dom {
       this.dom.__defs = defs;
     }
     else if(renderMode === mode.WEBGL && !this.props.noRender) {
+      this.__clear(ctx, renderMode);
       struct.renderWebgl(renderMode, ctx, this);
     }
     // 特殊cb，供小程序绘制完回调使用
@@ -1769,13 +1769,19 @@ class Root extends Dom {
     }
   }
 
-  __clear(ctx) {
-    // 可能会调整宽高，所以每次清除用最大值
-    this.__mw = Math.max(this.__mw, this.width);
-    this.__mh = Math.max(this.__mh, this.height);
-    // 清除前得恢复默认matrix，防止每次布局改变了属性
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, this.__mw, this.__mh);
+  __clear(ctx, renderMode) {
+    if(renderMode === mode.CANVAS) {
+      // 可能会调整宽高，所以每次清除用最大值
+      this.__mw = Math.max(this.__mw, this.width);
+      this.__mh = Math.max(this.__mh, this.height);
+      // 清除前得恢复默认matrix，防止每次布局改变了属性
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, this.__mw, this.__mh);
+    }
+    else if(renderMode === mode.WEBGL) {
+      ctx.clearColor(0, 0, 0, 0);
+      ctx.clear(ctx.COLOR_BUFFER_BIT);
+    }
   }
 
   get dom() {

@@ -1215,8 +1215,10 @@ function renderCacheCanvas(renderMode, ctx, root) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        __cacheTotal = __config[NODE_CACHE_TOTAL]
-          = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+        __cacheTotal = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+        if(__cacheTotal && __cacheTotal !== __cache) {
+          __config[NODE_CACHE_TOTAL] = __cacheTotal;
+        }
         needGen = true;
       }
       // 防止失败超限，必须有total结果
@@ -1379,13 +1381,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
           else {
             // 连cache都没生成的超限
             let res = node.render(renderMode, refreshLevel, ctx) || {};
-            // if(node instanceof Geom) {
-            //   res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-            // }
-            // else {
-            //   res = node.render(renderMode, refreshLevel, ctx);
-            // }
-            // res = res || {};
             offscreenBlend = res.offscreenBlend;
             offscreenMask = res.offscreenMask;
             offscreenFilter = res.offscreenFilter;
@@ -1885,8 +1880,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
 }
 
 function renderWebgl(renderMode, gl, root) {
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
   let { __structs, width, height, texCache } = root;
   let cx = width * 0.5, cy = height * 0.5;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算

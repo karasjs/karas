@@ -18256,20 +18256,14 @@
 
         if (__cacheFilter) {
           __cacheFilter.release();
-
-          __config[NODE_CACHE_FILTER$1] = null;
         }
 
         if (__cacheMask) {
           __cacheMask.release();
-
-          __config[NODE_CACHE_MASK] = null;
         }
 
         if (__cacheOverflow) {
           __cacheOverflow.release();
-
-          __config[NODE_CACHE_OVERFLOW$1] = null;
         }
       }
     }, {
@@ -22665,11 +22659,6 @@
 
         if (offscreenOverflow) {
           ctx = offscreenOverflow.target.ctx;
-        } // img无children所以total就是cache避免多余生成
-
-
-        if (renderMode === mode.CANVAS && cache || renderMode === mode.WEBGL) {
-          __config[NODE_CACHE_TOTAL$1] = __config[NODE_CACHE$3];
         } // 没source且不error时加载图片
 
 
@@ -26868,7 +26857,12 @@
         var needGen; // 可能没变化，比如被遮罩节点、filter变更等
 
         if (!__cacheTotal || !__cacheTotal.available) {
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+          __cacheTotal = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
+
+          if (__cacheTotal && __cacheTotal !== __cache) {
+            __config[NODE_CACHE_TOTAL$3] = __cacheTotal;
+          }
+
           needGen = true;
         } // 防止失败超限，必须有total结果
 
@@ -27050,14 +27044,7 @@
                 }
               } else {
                 // 连cache都没生成的超限
-                var res = node.render(renderMode, refreshLevel, ctx) || {}; // if(node instanceof Geom) {
-                //   res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-                // }
-                // else {
-                //   res = node.render(renderMode, refreshLevel, ctx);
-                // }
-                // res = res || {};
-
+                var res = node.render(renderMode, refreshLevel, ctx) || {};
                 offscreenBlend = res.offscreenBlend;
                 offscreenMask = res.offscreenMask;
                 offscreenFilter = res.offscreenFilter;
@@ -27655,8 +27642,6 @@
   }
 
   function renderWebgl(renderMode, gl, root) {
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
     var __structs = root.__structs,
         width = root.width,
         height = root.height,
@@ -29055,8 +29040,6 @@
 
       if (__config[NODE_CACHE_MASK$2]) {
         __config[NODE_CACHE_MASK$2].release();
-
-        __config[NODE_CACHE_MASK$2] = null;
       }
 
       if (__config[NODE_CACHE_OVERFLOW$3]) {
@@ -29412,7 +29395,7 @@
         this.__checkReflow(width, height);
 
         if (renderMode === mode.CANVAS && !this.props.noRender) {
-          this.__clear(ctx); // 利用list循环代替tree递归快速渲染
+          this.__clear(ctx, renderMode); // 利用list循环代替tree递归快速渲染
 
 
           if (this.cache) {
@@ -29437,6 +29420,8 @@
             this.dom.__vd = nvd;
             this.dom.__defs = defs;
           } else if (renderMode === mode.WEBGL && !this.props.noRender) {
+            this.__clear(ctx, renderMode);
+
             struct.renderWebgl(renderMode, ctx, this);
           } // 特殊cb，供小程序绘制完回调使用
 
@@ -30600,13 +30585,18 @@
       }
     }, {
       key: "__clear",
-      value: function __clear(ctx) {
-        // 可能会调整宽高，所以每次清除用最大值
-        this.__mw = Math.max(this.__mw, this.width);
-        this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
+      value: function __clear(ctx, renderMode) {
+        if (renderMode === mode.CANVAS) {
+          // 可能会调整宽高，所以每次清除用最大值
+          this.__mw = Math.max(this.__mw, this.width);
+          this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
 
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, this.__mw, this.__mh);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, this.__mw, this.__mh);
+        } else if (renderMode === mode.WEBGL) {
+          ctx.clearColor(0, 0, 0, 0);
+          ctx.clear(ctx.COLOR_BUFFER_BIT);
+        }
       }
     }, {
       key: "dom",

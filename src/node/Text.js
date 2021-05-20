@@ -575,6 +575,7 @@ class Text extends Node {
             __cache = Cache.getInstance(bbox, sx, sy);
           }
           if(__cache && __cache.enabled) {
+            this.__cache = __cache;
             this.__config[NODE_CACHE] = __cache;
             __cache.__available = true;
             ctx = __cache.ctx;

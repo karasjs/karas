@@ -10997,6 +10997,7 @@
               }
 
               if (__cache && __cache.enabled) {
+                this.__cache = __cache;
                 this.__config[NODE_CACHE$1] = __cache;
                 __cache.__available = true;
                 ctx = __cache.ctx;
@@ -27661,8 +27662,6 @@
     var parentMatrix;
     var opacityList = [];
     var parentOpacity = 1;
-    var refreshLevelList = [];
-    var parentRefreshLevel;
     var lastRefreshLevel;
     var lastConfig;
     var lastLv = 0;
@@ -27685,7 +27684,7 @@
           hasMask = _structs$_i8[STRUCT_HAS_MASK$1]; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
       if (node instanceof Text) {
-        if (parentRefreshLevel >= REPAINT$2) {
+        if (lastRefreshLevel >= REPAINT$2) {
           node.render(renderMode, 0, gl, true);
         }
 
@@ -27706,9 +27705,6 @@
         matrixList.push(parentMatrix);
         parentOpacity = lastConfig[NODE_OPACITY$3];
         opacityList.push(parentOpacity); // 要记住parent的refreshLevel供Text判断是否变化用
-
-        parentRefreshLevel = lastRefreshLevel;
-        refreshLevelList.push(parentRefreshLevel);
       } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
       else if (lv < lastLv) {
           var diff = lastLv - lv;
@@ -27716,8 +27712,6 @@
           parentMatrix = matrixList[lv - 1];
           opacityList.splice(-diff);
           parentOpacity = opacityList[lv - 1];
-          refreshLevelList.splice(-diff);
-          parentRefreshLevel = refreshLevelList[lv - 1];
         }
 
       lastRefreshLevel = refreshLevel;

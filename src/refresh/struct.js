@@ -1913,7 +1913,7 @@ function renderWebgl(renderMode, gl, root) {
     } = __structs[i];
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
-      if(parentRefreshLevel >= REPAINT) {
+      if(lastRefreshLevel >= REPAINT) {
         node.render(renderMode, 0, gl, true);
       }
       continue;

@@ -68,7 +68,7 @@ let karas = {
     }
   },
   createVd(tagName, props, children = []) {
-    if(['canvas', 'svg'].indexOf(tagName) > -1) {
+    if(['canvas', 'svg', 'webgl'].indexOf(tagName) > -1) {
       return new Root(tagName, props, children);
     }
     if(tag.TAG_NAME.hasOwnProperty(tagName)) {

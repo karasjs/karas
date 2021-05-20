@@ -85,7 +85,7 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
 function updateCp(cp, props, state) {
   cp.props = props;
   cp.__state = state;
-  cp.__nextState = null;
+  cp.__nextState = null; // 同步在refresh前清除component的新state标识，这样frame动画在after回调中可以新设
   let oldS = cp.shadow;
   let oldSr = cp.shadowRoot;
   let oldJson = cp.__cd;
@@ -397,7 +397,7 @@ function getKeyHash(json, hash, vd) {
       if(!util.isNil(key) && key !== '') {
         // 重复key错误警告
         if(hash.hasOwnProperty(key)) {
-          inject.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+          inject.warn('Component ' + vd.tagName + ' has duplicate key: ' + key);
         }
         hash[key] = {
           json,
@@ -455,6 +455,5 @@ export default {
   },
   updateList,
   check,
-  checkCp,
   did,
 };

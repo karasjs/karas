@@ -1,9 +1,11 @@
 import inject from '../util/inject';
 
-let SIZE   = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
-let NUMBER = [8,  8,  8,  8,   8,   4,   2,    1,    1,    1];
+let SIZE   = [8,   16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+let NUMBER = [128, 64, 32, 16,   8,   4,   2,    1,    1,    1,    1];
 let MAX = SIZE[SIZE.length - 1];
-const HASH = {};
+const HASH_CANVAS = {};
+
+let uuid = 0;
 
 class Page {
   constructor(size, number) {
@@ -11,15 +13,21 @@ class Page {
     this.__number = number;
     this.__free = this.__total = number * number;
     size *= number;
-    let offScreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
-    if(offScreen) {
-      this.__offScreen = offScreen;
+    this.__width = size;
+    this.__height = size;
+    let offscreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
+    if(offscreen) {
+      this.__offscreen = offscreen;
     }
     // 1/0标识n*n个单元格是否空闲可用，一维数组表示
     this.__grid = [];
     for(let i = 0; i < this.__total; i++) {
       this.__grid.push(1);
     }
+    this.__uuid = uuid++;
+    // webgl贴图缓存使用，一旦更新则标识记录，绑定某号纹理单元查看变化才更新贴图
+    this.__update = false;
+    this.time = 0;
   }
 
   add() {
@@ -39,8 +47,10 @@ class Page {
   }
 
   del(pos) {
-    this.grid[pos] = 1;
-    this.__free++;
+    if(!this.grid[pos]) {
+      this.grid[pos] = 1;
+      this.__free++;
+    }
   }
 
   getCoords(pos) {
@@ -50,8 +60,20 @@ class Page {
     return [x * size, y * size];
   }
 
+  get uuid() {
+    return this.__uuid;
+  }
+
   get size() {
     return this.__size;
+  }
+
+  get width() {
+    return this.__width;
+  }
+
+  get height() {
+    return this.__height;
   }
 
   get number() {
@@ -70,16 +92,24 @@ class Page {
     return this.__grid;
   }
 
-  get offScreen() {
-    return this.__offScreen;
+  get offscreen() {
+    return this.__offscreen;
   }
 
   get canvas() {
-    return this.offScreen.canvas;
+    return this.offscreen.canvas;
   }
 
   get ctx() {
-    return this.offScreen.ctx;
+    return this.offscreen.ctx;
+  }
+
+  get update() {
+    return this.__update;
+  }
+
+  set update(v) {
+    this.__update = v;
   }
 
   static getInstance(size) {
@@ -96,7 +126,7 @@ class Page {
         break;
       }
     }
-    let list = HASH[s] = HASH[s] || [];
+    let list = HASH_CANVAS[s] = HASH_CANVAS[s] || [];
     // 从hash列表中尝试取可用的一页，找不到就生成新的页
     let page;
     for(let i = 0, len = list.length; i < len; i++) {
@@ -108,7 +138,7 @@ class Page {
     }
     if(!page) {
       page = new Page(s, n);
-      if(!page.offScreen) {
+      if(!page.offscreen) {
         inject.error('Can not create off-screen for page');
         return;
       }
@@ -136,6 +166,10 @@ class Page {
 
   static get MAX() {
     return MAX;
+  }
+
+  static genUuid() {
+    return uuid++;
   }
 }
 

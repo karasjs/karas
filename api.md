@@ -538,7 +538,7 @@ root.ref.rect.removeAnimate(animate);
   * cb `Function`
     动画回调。
 * **说明**  
-  开始执行一段帧动画并将结果存入frameAnimateList中。在节点销毁时自动停止。
+  开始执行一段帧动画，在节点销毁时自动停止。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -633,6 +633,14 @@ root.ref.div.updateFormatStyleNoOverwrite({
   console.log('updateStyle');
 });
 ```
+
+#### clearCache
+* **类型** `Function`
+* **参数**
+  * onlyTotal `boolean`
+    只清楚局部根节点。
+* **说明**  
+清除当前节点的缓存，以及向上查找清除所有缓存本节点的节点。在canvas的`cache`的渲染模式和webgl模式时，每个节点都尽可能缓存自己，一些特殊效果节点（如filter）还会生成局部根节点缓存（即以自己未根将所有子节点包括进来形成位图缓存）。在需要的时候可以用这个方法清除缓存重新生成。
 
 ### html属性attribute
 
@@ -2083,7 +2091,7 @@ karas.inject.cancelAnimationFrame(id);
 
 <a name="style包"></a>
 ## style包
-包含`css`、`reset`、`unit`、`font`子对象。
+包含`css`、`reset`、`unit`、`font`、`abbr`子对象。
 
 ### css
 处理样式的工具集合。此举是面向框架开发维护人员的，普通开发者无需关注。
@@ -2233,6 +2241,25 @@ karas.style.font.register('newFont', {
 karas.style.font.support('tahoma');
 ```
 
+### abbr
+将css样式简写变成拆开独立的样式，直接修改原对象。
+
+#### toFull
+* **类型** `Function`
+* **参数**
+  * style `Object`
+    css样式集合。
+  * k `String`
+    需要拆开的样式名。
+* **说明**  
+  将css样式简写变成拆开独立的样式，直接修改原对象。
+* **示例**
+```jsx
+karas.style.abbr.toFull({border:'1px solid #F00'}, 'border');
+// {border: "1px solid #F00", borderTop: "1px solid #F00", borderRight: "1px solid #F00", borderBottom: "1px solid #F00", borderLeft: "1px solid #F00"}
+```
+
+
 <a name="parser包"></a>
 ## parser包
 包含解析动态json的方法，和简写信息。
@@ -2312,6 +2339,21 @@ karas.style.font.support('tahoma');
 ```jsx
 let easeInOut = karas.animate.easing.cubicBezier(0.42, 0, 0.58, 1);
 easeInOut(0.5); // 返回0.0197224535483112
+```
+
+#### getEasing
+* **类型** `Function`
+* **参数**
+  * v `Array/String`
+* **说明**  
+快捷综合的获取缓动曲线生成，可以传4个数值参数（此时等同cubicBezier方法），也可以传1个固定类型的string或css值。
+* **示例**
+```jsx
+// 下面几种方法等价返回easeOut类型
+karas.animate.easing.getEasing(0.42, 0, 0.58, 1);
+karas.animate.easing.getEasing([0.42, 0, 0.58, 1]);
+karas.animate.easing.getEasing('easeOut');
+karas.animate.easing.getEasing('cubic-bezier(0.42, 0, 0.58, 1)');
 ```
 
 ### frame

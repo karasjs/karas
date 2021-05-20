@@ -67,7 +67,7 @@ function replaceVars(target, vars) {
                 currentTarget = currentTarget[k2];
               }
               else {
-                inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
                 return;
               }
             }
@@ -98,42 +98,15 @@ function replaceLibraryVars(target, hash, vars) {
         // 有id且变量里面传入了替换的值
         if(k2 && v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
-          if(value === undefined) {
+          if(isFunction(value)) {
+            value = value(v);
+          }
+          // 替换图层的值必须是一个有tagName的对象
+          if(!value || !value.tagName) {
             return;
           }
-          let list = k2.split('.');
-          let libraryId = list[0];
-          if(list.length > 1) {
-            let currentTarget = hash[libraryId];
-            // 替换library内的子属性
-            let len = list.length;
-            for(let i = 1; i < len - 1; i++) {
-              k2 = list[i];
-              // 避免异常
-              if(currentTarget[k2]) {
-                currentTarget = currentTarget[k2];
-              }
-              else {
-                inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
-                return;
-              }
-            }
-            if(isFunction(value)) {
-              value = value(v);
-            }
-            currentTarget[k2] = value;
-          }
-          else {
-            if(isFunction(value)) {
-              value = value(v);
-            }
-            // 替换图层的值必须是一个有tagName的对象
-            if (!value || !value.tagName) {
-              return;
-            }
-            // library对象也要加上id，与正常的library保持一致
-            hash[libraryId] = Object.assign({ id: libraryId }, value);
-          }
+          // library对象也要加上id，与正常的library保持一致
+          hash[k2] = Object.assign({ id: k2 }, value);
         }
       }
     });

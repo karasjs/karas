@@ -7,6 +7,7 @@ import util from '../util/util';
 import textCache from './textCache';
 import inject from '../util/inject';
 import font from '../style/font';
+import Cache from '../refresh/Cache';
 
 const {
   STYLE_KEY: {
@@ -22,6 +23,13 @@ const {
     OVERFLOW,
     WHITE_SPACE,
     TEXT_OVERFLOW,
+  },
+  NODE_KEY: {
+    NODE_CACHE,
+    NODE_LIMIT_CACHE,
+    NODE_DOM_PARENT,
+    NODE_MATRIX_EVENT,
+    NODE_OPACITY,
   },
 } = enums;
 
@@ -87,7 +95,10 @@ class Text extends Node {
     let pfw = parentComputedStyle[FONT_WEIGHT];
     let pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
     let parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if(renderMode === mode.WEBGL) {
+        ctx = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__').ctx;
+      }
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
         ctx.font = css.setFontStyle(parentComputedStyle);
         parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
@@ -118,7 +129,7 @@ class Text extends Node {
         sum += mw;
         this.__charWidth = Math.max(this.charWidth, mw);
       }
-      else if(renderMode === mode.CANVAS) {
+      else if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         mw = cache[char] = ctx.measureText(char).width;
         charWidthList.push(mw);
         sum += mw;
@@ -165,11 +176,17 @@ class Text extends Node {
    * @private
    */
   __layout(data) {
+    let __cache = this.__cache;
+    if(__cache) {
+      __cache.release();
+    }
     let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
     let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
     textBoxes.splice(0);
+    let __config = this.__config;
+    __config[NODE_LIMIT_CACHE] = false;
     // 空内容w/h都为0可以提前跳出
     if(isDestroyed || currentStyle[DISPLAY] === 'none' || !content) {
       return lineClampCount;
@@ -534,19 +551,58 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, lv, ctx, defs, dx = 0, dy = 0) {
+  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
         children: [],
       };
     }
-    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp } = this;
+    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
-      return false;
+      return;
     }
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
+      if(renderMode === mode.WEBGL) {
+        if(cache) {
+          let { sx, sy, __cache, bbox } = this;
+          if(__cache) {
+            __cache.reset(bbox, sx, sy);
+          }
+          else {
+            __cache = Cache.getInstance(bbox, sx, sy);
+          }
+          if(__cache && __cache.enabled) {
+            this.__config[NODE_CACHE] = __cache;
+            __cache.__available = true;
+            ctx = __cache.ctx;
+            dx += -sx + __cache.x;
+            dy += -sy + __cache.y;
+            __config[NODE_LIMIT_CACHE] = false;
+          }
+          else {
+            __config[NODE_LIMIT_CACHE] = true;
+            return;
+          }
+        }
+        else {
+          let root = this.root;
+          let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
+          ctx = c.ctx;
+          let {
+            [NODE_DOM_PARENT]: {
+              __config: {
+                [NODE_MATRIX_EVENT]: m,
+                [NODE_OPACITY]: opacity,
+              },
+            },
+          } = __config;
+          ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+          ctx.globalAlpha = opacity;
+        }
+      }
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {
         ctx.font = font;
@@ -568,7 +624,7 @@ class Text extends Node {
       let last = textBoxes[textBoxes.length - 1];
       let { endX, endY } = last;
       let computedStyle = __bp.computedStyle;
-      if(renderMode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         let font = css.setFontStyle(computedStyle);
         if(ctx.font !== font) {
           ctx.font = font;
@@ -597,11 +653,20 @@ class Text extends Node {
         });
       }
     }
-    return true;
   }
 
   __deepScan(cb) {
     cb(this);
+  }
+
+  __destroy() {
+    if(this.isDestroyed) {
+      return;
+    }
+    super.__destroy();
+    if(this.__cache) {
+      this.__cache.release();
+    }
   }
 
   get content() {
@@ -637,29 +702,44 @@ class Text extends Node {
   }
 
   get root() {
-    return this.parent.root;
+    return this.domParent.root;
   }
 
   get currentStyle() {
-    return this.parent.currentStyle;
+    return this.domParent.currentStyle;
+  }
+
+  get style() {
+    return this.__style;
   }
 
   get computedStyle() {
-    return this.parent.computedStyle;
+    return this.domParent.computedStyle;
   }
 
   get cacheStyle() {
-    return this.parent.__cacheStyle;
+    return this.domParent.__cacheStyle;
   }
 
   get bbox() {
-    if(!this.content) {
-      return;
-    }
     let { sx, sy, width, height } = this;
-    let x1 = sx, y1 = sy;
-    let x2 = sx + width, y2 = sy + height;
-    return [x1, y1, x2, y2];
+    return [sx, sy, sx + width, sy + height];
+  }
+
+  get isShadowRoot() {
+    return !this.parent && this.host && this.host !== this.root;
+  }
+
+  get matrix() {
+    return this.domParent.matrix;
+  }
+
+  get renderMatrix() {
+    return this.domParent.renderMatrix;
+  }
+
+  get matrixEvent() {
+    return this.domParent.matrix;
   }
 }
 

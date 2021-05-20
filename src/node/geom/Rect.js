@@ -2,11 +2,12 @@ import Geom from './Geom';
 import util from "../../util/util";
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
+import mode from '../mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
-  FILTER,
 } } = enums;
 const { isNil } = util;
 
@@ -69,10 +70,10 @@ class Rect extends Geom {
     }
   }
 
-  buildCache(originX, originY) {
+  buildCache(originX, originY, focus) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
-    if(isNil(__cacheProps.rx)) {
+    if(isNil(__cacheProps.rx) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.rx = rx.map(rx => Math.min(rx, 0.5) * width);
@@ -81,7 +82,7 @@ class Rect extends Geom {
         __cacheProps.rx = Math.min(rx, 0.5) * width;
       }
     }
-    if(isNil(__cacheProps.ry)) {
+    if(isNil(__cacheProps.ry) || focus) {
       rebuild = true;
       if(isMulti) {
         __cacheProps.ry = rx.map(ry => Math.min(ry, 0.5) * height);
@@ -102,13 +103,14 @@ class Rect extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(res.break) {
       return res;
     }
-    this.buildCache(res.originX, res.originY);
-    this.__renderPolygon(renderMode, ctx, defs, res);
+    this.buildCache(res.sx3, res.sy3);
+    ctx = res.ctx;
+    this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
 
@@ -121,26 +123,30 @@ class Rect extends Geom {
   }
 
   get bbox() {
-    let {
-      __sx3: originX, __sy3: originY, width, height,
-      currentStyle: {
-        [STROKE_WIDTH]: strokeWidth,
-        [BOX_SHADOW]: boxShadow,
-      } } = this;
-    this.buildCache(originX, originY);
-    let bbox = super.bbox;
-    let half = 0;
-    strokeWidth.forEach(item => {
-      half = Math.max(item[0], half);
-    });
-    let [ox, oy] = this.__spreadBbox(boxShadow);
-    ox += half;
-    oy += half;
-    bbox[0] = Math.min(bbox[0], originX - ox);
-    bbox[1] = Math.min(bbox[1], originY - oy);
-    bbox[2] = Math.max(bbox[2], originX + width + ox);
-    bbox[3] = Math.max(bbox[3], originY + height + oy);
-    return bbox;
+    if(!this.__bbox) {
+      let {
+        __sx3: originX, __sy3: originY, width, height,
+        currentStyle: {
+          [STROKE_WIDTH]: strokeWidth,
+          [BOX_SHADOW]: boxShadow,
+        }
+      } = this;
+      this.buildCache(originX, originY);
+      let bbox = super.bbox;
+      let half = 0;
+      strokeWidth.forEach(item => {
+        half = Math.max(item[0], half);
+      });
+      let [ox, oy] = this.__spreadBbox(boxShadow);
+      ox += half;
+      oy += half;
+      bbox[0] = Math.min(bbox[0], originX - ox);
+      bbox[1] = Math.min(bbox[1], originY - oy);
+      bbox[2] = Math.max(bbox[2], originX + width + ox);
+      bbox[3] = Math.max(bbox[3], originY + height + oy);
+      this.__bbox = bbox;
+    }
+    return this.__bbox;
   }
 }
 

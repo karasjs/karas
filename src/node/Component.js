@@ -84,7 +84,7 @@ class Component extends Event {
             setUpdateFlag(this);
           },
           __after: () => {
-            // self.__nextState = null;
+            // self.__nextState = null; 由updater.js每次refresh前同步执行清空，这里不能异步清除，否则frame动画会乱序
             list.forEach(cb => {
               if(isFunction(cb)) {
                 cb.call(self);
@@ -195,17 +195,6 @@ class Component extends Event {
     }
   }
 
-  __computeMeasure(renderMode, ctx, isHost, cb) {
-    let sr = this.shadowRoot;
-    if(sr instanceof Text) {
-      sr.__computeMeasure(renderMode, ctx);
-    }
-    // 其它类型为Xom或Component
-    else {
-      sr.__computeMeasure(renderMode, ctx, true, cb);
-    }
-  }
-
   get tagName() {
     return this.__tagName;
   }
@@ -301,8 +290,18 @@ Object.keys(change.GEOM).concat([
   'oy',
   'sx',
   'sy',
-  '__sx1',
-  '__sy1',
+  // '__sx1',
+  // '__sx2',
+  // '__sx3',
+  // '__sx4',
+  // '__sx5',
+  // '__sx6',
+  // '__sy1',
+  // '__sy2',
+  // '__sy3',
+  // '__sy4',
+  // '__sy5',
+  // '__sy6',
   'width',
   'height',
   'outerWidth',
@@ -369,7 +368,7 @@ Object.keys(change.GEOM).concat([
   'getBoundingClientRect',
   'getComputedStyle',
   '__deepScan',
-  '__cancelCache',
+  'clearCache',
   '__structure',
   '__modifyStruct',
   '__updateStruct',
@@ -378,6 +377,7 @@ Object.keys(change.GEOM).concat([
   '__isRealInline',
   '__calBasis',
   '__calMinMax',
+  '__computeMeasure',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

@@ -4,11 +4,11 @@ import painter from '../../util/painter';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
-  FILTER,
 } } = enums;
 const { isNil } = util;
 
@@ -202,29 +202,29 @@ class Line extends Geom {
     }
   }
 
-  buildCache(originX, originY) {
+  buildCache(originX, originY, focus) {
     let { width, height, __cacheProps, isMulti } = this;
     let rebuild;
     ['x1', 'x2'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = reBuild(this[k], originX, width, isMulti);
       }
     });
     ['y1', 'y2'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = reBuild(this[k], originY, height, isMulti);
       }
     });
     ['controlA', 'controlB'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = reBuildC(this[k], originX, originY, width, height, isMulti);
       }
     });
     ['start', 'end'].forEach(k => {
-      if(isNil(__cacheProps[k])) {
+      if(isNil(__cacheProps[k]) || focus) {
         rebuild = true;
         __cacheProps[k] = this[k];
       }
@@ -232,14 +232,15 @@ class Line extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(res.break) {
       return res;
     }
+    ctx = res.ctx;
     let {
-      originX,
-      originY,
+      sx3,
+      sy3,
       stroke: strokes,
       strokeWidth: strokeWidths,
       strokeDasharray: strokeDasharrays,
@@ -251,7 +252,7 @@ class Line extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    let rebuild = this.buildCache(originX, originY);
+    let rebuild = this.buildCache(sx3, sy3);
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {
@@ -280,7 +281,7 @@ class Line extends Geom {
       }
       __cacheProps.d = d;
     }
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       strokes.forEach((stroke, i) => {
         let strokeWidth = strokeWidths[i];
         let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);

@@ -39,18 +39,18 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
             if(top[1] === AUTO) {
               if(bottom[1] === AUTO || bottom[1] === PX) {
                 next.__offsetY(dy, true, REFLOW);
-                next.__cancelCache();
+                next.clearCache();
               }
               else if(bottom[1] === PERCENT) {
                 let v = (1 - bottom[0] * 0.01) * dy;
                 next.__offsetY(v, true, REFLOW);
-                next.__cancelCache();
+                next.clearCache();
               }
             }
             else if(top[1] === PERCENT) {
               let v = top[0] * 0.01 * dy;
               next.__offsetY(v, true, REFLOW);
-              next.__cancelCache();
+              next.clearCache();
             }
             // 高度百分比需发生变化的重新布局，需要在容器内
             if(height[1] === PERCENT) {
@@ -77,7 +77,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
           }
           else {
             next.__offsetY(dy, true, REFLOW);
-            next.__cancelCache();
+            next.clearCache();
           }
         }
         next = next.next;
@@ -103,7 +103,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
       }
       if(need) {
         node.__resizeY(dy, REFLOW);
-        node.__cancelCache();
+        node.clearCache();
       }
       // abs或者高度不需要继续向上调整提前跳出
       else {
@@ -116,7 +116,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
     while(true);
     // 最后一个递归向上取消总缓存，防止过程中重复next多次无用递归
     while(last) {
-      last.__cancelCache(true);
+      last.clearCache(true);
       last = last.domParent;
     }
   }

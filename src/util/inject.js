@@ -2,6 +2,8 @@ import util from './util';
 import debug from './debug';
 import textCache from '../node/textCache';
 import font from '../style/font';
+import ca from '../gl/ca';
+import webgl from '../gl/webgl';
 
 const SPF = 1000 / 60;
 
@@ -44,21 +46,29 @@ function cache(key, width, height, hash, message) {
     }
     document.body.appendChild(o);
   }
+  let ctx;
+  if(hash === CANVAS) {
+    ctx = o.getContext('2d');
+  }
+  else {
+    ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
+  }
   return {
     canvas: o,
-    ctx: hash === CANVAS ? o.getContext('2d')
-      : (o.getContext('webgl') || o.getContext('experimental-webgl')),
+    ctx,
     draw() {
       // 空函数，仅对小程序提供hook特殊处理，flush缓冲
     },
     enabled: true,
     available: true,
     release() {
-      if(hash === CANVAS) {
-        CANVAS_LIST.push(this.canvas);
-      }
-      else {
-        WEBGL_LIST.push(this.canvas);
+      if(!key) {
+        if(hash === CANVAS) {
+          CANVAS_LIST.push(this.canvas);
+        }
+        else {
+          WEBGL_LIST.push(this.canvas);
+        }
       }
       this.canvas = null;
       this.ctx = null;
@@ -174,7 +184,7 @@ let inject = {
       return;
     }
     else if(!url || !util.isString(url)) {
-      inject.error('Measure img invalid: ' + url);
+      inject.warn('Measure img invalid: ' + url);
       cb && cb({
         state: LOADED,
         success: false,
@@ -207,7 +217,6 @@ let inject = {
         list.forEach(cb => cb(cache));
       };
       img.onerror = function(e) {
-        inject.error('Measure img failed: ' + url);
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;
@@ -319,6 +328,11 @@ let inject = {
       }
     }
     return false;
+  },
+  isWebGLTexture(o) {
+    if(o && typeof WebGLTexture !== 'undefined') {
+      return o instanceof WebGLTexture;
+    }
   },
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();

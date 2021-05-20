@@ -6,7 +6,6 @@ import geom from '../../math/geom';
 const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
-  FILTER,
 } } = enums;
 const { isNil } = util;
 
@@ -362,13 +361,14 @@ class Polyline extends Geom {
     return rebuild || rebuildSE;
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(res.break) {
       return res;
     }
-    this.buildCache(res.originX, res.originY);
-    this.__renderPolygon(renderMode, ctx, defs, res);
+    this.buildCache(res.sx3, res.sy3);
+    ctx = res.ctx;
+    this.__renderPolygon(renderMode, ctx, res);
     return res;
   }
 
@@ -389,62 +389,65 @@ class Polyline extends Geom {
   }
 
   get bbox() {
-    let {
-      __sx3: originX, __sy3: originY,
-      currentStyle: {
-        [STROKE_WIDTH]: strokeWidth,
-        [BOX_SHADOW]: boxShadow,
-      },
-      isMulti, __cacheProps,
-    } = this;
-    this.buildCache(originX, originY);
-    let bbox = super.bbox;
-    let half = 0;
-    strokeWidth.forEach(item => {
-      half = Math.max(item[0], half);
-    });
-    let [ox, oy] = this.__spreadBbox(boxShadow);
-    ox += half;
-    oy += half;
-    let { points, controls } = __cacheProps;
-    if(!isMulti) {
-      points = [points];
-      controls = [controls];
+    if(!this.__bbox) {
+      let {
+        __sx3: originX, __sy3: originY,
+        currentStyle: {
+          [STROKE_WIDTH]: strokeWidth,
+          [BOX_SHADOW]: boxShadow,
+        },
+        isMulti, __cacheProps,
+      } = this;
+      this.buildCache(originX, originY);
+      let bbox = super.bbox;
+      let half = 0;
+      strokeWidth.forEach(item => {
+        half = Math.max(item[0], half);
+      });
+      let [ox, oy] = this.__spreadBbox(boxShadow);
+      ox += half;
+      oy += half;
+      let { points, controls } = __cacheProps;
+      if(!isMulti) {
+        points = [points];
+        controls = [controls];
+      }
+      points.forEach((pointList, i) => {
+        if(!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
+          return;
+        }
+        let controlList = controls[i] || [];
+        let [xa, ya] = pointList[0];
+        for(let i = 1, len = pointList.length; i < len; i++) {
+          let [xb, yb] = pointList[i];
+          let c = controlList[i - 1];
+          if(c && c.length === 4) {
+            let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+          }
+          else if(c && c.length === 2) {
+            let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+          }
+          else {
+            bbox[0] = Math.min(bbox[0], xa - ox);
+            bbox[1] = Math.min(bbox[1], ya - oy);
+            bbox[2] = Math.max(bbox[2], xa + ox);
+            bbox[3] = Math.max(bbox[3], ya + oy);
+          }
+          xa = xb;
+          ya = yb;
+        }
+      });
+      this.__bbox = bbox;
     }
-    points.forEach((pointList, i) => {
-      if(!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
-        return;
-      }
-      let controlList = controls[i] || [];
-      let [xa, ya] = pointList[0];
-      for(let i = 1, len = pointList.length; i < len; i++) {
-        let [xb, yb] = pointList[i];
-        let c = controlList[i - 1];
-        if(c && c.length === 4) {
-          let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-          bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-          bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-          bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-          bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
-        }
-        else if(c && c.length === 2) {
-          let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
-          bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-          bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-          bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-          bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
-        }
-        else {
-          bbox[0] = Math.min(bbox[0], xa - ox);
-          bbox[1] = Math.min(bbox[1], ya - oy);
-          bbox[2] = Math.max(bbox[2], xa + ox);
-          bbox[3] = Math.max(bbox[3], ya + oy);
-        }
-        xa = xb;
-        ya = yb;
-      }
-    });
-    return bbox;
+    return this.__bbox;
   }
 }
 

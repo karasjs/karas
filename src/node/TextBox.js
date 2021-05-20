@@ -50,7 +50,7 @@ class TextBox {
     this.__endY = y;
     let { [LETTER_SPACING]: letterSpacing } = computedStyle;
     let i = 0, length = content.length;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(letterSpacing) {
         for(; i < length; i++) {
           ctx.fillText(content.charAt(i), x, y);

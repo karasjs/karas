@@ -1,6 +1,6 @@
 import mode from '../node/mode';
 import geom from '../math/geom';
-import mx from '../math/matrix';
+import blur from '../math/blur';
 import util from '../util/util';
 import painter from '../util/painter';
 import enums from '../util/enums';
@@ -13,10 +13,10 @@ const {
 const { int2rgba } = util;
 const { canvasPolygon, svgPolygon } = painter;
 
-function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h) {
-  let [x, y, blur, spread, color, inset] = data;
+function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
+  let [x, y, sigma, spread, color, inset] = data;
   let c = int2rgba(color);
-  let n = Math.abs(blur) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2;
+  let n = Math.abs(sigma) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2;
   // box本身坐标顺时针
   let box = [
     [x1, y1],
@@ -33,8 +33,8 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
     [x2 + n, y1 - n],
     [x1 - n, y1 - n],
   ];
-  if(color[3] > 0 && (blur > 0 || spread > 0)) {
-    if(renderMode === mode.CANVAS) {
+  if(color[3] > 0 && (sigma > 0 || spread > 0)) {
+    if(renderMode === mode.CANVAS | renderMode === mode.WEBGL) {
       ctx.save();
       ctx.beginPath();
       // inset裁剪box外面
@@ -87,7 +87,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
             ctx.fillStyle = '#FFF';
           }
           ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
+          ctx.shadowBlur = sigma;
           // 画在外围的空心矩形，宽度要比blur大，n考虑了这一情况取了最大值
           canvasPolygon(ctx, [
             [xa, ya],
@@ -114,7 +114,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
           ctx.shadowOffsetX = x;
           ctx.shadowOffsetY = y;
           ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
+          ctx.shadowBlur = sigma;
           canvasPolygon(ctx, [
             [x1, y1],
             [x2, y1],
@@ -182,7 +182,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
             ctx.fillStyle = '#FFF';
           }
           ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
+          ctx.shadowBlur = sigma;
           canvasPolygon(ctx, blurBox);
         }
         else {
@@ -197,7 +197,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
           ctx.shadowOffsetX = x;
           ctx.shadowOffsetY = y;
           ctx.shadowColor = c;
-          ctx.shadowBlur = blur;
+          ctx.shadowBlur = sigma;
           canvasPolygon(ctx, box);
         }
       }
@@ -206,7 +206,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
       ctx.restore();
     }
     else if(renderMode === mode.SVG) {
-      let d = mx.int2convolution(blur);
+      let d = blur.outerSize(sigma);
       if(inset === 'inset') {
         let xa = x1 + x + spread;
         let ya = y1 + y + spread;
@@ -246,14 +246,14 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
                 props: [
                   ['dx', 0],
                   ['dy', 0],
-                  ['stdDeviation', blur * 0.5],
+                  ['stdDeviation', sigma * 0.5],
                   ['flood-color', c],
                 ],
               },
             ],
           }
           xom.__config[NODE_DEFS_CACHE].push(v);
-          let filter = defs.add(v);
+          let filter = ctx.add(v);
           let v2 = {
             tagName: 'clipPath',
             children: [{
@@ -264,7 +264,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
               ],
             }],
           };
-          let clip = defs.add(v2);
+          let clip = ctx.add(v2);
           xom.__config[NODE_DEFS_CACHE].push(v2);
           xom.virtualDom.bb.push({
             type: 'item',
@@ -285,7 +285,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
               ],
             }],
           };
-          clip = defs.add(v);
+          clip = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
@@ -325,13 +325,13 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
                 props: [
                   ['dx', x],
                   ['dy', y],
-                  ['stdDeviation', blur * 0.5],
+                  ['stdDeviation', sigma * 0.5],
                   ['flood-color', c],
                 ],
               },
             ],
           }
-          let filter = defs.add(v);
+          let filter = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           v = {
             tagName: 'clipPath',
@@ -343,7 +343,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
               ],
             }],
           };
-          let clip = defs.add(v);
+          let clip = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
@@ -398,13 +398,13 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
                 props: [
                   ['dx', 0],
                   ['dy', 0],
-                  ['stdDeviation', blur * 0.5],
+                  ['stdDeviation', sigma * 0.5],
                   ['flood-color', c],
                 ],
               },
             ],
           };
-          let filter = defs.add(v);
+          let filter = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           v = {
             tagName: 'clipPath',
@@ -416,7 +416,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
               ],
             }],
           };
-          let clip = defs.add(v);
+          let clip = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
@@ -444,7 +444,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
               ],
             }],
           };
-          clip = defs.add(v);
+          clip = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',
@@ -472,13 +472,13 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
                 props: [
                   ['dx', x],
                   ['dy', y],
-                  ['stdDeviation', blur * 0.5],
+                  ['stdDeviation', sigma * 0.5],
                   ['flood-color', c],
                 ],
               },
             ],
           };
-          let filter = defs.add(v);
+          let filter = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           v = {
             tagName: 'clipPath',
@@ -490,7 +490,7 @@ function renderBoxShadow(xom, renderMode, ctx, defs, data, x1, y1, x2, y2, w, h)
               ],
             }],
           };
-          let clip = defs.add(v);
+          let clip = ctx.add(v);
           xom.__config[NODE_DEFS_CACHE].push(v);
           xom.virtualDom.bb.push({
             type: 'item',

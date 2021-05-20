@@ -7,7 +7,11 @@ let o = karas.parse({
   children: [
     {
       tagName: 'span',
-      props: {},
+      props: {
+        style: {
+          display: 'inlineBlock'
+        }
+      },
       animate: {
         value: [
           {

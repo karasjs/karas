@@ -272,22 +272,8 @@ export default {
             style[k2] = style[k2] || [];
             style[k2].push(v2[i]);
           }
-          // if(isNil(style[k])) {
-          //   style[k] = v[i];
-          // }
         });
       });
-      // else {
-      //   v = v.toString().split(/\s+/);
-      //   if(v.length === 1) {
-      //     v[1] = '50%';
-      //   }
-      //   this[k].forEach((k, i) => {
-      //     if(isNil(style[k])) {
-      //       style[k] = v[i];
-      //     }
-      //   });
-      // }
     }
     else if(['translate', 'scale', 'skew'].indexOf(k) > -1) {
       let arr = v.toString().split(/\s*,\s*/);
@@ -313,5 +299,6 @@ export default {
         }
       });
     }
+    return style;
   }
 };

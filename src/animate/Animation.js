@@ -839,11 +839,7 @@ function binarySearch(i, j, time, frames) {
 function getEasing(ea) {
   let timingFunction;
   if(ea) {
-    if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
-      let v = ea.match(/[\d.]+/g);
-      timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
-    }
-    else if((timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea))) {
+    if((timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea))) {
       let steps = parseInt(timingFunction[1]);
       let stepsD = timingFunction[2];
       timingFunction = function(percent) {
@@ -857,7 +853,7 @@ function getEasing(ea) {
       };
     }
     else {
-      timingFunction = easing[ea];
+      timingFunction = easing.getEasing(ea);
     }
   }
   return timingFunction;
@@ -1268,7 +1264,7 @@ class Animation extends Event {
     this.direction = op.direction;
     config[I_CURRENT_FRAMES] = {
       reverse: true,
-      'alternate-reverse': true
+      'alternate-reverse': true,
     }.hasOwnProperty(op.direction) ? framesR : frames;
   }
 

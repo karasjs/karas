@@ -10,11 +10,23 @@ const { STYLE_KEY: {
   TRANSFORM_ORIGIN,
 } } = enums;
 
+/**
+ * 圆弧拟合公式，根据角度求得3阶贝塞尔控制点比例长度，一般<=90，超过拆分
+ * @param deg
+ * @returns {number}
+ */
 function h(deg) {
   deg *= 0.5;
   return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
 }
 
+/**
+ * 判断点是否在多边形内
+ * @param x 点坐标
+ * @param y
+ * @param vertexes 多边形顶点坐标
+ * @returns {boolean}
+ */
 function pointInPolygon(x, y, vertexes) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
   let [xmax, ymax] = vertexes[0];

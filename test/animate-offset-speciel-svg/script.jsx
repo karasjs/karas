@@ -1,8 +1,8 @@
 let o = karas.render(
   <svg width="360" height="360">
-      <span ref="t" style={{
+      <div ref="t" style={{
         background: '#F00',
-      }}>123</span>
+      }}>123</div>
   </svg>,
   '#test'
 );

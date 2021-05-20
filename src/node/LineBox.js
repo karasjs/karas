@@ -96,6 +96,7 @@ class LineBox {
       let last = list[length - 1];
       let x1 = first.x;
       let dom = first instanceof TextBox ? first.parent.domParent : first.domParent;
+      // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
       while(true) {
         let list = dom.contentBoxList;
         let {
@@ -114,6 +115,7 @@ class LineBox {
       }
       let x2 = last.x + last.outerWidth;
       dom = last instanceof TextBox ? last.parent.domParent : last.domParent;
+      // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
       while(true) {
         let list = dom.contentBoxList;
         let {

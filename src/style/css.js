@@ -1019,28 +1019,28 @@ function normalize(style, reset = []) {
  * 影响文字测量的只有字体和大小和重量，需要提前处理
  * 继承相关的计算
  * @param node 对象节点
- * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
+ * @param isRoot 是否是根节点，无继承需使用默认值
  */
-function computeMeasure(node, isHost) {
-  let { currentStyle, computedStyle, parent } = node;
-  let parentComputedStyle = !isHost && parent.computedStyle;
+function computeMeasure(node, isRoot) {
+  let { currentStyle, computedStyle, domParent } = node;
+  let parentComputedStyle = !isRoot && domParent.computedStyle;
   MEASURE_KEY_SET.forEach(k => {
     let v = currentStyle[k];
     // ff特殊处理
     if(k === FONT_FAMILY) {
       if(v[1] === INHERIT) {
-        computedStyle[k] = getFontFamily(isHost ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
+        computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
       }
       else {
         computedStyle[k] = getFontFamily(v[0]);
       }
     }
     else if(v[1] === INHERIT) {
-      computedStyle[k] = isHost ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
     }
     // 只有fontSize会有%
     else if(v[1] === PERCENT) {
-      computedStyle[k] = isHost ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[1] * 0.01);
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
     }
     else {
       computedStyle[k] = v[0];
@@ -1365,7 +1365,8 @@ function cloneStyle(style, keys) {
     else if(k === FILL || k === STROKE) {
       res[k] = v.map(item => {
         // 渐变
-        if(item.k) {
+        // 可能非法为空
+        if(item && item.k) {
           return util.clone(item);
         }
         // 颜色

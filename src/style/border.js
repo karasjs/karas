@@ -10,11 +10,9 @@ const { canvasPolygon, svgPolygon } = painter;
 const {
   STYLE_KEY: {
     BORDER_LEFT_WIDTH,
-    BORDER_RIGHT_WIDTH,
     BORDER_TOP_WIDTH,
     BORDER_BOTTOM_WIDTH,
     PADDING_LEFT,
-    PADDING_RIGHT,
     PADDING_BOTTOM,
     PADDING_TOP,
     BORDER_TOP_LEFT_RADIUS,
@@ -2850,7 +2848,7 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
 }
 
 function renderBorder(xom, renderMode, ctx, points, color, dx, dy) {
-  if(renderMode === mode.CANVAS) {
+  if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
     ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;

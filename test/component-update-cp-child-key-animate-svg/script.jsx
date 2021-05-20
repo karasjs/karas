@@ -22,7 +22,7 @@ class Child extends karas.Component {
         color: '#00F'
       }
     ], {
-      duration: 200,
+      duration: 100,
       fill: 'both',
     });
   }
@@ -44,5 +44,5 @@ let o = karas.render(
 o.ref.c.setState({ a: 2 }, function() {
   setTimeout(function() {
     input.value += JSON.stringify(o.virtualDom);
-  }, 250);
+  }, 200);
 });

@@ -5,7 +5,6 @@ import unit from '../../style/unit';
 import enums from '../../util/enums';
 import mode from '../mode';
 import util from '../../util/util';
-import level from '../../refresh/level';
 import painter from '../../util/painter';
 import transform from '../../style/transform';
 import mx from '../../math/matrix';
@@ -48,9 +47,6 @@ const {
     NODE_STYLE,
     NODE_CACHE,
     NODE_CACHE_TOTAL,
-    NODE_CACHE_FILTER,
-    NODE_CACHE_MASK,
-    NODE_CACHE_OVERFLOW,
     NODE_DEFS_CACHE,
   }
 } = enums;
@@ -86,12 +82,51 @@ class Geom extends Xom {
 
   __tryLayInline(w, total) {
     // 无children，直接以style的width为宽度，不定义则为0
-    let { currentStyle: { [WIDTH]: width } } = this;
+    let { currentStyle: {
+      [WIDTH]: width,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } } = this;
     if(width[1] === PX) {
-      return w - width[0];
+      w -= width[0];
     }
     else if(width[1] === PERCENT) {
-      return w - total * width[0] * 0.01;
+      w -= total * width[0] * 0.01;
+    }
+    // 减去水平mbp
+    if(marginLeft[1] === PX) {
+      w -= marginLeft[0];
+    }
+    else if(marginLeft[1] === PERCENT) {
+      w -= marginLeft[0] * total * 0.01;
+    }
+    if(paddingLeft[1] === PX) {
+      w -= paddingLeft[0];
+    }
+    else if(paddingLeft[1] === PERCENT) {
+      w -= paddingLeft[0] * total * 0.01;
+    }
+    if(borderLeftWidth[1] === PX) {
+      w -= borderLeftWidth[0];
+    }
+    if(marginRight[1] === PX) {
+      w -= marginRight[0];
+    }
+    else if(marginRight[1] === PERCENT) {
+      w -= marginRight[0] * total * 0.01;
+    }
+    if(paddingRight[1] === PX) {
+      w -= paddingRight[0];
+    }
+    else if(paddingRight[1] === PERCENT) {
+      w -= paddingRight[0] * total * 0.01;
+    }
+    if(borderRightWidth[1] === PX) {
+      w -= borderRightWidth[0];
     }
     return w;
   }
@@ -196,12 +231,12 @@ class Geom extends Xom {
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
-  __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+  __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
-    let res = super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+    let res = super.__calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,
@@ -245,7 +280,7 @@ class Geom extends Xom {
         if(Array.isArray(v)) {
           v.forEach(item => {
             if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-              res.push(this.__gradient(renderMode, ctx, defs, x3, y3, x4, y4, item));
+              res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
             }
             else if(item[3] > 0) {
               res.push(int2rgba(item));
@@ -266,22 +301,10 @@ class Geom extends Xom {
     return computedStyle[VISIBILITY] !== 'hidden';
   }
 
-  __preSet() {
-    let { sx: x, sy: y, width, height, __cacheStyle, computedStyle } = this;
-    let {
-      [BORDER_TOP_WIDTH]: borderTopWidth,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [DISPLAY]: display,
-      [MARGIN_TOP]: marginTop,
-      [MARGIN_LEFT]: marginLeft,
-      [PADDING_TOP]: paddingTop,
-      [PADDING_LEFT]: paddingLeft,
-      [VISIBILITY]: visibility,
-    } = computedStyle;
-    let originX = x + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = y + borderTopWidth + marginTop + paddingTop;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
+  __preSet(res) {
+    let { width, height, __cacheStyle, computedStyle } = this;
+    let cx = res.sx3 + width * 0.5;
+    let cy = res.sy3 + height * 0.5;
     let {
       [FILL]: fill,
       [STROKE]: stroke,
@@ -296,15 +319,8 @@ class Geom extends Xom {
       [FILL_RULE]: fillRule,
     } = computedStyle;
     return {
-      x,
-      y,
-      originX,
-      originY,
-      width,
-      height,
       cx,
       cy,
-      display,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -313,7 +329,6 @@ class Geom extends Xom {
       strokeLinejoin,
       strokeMiterlimit,
       fill,
-      visibility,
       fillRule,
     };
   }
@@ -328,7 +343,7 @@ class Geom extends Xom {
       strokeMiterlimit,
       fill,
     } = res;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(fill) {
         if(fill.k === 'linear') {
           ctx.fillStyle = fill.v;
@@ -381,26 +396,8 @@ class Geom extends Xom {
     }
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
-    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, defs, cache);
-    let __config = this.__config;
-    let {
-      [NODE_CACHE]: __cache,
-      [NODE_CACHE_FILTER]: __cacheFilter,
-      [NODE_CACHE_MASK]: __cacheMask,
-      [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-    } = __config;
-    if(renderMode === mode.CANVAS && cache) {
-      __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
-    }
-    // 存在老的缓存认为可提前跳出
-    if(lv < level.REPAINT
-      && (__cache && __cache.available
-        || !level.contain(lv, level.FILTER) && __cacheFilter
-        || __cacheMask || __cacheOverflow)) {
-      res.break = true; // geom子类标识可以跳过自定义render()
-    }
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }
@@ -409,11 +406,11 @@ class Geom extends Xom {
       return res;
     }
     // data在无cache时没有提前设置
-    let preData = this.__preSet();
+    let preData = this.__preSet(res);
     return Object.assign(res, preData);
   }
 
-  __renderPolygon(renderMode, ctx, defs, res) {
+  __renderPolygon(renderMode, ctx, res) {
     let {
       fill: fills,
       fillRule: fillRules,
@@ -444,7 +441,7 @@ class Geom extends Xom {
         dy,
         bbox,
       };
-      this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+      this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
     }
     // 多个需要fill在下面，stroke在上面，依次循环
     else {
@@ -458,7 +455,7 @@ class Geom extends Xom {
             dy,
             bbox,
           };
-          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
         }
       }
       for(let i = 0, len = strokes.length; i < len; i++) {
@@ -476,13 +473,13 @@ class Geom extends Xom {
             dy,
             bbox,
           };
-          this.__renderOnePolygon(renderMode, ctx, defs, isMulti, list, o);
+          this.__renderOnePolygon(renderMode, ctx, isMulti, list, o);
         }
       }
     }
   }
 
-  __renderOnePolygon(renderMode, ctx, defs, isMulti, list, res) {
+  __renderOnePolygon(renderMode, ctx, isMulti, list, res) {
     let {
       fill,
       stroke,
@@ -495,41 +492,41 @@ class Geom extends Xom {
     let isStrokeRE = strokeWidth && strokeWidth > 0 && stroke && stroke.k === 'radial' && Array.isArray(stroke.v);
     if(isFillCE || isStrokeCE) {
       if(isFillCE) {
-        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+        this.__conicGradient(renderMode, ctx, list, isMulti, res);
       }
       else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
       }
       if(strokeWidth && strokeWidth > 0 && isStrokeCE) {
         inject.warn('Stroke style can not use conic-gradient');
       }
       else if(strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
       }
     }
     else if(isFillRE || isStrokeRE) {
       if(isFillRE) {
-        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+        this.__radialEllipse(renderMode, ctx, list, isMulti, res, 'fill');
       }
       else if(fill !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, true);
       }
       // stroke椭圆渐变matrix会变形，降级为圆
       if(strokeWidth && strokeWidth > 0 && isStrokeRE) {
         inject.warn('Stroke style can not use radial-gradient for ellipse');
         res.stroke.v = res.stroke.v[0];
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
       }
       else if(strokeWidth && strokeWidth > 0 && stroke !== 'none') {
-        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, false, true);
+        this.__drawPolygon(renderMode, ctx, isMulti, list, res, false, true);
       }
     }
     else {
-      this.__drawPolygon(renderMode, ctx, defs, isMulti, list, res, true, true);
+      this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, true);
     }
   }
 
-  __drawPolygon(renderMode, ctx, defs, isMulti, list, res, isFill, isStroke) {
+  __drawPolygon(renderMode, ctx, isMulti, list, res, isFill, isStroke) {
     let {
       fill,
       stroke,
@@ -542,7 +539,7 @@ class Geom extends Xom {
       dx,
       dy,
     } = res;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       this.__preSetCanvas(renderMode, ctx, res);
       ctx.beginPath();
       if(isMulti) {
@@ -631,7 +628,7 @@ class Geom extends Xom {
     }
   }
 
-  __radialEllipse(renderMode, ctx, defs, list, isMulti, res, method) {
+  __radialEllipse(renderMode, ctx, list, isMulti, res, method) {
     let {
       strokeWidth,
       strokeDasharrayStr,
@@ -648,7 +645,7 @@ class Geom extends Xom {
     let t = mx.inverse(matrix);
     list = this.__inversePtList(list, isMulti, t);
     // 用正向matrix渲染
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(matrix) {
         ctx.save();
         let me = this.matrixEvent;
@@ -697,7 +694,7 @@ class Geom extends Xom {
     }
   }
 
-  __conicGradient(renderMode, ctx, defs, list, isMulti, res) {
+  __conicGradient(renderMode, ctx, list, isMulti, res) {
     let {
       fill,
       bbox,
@@ -705,12 +702,12 @@ class Geom extends Xom {
       dy = 0,
     } = res;
     let color = fill.v;
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       let [x1, y1, x2, y2] = bbox;
       let w = x2 - x1, h = y2 - y1;
       let offscreen = inject.getCacheCanvas(w, h, '__$$CONIC_GRADIENT$$__');
       let imgData = offscreen.ctx.getImageData(0,0, w, h);
-      let data = gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
+      gradient.getConicGradientImage(w * 0.5, h * 0.5, w, h, fill.v.stop, imgData.data);
       offscreen.ctx.putImageData(imgData, 0, 0);
       if(isMulti) {
         list.forEach(item => {
@@ -746,7 +743,7 @@ class Geom extends Xom {
               ],
             }],
           };
-          let clip = defs.add(v);
+          let clip = ctx.add(v);
           this.__config[NODE_DEFS_CACHE].push(v);
           color.forEach(item => {
             this.virtualDom.bb.push({
@@ -771,7 +768,7 @@ class Geom extends Xom {
             ],
           }],
         };
-        let clip = defs.add(v);
+        let clip = ctx.add(v);
         this.__config[NODE_DEFS_CACHE].push(v);
         color.forEach(item => {
           this.virtualDom.bb.push({
@@ -805,6 +802,27 @@ class Geom extends Xom {
 
   // geom的cache无内容也不清除
   __releaseWhenEmpty() {}
+
+  // offset/resize时要多一步清空props上记录的缓存
+  __offsetX(diff, isLayout, lv) {
+    super.__offsetX(diff, isLayout, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
+
+  __offsetY(diff, isLayout, lv) {
+    super.__offsetY(diff, isLayout, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
+
+  __resizeX(diff, lv) {
+    super.__resizeX(diff, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
+
+  __resizeY(diff, lv) {
+    super.__resizeY(diff, lv);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+  }
 
   addGeom(tagName, props) {
     props = util.hash2arr(props);

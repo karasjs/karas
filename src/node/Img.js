@@ -168,10 +168,10 @@ class Img extends Dom {
     return res;
   }
 
-  render(renderMode, lv, ctx, defs, cache) {
-    let res = super.render(renderMode, lv, ctx, defs, cache);
+  render(renderMode, lv, ctx, cache) {
+    let res = super.render(renderMode, lv, ctx, cache);
     let {
-      offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend,
+      offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,
     } = res;
     let {
       width, height, isDestroyed,
@@ -192,12 +192,17 @@ class Img extends Dom {
       __loadImg: loadImg,
       root,
     } = this;
-    if(!cache && (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend)) {
-      ctx = (offScreenFilter || offScreenMask || offScreenOverflow || offScreenBlend).target.ctx;
+    if(offscreenBlend) {
+      ctx = offscreenBlend.target.ctx;
     }
-    // img无children所以total就是cache避免多余生成
-    if(renderMode === mode.CANVAS && cache) {
-      __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
+    if(offscreenMask) {
+      ctx = offscreenMask.target.ctx;
+    }
+    if(offscreenFilter) {
+      ctx = offscreenFilter.target.ctx;
+    }
+    if(offscreenOverflow) {
+      ctx = offscreenOverflow.target.ctx;
     }
     // 没source且不error时加载图片
     if(!loadImg.source && !loadImg.error && !loadImg.loading) {
@@ -230,7 +235,7 @@ class Img extends Dom {
         [originX + width * 0.9, originY + height * 0.8],
         [originX + width * 0.15, originY + height * 0.8]
       ];
-      if(renderMode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         ctx.strokeStyle = stroke;
         ctx.lineWidth = strokeWidth;
         ctx.fillStyle = fill;
@@ -290,7 +295,7 @@ class Img extends Dom {
       // 圆角需要生成一个mask
       let list = border.calRadius(originX, originY, width, height,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-      if(renderMode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         // 有border-radius需模拟遮罩裁剪
         if(list) {
           ctx.save();
@@ -327,7 +332,7 @@ class Img extends Dom {
                 }
               ],
             };
-            let id = defs.add(v);
+            let id = ctx.add(v);
             __config[NODE_DEFS_CACHE].push(v);
             virtualDom.conClip = 'url(#' + id + ')';
           }
@@ -361,7 +366,7 @@ class Img extends Dom {
               }
             ],
           };
-          let id = defs.add(v);
+          let id = ctx.add(v);
           __config[NODE_DEFS_CACHE].push(v);
           virtualDom.conClip = 'url(#' + id + ')';
           delete virtualDom.cache;
@@ -383,13 +388,80 @@ class Img extends Dom {
 
   // img没加载时，清空，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
   __releaseWhenEmpty(__cache) {
-    if(!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
+    if(!this.__loadImg.error && !this.__loadImg.source) {
       return super.__releaseWhenEmpty(__cache);
     }
   }
 
   __isRealInline() {
     return false;
+  }
+
+  // overwrite
+  __tryLayInline(w, total) {
+    let { currentStyle: {
+      [WIDTH]: width,
+      [HEIGHT]: height,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } } = this;
+    if(width[1] === PX) {
+      w -= width[0];
+    }
+    else if(width[1] === PERCENT) {
+      w -= total * width[0] * 0.01;
+    }
+    else {
+      let loadImg = this.__loadImg;
+      // 加载成功计算缩放后的宽度
+      if(loadImg.source) {
+        if(height[1] === PX) {
+          w -= loadImg.width * height[0] / loadImg.height;
+        }
+        else if(height[1] === PERCENT) {
+          w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
+        }
+        else {
+          w -= loadImg.width;
+        }
+      }
+    }
+    // 减去水平mbp
+    if(marginLeft[1] === PX) {
+      w -= marginLeft[0];
+    }
+    else if(marginLeft[1] === PERCENT) {
+      w -= marginLeft[0] * total * 0.01;
+    }
+    if(paddingLeft[1] === PX) {
+      w -= paddingLeft[0];
+    }
+    else if(paddingLeft[1] === PERCENT) {
+      w -= paddingLeft[0] * total * 0.01;
+    }
+    if(borderLeftWidth[1] === PX) {
+      w -= borderLeftWidth[0];
+    }
+    if(marginRight[1] === PX) {
+      w -= marginRight[0];
+    }
+    else if(marginRight[1] === PERCENT) {
+      w -= marginRight[0] * total * 0.01;
+    }
+    if(paddingRight[1] === PX) {
+      w -= paddingRight[0];
+    }
+    else if(paddingRight[1] === PERCENT) {
+      w -= paddingRight[0] * total * 0.01;
+    }
+    if(borderRightWidth[1] === PX) {
+      w -= borderRightWidth[0];
+    }
+    return w;
   }
 
   __calBasis(isDirectionRow, data) {

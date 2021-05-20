@@ -64,15 +64,17 @@ body{
   display:inline-block;
   width:360px;
   height:360px;
-  border:1px solid #EEE;
+  //border:1px solid #EEE;
   box-shadow:0 0 3px #EEE;
 }
 
 canvas, svg{
   display:block;
+  margin:1px;
   width:360px;
   height:360px;
   transform:translateZ(0);
   background:#EEE;
+  box-shadow:0 0 3px #EEE;
 }
 

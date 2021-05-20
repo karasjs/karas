@@ -10523,7 +10523,7 @@
     }, {
       key: "__layout",
       value: function __layout(data) {
-        var __cache = this.__cache;
+        var __cache = this.__config[NODE_CACHE$1];
 
         if (__cache) {
           __cache.release();
@@ -10987,8 +10987,8 @@
             if (cache) {
               var sx = this.sx,
                   sy = this.sy,
-                  __cache = this.__cache,
                   bbox = this.bbox;
+              var __cache = __config[NODE_CACHE$1];
 
               if (__cache) {
                 __cache.reset(bbox, sx, sy);
@@ -10997,8 +10997,7 @@
               }
 
               if (__cache && __cache.enabled) {
-                this.__cache = __cache;
-                this.__config[NODE_CACHE$1] = __cache;
+                __config[NODE_CACHE$1] = __cache;
                 __cache.__available = true;
                 ctx = __cache.ctx;
                 dx += -sx + __cache.x;
@@ -11090,8 +11089,10 @@
 
         _get(_getPrototypeOf(Text.prototype), "__destroy", this).call(this);
 
-        if (this.__cache) {
-          this.__cache.release();
+        var __cache = this.__config[NODE_CACHE$1];
+
+        if (__cache) {
+          __cache.release();
         }
       }
     }, {
@@ -33335,7 +33336,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.0";
+  var version = "0.58.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

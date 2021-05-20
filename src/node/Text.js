@@ -176,7 +176,7 @@ class Text extends Node {
    * @private
    */
   __layout(data) {
-    let __cache = this.__cache;
+    let __cache = this.__config[NODE_CACHE];
     if(__cache) {
       __cache.release();
     }
@@ -567,7 +567,8 @@ class Text extends Node {
       // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
       if(renderMode === mode.WEBGL) {
         if(cache) {
-          let { sx, sy, __cache, bbox } = this;
+          let { sx, sy, bbox } = this;
+          let __cache = __config[NODE_CACHE];
           if(__cache) {
             __cache.reset(bbox, sx, sy);
           }
@@ -575,8 +576,7 @@ class Text extends Node {
             __cache = Cache.getInstance(bbox, sx, sy);
           }
           if(__cache && __cache.enabled) {
-            this.__cache = __cache;
-            this.__config[NODE_CACHE] = __cache;
+            __config[NODE_CACHE] = __cache;
             __cache.__available = true;
             ctx = __cache.ctx;
             dx += -sx + __cache.x;
@@ -665,8 +665,9 @@ class Text extends Node {
       return;
     }
     super.__destroy();
-    if(this.__cache) {
-      this.__cache.release();
+    let __cache = this.__config[NODE_CACHE];
+    if(__cache) {
+      __cache.release();
     }
   }
 

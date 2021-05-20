@@ -26509,6 +26509,7 @@
         ctx.draw && ctx.draw(true);
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
+        target.draw();
         inject.releaseCacheCanvas(target.canvas);
       } else if (type === OFFSCREEN_FILTER) {
         var _target = offscreen.target,
@@ -26531,7 +26532,9 @@
 
           _target.draw();
 
+          apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
           apply.ctx.clearRect(0, 0, width, height);
+          apply.draw();
           inject.releaseCacheCanvas(apply.canvas);
         }
 
@@ -26547,6 +26550,8 @@
 
         _target.ctx.clearRect(0, 0, width, height);
 
+        _target.draw();
+
         inject.releaseCacheCanvas(_target.canvas);
       } else if (type === OFFSCREEN_MASK) {
         var mask = offscreen.mask,
@@ -26561,14 +26566,18 @@
           ctx.drawImage(offscreen.target.canvas, 0, 0);
           mask.draw();
           ctx.globalCompositeOperation = 'source-over';
+          offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
           offscreen.target.ctx.clearRect(0, 0, width, height);
+          offscreen.target.draw();
           inject.releaseCacheCanvas(offscreen.target.canvas);
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.drawImage(mask.canvas, 0, 0);
           ctx.draw && ctx.draw(true);
+          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
           mask.ctx.clearRect(0, 0, width, height);
+          mask.draw();
           inject.releaseCacheCanvas(mask.canvas);
         } else {
           mask.draw();
@@ -26579,18 +26588,24 @@
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.drawImage(mask.canvas, 0, 0);
           ctx.globalCompositeOperation = 'source-over';
-          mask.ctx.clearRect(0, 0, width, height);
-          inject.releaseCacheCanvas(mask.canvas);
 
           _target2.draw();
 
+          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          mask.ctx.clearRect(0, 0, width, height);
+          mask.draw();
+          inject.releaseCacheCanvas(mask.canvas);
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.drawImage(_target2.canvas, 0, 0);
           ctx.draw && ctx.draw(true);
 
+          _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
           _target2.ctx.clearRect(0, 0, width, height);
+
+          _target2.draw();
 
           inject.releaseCacheCanvas(_target2.canvas);
         }
@@ -26611,6 +26626,8 @@
         _target3.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         _target3.ctx.clearRect(0, 0, width, height);
+
+        _target3.draw();
 
         inject.releaseCacheCanvas(_target3.canvas);
       } // 特殊的mask节点汇总结束，还原ctx
@@ -27173,12 +27190,7 @@
         ctx = target.ctx;
       }
 
-      var res = node.render(renderMode, refreshLevel, ctx); // if(node instanceof Geom) {
-      //   res = node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-      // }
-      // else {
-      //   res = node.render(renderMode, refreshLevel, ctx);
-      // }
+      var res = node.render(renderMode, refreshLevel, ctx);
 
       var _ref = res || {},
           offscreenBlend = _ref.offscreenBlend,
@@ -27232,11 +27244,7 @@
         _list8.push([_i6, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
 
         ctx = offscreenOverflow.target.ctx;
-      } // geom传递上述offscreen的新ctx渲染，因为自定义不可控
-      // if(node instanceof Geom) {
-      //   node.render(renderMode, refreshLevel, ctx);
-      // }
-      // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
+      } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
       // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
 
 

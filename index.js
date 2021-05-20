@@ -26505,7 +26505,7 @@
         ctx = origin;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.drawImage(target.canvas, 0, 0);
+        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
         ctx.draw && ctx.draw(true);
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
@@ -26519,7 +26519,7 @@
         if (ctx.filter) {
           var apply = inject.getCacheCanvas(width, height, null, 'filter2');
           apply.ctx.filter = "blur(".concat(_blur, "px)");
-          apply.ctx.drawImage(_target.canvas, 0, 0);
+          apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
           apply.ctx.filter = 'none';
           apply.draw();
           _target.ctx.globalAlpha = 1;
@@ -26528,7 +26528,7 @@
 
           _target.ctx.clearRect(0, 0, width, height);
 
-          _target.ctx.drawImage(apply.canvas, 0, 0);
+          _target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
 
           _target.draw();
 
@@ -26541,7 +26541,7 @@
         ctx = _origin;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.drawImage(_target.canvas, 0, 0);
+        ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
         ctx.draw && ctx.draw(true);
 
         _target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -26563,7 +26563,7 @@
           ctx.globalCompositeOperation = 'source-out';
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(offscreen.target.canvas, 0, 0);
+          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
           mask.draw();
           ctx.globalCompositeOperation = 'source-over';
           offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -26573,7 +26573,7 @@
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0);
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
           ctx.draw && ctx.draw(true);
           mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
           mask.ctx.clearRect(0, 0, width, height);
@@ -26586,7 +26586,7 @@
           ctx.globalCompositeOperation = 'destination-in';
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0);
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
           ctx.globalCompositeOperation = 'source-over';
 
           _target2.draw();
@@ -26598,7 +26598,7 @@
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(_target2.canvas, 0, 0);
+          ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
           ctx.draw && ctx.draw(true);
 
           _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -26618,7 +26618,7 @@
 
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.drawImage(_target3.canvas, 0, 0);
+        ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
         ctx.globalCompositeOperation = 'source-over';
         ctx.draw && ctx.draw(true);
         _target3.ctx.globalAlpha = 1;

@@ -11409,8 +11409,7 @@
     initRoot: initRoot,
     initCp: initCp,
     flattenJson: flattenJson,
-    relation: relation,
-    build: build
+    relation: relation
   };
 
   var isFunction$1 = util.isFunction;
@@ -29902,7 +29901,6 @@
         for (var i = 0, len = reflowList.length; i < len; i++) {
           var _reflowList$i = reflowList[i],
               node = _reflowList$i.node,
-              style = _reflowList$i.style,
               img = _reflowList$i.img,
               component = _reflowList$i.component; // root提前跳出，完全重新布局
 
@@ -30011,9 +30009,9 @@
                   h = _parent$__layoutData.h,
                   width = parent.width,
                   computedStyle = parent.computedStyle;
-              var current = node; // cp的shadowRoot要向上到cp本身
+              var current = node; // cp的shadowRoot要向上到cp本身，高阶组件不能用isShadowRoot判断，暂时这样 TODO
 
-              while (component && current.isShadowRoot) {
+              while (component && !current.parent && current.host && current.host !== root) {
                 current = current.host;
               } // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的和display:none的
 

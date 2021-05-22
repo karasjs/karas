@@ -1206,7 +1206,7 @@ class Root extends Dom {
     let reflowHash = {};
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, style, img, component } = reflowList[i];
+      let { node, img, component } = reflowList[i];
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
@@ -1294,8 +1294,8 @@ class Root extends Dom {
         let parent = node.domParent;
         let { __layoutData: { x, y, h }, width, computedStyle } = parent;
         let current = node;
-        // cp的shadowRoot要向上到cp本身
-        while(component && current.isShadowRoot) {
+        // cp的shadowRoot要向上到cp本身，高阶组件不能用isShadowRoot判断，暂时这样 TODO
+        while(component && !current.parent && current.host && current.host !== root) {
           current = current.host;
         }
         // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的和display:none的

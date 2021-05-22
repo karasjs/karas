@@ -251,5 +251,4 @@ export default {
   initCp,
   flattenJson,
   relation,
-  build,
 };

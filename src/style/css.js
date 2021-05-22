@@ -417,7 +417,7 @@ function normalize(style, reset = []) {
         else if(TRANSFORM_HASH.hasOwnProperty(k)) {
           let k2 = TRANSFORM_HASH[k];
           let arr = calUnit(v);
-          compatibleTransform(k2, arr[1]);
+          compatibleTransform(k2, arr);
           transform.push([k2, arr]);
         }
         else if({ translate: true, scale: true, skew: true }.hasOwnProperty(k)) {
@@ -429,8 +429,8 @@ function normalize(style, reset = []) {
           let k2 = STYLE_KEY[style2Upper(k + 'Y')];
           let arr1 = calUnit(arr[0]);
           let arr2 = calUnit(arr[1]);
-          compatibleTransform(k1, arr1[1]);
-          compatibleTransform(k2, arr2[1]);
+          compatibleTransform(k1, arr1);
+          compatibleTransform(k2, arr2);
           transform.push([k1, arr1]);
           transform.push([k2, arr2]);
         }

@@ -7928,7 +7928,7 @@
 
             var _arr = calUnit(v);
 
-            compatibleTransform(k2, _arr[1]);
+            compatibleTransform(k2, _arr);
             transform.push([k2, _arr]);
           } else if ({
             translate: true,
@@ -7945,8 +7945,8 @@
             var _k = STYLE_KEY$3[style2Upper$1(k + 'Y')];
             var arr1 = calUnit(_arr2[0]);
             var arr2 = calUnit(_arr2[1]);
-            compatibleTransform(k1, arr1[1]);
-            compatibleTransform(_k, arr2[1]);
+            compatibleTransform(k1, arr1);
+            compatibleTransform(_k, arr2);
             transform.push([k1, arr1]);
             transform.push([_k, arr2]);
           }

@@ -11625,7 +11625,7 @@
       _this.__parent = null;
       _this.__host = null;
       _this.__ref = {};
-      _this.__state = {};
+      _this.state = {};
       _this.__isMounted = false;
       _this.__taskList = [];
       return _this;
@@ -11687,7 +11687,7 @@
           }
         } // 构造函数中调用还未render，
         else if (isFunction$2(cb)) {
-            self.__state = n;
+            self.state = n;
             cb.call(self);
           }
       }
@@ -24290,7 +24290,7 @@
 
   function updateCp(cp, props, state) {
     cp.props = props;
-    cp.__state = state;
+    cp.state = state;
     cp.__nextState = null; // 同步在refresh前清除component的新state标识，这样frame动画在after回调中可以新设
 
     var oldS = cp.shadow;
@@ -33340,7 +33340,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.2";
+  var version = "0.58.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

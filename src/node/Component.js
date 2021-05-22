@@ -42,7 +42,7 @@ class Component extends Event {
     this.__parent = null;
     this.__host = null;
     this.__ref = {};
-    this.__state = {};
+    this.state = {};
     this.__isMounted = false;
     this.__taskList = [];
   }
@@ -97,7 +97,7 @@ class Component extends Event {
     }
     // 构造函数中调用还未render，
     else if(isFunction(cb)) {
-      self.__state = n;
+      self.state = n;
       cb.call(self);
     }
   }

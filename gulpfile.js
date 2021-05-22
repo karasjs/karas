@@ -12,7 +12,8 @@ function jsx(file, enc, cb) {
   let content = file.contents.toString('utf-8');
   content = yurine.parse(content);
   content = babel.transformSync(content, {
-    presets: ['@babel/preset-env']
+    presets: ['@babel/preset-env'],
+    plugins: ['@babel/plugin-proposal-class-properties'],
   }).code;
   file.contents = Buffer.from(content);
   cb(null, file);

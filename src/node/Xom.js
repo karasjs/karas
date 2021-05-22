@@ -642,7 +642,7 @@ class Xom extends Node {
 
   __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
     if(__config[NODE_IS_INLINE]) {
-      computedStyle[TRANSFORM_ORIGIN] = [0, 0];
+      computedStyle[TRANSFORM_ORIGIN] = [sx1, sy1];
       return __cacheStyle[MATRIX] = [1, 0, 0, 1, 0, 0];
     }
     let matrixCache = __cacheStyle[MATRIX];
@@ -769,6 +769,42 @@ class Xom extends Node {
     return matrixCache;
   }
 
+  /**
+   * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算
+   * @param renderMode
+   * @param lv
+   * @param ctx
+   * @param parent
+   * @param __cacheStyle
+   * @param currentStyle
+   * @param computedStyle
+   * @param clientWidth
+   * @param clientHeight
+   * @param offsetWidth
+   * @param offsetHeight
+   * @param borderTopWidth
+   * @param borderRightWidth
+   * @param borderBottomWidth
+   * @param borderLeftWidth
+   * @param paddingTop
+   * @param paddingRight
+   * @param paddingBottom
+   * @param paddingLeft
+   * @param x1
+   * @param x2
+   * @param x3
+   * @param x4
+   * @param x5
+   * @param x6
+   * @param y1
+   * @param y2
+   * @param y3
+   * @param y4
+   * @param y5
+   * @param y6
+   * @returns {*[]}
+   * @private
+   */
   __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
@@ -836,7 +872,7 @@ class Xom extends Node {
         });
       }
       if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {
-        let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE];
+        let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE].slice(0);
         __cacheStyle[BACKGROUND_IMAGE] = bgI.map((bgi, i) => {
           if(!bgi) {
             return null;
@@ -892,7 +928,23 @@ class Xom extends Node {
       }
       if(__cacheStyle[BOX_SHADOW] === undefined) {
         __cacheStyle[BOX_SHADOW] = true;
-        computedStyle[BOX_SHADOW] = currentStyle[BOX_SHADOW];
+        computedStyle[BOX_SHADOW] = (currentStyle[BOX_SHADOW] || []).map(item => {
+          return item.map((item2, i) => {
+            if(i > 3) {
+              return item2;
+            }
+            let v = item2[0];
+            if(item2[1] === PERCENT) {
+              if(i % 2 === 0) {
+                v *= 0.01 * (bx2 - bx1);
+              }
+              else {
+                v *= 0.01 * (by2 - by1);
+              }
+            }
+            return v;
+          });
+        });
       }
       [
         BACKGROUND_COLOR,

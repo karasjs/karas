@@ -7784,7 +7784,13 @@
 
         res[k] = temp.map(function (item) {
           if (/^-?[\d.]/.test(item)) {
-            return calUnit(item);
+            var v = calUnit(item);
+
+            if ([NUMBER, DEG].indexOf(v[1]) > -1) {
+              v[1] = PX$2;
+            }
+
+            return v;
           } else {
             return [{
               top: 0,
@@ -7923,7 +7929,7 @@
             var _arr = calUnit(v);
 
             compatibleTransform(k2, _arr[1]);
-            transform.push(_arr);
+            transform.push([k2, _arr]);
           } else if ({
             translate: true,
             scale: true,
@@ -7941,8 +7947,8 @@
             var arr2 = calUnit(_arr2[1]);
             compatibleTransform(k1, arr1[1]);
             compatibleTransform(_k, arr2[1]);
-            transform.push(arr1);
-            transform.push(arr2);
+            transform.push([k1, arr1]);
+            transform.push([_k, arr2]);
           }
         });
       }
@@ -8368,18 +8374,18 @@
     if (temp !== undefined) {
       var bs = null;
 
-      var _match3 = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+      var _match3 = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
       if (_match3) {
         _match3.forEach(function (item) {
-          var boxShadow = /(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*)\s*)?(-?[\d.]+(?:[pxremvwh%]*)\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+          var boxShadow = /(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
           if (boxShadow) {
             bs = bs || [];
             var _res = []; // v,h,blur,spread,color,inset
 
             for (var _i = 0; _i < 4; _i++) {
-              var _v3 = calUnit(boxShadow[_i]);
+              var _v3 = calUnit(boxShadow[_i + 1]);
 
               if ([NUMBER, DEG].indexOf(_v3[1]) > -1) {
                 _v3[1] = PX$2;
@@ -8393,7 +8399,7 @@
               _res.push(_v3);
             }
 
-            _res.push(rgba2int$2(boxShadow[4]));
+            _res.push(rgba2int$2(boxShadow[5]));
 
             _res.push(boxShadow[6] || 'outset');
 
@@ -16590,7 +16596,7 @@
       key: "__calMatrix",
       value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
         if (__config[NODE_IS_INLINE]) {
-          computedStyle[TRANSFORM_ORIGIN$4] = [0, 0];
+          computedStyle[TRANSFORM_ORIGIN$4] = [sx1, sy1];
           return __cacheStyle[MATRIX$3] = [1, 0, 0, 1, 0, 0];
         }
 
@@ -16706,6 +16712,43 @@
 
         return matrixCache;
       }
+      /**
+       * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算
+       * @param renderMode
+       * @param lv
+       * @param ctx
+       * @param parent
+       * @param __cacheStyle
+       * @param currentStyle
+       * @param computedStyle
+       * @param clientWidth
+       * @param clientHeight
+       * @param offsetWidth
+       * @param offsetHeight
+       * @param borderTopWidth
+       * @param borderRightWidth
+       * @param borderBottomWidth
+       * @param borderLeftWidth
+       * @param paddingTop
+       * @param paddingRight
+       * @param paddingBottom
+       * @param paddingLeft
+       * @param x1
+       * @param x2
+       * @param x3
+       * @param x4
+       * @param x5
+       * @param x6
+       * @param y1
+       * @param y2
+       * @param y3
+       * @param y4
+       * @param y5
+       * @param y6
+       * @returns {*[]}
+       * @private
+       */
+
     }, {
       key: "__calCache",
       value: function __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
@@ -16765,7 +16808,7 @@
           }
 
           if (__cacheStyle[BACKGROUND_IMAGE$1] === undefined) {
-            var bgI = computedStyle[BACKGROUND_IMAGE$1] = currentStyle[BACKGROUND_IMAGE$1];
+            var bgI = computedStyle[BACKGROUND_IMAGE$1] = currentStyle[BACKGROUND_IMAGE$1].slice(0);
             __cacheStyle[BACKGROUND_IMAGE$1] = bgI.map(function (bgi, i) {
               if (!bgi) {
                 return null;
@@ -16824,7 +16867,25 @@
 
           if (__cacheStyle[BOX_SHADOW$2] === undefined) {
             __cacheStyle[BOX_SHADOW$2] = true;
-            computedStyle[BOX_SHADOW$2] = currentStyle[BOX_SHADOW$2];
+            computedStyle[BOX_SHADOW$2] = (currentStyle[BOX_SHADOW$2] || []).map(function (item) {
+              return item.map(function (item2, i) {
+                if (i > 3) {
+                  return item2;
+                }
+
+                var v = item2[0];
+
+                if (item2[1] === PERCENT$6) {
+                  if (i % 2 === 0) {
+                    v *= 0.01 * (bx2 - bx1);
+                  } else {
+                    v *= 0.01 * (by2 - by1);
+                  }
+                }
+
+                return v;
+              });
+            });
           }
 
           [BACKGROUND_COLOR$1, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {

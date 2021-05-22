@@ -71,8 +71,6 @@ const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, EM, VW, VH }
 const { isNil, rgba2int, equalArr } = util;
 const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
 
-const DEFAULT_FONT_SIZE = 16;
-
 const {
   COLOR_HASH,
   LENGTH_HASH,
@@ -290,7 +288,11 @@ function normalize(style, reset = []) {
       }
       res[k] = temp.map(item => {
         if(/^-?[\d.]/.test(item)) {
-          return calUnit(item);
+          let v = calUnit(item);
+          if([NUMBER, DEG].indexOf(v[1]) > -1) {
+            v[1] = PX;
+          }
+          return v;
         }
         else {
           return [
@@ -416,7 +418,7 @@ function normalize(style, reset = []) {
           let k2 = TRANSFORM_HASH[k];
           let arr = calUnit(v);
           compatibleTransform(k2, arr[1]);
-          transform.push(arr);
+          transform.push([k2, arr]);
         }
         else if({ translate: true, scale: true, skew: true }.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
@@ -429,8 +431,8 @@ function normalize(style, reset = []) {
           let arr2 = calUnit(arr[1]);
           compatibleTransform(k1, arr1[1]);
           compatibleTransform(k2, arr2[1]);
-          transform.push(arr1);
-          transform.push(arr2);
+          transform.push([k1, arr1]);
+          transform.push([k2, arr2]);
         }
       });
     }
@@ -848,16 +850,16 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    let match = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
     if(match) {
       match.forEach(item => {
-        let boxShadow = /(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*)\s*)?(-?[\d.]+(?:[pxremvwh%]*)\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        let boxShadow = /(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
         if(boxShadow) {
           bs = bs || [];
           let res = [];
           // v,h,blur,spread,color,inset
           for(let i = 0; i < 4; i++) {
-            let v = calUnit(boxShadow[i]);
+            let v = calUnit(boxShadow[i + 1]);
             if([NUMBER, DEG].indexOf(v[1]) > -1) {
               v[1] = PX;
             }
@@ -867,7 +869,7 @@ function normalize(style, reset = []) {
             }
             res.push(v);
           }
-          res.push(rgba2int(boxShadow[4]));
+          res.push(rgba2int(boxShadow[5]));
           res.push(boxShadow[6] || 'outset');
           bs.push(res);
         }

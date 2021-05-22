@@ -110,6 +110,12 @@ function calUnit(v) {
   else if(/rem$/i.test(v)) {
     return [n, REM];
   }
+  else if(/vw$/i.test(v)) {
+    return [n, VW];
+  }
+  else if(/vh$/i.test(v)) {
+    return [n, VH];
+  }
   else if(/em$/i.test(v)) {
     return [n, EM];
   }
@@ -973,6 +979,12 @@ function computeMeasure(node, isRoot) {
     else if(v[1] === REM) {
       computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.computedStyle[FONT_SIZE] * v[0]);
     }
+    else if(v[1] === VW) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.width * 0.01 * v[0]);
+    }
+    else if(v[1] === VH) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.height * 0.01 * v[0]);
+    }
     else {
       computedStyle[k] = v[0];
     }
@@ -1002,6 +1014,12 @@ function computeReflow(node, isHost) {
     }
     else if(item[1] === REM) {
       computedStyle[k] = item[0] * rem;
+    }
+    else if(item[1] === VW) {
+      computedStyle[k] = item[0] * root.width * 0.01;
+    }
+    else if(item[1] === VH) {
+      computedStyle[k] = item[0] * root.height * 0.01;
     }
     else {
       computedStyle[k] = 0;
@@ -1045,6 +1063,12 @@ function computeReflow(node, isHost) {
   else if(lineHeight[1] === REM) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * rem, 0) || calNormalLineHeight(computedStyle);
   }
+  else if(lineHeight[1] === VW) {
+    computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * root.width * 0.01, 0) || calNormalLineHeight(computedStyle);
+  }
+  else if(lineHeight[1] === VH) {
+    computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * root.height * 0.01, 0) || calNormalLineHeight(computedStyle);
+  }
   else if(lineHeight[1] === NUMBER) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE] || calNormalLineHeight(computedStyle);
   }
@@ -1061,6 +1085,12 @@ function computeReflow(node, isHost) {
   }
   else if(letterSpacing[1] === REM) {
     computedStyle[LETTER_SPACING] = rem * letterSpacing[0];
+  }
+  else if(letterSpacing[1] === VW) {
+    computedStyle[LETTER_SPACING] = root.width * 0.01 * letterSpacing[0];
+  }
+  else if(letterSpacing[1] === VH) {
+    computedStyle[LETTER_SPACING] = root.height * 0.01 * letterSpacing[0];
   }
   else {
     computedStyle[LETTER_SPACING] = letterSpacing[0];
@@ -1127,6 +1157,12 @@ function calRelativePercent(n, parent, k) {
     else if(style[1] === REM) {
       return n * style[0] * parent.root.computedStyle[FONT_SIZE];
     }
+    else if(style[1] === VW) {
+      return n * style[0] * parent.root.width * 0.01;
+    }
+    else if(style[1] === VH) {
+      return n * style[0] * parent.root.height * 0.01;
+    }
   }
   return n;
 }
@@ -1149,6 +1185,12 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
   else if(v[1] === REM) {
     v = v[0] * parent.root.computedStyle[FONT_SIZE];
   }
+  else if(v[1] === VW) {
+    v = v[0] * parent.root.width * 0.01;
+  }
+  else if(v[1] === VH) {
+    v = v[0] * parent.root.height * 0.01;
+  }
   return v;
 }
 
@@ -1164,6 +1206,12 @@ function calAbsolute(currentStyle, k, v, size, root) {
   }
   else if(v[1] === REM) {
     v = v[0] * root.computedStyle[FONT_SIZE];
+  }
+  else if(v[1] === VW) {
+    v = v[0] * root.width * 0.01;
+  }
+  else if(v[1] === VH) {
+    v = v[0] * root.height * 0.01;
   }
   return v;
 }

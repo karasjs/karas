@@ -132,7 +132,7 @@ const {
     NODE_IS_INLINE,
   }
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, REM } = unit;
+const { AUTO, PX, PERCENT, INHERIT, REM, VW, VH } = unit;
 const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
@@ -273,6 +273,12 @@ class Xom extends Node {
     else if(mp[1] === REM) {
       return mp[0] * this.root.computedStyle[FONT_SIZE];
     }
+    else if(mp[1] === VW) {
+      return mp[0] * this.root.width * 0.01;
+    }
+    else if(mp[1] === VH) {
+      return mp[0] * this.root.height * 0.01;
+    }
     return 0;
   }
 
@@ -300,6 +306,12 @@ class Xom extends Node {
     }
     else if(v[1] === REM) {
       n += v[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(v[1] === VW) {
+      n += v[0] * this.root.width * 0.01;
+    }
+    else if(v[1] === VH) {
+      n += v[0] * this.root.height * 0.01;
     }
     return n;
   }
@@ -414,6 +426,13 @@ class Xom extends Node {
             break;
           case REM:
             w = width[0] * this.root.computedStyle[FONT_SIZE];
+            break;
+          case VW:
+            w = width[0] * this.root.width * 0.01;
+            break;
+          case VH:
+            w = width[0] * this.root.height * 0.01;
+            break;
         }
       }
     }
@@ -575,6 +594,12 @@ class Xom extends Node {
         case REM:
           w = width[0] * this.root.computedStyle[FONT_SIZE];
           break;
+        case VW:
+          w = width[0] * this.root.width * 0.01;
+          break;
+        case VH:
+          w = width[0] * this.root.height * 0.01;
+          break;
       }
     }
     if(h2 !== undefined) {
@@ -596,6 +621,12 @@ class Xom extends Node {
           break;
         case REM:
           h = height[0] * this.root.computedStyle[FONT_SIZE];
+          break;
+        case VW:
+          h = height[0] * this.root.width * 0.01;
+          break;
+        case VH:
+          h = height[0] * this.root.height * 0.01;
           break;
       }
     }
@@ -674,6 +705,12 @@ class Xom extends Node {
         else if(v[1] === REM) {
           v = v[0] * this.root.computedStyle[FONT_SIZE];
         }
+        else if(v[1] === VW) {
+          v = v[0] * this.root.width * 0.01;
+        }
+        else if(v[1] === VH) {
+          v = v[0] * this.root.height * 0.01;
+        }
         else {
           v = v[0];
         }
@@ -692,6 +729,12 @@ class Xom extends Node {
         }
         else if(v[1] === REM) {
           v = v[0] * this.root.computedStyle[FONT_SIZE];
+        }
+        else if(v[1] === VW) {
+          v = v[0] * this.root.width * 0.01;
+        }
+        else if(v[1] === VH) {
+          v = v[0] * this.root.height * 0.01;
         }
         else {
           v = v[0];
@@ -777,6 +820,22 @@ class Xom extends Node {
               }
               else if(k === TRANSLATE_Y) {
                 computedStyle[k] = v[0] * this.root.computedStyle[FONT_SIZE];
+              }
+            }
+            else if(v[1] === VW) {
+              if(k === TRANSLATE_X) {
+                computedStyle[k] = v[0] * this.root.width * 0.01;
+              }
+              else if(k === TRANSLATE_Y) {
+                computedStyle[k] = v[0] * this.root.width * 0.01;
+              }
+            }
+            else if(v[1] === VH) {
+              if(k === TRANSLATE_X) {
+                computedStyle[k] = v[0] * this.root.height * 0.01;
+              }
+              else if(k === TRANSLATE_Y) {
+                computedStyle[k] = v[0] * this.root.height * 0.01;
               }
             }
             temp.push([k, v]);
@@ -887,6 +946,12 @@ class Xom extends Node {
           if(item[1] === REM) {
             return item[0] * this.root.computedStyle[FONT_SIZE];
           }
+          if(item[1] === VW) {
+            return item[0] * this.root.width * 0.01;
+          }
+          if(item[1] === VH) {
+            return item[0] * this.root.height * 0.01;
+          }
           if(item[1] === PERCENT) {
             return item[0] + '%';
           }
@@ -903,6 +968,12 @@ class Xom extends Node {
           }
           if(item[1] === REM) {
             return item[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          if(item[1] === VW) {
+            return item[0] * this.root.width * 0.01;
+          }
+          if(item[1] === VH) {
+            return item[0] * this.root.height * 0.01;
           }
           if(item[1] === PERCENT) {
             return item[0] + '%';
@@ -988,6 +1059,12 @@ class Xom extends Node {
             }
             else if(item2[1] === REM) {
               v = v * this.root.computedStyle[FONT_SIZE];
+            }
+            else if(item2[1] === VW) {
+              v = v * this.root.width * 0.01;
+            }
+            else if(item2[1] === VH) {
+              v = v * this.root.height * 0.01;
             }
             return v;
           });

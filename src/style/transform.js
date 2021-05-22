@@ -13,7 +13,7 @@ const { STYLE_KEY: {
   MATRIX,
   FONT_SIZE,
 }} = enums;
-const { PX, PERCENT, REM } = unit;
+const { PX, PERCENT, REM, VW, VH } = unit;
 const { matrix, geom } = math;
 const { identity, calPoint, multiply, isE } = matrix;
 const { d2r, pointInPolygon } = geom;
@@ -114,6 +114,12 @@ function normalizeSingle(k, v, ow, oh, root) {
     else if(v[1] === REM) {
       return v[0] * root.computedStyle[FONT_SIZE];
     }
+    else if(v[1] === VW) {
+      return v[0] * root.width * 0.01;
+    }
+    else if(v[1] === VH) {
+      return v[0] * root.height * 0.01;
+    }
   }
   else if(k === TRANSLATE_Y) {
     if(v[1] === PERCENT) {
@@ -121,6 +127,12 @@ function normalizeSingle(k, v, ow, oh, root) {
     }
     else if(v[1] === REM) {
       return v[0] * root.computedStyle[FONT_SIZE];
+    }
+    else if(v[1] === VW) {
+      return v[0] * root.width * 0.01;
+    }
+    else if(v[1] === VH) {
+      return v[0] * root.height * 0.01;
     }
   }
   else if(k === MATRIX) {
@@ -149,6 +161,12 @@ function calOrigin(transformOrigin, w, h, root) {
     }
     else if(item[1] === REM) {
       tfo.push(item[0] * root.computedStyle[FONT_SIZE]);
+    }
+    else if(item[1] === VW) {
+      tfo.push(item[0] * root.width * 0.01);
+    }
+    else if(item[1] === VH) {
+      tfo.push(item[0] * root.height * 0.01);
     }
   });
   return tfo;

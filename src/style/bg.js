@@ -20,7 +20,7 @@ const {
 } = enums;
 const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
-const { AUTO, PX, PERCENT, STRING, REM } = unit;
+const { AUTO, PX, PERCENT, STRING, REM, VW, VH } = unit;
 
 function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
@@ -128,6 +128,12 @@ function calBackgroundSize(value, w, h, root) {
     else if(item[1] === REM) {
       res.push(item[0] * root.computedStyle[FONT_SIZE]);
     }
+    else if(item[1] === VW) {
+      res.push(item[0] * root.width * 0.01);
+    }
+    else if(item[1] === VH) {
+      res.push(item[0] * root.height * 0.01);
+    }
     else if(item[1] === AUTO) {
       res.push(-1);
     }
@@ -148,6 +154,12 @@ function calBackgroundPosition(position, container, size, root) {
     }
     else if(position[1] === REM) {
       return position[0] * root.computedStyle[FONT_SIZE];
+    }
+    else if(position[1] === VW) {
+      return position[0] * root.width * 0.01;
+    }
+    else if(position[1] === VH) {
+      return position[0] * root.height * 0.01;
     }
   }
   return 0;

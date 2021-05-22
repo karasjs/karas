@@ -49,7 +49,7 @@ const {
     NODE_DEFS_CACHE,
   }
 } = enums;
-const { AUTO, PX, PERCENT, REM } = unit;
+const { AUTO, PX, PERCENT, REM, VW, VH } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 
@@ -99,6 +99,12 @@ class Geom extends Xom {
     else if(width[1] === REM) {
       w -= width[0] * this.root.computedStyle[FONT_SIZE];
     }
+    else if(width[1] === VW) {
+      w -= width[0] * this.root.width * 0.01;
+    }
+    else if(width[1] === VH) {
+      w -= width[0] * this.root.height * 0.01;
+    }
     // 减去水平mbp
     if(marginLeft[1] === PX) {
       w -= marginLeft[0];
@@ -109,6 +115,12 @@ class Geom extends Xom {
     else if(marginLeft[1] === REM) {
       w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE];
     }
+    else if(marginLeft[1] === VW) {
+      w -= marginLeft[0] * this.root.width * 0.01;
+    }
+    else if(marginLeft[1] === VH) {
+      w -= marginLeft[0] * this.root.height * 0.01;
+    }
     if(paddingLeft[1] === PX) {
       w -= paddingLeft[0];
     }
@@ -118,11 +130,23 @@ class Geom extends Xom {
     else if(paddingLeft[1] === REM) {
       w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE];
     }
+    else if(paddingLeft[1] === VW) {
+      w -= paddingLeft[0] * this.root.width * 0.01;
+    }
+    else if(paddingLeft[1] === VH) {
+      w -= paddingLeft[0] * this.root.height * 0.01;
+    }
     if(borderLeftWidth[1] === PX) {
       w -= borderLeftWidth[0];
     }
     else if(borderLeftWidth[1] === REM) {
       w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(borderLeftWidth[1] === VW) {
+      w -= borderLeftWidth[0] * this.root.width * 0.01;
+    }
+    else if(borderLeftWidth[1] === VH) {
+      w -= borderLeftWidth[0] * this.root.height * 0.01;
     }
     if(marginRight[1] === PX) {
       w -= marginRight[0];
@@ -133,6 +157,12 @@ class Geom extends Xom {
     else if(marginRight[1] === REM) {
       w -= marginRight[0] * this.root.computedStyle[FONT_SIZE];
     }
+    else if(marginRight[1] === VW) {
+      w -= marginRight[0] * this.root.width * 0.01;
+    }
+    else if(marginRight[1] === VH) {
+      w -= marginRight[0] * this.root.height * 0.01;
+    }
     if(paddingRight[1] === PX) {
       w -= paddingRight[0];
     }
@@ -142,11 +172,23 @@ class Geom extends Xom {
     else if(paddingRight[1] === REM) {
       w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE];
     }
+    else if(paddingRight[1] === VW) {
+      w -= paddingRight[0] * this.root.width * 0.01;
+    }
+    else if(paddingRight[1] === VH) {
+      w -= paddingRight[0] * this.root.height * 0.01;
+    }
     if(borderRightWidth[1] === PX) {
       w -= borderRightWidth[0];
     }
     else if(borderRightWidth[1] === REM) {
       w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(borderRightWidth[1] === VW) {
+      w -= borderRightWidth[0] * this.root.width * 0.01;
+    }
+    else if(borderRightWidth[1] === VH) {
+      w -= borderRightWidth[0] * this.root.height * 0.01;
     }
     return w;
   }
@@ -202,6 +244,12 @@ class Geom extends Xom {
     }
     else if(main[1] === REM) {
       b = max = main[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(main[1] === VW) {
+      b = max = main[0] * this.root.width * 0.01;
+    }
+    else if(main[1] === VH) {
+      b = max = main[0] * this.root.height * 0.01;
     }
     // border也得计算在内
     if(isDirectionRow) {
@@ -277,6 +325,12 @@ class Geom extends Xom {
         }
         else if(item[1] === REM) {
           return item[0] * this.root.computedStyle[FONT_SIZE];
+        }
+        else if(item[1] === VW) {
+          return item[0] * this.root.width * 0.01;
+        }
+        else if(item[1] === VH) {
+          return item[0] * this.root.height * 0.01;
         }
         else {
           return 0;

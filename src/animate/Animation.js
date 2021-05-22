@@ -21,7 +21,7 @@ const {
     BOX_SHADOW,
     TRANSLATE_X,
     BACKGROUND_SIZE,
-    FONTSIZE,
+    FONT_SIZE,
     FLEX_BASIS,
     FLEX_DIRECTION,
     WIDTH,
@@ -62,7 +62,7 @@ const {
     FRAME_TRANSITION,
   },
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
+const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH } = unit;
 const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
@@ -604,7 +604,7 @@ function calDiff(prev, next, k, target, tagName) {
     // 长度单位变化特殊计算，根据父元素computedStyle
     else if(p[1] === PX && n[1] === PERCENT) {
       let v;
-      if(k === FONTSIZE) {
+      if(k === FONT_SIZE) {
         v = n[0] * parentComputedStyle[k] * 0.01;
       }
       else if(k === FLEX_BASIS && computedStyle[FLEX_DIRECTION] === 'row' || k === WIDTH
@@ -619,7 +619,7 @@ function calDiff(prev, next, k, target, tagName) {
     }
     else if(p[1] === PERCENT && n[1] === PX) {
       let v;
-      if(k === FONTSIZE) {
+      if(k === FONT_SIZE) {
         v = n[0] * 100 / parentComputedStyle[k];
       }
       else if(k === FLEX_BASIS && computedStyle[FLEX_DIRECTION] === 'row' || k === WIDTH
@@ -635,10 +635,10 @@ function calDiff(prev, next, k, target, tagName) {
     // lineHeight奇怪的单位变化
     else if(k === LINE_HEIGHT) {
       if(p[1] === PX && n[1] === NUMBER) {
-        diff = n[0] * computedStyle[FONTSIZE] - p[0];
+        diff = n[0] * computedStyle[FONT_SIZE] - p[0];
       }
       else if(p[1] === NUMBER && n[1] === PX) {
-        diff = n[0] / computedStyle[FONTSIZE] - p[0];
+        diff = n[0] / computedStyle[FONT_SIZE] - p[0];
       }
     }
     // 兜底NaN非法

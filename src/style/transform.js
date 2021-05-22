@@ -11,8 +11,9 @@ const { STYLE_KEY: {
   SKEW_Y,
   ROTATE_Z,
   MATRIX,
+  FONT_SIZE,
 }} = enums;
-const { PX, PERCENT } = unit;
+const { PX, PERCENT, REM } = unit;
 const { matrix, geom } = math;
 const { identity, calPoint, multiply, isE } = matrix;
 const { d2r, pointInPolygon } = geom;
@@ -56,8 +57,8 @@ function calSingle(t, k, v) {
   }
 }
 
-function calMatrix(transform, ow, oh) {
-  let list = normalize(transform, ow, oh);
+function calMatrix(transform, ow, oh, root) {
+  let list = normalize(transform, ow, oh, root);
   let m = identity();
   list.forEach(item => {
     let [k, v] = item;
@@ -80,6 +81,7 @@ function calMatrixByOrigin(m, transformOrigin) {
   return res;
 }
 
+// img缩放svg下专用，无rem
 function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
   let m = calMatrix(transform, ow, oh);
   return calMatrixByOrigin(m, transformOrigin);
@@ -104,15 +106,21 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
   }
 }
 
-function normalizeSingle(k, v, ow, oh) {
+function normalizeSingle(k, v, ow, oh, root) {
   if(k === TRANSLATE_X) {
     if(v[1] === PERCENT) {
       return v[0] * ow * 0.01;
+    }
+    else if(v[1] === REM) {
+      return v[0] * root.computedStyle[FONT_SIZE];
     }
   }
   else if(k === TRANSLATE_Y) {
     if(v[1] === PERCENT) {
       return v[0] * oh * 0.01;
+    }
+    else if(v[1] === REM) {
+      return v[0] * root.computedStyle[FONT_SIZE];
     }
   }
   else if(k === MATRIX) {
@@ -121,16 +129,16 @@ function normalizeSingle(k, v, ow, oh) {
   return v[0];
 }
 
-function normalize(transform, ow, oh) {
+function normalize(transform, ow, oh, root) {
   let res = [];
   transform.forEach(item => {
     let [k, v] = item;
-    res.push([k, normalizeSingle(k, v, ow, oh)]);
+    res.push([k, normalizeSingle(k, v, ow, oh, root)]);
   });
   return res;
 }
 
-function calOrigin(transformOrigin, w, h) {
+function calOrigin(transformOrigin, w, h, root) {
   let tfo = [];
   transformOrigin.forEach((item, i) => {
     if(item[1] === PX) {
@@ -138,6 +146,9 @@ function calOrigin(transformOrigin, w, h) {
     }
     else if(item[1] === PERCENT) {
       tfo.push(item[0] * (i ? h : w) * 0.01);
+    }
+    else if(item[1] === REM) {
+      tfo.push(item[0] * root.computedStyle[FONT_SIZE]);
     }
   });
   return tfo;

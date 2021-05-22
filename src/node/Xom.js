@@ -298,6 +298,9 @@ class Xom extends Node {
       v[1] = PX;
       n += v[0];
     }
+    else if(v[1] === REM) {
+      n += v[0] * this.root.computedStyle[FONT_SIZE];
+    }
     return n;
   }
 
@@ -409,6 +412,8 @@ class Xom extends Node {
           case PERCENT:
             w *= width[0] * 0.01;
             break;
+          case REM:
+            w = width[0] * this.root.computedStyle[FONT_SIZE];
         }
       }
     }
@@ -666,6 +671,9 @@ class Xom extends Node {
         else if(v[1] === PERCENT) {
           v = v[0] * this.offsetWidth * 0.01;
         }
+        else if(v[1] === REM) {
+          v = v[0] * this.root.computedStyle[FONT_SIZE];
+        }
         else {
           v = v[0];
         }
@@ -681,6 +689,9 @@ class Xom extends Node {
         }
         else if(v[1] === PERCENT) {
           v = v[0] * this.offsetHeight * 0.01;
+        }
+        else if(v[1] === REM) {
+          v = v[0] * this.root.computedStyle[FONT_SIZE];
         }
         else {
           v = v[0];
@@ -703,7 +714,7 @@ class Xom extends Node {
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
         matrixCache = null;
-        computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight);
+        computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight, this.root);
       }
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
@@ -726,7 +737,7 @@ class Xom extends Node {
         let matrix;
         // transform相对于自身
         if(currentStyle[TRANSFORM]) {
-          matrix = tf.calMatrix(currentStyle[TRANSFORM], offsetWidth, offsetHeight);
+          matrix = tf.calMatrix(currentStyle[TRANSFORM], offsetWidth, offsetHeight, this.root);
         }
         // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -760,10 +771,18 @@ class Xom extends Node {
                 computedStyle[k] = v[0] * offsetHeight * 0.01;
               }
             }
+            else if(v[1] === REM) {
+              if(k === TRANSLATE_X) {
+                computedStyle[k] = v[0] * this.root.computedStyle[FONT_SIZE];
+              }
+              else if(k === TRANSLATE_Y) {
+                computedStyle[k] = v[0] * this.root.computedStyle[FONT_SIZE];
+              }
+            }
             temp.push([k, v]);
           });
           if(temp.length) {
-            matrix = tf.calMatrix(temp, offsetWidth, offsetHeight);
+            matrix = tf.calMatrix(temp, offsetWidth, offsetHeight, this.root);
           }
         }
         computedStyle[TRANSFORM] = matrix || [1, 0, 0, 1, 0, 0];
@@ -966,6 +985,9 @@ class Xom extends Node {
               else {
                 v *= 0.01 * (by2 - by1);
               }
+            }
+            else if(item2[1] === REM) {
+              v = v * this.root.computedStyle[FONT_SIZE];
             }
             return v;
           });

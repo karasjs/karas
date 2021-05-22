@@ -187,27 +187,27 @@ export default {
       else if(v === 'auto') {
         parseFlex(style, 1, 1, 'auto');
       }
-      else if(/^[\d.]+$/.test(v)) {
-        parseFlex(style, parseFloat(v), 1, 0);
+      else if(/^[\d.]+\s+[\d.]+\s+(auto|none|content)/.test(v)) {
+        let arr = v.split(/\s+/);
+        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
       }
-      else if(/^[\d.]+[pxremvwh%]*/i.test(v)) {
-        parseFlex(style, 1, 1, v);
+      else if(/^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwh%]*/.test(v)) {
+        let arr = v.split(/\s+/);
+        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
       }
       else if(/^[\d.]+\s+[\d.]+$/.test(v)) {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), 0);
       }
-      else if(/^[\d.]+\s+[\d.]+%/.test(v)) {
+      else if(/^[\d.]+\s+[\d.]+[pxremvwh%]+/.test(v)) {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), 1, arr[1]);
       }
-      else if(/^[\d.]+\s+[\d.]+\s+[\d.]+(px|%)?/.test(v)) {
-        let arr = v.split(/\s+/);
-        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
+      else if(/^[\d.]+$/.test(v)) {
+        parseFlex(style, parseFloat(v), 1, 0);
       }
-      else if(/^[\d.]+\s+[\d.]+\s+(auto|none)/.test(v)) {
-        let arr = v.split(/\s+/);
-        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
+      else if(/^[\d.]+[pxremvwh%]+/i.test(v)) {
+        parseFlex(style, 1, 1, v);
       }
       else {
         parseFlex(style, 0, 1, 'auto');

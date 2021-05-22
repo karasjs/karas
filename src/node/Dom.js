@@ -51,6 +51,7 @@ const {
     FLEX_WRAP,
     ALIGN_CONTENT,
     OVERFLOW,
+    FONT_SIZE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -67,7 +68,7 @@ const {
     STRUCT_INDEX,
   },
 } = enums;
-const { AUTO, PX, PERCENT } = unit;
+const { AUTO, PX, PERCENT, REM } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
 
 function genZIndexChildren(dom) {
@@ -331,7 +332,10 @@ class Dom extends Xom {
         w -= width[0];
       }
       else if(width[1] === PERCENT) {
-         w -= total * width[0] * 0.01;
+        w -= total * width[0] * 0.01;
+      }
+      else if(width[1] === REM) {
+        w -= width[0] * this.root.computedStyle[FONT_SIZE];
       }
       else {
         for(let i = 0; i < flowChildren.length; i++) {
@@ -359,14 +363,23 @@ class Dom extends Xom {
       else if(marginRight[1] === PERCENT) {
         w -= marginRight[0] * total * 0.01;
       }
+      else if(marginRight[1] === REM) {
+        w -= marginRight[0] * this.root.computedStyle[FONT_SIZE];
+      }
       if(paddingRight[1] === PX) {
         w -= paddingRight[0];
       }
       else if(paddingRight[1] === PERCENT) {
         w -= paddingRight[0] * total * 0.01;
       }
+      else if(paddingRight[1] === REM) {
+        w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE];
+      }
       if(borderRightWidth[1] === PX) {
         w -= borderRightWidth[0];
+      }
+      else if(borderRightWidth[1] === REM) {
+        w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
       }
     }
     // 还要减去开头的mpb
@@ -376,14 +389,23 @@ class Dom extends Xom {
     else if(marginLeft[1] === PERCENT) {
       w -= marginLeft[0] * total * 0.01;
     }
+    else if(marginLeft[1] === REM) {
+      w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE];
+    }
     if(paddingLeft[1] === PX) {
       w -= paddingLeft[0];
     }
     else if(paddingLeft[1] === PERCENT) {
       w -= paddingLeft[0] * total * 0.01;
     }
+    else if(paddingLeft[1] === REM) {
+      w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE];
+    }
     if(borderLeftWidth[1] === PX) {
       w -= borderLeftWidth[0];
+    }
+    else if(borderLeftWidth[1] === REM) {
+      w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
     }
     return w;
   }
@@ -637,7 +659,7 @@ class Dom extends Xom {
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
-    let isFixed = flexBasis[1] === PX || flexBasis[1] === PERCENT;
+    let isFixed = [PX, PERCENT, REM].indexOf(flexBasis[1]) > -1;
     let isContent = !isAuto && !isFixed;
     let fixedSize;
     // flex的item固定basis计算
@@ -645,8 +667,11 @@ class Dom extends Xom {
       if(flexBasis[1] === PX) {
         b = fixedSize = flexBasis[0];
       }
-      else {
+      else if(flexBasis[1] === PERCENT) {
         b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+      }
+      else if(flexBasis[1] === REM) {
+        b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
       }
     }
     // 已声明主轴尺寸的，当basis是auto时为值
@@ -654,8 +679,11 @@ class Dom extends Xom {
       if(main[1] === PX) {
         b = fixedSize = main[0];
       }
-      else {
+      else if(flexBasis[1] === PERCENT) {
         b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
+      }
+      else if(flexBasis[1] === REM) {
+        b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
       }
     }
     // 非固定尺寸的basis为auto时降级为content

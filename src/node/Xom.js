@@ -832,7 +832,7 @@ class Xom extends Node {
       if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
         __cacheStyle[BACKGROUND_SIZE] = true;
         computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
-          return bg.calBackgroundSize(item, clientWidth, clientHeight);
+          return bg.calBackgroundSize(item, bx2 - bx1, by2 - by1);
         });
       }
       if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {

@@ -7783,7 +7783,7 @@
         }
 
         res[k] = temp.map(function (item) {
-          if (/^-?[\d.]+$/.test(item)) {
+          if (/^-?[\d.]/.test(item)) {
             return calUnit(item);
           } else {
             return [{
@@ -7810,7 +7810,7 @@
           return [[0, AUTO], [0, AUTO]];
         }
 
-        var match = item.toString().match(/\b(?:(-?[\d.]+)|(contain|cover|auto))/ig);
+        var match = item.toString().match(/\b(?:(-?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
 
         if (match) {
           if (match.length === 1) {
@@ -7826,7 +7826,7 @@
           for (var i = 0; i < 2; i++) {
             var _item = match[i];
 
-            if (/^-?[\d.]+$/.test(_item)) {
+            if (/^-?[\d.]/.test(_item)) {
               var n = calUnit(_item);
 
               if ([NUMBER, DEG].indexOf(n[1]) > -1) {
@@ -7872,7 +7872,7 @@
         for (var i = 0; i < 2; i++) {
           var item = arr[i];
 
-          if (/^-?[\d.]+$/.test(item)) {
+          if (/^-?[\d.]/.test(item)) {
             var n = calUnit(item);
 
             if ([NUMBER, DEG].indexOf(n[1]) > -1) {
@@ -7963,7 +7963,7 @@
         for (var i = 0; i < 2; i++) {
           var item = _match[i];
 
-          if (/^-?[\d.]+$/.test(item)) {
+          if (/^-?[\d.]/.test(item)) {
             var n = calUnit(item);
 
             if ([NUMBER, DEG].indexOf(n[1]) > -1) {
@@ -8368,11 +8368,11 @@
     if (temp !== undefined) {
       var bs = null;
 
-      var _match3 = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+      var _match3 = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
       if (_match3) {
         _match3.forEach(function (item) {
-          var boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+          var boxShadow = /(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*)\s*)?(-?[\d.]+(?:[pxremvwh%]*)\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
           if (boxShadow) {
             bs = bs || [];
@@ -16760,7 +16760,7 @@
           if (__cacheStyle[BACKGROUND_SIZE$2] === undefined) {
             __cacheStyle[BACKGROUND_SIZE$2] = true;
             computedStyle[BACKGROUND_SIZE$2] = (currentStyle[BACKGROUND_SIZE$2] || []).map(function (item) {
-              return bg.calBackgroundSize(item, clientWidth, clientHeight);
+              return bg.calBackgroundSize(item, bx2 - bx1, by2 - by1);
             });
           }
 

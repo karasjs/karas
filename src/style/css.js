@@ -289,7 +289,7 @@ function normalize(style, reset = []) {
         temp = [temp];
       }
       res[k] = temp.map(item => {
-        if(/^-?[\d.]+$/.test(item)) {
+        if(/^-?[\d.]/.test(item)) {
           return calUnit(item);
         }
         else {
@@ -320,7 +320,7 @@ function normalize(style, reset = []) {
           [0, AUTO],
         ];
       }
-      let match = item.toString().match(/\b(?:(-?[\d.]+)|(contain|cover|auto))/ig);
+      let match = item.toString().match(/\b(?:(-?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
       if(match) {
         if(match.length === 1) {
           if(match[0] === 'contain' || match[0] === 'cover') {
@@ -333,7 +333,7 @@ function normalize(style, reset = []) {
         let v = [];
         for(let i = 0; i < 2; i++) {
           let item = match[i];
-          if(/^-?[\d.]+$/.test(item)) {
+          if(/^-?[\d.]/.test(item)) {
             let n = calUnit(item);
             if([NUMBER, DEG].indexOf(n[1]) > -1) {
               n[1] = PX;
@@ -376,7 +376,7 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = arr[i];
-        if(/^-?[\d.]+$/.test(item)) {
+        if(/^-?[\d.]/.test(item)) {
           let n = calUnit(item);
           if([NUMBER, DEG].indexOf(n[1]) > -1) {
             n[1] = PX;
@@ -445,7 +445,7 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/^-?[\d.]+$/.test(item)) {
+        if(/^-?[\d.]/.test(item)) {
           let n = calUnit(item);
           if([NUMBER, DEG].indexOf(n[1]) > -1) {
             n[1] = PX;
@@ -848,10 +848,10 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    let match = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*)\s+(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
     if(match) {
       match.forEach(item => {
-        let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        let boxShadow = /(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*))\s+(-?[\d.]+(?:[pxremvwh%]*)\s*)?(-?[\d.]+(?:[pxremvwh%]*)\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
         if(boxShadow) {
           bs = bs || [];
           let res = [];

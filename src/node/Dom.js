@@ -2348,28 +2348,28 @@ class Dom extends Xom {
       // 判断何种方式的定位，比如左+宽度，左+右之类
       if(left[1] !== AUTO) {
         fixedLeft = true;
-        computedStyle[LEFT] = calAbsolute(currentStyle, 'left', left, clientWidth);
+        computedStyle[LEFT] = calAbsolute(currentStyle, 'left', left, clientWidth, this.root);
       }
       else {
         computedStyle[LEFT] = 'auto';
       }
       if(right[1] !== AUTO) {
         fixedRight = true;
-        computedStyle[RIGHT] = calAbsolute(currentStyle, 'right', right, clientWidth);
+        computedStyle[RIGHT] = calAbsolute(currentStyle, 'right', right, clientWidth, this.root);
       }
       else {
         computedStyle[RIGHT] = 'auto';
       }
       if(top[1] !== AUTO) {
         fixedTop = true;
-        computedStyle[TOP] = calAbsolute(currentStyle, 'top', top, clientHeight);
+        computedStyle[TOP] = calAbsolute(currentStyle, 'top', top, clientHeight, this.root);
       }
       else {
         computedStyle[TOP] = 'auto';
       }
       if(bottom[1] !== AUTO) {
         fixedBottom = true;
-        computedStyle[BOTTOM] = calAbsolute(currentStyle, 'bottom', bottom, clientHeight);
+        computedStyle[BOTTOM] = calAbsolute(currentStyle, 'bottom', bottom, clientHeight, this.root);
       }
       else {
         computedStyle[BOTTOM] = 'auto';

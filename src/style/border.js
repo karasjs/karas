@@ -5,7 +5,7 @@ import enums from '../util/enums';
 import unit from './unit';
 
 const { H } = geom;
-const { PX } = unit;
+const { PX, PERCENT, REM } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const {
   STYLE_KEY: {
@@ -19,6 +19,7 @@ const {
     BORDER_TOP_RIGHT_RADIUS,
     BORDER_BOTTOM_LEFT_RADIUS,
     BORDER_BOTTOM_RIGHT_RADIUS,
+    FONT_SIZE,
   },
 } = enums;
 
@@ -2757,7 +2758,7 @@ function limit(points, x, y, direction) {
 }
 
 const BR_KS = [BORDER_TOP_LEFT_RADIUS, BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS];
-function calBorderRadius(w, h, currentStyle, computedStyle) {
+function calBorderRadius(w, h, currentStyle, computedStyle, root) {
   let noRadius = true;
   BR_KS.forEach(k => {
     computedStyle[k] = currentStyle[k].map((item, i) => {
@@ -2770,9 +2771,13 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
       if(item[1] === PX) {
         return Math.max(0, item[0]);
       }
-      else {
+      else if(item[1] === PERCENT) {
         return Math.max(0, item[0] * (i ? h : w) * 0.01);
       }
+      else if(item[1] === REM) {
+        return Math.max(0, item[0] * root.computedStyle[FONT_SIZE]);
+      }
+      return 0;
     });
   });
   // 优化提前跳出

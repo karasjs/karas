@@ -132,7 +132,7 @@ const {
     NODE_IS_INLINE,
   }
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT } = unit;
+const { AUTO, PX, PERCENT, INHERIT, REM } = unit;
 const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
@@ -269,6 +269,9 @@ class Xom extends Node {
     }
     else if(mp[1] === PERCENT) {
       return mp[0] * w * 0.01;
+    }
+    else if(mp[1] === REM) {
+      return mp[0] * this.root.computedStyle[FONT_SIZE];
     }
     return 0;
   }
@@ -564,6 +567,9 @@ class Xom extends Node {
         case PERCENT:
           w *= width[0] * 0.01;
           break;
+        case REM:
+          w = width[0] * this.root.computedStyle[FONT_SIZE];
+          break;
       }
     }
     if(h2 !== undefined) {
@@ -582,6 +588,9 @@ class Xom extends Node {
           break;
         case PERCENT:
           h *= height[0] * 0.01;
+          break;
+        case REM:
+          h = height[0] * this.root.computedStyle[FONT_SIZE];
           break;
       }
     }
@@ -853,7 +862,15 @@ class Xom extends Node {
           [BACKGROUND_POSITION_X]: bgX,
         } = currentStyle;
         computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
-          return item[1] === PX ? item[0] : (item[0] + '%');
+          if(item[1] === PX) {
+            return item[0];
+          }
+          if(item[1] === REM) {
+            return item[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          if(item[1] === PERCENT) {
+            return item[0] + '%';
+          }
         });
       }
       if(__cacheStyle[BACKGROUND_POSITION_Y] === undefined) {
@@ -862,13 +879,21 @@ class Xom extends Node {
           [BACKGROUND_POSITION_Y]: bgY,
         } = currentStyle;
         computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
-          return item[1] === PX ? item[0] : (item[0] + '%');
+          if(item[1] === PX) {
+            return item[0];
+          }
+          if(item[1] === REM) {
+            return item[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          if(item[1] === PERCENT) {
+            return item[0] + '%';
+          }
         });
       }
       if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
         __cacheStyle[BACKGROUND_SIZE] = true;
         computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
-          return bg.calBackgroundSize(item, bx2 - bx1, by2 - by1);
+          return bg.calBackgroundSize(item, bx2 - bx1, by2 - by1, this.root);
         });
       }
       if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {
@@ -969,11 +994,11 @@ class Xom extends Node {
           = true;
         // 非替代的inline计算看contentBox首尾
         if(isInline) {
-          border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle);
+          border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle, this.root);
         }
         // 普通block整体计算
         else {
-          border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle);
+          border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle, this.root);
         }
       }
       // width/style/radius影响border，color不影响渲染缓存

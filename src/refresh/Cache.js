@@ -28,7 +28,6 @@ function genSingle(cache, message) {
   let offscreen = inject.getCacheCanvas(width, height, null, message);
   offscreen.x = 0;
   offscreen.y = 0;
-  // offscreen.coords = [1, 1];
   offscreen.bbox = bbox;
   offscreen.size = size;
   offscreen.sx1 = sx1;
@@ -111,9 +110,6 @@ class Cache {
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
-    // w += 2;
-    // h += 2;
-    // 防止边的精度问题四周各+1px，宽高即+2px
     let res = Page.getInstance(Math.max(w, h));
     if(!res) {
       this.__enabled = false;

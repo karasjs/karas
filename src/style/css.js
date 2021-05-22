@@ -670,8 +670,12 @@ function normalize(style, reset = []) {
       res[LINE_HEIGHT] = [0, AUTO];
     }
     // lineHeight默认数字，想要px必须强制带单位
-    else if(/px$/i.test(temp)) {
-      res[LINE_HEIGHT] = [parseFloat(temp), PX];
+    else if(/^[\d.]+/i.test(temp)) {
+      let v = calUnit(temp);
+      if([DEG].indexOf(v[1]) > -1) {
+        v[1] = NUMBER;
+      }
+      res[LINE_HEIGHT] = v;
     }
     else {
       let n = Math.max(0, parseFloat(temp)) || 'normal';
@@ -692,8 +696,12 @@ function normalize(style, reset = []) {
     else if(temp === 'normal') {
       res[LETTER_SPACING] = [0, PX];
     }
-    else if(/px$/i.test(temp)) {
-      res[LETTER_SPACING] = [parseFloat(temp), PX];
+    else if(/^-?[\d.]/.test(temp)) {
+      let v = calUnit(temp);
+      if([NUMBER, DEG].indexOf(v[1]) > -1) {
+        v[1] = PX;
+      }
+      res[LETTER_SPACING] = v;
     }
     else {
       res[LETTER_SPACING] = [parseFloat(temp) || 0, PX];
@@ -962,6 +970,9 @@ function computeMeasure(node, isRoot) {
     else if(v[1] === PERCENT) {
       computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
     }
+    else if(v[1] === REM) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.computedStyle[FONT_SIZE] * v[0]);
+    }
     else {
       computedStyle[k] = v[0];
     }
@@ -974,7 +985,8 @@ function computeMeasure(node, isRoot) {
  * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
  */
 function computeReflow(node, isHost) {
-  let { currentStyle, computedStyle, parent } = node;
+  let { currentStyle, computedStyle, parent, root } = node;
+  let rem = root.computedStyle[FONT_SIZE];
   let isRoot = !parent;
   let parentComputedStyle = parent && parent.computedStyle;
   [
@@ -984,7 +996,16 @@ function computeReflow(node, isHost) {
     BORDER_LEFT_WIDTH,
   ].forEach(k => {
     // border-width不支持百分比
-    computedStyle[k] = (currentStyle[k][1] === PX) ? Math.max(0, currentStyle[k][0]) : 0;
+    let item = currentStyle[k];
+    if(item[1] === PX) {
+      computedStyle[k] = item[0];
+    }
+    else if(item[1] === REM) {
+      computedStyle[k] = item[0] * rem;
+    }
+    else {
+      computedStyle[k] = 0;
+    }
   });
   [
     POSITION,
@@ -1009,6 +1030,7 @@ function computeReflow(node, isHost) {
   else {
     computedStyle[TEXT_ALIGN] = textAlign[0];
   }
+  let fontSize = computedStyle[FONT_SIZE];
   let lineHeight = currentStyle[LINE_HEIGHT];
   if(lineHeight[1] === INHERIT) {
     computedStyle[LINE_HEIGHT] = isRoot ? calNormalLineHeight(computedStyle) : parentComputedStyle[LINE_HEIGHT];
@@ -1016,6 +1038,12 @@ function computeReflow(node, isHost) {
   // 防止为0
   else if(lineHeight[1] === PX) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) || calNormalLineHeight(computedStyle);
+  }
+  else if(lineHeight[1] === PERCENT) {
+    computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * fontSize * 0.01, 0) || calNormalLineHeight(computedStyle);
+  }
+  else if(lineHeight[1] === REM) {
+    computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * rem, 0) || calNormalLineHeight(computedStyle);
   }
   else if(lineHeight[1] === NUMBER) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE] || calNormalLineHeight(computedStyle);
@@ -1027,6 +1055,12 @@ function computeReflow(node, isHost) {
   let letterSpacing = currentStyle[LETTER_SPACING];
   if(letterSpacing[1] === INHERIT) {
     computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
+  }
+  else if(letterSpacing[1] === PERCENT) {
+    computedStyle[LETTER_SPACING] = fontSize * 0.01 * letterSpacing[0];
+  }
+  else if(letterSpacing[1] === REM) {
+    computedStyle[LETTER_SPACING] = rem * letterSpacing[0];
   }
   else {
     computedStyle[LETTER_SPACING] = letterSpacing[0];
@@ -1090,6 +1124,9 @@ function calRelativePercent(n, parent, k) {
       n *= style[0] * 0.01;
       parent = parent.domParent;
     }
+    else if(style[1] === REM) {
+      return n * style[0] * parent.root.computedStyle[FONT_SIZE];
+    }
   }
   return n;
 }
@@ -1098,7 +1135,7 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
   if(v[1] === AUTO) {
     v = 0;
   }
-  else if([PX, NUMBER, DEG, RGBA, STRING].indexOf(v[1]) > -1) {
+  else if([PX, NUMBER].indexOf(v[1]) > -1) {
     v = v[0];
   }
   else if(v[1] === PERCENT) {
@@ -1109,10 +1146,13 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
       v = calRelativePercent(v[0], parent, HEIGHT);
     }
   }
+  else if(v[1] === REM) {
+    v = v[0] * parent.root.computedStyle[FONT_SIZE];
+  }
   return v;
 }
 
-function calAbsolute(currentStyle, k, v, size) {
+function calAbsolute(currentStyle, k, v, size, root) {
   if(v[1] === AUTO) {
     v = 0;
   }
@@ -1121,6 +1161,9 @@ function calAbsolute(currentStyle, k, v, size) {
   }
   else if(v[1] === PERCENT) {
     v = v[0] * size * 0.01;
+  }
+  else if(v[1] === REM) {
+    v = v[0] * root.computedStyle[FONT_SIZE];
   }
   return v;
 }

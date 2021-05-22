@@ -12,6 +12,7 @@ const {
   STYLE_KEY: {
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
+    FONT_SIZE,
   },
   NODE_KEY: {
     NODE_DEFS_CACHE,
@@ -19,7 +20,7 @@ const {
 } = enums;
 const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
-const { AUTO, PX, PERCENT, STRING } = unit;
+const { AUTO, PX, PERCENT, STRING, REM } = unit;
 
 function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
@@ -115,7 +116,7 @@ function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bb
   }
 }
 
-function calBackgroundSize(value, w, h) {
+function calBackgroundSize(value, w, h, root) {
   let res = [];
   value.forEach((item, i) => {
     if(item[1] === PX) {
@@ -123,6 +124,9 @@ function calBackgroundSize(value, w, h) {
     }
     else if(item[1] === PERCENT) {
       res.push(item[0] * (i ? h : w) * 0.01);
+    }
+    else if(item[1] === REM) {
+      res.push(item[0] * root.computedStyle[FONT_SIZE]);
     }
     else if(item[1] === AUTO) {
       res.push(-1);
@@ -134,13 +138,16 @@ function calBackgroundSize(value, w, h) {
   return res;
 }
 
-function calBackgroundPosition(position, container, size) {
+function calBackgroundPosition(position, container, size, root) {
   if(Array.isArray(position)) {
     if(position[1] === PX) {
       return position[0];
     }
     else if(position[1] === PERCENT) {
       return (container - size) * position[0] * 0.01;
+    }
+    else if(position[1] === REM) {
+      return position[0] * root.computedStyle[FONT_SIZE];
     }
   }
   return 0;
@@ -227,8 +234,8 @@ function renderImage(xom, renderMode, ctx, loadBgi,
     else if(h === -1) {
       h = w * height / width;
     }
-    let bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w);
-    let bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h);
+    let bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w, xom.root);
+    let bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h, xom.root);
     // 超出尺寸模拟mask截取
     let needMask = bgX < bx1 || bgY < by1 || w > bgW || h > bgH;
     // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
@@ -445,5 +452,4 @@ export default {
   renderBgc,
   renderImage,
   calBackgroundSize,
-  calBackgroundPosition,
 };

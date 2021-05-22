@@ -623,7 +623,11 @@
     INHERIT: 4,
     DEG: 5,
     STRING: 6,
-    RGBA: 7
+    RGBA: 7,
+    REM: 8,
+    EM: 9,
+    VW: 10,
+    VH: 11
   };
 
   var o = {
@@ -7531,7 +7535,11 @@
       INHERIT$2 = unit.INHERIT,
       DEG = unit.DEG,
       RGBA = unit.RGBA,
-      STRING = unit.STRING;
+      STRING = unit.STRING,
+      REM = unit.REM,
+      EM = unit.EM,
+      VW = unit.VW,
+      VH = unit.VH;
   var isNil$3 = util.isNil,
       rgba2int$2 = util.rgba2int,
       equalArr$1 = util.equalArr;
@@ -7539,7 +7547,6 @@
       isGeom$1 = o$1.isGeom,
       GEOM$2 = o$1.GEOM,
       GEOM_KEY_SET$2 = o$1.GEOM_KEY_SET;
-  var DEFAULT_FONT_SIZE = 16;
   var COLOR_HASH$1 = key.COLOR_HASH,
       LENGTH_HASH$1 = key.LENGTH_HASH,
       RADIUS_HASH$1 = key.RADIUS_HASH,
@@ -7557,38 +7564,31 @@
     'rotate': ROTATE_Z
   };
   /**
-   * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
-   * @param res 待计算的样式对象
-   * @param k 对象的key
-   * @param v 对象的value
-   * @returns 格式化好的样式对象本身
+   * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
+   * @param v value
+   * @returns 格式化好的[number, unit]
    */
 
-  function calUnit(res, k, v) {
-    if (v === 'auto') {
-      res[k] = [0, AUTO];
-    } else if (v === 'inherit') {
-      res[k] = [0, INHERIT$2];
-    } else if (/%$/.test(v)) {
-      v = parseFloat(v) || 0;
-      res[k] = [v, PERCENT$1];
+  function calUnit(v) {
+    var n = parseFloat(v) || 0;
+
+    if (/%$/.test(v)) {
+      return [n, PERCENT$1];
     } else if (/px$/i.test(v)) {
-      v = parseFloat(v) || 0;
-      res[k] = [v, PX$2];
+      return [n, PX$2];
     } else if (/deg$/i.test(v)) {
-      v = parseFloat(v) || 0;
-      res[k] = [v, DEG];
-    } else {
-      v = parseFloat(v) || 0;
-      res[k] = [v, NUMBER];
-    } // border等相关不能为负值
-
-
-    if (k === BORDER_LEFT_WIDTH$1 || k === BORDER_TOP_WIDTH$1 || k === BORDER_RIGHT_WIDTH || k === BORDER_BOTTOM_WIDTH$1 || k === WIDTH$1 || k === HEIGHT$1 || k === FLEX_BASIS) {
-      res[k][0] = Math.max(res[k][0], 0);
+      return [n, DEG];
+    } else if (/rem$/i.test(v)) {
+      return [n, REM];
+    } else if (/em$/i.test(v)) {
+      return [n, EM];
+    } else if (/vw$/i.test(v)) {
+      return [n, VW];
+    } else if (/vh$/i.test(v)) {
+      return [n, VH];
     }
 
-    return res;
+    return [n, NUMBER];
   }
 
   function compatibleTransform(k, arr) {
@@ -7778,105 +7778,39 @@
       if (!isNil$3(temp)) {
         k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
 
-        if (Array.isArray(temp)) {
-          if (temp.length) {
-            res[k] = temp.map(function (item) {
-              if (/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-                var v = [];
-                calUnit(v, 0, item);
-
-                if (v[0][1] === NUMBER) {
-                  v[0][1] = PX$2;
-                }
-
-                return v[0];
-              } else {
-                return [{
-                  top: 0,
-                  left: 0,
-                  center: 50,
-                  right: 100,
-                  bottom: 100
-                }[item] || 0, PERCENT$1];
-              }
-            });
-          } else {
-            res[k] = [0, PERCENT$1];
-          }
-        } else if (/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
-          calUnit(res, k, temp);
-          temp = res[k];
-
-          if (temp[1] === NUMBER) {
-            temp[1] = PX$2;
-          }
-
-          res[k] = [temp];
-        } else {
-          res[k] = [[{
-            top: 0,
-            left: 0,
-            center: 50,
-            right: 100,
-            bottom: 100
-          }[temp] || 0, PERCENT$1]];
+        if (!Array.isArray(temp)) {
+          temp = [temp];
         }
+
+        res[k] = temp.map(function (item) {
+          if (/^-?[\d.]+$/.test(item)) {
+            return calUnit(item);
+          } else {
+            return [{
+              top: 0,
+              left: 0,
+              center: 50,
+              right: 100,
+              bottom: 100
+            }[item] || 0, PERCENT$1];
+          }
+        });
       }
     }); // 背景尺寸
 
     temp = style.backgroundSize;
 
     if (temp) {
-      var bs = res[BACKGROUND_SIZE] = [];
+      if (!Array.isArray(temp)) {
+        temp = [temp];
+      }
 
-      if (Array.isArray(temp)) {
-        if (temp.length) {
-          bs = temp.map(function (item) {
-            if (!item) {
-              return [[0, AUTO], [0, AUTO]];
-            }
-
-            var match = item.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
-
-            if (match) {
-              if (match.length === 1) {
-                if (match[0] === 'contain' || match[0] === 'cover') {
-                  match[1] = match[0];
-                } else {
-                  match[1] = 'auto';
-                }
-              }
-
-              var v = [];
-
-              for (var i = 0; i < 2; i++) {
-                var _item = match[i];
-
-                if (/%$/.test(_item) || /px$/i.test(_item) || /^-?[\d.]+$/.test(_item)) {
-                  calUnit(v, i, _item);
-
-                  if (v[i][1] === NUMBER) {
-                    v[i][1] = PX$2;
-                  }
-                } else if (_item === '0' || _item === 0) {
-                  v.push([0, PX$2]);
-                } else if (_item === 'contain' || _item === 'cover') {
-                  v.push([_item, STRING]);
-                } else {
-                  v.push([0, AUTO]);
-                }
-              }
-
-              return v;
-            } else {
-              return [[0, AUTO], [0, AUTO]];
-            }
-          });
-        } else {
-          bs.push([[0, AUTO], [0, AUTO]]);
+      res[BACKGROUND_SIZE] = temp.map(function (item) {
+        if (!item) {
+          return [[0, AUTO], [0, AUTO]];
         }
-      } else {
-        var match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+
+        var match = item.toString().match(/\b(?:(-?[\d.]+)|(contain|cover|auto))/ig);
 
         if (match) {
           if (match.length === 1) {
@@ -7890,28 +7824,28 @@
           var v = [];
 
           for (var i = 0; i < 2; i++) {
-            var item = match[i];
+            var _item = match[i];
 
-            if (/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-              calUnit(v, i, item);
+            if (/^-?[\d.]+$/.test(_item)) {
+              var n = calUnit(_item);
 
-              if (v[i][1] === NUMBER) {
-                v[i][1] = PX$2;
+              if ([NUMBER, DEG].indexOf(n[1]) > -1) {
+                n[1] = PX$2;
               }
-            } else if (item === '0' || item === 0) {
-              v.push([0, PX$2]);
-            } else if (item === 'contain' || item === 'cover') {
-              v.push([item, STRING]);
+
+              v.push(n);
+            } else if (_item === 'contain' || _item === 'cover') {
+              v.push([_item, STRING]);
             } else {
               v.push([0, AUTO]);
             }
           }
 
-          bs.push(v);
+          return v;
         } else {
-          bs.push([[0, AUTO], [0, AUTO]]);
+          return [[0, AUTO], [0, AUTO]];
         }
-      }
+      });
     } // border-color
 
 
@@ -7935,17 +7869,23 @@
           arr[1] = arr[0];
         }
 
-        for (var _i = 0; _i < 2; _i++) {
-          var _item2 = arr[_i];
+        for (var i = 0; i < 2; i++) {
+          var item = arr[i];
 
-          if (/%$/.test(_item2) || /px$/i.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
-            calUnit(arr, _i, _item2);
+          if (/^-?[\d.]+$/.test(item)) {
+            var n = calUnit(item);
 
-            if (arr[_i][1] === NUMBER) {
-              arr[_i][1] = PX$2;
+            if ([NUMBER, DEG].indexOf(n[1]) > -1) {
+              n[1] = PX$2;
             }
+
+            if (n[0] < 0) {
+              n[0] = 0;
+            }
+
+            arr[i] = n;
           } else {
-            arr[_i] = [0, PX$2];
+            arr[i] = [0, PX$2];
           }
         }
 
@@ -7956,11 +7896,10 @@
 
     if (temp) {
       var transform = res[TRANSFORM$1] = [];
+      var match = (temp || '').toString().match(/\w+\(.+?\)/g);
 
-      var _match = (temp || '').toString().match(/\w+\(.+?\)/g);
-
-      if (_match) {
-        _match.forEach(function (item) {
+      if (match) {
+        match.forEach(function (item) {
           var i = item.indexOf('(');
           var k = item.slice(0, i);
           var v = item.slice(i + 1, item.length - 1);
@@ -7981,7 +7920,7 @@
           } else if (TRANSFORM_HASH.hasOwnProperty(k)) {
             var k2 = TRANSFORM_HASH[k];
 
-            var _arr = calUnit([k2, v], 1, v);
+            var _arr = calUnit(v);
 
             compatibleTransform(k2, _arr[1]);
             transform.push(_arr);
@@ -7998,8 +7937,8 @@
 
             var k1 = STYLE_KEY$3[style2Upper$1(k + 'X')];
             var _k = STYLE_KEY$3[style2Upper$1(k + 'Y')];
-            var arr1 = calUnit([k1, _arr2[0]], 1, _arr2[0]);
-            var arr2 = calUnit([_k, _arr2[1]], 1, _arr2[1]);
+            var arr1 = calUnit(_arr2[0]);
+            var arr2 = calUnit(_arr2[1]);
             compatibleTransform(k1, arr1[1]);
             compatibleTransform(_k, arr2[1]);
             transform.push(arr1);
@@ -8014,22 +7953,24 @@
     if (!isNil$3(temp)) {
       var tfo = res[TRANSFORM_ORIGIN$1] = [];
 
-      var _match2 = temp.toString().match(reg.position);
+      var _match = temp.toString().match(reg.position);
 
-      if (_match2) {
-        if (_match2.length === 1) {
-          _match2[1] = _match2[0];
+      if (_match) {
+        if (_match.length === 1) {
+          _match[1] = _match[0];
         }
 
-        for (var _i2 = 0; _i2 < 2; _i2++) {
-          var _item3 = _match2[_i2];
+        for (var i = 0; i < 2; i++) {
+          var item = _match[i];
 
-          if (/%$/.test(_item3) || /px$/i.test(_item3) || /^-?[\d.]+$/.test(_item3)) {
-            calUnit(tfo, _i2, _item3);
+          if (/^-?[\d.]+$/.test(item)) {
+            var n = calUnit(item);
 
-            if (tfo[_i2][1] === NUMBER) {
-              tfo[_i2][1] = PX$2;
+            if ([NUMBER, DEG].indexOf(n[1]) > -1) {
+              n[1] = PX$2;
             }
+
+            tfo.push(n);
           } else {
             tfo.push([{
               top: 0,
@@ -8037,10 +7978,10 @@
               center: 50,
               right: 100,
               bottom: 100
-            }[_item3], PERCENT$1]); // 不规范的写法变默认值50%
+            }[item], PERCENT$1]); // 不规范的写法变默认值50%
 
-            if (isNil$3(tfo[_i2][0])) {
-              tfo[_i2][0] = 50;
+            if (isNil$3(tfo[i][0])) {
+              tfo[i][0] = 50;
             }
           }
         }
@@ -8058,9 +7999,10 @@
       }
 
       var k2 = TRANSFORM_HASH[k];
-      calUnit(res, k2, v); // 没有单位或默认值处理单位
+      var n = calUnit(v); // 没有单位或默认值处理单位
 
-      compatibleTransform(k2, res[k2]);
+      compatibleTransform(k2, n);
+      res[k2] = n;
     });
     temp = style.opacity;
 
@@ -8090,14 +8032,18 @@
         return;
       }
 
+      if (v === 'auto') {
+        v = [0, AUTO];
+      } else {
+        v = calUnit(v); // 无单位视为px
+
+        if ([NUMBER, DEG].indexOf(v[1]) > -1) {
+          v[1] = PX$2;
+        }
+      }
+
       var k2 = STYLE_KEY$3[style2Upper$1(k)];
-      calUnit(res, k2, v);
-      v = res[k2]; // 无单位视为px
-
-      if (v[1] === NUMBER) {
-        v[1] = PX$2;
-      } // 限制padding/border为正数
-
+      res[k2] = v; // 限制padding/border为正数
 
       if ({
         paddingTop: true,
@@ -8120,12 +8066,11 @@
       if (temp === 'content') {
         res[FLEX_BASIS] = [temp, STRING];
       } else if (/^[\d.]/.test(temp)) {
-        calUnit(res, FLEX_BASIS, temp);
-        var _v = res[FLEX_BASIS];
-        _v[0] = Math.max(_v[0], 0); // 无单位视为px
+        var v = res[FLEX_BASIS] = calUnit(temp);
+        v[0] = Math.max(v[0], 0); // 无单位视为px
 
-        if (_v[1] === NUMBER) {
-          _v[1] = PX$2;
+        if ([NUMBER, DEG].indexOf(v[1]) > -1) {
+          v[1] = PX$2;
         }
       } else {
         res[FLEX_BASIS] = [0, AUTO];
@@ -8153,16 +8098,19 @@
     if (temp || temp === 0) {
       if (temp === 'inherit') {
         res[FONT_SIZE] = [0, INHERIT$2];
-      } else if (/%$/.test(temp)) {
-        var _v2 = Math.max(0, parseFloat(temp));
-
-        if (_v2) {
-          res[FONT_SIZE] = [_v2, PERCENT$1];
-        } else {
-          res[FONT_SIZE] = [DEFAULT_FONT_SIZE, PX$2];
-        }
       } else {
-        res[FONT_SIZE] = [Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE, PX$2];
+        var _v = calUnit(temp); // fontSize不能为负数，否则为继承
+
+
+        if (_v < 0) {
+          res[FONT_SIZE] = [0, INHERIT$2];
+        } else {
+          if ([NUMBER, DEG].indexOf(_v[1]) > -1) {
+            _v[1] = PX$2;
+          }
+
+          res[FONT_SIZE] = _v;
+        }
       }
     }
 
@@ -8224,12 +8172,13 @@
       else if (/px$/i.test(temp)) {
           res[LINE_HEIGHT] = [parseFloat(temp), PX$2];
         } else {
-          var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
+          var _n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
-          if (n === 'normal') {
+
+          if (_n === 'normal') {
             res[LINE_HEIGHT] = [null, AUTO];
           } else {
-            res[LINE_HEIGHT] = [n, NUMBER];
+            res[LINE_HEIGHT] = [_n, NUMBER];
           }
         }
     }
@@ -8321,30 +8270,20 @@
     temp = style.strokeWidth;
 
     if (!isNil$3(temp)) {
-      if (Array.isArray(temp)) {
-        if (temp.length) {
-          res[STROKE_WIDTH] = temp.map(function (item) {
-            var v = [];
-            calUnit(v, 0, item);
-
-            if (v[0][1] === NUMBER) {
-              v[0][1] = PX$2;
-            }
-
-            return v[0];
-          });
-        } else {
-          res[STROKE_WIDTH] = [0, PX$2];
-        }
-      } else {
-        var _v3 = res[STROKE_WIDTH] = [];
-
-        calUnit(_v3, 0, temp);
-
-        if (_v3[0][1] === NUMBER) {
-          _v3[0][1] = PX$2;
-        }
+      if (!Array.isArray(temp)) {
+        temp = [temp];
       }
+
+      res[STROKE_WIDTH] = temp.map(function (item) {
+        var v = calUnit(item);
+
+        if ([NUMBER, DEG].indexOf(v[1]) > -1) {
+          v[1] = PX$2;
+        }
+
+        v[0] = Math.max(v[0], 0);
+        return v;
+      });
     }
 
     temp = style.strokeDasharray;
@@ -8369,18 +8308,18 @@
           return [];
         });
       } else {
-        var _match3 = temp.toString().match(/[\d.]+/g);
+        var _match2 = temp.toString().match(/[\d.]+/g);
 
-        if (_match3) {
-          _match3 = _match3.map(function (item) {
+        if (_match2) {
+          _match2 = _match2.map(function (item) {
             return parseFloat(item);
           });
 
-          if (_match3.length % 2 === 1) {
-            _match3.push(_match3[_match3.length - 1]);
+          if (_match2.length % 2 === 1) {
+            _match2.push(_match2[_match2.length - 1]);
           }
 
-          res[STROKE_DASHARRAY] = [_match3];
+          res[STROKE_DASHARRAY] = [_match2];
         } else {
           res[STROKE_DASHARRAY] = [[]];
         }
@@ -8394,10 +8333,10 @@
       var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
 
       if (blur) {
-        var _v4 = parseFloat(blur[1]) || 0;
+        var _v2 = parseFloat(blur[1]) || 0;
 
-        if (_v4) {
-          f = [['blur', _v4]];
+        if (_v2) {
+          f = [['blur', _v2]];
         }
       }
 
@@ -8427,38 +8366,43 @@
     temp = style.boxShadow;
 
     if (temp !== undefined) {
-      var _bs = null;
+      var bs = null;
 
-      var _match4 = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+      var _match3 = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
-      if (_match4) {
-        _match4.forEach(function (item) {
+      if (_match3) {
+        _match3.forEach(function (item) {
           var boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
           if (boxShadow) {
-            _bs = _bs || [];
-            var _res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
+            bs = bs || [];
+            var _res = []; // v,h,blur,spread,color,inset
 
-            for (var _i3 = 0; _i3 < 4; _i3++) {
-              calUnit(_res, _i3, _res[_i3]); // x/y可以负，blur和spread不行，没有继承且只有px无需保存单位
+            for (var _i = 0; _i < 4; _i++) {
+              var _v3 = calUnit(boxShadow[_i]);
 
-              if (_i3 > 1 && _res[_i3][0] < 0) {
-                _res[_i3] = 0;
+              if ([NUMBER, DEG].indexOf(_v3[1]) > -1) {
+                _v3[1] = PX$2;
+              } // x/y可以负，blur和spread不行
+
+
+              if (_i > 1 && _v3[0] < 0) {
+                _v3 = 0;
               }
 
-              if (_res[_i3][1] === NUMBER) {
-                _res[_i3] = _res[_i3][0];
-              }
+              _res.push(_v3);
             }
 
-            _res[4] = rgba2int$2(_res[4]);
+            _res.push(rgba2int$2(boxShadow[4]));
 
-            _bs.push(_res);
+            _res.push(boxShadow[6] || 'outset');
+
+            bs.push(_res);
           }
         });
       }
 
-      res[BOX_SHADOW] = _bs;
+      res[BOX_SHADOW] = bs;
     } // 直接赋值的string类型
 
 
@@ -8482,8 +8426,8 @@
 
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        var _v5 = style[k];
-        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v5) ? _v5 : [_v5];
+        var _v4 = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v4) ? _v4 : [_v4];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -8700,8 +8644,8 @@
         return false;
       }
 
-      for (var _i4 = 0, _len = a.length; _i4 < _len; _i4++) {
-        if (!equalArr$1(a[_i4], b[_i4])) {
+      for (var _i2 = 0, _len = a.length; _i2 < _len; _i2++) {
+        if (!equalArr$1(a[_i2], b[_i2])) {
           return false;
         }
       }
@@ -8712,9 +8656,9 @@
         return false;
       }
 
-      for (var _i5 = 0, _len2 = a.length; _i5 < _len2; _i5++) {
-        var aa = a[_i5],
-            bb = b[_i5];
+      for (var _i3 = 0, _len2 = a.length; _i3 < _len2; _i3++) {
+        var aa = a[_i3],
+            bb = b[_i3];
 
         if (aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
           return false;
@@ -8748,9 +8692,9 @@
         return false;
       }
 
-      for (var _i6 = 0, _len3 = av.length; _i6 < _len3; _i6++) {
-        var ai = av[_i6];
-        var bi = bv[_i6];
+      for (var _i4 = 0, _len3 = av.length; _i4 < _len3; _i4++) {
+        var ai = av[_i4];
+        var bi = bv[_i4];
 
         if (ai.length !== bi.length) {
           return false;
@@ -8830,9 +8774,9 @@
         if (v) {
           var n = v.slice(0);
 
-          for (var _i7 = 0, _len4 = n.length; _i7 < _len4; _i7++) {
-            n[_i7] = n[_i7].slice(0);
-            n[_i7][1] = n[_i7][1].slice(0);
+          for (var _i5 = 0, _len4 = n.length; _i5 < _len4; _i5++) {
+            n[_i5] = n[_i5].slice(0);
+            n[_i5][1] = n[_i5][1].slice(0);
           }
 
           res[k] = n;
@@ -8854,27 +8798,27 @@
             res[k] = util.clone(v);
           } // 其余皆是数组或空
           else if (v) {
-              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+              var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
               if (k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-                for (var _i8 = 0, _len5 = _n.length; _i8 < _len5; _i8++) {
-                  _n[_i8] = _n[_i8].slice(0);
+                for (var _i6 = 0, _len5 = _n2.length; _i6 < _len5; _i6++) {
+                  _n2[_i6] = _n2[_i6].slice(0);
                 }
               } else if (k === BACKGROUND_SIZE) {
-                for (var _i9 = 0, _len6 = _n.length; _i9 < _len6; _i9++) {
-                  _n[_i9] = _n[_i9].slice(0);
-                  _n[_i9][0] = _n[_i9][0].slice(0);
-                  _n[_i9][1] = _n[_i9][1].slice(0);
+                for (var _i7 = 0, _len6 = _n2.length; _i7 < _len6; _i7++) {
+                  _n2[_i7] = _n2[_i7].slice(0);
+                  _n2[_i7][0] = _n2[_i7][0].slice(0);
+                  _n2[_i7][1] = _n2[_i7][1].slice(0);
                 }
               } else if (ARRAY_0.hasOwnProperty(k)) {
-                _n[0] = _n[0].slice(0);
+                _n2[0] = _n2[0].slice(0);
               } else if (ARRAY_0_1.hasOwnProperty(k)) {
-                _n[0] = _n[0].slice(0);
-                _n[1] = _n[1].slice(0);
+                _n2[0] = _n2[0].slice(0);
+                _n2[1] = _n2[1].slice(0);
               } else if (k === TRANSFORM$1) {
-                for (var _i10 = 0, _len7 = _n.length; _i10 < _len7; _i10++) {
-                  _n[_i10] = _n[_i10].slice(0);
+                for (var _i8 = 0, _len7 = _n2.length; _i8 < _len7; _i8++) {
+                  _n2[_i8] = _n2[_i8].slice(0);
                 }
               }
             }
@@ -29804,8 +29748,9 @@
 
         var measureHash = {};
         measureList.forEach(function (node) {
-          var __uniqueUpdateId = node.__config[NODE_UNIQUE_UPDATE_ID],
-              parent = node.domParent;
+          var _node$__config = node.__config,
+              __uniqueUpdateId = _node$__config[NODE_UNIQUE_UPDATE_ID],
+              parent = _node$__config[NODE_DOM_PARENT$6];
 
           if (measureHash.hasOwnProperty(__uniqueUpdateId)) {
             return;

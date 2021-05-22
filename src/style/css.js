@@ -67,7 +67,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   FLEX_WRAP,
   ALIGN_CONTENT,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, EM, VW, VH } = unit;
 const { isNil, rgba2int, equalArr } = util;
 const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
 
@@ -94,41 +94,34 @@ const TRANSFORM_HASH = {
 };
 
 /**
- * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
- * @param res 待计算的样式对象
- * @param k 对象的key
- * @param v 对象的value
- * @returns 格式化好的样式对象本身
+ * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
+ * @param v value
+ * @returns 格式化好的[number, unit]
  */
-function calUnit(res, k, v) {
-  if(v === 'auto') {
-    res[k] = [0, AUTO];
-  }
-  else if(v === 'inherit') {
-    res[k] = [0, INHERIT];
-  }
-  else if(/%$/.test(v)) {
-    v = parseFloat(v) || 0;
-    res[k] = [v, PERCENT];
+function calUnit(v) {
+  let n = parseFloat(v) || 0;
+  if(/%$/.test(v)) {
+    return [n, PERCENT];
   }
   else if(/px$/i.test(v)) {
-    v = parseFloat(v) || 0;
-    res[k] = [v, PX];
+    return [n, PX];
   }
   else if(/deg$/i.test(v)) {
-    v = parseFloat(v) || 0;
-    res[k] = [v, DEG];
+    return [n, DEG];
   }
-  else {
-    v = parseFloat(v) || 0;
-    res[k] = [v, NUMBER];
+  else if(/rem$/i.test(v)) {
+    return [n, REM];
   }
-  // border等相关不能为负值
-  if(k === BORDER_LEFT_WIDTH || k === BORDER_TOP_WIDTH || k === BORDER_RIGHT_WIDTH || k === BORDER_BOTTOM_WIDTH
-    || k === WIDTH || k === HEIGHT || k === FLEX_BASIS) {
-    res[k][0] = Math.max(res[k][0], 0);
+  else if(/em$/i.test(v)) {
+    return [n, EM];
   }
-  return res;
+  else if(/vw$/i.test(v)) {
+    return [n, VW];
+  }
+  else if(/vh$/i.test(v)) {
+    return [n, VH];
+  }
+  return [n, NUMBER];
 }
 
 function compatibleTransform(k, arr) {
@@ -292,118 +285,42 @@ function normalize(style, reset = []) {
     temp = style[k];
     if(!isNil(temp)) {
       k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
-      if(Array.isArray(temp)) {
-        if(temp.length) {
-          res[k] = temp.map(item => {
-            if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-              let v = [];
-              calUnit(v, 0, item);
-              if(v[0][1] === NUMBER) {
-                v[0][1] = PX;
-              }
-              return v[0];
-            }
-            else {
-              return [
-                {
-                  top: 0,
-                  left: 0,
-                  center: 50,
-                  right: 100,
-                  bottom: 100,
-                }[item] || 0,
-                PERCENT,
-              ];
-            }
-          });
+      if(!Array.isArray(temp)) {
+        temp = [temp];
+      }
+      res[k] = temp.map(item => {
+        if(/^-?[\d.]+$/.test(item)) {
+          return calUnit(item);
         }
         else {
-          res[k] = [0, PERCENT];
+          return [
+            {
+              top: 0,
+              left: 0,
+              center: 50,
+              right: 100,
+              bottom: 100,
+            }[item] || 0,
+            PERCENT,
+          ];
         }
-      }
-      else if(/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
-        calUnit(res, k, temp);
-        temp = res[k];
-        if(temp[1] === NUMBER) {
-          temp[1] = PX;
-        }
-        res[k] = [temp];
-      }
-      else {
-        res[k] = [[
-          {
-            top: 0,
-            left: 0,
-            center: 50,
-            right: 100,
-            bottom: 100,
-          }[temp] || 0,
-          PERCENT,
-        ]];
-      }
+      });
     }
   });
   // 背景尺寸
   temp = style.backgroundSize;
   if(temp) {
-    let bs = res[BACKGROUND_SIZE] = [];
-    if(Array.isArray(temp)) {
-      if(temp.length) {
-        bs = temp.map(item => {
-          if(!item) {
-            return [
-              [0, AUTO],
-              [0, AUTO],
-            ];
-          }
-          let match = item.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
-          if(match) {
-            if(match.length === 1) {
-              if(match[0] === 'contain' || match[0] === 'cover') {
-                match[1] = match[0];
-              }
-              else {
-                match[1] = 'auto';
-              }
-            }
-            let v = [];
-            for(let i = 0; i < 2; i++) {
-              let item = match[i];
-              if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-                calUnit(v, i, item);
-                if(v[i][1] === NUMBER) {
-                  v[i][1] = PX;
-                }
-              }
-              else if(item === '0' || item === 0) {
-                v.push([0, PX]);
-              }
-              else if(item === 'contain' || item === 'cover') {
-                v.push([item, STRING]);
-              }
-              else {
-                v.push([0, AUTO]);
-              }
-            }
-            return v;
-          }
-          else {
-            return [
-              [0, AUTO],
-              [0, AUTO],
-            ];
-          }
-        });
-      }
-      else {
-        bs.push([
-          [0, AUTO],
-          [0, AUTO],
-        ]);
-      }
+    if(!Array.isArray(temp)) {
+      temp = [temp];
     }
-    else {
-      let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+    res[BACKGROUND_SIZE] = temp.map(item => {
+      if(!item) {
+        return [
+          [0, AUTO],
+          [0, AUTO],
+        ];
+      }
+      let match = item.toString().match(/\b(?:(-?[\d.]+)|(contain|cover|auto))/ig);
       if(match) {
         if(match.length === 1) {
           if(match[0] === 'contain' || match[0] === 'cover') {
@@ -416,14 +333,12 @@ function normalize(style, reset = []) {
         let v = [];
         for(let i = 0; i < 2; i++) {
           let item = match[i];
-          if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-            calUnit(v, i, item);
-            if(v[i][1] === NUMBER) {
-              v[i][1] = PX;
+          if(/^-?[\d.]+$/.test(item)) {
+            let n = calUnit(item);
+            if([NUMBER, DEG].indexOf(n[1]) > -1) {
+              n[1] = PX;
             }
-          }
-          else if(item === '0' || item === 0) {
-            v.push([0, PX]);
+            v.push(n);
           }
           else if(item === 'contain' || item === 'cover') {
             v.push([item, STRING]);
@@ -432,15 +347,15 @@ function normalize(style, reset = []) {
             v.push([0, AUTO]);
           }
         }
-        bs.push(v);
+        return v;
       }
       else {
-        bs.push([
+        return [
           [0, AUTO],
           [0, AUTO],
-        ]);
+        ];
       }
-    }
+    });
   }
   // border-color
   ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
@@ -461,11 +376,15 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = arr[i];
-        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-          calUnit(arr, i, item);
-          if(arr[i][1] === NUMBER) {
-            arr[i][1] = PX;
+        if(/^-?[\d.]+$/.test(item)) {
+          let n = calUnit(item);
+          if([NUMBER, DEG].indexOf(n[1]) > -1) {
+            n[1] = PX;
           }
+          if(n[0] < 0) {
+            n[0] = 0;
+          }
+          arr[i] = n;
         }
         else {
           arr[i] = [0, PX];
@@ -495,7 +414,7 @@ function normalize(style, reset = []) {
         }
         else if(TRANSFORM_HASH.hasOwnProperty(k)) {
           let k2 = TRANSFORM_HASH[k];
-          let arr = calUnit([k2, v], 1, v);
+          let arr = calUnit(v);
           compatibleTransform(k2, arr[1]);
           transform.push(arr);
         }
@@ -506,8 +425,8 @@ function normalize(style, reset = []) {
           }
           let k1 = STYLE_KEY[style2Upper(k + 'X')];
           let k2 = STYLE_KEY[style2Upper(k + 'Y')];
-          let arr1 = calUnit([k1, arr[0]], 1, arr[0]);
-          let arr2 = calUnit([k2, arr[1]], 1, arr[1]);
+          let arr1 = calUnit(arr[0]);
+          let arr2 = calUnit(arr[1]);
           compatibleTransform(k1, arr1[1]);
           compatibleTransform(k2, arr2[1]);
           transform.push(arr1);
@@ -526,11 +445,12 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
-          calUnit(tfo, i, item);
-          if(tfo[i][1] === NUMBER) {
-            tfo[i][1] = PX;
+        if(/^-?[\d.]+$/.test(item)) {
+          let n = calUnit(item);
+          if([NUMBER, DEG].indexOf(n[1]) > -1) {
+            n[1] = PX;
           }
+          tfo.push(n);
         }
         else {
           tfo.push([
@@ -570,9 +490,10 @@ function normalize(style, reset = []) {
       return;
     }
     let k2 = TRANSFORM_HASH[k];
-    calUnit(res, k2, v);
+    let n = calUnit(v);
     // 没有单位或默认值处理单位
-    compatibleTransform(k2, res[k2]);
+    compatibleTransform(k2, n);
+    res[k2] = n;
   });
   temp = style.opacity;
   if(!isNil(temp)) {
@@ -615,13 +536,18 @@ function normalize(style, reset = []) {
     if(isNil(v)) {
       return;
     }
-    let k2 = STYLE_KEY[style2Upper(k)];
-    calUnit(res, k2, v);
-    v = res[k2];
-    // 无单位视为px
-    if(v[1] === NUMBER) {
-      v[1] = PX;
+    if(v === 'auto') {
+      v = [0, AUTO];
     }
+    else {
+      v = calUnit(v);
+      // 无单位视为px
+      if([NUMBER, DEG].indexOf(v[1]) > -1) {
+        v[1] = PX;
+      }
+    }
+    let k2 = STYLE_KEY[style2Upper(k)];
+    res[k2] = v;
     // 限制padding/border为正数
     if({
       paddingTop: true,
@@ -644,11 +570,10 @@ function normalize(style, reset = []) {
       res[FLEX_BASIS] = [temp, STRING];
     }
     else if(/^[\d.]/.test(temp)) {
-      calUnit(res, FLEX_BASIS, temp);
-      let v = res[FLEX_BASIS];
+      let v = res[FLEX_BASIS] = calUnit(temp);
       v[0] = Math.max(v[0], 0);
       // 无单位视为px
-      if(v[1] === NUMBER) {
+      if([NUMBER, DEG].indexOf(v[1]) > -1) {
         v[1] = PX;
       }
     }
@@ -674,17 +599,18 @@ function normalize(style, reset = []) {
     if(temp === 'inherit') {
       res[FONT_SIZE] = [0, INHERIT];
     }
-    else if(/%$/.test(temp)) {
-      let v = Math.max(0, parseFloat(temp));
-      if(v) {
-        res[FONT_SIZE] = [v, PERCENT];
+    else {
+      let v = calUnit(temp);
+      // fontSize不能为负数，否则为继承
+      if(v < 0) {
+        res[FONT_SIZE] = [0, INHERIT];
       }
       else {
-        res[FONT_SIZE] = [DEFAULT_FONT_SIZE, PX];
+        if([NUMBER, DEG].indexOf(v[1]) > -1) {
+          v[1] = PX;
+        }
+        res[FONT_SIZE] = v;
       }
-    }
-    else {
-      res[FONT_SIZE] = [Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE, PX];
     }
   }
   temp = style.fontWeight;
@@ -848,28 +774,17 @@ function normalize(style, reset = []) {
   }
   temp = style.strokeWidth;
   if(!isNil(temp)) {
-    if(Array.isArray(temp)) {
-      if(temp.length) {
-        res[STROKE_WIDTH] = temp.map(item => {
-          let v = [];
-          calUnit(v, 0,  item);
-          if(v[0][1] === NUMBER) {
-            v[0][1] = PX;
-          }
-          return v[0];
-        });
-      }
-      else {
-        res[STROKE_WIDTH] = [0, PX];
-      }
+    if(!Array.isArray(temp)) {
+      temp = [temp];
     }
-    else {
-      let v = res[STROKE_WIDTH] = [];
-      calUnit(v, 0,  temp);
-      if(v[0][1] === NUMBER) {
-        v[0][1] = PX;
+    res[STROKE_WIDTH] = temp.map(item => {
+      let v = calUnit(item);
+      if([NUMBER, DEG].indexOf(v[1]) > -1) {
+        v[1] = PX;
       }
-    }
+      v[0] = Math.max(v[0], 0);
+      return v;
+    });
   }
   temp = style.strokeDasharray;
   if(!isNil(temp)) {
@@ -939,18 +854,21 @@ function normalize(style, reset = []) {
         let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
         if(boxShadow) {
           bs = bs || [];
-          let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
+          let res = [];
+          // v,h,blur,spread,color,inset
           for(let i = 0; i < 4; i++) {
-            calUnit(res, i, res[i]);
-            // x/y可以负，blur和spread不行，没有继承且只有px无需保存单位
-            if(i > 1 && res[i][0] < 0) {
-              res[i] = 0;
+            let v = calUnit(boxShadow[i]);
+            if([NUMBER, DEG].indexOf(v[1]) > -1) {
+              v[1] = PX;
             }
-            if(res[i][1] === NUMBER) {
-              res[i] = res[i][0];
+            // x/y可以负，blur和spread不行
+            if(i > 1 && v[0] < 0) {
+              v = 0;
             }
+            res.push(v);
           }
-          res[4] = rgba2int(res[4]);
+          res.push(rgba2int(boxShadow[4]));
+          res.push(boxShadow[6] || 'outset');
           bs.push(res);
         }
       });

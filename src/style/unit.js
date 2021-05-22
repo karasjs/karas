@@ -7,4 +7,8 @@ export default {
   DEG: 5,
   STRING: 6,
   RGBA: 7,
+  REM: 8,
+  EM: 9,
+  VW: 10,
+  VH: 11,
 };

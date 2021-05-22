@@ -1131,7 +1131,7 @@ class Root extends Dom {
      */
     let measureHash = {};
     measureList.forEach(node => {
-      let { __config:{ [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId, }, domParent: parent } = node;
+      let { __config:{ [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId, [NODE_DOM_PARENT]: parent } } = node;
       if(measureHash.hasOwnProperty(__uniqueUpdateId)) {
         return;
       }

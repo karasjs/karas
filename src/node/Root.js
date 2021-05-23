@@ -1294,9 +1294,9 @@ class Root extends Dom {
         let parent = node.domParent;
         let { __layoutData: { x, y, h }, width, computedStyle } = parent;
         let current = node;
-        // cp的shadowRoot要向上到cp本身，高阶组件不能用isShadowRoot判断，暂时这样 TODO
-        while(component && !current.parent && current.host && current.host !== root) {
-          current = current.host;
+        // cp的shadowRoot要向上到cp本身，考虑高阶组件在内到真正的顶层cp
+        if(component && current.isShadowRoot) {
+          current = current.hostRoot;
         }
         // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的和display:none的
         let ref = current.prev;

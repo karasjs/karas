@@ -136,6 +136,11 @@ class Node {
     return this.__host;
   }
 
+  // 考虑高阶组件在内的component根节点
+  get hostRoot() {
+    return this.__hostRoot;
+  }
+
   get baseLine() {
     return this.__baseLine;
   }

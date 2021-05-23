@@ -588,6 +588,12 @@
       key: "host",
       get: function get() {
         return this.__host;
+      } // 考虑高阶组件在内的component根节点
+
+    }, {
+      key: "hostRoot",
+      get: function get() {
+        return this.__hostRoot;
       }
     }, {
       key: "baseLine",
@@ -11840,17 +11846,19 @@
 
             _this3.on(k, v);
           }
-        }); // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
+        }); // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归即hoc高阶组件
+        // host是直接所属，hostRoot同考虑到高阶组件
 
         this.__shadow = sr;
-        sr.__host = this;
+        sr.__host = this; // 递归下去，多层级时执行顺序由里到外，最终会被最上层执行替换
 
         while (sr instanceof Component) {
-          sr = sr.shadowRoot;
+          sr.__hostRoot = this;
+          sr = sr.shadow;
         }
 
-        sr.__host = this;
         this.__shadowRoot = sr;
+        sr.__hostRoot = this;
 
         if (!this.__isMounted) {
           this.__isMounted = true;
@@ -11931,6 +11939,11 @@
       key: "host",
       get: function get() {
         return this.__host;
+      }
+    }, {
+      key: "hostRoot",
+      get: function get() {
+        return this.__hostRoot;
       }
     }, {
       key: "parent",
@@ -30366,10 +30379,10 @@
                   h = _parent$__layoutData.h,
                   width = parent.width,
                   computedStyle = parent.computedStyle;
-              var current = node; // cp的shadowRoot要向上到cp本身，高阶组件不能用isShadowRoot判断，暂时这样 TODO
+              var current = node; // cp的shadowRoot要向上到cp本身，考虑高阶组件在内到真正的顶层cp
 
-              while (component && !current.parent && current.host && current.host !== root) {
-                current = current.host;
+              if (component && current.isShadowRoot) {
+                current = current.hostRoot;
               } // y使用prev或者parent的，首个节点无prev，prev要忽略absolute的和display:none的
 
 

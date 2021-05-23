@@ -143,14 +143,17 @@ class Component extends Event {
         this.on(k, v);
       }
     });
-    // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归
+    // shadow指向直接renderRoot，shadowRoot考虑到返回Component的递归即hoc高阶组件
+    // host是直接所属，hostRoot同考虑到高阶组件
     this.__shadow = sr;
     sr.__host = this;
+    // 递归下去，多层级时执行顺序由里到外，最终会被最上层执行替换
     while(sr instanceof Component) {
-      sr = sr.shadowRoot;
+      sr.__hostRoot = this;
+      sr = sr.shadow;
     }
-    sr.__host = this;
     this.__shadowRoot = sr;
+    sr.__hostRoot = this;
     if(!this.__isMounted) {
       this.__isMounted = true;
       let { componentDidMount } = this;
@@ -213,6 +216,10 @@ class Component extends Event {
 
   get host() {
     return this.__host;
+  }
+
+  get hostRoot() {
+    return this.__hostRoot;
   }
 
   get parent() {

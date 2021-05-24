@@ -37,18 +37,30 @@
   * auto 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
 * marginTop/marginRight/marginBottom/marginLeft
   * auto 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
 * paddingTop/paddingRight/paddingBottom/paddingLeft
   * auto 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
 * width/height
   * auto 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
 * flexGrow
   * 0 默认
   * number
@@ -59,6 +71,9 @@
   * auto 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
 * flexWrap
   * nowrap 默认
   * wrap
@@ -113,6 +128,9 @@
   * normal 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
   * number
 * textAlign
   * left 默认
@@ -146,10 +164,16 @@
   * 0 默认，可以是数组形式设置多个
   * px
   * %
+  * rem
+  * vw
+  * vh
 * backgroundPositionY
   * 0 默认，可以是数组形式设置多个
   * px
   * %
+  * rem
+  * vw
+  * vh
   * contain/cover
 * backgroundRepeat
   * noRepeat 默认，可以是数组形式设置多个
@@ -159,6 +183,9 @@
   * auto 默认，可以是数组形式设置多个
   * px
   * %
+  * rem
+  * vw
+  * vh
   * contain/cover
 * backgroundClip
   * borderBox 默认
@@ -192,6 +219,9 @@
   * bottom
   * px
   * %
+  * rem
+  * vw
+  * vh
 * visibility
   * inherit 默认
   * visible
@@ -253,6 +283,9 @@
   * 1 默认，可以是数组形式设置多个
   * px
   * %
+  * rem
+  * vw
+  * vh
 * strokeDasharray
   * null 默认，可以是数组形式设置多个
   * Array\<Number>
@@ -276,6 +309,9 @@
   * 0 默认
   * px
   * %
+  * rem
+  * vw
+  * vh
 * scaleX/scaleY
   * 1 默认
   * Number[0,∞)

@@ -67,7 +67,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   FLEX_WRAP,
   ALIGN_CONTENT,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, EM, VW, VH } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, EM, VW, VH, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
 const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
 
@@ -90,43 +90,6 @@ const TRANSFORM_HASH = {
   'rotateZ': ROTATE_Z,
   'rotate': ROTATE_Z,
 };
-
-/**
- * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
- * @param v value
- * @returns 格式化好的[number, unit]
- */
-function calUnit(v) {
-  let n = parseFloat(v) || 0;
-  if(/%$/.test(v)) {
-    return [n, PERCENT];
-  }
-  else if(/px$/i.test(v)) {
-    return [n, PX];
-  }
-  else if(/deg$/i.test(v)) {
-    return [n, DEG];
-  }
-  else if(/rem$/i.test(v)) {
-    return [n, REM];
-  }
-  else if(/vw$/i.test(v)) {
-    return [n, VW];
-  }
-  else if(/vh$/i.test(v)) {
-    return [n, VH];
-  }
-  else if(/em$/i.test(v)) {
-    return [n, EM];
-  }
-  else if(/vw$/i.test(v)) {
-    return [n, VW];
-  }
-  else if(/vh$/i.test(v)) {
-    return [n, VH];
-  }
-  return [n, NUMBER];
-}
 
 function compatibleTransform(k, arr) {
   if(k === SCALE_X || k === SCALE_Y) {

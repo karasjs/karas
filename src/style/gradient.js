@@ -12,7 +12,7 @@ import enums from '../util/enums';
 import inject from '../util/inject';
 
 const { rgba2int, isNil } = util;
-const { PX, PERCENT } = unit;
+const { PX, PERCENT, DEG, NUMBER, calUnit } = unit;
 const { d2r } = geom;
 const { canvasPolygon, svgPolygon } = painter;
 const {
@@ -57,27 +57,24 @@ function getLinearDeg(v) {
 }
 
 function getRadialPosition(data) {
-  if(/%$/.test(data) || /px$/.test(data) || /^-?[\d.]+$/.test(data)) {
-    return [
-      parseFloat(data),
-      /%/.test(data) ? PERCENT : PX,
-    ];
+  if(/^-?[\d.]/.test(data)) {
+    let v = calUnit(data);
+    if([NUMBER, DEG].indexOf(v[1]) > -1) {
+      v[1] = PX;
+    }
+    return v;
   }
   else {
-    let res = [
+    return [
       {
         top: 0,
         left: 0,
         center: 50,
         right: 100,
         bottom: 100,
-      }[data],
+      }[data] || 50,
       PERCENT,
     ];
-    if(isNil(res[0])) {
-      res[0] = 50;
-    }
-    return res;
   }
 }
 
@@ -428,7 +425,7 @@ function parseGradient(s) {
           o.z = 'farthest-corner';
         }
       }
-      let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      let position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
         let x = getRadialPosition(position[1]);
         let y = position[2] ? getRadialPosition(position[2]) : x;
@@ -446,7 +443,7 @@ function parseGradient(s) {
       else {
         o.d = 0;
       }
-      let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      let position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
         let x = getRadialPosition(position[1]);
         let y = position[2] ? getRadialPosition(position[2]) : x;
@@ -456,19 +453,17 @@ function parseGradient(s) {
         o.p = [[50, PERCENT], [50, PERCENT]];
       }
     }
-    let v = gradient[2].match(/(-?[\d.]+(px|%))?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
+    let v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig);
     o.v = v.map(item => {
       let color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       let arr = [rgba2int(color[1])];
-      let percent = /-?[\d.]+(?:px|%)/.exec(item);
+      let percent = /-?[\d.]+[pxremvwh%]+/.exec(item);
       if(percent) {
-        arr[1] = [parseFloat(percent[0])];
-        if(/%$/.test(percent[0])) {
-          arr[1][1] = PERCENT;
+        let v = calUnit(percent[0]);
+        if([NUMBER, DEG].indexOf(v[1]) > -1) {
+          v[1] = PX;
         }
-        else {
-          arr[1][1] = PX;
-        }
+        arr[1] = v;
       }
       return arr;
     });

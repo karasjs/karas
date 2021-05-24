@@ -1233,7 +1233,7 @@ class Dom extends Xom {
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
     let maxX = 0;
-    let isDirectionRow = ['column', 'column-reverse'].indexOf(flexDirection) === -1;
+    let isDirectionRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1;
     // 计算伸缩基数
     let growList = [];
     let shrinkList = [];

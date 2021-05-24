@@ -197,61 +197,61 @@ function framing(style, duration, es) {
   return res;
 }
 
-function calByUnit(p, n, k, node) {
+function calByUnit(p, n, container, root) {
   if(p[1] === PX) {
     if(n[1] === PERCENT) {
-      return n[0] * 0.01 * node[k] - p[0];
+      return n[0] * 0.01 * container - p[0];
     }
     else if(n[1] === REM) {
-      return n[0] * node.root.computedStyle[FONT_SIZE] - p[0];
+      return n[0] * root.computedStyle[FONT_SIZE] - p[0];
     }
     else if(n[1] === VW) {
-      return n[0] * node.root.width * 0.01 - p[0];
+      return n[0] * root.width * 0.01 - p[0];
     }
     else if(n[1] === VH) {
-      return n[0] * node.root.height * 0.01 - p[0];
+      return n[0] * root.height * 0.01 - p[0];
     }
   }
   else if(p[1] === REM) {
     if(n[1] === PX) {
-      return n[0] / node.root.computedStyle[FONT_SIZE] - p[0];
+      return n[0] / root.computedStyle[FONT_SIZE] - p[0];
     }
     else if(n[1] === PERCENT) {
-      return n[0] * 0.01 * node[k] / node.root.computedStyle[FONT_SIZE] - p[0];
+      return n[0] * 0.01 * container / root.computedStyle[FONT_SIZE] - p[0];
     }
     else if(n[1] === VW) {
-      return n[0] * node.root.width * 0.01 / node.root.computedStyle[FONT_SIZE] - p[0];
+      return n[0] * root.width * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
     }
     else if(n[1] === VH) {
-      return n[0] * node.root.height * 0.01 / node.root.computedStyle[FONT_SIZE] - p[0];
+      return n[0] * root.height * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
     }
   }
   else if(p[1] === VW) {
     if(n[1] === PX) {
-      return n[0] * 100 / node.root.width - p[0];
+      return n[0] * 100 / root.width - p[0];
     }
     else if(n[1] === REM) {
-      return n[0] * 100 * node.root.computedStyle[FONT_SIZE] / node.root.width - p[0];
+      return n[0] * 100 * root.computedStyle[FONT_SIZE] / root.width - p[0];
     }
     else if(n[1] === PERCENT) {
-      return n[0] * node[k] / node.root.width - p[0];
+      return n[0] * container / root.width - p[0];
     }
     else if(n[1] === VH) {
-      return n[0] * node.root.height / node.root.width - p[0];
+      return n[0] * root.height / root.width - p[0];
     }
   }
   else if(p[1] === VH) {
     if(n[1] === PX) {
-      return n[0] * 100 / node.root.height - p[0];
+      return n[0] * 100 / root.height - p[0];
     }
     else if(n[1] === REM) {
-      return n[0] * 100 * node.root.computedStyle[FONT_SIZE] / node.root.height - p[0];
+      return n[0] * 100 * root.computedStyle[FONT_SIZE] / root.height - p[0];
     }
     else if(n[1] === VW) {
-      return n[0] * node.root.width / node.root.height - p[0];
+      return n[0] * root.width / root.height - p[0];
     }
     else if(n[1] === PERCENT) {
-      return n[0] * node[k] / node.root.height - p[0];
+      return n[0] * container / root.height - p[0];
     }
   }
 }
@@ -361,32 +361,13 @@ function calDiff(prev, next, k, target, tagName) {
         else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
           k2 = k === BACKGROUND_POSITION_X ? 'width' : 'height';
         }
-        let v = calByUnit(pi, ni, k2, target);
+        let v = calByUnit(pi, ni, target[k2], target.root);
         if(!v) {
           res[1].push(null);
           return;
         }
         res[1].push(v);
       }
-      // else if(p[1] === PX && n[1] === PERCENT) {
-      //   let v = ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-      //   v = v - pi[0];
-      //   if(v === 0) {
-      //     return;
-      //   }
-      //   res[1].push(v);
-      // }
-      // else if(p[1] === PERCENT && n[1] === PX) {
-      //   let v = ni[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-      //   v = v - pi[0];
-      //   if(v === 0) {
-      //     return;
-      //   }
-      //   res[1].push(v);
-      // }
-      // else {
-      //   res[1].push(null);
-      // }
     }
   }
   else if(k === BOX_SHADOW) {
@@ -417,28 +398,12 @@ function calDiff(prev, next, k, target, tagName) {
       res[1] = v;
     }
     else {
-      let v = calByUnit(p, n, k === TRANSLATE_X ? 'outerWidth' : 'outerHeight', target);
+      let v = calByUnit(p, n, target[k === TRANSLATE_X ? 'outerWidth' : 'outerHeight'], target.root);
       if(!v) {
         return;
       }
       res[1] = v;
     }
-    // else if(p[1] === PX && n[1] === PERCENT) {
-    //   let v = n[0] * 0.01 * target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
-    //   v = v - p[0];
-    //   if(v === 0) {
-    //     return;
-    //   }
-    //   res[1] = v;
-    // }
-    // else if(p[1] === PERCENT && n[1] === PX) {
-    //   let v = n[0] * 100 / target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
-    //   v = v - p[0];
-    //   if(v === 0) {
-    //     return;
-    //   }
-    //   res[1] = v;
-    // }
   }
   else if(k === BACKGROUND_SIZE) {
     res[1] = [];
@@ -464,21 +429,9 @@ function calDiff(prev, next, k, target, tagName) {
           else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
             k2 = i ? 'width' : 'height';
           }
-          let v = calByUnit(pp, nn, k2, target);
+          let v = calByUnit(pp, nn, target[k2], target.root);
           temp.push(v || 0);
         }
-        // else if(pp[1] === PX && nn[1] === PERCENT) {
-        //   let v = nn[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-        //   temp.push(v - pp[0]);
-        // }
-        // else if(pp[1] === PERCENT && nn[1] === PX) {
-        //   let v = nn[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-        //   temp.push(v - pp[0]);
-        // }
-        // // 兜底异常情况
-        // else {
-        //   temp.push(0);
-        // }
       }
       if(equalArr(temp, [0, 0])) {
         res[1].push(null);
@@ -673,18 +626,9 @@ function calDiff(prev, next, k, target, tagName) {
         res[1].push(n[i][0] - p[i][0]);
       }
       else {
-        let v = calByUnit(p[i], n[i], i ? 'outerHeight' : 'outerWidth', target);
+        let v = calByUnit(p[i], n[i], target[i ? 'outerHeight' : 'outerWidth'], target.root);
         res[1].push(v || 0);
       }
-      // else if(p[i][1] === PX && n[i][1] === PERCENT) {
-      //   res[1].push(n[i][0] * 0.01 * target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
-      // }
-      // else if(p[i][1] === PERCENT && n[i][1] === PX) {
-      //   res[1].push(n[i][0] * 100 / target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
-      // }
-      // else {
-      //   res[1].push(0);
-      // }
     }
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
@@ -698,44 +642,26 @@ function calDiff(prev, next, k, target, tagName) {
     if(p[1] === n[1]) {
       diff = n[0] - p[0];
     }
-    // 长度单位变化特殊计算，根据父元素computedStyle
-    else if(p[1] === PX && n[1] === PERCENT) {
-      let v;
-      if(k === FONT_SIZE) {
-        v = n[0] * parentComputedStyle[k] * 0.01;
-      }
-      else if(k === FLEX_BASIS && computedStyle[FLEX_DIRECTION] === 'row' || k === WIDTH
-        || [LEFT, RIGHT, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_TOP, MARGIN_RIGHT,
-          PADDING_TOP, PADDING_RIGHT, PADDING_BOTTOM, PADDING_LEFT].indexOf(k) > -1) {
-        v = n[0] * parentComputedStyle[WIDTH] * 0.01;
-      }
-      else if(k === FLEX_BASIS || k === HEIGHT || [TOP, BOTTOM].indexOf(k) > -1) {
-        v = n[0] * parentComputedStyle[HEIGHT] * 0.01;
-      }
-      diff = v - p[0];
-    }
-    else if(p[1] === PERCENT && n[1] === PX) {
-      let v;
-      if(k === FONT_SIZE) {
-        v = n[0] * 100 / parentComputedStyle[k];
-      }
-      else if(k === FLEX_BASIS && computedStyle[FLEX_DIRECTION] === 'row' || k === WIDTH
-        || [LEFT, RIGHT, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_TOP, MARGIN_RIGHT,
-          PADDING_TOP, PADDING_RIGHT, PADDING_BOTTOM, PADDING_LEFT].indexOf(k) > -1) {
-        v = n[0] * 100 / parentComputedStyle[WIDTH];
-      }
-      else if(k === FLEX_BASIS || k === HEIGHT || [TOP, BOTTOM].indexOf(k) > -1) {
-        v = n[0] * 100 / parentComputedStyle[HEIGHT];
-      }
-      diff = v - p[0];
-    }
-    // lineHeight奇怪的单位变化
+    // lineHeight奇怪的单位变化，%相对于fontSize
     else if(k === LINE_HEIGHT) {
-      if(p[1] === PX && n[1] === NUMBER) {
-        diff = n[0] * computedStyle[FONT_SIZE] - p[0];
+      diff = calByUnit(p, n, computedStyle[FONT_SIZE], target.root);
+    }
+    // fontSize的%相对于parent的
+    else if(k === FONT_SIZE) {
+      diff = calByUnit(p, n, parentComputedStyle[FONT_SIZE], target.root);
+    }
+    // 相对于父height的特殊属性
+    else if(k === FLEX_BASIS
+      && ['column', 'column-reverse', 'columnReverse'].indexOf(computedStyle[FLEX_DIRECTION]) > -1
+      || [HEIGHT, TOP, BOTTOM].indexOf(k) > -1) {
+      if(p[1] !== AUTO && n[1] !== AUTO) {
+        diff = calByUnit(p, n, parentComputedStyle[HEIGHT], target.root);
       }
-      else if(p[1] === NUMBER && n[1] === PX) {
-        diff = n[0] / computedStyle[FONT_SIZE] - p[0];
+    }
+    // 其余都是相对于父width的
+    else {
+      if(p[1] !== AUTO && n[1] !== AUTO) {
+        diff = calByUnit(p, n, parentComputedStyle[WIDTH], target.root);
       }
     }
     // 兜底NaN非法

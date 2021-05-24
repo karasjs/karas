@@ -8574,7 +8574,7 @@
       } else if (lineHeight[1] === VH$1) {
         computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * root.height * 0.01, 0) || calNormalLineHeight(computedStyle);
       } else if (lineHeight[1] === NUMBER) {
-        computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE$1] || calNormalLineHeight(computedStyle);
+        computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
       } // normal
       else {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
@@ -13103,46 +13103,46 @@
     return res;
   }
 
-  function calByUnit(p, n, k, node) {
+  function calByUnit(p, n, container, root) {
     if (p[1] === PX$5) {
       if (n[1] === PERCENT$6) {
-        return n[0] * 0.01 * node[k] - p[0];
+        return n[0] * 0.01 * container - p[0];
       } else if (n[1] === REM$4) {
-        return n[0] * node.root.computedStyle[FONT_SIZE$6] - p[0];
+        return n[0] * root.computedStyle[FONT_SIZE$6] - p[0];
       } else if (n[1] === VW$4) {
-        return n[0] * node.root.width * 0.01 - p[0];
+        return n[0] * root.width * 0.01 - p[0];
       } else if (n[1] === VH$4) {
-        return n[0] * node.root.height * 0.01 - p[0];
+        return n[0] * root.height * 0.01 - p[0];
       }
     } else if (p[1] === REM$4) {
       if (n[1] === PX$5) {
-        return n[0] / node.root.computedStyle[FONT_SIZE$6] - p[0];
+        return n[0] / root.computedStyle[FONT_SIZE$6] - p[0];
       } else if (n[1] === PERCENT$6) {
-        return n[0] * 0.01 * node[k] / node.root.computedStyle[FONT_SIZE$6] - p[0];
+        return n[0] * 0.01 * container / root.computedStyle[FONT_SIZE$6] - p[0];
       } else if (n[1] === VW$4) {
-        return n[0] * node.root.width * 0.01 / node.root.computedStyle[FONT_SIZE$6] - p[0];
+        return n[0] * root.width * 0.01 / root.computedStyle[FONT_SIZE$6] - p[0];
       } else if (n[1] === VH$4) {
-        return n[0] * node.root.height * 0.01 / node.root.computedStyle[FONT_SIZE$6] - p[0];
+        return n[0] * root.height * 0.01 / root.computedStyle[FONT_SIZE$6] - p[0];
       }
     } else if (p[1] === VW$4) {
       if (n[1] === PX$5) {
-        return n[0] * 100 / node.root.width - p[0];
+        return n[0] * 100 / root.width - p[0];
       } else if (n[1] === REM$4) {
-        return n[0] * 100 * node.root.computedStyle[FONT_SIZE$6] / node.root.width - p[0];
+        return n[0] * 100 * root.computedStyle[FONT_SIZE$6] / root.width - p[0];
       } else if (n[1] === PERCENT$6) {
-        return n[0] * node[k] / node.root.width - p[0];
+        return n[0] * container / root.width - p[0];
       } else if (n[1] === VH$4) {
-        return n[0] * node.root.height / node.root.width - p[0];
+        return n[0] * root.height / root.width - p[0];
       }
     } else if (p[1] === VH$4) {
       if (n[1] === PX$5) {
-        return n[0] * 100 / node.root.height - p[0];
+        return n[0] * 100 / root.height - p[0];
       } else if (n[1] === REM$4) {
-        return n[0] * 100 * node.root.computedStyle[FONT_SIZE$6] / node.root.height - p[0];
+        return n[0] * 100 * root.computedStyle[FONT_SIZE$6] / root.height - p[0];
       } else if (n[1] === VW$4) {
-        return n[0] * node.root.width / node.root.height - p[0];
+        return n[0] * root.width / root.height - p[0];
       } else if (n[1] === PERCENT$6) {
-        return n[0] * node[k] / node.root.height - p[0];
+        return n[0] * container / root.height - p[0];
       }
     }
   }
@@ -13253,7 +13253,7 @@
             k2 = k === BACKGROUND_POSITION_X$2 ? 'width' : 'height';
           }
 
-          var _v3 = calByUnit(_pi, _ni, k2, target);
+          var _v3 = calByUnit(_pi, _ni, target[k2], target.root);
 
           if (!_v3) {
             res[1].push(null);
@@ -13261,26 +13261,7 @@
           }
 
           res[1].push(_v3);
-        } // else if(p[1] === PX && n[1] === PERCENT) {
-        //   let v = ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-        //   v = v - pi[0];
-        //   if(v === 0) {
-        //     return;
-        //   }
-        //   res[1].push(v);
-        // }
-        // else if(p[1] === PERCENT && n[1] === PX) {
-        //   let v = ni[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-        //   v = v - pi[0];
-        //   if(v === 0) {
-        //     return;
-        //   }
-        //   res[1].push(v);
-        // }
-        // else {
-        //   res[1].push(null);
-        // }
-
+        }
       }
     } else if (k === BOX_SHADOW$1) {
       res[1] = [];
@@ -13315,30 +13296,14 @@
 
         res[1] = _v5;
       } else {
-        var _v6 = calByUnit(p, n, k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight', target);
+        var _v6 = calByUnit(p, n, target[k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight'], target.root);
 
         if (!_v6) {
           return;
         }
 
         res[1] = _v6;
-      } // else if(p[1] === PX && n[1] === PERCENT) {
-      //   let v = n[0] * 0.01 * target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
-      //   v = v - p[0];
-      //   if(v === 0) {
-      //     return;
-      //   }
-      //   res[1] = v;
-      // }
-      // else if(p[1] === PERCENT && n[1] === PX) {
-      //   let v = n[0] * 100 / target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
-      //   v = v - p[0];
-      //   if(v === 0) {
-      //     return;
-      //   }
-      //   res[1] = v;
-      // }
-
+      }
     } else if (k === BACKGROUND_SIZE$1) {
       res[1] = [];
 
@@ -13372,22 +13337,10 @@
               _k = _i3 ? 'width' : 'height';
             }
 
-            var _v7 = calByUnit(pp, nn, _k, target);
+            var _v7 = calByUnit(pp, nn, target[_k], target.root);
 
             temp.push(_v7 || 0);
-          } // else if(pp[1] === PX && nn[1] === PERCENT) {
-          //   let v = nn[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-          //   temp.push(v - pp[0]);
-          // }
-          // else if(pp[1] === PERCENT && nn[1] === PX) {
-          //   let v = nn[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-          //   temp.push(v - pp[0]);
-          // }
-          // // 兜底异常情况
-          // else {
-          //   temp.push(0);
-          // }
-
+          }
         }
 
         if (equalArr$2(temp, [0, 0])) {
@@ -13593,19 +13546,10 @@
         if (n[_i9][1] === p[_i9][1]) {
           res[1].push(n[_i9][0] - p[_i9][0]);
         } else {
-          var _v14 = calByUnit(p[_i9], n[_i9], _i9 ? 'outerHeight' : 'outerWidth', target);
+          var _v14 = calByUnit(p[_i9], n[_i9], target[_i9 ? 'outerHeight' : 'outerWidth'], target.root);
 
           res[1].push(_v14 || 0);
-        } // else if(p[i][1] === PX && n[i][1] === PERCENT) {
-        //   res[1].push(n[i][0] * 0.01 * target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
-        // }
-        // else if(p[i][1] === PERCENT && n[i][1] === PX) {
-        //   res[1].push(n[i][0] * 100 / target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
-        // }
-        // else {
-        //   res[1].push(0);
-        // }
-
+        }
       }
     } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
       // auto不做动画
@@ -13619,39 +13563,23 @@
 
       if (p[1] === n[1]) {
         diff = n[0] - p[0];
-      } // 长度单位变化特殊计算，根据父元素computedStyle
-      else if (p[1] === PX$5 && n[1] === PERCENT$6) {
-          var _v15;
-
-          if (k === FONT_SIZE$6) {
-            _v15 = n[0] * parentComputedStyle[k] * 0.01;
-          } else if (k === FLEX_BASIS$1 && computedStyle[FLEX_DIRECTION$1] === 'row' || k === WIDTH$2 || [LEFT, RIGHT, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_TOP, MARGIN_RIGHT, PADDING_TOP$1, PADDING_RIGHT, PADDING_BOTTOM$1, PADDING_LEFT$1].indexOf(k) > -1) {
-            _v15 = n[0] * parentComputedStyle[WIDTH$2] * 0.01;
-          } else if (k === FLEX_BASIS$1 || k === HEIGHT$2 || [TOP, BOTTOM].indexOf(k) > -1) {
-            _v15 = n[0] * parentComputedStyle[HEIGHT$2] * 0.01;
-          }
-
-          diff = _v15 - p[0];
-        } else if (p[1] === PERCENT$6 && n[1] === PX$5) {
-          var _v16;
-
-          if (k === FONT_SIZE$6) {
-            _v16 = n[0] * 100 / parentComputedStyle[k];
-          } else if (k === FLEX_BASIS$1 && computedStyle[FLEX_DIRECTION$1] === 'row' || k === WIDTH$2 || [LEFT, RIGHT, MARGIN_BOTTOM, MARGIN_LEFT, MARGIN_TOP, MARGIN_RIGHT, PADDING_TOP$1, PADDING_RIGHT, PADDING_BOTTOM$1, PADDING_LEFT$1].indexOf(k) > -1) {
-            _v16 = n[0] * 100 / parentComputedStyle[WIDTH$2];
-          } else if (k === FLEX_BASIS$1 || k === HEIGHT$2 || [TOP, BOTTOM].indexOf(k) > -1) {
-            _v16 = n[0] * 100 / parentComputedStyle[HEIGHT$2];
-          }
-
-          diff = _v16 - p[0];
-        } // lineHeight奇怪的单位变化
-        else if (k === LINE_HEIGHT$2) {
-            if (p[1] === PX$5 && n[1] === NUMBER$3) {
-              diff = n[0] * computedStyle[FONT_SIZE$6] - p[0];
-            } else if (p[1] === NUMBER$3 && n[1] === PX$5) {
-              diff = n[0] / computedStyle[FONT_SIZE$6] - p[0];
-            }
-          } // 兜底NaN非法
+      } // lineHeight奇怪的单位变化，%相对于fontSize
+      else if (k === LINE_HEIGHT$2) {
+          diff = calByUnit(p, n, computedStyle[FONT_SIZE$6], target.root);
+        } // fontSize的%相对于parent的
+        else if (k === FONT_SIZE$6) {
+            diff = calByUnit(p, n, parentComputedStyle[FONT_SIZE$6], target.root);
+          } // 相对于父height的特殊属性
+          else if (k === FLEX_BASIS$1 && ['column', 'column-reverse', 'columnReverse'].indexOf(computedStyle[FLEX_DIRECTION$1]) > -1 || [HEIGHT$2, TOP, BOTTOM].indexOf(k) > -1) {
+              if (p[1] !== AUTO$2 && n[1] !== AUTO$2) {
+                diff = calByUnit(p, n, parentComputedStyle[HEIGHT$2], target.root);
+              }
+            } // 其余都是相对于父width的
+            else {
+                if (p[1] !== AUTO$2 && n[1] !== AUTO$2) {
+                  diff = calByUnit(p, n, parentComputedStyle[WIDTH$2], target.root);
+                }
+              } // 兜底NaN非法
 
 
       if (diff === 0 || isNaN(diff)) {
@@ -13743,20 +13671,20 @@
               return;
             }
 
-            var _v17 = [];
+            var _v15 = [];
 
             for (var _i13 = 0, _len5 = Math.min(p.length, n.length); _i13 < _len5; _i13++) {
               var _pv3 = p[_i13];
               var _nv3 = n[_i13];
 
               if (isNil$5(_pv3) || isNil$5(_nv3)) {
-                _v17.push(0);
+                _v15.push(0);
               }
 
-              _v17.push(_nv3 - _pv3);
+              _v15.push(_nv3 - _pv3);
             }
 
-            res[1] = _v17;
+            res[1] = _v15;
           }
         } // 非multi特殊处理这几类数组类型数据
         else if (k === 'points' || k === 'controls') {
@@ -13773,20 +13701,20 @@
               if (isNil$5(_pv4) || isNil$5(_nv4)) {
                 res[1].push(null);
               } else {
-                var _v18 = [];
+                var _v16 = [];
 
                 for (var _j4 = 0, _len7 = Math.max(_pv4.length, _nv4.length); _j4 < _len7; _j4++) {
                   var _pv5 = _pv4[_j4];
                   var _nv5 = _nv4[_j4]; // control由4点变2点
 
                   if (isNil$5(_pv5) || isNil$5(_nv5)) {
-                    _v18.push(0);
+                    _v16.push(0);
                   } else {
-                    _v18.push(_nv5 - _pv5);
+                    _v16.push(_nv5 - _pv5);
                   }
                 }
 
-                res[1].push(_v18);
+                res[1].push(_v16);
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
@@ -13970,11 +13898,11 @@
             return;
           }
 
-          var _v19 = _slicedToArray(v2, 4),
-              c = _v19[0],
-              d = _v19[1],
-              p = _v19[2],
-              z = _v19[3];
+          var _v17 = _slicedToArray(v2, 4),
+              c = _v17[0],
+              d = _v17[1],
+              p = _v17[2],
+              z = _v17[3];
 
           if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
             for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
@@ -21161,7 +21089,7 @@
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
         var maxX = 0;
-        var isDirectionRow = ['column', 'column-reverse'].indexOf(flexDirection) === -1; // 计算伸缩基数
+        var isDirectionRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1; // 计算伸缩基数
 
         var growList = [];
         var shrinkList = [];

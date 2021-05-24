@@ -323,13 +323,9 @@ function calDiff(prev, next, k, target, tagName) {
       if(pi[1] === ni[1]) {
         res[1].push(ni[0] - pi[0]);
       }
-      else if(pi[1] === PX && ni[1] === PERCENT) {
-        let v = ni[0] * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
-        res[1].push(v - pi[0]);
-      }
-      else if(pi[1] === PERCENT && ni[1] === PX) {
-        let v = ni[0] * 100 / target[i ? 'outerHeight' : 'outerWidth'];
-        res[1].push(v - pi[0]);
+      else {
+        let v = calByUnit(pi, ni, target[i ? 'outerHeight' : 'outerWidth'], target.root);
+        res[1].push(v || 0);
       }
     }
     if(equalArr(res[1], [0, 0])) {
@@ -481,11 +477,9 @@ function calDiff(prev, next, k, target, tagName) {
             if(a[1][1] === b[1][1]) {
               t.push(b[1][0] - a[1][0]);
             }
-            else if(a[1][1] === PX && b[1][1] === PERCENT) {
-              t.push(b[1][0] * clientWidth * 0.01 - a[1][0]);
-            }
-            else if(a[1][1] === PERCENT && b[1][1] === PX) {
-              t.push(b[1][0] * 100 / clientWidth - a[1][0]);
+            else {
+              let v = calByUnit(a[1], b[1], clientWidth, target.root);
+              t.push(v || 0);
             }
           }
           temp[0].push(t);
@@ -549,13 +543,9 @@ function calDiff(prev, next, k, target, tagName) {
               if(pp[1] === np[1]) {
                 temp[2].push(np[0] - pp[0]);
               }
-              else if(pp[1] === PX && np[1] === PERCENT) {
-                let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-                temp[2].push(v - pp[0]);
-              }
-              else if(pp[1] === PERCENT && np[1] === PX) {
-                let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-                temp[2].push(v - pp[0]);
+              else {
+                let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
+                temp[2].push(v || 0);
               }
             }
             if(eq && equalArr(res[3], [0, 0])) {
@@ -572,13 +562,9 @@ function calDiff(prev, next, k, target, tagName) {
             if(pp[1] === np[1]) {
               temp[2].push(np[0] - pp[0]);
             }
-            else if(pp[1] === PX && np[1] === PERCENT) {
-              let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-              temp[2].push(v - pp[0]);
-            }
-            else if(pp[1] === PERCENT && np[1] === PX) {
-              let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-              temp[2].push(v - pp[0]);
+            else {
+              let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
+              temp[2].push(v || 0);
             }
           }
           if(eq && res[2] !== 0 && equalArr(res[3], [0, 0])) {

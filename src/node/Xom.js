@@ -2111,11 +2111,11 @@ class Xom extends Node {
     let cy = by1 + ih * 0.5;
     let res = { k };
     if(k === 'linear') {
-      let gd = gradient.getLinear(v, d, bx1, by1, cx, cy, iw, ih);
+      let gd = gradient.getLinear(v, d, bx1, by1, cx, cy, iw, ih, this.root);
       res.v = this.__getLg(renderMode, ctx, gd);
     }
     else if(k === 'radial') {
-      let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2);
+      let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root);
       if(gd) {
         res.v = this.__getRg(renderMode, ctx, gd);
         if(gd.matrix) {
@@ -2127,7 +2127,7 @@ class Xom extends Node {
       let bbox = this.bbox;
       let m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
       let m2 = Math.max(Math.abs(iw), Math.abs(ih));
-      let gd = gradient.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2);
+      let gd = gradient.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2, this.root);
       res.v = this.__getCg(renderMode, ctx, gd);
     }
     return res;

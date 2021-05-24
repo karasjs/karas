@@ -2610,7 +2610,7 @@ class Dom extends Xom {
         else if(height[1] === VH) {
           h2 = height[0] * this.root.height * 0.01;
         }
-        else {
+        else if(height[1] === PX) {
           h2 = height[0];
         }
       }

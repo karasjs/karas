@@ -22599,7 +22599,7 @@
                 h2 = height[0] * _this4.root.width * 0.01;
               } else if (height[1] === VH$7) {
                 h2 = height[0] * _this4.root.height * 0.01;
-              } else {
+              } else if (height[1] === PX$8) {
                 h2 = height[0];
               }
             } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局

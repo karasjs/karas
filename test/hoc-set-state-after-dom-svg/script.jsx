@@ -1,7 +1,13 @@
+class A extends karas.Component {
+  render() {
+    return <Component/>;
+  }
+}
+
 class Component extends karas.Component {
   componentDidMount(){
-    this.updateStyle({
-      height: 30,
+    this.setState({
+      a: 1
     }, function() {
       var input = document.querySelector('#base64');
       input.value = document.querySelector('svg').innerHTML;
@@ -15,7 +21,7 @@ class Component extends karas.Component {
 let o = karas.render(
   <svg width="360" height="360" cache="1">
     <div style={{width:50,height:20,background:'#000'}}/>
-    <Component/>
+    <A/>
   </svg>,
   '#test'
 );

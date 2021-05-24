@@ -148,11 +148,13 @@ function updateCp(cp, props, state) {
   if(json && json.placeholder) {
     delete json.placeholder;
   }
-  // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr需要同时更新引用
+  // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr/host需要同时更新引用
   let host = cp.host;
   while(host) {
     if(host.shadow === cp) {
       host.__shadowRoot = sr;
+      sr.__hostRoot = host;
+      cp = host;
       host = host.host;
     }
     else {

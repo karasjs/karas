@@ -15,7 +15,7 @@ const {
   STYLE_KEY: {
     FILTER,
     TRANSFORM_ORIGIN,
-    // BACKGROUND_IMAGE,
+    BACKGROUND_CLIP,
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
     BOX_SHADOW,
@@ -197,6 +197,65 @@ function framing(style, duration, es) {
   return res;
 }
 
+function calByUnit(p, n, k, node) {
+  if(p[1] === PX) {
+    if(n[1] === PERCENT) {
+      return n[0] * 0.01 * node[k] - p[0];
+    }
+    else if(n[1] === REM) {
+      return n[0] * node.root.computedStyle[FONT_SIZE] - p[0];
+    }
+    else if(n[1] === VW) {
+      return n[0] * node.root.width * 0.01 - p[0];
+    }
+    else if(n[1] === VH) {
+      return n[0] * node.root.height * 0.01 - p[0];
+    }
+  }
+  else if(p[1] === REM) {
+    if(n[1] === PX) {
+      return n[0] / node.root.computedStyle[FONT_SIZE] - p[0];
+    }
+    else if(n[1] === PERCENT) {
+      return n[0] * 0.01 * node[k] / node.root.computedStyle[FONT_SIZE] - p[0];
+    }
+    else if(n[1] === VW) {
+      return n[0] * node.root.width * 0.01 / node.root.computedStyle[FONT_SIZE] - p[0];
+    }
+    else if(n[1] === VH) {
+      return n[0] * node.root.height * 0.01 / node.root.computedStyle[FONT_SIZE] - p[0];
+    }
+  }
+  else if(p[1] === VW) {
+    if(n[1] === PX) {
+      return n[0] * 100 / node.root.width - p[0];
+    }
+    else if(n[1] === REM) {
+      return n[0] * 100 * node.root.computedStyle[FONT_SIZE] / node.root.width - p[0];
+    }
+    else if(n[1] === PERCENT) {
+      return n[0] * node[k] / node.root.width - p[0];
+    }
+    else if(n[1] === VH) {
+      return n[0] * node.root.height / node.root.width - p[0];
+    }
+  }
+  else if(p[1] === VH) {
+    if(n[1] === PX) {
+      return n[0] * 100 / node.root.height - p[0];
+    }
+    else if(n[1] === REM) {
+      return n[0] * 100 * node.root.computedStyle[FONT_SIZE] / node.root.height - p[0];
+    }
+    else if(n[1] === VW) {
+      return n[0] * node.root.width / node.root.height - p[0];
+    }
+    else if(n[1] === PERCENT) {
+      return n[0] * node[k] / node.root.height - p[0];
+    }
+  }
+}
+
 /**
  * 计算两帧之间的差，单位不同的以后面为准，返回的v表示差值
  * 没有变化返回空
@@ -286,32 +345,48 @@ function calDiff(prev, next, k, target, tagName) {
         res[1].push(null);
         continue;
       }
-      if(pi[1] === ni[1] && [PX, PERCENT].indexOf(pi[1]) > -1) {
+      if(pi[1] === ni[1]) {
         let v = ni[0] - pi[0];
-        if(v === 0) {
-          return;
-        }
-        res[1].push(v);
-      }
-      else if(p[1] === PX && n[1] === PERCENT) {
-        let v = ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-        v = v - pi[0];
-        if(v === 0) {
-          return;
-        }
-        res[1].push(v);
-      }
-      else if(p[1] === PERCENT && n[1] === PX) {
-        let v = ni[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
-        v = v - pi[0];
-        if(v === 0) {
+        if(!v) {
+          res[1].push(null);
           return;
         }
         res[1].push(v);
       }
       else {
-        res[1].push(null);
+        let k2 = k === BACKGROUND_POSITION_X ? 'offsetWidth' : 'offsetHeight';
+        if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+          k2 = k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight';
+        }
+        else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+          k2 = k === BACKGROUND_POSITION_X ? 'width' : 'height';
+        }
+        let v = calByUnit(pi, ni, k2, target);
+        if(!v) {
+          res[1].push(null);
+          return;
+        }
+        res[1].push(v);
       }
+      // else if(p[1] === PX && n[1] === PERCENT) {
+      //   let v = ni[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
+      //   v = v - pi[0];
+      //   if(v === 0) {
+      //     return;
+      //   }
+      //   res[1].push(v);
+      // }
+      // else if(p[1] === PERCENT && n[1] === PX) {
+      //   let v = ni[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
+      //   v = v - pi[0];
+      //   if(v === 0) {
+      //     return;
+      //   }
+      //   res[1].push(v);
+      // }
+      // else {
+      //   res[1].push(null);
+      // }
     }
   }
   else if(k === BOX_SHADOW) {
@@ -341,22 +416,29 @@ function calDiff(prev, next, k, target, tagName) {
       }
       res[1] = v;
     }
-    else if(p[1] === PX && n[1] === PERCENT) {
-      let v = n[0] * 0.01 * target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
-      v = v - p[0];
-      if(v === 0) {
+    else {
+      let v = calByUnit(p, n, k === TRANSLATE_X ? 'outerWidth' : 'outerHeight', target);
+      if(!v) {
         return;
       }
       res[1] = v;
     }
-    else if(p[1] === PERCENT && n[1] === PX) {
-      let v = n[0] * 100 / target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
-      v = v - p[0];
-      if(v === 0) {
-        return;
-      }
-      res[1] = v;
-    }
+    // else if(p[1] === PX && n[1] === PERCENT) {
+    //   let v = n[0] * 0.01 * target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
+    //   v = v - p[0];
+    //   if(v === 0) {
+    //     return;
+    //   }
+    //   res[1] = v;
+    // }
+    // else if(p[1] === PERCENT && n[1] === PX) {
+    //   let v = n[0] * 100 / target[(k === TRANSLATE_X) ? 'outerWidth' : 'outerHeight'];
+    //   v = v - p[0];
+    //   if(v === 0) {
+    //     return;
+    //   }
+    //   res[1] = v;
+    // }
   }
   else if(k === BACKGROUND_SIZE) {
     res[1] = [];
@@ -371,21 +453,32 @@ function calDiff(prev, next, k, target, tagName) {
       let temp = [];
       for(let j = 0; j < 2; j++) {
         let pp = pi[j], nn = ni[j];
-        if(pp[1] === nn[1] && [PX, PERCENT].indexOf(pp[1]) > -1) {
+        if(pp[1] === nn[1]) {
           temp.push(nn[0] - pp[0]);
         }
-        else if(pp[1] === PX && nn[1] === PERCENT) {
-          let v = nn[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
-          temp.push(v - pp[0]);
-        }
-        else if(pp[1] === PERCENT && nn[1] === PX) {
-          let v = nn[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
-          temp.push(v - pp[0]);
-        }
-        // 兜底异常情况
         else {
-          temp.push(0);
+          let k2 = i ? 'offsetWidth' : 'offsetHeight';
+          if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+            k2 = i ? 'clientWidth' : 'clientHeight';
+          }
+          else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+            k2 = i ? 'width' : 'height';
+          }
+          let v = calByUnit(pp, nn, k2, target);
+          temp.push(v || 0);
         }
+        // else if(pp[1] === PX && nn[1] === PERCENT) {
+        //   let v = nn[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
+        //   temp.push(v - pp[0]);
+        // }
+        // else if(pp[1] === PERCENT && nn[1] === PX) {
+        //   let v = nn[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
+        //   temp.push(v - pp[0]);
+        // }
+        // // 兜底异常情况
+        // else {
+        //   temp.push(0);
+        // }
       }
       if(equalArr(temp, [0, 0])) {
         res[1].push(null);
@@ -579,15 +672,19 @@ function calDiff(prev, next, k, target, tagName) {
       if(n[i][1] === p[i][1]) {
         res[1].push(n[i][0] - p[i][0]);
       }
-      else if(p[i][1] === PX && n[i][1] === PERCENT) {
-        res[1].push(n[i][0] * 0.01 * target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
-      }
-      else if(p[i][1] === PERCENT && n[i][1] === PX) {
-        res[1].push(n[i][0] * 100 / target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
-      }
       else {
-        res[1].push(0);
+        let v = calByUnit(p[i], n[i], i ? 'outerHeight' : 'outerWidth', target);
+        res[1].push(v || 0);
       }
+      // else if(p[i][1] === PX && n[i][1] === PERCENT) {
+      //   res[1].push(n[i][0] * 0.01 * target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
+      // }
+      // else if(p[i][1] === PERCENT && n[i][1] === PX) {
+      //   res[1].push(n[i][0] * 100 / target[i ? 'outerHeight' : 'outerWidth'] - p[i][0]);
+      // }
+      // else {
+      //   res[1].push(0);
+      // }
     }
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {

@@ -2502,7 +2502,7 @@ class Dom extends Xom {
         else {
           onlyRight = true;
         }
-        x2 = x + clientWidth - computedStyle[RIGHT] - w2 || 0;
+        x2 = x + clientWidth - computedStyle[RIGHT] - (w2 || 0);
         // 右对齐有尺寸时还需减去margin/border/padding的
         x2 -= computedStyle[MARGIN_LEFT];
         x2 -= computedStyle[MARGIN_RIGHT];
@@ -2556,7 +2556,7 @@ class Dom extends Xom {
           }
         }
       }
-      else if(fixedBottom && height[1] !== AUTO) {
+      else if(fixedBottom) {
         if(height[1] !== AUTO) {
           if(height[1] === PERCENT) {
             h2 = height[0] * clientHeight * 0.01;
@@ -2577,7 +2577,7 @@ class Dom extends Xom {
         else {
           onlyBottom = true;
         }
-        y2 = y + clientHeight - computedStyle[BOTTOM] - h2 || 0;
+        y2 = y + clientHeight - computedStyle[BOTTOM] - (h2 || 0);
         // 底对齐有尺寸时y值还需减去margin/border/padding的
         y2 -= computedStyle[MARGIN_TOP];
         y2 -= computedStyle[MARGIN_BOTTOM];
@@ -2598,8 +2598,20 @@ class Dom extends Xom {
           }
           prev = prev.prev;
         }
-        if(height[1] !== AUTO) {
-          h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
+        if(height[1] === PERCENT) {
+          h2 = height[0] * clientHeight * 0.01;
+        }
+        else if(height[1] === REM) {
+          h2 = height[0] * this.root.computedStyle[FONT_SIZE];
+        }
+        else if(height[1] === VW) {
+          h2 = height[0] * this.root.width * 0.01;
+        }
+        else if(height[1] === VH) {
+          h2 = height[0] * this.root.height * 0.01;
+        }
+        else {
+          h2 = height[0];
         }
       }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局

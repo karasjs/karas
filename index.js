@@ -22505,7 +22505,7 @@
               onlyRight = true;
             }
 
-            x2 = x + clientWidth - computedStyle[RIGHT$2] - w2 || 0; // 右对齐有尺寸时还需减去margin/border/padding的
+            x2 = x + clientWidth - computedStyle[RIGHT$2] - (w2 || 0); // 右对齐有尺寸时还需减去margin/border/padding的
 
             x2 -= computedStyle[MARGIN_LEFT$4];
             x2 -= computedStyle[MARGIN_RIGHT$4];
@@ -22551,7 +22551,7 @@
                 h2 = height[0];
               }
             }
-          } else if (fixedBottom && height[1] !== AUTO$5) {
+          } else if (fixedBottom) {
             if (height[1] !== AUTO$5) {
               if (height[1] === PERCENT$9) {
                 h2 = height[0] * clientHeight * 0.01;
@@ -22568,7 +22568,7 @@
               onlyBottom = true;
             }
 
-            y2 = y + clientHeight - computedStyle[BOTTOM$3] - h2 || 0; // 底对齐有尺寸时y值还需减去margin/border/padding的
+            y2 = y + clientHeight - computedStyle[BOTTOM$3] - (h2 || 0); // 底对齐有尺寸时y值还需减去margin/border/padding的
 
             y2 -= computedStyle[MARGIN_TOP$2];
             y2 -= computedStyle[MARGIN_BOTTOM$2];
@@ -22591,8 +22591,16 @@
                 prev = prev.prev;
               }
 
-              if (height[1] !== AUTO$5) {
-                h2 = height[1] === PX$8 ? height[0] : clientHeight * height[0] * 0.01;
+              if (height[1] === PERCENT$9) {
+                h2 = height[0] * clientHeight * 0.01;
+              } else if (height[1] === REM$7) {
+                h2 = height[0] * _this4.root.computedStyle[FONT_SIZE$9];
+              } else if (height[1] === VW$7) {
+                h2 = height[0] * _this4.root.width * 0.01;
+              } else if (height[1] === VH$7) {
+                h2 = height[0] * _this4.root.height * 0.01;
+              } else {
+                h2 = height[0];
               }
             } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
@@ -22880,6 +22888,7 @@
       PADDING_RIGHT$5 = _enums$STYLE_KEY$g.PADDING_RIGHT,
       PADDING_BOTTOM$4 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
       PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
+      FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -22887,12 +22896,14 @@
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
-      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$6.NODE_CACHE_TOTAL,
       NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
       NODE_IS_MASK = _enums$NODE_KEY$6.NODE_IS_MASK;
   var AUTO$6 = o.AUTO,
       PX$9 = o.PX,
       PERCENT$a = o.PERCENT,
+      REM$8 = o.REM,
+      VW$8 = o.VW,
+      VH$8 = o.VH,
       RGBA$2 = o.RGBA;
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$5 = painter.svgPolygon;
@@ -23273,6 +23284,12 @@
           w -= width[0];
         } else if (width[1] === PERCENT$a) {
           w -= total * width[0] * 0.01;
+        } else if (width[1] === REM$8) {
+          w -= width[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (width[1] === VW$8) {
+          w -= width[0] * this.root.width * 0.01;
+        } else if (width[1] === VH$8) {
+          w -= width[0] * this.root.height * 0.01;
         } else {
           var loadImg = this.__loadImg; // 加载成功计算缩放后的宽度
 
@@ -23281,6 +23298,12 @@
               w -= loadImg.width * height[0] / loadImg.height;
             } else if (height[1] === PERCENT$a) {
               w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
+            } else if (height[1] === REM$8) {
+              w -= loadImg.width * height[0] * this.root.computedStyle[FONT_SIZE$a] / loadImg.height;
+            } else if (height[1] === VW$8) {
+              w -= loadImg.width * height[0] * this.root.width * 0.01 / loadImg.height;
+            } else if (height[1] === VH$8) {
+              w -= loadImg.width * height[0] * this.root.height * 0.01 / loadImg.height;
             } else {
               w -= loadImg.width;
             }
@@ -23292,32 +23315,68 @@
           w -= marginLeft[0];
         } else if (marginLeft[1] === PERCENT$a) {
           w -= marginLeft[0] * total * 0.01;
+        } else if (marginLeft[1] === REM$8) {
+          w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (marginLeft[1] === VW$8) {
+          w -= marginLeft[0] * this.root.width * 0.01;
+        } else if (marginLeft[1] === VH$8) {
+          w -= marginLeft[0] * this.root.height * 0.01;
         }
 
         if (paddingLeft[1] === PX$9) {
           w -= paddingLeft[0];
         } else if (paddingLeft[1] === PERCENT$a) {
           w -= paddingLeft[0] * total * 0.01;
+        } else if (paddingLeft[1] === REM$8) {
+          w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (paddingLeft[1] === VW$8) {
+          w -= paddingLeft[0] * this.root.width * 0.01;
+        } else if (paddingLeft[1] === VH$8) {
+          w -= paddingLeft[0] * this.root.height * 0.01;
         }
 
         if (borderLeftWidth[1] === PX$9) {
           w -= borderLeftWidth[0];
+        } else if (borderLeftWidth[1] === REM$8) {
+          w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (borderLeftWidth[1] === VW$8) {
+          w -= borderLeftWidth[0] * this.root.width * 0.01;
+        } else if (borderLeftWidth[1] === VH$8) {
+          w -= borderLeftWidth[0] * this.root.height * 0.01;
         }
 
         if (marginRight[1] === PX$9) {
           w -= marginRight[0];
         } else if (marginRight[1] === PERCENT$a) {
           w -= marginRight[0] * total * 0.01;
+        } else if (marginRight[1] === REM$8) {
+          w -= marginRight[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (marginRight[1] === VW$8) {
+          w -= marginRight[0] * this.root.width * 0.01;
+        } else if (marginRight[1] === VH$8) {
+          w -= marginRight[0] * this.root.height * 0.01;
         }
 
         if (paddingRight[1] === PX$9) {
           w -= paddingRight[0];
         } else if (paddingRight[1] === PERCENT$a) {
           w -= paddingRight[0] * total * 0.01;
+        } else if (paddingRight[1] === REM$8) {
+          w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (paddingRight[1] === VW$8) {
+          w -= paddingRight[0] * this.root.width * 0.01;
+        } else if (paddingRight[1] === VH$8) {
+          w -= paddingRight[0] * this.root.height * 0.01;
         }
 
         if (borderRightWidth[1] === PX$9) {
           w -= borderRightWidth[0];
+        } else if (borderRightWidth[1] === REM$8) {
+          w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (borderRightWidth[1] === VW$8) {
+          w -= borderRightWidth[0] * this.root.width * 0.01;
+        } else if (borderRightWidth[1] === VH$8) {
+          w -= borderRightWidth[0] * this.root.height * 0.01;
         }
 
         return w;
@@ -23354,6 +23413,12 @@
           b = max = min = main[0];
         } else if (main[1] === PERCENT$a) {
           b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+        } else if (main[1] === REM$8) {
+          b = max = main[0] * this.root.computedStyle[FONT_SIZE$a];
+        } else if (main[1] === VW$8) {
+          b = max = main[0] * this.root.width * 0.01;
+        } else if (main[1] === VH$8) {
+          b = max = main[0] * this.root.height * 0.01;
         } // 固定尺寸比例计算
         else if (__loadImg.source || __loadImg.error) {
             if (cross[1] !== AUTO$6) {
@@ -23668,7 +23733,7 @@
       STROKE_DASHARRAY_STR = _enums$STYLE_KEY$h.STROKE_DASHARRAY_STR,
       FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
       VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
-      FONT_SIZE$a = _enums$STYLE_KEY$h.FONT_SIZE,
+      FONT_SIZE$b = _enums$STYLE_KEY$h.FONT_SIZE,
       _enums$NODE_KEY$7 = enums.NODE_KEY,
       NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
@@ -23679,9 +23744,9 @@
   var AUTO$7 = o.AUTO,
       PX$a = o.PX,
       PERCENT$b = o.PERCENT,
-      REM$8 = o.REM,
-      VW$8 = o.VW,
-      VH$8 = o.VH;
+      REM$9 = o.REM,
+      VW$9 = o.VW,
+      VH$9 = o.VH;
   var int2rgba$3 = util.int2rgba,
       isNil$7 = util.isNil,
       joinArr$3 = util.joinArr;
@@ -23743,11 +23808,11 @@
           w -= width[0];
         } else if (width[1] === PERCENT$b) {
           w -= total * width[0] * 0.01;
-        } else if (width[1] === REM$8) {
-          w -= width[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (width[1] === VW$8) {
+        } else if (width[1] === REM$9) {
+          w -= width[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (width[1] === VW$9) {
           w -= width[0] * this.root.width * 0.01;
-        } else if (width[1] === VH$8) {
+        } else if (width[1] === VH$9) {
           w -= width[0] * this.root.height * 0.01;
         } // 减去水平mbp
 
@@ -23756,11 +23821,11 @@
           w -= marginLeft[0];
         } else if (marginLeft[1] === PERCENT$b) {
           w -= marginLeft[0] * total * 0.01;
-        } else if (marginLeft[1] === REM$8) {
-          w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (marginLeft[1] === VW$8) {
+        } else if (marginLeft[1] === REM$9) {
+          w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (marginLeft[1] === VW$9) {
           w -= marginLeft[0] * this.root.width * 0.01;
-        } else if (marginLeft[1] === VH$8) {
+        } else if (marginLeft[1] === VH$9) {
           w -= marginLeft[0] * this.root.height * 0.01;
         }
 
@@ -23768,21 +23833,21 @@
           w -= paddingLeft[0];
         } else if (paddingLeft[1] === PERCENT$b) {
           w -= paddingLeft[0] * total * 0.01;
-        } else if (paddingLeft[1] === REM$8) {
-          w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (paddingLeft[1] === VW$8) {
+        } else if (paddingLeft[1] === REM$9) {
+          w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (paddingLeft[1] === VW$9) {
           w -= paddingLeft[0] * this.root.width * 0.01;
-        } else if (paddingLeft[1] === VH$8) {
+        } else if (paddingLeft[1] === VH$9) {
           w -= paddingLeft[0] * this.root.height * 0.01;
         }
 
         if (borderLeftWidth[1] === PX$a) {
           w -= borderLeftWidth[0];
-        } else if (borderLeftWidth[1] === REM$8) {
-          w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (borderLeftWidth[1] === VW$8) {
+        } else if (borderLeftWidth[1] === REM$9) {
+          w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (borderLeftWidth[1] === VW$9) {
           w -= borderLeftWidth[0] * this.root.width * 0.01;
-        } else if (borderLeftWidth[1] === VH$8) {
+        } else if (borderLeftWidth[1] === VH$9) {
           w -= borderLeftWidth[0] * this.root.height * 0.01;
         }
 
@@ -23790,11 +23855,11 @@
           w -= marginRight[0];
         } else if (marginRight[1] === PERCENT$b) {
           w -= marginRight[0] * total * 0.01;
-        } else if (marginRight[1] === REM$8) {
-          w -= marginRight[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (marginRight[1] === VW$8) {
+        } else if (marginRight[1] === REM$9) {
+          w -= marginRight[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (marginRight[1] === VW$9) {
           w -= marginRight[0] * this.root.width * 0.01;
-        } else if (marginRight[1] === VH$8) {
+        } else if (marginRight[1] === VH$9) {
           w -= marginRight[0] * this.root.height * 0.01;
         }
 
@@ -23802,21 +23867,21 @@
           w -= paddingRight[0];
         } else if (paddingRight[1] === PERCENT$b) {
           w -= paddingRight[0] * total * 0.01;
-        } else if (paddingRight[1] === REM$8) {
-          w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (paddingRight[1] === VW$8) {
+        } else if (paddingRight[1] === REM$9) {
+          w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (paddingRight[1] === VW$9) {
           w -= paddingRight[0] * this.root.width * 0.01;
-        } else if (paddingRight[1] === VH$8) {
+        } else if (paddingRight[1] === VH$9) {
           w -= paddingRight[0] * this.root.height * 0.01;
         }
 
         if (borderRightWidth[1] === PX$a) {
           w -= borderRightWidth[0];
-        } else if (borderRightWidth[1] === REM$8) {
-          w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (borderRightWidth[1] === VW$8) {
+        } else if (borderRightWidth[1] === REM$9) {
+          w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (borderRightWidth[1] === VW$9) {
           w -= borderRightWidth[0] * this.root.width * 0.01;
-        } else if (borderRightWidth[1] === VH$8) {
+        } else if (borderRightWidth[1] === VH$9) {
           w -= borderRightWidth[0] * this.root.height * 0.01;
         }
 
@@ -23871,11 +23936,11 @@
           b = max = main[0];
         } else if (main[1] === PERCENT$b) {
           b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
-        } else if (main[1] === REM$8) {
-          b = max = main[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (main[1] === VW$8) {
+        } else if (main[1] === REM$9) {
+          b = max = main[0] * this.root.computedStyle[FONT_SIZE$b];
+        } else if (main[1] === VW$9) {
           b = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$8) {
+        } else if (main[1] === VH$9) {
           b = max = main[0] * this.root.height * 0.01;
         } // border也得计算在内
 
@@ -23963,11 +24028,11 @@
               return item[0];
             } else if (item[1] === PERCENT$b) {
               return item[0] * w * 0.01;
-            } else if (item[1] === REM$8) {
-              return item[0] * _this2.root.computedStyle[FONT_SIZE$a];
-            } else if (item[1] === VW$8) {
+            } else if (item[1] === REM$9) {
+              return item[0] * _this2.root.computedStyle[FONT_SIZE$b];
+            } else if (item[1] === VW$9) {
               return item[0] * _this2.root.width * 0.01;
-            } else if (item[1] === VH$8) {
+            } else if (item[1] === VH$9) {
               return item[0] * _this2.root.height * 0.01;
             } else {
               return 0;
@@ -25982,7 +26047,7 @@
       TRANSFORM_ORIGIN$5 = _enums$STYLE_KEY$i.TRANSFORM_ORIGIN,
       _enums$NODE_KEY$9 = enums.NODE_KEY,
       NODE_CACHE$4 = _enums$NODE_KEY$9.NODE_CACHE,
-      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
+      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
       NODE_CACHE_MASK$1 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
       NODE_CACHE_FILTER$2 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
@@ -26090,7 +26155,7 @@
               _node2$__config = node2.__config,
               limitCache = _node2$__config[NODE_LIMIT_CACHE$2],
               __cache = _node2$__config[NODE_CACHE$4],
-              __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$2],
+              __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$1],
               __cacheFilter = _node2$__config[NODE_CACHE_FILTER$2],
               __cacheMask = _node2$__config[NODE_CACHE_MASK$1],
               __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$2],
@@ -26269,7 +26334,7 @@
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
           var __cache = _config[NODE_CACHE$4],
-              __cacheTotal = _config[NODE_CACHE_TOTAL$2],
+              __cacheTotal = _config[NODE_CACHE_TOTAL$1],
               __cacheFilter = _config[NODE_CACHE_FILTER$2],
               __cacheMask = _config[NODE_CACHE_MASK$1],
               __cacheOverflow = _config[NODE_CACHE_OVERFLOW$2],
@@ -26495,7 +26560,7 @@
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
           var __cache = _config2[NODE_CACHE$4],
-              __cacheTotal = _config2[NODE_CACHE_TOTAL$2],
+              __cacheTotal = _config2[NODE_CACHE_TOTAL$1],
               __cacheFilter = _config2[NODE_CACHE_FILTER$2],
               __cacheMask = _config2[NODE_CACHE_MASK$1],
               __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$2],
@@ -27167,7 +27232,7 @@
       lastConfig = __config;
       lastLv = lv;
       var refreshLevel = __config[NODE_REFRESH_LV$1],
-          __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+          __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
       if (computedStyle[DISPLAY$8] === 'none') {
@@ -27340,7 +27405,7 @@
             overflow = _item2[7];
 
         var __cache = __config[NODE_CACHE$4],
-            __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+            __cacheTotal = __config[NODE_CACHE_TOTAL$1],
             __cacheFilter = __config[NODE_CACHE_FILTER$2],
             __cacheMask = __config[NODE_CACHE_MASK$1],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2];
@@ -27350,7 +27415,7 @@
           __cacheTotal = genTotal(renderMode, node, __config, i, total || 0, __structs, __cacheTotal, __cache);
 
           if (__cacheTotal && __cacheTotal !== __cache) {
-            __config[NODE_CACHE_TOTAL$2] = __cacheTotal;
+            __config[NODE_CACHE_TOTAL$1] = __cacheTotal;
           }
 
           needGen = true;
@@ -27418,7 +27483,7 @@
             blurValue = __config[NODE_BLUR_VALUE$1],
             limitCache = __config[NODE_LIMIT_CACHE$2],
             __cache = __config[NODE_CACHE$4],
-            __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+            __cacheTotal = __config[NODE_CACHE_TOTAL$1],
             __cacheFilter = __config[NODE_CACHE_FILTER$2],
             __cacheMask = __config[NODE_CACHE_MASK$1],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2],
@@ -27804,7 +27869,7 @@
           lv = _structs$_i6[STRUCT_LV$2];
       var __config = node.__config;
       var display = node.computedStyle[DISPLAY$8];
-      var __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+      var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           refreshLevel = __config[NODE_REFRESH_LV$1],
           defsCache = __config[NODE_DEFS_CACHE$6]; // 将随后的若干个mask节点范围存下来
 
@@ -28189,7 +28254,7 @@
       lastRefreshLevel = refreshLevel;
       lastConfig = __config;
       lastLv = lv;
-      var __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+      var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
       if (computedStyle[DISPLAY$8] === 'none') {
@@ -28379,7 +28444,7 @@
             overflow = _item7[8];
 
         var __cache = __config[NODE_CACHE$4],
-            __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+            __cacheTotal = __config[NODE_CACHE_TOTAL$1],
             __cacheFilter = __config[NODE_CACHE_FILTER$2],
             __cacheMask = __config[NODE_CACHE_MASK$1],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2];
@@ -28396,7 +28461,7 @@
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
-            __config[NODE_CACHE_TOTAL$2] = res;
+            __config[NODE_CACHE_TOTAL$1] = res;
           }
         } // 即使超限，也有total结果
 
@@ -29035,7 +29100,7 @@
       NODE_UPDATE_HASH = _enums$NODE_KEY$a.NODE_UPDATE_HASH,
       NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$a.NODE_UNIQUE_UPDATE_ID,
       NODE_CACHE$5 = _enums$NODE_KEY$a.NODE_CACHE,
-      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$a.NODE_CACHE_TOTAL,
+      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$a.NODE_CACHE_TOTAL,
       NODE_CACHE_FILTER$3 = _enums$NODE_KEY$a.NODE_CACHE_FILTER,
       NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$a.NODE_CACHE_OVERFLOW,
       NODE_CACHE_MASK$2 = _enums$NODE_KEY$a.NODE_CACHE_MASK,
@@ -29508,8 +29573,8 @@
         __config[NODE_CACHE$5].release();
       }
 
-      if (__config[NODE_CACHE_TOTAL$3]) {
-        __config[NODE_CACHE_TOTAL$3].release();
+      if (__config[NODE_CACHE_TOTAL$2]) {
+        __config[NODE_CACHE_TOTAL$2].release();
       }
 
       if (__config[NODE_CACHE_MASK$2]) {
@@ -29553,8 +29618,8 @@
       } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
 
 
-      if (_config3[NODE_CACHE_TOTAL$3]) {
-        _config3[NODE_CACHE_TOTAL$3].release();
+      if (_config3[NODE_CACHE_TOTAL$2]) {
+        _config3[NODE_CACHE_TOTAL$2].release();
       }
 
       if (_config3[NODE_CACHE_FILTER$3]) {
@@ -29581,7 +29646,7 @@
     if (child) {
       __config[NODE_REFRESH_LV$2] |= REPAINT$3;
     } else {
-      __config[NODE_CACHE_TOTAL$3].release();
+      __config[NODE_CACHE_TOTAL$2].release();
     }
 
     if (Array.isArray(node.children)) {

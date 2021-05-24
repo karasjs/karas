@@ -35,6 +35,7 @@ const {
     PADDING_RIGHT,
     PADDING_BOTTOM,
     PADDING_LEFT,
+    FONT_SIZE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -44,12 +45,11 @@ const {
   },
   NODE_KEY: {
     NODE_CACHE,
-    NODE_CACHE_TOTAL,
     NODE_DEFS_CACHE,
     NODE_IS_MASK,
   },
 } = enums;
-const { AUTO, PX, PERCENT, RGBA } = unit;
+const { AUTO, PX, PERCENT, REM, VW, VH, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const { isFunction } = util;
 
@@ -415,6 +415,15 @@ class Img extends Dom {
     else if(width[1] === PERCENT) {
       w -= total * width[0] * 0.01;
     }
+    else if(width[1] === REM) {
+      w -= width[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(width[1] === VW) {
+      w -= width[0] * this.root.width * 0.01;
+    }
+    else if(width[1] === VH) {
+      w -= width[0] * this.root.height * 0.01;
+    }
     else {
       let loadImg = this.__loadImg;
       // 加载成功计算缩放后的宽度
@@ -424,6 +433,15 @@ class Img extends Dom {
         }
         else if(height[1] === PERCENT) {
           w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
+        }
+        else if(height[1] === REM) {
+          w -= loadImg.width * height[0] * this.root.computedStyle[FONT_SIZE] / loadImg.height;
+        }
+        else if(height[1] === VW) {
+          w -= loadImg.width * height[0] * this.root.width * 0.01 / loadImg.height;
+        }
+        else if(height[1] === VH) {
+          w -= loadImg.width * height[0] * this.root.height * 0.01 / loadImg.height;
         }
         else {
           w -= loadImg.width;
@@ -437,14 +455,41 @@ class Img extends Dom {
     else if(marginLeft[1] === PERCENT) {
       w -= marginLeft[0] * total * 0.01;
     }
+    else if(marginLeft[1] === REM) {
+      w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(marginLeft[1] === VW) {
+      w -= marginLeft[0] * this.root.width * 0.01;
+    }
+    else if(marginLeft[1] === VH) {
+      w -= marginLeft[0] * this.root.height * 0.01;
+    }
     if(paddingLeft[1] === PX) {
       w -= paddingLeft[0];
     }
     else if(paddingLeft[1] === PERCENT) {
       w -= paddingLeft[0] * total * 0.01;
     }
+    else if(paddingLeft[1] === REM) {
+      w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(paddingLeft[1] === VW) {
+      w -= paddingLeft[0] * this.root.width * 0.01;
+    }
+    else if(paddingLeft[1] === VH) {
+      w -= paddingLeft[0] * this.root.height * 0.01;
+    }
     if(borderLeftWidth[1] === PX) {
       w -= borderLeftWidth[0];
+    }
+    else if(borderLeftWidth[1] === REM) {
+      w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(borderLeftWidth[1] === VW) {
+      w -= borderLeftWidth[0] * this.root.width * 0.01;
+    }
+    else if(borderLeftWidth[1] === VH) {
+      w -= borderLeftWidth[0] * this.root.height * 0.01;
     }
     if(marginRight[1] === PX) {
       w -= marginRight[0];
@@ -452,14 +497,41 @@ class Img extends Dom {
     else if(marginRight[1] === PERCENT) {
       w -= marginRight[0] * total * 0.01;
     }
+    else if(marginRight[1] === REM) {
+      w -= marginRight[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(marginRight[1] === VW) {
+      w -= marginRight[0] * this.root.width * 0.01;
+    }
+    else if(marginRight[1] === VH) {
+      w -= marginRight[0] * this.root.height * 0.01;
+    }
     if(paddingRight[1] === PX) {
       w -= paddingRight[0];
     }
     else if(paddingRight[1] === PERCENT) {
       w -= paddingRight[0] * total * 0.01;
     }
+    else if(paddingRight[1] === REM) {
+      w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(paddingRight[1] === VW) {
+      w -= paddingRight[0] * this.root.width * 0.01;
+    }
+    else if(paddingRight[1] === VH) {
+      w -= paddingRight[0] * this.root.height * 0.01;
+    }
     if(borderRightWidth[1] === PX) {
       w -= borderRightWidth[0];
+    }
+    else if(borderRightWidth[1] === REM) {
+      w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(borderRightWidth[1] === VW) {
+      w -= borderRightWidth[0] * this.root.width * 0.01;
+    }
+    else if(borderRightWidth[1] === VH) {
+      w -= borderRightWidth[0] * this.root.height * 0.01;
     }
     return w;
   }
@@ -494,6 +566,15 @@ class Img extends Dom {
     }
     else if(main[1] === PERCENT) {
       b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+    }
+    else if(main[1] === REM) {
+      b = max = main[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(main[1] === VW) {
+      b = max = main[0] * this.root.width * 0.01;
+    }
+    else if(main[1] === VH) {
+      b = max = main[0] * this.root.height * 0.01;
     }
     // 固定尺寸比例计算
     else if(__loadImg.source || __loadImg.error) {

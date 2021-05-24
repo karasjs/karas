@@ -485,7 +485,7 @@ class Xom extends Node {
         computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
       }
     }
-    else if(currentStyle[POSITION] !== 'absolute') {
+    else if(position !== 'absolute') {
       computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
     }
     // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理

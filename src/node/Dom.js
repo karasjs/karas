@@ -2461,14 +2461,49 @@ class Dom extends Xom {
         x2 = x + computedStyle[LEFT];
         w2 = x + clientWidth - computedStyle[RIGHT] - x2;
       }
-      else if(fixedLeft && width[1] !== AUTO) {
+      else if(fixedLeft) {
         x2 = x + computedStyle[LEFT];
-        w2 = width[1] === PX ? width[0] : clientWidth * width[0] * 0.01;
+        if(width[1] !== AUTO) {
+          if(width[1] === PERCENT) {
+            w2 = width[0] * clientWidth * 0.01;
+          }
+          else if(width[1] === REM) {
+            w2 = width[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          else if(width[1] === VW) {
+            w2 = width[0] * this.root.width * 0.01;
+          }
+          else if(width[1] === VH) {
+            w2 = width[0] * this.root.height * 0.01;
+          }
+          else {
+            w2 = width[0];
+          }
+        }
       }
-      else if(fixedRight && width[1] !== AUTO) {
-        w2 = width[1] === PX ? width[0] : clientWidth * width[0] * 0.01;
-        x2 = x + clientWidth - computedStyle[RIGHT] - w2;
-        // 右对齐有尺寸时y值还需减去margin/border/padding的
+      else if(fixedRight) {
+        if(width[1] !== AUTO) {
+          if(width[1] === PERCENT) {
+            w2 = width[0] * clientWidth * 0.01;
+          }
+          else if(width[1] === REM) {
+            w2 = width[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          else if(width[1] === VW) {
+            w2 = width[0] * this.root.width * 0.01;
+          }
+          else if(width[1] === VH) {
+            w2 = width[0] * this.root.height * 0.01;
+          }
+          else {
+            w2 = width[0];
+          }
+        }
+        else {
+          onlyRight = true;
+        }
+        x2 = x + clientWidth - computedStyle[RIGHT] - w2 || 0;
+        // 右对齐有尺寸时还需减去margin/border/padding的
         x2 -= computedStyle[MARGIN_LEFT];
         x2 -= computedStyle[MARGIN_RIGHT];
         x2 -= computedStyle[PADDING_LEFT];
@@ -2476,17 +2511,24 @@ class Dom extends Xom {
         x2 -= currentStyle[BORDER_LEFT_WIDTH][0];
         x2 -= currentStyle[BORDER_RIGHT_WIDTH][0];
       }
-      else if(fixedLeft) {
-        x2 = x + computedStyle[LEFT];
-      }
-      else if(fixedRight) {
-        x2 = x + clientWidth - computedStyle[RIGHT];
-        onlyRight = true;
-      }
       else {
         x2 = x + paddingLeft;
         if(width[1] !== AUTO) {
-          w2 = width[1] === PX ? width[0] : clientWidth * width[0] * 0.01;
+          if(width[1] === PERCENT) {
+            w2 = width[0] * clientWidth * 0.01;
+          }
+          else if(width[1] === REM) {
+            w2 = width[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          else if(width[1] === VW) {
+            w2 = width[0] * this.root.width * 0.01;
+          }
+          else if(width[1] === VH) {
+            w2 = width[0] * this.root.height * 0.01;
+          }
+          else {
+            w2 = width[0];
+          }
         }
       }
       // top/bottom/height优先级同上
@@ -2494,13 +2536,48 @@ class Dom extends Xom {
         y2 = y + computedStyle[TOP];
         h2 = y + clientHeight - computedStyle[BOTTOM] - y2;
       }
-      else if(fixedTop && height[1] !== AUTO) {
+      else if(fixedTop) {
         y2 = y + computedStyle[TOP];
-        h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
+        if(height[1] !== AUTO) {
+          if(height[1] === PERCENT) {
+            h2 = height[0] * clientHeight * 0.01;
+          }
+          else if(height[1] === REM) {
+            h2 = height[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          else if(height[1] === VW) {
+            h2 = height[0] * this.root.width * 0.01;
+          }
+          else if(height[1] === VH) {
+            h2 = height[0] * this.root.height * 0.01;
+          }
+          else {
+            h2 = height[0];
+          }
+        }
       }
       else if(fixedBottom && height[1] !== AUTO) {
-        h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
-        y2 = y + clientHeight - computedStyle[BOTTOM] - h2;
+        if(height[1] !== AUTO) {
+          if(height[1] === PERCENT) {
+            h2 = height[0] * clientHeight * 0.01;
+          }
+          else if(height[1] === REM) {
+            h2 = height[0] * this.root.computedStyle[FONT_SIZE];
+          }
+          else if(height[1] === VW) {
+            h2 = height[0] * this.root.width * 0.01;
+          }
+          else if(height[1] === VH) {
+            h2 = height[0] * this.root.height * 0.01;
+          }
+          else {
+            h2 = height[0];
+          }
+        }
+        else {
+          onlyBottom = true;
+        }
+        y2 = y + clientHeight - computedStyle[BOTTOM] - h2 || 0;
         // 底对齐有尺寸时y值还需减去margin/border/padding的
         y2 -= computedStyle[MARGIN_TOP];
         y2 -= computedStyle[MARGIN_BOTTOM];
@@ -2508,13 +2585,6 @@ class Dom extends Xom {
         y2 -= computedStyle[PADDING_BOTTOM];
         y2 -= currentStyle[BORDER_TOP_WIDTH][0];
         y2 -= currentStyle[BORDER_BOTTOM_WIDTH][0];
-      }
-      else if(fixedTop) {
-        y2 = y + computedStyle[TOP];
-      }
-      else if(fixedBottom) {
-        y2 = y + clientHeight - computedStyle[BOTTOM];
-        onlyBottom = true;
       }
       // 未声明y的找到之前的流布局child，紧随其下
       else {

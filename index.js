@@ -16589,7 +16589,7 @@
           } else {
             computedStyle[LEFT$1] = computedStyle[RIGHT$1] = 'auto';
           }
-        } else if (currentStyle[POSITION$1] !== 'absolute') {
+        } else if (position !== 'absolute') {
           computedStyle[TOP$1] = computedStyle[BOTTOM$1] = computedStyle[LEFT$1] = computedStyle[RIGHT$1] = 'auto';
         } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
 
@@ -22472,12 +22472,40 @@
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle[LEFT$2];
             w2 = x + clientWidth - computedStyle[RIGHT$2] - x2;
-          } else if (fixedLeft && width[1] !== AUTO$5) {
+          } else if (fixedLeft) {
             x2 = x + computedStyle[LEFT$2];
-            w2 = width[1] === PX$8 ? width[0] : clientWidth * width[0] * 0.01;
-          } else if (fixedRight && width[1] !== AUTO$5) {
-            w2 = width[1] === PX$8 ? width[0] : clientWidth * width[0] * 0.01;
-            x2 = x + clientWidth - computedStyle[RIGHT$2] - w2; // 右对齐有尺寸时y值还需减去margin/border/padding的
+
+            if (width[1] !== AUTO$5) {
+              if (width[1] === PERCENT$9) {
+                w2 = width[0] * clientWidth * 0.01;
+              } else if (width[1] === REM$7) {
+                w2 = width[0] * _this4.root.computedStyle[FONT_SIZE$9];
+              } else if (width[1] === VW$7) {
+                w2 = width[0] * _this4.root.width * 0.01;
+              } else if (width[1] === VH$7) {
+                w2 = width[0] * _this4.root.height * 0.01;
+              } else {
+                w2 = width[0];
+              }
+            }
+          } else if (fixedRight) {
+            if (width[1] !== AUTO$5) {
+              if (width[1] === PERCENT$9) {
+                w2 = width[0] * clientWidth * 0.01;
+              } else if (width[1] === REM$7) {
+                w2 = width[0] * _this4.root.computedStyle[FONT_SIZE$9];
+              } else if (width[1] === VW$7) {
+                w2 = width[0] * _this4.root.width * 0.01;
+              } else if (width[1] === VH$7) {
+                w2 = width[0] * _this4.root.height * 0.01;
+              } else {
+                w2 = width[0];
+              }
+            } else {
+              onlyRight = true;
+            }
+
+            x2 = x + clientWidth - computedStyle[RIGHT$2] - w2 || 0; // 右对齐有尺寸时还需减去margin/border/padding的
 
             x2 -= computedStyle[MARGIN_LEFT$4];
             x2 -= computedStyle[MARGIN_RIGHT$4];
@@ -22485,16 +22513,21 @@
             x2 -= computedStyle[PADDING_RIGHT$4];
             x2 -= currentStyle[BORDER_LEFT_WIDTH$5][0];
             x2 -= currentStyle[BORDER_RIGHT_WIDTH$4][0];
-          } else if (fixedLeft) {
-            x2 = x + computedStyle[LEFT$2];
-          } else if (fixedRight) {
-            x2 = x + clientWidth - computedStyle[RIGHT$2];
-            onlyRight = true;
           } else {
             x2 = x + paddingLeft;
 
             if (width[1] !== AUTO$5) {
-              w2 = width[1] === PX$8 ? width[0] : clientWidth * width[0] * 0.01;
+              if (width[1] === PERCENT$9) {
+                w2 = width[0] * clientWidth * 0.01;
+              } else if (width[1] === REM$7) {
+                w2 = width[0] * _this4.root.computedStyle[FONT_SIZE$9];
+              } else if (width[1] === VW$7) {
+                w2 = width[0] * _this4.root.width * 0.01;
+              } else if (width[1] === VH$7) {
+                w2 = width[0] * _this4.root.height * 0.01;
+              } else {
+                w2 = width[0];
+              }
             }
           } // top/bottom/height优先级同上
 
@@ -22502,12 +22535,40 @@
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle[TOP$3];
             h2 = y + clientHeight - computedStyle[BOTTOM$3] - y2;
-          } else if (fixedTop && height[1] !== AUTO$5) {
+          } else if (fixedTop) {
             y2 = y + computedStyle[TOP$3];
-            h2 = height[1] === PX$8 ? height[0] : clientHeight * height[0] * 0.01;
+
+            if (height[1] !== AUTO$5) {
+              if (height[1] === PERCENT$9) {
+                h2 = height[0] * clientHeight * 0.01;
+              } else if (height[1] === REM$7) {
+                h2 = height[0] * _this4.root.computedStyle[FONT_SIZE$9];
+              } else if (height[1] === VW$7) {
+                h2 = height[0] * _this4.root.width * 0.01;
+              } else if (height[1] === VH$7) {
+                h2 = height[0] * _this4.root.height * 0.01;
+              } else {
+                h2 = height[0];
+              }
+            }
           } else if (fixedBottom && height[1] !== AUTO$5) {
-            h2 = height[1] === PX$8 ? height[0] : clientHeight * height[0] * 0.01;
-            y2 = y + clientHeight - computedStyle[BOTTOM$3] - h2; // 底对齐有尺寸时y值还需减去margin/border/padding的
+            if (height[1] !== AUTO$5) {
+              if (height[1] === PERCENT$9) {
+                h2 = height[0] * clientHeight * 0.01;
+              } else if (height[1] === REM$7) {
+                h2 = height[0] * _this4.root.computedStyle[FONT_SIZE$9];
+              } else if (height[1] === VW$7) {
+                h2 = height[0] * _this4.root.width * 0.01;
+              } else if (height[1] === VH$7) {
+                h2 = height[0] * _this4.root.height * 0.01;
+              } else {
+                h2 = height[0];
+              }
+            } else {
+              onlyBottom = true;
+            }
+
+            y2 = y + clientHeight - computedStyle[BOTTOM$3] - h2 || 0; // 底对齐有尺寸时y值还需减去margin/border/padding的
 
             y2 -= computedStyle[MARGIN_TOP$2];
             y2 -= computedStyle[MARGIN_BOTTOM$2];
@@ -22515,11 +22576,6 @@
             y2 -= computedStyle[PADDING_BOTTOM$3];
             y2 -= currentStyle[BORDER_TOP_WIDTH$3][0];
             y2 -= currentStyle[BORDER_BOTTOM_WIDTH$3][0];
-          } else if (fixedTop) {
-            y2 = y + computedStyle[TOP$3];
-          } else if (fixedBottom) {
-            y2 = y + clientHeight - computedStyle[BOTTOM$3];
-            onlyBottom = true;
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
               y2 = y + paddingTop;

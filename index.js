@@ -5649,7 +5649,7 @@
 
     var max = 100 / Math.max(width, height);
     var ratio = width / height;
-    var recycle = [tex1]; // 3次过程中新生成的中间纹理需要回收
+    var recycle = [tex2]; // 3次过程中新生成的中间纹理需要回收
 
     for (var k = 0; k < 3; k++) {
       var tex3 = createTexture(gl, null, j, width, height);
@@ -5663,10 +5663,9 @@
 
       gl.uniform1i(u_texture, i);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-      var _tex = createTexture(gl, null, i, width, height);
-
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, _tex, 0);
+      recycle.push(tex1);
+      var tex4 = createTexture(gl, null, i, width, height);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex4, 0);
 
       if (width >= height) {
         gl.uniform2f(u_direction, 0, max * ratio);
@@ -5676,17 +5675,15 @@
 
       gl.uniform1i(u_texture, j);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
-      tex1 = _tex;
-      recycle.push(tex3, _tex);
+      tex1 = tex4;
+      recycle.push(tex3);
     } // 回收
 
 
     gl.deleteBuffer(pointBuffer);
     gl.deleteBuffer(texBuffer);
     gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords); // 最后一个是多的，是返回的tex1，不能回收
-
-    recycle.pop();
+    gl.disableVertexAttribArray(a_texCoords);
     recycle.forEach(function (item) {
       return gl.deleteTexture(item);
     });
@@ -16279,7 +16276,6 @@
       NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$4.NODE_MATRIX_EVENT,
       NODE_MATRIX$1 = _enums$NODE_KEY$4.NODE_MATRIX,
       NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$4.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE = _enums$NODE_KEY$4.NODE_BLUR_VALUE,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$4.NODE_HAS_CONTENT,
       NODE_REFRESH_LV = _enums$NODE_KEY$4.NODE_REFRESH_LV,
       NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
@@ -16310,14 +16306,11 @@
       isValidMbm$1 = mbm.isValidMbm;
   var contain = o$3.contain,
       NONE = o$3.NONE,
-      TRANSFORM_ALL = o$3.TRANSFORM_ALL,
       TF = o$3.TRANSFORM,
       REFLOW = o$3.REFLOW,
       REPAINT$1 = o$3.REPAINT,
       TX = o$3.TRANSLATE_X,
-      TY = o$3.TRANSLATE_Y,
-      OP = o$3.OPACITY,
-      FT = o$3.FILTER;
+      TY = o$3.TRANSLATE_Y;
 
   function getFirstEmptyInlineWidth(xom) {
     var n = 0;
@@ -17822,21 +17815,9 @@
             ctx = _c2.ctx;
           }
         } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-        // let blurValue = __config[NODE_BLUR_VALUE] = 0;
 
 
-        var hasFilter = filter && filter.length; // if(Array.isArray(filter)) {
-        //   filter.forEach(item => {
-        //     let [k, v] = item;
-        //     if(k === 'blur') {
-        //       blurValue = __config[NODE_BLUR_VALUE] = v;
-        //     }
-        //     if(v > 0) {
-        //       hasFilter = true;
-        //     }
-        //   });
-        // }
-
+        var hasFilter = filter && filter.length;
         var offscreenFilter;
 
         if (hasFilter) {
@@ -17848,67 +17829,12 @@
 
             offscreenFilter = {
               ctx: ctx,
-              // blur: blurValue,
               filter: filter,
               target: _c3,
               matrix: matrix
             };
             ctx = _c3.ctx;
           } else if (renderMode === mode.SVG) {
-            // 模糊框卷积尺寸 #66
-            // let size = 0, list = [];
-            // filter.forEach(item => {
-            //   let [k, v] = item;
-            //   if(k === 'blur') {
-            //     size = blur.outerSize(v);
-            //     list.push({
-            //       tagName: 'feGaussianBlur',
-            //       props: [
-            //         ['stdDeviation', v],
-            //       ],
-            //     });
-            //   }
-            //   else if(k === 'hue-rotate') {
-            //     list.push({
-            //       tagName: 'feColorMatrix',
-            //       props: [
-            //         ['type', 'hueRotate'],
-            //         ['values', v],
-            //       ],
-            //     });
-            //   }
-            //   else if(k === 'saturate') {
-            //     list.push({
-            //       tagName: 'feColorMatrix',
-            //       props: [
-            //         ['type', 'saturate'],
-            //         ['values', v * 0.01],
-            //       ],
-            //     });
-            //   }
-            //   else if(k === 'brightness') {
-            //     list.push({
-            //       tagName: 'feColorMatrix',
-            //       props: [
-            //         ['type', 'luminanceToAlpha'],
-            //         ['values', v * 0.01],
-            //       ],
-            //     });
-            //   }
-            // });
-            // let o = {
-            //   tagName: 'filter',
-            //   props: [
-            //     ['x', -size / offsetWidth],
-            //     ['y', -size / offsetHeight],
-            //     ['width', 1 + size * 2 / offsetWidth],
-            //     ['height', 1 + size * 2 / offsetHeight],
-            //   ],
-            //   children: list,
-            // };
-            // let id = ctx.add(o);
-            // __config[NODE_DEFS_CACHE].push(o);
-            // virtualDom.filter = 'url(#' + id + ')';
             virtualDom.filter = painter.svgFilter(filter);
           }
         } else if (renderMode === mode.SVG) {
@@ -25357,7 +25283,7 @@
       joinDef$1 = util.joinDef;
   var contain$1 = o$3.contain,
       NONE$1 = o$3.NONE,
-      TRANSFORM_ALL$1 = o$3.TRANSFORM_ALL,
+      TRANSFORM_ALL = o$3.TRANSFORM_ALL,
       OPACITY$4 = o$3.OPACITY,
       FILTER$4 = o$3.FILTER,
       MIX_BLEND_MODE$2 = o$3.MIX_BLEND_MODE;
@@ -25582,7 +25508,7 @@
       return;
     }
 
-    if (contain$1(lv, TRANSFORM_ALL$1)) {
+    if (contain$1(lv, TRANSFORM_ALL)) {
       if (transform) {
         elem.setAttribute('transform', transform);
       } else {
@@ -26239,7 +26165,7 @@
       NODE_COMPUTED_STYLE$4 = _enums$NODE_KEY$9.NODE_COMPUTED_STYLE,
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$9.NODE_CURRENT_STYLE,
       NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$9.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$9.NODE_BLUR_VALUE,
+      NODE_BLUR_VALUE = _enums$NODE_KEY$9.NODE_BLUR_VALUE,
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
       NODE_DEFS_CACHE$6 = _enums$NODE_KEY$9.NODE_DEFS_CACHE,
@@ -26251,9 +26177,9 @@
       STRUCT_HAS_MASK$1 = _enums$STRUCT_KEY$2.STRUCT_HAS_MASK,
       STRUCT_LV$2 = _enums$STRUCT_KEY$2.STRUCT_LV;
   var NONE$2 = o$3.NONE,
-      TRANSFORM_ALL$2 = o$3.TRANSFORM_ALL,
-      OP$1 = o$3.OPACITY,
-      FT$1 = o$3.FILTER,
+      TRANSFORM_ALL$1 = o$3.TRANSFORM_ALL,
+      OP = o$3.OPACITY,
+      FT = o$3.FILTER,
       REPAINT$2 = o$3.REPAINT,
       contain$2 = o$3.contain,
       MBM = o$3.MIX_BLEND_MODE;
@@ -26859,13 +26785,46 @@
     return [limitCache || totalLimitCache, mockCache];
   }
 
-  function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
+  function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
     var sx1 = cache.sx1,
         sy1 = cache.sy1,
         width = cache.width,
         height = cache.height,
-        bbox = cache.bbox; // cache一定是total，fullSize还要算上blur扩展
+        bbox = cache.bbox;
+    var mockCache = cache;
+    filter.forEach(function (item) {
+      var _item2 = _slicedToArray(item, 2),
+          k = _item2[0],
+          v = _item2[1];
 
+      if (k === 'blur') {
+        var res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+
+        if (res) {
+          var _res = _slicedToArray(res, 4);
+
+          mockCache = _res[0];
+          width = _res[1];
+          height = _res[2];
+          bbox = _res[3];
+        }
+      }
+    }); // 切换回主程序
+
+    gl.useProgram(gl.program);
+    gl.viewport(0, 0, W, H);
+    return mockCache;
+  }
+  /**
+   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+   * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
+   * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+   * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
+   * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
+   */
+
+
+  function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox) {
     var d = blur.kernelSize(sigma);
     var max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
 
@@ -26883,16 +26842,13 @@
       return;
     }
 
+    bbox = bbox.slice(0);
+    bbox[0] -= spread;
+    bbox[1] -= spread;
+    bbox[2] += spread;
+    bbox[3] += spread;
     var cx = width * 0.5,
         cy = height * 0.5;
-    /**
-     * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
-     * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
-     * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
-     * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
-     * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
-     */
-
     var weights = blur.gaussianWeight(sigma, d);
     var vert = '';
     var frag = '';
@@ -26917,7 +26873,7 @@
     vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
     frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
     var program = webgl.initShaders(gl, vert, frag);
-    gl.useProgram(program); // 先将cache绘制到一个单独的纹理中，尺寸为fullSize，以便应用cache时纹理尺寸是扩展后的
+    gl.useProgram(program);
 
     var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, width, height),
         _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
@@ -26936,25 +26892,17 @@
       texCache.lockChannel(j);
     }
 
-    texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma); // 切换回主程序并销毁这个临时program
+    texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma); // 销毁这个临时program
 
-    gl.useProgram(gl.program);
     gl.deleteShader(program.vertexShader);
     gl.deleteShader(program.fragmentShader);
     gl.deleteProgram(program);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer);
-    texCache.releaseLockChannel(j); // 同total一样生成一个mockCache
-
-    var b = bbox.slice(0);
-    b[0] -= spread;
-    b[1] -= spread;
-    b[2] += spread;
-    b[3] += spread;
-    var filterCache = new MockCache(gl, texture, sx1, sy1, width, height, b);
-    texCache.releaseLockChannel(i, filterCache.page);
-    return filterCache;
+    texCache.releaseLockChannel(j);
+    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox);
+    texCache.releaseLockChannel(i, mockCache.page);
+    return [mockCache, width, height, bbox];
   }
 
   function genOverflowWebgl(gl, texCache, node, cache, W, H) {
@@ -27210,9 +27158,9 @@
       return b[1] - a[1];
     });
     list.forEach(function (item) {
-      var _item2 = _slicedToArray(item, 4),
-          type = _item2[2],
-          offscreen = _item2[3];
+      var _item3 = _slicedToArray(item, 4),
+          type = _item3[2],
+          offscreen = _item3[3];
 
       if (type === OFFSCREEN_OVERFLOW) {
         var matrix = offscreen.matrix,
@@ -27459,7 +27407,7 @@
             matrixEvent = __config[NODE_MATRIX_EVENT$4];
         var matrix = void 0;
 
-        if (contain$2(refreshLevel, TRANSFORM_ALL$2)) {
+        if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
           var m = __config[NODE_MATRIX$2];
@@ -27487,7 +27435,7 @@
         matrixEvent[5] = matrix[5];
         var opacity = void 0;
 
-        if (contain$2(refreshLevel, OP$1)) {
+        if (contain$2(refreshLevel, OP)) {
           opacity = computedStyle[OPACITY$5] = currentStyle[OPACITY$5];
         } else {
           opacity = computedStyle[OPACITY$5];
@@ -27496,7 +27444,7 @@
         __config[NODE_OPACITY$3] = parentOpacity * opacity; // filter会改变bbox范围
         // let blurValue;
 
-        if (contain$2(refreshLevel, FT$1)) {
+        if (contain$2(refreshLevel, FT)) {
           node.__bbox = null; // let filter = computedStyle[FILTER] = currentStyle[FILTER];
           // blurValue = __config[NODE_BLUR_VALUE] = 0;
           // if(Array.isArray(filter)) {
@@ -27572,14 +27520,14 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item3 = _slicedToArray(item, 8),
-            i = _item3[0],
-            total = _item3[2],
-            node = _item3[3],
-            __config = _item3[4],
-            hasMask = _item3[5],
-            filter = _item3[6],
-            overflow = _item3[7];
+        var _item4 = _slicedToArray(item, 8),
+            i = _item4[0],
+            total = _item4[2],
+            node = _item4[3],
+            __config = _item4[4],
+            hasMask = _item4[5],
+            filter = _item4[6],
+            overflow = _item4[7];
 
         var __cache = __config[NODE_CACHE$4],
             __cacheTotal = __config[NODE_CACHE_TOTAL$1],
@@ -27994,7 +27942,7 @@
             refreshLevel = _node$__config2[NODE_REFRESH_LV$1],
             defsCache = _node$__config2[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
 
-        var hasEffectMask = hasMask && (refreshLevel >= REPAINT$2 || contain$2(refreshLevel, TRANSFORM_ALL$2 | OP$1));
+        var hasEffectMask = hasMask && (refreshLevel >= REPAINT$2 || contain$2(refreshLevel, TRANSFORM_ALL$1 | OP));
 
         if (hasEffectMask) {
           var start = i + (total || 0) + 1;
@@ -28010,7 +27958,7 @@
           if (maskEffectHash.hasOwnProperty(i)) {
             var v = maskEffectHash[i];
 
-            if (!contain$2(refreshLevel, TRANSFORM_ALL$2) && v < REPAINT$2 && !contain$2(v, TRANSFORM_ALL$2)) {
+            if (!contain$2(refreshLevel, TRANSFORM_ALL$1) && v < REPAINT$2 && !contain$2(v, TRANSFORM_ALL$1)) {
               defsCache.forEach(function (item) {
                 // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
                 //   ctx.addCache(item);
@@ -28114,7 +28062,7 @@
             computedStyle = __config[NODE_COMPUTED_STYLE$4],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
-        if (contain$2(_refreshLevel2, TRANSFORM_ALL$2)) {
+        if (contain$2(_refreshLevel2, TRANSFORM_ALL$1)) {
           var matrix = _node4.__calMatrix(_refreshLevel2, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
 
@@ -28152,7 +28100,7 @@
           }
         }
 
-        if (contain$2(_refreshLevel2, OP$1)) {
+        if (contain$2(_refreshLevel2, OP)) {
           var opacity = computedStyle[OPACITY$5] = currentStyle[OPACITY$5];
 
           if (opacity === 1) {
@@ -28162,7 +28110,7 @@
           }
         }
 
-        if (contain$2(_refreshLevel2, FT$1)) {
+        if (contain$2(_refreshLevel2, FT)) {
           var filter = _node4.__calFilter(currentStyle, computedStyle);
 
           var s = painter.svgFilter(filter);
@@ -28249,7 +28197,7 @@
        */
 
 
-      if (maskHash.hasOwnProperty(_i5) && (maskEffectHash.hasOwnProperty(_i5) || _refreshLevel2 >= REPAINT$2 || contain$2(_refreshLevel2, TRANSFORM_ALL$2 | OP$1))) {
+      if (maskHash.hasOwnProperty(_i5) && (maskEffectHash.hasOwnProperty(_i5) || _refreshLevel2 >= REPAINT$2 || contain$2(_refreshLevel2, TRANSFORM_ALL$1 | OP))) {
         var _maskHash$_i = maskHash[_i5],
             index = _maskHash$_i.index,
             _start2 = _maskHash$_i.start,
@@ -28341,9 +28289,9 @@
 
 
         for (var _i6 = _defsCache.length - 1; _i6 >= 0; _i6--) {
-          var _item4 = _defsCache[_i6];
+          var _item5 = _defsCache[_i6];
 
-          if (_item4.tagName === 'mask') {
+          if (_item5.tagName === 'mask') {
             _defsCache.splice(_i6, 1);
           }
         }
@@ -28479,7 +28427,7 @@
             _matrixEvent4 = __config[NODE_MATRIX_EVENT$4];
         var matrix;
 
-        if (contain$2(refreshLevel, TRANSFORM_ALL$2)) {
+        if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
           var _m8 = __config[NODE_MATRIX$2];
@@ -28507,7 +28455,7 @@
 
         var _opacity5;
 
-        if (contain$2(refreshLevel, OP$1)) {
+        if (contain$2(refreshLevel, OP)) {
           _opacity5 = computedStyle[OPACITY$5] = currentStyle[OPACITY$5];
         } else {
           _opacity5 = computedStyle[OPACITY$5];
@@ -28515,21 +28463,23 @@
 
         __config[NODE_OPACITY$3] = parentOpacity * _opacity5; // filter会改变bbox范围
 
-        var _blurValue;
+        var blurValue;
 
-        if (contain$2(refreshLevel, FT$1)) {
+        if (contain$2(refreshLevel, FT)) {
           node.__bbox = null;
-          var filter = computedStyle[FILTER$5] = currentStyle[FILTER$5];
-          _blurValue = __config[NODE_BLUR_VALUE$1] = 0;
 
-          if (Array.isArray(filter)) {
-            filter.forEach(function (item) {
-              var _item6 = _slicedToArray(item, 2),
-                  k = _item6[0],
-                  v = _item6[1];
+          var _filter3 = computedStyle[FILTER$5] = currentStyle[FILTER$5];
+
+          blurValue = __config[NODE_BLUR_VALUE] = 0;
+
+          if (Array.isArray(_filter3)) {
+            _filter3.forEach(function (item) {
+              var _item7 = _slicedToArray(item, 2),
+                  k = _item7[0],
+                  v = _item7[1];
 
               if (k === 'blur') {
-                _blurValue = __config[NODE_BLUR_VALUE$1] = v;
+                blurValue = __config[NODE_BLUR_VALUE] = v;
               }
             });
           }
@@ -28542,10 +28492,10 @@
 
 
           if (hasRecordAsMask) {
-            hasRecordAsMask[7] = _blurValue;
+            hasRecordAsMask[7] = blurValue;
           } else {
             // 强制存hasMask，因为filter改变影响mask
-            hasRecordAsMask = [_i7, lv, total, node, __config, null, hasMask, _blurValue];
+            hasRecordAsMask = [_i7, lv, total, node, __config, null, hasMask, blurValue];
             mergeList.push(hasRecordAsMask);
           }
         }
@@ -28581,23 +28531,23 @@
         } // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
 
-      var blurValue = __config[NODE_BLUR_VALUE$1],
-          limitCache = __config[NODE_LIMIT_CACHE$2];
+      var limitCache = __config[NODE_LIMIT_CACHE$2];
       var overflow = computedStyle[OVERFLOW$3],
+          filter = computedStyle[FILTER$5],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3];
       var validMbm = isValidMbm$2(mixBlendMode);
 
-      if (hasMask || blurValue > 0 || overflow === 'hidden' && total || validMbm) {
+      if (hasMask || filter.length || overflow === 'hidden' && total || validMbm) {
         if (validMbm) {
           hasMbm = true;
         }
 
         if (hasRecordAsMask) {
           hasRecordAsMask[5] = limitCache;
-          hasRecordAsMask[7] = blurValue;
+          hasRecordAsMask[7] = filter;
           hasRecordAsMask[8] = overflow;
         } else {
-          mergeList.push([_i7, lv, total, node, __config, limitCache, hasMask, blurValue, overflow]);
+          mergeList.push([_i7, lv, total, node, __config, limitCache, hasMask, filter, overflow]);
         }
       }
 
@@ -28622,15 +28572,15 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item5 = _slicedToArray(item, 9),
-            i = _item5[0],
-            total = _item5[2],
-            node = _item5[3],
-            __config = _item5[4],
-            limitCache = _item5[5],
-            hasMask = _item5[6],
-            blurValue = _item5[7],
-            overflow = _item5[8];
+        var _item6 = _slicedToArray(item, 9),
+            i = _item6[0],
+            total = _item6[2],
+            node = _item6[3],
+            __config = _item6[4],
+            limitCache = _item6[5],
+            hasMask = _item6[6],
+            filter = _item6[7],
+            overflow = _item6[8];
 
         var __cache = __config[NODE_CACHE$4],
             __cacheTotal = __config[NODE_CACHE_TOTAL$1],
@@ -28668,9 +28618,9 @@
           }
         }
 
-        if (blurValue > 0) {
+        if (filter.length) {
           if (!__cacheFilter || !__cacheFilter.available || needGen) {
-            target = genFilterWebgl(gl, texCache, node, target, blurValue, width, height);
+            target = genFilterWebgl(gl, texCache, node, target, filter, width, height);
             needGen = true;
 
             if (!limitCache) {

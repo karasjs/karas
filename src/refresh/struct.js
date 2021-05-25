@@ -604,9 +604,32 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   return [limitCache || totalLimitCache, mockCache];
 }
 
-function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
+function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
   let { sx1, sy1, width, height, bbox } = cache;
-  // cache一定是total，fullSize还要算上blur扩展
+  let mockCache = cache;
+  filter.forEach(item => {
+    let [k, v] = item;
+    if(k === 'blur') {
+      let res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
+    }
+  });
+  // 切换回主程序
+  gl.useProgram(gl.program);
+  gl.viewport(0, 0, W, H);
+  return mockCache;
+}
+
+/**
+ * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+ * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
+ * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+ * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
+ * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
+ */
+function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox) {
   let d = blur.kernelSize(sigma);
   let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
   while(d > max) {
@@ -620,14 +643,12 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   if(width > limit || height > limit) {
     return;
   }
+  bbox = bbox.slice(0);
+  bbox[0] -= spread;
+  bbox[1] -= spread;
+  bbox[2] += spread;
+  bbox[3] += spread;
   let cx = width * 0.5, cy = height * 0.5;
-  /**
-   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
-   * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核d扩大3倍性能慢
-   * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
-   * 先动态生成gl程序，默认3核源码示例已注释，根据sigma获得d（一定奇数），再计算权重
-   * 然后将d尺寸和权重拼接成真正程序并编译成program，再开始绘制
-   */
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
   let frag = '';
@@ -648,7 +669,6 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
   let program = webgl.initShaders(gl, vert, frag);
   gl.useProgram(program);
-  // 先将cache绘制到一个单独的纹理中，尺寸为fullSize，以便应用cache时纹理尺寸是扩展后的
   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
   let j = texCache.findExistTexChannel(cache.page);
@@ -660,25 +680,18 @@ function genFilterWebgl(gl, texCache, node, cache, sigma, W, H) {
   else {
     texCache.lockChannel(j);
   }
-  texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma);
-  // 切换回主程序并销毁这个临时program
-  gl.useProgram(gl.program);
+  texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j,
+    width, height, cx, cy, spread, d, sigma);
+  // 销毁这个临时program
   gl.deleteShader(program.vertexShader);
   gl.deleteShader(program.fragmentShader);
   gl.deleteProgram(program);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   texCache.releaseLockChannel(j);
-  // 同total一样生成一个mockCache
-  let b = bbox.slice(0);
-  b[0] -= spread;
-  b[1] -= spread;
-  b[2] += spread;
-  b[3] += spread;
-  let filterCache = new MockCache(gl, texture, sx1, sy1, width, height, b);
-  texCache.releaseLockChannel(i, filterCache.page);
-  return filterCache;
+  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox);
+  texCache.releaseLockChannel(i, mockCache.page);
+  return [mockCache, width, height, bbox];
 }
 
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
@@ -2096,25 +2109,26 @@ function renderWebgl(renderMode, gl, root) {
     }
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
-      [NODE_BLUR_VALUE]: blurValue,
+      // [NODE_BLUR_VALUE]: blurValue,
       [NODE_LIMIT_CACHE]: limitCache,
     } = __config;
     let {
       [OVERFLOW]: overflow,
+      [FILTER]: filter,
       [MIX_BLEND_MODE]: mixBlendMode,
     } = computedStyle;
     let validMbm = isValidMbm(mixBlendMode);
-    if(hasMask || blurValue > 0 || (overflow === 'hidden' && total) || validMbm) {
+    if(hasMask || filter.length || (overflow === 'hidden' && total) || validMbm) {
       if(validMbm) {
         hasMbm = true;
       }
       if(hasRecordAsMask) {
         hasRecordAsMask[5] = limitCache;
-        hasRecordAsMask[7] = blurValue;
+        hasRecordAsMask[7] = filter;
         hasRecordAsMask[8] = overflow;
       }
       else {
-        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, blurValue, overflow]);
+        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow]);
       }
     }
   }
@@ -2129,7 +2143,7 @@ function renderWebgl(renderMode, gl, root) {
       return b[1] - a[1];
     });
     mergeList.forEach(item => {
-      let [i, , total, node, __config, limitCache, hasMask, blurValue, overflow] = item;
+      let [i, , total, node, __config, limitCache, hasMask, filter, overflow] = item;
       let {
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -2160,9 +2174,9 @@ function renderWebgl(renderMode, gl, root) {
           }
         }
       }
-      if(blurValue > 0) {
+      if(filter.length) {
         if(!__cacheFilter || !__cacheFilter.available || needGen) {
-          target = genFilterWebgl(gl, texCache, node, target, blurValue, width, height);
+          target = genFilterWebgl(gl, texCache, node, target, filter, width, height);
           needGen = true;
           if(!limitCache) {
             __config[NODE_CACHE_FILTER] = target;

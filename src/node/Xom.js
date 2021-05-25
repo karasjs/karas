@@ -119,7 +119,6 @@ const {
     NODE_MATRIX_EVENT,
     NODE_MATRIX,
     NODE_LIMIT_CACHE,
-    NODE_BLUR_VALUE,
     NODE_HAS_CONTENT,
     NODE_REFRESH_LV,
     NODE_CACHE,
@@ -142,14 +141,11 @@ const { mbmName, isValidMbm } = mbm;
 const {
   contain,
   NONE,
-  TRANSFORM_ALL,
   TRANSFORM: TF,
   REFLOW,
   REPAINT,
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
-  OPACITY: OP,
-  FILTER: FT,
 } = level;
 
 function getFirstEmptyInlineWidth(xom) {
@@ -1567,19 +1563,7 @@ class Xom extends Node {
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    // let blurValue = __config[NODE_BLUR_VALUE] = 0;
     let hasFilter = filter && filter.length;
-    // if(Array.isArray(filter)) {
-    //   filter.forEach(item => {
-    //     let [k, v] = item;
-    //     if(k === 'blur') {
-    //       blurValue = __config[NODE_BLUR_VALUE] = v;
-    //     }
-    //     if(v > 0) {
-    //       hasFilter = true;
-    //     }
-    //   });
-    // }
     let offscreenFilter;
     if(hasFilter) {
       if(renderMode === mode.CANVAS && !cache) {
@@ -1587,7 +1571,6 @@ class Xom extends Node {
         let c = inject.getCacheCanvas(width, height, null, 'filter1');
         offscreenFilter = {
           ctx,
-          // blur: blurValue,
           filter,
           target: c,
           matrix,
@@ -1595,60 +1578,6 @@ class Xom extends Node {
         ctx = c.ctx;
       }
       else if(renderMode === mode.SVG) {
-        // 模糊框卷积尺寸 #66
-        // let size = 0, list = [];
-        // filter.forEach(item => {
-        //   let [k, v] = item;
-        //   if(k === 'blur') {
-        //     size = blur.outerSize(v);
-        //     list.push({
-        //       tagName: 'feGaussianBlur',
-        //       props: [
-        //         ['stdDeviation', v],
-        //       ],
-        //     });
-        //   }
-        //   else if(k === 'hue-rotate') {
-        //     list.push({
-        //       tagName: 'feColorMatrix',
-        //       props: [
-        //         ['type', 'hueRotate'],
-        //         ['values', v],
-        //       ],
-        //     });
-        //   }
-        //   else if(k === 'saturate') {
-        //     list.push({
-        //       tagName: 'feColorMatrix',
-        //       props: [
-        //         ['type', 'saturate'],
-        //         ['values', v * 0.01],
-        //       ],
-        //     });
-        //   }
-        //   else if(k === 'brightness') {
-        //     list.push({
-        //       tagName: 'feColorMatrix',
-        //       props: [
-        //         ['type', 'luminanceToAlpha'],
-        //         ['values', v * 0.01],
-        //       ],
-        //     });
-        //   }
-        // });
-        // let o = {
-        //   tagName: 'filter',
-        //   props: [
-        //     ['x', -size / offsetWidth],
-        //     ['y', -size / offsetHeight],
-        //     ['width', 1 + size * 2 / offsetWidth],
-        //     ['height', 1 + size * 2 / offsetHeight],
-        //   ],
-        //   children: list,
-        // };
-        // let id = ctx.add(o);
-        // __config[NODE_DEFS_CACHE].push(o);
-        // virtualDom.filter = 'url(#' + id + ')';
         virtualDom.filter = painter.svgFilter(filter);
       }
     }

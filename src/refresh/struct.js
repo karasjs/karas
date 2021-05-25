@@ -935,7 +935,6 @@ function applyOffscreen(ctx, list, width, height) {
     }
     else if(type === OFFSCREEN_FILTER) {
       let { target, ctx: origin, filter } = offscreen;
-      console.log(filter);
       // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
       if(ctx.filter) {
         let apply = inject.getCacheCanvas(width, height, null, 'filter2');
@@ -1262,7 +1261,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           }
           target = __config[NODE_CACHE_OVERFLOW] || target;
         }
-        if(filter) {
+        if(filter && filter.length) {
           if(!__cacheFilter || !__cacheFilter.available || needGen) {
             __config[NODE_CACHE_FILTER] = genFilter(node, target, filter);
             needGen = true;
@@ -1383,7 +1382,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
               };
               ctx = c.ctx;
             }
-            if(filter) {
+            if(filter && filter.length) {
               let c = inject.getCacheCanvas(width, height, null, 'filter1');
               offscreenFilter = {
                 ctx,

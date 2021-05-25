@@ -27244,8 +27244,7 @@
       } else if (type === OFFSCREEN_FILTER) {
         var _target = offscreen.target,
             _origin = offscreen.ctx,
-            filter = offscreen.filter;
-        console.log(filter); // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
+            filter = offscreen.filter; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
 
         if (ctx.filter) {
           var apply = inject.getCacheCanvas(width, height, null, 'filter2');
@@ -27612,7 +27611,7 @@
             target = __config[NODE_CACHE_OVERFLOW$2] || target;
           }
 
-          if (filter) {
+          if (filter && filter.length) {
             if (!__cacheFilter || !__cacheFilter.available || needGen) {
               __config[NODE_CACHE_FILTER$2] = genFilter(node, target, filter);
               needGen = true;
@@ -27746,7 +27745,7 @@
                   ctx = _c2.ctx;
                 }
 
-                if (_filter2) {
+                if (_filter2 && _filter2.length) {
                   var _c3 = inject.getCacheCanvas(width, height, null, 'filter1');
 
                   offscreenFilter = {

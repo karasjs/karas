@@ -1511,17 +1511,6 @@ class Xom extends Node {
       }
       virtualDom.visibility = visibility;
     }
-    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    // let blurValue = __config[NODE_BLUR_VALUE] = 0;
-    // if(Array.isArray(filter)) {
-    //   filter.forEach(item => {
-    //     console.log(item);
-    //     let [k, v] = item;
-    //     if(k === 'blur') {
-    //       blurValue = __config[NODE_BLUR_VALUE] = v;
-    //     }
-    //   });
-    // }
     // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
     if(res.limitCache) {
       return res;

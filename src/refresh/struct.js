@@ -10,7 +10,6 @@ import painter from '../util/painter';
 import Cache from './Cache';
 import tf from '../style/transform';
 import mbm from '../style/mbm';
-import unit from '../style/unit';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';
@@ -47,7 +46,6 @@ const {
     FILL,
     TRANSFORM,
     TRANSFORM_ORIGIN,
-    FONT_SIZE,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -61,7 +59,6 @@ const {
     NODE_COMPUTED_STYLE,
     NODE_CURRENT_STYLE,
     NODE_LIMIT_CACHE,
-    NODE_BLUR_VALUE,
     NODE_REFRESH_LV,
     NODE_CACHE_STYLE,
     NODE_DEFS_CACHE,
@@ -86,7 +83,6 @@ const {
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
-const { PX, PERCENT, DEG, REM, VW, VH } = unit;
 
 // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 const OFFSCREEN_OVERFLOW = 0;
@@ -122,7 +118,6 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let { __sx1: sx1, __sy1: sy1, __config } = node;
   let {
     [NODE_CACHE]: cache,
-    // [NODE_BLUR_VALUE]: blurValue,
     [NODE_COMPUTED_STYLE]: {
       [FILTER]: filter,
     },
@@ -137,7 +132,6 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   }
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
   let list = [index];
-  // let d = blur.outerSize(blurValue);
   let d = 0;
   filter.forEach(item => {
     let [k, v] = item;
@@ -695,7 +689,7 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
 }
 
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
-  let sbox = node.bbox;
+  let sbox = node.bbox.slice(0);
   let bbox = cache.bbox;
   // 没超过无需生成
   if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
@@ -1171,19 +1165,8 @@ function renderCacheCanvas(renderMode, ctx, root) {
       }
       __config[NODE_OPACITY] = parentOpacity * opacity;
       // filter会改变bbox范围
-      // let blurValue;
       if(contain(refreshLevel, FT)) {
         node.__bbox = null;
-        // let filter = computedStyle[FILTER] = currentStyle[FILTER];
-        // blurValue = __config[NODE_BLUR_VALUE] = 0;
-        // if(Array.isArray(filter)) {
-        //   filter.forEach(item => {
-        //     let [k, v] = item;
-        //     if(k === 'blur') {
-        //       blurValue = __config[NODE_BLUR_VALUE] = v;
-        //     }
-        //   });
-        // }
         let filter = node.__calFilter(currentStyle, computedStyle);
         let __cacheFilter = __config[NODE_CACHE_FILTER];
         if(__cacheFilter) {
@@ -1217,7 +1200,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
     }
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
-      // [NODE_BLUR_VALUE]: blurValue,
       [NODE_LIMIT_CACHE]: limitCache,
     } = __config;
     let {
@@ -1318,7 +1300,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
       let {
         [NODE_OPACITY]: opacity,
         [NODE_MATRIX_EVENT]: matrixEvent,
-        // [NODE_BLUR_VALUE]: blurValue,
         [NODE_LIMIT_CACHE]: limitCache,
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -1399,7 +1380,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
               let c = inject.getCacheCanvas(width, height, null, 'filter1');
               offscreenFilter = {
                 ctx,
-                // blur: blurValue,
                 filter,
                 target: c,
                 matrix: matrixEvent,
@@ -1753,47 +1733,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         else {
           delete virtualDom.filter;
         }
-        // let filter = computedStyle[FILTER] = currentStyle[FILTER];
-        // delete virtualDom.filter;
-        // // 移除老缓存，防止无限增长
-        // for(let i = defsCache.length - 1; i >= 0; i--) {
-        //   let item = defsCache[i];
-        //   if(item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
-        //     ctx.removeCache(item);
-        //     break;
-        //   }
-        // }
-        // if(Array.isArray(filter)) {
-        //   filter.forEach(item => {
-        //     let [k, v] = item;
-        //     if(k === 'blur') {
-        //       if(v > 0) {
-        //         let d = blur.outerSize(v);
-        //         let { outerWidth, outerHeight } = node;
-        //         let o = {
-        //           tagName: 'filter',
-        //           props: [
-        //             ['x', -d / outerWidth],
-        //             ['y', -d / outerHeight],
-        //             ['width', 1 + d * 2 / outerWidth],
-        //             ['height', 1 + d * 2 / outerHeight],
-        //           ],
-        //           children: [
-        //             {
-        //               tagName: 'feGaussianBlur',
-        //               props: [
-        //                 ['stdDeviation', v],
-        //               ],
-        //             }
-        //           ],
-        //         };
-        //         let id = ctx.add(o);
-        //         __config[NODE_DEFS_CACHE].push(o);
-        //         virtualDom.filter = 'url(#' + id + ')';
-        //       }
-        //     }
-        //   });
-        // }
       }
       if(contain(refreshLevel, MBM)) {
         let mixBlendMode = computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
@@ -2057,30 +1996,20 @@ function renderWebgl(renderMode, gl, root) {
       }
       __config[NODE_OPACITY] = parentOpacity * opacity;
       // filter会改变bbox范围
-      let blurValue;
       if(contain(refreshLevel, FT)) {
         node.__bbox = null;
-        let filter = computedStyle[FILTER] = currentStyle[FILTER];
-        blurValue = __config[NODE_BLUR_VALUE] = 0;
-        if(Array.isArray(filter)) {
-          filter.forEach(item => {
-            let [k, v] = item;
-            if(k === 'blur') {
-              blurValue = __config[NODE_BLUR_VALUE] = v;
-            }
-          });
-        }
+        let filter = node.__calFilter(currentStyle, computedStyle);
         let __cacheFilter = __config[NODE_CACHE_FILTER];
         if(__cacheFilter) {
           __cacheFilter.release();
         }
         // 防重
         if(hasRecordAsMask) {
-          hasRecordAsMask[7] = blurValue;
+          hasRecordAsMask[7] = filter;
         }
         else {
           // 强制存hasMask，因为filter改变影响mask
-          hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, blurValue];
+          hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, filter];
           mergeList.push(hasRecordAsMask);
         }
       }
@@ -2109,7 +2038,6 @@ function renderWebgl(renderMode, gl, root) {
     }
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
-      // [NODE_BLUR_VALUE]: blurValue,
       [NODE_LIMIT_CACHE]: limitCache,
     } = __config;
     let {

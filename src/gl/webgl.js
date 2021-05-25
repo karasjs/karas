@@ -311,7 +311,7 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
    */
   let max = 100 / Math.max(width, height);
   let ratio = width / height;
-  let recycle = [tex2]; // 3次过程中新生成的中间纹理需要回收
+  let recycle = []; // 3次过程中新生成的中间纹理需要回收
   for(let k = 0; k < 3; k++) {
     let tex3 = createTexture(gl, null, j, width, height);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);

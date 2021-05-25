@@ -11,6 +11,7 @@ import blur from '../math/blur';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
+import painter from '../util/painter';
 import Animation from '../animate/Animation';
 import frame from '../animate/frame';
 import mx from '../math/matrix';
@@ -132,7 +133,7 @@ const {
     NODE_IS_INLINE,
   }
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, REM, VW, VH } = unit;
+const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, DEG } = unit;
 const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
@@ -859,7 +860,6 @@ class Xom extends Node {
   /**
    * 将currentStyle计算为computedStyle，同时存入cacheStyle可缓存的结果防止无变更重复计算
    * @param renderMode
-   * @param lv
    * @param ctx
    * @param parent
    * @param __cacheStyle
@@ -892,7 +892,7 @@ class Xom extends Node {
    * @returns {*[]}
    * @private
    */
-  __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
+  __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
@@ -912,283 +912,276 @@ class Xom extends Node {
       bx2 = x4;
       by2 = y4;
     }
-    if(lv >= REPAINT) {
-      let isInline = this.__config[NODE_IS_INLINE];
-      if(isInline && !this.contentBoxList.length) {
-        isInline = false;
-      }
-      // 这些直接赋值的不需要再算缓存
-      [
-        OPACITY,
-        Z_INDEX,
-        BORDER_TOP_STYLE,
-        BORDER_RIGHT_STYLE,
-        BORDER_BOTTOM_STYLE,
-        BORDER_LEFT_STYLE,
-        BACKGROUND_REPEAT,
-        FILTER,
-        OVERFLOW,
-        MIX_BLEND_MODE,
-        TEXT_OVERFLOW,
-        BACKGROUND_CLIP,
-      ].forEach(k => {
-        computedStyle[k] = currentStyle[k];
-      });
-      if(__cacheStyle[BACKGROUND_POSITION_X] === undefined) {
-        __cacheStyle[BACKGROUND_POSITION_X] = true;
-        let {
-          [BACKGROUND_POSITION_X]: bgX,
-        } = currentStyle;
-        computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
-          if(item[1] === PX) {
-            return item[0];
-          }
-          if(item[1] === REM) {
-            return item[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          if(item[1] === VW) {
-            return item[0] * this.root.width * 0.01;
-          }
-          if(item[1] === VH) {
-            return item[0] * this.root.height * 0.01;
-          }
-          if(item[1] === PERCENT) {
-            return item[0] + '%';
-          }
-        });
-      }
-      if(__cacheStyle[BACKGROUND_POSITION_Y] === undefined) {
-        __cacheStyle[BACKGROUND_POSITION_Y] = true;
-        let {
-          [BACKGROUND_POSITION_Y]: bgY,
-        } = currentStyle;
-        computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
-          if(item[1] === PX) {
-            return item[0];
-          }
-          if(item[1] === REM) {
-            return item[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          if(item[1] === VW) {
-            return item[0] * this.root.width * 0.01;
-          }
-          if(item[1] === VH) {
-            return item[0] * this.root.height * 0.01;
-          }
-          if(item[1] === PERCENT) {
-            return item[0] + '%';
-          }
-        });
-      }
-      if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
-        __cacheStyle[BACKGROUND_SIZE] = true;
-        computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
-          return bg.calBackgroundSize(item, bx2 - bx1, by2 - by1, this.root);
-        });
-      }
-      if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {
-        let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE].slice(0);
-        __cacheStyle[BACKGROUND_IMAGE] = bgI.map((bgi, i) => {
-          if(!bgi) {
-            return null;
-          }
-          // 防止隐藏不加载背景图
-          if(util.isString(bgi)) {
-            let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
-            let cache = inject.IMG[BACKGROUND_IMAGE];
-            if(cache && cache.state === inject.LOADED) {
-              loadBgi.url = BACKGROUND_IMAGE;
-              loadBgi.source = cache.source;
-              loadBgi.width = cache.width;
-              loadBgi.height = cache.height;
-            }
-            else if(loadBgi.url !== bgi) {
-              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-              loadBgi.url = bgi;
-              loadBgi.source = null;
-              let node = this;
-              let root = node.root;
-              inject.measureImg(bgi, data => {
-                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
-                  loadBgi.source = data.source;
-                  loadBgi.width = data.width;
-                  loadBgi.height = data.height;
-                  root.delRefreshTask(loadBgi.cb);
-                  root.addRefreshTask(loadBgi.cb = {
-                    __before() {
-                      __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                      let res = {};
-                      res[UPDATE_NODE] = node;
-                      res[UPDATE_FOCUS] = REPAINT;
-                      res[UPDATE_CONFIG] = node.__config;
-                      root.__addUpdate(node, node.__config, root, root.__config, res);
-                    },
-                  });
-                }
-              }, {
-                ctx,
-                root,
-                width: bx2 - bx1,
-                height: by2 - by1,
-              });
-            }
-            return true;
-          }
-          else if(!isInline && bgi.k) {
-            // gradient在渲染时才生成
-            return true;
-          }
-        });
-      }
-      if(__cacheStyle[BOX_SHADOW] === undefined) {
-        __cacheStyle[BOX_SHADOW] = true;
-        computedStyle[BOX_SHADOW] = (currentStyle[BOX_SHADOW] || []).map(item => {
-          return item.map((item2, i) => {
-            if(i > 3) {
-              return item2;
-            }
-            let v = item2[0];
-            if(item2[1] === PERCENT) {
-              if(i % 2 === 0) {
-                v *= 0.01 * (bx2 - bx1);
-              }
-              else {
-                v *= 0.01 * (by2 - by1);
-              }
-            }
-            else if(item2[1] === REM) {
-              v = v * this.root.computedStyle[FONT_SIZE];
-            }
-            else if(item2[1] === VW) {
-              v = v * this.root.width * 0.01;
-            }
-            else if(item2[1] === VH) {
-              v = v * this.root.height * 0.01;
-            }
-            return v;
-          });
-        });
-      }
-      [
-        BACKGROUND_COLOR,
-        BORDER_TOP_COLOR,
-        BORDER_RIGHT_COLOR,
-        BORDER_BOTTOM_COLOR,
-        BORDER_LEFT_COLOR,
-      ].forEach(k => {
-        if(__cacheStyle[k] === undefined) {
-          __cacheStyle[k] = int2rgba(computedStyle[k] = currentStyle[k][0]);
+    let isInline = this.__config[NODE_IS_INLINE];
+    if(isInline && !this.contentBoxList.length) {
+      isInline = false;
+    }
+    // 这些直接赋值的不需要再算缓存
+    [
+      OPACITY,
+      Z_INDEX,
+      BORDER_TOP_STYLE,
+      BORDER_RIGHT_STYLE,
+      BORDER_BOTTOM_STYLE,
+      BORDER_LEFT_STYLE,
+      BACKGROUND_REPEAT,
+      OVERFLOW,
+      MIX_BLEND_MODE,
+      TEXT_OVERFLOW,
+      BACKGROUND_CLIP,
+    ].forEach(k => {
+      computedStyle[k] = currentStyle[k];
+    });
+    if(isNil(__cacheStyle[FILTER])) {
+      __cacheStyle[FILTER] = true;
+      this.__calFilter(currentStyle, computedStyle);
+    }
+    if(isNil(__cacheStyle[BACKGROUND_POSITION_X])) {
+      __cacheStyle[BACKGROUND_POSITION_X] = true;
+      let {
+        [BACKGROUND_POSITION_X]: bgX,
+      } = currentStyle;
+      computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
+        if(item[1] === PX) {
+          return item[0];
         }
-      });
-      // 圆角边计算
-      if(__cacheStyle[BORDER_TOP_LEFT_RADIUS] === undefined
-        || __cacheStyle[BORDER_TOP_RIGHT_RADIUS] === undefined
-        || __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS] === undefined
-        || __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS] === undefined) {
-        __cacheStyle[BORDER_TOP_LEFT_RADIUS]
-          = __cacheStyle[BORDER_TOP_RIGHT_RADIUS]
-          = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS]
-          = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS]
-          = true;
-        // 非替代的inline计算看contentBox首尾
-        if(isInline) {
-          border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle, this.root);
+        if(item[1] === REM) {
+          return item[0] * this.root.computedStyle[FONT_SIZE];
         }
-        // 普通block整体计算
-        else {
-          border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle, this.root);
+        if(item[1] === VW) {
+          return item[0] * this.root.width * 0.01;
         }
-      }
-      // width/style/radius影响border，color不影响渲染缓存
-      let btlr = computedStyle[BORDER_TOP_LEFT_RADIUS];
-      let btrr = computedStyle[BORDER_TOP_RIGHT_RADIUS];
-      let bbrr = computedStyle[BORDER_BOTTOM_RIGHT_RADIUS];
-      let bblr = computedStyle[BORDER_BOTTOM_LEFT_RADIUS];
-      ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-        k = 'border' + k;
-        let k2 = STYLE_KEY[style2Upper(k)];
-        let kw = STYLE_KEY[style2Upper(k + 'Width')];
-        let ks = STYLE_KEY[style2Upper(k + 'Style')];
-        // width/style变更影响border重新计算
-        if(__cacheStyle[kw] === undefined) {
-          __cacheStyle[kw] = true;
-          __cacheStyle[k2] = undefined;
+        if(item[1] === VH) {
+          return item[0] * this.root.height * 0.01;
         }
-        if(__cacheStyle[ks] === undefined) {
-          __cacheStyle[ks] = true;
-          __cacheStyle[k2] = undefined;
-        }
-        if(__cacheStyle[k2] === undefined) {
-          if(k2 === BORDER_TOP) {
-            if(borderTopWidth > 0) {
-              if(!isInline) {
-                let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-                let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-                __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
-                  x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
-              }
-            }
-            else {
-              __cacheStyle[k2] = [];
-            }
-          }
-          else if(k2 === BORDER_RIGHT) {
-            if(borderRightWidth > 0) {
-              if(!isInline) {
-                let deg1 = Math.atan(borderRightWidth / borderTopWidth);
-                let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-                __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
-                  x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
-              }
-            }
-            else {
-              __cacheStyle[k2] = [];
-            }
-          }
-          else if(k2 === BORDER_BOTTOM) {
-            if(borderBottomWidth > 0) {
-              if(!isInline) {
-                let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
-                let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-                __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
-                  x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
-              }
-            }
-            else {
-              __cacheStyle[k2] = [];
-            }
-          }
-          else if(k2 === BORDER_LEFT) {
-            if(borderLeftWidth > 0) {
-              if(!isInline) {
-                let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
-                let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-                __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
-                  x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
-              }
-            }
-            else {
-              __cacheStyle[k2] = [];
-            }
-          }
+        if(item[1] === PERCENT) {
+          return item[0] + '%';
         }
       });
     }
-    else {
-      if(contain(lv, OP)) {
-        computedStyle[OPACITY] = currentStyle[OPACITY];
+    if(isNil(__cacheStyle[BACKGROUND_POSITION_Y])) {
+      __cacheStyle[BACKGROUND_POSITION_Y] = true;
+      let {
+        [BACKGROUND_POSITION_Y]: bgY,
+      } = currentStyle;
+      computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
+        if(item[1] === PX) {
+          return item[0];
+        }
+        if(item[1] === REM) {
+          return item[0] * this.root.computedStyle[FONT_SIZE];
+        }
+        if(item[1] === VW) {
+          return item[0] * this.root.width * 0.01;
+        }
+        if(item[1] === VH) {
+          return item[0] * this.root.height * 0.01;
+        }
+        if(item[1] === PERCENT) {
+          return item[0] + '%';
+        }
+      });
+    }
+    if(isNil(__cacheStyle[BACKGROUND_SIZE])) {
+      __cacheStyle[BACKGROUND_SIZE] = true;
+      computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
+        return bg.calBackgroundSize(item, bx2 - bx1, by2 - by1, this.root);
+      });
+    }
+    if(isNil(__cacheStyle[BACKGROUND_IMAGE])) {
+      let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE].slice(0);
+      __cacheStyle[BACKGROUND_IMAGE] = bgI.map((bgi, i) => {
+        if(!bgi) {
+          return null;
+        }
+        // 防止隐藏不加载背景图
+        if(util.isString(bgi)) {
+          let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
+          let cache = inject.IMG[BACKGROUND_IMAGE];
+          if(cache && cache.state === inject.LOADED) {
+            loadBgi.url = BACKGROUND_IMAGE;
+            loadBgi.source = cache.source;
+            loadBgi.width = cache.width;
+            loadBgi.height = cache.height;
+          }
+          else if(loadBgi.url !== bgi) {
+            // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+            loadBgi.url = bgi;
+            loadBgi.source = null;
+            let node = this;
+            let root = node.root;
+            inject.measureImg(bgi, data => {
+              // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+              if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
+                loadBgi.source = data.source;
+                loadBgi.width = data.width;
+                loadBgi.height = data.height;
+                root.delRefreshTask(loadBgi.cb);
+                root.addRefreshTask(loadBgi.cb = {
+                  __before() {
+                    __cacheStyle[BACKGROUND_IMAGE] = undefined;
+                    let res = {};
+                    res[UPDATE_NODE] = node;
+                    res[UPDATE_FOCUS] = REPAINT;
+                    res[UPDATE_CONFIG] = node.__config;
+                    root.__addUpdate(node, node.__config, root, root.__config, res);
+                  },
+                });
+              }
+            }, {
+              ctx,
+              root,
+              width: bx2 - bx1,
+              height: by2 - by1,
+            });
+          }
+          return true;
+        }
+        else if(!isInline && bgi.k) {
+          // gradient在渲染时才生成
+          return true;
+        }
+      });
+    }
+    if(isNil(__cacheStyle[BOX_SHADOW])) {
+      __cacheStyle[BOX_SHADOW] = true;
+      computedStyle[BOX_SHADOW] = (currentStyle[BOX_SHADOW] || []).map(item => {
+        return item.map((item2, i) => {
+          if(i > 3) {
+            return item2;
+          }
+          let v = item2[0];
+          if(item2[1] === PERCENT) {
+            if(i % 2 === 0) {
+              v *= 0.01 * (bx2 - bx1);
+            }
+            else {
+              v *= 0.01 * (by2 - by1);
+            }
+          }
+          else if(item2[1] === REM) {
+            v = v * this.root.computedStyle[FONT_SIZE];
+          }
+          else if(item2[1] === VW) {
+            v = v * this.root.width * 0.01;
+          }
+          else if(item2[1] === VH) {
+            v = v * this.root.height * 0.01;
+          }
+          return v;
+        });
+      });
+    }
+    [
+      BACKGROUND_COLOR,
+      BORDER_TOP_COLOR,
+      BORDER_RIGHT_COLOR,
+      BORDER_BOTTOM_COLOR,
+      BORDER_LEFT_COLOR,
+    ].forEach(k => {
+      if(isNil(__cacheStyle[k])) {
+        __cacheStyle[k] = int2rgba(computedStyle[k] = currentStyle[k][0]);
       }
-      if(contain(lv, FT)) {
-        computedStyle[FILTER] = currentStyle[FILTER];
+    });
+    // 圆角边计算
+    if(isNil(__cacheStyle[BORDER_TOP_LEFT_RADIUS])
+      || isNil(__cacheStyle[BORDER_TOP_RIGHT_RADIUS])
+      || isNil(__cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS])
+      || isNil(__cacheStyle[BORDER_BOTTOM_LEFT_RADIUS])) {
+      __cacheStyle[BORDER_TOP_LEFT_RADIUS]
+        = __cacheStyle[BORDER_TOP_RIGHT_RADIUS]
+        = __cacheStyle[BORDER_BOTTOM_RIGHT_RADIUS]
+        = __cacheStyle[BORDER_BOTTOM_LEFT_RADIUS]
+        = true;
+      // 非替代的inline计算看contentBox首尾
+      if(isInline) {
+        border.calBorderRadiusInline(this.contentBoxList, currentStyle, computedStyle, this.root);
+      }
+      // 普通block整体计算
+      else {
+        border.calBorderRadius(offsetWidth, offsetHeight, currentStyle, computedStyle, this.root);
       }
     }
+    // width/style/radius影响border，color不影响渲染缓存
+    let btlr = computedStyle[BORDER_TOP_LEFT_RADIUS];
+    let btrr = computedStyle[BORDER_TOP_RIGHT_RADIUS];
+    let bbrr = computedStyle[BORDER_BOTTOM_RIGHT_RADIUS];
+    let bblr = computedStyle[BORDER_BOTTOM_LEFT_RADIUS];
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      k = 'border' + k;
+      let k2 = STYLE_KEY[style2Upper(k)];
+      let kw = STYLE_KEY[style2Upper(k + 'Width')];
+      let ks = STYLE_KEY[style2Upper(k + 'Style')];
+      // width/style变更影响border重新计算
+      if(isNil(__cacheStyle[kw])) {
+        __cacheStyle[kw] = true;
+        __cacheStyle[k2] = undefined;
+      }
+      if(isNil(__cacheStyle[ks])) {
+        __cacheStyle[ks] = true;
+        __cacheStyle[k2] = undefined;
+      }
+      if(isNil(__cacheStyle[k2])) {
+        if(k2 === BORDER_TOP) {
+          if(borderTopWidth > 0) {
+            if(!isInline) {
+              let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+              let deg2 = Math.atan(borderTopWidth / borderRightWidth);
+              __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
+                x1, x2, x5, x6, y1, y2, y5, y6, 0, btlr, btrr);
+            }
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
+        }
+        else if(k2 === BORDER_RIGHT) {
+          if(borderRightWidth > 0) {
+            if(!isInline) {
+              let deg1 = Math.atan(borderRightWidth / borderTopWidth);
+              let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+              __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
+                x1, x2, x5, x6, y1, y2, y5, y6, 1, btrr, bbrr);
+            }
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
+        }
+        else if(k2 === BORDER_BOTTOM) {
+          if(borderBottomWidth > 0) {
+            if(!isInline) {
+              let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
+              let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
+              __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
+                x1, x2, x5, x6, y1, y2, y5, y6, 2, bblr, bbrr);
+            }
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
+        }
+        else if(k2 === BORDER_LEFT) {
+          if(borderLeftWidth > 0) {
+            if(!isInline) {
+              let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
+              let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
+              __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
+                x1, x2, x5, x6, y1, y2, y5, y6, 3, btlr, bblr);
+            }
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
+        }
+      }
+    });
     // 强制计算继承性的
     let parentComputedStyle = parent && parent.computedStyle;
     if(currentStyle[FONT_STYLE][1] === INHERIT) {
       computedStyle[FONT_STYLE] = parent ? parentComputedStyle[FONT_STYLE] : 'normal';
     }
-    else if(!__cacheStyle[FONT_STYLE]) {
+    else if(isNil(__cacheStyle[FONT_STYLE])) {
       computedStyle[FONT_STYLE] = currentStyle[FONT_STYLE][0];
     }
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
@@ -1196,25 +1189,45 @@ class Xom extends Node {
       computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
       __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
     }
-    else if(!__cacheStyle[COLOR]) {
+    else if(isNil(__cacheStyle[COLOR])) {
       computedStyle[COLOR] = rgba2int(currentStyle[COLOR][0]);
       __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
     }
     if(currentStyle[VISIBILITY][1] === INHERIT) {
       computedStyle[VISIBILITY] = parent ? parentComputedStyle[VISIBILITY] : 'visible';
     }
-    else if(!__cacheStyle[VISIBILITY]) {
+    else if(isNil(__cacheStyle[VISIBILITY])) {
       computedStyle[VISIBILITY] = currentStyle[VISIBILITY][0];
     }
     __cacheStyle[VISIBILITY] = computedStyle[VISIBILITY];
     if(currentStyle[POINTER_EVENTS][1] === INHERIT) {
       computedStyle[POINTER_EVENTS] = parent ? parentComputedStyle[POINTER_EVENTS] : 'auto';
     }
-    else if(!__cacheStyle[POINTER_EVENTS]) {
+    else if(isNil(__cacheStyle[POINTER_EVENTS])) {
       computedStyle[POINTER_EVENTS] = currentStyle[POINTER_EVENTS][0];
     }
     __cacheStyle[POINTER_EVENTS] = computedStyle[POINTER_EVENTS];
     return [bx1, by1, bx2, by2];
+  }
+
+  __calFilter(currentStyle, computedStyle) {
+    return computedStyle[FILTER] = (currentStyle[FILTER] || []).map(item => {
+      let [k, v] = item;
+      // 部分%单位的滤镜强制使用数字
+      if(v[1] === PX || v[1] === DEG || v[1] === PERCENT  || v[1] === NUMBER) {
+        v = v[0];
+      }
+      else if(v[1] === REM) {
+        v = v[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(v[1] === VW) {
+        v = v[0] * this.root.width * 0.01;
+      }
+      else if(v[1] === VH) {
+        v = v[0] * this.root.height * 0.01;
+      }
+      return [k, v];
+    }).filter(item => item[1]);
   }
 
   __calContent(renderMode, lv, currentStyle, computedStyle) {
@@ -1322,14 +1335,14 @@ class Xom extends Node {
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {
-      width,
-      height,
+      // width,
+      // height,
       clientWidth,
       clientHeight,
       offsetWidth,
       offsetHeight,
-      outerWidth,
-      outerHeight,
+      // outerWidth,
+      // outerHeight,
       __hasMask,
     } = this;
     let {
@@ -1424,7 +1437,7 @@ class Xom extends Node {
     res.dx = dx;
     res.dy = dy;
     // 计算好cacheStyle的内容，以及位图缓存指数
-    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, lv, ctx, this.parent,
+    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, this.parent,
       __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
@@ -1494,9 +1507,7 @@ class Xom extends Node {
     m[4] = matrix[4];
     m[5] = matrix[5];
     if(renderMode === mode.SVG) {
-      // svg可以没变化省略计算，因为只相对于自身
-      if(!contain(lv, TRANSFORM_ALL) && lv < REPAINT) {}
-      else if(!mx.isE(renderMatrix)) {
+      if(!mx.isE(renderMatrix)) {
         virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
       else {
@@ -1505,15 +1516,16 @@ class Xom extends Node {
       virtualDom.visibility = visibility;
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let blurValue = __config[NODE_BLUR_VALUE] = 0;
-    if(Array.isArray(filter)) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur') {
-          blurValue = __config[NODE_BLUR_VALUE] = v;
-        }
-      });
-    }
+    // let blurValue = __config[NODE_BLUR_VALUE] = 0;
+    // if(Array.isArray(filter)) {
+    //   filter.forEach(item => {
+    //     console.log(item);
+    //     let [k, v] = item;
+    //     if(k === 'blur') {
+    //       blurValue = __config[NODE_BLUR_VALUE] = v;
+    //     }
+    //   });
+    // }
     // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
     if(res.limitCache) {
       return res;
@@ -1554,49 +1566,94 @@ class Xom extends Node {
         ctx = c.ctx;
       }
     }
+    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
+    // let blurValue = __config[NODE_BLUR_VALUE] = 0;
+    let hasFilter = filter && filter.length;
+    // if(Array.isArray(filter)) {
+    //   filter.forEach(item => {
+    //     let [k, v] = item;
+    //     if(k === 'blur') {
+    //       blurValue = __config[NODE_BLUR_VALUE] = v;
+    //     }
+    //     if(v > 0) {
+    //       hasFilter = true;
+    //     }
+    //   });
+    // }
     let offscreenFilter;
-    if(blurValue > 0) {
+    if(hasFilter) {
       if(renderMode === mode.CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'filter1');
         offscreenFilter = {
           ctx,
-          blur: blurValue,
+          // blur: blurValue,
+          filter,
           target: c,
           matrix,
         };
         ctx = c.ctx;
       }
-      else if(renderMode === mode.SVG
-        && (lv >= REPAINT || contain(lv, FT))) {
+      else if(renderMode === mode.SVG) {
         // 模糊框卷积尺寸 #66
-        if(blurValue > 0 && width > 0 && height > 0) {
-          let d = blur.outerSize(blurValue);
-          let o = {
-            tagName: 'filter',
-            props: [
-              ['x', -d / outerWidth],
-              ['y', -d / outerHeight],
-              ['width', 1 + d * 2 / outerWidth],
-              ['height', 1 + d * 2 / outerHeight],
-            ],
-            children: [
-              {
-                tagName: 'feGaussianBlur',
-                props: [
-                  ['stdDeviation', blurValue],
-                ],
-              }
-            ],
-          };
-          let id = ctx.add(o);
-          __config[NODE_DEFS_CACHE].push(o);
-          virtualDom.filter = 'url(#' + id + ')';
-        }
-        else {
-          delete virtualDom.filter;
-        }
+        // let size = 0, list = [];
+        // filter.forEach(item => {
+        //   let [k, v] = item;
+        //   if(k === 'blur') {
+        //     size = blur.outerSize(v);
+        //     list.push({
+        //       tagName: 'feGaussianBlur',
+        //       props: [
+        //         ['stdDeviation', v],
+        //       ],
+        //     });
+        //   }
+        //   else if(k === 'hue-rotate') {
+        //     list.push({
+        //       tagName: 'feColorMatrix',
+        //       props: [
+        //         ['type', 'hueRotate'],
+        //         ['values', v],
+        //       ],
+        //     });
+        //   }
+        //   else if(k === 'saturate') {
+        //     list.push({
+        //       tagName: 'feColorMatrix',
+        //       props: [
+        //         ['type', 'saturate'],
+        //         ['values', v * 0.01],
+        //       ],
+        //     });
+        //   }
+        //   else if(k === 'brightness') {
+        //     list.push({
+        //       tagName: 'feColorMatrix',
+        //       props: [
+        //         ['type', 'luminanceToAlpha'],
+        //         ['values', v * 0.01],
+        //       ],
+        //     });
+        //   }
+        // });
+        // let o = {
+        //   tagName: 'filter',
+        //   props: [
+        //     ['x', -size / offsetWidth],
+        //     ['y', -size / offsetHeight],
+        //     ['width', 1 + size * 2 / offsetWidth],
+        //     ['height', 1 + size * 2 / offsetHeight],
+        //   ],
+        //   children: list,
+        // };
+        // let id = ctx.add(o);
+        // __config[NODE_DEFS_CACHE].push(o);
+        // virtualDom.filter = 'url(#' + id + ')';
+        virtualDom.filter = painter.svgFilter(filter);
       }
+    }
+    else if(renderMode === mode.SVG) {
+      delete virtualDom.filter;
     }
     // overflow:hidden，最后判断，filter/mask优先
     let offscreenOverflow;

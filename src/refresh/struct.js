@@ -6,9 +6,11 @@ import mx from '../math/matrix';
 import level from './level';
 import util from '../util/util';
 import inject from '../util/inject';
+import painter from '../util/painter';
 import Cache from './Cache';
 import tf from '../style/transform';
 import mbm from '../style/mbm';
+import unit from '../style/unit';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';
@@ -45,6 +47,7 @@ const {
     FILL,
     TRANSFORM,
     TRANSFORM_ORIGIN,
+    FONT_SIZE,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -83,6 +86,7 @@ const {
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
+const { PX, PERCENT, DEG, REM, VW, VH } = unit;
 
 // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 const OFFSCREEN_OVERFLOW = 0;
@@ -118,7 +122,10 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   let { __sx1: sx1, __sy1: sy1, __config } = node;
   let {
     [NODE_CACHE]: cache,
-    [NODE_BLUR_VALUE]: blurValue,
+    // [NODE_BLUR_VALUE]: blurValue,
+    [NODE_COMPUTED_STYLE]: {
+      [FILTER]: filter,
+    },
   } = __config;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
@@ -130,7 +137,14 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   }
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
   let list = [index];
-  let d = blur.outerSize(blurValue);
+  // let d = blur.outerSize(blurValue);
+  let d = 0;
+  filter.forEach(item => {
+    let [k, v] = item;
+    if(k === 'blur') {
+      d = blur.outerSize(v);
+    }
+  });
   opacityHash[index] = 1;
   // opacity可以保存下来层级相乘结果供外部使用，但matrix不可以，因为这里按画布原点为坐标系计算，外部合并局部根节点以bbox左上角为原点
   let matrixHash = {};
@@ -389,7 +403,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
 }
 
 function genFilter(node, cache, v) {
-  return Cache.genBlur(cache, v);
+  return Cache.genFilter(cache, v);
 }
 
 function genMask(node, cache) {
@@ -920,11 +934,12 @@ function applyOffscreen(ctx, list, width, height) {
       inject.releaseCacheCanvas(target.canvas);
     }
     else if(type === OFFSCREEN_FILTER) {
-      let { target, ctx: origin, blur } = offscreen;
+      let { target, ctx: origin, filter } = offscreen;
+      console.log(filter);
       // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
       if(ctx.filter) {
         let apply = inject.getCacheCanvas(width, height, null, 'filter2');
-        apply.ctx.filter = `blur(${blur}px)`;
+        apply.ctx.filter = painter.canvasFilter(filter);
         apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
         apply.ctx.filter = 'none';
         apply.draw();
@@ -938,6 +953,7 @@ function applyOffscreen(ctx, list, width, height) {
         apply.draw();
         inject.releaseCacheCanvas(apply.canvas);
       }
+      // 绘制回主画布，如果不支持则等同无filter原样绘制
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
@@ -1143,30 +1159,31 @@ function renderCacheCanvas(renderMode, ctx, root) {
       }
       __config[NODE_OPACITY] = parentOpacity * opacity;
       // filter会改变bbox范围
-      let blurValue;
+      // let blurValue;
       if(contain(refreshLevel, FT)) {
         node.__bbox = null;
-        let filter = computedStyle[FILTER] = currentStyle[FILTER];
-        blurValue = __config[NODE_BLUR_VALUE] = 0;
-        if(Array.isArray(filter)) {
-          filter.forEach(item => {
-            let [k, v] = item;
-            if(k === 'blur') {
-              blurValue = __config[NODE_BLUR_VALUE] = v;
-            }
-          });
-        }
+        // let filter = computedStyle[FILTER] = currentStyle[FILTER];
+        // blurValue = __config[NODE_BLUR_VALUE] = 0;
+        // if(Array.isArray(filter)) {
+        //   filter.forEach(item => {
+        //     let [k, v] = item;
+        //     if(k === 'blur') {
+        //       blurValue = __config[NODE_BLUR_VALUE] = v;
+        //     }
+        //   });
+        // }
+        let filter = node.__calFilter(currentStyle, computedStyle);
         let __cacheFilter = __config[NODE_CACHE_FILTER];
         if(__cacheFilter) {
           __cacheFilter.release();
         }
         // 防重
         if(hasRecordAsMask) {
-          hasRecordAsMask[6] = blurValue;
+          hasRecordAsMask[6] = filter;
         }
         else {
           // 强制存hasMask，因为filter改变影响mask
-          hasRecordAsMask = [i, lv, total, node, __config, hasMask, blurValue];
+          hasRecordAsMask = [i, lv, total, node, __config, hasMask, filter];
           mergeList.push(hasRecordAsMask);
         }
       }
@@ -1188,22 +1205,23 @@ function renderCacheCanvas(renderMode, ctx, root) {
     }
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
-      [NODE_BLUR_VALUE]: blurValue,
+      // [NODE_BLUR_VALUE]: blurValue,
       [NODE_LIMIT_CACHE]: limitCache,
     } = __config;
     let {
       [POSITION]: position,
       [OVERFLOW]: overflow,
+      [FILTER]: filter,
       [MIX_BLEND_MODE]: mixBlendMode,
     } = computedStyle;
     if(!limitCache && (hasMask || position === 'absolute'
-      || blurValue > 0 || (overflow === 'hidden' && total) || isValidMbm(mixBlendMode))) {
+      || filter.length || (overflow === 'hidden' && total) || isValidMbm(mixBlendMode))) {
       if(hasRecordAsMask) {
-        hasRecordAsMask[6] = blurValue;
+        hasRecordAsMask[6] = filter;
         hasRecordAsMask[7] = overflow;
       }
       else {
-        mergeList.push([i, lv, total, node, __config, hasMask, blurValue, overflow]);
+        mergeList.push([i, lv, total, node, __config, hasMask, filter, overflow]);
       }
     }
   }
@@ -1217,7 +1235,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       return b[1] - a[1];
     });
     mergeList.forEach(item => {
-      let [i, , total, node, __config, hasMask, blurValue, overflow] = item;
+      let [i, , total, node, __config, hasMask, filter, overflow] = item;
       let {
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -1244,9 +1262,9 @@ function renderCacheCanvas(renderMode, ctx, root) {
           }
           target = __config[NODE_CACHE_OVERFLOW] || target;
         }
-        if(blurValue > 0) {
+        if(filter) {
           if(!__cacheFilter || !__cacheFilter.available || needGen) {
-            __config[NODE_CACHE_FILTER] = genFilter(node, target, blurValue);
+            __config[NODE_CACHE_FILTER] = genFilter(node, target, filter);
             needGen = true;
           }
           target = __config[NODE_CACHE_FILTER] || target;
@@ -1288,7 +1306,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       let {
         [NODE_OPACITY]: opacity,
         [NODE_MATRIX_EVENT]: matrixEvent,
-        [NODE_BLUR_VALUE]: blurValue,
+        // [NODE_BLUR_VALUE]: blurValue,
         [NODE_LIMIT_CACHE]: limitCache,
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -1300,6 +1318,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           [DISPLAY]: display,
           [VISIBILITY]: visibility,
           [OVERFLOW]: overflow,
+          [FILTER]: filter,
           [MIX_BLEND_MODE]: mixBlendMode,
         },
       } = __config;
@@ -1364,11 +1383,12 @@ function renderCacheCanvas(renderMode, ctx, root) {
               };
               ctx = c.ctx;
             }
-            if(blurValue) {
+            if(filter) {
               let c = inject.getCacheCanvas(width, height, null, 'filter1');
               offscreenFilter = {
                 ctx,
-                blur: blurValue,
+                // blur: blurValue,
+                filter,
                 target: c,
                 matrix: matrixEvent,
               };
@@ -1567,24 +1587,26 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       }
       // >=REPAINT重绘生成走render()跳过这里
       if(refreshLevel < REPAINT) {
-        let hasFilter = contain(refreshLevel, FT);
+        // let hasFilter = contain(refreshLevel, FT);
         // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
         if(maskEffectHash.hasOwnProperty(i)) {
           let v = maskEffectHash[i];
           if(!contain(refreshLevel, TRANSFORM_ALL) && v < REPAINT && !contain(v, TRANSFORM_ALL)) {
             defsCache.forEach(item => {
-              if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-                ctx.addCache(item);
-              }
+              // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
+              //   ctx.addCache(item);
+              // }
+              ctx.addCache(item);
             });
           }
         }
         // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
         else {
           defsCache.forEach(item => {
-            if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-              ctx.addCache(item);
-            }
+            // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
+            //   ctx.addCache(item);
+            // }
+            ctx.addCache(item);
           });
         }
       }
@@ -1659,6 +1681,9 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         let { computedStyle: { [DISPLAY]: display } } = node;
         if(display === 'none') {
           i += (total || 0);
+          if(hasMask) {
+            i += hasMask;
+          }
         }
       }
       let {
@@ -1708,47 +1733,55 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         }
       }
       if(contain(refreshLevel, FT)) {
-        let filter = computedStyle[FILTER] = currentStyle[FILTER];
-        delete virtualDom.filter;
-        // 移除老缓存，防止无限增长
-        for(let i = defsCache.length - 1; i >= 0; i--) {
-          let item = defsCache[i];
-          if(item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
-            ctx.removeCache(item);
-            break;
-          }
+        let filter = node.__calFilter(currentStyle, computedStyle);
+        let s = painter.svgFilter(filter);
+        if(s) {
+          virtualDom.filter = s;
         }
-        if(Array.isArray(filter)) {
-          filter.forEach(item => {
-            let [k, v] = item;
-            if(k === 'blur') {
-              if(v > 0) {
-                let d = blur.outerSize(v);
-                let { outerWidth, outerHeight } = node;
-                let o = {
-                  tagName: 'filter',
-                  props: [
-                    ['x', -d / outerWidth],
-                    ['y', -d / outerHeight],
-                    ['width', 1 + d * 2 / outerWidth],
-                    ['height', 1 + d * 2 / outerHeight],
-                  ],
-                  children: [
-                    {
-                      tagName: 'feGaussianBlur',
-                      props: [
-                        ['stdDeviation', v],
-                      ],
-                    }
-                  ],
-                };
-                let id = ctx.add(o);
-                __config[NODE_DEFS_CACHE].push(o);
-                virtualDom.filter = 'url(#' + id + ')';
-              }
-            }
-          });
+        else {
+          delete virtualDom.filter;
         }
+        // let filter = computedStyle[FILTER] = currentStyle[FILTER];
+        // delete virtualDom.filter;
+        // // 移除老缓存，防止无限增长
+        // for(let i = defsCache.length - 1; i >= 0; i--) {
+        //   let item = defsCache[i];
+        //   if(item.tagName === 'filter' && item.children[0].tagName === 'feGaussianBlur') {
+        //     ctx.removeCache(item);
+        //     break;
+        //   }
+        // }
+        // if(Array.isArray(filter)) {
+        //   filter.forEach(item => {
+        //     let [k, v] = item;
+        //     if(k === 'blur') {
+        //       if(v > 0) {
+        //         let d = blur.outerSize(v);
+        //         let { outerWidth, outerHeight } = node;
+        //         let o = {
+        //           tagName: 'filter',
+        //           props: [
+        //             ['x', -d / outerWidth],
+        //             ['y', -d / outerHeight],
+        //             ['width', 1 + d * 2 / outerWidth],
+        //             ['height', 1 + d * 2 / outerHeight],
+        //           ],
+        //           children: [
+        //             {
+        //               tagName: 'feGaussianBlur',
+        //               props: [
+        //                 ['stdDeviation', v],
+        //               ],
+        //             }
+        //           ],
+        //         };
+        //         let id = ctx.add(o);
+        //         __config[NODE_DEFS_CACHE].push(o);
+        //         virtualDom.filter = 'url(#' + id + ')';
+        //       }
+        //     }
+        //   });
+        // }
       }
       if(contain(refreshLevel, MBM)) {
         let mixBlendMode = computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
@@ -1764,9 +1797,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     else {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
-      // if(node instanceof Geom) {
-      //   node.__renderSelfData = node.__renderSelf(renderMode, refreshLevel, ctx);
-      // }
       node.render(renderMode, refreshLevel, ctx);
       virtualDom = node.virtualDom;
       if(display === 'none') {

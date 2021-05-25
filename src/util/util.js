@@ -1,8 +1,5 @@
 import $$type from './$$type';
 import mx from '../math/matrix';
-import enums from './enums';
-
-const { STYLE_KEY, STYLE_KEY: { TRANSFORM } } = enums;
 
 let toString = {}.toString;
 function isType(type) {
@@ -123,8 +120,11 @@ function joinVd(vd) {
       + ' visibility="' + visibility + '"'
       + (mask ? (' mask="' + mask + '"') : '')
       + (overflow ? (' clip-path="' + overflow + '"') : '')
-      + (filter ? (' filter="' + filter + '"') : '')
-      + (mixBlendMode ? (' style="mix-blend-mode:' + mixBlendMode + '"') : '')
+      // + (filter ? (' filter="' + filter + '"') : '')
+      + ((filter || mixBlendMode) ? ' style="' : '')
+      + (filter ? ('filter:' + filter + ';') : '')
+      + (mixBlendMode ? ('mix-blend-mode:' + mixBlendMode + ';') : '')
+      + ((filter || mixBlendMode) ? '"' : '')
       + '>' + s + '</g>';
   }
 }

@@ -130,7 +130,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, visibility, mask, overflow, filter, conClip } = nvd;
+  let { transform, opacity, visibility, mask, overflow, filter, mixBlendMode, conClip } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -158,14 +158,23 @@ function diffX2X(elem, ovd, nvd) {
       elem.removeAttribute('mask');
     }
   }
-  if(ovd.filter !== filter) {
-    if(filter) {
-      elem.setAttribute('filter', filter);
+  if(ovd.filter !== filter || ovd.mixBlendMode !== mixBlendMode) {
+    let s = (filter ? `filter:${filter};` : '') + (mixBlendMode ? `mix-blend-mode:${mixBlendMode};` : '');
+    if(s) {
+      elem.setAttribute('style', s);
     }
     else {
       elem.removeAttribute('filter');
     }
   }
+  // if(ovd.filter !== filter) {
+  //   if(filter) {
+  //     elem.setAttribute('filter', filter);
+  //   }
+  //   else {
+  //     elem.removeAttribute('filter');
+  //   }
+  // }
   if(ovd.overflow !== overflow) {
     if(overflow) {
       elem.setAttribute('clipPath', overflow);
@@ -211,22 +220,31 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('opacity');
     }
   }
-  if(contain(lv, FILTER)) {
-    if(filter) {
-      elem.setAttribute('filter', filter);
-    }
-    else {
-      elem.removeAttribute('filter');
-    }
-  }
-  if(contain(lv, MIX_BLEND_MODE)) {
-    if(mixBlendMode) {
-      elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
+  if(contain(lv, FILTER) || contain(lv, MIX_BLEND_MODE)) {
+    let s = (filter ? `filter:${filter};` : '') + (mixBlendMode ? `mix-blend-mode:${mixBlendMode};` : '');
+    if(s) {
+      elem.setAttribute('style', s);
     }
     else {
       elem.removeAttribute('style');
     }
   }
+  // if(contain(lv, FILTER)) {
+  //   if(filter) {
+  //     elem.setAttribute('filter', filter);
+  //   }
+  //   else {
+  //     elem.removeAttribute('filter');
+  //   }
+  // }
+  // if(contain(lv, MIX_BLEND_MODE)) {
+  //   if(mixBlendMode) {
+  //     elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
+  //   }
+  //   else {
+  //     elem.removeAttribute('style');
+  //   }
+  // }
 }
 
 function diffD2D(elem, ovd, nvd, root) {

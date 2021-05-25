@@ -302,12 +302,12 @@ class Geom extends Xom {
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
-  __calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
+  __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
              clientWidth, clientHeight, offsetWidth, offsetHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6) {
-    let res = super.__calCache(renderMode, lv, ctx, parent, __cacheStyle, currentStyle, computedStyle,
+    let res = super.__calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,

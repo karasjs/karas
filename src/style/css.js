@@ -67,7 +67,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   FLEX_WRAP,
   ALIGN_CONTENT,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, EM, VW, VH, calUnit } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
 const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
 
@@ -796,15 +796,53 @@ function normalize(style, reset = []) {
   }
   temp = style.filter;
   if(temp !== undefined) {
+    let match = (temp || '').toString().match(/\b[\w-]+\s*\(\s*-?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
     let f = null;
-    let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
-    if(blur) {
-      let v = parseFloat(blur[1]) || 0;
-      if(v) {
-        f = [['blur', v]];
-      }
+    if(match) {
+      f = [];
+      match.forEach(item => {
+        let m2 = /([\w-]+)\s*\(\s*-?([\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
+        if(m2) {
+          let k = m2[1].toLowerCase(), v = calUnit(m2[2]);
+          if(k === 'blur') {
+            if([DEG, PERCENT].indexOf(v[1]) > -1) {
+              return;
+            }
+            f.push([k, v]);
+          }
+          else if(k === 'hue-rotate') {
+            if([NUMBER, DEG].indexOf(v[1]) === -1) {
+              return;
+            }
+            v[1] = DEG;
+            f.push([k, v]);
+          }
+          else if(k === 'saturate') {
+            if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
+              return;
+            }
+            v[1] = PERCENT;
+            f.push([k, v]);
+          }
+          else if(k === 'brightness') {
+            if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
+              return;
+            }
+            v[1] = PERCENT;
+            f.push([k, v]);
+          }
+        }
+      });
+      // console.log(f);
     }
     res[FILTER] = f;
+    // let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
+    // if(blur) {
+    //   let v = parseFloat(blur[1]) || 0;
+    //   if(v) {
+    //     f.push(['blur', v]);
+    //   }
+    // }
   }
   temp = style.visibility;
   if(temp) {

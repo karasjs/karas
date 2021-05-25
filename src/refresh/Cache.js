@@ -2,9 +2,10 @@ import Page from './Page';
 import util from '../util/util';
 import inject from '../util/inject';
 import enums from '../util/enums';
+import painter from '../util/painter';
+import debug from '../util/debug';
 import tf from '../style/transform';
 import mx from '../math/matrix';
-import debug from '../util/debug';
 import blur from '../math/blur';
 
 const {
@@ -187,11 +188,17 @@ class Cache {
   /**
    * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
    * @param cache
-   * @param v
+   * @param filter
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
-  static genBlur(cache, v) {
-    let d = blur.outerSize(v);
+  static genFilter(cache, filter) {
+    let d = 0;
+    filter.forEach(item => {
+      let [k, v] = item;
+      if(k === 'blur') {
+        d = blur.outerSize(v);
+      }
+    });
     let { x, y, size, canvas, sx1, sy1, width, height, bbox } = cache;
     bbox = bbox.slice(0);
     bbox[0] -= d;
@@ -199,7 +206,7 @@ class Cache {
     bbox[2] += d;
     bbox[3] += d;
     let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter1');
-    offscreen.ctx.filter = `blur(${v}px)`;
+    offscreen.ctx.filter = painter.canvasFilter(filter);
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';
     offscreen.draw();

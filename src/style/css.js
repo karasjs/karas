@@ -992,7 +992,7 @@ function computeMeasure(node, isRoot) {
  * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
  */
 function computeReflow(node, isHost) {
-  let { currentStyle, computedStyle, parent, root } = node;
+  let { currentStyle, computedStyle, domParent: parent, root } = node;
   let rem = root.computedStyle[FONT_SIZE];
   let isRoot = !parent;
   let parentComputedStyle = parent && parent.computedStyle;
@@ -1045,8 +1045,34 @@ function computeReflow(node, isHost) {
   }
   let fontSize = computedStyle[FONT_SIZE];
   let lineHeight = currentStyle[LINE_HEIGHT];
+  // lineHeight继承很特殊，数字和normal不同于普通单位
   if(lineHeight[1] === INHERIT) {
-    computedStyle[LINE_HEIGHT] = isRoot ? calNormalLineHeight(computedStyle) : parentComputedStyle[LINE_HEIGHT];
+    if(isRoot) {
+      computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+    }
+    else {
+      let p = parent;
+      let ph;
+      while(p) {
+        ph = p.currentStyle[LINE_HEIGHT];
+        if(ph[1] !== INHERIT) {
+          break;
+        }
+        p = p.domParent;
+      }
+      // 到root还是inherit或normal，或者中途遇到了normal，使用normal
+      if([AUTO, INHERIT].indexOf(ph[1]) > -1) {
+        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+      }
+      // 数字继承
+      else if(ph[1] === NUMBER) {
+        computedStyle[LINE_HEIGHT] = Math.max(ph[0], 0) * fontSize;
+      }
+      // 单位继承
+      else {
+        computedStyle[LINE_HEIGHT] = parentComputedStyle[LINE_HEIGHT];
+      }
+    }
   }
   // 防止为0
   else if(lineHeight[1] === PX) {

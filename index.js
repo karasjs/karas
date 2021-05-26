@@ -8725,7 +8725,7 @@
   function computeReflow(node, isHost) {
     var currentStyle = node.currentStyle,
         computedStyle = node.computedStyle,
-        parent = node.parent,
+        parent = node.domParent,
         root = node.root;
     var rem = root.computedStyle[FONT_SIZE$2];
     var isRoot = !parent;
@@ -8758,10 +8758,36 @@
     }
 
     var fontSize = computedStyle[FONT_SIZE$2];
-    var lineHeight = currentStyle[LINE_HEIGHT];
+    var lineHeight = currentStyle[LINE_HEIGHT]; // lineHeight继承很特殊，数字和normal不同于普通单位
 
     if (lineHeight[1] === INHERIT$2) {
-      computedStyle[LINE_HEIGHT] = isRoot ? calNormalLineHeight(computedStyle) : parentComputedStyle[LINE_HEIGHT];
+      if (isRoot) {
+        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+      } else {
+        var p = parent;
+        var ph;
+
+        while (p) {
+          ph = p.currentStyle[LINE_HEIGHT];
+
+          if (ph[1] !== INHERIT$2) {
+            break;
+          }
+
+          p = p.domParent;
+        } // 到root还是inherit或normal，或者中途遇到了normal，使用normal
+
+
+        if ([AUTO, INHERIT$2].indexOf(ph[1]) > -1) {
+          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+        } // 数字继承
+        else if (ph[1] === NUMBER$1) {
+            computedStyle[LINE_HEIGHT] = Math.max(ph[0], 0) * fontSize;
+          } // 单位继承
+          else {
+              computedStyle[LINE_HEIGHT] = parentComputedStyle[LINE_HEIGHT];
+            }
+      }
     } // 防止为0
     else if (lineHeight[1] === PX$2) {
         computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) || calNormalLineHeight(computedStyle);
@@ -13130,18 +13156,8 @@
       FLEX_DIRECTION$1 = _enums$STYLE_KEY$9.FLEX_DIRECTION,
       WIDTH$2 = _enums$STYLE_KEY$9.WIDTH,
       HEIGHT$2 = _enums$STYLE_KEY$9.HEIGHT,
-      MARGIN_RIGHT = _enums$STYLE_KEY$9.MARGIN_RIGHT,
-      MARGIN_TOP = _enums$STYLE_KEY$9.MARGIN_TOP,
-      MARGIN_LEFT = _enums$STYLE_KEY$9.MARGIN_LEFT,
-      MARGIN_BOTTOM = _enums$STYLE_KEY$9.MARGIN_BOTTOM,
-      PADDING_LEFT$1 = _enums$STYLE_KEY$9.PADDING_LEFT,
-      PADDING_BOTTOM$1 = _enums$STYLE_KEY$9.PADDING_BOTTOM,
-      PADDING_RIGHT = _enums$STYLE_KEY$9.PADDING_RIGHT,
-      PADDING_TOP$1 = _enums$STYLE_KEY$9.PADDING_TOP,
       TOP = _enums$STYLE_KEY$9.TOP,
-      RIGHT = _enums$STYLE_KEY$9.RIGHT,
       BOTTOM = _enums$STYLE_KEY$9.BOTTOM,
-      LEFT = _enums$STYLE_KEY$9.LEFT,
       LINE_HEIGHT$2 = _enums$STYLE_KEY$9.LINE_HEIGHT,
       OPACITY$1 = _enums$STYLE_KEY$9.OPACITY,
       Z_INDEX$1 = _enums$STYLE_KEY$9.Z_INDEX,
@@ -16095,10 +16111,10 @@
   };
 
   var _enums$STYLE_KEY$b = enums.STYLE_KEY,
-      MARGIN_LEFT$1 = _enums$STYLE_KEY$b.MARGIN_LEFT,
-      MARGIN_RIGHT$1 = _enums$STYLE_KEY$b.MARGIN_RIGHT,
-      PADDING_LEFT$2 = _enums$STYLE_KEY$b.PADDING_LEFT,
-      PADDING_RIGHT$1 = _enums$STYLE_KEY$b.PADDING_RIGHT,
+      MARGIN_LEFT = _enums$STYLE_KEY$b.MARGIN_LEFT,
+      MARGIN_RIGHT = _enums$STYLE_KEY$b.MARGIN_RIGHT,
+      PADDING_LEFT$1 = _enums$STYLE_KEY$b.PADDING_LEFT,
+      PADDING_RIGHT = _enums$STYLE_KEY$b.PADDING_RIGHT,
       BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$b.BORDER_LEFT_WIDTH,
       BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$b.BORDER_RIGHT_WIDTH;
   /**
@@ -16152,8 +16168,8 @@
 
       if (start === list[0]) {
         var _dom$computedStyle = dom.computedStyle,
-            marginLeft = _dom$computedStyle[MARGIN_LEFT$1],
-            _paddingLeft = _dom$computedStyle[PADDING_LEFT$2],
+            marginLeft = _dom$computedStyle[MARGIN_LEFT],
+            _paddingLeft = _dom$computedStyle[PADDING_LEFT$1],
             _borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$2];
         x1 -= marginLeft + _paddingLeft + _borderLeftWidth;
       }
@@ -16184,8 +16200,8 @@
 
       if (end === _list[_list.length - 1]) {
         var _dom$computedStyle2 = dom.computedStyle,
-            marginRight = _dom$computedStyle2[MARGIN_RIGHT$1],
-            _paddingRight = _dom$computedStyle2[PADDING_RIGHT$1],
+            marginRight = _dom$computedStyle2[MARGIN_RIGHT],
+            _paddingRight = _dom$computedStyle2[PADDING_RIGHT],
             _borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$1];
         x2 += marginRight + _paddingRight + _borderRightWidth;
       }
@@ -16241,16 +16257,16 @@
 
         if (contentBox === list[0]) {
           var _dom$computedStyle3 = dom.computedStyle,
-              marginLeft = _dom$computedStyle3[MARGIN_LEFT$1],
-              paddingLeft = _dom$computedStyle3[PADDING_LEFT$2],
+              marginLeft = _dom$computedStyle3[MARGIN_LEFT],
+              paddingLeft = _dom$computedStyle3[PADDING_LEFT$1],
               borderLeftWidth = _dom$computedStyle3[BORDER_LEFT_WIDTH$2];
           sum += marginLeft + paddingLeft + borderLeftWidth;
         }
 
         if (contentBox === list[list.length - 1]) {
           var _dom$computedStyle4 = dom.computedStyle,
-              marginRight = _dom$computedStyle4[MARGIN_RIGHT$1],
-              paddingRight = _dom$computedStyle4[PADDING_RIGHT$1],
+              marginRight = _dom$computedStyle4[MARGIN_RIGHT],
+              paddingRight = _dom$computedStyle4[PADDING_RIGHT],
               borderRightWidth = _dom$computedStyle4[BORDER_RIGHT_WIDTH$1];
           sum += marginRight + paddingRight + borderRightWidth;
         }
@@ -16275,22 +16291,22 @@
       BORDER_TOP_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_TOP_RIGHT_RADIUS,
       BORDER_BOTTOM_LEFT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_LEFT_RADIUS,
       BORDER_BOTTOM_RIGHT_RADIUS$1 = _enums$STYLE_KEY$c.BORDER_BOTTOM_RIGHT_RADIUS,
-      PADDING_LEFT$3 = _enums$STYLE_KEY$c.PADDING_LEFT,
-      PADDING_RIGHT$2 = _enums$STYLE_KEY$c.PADDING_RIGHT,
-      PADDING_TOP$2 = _enums$STYLE_KEY$c.PADDING_TOP,
-      PADDING_BOTTOM$2 = _enums$STYLE_KEY$c.PADDING_BOTTOM,
-      MARGIN_LEFT$2 = _enums$STYLE_KEY$c.MARGIN_LEFT,
-      MARGIN_TOP$1 = _enums$STYLE_KEY$c.MARGIN_TOP,
-      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$c.MARGIN_BOTTOM,
-      MARGIN_RIGHT$2 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
+      PADDING_LEFT$2 = _enums$STYLE_KEY$c.PADDING_LEFT,
+      PADDING_RIGHT$1 = _enums$STYLE_KEY$c.PADDING_RIGHT,
+      PADDING_TOP$1 = _enums$STYLE_KEY$c.PADDING_TOP,
+      PADDING_BOTTOM$1 = _enums$STYLE_KEY$c.PADDING_BOTTOM,
+      MARGIN_LEFT$1 = _enums$STYLE_KEY$c.MARGIN_LEFT,
+      MARGIN_TOP = _enums$STYLE_KEY$c.MARGIN_TOP,
+      MARGIN_BOTTOM = _enums$STYLE_KEY$c.MARGIN_BOTTOM,
+      MARGIN_RIGHT$1 = _enums$STYLE_KEY$c.MARGIN_RIGHT,
       BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$c.BORDER_LEFT_WIDTH,
       BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_TOP_WIDTH,
       BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_BOTTOM_WIDTH,
       BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$c.BORDER_RIGHT_WIDTH,
       TOP$1 = _enums$STYLE_KEY$c.TOP,
-      RIGHT$1 = _enums$STYLE_KEY$c.RIGHT,
+      RIGHT = _enums$STYLE_KEY$c.RIGHT,
       BOTTOM$1 = _enums$STYLE_KEY$c.BOTTOM,
-      LEFT$1 = _enums$STYLE_KEY$c.LEFT,
+      LEFT = _enums$STYLE_KEY$c.LEFT,
       POSITION$1 = _enums$STYLE_KEY$c.POSITION,
       DISPLAY$2 = _enums$STYLE_KEY$c.DISPLAY,
       WIDTH$3 = _enums$STYLE_KEY$c.WIDTH,
@@ -16547,12 +16563,12 @@
       key: "__ioSize",
       value: function __ioSize(w, h) {
         var computedStyle = this.computedStyle;
-        this.__clientWidth = w += computedStyle[PADDING_LEFT$3] + computedStyle[PADDING_RIGHT$2];
-        this.__clientHeight = h += computedStyle[PADDING_TOP$2] + computedStyle[PADDING_BOTTOM$2];
+        this.__clientWidth = w += computedStyle[PADDING_LEFT$2] + computedStyle[PADDING_RIGHT$1];
+        this.__clientHeight = h += computedStyle[PADDING_TOP$1] + computedStyle[PADDING_BOTTOM$1];
         this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$3] + computedStyle[BORDER_RIGHT_WIDTH$2];
         this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$2] + computedStyle[BORDER_BOTTOM_WIDTH$2];
-        this.__outerWidth = w + computedStyle[MARGIN_LEFT$2] + computedStyle[MARGIN_RIGHT$2];
-        this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[MARGIN_BOTTOM$1];
+        this.__outerWidth = w + computedStyle[MARGIN_LEFT$1] + computedStyle[MARGIN_RIGHT$1];
+        this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
       } // 换算margin/padding为px单位，onlyFixedValue只考虑绝对值，不考虑百分比等
 
     }, {
@@ -16580,14 +16596,14 @@
     }, {
       key: "__addMp",
       value: function __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
-        var marginLeft = currentStyle[MARGIN_LEFT$2],
-            marginTop = currentStyle[MARGIN_TOP$1],
-            marginRight = currentStyle[MARGIN_RIGHT$2],
-            marginBottom = currentStyle[MARGIN_BOTTOM$1],
-            paddingLeft = currentStyle[PADDING_LEFT$3],
-            paddingTop = currentStyle[PADDING_TOP$2],
-            paddingRight = currentStyle[PADDING_RIGHT$2],
-            paddingBottom = currentStyle[PADDING_BOTTOM$2],
+        var marginLeft = currentStyle[MARGIN_LEFT$1],
+            marginTop = currentStyle[MARGIN_TOP],
+            marginRight = currentStyle[MARGIN_RIGHT$1],
+            marginBottom = currentStyle[MARGIN_BOTTOM],
+            paddingLeft = currentStyle[PADDING_LEFT$2],
+            paddingTop = currentStyle[PADDING_TOP$1],
+            paddingRight = currentStyle[PADDING_RIGHT$1],
+            paddingBottom = currentStyle[PADDING_BOTTOM$1],
             borderTopWidth = currentStyle[BORDER_TOP_WIDTH$2],
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$2],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$2],
@@ -16720,9 +16736,9 @@
 
         if (position === 'relative') {
           var top = currentStyle[TOP$1],
-              right = currentStyle[RIGHT$1],
+              right = currentStyle[RIGHT],
               bottom = currentStyle[BOTTOM$1],
-              left = currentStyle[LEFT$1];
+              left = currentStyle[LEFT];
           var parent = this.parent;
 
           if (top[1] !== AUTO$3) {
@@ -16744,24 +16760,24 @@
           }
 
           if (left[1] !== AUTO$3) {
-            var _n2 = calRelative$1(currentStyle, LEFT$1, left, parent, true);
+            var _n2 = calRelative$1(currentStyle, LEFT, left, parent, true);
 
             this.__offsetX(_n2);
 
-            computedStyle[LEFT$1] = _n2;
-            computedStyle[RIGHT$1] = 'auto';
+            computedStyle[LEFT] = _n2;
+            computedStyle[RIGHT] = 'auto';
           } else if (right[1] !== AUTO$3) {
-            var _n3 = calRelative$1(currentStyle, RIGHT$1, right, parent, true);
+            var _n3 = calRelative$1(currentStyle, RIGHT, right, parent, true);
 
             this.__offsetX(-_n3);
 
-            computedStyle[RIGHT$1] = _n3;
-            computedStyle[LEFT$1] = 'auto';
+            computedStyle[RIGHT] = _n3;
+            computedStyle[LEFT] = 'auto';
           } else {
-            computedStyle[LEFT$1] = computedStyle[RIGHT$1] = 'auto';
+            computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
           }
         } else if (position !== 'absolute') {
-          computedStyle[TOP$1] = computedStyle[BOTTOM$1] = computedStyle[LEFT$1] = computedStyle[RIGHT$1] = 'auto';
+          computedStyle[TOP$1] = computedStyle[BOTTOM$1] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
         } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
 
 
@@ -16769,17 +16785,17 @@
         var y = this.__sy = this.y + this.oy;
 
         if (!__config[NODE_IS_INLINE]) {
-          x = this.__sx1 = x + computedStyle[MARGIN_LEFT$2];
+          x = this.__sx1 = x + computedStyle[MARGIN_LEFT$1];
           x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH$3];
-          x = this.__sx3 = x + computedStyle[PADDING_LEFT$3];
+          x = this.__sx3 = x + computedStyle[PADDING_LEFT$2];
           x = this.__sx4 = x + this.width;
-          x = this.__sx5 = x + computedStyle[PADDING_RIGHT$2];
+          x = this.__sx5 = x + computedStyle[PADDING_RIGHT$1];
           this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH$2];
-          y = this.__sy1 = y + computedStyle[MARGIN_TOP$1];
+          y = this.__sy1 = y + computedStyle[MARGIN_TOP];
           y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH$2];
-          y = this.__sy3 = y + computedStyle[PADDING_TOP$2];
+          y = this.__sy3 = y + computedStyle[PADDING_TOP$1];
           y = this.__sy4 = y + this.height;
-          y = this.__sy5 = y + computedStyle[PADDING_BOTTOM$2];
+          y = this.__sy5 = y + computedStyle[PADDING_BOTTOM$1];
           this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH$2];
         }
 
@@ -16815,7 +16831,7 @@
       value: function __layoutNone() {
         var computedStyle = this.computedStyle;
         computedStyle[DISPLAY$2] = 'none';
-        computedStyle[MARGIN_TOP$1] = computedStyle[MARGIN_RIGHT$2] = computedStyle[MARGIN_BOTTOM$1] = computedStyle[MARGIN_LEFT$2] = computedStyle[PADDING_TOP$2] = computedStyle[PADDING_RIGHT$2] = computedStyle[PADDING_BOTTOM$2] = computedStyle[PADDING_LEFT$3] = 0;
+        computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$1] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$1] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$1] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$2] = 0;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -16844,14 +16860,14 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
-            marginTop = computedStyle[MARGIN_TOP$1],
-            marginRight = computedStyle[MARGIN_RIGHT$2],
-            marginBottom = computedStyle[MARGIN_BOTTOM$1],
-            marginLeft = computedStyle[MARGIN_LEFT$2],
-            paddingTop = computedStyle[PADDING_TOP$2],
-            paddingRight = computedStyle[PADDING_RIGHT$2],
-            paddingBottom = computedStyle[PADDING_BOTTOM$2],
-            paddingLeft = computedStyle[PADDING_LEFT$3]; // 除了auto外都是固定宽高度
+            marginTop = computedStyle[MARGIN_TOP],
+            marginRight = computedStyle[MARGIN_RIGHT$1],
+            marginBottom = computedStyle[MARGIN_BOTTOM],
+            marginLeft = computedStyle[MARGIN_LEFT$1],
+            paddingTop = computedStyle[PADDING_TOP$1],
+            paddingRight = computedStyle[PADDING_RIGHT$1],
+            paddingBottom = computedStyle[PADDING_BOTTOM$1],
+            paddingLeft = computedStyle[PADDING_LEFT$2]; // 除了auto外都是固定宽高度
 
         var fixedWidth;
         var fixedHeight; // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
@@ -16969,8 +16985,8 @@
       value: function __marginAuto(style, data) {
         var position = style[POSITION$1],
             display = style[DISPLAY$2],
-            marginLeft = style[MARGIN_LEFT$2],
-            marginRight = style[MARGIN_RIGHT$2],
+            marginLeft = style[MARGIN_LEFT$1],
+            marginRight = style[MARGIN_RIGHT$1],
             width = style[WIDTH$3];
 
         if (position !== 'absolute' && (display === 'block' || display === 'flex') && (width[1] !== AUTO$3 || this.tagName === 'img') && marginLeft[1] === AUTO$3 && marginRight[1] === AUTO$3) {
@@ -17527,10 +17543,10 @@
             if (currentStyle[BACKGROUND_COLOR$1][0][3] > 0) {
               var width = computedStyle[WIDTH$3],
                   height = computedStyle[HEIGHT$3],
-                  paddingTop = computedStyle[PADDING_TOP$2],
-                  paddingRight = computedStyle[PADDING_RIGHT$2],
-                  paddingBottom = computedStyle[PADDING_BOTTOM$2],
-                  paddingLeft = computedStyle[PADDING_LEFT$3];
+                  paddingTop = computedStyle[PADDING_TOP$1],
+                  paddingRight = computedStyle[PADDING_RIGHT$1],
+                  paddingBottom = computedStyle[PADDING_BOTTOM$1],
+                  paddingLeft = computedStyle[PADDING_LEFT$2];
 
               if (width && height || paddingTop || paddingRight || paddingBottom || paddingLeft) {
                 return true;
@@ -17637,10 +17653,10 @@
             offsetWidth = this.offsetWidth,
             offsetHeight = this.offsetHeight,
             __hasMask = this.__hasMask;
-        var paddingTop = computedStyle[PADDING_TOP$2],
-            paddingRight = computedStyle[PADDING_RIGHT$2],
-            paddingBottom = computedStyle[PADDING_BOTTOM$2],
-            paddingLeft = computedStyle[PADDING_LEFT$3],
+        var paddingTop = computedStyle[PADDING_TOP$1],
+            paddingRight = computedStyle[PADDING_RIGHT$1],
+            paddingBottom = computedStyle[PADDING_BOTTOM$1],
+            paddingLeft = computedStyle[PADDING_LEFT$2],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
@@ -19214,12 +19230,12 @@
 
   var _enums$STYLE_KEY$d = enums.STYLE_KEY,
       DISPLAY$3 = _enums$STYLE_KEY$d.DISPLAY,
-      MARGIN_LEFT$3 = _enums$STYLE_KEY$d.MARGIN_LEFT,
+      MARGIN_LEFT$2 = _enums$STYLE_KEY$d.MARGIN_LEFT,
       BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
-      PADDING_LEFT$4 = _enums$STYLE_KEY$d.PADDING_LEFT,
-      PADDING_RIGHT$3 = _enums$STYLE_KEY$d.PADDING_RIGHT,
+      PADDING_LEFT$3 = _enums$STYLE_KEY$d.PADDING_LEFT,
+      PADDING_RIGHT$2 = _enums$STYLE_KEY$d.PADDING_RIGHT,
       BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
-      MARGIN_RIGHT$3 = _enums$STYLE_KEY$d.MARGIN_RIGHT;
+      MARGIN_RIGHT$2 = _enums$STYLE_KEY$d.MARGIN_RIGHT;
   /**
    * css中常见的概念，一行内容，里面可能有若干不同的内容，仅在布局阶段出现，不参与渲染逻辑
    * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inline等节点，而内容TextBox则属于Text
@@ -19329,9 +19345,9 @@
             var _list = dom.contentBoxList;
             var _dom$computedStyle = dom.computedStyle,
                 display = _dom$computedStyle[DISPLAY$3],
-                marginLeft = _dom$computedStyle[MARGIN_LEFT$3],
+                marginLeft = _dom$computedStyle[MARGIN_LEFT$2],
                 borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$4],
-                paddingLeft = _dom$computedStyle[PADDING_LEFT$4];
+                paddingLeft = _dom$computedStyle[PADDING_LEFT$3];
 
             if (display !== 'inline') {
               break;
@@ -19351,9 +19367,9 @@
             var _list2 = dom.contentBoxList;
             var _dom$computedStyle2 = dom.computedStyle,
                 _display = _dom$computedStyle2[DISPLAY$3],
-                marginRight = _dom$computedStyle2[MARGIN_RIGHT$3],
+                marginRight = _dom$computedStyle2[MARGIN_RIGHT$2],
                 borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$3],
-                paddingRight = _dom$computedStyle2[PADDING_RIGHT$3];
+                paddingRight = _dom$computedStyle2[PADDING_RIGHT$2];
 
             if (_display !== 'inline') {
               break;
@@ -19909,22 +19925,22 @@
       POSITION$3 = _enums$STYLE_KEY$f.POSITION,
       DISPLAY$5 = _enums$STYLE_KEY$f.DISPLAY,
       FONT_WEIGHT$4 = _enums$STYLE_KEY$f.FONT_WEIGHT,
-      MARGIN_LEFT$4 = _enums$STYLE_KEY$f.MARGIN_LEFT,
-      MARGIN_TOP$2 = _enums$STYLE_KEY$f.MARGIN_TOP,
-      MARGIN_RIGHT$4 = _enums$STYLE_KEY$f.MARGIN_RIGHT,
-      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$f.MARGIN_BOTTOM,
-      PADDING_LEFT$5 = _enums$STYLE_KEY$f.PADDING_LEFT,
-      PADDING_BOTTOM$3 = _enums$STYLE_KEY$f.PADDING_BOTTOM,
-      PADDING_RIGHT$4 = _enums$STYLE_KEY$f.PADDING_RIGHT,
-      PADDING_TOP$3 = _enums$STYLE_KEY$f.PADDING_TOP,
+      MARGIN_LEFT$3 = _enums$STYLE_KEY$f.MARGIN_LEFT,
+      MARGIN_TOP$1 = _enums$STYLE_KEY$f.MARGIN_TOP,
+      MARGIN_RIGHT$3 = _enums$STYLE_KEY$f.MARGIN_RIGHT,
+      MARGIN_BOTTOM$1 = _enums$STYLE_KEY$f.MARGIN_BOTTOM,
+      PADDING_LEFT$4 = _enums$STYLE_KEY$f.PADDING_LEFT,
+      PADDING_BOTTOM$2 = _enums$STYLE_KEY$f.PADDING_BOTTOM,
+      PADDING_RIGHT$3 = _enums$STYLE_KEY$f.PADDING_RIGHT,
+      PADDING_TOP$2 = _enums$STYLE_KEY$f.PADDING_TOP,
       BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$f.BORDER_TOP_WIDTH,
       BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$f.BORDER_BOTTOM_WIDTH,
       BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$f.BORDER_RIGHT_WIDTH,
       BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$f.BORDER_LEFT_WIDTH,
       TOP$3 = _enums$STYLE_KEY$f.TOP,
-      RIGHT$2 = _enums$STYLE_KEY$f.RIGHT,
+      RIGHT$1 = _enums$STYLE_KEY$f.RIGHT,
       BOTTOM$3 = _enums$STYLE_KEY$f.BOTTOM,
-      LEFT$2 = _enums$STYLE_KEY$f.LEFT,
+      LEFT$1 = _enums$STYLE_KEY$f.LEFT,
       WIDTH$4 = _enums$STYLE_KEY$f.WIDTH,
       HEIGHT$5 = _enums$STYLE_KEY$f.HEIGHT,
       TEXT_ALIGN$2 = _enums$STYLE_KEY$f.TEXT_ALIGN,
@@ -20246,10 +20262,10 @@
             _this$currentStyle = this.currentStyle,
             display = _this$currentStyle[DISPLAY$5],
             width = _this$currentStyle[WIDTH$4],
-            marginLeft = _this$currentStyle[MARGIN_LEFT$4],
-            marginRight = _this$currentStyle[MARGIN_RIGHT$4],
-            paddingLeft = _this$currentStyle[PADDING_LEFT$5],
-            paddingRight = _this$currentStyle[PADDING_RIGHT$4],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$3],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$3],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$4],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$3],
             borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$5],
             borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$4]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
@@ -21070,10 +21086,10 @@
 
                 if (!isNone && item.flowChildren && item.flowChildren.length === 0) {
                   var _item$computedStyle = item.computedStyle,
-                      marginTop = _item$computedStyle[MARGIN_TOP$2],
-                      marginBottom = _item$computedStyle[MARGIN_BOTTOM$2],
-                      paddingTop = _item$computedStyle[PADDING_TOP$3],
-                      paddingBottom = _item$computedStyle[PADDING_BOTTOM$3],
+                      marginTop = _item$computedStyle[MARGIN_TOP$1],
+                      marginBottom = _item$computedStyle[MARGIN_BOTTOM$1],
+                      paddingTop = _item$computedStyle[PADDING_TOP$2],
+                      paddingBottom = _item$computedStyle[PADDING_BOTTOM$2],
                       height = _item$computedStyle[HEIGHT$5],
                       borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$3],
                       borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$3]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
@@ -21095,8 +21111,8 @@
 
                 if (!isNone && !isEmptyBlock) {
                   var _item$computedStyle2 = item.computedStyle,
-                      _marginTop = _item$computedStyle2[MARGIN_TOP$2],
-                      _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$2]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+                      _marginTop = _item$computedStyle2[MARGIN_TOP$1],
+                      _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$1]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
                   // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
                   if (mergeMarginBottomList.length) {
@@ -21890,10 +21906,10 @@
                   height = item.currentStyle[HEIGHT$5];
               var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
                   borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
-                  marginTop = computedStyle[MARGIN_TOP$2],
-                  marginBottom = computedStyle[MARGIN_BOTTOM$2],
-                  paddingTop = computedStyle[PADDING_TOP$3],
-                  paddingBottom = computedStyle[PADDING_BOTTOM$3];
+                  marginTop = computedStyle[MARGIN_TOP$1],
+                  marginBottom = computedStyle[MARGIN_BOTTOM$1],
+                  paddingTop = computedStyle[PADDING_TOP$2],
+                  paddingBottom = computedStyle[PADDING_BOTTOM$2];
 
               if (height[1] === AUTO$5) {
                 var old = item.height;
@@ -21949,10 +21965,10 @@
 
                     var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
                         _borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
-                        _marginTop2 = _computedStyle2[MARGIN_TOP$2],
-                        _marginBottom2 = _computedStyle2[MARGIN_BOTTOM$2],
-                        _paddingTop = _computedStyle2[PADDING_TOP$3],
-                        _paddingBottom = _computedStyle2[PADDING_BOTTOM$3];
+                        _marginTop2 = _computedStyle2[MARGIN_TOP$1],
+                        _marginBottom2 = _computedStyle2[MARGIN_BOTTOM$1],
+                        _paddingTop = _computedStyle2[PADDING_TOP$2],
+                        _paddingBottom = _computedStyle2[PADDING_BOTTOM$2];
 
                     if (_height[1] === AUTO$5) {
                       var _old = item.height;
@@ -21990,10 +22006,10 @@
                     width = item.currentStyle[WIDTH$4];
                 var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$4],
                     borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
-                    marginRight = _computedStyle3[MARGIN_RIGHT$4],
-                    marginLeft = _computedStyle3[MARGIN_LEFT$4],
-                    paddingRight = _computedStyle3[PADDING_RIGHT$4],
-                    paddingLeft = _computedStyle3[PADDING_LEFT$5];
+                    marginRight = _computedStyle3[MARGIN_RIGHT$3],
+                    marginLeft = _computedStyle3[MARGIN_LEFT$3],
+                    paddingRight = _computedStyle3[PADDING_RIGHT$3],
+                    paddingLeft = _computedStyle3[PADDING_LEFT$4];
 
                 if (width[1] === AUTO$5) {
                   var _old2 = item.width;
@@ -22042,10 +22058,10 @@
                           _width = item.currentStyle[WIDTH$4];
                       var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
                           _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
-                          _marginRight = _computedStyle4[MARGIN_RIGHT$4],
-                          _marginLeft = _computedStyle4[MARGIN_LEFT$4],
-                          _paddingRight = _computedStyle4[PADDING_RIGHT$4],
-                          _paddingLeft = _computedStyle4[PADDING_LEFT$5];
+                          _marginRight = _computedStyle4[MARGIN_RIGHT$3],
+                          _marginLeft = _computedStyle4[MARGIN_LEFT$3],
+                          _paddingRight = _computedStyle4[PADDING_RIGHT$3],
+                          _paddingLeft = _computedStyle4[PADDING_LEFT$4];
 
                       if (_width[1] === AUTO$5) {
                         var _old3 = item.width;
@@ -22342,8 +22358,8 @@
 
 
           if (!flowChildren.length) {
-            var marginLeft = computedStyle[MARGIN_LEFT$4],
-                paddingLeft = computedStyle[PADDING_LEFT$5],
+            var marginLeft = computedStyle[MARGIN_LEFT$3],
+                paddingLeft = computedStyle[PADDING_LEFT$4],
                 borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5];
             lineBoxManager.addX(marginLeft + paddingLeft + borderLeftWidth);
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
@@ -22398,14 +22414,14 @@
             computedStyle = this.computedStyle,
             __ox = this.__ox,
             __oy = this.__oy;
-        var marginTop = computedStyle[MARGIN_TOP$2],
-            marginRight = computedStyle[MARGIN_RIGHT$4],
-            marginBottom = computedStyle[MARGIN_BOTTOM$2],
-            marginLeft = computedStyle[MARGIN_LEFT$4],
-            paddingTop = computedStyle[PADDING_TOP$3],
-            paddingRight = computedStyle[PADDING_RIGHT$4],
-            paddingBottom = computedStyle[PADDING_BOTTOM$3],
-            paddingLeft = computedStyle[PADDING_LEFT$5],
+        var marginTop = computedStyle[MARGIN_TOP$1],
+            marginRight = computedStyle[MARGIN_RIGHT$3],
+            marginBottom = computedStyle[MARGIN_BOTTOM$1],
+            marginLeft = computedStyle[MARGIN_LEFT$3],
+            paddingTop = computedStyle[PADDING_TOP$2],
+            paddingRight = computedStyle[PADDING_RIGHT$3],
+            paddingBottom = computedStyle[PADDING_BOTTOM$2],
+            paddingLeft = computedStyle[PADDING_LEFT$4],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
@@ -22533,10 +22549,10 @@
         var display = computedStyle[DISPLAY$5],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-            marginTop = computedStyle[MARGIN_TOP$2],
-            marginLeft = computedStyle[MARGIN_LEFT$4],
-            paddingLeft = computedStyle[PADDING_LEFT$5],
-            paddingTop = computedStyle[PADDING_TOP$3];
+            marginTop = computedStyle[MARGIN_TOP$1],
+            marginLeft = computedStyle[MARGIN_LEFT$3],
+            paddingLeft = computedStyle[PADDING_LEFT$4],
+            paddingTop = computedStyle[PADDING_TOP$2];
 
         if (isDestroyed || display === 'none') {
           this.__layoutNone();
@@ -22578,9 +22594,9 @@
             currentStyle[DISPLAY$5] = computedStyle[DISPLAY$5] = item.style.display = 'block';
           }
 
-          var left = currentStyle[LEFT$2],
+          var left = currentStyle[LEFT$1],
               top = currentStyle[TOP$3],
-              right = currentStyle[RIGHT$2],
+              right = currentStyle[RIGHT$1],
               bottom = currentStyle[BOTTOM$3],
               width = currentStyle[WIDTH$4],
               height = currentStyle[HEIGHT$5],
@@ -22596,16 +22612,16 @@
 
           if (left[1] !== AUTO$5) {
             fixedLeft = true;
-            computedStyle[LEFT$2] = calAbsolute$1(currentStyle, 'left', left, clientWidth, _this4.root);
+            computedStyle[LEFT$1] = calAbsolute$1(currentStyle, 'left', left, clientWidth, _this4.root);
           } else {
-            computedStyle[LEFT$2] = 'auto';
+            computedStyle[LEFT$1] = 'auto';
           }
 
           if (right[1] !== AUTO$5) {
             fixedRight = true;
-            computedStyle[RIGHT$2] = calAbsolute$1(currentStyle, 'right', right, clientWidth, _this4.root);
+            computedStyle[RIGHT$1] = calAbsolute$1(currentStyle, 'right', right, clientWidth, _this4.root);
           } else {
-            computedStyle[RIGHT$2] = 'auto';
+            computedStyle[RIGHT$1] = 'auto';
           }
 
           if (top[1] !== AUTO$5) {
@@ -22624,10 +22640,10 @@
 
 
           if (fixedLeft && fixedRight) {
-            x2 = x + computedStyle[LEFT$2];
-            w2 = x + clientWidth - computedStyle[RIGHT$2] - x2;
+            x2 = x + computedStyle[LEFT$1];
+            w2 = x + clientWidth - computedStyle[RIGHT$1] - x2;
           } else if (fixedLeft) {
-            x2 = x + computedStyle[LEFT$2];
+            x2 = x + computedStyle[LEFT$1];
 
             if (width[1] !== AUTO$5) {
               if (width[1] === PERCENT$9) {
@@ -22659,12 +22675,12 @@
               onlyRight = true;
             }
 
-            x2 = x + clientWidth - computedStyle[RIGHT$2] - (w2 || 0); // 右对齐有尺寸时还需减去margin/border/padding的
+            x2 = x + clientWidth - computedStyle[RIGHT$1] - (w2 || 0); // 右对齐有尺寸时还需减去margin/border/padding的
 
-            x2 -= computedStyle[MARGIN_LEFT$4];
-            x2 -= computedStyle[MARGIN_RIGHT$4];
-            x2 -= computedStyle[PADDING_LEFT$5];
-            x2 -= computedStyle[PADDING_RIGHT$4];
+            x2 -= computedStyle[MARGIN_LEFT$3];
+            x2 -= computedStyle[MARGIN_RIGHT$3];
+            x2 -= computedStyle[PADDING_LEFT$4];
+            x2 -= computedStyle[PADDING_RIGHT$3];
             x2 -= currentStyle[BORDER_LEFT_WIDTH$5][0];
             x2 -= currentStyle[BORDER_RIGHT_WIDTH$4][0];
           } else {
@@ -22724,10 +22740,10 @@
 
             y2 = y + clientHeight - computedStyle[BOTTOM$3] - (h2 || 0); // 底对齐有尺寸时y值还需减去margin/border/padding的
 
-            y2 -= computedStyle[MARGIN_TOP$2];
-            y2 -= computedStyle[MARGIN_BOTTOM$2];
-            y2 -= computedStyle[PADDING_TOP$3];
-            y2 -= computedStyle[PADDING_BOTTOM$3];
+            y2 -= computedStyle[MARGIN_TOP$1];
+            y2 -= computedStyle[MARGIN_BOTTOM$1];
+            y2 -= computedStyle[PADDING_TOP$2];
+            y2 -= computedStyle[PADDING_BOTTOM$2];
             y2 -= currentStyle[BORDER_TOP_WIDTH$3][0];
             y2 -= currentStyle[BORDER_BOTTOM_WIDTH$3][0];
           } // 未声明y的找到之前的流布局child，紧随其下
@@ -22989,9 +23005,9 @@
         }
 
         var _this$computedStyle = this.computedStyle,
-            marginTop = _this$computedStyle[MARGIN_TOP$2],
+            marginTop = _this$computedStyle[MARGIN_TOP$1],
             borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$3],
-            paddingTop = _this$computedStyle[PADDING_TOP$3];
+            paddingTop = _this$computedStyle[PADDING_TOP$2];
         return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
       }
     }, {
@@ -23002,9 +23018,9 @@
         }
 
         var _this$computedStyle2 = this.computedStyle,
-            marginTop = _this$computedStyle2[MARGIN_TOP$2],
+            marginTop = _this$computedStyle2[MARGIN_TOP$1],
             borderTopWidth = _this$computedStyle2[BORDER_TOP_WIDTH$3],
-            paddingTop = _this$computedStyle2[PADDING_TOP$3];
+            paddingTop = _this$computedStyle2[PADDING_TOP$2];
         return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseLine;
       }
     }, {
@@ -23034,14 +23050,14 @@
       BACKGROUND_COLOR$2 = _enums$STYLE_KEY$g.BACKGROUND_COLOR,
       BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
       MIX_BLEND_MODE$1 = _enums$STYLE_KEY$g.MIX_BLEND_MODE,
-      MARGIN_TOP$3 = _enums$STYLE_KEY$g.MARGIN_TOP,
-      MARGIN_RIGHT$5 = _enums$STYLE_KEY$g.MARGIN_RIGHT,
-      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
-      MARGIN_LEFT$5 = _enums$STYLE_KEY$g.MARGIN_LEFT,
-      PADDING_TOP$4 = _enums$STYLE_KEY$g.PADDING_TOP,
-      PADDING_RIGHT$5 = _enums$STYLE_KEY$g.PADDING_RIGHT,
-      PADDING_BOTTOM$4 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
-      PADDING_LEFT$6 = _enums$STYLE_KEY$g.PADDING_LEFT,
+      MARGIN_TOP$2 = _enums$STYLE_KEY$g.MARGIN_TOP,
+      MARGIN_RIGHT$4 = _enums$STYLE_KEY$g.MARGIN_RIGHT,
+      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
+      MARGIN_LEFT$4 = _enums$STYLE_KEY$g.MARGIN_LEFT,
+      PADDING_TOP$3 = _enums$STYLE_KEY$g.PADDING_TOP,
+      PADDING_RIGHT$4 = _enums$STYLE_KEY$g.PADDING_RIGHT,
+      PADDING_BOTTOM$3 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
+      PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
@@ -23427,10 +23443,10 @@
         var _this$currentStyle = this.currentStyle,
             width = _this$currentStyle[WIDTH$5],
             height = _this$currentStyle[HEIGHT$6],
-            marginLeft = _this$currentStyle[MARGIN_LEFT$5],
-            marginRight = _this$currentStyle[MARGIN_RIGHT$5],
-            paddingLeft = _this$currentStyle[PADDING_LEFT$6],
-            paddingRight = _this$currentStyle[PADDING_RIGHT$5],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$4],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$4],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$5],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$4],
             borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$6],
             borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$5];
 
@@ -23548,14 +23564,14 @@
 
         var width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$6],
-            marginLeft = currentStyle[MARGIN_LEFT$5],
-            marginTop = currentStyle[MARGIN_TOP$3],
-            marginRight = currentStyle[MARGIN_RIGHT$5],
-            marginBottom = currentStyle[MARGIN_BOTTOM$3],
-            paddingLeft = currentStyle[PADDING_LEFT$6],
-            paddingTop = currentStyle[PADDING_TOP$4],
-            paddingRight = currentStyle[PADDING_RIGHT$5],
-            paddingBottom = currentStyle[PADDING_BOTTOM$4],
+            marginLeft = currentStyle[MARGIN_LEFT$4],
+            marginTop = currentStyle[MARGIN_TOP$2],
+            marginRight = currentStyle[MARGIN_RIGHT$4],
+            marginBottom = currentStyle[MARGIN_BOTTOM$2],
+            paddingLeft = currentStyle[PADDING_LEFT$5],
+            paddingTop = currentStyle[PADDING_TOP$3],
+            paddingRight = currentStyle[PADDING_RIGHT$4],
+            paddingBottom = currentStyle[PADDING_BOTTOM$3],
             borderTopWidth = currentStyle[BORDER_TOP_WIDTH$4],
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$5],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$4],
@@ -23863,14 +23879,14 @@
 
   var _enums$STYLE_KEY$h = enums.STYLE_KEY,
       DISPLAY$7 = _enums$STYLE_KEY$h.DISPLAY,
-      MARGIN_TOP$4 = _enums$STYLE_KEY$h.MARGIN_TOP,
-      MARGIN_RIGHT$6 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
-      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
-      MARGIN_LEFT$6 = _enums$STYLE_KEY$h.MARGIN_LEFT,
-      PADDING_TOP$5 = _enums$STYLE_KEY$h.PADDING_TOP,
-      PADDING_RIGHT$6 = _enums$STYLE_KEY$h.PADDING_RIGHT,
-      PADDING_BOTTOM$5 = _enums$STYLE_KEY$h.PADDING_BOTTOM,
-      PADDING_LEFT$7 = _enums$STYLE_KEY$h.PADDING_LEFT,
+      MARGIN_TOP$3 = _enums$STYLE_KEY$h.MARGIN_TOP,
+      MARGIN_RIGHT$5 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
+      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
+      MARGIN_LEFT$5 = _enums$STYLE_KEY$h.MARGIN_LEFT,
+      PADDING_TOP$4 = _enums$STYLE_KEY$h.PADDING_TOP,
+      PADDING_RIGHT$5 = _enums$STYLE_KEY$h.PADDING_RIGHT,
+      PADDING_BOTTOM$4 = _enums$STYLE_KEY$h.PADDING_BOTTOM,
+      PADDING_LEFT$6 = _enums$STYLE_KEY$h.PADDING_LEFT,
       WIDTH$6 = _enums$STYLE_KEY$h.WIDTH,
       HEIGHT$7 = _enums$STYLE_KEY$h.HEIGHT,
       BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
@@ -23951,10 +23967,10 @@
         // 无children，直接以style的width为宽度，不定义则为0
         var _this$currentStyle = this.currentStyle,
             width = _this$currentStyle[WIDTH$6],
-            marginLeft = _this$currentStyle[MARGIN_LEFT$6],
-            marginRight = _this$currentStyle[MARGIN_RIGHT$6],
-            paddingLeft = _this$currentStyle[PADDING_LEFT$7],
-            paddingRight = _this$currentStyle[PADDING_RIGHT$6],
+            marginLeft = _this$currentStyle[MARGIN_LEFT$5],
+            marginRight = _this$currentStyle[MARGIN_RIGHT$5],
+            paddingLeft = _this$currentStyle[PADDING_LEFT$6],
+            paddingRight = _this$currentStyle[PADDING_RIGHT$5],
             borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$7],
             borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$6];
 
@@ -24072,14 +24088,14 @@
 
         var width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$7],
-            marginLeft = currentStyle[MARGIN_LEFT$6],
-            marginTop = currentStyle[MARGIN_TOP$4],
-            marginRight = currentStyle[MARGIN_RIGHT$6],
-            marginBottom = currentStyle[MARGIN_BOTTOM$4],
-            paddingLeft = currentStyle[PADDING_LEFT$7],
-            paddingTop = currentStyle[PADDING_TOP$5],
-            paddingRight = currentStyle[PADDING_RIGHT$6],
-            paddingBottom = currentStyle[PADDING_BOTTOM$5],
+            marginLeft = currentStyle[MARGIN_LEFT$5],
+            marginTop = currentStyle[MARGIN_TOP$3],
+            marginRight = currentStyle[MARGIN_RIGHT$5],
+            marginBottom = currentStyle[MARGIN_BOTTOM$3],
+            paddingLeft = currentStyle[PADDING_LEFT$6],
+            paddingTop = currentStyle[PADDING_TOP$4],
+            paddingRight = currentStyle[PADDING_RIGHT$5],
+            paddingBottom = currentStyle[PADDING_BOTTOM$4],
             borderTopWidth = currentStyle[BORDER_TOP_WIDTH$5],
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$6],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$5],
@@ -29277,9 +29293,9 @@
   var _DIRECTION_HASH;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
       TOP$4 = _enums$STYLE_KEY$j.TOP,
-      RIGHT$3 = _enums$STYLE_KEY$j.RIGHT,
+      RIGHT$2 = _enums$STYLE_KEY$j.RIGHT,
       BOTTOM$4 = _enums$STYLE_KEY$j.BOTTOM,
-      LEFT$3 = _enums$STYLE_KEY$j.LEFT,
+      LEFT$2 = _enums$STYLE_KEY$j.LEFT,
       POSITION$5 = _enums$STYLE_KEY$j.POSITION,
       DISPLAY$9 = _enums$STYLE_KEY$j.DISPLAY,
       VISIBILITY$6 = _enums$STYLE_KEY$j.VISIBILITY,
@@ -29287,12 +29303,12 @@
       WIDTH$7 = _enums$STYLE_KEY$j.WIDTH,
       HEIGHT$8 = _enums$STYLE_KEY$j.HEIGHT,
       Z_INDEX$4 = _enums$STYLE_KEY$j.Z_INDEX,
-      MARGIN_TOP$5 = _enums$STYLE_KEY$j.MARGIN_TOP,
-      MARGIN_LEFT$7 = _enums$STYLE_KEY$j.MARGIN_LEFT,
-      MARGIN_BOTTOM$5 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
-      PADDING_TOP$6 = _enums$STYLE_KEY$j.PADDING_TOP,
-      PADDING_LEFT$8 = _enums$STYLE_KEY$j.PADDING_LEFT,
-      PADDING_BOTTOM$6 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
+      MARGIN_TOP$4 = _enums$STYLE_KEY$j.MARGIN_TOP,
+      MARGIN_LEFT$6 = _enums$STYLE_KEY$j.MARGIN_LEFT,
+      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
+      PADDING_TOP$5 = _enums$STYLE_KEY$j.PADDING_TOP,
+      PADDING_LEFT$7 = _enums$STYLE_KEY$j.PADDING_LEFT,
+      PADDING_BOTTOM$5 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
       BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
@@ -29331,7 +29347,7 @@
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
       STRUCT_TOTAL$2 = _enums$STRUCT_KEY$3.STRUCT_TOTAL,
       STRUCT_NODE$2 = _enums$STRUCT_KEY$3.STRUCT_NODE;
-  var DIRECTION_HASH = (_DIRECTION_HASH = {}, _defineProperty(_DIRECTION_HASH, TOP$4, true), _defineProperty(_DIRECTION_HASH, RIGHT$3, true), _defineProperty(_DIRECTION_HASH, BOTTOM$4, true), _defineProperty(_DIRECTION_HASH, LEFT$3, true), _DIRECTION_HASH);
+  var DIRECTION_HASH = (_DIRECTION_HASH = {}, _defineProperty(_DIRECTION_HASH, TOP$4, true), _defineProperty(_DIRECTION_HASH, RIGHT$2, true), _defineProperty(_DIRECTION_HASH, BOTTOM$4, true), _defineProperty(_DIRECTION_HASH, LEFT$2, true), _DIRECTION_HASH);
   var isNil$8 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$7 = util.isFunction;
@@ -30788,10 +30804,10 @@
 
 
               if (!hasFlowPrev) {
-                y += computedStyle[MARGIN_TOP$5] + computedStyle[BORDER_TOP_WIDTH$6] + computedStyle[PADDING_TOP$6];
+                y += computedStyle[MARGIN_TOP$4] + computedStyle[BORDER_TOP_WIDTH$6] + computedStyle[PADDING_TOP$5];
               }
 
-              x += computedStyle[MARGIN_LEFT$7] + computedStyle[BORDER_LEFT_WIDTH$8] + computedStyle[PADDING_LEFT$8]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
+              x += computedStyle[MARGIN_LEFT$6] + computedStyle[BORDER_LEFT_WIDTH$8] + computedStyle[PADDING_LEFT$7]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
               var container = node;
 
@@ -31050,10 +31066,10 @@
 
                   if (!isNone && item.flowChildren && item.flowChildren.length === 0) {
                     var _item$computedStyle = item.computedStyle,
-                        marginTop = _item$computedStyle[MARGIN_TOP$5],
-                        marginBottom = _item$computedStyle[MARGIN_BOTTOM$5],
-                        paddingTop = _item$computedStyle[PADDING_TOP$6],
-                        paddingBottom = _item$computedStyle[PADDING_BOTTOM$6],
+                        marginTop = _item$computedStyle[MARGIN_TOP$4],
+                        marginBottom = _item$computedStyle[MARGIN_BOTTOM$4],
+                        paddingTop = _item$computedStyle[PADDING_TOP$5],
+                        paddingBottom = _item$computedStyle[PADDING_BOTTOM$5],
                         _height = _item$computedStyle[HEIGHT$8],
                         borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$6],
                         borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$6]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
@@ -31068,8 +31084,8 @@
 
                   if (!isNone && !isEmptyBlock) {
                     var _item$computedStyle2 = item.computedStyle,
-                        _marginTop = _item$computedStyle2[MARGIN_TOP$5],
-                        _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$5]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+                        _marginTop = _item$computedStyle2[MARGIN_TOP$4],
+                        _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$4]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
                     // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
                     if (mergeMarginBottomList.length) {
@@ -31111,7 +31127,7 @@
               var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
               if (height[1] === AUTO$8) {
-                var oldH = parent.height + parent.computedStyle[PADDING_TOP$6];
+                var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
                 var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
                 var _diff5 = nowH - oldH; // 调整next以及非固定PX的abs，再递归向上

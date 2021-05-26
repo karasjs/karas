@@ -616,13 +616,13 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
         [mockCache, width, height, bbox] = res;
       }
     }
-    else if(k === 'saturate') {
+    else if(k === 'saturate' && v !== 100) {
       let res = genSaturateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
       if(res) {
         [mockCache, width, height, bbox] = res;
       }
     }
-    else if(k === 'brightness') {
+    else if(k === 'brightness' && v !== 100) {
       let res = genBrightnessWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
       if(res) {
         [mockCache, width, height, bbox] = res;
@@ -767,13 +767,15 @@ function genSaturateWebgl(gl, texCache, cache, percent, width, height, sx1, sy1,
   else {
     texCache.lockChannel(j);
   }
-  let x = (percent * 0.01 * 2 / 3) + 1;
-  let y = ((x - 1) * -0.5);console.log(percent, x, y);
+  let sat = percent * 0.01;
+  let r = 0.213 * sat;
+  let g = 0.715 * sat;
+  let b = 0.072 * sat;
   gl.useProgram(gl.programCm);
   webgl.drawCm(gl, gl.programCm, j, [
-    x, y, y, 0, 0,
-    y, x, y, 0, 0,
-    y, y, x, 0, 0,
+    r + sat, g, b, 0, 0,
+    r, g + sat, b, 0, 0,
+    r, g, b + sat, 0, 0,
     0, 0, 0, 1, 0,
   ]);
   texCache.releaseLockChannel(j);

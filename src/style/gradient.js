@@ -603,7 +603,6 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
 
 function getConic(v, d, p, x1, y1, x2, y2, ratio, root) {
   let [cx, cy, r, deg] = calConicRadius(v, d, p, x1, y1, x2, y2, root);
-  console.log(v);
   let stop = getColorStop(v, 1, root);
   r <<= 1; // 锥形半径*2，这样分割画圆时保证一定会填满原有矩形
   r *= ratio; // 矢量图形比较特殊，有可能超限，传入个倍数扩大半径

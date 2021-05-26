@@ -6893,7 +6893,6 @@
         r = _calConicRadius2[2],
         deg = _calConicRadius2[3];
 
-    console.log(v);
     var stop = getColorStop(v, 1, root);
     r <<= 1; // 锥形半径*2，这样分割画圆时保证一定会填满原有矩形
 
@@ -26922,7 +26921,7 @@
           height = _res3[2];
           bbox = _res3[3];
         }
-      } else if (k === 'saturate') {
+      } else if (k === 'saturate' && v !== 100) {
         var _res4 = genSaturateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
 
         if (_res4) {
@@ -26933,7 +26932,7 @@
           height = _res5[2];
           bbox = _res5[3];
         }
-      } else if (k === 'brightness') {
+      } else if (k === 'brightness' && v !== 100) {
         var _res6 = genBrightnessWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
 
         if (_res6) {
@@ -27109,11 +27108,12 @@
       texCache.lockChannel(j);
     }
 
-    var x = percent * 0.01 * 2 / 3 + 1;
-    var y = (x - 1) * -0.5;
-    console.log(percent, x, y);
+    var sat = percent * 0.01;
+    var r = 0.213 * sat;
+    var g = 0.715 * sat;
+    var b = 0.072 * sat;
     gl.useProgram(gl.programCm);
-    webgl.drawCm(gl, gl.programCm, j, [x, y, y, 0, 0, y, x, y, 0, 0, y, y, x, 0, 0, 0, 0, 0, 1, 0]);
+    webgl.drawCm(gl, gl.programCm, j, [r + sat, g, b, 0, 0, r, g + sat, b, 0, 0, r, g, b + sat, 0, 0, 0, 0, 0, 1, 0]);
     texCache.releaseLockChannel(j); // 切回
 
     gl.useProgram(gl.program);
@@ -34198,7 +34198,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.4";
+  var version = "0.58.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

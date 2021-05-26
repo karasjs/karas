@@ -604,30 +604,30 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
   let mockCache = cache;
   filter.forEach(item => {
     let [k, v] = item;
-    if(k === 'blur' && v[0] > 0) {
+    if(k === 'blur' && v > 0) {
       let res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
       if(res) {
         [mockCache, width, height, bbox] = res;
       }
     }
-    // else if(k === 'hue-rotate') {
-    //   let res = genHueRotateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
-    //   if(res) {
-    //     [mockCache, width, height, bbox] = res;
-    //   }
-    // }
-    // else if(k === 'saturate') {
-    //   let res = genSaturateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
-    //   if(res) {
-    //     [mockCache, width, height, bbox] = res;
-    //   }
-    // }
-    // else if(k === 'brightness') {
-    //   let res = genBrightnessWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
-    //   if(res) {
-    //     [mockCache, width, height, bbox] = res;
-    //   }
-    // }
+    else if(k === 'hue-rotate') {
+      let res = genHueRotateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
+    }
+    else if(k === 'saturate') {
+      let res = genSaturateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
+    }
+    else if(k === 'brightness') {
+      let res = genBrightnessWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
+    }
   });
   // 切换回主程序
   gl.useProgram(gl.program);
@@ -707,83 +707,117 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   return [mockCache, width, height, bbox];
 }
 
-// function genHueRotateWebgl(gl, texCache, cache, deg, width, height, sx1, sy1, bbox) {
-//   // 生成最终纹理，尺寸为被遮罩节点大小
-//   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
-//   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-//   let j = texCache.findExistTexChannel(cache.page);
-//   if(j === -1) {
-//     // 直接绑定，因为一定是个mockCache
-//     j = texCache.lockOneChannel();
-//     webgl.bindTexture(gl, cache.page.texture, j);
-//   }
-//   else {
-//     texCache.lockChannel(j);
-//   }
-//   gl.useProgram(gl.programHueRotate);
-//   webgl.drawHueRotate(gl, gl.programHueRotate, j, geom.d2r(deg % 360));
-//   texCache.releaseLockChannel(j);
-//   // 切回
-//   gl.useProgram(gl.program);
-//   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-//   gl.deleteFramebuffer(frameBuffer);
-//   // 同total一样生成一个mockCache
-//   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-//   texCache.releaseLockChannel(i, mockCache.page);
-//   return [mockCache, width, height, bbox];
-// }
-//
-// function genSaturateWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
-//   // 生成最终纹理，尺寸为被遮罩节点大小
-//   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
-//   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-//   let j = texCache.findExistTexChannel(cache.page);
-//   if(j === -1) {
-//     // 直接绑定，因为一定是个mockCache
-//     j = texCache.lockOneChannel();
-//     webgl.bindTexture(gl, cache.page.texture, j);
-//   }
-//   else {
-//     texCache.lockChannel(j);
-//   }
-//   gl.useProgram(gl.programSaturate);
-//   webgl.drawSaturate(gl, gl.programSaturate, j, percent * 0.01);
-//   texCache.releaseLockChannel(j);
-//   // 切回
-//   gl.useProgram(gl.program);
-//   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-//   gl.deleteFramebuffer(frameBuffer);
-//   // 同total一样生成一个mockCache
-//   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-//   texCache.releaseLockChannel(i, mockCache.page);
-//   return [mockCache, width, height, bbox];
-// }
-//
-// function genBrightnessWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
-//   // 生成最终纹理，尺寸为被遮罩节点大小
-//   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
-//   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-//   let j = texCache.findExistTexChannel(cache.page);
-//   if(j === -1) {
-//     // 直接绑定，因为一定是个mockCache
-//     j = texCache.lockOneChannel();
-//     webgl.bindTexture(gl, cache.page.texture, j);
-//   }
-//   else {
-//     texCache.lockChannel(j);
-//   }
-//   gl.useProgram(gl.programBrightness);
-//   webgl.drawSaturate(gl, gl.programBrightness, j, percent * 0.01);
-//   texCache.releaseLockChannel(j);
-//   // 切回
-//   gl.useProgram(gl.program);
-//   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-//   gl.deleteFramebuffer(frameBuffer);
-//   // 同total一样生成一个mockCache
-//   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-//   texCache.releaseLockChannel(i, mockCache.page);
-//   return [mockCache, width, height, bbox];
-// }
+function genHueRotateWebgl(gl, texCache, cache, deg, width, height, sx1, sy1, bbox) {
+  // 生成最终纹理，尺寸为被遮罩节点大小
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  let j = texCache.findExistTexChannel(cache.page);
+  if(j === -1) {
+    // 直接绑定，因为一定是个mockCache
+    j = texCache.lockOneChannel();
+    webgl.bindTexture(gl, cache.page.texture, j);
+  }
+  else {
+    texCache.lockChannel(j);
+  }
+  // 构建colorMatrix矩阵
+  let rotation = geom.d2r(deg % 360);
+  let cosR = Math.cos(rotation);
+  let sinR = Math.sin(rotation);
+  let sqrt = Math.sqrt;
+  let w = 1 / 3;
+  let sqrW = sqrt(w); // weight is
+  let a00 = cosR + ((1.0 - cosR) * w);
+  let a01 = (w * (1.0 - cosR)) - (sqrW * sinR);
+  let a02 = (w * (1.0 - cosR)) + (sqrW * sinR);
+  let a10 = (w * (1.0 - cosR)) + (sqrW * sinR);
+  let a11 = cosR + (w * (1.0 - cosR));
+  let a12 = (w * (1.0 - cosR)) - (sqrW * sinR);
+  let a20 = (w * (1.0 - cosR)) - (sqrW * sinR);
+  let a21 = (w * (1.0 - cosR)) + (sqrW * sinR);
+  let a22 = cosR + (w * (1.0 - cosR));
+  gl.useProgram(gl.programCm);
+  webgl.drawCm(gl, gl.programCm, j, [
+    a00, a01, a02, 0, 0,
+    a10, a11, a12, 0, 0,
+    a20, a21, a22, 0, 0,
+    0, 0, 0, 1, 0,
+  ]);
+  texCache.releaseLockChannel(j);
+  // 切回
+  gl.useProgram(gl.program);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  // 同total一样生成一个mockCache
+  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  texCache.releaseLockChannel(i, mockCache.page);
+  return [mockCache, width, height, bbox];
+}
+
+function genSaturateWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
+  // 生成最终纹理，尺寸为被遮罩节点大小
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  let j = texCache.findExistTexChannel(cache.page);
+  if(j === -1) {
+    // 直接绑定，因为一定是个mockCache
+    j = texCache.lockOneChannel();
+    webgl.bindTexture(gl, cache.page.texture, j);
+  }
+  else {
+    texCache.lockChannel(j);
+  }
+  let x = (percent * 0.01 * 2 / 3) + 1;
+  let y = ((x - 1) * -0.5);console.log(percent, x, y);
+  gl.useProgram(gl.programCm);
+  webgl.drawCm(gl, gl.programCm, j, [
+    x, y, y, 0, 0,
+    y, x, y, 0, 0,
+    y, y, x, 0, 0,
+    0, 0, 0, 1, 0,
+  ]);
+  texCache.releaseLockChannel(j);
+  // 切回
+  gl.useProgram(gl.program);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  // 同total一样生成一个mockCache
+  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  texCache.releaseLockChannel(i, mockCache.page);
+  return [mockCache, width, height, bbox];
+}
+
+function genBrightnessWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
+  // 生成最终纹理，尺寸为被遮罩节点大小
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  let j = texCache.findExistTexChannel(cache.page);
+  if(j === -1) {
+    // 直接绑定，因为一定是个mockCache
+    j = texCache.lockOneChannel();
+    webgl.bindTexture(gl, cache.page.texture, j);
+  }
+  else {
+    texCache.lockChannel(j);
+  }
+  let b = percent * 0.01;
+  gl.useProgram(gl.programCm);
+  webgl.drawCm(gl, gl.programCm, j, [
+    b, 0, 0, 0, 0,
+    0, b, 0, 0, 0,
+    0, 0, b, 0, 0,
+    0, 0, 0, 1, 0,
+  ]);
+  texCache.releaseLockChannel(j);
+  // 切回
+  gl.useProgram(gl.program);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  // 同total一样生成一个mockCache
+  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  texCache.releaseLockChannel(i, mockCache.page);
+  return [mockCache, width, height, bbox];
+}
 
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   let sbox = node.bbox.slice(0);

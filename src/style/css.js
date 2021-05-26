@@ -1067,7 +1067,7 @@ function computeReflow(node, isHost) {
   else if(lineHeight[1] === NUMBER) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
   }
-  // normal
+  // normal或auto
   else {
     computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
   }

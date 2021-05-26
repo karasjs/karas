@@ -5687,65 +5687,92 @@
       return gl.deleteTexture(item);
     });
     return tex1;
-  }
+  } // function drawHueRotate(gl, program, i, deg) {
+  //   // 顶点buffer
+  //   let pointBuffer = gl.createBuffer();
+  //   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  //   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+  //     -1, -1,
+  //     -1, 1,
+  //     1, -1,
+  //     -1, 1,
+  //     1, -1,
+  //     1, 1,
+  //   ]), gl.STATIC_DRAW);
+  //   let a_position = gl.getAttribLocation(program, 'a_position');
+  //   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  //   gl.enableVertexAttribArray(a_position);
+  //   // 纹理buffer
+  //   let texBuffer = gl.createBuffer();
+  //   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  //   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+  //     0, 0,
+  //     0, 1,
+  //     1, 0,
+  //     0, 1,
+  //     1, 0,
+  //     1, 1,
+  //   ]), gl.STATIC_DRAW);
+  //   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  //   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  //   gl.enableVertexAttribArray(a_texCoords);
+  //   // 纹理单元
+  //   let u_texture = gl.getUniformLocation(program, 'u_texture');
+  //   gl.uniform1i(u_texture, i);
+  //   // 角度
+  //   let u_deg = gl.getUniformLocation(program, 'u_deg');
+  //   gl.uniform1f(u_deg, deg);
+  //   gl.drawArrays(gl.TRIANGLES, 0, 6);
+  //   // 回收
+  //   gl.deleteBuffer(pointBuffer);
+  //   gl.deleteBuffer(texBuffer);
+  //   gl.disableVertexAttribArray(a_position);
+  //   gl.disableVertexAttribArray(a_texCoords);
+  // }
+  //
+  // function drawSaturate(gl, program, i, percent) {
+  //   // 顶点buffer
+  //   let pointBuffer = gl.createBuffer();
+  //   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+  //   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+  //     -1, -1,
+  //     -1, 1,
+  //     1, -1,
+  //     -1, 1,
+  //     1, -1,
+  //     1, 1,
+  //   ]), gl.STATIC_DRAW);
+  //   let a_position = gl.getAttribLocation(program, 'a_position');
+  //   gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  //   gl.enableVertexAttribArray(a_position);
+  //   // 纹理buffer
+  //   let texBuffer = gl.createBuffer();
+  //   gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+  //   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+  //     0, 0,
+  //     0, 1,
+  //     1, 0,
+  //     0, 1,
+  //     1, 0,
+  //     1, 1,
+  //   ]), gl.STATIC_DRAW);
+  //   let a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+  //   gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+  //   gl.enableVertexAttribArray(a_texCoords);
+  //   // 纹理单元
+  //   let u_texture = gl.getUniformLocation(program, 'u_texture');
+  //   gl.uniform1i(u_texture, i);
+  //   // 饱和度
+  //   let u_percent = gl.getUniformLocation(program, 'u_percent');
+  //   gl.uniform1f(u_percent, percent);
+  //   gl.drawArrays(gl.TRIANGLES, 0, 6);
+  //   // 回收
+  //   gl.deleteBuffer(pointBuffer);
+  //   gl.deleteBuffer(texBuffer);
+  //   gl.disableVertexAttribArray(a_position);
+  //   gl.disableVertexAttribArray(a_texCoords);
+  // }
 
-  function drawHueRotate(gl, program, i, deg) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(program, 'u_texture');
-    gl.uniform1i(u_texture, i); // 角度
-
-    var u_deg = gl.getUniformLocation(program, 'u_deg');
-    gl.uniform1f(u_deg, deg);
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
-
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-  }
-
-  function drawSaturate(gl, program, i, percent) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(program, 'u_texture');
-    gl.uniform1i(u_texture, i); // 饱和度
-
-    var u_percent = gl.getUniformLocation(program, 'u_percent');
-    gl.uniform1f(u_percent, percent);
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
-
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-  }
   /**
    * 根据total/filter生成overflow
    * @param gl
@@ -5847,9 +5874,9 @@
     drawBlur: drawBlur,
     drawOverflow: drawOverflow,
     drawMask: drawMask,
-    drawMbm: drawMbm,
-    drawHueRotate: drawHueRotate,
-    drawSaturate: drawSaturate
+    drawMbm: drawMbm // drawHueRotate,
+    // drawSaturate,
+
   };
 
   var SPF = 1000 / 60;
@@ -7057,7 +7084,7 @@
     color: 'inherit',
     fontStyle: 'inherit',
     fontWeight: 'inherit',
-    lineHeight: 'normal',
+    lineHeight: 'inherit',
     backgroundImage: null,
     backgroundColor: 'transparent',
     backgroundSize: 'auto',
@@ -8748,7 +8775,7 @@
         computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * root.height * 0.01, 0) || calNormalLineHeight(computedStyle);
       } else if (lineHeight[1] === NUMBER$1) {
         computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
-      } // normal
+      } // normal或auto
       else {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
         }
@@ -26846,40 +26873,25 @@
           height = _res[2];
           bbox = _res[3];
         }
-      } else if (k === 'hue-rotate') {
-        var _res2 = genHueRotateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      } // else if(k === 'hue-rotate') {
+      //   let res = genHueRotateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      //   if(res) {
+      //     [mockCache, width, height, bbox] = res;
+      //   }
+      // }
+      // else if(k === 'saturate') {
+      //   let res = genSaturateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      //   if(res) {
+      //     [mockCache, width, height, bbox] = res;
+      //   }
+      // }
+      // else if(k === 'brightness') {
+      //   let res = genBrightnessWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      //   if(res) {
+      //     [mockCache, width, height, bbox] = res;
+      //   }
+      // }
 
-        if (_res2) {
-          var _res3 = _slicedToArray(_res2, 4);
-
-          mockCache = _res3[0];
-          width = _res3[1];
-          height = _res3[2];
-          bbox = _res3[3];
-        }
-      } else if (k === 'saturate') {
-        var _res4 = genSaturateWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
-
-        if (_res4) {
-          var _res5 = _slicedToArray(_res4, 4);
-
-          mockCache = _res5[0];
-          width = _res5[1];
-          height = _res5[2];
-          bbox = _res5[3];
-        }
-      } else if (k === 'brightness') {
-        var _res6 = genBrightnessWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
-
-        if (_res6) {
-          var _res7 = _slicedToArray(_res6, 4);
-
-          mockCache = _res7[0];
-          width = _res7[1];
-          height = _res7[2];
-          bbox = _res7[3];
-        }
-      }
     }); // 切换回主程序
 
     gl.useProgram(gl.program);
@@ -26974,103 +26986,84 @@
     var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox);
     texCache.releaseLockChannel(i, mockCache.page);
     return [mockCache, width, height, bbox];
-  }
+  } // function genHueRotateWebgl(gl, texCache, cache, deg, width, height, sx1, sy1, bbox) {
+  //   // 生成最终纹理，尺寸为被遮罩节点大小
+  //   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  //   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  //   let j = texCache.findExistTexChannel(cache.page);
+  //   if(j === -1) {
+  //     // 直接绑定，因为一定是个mockCache
+  //     j = texCache.lockOneChannel();
+  //     webgl.bindTexture(gl, cache.page.texture, j);
+  //   }
+  //   else {
+  //     texCache.lockChannel(j);
+  //   }
+  //   gl.useProgram(gl.programHueRotate);
+  //   webgl.drawHueRotate(gl, gl.programHueRotate, j, geom.d2r(deg % 360));
+  //   texCache.releaseLockChannel(j);
+  //   // 切回
+  //   gl.useProgram(gl.program);
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  //   gl.deleteFramebuffer(frameBuffer);
+  //   // 同total一样生成一个mockCache
+  //   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  //   texCache.releaseLockChannel(i, mockCache.page);
+  //   return [mockCache, width, height, bbox];
+  // }
+  //
+  // function genSaturateWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
+  //   // 生成最终纹理，尺寸为被遮罩节点大小
+  //   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  //   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  //   let j = texCache.findExistTexChannel(cache.page);
+  //   if(j === -1) {
+  //     // 直接绑定，因为一定是个mockCache
+  //     j = texCache.lockOneChannel();
+  //     webgl.bindTexture(gl, cache.page.texture, j);
+  //   }
+  //   else {
+  //     texCache.lockChannel(j);
+  //   }
+  //   gl.useProgram(gl.programSaturate);
+  //   webgl.drawSaturate(gl, gl.programSaturate, j, percent * 0.01);
+  //   texCache.releaseLockChannel(j);
+  //   // 切回
+  //   gl.useProgram(gl.program);
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  //   gl.deleteFramebuffer(frameBuffer);
+  //   // 同total一样生成一个mockCache
+  //   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  //   texCache.releaseLockChannel(i, mockCache.page);
+  //   return [mockCache, width, height, bbox];
+  // }
+  //
+  // function genBrightnessWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
+  //   // 生成最终纹理，尺寸为被遮罩节点大小
+  //   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  //   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  //   let j = texCache.findExistTexChannel(cache.page);
+  //   if(j === -1) {
+  //     // 直接绑定，因为一定是个mockCache
+  //     j = texCache.lockOneChannel();
+  //     webgl.bindTexture(gl, cache.page.texture, j);
+  //   }
+  //   else {
+  //     texCache.lockChannel(j);
+  //   }
+  //   gl.useProgram(gl.programBrightness);
+  //   webgl.drawSaturate(gl, gl.programBrightness, j, percent * 0.01);
+  //   texCache.releaseLockChannel(j);
+  //   // 切回
+  //   gl.useProgram(gl.program);
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  //   gl.deleteFramebuffer(frameBuffer);
+  //   // 同total一样生成一个mockCache
+  //   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  //   texCache.releaseLockChannel(i, mockCache.page);
+  //   return [mockCache, width, height, bbox];
+  // }
 
-  function genHueRotateWebgl(gl, texCache, cache, deg, width, height, sx1, sy1, bbox) {
-    // 生成最终纹理，尺寸为被遮罩节点大小
-    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
-        i = _genFrameBufferWithTe8[0],
-        frameBuffer = _genFrameBufferWithTe8[1],
-        texture = _genFrameBufferWithTe8[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-
-
-    var j = texCache.findExistTexChannel(cache.page);
-
-    if (j === -1) {
-      // 直接绑定，因为一定是个mockCache
-      j = texCache.lockOneChannel();
-      webgl.bindTexture(gl, cache.page.texture, j);
-    } else {
-      texCache.lockChannel(j);
-    }
-
-    gl.useProgram(gl.programHueRotate);
-    webgl.drawHueRotate(gl, gl.programHueRotate, j, geom.d2r(deg % 360));
-    texCache.releaseLockChannel(j); // 切回
-
-    gl.useProgram(gl.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
-
-    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-    texCache.releaseLockChannel(i, mockCache.page);
-    return [mockCache, width, height, bbox];
-  }
-
-  function genSaturateWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
-    // 生成最终纹理，尺寸为被遮罩节点大小
-    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
-        i = _genFrameBufferWithTe10[0],
-        frameBuffer = _genFrameBufferWithTe10[1],
-        texture = _genFrameBufferWithTe10[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-
-
-    var j = texCache.findExistTexChannel(cache.page);
-
-    if (j === -1) {
-      // 直接绑定，因为一定是个mockCache
-      j = texCache.lockOneChannel();
-      webgl.bindTexture(gl, cache.page.texture, j);
-    } else {
-      texCache.lockChannel(j);
-    }
-
-    gl.useProgram(gl.programSaturate);
-    webgl.drawSaturate(gl, gl.programSaturate, j, percent * 0.01);
-    texCache.releaseLockChannel(j); // 切回
-
-    gl.useProgram(gl.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
-
-    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-    texCache.releaseLockChannel(i, mockCache.page);
-    return [mockCache, width, height, bbox];
-  }
-
-  function genBrightnessWebgl(gl, texCache, cache, percent, width, height, sx1, sy1, bbox) {
-    // 生成最终纹理，尺寸为被遮罩节点大小
-    var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3),
-        i = _genFrameBufferWithTe12[0],
-        frameBuffer = _genFrameBufferWithTe12[1],
-        texture = _genFrameBufferWithTe12[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
-
-
-    var j = texCache.findExistTexChannel(cache.page);
-
-    if (j === -1) {
-      // 直接绑定，因为一定是个mockCache
-      j = texCache.lockOneChannel();
-      webgl.bindTexture(gl, cache.page.texture, j);
-    } else {
-      texCache.lockChannel(j);
-    }
-
-    gl.useProgram(gl.programBrightness);
-    webgl.drawSaturate(gl, gl.programBrightness, j, percent * 0.01);
-    texCache.releaseLockChannel(j); // 切回
-
-    gl.useProgram(gl.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
-
-    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-    texCache.releaseLockChannel(i, mockCache.page);
-    return [mockCache, width, height, bbox];
-  }
 
   function genOverflowWebgl(gl, texCache, node, cache, W, H) {
     var sbox = node.bbox.slice(0);
@@ -27083,11 +27076,11 @@
     var width = sbox[2] - sbox[0],
         height = sbox[3] - sbox[1]; // 生成最终纹理，尺寸为被遮罩节点大小
 
-    var _genFrameBufferWithTe13 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe14 = _slicedToArray(_genFrameBufferWithTe13, 3),
-        i = _genFrameBufferWithTe14[0],
-        frameBuffer = _genFrameBufferWithTe14[1],
-        texture = _genFrameBufferWithTe14[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+    var _genFrameBufferWithTe7 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe8 = _slicedToArray(_genFrameBufferWithTe7, 3),
+        i = _genFrameBufferWithTe8[0],
+        frameBuffer = _genFrameBufferWithTe8[1],
+        texture = _genFrameBufferWithTe8[2]; // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
 
 
     var j = texCache.findExistTexChannel(cache.page);
@@ -27143,11 +27136,11 @@
 
     inverse = mx.inverse(inverse); // 将所有mask绘入一个单独纹理中，尺寸和原点与被遮罩total相同，才能做到顶点坐标一致
 
-    var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe16 = _slicedToArray(_genFrameBufferWithTe15, 3),
-        i = _genFrameBufferWithTe16[0],
-        frameBuffer = _genFrameBufferWithTe16[1],
-        texture = _genFrameBufferWithTe16[2];
+    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
+        i = _genFrameBufferWithTe10[0],
+        frameBuffer = _genFrameBufferWithTe10[1],
+        texture = _genFrameBufferWithTe10[2];
 
     var next = node.next;
 
@@ -27208,11 +27201,11 @@
     } // 生成最终纹理，汇总total和maskCache
 
 
-    var _genFrameBufferWithTe17 = genFrameBufferWithTexture(gl, texCache, width, height),
-        _genFrameBufferWithTe18 = _slicedToArray(_genFrameBufferWithTe17, 3),
-        n = _genFrameBufferWithTe18[0],
-        frameBuffer2 = _genFrameBufferWithTe18[1],
-        texture2 = _genFrameBufferWithTe18[2];
+    var _genFrameBufferWithTe11 = genFrameBufferWithTexture(gl, texCache, width, height),
+        _genFrameBufferWithTe12 = _slicedToArray(_genFrameBufferWithTe11, 3),
+        n = _genFrameBufferWithTe12[0],
+        frameBuffer2 = _genFrameBufferWithTe12[1],
+        texture2 = _genFrameBufferWithTe12[2];
 
     var isClip = node.next.isClip;
     var program;
@@ -27293,11 +27286,11 @@
     var program = webgl.initShaders(gl, vertexMbm, frag);
     gl.useProgram(program); // 生成新的fbo，将混合结果绘入
 
-    var _genFrameBufferWithTe19 = genFrameBufferWithTexture(gl, texCache, W, H),
-        _genFrameBufferWithTe20 = _slicedToArray(_genFrameBufferWithTe19, 3),
-        n = _genFrameBufferWithTe20[0],
-        frameBuffer = _genFrameBufferWithTe20[1],
-        texture = _genFrameBufferWithTe20[2];
+    var _genFrameBufferWithTe13 = genFrameBufferWithTexture(gl, texCache, W, H),
+        _genFrameBufferWithTe14 = _slicedToArray(_genFrameBufferWithTe13, 3),
+        n = _genFrameBufferWithTe14[0],
+        frameBuffer = _genFrameBufferWithTe14[1],
+        texture = _genFrameBufferWithTe14[2];
 
     webgl.drawMbm(gl, program, i, j, W, H); // 切换回主程序并销毁这个临时program
 
@@ -28680,14 +28673,14 @@
           var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, width, height),
               _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
               limit = _genTotalWebgl2[0],
-              _res8 = _genTotalWebgl2[1];
+              _res2 = _genTotalWebgl2[1];
 
-          __cacheTotal = _res8;
+          __cacheTotal = _res2;
           needGen = true;
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
-            __config[NODE_CACHE_TOTAL$1] = _res8;
+            __config[NODE_CACHE_TOTAL$1] = _res2;
           }
         } // 即使超限，也有total结果
 
@@ -28741,13 +28734,13 @@
     var n, frameBuffer, texture;
 
     if (hasMbm) {
-      var _genFrameBufferWithTe21 = genFrameBufferWithTexture(gl, texCache, width, height);
+      var _genFrameBufferWithTe15 = genFrameBufferWithTexture(gl, texCache, width, height);
 
-      var _genFrameBufferWithTe22 = _slicedToArray(_genFrameBufferWithTe21, 3);
+      var _genFrameBufferWithTe16 = _slicedToArray(_genFrameBufferWithTe15, 3);
 
-      n = _genFrameBufferWithTe22[0];
-      frameBuffer = _genFrameBufferWithTe22[1];
-      texture = _genFrameBufferWithTe22[2];
+      n = _genFrameBufferWithTe16[0];
+      frameBuffer = _genFrameBufferWithTe16[1];
+      texture = _genFrameBufferWithTe16[2];
     }
 
     for (var _i7 = 0, _len7 = __structs.length; _i7 < _len7; _i7++) {
@@ -28819,11 +28812,11 @@
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe23 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe24 = _slicedToArray(_genFrameBufferWithTe23, 3),
-                n2 = _genFrameBufferWithTe24[0],
-                frameBuffer2 = _genFrameBufferWithTe24[1],
-                texture2 = _genFrameBufferWithTe24[2];
+            var _genFrameBufferWithTe17 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe18 = _slicedToArray(_genFrameBufferWithTe17, 3),
+                n2 = _genFrameBufferWithTe18[0],
+                frameBuffer2 = _genFrameBufferWithTe18[1],
+                texture2 = _genFrameBufferWithTe18[2];
 
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity5, _m6, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
@@ -28852,11 +28845,11 @@
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe25 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe26 = _slicedToArray(_genFrameBufferWithTe25, 3),
-                _n = _genFrameBufferWithTe26[0],
-                _frameBuffer = _genFrameBufferWithTe26[1],
-                _texture3 = _genFrameBufferWithTe26[2];
+            var _genFrameBufferWithTe19 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe20 = _slicedToArray(_genFrameBufferWithTe19, 3),
+                _n = _genFrameBufferWithTe20[0],
+                _frameBuffer = _genFrameBufferWithTe20[1],
+                _texture3 = _genFrameBufferWithTe20[2];
 
             texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _m7, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
@@ -28964,14 +28957,6 @@
   var fragmentClip = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);float a=color1.a*(1.0-color2.a);gl_FragColor=vec4(color1.rgb*(1.0-color2.a),a);}"; // eslint-disable-line
 
   var fragmentOverflow = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;void main(){gl_FragColor=texture2D(u_texture,v_texCoords);}"; // eslint-disable-line
-
-  var vertexHueRotate = "#version 100\n#define GLSLIFY 1\nattribute vec4 a_position;attribute vec2 a_texCoords;varying vec2 v_texCoords;void main(){gl_Position=a_position;v_texCoords=a_texCoords;}"; // eslint-disable-line
-
-  var fragmentHueRotate = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;uniform float u_deg;vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}vec3 hueShift(vec3 color,float hue){const vec3 k=vec3(0.57735,0.57735,0.57735);float cosAngle=cos(hue);return vec3(color*cosAngle+cross(k,color)*sin(hue)+k*dot(k,color)*(1.0-cosAngle));}void main(){vec4 color=texture2D(u_texture,v_texCoords);float a=color.a;vec3 res=premultipliedAlpha(color);vec3 res2=hueShift(res,u_deg);gl_FragColor=vec4(res2*a,a);}"; // eslint-disable-line
-
-  var fragmentSaturate = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;uniform float u_percent;vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}void main(){vec4 color=texture2D(u_texture,v_texCoords);float a=color.a;vec3 res=premultipliedAlpha(color);float s=getSaturation(res);s*=u_percent;vec3 res2=setSaturation(res,s);gl_FragColor=vec4(res2*a,a);}"; // eslint-disable-line
-
-  var fragmentBrightness = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture;uniform float u_percent;vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}void main(){vec4 color=texture2D(u_texture,v_texCoords);float a=color.a;vec3 res=premultipliedAlpha(color);float l=getLuminosity(res);l*=u_percent;vec3 res2=setLuminosity(res,l);gl_FragColor=vec4(res2*a,a);}"; // eslint-disable-line
 
   var TexCache = /*#__PURE__*/function () {
     function TexCache(units) {
@@ -30121,10 +30106,10 @@
           gl.program = webgl.initShaders(gl, vertex, fragment);
           gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
           gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
-          gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow);
-          gl.programHueRotate = webgl.initShaders(gl, vertexHueRotate, fragmentHueRotate);
-          gl.programSaturate = webgl.initShaders(gl, vertexHueRotate, fragmentSaturate);
-          gl.programBrightness = webgl.initShaders(gl, vertexHueRotate, fragmentBrightness);
+          gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow); // gl.programHueRotate = webgl.initShaders(gl, vertexHueRotate, fragmentHueRotate);
+          // gl.programSaturate = webgl.initShaders(gl, vertexHueRotate, fragmentSaturate);
+          // gl.programBrightness = webgl.initShaders(gl, vertexHueRotate, fragmentBrightness);
+
           gl.useProgram(gl.program); // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
 
           var MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));

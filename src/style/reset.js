@@ -18,7 +18,7 @@ const DOM = {
   color: 'inherit',
   fontStyle: 'inherit',
   fontWeight: 'inherit',
-  lineHeight: 'normal',
+  lineHeight: 'inherit',
   backgroundImage: null,
   backgroundColor: 'transparent',
   backgroundSize: 'auto',

@@ -26,6 +26,10 @@ import vertexMask from '../gl/mask.vert';
 import fragmentMask from '../gl/mask.frag';
 import fragmentClip from '../gl/clip.frag';
 import fragmentOverflow from '../gl/overflow.frag';
+import vertexHueRotate from '../gl/filter/hue.vert';
+import fragmentHueRotate from '../gl/filter/hue.frag';
+import fragmentSaturate from '../gl/filter/saturate.frag';
+import fragmentBrightness from '../gl/filter/brightness.frag';
 import webgl from '../gl/webgl';
 import ca from '../gl/ca';
 import TexCache from '../gl/TexCache';
@@ -744,6 +748,9 @@ class Root extends Dom {
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);
       gl.programClip = webgl.initShaders(gl, vertexMask, fragmentClip);
       gl.programOverflow = webgl.initShaders(gl, vertexMask, fragmentOverflow);
+      gl.programHueRotate = webgl.initShaders(gl, vertexHueRotate, fragmentHueRotate);
+      gl.programSaturate = webgl.initShaders(gl, vertexHueRotate, fragmentSaturate);
+      gl.programBrightness = webgl.initShaders(gl, vertexHueRotate, fragmentBrightness);
       gl.useProgram(gl.program);
       // 第一次渲染生成纹理缓存管理对象，收集渲染过程中生成的纹理并在gl纹理单元满了时进行绘制和清空，减少texImage2d耗时问题
       const MAX_TEXTURE_IMAGE_UNITS = Math.min(16, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));

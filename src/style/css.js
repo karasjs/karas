@@ -801,11 +801,11 @@ function normalize(style, reset = []) {
     if(match) {
       f = [];
       match.forEach(item => {
-        let m2 = /([\w-]+)\s*\(\s*-?([\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
+        let m2 = /([\w-]+)\s*\(\s*(-?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
         if(m2) {
           let k = m2[1].toLowerCase(), v = calUnit(m2[2]);
           if(k === 'blur') {
-            if([DEG, PERCENT].indexOf(v[1]) > -1) {
+            if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
               return;
             }
             f.push([k, v]);
@@ -821,6 +821,7 @@ function normalize(style, reset = []) {
             if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
               return;
             }
+            v[0] = Math.max(v[0], 0);
             v[1] = PERCENT;
             f.push([k, v]);
           }
@@ -828,21 +829,14 @@ function normalize(style, reset = []) {
             if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
               return;
             }
+            v[0] = Math.max(v[0], 0);
             v[1] = PERCENT;
             f.push([k, v]);
           }
         }
       });
-      // console.log(f);
     }
     res[FILTER] = f;
-    // let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
-    // if(blur) {
-    //   let v = parseFloat(blur[1]) || 0;
-    //   if(v) {
-    //     f.push(['blur', v]);
-    //   }
-    // }
   }
   temp = style.visibility;
   if(temp) {

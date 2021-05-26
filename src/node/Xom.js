@@ -1223,7 +1223,7 @@ class Xom extends Node {
         v = v[0] * this.root.height * 0.01;
       }
       return [k, v];
-    }).filter(item => item[1]);
+    });
   }
 
   __calContent(renderMode, lv, currentStyle, computedStyle) {

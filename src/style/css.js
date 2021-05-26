@@ -808,6 +808,9 @@ function normalize(style, reset = []) {
             if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
               return;
             }
+            if(v[1] === NUMBER) {
+              v[1] = PX;
+            }
             f.push([k, v]);
           }
           else if(k === 'hue-rotate') {
@@ -1407,7 +1410,7 @@ function cloneStyle(style, keys) {
         }
       });
     }
-    else if(k === TRANSFORM) {
+    else if(k === TRANSFORM || k === FILTER) {
       if(v) {
         let n = v.slice(0);
         for(let i = 0, len = n.length; i < len; i++) {

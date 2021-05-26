@@ -8550,6 +8550,10 @@
                 return;
               }
 
+              if (_v4[1] === NUMBER$1) {
+                _v4[1] = PX$2;
+              }
+
               f.push([k, _v4]);
             } else if (k === 'hue-rotate') {
               if ([NUMBER$1, DEG$1].indexOf(_v4[1]) === -1) {
@@ -9090,7 +9094,7 @@
               return item.slice(0);
             }
         });
-      } else if (k === TRANSFORM) {
+      } else if (k === TRANSFORM || k === FILTER) {
         if (v) {
           var n = v.slice(0);
 
@@ -13417,14 +13421,66 @@
       res[1] = [nm[0] - pm[0], nm[1] - pm[1], nm[2] - pm[2], nm[3] - pm[3], nm[4] - pm[4], nm[5] - pm[5]];
       return res;
     } else if (k === FILTER$1) {
-      // 目前只有1个blur，可以简单处理
-      if (!p || !p.length) {
-        res[1] = n[0][1];
-      } else if (!n || !n.length) {
-        res[1] = -p[0][1];
-      } else {
-        res[1] = n[0][1] - p[0][1];
+      // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
+      var pHash = {},
+          nHash = {},
+          keyHash = {};
+
+      if (p) {
+        p.forEach(function (item) {
+          keyHash[item[0]] = true;
+          pHash[item[0]] = item[1];
+        });
       }
+
+      if (n) {
+        n.forEach(function (item) {
+          keyHash[item[0]] = true;
+          nHash[item[0]] = item[1];
+        });
+      }
+
+      var v = {},
+          hasChange; // 只有blur支持px/rem/vw/vh，其余都是特殊固定单位
+
+      Object.keys(keyHash).forEach(function (k) {
+        if (k === 'blur') {
+          if (!pHash[k]) {
+            v[k] = nHash[k].slice(0);
+            hasChange = true;
+          } else if (!nHash[k]) {
+            v[k] = [-pHash[k][0], pHash[k][1]];
+            hasChange = true;
+          } else {
+            var v2 = calByUnit(pHash[k], nHash[k], 0, target.root);
+            v[k] = [v2, pHash[k][1]];
+            hasChange = true;
+          }
+        } else if (k === 'hue-rotate') {
+          var nv = isNil$5(nHash[k]) ? 0 : nHash[k][0];
+          var pv = isNil$5(pHash[k]) ? 0 : pHash[k][0];
+
+          if (pv !== nv) {
+            v[k] = [nv - pv, PERCENT$6];
+            hasChange = true;
+          }
+        } else if (k === 'saturate' || k === 'brightness') {
+          var _nv = isNil$5(nHash[k]) ? 100 : nHash[k][0];
+
+          var _pv = isNil$5(pHash[k]) ? 100 : pHash[k][0];
+
+          if (_pv !== _nv) {
+            v[k] = [_nv - _pv, PERCENT$6];
+            hasChange = true;
+          }
+        }
+      });
+
+      if (!hasChange) {
+        return;
+      }
+
+      res[1] = v;
     } else if (k === TRANSFORM_ORIGIN$3) {
       res[1] = [];
 
@@ -13435,8 +13491,9 @@
         if (pi[1] === ni[1]) {
           res[1].push(ni[0] - pi[0]);
         } else {
-          var v = calByUnit(pi, ni, target[i ? 'outerHeight' : 'outerWidth'], target.root);
-          res[1].push(v || 0);
+          var _v = calByUnit(pi, ni, target[i ? 'outerHeight' : 'outerWidth'], target.root);
+
+          res[1].push(_v || 0);
         }
       }
 
@@ -13457,14 +13514,14 @@
         }
 
         if (_pi[1] === _ni[1]) {
-          var _v = _ni[0] - _pi[0];
+          var _v2 = _ni[0] - _pi[0];
 
-          if (!_v) {
+          if (!_v2) {
             res[1].push(null);
             return;
           }
 
-          res[1].push(_v);
+          res[1].push(_v2);
         } else {
           var k2 = k === BACKGROUND_POSITION_X$2 ? 'offsetWidth' : 'offsetHeight';
 
@@ -13474,14 +13531,14 @@
             k2 = k === BACKGROUND_POSITION_X$2 ? 'width' : 'height';
           }
 
-          var _v2 = calByUnit(_pi, _ni, target[k2], target.root);
+          var _v3 = calByUnit(_pi, _ni, target[k2], target.root);
 
-          if (!_v2) {
+          if (!_v3) {
             res[1].push(null);
             return;
           }
 
-          res[1].push(_v2);
+          res[1].push(_v3);
         }
       }
     } else if (k === BOX_SHADOW$1) {
@@ -13490,10 +13547,10 @@
       for (var _i2 = 0, len = Math.min(p.length, n.length); _i2 < len; _i2++) {
         var a = p[_i2];
         var b = n[_i2];
-        var _v3 = []; // x/y/blur/spread
+        var _v4 = []; // x/y/blur/spread
 
         for (var j = 0; j < 4; j++) {
-          _v3.push(b[j] - a[j]);
+          _v4.push(b[j] - a[j]);
         } // rgba
 
 
@@ -13503,27 +13560,27 @@
           c.push(b[4][_j] - a[4][_j]);
         }
 
-        _v3.push(c);
+        _v4.push(c);
 
-        res[1].push(_v3);
+        res[1].push(_v4);
       }
     } else if (EXPAND_HASH$2.hasOwnProperty(k)) {
       if (p[1] === n[1]) {
-        var _v4 = n[0] - p[0];
+        var _v5 = n[0] - p[0];
 
-        if (_v4 === 0) {
-          return;
-        }
-
-        res[1] = _v4;
-      } else {
-        var _v5 = calByUnit(p, n, target[k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight'], target.root);
-
-        if (!_v5) {
+        if (_v5 === 0) {
           return;
         }
 
         res[1] = _v5;
+      } else {
+        var _v6 = calByUnit(p, n, target[k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight'], target.root);
+
+        if (!_v6) {
+          return;
+        }
+
+        res[1] = _v6;
       }
     } else if (k === BACKGROUND_SIZE$1) {
       res[1] = [];
@@ -13558,9 +13615,9 @@
               _k = _i3 ? 'width' : 'height';
             }
 
-            var _v6 = calByUnit(pp, nn, target[_k], target.root);
+            var _v7 = calByUnit(pp, nn, target[_k], target.root);
 
-            temp.push(_v6 || 0);
+            temp.push(_v7 || 0);
           }
         }
 
@@ -13614,9 +13671,9 @@
               if (_a[1][1] === _b[1][1]) {
                 t.push(_b[1][0] - _a[1][0]);
               } else {
-                var _v7 = calByUnit(_a[1], _b[1], clientWidth, target.root);
+                var _v8 = calByUnit(_a[1], _b[1], clientWidth, target.root);
 
-                t.push(_v7 || 0);
+                t.push(_v8 || 0);
               }
             }
 
@@ -13634,23 +13691,23 @@
             }
 
             if (isArrP) {
-              var _v8 = [_ni3.d[0] - _pi3.d[0], _ni3.d[1] - _pi3.d[1], _ni3.d[2] - _pi3.d[2], _ni3.d[3] - _pi3.d[3]];
+              var _v9 = [_ni3.d[0] - _pi3.d[0], _ni3.d[1] - _pi3.d[1], _ni3.d[2] - _pi3.d[2], _ni3.d[3] - _pi3.d[3]];
 
-              if (eq && equalArr$2(_v8, [0, 0, 0, 0])) {
-                res[1].push(null);
-                continue;
-              }
-
-              _temp[1] = _v8;
-            } else {
-              var _v9 = _ni3.d - _pi3.d;
-
-              if (eq && _v9 === 0) {
+              if (eq && equalArr$2(_v9, [0, 0, 0, 0])) {
                 res[1].push(null);
                 continue;
               }
 
               _temp[1] = _v9;
+            } else {
+              var _v10 = _ni3.d - _pi3.d;
+
+              if (eq && _v10 === 0) {
+                res[1].push(null);
+                continue;
+              }
+
+              _temp[1] = _v10;
             }
           } // 径向渐变的位置
           else if (_pi3.k === 'radial') {
@@ -13695,9 +13752,9 @@
                   if (_pp[1] === np[1]) {
                     _temp[2].push(np[0] - _pp[0]);
                   } else {
-                    var _v10 = calByUnit(_pp, np, target[_i7 ? 'clientWidth' : 'clientHeight'], target.root);
+                    var _v11 = calByUnit(_pp, np, target[_i7 ? 'clientWidth' : 'clientHeight'], target.root);
 
-                    _temp[2].push(_v10 || 0);
+                    _temp[2].push(_v11 || 0);
                   }
                 }
 
@@ -13717,9 +13774,9 @@
                 if (_pp2[1] === _np[1]) {
                   _temp[2].push(_np[0] - _pp2[0]);
                 } else {
-                  var _v11 = calByUnit(_pp2, _np, target[_i8 ? 'clientWidth' : 'clientHeight'], target.root);
+                  var _v12 = calByUnit(_pp2, _np, target[_i8 ? 'clientWidth' : 'clientHeight'], target.root);
 
-                  _temp[2].push(_v11 || 0);
+                  _temp[2].push(_v12 || 0);
                 }
               }
 
@@ -13759,9 +13816,9 @@
         if (n[_i9][1] === p[_i9][1]) {
           res[1].push(n[_i9][0] - p[_i9][0]);
         } else {
-          var _v12 = calByUnit(p[_i9], n[_i9], target[_i9 ? 'outerHeight' : 'outerWidth'], target.root);
+          var _v13 = calByUnit(p[_i9], n[_i9], target[_i9 ? 'outerHeight' : 'outerWidth'], target.root);
 
-          res[1].push(_v12 || 0);
+          res[1].push(_v13 || 0);
         }
       }
     } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
@@ -13827,17 +13884,17 @@
             res[1] = [];
 
             for (var _i11 = 0, _len3 = Math.min(p.length, n.length); _i11 < _len3; _i11++) {
-              var _pv = p[_i11];
-              var _nv = n[_i11];
+              var _pv2 = p[_i11];
+              var _nv2 = n[_i11];
 
-              if (isNil$5(_pv) || isNil$5(_nv)) {
+              if (isNil$5(_pv2) || isNil$5(_nv2)) {
                 res[1].push(null);
               } else {
                 var v2 = [];
 
-                for (var _j3 = 0, len2 = Math.min(_pv.length, _nv.length); _j3 < len2; _j3++) {
-                  var pv2 = _pv[_j3];
-                  var nv2 = _nv[_j3];
+                for (var _j3 = 0, len2 = Math.min(_pv2.length, _nv2.length); _j3 < len2; _j3++) {
+                  var pv2 = _pv2[_j3];
+                  var nv2 = _nv2[_j3];
 
                   if (isNil$5(pv2) || isNil$5(nv2)) {
                     v2.push(null);
@@ -13870,13 +13927,13 @@
             res[1] = [];
 
             for (var _i12 = 0, _len4 = Math.min(p.length, n.length); _i12 < _len4; _i12++) {
-              var _pv2 = p[_i12];
-              var _nv2 = n[_i12];
+              var _pv3 = p[_i12];
+              var _nv3 = n[_i12];
 
-              if (isNil$5(_pv2) || isNil$5(_nv2)) {
+              if (isNil$5(_pv3) || isNil$5(_nv3)) {
                 res[1].push(null);
               } else {
-                res[1].push([_nv2[0] - _pv2[0], _nv2[1] - _pv2[1]]);
+                res[1].push([_nv3[0] - _pv3[0], _nv3[1] - _pv3[1]]);
               }
             }
           } else {
@@ -13884,20 +13941,20 @@
               return;
             }
 
-            var _v13 = [];
+            var _v14 = [];
 
             for (var _i13 = 0, _len5 = Math.min(p.length, n.length); _i13 < _len5; _i13++) {
-              var _pv3 = p[_i13];
-              var _nv3 = n[_i13];
+              var _pv4 = p[_i13];
+              var _nv4 = n[_i13];
 
-              if (isNil$5(_pv3) || isNil$5(_nv3)) {
-                _v13.push(0);
+              if (isNil$5(_pv4) || isNil$5(_nv4)) {
+                _v14.push(0);
               }
 
-              _v13.push(_nv3 - _pv3);
+              _v14.push(_nv4 - _pv4);
             }
 
-            res[1] = _v13;
+            res[1] = _v14;
           }
         } // 非multi特殊处理这几类数组类型数据
         else if (k === 'points' || k === 'controls') {
@@ -13908,26 +13965,26 @@
             res[1] = [];
 
             for (var _i14 = 0, _len6 = Math.min(p.length, n.length); _i14 < _len6; _i14++) {
-              var _pv4 = p[_i14];
-              var _nv4 = n[_i14];
+              var _pv5 = p[_i14];
+              var _nv5 = n[_i14];
 
-              if (isNil$5(_pv4) || isNil$5(_nv4)) {
+              if (isNil$5(_pv5) || isNil$5(_nv5)) {
                 res[1].push(null);
               } else {
-                var _v14 = [];
+                var _v15 = [];
 
-                for (var _j4 = 0, _len7 = Math.max(_pv4.length, _nv4.length); _j4 < _len7; _j4++) {
-                  var _pv5 = _pv4[_j4];
-                  var _nv5 = _nv4[_j4]; // control由4点变2点
+                for (var _j4 = 0, _len7 = Math.max(_pv5.length, _nv5.length); _j4 < _len7; _j4++) {
+                  var _pv6 = _pv5[_j4];
+                  var _nv6 = _nv5[_j4]; // control由4点变2点
 
-                  if (isNil$5(_pv5) || isNil$5(_nv5)) {
-                    _v14.push(0);
+                  if (isNil$5(_pv6) || isNil$5(_nv6)) {
+                    _v15.push(0);
                   } else {
-                    _v14.push(_nv5 - _pv5);
+                    _v15.push(_nv6 - _pv6);
                   }
                 }
 
-                res[1].push(_v14);
+                res[1].push(_v15);
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
@@ -14060,12 +14117,34 @@
           st[0] += v * percent;
         }
       } else if (k === FILTER$1) {
-        // 只有1个样式声明了filter另外一个为空
+        // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
         if (!st) {
-          st = style[k] = [['blur', 0]];
-        }
+          st = style[k] = [];
+        } // 将已有的样式按key存入引用来操作
 
-        st[0][1] += v * percent;
+
+        var hash = {};
+        st.forEach(function (item) {
+          hash[item[0]] = item[1];
+        });
+        Object.keys(v).forEach(function (k) {
+          if (hash.hasOwnProperty(k)) {
+            hash[k][0] += v[k][0] * percent;
+          } else {
+            // 2个关键帧中有1个未声明，需新建样式存入
+            if (k === 'blur' || k === 'hue-rotate') {
+              var n = v[k].slice(0);
+              n[0] *= percent;
+              st.push([k, n]);
+            } // 默认值是1而非0
+            else if (k === 'saturate' || k === 'brightness') {
+                var _n = v[k].slice(0);
+
+                _n[0] = 100 + _n[0] * percent;
+                st.push([k, _n]);
+              }
+          }
+        });
       } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
         for (var _i16 = 0; _i16 < 2; _i16++) {
           st[_i16][0] += v[_i16] * percent;
@@ -14111,11 +14190,11 @@
             return;
           }
 
-          var _v15 = _slicedToArray(v2, 4),
-              c = _v15[0],
-              d = _v15[1],
-              p = _v15[2],
-              z = _v15[3];
+          var _v16 = _slicedToArray(v2, 4),
+              c = _v16[0],
+              d = _v16[1],
+              p = _v16[2],
+              z = _v16[3];
 
           if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
             for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
@@ -14214,10 +14293,10 @@
                 if (!isNil$5(item) && !isNil$5(st2)) {
                   for (var _i20 = 0, _len11 = Math.min(st2.length, item.length); _i20 < _len11; _i20++) {
                     var _o = st2[_i20];
-                    var _n = item[_i20];
+                    var _n2 = item[_i20];
 
-                    if (!isNil$5(_o) && !isNil$5(_n)) {
-                      st2[_i20] += _n * percent;
+                    if (!isNil$5(_o) && !isNil$5(_n2)) {
+                      st2[_i20] += _n2 * percent;
                     }
                   }
                 }
@@ -14233,12 +14312,12 @@
             if (k === 'points' || k === 'controls') {
               for (var _i21 = 0, _len12 = Math.min(_st.length, v.length); _i21 < _len12; _i21++) {
                 var _o2 = _st[_i21];
-                var _n2 = v[_i21];
+                var _n3 = v[_i21];
 
-                if (!isNil$5(_o2) && !isNil$5(_n2)) {
-                  for (var _j7 = 0, _len13 = Math.min(_o2.length, _n2.length); _j7 < _len13; _j7++) {
-                    if (!isNil$5(_o2[_j7]) && !isNil$5(_n2[_j7])) {
-                      _o2[_j7] += _n2[_j7] * percent;
+                if (!isNil$5(_o2) && !isNil$5(_n3)) {
+                  for (var _j7 = 0, _len13 = Math.min(_o2.length, _n3.length); _j7 < _len13; _j7++) {
+                    if (!isNil$5(_o2[_j7]) && !isNil$5(_n3[_j7])) {
+                      _o2[_j7] += _n3[_j7] * percent;
                     }
                   }
                 }
@@ -26878,7 +26957,7 @@
           k = _item2[0],
           v = _item2[1];
 
-      if (k === 'blur') {
+      if (k === 'blur' && v[0] > 0) {
         var res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
 
         if (res) {
@@ -28716,11 +28795,15 @@
 
         if (filter.length) {
           if (!__cacheFilter || !__cacheFilter.available || needGen) {
+            var old = target;
             target = genFilterWebgl(gl, texCache, node, target, filter, width, height);
-            needGen = true;
 
-            if (!limitCache) {
-              __config[NODE_CACHE_FILTER$2] = target;
+            if (target !== old) {
+              needGen = true;
+
+              if (!limitCache) {
+                __config[NODE_CACHE_FILTER$2] = target;
+              }
             }
           }
         }

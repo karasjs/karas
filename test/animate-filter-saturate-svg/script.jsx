@@ -1,6 +1,6 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <span ref="t" style={{position:'absolute',left:0,top:0,background:'#F00'}}>1</span>
+    <div ref="t" style={{width:50,height:50,background:'#F00'}}/>
   </svg>,
   '#test'
 );
@@ -9,7 +9,7 @@ let animation = t.animate([
   {
   },
   {
-    filter: 'blur(5)',
+    filter: 'saturate(50%)',
   }
 ], {
   duration: 200,
@@ -23,7 +23,7 @@ animation.on('frame', () => {
     input.value = t.getComputedStyle().filter;
   }
   else if(n === 2) {
-    input.value += '/' + (t.getComputedStyle().filter[0][1] > 0);
+    input.value += '/' + (t.getComputedStyle().filter[0][1] < 100);
   }
 });
 animation.on('finish', () => {

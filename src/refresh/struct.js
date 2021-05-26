@@ -604,7 +604,7 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
   let mockCache = cache;
   filter.forEach(item => {
     let [k, v] = item;
-    if(k === 'blur') {
+    if(k === 'blur' && v[0] > 0) {
       let res = genBlurWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
       if(res) {
         [mockCache, width, height, bbox] = res;
@@ -2201,10 +2201,13 @@ function renderWebgl(renderMode, gl, root) {
       }
       if(filter.length) {
         if(!__cacheFilter || !__cacheFilter.available || needGen) {
+          let old = target;
           target = genFilterWebgl(gl, texCache, node, target, filter, width, height);
-          needGen = true;
-          if(!limitCache) {
-            __config[NODE_CACHE_FILTER] = target;
+          if(target !== old) {
+            needGen = true;
+            if(!limitCache) {
+              __config[NODE_CACHE_FILTER] = target;
+            }
           }
         }
       }

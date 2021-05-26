@@ -294,16 +294,59 @@ function calDiff(prev, next, k, target, tagName) {
     return res;
   }
   else if(k === FILTER) {
-    // 目前只有1个blur，可以简单处理
-    if(!p || !p.length) {
-      res[1] = n[0][1];
+    // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
+    let pHash = {}, nHash = {}, keyHash = {};
+    if(p) {
+      p.forEach(item => {
+        keyHash[item[0]] = true;
+        pHash[item[0]] = item[1];
+      });
     }
-    else if(!n || !n.length) {
-      res[1] = -p[0][1];
+    if(n) {
+      n.forEach(item => {
+        keyHash[item[0]] = true;
+        nHash[item[0]] = item[1];
+      })
     }
-    else {
-      res[1] = n[0][1] - p[0][1];
+    let v = {}, hasChange;
+    // 只有blur支持px/rem/vw/vh，其余都是特殊固定单位
+    Object.keys(keyHash).forEach(k => {
+      if(k === 'blur') {
+        if(!pHash[k]) {
+          v[k] = nHash[k].slice(0);
+          hasChange = true;
+        }
+        else if(!nHash[k]) {
+          v[k] = [-pHash[k][0], pHash[k][1]];
+          hasChange = true;
+        }
+        else {
+          let v2 = calByUnit(pHash[k], nHash[k], 0, target.root);
+          v[k] = [v2, pHash[k][1]];
+          hasChange = true;
+        }
+      }
+      else if(k === 'hue-rotate') {
+        let nv = isNil(nHash[k]) ? 0 : nHash[k][0];
+        let pv = isNil(pHash[k]) ? 0 : pHash[k][0];
+        if(pv !== nv) {
+          v[k] = [nv - pv, PERCENT];
+          hasChange = true;
+        }
+      }
+      else if(k === 'saturate' || k === 'brightness') {
+        let nv = isNil(nHash[k]) ? 100 : nHash[k][0];
+        let pv = isNil(pHash[k]) ? 100 : pHash[k][0];
+        if(pv !== nv) {
+          v[k] = [nv - pv, PERCENT];
+          hasChange = true;
+        }
+      }
+    });
+    if(!hasChange) {
+      return;
     }
+    res[1] = v;
   }
   else if(k === TRANSFORM_ORIGIN) {
     res[1] = [];
@@ -893,11 +936,34 @@ function calIntermediateStyle(frame, keys, percent, target) {
       }
     }
     else if(k === FILTER) {
-      // 只有1个样式声明了filter另外一个为空
+      // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
       if(!st) {
-        st = style[k] = [['blur', 0]];
+        st = style[k] = [];
       }
-      st[0][1] += v * percent;
+      // 将已有的样式按key存入引用来操作
+      let hash = {};
+      st.forEach(item => {
+        hash[item[0]] = item[1];
+      });
+      Object.keys(v).forEach(k => {
+        if(hash.hasOwnProperty(k)) {
+          hash[k][0] += v[k][0] * percent;
+        }
+        else {
+          // 2个关键帧中有1个未声明，需新建样式存入
+          if(k === 'blur' || k === 'hue-rotate') {
+            let n = v[k].slice(0);
+            n[0] *= percent;
+            st.push([k, n]);
+          }
+          // 默认值是1而非0
+          else if(k === 'saturate' || k === 'brightness') {
+            let n = v[k].slice(0);
+            n[0] = 100 + n[0] * percent;
+            st.push([k, n]);
+          }
+        }
+      });
     }
     else if(RADIUS_HASH.hasOwnProperty(k)) {
       for(let i = 0; i < 2; i++) {

@@ -7,6 +7,7 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
+    filter: 'blur(0.1rem)',
   },
   {
     filter: 'blur(5)',
@@ -21,9 +22,6 @@ animation.on('frame', () => {
   n++;
   if(n === 1) {
     input.value = t.getComputedStyle().filter;
-  }
-  else if(n === 2) {
-    input.value += '/' + (t.getComputedStyle().filter[0][1] > 0);
   }
 });
 animation.on('finish', () => {

@@ -724,23 +724,11 @@ function genHueRotateWebgl(gl, texCache, cache, deg, width, height, sx1, sy1, bb
   let rotation = geom.d2r(deg % 360);
   let cosR = Math.cos(rotation);
   let sinR = Math.sin(rotation);
-  let sqrt = Math.sqrt;
-  let w = 1 / 3;
-  let sqrW = sqrt(w); // weight is
-  let a00 = cosR + ((1.0 - cosR) * w);
-  let a01 = (w * (1.0 - cosR)) - (sqrW * sinR);
-  let a02 = (w * (1.0 - cosR)) + (sqrW * sinR);
-  let a10 = (w * (1.0 - cosR)) + (sqrW * sinR);
-  let a11 = cosR + (w * (1.0 - cosR));
-  let a12 = (w * (1.0 - cosR)) - (sqrW * sinR);
-  let a20 = (w * (1.0 - cosR)) - (sqrW * sinR);
-  let a21 = (w * (1.0 - cosR)) + (sqrW * sinR);
-  let a22 = cosR + (w * (1.0 - cosR));
   gl.useProgram(gl.programCm);
   webgl.drawCm(gl, gl.programCm, j, [
-    a00, a01, a02, 0, 0,
-    a10, a11, a12, 0, 0,
-    a20, a21, a22, 0, 0,
+    0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0,
+    0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0,
+    0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0,
     0, 0, 0, 1, 0,
   ]);
   texCache.releaseLockChannel(j);
@@ -767,15 +755,12 @@ function genSaturateWebgl(gl, texCache, cache, percent, width, height, sx1, sy1,
   else {
     texCache.lockChannel(j);
   }
-  let sat = percent * 0.01;
-  let r = 0.213 * sat;
-  let g = 0.715 * sat;
-  let b = 0.072 * sat;
+  let amount = percent * 0.01;
   gl.useProgram(gl.programCm);
   webgl.drawCm(gl, gl.programCm, j, [
-    r + sat, g, b, 0, 0,
-    r, g + sat, b, 0, 0,
-    r, g, b + sat, 0, 0,
+    0.213 + 0.787 * amount,  0.715 - 0.715 * amount, 0.072 - 0.072 * amount, 0, 0,
+    0.213 - 0.213 * amount,  0.715 + 0.285 * amount, 0.072 - 0.072 * amount, 0, 0,
+    0.213 - 0.213 * amount,  0.715 - 0.715 * amount, 0.072 + 0.928 * amount, 0, 0,
     0, 0, 0, 1, 0,
   ]);
   texCache.releaseLockChannel(j);

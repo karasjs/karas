@@ -27063,21 +27063,8 @@
     var rotation = geom.d2r(deg % 360);
     var cosR = Math.cos(rotation);
     var sinR = Math.sin(rotation);
-    var sqrt = Math.sqrt;
-    var w = 1 / 3;
-    var sqrW = sqrt(w); // weight is
-
-    var a00 = cosR + (1.0 - cosR) * w;
-    var a01 = w * (1.0 - cosR) - sqrW * sinR;
-    var a02 = w * (1.0 - cosR) + sqrW * sinR;
-    var a10 = w * (1.0 - cosR) + sqrW * sinR;
-    var a11 = cosR + w * (1.0 - cosR);
-    var a12 = w * (1.0 - cosR) - sqrW * sinR;
-    var a20 = w * (1.0 - cosR) - sqrW * sinR;
-    var a21 = w * (1.0 - cosR) + sqrW * sinR;
-    var a22 = cosR + w * (1.0 - cosR);
     gl.useProgram(gl.programCm);
-    webgl.drawCm(gl, gl.programCm, j, [a00, a01, a02, 0, 0, a10, a11, a12, 0, 0, a20, a21, a22, 0, 0, 0, 0, 0, 1, 0]);
+    webgl.drawCm(gl, gl.programCm, j, [0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0, 0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0, 0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0, 0, 0, 0, 1, 0]);
     texCache.releaseLockChannel(j); // 切回
 
     gl.useProgram(gl.program);
@@ -27108,12 +27095,9 @@
       texCache.lockChannel(j);
     }
 
-    var sat = percent * 0.01;
-    var r = 0.213 * sat;
-    var g = 0.715 * sat;
-    var b = 0.072 * sat;
+    var amount = percent * 0.01;
     gl.useProgram(gl.programCm);
-    webgl.drawCm(gl, gl.programCm, j, [r + sat, g, b, 0, 0, r, g + sat, b, 0, 0, r, g, b + sat, 0, 0, 0, 0, 0, 1, 0]);
+    webgl.drawCm(gl, gl.programCm, j, [0.213 + 0.787 * amount, 0.715 - 0.715 * amount, 0.072 - 0.072 * amount, 0, 0, 0.213 - 0.213 * amount, 0.715 + 0.285 * amount, 0.072 - 0.072 * amount, 0, 0, 0.213 - 0.213 * amount, 0.715 - 0.715 * amount, 0.072 + 0.928 * amount, 0, 0, 0, 0, 0, 1, 0]);
     texCache.releaseLockChannel(j); // 切回
 
     gl.useProgram(gl.program);

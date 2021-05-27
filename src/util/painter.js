@@ -110,33 +110,8 @@ function canvasFilter(filter) {
     else if(k === 'hue-rotate') {
       s += `hue-rotate(${v}deg)`;
     }
-    else if(k === 'saturate') {
-      s += `saturate(${v}%)`;
-    }
-    else if(k === 'brightness') {
-      s += `brightness(${v}%)`;
-    }
-  });
-  return s;
-}
-
-function svgFilter(filter) {
-  let s = '';
-  filter.forEach(item => {
-    let [k, v] = item;
-    if(v) {
-      if(k === 'blur') {
-        s += `blur(${v}px)`;
-      }
-      else if(k === 'hue-rotate') {
-        s += `hue-rotate(${v}deg)`;
-      }
-      else if(k === 'saturate') {
-        s += `saturate(${v}%)`;
-      }
-      else if(k === 'brightness') {
-        s += `brightness(${v}%)`;
-      }
+    else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
+      s += `${k}(${v}%)`;
     }
   });
   return s;
@@ -148,5 +123,5 @@ export default {
   canvasLine,
   svgLine,
   canvasFilter,
-  svgFilter,
+  svgFilter: canvasFilter,
 };

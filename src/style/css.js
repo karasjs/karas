@@ -820,15 +820,7 @@ function normalize(style, reset = []) {
             v[1] = DEG;
             f.push([k, v]);
           }
-          else if(k === 'saturate') {
-            if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
-              return;
-            }
-            v[0] = Math.max(v[0], 0);
-            v[1] = PERCENT;
-            f.push([k, v]);
-          }
-          else if(k === 'brightness') {
+          else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
             if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
               return;
             }

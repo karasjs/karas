@@ -1331,14 +1331,10 @@ class Xom extends Node {
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {
-      // width,
-      // height,
       clientWidth,
       clientHeight,
       offsetWidth,
       offsetHeight,
-      // outerWidth,
-      // outerHeight,
       __hasMask,
     } = this;
     let {

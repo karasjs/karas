@@ -238,6 +238,11 @@
 * filter
   * null 默认
   * blur
+  * hue-rotate
+  * saturate
+  * brightness
+  * grayscale
+  * contrast
 * pointerEvents
   * inherit 默认
   * none

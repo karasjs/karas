@@ -13253,6 +13253,16 @@
       } else if (n[1] === VH$5) {
         return n[0] * root.height * 0.01 - p[0];
       }
+    } else if (p[1] === PERCENT$6) {
+      if (n[1] === PX$5) {
+        return n[0] * 100 / container - p[0];
+      } else if (n[1] === REM$5) {
+        return n[0] * root.computedStyle[FONT_SIZE$7] * 100 / container - p[0];
+      } else if (n[1] === VW$5) {
+        return n[0] * root.width / container - p[0];
+      } else if (n[1] === VH$5) {
+        return n[0] * root.height / container - p[0];
+      }
     } else if (p[1] === REM$5) {
       if (n[1] === PX$5) {
         return n[0] / root.computedStyle[FONT_SIZE$7] - p[0];
@@ -14592,7 +14602,8 @@
         }); // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的当前样式currentStyle
 
         var keys = unify(frames, target);
-        inherit(frames, keys, target); // 存储原本样式以便恢复用
+        inherit(frames, keys, target);
+        var framesR = clone$3(frames).reverse(); // 存储原本样式以便恢复用
 
         var style = target.style,
             props = target.props;
@@ -14614,7 +14625,6 @@
         } // 反向存储帧的倒排结果
 
 
-        var framesR = clone$3(frames).reverse();
         framesR.forEach(function (item) {
           item[FRAME_TIME] = duration - item[FRAME_TIME];
           item[FRAME_TRANSITION] = [];

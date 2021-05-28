@@ -202,6 +202,20 @@ function calByUnit(p, n, container, root) {
       return n[0] * root.height * 0.01 - p[0];
     }
   }
+  else if(p[1] === PERCENT) {
+    if(n[1] === PX) {
+      return n[0] * 100 / container - p[0];
+    }
+    else if(n[1] === REM) {
+      return n[0] * root.computedStyle[FONT_SIZE] * 100 / container - p[0];
+    }
+    else if(n[1] === VW) {
+      return n[0] * root.width / container - p[0];
+    }
+    else if(n[1] === VH) {
+      return n[0] * root.height / container - p[0];
+    }
+  }
   else if(p[1] === REM) {
     if(n[1] === PX) {
       return n[0] / root.computedStyle[FONT_SIZE] - p[0];
@@ -1453,6 +1467,7 @@ class Animation extends Event {
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的当前样式currentStyle
     let keys = unify(frames, target);
     inherit(frames, keys, target);
+    let framesR = clone(frames).reverse();
     // 存储原本样式以便恢复用
     let { style, props } = target;
     let originStyle = {};
@@ -1470,7 +1485,6 @@ class Animation extends Event {
       prev = calFrame(prev, next, keys, target, tagName);
     }
     // 反向存储帧的倒排结果
-    let framesR = clone(frames).reverse();
     framesR.forEach(item => {
       item[FRAME_TIME] = duration - item[FRAME_TIME];
       item[FRAME_TRANSITION] = [];

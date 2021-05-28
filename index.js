@@ -14805,25 +14805,22 @@
 
         __config[I_FIRST_ENTER] = false; // delay仅第一次生效
 
-        if (playCount > 0) ; // 还没过前置delay
-        else if (currentTime < delay) {
-            if (stayBegin) {
-              var _currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
+        if (playCount === 0 && currentTime < delay) {
+          if (stayBegin) {
+            var _currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
 
-              var _current = _currentFrame[FRAME_STYLE];
-              genBeforeRefresh(_current, __config[I_KEYS], __config, root, target);
-            } // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
-
-
-            __config[I_OUT_BEGIN_DELAY] = true;
-            __config[I_IS_DELAY] = true;
-            return;
-          } // 减去delay，计算在哪一帧，仅第一次生效
+            var _current = _currentFrame[FRAME_STYLE];
+            genBeforeRefresh(_current, __config[I_KEYS], __config, root, target);
+          } // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
 
 
-        if (playCount === 0) {
-          currentTime -= delay;
-        }
+          __config[I_OUT_BEGIN_DELAY] = true;
+          __config[I_IS_DELAY] = true;
+          return;
+        } // 减去delay，计算在哪一帧
+
+
+        currentTime -= delay;
 
         if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
           __config[I_OUT_BEGIN_DELAY] = false;

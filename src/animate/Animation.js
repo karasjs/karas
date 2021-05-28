@@ -1632,11 +1632,7 @@ class Animation extends Event {
     }
     __config[I_FIRST_ENTER] = false;
     // delay仅第一次生效
-    if(playCount > 0) {
-      // delay = 0;
-    }
-    // 还没过前置delay
-    else if(currentTime < delay) {
+    if(playCount === 0 && currentTime < delay) {
       if(stayBegin) {
         let currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
         let current = currentFrame[FRAME_STYLE];
@@ -1647,10 +1643,8 @@ class Animation extends Event {
       __config[I_IS_DELAY] = true;
       return;
     }
-    // 减去delay，计算在哪一帧，仅第一次生效
-    if(playCount === 0) {
-      currentTime -= delay;
-    }
+    // 减去delay，计算在哪一帧
+    currentTime -= delay;
     if(currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
       __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;

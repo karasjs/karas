@@ -856,7 +856,7 @@
             d4 = _m2[15];
 
         var w = x * d1 + y * d2 + z * d3 + d4;
-        return [(x * a1 + y * a2 + z * a3 + a4) / w, (x * b1 + y * b2 + z * b3 + b4) / w, (x * c1 + y * c2 + z * c3 + c4) / w];
+        return [x * a1 + y * a2 + z * a3 + a4, x * b1 + y * b2 + z * b3 + b4, x * c1 + y * c2 + z * c3 + c4, w];
       }
     }
 
@@ -24920,15 +24920,69 @@
     return Geom;
   }(Xom$1);
 
+  var TYPE_VD$2 = $$type.TYPE_VD,
+      TYPE_GM$2 = $$type.TYPE_GM,
+      TYPE_CP$2 = $$type.TYPE_CP;
+  /**
+   * 2. 打平children中的数组，变成一维
+   * 3. 合并相连的Text节点，即string内容
+   */
+
+  function flattenJson$1(parent) {
+    if (Array.isArray(parent)) {
+      return parent.map(function (item) {
+        return flattenJson$1(item);
+      });
+    } else if (!parent || [TYPE_VD$2, TYPE_GM$2, TYPE_CP$2].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
+      return parent;
+    }
+
+    var list = [];
+    traverseJson$1(list, parent.children, {
+      lastText: null
+    });
+    parent.children = list;
+    return parent;
+  }
+
+  function traverseJson$1(list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        traverseJson$1(list, item, options);
+      });
+    } else if (children && (children.$$type === TYPE_VD$2 || children.$$type === TYPE_GM$2)) {
+      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg/webgl');
+      }
+
+      if (children.$$type === TYPE_VD$2) {
+        flattenJson$1(children);
+      }
+
+      list.push(children);
+      options.lastText = null;
+    } else if (children && children.$$type === TYPE_CP$2) {
+      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+
+      options.lastText = null;
+    } // 排除掉空的文本，连续的text合并
+    else if (!util.isNil(children) && children !== '') {
+        if (options.lastText !== null) {
+          list[list.length - 1] = options.lastText += children;
+        } else {
+          list.push(children);
+        }
+      }
+  }
+
   var _enums$NODE_KEY$8 = enums.NODE_KEY,
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_DOM_PARENT$4 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_MATRIX_EVENT$3 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
       NODE_STRUCT$3 = _enums$NODE_KEY$8.NODE_STRUCT;
-  var TYPE_VD$2 = $$type.TYPE_VD,
-      TYPE_GM$2 = $$type.TYPE_GM,
-      TYPE_CP$2 = $$type.TYPE_CP;
-  var Xom$2, Dom$2, Img$2, Geom$2, Component$2;
+  var TYPE_VD$3 = $$type.TYPE_VD,
+      TYPE_GM$3 = $$type.TYPE_GM,
+      TYPE_CP$3 = $$type.TYPE_CP;
   var updateList = [];
   var removeList = [];
   var KEY_FLAG = {};
@@ -24937,18 +24991,18 @@
    */
 
   function check(vd) {
-    if (vd instanceof Dom$2) {
+    if (vd instanceof Dom$1) {
       vd.children.forEach(function (child) {
-        if (child instanceof Dom$2) {
+        if (child instanceof Dom$1) {
           check(child);
         } // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
-        else if (child instanceof Component$2 && child.__hasUpdate) {
+        else if (child instanceof Component$1 && child.__hasUpdate) {
             child.__hasUpdate = false;
             checkCp(child, child.props);
           }
       });
     } // 高阶组件会进入此分支，被父组件调用
-    else if (vd instanceof Component$2 && vd.__hasUpdate) {
+    else if (vd instanceof Component$1 && vd.__hasUpdate) {
         vd.__hasUpdate = false;
         checkCp(vd, vd.props);
       }
@@ -25001,7 +25055,7 @@
     var oldS = cp.shadow;
     var oldSr = cp.shadowRoot;
     var oldJson = cp.__cd;
-    var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
+    var json = flattenJson$1(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
 
     diffSr(oldS, oldJson, json);
 
@@ -25010,12 +25064,8 @@
 
     var sr = cp.shadowRoot;
 
-    if (sr instanceof Xom$2) {
-      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', // '__bx1',
-      // '__by1',
-      // '__bx2',
-      // '__by2',
-      '__computedStyle'].forEach(function (k) {
+    if (sr instanceof Xom$1) {
+      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', '__computedStyle'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
       sr.__config[NODE_COMPUTED_STYLE$3] = oldSr.computedStyle;
@@ -25090,7 +25140,7 @@
       var nj = n.json;
       var vd = o.vd; // 相同class的组件进行对比替换
 
-      if (oj.$$type === TYPE_CP$2 && nj.$$type === TYPE_CP$2) {
+      if (oj.$$type === TYPE_CP$3 && nj.$$type === TYPE_CP$3) {
         if (oj.klass === nj.klass) {
           // 对比props和children看是否全等，是则直接替换新json类型为占位符，引用老vd，否则强制更新
           diffCp(oj, nj, vd); // 标识对比过了
@@ -25102,13 +25152,13 @@
       } // 相同类型的vd进行对比继承动画
       else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
           // 需判断矢量标签mutil是否相等
-          if (nj.$$type !== TYPE_GM$2 || oj.props.multi === nj.props.multi) {
+          if (nj.$$type !== TYPE_GM$3 || oj.props.multi === nj.props.multi) {
             nj.inheritAnimate = vd;
           }
 
           oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
 
-          if (nj.$$type === TYPE_VD$2) {
+          if (nj.$$type === TYPE_VD$3) {
             keyList.push({
               vd: vd,
               oj: oj,
@@ -25138,7 +25188,7 @@
 
   function diffChild(vd, oj, nj) {
     if (util.isObject(nj)) {
-      if (nj.$$type === TYPE_CP$2) {
+      if (nj.$$type === TYPE_CP$3) {
         // key对比过了忽略
         if (nj.key === KEY_FLAG) {
           return;
@@ -25150,13 +25200,13 @@
 
           removeCpFromOldTree(vd);
         }
-      } else if (nj.$$type === TYPE_GM$2 && oj.$$type === TYPE_GM$2) {
+      } else if (nj.$$type === TYPE_GM$3 && oj.$$type === TYPE_GM$3) {
         // $geom的multi必须一致
         if (oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
           nj.inheritAnimate = vd;
         }
       } // dom类型递归children
-      else if (nj.$$type === TYPE_VD$2 && oj.$$type === TYPE_VD$2) {
+      else if (nj.$$type === TYPE_VD$3 && oj.$$type === TYPE_VD$3) {
           if (oj.tagName === nj.tagName) {
             nj.inheritAnimate = vd;
           }
@@ -25290,9 +25340,9 @@
         return getKeyHash(item, hash, vd && vd[i]);
       });
     } else if (util.isObject(json)) {
-      if (json.$$type === TYPE_VD$2 || json.$$type === TYPE_GM$2 || json.$$type === TYPE_CP$2) {
+      if (json.$$type === TYPE_VD$3 || json.$$type === TYPE_GM$3 || json.$$type === TYPE_CP$3) {
         // 深度优先
-        if (json.$$type === TYPE_VD$2) {
+        if (json.$$type === TYPE_VD$3) {
           getKeyHash(json.children, hash, vd && vd.children);
         }
 
@@ -25356,13 +25406,6 @@
   }
 
   var updater = {
-    ref: function ref(o) {
-      Xom$2 = o.Xom;
-      Dom$2 = o.Dom;
-      Img$2 = o.Img;
-      Geom$2 = o.Geom;
-      Component$2 = o.Component;
-    },
     updateList: updateList,
     check: check,
     did: did
@@ -33726,9 +33769,9 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var TYPE_VD$3 = $$type.TYPE_VD,
-      TYPE_GM$3 = $$type.TYPE_GM,
-      TYPE_CP$3 = $$type.TYPE_CP;
+  var TYPE_VD$4 = $$type.TYPE_VD,
+      TYPE_GM$4 = $$type.TYPE_GM,
+      TYPE_CP$4 = $$type.TYPE_CP;
   var isNil$f = util.isNil,
       isFunction$8 = util.isFunction,
       isPrimitive = util.isPrimitive,
@@ -33981,7 +34024,7 @@
     } else if (/^[A-Z]/.test(tagName)) {
       var cp = Component$1.getRegister(tagName);
       vd = karas.createCp(cp, props, children.map(function (item) {
-        if (item && [TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
+        if (item && [TYPE_VD$4, TYPE_GM$4, TYPE_CP$4].indexOf(item.$$type) > -1) {
           return item;
         }
 
@@ -33989,7 +34032,7 @@
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        if (item && [TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
+        if (item && [TYPE_VD$4, TYPE_GM$4, TYPE_CP$4].indexOf(item.$$type) > -1) {
           return item;
         }
 
@@ -34240,13 +34283,6 @@
 
   };
   builder.ref({
-    Xom: Xom$1,
-    Dom: Dom$1,
-    Img: Img$1,
-    Geom: Geom$1,
-    Component: Component$1
-  });
-  updater.ref({
     Xom: Xom$1,
     Dom: Dom$1,
     Img: Img$1,

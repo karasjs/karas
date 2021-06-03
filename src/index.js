@@ -131,13 +131,6 @@ builder.ref({
   Geom,
   Component,
 });
-updater.ref({
-  Xom,
-  Dom,
-  Img,
-  Geom,
-  Component,
-});
 
 if(typeof window !== 'undefined') {
   window.karas = karas;

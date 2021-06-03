@@ -1,6 +1,9 @@
+import Xom from '../node/Xom';
+import Dom from '../node/Dom';
+import Component from '../node/Component';
 import util from './util';
 import inject from './inject';
-import builder from './builder';
+import flatten from './flatten';
 import $$type from './$$type';
 import enums from './enums';
 
@@ -13,8 +16,6 @@ const {
   },
 } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
-
-let Xom, Dom, Img, Geom, Component;
 
 let updateList = [];
 let removeList = [];
@@ -89,7 +90,7 @@ function updateCp(cp, props, state) {
   let oldS = cp.shadow;
   let oldSr = cp.shadowRoot;
   let oldJson = cp.__cd;
-  let json = builder.flattenJson(cp.render());
+  let json = flatten(cp.render());
   // 对比新老render()返回的内容，更新后重新生成sr
   diffSr(oldS, oldJson, json);
   cp.__init(json);
@@ -111,10 +112,6 @@ function updateCp(cp, props, state) {
       '__sy4',
       '__sy5',
       '__sy6',
-      // '__bx1',
-      // '__by1',
-      // '__bx2',
-      // '__by2',
       '__computedStyle',
     ].forEach(k => {
       sr[k] = oldSr[k];
@@ -448,13 +445,6 @@ function did() {
 }
 
 export default {
-  ref(o) {
-    Xom = o.Xom;
-    Dom = o.Dom;
-    Img = o.Img;
-    Geom = o.Geom;
-    Component = o.Component;
-  },
   updateList,
   check,
   did,

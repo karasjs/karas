@@ -10077,6 +10077,8 @@
   var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$5.TRANSFORM_ORIGIN,
       TRANSFORM$1 = _enums$STYLE_KEY$5.TRANSFORM,
+      DISPLAY$1 = _enums$STYLE_KEY$5.DISPLAY,
+      VISIBILITY$1 = _enums$STYLE_KEY$5.VISIBILITY,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
@@ -10378,8 +10380,8 @@
           if (source) {
             ctx.globalAlpha = __config[NODE_OPACITY];
             Cache.drawCache(source, cacheMask, __config[NODE_COMPUTED_STYLE][TRANSFORM$1], [1, 0, 0, 1, 0, 0], __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN$2].slice(0), inverse);
-          } // 没有内容或者img没加载成功导致没有内容，有内容则是超限
-          else if (__config[NODE_HAS_CONTENT]) {
+          } // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
+          else if (__config[NODE_HAS_CONTENT] && __config[NODE_COMPUTED_STYLE][DISPLAY$1] !== 'none' && __config[NODE_COMPUTED_STYLE][VISIBILITY$1] !== 'hidden') {
               inject.error('CacheMask is oversize');
             }
         });
@@ -10532,14 +10534,14 @@
   }();
 
   var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
-      DISPLAY$1 = _enums$STYLE_KEY$6.DISPLAY,
+      DISPLAY$2 = _enums$STYLE_KEY$6.DISPLAY,
       LINE_HEIGHT$1 = _enums$STYLE_KEY$6.LINE_HEIGHT,
       FONT_SIZE$5 = _enums$STYLE_KEY$6.FONT_SIZE,
       FONT_FAMILY$2 = _enums$STYLE_KEY$6.FONT_FAMILY,
       FONT_STYLE$2 = _enums$STYLE_KEY$6.FONT_STYLE,
       FONT_WEIGHT$2 = _enums$STYLE_KEY$6.FONT_WEIGHT,
       COLOR$2 = _enums$STYLE_KEY$6.COLOR,
-      VISIBILITY$1 = _enums$STYLE_KEY$6.VISIBILITY,
+      VISIBILITY$2 = _enums$STYLE_KEY$6.VISIBILITY,
       LETTER_SPACING$2 = _enums$STYLE_KEY$6.LETTER_SPACING,
       OVERFLOW = _enums$STYLE_KEY$6.OVERFLOW,
       WHITE_SPACE$1 = _enums$STYLE_KEY$6.WHITE_SPACE,
@@ -10613,7 +10615,7 @@
 
         var bp = this.parent;
 
-        while (bp.currentStyle[DISPLAY$1] === 'inline') {
+        while (bp.currentStyle[DISPLAY$2] === 'inline') {
           bp = bp.domParent;
         }
 
@@ -10760,7 +10762,7 @@
         var __config = this.__config;
         __config[NODE_LIMIT_CACHE] = false; // 空内容w/h都为0可以提前跳出
 
-        if (isDestroyed || currentStyle[DISPLAY$1] === 'none' || !content) {
+        if (isDestroyed || currentStyle[DISPLAY$2] === 'none' || !content) {
           return lineClampCount;
         }
 
@@ -11181,7 +11183,7 @@
             __bp = this.__bp,
             __config = this.__config;
 
-        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden' || !textBoxes.length) {
+        if (isDestroyed || computedStyle[DISPLAY$2] === 'none' || computedStyle[VISIBILITY$2] === 'hidden' || !textBoxes.length) {
           return;
         }
 
@@ -16313,7 +16315,7 @@
       BOTTOM$1 = _enums$STYLE_KEY$c.BOTTOM,
       LEFT = _enums$STYLE_KEY$c.LEFT,
       POSITION$1 = _enums$STYLE_KEY$c.POSITION,
-      DISPLAY$2 = _enums$STYLE_KEY$c.DISPLAY,
+      DISPLAY$3 = _enums$STYLE_KEY$c.DISPLAY,
       WIDTH$3 = _enums$STYLE_KEY$c.WIDTH,
       HEIGHT$3 = _enums$STYLE_KEY$c.HEIGHT,
       MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
@@ -16349,7 +16351,7 @@
       BORDER_RIGHT_COLOR = _enums$STYLE_KEY$c.BORDER_RIGHT_COLOR,
       FONT_STYLE$4 = _enums$STYLE_KEY$c.FONT_STYLE,
       COLOR$4 = _enums$STYLE_KEY$c.COLOR,
-      VISIBILITY$2 = _enums$STYLE_KEY$c.VISIBILITY,
+      VISIBILITY$3 = _enums$STYLE_KEY$c.VISIBILITY,
       POINTER_EVENTS$1 = _enums$STYLE_KEY$c.POINTER_EVENTS,
       BORDER_TOP = _enums$STYLE_KEY$c.BORDER_TOP,
       BORDER_RIGHT = _enums$STYLE_KEY$c.BORDER_RIGHT,
@@ -16644,7 +16646,7 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             __config = this.__config;
-        var display = computedStyle[DISPLAY$2];
+        var display = computedStyle[DISPLAY$3];
         var width = currentStyle[WIDTH$3],
             position = currentStyle[POSITION$1];
         this.clearCache();
@@ -16698,7 +16700,7 @@
 
 
         if (width[1] !== AUTO$3) {
-          if (this.__isRealInline() && currentStyle[DISPLAY$2] === 'inline') {
+          if (this.__isRealInline() && currentStyle[DISPLAY$3] === 'inline') {
             width[0] = 0;
             width[1] = AUTO$3;
           } else {
@@ -16835,7 +16837,7 @@
       key: "__layoutNone",
       value: function __layoutNone() {
         var computedStyle = this.computedStyle;
-        computedStyle[DISPLAY$2] = 'none';
+        computedStyle[DISPLAY$3] = 'none';
         computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$1] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$1] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$1] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$2] = 0;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -16989,7 +16991,7 @@
       key: "__marginAuto",
       value: function __marginAuto(style, data) {
         var position = style[POSITION$1],
-            display = style[DISPLAY$2],
+            display = style[DISPLAY$3],
             marginLeft = style[MARGIN_LEFT$1],
             marginRight = style[MARGIN_RIGHT$1],
             width = style[WIDTH$3];
@@ -17483,13 +17485,13 @@
           __cacheStyle[COLOR$4] = int2rgba$2(computedStyle[COLOR$4]);
         }
 
-        if (currentStyle[VISIBILITY$2][1] === INHERIT$4) {
-          computedStyle[VISIBILITY$2] = parent ? parentComputedStyle[VISIBILITY$2] : 'visible';
-        } else if (isNil$6(__cacheStyle[VISIBILITY$2])) {
-          computedStyle[VISIBILITY$2] = currentStyle[VISIBILITY$2][0];
+        if (currentStyle[VISIBILITY$3][1] === INHERIT$4) {
+          computedStyle[VISIBILITY$3] = parent ? parentComputedStyle[VISIBILITY$3] : 'visible';
+        } else if (isNil$6(__cacheStyle[VISIBILITY$3])) {
+          computedStyle[VISIBILITY$3] = currentStyle[VISIBILITY$3][0];
         }
 
-        __cacheStyle[VISIBILITY$2] = computedStyle[VISIBILITY$2];
+        __cacheStyle[VISIBILITY$3] = computedStyle[VISIBILITY$3];
 
         if (currentStyle[POINTER_EVENTS$1][1] === INHERIT$4) {
           computedStyle[POINTER_EVENTS$1] = parent ? parentComputedStyle[POINTER_EVENTS$1] : 'auto';
@@ -17532,7 +17534,7 @@
             return this.__hasContent;
           }
 
-          var visibility = currentStyle[VISIBILITY$2];
+          var visibility = currentStyle[VISIBILITY$3];
 
           if (visibility !== 'hidden') {
             var bgI = currentStyle[BACKGROUND_IMAGE$1];
@@ -17644,7 +17646,7 @@
           }
         }
 
-        var display = computedStyle[DISPLAY$2]; // canvas返回信息，svg已经初始化好了vd
+        var display = computedStyle[DISPLAY$3]; // canvas返回信息，svg已经初始化好了vd
 
         if (display === 'none') {
           return {
@@ -17796,7 +17798,7 @@
             borderTopRightRadius = computedStyle[BORDER_TOP_RIGHT_RADIUS$1],
             borderBottomRightRadius = computedStyle[BORDER_BOTTOM_RIGHT_RADIUS$1],
             borderBottomLeftRadius = computedStyle[BORDER_BOTTOM_LEFT_RADIUS$1],
-            visibility = computedStyle[VISIBILITY$2],
+            visibility = computedStyle[VISIBILITY$3],
             backgroundRepeat = computedStyle[BACKGROUND_REPEAT],
             backgroundImage = computedStyle[BACKGROUND_IMAGE$1],
             opacity = computedStyle[OPACITY$3],
@@ -18423,7 +18425,7 @@
             computedStyle = this.computedStyle,
             isMask = this.isMask;
 
-        if (isDestroyed || computedStyle[DISPLAY$2] === 'none' || e.__stopPropagation || isMask) {
+        if (isDestroyed || computedStyle[DISPLAY$3] === 'none' || e.__stopPropagation || isMask) {
           return;
         }
 
@@ -19234,7 +19236,7 @@
   }(Node);
 
   var _enums$STYLE_KEY$d = enums.STYLE_KEY,
-      DISPLAY$3 = _enums$STYLE_KEY$d.DISPLAY,
+      DISPLAY$4 = _enums$STYLE_KEY$d.DISPLAY,
       MARGIN_LEFT$2 = _enums$STYLE_KEY$d.MARGIN_LEFT,
       BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
       PADDING_LEFT$3 = _enums$STYLE_KEY$d.PADDING_LEFT,
@@ -19349,7 +19351,7 @@
           while (true) {
             var _list = dom.contentBoxList;
             var _dom$computedStyle = dom.computedStyle,
-                display = _dom$computedStyle[DISPLAY$3],
+                display = _dom$computedStyle[DISPLAY$4],
                 marginLeft = _dom$computedStyle[MARGIN_LEFT$2],
                 borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$4],
                 paddingLeft = _dom$computedStyle[PADDING_LEFT$3];
@@ -19371,7 +19373,7 @@
           while (true) {
             var _list2 = dom.contentBoxList;
             var _dom$computedStyle2 = dom.computedStyle,
-                _display = _dom$computedStyle2[DISPLAY$3],
+                _display = _dom$computedStyle2[DISPLAY$4],
                 marginRight = _dom$computedStyle2[MARGIN_RIGHT$2],
                 borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$3],
                 paddingRight = _dom$computedStyle2[PADDING_RIGHT$2];
@@ -19742,7 +19744,7 @@
   };
 
   var _enums$STYLE_KEY$e = enums.STYLE_KEY,
-      DISPLAY$4 = _enums$STYLE_KEY$e.DISPLAY,
+      DISPLAY$5 = _enums$STYLE_KEY$e.DISPLAY,
       TOP$2 = _enums$STYLE_KEY$e.TOP,
       BOTTOM$2 = _enums$STYLE_KEY$e.BOTTOM,
       POSITION$2 = _enums$STYLE_KEY$e.POSITION,
@@ -19777,7 +19779,7 @@
         var container = void 0;
 
         while (next) {
-          if (next.currentStyle[DISPLAY$4] !== 'none') {
+          if (next.currentStyle[DISPLAY$5] !== 'none') {
             if (next.currentStyle[POSITION$2] === 'absolute') {
               var _next$currentStyle = next.currentStyle,
                   top = _next$currentStyle[TOP$2],
@@ -19928,7 +19930,7 @@
 
   var _enums$STYLE_KEY$f = enums.STYLE_KEY,
       POSITION$3 = _enums$STYLE_KEY$f.POSITION,
-      DISPLAY$5 = _enums$STYLE_KEY$f.DISPLAY,
+      DISPLAY$6 = _enums$STYLE_KEY$f.DISPLAY,
       FONT_WEIGHT$4 = _enums$STYLE_KEY$f.FONT_WEIGHT,
       MARGIN_LEFT$3 = _enums$STYLE_KEY$f.MARGIN_LEFT,
       MARGIN_TOP$1 = _enums$STYLE_KEY$f.MARGIN_TOP,
@@ -20265,7 +20267,7 @@
       value: function __tryLayInline(w, total) {
         var flowChildren = this.flowChildren,
             _this$currentStyle = this.currentStyle,
-            display = _this$currentStyle[DISPLAY$5],
+            display = _this$currentStyle[DISPLAY$6],
             width = _this$currentStyle[WIDTH$4],
             marginLeft = _this$currentStyle[MARGIN_LEFT$3],
             marginRight = _this$currentStyle[MARGIN_RIGHT$3],
@@ -20442,7 +20444,7 @@
             h = data.h,
             lineBoxManager = data.lineBoxManager; // 计算需考虑style的属性
 
-        var display = currentStyle[DISPLAY$5],
+        var display = currentStyle[DISPLAY$6],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$4],
             height = currentStyle[HEIGHT$5];
@@ -20458,8 +20460,8 @@
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
                 var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-                if (_currentStyle[DISPLAY$5] !== 'block' && _currentStyle[DISPLAY$5] !== 'flex') {
-                  _currentStyle[DISPLAY$5] = 'block';
+                if (_currentStyle[DISPLAY$6] !== 'block' && _currentStyle[DISPLAY$6] !== 'flex') {
+                  _currentStyle[DISPLAY$6] = 'block';
                 }
 
                 var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
@@ -20680,7 +20682,7 @@
             w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var display = currentStyle[DISPLAY$5],
+        var display = currentStyle[DISPLAY$6],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$4],
             height = currentStyle[HEIGHT$5],
@@ -20730,8 +20732,8 @@
             if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
               var _currentStyle2 = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-              if (_currentStyle2[DISPLAY$5] !== 'block' && _currentStyle2[DISPLAY$5] !== 'flex') {
-                _currentStyle2[DISPLAY$5] = 'block';
+              if (_currentStyle2[DISPLAY$6] !== 'block' && _currentStyle2[DISPLAY$6] !== 'flex') {
+                _currentStyle2[DISPLAY$6] = 'block';
               }
 
               var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
@@ -20949,8 +20951,8 @@
         var length = flowChildren.length;
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-          var isInline = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
+          var isInline = isXom && item.currentStyle[DISPLAY$6] === 'inline';
+          var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$6]) > -1;
           var isImg = item.tagName === 'img'; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
 
           if (!isXom || isInline || isInlineBlock) {
@@ -21085,7 +21087,7 @@
                   h: h
                 }, isVirtual);
 
-                var isNone = item.currentStyle[DISPLAY$5] === 'none'; // 自身无内容
+                var isNone = item.currentStyle[DISPLAY$6] === 'none'; // 自身无内容
 
                 var isEmptyBlock;
 
@@ -21301,8 +21303,8 @@
             var _currentStyle3 = item.currentStyle,
                 _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-            if (_currentStyle3[DISPLAY$5] !== 'block' && _currentStyle3[DISPLAY$5] !== 'flex') {
-              _currentStyle3[DISPLAY$5] = 'block';
+            if (_currentStyle3[DISPLAY$6] !== 'block' && _currentStyle3[DISPLAY$6] !== 'flex') {
+              _currentStyle3[DISPLAY$6] = 'block';
             } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -21958,7 +21960,7 @@
                 else {
                     var _computedStyle2 = item.computedStyle,
                         _item$currentStyle = item.currentStyle,
-                        display = _item$currentStyle[DISPLAY$5],
+                        display = _item$currentStyle[DISPLAY$6],
                         flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
                         _height = _item$currentStyle[HEIGHT$5]; // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
 
@@ -22171,8 +22173,8 @@
         var length = flowChildren.length;
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-          var isInline2 = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
+          var isInline2 = isXom && item.currentStyle[DISPLAY$6] === 'inline';
+          var isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$6]) > -1;
 
           var isRealInline = isXom && item.__isRealInline(); // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
 
@@ -22185,7 +22187,7 @@
 
           if (isXom) {
             if (!isInline2 && !isInlineBlock2) {
-              item.currentStyle[DISPLAY$5] = item.computedStyle[DISPLAY$5] = 'inlineBlock';
+              item.currentStyle[DISPLAY$6] = item.computedStyle[DISPLAY$6] = 'inlineBlock';
               isInlineBlock2 = true;
               inject.warn('Inline can not contain block/flex');
             } // x开头，不用考虑是否放得下直接放，i为0强制不换行
@@ -22551,7 +22553,7 @@
         var isDestroyed = this.isDestroyed,
             children = this.children,
             absChildren = this.absChildren;
-        var display = computedStyle[DISPLAY$5],
+        var display = computedStyle[DISPLAY$6],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             marginTop = computedStyle[MARGIN_TOP$1],
@@ -22586,7 +22588,7 @@
           var currentStyle = item.currentStyle,
               computedStyle = item.computedStyle;
 
-          if (currentStyle[DISPLAY$5] === 'none') {
+          if (currentStyle[DISPLAY$6] === 'none') {
             item.__layoutNone();
 
             return;
@@ -22595,8 +22597,8 @@
 
           item.__mp(currentStyle, computedStyle, clientWidth);
 
-          if (currentStyle[DISPLAY$5] !== 'block' && currentStyle[DISPLAY$5] !== 'flex') {
-            currentStyle[DISPLAY$5] = computedStyle[DISPLAY$5] = item.style.display = 'block';
+          if (currentStyle[DISPLAY$6] !== 'block' && currentStyle[DISPLAY$6] !== 'flex') {
+            currentStyle[DISPLAY$6] = computedStyle[DISPLAY$6] = item.style.display = 'block';
           }
 
           var left = currentStyle[LEFT$1],
@@ -22605,7 +22607,7 @@
               bottom = currentStyle[BOTTOM$3],
               width = currentStyle[WIDTH$4],
               height = currentStyle[HEIGHT$5],
-              display = currentStyle[DISPLAY$5],
+              display = currentStyle[DISPLAY$6],
               flexDirection = currentStyle[FLEX_DIRECTION$2];
           var x2, y2, w2, h2;
           var onlyRight;
@@ -22911,7 +22913,7 @@
             computedStyle = this.computedStyle,
             isMask = this.isMask;
 
-        if (isDestroyed || computedStyle[DISPLAY$5] === 'none' || e.__stopPropagation || isMask) {
+        if (isDestroyed || computedStyle[DISPLAY$6] === 'none' || e.__stopPropagation || isMask) {
           return;
         } // overflow:hidden时还需要判断是否超出范围外，如果是则无效
 
@@ -23041,7 +23043,7 @@
   var _enums$STYLE_KEY$g = enums.STYLE_KEY,
       WIDTH$5 = _enums$STYLE_KEY$g.WIDTH,
       HEIGHT$6 = _enums$STYLE_KEY$g.HEIGHT,
-      DISPLAY$6 = _enums$STYLE_KEY$g.DISPLAY,
+      DISPLAY$7 = _enums$STYLE_KEY$g.DISPLAY,
       BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
       BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
       BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
@@ -23050,7 +23052,7 @@
       BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_TOP_RIGHT_RADIUS,
       BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_RIGHT_RADIUS,
       BORDER_BOTTOM_LEFT_RADIUS$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_LEFT_RADIUS,
-      VISIBILITY$3 = _enums$STYLE_KEY$g.VISIBILITY,
+      VISIBILITY$4 = _enums$STYLE_KEY$g.VISIBILITY,
       BACKGROUND_IMAGE$2 = _enums$STYLE_KEY$g.BACKGROUND_IMAGE,
       BACKGROUND_COLOR$2 = _enums$STYLE_KEY$g.BACKGROUND_COLOR,
       BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
@@ -23213,7 +23215,7 @@
         if (!res) {
           var loadImg = this.__loadImg;
 
-          if (computedStyle[VISIBILITY$3] !== 'hidden' && (computedStyle[WIDTH$5] || computedStyle[HEIGHT$6]) && loadImg.source) {
+          if (computedStyle[VISIBILITY$4] !== 'hidden' && (computedStyle[WIDTH$5] || computedStyle[HEIGHT$6]) && loadImg.source) {
             res = true;
           }
         }
@@ -23235,12 +23237,12 @@
             placeholder = this.props.placeholder,
             computedStyle = this.computedStyle,
             _this$computedStyle = this.computedStyle,
-            display = _this$computedStyle[DISPLAY$6],
+            display = _this$computedStyle[DISPLAY$7],
             borderTopLeftRadius = _this$computedStyle[BORDER_TOP_LEFT_RADIUS$2],
             borderTopRightRadius = _this$computedStyle[BORDER_TOP_RIGHT_RADIUS$2],
             borderBottomRightRadius = _this$computedStyle[BORDER_BOTTOM_RIGHT_RADIUS$2],
             borderBottomLeftRadius = _this$computedStyle[BORDER_BOTTOM_LEFT_RADIUS$2],
-            visibility = _this$computedStyle[VISIBILITY$3],
+            visibility = _this$computedStyle[VISIBILITY$4],
             virtualDom = this.virtualDom,
             __config = this.__config,
             loadImg = this.__loadImg,
@@ -23737,7 +23739,7 @@
             } // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
 
 
-            if (computedStyle[DISPLAY$6] !== 'none') {
+            if (computedStyle[DISPLAY$7] !== 'none') {
               reload();
             }
           }
@@ -23883,7 +23885,7 @@
   }();
 
   var _enums$STYLE_KEY$h = enums.STYLE_KEY,
-      DISPLAY$7 = _enums$STYLE_KEY$h.DISPLAY,
+      DISPLAY$8 = _enums$STYLE_KEY$h.DISPLAY,
       MARGIN_TOP$3 = _enums$STYLE_KEY$h.MARGIN_TOP,
       MARGIN_RIGHT$5 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
       MARGIN_BOTTOM$3 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
@@ -23907,7 +23909,7 @@
       STROKE_DASHARRAY$1 = _enums$STYLE_KEY$h.STROKE_DASHARRAY,
       STROKE_DASHARRAY_STR = _enums$STYLE_KEY$h.STROKE_DASHARRAY_STR,
       FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
-      VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
+      VISIBILITY$5 = _enums$STYLE_KEY$h.VISIBILITY,
       FONT_SIZE$b = _enums$STYLE_KEY$h.FONT_SIZE,
       _enums$NODE_KEY$7 = enums.NODE_KEY,
       NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
@@ -24072,7 +24074,7 @@
 
         var width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$7],
-            display = currentStyle[DISPLAY$7];
+            display = currentStyle[DISPLAY$8];
         var main = isDirectionRow ? width : height; // 只绝对值生效，%不生效，依旧要判断
 
         if (main[1] === PX$a) {
@@ -24255,7 +24257,7 @@
       key: "__calContent",
       value: function __calContent(renderMode, lv, currentStyle, computedStyle) {
         // Geom强制有内容
-        return computedStyle[VISIBILITY$4] !== 'hidden';
+        return computedStyle[VISIBILITY$5] !== 'hidden';
       }
     }, {
       key: "__preSet",
@@ -26220,9 +26222,9 @@
 
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$i.POSITION,
-      DISPLAY$8 = _enums$STYLE_KEY$i.DISPLAY,
+      DISPLAY$9 = _enums$STYLE_KEY$i.DISPLAY,
       OPACITY$5 = _enums$STYLE_KEY$i.OPACITY,
-      VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
+      VISIBILITY$6 = _enums$STYLE_KEY$i.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$i.FILTER,
       OVERFLOW$3 = _enums$STYLE_KEY$i.OVERFLOW,
       MIX_BLEND_MODE$3 = _enums$STYLE_KEY$i.MIX_BLEND_MODE,
@@ -26352,8 +26354,8 @@
               __cacheMask = _node2$__config[NODE_CACHE_MASK$1],
               __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$2],
               _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$4],
-              display = _node2$__config$NODE_[DISPLAY$8],
-              visibility = _node2$__config$NODE_[VISIBILITY$5],
+              display = _node2$__config$NODE_[DISPLAY$9],
+              visibility = _node2$__config$NODE_[VISIBILITY$6],
               transform = _node2$__config$NODE_[TRANSFORM$4],
               transformOrigin = _node2$__config$NODE_[TRANSFORM_ORIGIN$5],
               opacity = _node2$__config$NODE_[OPACITY$5]; // webgl不能跳过超限
@@ -26532,8 +26534,8 @@
               __cacheOverflow = _config[NODE_CACHE_OVERFLOW$2],
               isMask = _config[NODE_IS_MASK$2],
               _config$NODE_COMPUTED = _config[NODE_COMPUTED_STYLE$4],
-              display = _config$NODE_COMPUTED[DISPLAY$8],
-              visibility = _config$NODE_COMPUTED[VISIBILITY$5],
+              display = _config$NODE_COMPUTED[DISPLAY$9],
+              visibility = _config$NODE_COMPUTED[VISIBILITY$6],
               transform = _config$NODE_COMPUTED[TRANSFORM$4],
               transformOrigin = _config$NODE_COMPUTED[TRANSFORM_ORIGIN$5],
               mixBlendMode = _config$NODE_COMPUTED[MIX_BLEND_MODE$3];
@@ -26758,8 +26760,8 @@
               __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$2],
               isMask = _config2[NODE_IS_MASK$2],
               _config2$NODE_COMPUTE = _config2[NODE_COMPUTED_STYLE$4],
-              display = _config2$NODE_COMPUTE[DISPLAY$8],
-              visibility = _config2$NODE_COMPUTE[VISIBILITY$5],
+              display = _config2$NODE_COMPUTE[DISPLAY$9],
+              visibility = _config2$NODE_COMPUTE[VISIBILITY$6],
               transform = _config2$NODE_COMPUTE[TRANSFORM$4],
               transformOrigin = _config2$NODE_COMPUTE[TRANSFORM_ORIGIN$5],
               mixBlendMode = _config2$NODE_COMPUTE[MIX_BLEND_MODE$3];
@@ -27171,8 +27173,8 @@
           __cacheFilter = _config3[NODE_CACHE_FILTER$2],
           __cacheOverflow = _config3[NODE_CACHE_OVERFLOW$2],
           _config3$NODE_COMPUTE = _config3[NODE_COMPUTED_STYLE$4],
-          display = _config3$NODE_COMPUTE[DISPLAY$8],
-          visibility = _config3$NODE_COMPUTE[VISIBILITY$5],
+          display = _config3$NODE_COMPUTE[DISPLAY$9],
+          visibility = _config3$NODE_COMPUTE[VISIBILITY$6],
           opacity = _config3$NODE_COMPUTE[OPACITY$5],
           _transform = _config3$NODE_COMPUTE[TRANSFORM$4],
           _transformOrigin = _config3$NODE_COMPUTE[TRANSFORM_ORIGIN$5];
@@ -27556,7 +27558,7 @@
           __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
-      if (computedStyle[DISPLAY$8] === 'none') {
+      if (computedStyle[DISPLAY$9] === 'none') {
         i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
 
         continue;
@@ -27785,8 +27787,8 @@
             __cacheOverflow = _config4[NODE_CACHE_OVERFLOW$2],
             _refreshLevel = _config4[NODE_REFRESH_LV$1],
             _config4$NODE_COMPUTE = _config4[NODE_COMPUTED_STYLE$4],
-            display = _config4$NODE_COMPUTE[DISPLAY$8],
-            visibility = _config4$NODE_COMPUTE[VISIBILITY$5],
+            display = _config4$NODE_COMPUTE[DISPLAY$9],
+            visibility = _config4$NODE_COMPUTE[VISIBILITY$6],
             _overflow = _config4$NODE_COMPUTE[OVERFLOW$3],
             _filter2 = _config4$NODE_COMPUTE[FILTER$5],
             _mixBlendMode = _config4$NODE_COMPUTE[MIX_BLEND_MODE$3]; // 有total的可以直接绘制并跳过子节点索引
@@ -28088,7 +28090,7 @@
       } // render后判断可见状态，此时computedStyle才有值，以及svg的virtualDom也要生成
 
 
-      if (computedStyle[DISPLAY$8] === 'none') {
+      if (computedStyle[DISPLAY$9] === 'none') {
         i += (total || 0) + (hasMask || 0);
       }
     }
@@ -28165,7 +28167,7 @@
           _hasMask2 = _structs$_i3[STRUCT_HAS_MASK$1],
           lv = _structs$_i3[STRUCT_LV$2];
       var __config = _node4.__config;
-      var display = _node4.computedStyle[DISPLAY$8];
+      var display = _node4.computedStyle[DISPLAY$9];
       var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           _refreshLevel2 = __config[NODE_REFRESH_LV$1],
           _defsCache = __config[NODE_DEFS_CACHE$6]; // 将随后的若干个mask节点范围存下来
@@ -28217,7 +28219,7 @@
 
           delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
-          var _display = _node4.computedStyle[DISPLAY$8];
+          var _display = _node4.computedStyle[DISPLAY$9];
 
           if (_display === 'none') {
             _i5 += _total6 || 0;
@@ -28347,8 +28349,8 @@
         for (var j = _start2; j < _end2; j++) {
           var _node5 = __structs[j][STRUCT_NODE$1];
           var _node5$computedStyle = _node5.computedStyle,
-              _display2 = _node5$computedStyle[DISPLAY$8],
-              visibility = _node5$computedStyle[VISIBILITY$5],
+              _display2 = _node5$computedStyle[DISPLAY$9],
+              visibility = _node5$computedStyle[VISIBILITY$6],
               fill = _node5$computedStyle[FILL$2],
               _node5$virtualDom = _node5.virtualDom,
               children = _node5$virtualDom.children,
@@ -28522,7 +28524,7 @@
       var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           computedStyle = __config[NODE_COMPUTED_STYLE$4]; // 跳过display:none元素和它的所有子节点
 
-      if (computedStyle[DISPLAY$8] === 'none') {
+      if (computedStyle[DISPLAY$9] === 'none') {
         i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
 
         continue;
@@ -28816,8 +28818,8 @@
             __cacheOverflow = _config5[NODE_CACHE_OVERFLOW$2],
             _refreshLevel3 = _config5[NODE_REFRESH_LV$1],
             _config5$NODE_COMPUTE = _config5[NODE_COMPUTED_STYLE$4],
-            display = _config5$NODE_COMPUTE[DISPLAY$8],
-            visibility = _config5$NODE_COMPUTE[VISIBILITY$5],
+            display = _config5$NODE_COMPUTE[DISPLAY$9],
+            visibility = _config5$NODE_COMPUTE[VISIBILITY$6],
             _mixBlendMode2 = _config5$NODE_COMPUTE[MIX_BLEND_MODE$3];
 
         if (display === 'none') {
@@ -29310,8 +29312,8 @@
       BOTTOM$4 = _enums$STYLE_KEY$j.BOTTOM,
       LEFT$2 = _enums$STYLE_KEY$j.LEFT,
       POSITION$5 = _enums$STYLE_KEY$j.POSITION,
-      DISPLAY$9 = _enums$STYLE_KEY$j.DISPLAY,
-      VISIBILITY$6 = _enums$STYLE_KEY$j.VISIBILITY,
+      DISPLAY$a = _enums$STYLE_KEY$j.DISPLAY,
+      VISIBILITY$7 = _enums$STYLE_KEY$j.VISIBILITY,
       COLOR$5 = _enums$STYLE_KEY$j.COLOR,
       WIDTH$7 = _enums$STYLE_KEY$j.WIDTH,
       HEIGHT$8 = _enums$STYLE_KEY$j.HEIGHT,
@@ -29446,7 +29448,7 @@
       var parent = node.domParent;
 
       if (parent) {
-        if (parent.currentStyle[DISPLAY$9] === 'flex' || parent.computedStyle[DISPLAY$9] === 'flex') {
+        if (parent.currentStyle[DISPLAY$a] === 'flex' || parent.computedStyle[DISPLAY$a] === 'flex') {
           return false;
         }
       }
@@ -29482,7 +29484,7 @@
   function checkInfluence(root, reflowHash, node, component) {
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1) {
+    if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1) {
       do {
         target = target.domParent; // 父到root提前跳出
 
@@ -29500,7 +29502,7 @@
           setLAYOUT(target, reflowHash, component);
           return;
         }
-      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
+      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
 
 
       if (isFixedSize(target, true)) {
@@ -29526,7 +29528,7 @@
       } // flex相关，包含变化或不变化
 
 
-      if (parent.computedStyle[DISPLAY$9] === 'flex' || parent.currentStyle[DISPLAY$9] === 'flex') {
+      if (parent.computedStyle[DISPLAY$a] === 'flex' || parent.currentStyle[DISPLAY$a] === 'flex') {
         topFlex = parent;
       } // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
 
@@ -29675,7 +29677,7 @@
                   delete style[k];
                   continue;
                 }
-              } else if (k === DISPLAY$9) {
+              } else if (k === DISPLAY$a) {
                 hasDisplay = true;
               } // repaint细化等级，reflow在checkReflow()
 
@@ -29694,7 +29696,7 @@
                 hasZ = true;
               }
 
-              if (k === VISIBILITY$6) {
+              if (k === VISIBILITY$7) {
                 hasVisibility = true;
               }
 
@@ -29730,7 +29732,7 @@
         var _need = void 0; // text的style指向parent，因此text一定变更
 
 
-        if (hasVisibility && (_node instanceof Text || _currentStyle[VISIBILITY$6][1] === INHERIT$5)) {
+        if (hasVisibility && (_node instanceof Text || _currentStyle[VISIBILITY$7][1] === INHERIT$5)) {
           _need = true;
         }
 
@@ -29764,7 +29766,7 @@
     } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
 
 
-    if (computedStyle[DISPLAY$9] === 'none' && !hasDisplay) {
+    if (computedStyle[DISPLAY$a] === 'none' && !hasDisplay) {
       return false;
     } // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
     // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
@@ -29776,8 +29778,8 @@
     if (hasDisplay && parent) {
       var _config2 = parent.__config;
 
-      if (_config2[NODE_CURRENT_STYLE$5][DISPLAY$9] === 'none' || _config2[NODE_COMPUTED_STYLE$5][DISPLAY$9] === 'none') {
-        computedStyle[DISPLAY$9] = 'none';
+      if (_config2[NODE_CURRENT_STYLE$5][DISPLAY$a] === 'none' || _config2[NODE_COMPUTED_STYLE$5][DISPLAY$a] === 'none') {
+        computedStyle[DISPLAY$a] = 'none';
         return false;
       }
     } // reflow/repaint/measure相关的记录下来
@@ -30446,8 +30448,8 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle; // canvas/svg作为根节点一定是block或flex，不会是inline
 
-        if (['flex', 'block'].indexOf(currentStyle[DISPLAY$9]) === -1) {
-          computedStyle[DISPLAY$9] = currentStyle[DISPLAY$9] = 'block';
+        if (['flex', 'block'].indexOf(currentStyle[DISPLAY$a]) === -1) {
+          computedStyle[DISPLAY$a] = currentStyle[DISPLAY$a] = 'block';
         } // 同理position不能为absolute
 
 
@@ -30776,11 +30778,11 @@
                   cts = node.currentStyle;
               var zIndex = cps[Z_INDEX$4],
                   position = cps[POSITION$5],
-                  display = cps[DISPLAY$9];
+                  display = cps[DISPLAY$a];
               var isLastAbs = position === 'absolute';
               var isNowAbs = cts[POSITION$5] === 'absolute';
               var isLastNone = display === 'none';
-              var isNowNone = cts[DISPLAY$9] === 'none'; // none不可见布局无效可以无视
+              var isNowNone = cts[DISPLAY$a] === 'none'; // none不可见布局无效可以无视
 
               if (isLastNone && isNowNone) {
                 return;
@@ -30804,7 +30806,7 @@
               var hasFlowPrev;
 
               while (ref) {
-                if (ref instanceof Text || ref.computedStyle[POSITION$5] !== 'absolute' && ref.computedStyle[DISPLAY$9] !== 'none') {
+                if (ref instanceof Text || ref.computedStyle[POSITION$5] !== 'absolute' && ref.computedStyle[DISPLAY$a] !== 'none') {
                   y = ref.y + ref.outerHeight;
                   hasFlowPrev = true;
                   break;
@@ -30970,7 +30972,7 @@
 
                     var cs = target.computedStyle;
 
-                    if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$9] !== 'none') {
+                    if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$a] !== 'none') {
                       target.__offsetY(_diff, true, REPAINT$3); // target.clearCache();
 
                     }
@@ -31050,8 +31052,8 @@
 
                 var _cs = isXom && item.currentStyle;
 
-                var isInline = isXom && _cs[DISPLAY$9] === 'inline';
-                var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$9]) > -1;
+                var isInline = isXom && _cs[DISPLAY$a] === 'inline';
+                var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$a]) > -1;
                 lastChild = item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
                 if (!isXom || isInline || isInlineBlock) {
@@ -31072,7 +31074,7 @@
 
 
                 if (isXom && !isInline) {
-                  var isNone = isXom && _cs[DISPLAY$9] === 'none';
+                  var isNone = isXom && _cs[DISPLAY$a] === 'none';
                   var isEmptyBlock = void 0;
 
                   if (!isNone && item.flowChildren && item.flowChildren.length === 0) {

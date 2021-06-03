@@ -12,6 +12,8 @@ const {
   STYLE_KEY: {
     TRANSFORM_ORIGIN,
     TRANSFORM,
+    DISPLAY,
+    VISIBILITY,
   },
   NODE_KEY: {
     NODE_OPACITY,
@@ -257,8 +259,10 @@ class Cache {
           inverse
         );
       }
-      // 没有内容或者img没加载成功导致没有内容，有内容则是超限
-      else if(__config[NODE_HAS_CONTENT]) {
+      // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
+      else if(__config[NODE_HAS_CONTENT]
+        && __config[NODE_COMPUTED_STYLE][DISPLAY] !== 'none'
+        && __config[NODE_COMPUTED_STYLE][VISIBILITY] !== 'hidden') {
         inject.error('CacheMask is oversize');
       }
     });

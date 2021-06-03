@@ -11400,6 +11400,61 @@
 
   Text.prototype.__renderByMask = Text.prototype.render;
 
+  var TYPE_VD$1 = $$type.TYPE_VD,
+      TYPE_GM$1 = $$type.TYPE_GM,
+      TYPE_CP$1 = $$type.TYPE_CP;
+  /**
+   * 2. 打平children中的数组，变成一维
+   * 3. 合并相连的Text节点，即string内容
+   */
+
+  function flattenJson(parent) {
+    if (Array.isArray(parent)) {
+      return parent.map(function (item) {
+        return flattenJson(item);
+      });
+    } else if (!parent || [TYPE_VD$1, TYPE_GM$1, TYPE_CP$1].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
+      return parent;
+    }
+
+    var list = [];
+    traverseJson(list, parent.children, {
+      lastText: null
+    });
+    parent.children = list;
+    return parent;
+  }
+
+  function traverseJson(list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        traverseJson(list, item, options);
+      });
+    } else if (children && (children.$$type === TYPE_VD$1 || children.$$type === TYPE_GM$1)) {
+      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg/webgl');
+      }
+
+      if (children.$$type === TYPE_VD$1) {
+        flattenJson(children);
+      }
+
+      list.push(children);
+      options.lastText = null;
+    } else if (children && children.$$type === TYPE_CP$1) {
+      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+
+      options.lastText = null;
+    } // 排除掉空的文本，连续的text合并
+    else if (!util.isNil(children) && children !== '') {
+        if (options.lastText !== null) {
+          list[list.length - 1] = options.lastText += children;
+        } else {
+          list.push(children);
+        }
+      }
+  }
+
   var _enums$NODE_KEY$3 = enums.NODE_KEY,
       NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
       NODE_STYLE = _enums$NODE_KEY$3.NODE_STYLE,
@@ -11407,15 +11462,15 @@
       NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$3.NODE_COMPUTED_STYLE,
       NODE_MATRIX = _enums$NODE_KEY$3.NODE_MATRIX,
       NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$3.NODE_MATRIX_EVENT;
-  var TYPE_VD$1 = $$type.TYPE_VD,
-      TYPE_GM$1 = $$type.TYPE_GM,
-      TYPE_CP$1 = $$type.TYPE_CP;
+  var TYPE_VD$2 = $$type.TYPE_VD,
+      TYPE_GM$2 = $$type.TYPE_GM,
+      TYPE_CP$2 = $$type.TYPE_CP;
   var Xom, Dom, Img, Geom, Component;
 
   function initRoot(cd, root) {
     var c = flattenJson({
       children: cd,
-      $$type: TYPE_VD$1
+      $$type: TYPE_VD$2
     });
     var children = build(c.children, root, root);
     return relation(root, children);
@@ -11465,11 +11520,11 @@
           inheritAnimate = json.inheritAnimate,
           __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
 
-      if (_$$type === TYPE_CP$1 && json.placeholder) {
+      if (_$$type === TYPE_CP$2 && json.placeholder) {
         return json.value;
       }
 
-      if (_$$type === TYPE_VD$1) {
+      if (_$$type === TYPE_VD$2) {
         if (tagName === 'img') {
           vd = new Img(tagName, props);
 
@@ -11494,11 +11549,11 @@
         }
 
         vd.__children = children;
-      } else if (_$$type === TYPE_GM$1) {
+      } else if (_$$type === TYPE_GM$2) {
         var _klass = Geom.getRegister(tagName);
 
         vd = new _klass(tagName, props);
-      } else if (_$$type === TYPE_CP$1) {
+      } else if (_$$type === TYPE_CP$2) {
         vd = new klass(props);
         vd.__tagName = vd.__tagName || tagName;
       } else {
@@ -11527,7 +11582,7 @@
         vd.__host = host;
       }
 
-      if (_$$type === TYPE_CP$1) {
+      if (_$$type === TYPE_CP$2) {
         vd.__init();
       }
 
@@ -11543,58 +11598,6 @@
     }
 
     return new Text(json);
-  }
-  /**
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点，即string内容
-   */
-
-
-  function flattenJson(parent) {
-    if (Array.isArray(parent)) {
-      return parent.map(function (item) {
-        return flattenJson(item);
-      });
-    } else if (!parent || [TYPE_VD$1, TYPE_GM$1, TYPE_CP$1].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
-      return parent;
-    }
-
-    var list = [];
-    traverseJson(list, parent.children, {
-      lastText: null
-    });
-    parent.children = list;
-    return parent;
-  }
-
-  function traverseJson(list, children, options) {
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        traverseJson(list, item, options);
-      });
-    } else if (children && (children.$$type === TYPE_VD$1 || children.$$type === TYPE_GM$1)) {
-      if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg');
-      }
-
-      if (children.$$type === TYPE_VD$1) {
-        flattenJson(children);
-      }
-
-      list.push(children);
-      options.lastText = null;
-    } else if (children && children.$$type === TYPE_CP$1) {
-      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-
-      options.lastText = null;
-    } // 排除掉空的文本，连续的text合并
-    else if (!util.isNil(children) && children !== '') {
-        if (options.lastText !== null) {
-          list[list.length - 1] = options.lastText += children;
-        } else {
-          list.push(children);
-        }
-      }
   }
   /**
    * 设置关系，父子和兄弟
@@ -11664,7 +11667,6 @@
     },
     initRoot: initRoot,
     initCp: initCp,
-    flattenJson: flattenJson,
     relation: relation
   };
 
@@ -11960,7 +11962,7 @@
 
         this.__ref = {};
         var root = this.root;
-        var cd = json || builder.flattenJson(this.render());
+        var cd = json || flattenJson(this.render());
         var sr = builder.initCp(cd, root, this);
         this.__cd = cd;
 
@@ -24920,61 +24922,6 @@
     return Geom;
   }(Xom$1);
 
-  var TYPE_VD$2 = $$type.TYPE_VD,
-      TYPE_GM$2 = $$type.TYPE_GM,
-      TYPE_CP$2 = $$type.TYPE_CP;
-  /**
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点，即string内容
-   */
-
-  function flattenJson$1(parent) {
-    if (Array.isArray(parent)) {
-      return parent.map(function (item) {
-        return flattenJson$1(item);
-      });
-    } else if (!parent || [TYPE_VD$2, TYPE_GM$2, TYPE_CP$2].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
-      return parent;
-    }
-
-    var list = [];
-    traverseJson$1(list, parent.children, {
-      lastText: null
-    });
-    parent.children = list;
-    return parent;
-  }
-
-  function traverseJson$1(list, children, options) {
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        traverseJson$1(list, item, options);
-      });
-    } else if (children && (children.$$type === TYPE_VD$2 || children.$$type === TYPE_GM$2)) {
-      if (['canvas', 'svg', 'webgl'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg/webgl');
-      }
-
-      if (children.$$type === TYPE_VD$2) {
-        flattenJson$1(children);
-      }
-
-      list.push(children);
-      options.lastText = null;
-    } else if (children && children.$$type === TYPE_CP$2) {
-      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-
-      options.lastText = null;
-    } // 排除掉空的文本，连续的text合并
-    else if (!util.isNil(children) && children !== '') {
-        if (options.lastText !== null) {
-          list[list.length - 1] = options.lastText += children;
-        } else {
-          list.push(children);
-        }
-      }
-  }
-
   var _enums$NODE_KEY$8 = enums.NODE_KEY,
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_DOM_PARENT$4 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
@@ -25055,7 +25002,7 @@
     var oldS = cp.shadow;
     var oldSr = cp.shadowRoot;
     var oldJson = cp.__cd;
-    var json = flattenJson$1(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
+    var json = flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
 
     diffSr(oldS, oldJson, json);
 

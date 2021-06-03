@@ -4,6 +4,7 @@ import builder from '../util/builder';
 import Event from '../util/Event';
 import util from '../util/util';
 import inject from '../util/inject';
+import flatten from '../util/flatten';
 import css from '../style/css';
 import change from '../refresh/change';
 
@@ -110,7 +111,7 @@ class Component extends Event {
   __init(json) {
     this.__ref = {};
     let root = this.root;
-    let cd = json || builder.flattenJson(this.render());
+    let cd = json || flatten(this.render());
     let sr = builder.initCp(cd, root, this);
     this.__cd = cd;
     if(sr instanceof Text) {

@@ -5858,7 +5858,7 @@
       enabled: true,
       available: true,
       release: function release() {
-        if (!key) {
+        if (!key && this.available) {
           if (hash === CANVAS) {
             CANVAS_LIST.push(this.canvas);
           } else {
@@ -5866,8 +5866,6 @@
           }
         }
 
-        this.canvas = null;
-        this.ctx = null;
         this.available = false;
       }
     };
@@ -34126,7 +34124,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.7";
+  var version = "0.58.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

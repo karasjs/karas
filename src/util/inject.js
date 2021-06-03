@@ -62,7 +62,7 @@ function cache(key, width, height, hash, message) {
     enabled: true,
     available: true,
     release() {
-      if(!key) {
+      if(!key && this.available) {
         if(hash === CANVAS) {
           CANVAS_LIST.push(this.canvas);
         }
@@ -70,8 +70,6 @@ function cache(key, width, height, hash, message) {
           WEBGL_LIST.push(this.canvas);
         }
       }
-      this.canvas = null;
-      this.ctx = null;
       this.available = false;
     },
   };

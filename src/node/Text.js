@@ -507,7 +507,7 @@ class Text extends Node {
         }
       }
     }
-    return [y, maxW];
+    return [y, maxW + ew];
   }
 
   __offsetX(diff, isLayout) {

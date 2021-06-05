@@ -11104,7 +11104,7 @@
             }
         }
 
-        return [y, maxW];
+        return [y, maxW + ew];
       }
     }, {
       key: "__offsetX",
@@ -22288,8 +22288,13 @@
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
-                if (!isInline && lineBoxManager.size - n > 1 && width[1] === AUTO$5) {
-                  isIbFull = true;
+                if (!isInline && width[1] === AUTO$5) {
+                  if (lineBoxManager.size - n > 1) {
+                    isIbFull = true;
+                  } // 特殊判断，如果蚊子节点真的发生了截断，ib要视为满
+                  else if (item instanceof Text && item.__ellipsis) {
+                      isIbFull = true;
+                    }
                 }
               } else {
                 // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
@@ -22341,8 +22346,13 @@
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY; // ib情况发生折行
 
-                    if (!isInline && lineBoxManager.size - n > 1 && width[1] === AUTO$5) {
-                      isIbFull = true;
+                    if (!isInline && width[1] === AUTO$5) {
+                      if (lineBoxManager.size - n > 1) {
+                        isIbFull = true;
+                      } // 特殊判断，如果蚊子节点真的发生了截断，ib要视为满
+                      else if (item instanceof Text && item.__ellipsis) {
+                          isIbFull = true;
+                        }
                     }
                   }
               }

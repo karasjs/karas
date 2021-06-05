@@ -298,40 +298,46 @@
     TRANSFORM: 56,
     TRANSLATE_X: 57,
     TRANSLATE_Y: 58,
-    SCALE_X: 59,
-    SCALE_Y: 60,
-    SKEW_X: 61,
-    SKEW_Y: 62,
-    ROTATE_Z: 63,
-    FILTER: 64,
-    BOX_SHADOW: 65,
-    POINTER_EVENTS: 66,
-    OVERFLOW: 67,
-    MIX_BLEND_MODE: 68,
-    BACKGROUND_CLIP: 69,
-    WHITE_SPACE: 70,
-    TEXT_OVERFLOW: 71,
-    LETTER_SPACING: 72,
-    LINE_CLAMP: 73,
-    ORDER: 74,
-    FLEX_WRAP: 75,
-    ALIGN_CONTENT: 76,
+    TRANSLATE_Z: 59,
+    SCALE_X: 60,
+    SCALE_Y: 61,
+    SCALE_Z: 62,
+    SKEW_X: 63,
+    SKEW_Y: 64,
+    ROTATE_X: 65,
+    ROTATE_Y: 66,
+    ROTATE_Z: 67,
+    ROTATE_3D: 68,
+    PERSPECTIVE: 69,
+    FILTER: 70,
+    BOX_SHADOW: 71,
+    POINTER_EVENTS: 72,
+    OVERFLOW: 73,
+    MIX_BLEND_MODE: 74,
+    BACKGROUND_CLIP: 75,
+    WHITE_SPACE: 76,
+    TEXT_OVERFLOW: 77,
+    LETTER_SPACING: 78,
+    LINE_CLAMP: 79,
+    ORDER: 80,
+    FLEX_WRAP: 81,
+    ALIGN_CONTENT: 82,
     // GEOM
-    FILL: 77,
-    STROKE: 78,
-    STROKE_WIDTH: 79,
-    STROKE_DASHARRAY: 80,
-    STROKE_DASHARRAY_STR: 81,
-    STROKE_LINECAP: 82,
-    STROKE_LINEJOIN: 83,
-    STROKE_MITERLIMIT: 84,
-    FILL_RULE: 85,
+    FILL: 83,
+    STROKE: 84,
+    STROKE_WIDTH: 85,
+    STROKE_DASHARRAY: 86,
+    STROKE_DASHARRAY_STR: 87,
+    STROKE_LINECAP: 88,
+    STROKE_LINEJOIN: 89,
+    STROKE_MITERLIMIT: 90,
+    FILL_RULE: 91,
     // 无此样式，仅cache需要
-    MATRIX: 86,
-    BORDER_TOP: 87,
-    BORDER_RIGHT: 88,
-    BORDER_BOTTOM: 89,
-    BORDER_LEFT: 90
+    MATRIX: 92,
+    BORDER_TOP: 93,
+    BORDER_RIGHT: 94,
+    BORDER_BOTTOM: 95,
+    BORDER_LEFT: 96
   };
 
   function style2Lower(s) {
@@ -770,97 +776,74 @@
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
 
-  // 生成3*3单位矩阵，css表达方法一维6位
+  // 生成4*4单位矩阵
   function identity() {
-    return [1, 0, 0, 1, 0, 0];
-  } // 矩阵a*b，固定两个matrix都是长度6
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  } // 矩阵a*b，固定两个matrix都是长度16
 
 
   function multiply(a, b) {
-    // 特殊情况优化
-    var isPreIdA = a[0] === 1 && a[1] === 0 && a[2] === 0 && a[3] === 1;
-    var isPreIdB = b[0] === 1 && b[1] === 0 && b[2] === 0 && b[3] === 1;
-    var isSubIdA = a[4] === 0 && a[5] === 0;
-    var isSubIdB = b[4] === 0 && b[5] === 0;
-
-    if (isPreIdA && isSubIdA) {
-      return b.slice(0);
+    if (isE(a)) {
+      return b;
     }
 
-    if (isPreIdB && isSubIdB) {
-      return a.slice(0);
-    }
-
-    if (isPreIdA && isPreIdB) {
-      a = a.slice(0);
-      a[4] += b[4];
-      a[5] += b[5];
+    if (isE(b)) {
       return a;
-    } else if (isPreIdA || isPreIdB) {
-      var _c = isPreIdA ? b.slice(0) : a.slice(0);
-
-      _c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
-      _c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
-      return _c;
     }
 
-    var c = [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], 0, 0];
+    var c = [];
 
-    if (isSubIdA && isSubIdB) ; else if (isSubIdB) {
-      c[4] = a[4];
-      c[5] = a[5];
-    } else {
-      c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
-      c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
+    for (var i = 0; i < 4; i++) {
+      var a0 = a[i];
+      var a1 = a[i + 4];
+      var a2 = a[i + 8];
+      var a3 = a[i + 12];
+      c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+      c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+      c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+      c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
     }
 
     return c;
   }
 
   function calPoint(point, m) {
-    var _point = _slicedToArray(point, 3),
+    var _point = _slicedToArray(point, 4),
         x = _point[0],
         y = _point[1],
-        z = _point[2];
+        z = _point[2],
+        w = _point[3];
 
-    if (m && !isE(m)) {
-      if (m && m.length === 6) {
-        var _m = _slicedToArray(m, 6),
-            a = _m[0],
-            b = _m[1],
-            c = _m[2],
-            d = _m[3],
-            e = _m[4],
-            f = _m[5];
-
-        return [a * x + c * y + e, b * x + d * y + f];
-      } else if (m && m.length === 16) {
-        z = z || 0;
-
-        var _m2 = _slicedToArray(m, 16),
-            a1 = _m2[0],
-            b1 = _m2[1],
-            c1 = _m2[2],
-            d1 = _m2[3],
-            a2 = _m2[4],
-            b2 = _m2[5],
-            c2 = _m2[6],
-            d2 = _m2[7],
-            a3 = _m2[8],
-            b3 = _m2[9],
-            c3 = _m2[10],
-            d3 = _m2[11],
-            a4 = _m2[12],
-            b4 = _m2[13],
-            c4 = _m2[14],
-            d4 = _m2[15];
-
-        var w = x * d1 + y * d2 + z * d3 + d4;
-        return [x * a1 + y * a2 + z * a3 + a4, x * b1 + y * b2 + z * b3 + b4, x * c1 + y * c2 + z * c3 + c4, w];
-      }
+    if (w === undefined) {
+      w = 1;
     }
 
-    return point.slice(0);
+    if (m && !isE(m)) {
+      z = z || 0;
+
+      var _m = _slicedToArray(m, 16),
+          a1 = _m[0],
+          b1 = _m[1],
+          c1 = _m[2],
+          d1 = _m[3],
+          a2 = _m[4],
+          b2 = _m[5],
+          c2 = _m[6],
+          d2 = _m[7],
+          a3 = _m[8],
+          b3 = _m[9],
+          c3 = _m[10],
+          d3 = _m[11],
+          a4 = _m[12],
+          b4 = _m[13],
+          c4 = _m[14],
+          d4 = _m[15];
+
+      w *= x * d1 + y * d2 + z * d3 + d4;
+      return [x * a1 + y * a2 + z * a3 + a4, x * b1 + y * b2 + z * b3 + b4, x * c1 + y * c2 + z * c3 + c4, w];
+    }
+
+    return [x, y, z, w];
   }
   /**
    * 初等行变换求3*3特定css的matrix方阵，一维6长度
@@ -875,13 +858,13 @@
       return inverse4(m);
     }
 
-    var _m3 = _slicedToArray(m, 6),
-        a = _m3[0],
-        b = _m3[1],
-        c = _m3[2],
-        d = _m3[3],
-        e = _m3[4],
-        f = _m3[5];
+    var _m2 = _slicedToArray(m, 6),
+        a = _m2[0],
+        b = _m2[1],
+        c = _m2[2],
+        d = _m2[3],
+        e = _m2[4],
+        f = _m2[5];
 
     if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
       return m;
@@ -897,11 +880,7 @@
   }
 
   function isE(m) {
-    if (m.length === 16) {
-      return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0 && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0 && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0 && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
-    }
-
-    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
+    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0 && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0 && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0 && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
   }
   /**
    * 4*4 行列式的值
@@ -1007,30 +986,10 @@
       return a / det;
     });
   }
-  /**
-   * 转换为webgl的mat4，即4*4矩阵，一维表示，同时位移转成[-1,1]区间表示
-   * @param m
-   * @param width
-   * @param height
-   * @returns {(*|number)[]|number[]|*}
-   */
 
 
-  function m2Mat4(m, width, height) {
-    if (m && m.length === 16) {
-      m = m.slice(0);
-      m[13] /= width;
-      m[14] /= height;
-      return m;
-    }
-
-    if (m && m.length === 6) {
-      m = m.slice(0);
-      return [m[0], m[1], 0, 0, m[2], m[3], 0, 0, 0, 0, 1, 0, // m[4] / width, m[5] / height, 0, 1,
-      m[4], m[5], 0, 1];
-    }
-
-    return m;
+  function m2m6(m) {
+    return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
   var mx = {
@@ -1039,7 +998,8 @@
     calPoint: calPoint,
     inverse: inverse,
     isE: isE,
-    m2Mat4: m2Mat4
+    // m2Mat4,
+    m2m6: m2m6
   };
 
   // 向量点乘积
@@ -5132,13 +5092,21 @@
       }
 
       var list = [x2, y1, x1, y2, x2, y2];
+      var w;
 
       var _mx$calPoint = mx.calPoint([x1, y1], matrix);
 
-      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
+      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
 
       x1 = _mx$calPoint2[0];
       y1 = _mx$calPoint2[1];
+      w = _mx$calPoint2[3];
+
+      if (w !== 1) {
+        x1 /= w;
+        y1 /= w;
+      }
+
       var xa = x1,
           ya = y1,
           xb = x1,
@@ -5150,10 +5118,17 @@
 
         var _mx$calPoint3 = mx.calPoint([x, y], matrix);
 
-        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
+        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
 
         x = _mx$calPoint4[0];
         y = _mx$calPoint4[1];
+        w = _mx$calPoint4[3];
+
+        if (w !== 1) {
+          x /= w;
+          y /= y;
+        }
+
         xa = Math.min(xa, x);
         xb = Math.max(xb, x);
         ya = Math.min(ya, y);
@@ -5162,6 +5137,7 @@
 
       bbox = [xa, ya, xb, yb];
     } else if (dx || dy) {
+      bbox = bbox.slice(0);
       bbox[0] -= dx;
       bbox[1] -= dy;
       bbox[2] += dx;
@@ -5184,6 +5160,26 @@
 
     var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
     return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
+  }
+
+  function assignMatrix(t, v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+    return t;
   }
 
   var util = {
@@ -5221,7 +5217,8 @@
     extend: extend,
     joinArr: joinArr,
     extendAnimate: extendAnimate,
-    transformBbox: transformBbox
+    transformBbox: transformBbox,
+    assignMatrix: assignMatrix
   };
 
   var debug = {
@@ -5349,9 +5346,17 @@
   }
 
   function convertCoords2Gl(_ref, cx, cy, revertY) {
-    var _ref2 = _slicedToArray(_ref, 2),
+    var _ref2 = _slicedToArray(_ref, 4),
         x = _ref2[0],
-        y = _ref2[1];
+        y = _ref2[1],
+        z = _ref2[2],
+        w = _ref2[3];
+
+    if (w !== 1) {
+      x /= w;
+      y /= w;
+      z /= w;
+    }
 
     if (x === cx) {
       x = 0;
@@ -5369,7 +5374,7 @@
       }
     }
 
-    return [x, y];
+    return [x * w, y * w, z * w, w];
   }
 
   function createTexture(gl, tex, n, width, height) {
@@ -5455,53 +5460,57 @@
           yb = by + (dy || 0);
 
       var _calPoint = calPoint$1([xa, ya], matrix),
-          _calPoint2 = _slicedToArray(_calPoint, 2),
+          _calPoint2 = _slicedToArray(_calPoint, 4),
           x1 = _calPoint2[0],
-          y1 = _calPoint2[1];
+          y1 = _calPoint2[1],
+          w1 = _calPoint2[3];
 
       var _calPoint3 = calPoint$1([xb, ya], matrix),
-          _calPoint4 = _slicedToArray(_calPoint3, 2),
+          _calPoint4 = _slicedToArray(_calPoint3, 4),
           x2 = _calPoint4[0],
-          y2 = _calPoint4[1];
+          y2 = _calPoint4[1],
+          w2 = _calPoint4[3];
 
       var _calPoint5 = calPoint$1([xb, yb], matrix),
-          _calPoint6 = _slicedToArray(_calPoint5, 2),
+          _calPoint6 = _slicedToArray(_calPoint5, 4),
           x3 = _calPoint6[0],
-          y3 = _calPoint6[1];
+          y3 = _calPoint6[1],
+          w3 = _calPoint6[3];
 
       var _calPoint7 = calPoint$1([xa, yb], matrix),
-          _calPoint8 = _slicedToArray(_calPoint7, 2),
+          _calPoint8 = _slicedToArray(_calPoint7, 4),
           x4 = _calPoint8[0],
-          y4 = _calPoint8[1];
+          y4 = _calPoint8[1],
+          w4 = _calPoint8[3];
 
-      var _convertCoords2Gl = convertCoords2Gl([x1, y1], cx, cy, revertY);
+      var _convertCoords2Gl = convertCoords2Gl([x1, y1, 0, w1], cx, cy, revertY);
 
       var _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2);
 
       x1 = _convertCoords2Gl2[0];
       y1 = _convertCoords2Gl2[1];
 
-      var _convertCoords2Gl3 = convertCoords2Gl([x2, y2], cx, cy, revertY);
+      var _convertCoords2Gl3 = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
 
       var _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2);
 
       x2 = _convertCoords2Gl4[0];
       y2 = _convertCoords2Gl4[1];
 
-      var _convertCoords2Gl5 = convertCoords2Gl([x3, y3], cx, cy, revertY);
+      var _convertCoords2Gl5 = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
 
       var _convertCoords2Gl6 = _slicedToArray(_convertCoords2Gl5, 2);
 
       x3 = _convertCoords2Gl6[0];
       y3 = _convertCoords2Gl6[1];
 
-      var _convertCoords2Gl7 = convertCoords2Gl([x4, y4], cx, cy, revertY);
+      var _convertCoords2Gl7 = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
 
       var _convertCoords2Gl8 = _slicedToArray(_convertCoords2Gl7, 2);
 
       x4 = _convertCoords2Gl8[0];
       y4 = _convertCoords2Gl8[1];
-      vtPoint.push(x1, y1, x4, y4, x2, y2, x4, y4, x2, y2, x3, y3);
+      vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
       var tx1 = x / page.width,
           ty1 = (y + height) / page.height;
       var tx2 = (x + width) / page.width,
@@ -5515,7 +5524,7 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
     var a_position = gl.getAttribLocation(gl.program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(a_position); // 纹理buffer
 
     var texBuffer = gl.createBuffer();
@@ -7045,10 +7054,14 @@
     transform: null,
     translateX: 0,
     translateY: 0,
+    translateZ: 0,
     scaleX: 1,
     scaleY: 1,
+    scaleZ: 1,
     skewX: 0,
     skewY: 0,
+    rotateX: 0,
+    rotateY: 0,
     rotateZ: 0,
     filter: null,
     boxShadow: null,
@@ -7206,7 +7219,9 @@
     backgroundPosition: ['backgroundPositionX', 'backgroundPositionY'],
     flex: ['flexGrow', 'flexShrink', 'flexBasis'],
     translate: ['translateX', 'translateY'],
+    translate3d: ['translateX', 'translateY', 'translateY'],
     scale: ['scaleX', 'scaleY'],
+    scale3d: ['scaleX', 'scaleY', 'scaleZ'],
     rotate: ['rotateZ'],
     skew: ['skewX', 'skewY'],
     toFull: function toFull(style, k) {
@@ -7422,6 +7437,20 @@
             style[k] = _arr4[i];
           }
         });
+      } else if (['translate3d', 'scale3d'].indexOf(k) > -1) {
+        var _arr5 = v.toString().split(/\s*,\s*/);
+
+        if (_arr5.length === 1) {
+          _arr5[2] = _arr5[1] = _arr5[0];
+        } else if (_arr5.length === 2) {
+          _arr5[2] = k === 'scale3d' ? 1 : 0;
+        }
+
+        this[k].forEach(function (k, i) {
+          if (isNil$2(style[k])) {
+            style[k] = _arr5[i];
+          }
+        });
       } else if (k === 'margin' || k === 'padding') {
         parseMarginPadding(style, k, this[k]);
       } else if (/^border((Top)|(Right)|(Bottom)|(Left))$/.test(k)) {
@@ -7605,11 +7634,17 @@
       HEIGHT$1 = _enums$STYLE_KEY$2.HEIGHT,
       TRANSLATE_X = _enums$STYLE_KEY$2.TRANSLATE_X,
       TRANSLATE_Y = _enums$STYLE_KEY$2.TRANSLATE_Y,
+      TRANSLATE_Z = _enums$STYLE_KEY$2.TRANSLATE_Z,
       SCALE_X = _enums$STYLE_KEY$2.SCALE_X,
       SCALE_Y = _enums$STYLE_KEY$2.SCALE_Y,
+      SCALE_Z = _enums$STYLE_KEY$2.SCALE_Z,
       SKEW_X = _enums$STYLE_KEY$2.SKEW_X,
       SKEW_Y = _enums$STYLE_KEY$2.SKEW_Y,
+      ROTATE_X = _enums$STYLE_KEY$2.ROTATE_X,
+      ROTATE_Y = _enums$STYLE_KEY$2.ROTATE_Y,
       ROTATE_Z = _enums$STYLE_KEY$2.ROTATE_Z,
+      ROTATE_3D = _enums$STYLE_KEY$2.ROTATE_3D,
+      PERSPECTIVE = _enums$STYLE_KEY$2.PERSPECTIVE,
       TRANSFORM = _enums$STYLE_KEY$2.TRANSFORM,
       TRANSFORM_ORIGIN$1 = _enums$STYLE_KEY$2.TRANSFORM_ORIGIN,
       BACKGROUND_IMAGE = _enums$STYLE_KEY$2.BACKGROUND_IMAGE,
@@ -7681,20 +7716,24 @@
       EXPAND_HASH$1 = key.EXPAND_HASH,
       GRADIENT_TYPE$1 = key.GRADIENT_TYPE;
   var TRANSFORM_HASH = {
-    'translateX': TRANSLATE_X,
-    'translateY': TRANSLATE_Y,
-    'scaleX': SCALE_X,
-    'scaleY': SCALE_Y,
-    'skewX': SKEW_X,
-    'skewY': SKEW_Y,
-    'rotateZ': ROTATE_Z,
-    'rotate': ROTATE_Z
+    translateX: TRANSLATE_X,
+    translateY: TRANSLATE_Y,
+    translateZ: TRANSLATE_Z,
+    scaleX: SCALE_X,
+    scaleY: SCALE_Y,
+    scaleZ: SCALE_Z,
+    skewX: SKEW_X,
+    skewY: SKEW_Y,
+    rotateX: ROTATE_X,
+    rotateY: ROTATE_Y,
+    rotateZ: ROTATE_Z // rotate: ROTATE_Z,
+
   };
 
   function compatibleTransform(k, arr) {
-    if (k === SCALE_X || k === SCALE_Y) {
+    if (k === SCALE_X || k === SCALE_Y || k === SCALE_Z) {
       arr[1] = NUMBER$1;
-    } else if (k === TRANSLATE_X || k === TRANSLATE_Y) {
+    } else if (k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z || k === PERSPECTIVE) {
       if (arr[1] === NUMBER$1) {
         arr[1] = PX$2;
       }
@@ -7796,21 +7835,15 @@
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
 
-    ['translate', 'scale', 'skew'].forEach(function (k) {
+    ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate3d', 'rotate'].forEach(function (k) {
       temp = style[k];
 
       if (!isNil$3(temp)) {
         abbr.toFull(style, k);
       }
-    });
-    temp = style.rotate;
+    }); // 扩展的不能和transform混用，给出警告
 
-    if (!isNil$3(temp)) {
-      abbr.toFull(style, 'rotate');
-    } // 扩展的不能和transform混用，给出警告
-
-
-    ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ'].forEach(function (k) {
+    ['translateX', 'translateY', 'translateZ', 'scaleX', 'scaleY', 'scaleZ', 'skewX', 'skewY', 'rotateX', 'rotateY', 'rotateZ', 'rotate3d'].forEach(function (k) {
       var v = style[k];
 
       if (!isNil$3(v) && style.transform) {
@@ -7884,13 +7917,13 @@
 
         res[k] = temp.map(function (item) {
           if (/^-?[\d.]/.test(item)) {
-            var v = calUnit$1(item);
+            var _v = calUnit$1(item);
 
-            if ([NUMBER$1, DEG$1].indexOf(v[1]) > -1) {
-              v[1] = PX$2;
+            if ([NUMBER$1, DEG$1].indexOf(_v[1]) > -1) {
+              _v[1] = PX$2;
             }
 
-            return v;
+            return _v;
           } else {
             return [{
               top: 0,
@@ -7927,7 +7960,7 @@
             }
           }
 
-          var v = [];
+          var _v2 = [];
 
           for (var i = 0; i < 2; i++) {
             var _item = match[i];
@@ -7939,15 +7972,15 @@
                 n[1] = PX$2;
               }
 
-              v.push(n);
+              _v2.push(n);
             } else if (_item === 'contain' || _item === 'cover') {
-              v.push([_item, STRING]);
+              _v2.push([_item, STRING]);
             } else {
-              v.push([0, AUTO]);
+              _v2.push([0, AUTO]);
             }
           }
 
-          return v;
+          return _v2;
         } else {
           return [[0, AUTO], [0, AUTO]];
         }
@@ -8021,34 +8054,94 @@
             }
 
             if (arr.length === 6) {
-              transform.push([MATRIX, arr]);
+              transform.push([MATRIX, [arr[0], arr[1], 0, 0, arr[2], arr[3], 0, 0, 0, 0, 1, 0, arr[4], arr[5], 0, 1]]);
+            }
+          } else if (k === 'matrix3d') {
+            var _arr = v.toString().split(/\s*,\s*/);
+
+            _arr = _arr.map(function (item) {
+              return parseFloat(item);
+            });
+
+            if (_arr.length > 16) {
+              _arr = _arr.slice(0, 16);
+            }
+
+            if (_arr.length === 16) {
+              transform.push([MATRIX, _arr]);
+            }
+          } else if (k === 'perspective') {
+            var _arr2 = calUnit$1(v);
+
+            compatibleTransform(PERSPECTIVE, _arr2);
+            transform.push([PERSPECTIVE, _arr2]);
+          } else if (k === 'rotate3d') {
+            var _arr3 = v.toString().split(/\s*,\s*/);
+
+            if (_arr3.length === 4) {
+              var deg = calUnit$1(_arr3[3]);
+              compatibleTransform(ROTATE_3D, deg);
+              _arr3[3] = deg;
+              transform.push(ROTATE_3D, _arr3);
             }
           } else if (TRANSFORM_HASH.hasOwnProperty(k)) {
             var k2 = TRANSFORM_HASH[k];
 
-            var _arr = calUnit$1(v);
+            var _arr4 = calUnit$1(v);
 
-            compatibleTransform(k2, _arr);
-            transform.push([k2, _arr]);
+            compatibleTransform(k2, _arr4);
+            transform.push([k2, _arr4]);
           } else if ({
             translate: true,
             scale: true,
             skew: true
           }.hasOwnProperty(k)) {
-            var _arr2 = v.toString().split(/\s*,\s*/);
+            var _arr5 = v.toString().split(/\s*,\s*/);
 
-            if (_arr2.length === 1) {
-              _arr2[1] = _arr2[0].slice(0);
+            if (_arr5.length === 1) {
+              _arr5[1] = k === 'scale' ? [1] : [0];
             }
 
-            var k1 = STYLE_KEY$3[style2Upper$1(k + 'X')];
-            var _k = STYLE_KEY$3[style2Upper$1(k + 'Y')];
-            var arr1 = calUnit$1(_arr2[0]);
-            var arr2 = calUnit$1(_arr2[1]);
-            compatibleTransform(k1, arr1);
-            compatibleTransform(_k, arr2);
-            transform.push([k1, arr1]);
-            transform.push([_k, arr2]);
+            if (_arr5.length === 2) {
+              var k1 = STYLE_KEY$3[style2Upper$1(k + 'X')];
+              var _k = STYLE_KEY$3[style2Upper$1(k + 'Y')];
+              var arr1 = calUnit$1(_arr5[0]);
+              var arr2 = calUnit$1(_arr5[1]);
+              compatibleTransform(k1, arr1);
+              compatibleTransform(_k, arr2);
+              transform.push([k1, arr1]);
+              transform.push([_k, arr2]);
+            }
+          } else if ({
+            translate3d: true,
+            scale3d: true
+          }.hasOwnProperty(k)) {
+            var _arr6 = v.toString().split(/\s*,\s*/);
+
+            if (_arr6.length === 1) {
+              _arr6[1] = k === 'scale3d' ? [1] : [0];
+              _arr6[2] = k === 'scale3d' ? [1] : [0];
+            } else if (_arr6.length === 2) {
+              _arr6[2] = k === 'scale3d' ? [1] : [0];
+            }
+
+            if (_arr6.length === 3) {
+              var _k2 = STYLE_KEY$3[style2Upper$1(k + 'X')];
+              var _k3 = STYLE_KEY$3[style2Upper$1(k + 'Y')];
+              var k3 = STYLE_KEY$3[style2Upper$1(k + 'Z')];
+
+              var _arr7 = calUnit$1(_arr6[0]);
+
+              var _arr8 = calUnit$1(_arr6[1]);
+
+              var arr3 = calUnit$1(_arr6[2]);
+              compatibleTransform(_k2, _arr7);
+              compatibleTransform(_k3, _arr8);
+              compatibleTransform(k3, arr3);
+              transform.push([_k2, _arr7]);
+              transform.push([_k3, _arr8]);
+              transform.push([k3, arr3]);
+            }
           }
         });
       }
@@ -8097,7 +8190,7 @@
       }
     }
 
-    ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
+    ['translateX', 'translateY', 'translateZ', 'scaleX', 'scaleY', 'scaleZ', 'skewX', 'skewY', 'rotateX', 'rotateY', 'rotateZ'].forEach(function (k) {
       var v = style[k];
 
       if (isNil$3(v)) {
@@ -8110,6 +8203,19 @@
       compatibleTransform(k2, n);
       res[k2] = n;
     });
+    temp = style.rotate3d;
+
+    if (temp) {
+      var arr = v.toString().split(/\s*,\s*/);
+
+      if (arr.length === 4) {
+        var deg = calUnit$1(arr[3]);
+        compatibleTransform(ROTATE_3D, deg);
+        arr[3] = deg;
+        res[ROTATE_3D] = arr;
+      }
+    }
+
     temp = style.opacity;
 
     if (!isNil$3(temp)) {
@@ -8172,11 +8278,12 @@
       if (temp === 'content') {
         res[FLEX_BASIS] = [temp, STRING];
       } else if (/^[\d.]/.test(temp)) {
-        var v = res[FLEX_BASIS] = calUnit$1(temp);
-        v[0] = Math.max(v[0], 0); // 无单位视为px
+        var _v3 = res[FLEX_BASIS] = calUnit$1(temp);
 
-        if ([NUMBER$1, DEG$1].indexOf(v[1]) > -1) {
-          v[1] = PX$2;
+        _v3[0] = Math.max(_v3[0], 0); // 无单位视为px
+
+        if ([NUMBER$1, DEG$1].indexOf(_v3[1]) > -1) {
+          _v3[1] = PX$2;
         }
       } else {
         res[FLEX_BASIS] = [0, AUTO];
@@ -8205,17 +8312,17 @@
       if (temp === 'inherit') {
         res[FONT_SIZE$2] = [0, INHERIT$2];
       } else {
-        var _v = calUnit$1(temp); // fontSize不能为负数，否则为继承
+        var _v4 = calUnit$1(temp); // fontSize不能为负数，否则为继承
 
 
-        if (_v < 0) {
+        if (_v4 < 0) {
           res[FONT_SIZE$2] = [0, INHERIT$2];
         } else {
-          if ([NUMBER$1, DEG$1].indexOf(_v[1]) > -1) {
-            _v[1] = PX$2;
+          if ([NUMBER$1, DEG$1].indexOf(_v4[1]) > -1) {
+            _v4[1] = PX$2;
           }
 
-          res[FONT_SIZE$2] = _v;
+          res[FONT_SIZE$2] = _v4;
         }
       }
     }
@@ -8276,13 +8383,13 @@
         res[LINE_HEIGHT] = [0, AUTO];
       } // lineHeight默认数字，想要px必须强制带单位
       else if (/^[\d.]+/i.test(temp)) {
-          var _v2 = calUnit$1(temp);
+          var _v5 = calUnit$1(temp);
 
-          if ([DEG$1].indexOf(_v2[1]) > -1) {
-            _v2[1] = NUMBER$1;
+          if ([DEG$1].indexOf(_v5[1]) > -1) {
+            _v5[1] = NUMBER$1;
           }
 
-          res[LINE_HEIGHT] = _v2;
+          res[LINE_HEIGHT] = _v5;
         } else {
           var _n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
@@ -8303,13 +8410,13 @@
       } else if (temp === 'normal') {
         res[LETTER_SPACING] = [0, PX$2];
       } else if (/^-?[\d.]/.test(temp)) {
-        var _v3 = calUnit$1(temp);
+        var _v6 = calUnit$1(temp);
 
-        if ([NUMBER$1, DEG$1].indexOf(_v3[1]) > -1) {
-          _v3[1] = PX$2;
+        if ([NUMBER$1, DEG$1].indexOf(_v6[1]) > -1) {
+          _v6[1] = PX$2;
         }
 
-        res[LETTER_SPACING] = _v3;
+        res[LETTER_SPACING] = _v6;
       } else {
         res[LETTER_SPACING] = [parseFloat(temp) || 0, PX$2];
       }
@@ -8459,33 +8566,33 @@
 
           if (m2) {
             var k = m2[1].toLowerCase(),
-                _v4 = calUnit$1(m2[2]);
+                _v7 = calUnit$1(m2[2]);
 
             if (k === 'blur') {
-              if (_v4[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v4[1]) > -1) {
+              if (_v7[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v7[1]) > -1) {
                 return;
               }
 
-              if (_v4[1] === NUMBER$1) {
-                _v4[1] = PX$2;
+              if (_v7[1] === NUMBER$1) {
+                _v7[1] = PX$2;
               }
 
-              f.push([k, _v4]);
+              f.push([k, _v7]);
             } else if (k === 'hue-rotate') {
-              if ([NUMBER$1, DEG$1].indexOf(_v4[1]) === -1) {
+              if ([NUMBER$1, DEG$1].indexOf(_v7[1]) === -1) {
                 return;
               }
 
-              _v4[1] = DEG$1;
-              f.push([k, _v4]);
+              _v7[1] = DEG$1;
+              f.push([k, _v7]);
             } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
-              if ([NUMBER$1, PERCENT$2].indexOf(_v4[1]) === -1) {
+              if ([NUMBER$1, PERCENT$2].indexOf(_v7[1]) === -1) {
                 return;
               }
 
-              _v4[0] = Math.max(_v4[0], 0);
-              _v4[1] = PERCENT$2;
-              f.push([k, _v4]);
+              _v7[0] = Math.max(_v7[0], 0);
+              _v7[1] = PERCENT$2;
+              f.push([k, _v7]);
             }
           }
         });
@@ -8530,18 +8637,18 @@
             var _res = []; // v,h,blur,spread,color,inset
 
             for (var _i = 0; _i < 4; _i++) {
-              var _v5 = calUnit$1(boxShadow[_i + 1]);
+              var _v8 = calUnit$1(boxShadow[_i + 1]);
 
-              if ([NUMBER$1, DEG$1].indexOf(_v5[1]) > -1) {
-                _v5[1] = PX$2;
+              if ([NUMBER$1, DEG$1].indexOf(_v8[1]) > -1) {
+                _v8[1] = PX$2;
               } // x/y可以负，blur和spread不行
 
 
-              if (_i > 1 && _v5[0] < 0) {
-                _v5 = 0;
+              if (_i > 1 && _v8[0] < 0) {
+                _v8 = 0;
               }
 
-              _res.push(_v5);
+              _res.push(_v8);
             }
 
             _res.push(rgba2int$2(boxShadow[5]));
@@ -8577,8 +8684,8 @@
 
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        var _v6 = style[k];
-        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v6) ? _v6 : [_v6];
+        var _v9 = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v9) ? _v9 : [_v9];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -8963,7 +9070,7 @@
 
   var VALUE = (_VALUE = {}, _defineProperty(_VALUE, POSITION, true), _defineProperty(_VALUE, DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, FLEX_DIRECTION, true), _defineProperty(_VALUE, FLEX_GROW, true), _defineProperty(_VALUE, FLEX_SHRINK, true), _defineProperty(_VALUE, FLEX_WRAP, true), _defineProperty(_VALUE, JUSTIFY_CONTENT, true), _defineProperty(_VALUE, ALIGN_ITEMS, true), _defineProperty(_VALUE, ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$3.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$3.FILL_RULE, true), _defineProperty(_VALUE, OPACITY, true), _defineProperty(_VALUE, Z_INDEX, true), _defineProperty(_VALUE, BACKGROUND_CLIP, true), _defineProperty(_VALUE, TEXT_OVERFLOW, true), _defineProperty(_VALUE, LINE_CLAMP, true), _VALUE);
   var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, COLOR, true), _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_);
-  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _ARRAY_0_);
+  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _ARRAY_0_); // TODO 优化
 
   function cloneStyle(style, keys) {
     if (!keys) {
@@ -8980,10 +9087,10 @@
 
     for (var i = 0, len = keys.length; i < len; i++) {
       var k = keys[i];
-      var v = style[k]; // 渐变特殊处理
+      var _v10 = style[k]; // 渐变特殊处理
 
       if (k === BACKGROUND_IMAGE) {
-        res[k] = v.map(function (item) {
+        res[k] = _v10.map(function (item) {
           // 可能为null
           if (item && item.k) {
             return util.clone(item);
@@ -8992,7 +9099,7 @@
           }
         });
       } else if (k === FILL || k === STROKE) {
-        res[k] = v.map(function (item) {
+        res[k] = _v10.map(function (item) {
           // 渐变
           // 可能非法为空
           if (item && item.k) {
@@ -9003,8 +9110,8 @@
             }
         });
       } else if (k === TRANSFORM || k === FILTER) {
-        if (v) {
-          var n = v.slice(0);
+        if (_v10) {
+          var n = _v10.slice(0);
 
           for (var _i5 = 0, _len4 = n.length; _i5 < _len4; _i5++) {
             n[_i5] = n[_i5].slice(0);
@@ -9014,23 +9121,23 @@
           res[k] = n;
         }
       } else if (k === BOX_SHADOW) {
-        if (v) {
-          v = v.map(function (item) {
+        if (_v10) {
+          _v10 = _v10.map(function (item) {
             var n = item.slice(0);
             n[4] = n[4].slice(0);
             return n;
           });
-          res[k] = v;
+          res[k] = _v10;
         }
       } // position等直接值类型赋值
       else if (VALUE.hasOwnProperty(k)) {
-          res[k] = v;
+          res[k] = _v10;
         } // geom自定义属性
         else if (GEOM$2.hasOwnProperty(k)) {
-            res[k] = util.clone(v);
+            res[k] = util.clone(_v10);
           } // 其余皆是数组或空
-          else if (v) {
-              var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+          else if (_v10) {
+              var _n2 = res[k] = _v10.slice(0); // 特殊引用里数组某项再次clone
 
 
               if (k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
@@ -9794,11 +9901,17 @@
   var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
       TRANSLATE_X$1 = _enums$STYLE_KEY$4.TRANSLATE_X,
       TRANSLATE_Y$1 = _enums$STYLE_KEY$4.TRANSLATE_Y,
+      TRANSLATE_Z$1 = _enums$STYLE_KEY$4.TRANSLATE_Z,
       SCALE_X$1 = _enums$STYLE_KEY$4.SCALE_X,
       SCALE_Y$1 = _enums$STYLE_KEY$4.SCALE_Y,
+      SCALE_Z$1 = _enums$STYLE_KEY$4.SCALE_Z,
       SKEW_X$1 = _enums$STYLE_KEY$4.SKEW_X,
       SKEW_Y$1 = _enums$STYLE_KEY$4.SKEW_Y,
+      ROTATE_X$1 = _enums$STYLE_KEY$4.ROTATE_X,
+      ROTATE_Y$1 = _enums$STYLE_KEY$4.ROTATE_Y,
       ROTATE_Z$1 = _enums$STYLE_KEY$4.ROTATE_Z,
+      ROTATE_3D$1 = _enums$STYLE_KEY$4.ROTATE_3D,
+      PERSPECTIVE$1 = _enums$STYLE_KEY$4.PERSPECTIVE,
       MATRIX$1 = _enums$STYLE_KEY$4.MATRIX,
       FONT_SIZE$4 = _enums$STYLE_KEY$4.FONT_SIZE;
   var PX$3 = o.PX,
@@ -9813,37 +9926,63 @@
       multiply$1 = matrix.multiply,
       isE$1 = matrix.isE;
   var d2r$2 = geom$1.d2r,
-      pointInPolygon$1 = geom$1.pointInPolygon;
+      pointInPolygon$1 = geom$1.pointInPolygon; // const HASH_3D = {
+  //   [TRANSLATE_Z]: true,
+  //   [SCALE_Z]: true,
+  //   [ROTATE_X]: true,
+  //   [ROTATE_Y]: true,
+  // }
 
   function calSingle(t, k, v) {
     if (k === TRANSLATE_X$1) {
-      t[4] = v;
+      t[12] = v;
     } else if (k === TRANSLATE_Y$1) {
-      t[5] = v;
+      t[13] = v;
+    } else if (k === TRANSLATE_Z$1) {
+      t[14] = v;
     } else if (k === SCALE_X$1) {
       t[0] = v;
     } else if (k === SCALE_Y$1) {
-      t[3] = v;
+      t[5] = v;
+    } else if (k === SCALE_Z$1) {
+      t[10] = v;
     } else if (k === SKEW_X$1) {
       v = d2r$2(v);
-      t[2] = Math.tan(v);
+      t[4] = Math.tan(v);
     } else if (k === SKEW_Y$1) {
       v = d2r$2(v);
-      t[1] = Math.tan(v);
-    } else if (k === ROTATE_Z$1) {
+      t[5] = Math.tan(v);
+    } else if (k === ROTATE_X$1) {
       v = d2r$2(v);
       var sin = Math.sin(v);
       var cos = Math.cos(v);
-      t[0] = t[3] = cos;
-      t[1] = sin;
-      t[2] = -sin;
+      t[5] = t[10] = cos;
+      t[6] = sin;
+      t[9] = -sin;
+    } else if (k === ROTATE_Y$1) {
+      v = d2r$2(v);
+
+      var _sin = Math.sin(v);
+
+      var _cos = Math.cos(v);
+
+      t[0] = t[10] = _cos;
+      t[8] = _sin;
+      t[2] = -_sin;
+    } else if (k === ROTATE_Z$1) {
+      v = d2r$2(v);
+
+      var _sin2 = Math.sin(v);
+
+      var _cos2 = Math.cos(v);
+
+      t[0] = t[5] = _cos2;
+      t[1] = _sin2;
+      t[4] = -_sin2;
+    } else if (k === ROTATE_3D$1) ; else if (k === PERSPECTIVE$1) {
+      t[11] = -1 / v;
     } else if (k === MATRIX$1) {
-      t[0] = v[0];
-      t[1] = v[1];
-      t[2] = v[2];
-      t[3] = v[3];
-      t[4] = v[4];
-      t[5] = v[5];
+      util.assignMatrix(t, v);
     }
   }
 
@@ -9860,7 +9999,8 @@
       m = multiply$1(m, t);
     });
     return m;
-  }
+  } // 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
+
 
   function calMatrixByOrigin(m, transformOrigin) {
     var _transformOrigin = _slicedToArray(transformOrigin, 2),
@@ -9873,16 +10013,8 @@
       return res;
     }
 
-    var _res = _slicedToArray(res, 6),
-        a = _res[0],
-        b = _res[1],
-        c = _res[2],
-        d = _res[3],
-        e = _res[4],
-        f = _res[5];
-
-    res[4] = -ox * a - oy * c + e + ox;
-    res[5] = -ox * b - oy * d + f + oy;
+    res = multiply$1([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+    res = multiply$1(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
     return res;
   } // img缩放svg下专用，无rem
 
@@ -9890,7 +10022,7 @@
   function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
     var m = calMatrix(transform, ow, oh);
     return calMatrixByOrigin(m, transformOrigin);
-  } // 判断点是否在一个矩形内，比如事件发生是否在节点上
+  } // 判断点是否在一个4边形内，比如事件发生是否在节点上
 
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
@@ -10379,7 +10511,7 @@
 
           if (source) {
             ctx.globalAlpha = __config[NODE_OPACITY];
-            Cache.drawCache(source, cacheMask, __config[NODE_COMPUTED_STYLE][TRANSFORM$1], [1, 0, 0, 1, 0, 0], __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN$2].slice(0), inverse);
+            Cache.drawCache(source, cacheMask, __config[NODE_COMPUTED_STYLE][TRANSFORM$1], mx.identity(), __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN$2].slice(0), inverse);
           } // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
           else if (__config[NODE_HAS_CONTENT] && __config[NODE_COMPUTED_STYLE][DISPLAY$1] !== 'none' && __config[NODE_COMPUTED_STYLE][VISIBILITY$1] !== 'hidden') {
               inject.error('CacheMask is oversize');
@@ -10495,14 +10627,14 @@
           if (inverse) {
             // 很多情况mask和target相同matrix，可简化计算
             if (util.equalArr(matrix, inverse)) {
-              matrix = [1, 0, 0, 1, 0, 0];
+              matrix = mx.identity();
             } else {
               inverse = mx.inverse(inverse);
               matrix = mx.multiply(inverse, matrix);
             }
           }
 
-          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+          ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         }
 
         ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
@@ -10511,7 +10643,7 @@
       key: "draw",
       value: function draw(ctx, opacity, matrix, cache) {
         ctx.globalAlpha = opacity;
-        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         var x = cache.x,
             y = cache.y,
             canvas = cache.canvas,
@@ -16321,9 +16453,13 @@
       MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
       TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
       TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
+      TRANSLATE_Z$2 = _enums$STYLE_KEY$c.TRANSLATE_Z,
       TRANSFORM$3 = _enums$STYLE_KEY$c.TRANSFORM,
       SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
       SCALE_Y$3 = _enums$STYLE_KEY$c.SCALE_Y,
+      SCALE_Z$2 = _enums$STYLE_KEY$c.SCALE_Z,
+      ROTATE_X$2 = _enums$STYLE_KEY$c.ROTATE_X,
+      ROTATE_Y$2 = _enums$STYLE_KEY$c.ROTATE_Y,
       ROTATE_Z$2 = _enums$STYLE_KEY$c.ROTATE_Z,
       SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
@@ -17011,7 +17147,7 @@
 
         if (__config[NODE_IS_INLINE]) {
           computedStyle[TRANSFORM_ORIGIN$4] = [sx1, sy1];
-          return __cacheStyle[MATRIX$3] = [1, 0, 0, 1, 0, 0];
+          return __cacheStyle[MATRIX$3] = mx.identity();
         }
 
         var matrixCache = __cacheStyle[MATRIX$3]; // tx/ty变化特殊优化
@@ -17039,8 +17175,8 @@
 
             x = v - (computedStyle[TRANSLATE_X$4] || 0);
             computedStyle[TRANSLATE_X$4] = v;
-            computedStyle[TRANSFORM$3][4] += x;
-            matrixCache[4] += x;
+            computedStyle[TRANSFORM$3][12] += x;
+            matrixCache[12] += x;
           }
 
           if (contain(lv, TY)) {
@@ -17062,8 +17198,8 @@
 
             y = _v - (computedStyle[TRANSLATE_Y$3] || 0);
             computedStyle[TRANSLATE_Y$3] = _v;
-            computedStyle[TRANSFORM$3][5] += y;
-            matrixCache[5] += y;
+            computedStyle[TRANSFORM$3][13] += y;
+            matrixCache[13] += y;
           }
 
           __cacheStyle[MATRIX$3] = matrixCache;
@@ -17082,8 +17218,8 @@
               computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
             }
 
-            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
-              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
+            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$2] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$2] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
               matrixCache = null;
               var matrix; // transform相对于自身
 
@@ -17092,7 +17228,7 @@
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
-                  [TRANSLATE_X$4, TRANSLATE_Y$3, ROTATE_Z$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3].forEach(function (k) {
+                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$2, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                     // 删除之前遗留的
                     delete computedStyle[k];
                     var v = currentStyle[k];
@@ -17103,32 +17239,32 @@
 
                     computedStyle[k] = v[0]; // scale为1和其它为0避免计算浪费
 
-                    var isScale = k === SCALE_X$3 || k === SCALE_Y$3;
+                    var isScale = k === SCALE_X$3 || k === SCALE_Y$3 || k === SCALE_Z$2;
 
                     if (v[0] === 1 && isScale || !isScale && v[0] === 0) {
                       return;
                     }
 
                     if (v[1] === PERCENT$7) {
-                      if (k === TRANSLATE_X$4) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
                         computedStyle[k] = v[0] * offsetWidth * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * offsetHeight * 0.01;
                       }
                     } else if (v[1] === REM$6) {
-                      if (k === TRANSLATE_X$4) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       }
                     } else if (v[1] === VW$6) {
-                      if (k === TRANSLATE_X$4) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       }
                     } else if (v[1] === VH$6) {
-                      if (k === TRANSLATE_X$4) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
@@ -17143,7 +17279,7 @@
                   }
                 }
 
-              computedStyle[TRANSFORM$3] = matrix || [1, 0, 0, 1, 0, 0];
+              computedStyle[TRANSFORM$3] = matrix || mx.identity();
             }
 
             if (!matrixCache) {
@@ -17825,38 +17961,39 @@
 
 
         var matrix = __cacheStyle[MATRIX$3];
+
+        if (renderMode === mode.SVG) {
+          if (!mx.isE(matrix)) {
+            virtualDom.transform = 'matrix(' + joinArr$2(mx.m2m6(matrix), ',') + ')';
+          } else {
+            delete virtualDom.transform;
+          }
+
+          virtualDom.visibility = visibility;
+        }
+
         var m = __config[NODE_MATRIX$1];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
-        var renderMatrix = matrix; // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
+        util.assignMatrix(m, matrix); // m[0] = matrix[0];
+        // m[1] = matrix[1];
+        // m[2] = matrix[2];
+        // m[3] = matrix[3];
+        // m[4] = matrix[4];
+        // m[5] = matrix[5];
+        // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
 
         if (p) {
           matrix = mx.multiply(p.matrixEvent, matrix);
         } // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
 
 
-        m = __config[NODE_MATRIX_EVENT$2];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
+        m = __config[NODE_MATRIX_EVENT$2]; // m[0] = matrix[0];
+        // m[1] = matrix[1];
+        // m[2] = matrix[2];
+        // m[3] = matrix[3];
+        // m[4] = matrix[4];
+        // m[5] = matrix[5];
 
-        if (renderMode === mode.SVG) {
-          if (!mx.isE(renderMatrix)) {
-            virtualDom.transform = 'matrix(' + joinArr$2(renderMatrix, ',') + ')';
-          } else {
-            delete virtualDom.transform;
-          }
-
-          virtualDom.visibility = visibility;
-        } // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
-
+        util.assignMatrix(m, matrix); // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
 
         if (res.limitCache) {
           return res;
@@ -17978,8 +18115,9 @@
           res.offscreenFilter = offscreenFilter;
           res.offscreenOverflow = offscreenOverflow;
           res.ctx = ctx;
-          ctx.globalAlpha = opacity;
-          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+          ctx.globalAlpha = opacity; // console.warn(this.tagName, matrix.slice(0), mx.m2m6(matrix));
+
+          ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         } // 隐藏不渲染
 
 
@@ -18414,7 +18552,7 @@
 
         root.delRefreshTask(this.__loadBgi.cb);
         root.delRefreshTask(this.__task);
-        this.__matrix = this.__matrixEvent = this.__root = null;
+        this.__root = null;
         this.clearCache();
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
@@ -19184,12 +19322,10 @@
       key: "matrixEvent",
       get: function get() {
         return this.__config[NODE_MATRIX_EVENT$2];
-      }
-    }, {
-      key: "renderMatrix",
-      get: function get() {
-        return this.matrix;
-      }
+      } // get renderMatrix() {
+      //   return this.matrix;
+      // }
+
     }, {
       key: "style",
       get: function get() {
@@ -26521,8 +26657,8 @@
 
       if (_node instanceof Text) {
         ctx.globalAlpha = opacity;
-        var m = matrix || [1, 0, 0, 1, 0, 0];
-        ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        var m = matrix || mx.identity();
+        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
         _node.render(renderMode, 0, ctx, true, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -26596,7 +26732,7 @@
             ctx.globalAlpha = opacity;
 
             if (matrix) {
-              ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+              ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
             } else {
               ctx.setTransform(1, 0, 0, 1, 0, 0);
             }
@@ -26749,8 +26885,8 @@
       // 先看text，visibility会在内部判断，display会被parent判断
 
       if (_node2 instanceof Text) {
-        var m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-        texCache.addTexAndDrawWhenLimit(gl, _config2[NODE_CACHE$4], opacity, m, cx, cy, dx, dy);
+        // let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+        texCache.addTexAndDrawWhenLimit(gl, _config2[NODE_CACHE$4], opacity, matrix, cx, cy, dx, dy);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
           var __cache = _config2[NODE_CACHE$4],
@@ -26798,13 +26934,12 @@
 
             tfo[0] += _dx;
             tfo[1] += _dy;
-
-            var _m2 = tf.calMatrixByOrigin(transform, tfo);
+            var m = tf.calMatrixByOrigin(transform, tfo);
 
             if (matrix) {
-              matrix = multiply$2(matrix, _m2);
+              matrix = multiply$2(matrix, m);
             } else {
-              matrix = _m2;
+              matrix = m;
             }
           }
 
@@ -26815,9 +26950,8 @@
           var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
 
           if (target) {
-            var _m3 = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy); // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-
-
+            // let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+            // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
             if (isValidMbm$2(mixBlendMode)) {
               texCache.refresh(gl, cx, cy);
 
@@ -26827,7 +26961,7 @@
                   frameBuffer2 = _genFrameBufferWithTe4[1],
                   texture2 = _genFrameBufferWithTe4[2];
 
-              texCache.addTexAndDrawWhenLimit(gl, target, opacity, _m3, cx, cy, dx, dy);
+              texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
               texCache.refresh(gl, cx, cy); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
 
               var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
@@ -26840,7 +26974,7 @@
               gl.deleteFramebuffer(frameBuffer2);
               gl.deleteTexture(texture2);
             } else {
-              texCache.addTexAndDrawWhenLimit(gl, target, opacity, _m3, cx, cy, dx, dy);
+              texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
             }
 
             if (target !== __cache) {
@@ -27149,7 +27283,7 @@
     var inverse;
 
     if (isE$2(transform)) {
-      inverse = [1, 0, 0, 1, 0, 0];
+      inverse = mx.identity();
     } else {
       var tfo = transformOrigin.slice(0);
       tfo[0] += sx1 + dx;
@@ -27190,7 +27324,7 @@
         var m = void 0;
 
         if (isE$2(_transform)) {
-          m = [1, 0, 0, 1, 0, 0];
+          m = mx.identity();
         } else {
           var _tfo = _transformOrigin.slice(0);
 
@@ -27199,8 +27333,8 @@
           m = tf.calMatrixByOrigin(_transform, _tfo);
         }
 
-        m = mx.multiply(inverse, m);
-        m = mx.m2Mat4(m, cx, cy);
+        m = mx.multiply(inverse, m); // m = mx.m2Mat4(m, cx, cy);
+
         texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
       } // 异常情况超限
       else if (_config3[NODE_LIMIT_CACHE$2]) {
@@ -27355,7 +27489,7 @@
             offsetHeight = offscreen.offsetHeight;
         ctx.globalCompositeOperation = 'destination-in';
         ctx.globalAlpha = 1;
-        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         ctx.fillStyle = '#FFF';
         ctx.beginPath();
         ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -27594,12 +27728,12 @@
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
           var m = __config[NODE_MATRIX$2];
-          m[0] = matrix[0];
-          m[1] = matrix[1];
-          m[2] = matrix[2];
-          m[3] = matrix[3];
-          m[4] = matrix[4];
-          m[5] = matrix[5];
+          util.assignMatrix(m, matrix); // m[0] = matrix[0];
+          // m[1] = matrix[1];
+          // m[2] = matrix[2];
+          // m[3] = matrix[3];
+          // m[4] = matrix[4];
+          // m[5] = matrix[5];
         } else {
           matrix = __config[NODE_MATRIX$2];
         } // 父不为E时要点乘继承父的
@@ -27610,12 +27744,13 @@
         } // 恶心的v8性能优化
 
 
-        matrixEvent[0] = matrix[0];
-        matrixEvent[1] = matrix[1];
-        matrixEvent[2] = matrix[2];
-        matrixEvent[3] = matrix[3];
-        matrixEvent[4] = matrix[4];
-        matrixEvent[5] = matrix[5];
+        util.assignMatrix(matrixEvent, matrix); // matrixEvent[0] = matrix[0];
+        // matrixEvent[1] = matrix[1];
+        // matrixEvent[2] = matrix[2];
+        // matrixEvent[3] = matrix[3];
+        // matrixEvent[4] = matrix[4];
+        // matrixEvent[5] = matrix[5];
+
         var opacity = void 0;
 
         if (contain$2(refreshLevel, OP)) {
@@ -27769,7 +27904,7 @@
             _opacity = _config4$NODE_DOM_PAR[NODE_OPACITY$3],
             _matrixEvent = _config4$NODE_DOM_PAR[NODE_MATRIX_EVENT$4];
         ctx.globalAlpha = _opacity;
-        ctx.setTransform(_matrixEvent[0], _matrixEvent[1], _matrixEvent[2], _matrixEvent[3], _matrixEvent[4], _matrixEvent[5]);
+        ctx.setTransform(_matrixEvent[0], _matrixEvent[1], _matrixEvent[4], _matrixEvent[5], _matrixEvent[12], _matrixEvent[13]);
 
         _node3.render(renderMode, 0, ctx);
 
@@ -28132,18 +28267,12 @@
 
             if (!contain$2(refreshLevel, TRANSFORM_ALL$1) && v < REPAINT$2 && !contain$2(v, TRANSFORM_ALL$1)) {
               defsCache.forEach(function (item) {
-                // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-                //   ctx.addCache(item);
-                // }
                 ctx.addCache(item);
               });
             }
           } // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
           else {
               defsCache.forEach(function (item) {
-                // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-                //   ctx.addCache(item);
-                // }
                 ctx.addCache(item);
               });
             }
@@ -28166,11 +28295,13 @@
           _total6 = _structs$_i3[STRUCT_TOTAL$1],
           _hasMask2 = _structs$_i3[STRUCT_HAS_MASK$1],
           lv = _structs$_i3[STRUCT_LV$2];
-      var __config = _node4.__config;
-      var display = _node4.computedStyle[DISPLAY$9];
+      var __config = _node4.__config; // let { computedStyle: { [DISPLAY]: display } } = node;
+
       var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           _refreshLevel2 = __config[NODE_REFRESH_LV$1],
-          _defsCache = __config[NODE_DEFS_CACHE$6]; // 将随后的若干个mask节点范围存下来
+          _defsCache = __config[NODE_DEFS_CACHE$6],
+          computedStyle = __config[NODE_COMPUTED_STYLE$4];
+      var display = computedStyle[DISPLAY$9]; // 将随后的若干个mask节点范围存下来
 
       if (_hasMask2 && display !== 'none') {
         var _start = _i5 + (_total6 || 0) + 1;
@@ -28218,10 +28349,9 @@
           }
 
           delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
+          // let { computedStyle: { [DISPLAY]: display } } = node;
 
-          var _display = _node4.computedStyle[DISPLAY$9];
-
-          if (_display === 'none') {
+          if (display === 'none') {
             _i5 += _total6 || 0;
 
             if (_hasMask2) {
@@ -28231,23 +28361,22 @@
         }
 
         var currentStyle = __config[NODE_CURRENT_STYLE$4],
-            computedStyle = __config[NODE_COMPUTED_STYLE$4],
+            _computedStyle = __config[NODE_COMPUTED_STYLE$4],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$2(_refreshLevel2, TRANSFORM_ALL$1)) {
-          var matrix = _node4.__calMatrix(_refreshLevel2, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
+          var matrix = _node4.__calMatrix(_refreshLevel2, __cacheStyle, currentStyle, _computedStyle, __config); // 恶心的v8性能优化
 
 
           var m = __config[NODE_MATRIX$2];
-
-          if (matrix && m) {
-            m[0] = matrix[0];
-            m[1] = matrix[1];
-            m[2] = matrix[2];
-            m[3] = matrix[3];
-            m[4] = matrix[4];
-            m[5] = matrix[5];
-          }
+          util.assignMatrix(m, matrix); // if(matrix && m) {
+          // m[0] = matrix[0];
+          // m[1] = matrix[1];
+          // m[2] = matrix[2];
+          // m[3] = matrix[3];
+          // m[4] = matrix[4];
+          // m[5] = matrix[5];
+          // }
 
           if (!matrix || isE$2(matrix)) {
             delete virtualDom.transform;
@@ -28261,19 +28390,18 @@
 
 
           m = __config[NODE_MATRIX_EVENT$4];
-
-          if (m && matrix) {
-            m[0] = matrix[0];
-            m[1] = matrix[1];
-            m[2] = matrix[2];
-            m[3] = matrix[3];
-            m[4] = matrix[4];
-            m[5] = matrix[5];
-          }
+          util.assignMatrix(m, matrix); // if(m && matrix) {
+          //   m[0] = matrix[0];
+          //   m[1] = matrix[1];
+          //   m[2] = matrix[2];
+          //   m[3] = matrix[3];
+          //   m[4] = matrix[4];
+          //   m[5] = matrix[5];
+          // }
         }
 
         if (contain$2(_refreshLevel2, OP)) {
-          var opacity = computedStyle[OPACITY$5] = currentStyle[OPACITY$5];
+          var opacity = _computedStyle[OPACITY$5] = currentStyle[OPACITY$5];
 
           if (opacity === 1) {
             delete virtualDom.opacity;
@@ -28283,7 +28411,7 @@
         }
 
         if (contain$2(_refreshLevel2, FT)) {
-          var filter = _node4.__calFilter(currentStyle, computedStyle);
+          var filter = _node4.__calFilter(currentStyle, _computedStyle);
 
           var s = painter.svgFilter(filter);
 
@@ -28295,7 +28423,7 @@
         }
 
         if (contain$2(_refreshLevel2, MBM)) {
-          var mixBlendMode = computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
+          var mixBlendMode = _computedStyle[MIX_BLEND_MODE$3] = currentStyle[MIX_BLEND_MODE$3];
 
           if (isValidMbm$2(mixBlendMode)) {
             virtualDom.mixBlendMode = mbmName$2(mixBlendMode);
@@ -28311,7 +28439,9 @@
 
         _node4.render(renderMode, _refreshLevel2, ctx);
 
-        virtualDom = _node4.virtualDom;
+        virtualDom = _node4.virtualDom; // 渲染后更新取值
+
+        display = computedStyle[DISPLAY$9];
 
         if (display === 'none') {
           _i5 += _total6 || 0;
@@ -28349,14 +28479,14 @@
         for (var j = _start2; j < _end2; j++) {
           var _node5 = __structs[j][STRUCT_NODE$1];
           var _node5$computedStyle = _node5.computedStyle,
-              _display2 = _node5$computedStyle[DISPLAY$9],
+              _display = _node5$computedStyle[DISPLAY$9],
               visibility = _node5$computedStyle[VISIBILITY$6],
               fill = _node5$computedStyle[FILL$2],
               _node5$virtualDom = _node5.virtualDom,
               children = _node5$virtualDom.children,
               _opacity3 = _node5$virtualDom.opacity;
 
-          if (_display2 !== 'none' && visibility !== 'hidden') {
+          if (_display !== 'none' && visibility !== 'hidden') {
             // 引用相同无法diff，需要clone
             children = util.clone(children);
             mChildren = mChildren.concat(children);
@@ -28390,9 +28520,9 @@
               else if (tagName === 'image') {
                   var hasTransform = -1;
 
-                  for (var _m4 = 0, _len6 = props.length; _m4 < _len6; _m4++) {
-                    if (props[_m4][0] === 'transform') {
-                      hasTransform = _m4;
+                  for (var _m2 = 0, _len6 = props.length; _m2 < _len6; _m2++) {
+                    if (props[_m2][0] === 'transform') {
+                      hasTransform = _m2;
                       break;
                     }
                   }
@@ -28560,12 +28690,12 @@
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
           var m = __config[NODE_MATRIX$2];
-          m[0] = matrix[0];
-          m[1] = matrix[1];
-          m[2] = matrix[2];
-          m[3] = matrix[3];
-          m[4] = matrix[4];
-          m[5] = matrix[5];
+          util.assignMatrix(m, matrix); // m[0] = matrix[0];
+          // m[1] = matrix[1];
+          // m[2] = matrix[2];
+          // m[3] = matrix[3];
+          // m[4] = matrix[4];
+          // m[5] = matrix[5];
         } else {
           matrix = __config[NODE_MATRIX$2];
         }
@@ -28575,12 +28705,13 @@
         } // 恶心的v8性能优化
 
 
-        matrixEvent[0] = matrix[0];
-        matrixEvent[1] = matrix[1];
-        matrixEvent[2] = matrix[2];
-        matrixEvent[3] = matrix[3];
-        matrixEvent[4] = matrix[4];
-        matrixEvent[5] = matrix[5];
+        util.assignMatrix(matrixEvent, matrix); // matrixEvent[0] = matrix[0];
+        // matrixEvent[1] = matrix[1];
+        // matrixEvent[2] = matrix[2];
+        // matrixEvent[3] = matrix[3];
+        // matrixEvent[4] = matrix[4];
+        // matrixEvent[5] = matrix[5];
+
         var opacity = void 0;
 
         if (contain$2(refreshLevel, OP)) {
@@ -28783,12 +28914,10 @@
             _limitCache2 = _config5[NODE_LIMIT_CACHE$2],
             _config5$NODE_DOM_PAR = _config5[NODE_DOM_PARENT$5].__config,
             _matrixEvent3 = _config5$NODE_DOM_PAR[NODE_MATRIX_EVENT$4],
-            _opacity4 = _config5$NODE_DOM_PAR[NODE_OPACITY$3];
-
-        var _m5 = mx.m2Mat4(_matrixEvent3, cx, cy);
+            _opacity4 = _config5$NODE_DOM_PAR[NODE_OPACITY$3]; // let m = mx.m2Mat4(matrixEvent, cx, cy);
 
         if (__cache && __cache.available) {
-          texCache.addTexAndDrawWhenLimit(gl, __cache, _opacity4, _m5, cx, cy, true);
+          texCache.addTexAndDrawWhenLimit(gl, __cache, _opacity4, _matrixEvent3, cx, cy, true);
         } // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
         else if (_limitCache2) {
             var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
@@ -28800,7 +28929,7 @@
             var _texture2 = webgl.createTexture(gl, c.canvas, j);
 
             var mockCache = new MockCache(gl, _texture2, 0, 0, width, height, [0, 0, width, height]);
-            texCache.addTexAndDrawWhenLimit(gl, mockCache, _opacity4, _m5, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, mockCache, _opacity4, _matrixEvent3, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true);
             c.ctx.setTransform(1, 0, 0, 1, 0, 0);
             c.ctx.globalAlpha = 1;
@@ -28833,9 +28962,8 @@
         var target = getCache([__cacheMask, _cacheFilter2, __cacheOverflow, _cache]); // total和自身cache的尝试
 
         if (target) {
-          var _m6 = mx.m2Mat4(_matrixEvent4, cx, cy); // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
-
-
+          // let m = mx.m2Mat4(matrixEvent, cx, cy);
+          // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
             texCache.refresh(gl, cx, cy, true);
 
@@ -28845,7 +28973,7 @@
                 frameBuffer2 = _genFrameBufferWithTe20[1],
                 texture2 = _genFrameBufferWithTe20[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity5, _m6, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, target, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
             var _genMbmWebgl3 = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(_mixBlendMode2), width, height);
@@ -28858,15 +28986,14 @@
             gl.deleteFramebuffer(frameBuffer2);
             gl.deleteTexture(texture2);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, target, _opacity5, _m6, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, target, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
           }
 
           if (target !== _cache) {
             _i7 += (_total7 || 0) + (_hasMask3 || 0);
           }
         } else if (limitHash.hasOwnProperty(_i7)) {
-          var _m7 = mx.m2Mat4(_matrixEvent4, cx, cy);
-
+          // let m = mx.m2Mat4(matrixEvent, cx, cy);
           var _target5 = limitHash[_i7];
 
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
@@ -28878,7 +29005,7 @@
                 _frameBuffer = _genFrameBufferWithTe22[1],
                 _texture3 = _genFrameBufferWithTe22[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _m7, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
             var _genMbmWebgl5 = genMbmWebgl(gl, texCache, n, _n, frameBuffer, texture, mbmName$2(_mixBlendMode2), width, height);
@@ -28891,15 +29018,14 @@
             gl.deleteFramebuffer(_frameBuffer);
             gl.deleteTexture(_texture3);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _m7, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
           }
 
           _i7 += (_total7 || 0) + (_hasMask3 || 0);
         } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
         // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
         else if (_limitCache3 && display !== 'none' && visibility !== 'hidden') {
-            var _m8 = mx.m2Mat4(_matrixEvent4, cx, cy);
-
+            // let m = mx.m2Mat4(matrixEvent, cx, cy);
             var _c5 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
             _node6.render(renderMode, _refreshLevel3, gl);
@@ -28910,7 +29036,7 @@
 
             var _mockCache2 = new MockCache(gl, _texture4, 0, 0, width, height, [0, 0, width, height]);
 
-            texCache.addTexAndDrawWhenLimit(gl, _mockCache2, _opacity5, _m8, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _mockCache2, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true);
 
             _c5.ctx.setTransform(1, 0, 0, 1, 0, 0);

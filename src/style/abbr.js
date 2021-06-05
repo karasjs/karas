@@ -84,7 +84,9 @@ export default {
   backgroundPosition: ['backgroundPositionX', 'backgroundPositionY'],
   flex: ['flexGrow', 'flexShrink', 'flexBasis'],
   translate: ['translateX', 'translateY'],
+  translate3d: ['translateX', 'translateY', 'translateY'],
   scale: ['scaleX', 'scaleY'],
+  scale3d: ['scaleX', 'scaleY', 'scaleZ'],
   rotate: ['rotateZ'],
   skew: ['skewX', 'skewY'],
 
@@ -276,6 +278,20 @@ export default {
       let arr = v.toString().split(/\s*,\s*/);
       if(arr.length === 1) {
         arr[1] = arr[0];
+      }
+      this[k].forEach((k, i) => {
+        if(isNil(style[k])) {
+          style[k] = arr[i];
+        }
+      });
+    }
+    else if(['translate3d', 'scale3d'].indexOf(k) > -1) {
+      let arr = v.toString().split(/\s*,\s*/);
+      if(arr.length === 1) {
+        arr[2] = arr[1] = arr[0];
+      }
+      else if(arr.length === 2) {
+        arr[2] = k === 'scale3d' ? 1 : 0;
       }
       this[k].forEach((k, i) => {
         if(isNil(style[k])) {

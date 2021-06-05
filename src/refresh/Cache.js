@@ -254,7 +254,7 @@ class Cache {
         Cache.drawCache(
           source, cacheMask,
           __config[NODE_COMPUTED_STYLE][TRANSFORM],
-          [1, 0, 0, 1, 0, 0],
+          mx.identity(),
           __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN].slice(0),
           inverse
         );
@@ -345,21 +345,21 @@ class Cache {
       if(inverse) {
         // 很多情况mask和target相同matrix，可简化计算
         if(util.equalArr(matrix, inverse)) {
-          matrix = [1, 0, 0, 1, 0, 0];
+          matrix = mx.identity();
         }
         else {
           inverse = mx.inverse(inverse);
           matrix = mx.multiply(inverse, matrix);
         }
       }
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     }
     ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
   }
 
   static draw(ctx, opacity, matrix, cache) {
     ctx.globalAlpha = opacity;
-    ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+    ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     let { x, y, canvas, sx1, sy1, dbx, dby, width, height } = cache;
     ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
   }

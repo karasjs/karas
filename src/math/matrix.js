@@ -1,74 +1,47 @@
-// 生成3*3单位矩阵，css表达方法一维6位
+// 生成4*4单位矩阵
 function identity() {
-  return [1, 0, 0, 1, 0, 0];
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 }
 
-// 矩阵a*b，固定两个matrix都是长度6
+// 矩阵a*b，固定两个matrix都是长度16
 function multiply(a, b) {
-  // 特殊情况优化
-  let isPreIdA = a[0] === 1 && a[1] === 0 && a[2] === 0 && a[3] === 1;
-  let isPreIdB = b[0] === 1 && b[1] === 0 && b[2] === 0 && b[3] === 1;
-  let isSubIdA = a[4] === 0 && a[5] === 0;
-  let isSubIdB = b[4] === 0 && b[5] === 0;
-  if(isPreIdA && isSubIdA) {
-    return b.slice(0);
+  if(isE(a)) {
+    return b;
   }
-  if(isPreIdB && isSubIdB) {
-    return a.slice(0);
-  }
-  if(isPreIdA && isPreIdB) {
-    a = a.slice(0);
-    a[4] += b[4];
-    a[5] += b[5];
+  if(isE(b)) {
     return a;
   }
-  else if(isPreIdA || isPreIdB) {
-    let c = isPreIdA ? b.slice(0) : a.slice(0);
-    c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
-    c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
-    return c;
-  }
-  let c = [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3],
-    0,
-    0,
-  ];
-  if(isSubIdA && isSubIdB) {
-  }
-  else if(isSubIdB) {
-    c[4] = a[4];
-    c[5] = a[5];
-  }
-  else {
-    c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
-    c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
+  let c = [];
+  for(let i = 0; i < 4; i++) {
+    let a0 = a[i];
+    let a1 = a[i + 4];
+    let a2 = a[i + 8];
+    let a3 = a[i + 12];
+    c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+    c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+    c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+    c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
   }
   return c;
 }
 
 function calPoint(point, m) {
-  let [x, y, z] = point;
-  if(m && !isE(m)) {
-    if(m && m.length === 6) {
-      let [a, b, c, d, e, f] = m;
-      return [a * x + c * y + e, b * x + d * y + f];
-    }
-    else if(m && m.length === 16) {
-      z = z || 0;
-      let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
-      let w = x * d1 + y * d2 + z * d3 + d4;
-      return [
-        (x * a1 + y * a2 + z * a3 + a4),
-        (x * b1 + y * b2 + z * b3 + b4),
-        (x * c1 + y * c2 + z * c3 + c4),
-        w
-      ];
-    }
+  let [x, y, z, w] = point;
+  if(w === undefined) {
+    w = 1;
   }
-  return point.slice(0);
+  if(m && !isE(m)) {
+    z = z || 0;
+    let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
+    w *= x * d1 + y * d2 + z * d3 + d4;
+    return [
+      (x * a1 + y * a2 + z * a3 + a4),
+      (x * b1 + y * b2 + z * b3 + b4),
+      (x * c1 + y * c2 + z * c3 + c4),
+      w
+    ];
+  }
+  return [x, y, z, w];
 }
 
 /**
@@ -94,13 +67,10 @@ function inverse(m) {
 }
 
 function isE(m) {
-  if(m.length === 16) {
-    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
-      && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
-      && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0
-      && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
-  }
-  return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
+  return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
+    && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
+    && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0
+    && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
 }
 
 /**
@@ -203,11 +173,24 @@ function m2Mat4(m, width, height) {
   return m;
 }
 
+// 将4*4的16长度矩阵转成css/canvas的6位标准使用，忽略transform3d
+function m2m6(m) {
+  return [
+    m[0],
+    m[1],
+    m[4],
+    m[5],
+    m[12],
+    m[13],
+  ];
+}
+
 export default {
   identity,
   multiply,
   calPoint,
   inverse,
   isE,
-  m2Mat4,
+  // m2Mat4,
+  m2m6,
 };

@@ -16,11 +16,17 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   HEIGHT,
   TRANSLATE_X,
   TRANSLATE_Y,
+  TRANSLATE_Z,
   SCALE_X,
   SCALE_Y,
+  SCALE_Z,
   SKEW_X,
   SKEW_Y,
+  ROTATE_X,
+  ROTATE_Y,
   ROTATE_Z,
+  ROTATE_3D,
+  PERSPECTIVE,
   TRANSFORM,
   TRANSFORM_ORIGIN,
   BACKGROUND_IMAGE,
@@ -81,21 +87,25 @@ const {
 } = key;
 
 const TRANSFORM_HASH = {
-  'translateX': TRANSLATE_X,
-  'translateY': TRANSLATE_Y,
-  'scaleX': SCALE_X,
-  'scaleY': SCALE_Y,
-  'skewX': SKEW_X,
-  'skewY': SKEW_Y,
-  'rotateZ': ROTATE_Z,
-  'rotate': ROTATE_Z,
+  translateX: TRANSLATE_X,
+  translateY: TRANSLATE_Y,
+  translateZ: TRANSLATE_Z,
+  scaleX: SCALE_X,
+  scaleY: SCALE_Y,
+  scaleZ: SCALE_Z,
+  skewX: SKEW_X,
+  skewY: SKEW_Y,
+  rotateX: ROTATE_X,
+  rotateY: ROTATE_Y,
+  rotateZ: ROTATE_Z,
+  // rotate: ROTATE_Z,
 };
 
 function compatibleTransform(k, arr) {
-  if(k === SCALE_X || k === SCALE_Y) {
+  if(k === SCALE_X || k === SCALE_Y || k === SCALE_Z) {
     arr[1] = NUMBER;
   }
-  else if(k === TRANSLATE_X || k === TRANSLATE_Y) {
+  else if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z || k === PERSPECTIVE) {
     if(arr[1] === NUMBER) {
       arr[1] = PX;
     }
@@ -173,25 +183,26 @@ function normalize(style, reset = []) {
     abbr.toFull(style, 'padding');
   }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
-  ['translate', 'scale', 'skew'].forEach(k => {
+  ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate3d', 'rotate'].forEach(k => {
     temp = style[k];
     if(!isNil(temp)) {
       abbr.toFull(style, k);
     }
   });
-  temp = style.rotate;
-  if(!isNil(temp)) {
-    abbr.toFull(style, 'rotate');
-  }
   // 扩展的不能和transform混用，给出警告
   [
     'translateX',
     'translateY',
+    'translateZ',
     'scaleX',
     'scaleY',
+    'scaleZ',
     'skewX',
     'skewY',
+    'rotateX',
+    'rotateY',
     'rotateZ',
+    'rotate3d',
   ].forEach(k => {
     let v = style[k];
     if(!isNil(v) && style.transform) {
@@ -380,7 +391,33 @@ function normalize(style, reset = []) {
             arr = arr.slice(0, 6);
           }
           if(arr.length === 6) {
+            transform.push([MATRIX, [
+              arr[0], arr[1], 0, 0, arr[2], arr[3], 0, 0, 0, 0, 1, 0, arr[4], arr[5], 0, 1,
+            ]]);
+          }
+        }
+        else if(k === 'matrix3d') {
+          let arr = v.toString().split(/\s*,\s*/);
+          arr = arr.map(item => parseFloat(item));
+          if(arr.length > 16) {
+            arr = arr.slice(0, 16);
+          }
+          if(arr.length === 16) {
             transform.push([MATRIX, arr]);
+          }
+        }
+        else if(k === 'perspective') {
+          let arr = calUnit(v);
+          compatibleTransform(PERSPECTIVE, arr);
+          transform.push([PERSPECTIVE, arr]);
+        }
+        else if(k === 'rotate3d') {
+          let arr = v.toString().split(/\s*,\s*/);
+          if(arr.length === 4) {
+            let deg = calUnit(arr[3]);
+            compatibleTransform(ROTATE_3D, deg);
+            arr[3] = deg;
+            transform.push(ROTATE_3D, arr);
           }
         }
         else if(TRANSFORM_HASH.hasOwnProperty(k)) {
@@ -392,16 +429,42 @@ function normalize(style, reset = []) {
         else if({ translate: true, scale: true, skew: true }.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
           if(arr.length === 1) {
-            arr[1] = arr[0].slice(0);
+            arr[1] = k === 'scale' ? [1] : [0];
           }
-          let k1 = STYLE_KEY[style2Upper(k + 'X')];
-          let k2 = STYLE_KEY[style2Upper(k + 'Y')];
-          let arr1 = calUnit(arr[0]);
-          let arr2 = calUnit(arr[1]);
-          compatibleTransform(k1, arr1);
-          compatibleTransform(k2, arr2);
-          transform.push([k1, arr1]);
-          transform.push([k2, arr2]);
+          if(arr.length === 2) {
+            let k1 = STYLE_KEY[style2Upper(k + 'X')];
+            let k2 = STYLE_KEY[style2Upper(k + 'Y')];
+            let arr1 = calUnit(arr[0]);
+            let arr2 = calUnit(arr[1]);
+            compatibleTransform(k1, arr1);
+            compatibleTransform(k2, arr2);
+            transform.push([k1, arr1]);
+            transform.push([k2, arr2]);
+          }
+        }
+        else if({ translate3d: true, scale3d: true }.hasOwnProperty(k)) {
+          let arr = v.toString().split(/\s*,\s*/);
+          if(arr.length === 1) {
+            arr[1] = k === 'scale3d' ? [1] : [0];
+            arr[2] = k === 'scale3d' ? [1] : [0];
+          }
+          else if(arr.length === 2) {
+            arr[2] = k === 'scale3d' ? [1] : [0];
+          }
+          if(arr.length === 3) {
+            let k1 = STYLE_KEY[style2Upper(k + 'X')];
+            let k2 = STYLE_KEY[style2Upper(k + 'Y')];
+            let k3 = STYLE_KEY[style2Upper(k + 'Z')];
+            let arr1 = calUnit(arr[0]);
+            let arr2 = calUnit(arr[1]);
+            let arr3 = calUnit(arr[2]);
+            compatibleTransform(k1, arr1);
+            compatibleTransform(k2, arr2);
+            compatibleTransform(k3, arr3);
+            transform.push([k1, arr1]);
+            transform.push([k2, arr2]);
+            transform.push([k3, arr3]);
+          }
         }
       });
     }
@@ -449,12 +512,15 @@ function normalize(style, reset = []) {
   [
     'translateX',
     'translateY',
+    'translateZ',
     'scaleX',
     'scaleY',
+    'scaleZ',
     'skewX',
     'skewY',
+    'rotateX',
+    'rotateY',
     'rotateZ',
-    'rotate',
   ].forEach(k => {
     let v = style[k];
     if(isNil(v)) {
@@ -466,6 +532,16 @@ function normalize(style, reset = []) {
     compatibleTransform(k2, n);
     res[k2] = n;
   });
+  temp = style.rotate3d;
+  if(temp) {
+    let arr = v.toString().split(/\s*,\s*/);
+    if(arr.length === 4) {
+      let deg = calUnit(arr[3]);
+      compatibleTransform(ROTATE_3D, deg);
+      arr[3] = deg;
+      res[ROTATE_3D] = arr;
+    }
+  }
   temp = style.opacity;
   if(!isNil(temp)) {
     temp = parseFloat(temp);
@@ -1364,6 +1440,7 @@ const ARRAY_0_1 = {
   [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
   [TRANSFORM_ORIGIN]: true,
 };
+// TODO 优化
 function cloneStyle(style, keys) {
   if(!keys) {
     keys = Object.keys(style).map(i => {

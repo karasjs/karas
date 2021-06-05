@@ -56,9 +56,13 @@ const {
     MATRIX,
     TRANSLATE_X,
     TRANSLATE_Y,
+    TRANSLATE_Z,
     TRANSFORM,
     SCALE_X,
     SCALE_Y,
+    SCALE_Z,
+    ROTATE_X,
+    ROTATE_Y,
     ROTATE_Z,
     SKEW_X,
     SKEW_Y,
@@ -685,7 +689,7 @@ class Xom extends Node {
   __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, sx1, sy1, offsetWidth, offsetHeight) {
     if(__config[NODE_IS_INLINE]) {
       computedStyle[TRANSFORM_ORIGIN] = [sx1, sy1];
-      return __cacheStyle[MATRIX] = [1, 0, 0, 1, 0, 0];
+      return __cacheStyle[MATRIX] = mx.identity();
     }
     let matrixCache = __cacheStyle[MATRIX];
     // tx/ty变化特殊优化
@@ -713,8 +717,8 @@ class Xom extends Node {
         }
         x = v - (computedStyle[TRANSLATE_X] || 0);
         computedStyle[TRANSLATE_X] = v;
-        computedStyle[TRANSFORM][4] += x;
-        matrixCache[4] += x;
+        computedStyle[TRANSFORM][12] += x;
+        matrixCache[12] += x;
       }
       if(contain(lv, TY)) {
         let v = currentStyle[TRANSLATE_Y];
@@ -738,8 +742,8 @@ class Xom extends Node {
         }
         y = v - (computedStyle[TRANSLATE_Y] || 0);
         computedStyle[TRANSLATE_Y] = v;
-        computedStyle[TRANSFORM][5] += y;
-        matrixCache[5] += y;
+        computedStyle[TRANSFORM][13] += y;
+        matrixCache[13] += y;
       }
       __cacheStyle[MATRIX] = matrixCache;
     }
@@ -759,17 +763,25 @@ class Xom extends Node {
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
         || __cacheStyle[TRANSLATE_Y] === undefined
+        || __cacheStyle[TRANSLATE_Z] === undefined
+        || __cacheStyle[ROTATE_X] === undefined
+        || __cacheStyle[ROTATE_Y] === undefined
         || __cacheStyle[ROTATE_Z] === undefined
         || __cacheStyle[SCALE_X] === undefined
         || __cacheStyle[SCALE_Y] === undefined
+        || __cacheStyle[SCALE_Z] === undefined
         || __cacheStyle[SKEW_X] === undefined
         || __cacheStyle[SKEW_Y] === undefined) {
         __cacheStyle[TRANSFORM]
           = __cacheStyle[TRANSLATE_X]
           = __cacheStyle[TRANSLATE_Y]
+          = __cacheStyle[TRANSLATE_Z]
+          = __cacheStyle[ROTATE_X]
+          = __cacheStyle[ROTATE_Y]
           = __cacheStyle[ROTATE_Z]
           = __cacheStyle[SCALE_X]
           = __cacheStyle[SCALE_Y]
+          = __cacheStyle[SCALE_Z]
           = __cacheStyle[SKEW_X]
           = __cacheStyle[SKEW_Y]
           = true;
@@ -785,11 +797,15 @@ class Xom extends Node {
           [
             TRANSLATE_X,
             TRANSLATE_Y,
+            TRANSLATE_Z,
+            ROTATE_X,
+            ROTATE_Y,
             ROTATE_Z,
             SKEW_X,
             SKEW_Y,
             SCALE_X,
             SCALE_Y,
+            SCALE_Z,
           ].forEach(k => {
             // 删除之前遗留的
             delete computedStyle[k];
@@ -799,12 +815,12 @@ class Xom extends Node {
             }
             computedStyle[k] = v[0];
             // scale为1和其它为0避免计算浪费
-            let isScale = k === SCALE_X || k === SCALE_Y;
+            let isScale = k === SCALE_X || k === SCALE_Y || k === SCALE_Z;
             if(v[0] === 1 && isScale || !isScale && v[0] === 0) {
               return;
             }
             if(v[1] === PERCENT) {
-              if(k === TRANSLATE_X) {
+              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
                 computedStyle[k] = v[0] * offsetWidth * 0.01;
               }
               else if(k === TRANSLATE_Y) {
@@ -812,7 +828,7 @@ class Xom extends Node {
               }
             }
             else if(v[1] === REM) {
-              if(k === TRANSLATE_X) {
+              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
                 computedStyle[k] = v[0] * this.root.computedStyle[FONT_SIZE];
               }
               else if(k === TRANSLATE_Y) {
@@ -820,7 +836,7 @@ class Xom extends Node {
               }
             }
             else if(v[1] === VW) {
-              if(k === TRANSLATE_X) {
+              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
                 computedStyle[k] = v[0] * this.root.width * 0.01;
               }
               else if(k === TRANSLATE_Y) {
@@ -828,7 +844,7 @@ class Xom extends Node {
               }
             }
             else if(v[1] === VH) {
-              if(k === TRANSLATE_X) {
+              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
                 computedStyle[k] = v[0] * this.root.height * 0.01;
               }
               else if(k === TRANSLATE_Y) {
@@ -841,7 +857,7 @@ class Xom extends Node {
             matrix = tf.calMatrix(temp, offsetWidth, offsetHeight, this.root);
           }
         }
-        computedStyle[TRANSFORM] = matrix || [1, 0, 0, 1, 0, 0];
+        computedStyle[TRANSFORM] = matrix || mx.identity();
       }
       if(!matrixCache) {
         let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
@@ -1478,35 +1494,36 @@ class Xom extends Node {
     }
     // canvas/svg/事件需要3种不同的matrix
     let matrix = __cacheStyle[MATRIX];
-    let m = __config[NODE_MATRIX];
-    m[0] = matrix[0];
-    m[1] = matrix[1];
-    m[2] = matrix[2];
-    m[3] = matrix[3];
-    m[4] = matrix[4];
-    m[5] = matrix[5];
-    let renderMatrix = matrix;
-    // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
-    if(p) {
-      matrix = mx.multiply(p.matrixEvent, matrix);
-    }
-    // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
-    m = __config[NODE_MATRIX_EVENT];
-    m[0] = matrix[0];
-    m[1] = matrix[1];
-    m[2] = matrix[2];
-    m[3] = matrix[3];
-    m[4] = matrix[4];
-    m[5] = matrix[5];
     if(renderMode === mode.SVG) {
-      if(!mx.isE(renderMatrix)) {
-        virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
+      if(!mx.isE(matrix)) {
+        virtualDom.transform = 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')';
       }
       else {
         delete virtualDom.transform;
       }
       virtualDom.visibility = visibility;
     }
+    let m = __config[NODE_MATRIX];
+    util.assignMatrix(m, matrix);
+    // m[0] = matrix[0];
+    // m[1] = matrix[1];
+    // m[2] = matrix[2];
+    // m[3] = matrix[3];
+    // m[4] = matrix[4];
+    // m[5] = matrix[5];
+    // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
+    if(p) {
+      matrix = mx.multiply(p.matrixEvent, matrix);
+    }
+    // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
+    m = __config[NODE_MATRIX_EVENT];
+    // m[0] = matrix[0];
+    // m[1] = matrix[1];
+    // m[2] = matrix[2];
+    // m[3] = matrix[3];
+    // m[4] = matrix[4];
+    // m[5] = matrix[5];
+    util.assignMatrix(m, matrix);
     // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
     if(res.limitCache) {
       return res;
@@ -1615,7 +1632,8 @@ class Xom extends Node {
       res.offscreenOverflow = offscreenOverflow;
       res.ctx = ctx;
       ctx.globalAlpha = opacity;
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      // console.warn(this.tagName, matrix.slice(0), mx.m2m6(matrix));
+      ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     }
     // 隐藏不渲染
     if(visibility === 'hidden' && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
@@ -1998,7 +2016,7 @@ class Xom extends Node {
     });
     root.delRefreshTask(this.__loadBgi.cb);
     root.delRefreshTask(this.__task);
-    this.__matrix = this.__matrixEvent = this.__root = null;
+    this.__root = null;
     this.clearCache();
   }
 
@@ -2646,9 +2664,9 @@ class Xom extends Node {
     return this.__config[NODE_MATRIX_EVENT];
   }
 
-  get renderMatrix() {
-    return this.matrix;
-  }
+  // get renderMatrix() {
+  //   return this.matrix;
+  // }
 
   get style() {
     return this.__style;

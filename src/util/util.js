@@ -423,11 +423,20 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
       y2 += dy;
     }
     let list = [x2, y1, x1, y2, x2, y2];
-    [x1, y1] = mx.calPoint([x1, y1], matrix);
+    let w;
+    [x1, y1, , w] = mx.calPoint([x1, y1], matrix);
+    if(w !== 1) {
+      x1 /= w;
+      y1 /= w;
+    }
     let xa = x1, ya = y1, xb = x1, yb = y1;
     for(let i = 0; i < 6; i += 2) {
       let x = list[i], y = list[i + 1];
-      [x, y] = mx.calPoint([x, y], matrix);
+      [x, y, , w] = mx.calPoint([x, y], matrix);
+      if(w !== 1) {
+        x /= w;
+        y /= y;
+      }
       xa = Math.min(xa, x);
       xb = Math.max(xb, x);
       ya = Math.min(ya, y);
@@ -436,6 +445,7 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
     bbox = [xa, ya, xb, yb];
   }
   else if(dx || dy) {
+    bbox = bbox.slice(0);
     bbox[0] -= dx;
     bbox[1] -= dy;
     bbox[2] += dx;
@@ -445,7 +455,7 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
 }
 
 function isPlainObject(obj) {
-  if(!obj || toString.call( obj ) !== '[object Object]') {
+  if(!obj || toString.call(obj) !== '[object Object]') {
     return false;
   }
   let proto = Object.getPrototypeOf(obj);
@@ -454,6 +464,26 @@ function isPlainObject(obj) {
   }
   let Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
   return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
+}
+
+function assignMatrix(t, v) {
+  t[0] = v[0];
+  t[1] = v[1];
+  t[2] = v[2];
+  t[3] = v[3];
+  t[4] = v[4];
+  t[5] = v[5];
+  t[6] = v[6];
+  t[7] = v[7];
+  t[8] = v[8];
+  t[9] = v[9];
+  t[10] = v[10];
+  t[11] = v[11];
+  t[12] = v[12];
+  t[13] = v[13];
+  t[14] = v[14];
+  t[15] = v[15];
+  return t;
 }
 
 let util = {
@@ -492,6 +522,7 @@ let util = {
   joinArr,
   extendAnimate,
   transformBbox,
+  assignMatrix,
 };
 
 export default util;

@@ -313,8 +313,8 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
       ctx.globalAlpha = opacity;
-      let m = matrix || [1, 0, 0, 1, 0, 0];
-      ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+      let m = matrix || mx.identity();
+      ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
       node.render(renderMode, 0, ctx, true, tx - sx1 + dbx, ty - sy1 + dby);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -381,7 +381,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
         }
         ctx.globalAlpha = opacity;
         if(matrix) {
-          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+          ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         }
         else {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -508,8 +508,8 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
     let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
-      let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
-      texCache.addTexAndDrawWhenLimit(gl, __config[NODE_CACHE], opacity, m, cx, cy, dx, dy);
+      // let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+      texCache.addTexAndDrawWhenLimit(gl, __config[NODE_CACHE], opacity, matrix, cx, cy, dx, dy);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
@@ -567,12 +567,12 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       }
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       if(target) {
-        let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+        // let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy);
           let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
           texCache.refresh(gl, cx, cy);
           // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
           [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
@@ -580,7 +580,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
           gl.deleteTexture(texture2);
         }
         else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
         }
         if(target !== __cache) {
           i += (total || 0) + (hasMask || 0);
@@ -782,7 +782,6 @@ function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bb
   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
   texCache.releaseLockChannel(i, mockCache.page);
   return [mockCache, width, height, bbox];
-
 }
 
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
@@ -834,7 +833,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
   } = __config;
   let inverse;
   if(isE(transform)) {
-    inverse = [1, 0, 0, 1, 0, 0];
+    inverse = mx.identity();
   }
   else {
     let tfo = transformOrigin.slice(0);
@@ -868,7 +867,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
     if(target) {
       let m;
       if(isE(transform)) {
-        m = [1, 0, 0, 1, 0, 0];
+        m = mx.identity();
       }
       else {
         let tfo = transformOrigin.slice(0);
@@ -877,7 +876,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
         m = tf.calMatrixByOrigin(transform, tfo);
       }
       m = mx.multiply(inverse, m);
-      m = mx.m2Mat4(m, cx, cy);
+      // m = mx.m2Mat4(m, cx, cy);
       texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, dx, dy);
     }
     // 异常情况超限
@@ -1019,7 +1018,7 @@ function applyOffscreen(ctx, list, width, height) {
       let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offscreen;
       ctx.globalCompositeOperation = 'destination-in';
       ctx.globalAlpha = 1;
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
       ctx.rect(x, y, offsetWidth, offsetHeight);
@@ -1232,12 +1231,13 @@ function renderCacheCanvas(renderMode, ctx, root) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
+        util.assignMatrix(m, matrix);
+        // m[0] = matrix[0];
+        // m[1] = matrix[1];
+        // m[2] = matrix[2];
+        // m[3] = matrix[3];
+        // m[4] = matrix[4];
+        // m[5] = matrix[5];
       }
       else {
         matrix = __config[NODE_MATRIX];
@@ -1247,12 +1247,13 @@ function renderCacheCanvas(renderMode, ctx, root) {
         matrix = multiply(parentMatrix, matrix);
       }
       // 恶心的v8性能优化
-      matrixEvent[0] = matrix[0];
-      matrixEvent[1] = matrix[1];
-      matrixEvent[2] = matrix[2];
-      matrixEvent[3] = matrix[3];
-      matrixEvent[4] = matrix[4];
-      matrixEvent[5] = matrix[5];
+      util.assignMatrix(matrixEvent, matrix);
+      // matrixEvent[0] = matrix[0];
+      // matrixEvent[1] = matrix[1];
+      // matrixEvent[2] = matrix[2];
+      // matrixEvent[3] = matrix[3];
+      // matrixEvent[4] = matrix[4];
+      // matrixEvent[5] = matrix[5];
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1387,7 +1388,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
         [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config[NODE_DOM_PARENT].__config;
       ctx.globalAlpha = opacity;
-      ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
+      ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[4], matrixEvent[5], matrixEvent[12], matrixEvent[13]);
       node.render(renderMode, 0, ctx);
       if(offscreenHash.hasOwnProperty(i)) {
         ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
@@ -1682,9 +1683,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
           let v = maskEffectHash[i];
           if(!contain(refreshLevel, TRANSFORM_ALL) && v < REPAINT && !contain(v, TRANSFORM_ALL)) {
             defsCache.forEach(item => {
-              // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-              //   ctx.addCache(item);
-              // }
               ctx.addCache(item);
             });
           }
@@ -1692,9 +1690,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         // 去除特殊的filter，普通节点或不影响的mask在<REPAINT下defs的其它都可缓存
         else {
           defsCache.forEach(item => {
-            // if(!hasFilter || item.tagName !== 'filter' || item.children[0].tagName !== 'feGaussianBlur') {
-            //   ctx.addCache(item);
-            // }
             ctx.addCache(item);
           });
         }
@@ -1717,12 +1712,14 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       [STRUCT_LV]: lv,
     } = __structs[i];
     let __config = node.__config;
-    let { computedStyle: { [DISPLAY]: display } } = node;
+    // let { computedStyle: { [DISPLAY]: display } } = node;
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_REFRESH_LV]: refreshLevel,
       [NODE_DEFS_CACHE]: defsCache,
+      [NODE_COMPUTED_STYLE]: computedStyle,
     } = __config;
+    let display = computedStyle[DISPLAY];
     // 将随后的若干个mask节点范围存下来
     if(hasMask && display !== 'none') {
       let start = i + (total || 0) + 1;
@@ -1767,7 +1764,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         }
         delete virtualDom.cache;
         // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
-        let { computedStyle: { [DISPLAY]: display } } = node;
+        // let { computedStyle: { [DISPLAY]: display } } = node;
         if(display === 'none') {
           i += (total || 0);
           if(hasMask) {
@@ -1784,14 +1781,15 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        if(matrix && m) {
-          m[0] = matrix[0];
-          m[1] = matrix[1];
-          m[2] = matrix[2];
-          m[3] = matrix[3];
-          m[4] = matrix[4];
-          m[5] = matrix[5];
-        }
+        util.assignMatrix(m, matrix);
+        // if(matrix && m) {
+          // m[0] = matrix[0];
+          // m[1] = matrix[1];
+          // m[2] = matrix[2];
+          // m[3] = matrix[3];
+          // m[4] = matrix[4];
+          // m[5] = matrix[5];
+        // }
         if(!matrix || isE(matrix)) {
           delete virtualDom.transform;
         }
@@ -1803,14 +1801,15 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         }
         // 恶心的v8性能优化
         m = __config[NODE_MATRIX_EVENT];
-        if(m && matrix) {
-          m[0] = matrix[0];
-          m[1] = matrix[1];
-          m[2] = matrix[2];
-          m[3] = matrix[3];
-          m[4] = matrix[4];
-          m[5] = matrix[5];
-        }
+        util.assignMatrix(m, matrix);
+        // if(m && matrix) {
+        //   m[0] = matrix[0];
+        //   m[1] = matrix[1];
+        //   m[2] = matrix[2];
+        //   m[3] = matrix[3];
+        //   m[4] = matrix[4];
+        //   m[5] = matrix[5];
+        // }
       }
       if(contain(refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1847,6 +1846,8 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
       node.render(renderMode, refreshLevel, ctx);
       virtualDom = node.virtualDom;
+      // 渲染后更新取值
+      display = computedStyle[DISPLAY];
       if(display === 'none') {
         i += (total || 0);
         if(hasMask) {
@@ -2064,12 +2065,13 @@ function renderWebgl(renderMode, gl, root) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
+        util.assignMatrix(m, matrix);
+        // m[0] = matrix[0];
+        // m[1] = matrix[1];
+        // m[2] = matrix[2];
+        // m[3] = matrix[3];
+        // m[4] = matrix[4];
+        // m[5] = matrix[5];
       }
       else {
         matrix = __config[NODE_MATRIX];
@@ -2078,12 +2080,13 @@ function renderWebgl(renderMode, gl, root) {
         matrix = multiply(parentMatrix, matrix);
       }
       // 恶心的v8性能优化
-      matrixEvent[0] = matrix[0];
-      matrixEvent[1] = matrix[1];
-      matrixEvent[2] = matrix[2];
-      matrixEvent[3] = matrix[3];
-      matrixEvent[4] = matrix[4];
-      matrixEvent[5] = matrix[5];
+      util.assignMatrix(matrixEvent, matrix);
+      // matrixEvent[0] = matrix[0];
+      // matrixEvent[1] = matrix[1];
+      // matrixEvent[2] = matrix[2];
+      // matrixEvent[3] = matrix[3];
+      // matrixEvent[4] = matrix[4];
+      // matrixEvent[5] = matrix[5];
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -2253,9 +2256,9 @@ function renderWebgl(renderMode, gl, root) {
           },
         },
       } = __config;
-      let m = mx.m2Mat4(matrixEvent, cx, cy);
+      // let m = mx.m2Mat4(matrixEvent, cx, cy);
       if(__cache && __cache.available) {
-        texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, m, cx, cy, true);
+        texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, matrixEvent, cx, cy, true);
       }
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
       else if(limitCache) {
@@ -2264,7 +2267,7 @@ function renderWebgl(renderMode, gl, root) {
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
+        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, matrixEvent, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
         c.ctx.setTransform(1, 0, 0, 1, 0, 0);
         c.ctx.globalAlpha = 1;
@@ -2299,12 +2302,12 @@ function renderWebgl(renderMode, gl, root) {
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cache]);
       // total和自身cache的尝试
       if(target) {
-        let m = mx.m2Mat4(matrixEvent, cx, cy);
+        // let m = mx.m2Mat4(matrixEvent, cx, cy);
         // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(hasMbm && isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy, true);
           let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrixEvent, cx, cy, 0, 0, true);
           texCache.refresh(gl, cx, cy, true);
           // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
           [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
@@ -2312,19 +2315,19 @@ function renderWebgl(renderMode, gl, root) {
           gl.deleteTexture(texture2);
         }
         else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrixEvent, cx, cy, 0, 0, true);
         }
         if(target !== __cache) {
           i += (total || 0) + (hasMask || 0);
         }
       }
       else if(limitHash.hasOwnProperty(i)) {
-        let m = mx.m2Mat4(matrixEvent, cx, cy);
+        // let m = mx.m2Mat4(matrixEvent, cx, cy);
         let target = limitHash[i];
         if(hasMbm && isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy, true);
           let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrixEvent, cx, cy, 0, 0, true);
           texCache.refresh(gl, cx, cy, true);
           // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
           [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
@@ -2332,20 +2335,20 @@ function renderWebgl(renderMode, gl, root) {
           gl.deleteTexture(texture2);
         }
         else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, m, cx, cy, 0, 0, true);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrixEvent, cx, cy, 0, 0, true);
         }
         i += (total || 0) + (hasMask || 0);
       }
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if(limitCache && display !== 'none' && visibility !== 'hidden') {
-        let m = mx.m2Mat4(matrixEvent, cx, cy);
+        // let m = mx.m2Mat4(matrixEvent, cx, cy);
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
         node.render(renderMode, refreshLevel, gl);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, m, cx, cy, 0, 0, true);
+        texCache.addTexAndDrawWhenLimit(gl, mockCache, opacity, matrixEvent, cx, cy, 0, 0, true);
         texCache.refresh(gl, cx, cy, true);
         c.ctx.setTransform(1, 0, 0, 1, 0, 0);
         c.ctx.globalAlpha = 1;

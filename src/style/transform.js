@@ -1,15 +1,22 @@
 import unit from '../style/unit';
 import enums from '../util/enums';
+import util from '../util/util';
 import math from '../math/index';
 
 const { STYLE_KEY: {
   TRANSLATE_X,
   TRANSLATE_Y,
+  TRANSLATE_Z,
   SCALE_X,
   SCALE_Y,
+  SCALE_Z,
   SKEW_X,
   SKEW_Y,
+  ROTATE_X,
+  ROTATE_Y,
   ROTATE_Z,
+  ROTATE_3D,
+  PERSPECTIVE,
   MATRIX,
   FONT_SIZE,
 }} = enums;
@@ -17,43 +24,72 @@ const { PX, PERCENT, REM, VW, VH } = unit;
 const { matrix, geom } = math;
 const { identity, calPoint, multiply, isE } = matrix;
 const { d2r, pointInPolygon } = geom;
+// const HASH_3D = {
+//   [TRANSLATE_Z]: true,
+//   [SCALE_Z]: true,
+//   [ROTATE_X]: true,
+//   [ROTATE_Y]: true,
+// }
 
 function calSingle(t, k, v) {
   if(k === TRANSLATE_X) {
-    t[4] = v;
+    t[12] = v;
   }
   else if(k === TRANSLATE_Y) {
-    t[5] = v;
+    t[13] = v;
+  }
+  else if(k === TRANSLATE_Z) {
+    t[14] = v;
   }
   else if(k === SCALE_X) {
     t[0] = v;
   }
   else if(k === SCALE_Y) {
-    t[3] = v;
+    t[5] = v;
+  }
+  else if(k === SCALE_Z) {
+    t[10] = v;
   }
   else if(k === SKEW_X) {
     v = d2r(v);
-    t[2] = Math.tan(v);
+    t[4] = Math.tan(v);
   }
   else if(k === SKEW_Y) {
     v = d2r(v);
-    t[1] = Math.tan(v);
+    t[5] = Math.tan(v);
+  }
+  else if(k === ROTATE_X) {
+    v = d2r(v);
+    let sin = Math.sin(v);
+    let cos = Math.cos(v);
+    t[5] = t[10] = cos;
+    t[6] = sin;
+    t[9] = -sin;
+  }
+  else if(k === ROTATE_Y) {
+    v = d2r(v);
+    let sin = Math.sin(v);
+    let cos = Math.cos(v);
+    t[0] = t[10] = cos;
+    t[8] = sin;
+    t[2] = -sin;
   }
   else if(k === ROTATE_Z) {
     v = d2r(v);
     let sin = Math.sin(v);
     let cos = Math.cos(v);
-    t[0] = t[3] = cos;
+    t[0] = t[5] = cos;
     t[1] = sin;
-    t[2] = -sin;
+    t[4] = -sin;
+  }
+  else if(k === ROTATE_3D) {
+    //
+  }
+  else if(k === PERSPECTIVE) {
+    t[11] = -1 / v;
   }
   else if(k === MATRIX) {
-    t[0] = v[0];
-    t[1] = v[1];
-    t[2] = v[2];
-    t[3] = v[3];
-    t[4] = v[4];
-    t[5] = v[5];
+    util.assignMatrix(t, v);
   }
 }
 
@@ -69,15 +105,15 @@ function calMatrix(transform, ow, oh, root) {
   return m;
 }
 
+// 已有计算好的变换矩阵，根据tfo原点计算最终的matrix
 function calMatrixByOrigin(m, transformOrigin) {
   let [ox, oy] = transformOrigin;
   let res = m.slice(0);
   if(ox === 0 && oy === 0 || isE(m)) {
     return res;
   }
-  let [a, b, c, d, e, f] = res;
-  res[4] = -ox * a - oy * c + e + ox;
-  res[5] = -ox * b - oy * d + f + oy;
+  res = multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+  res = multiply(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
   return res;
 }
 
@@ -87,7 +123,7 @@ function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
   return calMatrixByOrigin(m, transformOrigin);
 }
 
-// 判断点是否在一个矩形内，比如事件发生是否在节点上
+// 判断点是否在一个4边形内，比如事件发生是否在节点上
 function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
   if(matrix && !isE(matrix)) {
     [x1, y1] = calPoint([x1, y1], matrix);

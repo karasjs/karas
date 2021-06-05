@@ -819,28 +819,41 @@
     }
 
     if (m && !isE(m)) {
-      z = z || 0;
+      if (m.length === 16) {
+        z = z || 0;
 
-      var _m = _slicedToArray(m, 16),
-          a1 = _m[0],
-          b1 = _m[1],
-          c1 = _m[2],
-          d1 = _m[3],
-          a2 = _m[4],
-          b2 = _m[5],
-          c2 = _m[6],
-          d2 = _m[7],
-          a3 = _m[8],
-          b3 = _m[9],
-          c3 = _m[10],
-          d3 = _m[11],
-          a4 = _m[12],
-          b4 = _m[13],
-          c4 = _m[14],
-          d4 = _m[15];
+        var _m = _slicedToArray(m, 16),
+            a1 = _m[0],
+            b1 = _m[1],
+            c1 = _m[2],
+            d1 = _m[3],
+            a2 = _m[4],
+            b2 = _m[5],
+            c2 = _m[6],
+            d2 = _m[7],
+            a3 = _m[8],
+            b3 = _m[9],
+            c3 = _m[10],
+            d3 = _m[11],
+            a4 = _m[12],
+            b4 = _m[13],
+            c4 = _m[14],
+            d4 = _m[15];
 
-      w *= x * d1 + y * d2 + z * d3 + d4;
-      return [x * a1 + y * a2 + z * a3 + a4, x * b1 + y * b2 + z * b3 + b4, x * c1 + y * c2 + z * c3 + c4, w];
+        w *= x * d1 + y * d2 + z * d3 + d4;
+        return [x * a1 + y * a2 + z * a3 + a4, x * b1 + y * b2 + z * b3 + b4, x * c1 + y * c2 + z * c3 + c4, w];
+      } // 6位类型
+
+
+      var _m2 = _slicedToArray(m, 6),
+          a = _m2[0],
+          b = _m2[1],
+          c = _m2[2],
+          d = _m2[3],
+          e = _m2[4],
+          f = _m2[5];
+
+      return [a * x + c * y + e, b * x + d * y + f];
     }
 
     return [x, y, z, w];
@@ -858,13 +871,13 @@
       return inverse4(m);
     }
 
-    var _m2 = _slicedToArray(m, 6),
-        a = _m2[0],
-        b = _m2[1],
-        c = _m2[2],
-        d = _m2[3],
-        e = _m2[4],
-        f = _m2[5];
+    var _m3 = _slicedToArray(m, 6),
+        a = _m3[0],
+        b = _m3[1],
+        c = _m3[2],
+        d = _m3[3],
+        e = _m3[4],
+        f = _m3[5];
 
     if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
       return m;
@@ -880,77 +893,11 @@
   }
 
   function isE(m) {
-    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0 && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0 && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0 && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
-  }
-  /**
-   * 4*4 行列式的值
-   * @returns {number}
-   */
+    if (m.length === 16) {
+      return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0 && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0 && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0 && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
+    }
 
-
-  function det4(_ref) {
-    var _ref2 = _slicedToArray(_ref, 16),
-        a11 = _ref2[0],
-        a12 = _ref2[1],
-        a13 = _ref2[2],
-        a14 = _ref2[3],
-        a21 = _ref2[4],
-        a22 = _ref2[5],
-        a23 = _ref2[6],
-        a24 = _ref2[7],
-        a31 = _ref2[8],
-        a32 = _ref2[9],
-        a33 = _ref2[10],
-        a34 = _ref2[11],
-        a41 = _ref2[12],
-        a42 = _ref2[13],
-        a43 = _ref2[14],
-        a44 = _ref2[15];
-
-    return a11 * (a22 * (a33 * a44 - a43 * a34) - a23 * (a32 * a44 - a42 * a34) + a24 * (a32 * a43 - a42 * a33)) - a12 * (a21 * (a33 * a44 - a43 * a34) - a23 * (a31 * a44 - a41 * a34) + a24 * (a31 * a43 - a41 * a33)) + a13 * (a21 * (a32 * a44 - a42 * a34) - a22 * (a31 * a44 - a41 * a34) + a24 * (a31 * a42 - a41 * a32)) - a14 * (a21 * (a32 * a43 - a42 * a33) - a22 * (a31 * a43 - a41 * a33) + a23 * (a31 * a42 - a41 * a32));
-  }
-  /**
-   * 递归写任意阶的伴随矩阵，但是 karas 这里用不到，所以直接写出来比较清晰明了
-   * @returns {number[]} 返回伴随矩阵
-   */
-
-
-  function adjoint4(_ref3) {
-    var _ref4 = _slicedToArray(_ref3, 16),
-        a11 = _ref4[0],
-        a12 = _ref4[1],
-        a13 = _ref4[2],
-        a14 = _ref4[3],
-        a21 = _ref4[4],
-        a22 = _ref4[5],
-        a23 = _ref4[6],
-        a24 = _ref4[7],
-        a31 = _ref4[8],
-        a32 = _ref4[9],
-        a33 = _ref4[10],
-        a34 = _ref4[11],
-        a41 = _ref4[12],
-        a42 = _ref4[13],
-        a43 = _ref4[14],
-        a44 = _ref4[15];
-
-    var c11 = a22 * a33 * a44 + a23 * a34 * a42 + a24 * a32 * a43 - a22 * a34 * a43 - a23 * a32 * a44 - a24 * a33 * a42;
-    var c21 = a12 * a34 * a43 + a13 * a32 * a44 + a14 * a33 * a42 - a12 * a33 * a44 - a13 * a34 * a42 - a14 * a32 * a43;
-    var c31 = a12 * a23 * a44 + a13 * a24 * a42 + a14 * a22 * a43 - a12 * a24 * a43 - a13 * a22 * a44 - a14 * a23 * a42;
-    var c41 = a12 * a24 * a33 + a13 * a22 * a34 + a14 * a23 * a32 - a12 * a23 * a34 - a13 * a24 * a32 - a14 * a22 * a33;
-    var c12 = a21 * a34 * a43 + a23 * a31 * a44 + a24 * a33 * a41 - a21 * a33 * a44 - a23 * a34 * a41 - a24 * a31 * a43;
-    var c22 = a11 * a33 * a44 + a13 * a34 * a41 + a14 * a31 * a43 - a11 * a34 * a43 - a13 * a31 * a44 - a14 * a33 * a41;
-    var c32 = -1 * (a11 * a23 * a44 - a13 * a21 * a44 + a14 * a21 * a43 - a11 * a24 * a43 + a13 * a41 * a24 - a14 * a23 * a41);
-    var c42 = a11 * a23 * a34 + a13 * a24 * a31 + a14 * a21 * a33 - a11 * a24 * a33 - a13 * a21 * a34 - a14 * a23 * a31;
-    var c13 = a21 * a32 * a44 + a22 * a34 * a41 + a24 * a31 * a42 - a21 * a34 * a42 - a22 * a31 * a44 - a24 * a32 * a41;
-    var c23 = a11 * a34 * a42 + a12 * a31 * a44 + a14 * a32 * a41 - a11 * a32 * a44 - a12 * a34 * a41 - a14 * a31 * a42;
-    var c33 = a11 * a22 * a44 + a12 * a24 * a41 + a14 * a21 * a42 - a11 * a24 * a42 - a12 * a21 * a44 - a14 * a22 * a41;
-    var c43 = a11 * a24 * a32 + a12 * a21 * a34 + a14 * a22 * a31 - a11 * a22 * a34 - a12 * a24 * a31 - a14 * a21 * a32;
-    var c14 = a21 * a33 * a42 + a22 * a31 * a43 + a23 * a32 * a41 - a21 * a32 * a43 - a22 * a33 * a41 - a23 * a31 * a42;
-    var c24 = a11 * a32 * a43 + a12 * a33 * a41 + a13 * a31 * a42 - a11 * a33 * a42 - a12 * a31 * a43 - a13 * a32 * a41;
-    var c34 = a11 * a23 * a42 + a12 * a21 * a43 + a13 * a22 * a41 - a11 * a22 * a43 - a12 * a23 * a41 - a13 * a21 * a42;
-    var c44 = a11 * a22 * a33 + a12 * a23 * a31 + a13 * a21 * a32 - a11 * a23 * a32 - a12 * a21 * a33 - a13 * a22 * a31;
-    return [c11, c12, c13, c14, c21, c22, c23, c24, c31, c32, c33, c34, c41, c42, c43, c44];
+    return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
   }
   /**
    * 求任意4*4矩阵的逆矩阵，行列式为 0 则返回单位矩阵兜底
@@ -971,20 +918,38 @@
    */
 
 
-  function inverse4(m) {
-    if (m.length !== 16) {
-      throw new Error('The length of matrix4 must be 16');
-    }
-
-    var det = det4(m); // det 为 0，返回单位矩阵兜底
+  function inverse4(s) {
+    var inv = [];
+    inv[0] = s[5] * s[10] * s[15] - s[5] * s[11] * s[14] - s[9] * s[6] * s[15] + s[9] * s[7] * s[14] + s[13] * s[6] * s[11] - s[13] * s[7] * s[10];
+    inv[4] = -s[4] * s[10] * s[15] + s[4] * s[11] * s[14] + s[8] * s[6] * s[15] - s[8] * s[7] * s[14] - s[12] * s[6] * s[11] + s[12] * s[7] * s[10];
+    inv[8] = s[4] * s[9] * s[15] - s[4] * s[11] * s[13] - s[8] * s[5] * s[15] + s[8] * s[7] * s[13] + s[12] * s[5] * s[11] - s[12] * s[7] * s[9];
+    inv[12] = -s[4] * s[9] * s[14] + s[4] * s[10] * s[13] + s[8] * s[5] * s[14] - s[8] * s[6] * s[13] - s[12] * s[5] * s[10] + s[12] * s[6] * s[9];
+    inv[1] = -s[1] * s[10] * s[15] + s[1] * s[11] * s[14] + s[9] * s[2] * s[15] - s[9] * s[3] * s[14] - s[13] * s[2] * s[11] + s[13] * s[3] * s[10];
+    inv[5] = s[0] * s[10] * s[15] - s[0] * s[11] * s[14] - s[8] * s[2] * s[15] + s[8] * s[3] * s[14] + s[12] * s[2] * s[11] - s[12] * s[3] * s[10];
+    inv[9] = -s[0] * s[9] * s[15] + s[0] * s[11] * s[13] + s[8] * s[1] * s[15] - s[8] * s[3] * s[13] - s[12] * s[1] * s[11] + s[12] * s[3] * s[9];
+    inv[13] = s[0] * s[9] * s[14] - s[0] * s[10] * s[13] - s[8] * s[1] * s[14] + s[8] * s[2] * s[13] + s[12] * s[1] * s[10] - s[12] * s[2] * s[9];
+    inv[2] = s[1] * s[6] * s[15] - s[1] * s[7] * s[14] - s[5] * s[2] * s[15] + s[5] * s[3] * s[14] + s[13] * s[2] * s[7] - s[13] * s[3] * s[6];
+    inv[6] = -s[0] * s[6] * s[15] + s[0] * s[7] * s[14] + s[4] * s[2] * s[15] - s[4] * s[3] * s[14] - s[12] * s[2] * s[7] + s[12] * s[3] * s[6];
+    inv[10] = s[0] * s[5] * s[15] - s[0] * s[7] * s[13] - s[4] * s[1] * s[15] + s[4] * s[3] * s[13] + s[12] * s[1] * s[7] - s[12] * s[3] * s[5];
+    inv[14] = -s[0] * s[5] * s[14] + s[0] * s[6] * s[13] + s[4] * s[1] * s[14] - s[4] * s[2] * s[13] - s[12] * s[1] * s[6] + s[12] * s[2] * s[5];
+    inv[3] = -s[1] * s[6] * s[11] + s[1] * s[7] * s[10] + s[5] * s[2] * s[11] - s[5] * s[3] * s[10] - s[9] * s[2] * s[7] + s[9] * s[3] * s[6];
+    inv[7] = s[0] * s[6] * s[11] - s[0] * s[7] * s[10] - s[4] * s[2] * s[11] + s[4] * s[3] * s[10] + s[8] * s[2] * s[7] - s[8] * s[3] * s[6];
+    inv[11] = -s[0] * s[5] * s[11] + s[0] * s[7] * s[9] + s[4] * s[1] * s[11] - s[4] * s[3] * s[9] - s[8] * s[1] * s[7] + s[8] * s[3] * s[5];
+    inv[15] = s[0] * s[5] * s[10] - s[0] * s[6] * s[9] - s[4] * s[1] * s[10] + s[4] * s[2] * s[9] + s[8] * s[1] * s[6] - s[8] * s[2] * s[5];
+    var det = s[0] * inv[0] + s[1] * inv[4] + s[2] * inv[8] + s[3] * inv[12];
 
     if (det === 0) {
-      return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+      return identity();
     }
 
-    return adjoint4(m).map(function (a) {
-      return a / det;
-    });
+    det = 1 / det;
+    var d = [];
+
+    for (var i = 0; i < 16; i++) {
+      d[i] = inv[i] * det;
+    }
+
+    return d;
   }
 
 
@@ -12475,7 +12440,7 @@
 
         if (matrix) {
           var bb = xom.virtualDom.bb;
-          bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(matrix, ','), ")")]);
+          bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(mx.m2m6(matrix), ','), ")")]);
         }
       }
     }
@@ -12738,10 +12703,11 @@
         var matrix = image.matrixResize(width, height, w, h, bgX, bgY, bgW, bgH);
         var props = [['xlink:href', loadBgi.url], ['x', bgX], ['y', bgY], ['width', width], ['height', height]];
         var needResize;
+        console.log(matrix, needMask);
 
         if (matrix && !mx.isE(matrix)) {
           needResize = true;
-          props.push(['transform', 'matrix(' + joinArr$1(matrix, ',') + ')']);
+          props.push(['transform', 'matrix(' + joinArr$1(mx.m2m6(matrix), ',') + ')']);
         }
 
         if (needMask) {
@@ -12788,7 +12754,7 @@
               var _matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
 
               if (_matrix && !mx.isE(_matrix)) {
-                copy[5][1] = 'matrix(' + joinArr$1(_matrix, ',') + ')';
+                copy[5][1] = 'matrix(' + joinArr$1(mx.m2m6(_matrix), ',') + ')';
               }
             }
 
@@ -12817,7 +12783,7 @@
               var _matrix2 = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
 
               if (_matrix2 && !mx.isE(_matrix2)) {
-                copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
+                copy[5][1] = 'matrix(' + joinArr$1(mx.m2m6(_matrix2), ',') + ')';
               }
             }
 
@@ -13458,13 +13424,13 @@
       if (p) {
         pm = p[0][1];
       } else {
-        pm = [1, 0, 0, 1, 0, 0];
+        pm = mx.identity();
       }
 
       if (n) {
         nm = n[0][1];
       } else {
-        nm = [1, 0, 0, 1, 0, 0];
+        nm = mx.identity();
       } // transform特殊被初始化转成matrix矩阵，直接计算差值
 
 
@@ -13472,7 +13438,7 @@
         return;
       }
 
-      res[1] = [nm[0] - pm[0], nm[1] - pm[1], nm[2] - pm[2], nm[3] - pm[3], nm[4] - pm[4], nm[5] - pm[5]];
+      res[1] = [nm[0] - pm[0], nm[1] - pm[1], nm[2] - pm[2], nm[3] - pm[3], nm[4] - pm[4], nm[5] - pm[5], nm[6] - pm[6], nm[7] - pm[7], nm[8] - pm[8], nm[9] - pm[9], nm[10] - pm[10], nm[11] - pm[11], nm[12] - pm[12], nm[13] - pm[13], nm[14] - pm[14], nm[15] - pm[15]];
       return res;
     } else if (k === FILTER$1) {
       // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
@@ -14169,10 +14135,10 @@
 
       if (k === TRANSFORM$2) {
         if (!st) {
-          st = style[k] = [[MATRIX$2, [1, 0, 0, 1, 0, 0]]];
+          st = style[k] = [[MATRIX$2, mx.identity()]];
         }
 
-        for (var _i15 = 0; _i15 < 6; _i15++) {
+        for (var _i15 = 0; _i15 < 16; _i15++) {
           st[0][1][_i15] += v[_i15] * percent;
         }
       } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
@@ -23550,8 +23516,8 @@
               delete virtualDom.cache;
             }
 
-            if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-              props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
+            if (matrix && !mx.isE(matrix)) {
+              props.push(['transform', 'matrix(' + util.joinArr(mx.m2m6(matrix), ',') + ')']);
             }
 
             var vd = {
@@ -24816,7 +24782,7 @@
             this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
           }
 
-          props.push(['transform', "matrix(".concat(joinArr$3(matrix, ','), ")")]);
+          props.push(['transform', "matrix(".concat(joinArr$3(mx.m2m6(matrix), ','), ")")]);
           this.addGeom('path', props);
         }
       }
@@ -28381,7 +28347,7 @@
           if (!matrix || isE$2(matrix)) {
             delete virtualDom.transform;
           } else {
-            virtualDom.transform = 'matrix(' + util.joinArr(matrix, ',') + ')';
+            virtualDom.transform = 'matrix(' + util.joinArr(mx.m2m6(matrix), ',') + ')';
           }
 
           if (parentMatrix && matrix) {

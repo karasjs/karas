@@ -10,6 +10,7 @@ import frame from './frame';
 import easing from './easing';
 import change from '../refresh/change';
 import key from './key';
+import mx from '../math/matrix';
 
 const {
   STYLE_KEY: {
@@ -285,13 +286,13 @@ function calDiff(prev, next, k, target, tagName) {
       pm = p[0][1];
     }
     else {
-      pm = [1, 0, 0, 1, 0, 0];
+      pm = mx.identity();
     }
     if(n) {
       nm = n[0][1];
     }
     else {
-      nm = [1, 0, 0, 1, 0, 0];
+      nm = mx.identity();
     }
     // transform特殊被初始化转成matrix矩阵，直接计算差值
     if(equalArr(pm, nm)) {
@@ -304,6 +305,16 @@ function calDiff(prev, next, k, target, tagName) {
       nm[3] - pm[3],
       nm[4] - pm[4],
       nm[5] - pm[5],
+      nm[6] - pm[6],
+      nm[7] - pm[7],
+      nm[8] - pm[8],
+      nm[9] - pm[9],
+      nm[10] - pm[10],
+      nm[11] - pm[11],
+      nm[12] - pm[12],
+      nm[13] - pm[13],
+      nm[14] - pm[14],
+      nm[15] - pm[15],
     ];
     return res;
   }
@@ -946,9 +957,9 @@ function calIntermediateStyle(frame, keys, percent, target) {
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === TRANSFORM) {
       if(!st) {
-        st = style[k] = [[MATRIX, [1, 0, 0, 1, 0, 0]]];
+        st = style[k] = [[MATRIX, mx.identity()]];
       }
-      for(let i = 0; i < 6; i++) {
+      for(let i = 0; i < 16; i++) {
         st[0][1][i] += v[i] * percent;
       }
     }

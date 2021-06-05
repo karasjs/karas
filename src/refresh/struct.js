@@ -1794,7 +1794,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
           delete virtualDom.transform;
         }
         else {
-          virtualDom.transform = 'matrix(' + util.joinArr(matrix, ',') + ')';
+          virtualDom.transform = 'matrix(' + util.joinArr(mx.m2m6(matrix), ',') + ')';
         }
         if(parentMatrix && matrix) {
           matrix = multiply(parentMatrix, matrix);

@@ -769,7 +769,7 @@ class Geom extends Xom {
         props.push(['stroke-width', strokeWidth]);
         this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       }
-      props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
+      props.push(['transform', `matrix(${joinArr(mx.m2m6(matrix), ',')})`]);
       this.addGeom('path', props);
     }
   }

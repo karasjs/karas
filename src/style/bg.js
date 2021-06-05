@@ -110,7 +110,7 @@ function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bb
       // 椭圆渐变独有
       if(matrix) {
         let bb = xom.virtualDom.bb;
-        bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
+        bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(mx.m2m6(matrix), ',')})`]);
       }
     }
   }
@@ -374,9 +374,10 @@ function renderImage(xom, renderMode, ctx, loadBgi,
         ['height', height],
       ];
       let needResize;
+      console.log(matrix, needMask);
       if(matrix && !mx.isE(matrix)) {
         needResize = true;
-        props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
+        props.push(['transform', 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')']);
       }
       if(needMask) {
         let p1 = [bx1, by1];
@@ -418,7 +419,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
           if(needResize) {
             let matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
             if(matrix && !mx.isE(matrix)) {
-              copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+              copy[5][1] = 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')';
             }
           }
           copy[1][1] = item[0];
@@ -444,7 +445,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
           if(needResize) {
             let matrix = image.matrixResize(width, height, w, h, item[0], item[1], bgW, bgH);
             if(matrix && !mx.isE(matrix)) {
-              copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
+              copy[5][1] = 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')';
             }
           }
           copy[1][1] = item[0];

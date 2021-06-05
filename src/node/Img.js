@@ -8,6 +8,7 @@ import image from '../style/image';
 import border from '../style/border';
 import enums from '../util/enums';
 import level from '../refresh/level';
+import mx from '../math/matrix';
 
 const {
   STYLE_KEY: {
@@ -371,8 +372,8 @@ class Img extends Dom {
           virtualDom.conClip = 'url(#' + id + ')';
           delete virtualDom.cache;
         }
-        if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-          props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
+        if(matrix && !mx.isE(matrix)) {
+          props.push(['transform', 'matrix(' + util.joinArr(mx.m2m6(matrix), ',') + ')']);
         }
         let vd = {
           type: 'img',

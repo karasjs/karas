@@ -30,9 +30,8 @@ let o = karas.parse({
 });
 let input = document.querySelector('input');
 let n = 0;
+input.value = n;
 o.on('refresh', function() {
   n++;
-});
-setTimeout(function() {
   input.value = n;
-}, 500);
+});

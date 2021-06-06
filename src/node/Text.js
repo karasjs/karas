@@ -2,11 +2,12 @@ import Node from './Node';
 import TextBox from './TextBox';
 import mode from './mode';
 import css from '../style/css';
+import font from '../style/font';
+import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import textCache from './textCache';
 import inject from '../util/inject';
-import font from '../style/font';
 import Cache from '../refresh/Cache';
 
 const {
@@ -23,6 +24,7 @@ const {
     OVERFLOW,
     WHITE_SPACE,
     TEXT_OVERFLOW,
+    WIDTH,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -34,6 +36,7 @@ const {
 } = enums;
 
 const ELLIPSIS = textCache.ELLIPSIS;
+const AUTO = unit.AUTO;
 
 class Text extends Node {
   constructor(content) {
@@ -218,7 +221,9 @@ class Text extends Node {
       // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
       let bp = this.__bp;
       let {
+        [DISPLAY]: display,
         [OVERFLOW]: overflow,
+        [WIDTH]: width,
         [TEXT_OVERFLOW]: textOverflow,
       } = bp.currentStyle;
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
@@ -226,7 +231,13 @@ class Text extends Node {
         while(i < length) {
           count += charWidthList[i] + letterSpacing;
           if(count > w) {
-            isTextOverflow = true;
+            // block/flex无需宽度，inline-block需要设置宽度才生效
+            if(display === 'block' || display === 'flex') {
+              isTextOverflow = true;
+            }
+            else if(width[1] !== AUTO) {
+              isTextOverflow = true;
+            }
             break;
           }
           i++;
@@ -239,7 +250,7 @@ class Text extends Node {
       }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount,
+        [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
           lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
       }
       // 默认clip跟随overflow:hidden，无需感知
@@ -297,7 +308,7 @@ class Text extends Node {
         if(count === w) {
           // 多行文本截断，这里肯定需要回退
           if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount,
+            [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
               lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
             lineCount++;
             break;
@@ -330,7 +341,7 @@ class Text extends Node {
         else if(count > w) {
           // 多行文本截断，这里肯定需要回退
           if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount,
+            [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
               lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
             lineCount++;
             break;
@@ -439,10 +450,10 @@ class Text extends Node {
   }
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
-  __lineBack(count, w, beginSpace, endSpace, ew, begin, i, length, lineCount, lineHeight, lx, x, y, maxW,
+  __lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW,
                   textBoxes, content, charWidthList, lineBoxManager) {
     for(; i >= begin; i--) {
-      count -= charWidthList[i];
+      count -= charWidthList[i] + letterSpacing;
       if(count + ew + endSpace <= w) {
         // 至少1个字符不用回退，到0也没找到需要回退
         if(i) {
@@ -507,7 +518,7 @@ class Text extends Node {
         }
       }
     }
-    return [y, maxW + ew];
+    return [y, maxW];
   }
 
   __offsetX(diff, isLayout) {

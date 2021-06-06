@@ -16,7 +16,10 @@ let o = karas.render(
     <div style={{width:30,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
       <span>1</span><span>2</span><span>34</span>
     </div>
-    <div style={{display:'inlineBlock',background:'#F00',overflow:'hidden',textOverflow:'ellipsis', whiteSpace:'nowrap'}}>啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊</div>
+    <div style={{width:30}}>
+      <div style={{display:'inlineBlock',background:'#F00',overflow:'hidden',textOverflow:'ellipsis', whiteSpace:'nowrap'}}>123456</div>
+    </div>
+    <div style={{display:'inlineBlock',width:30,background:'#F00',overflow:'hidden',textOverflow:'ellipsis', whiteSpace:'nowrap'}}>123456</div>
   </svg>,
   '#test'
 );

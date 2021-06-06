@@ -1657,8 +1657,10 @@ class Animation extends Event {
       __config[I_IS_DELAY] = true;
       return;
     }
-    // 减去delay，计算在哪一帧
-    currentTime -= delay;
+    // 减去delay，计算在哪一帧，仅首轮
+    if(playCount === 0) {
+      currentTime -= delay;
+    }
     if(currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
       __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;
@@ -1714,6 +1716,10 @@ class Animation extends Event {
       }
       // 非尾每轮次放完增加次数和计算下轮准备
       if(!isLastCount) {
+        // 首轮特殊减去delay
+        if(playCount === 0 && delay) {
+          __config[I_NEXT_TIME] -= delay;
+        }
         // duration特别短的情况循环减去
         while(__config[I_NEXT_TIME] >= duration) {
           __config[I_NEXT_TIME] -= duration;
@@ -1986,6 +1992,7 @@ class Animation extends Event {
     if(excludeDelay) {
       v += __config[I_DELAY];
     }
+    v -= __config[I_DELAY];
     // 超过时间长度需要累加次数
     while(v > duration && __config[I_PLAY_COUNT] < __config[I_ITERATIONS] - 1) {
       __config[I_PLAY_COUNT]++;

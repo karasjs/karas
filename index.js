@@ -10613,7 +10613,7 @@
         var sum = 0;
         var needMeasure = false; // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
 
-        var bp = this.parent;
+        var bp = this.domParent;
 
         while (bp.currentStyle[DISPLAY$1] === 'inline') {
           bp = bp.domParent;
@@ -34143,7 +34143,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.8";
+  var version = "0.58.9";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

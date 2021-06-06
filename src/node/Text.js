@@ -81,7 +81,7 @@ class Text extends Node {
     let sum = 0;
     let needMeasure = false;
     // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
-    let bp = this.parent;
+    let bp = this.domParent;
     while(bp.currentStyle[DISPLAY] === 'inline') {
       bp = bp.domParent;
     }

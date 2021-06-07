@@ -12709,7 +12709,6 @@
         var matrix = image.matrixResize(width, height, w, h, bgX, bgY, bgW, bgH);
         var props = [['xlink:href', loadBgi.url], ['x', bgX], ['y', bgY], ['width', width], ['height', height]];
         var needResize;
-        console.log(matrix, needMask);
 
         if (matrix && !mx.isE(matrix)) {
           needResize = true;

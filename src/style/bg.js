@@ -374,7 +374,6 @@ function renderImage(xom, renderMode, ctx, loadBgi,
         ['height', height],
       ];
       let needResize;
-      console.log(matrix, needMask);
       if(matrix && !mx.isE(matrix)) {
         needResize = true;
         props.push(['transform', 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')']);

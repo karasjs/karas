@@ -24,12 +24,6 @@ const { PX, PERCENT, REM, VW, VH } = unit;
 const { matrix, geom } = math;
 const { identity, calPoint, multiply, isE } = matrix;
 const { d2r, pointInPolygon } = geom;
-// const HASH_3D = {
-//   [TRANSLATE_Z]: true,
-//   [SCALE_Z]: true,
-//   [ROTATE_X]: true,
-//   [ROTATE_Y]: true,
-// }
 
 function calSingle(t, k, v) {
   if(k === TRANSLATE_X) {
@@ -83,9 +77,76 @@ function calSingle(t, k, v) {
     t[4] = -sin;
   }
   else if(k === ROTATE_3D) {
-    //
+    let [x, y, z, r] = v;
+    r = d2r(r[0]);
+    let s = Math.sin(r);
+    let c = Math.cos(r);
+    if(x && !y && !z) {
+      if(x < 0) {
+        s = -s;
+      }
+      t[5] = c;
+      t[9] = -s;
+      t[6] = s;
+      t[10] = c;
+    }
+    else if(y && !x && !z) {
+      if(y < 0) {
+        s = -s;
+      }
+      t[0] = c;
+      t[8] = s;
+      t[2] = -s;
+      t[10] = c;
+    }
+    else if(z && !x && !y) {
+      if(z < 0) {
+        s = -s;
+      }
+      t[0] = c;
+      t[4] = -s;
+      t[1] = s;
+      t[5] = c;
+    }
+    else {
+      let len = Math.sqrt(x * x + y * y + z * z);
+      if(len !== 1) {
+        let rlen = 1 / len;
+        x *= rlen;
+        y *= rlen;
+        z *= rlen;
+      }
+      let nc = 1 - c;
+      let xy = x * y;
+      let yz = y * z;
+      let zx = z * x;
+      let xs = x * s;
+      let ys = y * s;
+      let zs = z * s;
+
+      t[0] = x * x * nc + c;
+      t[1] = xy * nc + zs;
+      t[2] = zx * nc - ys;
+      t[3] = 0;
+
+      t[4] = xy * nc - zs;
+      t[5] = y * y * nc + c;
+      t[6] = yz * nc + xs;
+      t[7] = 0;
+
+      t[8] = zx * nc + ys;
+      t[9] = yz * nc - xs;
+      t[10] = z * z * nc + c;
+      t[11] = 0;
+
+      t[12] = 0;
+      t[13] = 0;
+      t[14] = 0;
+      t[15] = 1;
+    }
   }
-  else if(k === PERSPECTIVE) {
+  else if(k === PERSPECTIVE && v > 0) {
+    v = Math.max(v, 1);
     t[11] = -1 / v;
   }
   else if(k === MATRIX) {
@@ -143,7 +204,7 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
 }
 
 function normalizeSingle(k, v, ow, oh, root) {
-  if(k === TRANSLATE_X) {
+  if(k === TRANSLATE_X || k === TRANSLATE_Z) {
     if(v[1] === PERCENT) {
       return v[0] * ow * 0.01;
     }
@@ -172,6 +233,9 @@ function normalizeSingle(k, v, ow, oh, root) {
     }
   }
   else if(k === MATRIX) {
+    return v;
+  }
+  else if(k === ROTATE_3D) {
     return v;
   }
   return v[0];
@@ -208,9 +272,20 @@ function calOrigin(transformOrigin, w, h, root) {
   return tfo;
 }
 
+function calMatrixByPerspective(m, ppt) {
+  if(ppt && ppt > 0) {
+    ppt = Math.max(ppt, 1);
+    let i = identity();
+    i[11] = -1 / ppt;
+    m = multiply(i, m);
+  }
+  return m;
+}
+
 export default {
   calMatrix,
   calOrigin,
+  calMatrixByPerspective,
   calMatrixByOrigin,
   calMatrixWithOrigin,
   pointInQuadrilateral,

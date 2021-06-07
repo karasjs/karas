@@ -72,6 +72,7 @@ const DOM = {
   rotateX: 0,
   rotateY: 0,
   rotateZ: 0,
+  perspective: 0,
   filter: null,
   boxShadow: null,
   pointerEvents: 'inherit',

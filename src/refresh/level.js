@@ -9,7 +9,7 @@ const { STYLE_KEY, STYLE_KEY: {
 } } = enums;
 
 const ENUM = {
-  // 低4位表示repaint级别
+  // 低位表示repaint级别
   NONE: 0, //                                          0
   TRANSLATE_X: 1, //                                   1
   TRANSLATE_Y: 2, //                                  10
@@ -27,9 +27,14 @@ const ENUM = {
 const TRANSFORMS = {
   // translateX: true,
   // translateY: true,
+  [STYLE_KEY.TRANSLATE_Z]: true,
   [STYLE_KEY.SCALE_X]: true,
   [STYLE_KEY.SCALE_Y]: true,
+  [STYLE_KEY.SCALE_Z]: true,
+  [STYLE_KEY.ROTATE_X]: true,
+  [STYLE_KEY.ROTATE_Y]: true,
   [STYLE_KEY.ROTATE_Z]: true,
+  [STYLE_KEY.ROTATE_3D]: true,
   [STYLE_KEY.TRANSFORM]: true,
   [STYLE_KEY.TRANSFORM_ORIGIN]: true,
 };

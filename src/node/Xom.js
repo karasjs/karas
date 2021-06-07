@@ -66,6 +66,7 @@ const {
     ROTATE_Z,
     SKEW_X,
     SKEW_Y,
+    PERSPECTIVE,
     TRANSFORM_ORIGIN,
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
@@ -860,10 +861,18 @@ class Xom extends Node {
         computedStyle[TRANSFORM] = matrix || mx.identity();
       }
       if(!matrixCache) {
+        let m = computedStyle[TRANSFORM];
+        let p = __config[NODE_DOM_PARENT];
+        if(p) {
+          let pp = p.computedStyle[PERSPECTIVE];
+          if(pp) {
+            m = tf.calMatrixByPerspective(m, pp);
+          }
+        }
         let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
         tfo[0] += sx1 || 0;
         tfo[1] += sy1 || 0;
-        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(computedStyle[TRANSFORM], tfo);
+        matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(m, tfo);
       }
     }
     return matrixCache;
@@ -1222,6 +1231,27 @@ class Xom extends Node {
     return [bx1, by1, bx2, by2];
   }
 
+  __calPerspective(__cacheStyle, currentStyle, computedStyle) {
+    let p = 0;
+    if(isNil(__cacheStyle[PERSPECTIVE])) {
+      __cacheStyle[PERSPECTIVE] = true;
+      let v = currentStyle[PERSPECTIVE];
+      if(v[1] === REM) {
+        p = computedStyle[PERSPECTIVE] = v[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(v[1] === VW) {
+        p = computedStyle[PERSPECTIVE] = v[0] * this.root.width * 0.01;
+      }
+      else if(v[1] === VH) {
+        p = computedStyle[PERSPECTIVE] = v[0] * this.root.height * 0.01;
+      }
+      else {
+        p = computedStyle[PERSPECTIVE] = v[0];
+      }
+    }
+    return p;
+  }
+
   __calFilter(currentStyle, computedStyle) {
     return computedStyle[FILTER] = (currentStyle[FILTER] || []).map(item => {
       let [k, v] = item;
@@ -1386,7 +1416,8 @@ class Xom extends Node {
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
-    this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
+    this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
+    let matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
@@ -1445,7 +1476,7 @@ class Xom extends Node {
     res.dx = dx;
     res.dy = dy;
     // 计算好cacheStyle的内容，以及位图缓存指数
-    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, this.parent,
+    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
       __cacheStyle, currentStyle, computedStyle,
       clientWidth, clientHeight, offsetWidth, offsetHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
@@ -1493,7 +1524,6 @@ class Xom extends Node {
       }
     }
     // canvas/svg/事件需要3种不同的matrix
-    let matrix = __cacheStyle[MATRIX];
     if(renderMode === mode.SVG) {
       if(!mx.isE(matrix)) {
         virtualDom.transform = 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')';

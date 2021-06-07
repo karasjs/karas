@@ -7035,6 +7035,7 @@
     rotateX: 0,
     rotateY: 0,
     rotateZ: 0,
+    perspective: 0,
     filter: null,
     boxShadow: null,
     pointerEvents: 'inherit',
@@ -7705,8 +7706,12 @@
   function compatibleTransform(k, arr) {
     if (k === SCALE_X || k === SCALE_Y || k === SCALE_Z) {
       arr[1] = NUMBER$1;
-    } else if (k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z || k === PERSPECTIVE) {
+    } else if (k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z) {
       if (arr[1] === NUMBER$1) {
+        arr[1] = PX$2;
+      }
+    } else if (k === PERSPECTIVE) {
+      if ([NUMBER$1, PERCENT$2, DEG$1].indexOf(arr[1]) > -1) {
         arr[1] = PX$2;
       }
     } else {
@@ -7807,7 +7812,7 @@
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
 
-    ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate3d', 'rotate'].forEach(function (k) {
+    ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(function (k) {
       temp = style[k];
 
       if (!isNil$3(temp)) {
@@ -8045,6 +8050,10 @@
           } else if (k === 'perspective') {
             var _arr2 = calUnit$1(v);
 
+            if (_arr2[0] < 0) {
+              _arr2[0] = 0;
+            }
+
             compatibleTransform(PERSPECTIVE, _arr2);
             transform.push([PERSPECTIVE, _arr2]);
           } else if (k === 'rotate3d') {
@@ -8053,8 +8062,11 @@
             if (_arr3.length === 4) {
               var deg = calUnit$1(_arr3[3]);
               compatibleTransform(ROTATE_3D, deg);
+              _arr3[0] = parseFloat(_arr3[0]);
+              _arr3[1] = parseFloat(_arr3[1]);
+              _arr3[2] = parseFloat(_arr3[2]);
               _arr3[3] = deg;
-              transform.push(ROTATE_3D, _arr3);
+              transform.push([ROTATE_3D, _arr3]);
             }
           } else if (TRANSFORM_HASH.hasOwnProperty(k)) {
             var k2 = TRANSFORM_HASH[k];
@@ -8119,6 +8131,14 @@
       }
     }
 
+    temp = style.perspective;
+
+    if (!isNil$3(temp)) {
+      var arr = calUnit$1(temp);
+      compatibleTransform(PERSPECTIVE, arr);
+      res[PERSPECTIVE] = arr;
+    }
+
     temp = style.transformOrigin;
 
     if (!isNil$3(temp)) {
@@ -8178,13 +8198,13 @@
     temp = style.rotate3d;
 
     if (temp) {
-      var arr = v.toString().split(/\s*,\s*/);
+      var _arr9 = v.toString().split(/\s*,\s*/);
 
-      if (arr.length === 4) {
-        var deg = calUnit$1(arr[3]);
+      if (_arr9.length === 4) {
+        var deg = calUnit$1(_arr9[3]);
         compatibleTransform(ROTATE_3D, deg);
-        arr[3] = deg;
-        res[ROTATE_3D] = arr;
+        _arr9[3] = deg;
+        res[ROTATE_3D] = _arr9;
       }
     }
 
@@ -9042,7 +9062,7 @@
 
   var VALUE = (_VALUE = {}, _defineProperty(_VALUE, POSITION, true), _defineProperty(_VALUE, DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, FLEX_DIRECTION, true), _defineProperty(_VALUE, FLEX_GROW, true), _defineProperty(_VALUE, FLEX_SHRINK, true), _defineProperty(_VALUE, FLEX_WRAP, true), _defineProperty(_VALUE, JUSTIFY_CONTENT, true), _defineProperty(_VALUE, ALIGN_ITEMS, true), _defineProperty(_VALUE, ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$3.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$3.FILL_RULE, true), _defineProperty(_VALUE, OPACITY, true), _defineProperty(_VALUE, Z_INDEX, true), _defineProperty(_VALUE, BACKGROUND_CLIP, true), _defineProperty(_VALUE, TEXT_OVERFLOW, true), _defineProperty(_VALUE, LINE_CLAMP, true), _VALUE);
   var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, COLOR, true), _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_);
-  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _ARRAY_0_); // TODO 优化
+  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _ARRAY_0_);
 
   function cloneStyle(style, keys) {
     if (!keys) {
@@ -9898,12 +9918,7 @@
       multiply$1 = matrix.multiply,
       isE$1 = matrix.isE;
   var d2r$2 = geom$1.d2r,
-      pointInPolygon$1 = geom$1.pointInPolygon; // const HASH_3D = {
-  //   [TRANSLATE_Z]: true,
-  //   [SCALE_Z]: true,
-  //   [ROTATE_X]: true,
-  //   [ROTATE_Y]: true,
-  // }
+      pointInPolygon$1 = geom$1.pointInPolygon;
 
   function calSingle(t, k, v) {
     if (k === TRANSLATE_X$1) {
@@ -9951,7 +9966,81 @@
       t[0] = t[5] = _cos2;
       t[1] = _sin2;
       t[4] = -_sin2;
-    } else if (k === ROTATE_3D$1) ; else if (k === PERSPECTIVE$1) {
+    } else if (k === ROTATE_3D$1) {
+      var _v = v,
+          _v2 = _slicedToArray(_v, 4),
+          x = _v2[0],
+          y = _v2[1],
+          z = _v2[2],
+          r = _v2[3];
+
+      r = d2r$2(r[0]);
+      var s = Math.sin(r);
+      var c = Math.cos(r);
+
+      if (x && !y && !z) {
+        if (x < 0) {
+          s = -s;
+        }
+
+        t[5] = c;
+        t[9] = -s;
+        t[6] = s;
+        t[10] = c;
+      } else if (y && !x && !z) {
+        if (y < 0) {
+          s = -s;
+        }
+
+        t[0] = c;
+        t[8] = s;
+        t[2] = -s;
+        t[10] = c;
+      } else if (z && !x && !y) {
+        if (z < 0) {
+          s = -s;
+        }
+
+        t[0] = c;
+        t[4] = -s;
+        t[1] = s;
+        t[5] = c;
+      } else {
+        var len = Math.sqrt(x * x + y * y + z * z);
+
+        if (len !== 1) {
+          var rlen = 1 / len;
+          x *= rlen;
+          y *= rlen;
+          z *= rlen;
+        }
+
+        var nc = 1 - c;
+        var xy = x * y;
+        var yz = y * z;
+        var zx = z * x;
+        var xs = x * s;
+        var ys = y * s;
+        var zs = z * s;
+        t[0] = x * x * nc + c;
+        t[1] = xy * nc + zs;
+        t[2] = zx * nc - ys;
+        t[3] = 0;
+        t[4] = xy * nc - zs;
+        t[5] = y * y * nc + c;
+        t[6] = yz * nc + xs;
+        t[7] = 0;
+        t[8] = zx * nc + ys;
+        t[9] = yz * nc - xs;
+        t[10] = z * z * nc + c;
+        t[11] = 0;
+        t[12] = 0;
+        t[13] = 0;
+        t[14] = 0;
+        t[15] = 1;
+      }
+    } else if (k === PERSPECTIVE$1 && v > 0) {
+      v = Math.max(v, 1);
       t[11] = -1 / v;
     } else if (k === MATRIX$1) {
       util.assignMatrix(t, v);
@@ -10033,7 +10122,7 @@
   }
 
   function normalizeSingle(k, v, ow, oh, root) {
-    if (k === TRANSLATE_X$1) {
+    if (k === TRANSLATE_X$1 || k === TRANSLATE_Z$1) {
       if (v[1] === PERCENT$3) {
         return v[0] * ow * 0.01;
       } else if (v[1] === REM$3) {
@@ -10054,6 +10143,8 @@
         return v[0] * root.height * 0.01;
       }
     } else if (k === MATRIX$1) {
+      return v;
+    } else if (k === ROTATE_3D$1) {
       return v;
     }
 
@@ -10090,9 +10181,21 @@
     return tfo;
   }
 
+  function calMatrixByPerspective(m, ppt) {
+    if (ppt && ppt > 0) {
+      ppt = Math.max(ppt, 1);
+      var i = identity$1();
+      i[11] = -1 / ppt;
+      m = multiply$1(i, m);
+    }
+
+    return m;
+  }
+
   var tf = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
+    calMatrixByPerspective: calMatrixByPerspective,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
     pointInQuadrilateral: pointInQuadrilateral
@@ -15773,7 +15876,7 @@
       OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
       FILTER$2 = _enums$STYLE_KEY$a.FILTER;
   var ENUM = {
-    // 低4位表示repaint级别
+    // 低位表示repaint级别
     NONE: 0,
     //                                          0
     TRANSLATE_X: 1,
@@ -15796,7 +15899,7 @@
     REFLOW: 128 //                               10000000
 
   };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSLATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
   var o$3 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
@@ -16449,6 +16552,7 @@
       ROTATE_Z$2 = _enums$STYLE_KEY$c.ROTATE_Z,
       SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
+      PERSPECTIVE$2 = _enums$STYLE_KEY$c.PERSPECTIVE,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
       BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_Y,
@@ -17269,10 +17373,21 @@
             }
 
             if (!matrixCache) {
+              var m = computedStyle[TRANSFORM$3];
+              var p = __config[NODE_DOM_PARENT$2];
+
+              if (p) {
+                var pp = p.computedStyle[PERSPECTIVE$2];
+
+                if (pp) {
+                  m = tf.calMatrixByPerspective(m, pp);
+                }
+              }
+
               var tfo = computedStyle[TRANSFORM_ORIGIN$4].slice(0);
               tfo[0] += sx1 || 0;
               tfo[1] += sy1 || 0;
-              matrixCache = __cacheStyle[MATRIX$3] = tf.calMatrixByOrigin(computedStyle[TRANSFORM$3], tfo);
+              matrixCache = __cacheStyle[MATRIX$3] = tf.calMatrixByOrigin(m, tfo);
             }
           }
 
@@ -17625,6 +17740,28 @@
         return [bx1, by1, bx2, by2];
       }
     }, {
+      key: "__calPerspective",
+      value: function __calPerspective(__cacheStyle, currentStyle, computedStyle) {
+        var p = 0;
+
+        if (isNil$6(__cacheStyle[PERSPECTIVE$2])) {
+          __cacheStyle[PERSPECTIVE$2] = true;
+          var v = currentStyle[PERSPECTIVE$2];
+
+          if (v[1] === REM$6) {
+            p = computedStyle[PERSPECTIVE$2] = v[0] * this.root.computedStyle[FONT_SIZE$8];
+          } else if (v[1] === VW$6) {
+            p = computedStyle[PERSPECTIVE$2] = v[0] * this.root.width * 0.01;
+          } else if (v[1] === VH$6) {
+            p = computedStyle[PERSPECTIVE$2] = v[0] * this.root.height * 0.01;
+          } else {
+            p = computedStyle[PERSPECTIVE$2] = v[0];
+          }
+        }
+
+        return p;
+      }
+    }, {
       key: "__calFilter",
       value: function __calFilter(currentStyle, computedStyle) {
         var _this5 = this;
@@ -17836,7 +17973,9 @@
 
         var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT$1] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
 
-        this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight); // canvas特殊申请离屏缓存
+        this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
+
+        var matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight); // canvas特殊申请离屏缓存
 
 
         var dx = 0,
@@ -17900,7 +18039,7 @@
         res.dx = dx;
         res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数
 
-        var _this$__calCache = this.__calCache(renderMode, ctx, this.parent, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6),
+        var _this$__calCache = this.__calCache(renderMode, ctx, p, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6),
             _this$__calCache2 = _slicedToArray(_this$__calCache, 4),
             bx1 = _this$__calCache2[0],
             by1 = _this$__calCache2[1],
@@ -17945,8 +18084,6 @@
           }
         } // canvas/svg/事件需要3种不同的matrix
 
-
-        var matrix = __cacheStyle[MATRIX$3];
 
         if (renderMode === mode.SVG) {
           if (!mx.isE(matrix)) {
@@ -25724,23 +25861,7 @@
       } else {
         elem.removeAttribute('style');
       }
-    } // if(contain(lv, FILTER)) {
-    //   if(filter) {
-    //     elem.setAttribute('filter', filter);
-    //   }
-    //   else {
-    //     elem.removeAttribute('filter');
-    //   }
-    // }
-    // if(contain(lv, MIX_BLEND_MODE)) {
-    //   if(mixBlendMode) {
-    //     elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
-    //   }
-    //   else {
-    //     elem.removeAttribute('style');
-    //   }
-    // }
-
+    }
   }
 
   function diffD2D(elem, ovd, nvd, root) {
@@ -28599,7 +28720,7 @@
 
         matrixList.push(parentMatrix);
         parentOpacity = lastConfig[NODE_OPACITY$3];
-        opacityList.push(parentOpacity); // 要记住parent的refreshLevel供Text判断是否变化用
+        opacityList.push(parentOpacity);
       } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
       else if (lv < lastLv) {
           var diff = lastLv - lv;
@@ -28644,7 +28765,8 @@
 
         var currentStyle = __config[NODE_CURRENT_STYLE$5],
             __cacheStyle = __config[NODE_CACHE_STYLE$1],
-            matrixEvent = __config[NODE_MATRIX_EVENT$4];
+            matrixEvent = __config[NODE_MATRIX_EVENT$4]; // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
+
         var matrix = void 0;
 
         if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
@@ -29401,6 +29523,8 @@
       BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+      PERSPECTIVE$3 = _enums$STYLE_KEY$j.PERSPECTIVE,
+      MATRIX$4 = _enums$STYLE_KEY$j.MATRIX,
       _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
       UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -29722,7 +29846,7 @@
         isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
-    var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
+    var hasZ, hasVisibility, hasColor, hasDisplay, hasPerspective; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
     if (!component && style && keys) {
       for (var i = 0, len = keys.length; i < len; i++) {
@@ -29738,53 +29862,73 @@
         } else {
           // 需和现在不等，且不是pointerEvents这种无关的
           if (!equalStyle$1(k, v, currentStyle[k], node)) {
-            // pointerEvents这种无关的只需更新
-            if (isIgnore(k)) {
+            // 特殊的perspective，影响直接子节点的transform，将子节点的__cacheStyle清空
+            if (k === PERSPECTIVE$3) {
+              hasPerspective = true;
               __cacheStyle[k] = undefined;
               currentStyle[k] = v;
-            } else {
-              // TRBL变化只对relative/absolute起作用，其它忽视
-              if (DIRECTION_HASH.hasOwnProperty(k)) {
-                var position = currentStyle[POSITION$5];
 
-                if (position !== 'relative' && position !== 'absolute') {
-                  delete style[k];
-                  continue;
+              node.__calPerspective(__cacheStyle, currentStyle, computedStyle);
+
+              node.children.forEach(function (item) {
+                if (item instanceof Component$1) {
+                  item = item.shadowRoot;
                 }
-              } else if (k === DISPLAY$a) {
-                hasDisplay = true;
-              } // repaint细化等级，reflow在checkReflow()
+
+                if (item instanceof Xom$1) {
+                  item.__cacheStyle[MATRIX$4] = null;
+                  var config = item.__config;
+                  config[NODE_REFRESH_LV$2] |= o$3.TRANSFORM;
+                }
+              });
+            } // pointerEvents这种无关的只需更新
+            else if (isIgnore(k)) {
+                __cacheStyle[k] = undefined;
+                currentStyle[k] = v;
+              } else {
+                // TRBL变化只对relative/absolute起作用，其它忽视
+                if (DIRECTION_HASH.hasOwnProperty(k)) {
+                  var position = currentStyle[POSITION$5];
+
+                  if (position !== 'relative' && position !== 'absolute') {
+                    delete style[k];
+                    continue;
+                  }
+                } else if (k === DISPLAY$a) {
+                  hasDisplay = true;
+                } // repaint细化等级，reflow在checkReflow()
 
 
-              lv |= getLevel(k);
+                lv |= getLevel(k);
 
-              if (isMeasure(k)) {
-                hasMeasure = true;
-              } // repaint置空，如果reflow会重新生成空的
+                if (isMeasure(k)) {
+                  hasMeasure = true;
+                } // repaint置空，如果reflow会重新生成空的
 
 
-              __cacheStyle[k] = undefined;
-              currentStyle[k] = v;
+                __cacheStyle[k] = undefined;
+                currentStyle[k] = v;
 
-              if (k === Z_INDEX$4 && node !== root) {
-                hasZ = true;
+                if (k === Z_INDEX$4 && node !== root) {
+                  hasZ = true;
+                }
+
+                if (k === VISIBILITY$7) {
+                  hasVisibility = true;
+                }
+
+                if (k === COLOR$5) {
+                  hasColor = true;
+                }
               }
-
-              if (k === VISIBILITY$7) {
-                hasVisibility = true;
-              }
-
-              if (k === COLOR$5) {
-                hasColor = true;
-              }
-            }
           }
         }
       }
     } // 无任何改变处理的去除记录，如pointerEvents、无效的left
+    // 但是perspective需考虑进来，虽然不影响自己但影响别人，要返回true表明有变更
 
 
-    if (lv === NONE$3 && !component) {
+    if (lv === NONE$3 && !component && !hasPerspective) {
       delete __config[NODE_UNIQUE_UPDATE_ID];
       return;
     } // 记录下来清除parent的zIndexChildren缓存
@@ -29841,7 +29985,7 @@
 
 
     if (computedStyle[DISPLAY$a] === 'none' && !hasDisplay) {
-      return false;
+      return;
     } // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
     // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
     // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
@@ -29854,7 +29998,7 @@
 
       if (_config2[NODE_CURRENT_STYLE$6][DISPLAY$a] === 'none' || _config2[NODE_COMPUTED_STYLE$5][DISPLAY$a] === 'none') {
         computedStyle[DISPLAY$a] = 'none';
-        return false;
+        return;
       }
     } // reflow/repaint/measure相关的记录下来
 

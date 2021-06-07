@@ -229,22 +229,6 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('style');
     }
   }
-  // if(contain(lv, FILTER)) {
-  //   if(filter) {
-  //     elem.setAttribute('filter', filter);
-  //   }
-  //   else {
-  //     elem.removeAttribute('filter');
-  //   }
-  // }
-  // if(contain(lv, MIX_BLEND_MODE)) {
-  //   if(mixBlendMode) {
-  //     elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
-  //   }
-  //   else {
-  //     elem.removeAttribute('style');
-  //   }
-  // }
 }
 
 function diffD2D(elem, ovd, nvd, root) {

@@ -1951,8 +1951,6 @@ function renderWebgl(renderMode, gl, root) {
   let parentMatrix;
   let opacityList = [];
   let parentOpacity = 1;
-  let refreshLevelList = [];
-  let parentRefreshLevel;
   let lastRefreshLevel;
   let lastConfig;
   let lastLv = 0;
@@ -1991,9 +1989,6 @@ function renderWebgl(renderMode, gl, root) {
       matrixList.push(parentMatrix);
       parentOpacity = lastConfig[NODE_OPACITY];
       opacityList.push(parentOpacity);
-      // 要记住parent的refreshLevel供Text判断是否变化用
-      parentRefreshLevel = lastRefreshLevel;
-      refreshLevelList.push(parentRefreshLevel);
     }
     // 变小出栈索引需注意，可能不止一层，多层计算diff层级
     else if(lv < lastLv) {
@@ -2002,8 +1997,6 @@ function renderWebgl(renderMode, gl, root) {
       parentMatrix = matrixList[lv - 1];
       opacityList.splice(-diff);
       parentOpacity = opacityList[lv - 1];
-      refreshLevelList.splice(-diff);
-      parentRefreshLevel = refreshLevelList[lv - 1];
     }
     // 不变是同级兄弟，无需特殊处理
     else {}
@@ -2042,6 +2035,7 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_CACHE_STYLE]: __cacheStyle,
         [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config;
+      // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
       let matrix;
       if(contain(refreshLevel, TRANSFORM_ALL)) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);

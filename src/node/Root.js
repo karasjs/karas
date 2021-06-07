@@ -54,6 +54,8 @@ const {
     BORDER_TOP_WIDTH,
     BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH,
+    PERSPECTIVE,
+    MATRIX,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -345,7 +347,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   } = __config;
   let lv = focus || NONE;
   let hasMeasure = measure;
-  let hasZ, hasVisibility, hasColor, hasDisplay;
+  let hasZ, hasVisibility, hasColor, hasDisplay, hasPerspective;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
   if(!component && style && keys) {
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -362,8 +364,25 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       else {
         // 需和现在不等，且不是pointerEvents这种无关的
         if(!equalStyle(k, v, currentStyle[k], node)) {
+          // 特殊的perspective，影响直接子节点的transform，将子节点的__cacheStyle清空
+          if(k === PERSPECTIVE) {
+            hasPerspective = true;
+            __cacheStyle[k] = undefined;
+            currentStyle[k] = v;
+            node.__calPerspective(__cacheStyle, currentStyle, computedStyle);
+            node.children.forEach(item => {
+              if(item instanceof Component) {
+                item = item.shadowRoot;
+              }
+              if(item instanceof Xom) {
+                item.__cacheStyle[MATRIX] = null;
+                let config = item.__config;
+                config[NODE_REFRESH_LV] |= level.TRANSFORM;
+              }
+            });
+          }
           // pointerEvents这种无关的只需更新
-          if(isIgnore(k)) {
+          else if(isIgnore(k)) {
             __cacheStyle[k] = undefined;
             currentStyle[k] = v;
           }
@@ -402,7 +421,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
-  if(lv === NONE && !component) {
+  // 但是perspective需考虑进来，虽然不影响自己但影响别人，要返回true表明有变更
+  if(lv === NONE && !component && !hasPerspective) {
     delete __config[NODE_UNIQUE_UPDATE_ID];
     return;
   }
@@ -450,7 +470,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
   if(computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-    return false;
+    return;
   }
   // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
   // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
@@ -460,7 +480,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     let __config = parent.__config;
     if(__config[NODE_CURRENT_STYLE][DISPLAY] === 'none' || __config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
       computedStyle[DISPLAY] = 'none';
-      return false;
+      return;
     }
   }
   // reflow/repaint/measure相关的记录下来

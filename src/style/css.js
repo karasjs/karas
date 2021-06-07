@@ -105,8 +105,13 @@ function compatibleTransform(k, arr) {
   if(k === SCALE_X || k === SCALE_Y || k === SCALE_Z) {
     arr[1] = NUMBER;
   }
-  else if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z || k === PERSPECTIVE) {
+  else if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z) {
     if(arr[1] === NUMBER) {
+      arr[1] = PX;
+    }
+  }
+  else if(k === PERSPECTIVE) {
+    if([NUMBER, PERCENT, DEG].indexOf(arr[1]) > -1) {
       arr[1] = PX;
     }
   }
@@ -183,7 +188,7 @@ function normalize(style, reset = []) {
     abbr.toFull(style, 'padding');
   }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
-  ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate3d', 'rotate'].forEach(k => {
+  ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(k => {
     temp = style[k];
     if(!isNil(temp)) {
       abbr.toFull(style, k);
@@ -408,6 +413,9 @@ function normalize(style, reset = []) {
         }
         else if(k === 'perspective') {
           let arr = calUnit(v);
+          if(arr[0] < 0) {
+            arr[0] = 0;
+          }
           compatibleTransform(PERSPECTIVE, arr);
           transform.push([PERSPECTIVE, arr]);
         }
@@ -416,8 +424,11 @@ function normalize(style, reset = []) {
           if(arr.length === 4) {
             let deg = calUnit(arr[3]);
             compatibleTransform(ROTATE_3D, deg);
+            arr[0] = parseFloat(arr[0]);
+            arr[1] = parseFloat(arr[1]);
+            arr[2] = parseFloat(arr[2]);
             arr[3] = deg;
-            transform.push(ROTATE_3D, arr);
+            transform.push([ROTATE_3D, arr]);
           }
         }
         else if(TRANSFORM_HASH.hasOwnProperty(k)) {
@@ -468,6 +479,12 @@ function normalize(style, reset = []) {
         }
       });
     }
+  }
+  temp = style.perspective;
+  if(!isNil(temp)) {
+    let arr = calUnit(temp);
+    compatibleTransform(PERSPECTIVE, arr);
+    res[PERSPECTIVE] = arr;
   }
   temp = style.transformOrigin;
   if(!isNil(temp)) {
@@ -1441,7 +1458,6 @@ const ARRAY_0_1 = {
   [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
   [TRANSFORM_ORIGIN]: true,
 };
-// TODO 优化
 function cloneStyle(style, keys) {
   if(!keys) {
     keys = Object.keys(style).map(i => {

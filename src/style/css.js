@@ -98,7 +98,7 @@ const TRANSFORM_HASH = {
   rotateX: ROTATE_X,
   rotateY: ROTATE_Y,
   rotateZ: ROTATE_Z,
-  // rotate: ROTATE_Z,
+  rotate: ROTATE_Z,
 };
 
 function compatibleTransform(k, arr) {
@@ -521,6 +521,7 @@ function normalize(style, reset = []) {
     'rotateX',
     'rotateY',
     'rotateZ',
+    'rotate',
   ].forEach(k => {
     let v = style[k];
     if(isNil(v)) {

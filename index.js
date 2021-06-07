@@ -7691,8 +7691,8 @@
     skewY: SKEW_Y,
     rotateX: ROTATE_X,
     rotateY: ROTATE_Y,
-    rotateZ: ROTATE_Z // rotate: ROTATE_Z,
-
+    rotateZ: ROTATE_Z,
+    rotate: ROTATE_Z
   };
 
   function compatibleTransform(k, arr) {
@@ -8155,7 +8155,7 @@
       }
     }
 
-    ['translateX', 'translateY', 'translateZ', 'scaleX', 'scaleY', 'scaleZ', 'skewX', 'skewY', 'rotateX', 'rotateY', 'rotateZ'].forEach(function (k) {
+    ['translateX', 'translateY', 'translateZ', 'scaleX', 'scaleY', 'scaleZ', 'skewX', 'skewY', 'rotateX', 'rotateY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
       if (isNil$3(v)) {
@@ -17953,26 +17953,14 @@
         }
 
         var m = __config[NODE_MATRIX$1];
-        util.assignMatrix(m, matrix); // m[0] = matrix[0];
-        // m[1] = matrix[1];
-        // m[2] = matrix[2];
-        // m[3] = matrix[3];
-        // m[4] = matrix[4];
-        // m[5] = matrix[5];
-        // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
+        util.assignMatrix(m, matrix); // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
 
         if (p) {
           matrix = mx.multiply(p.matrixEvent, matrix);
         } // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
 
 
-        m = __config[NODE_MATRIX_EVENT$2]; // m[0] = matrix[0];
-        // m[1] = matrix[1];
-        // m[2] = matrix[2];
-        // m[3] = matrix[3];
-        // m[4] = matrix[4];
-        // m[5] = matrix[5];
-
+        m = __config[NODE_MATRIX_EVENT$2];
         util.assignMatrix(m, matrix); // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
 
         if (res.limitCache) {

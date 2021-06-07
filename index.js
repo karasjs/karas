@@ -6804,18 +6804,18 @@
       if (d) {
         var sin = Math.sin(d);
         var cos = Math.cos(d);
-        matrix = [cos, sin, -sin, cos, 0, 0];
+        matrix = [cos, sin, 0, 0, -sin, cos, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
       }
 
       if (xl !== r) {
         scx = xl / r;
-        var m = [scx, 0, 0, 1, 0, 0];
+        var m = [scx, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
         matrix = mx.multiply(matrix, m);
       }
 
       if (yl !== r) {
         scy = yl / r;
-        var _m = [1, 0, 0, scy, 0, 0];
+        var _m = [1, 0, 0, 0, 0, scy, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
         matrix = mx.multiply(matrix, _m);
       }
     }
@@ -24733,7 +24733,7 @@
             ctx.save();
             var me = this.matrixEvent;
             matrix = mx.multiply(me, matrix);
-            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+            ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
           }
 
           ctx.beginPath();

@@ -575,16 +575,16 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
     if(d) {
       let sin = Math.sin(d);
       let cos = Math.cos(d);
-      matrix = [cos, sin, -sin, cos, 0, 0];
+      matrix = [cos, sin, 0, 0, -sin, cos, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
     }
     if(xl !== r) {
       scx = xl / r;
-      let m = [scx, 0, 0, 1, 0, 0];
+      let m = [scx, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
       matrix = mx.multiply(matrix, m);
     }
     if(yl !== r) {
       scy = yl / r;
-      let m = [1, 0, 0, scy, 0, 0];
+      let m = [1, 0, 0, 0, 0, scy, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
       matrix = mx.multiply(matrix, m);
     }
   }

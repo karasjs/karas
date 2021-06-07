@@ -611,7 +611,7 @@ class Text extends Node {
               },
             },
           } = __config;
-          ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           ctx.globalAlpha = opacity;
         }
       }

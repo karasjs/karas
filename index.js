@@ -950,7 +950,7 @@
     }
 
     return d;
-  }
+  } // 将4*4的16长度矩阵转成css/canvas的6位标准使用，忽略transform3d
 
 
   function m2m6(m) {
@@ -963,7 +963,6 @@
     calPoint: calPoint,
     inverse: inverse,
     isE: isE,
-    // m2Mat4,
     m2m6: m2m6
   };
 
@@ -11336,7 +11335,7 @@
               var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT].__config,
                   m = _config$NODE_DOM_PAR[NODE_MATRIX_EVENT],
                   opacity = _config$NODE_DOM_PAR[NODE_OPACITY$1];
-              ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               ctx.globalAlpha = opacity;
             }
           }

@@ -151,33 +151,6 @@ function inverse4(s) {
   return d;
 }
 
-/**
- * 转换为webgl的mat4，即4*4矩阵，一维表示，同时位移转成[-1,1]区间表示
- * @param m
- * @param width
- * @param height
- * @returns {(*|number)[]|number[]|*}
- */
-function m2Mat4(m, width, height) {
-  if(m && m.length === 16) {
-    m = m.slice(0);
-    m[13] /= width;
-    m[14] /= height;
-    return m;
-  }
-  if(m && m.length === 6) {
-    m = m.slice(0);
-    return [
-      m[0], m[1], 0, 0,
-      m[2], m[3], 0, 0,
-      0, 0, 1, 0,
-      // m[4] / width, m[5] / height, 0, 1,
-      m[4], m[5], 0, 1,
-    ];
-  }
-  return m;
-}
-
 // 将4*4的16长度矩阵转成css/canvas的6位标准使用，忽略transform3d
 function m2m6(m) {
   return [
@@ -196,6 +169,5 @@ export default {
   calPoint,
   inverse,
   isE,
-  // m2Mat4,
   m2m6,
 };

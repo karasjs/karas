@@ -95,7 +95,13 @@ export function loadShader(gl, type, source) {
 }
 
 function convertCoords2Gl([x, y, z, w], cx, cy, revertY) {
-  if(w !== 1) {
+  if(z === undefined) {
+    z = 0;
+  }
+  if(w === undefined) {
+    w = 1;
+  }
+  if(w && w !== 1) {
     x /= w;
     y /= w;
     z /= w;

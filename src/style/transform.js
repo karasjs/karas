@@ -56,7 +56,7 @@ function calSingle(t, k, v) {
   }
   else if(k === SKEW_Y) {
     v = d2r(v);
-    t[5] = Math.tan(v);
+    t[1] = Math.tan(v);
   }
   else if(k === ROTATE_X) {
     v = d2r(v);

@@ -5317,7 +5317,15 @@
         z = _ref2[2],
         w = _ref2[3];
 
-    if (w !== 1) {
+    if (z === undefined) {
+      z = 0;
+    }
+
+    if (w === undefined) {
+      w = 1;
+    }
+
+    if (w && w !== 1) {
       x /= w;
       y /= w;
       z /= w;
@@ -9557,9 +9565,9 @@
     var sin = Math.sin(theta);
     var cos = Math.cos(theta);
     var t = mx.identity();
-    t[0] = t[3] = cos;
+    t[0] = t[5] = cos;
     t[1] = sin;
-    t[2] = -sin;
+    t[4] = -sin;
     return t;
   }
   /**
@@ -9738,8 +9746,8 @@
     var overflow = isOverflow(source, target); // 第0步，将源三角第1个a点移到原点
 
     var m = mx.identity();
-    m[4] = -sx1;
-    m[5] = -sy1;
+    m[12] = -sx1;
+    m[13] = -sy1;
     var t; // 第1步，以第1条边ab为基准，将其贴合x轴上，为后续倾斜不干扰做准备
 
     var theta = calDeg(sx1, sy1, sx2, sy2);
@@ -9760,8 +9768,8 @@
     // 第3步，缩放y，先将目标三角形旋转到x轴平行，再变换坐标计算
 
     var n = mx.identity();
-    n[4] = -tx1;
-    n[5] = -ty1;
+    n[12] = -tx1;
+    n[13] = -ty1;
     theta = calDeg(tx1, ty1, tx2, ty2); // 记录下这个旋转角度，后面源三角形要反向旋转
 
     var alpha = theta;
@@ -9790,7 +9798,7 @@
       }
 
       if (ls2 !== lt2) {
-        t[3] = lt2 / ls2;
+        t[5] = lt2 / ls2;
       }
 
       m = mx.multiply(t, m);
@@ -9825,15 +9833,15 @@
 
     if (a !== A) {
       t = mx.identity();
-      t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
+      t[4] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
       m = mx.multiply(t, m);
     } // 发生翻转时特殊处理按x轴垂直翻转
 
 
     if (overflow) {
       m[1] = -m[1];
-      m[3] = -m[3];
       m[5] = -m[5];
+      m[13] = -m[13];
     } // 第5步，再次旋转，角度为目标旋转到x轴的负值，可与下步合并
 
 
@@ -9845,10 +9853,10 @@
     // t = matrix.identity();
 
 
-    t[4] = tx1;
-    t[5] = ty1;
+    t[12] = tx1;
+    t[13] = ty1;
     m = mx.multiply(t, m);
-    return m;
+    return mx.m2m6(m);
   }
 
   var tar = {
@@ -9916,7 +9924,7 @@
       t[4] = Math.tan(v);
     } else if (k === SKEW_Y$1) {
       v = d2r$2(v);
-      t[5] = Math.tan(v);
+      t[1] = Math.tan(v);
     } else if (k === ROTATE_X$1) {
       v = d2r$2(v);
       var sin = Math.sin(v);
@@ -25023,8 +25031,11 @@
   }(Xom$1);
 
   var _enums$NODE_KEY$8 = enums.NODE_KEY,
+      NODE_STYLE$4 = _enums$NODE_KEY$8.NODE_STYLE,
+      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_DOM_PARENT$4 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
+      NODE_MATRIX$2 = _enums$NODE_KEY$8.NODE_MATRIX,
       NODE_MATRIX_EVENT$3 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
       NODE_STRUCT$3 = _enums$NODE_KEY$8.NODE_STRUCT;
   var TYPE_VD$3 = $$type.TYPE_VD,
@@ -25115,9 +25126,12 @@
       ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', '__computedStyle'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
-      sr.__config[NODE_COMPUTED_STYLE$3] = oldSr.computedStyle;
+      sr.__computedStyle = sr.__config[NODE_COMPUTED_STYLE$3] = oldSr.computedStyle;
     } else {
-      sr.__config[NODE_MATRIX_EVENT$3] = oldSr.__config[NODE_MATRIX_EVENT$3];
+      var domParent = cp.domParent;
+      [NODE_STYLE$4, NODE_CURRENT_STYLE$4, NODE_COMPUTED_STYLE$3, NODE_MATRIX$2, NODE_MATRIX_EVENT$3].forEach(function (k) {
+        sr.__config[k] = domParent.__config[k];
+      });
     }
 
     ['__x', '__y', '__width', '__height', '__sx1', // text和xom
@@ -26337,11 +26351,11 @@
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
       NODE_CACHE_MASK$1 = _enums$NODE_KEY$9.NODE_CACHE_MASK,
       NODE_CACHE_FILTER$2 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
-      NODE_MATRIX$2 = _enums$NODE_KEY$9.NODE_MATRIX,
+      NODE_MATRIX$3 = _enums$NODE_KEY$9.NODE_MATRIX,
       NODE_MATRIX_EVENT$4 = _enums$NODE_KEY$9.NODE_MATRIX_EVENT,
       NODE_OPACITY$3 = _enums$NODE_KEY$9.NODE_OPACITY,
       NODE_COMPUTED_STYLE$4 = _enums$NODE_KEY$9.NODE_COMPUTED_STYLE,
-      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$9.NODE_CURRENT_STYLE,
+      NODE_CURRENT_STYLE$5 = _enums$NODE_KEY$9.NODE_CURRENT_STYLE,
       NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$9.NODE_LIMIT_CACHE,
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
@@ -27683,7 +27697,7 @@
           }
         }
 
-        var currentStyle = __config[NODE_CURRENT_STYLE$4],
+        var currentStyle = __config[NODE_CURRENT_STYLE$5],
             __cacheStyle = __config[NODE_CACHE_STYLE$1],
             matrixEvent = __config[NODE_MATRIX_EVENT$4];
         var matrix = void 0;
@@ -27691,7 +27705,7 @@
         if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
-          var m = __config[NODE_MATRIX$2];
+          var m = __config[NODE_MATRIX$3];
           util.assignMatrix(m, matrix); // m[0] = matrix[0];
           // m[1] = matrix[1];
           // m[2] = matrix[2];
@@ -27699,7 +27713,7 @@
           // m[4] = matrix[4];
           // m[5] = matrix[5];
         } else {
-          matrix = __config[NODE_MATRIX$2];
+          matrix = __config[NODE_MATRIX$3];
         } // 父不为E时要点乘继承父的
 
 
@@ -28322,7 +28336,7 @@
           }
         }
 
-        var currentStyle = __config[NODE_CURRENT_STYLE$4],
+        var currentStyle = __config[NODE_CURRENT_STYLE$5],
             _computedStyle = __config[NODE_COMPUTED_STYLE$4],
             __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
@@ -28330,7 +28344,7 @@
           var matrix = _node4.__calMatrix(_refreshLevel2, __cacheStyle, currentStyle, _computedStyle, __config); // 恶心的v8性能优化
 
 
-          var m = __config[NODE_MATRIX$2];
+          var m = __config[NODE_MATRIX$3];
           util.assignMatrix(m, matrix);
 
           if (!matrix || isE$2(matrix)) {
@@ -28524,7 +28538,7 @@
       }
 
       if (_i5 === 0) {
-        parentMatrix = __config[NODE_MATRIX$2];
+        parentMatrix = __config[NODE_MATRIX$3];
         parentVd = virtualDom;
       }
 
@@ -28629,7 +28643,7 @@
           }
         }
 
-        var currentStyle = __config[NODE_CURRENT_STYLE$4],
+        var currentStyle = __config[NODE_CURRENT_STYLE$5],
             __cacheStyle = __config[NODE_CACHE_STYLE$1],
             matrixEvent = __config[NODE_MATRIX_EVENT$4];
         var matrix = void 0;
@@ -28637,10 +28651,10 @@
         if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
-          var m = __config[NODE_MATRIX$2];
+          var m = __config[NODE_MATRIX$3];
           util.assignMatrix(m, matrix);
         } else {
-          matrix = __config[NODE_MATRIX$2];
+          matrix = __config[NODE_MATRIX$3];
         }
 
         if (parentMatrix) {
@@ -29403,14 +29417,14 @@
       NODE_TAG_NAME$1 = _enums$NODE_KEY$a.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$a.NODE_CACHE_STYLE,
       NODE_CACHE_PROPS$1 = _enums$NODE_KEY$a.NODE_CACHE_PROPS,
-      NODE_CURRENT_STYLE$5 = _enums$NODE_KEY$a.NODE_CURRENT_STYLE,
+      NODE_CURRENT_STYLE$6 = _enums$NODE_KEY$a.NODE_CURRENT_STYLE,
       NODE_COMPUTED_STYLE$5 = _enums$NODE_KEY$a.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$a.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$6 = _enums$NODE_KEY$a.NODE_DOM_PARENT,
       NODE_IS_MASK$3 = _enums$NODE_KEY$a.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$a.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$a.NODE_IS_DESTROYED,
-      NODE_STYLE$4 = _enums$NODE_KEY$a.NODE_STYLE,
+      NODE_STYLE$5 = _enums$NODE_KEY$a.NODE_STYLE,
       NODE_UPDATE_HASH = _enums$NODE_KEY$a.NODE_UPDATE_HASH,
       NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$a.NODE_UNIQUE_UPDATE_ID,
       NODE_CACHE$5 = _enums$NODE_KEY$a.NODE_CACHE,
@@ -29662,7 +29676,7 @@
 
 
     if (overwrite) {
-      Object.assign(__config[NODE_STYLE$4], overwrite);
+      Object.assign(__config[NODE_STYLE$5], overwrite);
     } // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
 
 
@@ -29685,7 +29699,7 @@
         });
 
         if (overwrite) {
-          Object.assign(__config[NODE_STYLE$4], overwrite);
+          Object.assign(__config[NODE_STYLE$5], overwrite);
         }
 
         if (style2) {
@@ -29702,7 +29716,7 @@
     var tagName = __config[NODE_TAG_NAME$1],
         __cacheStyle = __config[NODE_CACHE_STYLE$2],
         __cacheProps = __config[NODE_CACHE_PROPS$1],
-        currentStyle = __config[NODE_CURRENT_STYLE$5],
+        currentStyle = __config[NODE_CURRENT_STYLE$6],
         computedStyle = __config[NODE_COMPUTED_STYLE$5],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$6],
@@ -29788,7 +29802,7 @@
             _node = _structs$_i[STRUCT_NODE$2],
             total = _structs$_i[STRUCT_TOTAL$2];
         var _config = _node.__config;
-        var _currentStyle = _config[NODE_CURRENT_STYLE$5];
+        var _currentStyle = _config[NODE_CURRENT_STYLE$6];
 
         var _need = void 0; // text的style指向parent，因此text一定变更
 
@@ -29839,7 +29853,7 @@
     if (hasDisplay && parent) {
       var _config2 = parent.__config;
 
-      if (_config2[NODE_CURRENT_STYLE$5][DISPLAY$a] === 'none' || _config2[NODE_COMPUTED_STYLE$5][DISPLAY$a] === 'none') {
+      if (_config2[NODE_CURRENT_STYLE$6][DISPLAY$a] === 'none' || _config2[NODE_COMPUTED_STYLE$5][DISPLAY$a] === 'none') {
         computedStyle[DISPLAY$a] = 'none';
         return false;
       }

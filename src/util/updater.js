@@ -9,8 +9,11 @@ import enums from './enums';
 
 const {
   NODE_KEY: {
+    NODE_STYLE,
+    NODE_CURRENT_STYLE,
     NODE_COMPUTED_STYLE,
     NODE_DOM_PARENT,
+    NODE_MATRIX,
     NODE_MATRIX_EVENT,
     NODE_STRUCT,
   },
@@ -116,10 +119,19 @@ function updateCp(cp, props, state) {
     ].forEach(k => {
       sr[k] = oldSr[k];
     });
-    sr.__config[NODE_COMPUTED_STYLE] = oldSr.computedStyle;
+    sr.__computedStyle = sr.__config[NODE_COMPUTED_STYLE] = oldSr.computedStyle;
   }
   else {
-    sr.__config[NODE_MATRIX_EVENT] = oldSr.__config[NODE_MATRIX_EVENT];
+    let domParent = cp.domParent;
+    [
+      NODE_STYLE,
+      NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE,
+      NODE_MATRIX,
+      NODE_MATRIX_EVENT,
+    ].forEach(k => {
+      sr.__config[k] = domParent.__config[k];
+    });
   }
   [
     '__x',

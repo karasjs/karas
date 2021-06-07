@@ -65,7 +65,7 @@ function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bb
       ctx.save();
       let me = xom.matrixEvent;
       matrix = mx.multiply(me, matrix);
-      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     }
     ctx.beginPath();
     if(ctx.fillStyle !== color) {

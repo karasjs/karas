@@ -26,4 +26,4 @@ let o = karas.parse({
 var input = document.querySelector('#base64');
 setTimeout(function() {
   input.value = JSON.stringify(o.virtualDom);
-}, 220);
+}, 250);

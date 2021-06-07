@@ -30671,16 +30671,19 @@
         measureList.forEach(function (node) {
           var _node$__config = node.__config,
               __uniqueUpdateId = _node$__config[NODE_UNIQUE_UPDATE_ID],
-              parent = _node$__config[NODE_DOM_PARENT$6];
+              parent = _node$__config[NODE_DOM_PARENT$6]; // 在root下的component变更时root会进入，但其没有__uniqueUpdateId
 
-          if (measureHash.hasOwnProperty(__uniqueUpdateId)) {
-            return;
+          if (node !== root) {
+            if (measureHash.hasOwnProperty(__uniqueUpdateId)) {
+              return;
+            }
+
+            measureHash[__uniqueUpdateId] = true;
           }
 
-          measureHash[__uniqueUpdateId] = true;
-          var last = node; // 检查measure的属性是否是inherit
+          var last = node; // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
 
-          var isInherit = o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = node !== root && o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             while (parent && parent !== root) {

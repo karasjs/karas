@@ -13,6 +13,8 @@ let fullCssProperty = {
   backgroundClip: 'bp',
   textOverflow: 'tof',
   flexWrap: 'fp',
+  perspective: 'ppt',
+  rotate3d: 'r3',
 };
 
 let abbrCssProperty = {

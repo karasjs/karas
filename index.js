@@ -7466,7 +7466,7 @@
     radial: true,
     conic: true
   };
-  var KEY_EXPAND = [[STYLE_KEY$1.TRANSLATE_X], [STYLE_KEY$1.TRANSLATE_Y], [STYLE_KEY$1.SKEW_X], [STYLE_KEY$1.SKEW_Y], [STYLE_KEY$1.SCALE_X], [STYLE_KEY$1.SCALE_Y], [STYLE_KEY$1.ROTATE_Z]];
+  var KEY_EXPAND = [[STYLE_KEY$1.TRANSLATE_X], [STYLE_KEY$1.TRANSLATE_Y], [STYLE_KEY$1.TRANSLATE_Z], [STYLE_KEY$1.SKEW_X], [STYLE_KEY$1.SKEW_Y], [STYLE_KEY$1.SCALE_X], [STYLE_KEY$1.SCALE_Y], [STYLE_KEY$1.SCALE_Z], [STYLE_KEY$1.ROTATE_X], [STYLE_KEY$1.ROTATE_Y], [STYLE_KEY$1.ROTATE_Z]];
   var EXPAND_HASH = {};
   KEY_EXPAND.forEach(function (k) {
     EXPAND_HASH[k] = true;
@@ -13279,6 +13279,7 @@
       BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
       BOX_SHADOW$1 = _enums$STYLE_KEY$9.BOX_SHADOW,
       TRANSLATE_X$2 = _enums$STYLE_KEY$9.TRANSLATE_X,
+      TRANSLATE_Z$2 = _enums$STYLE_KEY$9.TRANSLATE_Z,
       BACKGROUND_SIZE$1 = _enums$STYLE_KEY$9.BACKGROUND_SIZE,
       FONT_SIZE$7 = _enums$STYLE_KEY$9.FONT_SIZE,
       FLEX_BASIS$1 = _enums$STYLE_KEY$9.FLEX_BASIS,
@@ -13718,7 +13719,7 @@
 
         res[1] = _v5;
       } else {
-        var _v6 = calByUnit(p, n, target[k === TRANSLATE_X$2 ? 'outerWidth' : 'outerHeight'], target.root);
+        var _v6 = calByUnit(p, n, target[k === TRANSLATE_X$2 || k === TRANSLATE_Z$2 ? 'outerWidth' : 'outerHeight'], target.root);
 
         if (!_v6) {
           return;
@@ -16542,7 +16543,7 @@
       MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
       TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
       TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
-      TRANSLATE_Z$2 = _enums$STYLE_KEY$c.TRANSLATE_Z,
+      TRANSLATE_Z$3 = _enums$STYLE_KEY$c.TRANSLATE_Z,
       TRANSFORM$3 = _enums$STYLE_KEY$c.TRANSFORM,
       SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
       SCALE_Y$3 = _enums$STYLE_KEY$c.SCALE_Y,
@@ -17308,8 +17309,8 @@
               computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
             }
 
-            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$2] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
-              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$2] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
+            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$3] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$3] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
               matrixCache = null;
               var matrix; // transform相对于自身
 
@@ -17318,7 +17319,7 @@
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
-                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$2, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$3, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                     // 删除之前遗留的
                     delete computedStyle[k];
                     var v = currentStyle[k];
@@ -17336,25 +17337,25 @@
                     }
 
                     if (v[1] === PERCENT$7) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
                         computedStyle[k] = v[0] * offsetWidth * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * offsetHeight * 0.01;
                       }
                     } else if (v[1] === REM$6) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       }
                     } else if (v[1] === VW$6) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       }
                     } else if (v[1] === VH$6) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$2) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
@@ -33888,7 +33889,9 @@
     overflow: 'of',
     backgroundClip: 'bp',
     textOverflow: 'tof',
-    flexWrap: 'fp'
+    flexWrap: 'fp',
+    perspective: 'ppt',
+    rotate3d: 'r3'
   };
   var abbrCssProperty = {
     os: 'offset',

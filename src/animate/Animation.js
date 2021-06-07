@@ -21,6 +21,7 @@ const {
     BACKGROUND_POSITION_Y,
     BOX_SHADOW,
     TRANSLATE_X,
+    TRANSLATE_Z,
     BACKGROUND_SIZE,
     FONT_SIZE,
     FLEX_BASIS,
@@ -460,7 +461,7 @@ function calDiff(prev, next, k, target, tagName) {
       res[1] = v;
     }
     else {
-      let v = calByUnit(p, n, target[k === TRANSLATE_X ? 'outerWidth' : 'outerHeight'], target.root);
+      let v = calByUnit(p, n, target[k === TRANSLATE_X || k === TRANSLATE_Z ? 'outerWidth' : 'outerHeight'], target.root);
       if(!v) {
         return;
       }

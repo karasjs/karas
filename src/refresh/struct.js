@@ -1712,7 +1712,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       [STRUCT_LV]: lv,
     } = __structs[i];
     let __config = node.__config;
-    // let { computedStyle: { [DISPLAY]: display } } = node;
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_REFRESH_LV]: refreshLevel,
@@ -1764,7 +1763,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         }
         delete virtualDom.cache;
         // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
-        // let { computedStyle: { [DISPLAY]: display } } = node;
         if(display === 'none') {
           i += (total || 0);
           if(hasMask) {
@@ -1782,14 +1780,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         util.assignMatrix(m, matrix);
-        // if(matrix && m) {
-          // m[0] = matrix[0];
-          // m[1] = matrix[1];
-          // m[2] = matrix[2];
-          // m[3] = matrix[3];
-          // m[4] = matrix[4];
-          // m[5] = matrix[5];
-        // }
         if(!matrix || isE(matrix)) {
           delete virtualDom.transform;
         }
@@ -1802,14 +1792,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         // 恶心的v8性能优化
         m = __config[NODE_MATRIX_EVENT];
         util.assignMatrix(m, matrix);
-        // if(m && matrix) {
-        //   m[0] = matrix[0];
-        //   m[1] = matrix[1];
-        //   m[2] = matrix[2];
-        //   m[3] = matrix[3];
-        //   m[4] = matrix[4];
-        //   m[5] = matrix[5];
-        // }
       }
       if(contain(refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1896,11 +1878,11 @@ function renderSvg(renderMode, ctx, root, isFirst) {
                   }
                 }
               }
-              let matrix = node.renderMatrix;
-              let ivs = inverse(dom.renderMatrix);
+              let matrix = node.matrix;
+              let ivs = inverse(dom.matrix);
               matrix = multiply(ivs, matrix);
               // path没有transform属性，在vd上，需要弥补
-              props.push(['transform', `matrix(${matrix.join(',')})`]);
+              props.push(['transform', `matrix(${util.joinArr(mx.m2m6(matrix), ',')})`]);
               // path没有opacity属性，在vd上，需要弥补
               if(!util.isNil(opacity) && opacity !== 1) {
                 props.push(['opacity', opacity]);
@@ -1916,16 +1898,16 @@ function renderSvg(renderMode, ctx, root, isFirst) {
                 }
               }
               if(hasTransform === -1) {
-                let ivs = inverse(dom.renderMatrix);
+                let ivs = inverse(dom.matrix);
                 if(!isE(ivs)) {
-                  props.push(['transform', `matrix(${ivs.join(',')})`]);
+                  props.push(['transform', `matrix(${util.joinArr(mx.m2m6(ivs), ',')})`]);
                 }
               }
               else {
                 let matrix = props[hasTransform][1].match(/[\d.]+/g).map(i => parseFloat(i));
-                let ivs = inverse(dom.renderMatrix);
+                let ivs = inverse(dom.matrix);
                 matrix = multiply(ivs, matrix);
-                props[hasTransform][1] = `matrix(${matrix.join(',')})`;
+                props[hasTransform][1] = `matrix(${util.joinArr(mx.m2m6(matrix), ',')})`;
               }
             }
           }
@@ -2066,12 +2048,6 @@ function renderWebgl(renderMode, gl, root) {
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         util.assignMatrix(m, matrix);
-        // m[0] = matrix[0];
-        // m[1] = matrix[1];
-        // m[2] = matrix[2];
-        // m[3] = matrix[3];
-        // m[4] = matrix[4];
-        // m[5] = matrix[5];
       }
       else {
         matrix = __config[NODE_MATRIX];
@@ -2081,12 +2057,6 @@ function renderWebgl(renderMode, gl, root) {
       }
       // 恶心的v8性能优化
       util.assignMatrix(matrixEvent, matrix);
-      // matrixEvent[0] = matrix[0];
-      // matrixEvent[1] = matrix[1];
-      // matrixEvent[2] = matrix[2];
-      // matrixEvent[3] = matrix[3];
-      // matrixEvent[4] = matrix[4];
-      // matrixEvent[5] = matrix[5];
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -2256,7 +2226,6 @@ function renderWebgl(renderMode, gl, root) {
           },
         },
       } = __config;
-      // let m = mx.m2Mat4(matrixEvent, cx, cy);
       if(__cache && __cache.available) {
         texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, matrixEvent, cx, cy, true);
       }
@@ -2302,7 +2271,6 @@ function renderWebgl(renderMode, gl, root) {
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cache]);
       // total和自身cache的尝试
       if(target) {
-        // let m = mx.m2Mat4(matrixEvent, cx, cy);
         // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(hasMbm && isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy, true);
@@ -2322,7 +2290,6 @@ function renderWebgl(renderMode, gl, root) {
         }
       }
       else if(limitHash.hasOwnProperty(i)) {
-        // let m = mx.m2Mat4(matrixEvent, cx, cy);
         let target = limitHash[i];
         if(hasMbm && isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy, true);

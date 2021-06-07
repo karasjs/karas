@@ -2664,10 +2664,6 @@ class Xom extends Node {
     return this.__config[NODE_MATRIX_EVENT];
   }
 
-  // get renderMatrix() {
-  //   return this.matrix;
-  // }
-
   get style() {
     return this.__style;
   }

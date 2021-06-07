@@ -747,10 +747,6 @@ class Text extends Node {
     return this.domParent.matrix;
   }
 
-  get renderMatrix() {
-    return this.domParent.renderMatrix;
-  }
-
   get matrixEvent() {
     return this.domParent.matrix;
   }

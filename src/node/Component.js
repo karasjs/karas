@@ -344,7 +344,6 @@ Object.keys(change.GEOM).concat([
   'listener',
   'matrix',
   'matrixEvent',
-  'renderMatrix',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

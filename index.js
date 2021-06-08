@@ -7894,13 +7894,13 @@
 
         res[k] = temp.map(function (item) {
           if (/^-?[\d.]/.test(item)) {
-            var _v = calUnit$1(item);
+            var v = calUnit$1(item);
 
-            if ([NUMBER$1, DEG$1].indexOf(_v[1]) > -1) {
-              _v[1] = PX$2;
+            if ([NUMBER$1, DEG$1].indexOf(v[1]) > -1) {
+              v[1] = PX$2;
             }
 
-            return _v;
+            return v;
           } else {
             return [{
               top: 0,
@@ -7937,7 +7937,7 @@
             }
           }
 
-          var _v2 = [];
+          var v = [];
 
           for (var i = 0; i < 2; i++) {
             var _item = match[i];
@@ -7949,15 +7949,15 @@
                 n[1] = PX$2;
               }
 
-              _v2.push(n);
+              v.push(n);
             } else if (_item === 'contain' || _item === 'cover') {
-              _v2.push([_item, STRING]);
+              v.push([_item, STRING]);
             } else {
-              _v2.push([0, AUTO]);
+              v.push([0, AUTO]);
             }
           }
 
-          return _v2;
+          return v;
         } else {
           return [[0, AUTO], [0, AUTO]];
         }
@@ -8198,11 +8198,14 @@
     temp = style.rotate3d;
 
     if (temp) {
-      var _arr9 = v.toString().split(/\s*,\s*/);
+      var _arr9 = temp.toString().split(/\s*,\s*/);
 
       if (_arr9.length === 4) {
         var deg = calUnit$1(_arr9[3]);
         compatibleTransform(ROTATE_3D, deg);
+        _arr9[0] = parseFloat(_arr9[0]);
+        _arr9[1] = parseFloat(_arr9[1]);
+        _arr9[2] = parseFloat(_arr9[2]);
         _arr9[3] = deg;
         res[ROTATE_3D] = _arr9;
       }
@@ -8270,12 +8273,11 @@
       if (temp === 'content') {
         res[FLEX_BASIS] = [temp, STRING];
       } else if (/^[\d.]/.test(temp)) {
-        var _v3 = res[FLEX_BASIS] = calUnit$1(temp);
+        var v = res[FLEX_BASIS] = calUnit$1(temp);
+        v[0] = Math.max(v[0], 0); // 无单位视为px
 
-        _v3[0] = Math.max(_v3[0], 0); // 无单位视为px
-
-        if ([NUMBER$1, DEG$1].indexOf(_v3[1]) > -1) {
-          _v3[1] = PX$2;
+        if ([NUMBER$1, DEG$1].indexOf(v[1]) > -1) {
+          v[1] = PX$2;
         }
       } else {
         res[FLEX_BASIS] = [0, AUTO];
@@ -8304,17 +8306,17 @@
       if (temp === 'inherit') {
         res[FONT_SIZE$2] = [0, INHERIT$2];
       } else {
-        var _v4 = calUnit$1(temp); // fontSize不能为负数，否则为继承
+        var _v = calUnit$1(temp); // fontSize不能为负数，否则为继承
 
 
-        if (_v4 < 0) {
+        if (_v < 0) {
           res[FONT_SIZE$2] = [0, INHERIT$2];
         } else {
-          if ([NUMBER$1, DEG$1].indexOf(_v4[1]) > -1) {
-            _v4[1] = PX$2;
+          if ([NUMBER$1, DEG$1].indexOf(_v[1]) > -1) {
+            _v[1] = PX$2;
           }
 
-          res[FONT_SIZE$2] = _v4;
+          res[FONT_SIZE$2] = _v;
         }
       }
     }
@@ -8375,13 +8377,13 @@
         res[LINE_HEIGHT] = [0, AUTO];
       } // lineHeight默认数字，想要px必须强制带单位
       else if (/^[\d.]+/i.test(temp)) {
-          var _v5 = calUnit$1(temp);
+          var _v2 = calUnit$1(temp);
 
-          if ([DEG$1].indexOf(_v5[1]) > -1) {
-            _v5[1] = NUMBER$1;
+          if ([DEG$1].indexOf(_v2[1]) > -1) {
+            _v2[1] = NUMBER$1;
           }
 
-          res[LINE_HEIGHT] = _v5;
+          res[LINE_HEIGHT] = _v2;
         } else {
           var _n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
@@ -8402,13 +8404,13 @@
       } else if (temp === 'normal') {
         res[LETTER_SPACING] = [0, PX$2];
       } else if (/^-?[\d.]/.test(temp)) {
-        var _v6 = calUnit$1(temp);
+        var _v3 = calUnit$1(temp);
 
-        if ([NUMBER$1, DEG$1].indexOf(_v6[1]) > -1) {
-          _v6[1] = PX$2;
+        if ([NUMBER$1, DEG$1].indexOf(_v3[1]) > -1) {
+          _v3[1] = PX$2;
         }
 
-        res[LETTER_SPACING] = _v6;
+        res[LETTER_SPACING] = _v3;
       } else {
         res[LETTER_SPACING] = [parseFloat(temp) || 0, PX$2];
       }
@@ -8558,33 +8560,33 @@
 
           if (m2) {
             var k = m2[1].toLowerCase(),
-                _v7 = calUnit$1(m2[2]);
+                _v4 = calUnit$1(m2[2]);
 
             if (k === 'blur') {
-              if (_v7[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v7[1]) > -1) {
+              if (_v4[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v4[1]) > -1) {
                 return;
               }
 
-              if (_v7[1] === NUMBER$1) {
-                _v7[1] = PX$2;
+              if (_v4[1] === NUMBER$1) {
+                _v4[1] = PX$2;
               }
 
-              f.push([k, _v7]);
+              f.push([k, _v4]);
             } else if (k === 'hue-rotate') {
-              if ([NUMBER$1, DEG$1].indexOf(_v7[1]) === -1) {
+              if ([NUMBER$1, DEG$1].indexOf(_v4[1]) === -1) {
                 return;
               }
 
-              _v7[1] = DEG$1;
-              f.push([k, _v7]);
+              _v4[1] = DEG$1;
+              f.push([k, _v4]);
             } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
-              if ([NUMBER$1, PERCENT$2].indexOf(_v7[1]) === -1) {
+              if ([NUMBER$1, PERCENT$2].indexOf(_v4[1]) === -1) {
                 return;
               }
 
-              _v7[0] = Math.max(_v7[0], 0);
-              _v7[1] = PERCENT$2;
-              f.push([k, _v7]);
+              _v4[0] = Math.max(_v4[0], 0);
+              _v4[1] = PERCENT$2;
+              f.push([k, _v4]);
             }
           }
         });
@@ -8629,18 +8631,18 @@
             var _res = []; // v,h,blur,spread,color,inset
 
             for (var _i = 0; _i < 4; _i++) {
-              var _v8 = calUnit$1(boxShadow[_i + 1]);
+              var _v5 = calUnit$1(boxShadow[_i + 1]);
 
-              if ([NUMBER$1, DEG$1].indexOf(_v8[1]) > -1) {
-                _v8[1] = PX$2;
+              if ([NUMBER$1, DEG$1].indexOf(_v5[1]) > -1) {
+                _v5[1] = PX$2;
               } // x/y可以负，blur和spread不行
 
 
-              if (_i > 1 && _v8[0] < 0) {
-                _v8 = 0;
+              if (_i > 1 && _v5[0] < 0) {
+                _v5 = 0;
               }
 
-              _res.push(_v8);
+              _res.push(_v5);
             }
 
             _res.push(rgba2int$2(boxShadow[5]));
@@ -8676,8 +8678,8 @@
 
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        var _v9 = style[k];
-        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v9) ? _v9 : [_v9];
+        var _v6 = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v6) ? _v6 : [_v6];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -9079,10 +9081,10 @@
 
     for (var i = 0, len = keys.length; i < len; i++) {
       var k = keys[i];
-      var _v10 = style[k]; // 渐变特殊处理
+      var v = style[k]; // 渐变特殊处理
 
       if (k === BACKGROUND_IMAGE) {
-        res[k] = _v10.map(function (item) {
+        res[k] = v.map(function (item) {
           // 可能为null
           if (item && item.k) {
             return util.clone(item);
@@ -9091,7 +9093,7 @@
           }
         });
       } else if (k === FILL || k === STROKE) {
-        res[k] = _v10.map(function (item) {
+        res[k] = v.map(function (item) {
           // 渐变
           // 可能非法为空
           if (item && item.k) {
@@ -9102,8 +9104,8 @@
             }
         });
       } else if (k === TRANSFORM || k === FILTER) {
-        if (_v10) {
-          var n = _v10.slice(0);
+        if (v) {
+          var n = v.slice(0);
 
           for (var _i5 = 0, _len4 = n.length; _i5 < _len4; _i5++) {
             n[_i5] = n[_i5].slice(0);
@@ -9113,23 +9115,23 @@
           res[k] = n;
         }
       } else if (k === BOX_SHADOW) {
-        if (_v10) {
-          _v10 = _v10.map(function (item) {
+        if (v) {
+          v = v.map(function (item) {
             var n = item.slice(0);
             n[4] = n[4].slice(0);
             return n;
           });
-          res[k] = _v10;
+          res[k] = v;
         }
       } // position等直接值类型赋值
       else if (VALUE.hasOwnProperty(k)) {
-          res[k] = _v10;
+          res[k] = v;
         } // geom自定义属性
         else if (GEOM$2.hasOwnProperty(k)) {
-            res[k] = util.clone(_v10);
+            res[k] = util.clone(v);
           } // 其余皆是数组或空
-          else if (_v10) {
-              var _n2 = res[k] = _v10.slice(0); // 特殊引用里数组某项再次clone
+          else if (v) {
+              var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
               if (k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
@@ -16554,6 +16556,7 @@
       SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
       PERSPECTIVE$2 = _enums$STYLE_KEY$c.PERSPECTIVE,
+      ROTATE_3D$2 = _enums$STYLE_KEY$c.ROTATE_3D,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
       BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_Y,
@@ -17309,7 +17312,7 @@
               computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
             }
 
-            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$3] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$3] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
               __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$3] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
               matrixCache = null;
               var matrix; // transform相对于自身
@@ -17319,12 +17322,18 @@
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
-                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$3, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$3, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                     // 删除之前遗留的
                     delete computedStyle[k];
                     var v = currentStyle[k];
 
                     if (isNil$6(v)) {
+                      return;
+                    }
+
+                    if (k === ROTATE_3D$2) {
+                      computedStyle[k] = [v[0], v[1], v[2], v[3][0]];
+                      temp.push([k, v]);
                       return;
                     }
 

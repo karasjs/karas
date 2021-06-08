@@ -67,6 +67,7 @@ const {
     SKEW_X,
     SKEW_Y,
     PERSPECTIVE,
+    ROTATE_3D,
     TRANSFORM_ORIGIN,
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
@@ -768,6 +769,7 @@ class Xom extends Node {
         || __cacheStyle[ROTATE_X] === undefined
         || __cacheStyle[ROTATE_Y] === undefined
         || __cacheStyle[ROTATE_Z] === undefined
+        || __cacheStyle[ROTATE_3D] === undefined
         || __cacheStyle[SCALE_X] === undefined
         || __cacheStyle[SCALE_Y] === undefined
         || __cacheStyle[SCALE_Z] === undefined
@@ -802,6 +804,7 @@ class Xom extends Node {
             ROTATE_X,
             ROTATE_Y,
             ROTATE_Z,
+            ROTATE_3D,
             SKEW_X,
             SKEW_Y,
             SCALE_X,
@@ -812,6 +815,11 @@ class Xom extends Node {
             delete computedStyle[k];
             let v = currentStyle[k];
             if(isNil(v)) {
+              return;
+            }
+            if(k === ROTATE_3D) {
+              computedStyle[k] = [v[0], v[1], v[2], v[3][0]];
+              temp.push([k, v]);
               return;
             }
             computedStyle[k] = v[0];

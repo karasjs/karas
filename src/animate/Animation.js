@@ -40,6 +40,7 @@ const {
     FONT_FAMILY,
     TEXT_ALIGN,
     MATRIX,
+    ROTATE_3D,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -318,6 +319,12 @@ function calDiff(prev, next, k, target, tagName) {
       nm[15] - pm[15],
     ];
     return res;
+  }
+  else if(k === ROTATE_3D) {
+    if(equalArr(p, n)) {
+      return;
+    }
+    res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
   }
   else if(k === FILTER) {
     // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
@@ -964,6 +971,12 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[0][1][i] += v[i] * percent;
       }
     }
+    else if(k === ROTATE_3D) {
+      st[0] += v[0] * percent;
+      st[1] += v[1] * percent;
+      st[2] += v[2] * percent;
+      st[3][0] += v[3][0] * percent;
+    }
     else if(NUM_CAL_HASH.hasOwnProperty(k)) {
       if(v) {
         st[0] += v * percent;
@@ -1395,6 +1408,7 @@ class Animation extends Event {
           continue;
         }
       }
+      // 缩写处理
       Object.keys(current).forEach(k => {
         if(abbr.hasOwnProperty(k)) {
           abbr.toFull(current, k);

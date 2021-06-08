@@ -1555,6 +1555,9 @@ function cloneStyle(style, keys) {
           n[i] = n[i].slice(0);
         }
       }
+      else if(k === ROTATE_3D) {
+        n[3] = n[3].slice(0);
+      }
     }
   }
   return res;

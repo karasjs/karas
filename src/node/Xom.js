@@ -819,6 +819,9 @@ class Xom extends Node {
             }
             if(k === ROTATE_3D) {
               computedStyle[k] = [v[0], v[1], v[2], v[3][0]];
+              if(v[3][0] === 0) {
+                return;
+              }
               temp.push([k, v]);
               return;
             }

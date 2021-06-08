@@ -7035,6 +7035,7 @@
     rotateX: 0,
     rotateY: 0,
     rotateZ: 0,
+    rotate3d: '0, 0, 0, 0',
     perspective: 0,
     filter: null,
     boxShadow: null,
@@ -9153,6 +9154,8 @@
                 for (var _i8 = 0, _len7 = _n2.length; _i8 < _len7; _i8++) {
                   _n2[_i8] = _n2[_i8].slice(0);
                 }
+              } else if (k === ROTATE_3D) {
+                _n2[3] = _n2[3].slice(0);
               }
             }
     }
@@ -13300,6 +13303,7 @@
       FONT_FAMILY$3 = _enums$STYLE_KEY$9.FONT_FAMILY,
       TEXT_ALIGN$1 = _enums$STYLE_KEY$9.TEXT_ALIGN,
       MATRIX$2 = _enums$STYLE_KEY$9.MATRIX,
+      ROTATE_3D$2 = _enums$STYLE_KEY$9.ROTATE_3D,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_STYLE = _enums$UPDATE_KEY.UPDATE_STYLE,
@@ -13558,6 +13562,12 @@
 
       res[1] = [nm[0] - pm[0], nm[1] - pm[1], nm[2] - pm[2], nm[3] - pm[3], nm[4] - pm[4], nm[5] - pm[5], nm[6] - pm[6], nm[7] - pm[7], nm[8] - pm[8], nm[9] - pm[9], nm[10] - pm[10], nm[11] - pm[11], nm[12] - pm[12], nm[13] - pm[13], nm[14] - pm[14], nm[15] - pm[15]];
       return res;
+    } else if (k === ROTATE_3D$2) {
+      if (equalArr$2(p, n)) {
+        return;
+      }
+
+      res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
     } else if (k === FILTER$1) {
       // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
       var pHash = {},
@@ -14259,6 +14269,11 @@
         for (var _i15 = 0; _i15 < 16; _i15++) {
           st[0][1][_i15] += v[_i15] * percent;
         }
+      } else if (k === ROTATE_3D$2) {
+        st[0] += v[0] * percent;
+        st[1] += v[1] * percent;
+        st[2] += v[2] * percent;
+        st[3][0] += v[3][0] * percent;
       } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
         if (v) {
           st[0] += v * percent;
@@ -14718,7 +14733,8 @@
                 len = _len14;
                 return "continue";
               }
-          }
+          } // 缩写处理
+
 
           Object.keys(current).forEach(function (k) {
             if (abbr.hasOwnProperty(k)) {
@@ -16556,7 +16572,7 @@
       SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
       PERSPECTIVE$2 = _enums$STYLE_KEY$c.PERSPECTIVE,
-      ROTATE_3D$2 = _enums$STYLE_KEY$c.ROTATE_3D,
+      ROTATE_3D$3 = _enums$STYLE_KEY$c.ROTATE_3D,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
       BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_Y,
@@ -17312,7 +17328,7 @@
               computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
             }
 
-            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$3] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$2] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$3] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
               __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$3] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
               matrixCache = null;
               var matrix; // transform相对于自身
@@ -17322,7 +17338,7 @@
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
-                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$3, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$2, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$3, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                     // 删除之前遗留的
                     delete computedStyle[k];
                     var v = currentStyle[k];
@@ -17331,8 +17347,13 @@
                       return;
                     }
 
-                    if (k === ROTATE_3D$2) {
+                    if (k === ROTATE_3D$3) {
                       computedStyle[k] = [v[0], v[1], v[2], v[3][0]];
+
+                      if (v[3][0] === 0) {
+                        return;
+                      }
+
                       temp.push([k, v]);
                       return;
                     }

@@ -10106,33 +10106,60 @@
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !isE$1(matrix)) {
+      var w1, w2, w3, w4;
+
       var _calPoint = calPoint$2([x1, y1], matrix);
 
-      var _calPoint2 = _slicedToArray(_calPoint, 2);
+      var _calPoint2 = _slicedToArray(_calPoint, 4);
 
       x1 = _calPoint2[0];
       y1 = _calPoint2[1];
+      w1 = _calPoint2[3];
 
       var _calPoint3 = calPoint$2([x2, y2], matrix);
 
-      var _calPoint4 = _slicedToArray(_calPoint3, 2);
+      var _calPoint4 = _slicedToArray(_calPoint3, 4);
 
       x2 = _calPoint4[0];
       y2 = _calPoint4[1];
+      w2 = _calPoint4[3];
 
       var _calPoint5 = calPoint$2([x3, y3], matrix);
 
-      var _calPoint6 = _slicedToArray(_calPoint5, 2);
+      var _calPoint6 = _slicedToArray(_calPoint5, 4);
 
       x3 = _calPoint6[0];
       y3 = _calPoint6[1];
+      w3 = _calPoint6[3];
 
       var _calPoint7 = calPoint$2([x4, y4], matrix);
 
-      var _calPoint8 = _slicedToArray(_calPoint7, 2);
+      var _calPoint8 = _slicedToArray(_calPoint7, 4);
 
       x4 = _calPoint8[0];
       y4 = _calPoint8[1];
+      w4 = _calPoint8[3];
+
+      if (w1 && w1 !== 1) {
+        x1 /= w1;
+        y1 /= w1;
+      }
+
+      if (w2 && w2 !== 1) {
+        x2 /= w2;
+        y2 /= w2;
+      }
+
+      if (w3 && w3 !== 1) {
+        x3 /= w3;
+        y3 /= w3;
+      }
+
+      if (w4 && w4 !== 1) {
+        x4 /= w4;
+        y4 /= w4;
+      }
+
       return pointInPolygon$1(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;

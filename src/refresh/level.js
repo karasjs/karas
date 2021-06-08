@@ -4,8 +4,11 @@ import enums from '../util/enums';
 const { STYLE_KEY, STYLE_KEY: {
   TRANSLATE_X,
   TRANSLATE_Y,
+  TRANSLATE_Z,
   OPACITY,
   FILTER,
+  PERSPECTIVE,
+  PERSPECTIVE_ORIGIN,
 } } = enums;
 
 const ENUM = {
@@ -13,21 +16,23 @@ const ENUM = {
   NONE: 0, //                                          0
   TRANSLATE_X: 1, //                                   1
   TRANSLATE_Y: 2, //                                  10
-  TRANSFORM: 4, //                                   100
-  TRANSFORM_ALL: 7, //                               111
-  OPACITY: 8, //                                    1000
-  FILTER: 16, //                                   10000
-  MIX_BLEND_MODE: 32, //                          100000
-  REPAINT: 64, //                                1000000
+  TRANSLATE_Z: 4, //                                 100
+  TRANSFORM: 8, //                                  1000
+  TRANSFORM_ALL: 15, //                             1111
+  OPACITY: 16, //                                  10000
+  FILTER: 32, //                                  100000
+  MIX_BLEND_MODE: 64, //                         1000000
+  PERSPECTIVE: 128, //                          10000000
+  REPAINT: 256, //                             100000000
 
   // 高位表示reflow
-  REFLOW: 128, //                               10000000
+  REFLOW: 512, //                             1000000000
 };
 
 const TRANSFORMS = {
-  // translateX: true,
-  // translateY: true,
-  [STYLE_KEY.TRANSLATE_Z]: true,
+  // [STYLE_KEY.TRANSLATE_X]: true,
+  // [STYLE_KEY.TRANSLATE_Y]: true,
+  // [STYLE_KEY.TRANSLATE_Z]: true,
   [STYLE_KEY.SCALE_X]: true,
   [STYLE_KEY.SCALE_Y]: true,
   [STYLE_KEY.SCALE_Z]: true,
@@ -58,6 +63,9 @@ let o = Object.assign({
     else if(k === TRANSLATE_Y) {
       return ENUM.TRANSLATE_Y;
     }
+    else if(k === TRANSLATE_Z) {
+      return ENUM.TRANSLATE_Z;
+    }
     else if(TRANSFORMS.hasOwnProperty(k)) {
       return ENUM.TRANSFORM;
     }
@@ -67,7 +75,10 @@ let o = Object.assign({
     else if(k === FILTER) {
       return ENUM.FILTER;
     }
-    if(change.isRepaint(k)) {
+    else if(k === PERSPECTIVE || k === PERSPECTIVE_ORIGIN) {
+      return ENUM.PERSPECTIVE;
+    }
+    else if(change.isRepaint(k)) {
       return ENUM.REPAINT;
     }
     return ENUM.REFLOW;

@@ -71,7 +71,11 @@ function inverse(m) {
     (c * f - d * e) / divisor, (b * e - a * f) / divisor];
 }
 
+// 16位或者6位单位矩阵判断，空也认为是
 function isE(m) {
+  if(!m) {
+    return true;
+  }
   if(m.length === 16) {
     return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
       && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0

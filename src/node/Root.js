@@ -54,8 +54,8 @@ const {
     BORDER_TOP_WIDTH,
     BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH,
-    PERSPECTIVE,
-    MATRIX,
+    // PERSPECTIVE,
+    // PERSPECTIVE_ORIGIN,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -105,7 +105,7 @@ const DIRECTION_HASH = {
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { isRelativeOrAbsolute, equalStyle } = css;
-const { contain, getLevel, isRepaint, NONE, FILTER, REPAINT, REFLOW } = level;
+const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW } = level;
 const { isIgnore, isGeom, isMeasure } = change;
 
 const ROOT_DOM_NAME = {
@@ -364,25 +364,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       else {
         // 需和现在不等，且不是pointerEvents这种无关的
         if(!equalStyle(k, v, currentStyle[k], node)) {
-          // 特殊的perspective，影响直接子节点的transform，将子节点的__cacheStyle清空
-          if(k === PERSPECTIVE) {
-            hasPerspective = true;
-            __cacheStyle[k] = undefined;
-            currentStyle[k] = v;
-            node.__calPerspective(__cacheStyle, currentStyle, computedStyle);
-            node.children.forEach(item => {
-              if(item instanceof Component) {
-                item = item.shadowRoot;
-              }
-              if(item instanceof Xom) {
-                item.__cacheStyle[MATRIX] = null;
-                let config = item.__config;
-                config[NODE_REFRESH_LV] |= level.TRANSFORM;
-              }
-            });
-          }
           // pointerEvents这种无关的只需更新
-          else if(isIgnore(k)) {
+          if(isIgnore(k)) {
             __cacheStyle[k] = undefined;
             currentStyle[k] = v;
           }
@@ -422,8 +405,12 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   // 但是perspective需考虑进来，虽然不影响自己但影响别人，要返回true表明有变更
-  if(lv === NONE && !component && !hasPerspective) {
+  if(lv === NONE && !component) {
     delete __config[NODE_UNIQUE_UPDATE_ID];
+    return;
+  }
+  // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
+  if(computedStyle[DISPLAY] === 'none' && !hasDisplay) {
     return;
   }
   // 记录下来清除parent的zIndexChildren缓存
@@ -468,10 +455,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       prev.__config[NODE_CACHE_MASK].release();
     }
   }
-  // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
-  if(computedStyle[DISPLAY] === 'none' && !hasDisplay) {
-    return;
-  }
   // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
   // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
   // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
@@ -515,12 +498,15 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
   __config[NODE_REFRESH_LV] |= lv;
-  // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
+  // dom在>=REPAINT时total失效，svg的Geom比较特殊
   let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {
     if(__config[NODE_CACHE]) {
       __config[NODE_CACHE].release();
     }
+  }
+  // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
+  if(need || contain(lv, PERSPECTIVE)) {
     if(__config[NODE_CACHE_TOTAL]) {
       __config[NODE_CACHE_TOTAL].release();
     }
@@ -531,6 +517,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       __config[NODE_CACHE_OVERFLOW].release();
     }
   }
+  // 特殊的filter清除cache
   if((need || contain(lv, FILTER)) && __config[NODE_CACHE_FILTER]) {
     __config[NODE_CACHE_FILTER].release();
   }

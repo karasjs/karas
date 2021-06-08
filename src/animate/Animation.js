@@ -16,6 +16,7 @@ const {
   STYLE_KEY: {
     FILTER,
     TRANSFORM_ORIGIN,
+    PERSPECTIVE_ORIGIN,
     BACKGROUND_CLIP,
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
@@ -389,7 +390,7 @@ function calDiff(prev, next, k, target, tagName) {
     }
     res[1] = v;
   }
-  else if(k === TRANSFORM_ORIGIN) {
+  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
     res[1] = [];
     for(let i = 0; i < 2; i++) {
       let pi = p[i];
@@ -1017,7 +1018,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[i][0] += v[i] * percent;
       }
     }
-    else if(k === TRANSFORM_ORIGIN) {
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
       if(v[0] !== 0) {
         st[0][0] += v[0] * percent;
       }

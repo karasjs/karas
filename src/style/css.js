@@ -27,6 +27,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   ROTATE_Z,
   ROTATE_3D,
   PERSPECTIVE,
+  PERSPECTIVE_ORIGIN,
   TRANSFORM,
   TRANSFORM_ORIGIN,
   BACKGROUND_IMAGE,
@@ -486,46 +487,48 @@ function normalize(style, reset = []) {
     compatibleTransform(PERSPECTIVE, arr);
     res[PERSPECTIVE] = arr;
   }
-  temp = style.transformOrigin;
-  if(!isNil(temp)) {
-    let tfo = res[TRANSFORM_ORIGIN] = [];
-    let match = temp.toString().match(reg.position);
-    if(match) {
-      if(match.length === 1) {
-        match[1] = match[0];
+  ['perspectiveOrigin', 'transformOrigin'].forEach(k => {
+    temp = style[k];
+    if(!isNil(temp)) {
+      let arr = res[STYLE_KEY[style2Upper(k)]] = [];
+      let match = temp.toString().match(reg.position);
+      if(match) {
+        if(match.length === 1) {
+          match[1] = match[0];
+        }
+        for(let i = 0; i < 2; i++) {
+          let item = match[i];
+          if(/^-?[\d.]/.test(item)) {
+            let n = calUnit(item);
+            if([NUMBER, DEG].indexOf(n[1]) > -1) {
+              n[1] = PX;
+            }
+            arr.push(n);
+          }
+          else {
+            arr.push([
+              {
+                top: 0,
+                left: 0,
+                center: 50,
+                right: 100,
+                bottom: 100,
+              }[item],
+              PERCENT,
+            ]);
+            // 不规范的写法变默认值50%
+            if(isNil(arr[i][0])) {
+              arr[i][0] = 50;
+            }
+          }
+        }
       }
-      for(let i = 0; i < 2; i++) {
-        let item = match[i];
-        if(/^-?[\d.]/.test(item)) {
-          let n = calUnit(item);
-          if([NUMBER, DEG].indexOf(n[1]) > -1) {
-            n[1] = PX;
-          }
-          tfo.push(n);
-        }
-        else {
-          tfo.push([
-            {
-              top: 0,
-              left: 0,
-              center: 50,
-              right: 100,
-              bottom: 100,
-            }[item],
-            PERCENT,
-          ]);
-          // 不规范的写法变默认值50%
-          if(isNil(tfo[i][0])) {
-            tfo[i][0] = 50;
-          }
-        }
+      else {
+        arr.push([50, PERCENT]);
+        arr.push([50, PERCENT]);
       }
     }
-    else {
-      tfo.push([50, PERCENT]);
-      tfo.push([50, PERCENT]);
-    }
-  }
+  });
   [
     'translateX',
     'translateY',
@@ -1446,6 +1449,7 @@ const VALUE = {
   [TEXT_OVERFLOW]: true,
   [LINE_CLAMP]: true,
 };
+// 仅1维数组
 const ARRAY_0 = {
   [COLOR]: true,
   [BACKGROUND_COLOR]: true,
@@ -1454,12 +1458,14 @@ const ARRAY_0 = {
   [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
   [STYLE_KEY.BORDER_LEFT_COLOR]: true,
 };
+// 仅2维数组且只有2个值
 const ARRAY_0_1 = {
   [STYLE_KEY.BORDER_TOP_LEFT_RADIUS]: true,
   [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
   [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
   [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
   [TRANSFORM_ORIGIN]: true,
+  [PERSPECTIVE_ORIGIN]: true,
 };
 function cloneStyle(style, keys) {
   if(!keys) {

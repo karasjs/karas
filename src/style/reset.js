@@ -74,6 +74,7 @@ const DOM = {
   rotateZ: 0,
   rotate3d: '0, 0, 0, 0',
   perspective: 0,
+  perspectiveOrigin: 'center',
   filter: null,
   boxShadow: null,
   pointerEvents: 'inherit',

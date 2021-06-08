@@ -272,20 +272,32 @@ function calOrigin(transformOrigin, w, h, root) {
   return tfo;
 }
 
-function calMatrixByPerspective(m, ppt) {
-  if(ppt && ppt > 0) {
-    ppt = Math.max(ppt, 1);
-    let i = identity();
-    i[11] = -1 / ppt;
-    m = multiply(i, m);
+function calMatrixByPerspective(m, pm) {
+  if(!isE(pm)) {
+    m = multiply(pm, m);
   }
   return m;
+}
+
+function calPerspectiveMatrix(ppt, po) {
+  if(ppt && ppt > 0) {
+    let res = identity();
+    ppt = Math.max(ppt, 1);
+    res[11] = -1 / ppt;
+    let [ox, oy] = po;
+    if(ox || oy) {
+      res = multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+      res = multiply(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
+    }
+    return res;
+  }
 }
 
 export default {
   calMatrix,
   calOrigin,
   calMatrixByPerspective,
+  calPerspectiveMatrix,
   calMatrixByOrigin,
   calMatrixWithOrigin,
   pointInQuadrilateral,

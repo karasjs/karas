@@ -6,7 +6,6 @@ let o = karas.render(
       perspective:200}} ref="div">
         <div style={{width:100,height:100,background:'linear-gradient(#F00,#00F)',rotate3d:'1,1,1,45'}} ref="span"/>
     </div>
-
   </webgl>,
   '#test'
 );

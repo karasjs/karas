@@ -67,6 +67,7 @@ const {
     SKEW_X,
     SKEW_Y,
     PERSPECTIVE,
+    PERSPECTIVE_ORIGIN,
     ROTATE_3D,
     TRANSFORM_ORIGIN,
     BACKGROUND_POSITION_X,
@@ -136,6 +137,7 @@ const {
     NODE_DEFS_CACHE,
     NODE_DOM_PARENT,
     NODE_IS_INLINE,
+    NODE_PERSPECTIVE_MATRIX,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, DEG } = unit;
@@ -873,13 +875,6 @@ class Xom extends Node {
       }
       if(!matrixCache) {
         let m = computedStyle[TRANSFORM];
-        let p = __config[NODE_DOM_PARENT];
-        if(p) {
-          let pp = p.computedStyle[PERSPECTIVE];
-          if(pp) {
-            m = tf.calMatrixByPerspective(m, pp);
-          }
-        }
         let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
         tfo[0] += sx1 || 0;
         tfo[1] += sy1 || 0;
@@ -1242,25 +1237,42 @@ class Xom extends Node {
     return [bx1, by1, bx2, by2];
   }
 
-  __calPerspective(__cacheStyle, currentStyle, computedStyle) {
-    let p = 0;
+  __calPerspective(__cacheStyle, currentStyle, computedStyle, __config, sx1, sy1) {
+    let rebuild;
     if(isNil(__cacheStyle[PERSPECTIVE])) {
       __cacheStyle[PERSPECTIVE] = true;
+      rebuild = true;
       let v = currentStyle[PERSPECTIVE];
+      let ppt = 0;
       if(v[1] === REM) {
-        p = computedStyle[PERSPECTIVE] = v[0] * this.root.computedStyle[FONT_SIZE];
+        ppt = v[0] * this.root.computedStyle[FONT_SIZE];
       }
       else if(v[1] === VW) {
-        p = computedStyle[PERSPECTIVE] = v[0] * this.root.width * 0.01;
+        ppt = v[0] * this.root.width * 0.01;
       }
       else if(v[1] === VH) {
-        p = computedStyle[PERSPECTIVE] = v[0] * this.root.height * 0.01;
+        ppt = v[0] * this.root.height * 0.01;
       }
       else {
-        p = computedStyle[PERSPECTIVE] = v[0];
+        ppt = v[0];
       }
+      computedStyle[PERSPECTIVE] = ppt;
     }
-    return p;
+    if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
+      __cacheStyle[PERSPECTIVE_ORIGIN] = true;
+      rebuild = true;
+      computedStyle[PERSPECTIVE_ORIGIN] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN], this.offsetWidth, this.offsetHeight, this.root);
+    }
+    if(rebuild) {
+      if(sx1 === undefined) {
+        sx1 = this.__sx1;
+        sy1 = this.__sy1;
+      }
+      let po = computedStyle[PERSPECTIVE_ORIGIN].slice(0);
+      po[0] += sx1 || 0;
+      po[1] += sy1 || 0;
+      __config[NODE_PERSPECTIVE_MATRIX] = tf.calPerspectiveMatrix(computedStyle[PERSPECTIVE], po);
+    }
   }
 
   __calFilter(currentStyle, computedStyle) {
@@ -1548,6 +1560,9 @@ class Xom extends Node {
     util.assignMatrix(m, matrix);
     // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
     if(p) {
+      if(p.perspectiveMatrix) {
+        matrix = mx.multiply(p.perspectiveMatrix, matrix);
+      }
       matrix = mx.multiply(p.matrixEvent, matrix);
     }
     // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
@@ -1661,7 +1676,6 @@ class Xom extends Node {
       res.offscreenOverflow = offscreenOverflow;
       res.ctx = ctx;
       ctx.globalAlpha = opacity;
-      // console.warn(this.tagName, matrix.slice(0), mx.m2m6(matrix));
       ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     }
     // 隐藏不渲染
@@ -2691,6 +2705,10 @@ class Xom extends Node {
 
   get matrixEvent() {
     return this.__config[NODE_MATRIX_EVENT];
+  }
+
+  get perspectiveMatrix() {
+    return this.__config[NODE_PERSPECTIVE_MATRIX];
   }
 
   get style() {

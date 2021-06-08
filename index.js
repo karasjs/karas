@@ -309,35 +309,36 @@
     ROTATE_Z: 67,
     ROTATE_3D: 68,
     PERSPECTIVE: 69,
-    FILTER: 70,
-    BOX_SHADOW: 71,
-    POINTER_EVENTS: 72,
-    OVERFLOW: 73,
-    MIX_BLEND_MODE: 74,
-    BACKGROUND_CLIP: 75,
-    WHITE_SPACE: 76,
-    TEXT_OVERFLOW: 77,
-    LETTER_SPACING: 78,
-    LINE_CLAMP: 79,
-    ORDER: 80,
-    FLEX_WRAP: 81,
-    ALIGN_CONTENT: 82,
+    PERSPECTIVE_ORIGIN: 70,
+    FILTER: 71,
+    BOX_SHADOW: 72,
+    POINTER_EVENTS: 73,
+    OVERFLOW: 74,
+    MIX_BLEND_MODE: 75,
+    BACKGROUND_CLIP: 76,
+    WHITE_SPACE: 77,
+    TEXT_OVERFLOW: 78,
+    LETTER_SPACING: 79,
+    LINE_CLAMP: 80,
+    ORDER: 81,
+    FLEX_WRAP: 82,
+    ALIGN_CONTENT: 83,
     // GEOM
-    FILL: 83,
-    STROKE: 84,
-    STROKE_WIDTH: 85,
-    STROKE_DASHARRAY: 86,
-    STROKE_DASHARRAY_STR: 87,
-    STROKE_LINECAP: 88,
-    STROKE_LINEJOIN: 89,
-    STROKE_MITERLIMIT: 90,
-    FILL_RULE: 91,
+    FILL: 84,
+    STROKE: 85,
+    STROKE_WIDTH: 86,
+    STROKE_DASHARRAY: 87,
+    STROKE_DASHARRAY_STR: 88,
+    STROKE_LINECAP: 89,
+    STROKE_LINEJOIN: 90,
+    STROKE_MITERLIMIT: 91,
+    FILL_RULE: 92,
     // 无此样式，仅cache需要
-    MATRIX: 92,
-    BORDER_TOP: 93,
-    BORDER_RIGHT: 94,
-    BORDER_BOTTOM: 95,
-    BORDER_LEFT: 96
+    MATRIX: 93,
+    BORDER_TOP: 94,
+    BORDER_RIGHT: 95,
+    BORDER_BOTTOM: 96,
+    BORDER_LEFT: 97
   };
 
   function style2Lower(s) {
@@ -413,7 +414,8 @@
     NODE_STYLE: 22,
     NODE_UPDATE_HASH: 23,
     NODE_UNIQUE_UPDATE_ID: 24,
-    NODE_DEFS_CACHE: 25
+    NODE_DEFS_CACHE: 25,
+    NODE_PERSPECTIVE_MATRIX: 26
   }; // struct用
 
   var STRUCT_KEY = {
@@ -890,9 +892,14 @@
     }
 
     return [d / divisor, -b / divisor, -c / divisor, a / divisor, (c * f - d * e) / divisor, (b * e - a * f) / divisor];
-  }
+  } // 16位或者6位单位矩阵判断，空也认为是
+
 
   function isE(m) {
+    if (!m) {
+      return true;
+    }
+
     if (m.length === 16) {
       return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0 && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0 && m[8] === 0 && m[9] === 0 && m[10] === 1 && m[11] === 0 && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
     }
@@ -7037,6 +7044,7 @@
     rotateZ: 0,
     rotate3d: '0, 0, 0, 0',
     perspective: 0,
+    perspectiveOrigin: 'center',
     filter: null,
     boxShadow: null,
     pointerEvents: 'inherit',
@@ -7443,7 +7451,7 @@
 
   var STYLE_KEY$1 = enums.STYLE_KEY;
   var KEY_COLOR = [[STYLE_KEY$1.BACKGROUND_COLOR], [STYLE_KEY$1.BORDER_BOTTOM_COLOR], [STYLE_KEY$1.BORDER_LEFT_COLOR], [STYLE_KEY$1.BORDER_RIGHT_COLOR], [STYLE_KEY$1.BORDER_TOP_COLOR], [STYLE_KEY$1.COLOR]];
-  var KEY_LENGTH = [[STYLE_KEY$1.FONT_SIZE], [STYLE_KEY$1.BORDER_BOTTOM_WIDTH], [STYLE_KEY$1.BORDER_LEFT_WIDTH], [STYLE_KEY$1.BORDER_RIGHT_WIDTH], [STYLE_KEY$1.BORDER_TOP_WIDTH], [STYLE_KEY$1.LEFT], [STYLE_KEY$1.TOP], [STYLE_KEY$1.RIGHT], [STYLE_KEY$1.BOTTOM], [STYLE_KEY$1.FLEX_BASIS], [STYLE_KEY$1.WIDTH], [STYLE_KEY$1.HEIGHT], [STYLE_KEY$1.LINE_HEIGHT], [STYLE_KEY$1.MARGIN_BOTTOM], [STYLE_KEY$1.MARGIN_LEFT], [STYLE_KEY$1.MARGIN_TOP], [STYLE_KEY$1.MARGIN_RIGHT], [STYLE_KEY$1.PADDING_TOP], [STYLE_KEY$1.PADDING_RIGHT], [STYLE_KEY$1.PADDING_BOTTOM], [STYLE_KEY$1.PADDING_LEFT], [STYLE_KEY$1.STROKE_WIDTH], [STYLE_KEY$1.STROKE_MITERLIMIT], [STYLE_KEY$1.LETTER_SPACING]];
+  var KEY_LENGTH = [[STYLE_KEY$1.FONT_SIZE], [STYLE_KEY$1.BORDER_BOTTOM_WIDTH], [STYLE_KEY$1.BORDER_LEFT_WIDTH], [STYLE_KEY$1.BORDER_RIGHT_WIDTH], [STYLE_KEY$1.BORDER_TOP_WIDTH], [STYLE_KEY$1.LEFT], [STYLE_KEY$1.TOP], [STYLE_KEY$1.RIGHT], [STYLE_KEY$1.BOTTOM], [STYLE_KEY$1.FLEX_BASIS], [STYLE_KEY$1.WIDTH], [STYLE_KEY$1.HEIGHT], [STYLE_KEY$1.LINE_HEIGHT], [STYLE_KEY$1.MARGIN_BOTTOM], [STYLE_KEY$1.MARGIN_LEFT], [STYLE_KEY$1.MARGIN_TOP], [STYLE_KEY$1.MARGIN_RIGHT], [STYLE_KEY$1.PADDING_TOP], [STYLE_KEY$1.PADDING_RIGHT], [STYLE_KEY$1.PADDING_BOTTOM], [STYLE_KEY$1.PADDING_LEFT], [STYLE_KEY$1.STROKE_WIDTH], [STYLE_KEY$1.STROKE_MITERLIMIT], [STYLE_KEY$1.LETTER_SPACING], [STYLE_KEY$1.PERSPECTIVE]];
   var KEY_GRADIENT = [[STYLE_KEY$1.BACKGROUND_IMAGE], [STYLE_KEY$1.FILL], [STYLE_KEY$1.STROKE]];
   var KEY_RADIUS = [[STYLE_KEY$1.BORDER_TOP_LEFT_RADIUS], [STYLE_KEY$1.BORDER_TOP_RIGHT_RADIUS], [STYLE_KEY$1.BORDER_BOTTOM_RIGHT_RADIUS], [STYLE_KEY$1.BORDER_BOTTOM_LEFT_RADIUS]];
   var COLOR_HASH = {};
@@ -7619,6 +7627,7 @@
       ROTATE_Z = _enums$STYLE_KEY$2.ROTATE_Z,
       ROTATE_3D = _enums$STYLE_KEY$2.ROTATE_3D,
       PERSPECTIVE = _enums$STYLE_KEY$2.PERSPECTIVE,
+      PERSPECTIVE_ORIGIN = _enums$STYLE_KEY$2.PERSPECTIVE_ORIGIN,
       TRANSFORM = _enums$STYLE_KEY$2.TRANSFORM,
       TRANSFORM_ORIGIN$1 = _enums$STYLE_KEY$2.TRANSFORM_ORIGIN,
       BACKGROUND_IMAGE = _enums$STYLE_KEY$2.BACKGROUND_IMAGE,
@@ -8140,49 +8149,52 @@
       res[PERSPECTIVE] = arr;
     }
 
-    temp = style.transformOrigin;
+    ['perspectiveOrigin', 'transformOrigin'].forEach(function (k) {
+      temp = style[k];
 
-    if (!isNil$3(temp)) {
-      var tfo = res[TRANSFORM_ORIGIN$1] = [];
+      if (!isNil$3(temp)) {
+        var _arr9 = res[STYLE_KEY$3[style2Upper$1(k)]] = [];
 
-      var _match = temp.toString().match(reg.position);
+        var _match = temp.toString().match(reg.position);
 
-      if (_match) {
-        if (_match.length === 1) {
-          _match[1] = _match[0];
-        }
+        if (_match) {
+          if (_match.length === 1) {
+            _match[1] = _match[0];
+          }
 
-        for (var i = 0; i < 2; i++) {
-          var item = _match[i];
+          for (var i = 0; i < 2; i++) {
+            var item = _match[i];
 
-          if (/^-?[\d.]/.test(item)) {
-            var n = calUnit$1(item);
+            if (/^-?[\d.]/.test(item)) {
+              var n = calUnit$1(item);
 
-            if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
-              n[1] = PX$2;
-            }
+              if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
+                n[1] = PX$2;
+              }
 
-            tfo.push(n);
-          } else {
-            tfo.push([{
-              top: 0,
-              left: 0,
-              center: 50,
-              right: 100,
-              bottom: 100
-            }[item], PERCENT$2]); // 不规范的写法变默认值50%
+              _arr9.push(n);
+            } else {
+              _arr9.push([{
+                top: 0,
+                left: 0,
+                center: 50,
+                right: 100,
+                bottom: 100
+              }[item], PERCENT$2]); // 不规范的写法变默认值50%
 
-            if (isNil$3(tfo[i][0])) {
-              tfo[i][0] = 50;
+
+              if (isNil$3(_arr9[i][0])) {
+                _arr9[i][0] = 50;
+              }
             }
           }
-        }
-      } else {
-        tfo.push([50, PERCENT$2]);
-        tfo.push([50, PERCENT$2]);
-      }
-    }
+        } else {
+          _arr9.push([50, PERCENT$2]);
 
+          _arr9.push([50, PERCENT$2]);
+        }
+      }
+    });
     ['translateX', 'translateY', 'translateZ', 'scaleX', 'scaleY', 'scaleZ', 'skewX', 'skewY', 'rotateX', 'rotateY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
@@ -8199,16 +8211,16 @@
     temp = style.rotate3d;
 
     if (temp) {
-      var _arr9 = temp.toString().split(/\s*,\s*/);
+      var _arr10 = temp.toString().split(/\s*,\s*/);
 
-      if (_arr9.length === 4) {
-        var deg = calUnit$1(_arr9[3]);
+      if (_arr10.length === 4) {
+        var deg = calUnit$1(_arr10[3]);
         compatibleTransform(ROTATE_3D, deg);
-        _arr9[0] = parseFloat(_arr9[0]);
-        _arr9[1] = parseFloat(_arr9[1]);
-        _arr9[2] = parseFloat(_arr9[2]);
-        _arr9[3] = deg;
-        res[ROTATE_3D] = _arr9;
+        _arr10[0] = parseFloat(_arr10[0]);
+        _arr10[1] = parseFloat(_arr10[1]);
+        _arr10[2] = parseFloat(_arr10[2]);
+        _arr10[3] = deg;
+        res[ROTATE_3D] = _arr10;
       }
     }
 
@@ -8386,13 +8398,12 @@
 
           res[LINE_HEIGHT] = _v2;
         } else {
-          var _n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
+          var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
-
-          if (_n === 'normal') {
+          if (n === 'normal') {
             res[LINE_HEIGHT] = [null, AUTO];
           } else {
-            res[LINE_HEIGHT] = [_n, NUMBER$1];
+            res[LINE_HEIGHT] = [n, NUMBER$1];
           }
         }
     }
@@ -8631,15 +8642,15 @@
             bs = bs || [];
             var _res = []; // v,h,blur,spread,color,inset
 
-            for (var _i = 0; _i < 4; _i++) {
-              var _v5 = calUnit$1(boxShadow[_i + 1]);
+            for (var i = 0; i < 4; i++) {
+              var _v5 = calUnit$1(boxShadow[i + 1]);
 
               if ([NUMBER$1, DEG$1].indexOf(_v5[1]) > -1) {
                 _v5[1] = PX$2;
               } // x/y可以负，blur和spread不行
 
 
-              if (_i > 1 && _v5[0] < 0) {
+              if (i > 1 && _v5[0] < 0) {
                 _v5 = 0;
               }
 
@@ -8978,8 +8989,8 @@
         return false;
       }
 
-      for (var _i2 = 0, _len = a.length; _i2 < _len; _i2++) {
-        if (!equalArr$1(a[_i2], b[_i2])) {
+      for (var _i = 0, _len = a.length; _i < _len; _i++) {
+        if (!equalArr$1(a[_i], b[_i])) {
           return false;
         }
       }
@@ -8990,9 +9001,9 @@
         return false;
       }
 
-      for (var _i3 = 0, _len2 = a.length; _i3 < _len2; _i3++) {
-        var aa = a[_i3],
-            bb = b[_i3];
+      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+        var aa = a[_i2],
+            bb = b[_i2];
 
         if (aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
           return false;
@@ -9026,9 +9037,9 @@
         return false;
       }
 
-      for (var _i4 = 0, _len3 = av.length; _i4 < _len3; _i4++) {
-        var ai = av[_i4];
-        var bi = bv[_i4];
+      for (var _i3 = 0, _len3 = av.length; _i3 < _len3; _i3++) {
+        var ai = av[_i3];
+        var bi = bv[_i3];
 
         if (ai.length !== bi.length) {
           return false;
@@ -9063,9 +9074,11 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  var VALUE = (_VALUE = {}, _defineProperty(_VALUE, POSITION, true), _defineProperty(_VALUE, DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, FLEX_DIRECTION, true), _defineProperty(_VALUE, FLEX_GROW, true), _defineProperty(_VALUE, FLEX_SHRINK, true), _defineProperty(_VALUE, FLEX_WRAP, true), _defineProperty(_VALUE, JUSTIFY_CONTENT, true), _defineProperty(_VALUE, ALIGN_ITEMS, true), _defineProperty(_VALUE, ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$3.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$3.FILL_RULE, true), _defineProperty(_VALUE, OPACITY, true), _defineProperty(_VALUE, Z_INDEX, true), _defineProperty(_VALUE, BACKGROUND_CLIP, true), _defineProperty(_VALUE, TEXT_OVERFLOW, true), _defineProperty(_VALUE, LINE_CLAMP, true), _VALUE);
-  var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, COLOR, true), _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_);
-  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _ARRAY_0_);
+  var VALUE = (_VALUE = {}, _defineProperty(_VALUE, POSITION, true), _defineProperty(_VALUE, DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, FLEX_DIRECTION, true), _defineProperty(_VALUE, FLEX_GROW, true), _defineProperty(_VALUE, FLEX_SHRINK, true), _defineProperty(_VALUE, FLEX_WRAP, true), _defineProperty(_VALUE, JUSTIFY_CONTENT, true), _defineProperty(_VALUE, ALIGN_ITEMS, true), _defineProperty(_VALUE, ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$3.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$3.FILL_RULE, true), _defineProperty(_VALUE, OPACITY, true), _defineProperty(_VALUE, Z_INDEX, true), _defineProperty(_VALUE, BACKGROUND_CLIP, true), _defineProperty(_VALUE, TEXT_OVERFLOW, true), _defineProperty(_VALUE, LINE_CLAMP, true), _VALUE); // 仅1维数组
+
+  var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, COLOR, true), _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_); // 仅2维数组且只有2个值
+
+  var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _defineProperty(_ARRAY_0_, PERSPECTIVE_ORIGIN, true), _ARRAY_0_);
 
   function cloneStyle(style, keys) {
     if (!keys) {
@@ -9108,9 +9121,9 @@
         if (v) {
           var n = v.slice(0);
 
-          for (var _i5 = 0, _len4 = n.length; _i5 < _len4; _i5++) {
-            n[_i5] = n[_i5].slice(0);
-            n[_i5][1] = n[_i5][1].slice(0);
+          for (var _i4 = 0, _len4 = n.length; _i4 < _len4; _i4++) {
+            n[_i4] = n[_i4].slice(0);
+            n[_i4][1] = n[_i4][1].slice(0);
           }
 
           res[k] = n;
@@ -9132,30 +9145,30 @@
             res[k] = util.clone(v);
           } // 其余皆是数组或空
           else if (v) {
-              var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
               if (k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-                for (var _i6 = 0, _len5 = _n2.length; _i6 < _len5; _i6++) {
-                  _n2[_i6] = _n2[_i6].slice(0);
+                for (var _i5 = 0, _len5 = _n.length; _i5 < _len5; _i5++) {
+                  _n[_i5] = _n[_i5].slice(0);
                 }
               } else if (k === BACKGROUND_SIZE) {
-                for (var _i7 = 0, _len6 = _n2.length; _i7 < _len6; _i7++) {
-                  _n2[_i7] = _n2[_i7].slice(0);
-                  _n2[_i7][0] = _n2[_i7][0].slice(0);
-                  _n2[_i7][1] = _n2[_i7][1].slice(0);
+                for (var _i6 = 0, _len6 = _n.length; _i6 < _len6; _i6++) {
+                  _n[_i6] = _n[_i6].slice(0);
+                  _n[_i6][0] = _n[_i6][0].slice(0);
+                  _n[_i6][1] = _n[_i6][1].slice(0);
                 }
               } else if (ARRAY_0.hasOwnProperty(k)) {
-                _n2[0] = _n2[0].slice(0);
+                _n[0] = _n[0].slice(0);
               } else if (ARRAY_0_1.hasOwnProperty(k)) {
-                _n2[0] = _n2[0].slice(0);
-                _n2[1] = _n2[1].slice(0);
+                _n[0] = _n[0].slice(0);
+                _n[1] = _n[1].slice(0);
               } else if (k === TRANSFORM) {
-                for (var _i8 = 0, _len7 = _n2.length; _i8 < _len7; _i8++) {
-                  _n2[_i8] = _n2[_i8].slice(0);
+                for (var _i7 = 0, _len7 = _n.length; _i7 < _len7; _i7++) {
+                  _n[_i7] = _n[_i7].slice(0);
                 }
               } else if (k === ROTATE_3D) {
-                _n2[3] = _n2[3].slice(0);
+                _n[3] = _n[3].slice(0);
               }
             }
     }
@@ -10186,21 +10199,38 @@
     return tfo;
   }
 
-  function calMatrixByPerspective(m, ppt) {
-    if (ppt && ppt > 0) {
-      ppt = Math.max(ppt, 1);
-      var i = identity$1();
-      i[11] = -1 / ppt;
-      m = multiply$1(i, m);
+  function calMatrixByPerspective(m, pm) {
+    if (!isE$1(pm)) {
+      m = multiply$1(pm, m);
     }
 
     return m;
+  }
+
+  function calPerspectiveMatrix(ppt, po) {
+    if (ppt && ppt > 0) {
+      var res = identity$1();
+      ppt = Math.max(ppt, 1);
+      res[11] = -1 / ppt;
+
+      var _po = _slicedToArray(po, 2),
+          ox = _po[0],
+          oy = _po[1];
+
+      if (ox || oy) {
+        res = multiply$1([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, ox, oy, 0, 1], res);
+        res = multiply$1(res, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -ox, -oy, 0, 1]);
+      }
+
+      return res;
+    }
   }
 
   var tf = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
     calMatrixByPerspective: calMatrixByPerspective,
+    calPerspectiveMatrix: calPerspectiveMatrix,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
     pointInQuadrilateral: pointInQuadrilateral
@@ -13279,6 +13309,7 @@
   var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
       FILTER$1 = _enums$STYLE_KEY$9.FILTER,
       TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
+      PERSPECTIVE_ORIGIN$1 = _enums$STYLE_KEY$9.PERSPECTIVE_ORIGIN,
       BACKGROUND_CLIP$1 = _enums$STYLE_KEY$9.BACKGROUND_CLIP,
       BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
@@ -13638,7 +13669,7 @@
       }
 
       res[1] = v;
-    } else if (k === TRANSFORM_ORIGIN$3) {
+    } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$1) {
       res[1] = [];
 
       for (var i = 0; i < 2; i++) {
@@ -14311,7 +14342,7 @@
         for (var _i16 = 0; _i16 < 2; _i16++) {
           st[_i16][0] += v[_i16] * percent;
         }
-      } else if (k === TRANSFORM_ORIGIN$3) {
+      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$1) {
         if (v[0] !== 0) {
           st[0][0] += v[0] * percent;
         }
@@ -15892,8 +15923,11 @@
       _enums$STYLE_KEY$a = enums.STYLE_KEY,
       TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
       TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
+      TRANSLATE_Z$3 = _enums$STYLE_KEY$a.TRANSLATE_Z,
       OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
-      FILTER$2 = _enums$STYLE_KEY$a.FILTER;
+      FILTER$2 = _enums$STYLE_KEY$a.FILTER,
+      PERSPECTIVE$2 = _enums$STYLE_KEY$a.PERSPECTIVE,
+      PERSPECTIVE_ORIGIN$2 = _enums$STYLE_KEY$a.PERSPECTIVE_ORIGIN;
   var ENUM = {
     // 低位表示repaint级别
     NONE: 0,
@@ -15902,23 +15936,27 @@
     //                                   1
     TRANSLATE_Y: 2,
     //                                  10
-    TRANSFORM: 4,
-    //                                   100
-    TRANSFORM_ALL: 7,
-    //                               111
-    OPACITY: 8,
-    //                                    1000
-    FILTER: 16,
-    //                                   10000
-    MIX_BLEND_MODE: 32,
-    //                          100000
-    REPAINT: 64,
-    //                                1000000
+    TRANSLATE_Z: 4,
+    //                                 100
+    TRANSFORM: 8,
+    //                                  1000
+    TRANSFORM_ALL: 15,
+    //                             1111
+    OPACITY: 16,
+    //                                  10000
+    FILTER: 32,
+    //                                  100000
+    MIX_BLEND_MODE: 64,
+    //                         1000000
+    PERSPECTIVE: 128,
+    //                          10000000
+    REPAINT: 256,
+    //                             100000000
     // 高位表示reflow
-    REFLOW: 128 //                               10000000
+    REFLOW: 512 //                             1000000000
 
   };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSLATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
   var o$3 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
@@ -15938,15 +15976,17 @@
         return ENUM.TRANSLATE_X;
       } else if (k === TRANSLATE_Y$2) {
         return ENUM.TRANSLATE_Y;
+      } else if (k === TRANSLATE_Z$3) {
+        return ENUM.TRANSLATE_Z;
       } else if (TRANSFORMS.hasOwnProperty(k)) {
         return ENUM.TRANSFORM;
       } else if (k === OPACITY$2) {
         return ENUM.OPACITY;
       } else if (k === FILTER$2) {
         return ENUM.FILTER;
-      }
-
-      if (o$2.isRepaint(k)) {
+      } else if (k === PERSPECTIVE$2 || k === PERSPECTIVE_ORIGIN$2) {
+        return ENUM.PERSPECTIVE;
+      } else if (o$2.isRepaint(k)) {
         return ENUM.REPAINT;
       }
 
@@ -16561,7 +16601,7 @@
       MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
       TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
       TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
-      TRANSLATE_Z$3 = _enums$STYLE_KEY$c.TRANSLATE_Z,
+      TRANSLATE_Z$4 = _enums$STYLE_KEY$c.TRANSLATE_Z,
       TRANSFORM$3 = _enums$STYLE_KEY$c.TRANSFORM,
       SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
       SCALE_Y$3 = _enums$STYLE_KEY$c.SCALE_Y,
@@ -16571,7 +16611,8 @@
       ROTATE_Z$2 = _enums$STYLE_KEY$c.ROTATE_Z,
       SKEW_X$2 = _enums$STYLE_KEY$c.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$c.SKEW_Y,
-      PERSPECTIVE$2 = _enums$STYLE_KEY$c.PERSPECTIVE,
+      PERSPECTIVE$3 = _enums$STYLE_KEY$c.PERSPECTIVE,
+      PERSPECTIVE_ORIGIN$3 = _enums$STYLE_KEY$c.PERSPECTIVE_ORIGIN,
       ROTATE_3D$3 = _enums$STYLE_KEY$c.ROTATE_3D,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
       BACKGROUND_POSITION_X$3 = _enums$STYLE_KEY$c.BACKGROUND_POSITION_X,
@@ -16636,7 +16677,8 @@
       NODE_IS_DESTROYED$1 = _enums$NODE_KEY$4.NODE_IS_DESTROYED,
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
       NODE_DOM_PARENT$2 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
-      NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE;
+      NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE,
+      NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$4.NODE_PERSPECTIVE_MATRIX;
   var AUTO$4 = o.AUTO,
       PX$6 = o.PX,
       PERCENT$7 = o.PERCENT,
@@ -17328,8 +17370,8 @@
               computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
             }
 
-            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$3] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
-              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$3] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
+            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
               matrixCache = null;
               var matrix; // transform相对于自身
 
@@ -17338,7 +17380,7 @@
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
-                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$3, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                     // 删除之前遗留的
                     delete computedStyle[k];
                     var v = currentStyle[k];
@@ -17367,25 +17409,25 @@
                     }
 
                     if (v[1] === PERCENT$7) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * offsetWidth * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * offsetHeight * 0.01;
                       }
                     } else if (v[1] === REM$6) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       }
                     } else if (v[1] === VW$6) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       }
                     } else if (v[1] === VH$6) {
-                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$3) {
+                      if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
                       } else if (k === TRANSLATE_Y$3) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
@@ -17405,16 +17447,6 @@
 
             if (!matrixCache) {
               var m = computedStyle[TRANSFORM$3];
-              var p = __config[NODE_DOM_PARENT$2];
-
-              if (p) {
-                var pp = p.computedStyle[PERSPECTIVE$2];
-
-                if (pp) {
-                  m = tf.calMatrixByPerspective(m, pp);
-                }
-              }
-
               var tfo = computedStyle[TRANSFORM_ORIGIN$4].slice(0);
               tfo[0] += sx1 || 0;
               tfo[1] += sy1 || 0;
@@ -17772,25 +17804,45 @@
       }
     }, {
       key: "__calPerspective",
-      value: function __calPerspective(__cacheStyle, currentStyle, computedStyle) {
-        var p = 0;
+      value: function __calPerspective(__cacheStyle, currentStyle, computedStyle, __config, sx1, sy1) {
+        var rebuild;
 
-        if (isNil$6(__cacheStyle[PERSPECTIVE$2])) {
-          __cacheStyle[PERSPECTIVE$2] = true;
-          var v = currentStyle[PERSPECTIVE$2];
+        if (isNil$6(__cacheStyle[PERSPECTIVE$3])) {
+          __cacheStyle[PERSPECTIVE$3] = true;
+          rebuild = true;
+          var v = currentStyle[PERSPECTIVE$3];
+          var ppt = 0;
 
           if (v[1] === REM$6) {
-            p = computedStyle[PERSPECTIVE$2] = v[0] * this.root.computedStyle[FONT_SIZE$8];
+            ppt = v[0] * this.root.computedStyle[FONT_SIZE$8];
           } else if (v[1] === VW$6) {
-            p = computedStyle[PERSPECTIVE$2] = v[0] * this.root.width * 0.01;
+            ppt = v[0] * this.root.width * 0.01;
           } else if (v[1] === VH$6) {
-            p = computedStyle[PERSPECTIVE$2] = v[0] * this.root.height * 0.01;
+            ppt = v[0] * this.root.height * 0.01;
           } else {
-            p = computedStyle[PERSPECTIVE$2] = v[0];
+            ppt = v[0];
           }
+
+          computedStyle[PERSPECTIVE$3] = ppt;
         }
 
-        return p;
+        if (isNil$6(__cacheStyle[PERSPECTIVE_ORIGIN$3])) {
+          __cacheStyle[PERSPECTIVE_ORIGIN$3] = true;
+          rebuild = true;
+          computedStyle[PERSPECTIVE_ORIGIN$3] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN$3], this.offsetWidth, this.offsetHeight, this.root);
+        }
+
+        if (rebuild) {
+          if (sx1 === undefined) {
+            sx1 = this.__sx1;
+            sy1 = this.__sy1;
+          }
+
+          var po = computedStyle[PERSPECTIVE_ORIGIN$3].slice(0);
+          po[0] += sx1 || 0;
+          po[1] += sy1 || 0;
+          __config[NODE_PERSPECTIVE_MATRIX] = tf.calPerspectiveMatrix(computedStyle[PERSPECTIVE$3], po);
+        }
       }
     }, {
       key: "__calFilter",
@@ -18130,6 +18182,10 @@
         util.assignMatrix(m, matrix); // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
 
         if (p) {
+          if (p.perspectiveMatrix) {
+            matrix = mx.multiply(p.perspectiveMatrix, matrix);
+          }
+
           matrix = mx.multiply(p.matrixEvent, matrix);
         } // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
 
@@ -18257,8 +18313,7 @@
           res.offscreenFilter = offscreenFilter;
           res.offscreenOverflow = offscreenOverflow;
           res.ctx = ctx;
-          ctx.globalAlpha = opacity; // console.warn(this.tagName, matrix.slice(0), mx.m2m6(matrix));
-
+          ctx.globalAlpha = opacity;
           ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         } // 隐藏不渲染
 
@@ -19464,6 +19519,11 @@
       key: "matrixEvent",
       get: function get() {
         return this.__config[NODE_MATRIX_EVENT$2];
+      }
+    }, {
+      key: "perspectiveMatrix",
+      get: function get() {
+        return this.__config[NODE_PERSPECTIVE_MATRIX];
       }
     }, {
       key: "style",
@@ -26513,6 +26573,7 @@
       NODE_DEFS_CACHE$6 = _enums$NODE_KEY$9.NODE_DEFS_CACHE,
       NODE_IS_MASK$2 = _enums$NODE_KEY$9.NODE_IS_MASK,
       NODE_DOM_PARENT$5 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
+      NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$9.NODE_PERSPECTIVE_MATRIX,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
@@ -26524,7 +26585,8 @@
       FT = o$3.FILTER,
       REPAINT$2 = o$3.REPAINT,
       contain$2 = o$3.contain,
-      MBM = o$3.MIX_BLEND_MODE;
+      MBM = o$3.MIX_BLEND_MODE,
+      PERSPECTIVE$4 = o$3.PERSPECTIVE;
   var isE$2 = mx.isE,
       inverse$1 = mx.inverse,
       multiply$2 = mx.multiply;
@@ -28710,6 +28772,8 @@
     var parentMatrix;
     var opacityList = [];
     var parentOpacity = 1;
+    var pmList = [];
+    var parentPm;
     var lastRefreshLevel;
     var lastConfig;
     var lastLv = 0;
@@ -28752,6 +28816,13 @@
         matrixList.push(parentMatrix);
         parentOpacity = lastConfig[NODE_OPACITY$3];
         opacityList.push(parentOpacity);
+        parentPm = lastConfig[NODE_PERSPECTIVE_MATRIX$1];
+
+        if (isE$2(parentPm)) {
+          parentPm = null;
+        }
+
+        pmList.push(parentPm);
       } // 变小出栈索引需注意，可能不止一层，多层计算diff层级
       else if (lv < lastLv) {
           var diff = lastLv - lv;
@@ -28759,6 +28830,8 @@
           parentMatrix = matrixList[lv - 1];
           opacityList.splice(-diff);
           parentOpacity = opacityList[lv - 1];
+          pmList.splice(-diff);
+          parentPm = pmList[lv - 1];
         }
 
       lastRefreshLevel = refreshLevel;
@@ -28796,7 +28869,12 @@
 
         var currentStyle = __config[NODE_CURRENT_STYLE$5],
             __cacheStyle = __config[NODE_CACHE_STYLE$1],
-            matrixEvent = __config[NODE_MATRIX_EVENT$4]; // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
+            matrixEvent = __config[NODE_MATRIX_EVENT$4];
+
+        if (contain$2(refreshLevel, PERSPECTIVE$4)) {
+          node.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
+        } // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
+
 
         var matrix = void 0;
 
@@ -28807,6 +28885,11 @@
           util.assignMatrix(m, matrix);
         } else {
           matrix = __config[NODE_MATRIX$3];
+        } // 先左乘perspective的矩阵，再左乘父级的总矩阵
+
+
+        if (parentPm) {
+          matrix = multiply$2(parentPm, matrix);
         }
 
         if (parentMatrix) {
@@ -29554,8 +29637,6 @@
       BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
-      PERSPECTIVE$3 = _enums$STYLE_KEY$j.PERSPECTIVE,
-      MATRIX$4 = _enums$STYLE_KEY$j.MATRIX,
       _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
       UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -29606,6 +29687,7 @@
       isRepaint = o$3.isRepaint,
       NONE$3 = o$3.NONE,
       FILTER$6 = o$3.FILTER,
+      PERSPECTIVE$5 = o$3.PERSPECTIVE,
       REPAINT$3 = o$3.REPAINT,
       REFLOW$2 = o$3.REFLOW;
   var isIgnore = o$2.isIgnore,
@@ -29877,7 +29959,7 @@
         isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
-    var hasZ, hasVisibility, hasColor, hasDisplay, hasPerspective; // component无需遍历直接赋值，img重新加载等情况没有样式更新
+    var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
     if (!component && style && keys) {
       for (var i = 0, len = keys.length; i < len; i++) {
@@ -29893,65 +29975,46 @@
         } else {
           // 需和现在不等，且不是pointerEvents这种无关的
           if (!equalStyle$1(k, v, currentStyle[k], node)) {
-            // 特殊的perspective，影响直接子节点的transform，将子节点的__cacheStyle清空
-            if (k === PERSPECTIVE$3) {
-              hasPerspective = true;
+            // pointerEvents这种无关的只需更新
+            if (isIgnore(k)) {
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
+            } else {
+              // TRBL变化只对relative/absolute起作用，其它忽视
+              if (DIRECTION_HASH.hasOwnProperty(k)) {
+                var position = currentStyle[POSITION$5];
+
+                if (position !== 'relative' && position !== 'absolute') {
+                  delete style[k];
+                  continue;
+                }
+              } else if (k === DISPLAY$a) {
+                hasDisplay = true;
+              } // repaint细化等级，reflow在checkReflow()
+
+
+              lv |= getLevel(k);
+
+              if (isMeasure(k)) {
+                hasMeasure = true;
+              } // repaint置空，如果reflow会重新生成空的
+
+
               __cacheStyle[k] = undefined;
               currentStyle[k] = v;
 
-              node.__calPerspective(__cacheStyle, currentStyle, computedStyle);
-
-              node.children.forEach(function (item) {
-                if (item instanceof Component$1) {
-                  item = item.shadowRoot;
-                }
-
-                if (item instanceof Xom$1) {
-                  item.__cacheStyle[MATRIX$4] = null;
-                  var config = item.__config;
-                  config[NODE_REFRESH_LV$2] |= o$3.TRANSFORM;
-                }
-              });
-            } // pointerEvents这种无关的只需更新
-            else if (isIgnore(k)) {
-                __cacheStyle[k] = undefined;
-                currentStyle[k] = v;
-              } else {
-                // TRBL变化只对relative/absolute起作用，其它忽视
-                if (DIRECTION_HASH.hasOwnProperty(k)) {
-                  var position = currentStyle[POSITION$5];
-
-                  if (position !== 'relative' && position !== 'absolute') {
-                    delete style[k];
-                    continue;
-                  }
-                } else if (k === DISPLAY$a) {
-                  hasDisplay = true;
-                } // repaint细化等级，reflow在checkReflow()
-
-
-                lv |= getLevel(k);
-
-                if (isMeasure(k)) {
-                  hasMeasure = true;
-                } // repaint置空，如果reflow会重新生成空的
-
-
-                __cacheStyle[k] = undefined;
-                currentStyle[k] = v;
-
-                if (k === Z_INDEX$4 && node !== root) {
-                  hasZ = true;
-                }
-
-                if (k === VISIBILITY$7) {
-                  hasVisibility = true;
-                }
-
-                if (k === COLOR$5) {
-                  hasColor = true;
-                }
+              if (k === Z_INDEX$4 && node !== root) {
+                hasZ = true;
               }
+
+              if (k === VISIBILITY$7) {
+                hasVisibility = true;
+              }
+
+              if (k === COLOR$5) {
+                hasColor = true;
+              }
+            }
           }
         }
       }
@@ -29959,8 +30022,13 @@
     // 但是perspective需考虑进来，虽然不影响自己但影响别人，要返回true表明有变更
 
 
-    if (lv === NONE$3 && !component && !hasPerspective) {
+    if (lv === NONE$3 && !component) {
       delete __config[NODE_UNIQUE_UPDATE_ID];
+      return;
+    } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
+
+
+    if (computedStyle[DISPLAY$a] === 'none' && !hasDisplay) {
       return;
     } // 记录下来清除parent的zIndexChildren缓存
 
@@ -30012,11 +30080,6 @@
       if (prev && prev.__config[NODE_CACHE_MASK$2]) {
         prev.__config[NODE_CACHE_MASK$2].release();
       }
-    } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
-
-
-    if (computedStyle[DISPLAY$a] === 'none' && !hasDisplay) {
-      return;
     } // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
     // 如果父节点由none变block，这里也return false，因为父节点会重新layout+render
     // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
@@ -30066,7 +30129,7 @@
       } // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
 
 
-    __config[NODE_REFRESH_LV$2] |= lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊，任何改变都失效
+    __config[NODE_REFRESH_LV$2] |= lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
@@ -30074,7 +30137,10 @@
       if (__config[NODE_CACHE$5]) {
         __config[NODE_CACHE$5].release();
       }
+    } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
 
+
+    if (need || contain$3(lv, PERSPECTIVE$5)) {
       if (__config[NODE_CACHE_TOTAL$2]) {
         __config[NODE_CACHE_TOTAL$2].release();
       }
@@ -30086,7 +30152,8 @@
       if (__config[NODE_CACHE_OVERFLOW$3]) {
         __config[NODE_CACHE_OVERFLOW$3].release();
       }
-    }
+    } // 特殊的filter清除cache
+
 
     if ((need || contain$3(lv, FILTER$6)) && __config[NODE_CACHE_FILTER$3]) {
       __config[NODE_CACHE_FILTER$3].release();

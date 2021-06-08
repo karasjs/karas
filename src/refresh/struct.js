@@ -65,6 +65,7 @@ const {
     NODE_DEFS_CACHE,
     NODE_IS_MASK,
     NODE_DOM_PARENT,
+    NODE_PERSPECTIVE_MATRIX,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -81,6 +82,7 @@ const {
   REPAINT,
   contain,
   MIX_BLEND_MODE: MBM,
+  PERSPECTIVE,
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
@@ -1951,6 +1953,8 @@ function renderWebgl(renderMode, gl, root) {
   let parentMatrix;
   let opacityList = [];
   let parentOpacity = 1;
+  let pmList = [];
+  let parentPm;
   let lastRefreshLevel;
   let lastConfig;
   let lastLv = 0;
@@ -1989,6 +1993,11 @@ function renderWebgl(renderMode, gl, root) {
       matrixList.push(parentMatrix);
       parentOpacity = lastConfig[NODE_OPACITY];
       opacityList.push(parentOpacity);
+      parentPm = lastConfig[NODE_PERSPECTIVE_MATRIX];
+      if(isE(parentPm)) {
+        parentPm = null;
+      }
+      pmList.push(parentPm);
     }
     // 变小出栈索引需注意，可能不止一层，多层计算diff层级
     else if(lv < lastLv) {
@@ -1997,6 +2006,8 @@ function renderWebgl(renderMode, gl, root) {
       parentMatrix = matrixList[lv - 1];
       opacityList.splice(-diff);
       parentOpacity = opacityList[lv - 1];
+      pmList.splice(-diff);
+      parentPm = pmList[lv - 1];
     }
     // 不变是同级兄弟，无需特殊处理
     else {}
@@ -2035,6 +2046,9 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_CACHE_STYLE]: __cacheStyle,
         [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config;
+      if(contain(refreshLevel, PERSPECTIVE)) {
+        node.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
+      }
       // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
       let matrix;
       if(contain(refreshLevel, TRANSFORM_ALL)) {
@@ -2045,6 +2059,10 @@ function renderWebgl(renderMode, gl, root) {
       }
       else {
         matrix = __config[NODE_MATRIX];
+      }
+      // 先左乘perspective的矩阵，再左乘父级的总矩阵
+      if(parentPm) {
+        matrix = multiply(parentPm, matrix);
       }
       if(parentMatrix) {
         matrix = multiply(parentMatrix, matrix);

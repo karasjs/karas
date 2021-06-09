@@ -18364,7 +18364,7 @@
         } // 隐藏不渲染
 
 
-        if (visibility === 'hidden' && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+        if ((visibility === 'hidden' || res["break"]) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
           res["break"] = true;
           return res;
         } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius

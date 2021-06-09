@@ -7,6 +7,7 @@ import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
+// import tf from '../style/transform';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -52,6 +53,8 @@ const {
     ALIGN_CONTENT,
     OVERFLOW,
     FONT_SIZE,
+    // PERSPECTIVE,
+    // TRANSFORM,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -2727,6 +2730,13 @@ class Dom extends Xom {
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
       return;
     }
+    // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位
+    // if(computedStyle[PERSPECTIVE]) {
+    //   perspectiveNest++;
+    // }
+    // if(tf.isPerspectiveMatrix(computedStyle[TRANSFORM])) {
+    //   perspectiveTfNest++;
+    // }
     // overflow:hidden时还需要判断是否超出范围外，如果是则无效
     if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
       return;

@@ -2136,25 +2136,10 @@ class Xom extends Node {
 
   willResponseEvent(e, ignore) {
     let { x, y } = e;
-    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, domParent,
-      computedStyle: { [POINTER_EVENTS]: pointerEvents, [TRANSFORM]: transform } } = this;
-    if(pointerEvents === 'none') {
+    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, computedStyle } = this;
+    if(computedStyle[POINTER_EVENTS] === 'none') {
       return;
     }
-    // 向上检查是否出现嵌套的perspective即3d渲染上下文，没有则简化计算
-    // let hasNestPerspective = 0;
-    // if(tf.isPerspectiveMatrix(transform) || domParent && domParent.computedStyle[PERSPECTIVE]) {
-    //   hasNestPerspective++;
-    // }
-    // while(domParent) {
-    //   if(tf.isPerspectiveMatrix(domParent.computedStyle[TRANSFORM])) {
-    //     hasNestPerspective++;
-    //   }
-    //   domParent = domParent.domParent;
-    //   if(domParent && domParent.computedStyle[PERSPECTIVE]) {
-    //     hasNestPerspective++;
-    //   }
-    // }
     let inThis = tf.pointInQuadrilateral(
       x, y,
       __sx1, __sy1,

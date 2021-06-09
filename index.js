@@ -12342,14 +12342,14 @@
       }
     }, {
       key: "__emitEvent",
-      value: function __emitEvent(e) {
+      value: function __emitEvent(e, force) {
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
           return;
         }
 
-        var res = sr.__emitEvent(e);
+        var res = sr.__emitEvent(e, force);
 
         if (res) {
           e.target = this;
@@ -18911,28 +18911,11 @@
             offsetWidth = this.offsetWidth,
             offsetHeight = this.offsetHeight,
             matrixEvent = this.matrixEvent,
-            domParent = this.domParent,
-            _this$computedStyle = this.computedStyle,
-            pointerEvents = _this$computedStyle[POINTER_EVENTS$1],
-            transform = _this$computedStyle[TRANSFORM$3];
+            computedStyle = this.computedStyle;
 
-        if (pointerEvents === 'none') {
+        if (computedStyle[POINTER_EVENTS$1] === 'none') {
           return;
-        } // 向上检查是否出现嵌套的perspective即3d渲染上下文，没有则简化计算
-        // let hasNestPerspective = 0;
-        // if(tf.isPerspectiveMatrix(transform) || domParent && domParent.computedStyle[PERSPECTIVE]) {
-        //   hasNestPerspective++;
-        // }
-        // while(domParent) {
-        //   if(tf.isPerspectiveMatrix(domParent.computedStyle[TRANSFORM])) {
-        //     hasNestPerspective++;
-        //   }
-        //   domParent = domParent.domParent;
-        //   if(domParent && domParent.computedStyle[PERSPECTIVE]) {
-        //     hasNestPerspective++;
-        //   }
-        // }
-
+        }
 
         var inThis = tf.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
 
@@ -23355,7 +23338,14 @@
 
         if (isDestroyed || computedStyle[DISPLAY$6] === 'none' || e.__stopPropagation || isMask) {
           return;
-        } // overflow:hidden时还需要判断是否超出范围外，如果是则无效
+        } // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位
+        // if(computedStyle[PERSPECTIVE]) {
+        //   perspectiveNest++;
+        // }
+        // if(tf.isPerspectiveMatrix(computedStyle[TRANSFORM])) {
+        //   perspectiveTfNest++;
+        // }
+        // overflow:hidden时还需要判断是否超出范围外，如果是则无效
 
 
         if (computedStyle[OVERFLOW$2] === 'hidden' && !this.willResponseEvent(e, true)) {
@@ -34598,7 +34588,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.9";
+  var version = "0.59.0-alpha1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

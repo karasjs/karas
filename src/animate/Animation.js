@@ -2021,6 +2021,7 @@ class Animation extends Event {
     }
     v -= __config[I_DELAY];
     // 超过时间长度需要累加次数
+    __config[I_PLAY_COUNT] = 0;
     while(v > duration && __config[I_PLAY_COUNT] < __config[I_ITERATIONS] - 1) {
       __config[I_PLAY_COUNT]++;
       v -= duration;

@@ -425,7 +425,7 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
     let list = [x2, y1, x1, y2, x2, y2];
     let w;
     [x1, y1, , w] = mx.calPoint([x1, y1], matrix);
-    if(w !== 1) {
+    if(w && w !== 1) {
       x1 /= w;
       y1 /= w;
     }
@@ -433,9 +433,9 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
     for(let i = 0; i < 6; i += 2) {
       let x = list[i], y = list[i + 1];
       [x, y, , w] = mx.calPoint([x, y], matrix);
-      if(w !== 1) {
+      if(w && w !== 1) {
         x /= w;
-        y /= y;
+        y /= w;
       }
       xa = Math.min(xa, x);
       xb = Math.max(xb, x);

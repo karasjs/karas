@@ -47,6 +47,8 @@ const {
     FILL,
     TRANSFORM,
     TRANSFORM_ORIGIN,
+    PERSPECTIVE,
+    PERSPECTIVE_ORIGIN,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -82,10 +84,15 @@ const {
   REPAINT,
   contain,
   MIX_BLEND_MODE: MBM,
-  PERSPECTIVE,
+  PERSPECTIVE: ppt,
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
+
+// 是否有透视矩阵应用
+function isPerspectiveMatrix(m) {
+  return !!(m[3] || m[7] || m[11]);
+}
 
 // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 const OFFSCREEN_OVERFLOW = 0;
@@ -123,6 +130,8 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
     [NODE_CACHE]: cache,
     [NODE_COMPUTED_STYLE]: {
       [FILTER]: filter,
+      [PERSPECTIVE]: perspective,
+      [PERSPECTIVE_ORIGIN]: perspectiveOrigin,
     },
   } = __config;
   // 先将局部根节点的bbox算好，可能没内容是空
@@ -132,6 +141,11 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   }
   else {
     bboxTotal = node.bbox;
+  }
+  // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
+  let pm;
+  if(perspective) {
+    pm = tf.calPerspectiveMatrix(perspective, perspectiveOrigin);
   }
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和opacity，blur只需记住顶层，因为子的如果有一定是cacheFilter
   let list = [index];
@@ -237,6 +251,9 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           if(matrix) {
             matrixHash[i] = matrix;
           }
+          if(pm) {
+            matrix = multiply(pm, matrix);
+          }
           bbox = util.transformBbox(bbox, matrix, d, d);
           // 有孩子才继续存入下层级广度运算
           if(total && !hasTotal) {
@@ -247,7 +264,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
       }
     }
   }
-  return bboxTotal;
+  return [bboxTotal, pm];
 }
 
 function mergeBbox(bbox, t, sx1, sy1) {
@@ -276,7 +293,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, Cache.MAX);
+  let [bboxTotal] = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash, Cache.MAX);
   if(!bboxTotal) {
     return;
   }
@@ -457,7 +474,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash,
+  let [bboxTotal, parentPm] = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash,
     gl.getParameter(gl.MAX_TEXTURE_SIZE), limitCache);
   // 可能局部根节点合成过程中发现整体超限
   let totalLimitCache;
@@ -510,7 +527,9 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
     let opacity = opacityHash[i]; // opacity在合并box时已经计算可以直接用
     // 先看text，visibility会在内部判断，display会被parent判断
     if(node instanceof Text) {
-      // let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
+      if(parentPm) {
+        matrix = multiply(parentPm, matrix);
+      }
       texCache.addTexAndDrawWhenLimit(gl, __config[NODE_CACHE], opacity, matrix, cx, cy, dx, dy);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
@@ -567,9 +586,11 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       if(matrix) {
         matrixHash[i] = matrix;
       }
+      if(parentPm) {
+        matrix = multiply(parentPm, matrix);
+      }
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       if(target) {
-        // let m = mx.m2Mat4(matrix || [1, 0, 0, 1, 0, 0], cx, cy);
         // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
         if(isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy);
@@ -2046,7 +2067,7 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_CACHE_STYLE]: __cacheStyle,
         [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config;
-      if(contain(refreshLevel, PERSPECTIVE)) {
+      if(contain(refreshLevel, ppt)) {
         node.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
       }
       // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
@@ -2059,6 +2080,15 @@ function renderWebgl(renderMode, gl, root) {
       }
       else {
         matrix = __config[NODE_MATRIX];
+      }
+      // node本身有或者父有perspective都认为需要生成3d渲染上下文
+      if(isPerspectiveMatrix(matrix) || parentPm) {
+        if(hasRecordAsMask) {
+          hasRecordAsMask[9] = true;
+        }
+        else {
+          hasRecordAsMask = [i, lv, total, node, __config, null, null, null, null, true];
+        }
       }
       // 先左乘perspective的矩阵，再左乘父级的总矩阵
       if(parentPm) {
@@ -2126,9 +2156,12 @@ function renderWebgl(renderMode, gl, root) {
       [OVERFLOW]: overflow,
       [FILTER]: filter,
       [MIX_BLEND_MODE]: mixBlendMode,
+      [TRANSFORM]: transform,
     } = computedStyle;
     let validMbm = isValidMbm(mixBlendMode);
-    if(hasMask || filter.length || (overflow === 'hidden' && total) || validMbm) {
+    // 3d渲染上下文
+    let isPerspective = isPerspectiveMatrix(transform) || parentPm;
+    if(hasMask || filter.length || (overflow === 'hidden' && total) || validMbm || isPerspective) {
       if(validMbm) {
         hasMbm = true;
       }
@@ -2136,9 +2169,10 @@ function renderWebgl(renderMode, gl, root) {
         hasRecordAsMask[5] = limitCache;
         hasRecordAsMask[7] = filter;
         hasRecordAsMask[8] = overflow;
+        hasRecordAsMask[9] = isPerspective;
       }
       else {
-        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow]);
+        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective]);
       }
     }
   }
@@ -2153,7 +2187,7 @@ function renderWebgl(renderMode, gl, root) {
       return b[1] - a[1];
     });
     mergeList.forEach(item => {
-      let [i, , total, node, __config, limitCache, hasMask, filter, overflow] = item;
+      let [i, , total, node, __config, limitCache, hasMask, filter, overflow, isPerspective] = item;
       let {
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -2263,6 +2297,7 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_MATRIX_EVENT]: matrixEvent,
         [NODE_LIMIT_CACHE]: limitCache,
         [NODE_CACHE]: __cache,
+        [NODE_CACHE_TOTAL]: __cacheTotal,
         [NODE_CACHE_FILTER]: __cacheFilter,
         [NODE_CACHE_MASK]: __cacheMask,
         [NODE_CACHE_OVERFLOW]: __cacheOverflow,
@@ -2280,7 +2315,8 @@ function renderWebgl(renderMode, gl, root) {
       // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
       // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
       // 因为webgl纹理单元缓存原因，所以不用cacheTotal防止切换性能损耗
-      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cache]);
+      // 已取消，因为perspective需要进行独立上下文渲染
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
       // total和自身cache的尝试
       if(target) {
         // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成

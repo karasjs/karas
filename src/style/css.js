@@ -484,6 +484,9 @@ function normalize(style, reset = []) {
   temp = style.perspective;
   if(!isNil(temp)) {
     let arr = calUnit(temp);
+    if(arr[0] < 0) {
+      arr[0] = 0;
+    }
     compatibleTransform(PERSPECTIVE, arr);
     res[PERSPECTIVE] = arr;
   }

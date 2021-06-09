@@ -2027,6 +2027,23 @@ class Animation extends Event {
     }
     // 在时间范围内设置好时间，复用play直接跳到播放点
     __config[I_NEXT_TIME] = v;
+    // 防止play()重置时间和当前帧组，提前计算好
+    __config[I_ENTER_FRAME] = true;
+    let frames = __config[I_FRAMES];
+    let framesR = __config[I_FRAMES_R];
+    let direction = __config[I_DIRECTION];
+    if({
+      alternate: true,
+      'alternate-reverse': true,
+    }.hasOwnProperty(direction)) {
+      let isEven = __config[I_PLAY_COUNT] % 2 === 0;
+      if(direction === 'alternate') {
+        __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+      }
+      else {
+        __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+      }
+    }
     return v;
   }
 

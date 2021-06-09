@@ -310,6 +310,14 @@ function calPerspectiveMatrix(ppt, po) {
   }
 }
 
+// 是否有透视矩阵应用
+function isPerspectiveMatrix(m) {
+  if(!m) {
+    return;
+  }
+  return !!(m[3] || m[7] || m[11]);
+}
+
 export default {
   calMatrix,
   calOrigin,
@@ -318,4 +326,5 @@ export default {
   calMatrixByOrigin,
   calMatrixWithOrigin,
   pointInQuadrilateral,
+  isPerspectiveMatrix,
 };

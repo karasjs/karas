@@ -89,11 +89,6 @@ const {
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
 
-// 是否有透视矩阵应用
-function isPerspectiveMatrix(m) {
-  return !!(m[3] || m[7] || m[11]);
-}
-
 // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 const OFFSCREEN_OVERFLOW = 0;
 const OFFSCREEN_FILTER = 1;
@@ -2082,7 +2077,7 @@ function renderWebgl(renderMode, gl, root) {
         matrix = __config[NODE_MATRIX];
       }
       // node本身有或者父有perspective都认为需要生成3d渲染上下文
-      if(isPerspectiveMatrix(matrix) || parentPm) {
+      if(tf.isPerspectiveMatrix(matrix) || parentPm) {
         if(hasRecordAsMask) {
           hasRecordAsMask[9] = true;
         }
@@ -2160,7 +2155,7 @@ function renderWebgl(renderMode, gl, root) {
     } = computedStyle;
     let validMbm = isValidMbm(mixBlendMode);
     // 3d渲染上下文
-    let isPerspective = isPerspectiveMatrix(transform) || parentPm;
+    let isPerspective = tf.isPerspectiveMatrix(transform) || parentPm;
     if(hasMask || filter.length || (overflow === 'hidden' && total) || validMbm || isPerspective) {
       if(validMbm) {
         hasMbm = true;

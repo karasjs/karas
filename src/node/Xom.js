@@ -154,6 +154,7 @@ const {
   REPAINT,
   TRANSLATE_X: TX,
   TRANSLATE_Y: TY,
+  TRANSLATE_Z: TZ,
 } = level;
 
 function getFirstEmptyInlineWidth(xom) {
@@ -698,7 +699,7 @@ class Xom extends Node {
     let matrixCache = __cacheStyle[MATRIX];
     // tx/ty变化特殊优化
     if(matrixCache && lv < REFLOW && !contain(lv, TF)) {
-      let x = 0, y = 0;
+      let x = 0, y = 0, z = 0;
       if(contain(lv, TX)) {
         let v = currentStyle[TRANSLATE_X];
         if(isNil(v)) {
@@ -748,6 +749,31 @@ class Xom extends Node {
         computedStyle[TRANSLATE_Y] = v;
         computedStyle[TRANSFORM][13] += y;
         matrixCache[13] += y;
+      }
+      if(contain(lv, TZ)) {
+        let v = currentStyle[TRANSLATE_Z];
+        if(isNil(v)) {
+          v = 0;
+        }
+        else if(v[1] === PERCENT) {
+          v = v[0] * this.offsetWidth * 0.01;
+        }
+        else if(v[1] === REM) {
+          v = v[0] * this.root.computedStyle[FONT_SIZE];
+        }
+        else if(v[1] === VW) {
+          v = v[0] * this.root.width * 0.01;
+        }
+        else if(v[1] === VH) {
+          v = v[0] * this.root.height * 0.01;
+        }
+        else {
+          v = v[0];
+        }
+        z = v - (computedStyle[TRANSLATE_Z] || 0);
+        computedStyle[TRANSLATE_Z] = v;
+        computedStyle[TRANSFORM][14] += z;
+        matrixCache[14] += z;
       }
       __cacheStyle[MATRIX] = matrixCache;
     }
@@ -2110,11 +2136,25 @@ class Xom extends Node {
 
   willResponseEvent(e, ignore) {
     let { x, y } = e;
-    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent,
-      computedStyle: { [POINTER_EVENTS]: pointerEvents } } = this;
+    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, domParent,
+      computedStyle: { [POINTER_EVENTS]: pointerEvents, [TRANSFORM]: transform } } = this;
     if(pointerEvents === 'none') {
       return;
     }
+    // 向上检查是否出现嵌套的perspective即3d渲染上下文，没有则简化计算
+    // let hasNestPerspective = 0;
+    // if(tf.isPerspectiveMatrix(transform) || domParent && domParent.computedStyle[PERSPECTIVE]) {
+    //   hasNestPerspective++;
+    // }
+    // while(domParent) {
+    //   if(tf.isPerspectiveMatrix(domParent.computedStyle[TRANSFORM])) {
+    //     hasNestPerspective++;
+    //   }
+    //   domParent = domParent.domParent;
+    //   if(domParent && domParent.computedStyle[PERSPECTIVE]) {
+    //     hasNestPerspective++;
+    //   }
+    // }
     let inThis = tf.pointInQuadrilateral(
       x, y,
       __sx1, __sy1,

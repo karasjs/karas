@@ -10256,6 +10256,15 @@
 
       return res;
     }
+  } // 是否有透视矩阵应用
+
+
+  function isPerspectiveMatrix(m) {
+    if (!m) {
+      return;
+    }
+
+    return !!(m[3] || m[7] || m[11]);
   }
 
   var tf = {
@@ -10265,7 +10274,8 @@
     calPerspectiveMatrix: calPerspectiveMatrix,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
-    pointInQuadrilateral: pointInQuadrilateral
+    pointInQuadrilateral: pointInQuadrilateral,
+    isPerspectiveMatrix: isPerspectiveMatrix
   };
 
   /**
@@ -16755,7 +16765,8 @@
       REFLOW = o$3.REFLOW,
       REPAINT$1 = o$3.REPAINT,
       TX = o$3.TRANSLATE_X,
-      TY = o$3.TRANSLATE_Y;
+      TY = o$3.TRANSLATE_Y,
+      TZ = o$3.TRANSLATE_Z;
 
   function getFirstEmptyInlineWidth(xom) {
     var n = 0;
@@ -17359,7 +17370,8 @@
 
         if (matrixCache && lv < REFLOW && !contain(lv, TF)) {
           var x = 0,
-              y = 0;
+              y = 0,
+              z = 0;
 
           if (contain(lv, TX)) {
             var v = currentStyle[TRANSLATE_X$4];
@@ -17405,6 +17417,29 @@
             computedStyle[TRANSLATE_Y$3] = _v;
             computedStyle[TRANSFORM$3][13] += y;
             matrixCache[13] += y;
+          }
+
+          if (contain(lv, TZ)) {
+            var _v2 = currentStyle[TRANSLATE_Z$4];
+
+            if (isNil$6(_v2)) {
+              _v2 = 0;
+            } else if (_v2[1] === PERCENT$7) {
+              _v2 = _v2[0] * this.offsetWidth * 0.01;
+            } else if (_v2[1] === REM$6) {
+              _v2 = _v2[0] * this.root.computedStyle[FONT_SIZE$8];
+            } else if (_v2[1] === VW$6) {
+              _v2 = _v2[0] * this.root.width * 0.01;
+            } else if (_v2[1] === VH$6) {
+              _v2 = _v2[0] * this.root.height * 0.01;
+            } else {
+              _v2 = _v2[0];
+            }
+
+            z = _v2 - (computedStyle[TRANSLATE_Z$4] || 0);
+            computedStyle[TRANSLATE_Z$4] = _v2;
+            computedStyle[TRANSFORM$3][14] += z;
+            matrixCache[14] += z;
           }
 
           __cacheStyle[MATRIX$3] = matrixCache;
@@ -18537,7 +18572,7 @@
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
                         svgBgSymbol.forEach(function (symbol) {
                           if (symbol) {
-                            var _v2 = {
+                            var _v3 = {
                               tagName: 'clipPath',
                               props: [],
                               children: [{
@@ -18545,9 +18580,9 @@
                                 props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
-                            var clip = ctx.add(_v2);
+                            var clip = ctx.add(_v3);
 
-                            __config[NODE_DEFS_CACHE$3].push(_v2);
+                            __config[NODE_DEFS_CACHE$3].push(_v3);
 
                             virtualDom.bb.push({
                               type: 'item',
@@ -18638,7 +18673,7 @@
                     else if (renderMode === mode.SVG && svgBgSymbol.length) {
                         svgBgSymbol.forEach(function (symbol) {
                           if (symbol) {
-                            var _v3 = {
+                            var _v4 = {
                               tagName: 'clipPath',
                               props: [],
                               children: [{
@@ -18646,9 +18681,9 @@
                                 props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                               }]
                             };
-                            var clip = ctx.add(_v3);
+                            var clip = ctx.add(_v4);
 
-                            __config[NODE_DEFS_CACHE$3].push(_v3);
+                            __config[NODE_DEFS_CACHE$3].push(_v4);
 
                             virtualDom.bb.push({
                               type: 'item',
@@ -18876,11 +18911,28 @@
             offsetWidth = this.offsetWidth,
             offsetHeight = this.offsetHeight,
             matrixEvent = this.matrixEvent,
-            pointerEvents = this.computedStyle[POINTER_EVENTS$1];
+            domParent = this.domParent,
+            _this$computedStyle = this.computedStyle,
+            pointerEvents = _this$computedStyle[POINTER_EVENTS$1],
+            transform = _this$computedStyle[TRANSFORM$3];
 
         if (pointerEvents === 'none') {
           return;
-        }
+        } // 向上检查是否出现嵌套的perspective即3d渲染上下文，没有则简化计算
+        // let hasNestPerspective = 0;
+        // if(tf.isPerspectiveMatrix(transform) || domParent && domParent.computedStyle[PERSPECTIVE]) {
+        //   hasNestPerspective++;
+        // }
+        // while(domParent) {
+        //   if(tf.isPerspectiveMatrix(domParent.computedStyle[TRANSFORM])) {
+        //     hasNestPerspective++;
+        //   }
+        //   domParent = domParent.domParent;
+        //   if(domParent && domParent.computedStyle[PERSPECTIVE]) {
+        //     hasNestPerspective++;
+        //   }
+        // }
+
 
         var inThis = tf.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
 
@@ -26646,12 +26698,7 @@
       inverse$1 = mx.inverse,
       multiply$2 = mx.multiply;
   var mbmName$2 = mbm.mbmName,
-      isValidMbm$2 = mbm.isValidMbm; // 是否有透视矩阵应用
-
-  function isPerspectiveMatrix(m) {
-    return !!(m[3] || m[7] || m[11]);
-  } // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
-
+      isValidMbm$2 = mbm.isValidMbm; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 
   var OFFSCREEN_OVERFLOW = 0;
   var OFFSCREEN_FILTER = 1;
@@ -28976,7 +29023,7 @@
         } // node本身有或者父有perspective都认为需要生成3d渲染上下文
 
 
-        if (isPerspectiveMatrix(matrix) || parentPm) {
+        if (tf.isPerspectiveMatrix(matrix) || parentPm) {
           if (hasRecordAsMask) {
             hasRecordAsMask[9] = true;
           } else {
@@ -29063,7 +29110,7 @@
           transform = computedStyle[TRANSFORM$4];
       var validMbm = isValidMbm$2(mixBlendMode); // 3d渲染上下文
 
-      var isPerspective = isPerspectiveMatrix(transform) || parentPm;
+      var isPerspective = tf.isPerspectiveMatrix(transform) || parentPm;
 
       if (hasMask || filter.length || overflow === 'hidden' && total || validMbm || isPerspective) {
         if (validMbm) {

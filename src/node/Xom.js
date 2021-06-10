@@ -1618,7 +1618,7 @@ class Xom extends Node {
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     // 隐藏不渲染
-    if(visibility === 'hidden' && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+    if((visibility === 'hidden' || res.break) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
       res.break = true;
       return res;
     }

@@ -14511,7 +14511,8 @@
                 len = _len14;
                 return "continue";
               }
-          }
+          } // 缩写处理
+
 
           Object.keys(current).forEach(function (k) {
             if (abbr.hasOwnProperty(k)) {
@@ -15249,13 +15250,34 @@
 
         v -= __config[I_DELAY]; // 超过时间长度需要累加次数
 
+        __config[I_PLAY_COUNT] = 0;
+
         while (v > duration && __config[I_PLAY_COUNT] < __config[I_ITERATIONS] - 1) {
           __config[I_PLAY_COUNT]++;
           v -= duration;
         } // 在时间范围内设置好时间，复用play直接跳到播放点
 
 
-        __config[I_NEXT_TIME] = v;
+        __config[I_NEXT_TIME] = v; // 防止play()重置时间和当前帧组，提前计算好
+
+        __config[I_ENTER_FRAME] = true;
+        var frames = __config[I_FRAMES];
+        var framesR = __config[I_FRAMES_R];
+        var direction = __config[I_DIRECTION];
+
+        if ({
+          alternate: true,
+          'alternate-reverse': true
+        }.hasOwnProperty(direction)) {
+          var isEven = __config[I_PLAY_COUNT] % 2 === 0;
+
+          if (direction === 'alternate') {
+            __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+          } else {
+            __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+          }
+        }
+
         return v;
       }
     }, {
@@ -18000,7 +18022,7 @@
         } // 隐藏不渲染
 
 
-        if (visibility === 'hidden' && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+        if ((visibility === 'hidden' || res["break"]) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
           res["break"] = true;
           return res;
         } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
@@ -34143,7 +34165,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.9";
+  var version = "0.58.10";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

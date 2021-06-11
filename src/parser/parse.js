@@ -170,13 +170,13 @@ function linkChild(child, libraryItem) {
   }
 }
 
-function parse(karas, json, animateRecords, vars, hash = {}) {
+function parse(karas, json, animateRecords, opt, hash = {}) {
   if(isPrimitive(json) || json instanceof Node || json instanceof Component) {
     return json;
   }
   if(Array.isArray(json)) {
     return json.map(item => {
-      return parse(karas, item, animateRecords, vars, hash);
+      return parse(karas, item, animateRecords, opt, hash);
     });
   }
   // 先判断是否是个链接到库的节点，是则进行链接操作
@@ -200,7 +200,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       linkLibrary(item, hash);
     });
     // 替换library插槽
-    replaceLibraryVars(json, hash, vars);
+    replaceLibraryVars(json, hash, opt.vars);
     json.library = null;
   }
   let { tagName, props = {}, children = [], animate = [] } = json;
@@ -208,13 +208,13 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
   }
   let style = props.style;
-  abbr2full(style, abbrCssProperty);
+  (opt.abbr !== false) && abbr2full(style, abbrCssProperty);
   // 先替换style的
-  replaceVars(style, vars);
+  replaceVars(style, opt.vars);
   // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
-  replaceVars(props, vars);
+  replaceVars(props, opt.vars);
   // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
-  replaceVars(json, vars);
+  replaceVars(json, opt.vars);
   let vd;
   if(tagName.charAt(0) === '$') {
     vd = karas.createGm(tagName, props);
@@ -225,7 +225,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
         return item;
       }
-      return parse(karas, item, animateRecords, vars, hash);
+      return parse(karas, item, animateRecords, opt, hash);
     }));
   }
   else {
@@ -233,7 +233,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
         return item;
       }
-      return parse(karas, item, animateRecords, vars, hash);
+      return parse(karas, item, animateRecords, opt, hash);
     }));
   }
   let animationRecord;
@@ -241,19 +241,19 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     if(Array.isArray(animate)) {
       let has;
       animate.forEach(item => {
-        abbr2full(item, abbrAnimate);
+        (opt.abbr !== false) && abbr2full(item, abbrAnimate);
         let { value, options } = item;
         // 忽略空动画
         if(Array.isArray(value) && value.length) {
           has = true;
           value.forEach(item => {
-            abbr2full(item, abbrCssProperty);
-            replaceVars(item, vars);
+            (opt.abbr !== false) && abbr2full(item, abbrCssProperty);
+            replaceVars(item, opt.vars);
           });
         }
         if(options) {
-          abbr2full(options, abbrAnimateOption);
-          replaceVars(options, vars);
+          (opt.abbr !== false) && abbr2full(options, abbrAnimateOption);
+          replaceVars(options, opt.vars);
         }
       });
       if(has) {
@@ -264,12 +264,12 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       }
     }
     else {
-      abbr2full(animate, abbrAnimate);
+      (opt.abbr !== false) && abbr2full(animate, abbrAnimate);
       let { value, options } = animate;
       if(Array.isArray(value) && value.length) {
         value.forEach(item => {
-          abbr2full(item, abbrCssProperty);
-          replaceVars(item, vars);
+          (opt.abbr !== false) && abbr2full(item, abbrCssProperty);
+          replaceVars(item, opt.vars);
         });
         animationRecord = {
           animate,
@@ -277,8 +277,8 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
         };
       }
       if(options) {
-        abbr2full(options, abbrAnimateOption);
-        replaceVars(options, vars);
+        (opt.abbr !== false) && abbr2full(options, abbrAnimateOption);
+        replaceVars(options, opt.vars);
       }
     }
   }

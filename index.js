@@ -34365,7 +34365,7 @@
     }
   }
 
-  function parse(karas, json, animateRecords, vars) {
+  function parse(karas, json, animateRecords, opt) {
     var hash = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
 
     if (isPrimitive(json) || json instanceof Node || json instanceof Component$1) {
@@ -34374,7 +34374,7 @@
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, opt, hash);
       });
     } // 先判断是否是个链接到库的节点，是则进行链接操作
 
@@ -34402,7 +34402,7 @@
         linkLibrary(item, hash);
       }); // 替换library插槽
 
-      replaceLibraryVars(json, hash, vars);
+      replaceLibraryVars(json, hash, opt.vars);
       json.library = null;
     }
 
@@ -34419,13 +34419,13 @@
     }
 
     var style = props.style;
-    abbr2full(style, abbrCssProperty$1); // 先替换style的
+    opt.abbr !== false && abbr2full(style, abbrCssProperty$1); // 先替换style的
 
-    replaceVars(style, vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
+    replaceVars(style, opt.vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
 
-    replaceVars(props, vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
+    replaceVars(props, opt.vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
 
-    replaceVars(json, vars);
+    replaceVars(json, opt.vars);
     var vd;
 
     if (tagName.charAt(0) === '$') {
@@ -34437,7 +34437,7 @@
           return item;
         }
 
-        return parse(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, opt, hash);
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
@@ -34445,7 +34445,7 @@
           return item;
         }
 
-        return parse(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, opt, hash);
       }));
     }
 
@@ -34455,21 +34455,21 @@
       if (Array.isArray(animate)) {
         var has;
         animate.forEach(function (item) {
-          abbr2full(item, abbrAnimate$1);
+          opt.abbr !== false && abbr2full(item, abbrAnimate$1);
           var value = item.value,
               options = item.options; // 忽略空动画
 
           if (Array.isArray(value) && value.length) {
             has = true;
             value.forEach(function (item) {
-              abbr2full(item, abbrCssProperty$1);
-              replaceVars(item, vars);
+              opt.abbr !== false && abbr2full(item, abbrCssProperty$1);
+              replaceVars(item, opt.vars);
             });
           }
 
           if (options) {
-            abbr2full(options, abbrAnimateOption$1);
-            replaceVars(options, vars);
+            opt.abbr !== false && abbr2full(options, abbrAnimateOption$1);
+            replaceVars(options, opt.vars);
           }
         });
 
@@ -34480,14 +34480,14 @@
           };
         }
       } else {
-        abbr2full(animate, abbrAnimate$1);
+        opt.abbr !== false && abbr2full(animate, abbrAnimate$1);
         var value = animate.value,
             options = animate.options;
 
         if (Array.isArray(value) && value.length) {
           value.forEach(function (item) {
-            abbr2full(item, abbrCssProperty$1);
-            replaceVars(item, vars);
+            opt.abbr !== false && abbr2full(item, abbrCssProperty$1);
+            replaceVars(item, opt.vars);
           });
           animationRecord = {
             animate: animate,
@@ -34496,8 +34496,8 @@
         }
 
         if (options) {
-          abbr2full(options, abbrAnimateOption$1);
-          replaceVars(options, vars);
+          opt.abbr !== false && abbr2full(options, abbrAnimateOption$1);
+          replaceVars(options, opt.vars);
         }
       }
     } // 产生实际动画运行才存入列表供root调用执行
@@ -34523,7 +34523,7 @@
 
       var animateRecords = [];
 
-      var vd = parse(karas, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
+      var vd = parse(karas, json, animateRecords, options); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

@@ -143,7 +143,12 @@ function initEvent(dom, Root) {
       let root = dom.__root;
       if(root && root instanceof Root) {
         if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-          root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+          let target = root.__touchstartTarget;
+          let event = root.__wrapEvent(e);
+          while(target) {
+            target.__emitEvent(event, true);
+            target = target.domParent;
+          }
         }
         else {
           root.__cb(e);

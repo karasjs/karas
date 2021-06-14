@@ -29464,7 +29464,15 @@
 
         if (root && root instanceof Root) {
           if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-            root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+            var target = root.__touchstartTarget;
+
+            var event = root.__wrapEvent(e);
+
+            while (target) {
+              target.__emitEvent(event, true);
+
+              target = target.domParent;
+            }
           } else {
             root.__cb(e);
           }
@@ -34165,7 +34173,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.10";
+  var version = "0.58.11";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

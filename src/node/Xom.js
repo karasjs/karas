@@ -2016,8 +2016,7 @@ class Xom extends Node {
     }
     // touchmove之类强制的直接由Root通知即可
     if(force) {
-      e.target = this;
-      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+      if(computedStyle[POINTER_EVENTS] !== 'none' && util.isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
       return true;

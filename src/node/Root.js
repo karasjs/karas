@@ -145,6 +145,7 @@ function initEvent(dom, Root) {
         if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
           let target = root.__touchstartTarget;
           let event = root.__wrapEvent(e);
+          event.target = target;
           while(target) {
             target.__emitEvent(event, true);
             target = target.domParent;

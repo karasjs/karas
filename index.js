@@ -18479,9 +18479,7 @@
 
 
         if (force) {
-          e.target = this;
-
-          if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
+          if (computedStyle[POINTER_EVENTS$1] !== 'none' && util.isFunction(cb) && !e.__stopImmediatePropagation) {
             cb.call(this, e);
           }
 
@@ -29467,6 +29465,8 @@
             var target = root.__touchstartTarget;
 
             var event = root.__wrapEvent(e);
+
+            event.target = target;
 
             while (target) {
               target.__emitEvent(event, true);

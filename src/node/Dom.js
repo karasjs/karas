@@ -1851,7 +1851,7 @@ class Dom extends Xom {
             } = computedStyle;
             if(height[1] === AUTO) {
               let old = item.height;
-              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              let v = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
               item.__sy4 += d;
               item.__sy5 += d;

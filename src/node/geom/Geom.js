@@ -39,6 +39,7 @@ const {
     FILL_RULE,
     VISIBILITY,
     FONT_SIZE,
+    FLEX_BASIS,
   },
   NODE_KEY: {
     NODE_CACHE_PROPS,
@@ -220,6 +221,7 @@ class Geom extends Xom {
     let { w, h } = data;
     // 计算需考虑style的属性
     let {
+      [FLEX_BASIS]: flexBasis,
       [WIDTH]: width,
       [HEIGHT]: height,
       [MARGIN_LEFT]: marginLeft,
@@ -236,20 +238,41 @@ class Geom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
     let main = isDirectionRow ? width : height;
-    if(main[1] !== AUTO) {
-      b = max = main[0];
+    // basis3种情况：auto、固定、content，只区分固定和其它
+    let isFixed = [PX, PERCENT, REM, VW, VH].indexOf(flexBasis[1]) > -1;
+    if(isFixed) {
+      if(flexBasis[1] === PX) {
+        b = max = min = flexBasis[0];
+      }
+      else if(flexBasis[1] === PERCENT) {
+        b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
+      }
+      else if(flexBasis[1] === REM) {
+        b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(flexBasis[1] === VW) {
+        b = max = min = flexBasis[0] * this.root.width * 0.01;
+      }
+      else if(flexBasis[1] === VH) {
+        b = max = min = flexBasis[0] * this.root.height * 0.01;
+      }
     }
-    else if(main[1] === PERCENT) {
-      b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
-    }
-    else if(main[1] === REM) {
-      b = max = main[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(main[1] === VW) {
-      b = max = main[0] * this.root.width * 0.01;
-    }
-    else if(main[1] === VH) {
-      b = max = main[0] * this.root.height * 0.01;
+    else if(([PX, PERCENT, REM, VW, VH].indexOf(main[1]) > -1)) {
+      if(main[1] === PX) {
+        b = max = min = main[0];
+      }
+      else if(main[1] === PERCENT) {
+        b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+      }
+      else if(main[1] === REM) {
+        b = max = min = main[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(main[1] === VW) {
+        b = max = min = main[0] * this.root.width * 0.01;
+      }
+      else if(main[1] === VH) {
+        b = max = min = main[0] * this.root.height * 0.01;
+      }
     }
     // border也得计算在内
     if(isDirectionRow) {

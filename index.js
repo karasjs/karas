@@ -20744,17 +20744,17 @@
             b = fixedSize = flexBasis[0] * this.root.height * 0.01;
           }
         } // 已声明主轴尺寸的，当basis是auto时为值
-        else if ((main[1] === PX$8 || main[1] === PERCENT$9) && isAuto) {
+        else if ([PX$8, PERCENT$9, REM$7, VW$7, VH$7].indexOf(main[1]) > -1 && isAuto) {
             if (main[1] === PX$8) {
               b = fixedSize = main[0];
-            } else if (flexBasis[1] === PERCENT$9) {
+            } else if (main[1] === PERCENT$9) {
               b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
-            } else if (flexBasis[1] === REM$7) {
-              b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (flexBasis[1] === VW$7) {
-              b = fixedSize = flexBasis[0] * this.root.width * 0.01;
-            } else if (flexBasis[1] === VH$7) {
-              b = fixedSize = flexBasis[0] * this.root.height * 0.01;
+            } else if (main[1] === REM$7) {
+              b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE$9];
+            } else if (main[1] === VW$7) {
+              b = fixedSize = main[0] * this.root.width * 0.01;
+            } else if (main[1] === VH$7) {
+              b = fixedSize = main[0] * this.root.height * 0.01;
             }
           } // 非固定尺寸的basis为auto时降级为content
           else if (isAuto) {
@@ -23103,6 +23103,7 @@
       PADDING_BOTTOM$3 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
       PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
+      FLEX_BASIS$3 = _enums$STYLE_KEY$g.FLEX_BASIS,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -23606,7 +23607,8 @@
         var w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var width = currentStyle[WIDTH$6],
+        var flexBasis = currentStyle[FLEX_BASIS$3],
+            width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$6],
             marginLeft = currentStyle[MARGIN_LEFT$4],
             marginTop = currentStyle[MARGIN_TOP$2],
@@ -23621,24 +23623,53 @@
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$4],
             borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$6];
         var main = isDirectionRow ? width : height;
-        var cross = isDirectionRow ? height : width;
+        var cross = isDirectionRow ? height : width; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        if (main[1] !== AUTO$7) {
-          b = max = min = main[0];
-        } else if (main[1] === PERCENT$a) {
-          b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
-        } else if (main[1] === REM$8) {
-          b = max = main[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (main[1] === VW$8) {
-          b = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$8) {
-          b = max = main[0] * this.root.height * 0.01;
-        } // 固定尺寸比例计算
+        var isFixed = [PX$9, PERCENT$a, REM$8, VW$8, VH$8].indexOf(flexBasis[1]) > -1;
+
+        if (isFixed) {
+          if (flexBasis[1] === PX$9) {
+            b = max = min = flexBasis[0];
+          } else if (flexBasis[1] === PERCENT$a) {
+            b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (flexBasis[1] === REM$8) {
+            b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE$a];
+          } else if (flexBasis[1] === VW$8) {
+            b = max = min = flexBasis[0] * this.root.width * 0.01;
+          } else if (flexBasis[1] === VH$8) {
+            b = max = min = flexBasis[0] * this.root.height * 0.01;
+          }
+        } else if ([PX$9, PERCENT$a, REM$8, VW$8, VH$8].indexOf(main[1]) > -1) {
+          if (main[1] === PX$9) {
+            b = max = min = main[0];
+          } else if (main[1] === PERCENT$a) {
+            b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (main[1] === REM$8) {
+            b = max = min = main[0] * this.root.computedStyle[FONT_SIZE$a];
+          } else if (main[1] === VW$8) {
+            b = max = min = main[0] * this.root.width * 0.01;
+          } else if (main[1] === VH$8) {
+            b = max = min = main[0] * this.root.height * 0.01;
+          }
+        } // auto和content固定尺寸比例计算
         else if (__loadImg.source || __loadImg.error) {
             if (cross[1] !== AUTO$7) {
-              cross = cross[1] === PX$9 ? cross[0] : cross[0] * 0.01 * (isDirectionRow ? h : w);
+              if (cross[1] === PX$9) {
+                cross = cross[0];
+              } else if (cross[1] === PERCENT$a) {
+                cross = cross[0] * 0.01 * (isDirectionRow ? h : w);
+              } else if (cross[1] === REM$8) {
+                cross = cross[0] * this.root.computedStyle[FONT_SIZE$a];
+              } else if (cross[1] === VW$8) {
+                cross = cross[0] * this.root.width * 0.01;
+              } else if (cross[1] === VH$8) {
+                cross = cross[0] * this.root.height * 0.01;
+              }
+
               var ratio = __loadImg.width / __loadImg.height;
               b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
+            } else {
+              b = max = min = isDirectionRow ? __loadImg.width : __loadImg.height;
             }
           } // border也得计算在内
 
@@ -23948,6 +23979,7 @@
       FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
       VISIBILITY$4 = _enums$STYLE_KEY$h.VISIBILITY,
       FONT_SIZE$b = _enums$STYLE_KEY$h.FONT_SIZE,
+      FLEX_BASIS$4 = _enums$STYLE_KEY$h.FLEX_BASIS,
       _enums$NODE_KEY$7 = enums.NODE_KEY,
       NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
@@ -23955,8 +23987,7 @@
       NODE_IS_MASK$1 = _enums$NODE_KEY$7.NODE_IS_MASK,
       NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
       NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE;
-  var AUTO$8 = o.AUTO,
-      PX$a = o.PX,
+  var PX$a = o.PX,
       PERCENT$b = o.PERCENT,
       REM$9 = o.REM,
       VW$9 = o.VW,
@@ -24130,7 +24161,8 @@
         var w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var width = currentStyle[WIDTH$7],
+        var flexBasis = currentStyle[FLEX_BASIS$4],
+            width = currentStyle[WIDTH$7],
             height = currentStyle[HEIGHT$7],
             marginLeft = currentStyle[MARGIN_LEFT$5],
             marginTop = currentStyle[MARGIN_TOP$3],
@@ -24144,18 +24176,34 @@
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$6],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$5],
             borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$7];
-        var main = isDirectionRow ? width : height;
+        var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        if (main[1] !== AUTO$8) {
-          b = max = main[0];
-        } else if (main[1] === PERCENT$b) {
-          b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
-        } else if (main[1] === REM$9) {
-          b = max = main[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (main[1] === VW$9) {
-          b = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$9) {
-          b = max = main[0] * this.root.height * 0.01;
+        var isFixed = [PX$a, PERCENT$b, REM$9, VW$9, VH$9].indexOf(flexBasis[1]) > -1;
+
+        if (isFixed) {
+          if (flexBasis[1] === PX$a) {
+            b = max = min = flexBasis[0];
+          } else if (flexBasis[1] === PERCENT$b) {
+            b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (flexBasis[1] === REM$9) {
+            b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE$b];
+          } else if (flexBasis[1] === VW$9) {
+            b = max = min = flexBasis[0] * this.root.width * 0.01;
+          } else if (flexBasis[1] === VH$9) {
+            b = max = min = flexBasis[0] * this.root.height * 0.01;
+          }
+        } else if ([PX$a, PERCENT$b, REM$9, VW$9, VH$9].indexOf(main[1]) > -1) {
+          if (main[1] === PX$a) {
+            b = max = min = main[0];
+          } else if (main[1] === PERCENT$b) {
+            b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (main[1] === REM$9) {
+            b = max = min = main[0] * this.root.computedStyle[FONT_SIZE$b];
+          } else if (main[1] === VW$9) {
+            b = max = min = main[0] * this.root.width * 0.01;
+          } else if (main[1] === VH$9) {
+            b = max = min = main[0] * this.root.height * 0.01;
+          }
         } // border也得计算在内
 
 
@@ -29403,7 +29451,7 @@
   var isNil$8 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$7 = util.isFunction;
-  var AUTO$9 = o.AUTO,
+  var AUTO$8 = o.AUTO,
       PX$b = o.PX,
       PERCENT$c = o.PERCENT,
       INHERIT$5 = o.INHERIT;
@@ -29484,7 +29532,7 @@
 
   function isFixedWidthOrHeight(node, k) {
     var c = node.currentStyle[k];
-    return c[1] !== AUTO$9;
+    return c[1] !== AUTO$8;
   } // 除了固定尺寸，父级也不能是flex或变化flex
 
 
@@ -31186,7 +31234,7 @@
               var height = cs[HEIGHT$8];
               var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
-              if (height[1] === AUTO$9) {
+              if (height[1] === AUTO$8) {
                 var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
                 var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
@@ -31205,8 +31253,8 @@
                         bottom = _item$currentStyle[BOTTOM$4],
                         _height2 = _item$currentStyle[HEIGHT$8]; // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
 
-                    if (top[1] === AUTO$9) {
-                      if (bottom[1] === AUTO$9) {
+                    if (top[1] === AUTO$8) {
+                      if (bottom[1] === AUTO$8) {
                         var prev = _item.prev;
 
                         while (prev) {
@@ -31321,7 +31369,7 @@
                     _top = _item2$currentStyle[TOP$4],
                     _bottom = _item2$currentStyle[BOTTOM$4];
 
-                if (_top[1] === AUTO$9 && _bottom[1] === AUTO$9) {
+                if (_top[1] === AUTO$8 && _bottom[1] === AUTO$8) {
                   var _prev = _item2.prev;
 
                   while (_prev) {

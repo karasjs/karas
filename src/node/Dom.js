@@ -723,21 +723,21 @@ class Dom extends Xom {
       }
     }
     // 已声明主轴尺寸的，当basis是auto时为值
-    else if((main[1] === PX || main[1] === PERCENT) && isAuto) {
+    else if(([PX, PERCENT, REM, VW, VH].indexOf(main[1]) > -1) && isAuto) {
       if(main[1] === PX) {
         b = fixedSize = main[0];
       }
-      else if(flexBasis[1] === PERCENT) {
+      else if(main[1] === PERCENT) {
         b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
       }
-      else if(flexBasis[1] === REM) {
-        b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
+      else if(main[1] === REM) {
+        b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE];
       }
-      else if(flexBasis[1] === VW) {
-        b = fixedSize = flexBasis[0] * this.root.width * 0.01;
+      else if(main[1] === VW) {
+        b = fixedSize = main[0] * this.root.width * 0.01;
       }
-      else if(flexBasis[1] === VH) {
-        b = fixedSize = flexBasis[0] * this.root.height * 0.01;
+      else if(main[1] === VH) {
+        b = fixedSize = main[0] * this.root.height * 0.01;
       }
     }
     // 非固定尺寸的basis为auto时降级为content

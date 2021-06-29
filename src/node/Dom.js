@@ -449,10 +449,6 @@ class Dom extends Xom {
     else if(borderLeftWidth[1] === VH) {
       w -= borderLeftWidth[0] * this.root.height * 0.01;
     }
-    // TODO: 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
-    if(w > -1e-10) {
-      return 0;
-    }
     return w;
   }
 

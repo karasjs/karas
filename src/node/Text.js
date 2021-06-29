@@ -338,7 +338,8 @@ class Text extends Node {
           lineCount++;
           lastChar = null; // 换行后连续字符reduce不生效重新计数
         }
-        else if(count > w) {
+        // TODO: 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
+        else if(count > w + (1e-10)) {
           // 多行文本截断，这里肯定需要回退
           if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
             [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,

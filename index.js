@@ -10924,54 +10924,55 @@
                 count = 0;
                 lineCount++;
                 lastChar = null; // 换行后连续字符reduce不生效重新计数
-              } else if (count > w) {
-                // 多行文本截断，这里肯定需要回退
-                if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-                  var _this$__lineBack5 = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
+              } // TODO: 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
+              else if (count > w + 1e-10) {
+                  // 多行文本截断，这里肯定需要回退
+                  if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+                    var _this$__lineBack5 = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
 
-                  var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
+                    var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
 
-                  y = _this$__lineBack6[0];
-                  maxW = _this$__lineBack6[1];
+                    y = _this$__lineBack6[0];
+                    maxW = _this$__lineBack6[1];
+                    lineCount++;
+                    break;
+                  } // 普通非多行文本阶段逻辑
+
+
+                  var _width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
+                  // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里，这个if只有0或1个字符的情况
+
+
+                  if (i <= begin) {
+                    _width = count;
+                  } // 超过2个字符回退1个
+                  else {
+                      _width = count - charWidthList[i--];
+                    }
+
+                  i++; // 根据是否第一行分开处理行首空白
+
+                  var _textBox2 = void 0;
+
+                  if (!lineCount) {
+                    maxW = _width - beginSpace;
+                    _textBox2 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  } else {
+                    _textBox2 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                    maxW = Math.max(maxW, _width);
+                  } // 必须先添加再设置y，同上
+
+
+                  textBoxes.push(_textBox2);
+                  lineBoxManager.addItem(_textBox2, true);
+                  y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                  begin = i;
+                  count = 0;
                   lineCount++;
-                  break;
-                } // 普通非多行文本阶段逻辑
-
-
-                var _width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
-                // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里，这个if只有0或1个字符的情况
-
-
-                if (i <= begin) {
-                  _width = count;
-                } // 超过2个字符回退1个
-                else {
-                    _width = count - charWidthList[i--];
-                  }
-
-                i++; // 根据是否第一行分开处理行首空白
-
-                var _textBox2 = void 0;
-
-                if (!lineCount) {
-                  maxW = _width - beginSpace;
-                  _textBox2 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  lastChar = null;
                 } else {
-                  _textBox2 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
-                  maxW = Math.max(maxW, _width);
-                } // 必须先添加再设置y，同上
-
-
-                textBoxes.push(_textBox2);
-                lineBoxManager.addItem(_textBox2, true);
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                begin = i;
-                count = 0;
-                lineCount++;
-                lastChar = null;
-              } else {
-                i++;
-              }
+                  i++;
+                }
             } // 换行后Text的x重设为lx
 
 
@@ -20467,6 +20468,11 @@
           w -= borderLeftWidth[0] * this.root.width * 0.01;
         } else if (borderLeftWidth[1] === VH$7) {
           w -= borderLeftWidth[0] * this.root.height * 0.01;
+        } // TODO: 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
+
+
+        if (w > -1e-10) {
+          return 0;
         }
 
         return w;
@@ -34258,7 +34264,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.13";
+  var version = "0.58.14.alpha.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

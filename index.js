@@ -94,7 +94,7 @@
     if (typeof Proxy === "function") return true;
 
     try {
-      Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
+      Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
       return true;
     } catch (e) {
       return false;
@@ -183,18 +183,21 @@
   }
 
   function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
   }
 
   function _iterableToArrayLimit(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
+
+    if (_i == null) return;
     var _arr = [];
     var _n = true;
     var _d = false;
-    var _e = undefined;
+
+    var _s, _e;
 
     try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
         _arr.push(_s.value);
 
         if (i && _arr.length === i) break;
@@ -9549,12 +9552,13 @@
         };
       }
     }, {
-      key: "genUuid",
-      value: function genUuid() {
-        return uuid++;
-      }
-    }, {
       key: "CONFIG",
+      get: function get() {
+        return {
+          SIZE: SIZE,
+          NUMBER: NUMBER$2
+        };
+      },
       set: function set(v) {
         if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
           return;
@@ -9563,17 +9567,16 @@
         SIZE = v.SIZE;
         NUMBER$2 = v.NUMBER;
         MAX = SIZE[SIZE.length - 1];
-      },
-      get: function get() {
-        return {
-          SIZE: SIZE,
-          NUMBER: NUMBER$2
-        };
       }
     }, {
       key: "MAX",
       get: function get() {
         return MAX;
+      }
+    }, {
+      key: "genUuid",
+      value: function genUuid() {
+        return uuid++;
       }
     }]);
 
@@ -10559,6 +10562,11 @@
         return this.__pos;
       }
     }], [{
+      key: "MAX",
+      get: function get() {
+        return Page.MAX;
+      }
+    }, {
       key: "getInstance",
       value: function getInstance(bbox, x1, y1) {
         var w = Math.ceil(bbox[2] - bbox[0]);
@@ -10806,11 +10814,6 @@
             width = cache.width,
             height = cache.height;
         ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
-      }
-    }, {
-      key: "MAX",
-      get: function get() {
-        return Page.MAX;
       }
     }]);
 
@@ -11210,54 +11213,55 @@
                 count = 0;
                 lineCount++;
                 lastChar = null; // 换行后连续字符reduce不生效重新计数
-              } else if (count > w) {
-                // 多行文本截断，这里肯定需要回退
-                if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-                  var _this$__lineBack5 = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
+              } // 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
+              else if (count > w + 1e-10) {
+                  // 多行文本截断，这里肯定需要回退
+                  if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+                    var _this$__lineBack5 = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
 
-                  var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
+                    var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
 
-                  y = _this$__lineBack6[0];
-                  maxW = _this$__lineBack6[1];
+                    y = _this$__lineBack6[0];
+                    maxW = _this$__lineBack6[1];
+                    lineCount++;
+                    break;
+                  } // 普通非多行文本阶段逻辑
+
+
+                  var _width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
+                  // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里，这个if只有0或1个字符的情况
+
+
+                  if (i <= begin) {
+                    _width = count;
+                  } // 超过2个字符回退1个
+                  else {
+                      _width = count - charWidthList[i--];
+                    }
+
+                  i++; // 根据是否第一行分开处理行首空白
+
+                  var _textBox2 = void 0;
+
+                  if (!lineCount) {
+                    maxW = _width - beginSpace;
+                    _textBox2 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  } else {
+                    _textBox2 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                    maxW = Math.max(maxW, _width);
+                  } // 必须先添加再设置y，同上
+
+
+                  textBoxes.push(_textBox2);
+                  lineBoxManager.addItem(_textBox2, true);
+                  y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                  begin = i;
+                  count = 0;
                   lineCount++;
-                  break;
-                } // 普通非多行文本阶段逻辑
-
-
-                var _width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
-                // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里，这个if只有0或1个字符的情况
-
-
-                if (i <= begin) {
-                  _width = count;
-                } // 超过2个字符回退1个
-                else {
-                    _width = count - charWidthList[i--];
-                  }
-
-                i++; // 根据是否第一行分开处理行首空白
-
-                var _textBox2 = void 0;
-
-                if (!lineCount) {
-                  maxW = _width - beginSpace;
-                  _textBox2 = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
+                  lastChar = null;
                 } else {
-                  _textBox2 = new TextBox(this, textBoxes.length, lx, y, _width, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
-                  maxW = Math.max(maxW, _width);
-                } // 必须先添加再设置y，同上
-
-
-                textBoxes.push(_textBox2);
-                lineBoxManager.addItem(_textBox2, true);
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                begin = i;
-                count = 0;
-                lineCount++;
-                lastChar = null;
-              } else {
-                i++;
-              }
+                  i++;
+                }
             } // 换行后Text的x重设为lx
 
 
@@ -12425,6 +12429,11 @@
         return this.__isDestroyed;
       }
     }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER;
+      }
+    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
@@ -12461,11 +12470,6 @@
         if (Component.hasRegister(name)) {
           delete REGISTER[name];
         }
-      }
-    }, {
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER;
       }
     }]);
 
@@ -16967,21 +16971,58 @@
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$2],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$2],
             borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$3];
-        var mpb;
 
         if (isDirectionRow) {
           var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
 
-          mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
+          if (borderLeftWidth[1] === PX$6) {
+            mp += borderLeftWidth[0];
+          } else if (borderLeftWidth[1] === REM$6) {
+            mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$8];
+          } else if (borderLeftWidth[1] === VW$6) {
+            mp += borderLeftWidth[0] * this.root.width * 0.01;
+          } else if (borderLeftWidth[1] === VH$6) {
+            mp += borderLeftWidth[0] * this.root.height * 0.01;
+          }
+
+          if (borderRightWidth[1] === PX$6) {
+            mp += borderRightWidth[0];
+          } else if (borderRightWidth[1] === REM$6) {
+            mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$8];
+          } else if (borderRightWidth[1] === VW$6) {
+            mp += borderRightWidth[0] * this.root.width * 0.01;
+          } else if (borderRightWidth[1] === VH$6) {
+            mp += borderRightWidth[0] * this.root.height * 0.01;
+          }
+
           res = res.map(function (item) {
-            return item + mpb;
+            return item + mp;
           });
         } else {
           var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
 
-          mpb = borderTopWidth[0] + borderBottomWidth[0] + _mp;
+          if (borderTopWidth[1] === PX$6) {
+            _mp += borderTopWidth[0];
+          } else if (borderTopWidth[1] === REM$6) {
+            _mp += borderTopWidth[0] * this.root.computedStyle[FONT_SIZE$8];
+          } else if (borderTopWidth[1] === VW$6) {
+            _mp += borderTopWidth[0] * this.root.width * 0.01;
+          } else if (borderTopWidth[1] === VH$6) {
+            _mp += borderTopWidth[0] * this.root.height * 0.01;
+          }
+
+          if (borderBottomWidth[1] === PX$6) {
+            _mp += borderBottomWidth[0];
+          } else if (borderBottomWidth[1] === REM$6) {
+            _mp += borderBottomWidth[0] * this.root.computedStyle[FONT_SIZE$8];
+          } else if (borderBottomWidth[1] === VW$6) {
+            _mp += borderBottomWidth[0] * this.root.width * 0.01;
+          } else if (borderBottomWidth[1] === VH$6) {
+            _mp += borderBottomWidth[0] * this.root.height * 0.01;
+          }
+
           res = res.map(function (item) {
-            return item + mpb;
+            return item + _mp;
           });
         }
 
@@ -18863,9 +18904,7 @@
 
 
         if (force) {
-          e.target = this;
-
-          if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
+          if (computedStyle[POINTER_EVENTS$1] !== 'none' && util.isFunction(cb) && !e.__stopImmediatePropagation) {
             cb.call(this, e);
           }
 
@@ -21130,17 +21169,17 @@
             b = fixedSize = flexBasis[0] * this.root.height * 0.01;
           }
         } // 已声明主轴尺寸的，当basis是auto时为值
-        else if ((main[1] === PX$8 || main[1] === PERCENT$9) && isAuto) {
+        else if ([PX$8, PERCENT$9, REM$7, VW$7, VH$7].indexOf(main[1]) > -1 && isAuto) {
             if (main[1] === PX$8) {
               b = fixedSize = main[0];
-            } else if (flexBasis[1] === PERCENT$9) {
+            } else if (main[1] === PERCENT$9) {
               b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
-            } else if (flexBasis[1] === REM$7) {
-              b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (flexBasis[1] === VW$7) {
-              b = fixedSize = flexBasis[0] * this.root.width * 0.01;
-            } else if (flexBasis[1] === VH$7) {
-              b = fixedSize = flexBasis[0] * this.root.height * 0.01;
+            } else if (main[1] === REM$7) {
+              b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE$9];
+            } else if (main[1] === VW$7) {
+              b = fixedSize = main[0] * this.root.width * 0.01;
+            } else if (main[1] === VH$7) {
+              b = fixedSize = main[0] * this.root.height * 0.01;
             }
           } // 非固定尺寸的basis为auto时降级为content
           else if (isAuto) {
@@ -21430,10 +21469,10 @@
                 }
               } else {
                 // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
-                var fw = item.__tryLayInline(w + data.x - x, w); // 放得下继续
+                var fw = item.__tryLayInline(w + data.x - x, w); // 放得下继续，奇怪的精度问题，加上阈值
 
 
-                if (fw >= 0) {
+                if (fw >= -1e-10) {
                   item.__layout({
                     x: x,
                     y: y,
@@ -21601,7 +21640,7 @@
                 var _fw = item.__tryLayInline(w - x + data.x); // 放得下继续
 
 
-                if (_fw >= 0) {
+                if (_fw >= -1e-10) {
                   lineClampCount = item.__layout({
                     x: x,
                     y: y,
@@ -22403,7 +22442,7 @@
                     if (_height[1] === AUTO$6) {
                       var _old = item.height;
 
-                      var _v = item.__height = _computedStyle2[HEIGHT$5] = maxCross - _marginTop2 - _marginBottom2 - _paddingTop - _paddingBottom - _borderTopWidth - _borderBottomWidth;
+                      var _v = maxCross - _marginTop2 - _marginBottom2 - _paddingTop - _paddingBottom - _borderTopWidth - _borderBottomWidth;
 
                       var _d = _v - _old;
 
@@ -22645,7 +22684,7 @@
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
               var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
 
-              if (fw >= 0) {
+              if (fw >= -1e-10) {
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,
@@ -22732,7 +22771,7 @@
                 } // 放得下继续
 
 
-                if (_fw2 >= 0) {
+                if (_fw2 >= -1e-10) {
                   lineClampCount = item.__layout({
                     x: x,
                     y: y,
@@ -23496,6 +23535,7 @@
       PADDING_BOTTOM$3 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
       PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
+      FLEX_BASIS$3 = _enums$STYLE_KEY$g.FLEX_BASIS,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -23999,7 +24039,8 @@
         var w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var width = currentStyle[WIDTH$6],
+        var flexBasis = currentStyle[FLEX_BASIS$3],
+            width = currentStyle[WIDTH$6],
             height = currentStyle[HEIGHT$6],
             marginLeft = currentStyle[MARGIN_LEFT$4],
             marginTop = currentStyle[MARGIN_TOP$2],
@@ -24014,24 +24055,53 @@
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$4],
             borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$6];
         var main = isDirectionRow ? width : height;
-        var cross = isDirectionRow ? height : width;
+        var cross = isDirectionRow ? height : width; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        if (main[1] !== AUTO$7) {
-          b = max = min = main[0];
-        } else if (main[1] === PERCENT$a) {
-          b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
-        } else if (main[1] === REM$8) {
-          b = max = main[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (main[1] === VW$8) {
-          b = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$8) {
-          b = max = main[0] * this.root.height * 0.01;
-        } // 固定尺寸比例计算
+        var isFixed = [PX$9, PERCENT$a, REM$8, VW$8, VH$8].indexOf(flexBasis[1]) > -1;
+
+        if (isFixed) {
+          if (flexBasis[1] === PX$9) {
+            b = max = min = flexBasis[0];
+          } else if (flexBasis[1] === PERCENT$a) {
+            b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (flexBasis[1] === REM$8) {
+            b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE$a];
+          } else if (flexBasis[1] === VW$8) {
+            b = max = min = flexBasis[0] * this.root.width * 0.01;
+          } else if (flexBasis[1] === VH$8) {
+            b = max = min = flexBasis[0] * this.root.height * 0.01;
+          }
+        } else if ([PX$9, PERCENT$a, REM$8, VW$8, VH$8].indexOf(main[1]) > -1) {
+          if (main[1] === PX$9) {
+            b = max = min = main[0];
+          } else if (main[1] === PERCENT$a) {
+            b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (main[1] === REM$8) {
+            b = max = min = main[0] * this.root.computedStyle[FONT_SIZE$a];
+          } else if (main[1] === VW$8) {
+            b = max = min = main[0] * this.root.width * 0.01;
+          } else if (main[1] === VH$8) {
+            b = max = min = main[0] * this.root.height * 0.01;
+          }
+        } // auto和content固定尺寸比例计算
         else if (__loadImg.source || __loadImg.error) {
             if (cross[1] !== AUTO$7) {
-              cross = cross[1] === PX$9 ? cross[0] : cross[0] * 0.01 * (isDirectionRow ? h : w);
+              if (cross[1] === PX$9) {
+                cross = cross[0];
+              } else if (cross[1] === PERCENT$a) {
+                cross = cross[0] * 0.01 * (isDirectionRow ? h : w);
+              } else if (cross[1] === REM$8) {
+                cross = cross[0] * this.root.computedStyle[FONT_SIZE$a];
+              } else if (cross[1] === VW$8) {
+                cross = cross[0] * this.root.width * 0.01;
+              } else if (cross[1] === VH$8) {
+                cross = cross[0] * this.root.height * 0.01;
+              }
+
               var ratio = __loadImg.width / __loadImg.height;
               b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
+            } else {
+              b = max = min = isDirectionRow ? __loadImg.width : __loadImg.height;
             }
           } // border也得计算在内
 
@@ -24341,6 +24411,7 @@
       FILL_RULE = _enums$STYLE_KEY$h.FILL_RULE,
       VISIBILITY$5 = _enums$STYLE_KEY$h.VISIBILITY,
       FONT_SIZE$b = _enums$STYLE_KEY$h.FONT_SIZE,
+      FLEX_BASIS$4 = _enums$STYLE_KEY$h.FLEX_BASIS,
       _enums$NODE_KEY$7 = enums.NODE_KEY,
       NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
@@ -24348,8 +24419,7 @@
       NODE_IS_MASK$1 = _enums$NODE_KEY$7.NODE_IS_MASK,
       NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
       NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE;
-  var AUTO$8 = o.AUTO,
-      PX$a = o.PX,
+  var PX$a = o.PX,
       PERCENT$b = o.PERCENT,
       REM$9 = o.REM,
       VW$9 = o.VW,
@@ -24523,7 +24593,8 @@
         var w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var width = currentStyle[WIDTH$7],
+        var flexBasis = currentStyle[FLEX_BASIS$4],
+            width = currentStyle[WIDTH$7],
             height = currentStyle[HEIGHT$7],
             marginLeft = currentStyle[MARGIN_LEFT$5],
             marginTop = currentStyle[MARGIN_TOP$3],
@@ -24537,18 +24608,34 @@
             borderRightWidth = currentStyle[BORDER_RIGHT_WIDTH$6],
             borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$5],
             borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$7];
-        var main = isDirectionRow ? width : height;
+        var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        if (main[1] !== AUTO$8) {
-          b = max = main[0];
-        } else if (main[1] === PERCENT$b) {
-          b = max = main[0] * 0.01 * (isDirectionRow ? w : h);
-        } else if (main[1] === REM$9) {
-          b = max = main[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (main[1] === VW$9) {
-          b = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$9) {
-          b = max = main[0] * this.root.height * 0.01;
+        var isFixed = [PX$a, PERCENT$b, REM$9, VW$9, VH$9].indexOf(flexBasis[1]) > -1;
+
+        if (isFixed) {
+          if (flexBasis[1] === PX$a) {
+            b = max = min = flexBasis[0];
+          } else if (flexBasis[1] === PERCENT$b) {
+            b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (flexBasis[1] === REM$9) {
+            b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE$b];
+          } else if (flexBasis[1] === VW$9) {
+            b = max = min = flexBasis[0] * this.root.width * 0.01;
+          } else if (flexBasis[1] === VH$9) {
+            b = max = min = flexBasis[0] * this.root.height * 0.01;
+          }
+        } else if ([PX$a, PERCENT$b, REM$9, VW$9, VH$9].indexOf(main[1]) > -1) {
+          if (main[1] === PX$a) {
+            b = max = min = main[0];
+          } else if (main[1] === PERCENT$b) {
+            b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+          } else if (main[1] === REM$9) {
+            b = max = min = main[0] * this.root.computedStyle[FONT_SIZE$b];
+          } else if (main[1] === VW$9) {
+            b = max = min = main[0] * this.root.width * 0.01;
+          } else if (main[1] === VH$9) {
+            b = max = min = main[0] * this.root.height * 0.01;
+          }
         } // border也得计算在内
 
 
@@ -25305,6 +25392,11 @@
         return this.__currentProps;
       }
     }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER$1;
+      }
+    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || name.charAt(0) !== '$') {
@@ -25341,11 +25433,6 @@
         if (Geom.hasRegister(name)) {
           delete REGISTER$1[name];
         }
-      }
-    }, {
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER$1;
       }
     }]);
 
@@ -26487,16 +26574,16 @@
         }]);
       }
     }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
       key: "__set",
       value: function __set(key, value) {
         this.list.forEach(function (item) {
           item[key] = value;
         });
-      }
-    }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
       }
     }, {
       key: "playbackRate",
@@ -29817,7 +29904,7 @@
   var isNil$8 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$7 = util.isFunction;
-  var AUTO$9 = o.AUTO,
+  var AUTO$8 = o.AUTO,
       PX$b = o.PX,
       PERCENT$c = o.PERCENT,
       INHERIT$5 = o.INHERIT;
@@ -29877,7 +29964,17 @@
 
         if (root && root instanceof Root) {
           if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-            root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+            var target = root.__touchstartTarget;
+
+            var event = root.__wrapEvent(e);
+
+            event.target = target;
+
+            while (target) {
+              target.__emitEvent(event, true);
+
+              target = target.domParent;
+            }
           } else {
             root.__cb(e);
           }
@@ -29889,7 +29986,7 @@
 
   function isFixedWidthOrHeight(node, k) {
     var c = node.currentStyle[k];
-    return c[1] !== AUTO$9;
+    return c[1] !== AUTO$8;
   } // 除了固定尺寸，父级也不能是flex或变化flex
 
 
@@ -31599,7 +31696,7 @@
               var height = cs[HEIGHT$8];
               var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
-              if (height[1] === AUTO$9) {
+              if (height[1] === AUTO$8) {
                 var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
                 var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
@@ -31618,8 +31715,8 @@
                         bottom = _item$currentStyle[BOTTOM$4],
                         _height2 = _item$currentStyle[HEIGHT$8]; // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
 
-                    if (top[1] === AUTO$9) {
-                      if (bottom[1] === AUTO$9) {
+                    if (top[1] === AUTO$8) {
+                      if (bottom[1] === AUTO$8) {
                         var prev = _item.prev;
 
                         while (prev) {
@@ -31734,7 +31831,7 @@
                     _top = _item2$currentStyle[TOP$4],
                     _bottom = _item2$currentStyle[BOTTOM$4];
 
-                if (_top[1] === AUTO$9 && _bottom[1] === AUTO$9) {
+                if (_top[1] === AUTO$8 && _bottom[1] === AUTO$8) {
                   var _prev = _item2.prev;
 
                   while (_prev) {

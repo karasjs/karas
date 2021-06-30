@@ -53,7 +53,6 @@ karas.parse(
                         "d": "inline-block",
                         "ai": "center",
                         "fz": 40,
-                        "ff": "pingfangsc-regular",
                         "c": "rgba(179, 146, 116, 1)"
                       }
                   },

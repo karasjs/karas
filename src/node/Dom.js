@@ -988,8 +988,8 @@ class Dom extends Xom {
           else {
             // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
             let fw = item.__tryLayInline(w + data.x - x, w);
-            // 放得下继续
-            if(fw >= 0) {
+            // 放得下继续，奇怪的精度问题，加上阈值
+            if(fw >= (-1e-10)) {
               item.__layout({
                 x,
                 y,
@@ -1144,7 +1144,7 @@ class Dom extends Xom {
           // 非开头先尝试是否放得下
           let fw = item.__tryLayInline(w - x + data.x);
           // 放得下继续
-          if(fw >= 0) {
+          if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
               x,
               y,
@@ -2066,7 +2066,7 @@ class Dom extends Xom {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
           let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
           // 放得下继续
-          if(fw >= 0) {
+          if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
               x,
               y,
@@ -2153,7 +2153,7 @@ class Dom extends Xom {
             }
           }
           // 放得下继续
-          if(fw >= 0) {
+          if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
               x,
               y,

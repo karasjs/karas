@@ -10924,7 +10924,7 @@
                 count = 0;
                 lineCount++;
                 lastChar = null; // 换行后连续字符reduce不生效重新计数
-              } // TODO: 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
+              } // 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
               else if (count > w + 1e-10) {
                   // 多行文本截断，这里肯定需要回退
                   if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
@@ -21082,10 +21082,10 @@
                 }
               } else {
                 // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
-                var fw = item.__tryLayInline(w + data.x - x, w); // 放得下继续
+                var fw = item.__tryLayInline(w + data.x - x, w); // 放得下继续，奇怪的精度问题，加上阈值
 
 
-                if (fw >= 0) {
+                if (fw >= -1e-10) {
                   item.__layout({
                     x: x,
                     y: y,
@@ -21253,7 +21253,7 @@
                 var _fw = item.__tryLayInline(w - x + data.x); // 放得下继续
 
 
-                if (_fw >= 0) {
+                if (_fw >= -1e-10) {
                   lineClampCount = item.__layout({
                     x: x,
                     y: y,
@@ -22297,7 +22297,7 @@
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
               var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
 
-              if (fw >= 0) {
+              if (fw >= -1e-10) {
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,
@@ -22384,7 +22384,7 @@
                 } // 放得下继续
 
 
-                if (_fw2 >= 0) {
+                if (_fw2 >= -1e-10) {
                   lineClampCount = item.__layout({
                     x: x,
                     y: y,
@@ -34259,7 +34259,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.14-alpha1";
+  var version = "0.58.14-beta1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

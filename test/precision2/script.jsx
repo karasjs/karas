@@ -57,7 +57,7 @@ karas.parse(
                         "c": "rgba(179, 146, 116, 1)"
                       }
                   },
-                "children": ["当个888席位"]
+                "children": ["8"]
               }
             ]
           }

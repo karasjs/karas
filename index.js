@@ -94,7 +94,7 @@
     if (typeof Proxy === "function") return true;
 
     try {
-      Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
+      Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
       return true;
     } catch (e) {
       return false;
@@ -183,18 +183,21 @@
   }
 
   function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
   }
 
   function _iterableToArrayLimit(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
+
+    if (_i == null) return;
     var _arr = [];
     var _n = true;
     var _d = false;
-    var _e = undefined;
+
+    var _s, _e;
 
     try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
         _arr.push(_s.value);
 
         if (i && _arr.length === i) break;
@@ -9427,12 +9430,13 @@
         };
       }
     }, {
-      key: "genUuid",
-      value: function genUuid() {
-        return uuid++;
-      }
-    }, {
       key: "CONFIG",
+      get: function get() {
+        return {
+          SIZE: SIZE,
+          NUMBER: NUMBER$2
+        };
+      },
       set: function set(v) {
         if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
           return;
@@ -9441,17 +9445,16 @@
         SIZE = v.SIZE;
         NUMBER$2 = v.NUMBER;
         MAX = SIZE[SIZE.length - 1];
-      },
-      get: function get() {
-        return {
-          SIZE: SIZE,
-          NUMBER: NUMBER$2
-        };
       }
     }, {
       key: "MAX",
       get: function get() {
         return MAX;
+      }
+    }, {
+      key: "genUuid",
+      value: function genUuid() {
+        return uuid++;
       }
     }]);
 
@@ -10273,6 +10276,11 @@
         return this.__pos;
       }
     }], [{
+      key: "MAX",
+      get: function get() {
+        return Page.MAX;
+      }
+    }, {
       key: "getInstance",
       value: function getInstance(bbox, x1, y1) {
         var w = Math.ceil(bbox[2] - bbox[0]);
@@ -10520,11 +10528,6 @@
             width = cache.width,
             height = cache.height;
         ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
-      }
-    }, {
-      key: "MAX",
-      get: function get() {
-        return Page.MAX;
       }
     }]);
 
@@ -12145,6 +12148,11 @@
         return this.__isDestroyed;
       }
     }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER;
+      }
+    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || !/^[A-Z]/.test(name)) {
@@ -12181,11 +12189,6 @@
         if (Component.hasRegister(name)) {
           delete REGISTER[name];
         }
-      }
-    }, {
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER;
       }
     }]);
 
@@ -24998,6 +25001,11 @@
         return this.__currentProps;
       }
     }], [{
+      key: "REGISTER",
+      get: function get() {
+        return REGISTER$1;
+      }
+    }, {
       key: "getRegister",
       value: function getRegister(name) {
         if (!name || !util.isString(name) || name.charAt(0) !== '$') {
@@ -25034,11 +25042,6 @@
         if (Geom.hasRegister(name)) {
           delete REGISTER$1[name];
         }
-      }
-    }, {
-      key: "REGISTER",
-      get: function get() {
-        return REGISTER$1;
       }
     }]);
 
@@ -26190,16 +26193,16 @@
         }]);
       }
     }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
       key: "__set",
       value: function __set(key, value) {
         this.list.forEach(function (item) {
           item[key] = value;
         });
-      }
-    }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
       }
     }, {
       key: "playbackRate",

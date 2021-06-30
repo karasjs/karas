@@ -37,6 +37,7 @@ const {
     PADDING_BOTTOM,
     PADDING_LEFT,
     FONT_SIZE,
+    FLEX_BASIS,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -545,6 +546,7 @@ class Img extends Dom {
     let { w, h } = data;
     // 计算需考虑style的属性
     let {
+      [FLEX_BASIS]: flexBasis,
       [WIDTH]: width,
       [HEIGHT]: height,
       [MARGIN_LEFT]: marginLeft,
@@ -562,27 +564,65 @@ class Img extends Dom {
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     let cross = isDirectionRow ? height : width;
-    if(main[1] !== AUTO) {
-      b = max = min = main[0];
+    // basis3种情况：auto、固定、content，只区分固定和其它
+    let isFixed = [PX, PERCENT, REM, VW, VH].indexOf(flexBasis[1]) > -1;
+    if(isFixed) {
+      if(flexBasis[1] === PX) {
+        b = max = min = flexBasis[0];
+      }
+      else if(flexBasis[1] === PERCENT) {
+        b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
+      }
+      else if(flexBasis[1] === REM) {
+        b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(flexBasis[1] === VW) {
+        b = max = min = flexBasis[0] * this.root.width * 0.01;
+      }
+      else if(flexBasis[1] === VH) {
+        b = max = min = flexBasis[0] * this.root.height * 0.01;
+      }
     }
-    else if(main[1] === PERCENT) {
-      b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+    else if(([PX, PERCENT, REM, VW, VH].indexOf(main[1]) > -1)) {
+      if(main[1] === PX) {
+        b = max = min = main[0];
+      }
+      else if(main[1] === PERCENT) {
+        b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
+      }
+      else if(main[1] === REM) {
+        b = max = min = main[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(main[1] === VW) {
+        b = max = min = main[0] * this.root.width * 0.01;
+      }
+      else if(main[1] === VH) {
+        b = max = min = main[0] * this.root.height * 0.01;
+      }
     }
-    else if(main[1] === REM) {
-      b = max = main[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(main[1] === VW) {
-      b = max = main[0] * this.root.width * 0.01;
-    }
-    else if(main[1] === VH) {
-      b = max = main[0] * this.root.height * 0.01;
-    }
-    // 固定尺寸比例计算
+    // auto和content固定尺寸比例计算
     else if(__loadImg.source || __loadImg.error) {
       if(cross[1] !== AUTO) {
-        cross = cross[1] === PX ? cross[0] : cross[0] * 0.01 * (isDirectionRow ? h : w);
+        if(cross[1] === PX) {
+          cross = cross[0];
+        }
+        else if(cross[1] === PERCENT) {
+          cross = cross[0] * 0.01 * (isDirectionRow ? h : w);
+        }
+        else if(cross[1] === REM) {
+          cross = cross[0] * this.root.computedStyle[FONT_SIZE];
+        }
+        else if(cross[1] === VW) {
+          cross = cross[0] * this.root.width * 0.01;
+        }
+        else if(cross[1] === VH) {
+          cross = cross[0] * this.root.height * 0.01;
+        }
         let ratio = __loadImg.width / __loadImg.height;
         b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
+      }
+      else {
+        b = max = min = isDirectionRow ? __loadImg.width : __loadImg.height;
       }
     }
     // border也得计算在内

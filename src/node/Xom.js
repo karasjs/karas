@@ -338,22 +338,67 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
-    let mpb;
     if(isDirectionRow) {
       let mp = this.__calMp(marginLeft, w, !isDirectItem)
         + this.__calMp(marginRight, w, !isDirectItem)
         + this.__calMp(paddingLeft, w, !isDirectItem)
         + this.__calMp(paddingRight, w, !isDirectItem);
-      mpb = borderLeftWidth[0] + borderRightWidth[0] + mp;
-      res = res.map(item => item + mpb);
+      if(borderLeftWidth[1] === PX) {
+        mp += borderLeftWidth[0];
+      }
+      else if(borderLeftWidth[1] === REM) {
+        mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(borderLeftWidth[1] === VW) {
+        mp += borderLeftWidth[0] * this.root.width * 0.01;
+      }
+      else if(borderLeftWidth[1] === VH) {
+        mp += borderLeftWidth[0] * this.root.height * 0.01;
+      }
+      if(borderRightWidth[1] === PX) {
+        mp += borderRightWidth[0];
+      }
+      else if(borderRightWidth[1] === REM) {
+        mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(borderRightWidth[1] === VW) {
+        mp += borderRightWidth[0] * this.root.width * 0.01;
+      }
+      else if(borderRightWidth[1] === VH) {
+        mp += borderRightWidth[0] * this.root.height * 0.01;
+      }
+      res = res.map(item => item + mp);
     }
     else {
       let mp = this.__calMp(marginTop, w, !isDirectItem)
         + this.__calMp(marginBottom, w, !isDirectItem)
         + this.__calMp(paddingTop, w, !isDirectItem)
         + this.__calMp(paddingBottom, w, !isDirectItem);
-      mpb = borderTopWidth[0] + borderBottomWidth[0] + mp;
-      res = res.map(item => item + mpb);
+      if(borderTopWidth[1] === PX) {
+        mp += borderTopWidth[0];
+      }
+      else if(borderTopWidth[1] === REM) {
+        mp += borderTopWidth[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(borderTopWidth[1] === VW) {
+        mp += borderTopWidth[0] * this.root.width * 0.01;
+      }
+      else if(borderTopWidth[1] === VH) {
+        mp += borderTopWidth[0] * this.root.height * 0.01;
+      }
+      if(borderBottomWidth[1] === PX) {
+        mp += borderBottomWidth[0];
+      }
+      else if(borderBottomWidth[1] === REM) {
+        mp += borderBottomWidth[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(borderBottomWidth[1] === VW) {
+        mp += borderBottomWidth[0] * this.root.width * 0.01;
+      }
+      else if(borderBottomWidth[1] === VH) {
+        mp += borderBottomWidth[0] * this.root.height * 0.01;
+      }
+      res = res.map(item => item + mp);
     }
     return res;
   }
@@ -2103,8 +2148,7 @@ class Xom extends Node {
     }
     // touchmove之类强制的直接由Root通知即可
     if(force) {
-      e.target = this;
-      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+      if(computedStyle[POINTER_EVENTS] !== 'none' && util.isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
       return true;

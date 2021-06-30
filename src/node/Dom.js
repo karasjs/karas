@@ -726,21 +726,21 @@ class Dom extends Xom {
       }
     }
     // 已声明主轴尺寸的，当basis是auto时为值
-    else if((main[1] === PX || main[1] === PERCENT) && isAuto) {
+    else if(([PX, PERCENT, REM, VW, VH].indexOf(main[1]) > -1) && isAuto) {
       if(main[1] === PX) {
         b = fixedSize = main[0];
       }
-      else if(flexBasis[1] === PERCENT) {
+      else if(main[1] === PERCENT) {
         b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
       }
-      else if(flexBasis[1] === REM) {
-        b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
+      else if(main[1] === REM) {
+        b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE];
       }
-      else if(flexBasis[1] === VW) {
-        b = fixedSize = flexBasis[0] * this.root.width * 0.01;
+      else if(main[1] === VW) {
+        b = fixedSize = main[0] * this.root.width * 0.01;
       }
-      else if(flexBasis[1] === VH) {
-        b = fixedSize = flexBasis[0] * this.root.height * 0.01;
+      else if(main[1] === VH) {
+        b = fixedSize = main[0] * this.root.height * 0.01;
       }
     }
     // 非固定尺寸的basis为auto时降级为content
@@ -991,8 +991,8 @@ class Dom extends Xom {
           else {
             // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
             let fw = item.__tryLayInline(w + data.x - x, w);
-            // 放得下继续
-            if(fw >= 0) {
+            // 放得下继续，奇怪的精度问题，加上阈值
+            if(fw >= (-1e-10)) {
               item.__layout({
                 x,
                 y,
@@ -1147,7 +1147,7 @@ class Dom extends Xom {
           // 非开头先尝试是否放得下
           let fw = item.__tryLayInline(w - x + data.x);
           // 放得下继续
-          if(fw >= 0) {
+          if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
               x,
               y,
@@ -1854,7 +1854,7 @@ class Dom extends Xom {
             } = computedStyle;
             if(height[1] === AUTO) {
               let old = item.height;
-              let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              let v = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
               item.__sy4 += d;
               item.__sy5 += d;
@@ -2069,7 +2069,7 @@ class Dom extends Xom {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
           let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
           // 放得下继续
-          if(fw >= 0) {
+          if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
               x,
               y,
@@ -2156,7 +2156,7 @@ class Dom extends Xom {
             }
           }
           // 放得下继续
-          if(fw >= 0) {
+          if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
               x,
               y,

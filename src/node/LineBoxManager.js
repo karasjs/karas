@@ -6,16 +6,16 @@ import LineBox from './LineBox';
  * 同时LineBox可能连续也可能不连续，不连续的是中间有block之类的隔离开来
  */
 class LineBoxManager {
-  constructor(x, y) {
+  constructor(x, y, lineHeight, baseLine) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
     this.__maxX = x;
     this.__domList = [];
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
-    this.__isNewLine = true; // 区域内是否是新行，dom开头肯定是
-    this.__lineHeight = 0;
-    this.__baseLine = 0;
+    this.__isNewLine = true; // 区域内是否是新行，容器dom（block）开头肯定是
+    this.__lineHeight = lineHeight;
+    this.__baseLine = baseLine;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
   }
 
@@ -24,7 +24,7 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   genLineBox(x, y) {
-    let lineBox = new LineBox(x, y);
+    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseLine);
     this.__list.push(lineBox);
     this.__isEnd = true;
     return lineBox;
@@ -58,10 +58,10 @@ class LineBoxManager {
     if(this.__isNewLine) {
       this.__isNewLine = false;
       lineBox = this.genLineBox(o.x, o.y);
-      if(this.__lineHeight) {
-        lineBox.__setLB(this.__lineHeight, this.__baseLine);
-        this.__lineHeight = this.__baseLine = 0;
-      }
+      // if(this.__lineHeight) {
+      //   lineBox.__setLB(this.__lineHeight, this.__baseLine);
+      //   this.__lineHeight = this.__baseLine = 0;
+      // }
     }
     else {
       let list = this.__list;
@@ -144,16 +144,16 @@ class LineBoxManager {
    * @param b
    * @private
    */
-  __setLB(l, b) {
-    let length = this.__list.length;
-    if(length && !this.isNewLine) {
-      this.__list[length - 1].__setLB(l, b);
-    }
-    else {
-      this.__lineHeight = Math.max(this.__lineHeight, l);
-      this.__baseLine = Math.max(this.__baseLine, b);
-    }
-  }
+  // __setLB(l, b) {
+  //   let length = this.__list.length;
+  //   if(length && !this.isNewLine) {
+  //     this.__list[length - 1].__setLB(l, b);
+  //   }
+  //   else {
+  //     this.__lineHeight = Math.max(this.__lineHeight, l);
+  //     this.__baseLine = Math.max(this.__baseLine, b);
+  //   }
+  // }
 
   get size() {
     return this.__list.length;
@@ -173,8 +173,9 @@ class LineBoxManager {
     if(length) {
       return list[length - 1].endY;
     }
+    return this.__y;
     // 最后一行可能为空inline，需考虑lh
-    return this.__y + this.__lineHeight;
+    // return this.__y + this.__lineHeight;
   }
 
   get isEnd() {

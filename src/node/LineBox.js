@@ -13,22 +13,22 @@ const { STYLE_KEY: {
 
 /**
  * css中常见的概念，一行内容，里面可能有若干不同的内容，仅在布局阶段出现，不参与渲染逻辑
- * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inline等节点，而内容TextBox则属于Text
+ * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inlineBlock等节点，而内容TextBox则属于Text
  * 一个Text可能因为换行产生多个TextBox，从而形成不同行的内容就属于不同的LineBox
  * 本类属于block（包含flex和inlineBlock，下同）节点下，一个dom会有个专门列表，
  * 包含若干个LineBox保存着若干行文本内容TextBox，不直接关联Text，
  * inline则不会有此对象和列表，其复用最近block父层的，这样解决嵌套问题，
  * block在布局时将列表向孩子传递下去，每遇到block会重新生成
  * 每当发生换行时，专门列表中会新生成一个LineBox，让后续内容继续跟随新的LB
- * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseLine，inline等节点按最后一行baseLine
+ * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseLine，inlineBlock等节点按最后一行baseLine
  */
 class LineBox {
-  constructor(x, y) {
+  constructor(x, y, lineHeight, baseLine) {
     this.__list = [];
     this.__x = x;
     this.__y = y;
-    this.__lineHeight = 0; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseLine
-    this.__baseLine = 0;
+    this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseLine
+    this.__baseLine = baseLine;
   }
 
   add(item) {
@@ -63,10 +63,10 @@ class LineBox {
    * @param b
    * @private
    */
-  __setLB(l, b) {
-    this.__lineHeight = l;
-    this.__baseLine = b;
-  }
+  // __setLB(l, b) {
+  //   this.__lineHeight = l;
+  //   this.__baseLine = b;
+  // }
 
   get list() {
     return this.__list;

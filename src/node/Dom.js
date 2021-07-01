@@ -486,7 +486,7 @@ class Dom extends Xom {
     css.computeReflow(this, this.isShadowRoot);
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
     let { x, y, w, h, lineBoxManager } = data;
     // 计算需考虑style的属性
     let {
@@ -494,8 +494,10 @@ class Dom extends Xom {
       [FLEX_DIRECTION]: flexDirection,
       [WIDTH]: width,
       [HEIGHT]: height,
-      [LINE_HEIGHT]: lineHeight,
     } = currentStyle;
+    let {
+      [LINE_HEIGHT]: lineHeight,
+    } = computedStyle;
     let main = isDirectionRow ? width : height;
     // 只绝对值生效，%不生效，依旧要判断
     if(main[1] === PX) {
@@ -692,7 +694,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {
@@ -701,8 +703,10 @@ class Dom extends Xom {
       [WIDTH]: width,
       [HEIGHT]: height,
       [FLEX_BASIS]: flexBasis,
-      [LINE_HEIGHT]: lineHeight,
     } = currentStyle;
+    let {
+      [LINE_HEIGHT]: lineHeight,
+    } = computedStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
@@ -930,7 +934,6 @@ class Dom extends Xom {
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
-    console.log('block', this.tagName, x, y);
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
     let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));

@@ -20892,7 +20892,8 @@
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle;
+            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle;
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -20902,8 +20903,8 @@
         var display = currentStyle[DISPLAY$6],
             flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$5],
-            height = currentStyle[HEIGHT$5],
-            lineHeight = currentStyle[LINE_HEIGHT$4];
+            height = currentStyle[HEIGHT$5];
+        var lineHeight = computedStyle[LINE_HEIGHT$4];
         var main = isDirectionRow ? width : height; // 只绝对值生效，%不生效，依旧要判断
 
         if (main[1] === PX$8) {
@@ -21132,7 +21133,8 @@
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle;
+            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle;
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -21142,8 +21144,8 @@
             flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5],
-            flexBasis = currentStyle[FLEX_BASIS$2],
-            lineHeight = currentStyle[LINE_HEIGHT$4];
+            flexBasis = currentStyle[FLEX_BASIS$2];
+        var lineHeight = computedStyle[LINE_HEIGHT$4];
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
         var isAuto = flexBasis[1] === AUTO$6;
@@ -21396,8 +21398,7 @@
             lineHeight = computedStyle[LINE_HEIGHT$4]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
-        var lineClampCount = 0;
-        console.log('block', this.tagName, x, y); // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
+        var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
         // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
 
         var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle)); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
@@ -22369,18 +22370,18 @@
                 item.__offsetY(_diff3 * 0.5, true);
               }
             } else if (alignSelf === 'stretch') {
-              var _computedStyle2 = item.computedStyle,
+              var computedStyle = item.computedStyle,
                   height = item.currentStyle[HEIGHT$5];
-              var borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
-                  borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
-                  marginTop = _computedStyle2[MARGIN_TOP$1],
-                  marginBottom = _computedStyle2[MARGIN_BOTTOM$1],
-                  paddingTop = _computedStyle2[PADDING_TOP$2],
-                  paddingBottom = _computedStyle2[PADDING_BOTTOM$2];
+              var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+                  borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
+                  marginTop = computedStyle[MARGIN_TOP$1],
+                  marginBottom = computedStyle[MARGIN_BOTTOM$1],
+                  paddingTop = computedStyle[PADDING_TOP$2],
+                  paddingBottom = computedStyle[PADDING_BOTTOM$2];
 
               if (height[1] === AUTO$6) {
                 var old = item.height;
-                var v = item.__height = _computedStyle2[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                var v = item.__height = computedStyle[HEIGHT$5] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 var d = v - old;
                 item.__sy4 += d;
                 item.__sy5 += d;
@@ -22418,7 +22419,7 @@
                   }
                 } // 默认stretch
                 else {
-                    var _computedStyle3 = item.computedStyle,
+                    var _computedStyle2 = item.computedStyle,
                         _item$currentStyle = item.currentStyle,
                         display = _item$currentStyle[DISPLAY$6],
                         flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
@@ -22430,12 +22431,12 @@
                       }));
                     }
 
-                    var _borderTopWidth = _computedStyle3[BORDER_TOP_WIDTH$3],
-                        _borderBottomWidth = _computedStyle3[BORDER_BOTTOM_WIDTH$3],
-                        _marginTop2 = _computedStyle3[MARGIN_TOP$1],
-                        _marginBottom2 = _computedStyle3[MARGIN_BOTTOM$1],
-                        _paddingTop = _computedStyle3[PADDING_TOP$2],
-                        _paddingBottom = _computedStyle3[PADDING_BOTTOM$2];
+                    var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
+                        _borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
+                        _marginTop2 = _computedStyle2[MARGIN_TOP$1],
+                        _marginBottom2 = _computedStyle2[MARGIN_BOTTOM$1],
+                        _paddingTop = _computedStyle2[PADDING_TOP$2],
+                        _paddingBottom = _computedStyle2[PADDING_BOTTOM$2];
 
                     if (_height[1] === AUTO$6) {
                       var _old = item.height;
@@ -22469,19 +22470,19 @@
                   item.__offsetX(_diff9 * 0.5, true);
                 }
               } else if (alignSelf === 'stretch') {
-                var _computedStyle4 = item.computedStyle,
+                var _computedStyle3 = item.computedStyle,
                     width = item.currentStyle[WIDTH$5];
-                var borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
-                    borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
-                    marginRight = _computedStyle4[MARGIN_RIGHT$3],
-                    marginLeft = _computedStyle4[MARGIN_LEFT$3],
-                    paddingRight = _computedStyle4[PADDING_RIGHT$3],
-                    paddingLeft = _computedStyle4[PADDING_LEFT$4];
+                var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$4],
+                    borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
+                    marginRight = _computedStyle3[MARGIN_RIGHT$3],
+                    marginLeft = _computedStyle3[MARGIN_LEFT$3],
+                    paddingRight = _computedStyle3[PADDING_RIGHT$3],
+                    paddingLeft = _computedStyle3[PADDING_LEFT$4];
 
                 if (width[1] === AUTO$6) {
                   var _old2 = item.width;
 
-                  var _v2 = item.__width = _computedStyle4[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                  var _v2 = item.__width = _computedStyle3[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                   var _d2 = _v2 - _old2;
 
@@ -22521,19 +22522,19 @@
                     }
                   } // 默认stretch
                   else {
-                      var _computedStyle5 = item.computedStyle,
+                      var _computedStyle4 = item.computedStyle,
                           _width = item.currentStyle[WIDTH$5];
-                      var _borderRightWidth = _computedStyle5[BORDER_RIGHT_WIDTH$4],
-                          _borderLeftWidth = _computedStyle5[BORDER_LEFT_WIDTH$5],
-                          _marginRight = _computedStyle5[MARGIN_RIGHT$3],
-                          _marginLeft = _computedStyle5[MARGIN_LEFT$3],
-                          _paddingRight = _computedStyle5[PADDING_RIGHT$3],
-                          _paddingLeft = _computedStyle5[PADDING_LEFT$4];
+                      var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
+                          _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
+                          _marginRight = _computedStyle4[MARGIN_RIGHT$3],
+                          _marginLeft = _computedStyle4[MARGIN_LEFT$3],
+                          _paddingRight = _computedStyle4[PADDING_RIGHT$3],
+                          _paddingLeft = _computedStyle4[PADDING_LEFT$4];
 
                       if (_width[1] === AUTO$6) {
                         var _old3 = item.width;
 
-                        var _v3 = item.__width = _computedStyle5[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
+                        var _v3 = item.__width = _computedStyle4[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
 
                         var _d3 = _v3 - _old3;
 

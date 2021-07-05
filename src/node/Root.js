@@ -735,7 +735,7 @@ class Root extends Dom {
         this.__dom = dom.querySelector(domName);
       }
     }
-    this.__uuid = isNil(this.__dom.__uuid) ? uuid++ : this.__dom.__uuid;
+    this.__uuid = uuid++;
     this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
@@ -1806,6 +1806,10 @@ class Root extends Dom {
 
   get dom() {
     return this.__dom;
+  }
+
+  get uuid() {
+    return this.__uuid;
   }
 
   get renderMode() {

@@ -30256,7 +30256,7 @@
               }
             }
 
-        this.__uuid = isNil$8(this.__dom.__uuid) ? uuid$2++ : this.__dom.__uuid;
+        this.__uuid = uuid$2++;
         this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -31544,6 +31544,11 @@
       key: "dom",
       get: function get() {
         return this.__dom;
+      }
+    }, {
+      key: "uuid",
+      get: function get() {
+        return this.__uuid;
       }
     }, {
       key: "renderMode",

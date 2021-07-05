@@ -14398,7 +14398,7 @@
         duration: 0
       };
       var root = target.root;
-      var config = _this.__config = _this.__config = [false, // assigning
+      var config = _this.__config = [false, // assigning
       false, // inFps
       false, // isDelay
       false, // begin
@@ -14436,7 +14436,7 @@
       false, // is2
       0, // endTime
       target.__config, // nodeConfig
-      root.__config, // rootConfig
+      root && root.__config, // rootConfig，destroy后root可能为空
       false // outBeginDelay
       ];
       var iterations = _this.iterations = op.iterations;
@@ -29544,9 +29544,12 @@
     return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
   }
 
+  var EVENT_LIST = ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'];
+
   function initEvent(dom, Root) {
-    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
-      dom.addEventListener(type, function (e) {
+    var list = [];
+    EVENT_LIST.forEach(function (type) {
+      function cb(e) {
         var root = dom.__root;
 
         if (root && root instanceof Root) {
@@ -29566,7 +29569,17 @@
             root.__cb(e);
           }
         }
-      });
+      }
+
+      dom.addEventListener(type, cb);
+      list.push([type, cb]);
+    });
+    return list;
+  }
+
+  function removeEvent(dom, list) {
+    list.forEach(function (item) {
+      dom.removeEventListener(item[0], item[1]);
     });
   } // 提取出对比节点尺寸是否固定非AUTO
 
@@ -30283,12 +30296,11 @@
 
         this.refresh(null, true); // 第一次节点没有__root，渲染一次就有了才能diff
 
-        if (this.dom.__root) {
+        if (this.dom.__root && this.dom.__root instanceof Root) {
           this.dom.__root.destroy();
-        } else {
-          initEvent(this.dom, Root);
-          this.dom.__uuid = this.__uuid;
         }
+
+        this.__eventCbList = initEvent(this.dom, Root); // this.dom.__uuid = this.__uuid;
 
         this.dom.__root = this;
       }
@@ -30369,6 +30381,7 @@
         var n = this.dom;
 
         if (n) {
+          removeEvent(n, this.__eventCbList || []);
           n.__root = null;
         }
 
@@ -34262,7 +34275,7 @@
     Cache: Cache
   };
 
-  var version = "0.58.14";
+  var version = "0.58.15";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

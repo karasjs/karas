@@ -1278,7 +1278,7 @@ class Animation extends Event {
       duration: 0,
     };
     let root = target.root;
-    let config = this.__config = this.__config = [
+    let config = this.__config = [
       false, // assigning
       false, // inFps
       false, // isDelay
@@ -1323,7 +1323,7 @@ class Animation extends Event {
       false, // is2
       0, // endTime
       target.__config, // nodeConfig
-      root.__config, // rootConfig
+      root && root.__config, // rootConfig，destroy后root可能为空
       false, // outBeginDelay
     ];
     let iterations = this.iterations = op.iterations;

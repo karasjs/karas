@@ -137,9 +137,12 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
+const EVENT_LIST = ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'];
+
 function initEvent(dom, Root) {
-  ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
-    dom.addEventListener(type, e => {
+  let list = [];
+  EVENT_LIST.forEach(type => {
+    function cb(e) {
       let root = dom.__root;
       if(root && root instanceof Root) {
         if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
@@ -155,7 +158,16 @@ function initEvent(dom, Root) {
           root.__cb(e);
         }
       }
-    });
+    }
+    dom.addEventListener(type, cb);
+    list.push([type, cb]);
+  });
+  return list;
+}
+
+function removeEvent(dom, list) {
+  list.forEach(item => {
+    dom.removeEventListener(item[0], item[1]);
   });
 }
 
@@ -760,13 +772,11 @@ class Root extends Dom {
     }
     this.refresh(null, true);
     // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.dom.__root) {
+    if(this.dom.__root && this.dom.__root instanceof Root) {
       this.dom.__root.destroy();
     }
-    else {
-      initEvent(this.dom, Root);
-      this.dom.__uuid = this.__uuid;
-    }
+    this.__eventCbList = initEvent(this.dom, Root);
+    // this.dom.__uuid = this.__uuid;
     this.dom.__root = this;
   }
 
@@ -830,6 +840,7 @@ class Root extends Dom {
     this.__destroy();
     let n = this.dom;
     if(n) {
+      removeEvent(n, this.__eventCbList || []);
       n.__root = null;
     }
     let gl = this.ctx;

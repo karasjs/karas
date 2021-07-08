@@ -190,10 +190,6 @@ class LineBoxManager {
     }
   }
 
-  get isNewLine() {
-    return this.__isNewLine;
-  }
-
   get size() {
     return this.__list.length;
   }

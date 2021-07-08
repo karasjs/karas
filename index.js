@@ -20117,11 +20117,6 @@
         }
       }
     }, {
-      key: "isNewLine",
-      get: function get() {
-        return this.__isNewLine;
-      }
-    }, {
       key: "size",
       get: function get() {
         return this.__list.length;
@@ -20153,6 +20148,11 @@
       key: "isEnd",
       get: function get() {
         return this.__isEnd;
+      }
+    }, {
+      key: "isNewLine",
+      get: function get() {
+        return this.__isNewLine;
       }
     }, {
       key: "breakLine",

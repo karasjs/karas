@@ -31,6 +31,46 @@ class LineBoxManager {
   }
 
   /**
+   * inline的特殊调用，防止空内容但有mbp的inline不占位，放入一个有lineHeight的空lineBox
+   * 只有新行开头时需要，后面的无论是否有内容都会影响lineHeight
+   * @param x
+   * @param y
+   * @param l
+   * @param b
+   * @returns {LineBox}
+   */
+  genLineBoxByInlineIfNewLine(x, y, l, b) {
+    let lineHeight = Math.max(this.__lineHeight, l);
+    let baseLine = Math.max(this.__baseLine, b);
+    if(this.__isNewLine) {
+      let lineBox = new LineBox(x, y, lineHeight, baseLine);
+      this.__list.push(lineBox);
+      this.__isEnd = true;
+      this.__isNewLine = false;
+      return lineBox;
+    }
+  }
+
+  setLbOrGenLineBoxByInline(x, y, l, b) {
+    let lineHeight = Math.max(this.__lineHeight, l);
+    let baseLine = Math.max(this.__baseLine, b);
+    let lineBox;
+    if(this.__isNewLine) {
+      lineBox = new LineBox(x, y, lineHeight, baseLine);
+      this.__list.push(lineBox);
+      this.__isEnd = true;
+      this.__isNewLine = false;
+      return lineBox;
+    }
+    else {
+      let list = this.__list;
+      let length = list.length;
+      lineBox = list[length - 1];
+      lineBox.__setLB(l, b);
+    }
+  }
+
+  /**
    * 外部设置为结尾，如一个LineBox后出现一个block，此时会被隔断，不再作为流的末尾
    */
   setNotEnd() {
@@ -138,22 +178,21 @@ class LineBoxManager {
   }
 
   /**
-   * 当前有lineBox则设置lineHeight/baseLine，否则记录下来等新的设置
-   * 当是新行时不设置，留下个创建的新lineBox用
+   * inline的特殊调用，非行首无论是否有内容都设置lineBox的lineHeight
    * @param l
    * @param b
    * @private
    */
-  // __setLB(l, b) {
-  //   let length = this.__list.length;
-  //   if(length && !this.isNewLine) {
-  //     this.__list[length - 1].__setLB(l, b);
-  //   }
-  //   else {
-  //     this.__lineHeight = Math.max(this.__lineHeight, l);
-  //     this.__baseLine = Math.max(this.__baseLine, b);
-  //   }
-  // }
+  setLbByInlineIfNotNewLine(l, b) {
+    let length = this.__list.length;
+    if(length && !this.isNewLine) {
+      this.__list[length - 1].__setLB(l, b);
+    }
+  }
+
+  get isNewLine() {
+    return this.__isNewLine;
+  }
 
   get size() {
     return this.__list.length;

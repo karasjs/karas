@@ -2002,6 +2002,12 @@ class Dom extends Xom {
       [WHITE_SPACE]: whiteSpace,
       [LINE_CLAMP]: lineClamp,
       [LINE_HEIGHT]: lineHeight,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
     } = computedStyle;
     let lineClampCount = data.lineClampCount || 0;
     if(isInline && !this.__isRealInline()) {
@@ -2012,9 +2018,21 @@ class Dom extends Xom {
     if(isInline) {
       this.__config[NODE_IS_INLINE] = true;
       this.__lineBoxManager = lineBoxManager;
-      // let lineHeight = computedStyle[LINE_HEIGHT];
-      // let baseLine = css.getBaseLine(computedStyle);
-      // lineBoxManager.__setLB(lineHeight, baseLine);
+      let baseLine = css.getBaseLine(computedStyle);
+      // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+      if(marginLeft || marginRight
+        || paddingLeft || paddingRight
+        || borderLeftWidth || borderRightWidth) {
+        if(lineBoxManager.isNewLine) {
+          lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseLine);
+        }
+        else {
+          lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+        }
+      }
+      else {
+        lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+      }
       lineClamp = data.lineClamp || 0;
     }
     else {

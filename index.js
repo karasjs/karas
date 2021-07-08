@@ -19761,16 +19761,18 @@
         this.__y += diff;
       }
       /**
-       * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
+       * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
        * @param l
        * @param b
        * @private
        */
-      // __setLB(l, b) {
-      //   this.__lineHeight = l;
-      //   this.__baseLine = b;
-      // }
 
+    }, {
+      key: "__setLB",
+      value: function __setLB(l, b) {
+        this.__lineHeight = Math.max(l, this.__lineHeight);
+        this.__baseLine = Math.max(b, this.__baseLine);
+      }
     }, {
       key: "list",
       get: function get() {
@@ -19857,11 +19859,7 @@
     }, {
       key: "height",
       get: function get() {
-        var height = 0;
-        this.list.forEach(function (item) {
-          height = Math.max(height, item.outerHeight);
-        });
-        return Math.max(this.__lineHeight, height);
+        return this.lineHeight;
       }
     }, {
       key: "baseLine",
@@ -19926,6 +19924,55 @@
 
         this.__isEnd = true;
         return lineBox;
+      }
+      /**
+       * inline的特殊调用，防止空内容但有mbp的inline不占位，放入一个有lineHeight的空lineBox
+       * 只有新行开头时需要，后面的无论是否有内容都会影响lineHeight
+       * @param x
+       * @param y
+       * @param l
+       * @param b
+       * @returns {LineBox}
+       */
+
+    }, {
+      key: "genLineBoxByInlineIfNewLine",
+      value: function genLineBoxByInlineIfNewLine(x, y, l, b) {
+        var lineHeight = Math.max(this.__lineHeight, l);
+        var baseLine = Math.max(this.__baseLine, b);
+
+        if (this.__isNewLine) {
+          var lineBox = new LineBox(x, y, lineHeight, baseLine);
+
+          this.__list.push(lineBox);
+
+          this.__isEnd = true;
+          this.__isNewLine = false;
+          return lineBox;
+        }
+      }
+    }, {
+      key: "setLbOrGenLineBoxByInline",
+      value: function setLbOrGenLineBoxByInline(x, y, l, b) {
+        var lineHeight = Math.max(this.__lineHeight, l);
+        var baseLine = Math.max(this.__baseLine, b);
+        var lineBox;
+
+        if (this.__isNewLine) {
+          lineBox = new LineBox(x, y, lineHeight, baseLine);
+
+          this.__list.push(lineBox);
+
+          this.__isEnd = true;
+          this.__isNewLine = false;
+          return lineBox;
+        } else {
+          var list = this.__list;
+          var length = list.length;
+          lineBox = list[length - 1];
+
+          lineBox.__setLB(l, b);
+        }
       }
       /**
        * 外部设置为结尾，如一个LineBox后出现一个block，此时会被隔断，不再作为流的末尾
@@ -20054,23 +20101,26 @@
         });
       }
       /**
-       * 当前有lineBox则设置lineHeight/baseLine，否则记录下来等新的设置
-       * 当是新行时不设置，留下个创建的新lineBox用
+       * inline的特殊调用，非行首无论是否有内容都设置lineBox的lineHeight
        * @param l
        * @param b
        * @private
        */
-      // __setLB(l, b) {
-      //   let length = this.__list.length;
-      //   if(length && !this.isNewLine) {
-      //     this.__list[length - 1].__setLB(l, b);
-      //   }
-      //   else {
-      //     this.__lineHeight = Math.max(this.__lineHeight, l);
-      //     this.__baseLine = Math.max(this.__baseLine, b);
-      //   }
-      // }
 
+    }, {
+      key: "setLbByInlineIfNotNewLine",
+      value: function setLbByInlineIfNotNewLine(l, b) {
+        var length = this.__list.length;
+
+        if (length && !this.isNewLine) {
+          this.__list[length - 1].__setLB(l, b);
+        }
+      }
+    }, {
+      key: "isNewLine",
+      get: function get() {
+        return this.__isNewLine;
+      }
     }, {
       key: "size",
       get: function get() {
@@ -20103,11 +20153,6 @@
       key: "isEnd",
       get: function get() {
         return this.__isEnd;
-      }
-    }, {
-      key: "isNewLine",
-      get: function get() {
-        return this.__isNewLine;
       }
     }, {
       key: "breakLine",
@@ -22598,7 +22643,13 @@
         var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2],
             lineClamp = computedStyle[LINE_CLAMP$1],
-            lineHeight = computedStyle[LINE_HEIGHT$4];
+            lineHeight = computedStyle[LINE_HEIGHT$4],
+            marginLeft = computedStyle[MARGIN_LEFT$3],
+            marginRight = computedStyle[MARGIN_RIGHT$3],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
+            paddingLeft = computedStyle[PADDING_LEFT$4],
+            paddingRight = computedStyle[PADDING_RIGHT$3];
         var lineClampCount = data.lineClampCount || 0;
 
         if (isInline && !this.__isRealInline()) {
@@ -22609,9 +22660,18 @@
 
         if (isInline) {
           this.__config[NODE_IS_INLINE$1] = true;
-          this.__lineBoxManager = lineBoxManager; // let lineHeight = computedStyle[LINE_HEIGHT];
-          // let baseLine = css.getBaseLine(computedStyle);
-          // lineBoxManager.__setLB(lineHeight, baseLine);
+          this.__lineBoxManager = lineBoxManager;
+          var baseLine = css.getBaseLine(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+
+          if (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth) {
+            if (lineBoxManager.isNewLine) {
+              lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseLine);
+            } else {
+              lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+            }
+          } else {
+            lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+          }
 
           lineClamp = data.lineClamp || 0;
         } else {
@@ -22825,10 +22885,10 @@
 
 
           if (!flowChildren.length) {
-            var marginLeft = computedStyle[MARGIN_LEFT$3],
-                paddingLeft = computedStyle[PADDING_LEFT$4],
-                borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5];
-            lineBoxManager.addX(marginLeft + paddingLeft + borderLeftWidth);
+            var _marginLeft2 = computedStyle[MARGIN_LEFT$3],
+                _paddingLeft2 = computedStyle[PADDING_LEFT$4],
+                _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$5];
+            lineBoxManager.addX(_marginLeft2 + _paddingLeft2 + _borderLeftWidth2);
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
 
 

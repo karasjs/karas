@@ -58,15 +58,15 @@ class LineBox {
   }
 
   /**
-   * 防止空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
+   * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
    * @param l
    * @param b
    * @private
    */
-  // __setLB(l, b) {
-  //   this.__lineHeight = l;
-  //   this.__baseLine = b;
-  // }
+  __setLB(l, b) {
+    this.__lineHeight = Math.max(l, this.__lineHeight);
+    this.__baseLine = Math.max(b, this.__baseLine);
+  }
 
   get list() {
     return this.__list;
@@ -138,11 +138,7 @@ class LineBox {
   }
 
   get height() {
-    let height = 0;
-    this.list.forEach(item => {
-      height = Math.max(height, item.outerHeight);
-    });
-    return Math.max(this.__lineHeight, height);
+    return this.lineHeight;
   }
 
   get baseLine() {

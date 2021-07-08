@@ -21613,7 +21613,8 @@
                   }
                 }
 
-                y += item.outerHeight; // absolute/flex前置虚拟计算
+                y += item.outerHeight;
+                lineBoxManager.__lastY = y; // absolute/flex前置虚拟计算
 
                 if (isVirtual) {
                   maxW = Math.max(maxW, item.outerWidth);

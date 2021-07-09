@@ -45,13 +45,13 @@ let input = document.querySelector('input');
 let n = 0;
 animation2.on(karas.Event.FRAME, () => {
   if(n++ === 1) {
-    let a = parseFloat(t.getComputedStyle().transform[4]);
-    let b = parseFloat(t2.getComputedStyle().transform[4]);
+    let a = parseFloat(t.getComputedStyle().transform[12]);
+    let b = parseFloat(t2.getComputedStyle().transform[12]);
     input.value = a > b;
   }
 });
 animation2.on(karas.Event.FINISH, () => {
-  let a = t.getComputedStyle().transform[4];
-  let b = t2.getComputedStyle().transform[4];
+  let a = t.getComputedStyle().transform[12];
+  let b = t2.getComputedStyle().transform[12];
   input.value += '/' + (a === b);
 });

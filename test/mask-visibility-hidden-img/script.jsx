@@ -1,4 +1,4 @@
-karas.render(
+let o = karas.render(
   <canvas width="360" height="360">
     <img style={{visibility:'hidden'}} src="../image.png"/>
     <$polygon mask="1" style={{
@@ -18,3 +18,8 @@ karas.render(
   </canvas>,
   '#test'
 );
+o.on('refresh', function() {
+  let canvas = document.querySelector('canvas');
+  let input = document.querySelector('#base64');
+  input.value = canvas.toDataURL();
+});

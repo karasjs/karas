@@ -187,12 +187,12 @@ class Component extends Event {
     this.__parent = null;
   }
 
-  __emitEvent(e) {
+  __emitEvent(e, force) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
       return;
     }
-    let res = sr.__emitEvent(e);
+    let res = sr.__emitEvent(e, force);
     if(res) {
       e.target = this;
       return true;
@@ -344,7 +344,6 @@ Object.keys(change.GEOM).concat([
   'listener',
   'matrix',
   'matrixEvent',
-  'renderMatrix',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

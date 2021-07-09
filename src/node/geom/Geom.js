@@ -753,7 +753,7 @@ class Geom extends Xom {
         ctx.save();
         let me = this.matrixEvent;
         matrix = mx.multiply(me, matrix);
-        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       }
       ctx.beginPath();
       if(ctx[method + 'Style'] !== color) {
@@ -792,7 +792,7 @@ class Geom extends Xom {
         props.push(['stroke-width', strokeWidth]);
         this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       }
-      props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
+      props.push(['transform', `matrix(${joinArr(mx.m2m6(matrix), ',')})`]);
       this.addGeom('path', props);
     }
   }

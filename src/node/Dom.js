@@ -7,6 +7,7 @@ import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
+// import tf from '../style/transform';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -52,6 +53,8 @@ const {
     ALIGN_CONTENT,
     OVERFLOW,
     FONT_SIZE,
+    // PERSPECTIVE,
+    // TRANSFORM,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -483,7 +486,7 @@ class Dom extends Xom {
     css.computeReflow(this, this.isShadowRoot);
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
     let { x, y, w, h, lineBoxManager } = data;
     // 计算需考虑style的属性
     let {
@@ -492,6 +495,9 @@ class Dom extends Xom {
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
+    let {
+      [LINE_HEIGHT]: lineHeight,
+    } = computedStyle;
     let main = isDirectionRow ? width : height;
     // 只绝对值生效，%不生效，依旧要判断
     if(main[1] === PX) {
@@ -541,7 +547,7 @@ class Dom extends Xom {
             }
           }
           else {
-            let lineBoxManager = new LineBoxManager(x, y);
+            let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
             item.__layout({
               x,
               y,
@@ -562,7 +568,7 @@ class Dom extends Xom {
       }
       else if(display === 'block') {
         let countMin = 0, countMax = 0;
-        let lineBoxManager = new LineBoxManager(x, y);
+        let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
         let length = flowChildren.length;
         flowChildren.forEach((item, i) => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -632,7 +638,7 @@ class Dom extends Xom {
       }
       else {
         if(display === 'inlineBlock' || display === 'inline-block') {
-          lineBoxManager = new LineBoxManager(x, y);
+          lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
         }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -688,7 +694,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {
@@ -698,6 +704,9 @@ class Dom extends Xom {
       [HEIGHT]: height,
       [FLEX_BASIS]: flexBasis,
     } = currentStyle;
+    let {
+      [LINE_HEIGHT]: lineHeight,
+    } = computedStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
@@ -788,7 +797,7 @@ class Dom extends Xom {
           }
         }
         else {
-          let lineBoxManager = new LineBoxManager(x, y);
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
           item.__layout({
             x,
             y,
@@ -810,7 +819,7 @@ class Dom extends Xom {
     // flex的item是block/inline时，inline也会变成block统一对待
     else {
       let countMin = 0, countMax = 0;
-      let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+      let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
       let length = flowChildren.length;
       flowChildren.forEach((item, i) => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -920,13 +929,14 @@ class Dom extends Xom {
       [TEXT_ALIGN]: textAlign,
       [WHITE_SPACE]: whiteSpace,
       [LINE_CLAMP]: lineClamp,
+      [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
-    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxW = 0;
     let cw = 0;
@@ -1083,6 +1093,7 @@ class Dom extends Xom {
             }
           }
           y += item.outerHeight;
+          lineBoxManager.__lastY = y;
           // absolute/flex前置虚拟计算
           if(isVirtual) {
             maxW = Math.max(maxW, item.outerWidth);
@@ -1228,6 +1239,7 @@ class Dom extends Xom {
       [LINE_CLAMP]: lineClamp,
       [FLEX_WRAP]: flexWrap,
       [ALIGN_CONTENT]: alignContent,
+      [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
@@ -1289,7 +1301,7 @@ class Dom extends Xom {
           minList.push(cw);
         }
         else {
-          let lineBoxManager = new LineBoxManager(x, y);
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
           item.__layout({
             x,
             y,
@@ -1366,7 +1378,7 @@ class Dom extends Xom {
       let end = offset + length;
       let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, containerSize,
         fixedWidth, fixedHeight, lineClamp, lineClampCount,
-        justifyContent, alignItems, orderChildren.slice(offset, end), item,
+        lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
         hypotheticalList.slice(offset, end), minList.slice(offset, end));
       // 下一行/列更新坐标
@@ -1548,7 +1560,7 @@ class Dom extends Xom {
    */
   __layoutFlexLine(data, isDirectionRow, containerSize,
                    fixedWidth, fixedHeight, lineClamp, lineClampCount,
-                   justifyContent, alignItems, orderChildren, flexLine,
+                   lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine,
                    growList, shrinkList, basisList, hypotheticalList, minList) {
     let { x, y, w, h } = data;
     let hypotheticalSum = 0;
@@ -1696,7 +1708,7 @@ class Dom extends Xom {
         }
       }
       else {
-        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
         item.__layout({
           x,
           y,
@@ -1990,6 +2002,13 @@ class Dom extends Xom {
       [TEXT_ALIGN]: textAlign,
       [WHITE_SPACE]: whiteSpace,
       [LINE_CLAMP]: lineClamp,
+      [LINE_HEIGHT]: lineHeight,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
     } = computedStyle;
     let lineClampCount = data.lineClampCount || 0;
     if(isInline && !this.__isRealInline()) {
@@ -2000,13 +2019,25 @@ class Dom extends Xom {
     if(isInline) {
       this.__config[NODE_IS_INLINE] = true;
       this.__lineBoxManager = lineBoxManager;
-      let lineHeight = computedStyle[LINE_HEIGHT];
       let baseLine = css.getBaseLine(computedStyle);
-      lineBoxManager.__setLB(lineHeight, baseLine);
+      // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+      if(marginLeft || marginRight
+        || paddingLeft || paddingRight
+        || borderLeftWidth || borderRightWidth) {
+        if(lineBoxManager.isNewLine) {
+          lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseLine);
+        }
+        else {
+          lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+        }
+      }
+      else {
+        lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+      }
       lineClamp = data.lineClamp || 0;
     }
     else {
-      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y);
+      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
       lx = x;
       endSpace = selfEndSpace = lineClampCount = 0;
     }
@@ -2727,6 +2758,13 @@ class Dom extends Xom {
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
       return;
     }
+    // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位
+    // if(computedStyle[PERSPECTIVE]) {
+    //   perspectiveNest++;
+    // }
+    // if(tf.isPerspectiveMatrix(computedStyle[TRANSFORM])) {
+    //   perspectiveTfNest++;
+    // }
     // overflow:hidden时还需要判断是否超出范围外，如果是则无效
     if(computedStyle[OVERFLOW] === 'hidden' && !this.willResponseEvent(e, true)) {
       return;

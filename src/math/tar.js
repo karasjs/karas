@@ -26,9 +26,9 @@ function rotate(theta) {
   let sin = Math.sin(theta);
   let cos = Math.cos(theta);
   let t = matrix.identity();
-  t[0] = t[3] = cos;
+  t[0] = t[5] = cos;
   t[1] = sin;
-  t[2] = -sin;
+  t[4] = -sin;
   return t;
 }
 
@@ -130,8 +130,8 @@ function transform(source, target) {
   let overflow = isOverflow(source, target);
   // 第0步，将源三角第1个a点移到原点
   let m = matrix.identity();
-  m[4] = -sx1;
-  m[5] = -sy1;
+  m[12] = -sx1;
+  m[13] = -sy1;
   let t;
   // 第1步，以第1条边ab为基准，将其贴合x轴上，为后续倾斜不干扰做准备
   let theta = calDeg(sx1, sy1, sx2, sy2);
@@ -150,8 +150,8 @@ function transform(source, target) {
   // }
   // 第3步，缩放y，先将目标三角形旋转到x轴平行，再变换坐标计算
   let n = matrix.identity();
-  n[4] = -tx1;
-  n[5] = -ty1;
+  n[12] = -tx1;
+  n[13] = -ty1;
   theta = calDeg(tx1, ty1, tx2, ty2);
   // 记录下这个旋转角度，后面源三角形要反向旋转
   let alpha = theta;
@@ -176,7 +176,7 @@ function transform(source, target) {
       t[0] = lt / ls;
     }
     if(ls2 !== lt2) {
-      t[3] = lt2 / ls2;
+      t[5] = lt2 / ls2;
     }
     m = matrix.multiply(t, m);
   }
@@ -196,14 +196,14 @@ function transform(source, target) {
   // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
   if(a !== A) {
     t = matrix.identity();
-    t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
+    t[4] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
     m = matrix.multiply(t, m);
   }
   // 发生翻转时特殊处理按x轴垂直翻转
   if(overflow) {
     m[1] = -m[1];
-    m[3] = -m[3];
     m[5] = -m[5];
+    m[13] = -m[13];
   }
   // 第5步，再次旋转，角度为目标旋转到x轴的负值，可与下步合并
   if(alpha !== 0) {
@@ -215,10 +215,10 @@ function transform(source, target) {
   }
   // 第6步，移动第一个点的差值
   // t = matrix.identity();
-  t[4] = tx1;
-  t[5] = ty1;
+  t[12] = tx1;
+  t[13] = ty1;
   m = matrix.multiply(t, m);
-  return m;
+  return matrix.m2m6(m);
 }
 
 export default {

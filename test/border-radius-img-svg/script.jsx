@@ -4,8 +4,8 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-setTimeout(() => {
+o.on('refresh',() => {
   let input = document.querySelector('#base64');
   let svg = document.querySelector('svg');
   input.value = svg.innerHTML;
-}, 50);
+});

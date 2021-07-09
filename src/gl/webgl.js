@@ -94,7 +94,18 @@ export function loadShader(gl, type, source) {
   return shader;
 }
 
-function convertCoords2Gl([x, y], cx, cy, revertY) {
+function convertCoords2Gl([x, y, z, w], cx, cy, revertY) {
+  if(z === undefined) {
+    z = 0;
+  }
+  if(w === undefined) {
+    w = 1;
+  }
+  if(w && w !== 1) {
+    x /= w;
+    y /= w;
+    z /= w;
+  }
   if(x === cx) {
     x = 0;
   }
@@ -110,7 +121,7 @@ function convertCoords2Gl([x, y], cx, cy, revertY) {
       y = -y;
     }
   }
-  return [x, y];
+  return [x * w, y * w, z * w, w];
 }
 
 function createTexture(gl, tex, n, width, height) {
@@ -174,15 +185,15 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
     let bx = bbox[0], by = bbox[1];
     let [xa, ya] = [bx + (dx || 0), by + height + (dy || 0)];
     let [xb, yb] = [bx + width + (dx || 0), by + (dy || 0)];
-    let [x1, y1] = calPoint([xa, ya], matrix);
-    let [x2, y2] = calPoint([xb, ya], matrix);
-    let [x3, y3] = calPoint([xb, yb], matrix);
-    let [x4, y4] = calPoint([xa, yb], matrix);
-    [x1, y1] = convertCoords2Gl([x1, y1], cx, cy, revertY);
-    [x2, y2] = convertCoords2Gl([x2, y2], cx, cy, revertY);
-    [x3, y3] = convertCoords2Gl([x3, y3], cx, cy, revertY);
-    [x4, y4] = convertCoords2Gl([x4, y4], cx, cy, revertY);
-    vtPoint.push(x1, y1, x4, y4, x2, y2, x4, y4, x2, y2, x3, y3);
+    let [x1, y1, , w1] = calPoint([xa, ya], matrix);
+    let [x2, y2, , w2] = calPoint([xb, ya], matrix);
+    let [x3, y3, , w3] = calPoint([xb, yb], matrix);
+    let [x4, y4, , w4] = calPoint([xa, yb], matrix);
+    [x1, y1] = convertCoords2Gl([x1, y1, 0, w1], cx, cy, revertY);
+    [x2, y2] = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
+    [x3, y3] = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
+    [x4, y4] = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
+    vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
     let tx1 = x / page.width, ty1 = (y + height) / page.height;
     let tx2 = (x + width) / page.width, ty2 = y / page.height;
     vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
@@ -194,7 +205,7 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
   let a_position = gl.getAttribLocation(gl.program, 'a_position');
-  gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position);
   // 纹理buffer
   let texBuffer = gl.createBuffer();

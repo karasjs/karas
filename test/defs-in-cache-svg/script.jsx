@@ -27,11 +27,11 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-setTimeout(function() {
+o.on('refresh', function() {
   o.ref.d2.updateStyle({
     opacity: 0.5,
   }, function() {
     let input = document.querySelector('#base64');
     input.value = document.querySelector('svg').innerHTML;
   });
-}, 100);
+});

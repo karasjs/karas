@@ -1,65 +1,40 @@
-// 生成3*3单位矩阵，css表达方法一维6位
+// 生成4*4单位矩阵
 function identity() {
-  return [1, 0, 0, 1, 0, 0];
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 }
 
-// 矩阵a*b，固定两个matrix都是长度6
+// 矩阵a*b，固定两个matrix都是长度16
 function multiply(a, b) {
-  // 特殊情况优化
-  let isPreIdA = a[0] === 1 && a[1] === 0 && a[2] === 0 && a[3] === 1;
-  let isPreIdB = b[0] === 1 && b[1] === 0 && b[2] === 0 && b[3] === 1;
-  let isSubIdA = a[4] === 0 && a[5] === 0;
-  let isSubIdB = b[4] === 0 && b[5] === 0;
-  if(isPreIdA && isSubIdA) {
-    return b.slice(0);
+  if(isE(a)) {
+    return b;
   }
-  if(isPreIdB && isSubIdB) {
-    return a.slice(0);
-  }
-  if(isPreIdA && isPreIdB) {
-    a = a.slice(0);
-    a[4] += b[4];
-    a[5] += b[5];
+  if(isE(b)) {
     return a;
   }
-  else if(isPreIdA || isPreIdB) {
-    let c = isPreIdA ? b.slice(0) : a.slice(0);
-    c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
-    c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
-    return c;
-  }
-  let c = [
-    a[0] * b[0] + a[2] * b[1],
-    a[1] * b[0] + a[3] * b[1],
-    a[0] * b[2] + a[2] * b[3],
-    a[1] * b[2] + a[3] * b[3],
-    0,
-    0,
-  ];
-  if(isSubIdA && isSubIdB) {
-  }
-  else if(isSubIdB) {
-    c[4] = a[4];
-    c[5] = a[5];
-  }
-  else {
-    c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
-    c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
+  let c = [];
+  for(let i = 0; i < 4; i++) {
+    let a0 = a[i];
+    let a1 = a[i + 4];
+    let a2 = a[i + 8];
+    let a3 = a[i + 12];
+    c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
+    c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
+    c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
+    c[i + 12] = a0 * b[12] + a1 * b[13] + a2 * b[14] + a3 * b[15];
   }
   return c;
 }
 
 function calPoint(point, m) {
-  let [x, y, z] = point;
+  let [x, y, z, w] = point;
+  if(w === undefined) {
+    w = 1;
+  }
   if(m && !isE(m)) {
-    if(m && m.length === 6) {
-      let [a, b, c, d, e, f] = m;
-      return [a * x + c * y + e, b * x + d * y + f];
-    }
-    else if(m && m.length === 16) {
+    if(m.length === 16) {
       z = z || 0;
       let [a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, a4, b4, c4, d4] = m;
-      let w = x * d1 + y * d2 + z * d3 + d4;
+      w *= x * d1 + y * d2 + z * d3 + d4;
       return [
         (x * a1 + y * a2 + z * a3 + a4),
         (x * b1 + y * b2 + z * b3 + b4),
@@ -67,8 +42,11 @@ function calPoint(point, m) {
         w
       ];
     }
+    // 6位类型
+    let [a, b, c, d, e, f] = m;
+    return [a * x + c * y + e, b * x + d * y + f];
   }
-  return point.slice(0);
+  return [x, y, z, w];
 }
 
 /**
@@ -93,7 +71,11 @@ function inverse(m) {
     (c * f - d * e) / divisor, (b * e - a * f) / divisor];
 }
 
+// 16位或者6位单位矩阵判断，空也认为是
 function isE(m) {
+  if(!m) {
+    return true;
+  }
   if(m.length === 16) {
     return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 0
       && m[4] === 0 && m[5] === 1 && m[6] === 0 && m[7] === 0
@@ -101,45 +83,6 @@ function isE(m) {
       && m[12] === 0 && m[13] === 0 && m[14] === 0 && m[15] === 1;
   }
   return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
-}
-
-/**
- * 4*4 行列式的值
- * @returns {number}
- */
-function det4([a11, a12, a13, a14, a21, a22, a23, a24, a31, a32, a33, a34, a41, a42, a43, a44]) {
-  return a11 * (a22 * (a33 * a44 - a43 * a34) - a23 * (a32 * a44 - a42 * a34) + a24 * (a32 * a43 - a42 * a33))
-    - a12 * (a21 * (a33 * a44 - a43 * a34) - a23 * (a31 * a44 - a41 * a34) + a24 * (a31 * a43 - a41 * a33))
-    + a13 * (a21 * (a32 * a44 - a42 * a34) - a22 * (a31 * a44 - a41 * a34) + a24 * (a31 * a42 - a41 * a32))
-    - a14 * (a21 * (a32 * a43 - a42 * a33) - a22 * (a31 * a43 - a41 * a33) + a23 * (a31 * a42 - a41 * a32))
-}
-
-/**
- * 递归写任意阶的伴随矩阵，但是 karas 这里用不到，所以直接写出来比较清晰明了
- * @returns {number[]} 返回伴随矩阵
- */
-function adjoint4([a11, a12, a13, a14, a21, a22, a23, a24, a31, a32, a33, a34, a41, a42, a43, a44]) {
-  let c11 = a22 * a33 * a44 + a23 * a34 * a42 + a24 * a32 * a43 - a22 * a34 * a43 - a23 * a32 * a44 - a24 * a33 * a42;
-  let c21 = a12 * a34 * a43 + a13 * a32 * a44 + a14 * a33 * a42 - a12 * a33 * a44 - a13 * a34 * a42 - a14 * a32 * a43;
-  let c31 = a12 * a23 * a44 + a13 * a24 * a42 + a14 * a22 * a43 - a12 * a24 * a43 - a13 * a22 * a44 - a14 * a23 * a42;
-  let c41 = a12 * a24 * a33 + a13 * a22 * a34 + a14 * a23 * a32 - a12 * a23 * a34 - a13 * a24 * a32 - a14 * a22 * a33;
-
-  let c12 = a21 * a34 * a43 + a23 * a31 * a44 + a24 * a33 * a41 - a21 * a33 * a44 - a23 * a34 * a41 - a24 * a31 * a43;
-  let c22 = a11 * a33 * a44 + a13 * a34 * a41 + a14 * a31 * a43 - a11 * a34 * a43 - a13 * a31 * a44 - a14 * a33 * a41;
-  let c32 = -1 * (a11 * a23 * a44 - a13 * a21 * a44 + a14 * a21 * a43 - a11 * a24 * a43 + a13 * a41 * a24 - a14 * a23 * a41);
-  let c42 = a11 * a23 * a34 + a13 * a24 * a31 + a14 * a21 * a33 - a11 * a24 * a33 - a13 * a21 * a34 - a14 * a23 * a31;
-
-  let c13 = a21 * a32 * a44 + a22 * a34 * a41 + a24 * a31 * a42 - a21 * a34 * a42 - a22 * a31 * a44 - a24 * a32 * a41;
-  let c23 = a11 * a34 * a42 + a12 * a31 * a44 + a14 * a32 * a41 - a11 * a32 * a44 - a12 * a34 * a41 - a14 * a31 * a42;
-  let c33 = a11 * a22 * a44 + a12 * a24 * a41 + a14 * a21 * a42 - a11 * a24 * a42 - a12 * a21 * a44 - a14 * a22 * a41;
-  let c43 = a11 * a24 * a32 + a12 * a21 * a34 + a14 * a22 * a31 - a11 * a22 * a34 - a12 * a24 * a31 - a14 * a21 * a32;
-
-  let c14 = a21 * a33 * a42 + a22 * a31 * a43 + a23 * a32 * a41 - a21 * a32 * a43 - a22 * a33 * a41 - a23 * a31 * a42;
-  let c24 = a11 * a32 * a43 + a12 * a33 * a41 + a13 * a31 * a42 - a11 * a33 * a42 - a12 * a31 * a43 - a13 * a32 * a41;
-  let c34 = a11 * a23 * a42 + a12 * a21 * a43 + a13 * a22 * a41 - a11 * a22 * a43 - a12 * a23 * a41 - a13 * a21 * a42;
-  let c44 = a11 * a22 * a33 + a12 * a23 * a31 + a13 * a21 * a32 - a11 * a23 * a32 - a12 * a21 * a33 - a13 * a22 * a31;
-
-  return [c11, c12, c13, c14, c21, c22, c23, c24, c31, c32, c33, c34, c41, c42, c43, c44];
 }
 
 /**
@@ -159,48 +102,69 @@ function adjoint4([a11, a12, a13, a14, a21, a22, a23, a24, a31, a32, a33, a34, a
  *
  * @returns {number[]}
  */
-function inverse4(m) {
-  if(m.length !== 16) {
-    throw new Error('The length of matrix4 must be 16');
+
+function inverse4(s) {
+  let inv = [];
+
+  inv[0] = s[5] * s[10] * s[15] - s[5] * s[11] * s[14] - s[9] * s[6] * s[15]
+    + s[9] * s[7] * s[14] + s[13] * s[6] * s[11] - s[13] * s[7] * s[10];
+  inv[4] = -s[4] * s[10] * s[15] + s[4] * s[11] * s[14] + s[8] * s[6] * s[15]
+    - s[8] * s[7] * s[14] - s[12] * s[6] * s[11] + s[12] * s[7] * s[10];
+  inv[8] = s[4] * s[9] * s[15] - s[4] * s[11] * s[13] - s[8] * s[5] * s[15]
+    + s[8] * s[7] * s[13] + s[12] * s[5] * s[11] - s[12] * s[7] * s[9];
+  inv[12] = -s[4] * s[9] * s[14] + s[4] * s[10] * s[13] + s[8] * s[5] * s[14]
+    - s[8] * s[6] * s[13] - s[12] * s[5] * s[10] + s[12] * s[6] * s[9];
+
+  inv[1] = -s[1] * s[10] * s[15] + s[1] * s[11] * s[14] + s[9] * s[2] * s[15]
+    - s[9] * s[3] * s[14] - s[13] * s[2] * s[11] + s[13] * s[3] * s[10];
+  inv[5] = s[0] * s[10] * s[15] - s[0] * s[11] * s[14] - s[8] * s[2] * s[15]
+    + s[8] * s[3] * s[14] + s[12] * s[2] * s[11] - s[12] * s[3] * s[10];
+  inv[9] = -s[0] * s[9] * s[15] + s[0] * s[11] * s[13] + s[8] * s[1] * s[15]
+    - s[8] * s[3] * s[13] - s[12] * s[1] * s[11] + s[12] * s[3] * s[9];
+  inv[13] = s[0] * s[9] * s[14] - s[0] * s[10] * s[13] - s[8] * s[1] * s[14]
+    + s[8] * s[2] * s[13] + s[12] * s[1] * s[10] - s[12] * s[2] * s[9];
+
+  inv[2] = s[1] * s[6] * s[15] - s[1] * s[7] * s[14] - s[5] * s[2] * s[15]
+    + s[5] * s[3] * s[14] + s[13] * s[2] * s[7] - s[13] * s[3] * s[6];
+  inv[6] = -s[0] * s[6] * s[15] + s[0] * s[7] * s[14] + s[4] * s[2] * s[15]
+    - s[4] * s[3] * s[14] - s[12] * s[2] * s[7] + s[12] * s[3] * s[6];
+  inv[10] = s[0] * s[5] * s[15] - s[0] * s[7] * s[13] - s[4] * s[1] * s[15]
+    + s[4] * s[3] * s[13] + s[12] * s[1] * s[7] - s[12] * s[3] * s[5];
+  inv[14] = -s[0] * s[5] * s[14] + s[0] * s[6] * s[13] + s[4] * s[1] * s[14]
+    - s[4] * s[2] * s[13] - s[12] * s[1] * s[6] + s[12] * s[2] * s[5];
+
+  inv[3] = -s[1] * s[6] * s[11] + s[1] * s[7] * s[10] + s[5] * s[2] * s[11]
+    - s[5] * s[3] * s[10] - s[9] * s[2] * s[7] + s[9] * s[3] * s[6];
+  inv[7] = s[0] * s[6] * s[11] - s[0] * s[7] * s[10] - s[4] * s[2] * s[11]
+    + s[4] * s[3] * s[10] + s[8] * s[2] * s[7] - s[8] * s[3] * s[6];
+  inv[11] = -s[0] * s[5] * s[11] + s[0] * s[7] * s[9] + s[4] * s[1] * s[11]
+    - s[4] * s[3] * s[9] - s[8] * s[1] * s[7] + s[8] * s[3] * s[5];
+  inv[15] = s[0] * s[5] * s[10] - s[0] * s[6] * s[9] - s[4] * s[1] * s[10]
+    + s[4] * s[2] * s[9] + s[8] * s[1] * s[6] - s[8] * s[2] * s[5];
+
+  let det = s[0] * inv[0] + s[1] * inv[4] + s[2] * inv[8] + s[3] * inv[12];
+  if (det === 0) {
+    return identity();
   }
-  let det = det4(m);
-  // det 为 0，返回单位矩阵兜底
-  if(det === 0) {
-    return [
-      1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-    ]
+
+  det = 1 / det;
+  let d = [];
+  for (let i = 0; i < 16; i++) {
+    d[i] = inv[i] * det;
   }
-  return adjoint4(m).map(a => a / det);
+  return d;
 }
 
-/**
- * 转换为webgl的mat4，即4*4矩阵，一维表示，同时位移转成[-1,1]区间表示
- * @param m
- * @param width
- * @param height
- * @returns {(*|number)[]|number[]|*}
- */
-function m2Mat4(m, width, height) {
-  if(m && m.length === 16) {
-    m = m.slice(0);
-    m[13] /= width;
-    m[14] /= height;
-    return m;
-  }
-  if(m && m.length === 6) {
-    m = m.slice(0);
-    return [
-      m[0], m[1], 0, 0,
-      m[2], m[3], 0, 0,
-      0, 0, 1, 0,
-      // m[4] / width, m[5] / height, 0, 1,
-      m[4], m[5], 0, 1,
-    ];
-  }
-  return m;
+// 将4*4的16长度矩阵转成css/canvas的6位标准使用，忽略transform3d
+function m2m6(m) {
+  return [
+    m[0],
+    m[1],
+    m[4],
+    m[5],
+    m[12],
+    m[13],
+  ];
 }
 
 export default {
@@ -209,5 +173,5 @@ export default {
   calPoint,
   inverse,
   isE,
-  m2Mat4,
+  m2m6,
 };

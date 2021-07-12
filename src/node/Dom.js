@@ -1240,6 +1240,7 @@ class Dom extends Xom {
       [FLEX_WRAP]: flexWrap,
       [ALIGN_CONTENT]: alignContent,
       [LINE_HEIGHT]: lineHeight,
+      [TEXT_ALIGN]: textAlign,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
@@ -1378,7 +1379,7 @@ class Dom extends Xom {
       let end = offset + length;
       let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, containerSize,
         fixedWidth, fixedHeight, lineClamp, lineClampCount,
-        lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item,
+        lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
         hypotheticalList.slice(offset, end), minList.slice(offset, end));
       // 下一行/列更新坐标
@@ -1560,7 +1561,7 @@ class Dom extends Xom {
    */
   __layoutFlexLine(data, isDirectionRow, containerSize,
                    fixedWidth, fixedHeight, lineClamp, lineClampCount,
-                   lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine,
+                   lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign,
                    growList, shrinkList, basisList, hypotheticalList, minList) {
     let { x, y, w, h } = data;
     let hypotheticalSum = 0;
@@ -1685,6 +1686,7 @@ class Dom extends Xom {
       }
     }
     let maxCross = 0;
+    let lbmList = [];
     orderChildren.forEach((item, i) => {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1709,6 +1711,7 @@ class Dom extends Xom {
       }
       else {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+        lbmList.push(lineBoxManager);
         item.__layout({
           x,
           y,
@@ -1731,7 +1734,7 @@ class Dom extends Xom {
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
     // 主轴对齐方式
-    if(!isOverflow && diff > 0) {
+    if(diff > 0) {
       let len = orderChildren.length;
       if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
@@ -1766,6 +1769,12 @@ class Dom extends Xom {
     }
     else {
       x += maxCross;
+    }
+    // flex的直接text对齐比较特殊
+    if(['center', 'right'].indexOf(textAlign) > -1) {
+      lbmList.forEach(item => {
+        item.horizonAlign(item.width, textAlign);
+      })
     }
     return [x, y, maxCross];
   }

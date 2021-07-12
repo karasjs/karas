@@ -25,7 +25,7 @@ class LineBoxManager {
    */
   genLineBox(x, y) {
     let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseLine);
-    this.__list.push(lineBox);
+    this.list.push(lineBox);
     this.__isEnd = true;
     return lineBox;
   }
@@ -44,7 +44,7 @@ class LineBoxManager {
     let baseLine = Math.max(this.__baseLine, b);
     if(this.__isNewLine) {
       let lineBox = new LineBox(x, y, lineHeight, baseLine);
-      this.__list.push(lineBox);
+      this.list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
       return lineBox;
@@ -55,15 +55,15 @@ class LineBoxManager {
     let lineHeight = Math.max(this.__lineHeight, l);
     let baseLine = Math.max(this.__baseLine, b);
     let lineBox;
+    let list = this.list;
     if(this.__isNewLine) {
       lineBox = new LineBox(x, y, lineHeight, baseLine);
-      this.__list.push(lineBox);
+      list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
       return lineBox;
     }
     else {
-      let list = this.__list;
       let length = list.length;
       lineBox = list[length - 1];
       lineBox.__setLB(l, b);
@@ -104,7 +104,7 @@ class LineBoxManager {
       // }
     }
     else {
-      let list = this.__list;
+      let list = this.list;
       let length = list.length;
       lineBox = list[length - 1];
     }
@@ -128,7 +128,7 @@ class LineBoxManager {
   }
 
   horizonAlign(w, textAlign) {
-    this.__list.forEach(lineBox => {
+    this.list.forEach(lineBox => {
       let diff = w - lineBox.width;
       if(diff > 0) {
         if(textAlign === 'center') {
@@ -143,7 +143,7 @@ class LineBoxManager {
   }
 
   verticalAlign() {
-    this.__list.forEach(lineBox => {
+    this.list.forEach(lineBox => {
       lineBox.verticalAlign();
     });
   }
@@ -166,13 +166,13 @@ class LineBoxManager {
   }
 
   __offsetX(diff) {
-    this.__list.forEach(lineBox => {
+    this.list.forEach(lineBox => {
       lineBox.__offsetX(diff);
     });
   }
 
   __offsetY(diff) {
-    this.__list.forEach(lineBox => {
+    this.list.forEach(lineBox => {
       lineBox.__offsetY(diff);
     });
   }
@@ -184,14 +184,14 @@ class LineBoxManager {
    * @private
    */
   setLbByInlineIfNotNewLine(l, b) {
-    let length = this.__list.length;
+    let length = this.list.length;
     if(length && !this.isNewLine) {
-      this.__list[length - 1].__setLB(l, b);
+      this.list[length - 1].__setLB(l, b);
     }
   }
 
   get size() {
-    return this.__list.length;
+    return this.list.length;
   }
 
   get lastX() {
@@ -203,7 +203,7 @@ class LineBoxManager {
   }
 
   get endY() {
-    let list = this.__list;
+    let list = this.list;
     let length = list.length;
     if(length) {
       return list[length - 1].endY;
@@ -222,7 +222,7 @@ class LineBoxManager {
   }
 
   get breakLine() {
-    return this.__list.length > 1;
+    return this.list.length > 1;
   }
 
   get domList() {
@@ -230,7 +230,7 @@ class LineBoxManager {
   }
 
   get baseLine() {
-    let list = this.__list;
+    let list = this.list;
     let length = list.length;
     if(length) {
       let n = 0;
@@ -243,7 +243,7 @@ class LineBoxManager {
   }
 
   get firstBaseLine() {
-    let list = this.__list;
+    let list = this.list;
     let length = list.length;
     if(length) {
       return list[0].baseLine;
@@ -252,7 +252,7 @@ class LineBoxManager {
   }
 
   get lineHeight() {
-    let list = this.__list;
+    let list = this.list;
     if(list.length) {
       return list[list.length - 1].lineHeight;
     }
@@ -260,10 +260,22 @@ class LineBoxManager {
   }
 
   get lineBox() {
-    let list = this.__list;
+    let list = this.list;
     if(list.length) {
       return list[list.length - 1];
     }
+  }
+
+  get list() {
+    return this.__list;
+  }
+
+  get width() {
+    let w = 0;
+    this.list.forEach(item => {
+      w = Math.max(w, item.width);
+    });
+    return w;
   }
 }
 

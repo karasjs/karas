@@ -19919,9 +19919,7 @@
       key: "genLineBox",
       value: function genLineBox(x, y) {
         var lineBox = new LineBox(x, y, this.__lineHeight, this.__baseLine);
-
-        this.__list.push(lineBox);
-
+        this.list.push(lineBox);
         this.__isEnd = true;
         return lineBox;
       }
@@ -19943,9 +19941,7 @@
 
         if (this.__isNewLine) {
           var lineBox = new LineBox(x, y, lineHeight, baseLine);
-
-          this.__list.push(lineBox);
-
+          this.list.push(lineBox);
           this.__isEnd = true;
           this.__isNewLine = false;
           return lineBox;
@@ -19957,17 +19953,15 @@
         var lineHeight = Math.max(this.__lineHeight, l);
         var baseLine = Math.max(this.__baseLine, b);
         var lineBox;
+        var list = this.list;
 
         if (this.__isNewLine) {
           lineBox = new LineBox(x, y, lineHeight, baseLine);
-
-          this.__list.push(lineBox);
-
+          list.push(lineBox);
           this.__isEnd = true;
           this.__isNewLine = false;
           return lineBox;
         } else {
-          var list = this.__list;
           var length = list.length;
           lineBox = list[length - 1];
 
@@ -20014,7 +20008,7 @@
           //   this.__lineHeight = this.__baseLine = 0;
           // }
         } else {
-          var list = this.__list;
+          var list = this.list;
           var length = list.length;
           lineBox = list[length - 1];
         } // inline递归过程中所有inline父子顺序列表，每个dom都需要对当前内容保存
@@ -20041,7 +20035,7 @@
     }, {
       key: "horizonAlign",
       value: function horizonAlign(w, textAlign) {
-        this.__list.forEach(function (lineBox) {
+        this.list.forEach(function (lineBox) {
           var diff = w - lineBox.width;
 
           if (diff > 0) {
@@ -20060,7 +20054,7 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        this.__list.forEach(function (lineBox) {
+        this.list.forEach(function (lineBox) {
           lineBox.verticalAlign();
         });
       }
@@ -20089,14 +20083,14 @@
     }, {
       key: "__offsetX",
       value: function __offsetX(diff) {
-        this.__list.forEach(function (lineBox) {
+        this.list.forEach(function (lineBox) {
           lineBox.__offsetX(diff);
         });
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff) {
-        this.__list.forEach(function (lineBox) {
+        this.list.forEach(function (lineBox) {
           lineBox.__offsetY(diff);
         });
       }
@@ -20110,16 +20104,16 @@
     }, {
       key: "setLbByInlineIfNotNewLine",
       value: function setLbByInlineIfNotNewLine(l, b) {
-        var length = this.__list.length;
+        var length = this.list.length;
 
         if (length && !this.isNewLine) {
-          this.__list[length - 1].__setLB(l, b);
+          this.list[length - 1].__setLB(l, b);
         }
       }
     }, {
       key: "size",
       get: function get() {
-        return this.__list.length;
+        return this.list.length;
       }
     }, {
       key: "lastX",
@@ -20134,7 +20128,7 @@
     }, {
       key: "endY",
       get: function get() {
-        var list = this.__list;
+        var list = this.list;
         var length = list.length;
 
         if (length) {
@@ -20157,7 +20151,7 @@
     }, {
       key: "breakLine",
       get: function get() {
-        return this.__list.length > 1;
+        return this.list.length > 1;
       }
     }, {
       key: "domList",
@@ -20167,7 +20161,7 @@
     }, {
       key: "baseLine",
       get: function get() {
-        var list = this.__list;
+        var list = this.list;
         var length = list.length;
 
         if (length) {
@@ -20185,7 +20179,7 @@
     }, {
       key: "firstBaseLine",
       get: function get() {
-        var list = this.__list;
+        var list = this.list;
         var length = list.length;
 
         if (length) {
@@ -20197,7 +20191,7 @@
     }, {
       key: "lineHeight",
       get: function get() {
-        var list = this.__list;
+        var list = this.list;
 
         if (list.length) {
           return list[list.length - 1].lineHeight;
@@ -20208,11 +20202,25 @@
     }, {
       key: "lineBox",
       get: function get() {
-        var list = this.__list;
+        var list = this.list;
 
         if (list.length) {
           return list[list.length - 1];
         }
+      }
+    }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        var w = 0;
+        this.list.forEach(function (item) {
+          w = Math.max(w, item.width);
+        });
+        return w;
       }
     }]);
 
@@ -21792,7 +21800,8 @@
             lineClamp = computedStyle[LINE_CLAMP$1],
             flexWrap = computedStyle[FLEX_WRAP$1],
             alignContent = computedStyle[ALIGN_CONTENT$1],
-            lineHeight = computedStyle[LINE_HEIGHT$4]; // 只有>=1的正整数才有效
+            lineHeight = computedStyle[LINE_HEIGHT$4],
+            textAlign = computedStyle[TEXT_ALIGN$2]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
@@ -21962,7 +21971,7 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
               _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
               x1 = _this2$__layoutFlexLi2[0],
               y1 = _this2$__layoutFlexLi2[1],
@@ -22159,7 +22168,7 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, growList, shrinkList, basisList, hypotheticalList, minList) {
+      value: function __layoutFlexLine(data, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
         var _this3 = this;
 
         var x = data.x,
@@ -22303,6 +22312,7 @@
         }
 
         var maxCross = 0;
+        var lbmList = [];
         orderChildren.forEach(function (item, i) {
           var main = targetMainList[i];
 
@@ -22328,6 +22338,7 @@
             }
           } else {
             var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            lbmList.push(lineBoxManager);
 
             item.__layout({
               x: x,
@@ -22351,7 +22362,7 @@
 
         var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式
 
-        if (!isOverflow && diff > 0) {
+        if (diff > 0) {
           var len = orderChildren.length;
 
           if (justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
@@ -22387,6 +22398,13 @@
           y += maxCross;
         } else {
           x += maxCross;
+        } // flex的直接text对齐比较特殊
+
+
+        if (['center', 'right'].indexOf(textAlign) > -1) {
+          lbmList.forEach(function (item) {
+            item.horizonAlign(item.width, textAlign);
+          });
         }
 
         return [x, y, maxCross];

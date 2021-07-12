@@ -93,16 +93,12 @@ let inject = {
     let { list, data } = textCache;
     let html = '';
     let keys = [];
-    let ffs = [];
-    let fss = [];
     let lengths = [];
     let chars = [];
     Object.keys(data).forEach(key => {
       let { ff, fs, fw, s } = data[key];
       if(s) {
         keys.push(key);
-        ffs.push(ff);
-        fss.push(fs);
         lengths.push(s.length);
         let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
         for(let i = 0, len = s.length; i < len; i++) {

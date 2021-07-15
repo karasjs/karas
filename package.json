@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.59.1",
+  "version": "0.59.2",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg.",
   "maintainers": [
     {
@@ -42,7 +42,7 @@
     "webstorm-disable-index": "^1.2.0",
     "yurine": "~0.4.1"
   },
-  "main": "./index",
+  "main": "./index.es.js",
   "engines": {
     "node": ">=10.0.0"
   },

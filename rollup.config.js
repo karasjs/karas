@@ -7,7 +7,7 @@ export default [{
   input: 'src/index.js',
   output: {
     name: 'karas',
-    file: 'index.js',
+    file: 'index.umd.js',
     format: 'umd',
     sourcemap: true,
   },
@@ -39,7 +39,7 @@ export default [{
   input: 'src/index.js',
   output: {
     name: 'karas',
-    file: 'index.min.js',
+    file: 'index.umd.min.js',
     format: 'umd',
     sourcemap: true,
   },

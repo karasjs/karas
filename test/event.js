@@ -1,5 +1,5 @@
 let expect = require('expect.js');
-let karas = require('../index');
+let karas = require('../index.es');
 
 describe('Event', function() {
   it('on && emit', function() {

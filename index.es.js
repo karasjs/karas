@@ -24656,6 +24656,12 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
 
       if (main[1] === PX$a) {
         min = max = main[0];
+      } else if (main[1] === REM$9) {
+        min = max = main[0] * this.root.computedStyle[FONT_SIZE$b];
+      } else if (main[1] === VW$9) {
+        min = max = main[0] * this.root.width * 0.01;
+      } else if (main[1] === VH$9) {
+        min = max = main[0] * this.root.height * 0.01;
       }
 
       return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
@@ -34780,7 +34786,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.59.3";
+var version = "0.59.4";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

@@ -210,6 +210,15 @@ class Geom extends Xom {
     if(main[1] === PX) {
       min = max = main[0];
     }
+    else if(main[1] === REM) {
+      min = max = main[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(main[1] === VW) {
+      min = max = main[0] * this.root.width * 0.01;
+    }
+    else if(main[1] === VH) {
+      min = max = main[0] * this.root.height * 0.01;
+    }
     return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
   }
 

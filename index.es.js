@@ -20956,6 +20956,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
       if (main[1] === PX$8) {
         min = max = main[0];
+      } else if (main[1] === REM$7) {
+        min = max = main[0] * this.root.computedStyle[FONT_SIZE$9];
+      } else if (main[1] === VW$7) {
+        min = max = main[0] * this.root.width * 0.01;
+      } else if (main[1] === VH$7) {
+        min = max = main[0] * this.root.height * 0.01;
       } else {
         if (display === 'flex') {
           var isRow = flexDirection !== 'column';
@@ -34774,7 +34780,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.59.2";
+var version = "0.59.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

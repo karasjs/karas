@@ -11441,7 +11441,6 @@
     }, {
       key: "__inlineSize",
       value: function __inlineSize() {
-        console.log(this.content, this.textBoxes);
         var minX, maxX;
         this.textBoxes.forEach(function (item, i) {
           if (i) {

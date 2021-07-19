@@ -547,7 +547,6 @@ class Text extends Node {
   }
 
   __inlineSize() {
-    console.log(this.content, this.textBoxes);
     let minX, maxX;
     this.textBoxes.forEach((item, i) => {
       if(i) {

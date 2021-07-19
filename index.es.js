@@ -21758,7 +21758,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
         lineBoxManager.domList.forEach(function (item) {
-          item.__inlineSize();
+          item.__inlineSize(tw, textAlign);
         });
 
         this.__marginAuto(currentStyle, data);
@@ -22912,10 +22912,6 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
         lineBoxManager.popContentBoxList(); // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
-
-        if (isVirtual) {
-          this.__inlineSize();
-        }
       } else {
         // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
         var maxW = lineBoxManager.__maxX - data.x;
@@ -22935,7 +22931,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
         lineBoxManager.domList.forEach(function (item) {
-          item.__inlineSize();
+          item.__inlineSize(tw, textAlign);
         });
       } // inlineBlock新开上下文，但父级block遇到要处理换行
 
@@ -22955,7 +22951,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
   }, {
     key: "__inlineSize",
-    value: function __inlineSize() {
+    value: function __inlineSize(tw, textAlign) {
       var contentBoxList = this.contentBoxList,
           computedStyle = this.computedStyle,
           __ox = this.__ox,
@@ -23033,6 +23029,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         this.__offsetHeight = maxFY - minFY;
         this.__outerWidth = maxOX - minOX;
         this.__outerHeight = maxOY - minOY;
+        this.__sx = minOX + __ox;
+        this.__sy = minOY + __oy;
         this.__sx1 = minFX + __ox;
         this.__sy1 = minFY + __oy;
         this.__sx2 = minCX + __ox;
@@ -23045,12 +23043,24 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         this.__sy5 = maxCY + __oy;
         this.__sx6 = maxFX + __ox;
         this.__sy6 = maxFY + __oy;
-      } // 如果没有内容，宽度为0高度为lineHeight
+      } // 如果没有内容，宽度为0高度为lineHeight，对齐也特殊处理，lineBoxManager不会处理
       else {
-          var tw = this.__width = computedStyle[WIDTH$5] = 0;
+          if (['center', 'right'].indexOf(textAlign) > -1) {
+            var diff = tw;
+
+            if (textAlign === 'center') {
+              diff *= 0.5;
+            }
+
+            if (diff) {
+              this.__offsetX(diff, true);
+            }
+          }
+
+          this.__width = computedStyle[WIDTH$5] = 0;
           var th = this.__height = computedStyle[HEIGHT$5] = lineHeight;
 
-          this.__ioSize(tw, th);
+          this.__ioSize(0, th);
 
           this.__sy -= marginTop + paddingTop + borderTopWidth;
           this.__sx1 = this.sx + marginLeft;

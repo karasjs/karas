@@ -11433,6 +11433,24 @@ var Text = /*#__PURE__*/function (_Node) {
       return w - this.charWidthList[0];
     }
   }, {
+    key: "__inlineSize",
+    value: function __inlineSize() {
+      console.log(this.content, this.textBoxes);
+      var minX, maxX;
+      this.textBoxes.forEach(function (item, i) {
+        if (i) {
+          minX = Math.min(minX, item.x);
+          maxX = Math.max(maxX, item.x + item.width);
+        } else {
+          minX = item.x;
+          maxX = item.x + item.width;
+        }
+      });
+      this.__x = minX;
+      this.__sx = this.__sx1 = minX + this.ox;
+      this.__width = maxX - minX;
+    }
+  }, {
     key: "__calMaxAndMinWidth",
     value: function __calMaxAndMinWidth() {
       var n = 0;
@@ -23046,7 +23064,15 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         this.__sx5 = maxCX + __ox;
         this.__sy5 = maxCY + __oy;
         this.__sx6 = maxFX + __ox;
-        this.__sy6 = maxFY + __oy;
+        this.__sy6 = maxFY + __oy; // inline的text整体设置相同
+
+        if (['center', 'right'].indexOf(textAlign) > -1) {
+          this.children.forEach(function (item) {
+            if (item instanceof Text) {
+              item.__inlineSize();
+            }
+          });
+        }
       } // 如果没有内容，宽度为0高度为lineHeight，对齐也特殊处理，lineBoxManager不会处理
       else {
           if (['center', 'right'].indexOf(textAlign) > -1) {

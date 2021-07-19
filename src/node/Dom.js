@@ -2394,6 +2394,14 @@ class Dom extends Xom {
       this.__sy5 = maxCY + __oy;
       this.__sx6 = maxFX + __ox;
       this.__sy6 = maxFY + __oy;
+      // inline的text整体设置相同
+      if(['center', 'right'].indexOf(textAlign) > -1) {
+        this.children.forEach(item => {
+          if(item instanceof Text) {
+            item.__inlineSize();
+          }
+        });
+      }
     }
     // 如果没有内容，宽度为0高度为lineHeight，对齐也特殊处理，lineBoxManager不会处理
     else {

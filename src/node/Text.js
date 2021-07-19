@@ -546,6 +546,24 @@ class Text extends Node {
     return w - this.charWidthList[0];
   }
 
+  __inlineSize() {
+    console.log(this.content, this.textBoxes);
+    let minX, maxX;
+    this.textBoxes.forEach((item, i) => {
+      if(i) {
+        minX = Math.min(minX, item.x);
+        maxX = Math.max(maxX, item.x + item.width);
+      }
+      else {
+        minX = item.x;
+        maxX = item.x + item.width;
+      }
+    });
+    this.__x = minX;
+    this.__sx = this.__sx1 = minX + this.ox;
+    this.__width = maxX - minX;
+  }
+
   __calMaxAndMinWidth() {
     let n = 0;
     this.charWidthList.forEach(item => {

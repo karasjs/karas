@@ -22911,7 +22911,11 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
 
 
-        lineBoxManager.popContentBoxList(); // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
+        lineBoxManager.popContentBoxList(); // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，
+
+        if (isVirtual) {
+          this.__inlineSize();
+        }
       } else {
         // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
         var maxW = lineBoxManager.__maxX - data.x;

@@ -1224,7 +1224,7 @@ class Dom extends Xom {
       }
       // 所有inline计算size
       lineBoxManager.domList.forEach(item => {
-        item.__inlineSize();
+        item.__inlineSize(tw, textAlign);
       });
       this.__marginAuto(currentStyle, data);
     }
@@ -2267,7 +2267,7 @@ class Dom extends Xom {
       }
       // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
       lineBoxManager.popContentBoxList();
-      // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
+      // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，
       if(isVirtual) {
         this.__inlineSize();
       }
@@ -2287,7 +2287,7 @@ class Dom extends Xom {
       }
       // block的所有inline计算size
       lineBoxManager.domList.forEach(item => {
-        item.__inlineSize();
+        item.__inlineSize(tw, textAlign);
       });
     }
     // inlineBlock新开上下文，但父级block遇到要处理换行
@@ -2304,7 +2304,7 @@ class Dom extends Xom {
    * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
    * @private
    */
-  __inlineSize() {
+  __inlineSize(tw, textAlign) {
     let { contentBoxList, computedStyle, __ox, __oy } = this;
     let {
       [MARGIN_TOP]: marginTop,
@@ -2380,6 +2380,8 @@ class Dom extends Xom {
       this.__offsetHeight = maxFY - minFY;
       this.__outerWidth = maxOX - minOX;
       this.__outerHeight = maxOY - minOY;
+      this.__sx = minOX + __ox;
+      this.__sy = minOY + __oy;
       this.__sx1 = minFX + __ox;
       this.__sy1 = minFY + __oy;
       this.__sx2 = minCX + __ox;
@@ -2392,12 +2394,29 @@ class Dom extends Xom {
       this.__sy5 = maxCY + __oy;
       this.__sx6 = maxFX + __ox;
       this.__sy6 = maxFY + __oy;
+      // inline的text整体设置相同
+      if(['center', 'right'].indexOf(textAlign) > -1) {
+        this.children.forEach(item => {
+          if(item instanceof Text) {
+            item.__inlineSize();
+          }
+        });
+      }
     }
-    // 如果没有内容，宽度为0高度为lineHeight
+    // 如果没有内容，宽度为0高度为lineHeight，对齐也特殊处理，lineBoxManager不会处理
     else {
-      let tw = this.__width = computedStyle[WIDTH] = 0;
+      if(['center', 'right'].indexOf(textAlign) > -1) {
+        let diff = tw;
+        if(textAlign === 'center') {
+          diff *= 0.5;
+        }
+        if(diff) {
+          this.__offsetX(diff, true);
+        }
+      }
+      this.__width = computedStyle[WIDTH] = 0;
       let th = this.__height = computedStyle[HEIGHT] = lineHeight;
-      this.__ioSize(tw, th);
+      this.__ioSize(0, th);
       this.__sy -= marginTop + paddingTop + borderTopWidth;
       this.__sx1 = this.sx + marginLeft;
       this.__sy1 = this.sy + marginTop;

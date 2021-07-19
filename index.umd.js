@@ -11439,6 +11439,23 @@
         return w - this.charWidthList[0];
       }
     }, {
+      key: "__inlineSize",
+      value: function __inlineSize() {
+        var minX, maxX;
+        this.textBoxes.forEach(function (item, i) {
+          if (i) {
+            minX = Math.min(minX, item.x);
+            maxX = Math.max(maxX, item.x + item.width);
+          } else {
+            minX = item.x;
+            maxX = item.x + item.width;
+          }
+        });
+        this.__x = minX;
+        this.__sx = this.__sx1 = minX + this.ox;
+        this.__width = maxX - minX;
+      }
+    }, {
       key: "__calMaxAndMinWidth",
       value: function __calMaxAndMinWidth() {
         var n = 0;
@@ -21764,7 +21781,7 @@
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize();
+            item.__inlineSize(tw, textAlign);
           });
 
           this.__marginAuto(currentStyle, data);
@@ -22917,7 +22934,7 @@
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
 
 
-          lineBoxManager.popContentBoxList(); // abs时计算，本来是最近非inline父层统一计算，但在abs时不算
+          lineBoxManager.popContentBoxList(); // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，
 
           if (isVirtual) {
             this.__inlineSize();
@@ -22941,7 +22958,7 @@
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize();
+            item.__inlineSize(tw, textAlign);
           });
         } // inlineBlock新开上下文，但父级block遇到要处理换行
 
@@ -22961,7 +22978,7 @@
 
     }, {
       key: "__inlineSize",
-      value: function __inlineSize() {
+      value: function __inlineSize(tw, textAlign) {
         var contentBoxList = this.contentBoxList,
             computedStyle = this.computedStyle,
             __ox = this.__ox,
@@ -23039,6 +23056,8 @@
           this.__offsetHeight = maxFY - minFY;
           this.__outerWidth = maxOX - minOX;
           this.__outerHeight = maxOY - minOY;
+          this.__sx = minOX + __ox;
+          this.__sy = minOY + __oy;
           this.__sx1 = minFX + __ox;
           this.__sy1 = minFY + __oy;
           this.__sx2 = minCX + __ox;
@@ -23050,13 +23069,33 @@
           this.__sx5 = maxCX + __ox;
           this.__sy5 = maxCY + __oy;
           this.__sx6 = maxFX + __ox;
-          this.__sy6 = maxFY + __oy;
-        } // 如果没有内容，宽度为0高度为lineHeight
+          this.__sy6 = maxFY + __oy; // inline的text整体设置相同
+
+          if (['center', 'right'].indexOf(textAlign) > -1) {
+            this.children.forEach(function (item) {
+              if (item instanceof Text) {
+                item.__inlineSize();
+              }
+            });
+          }
+        } // 如果没有内容，宽度为0高度为lineHeight，对齐也特殊处理，lineBoxManager不会处理
         else {
-            var tw = this.__width = computedStyle[WIDTH$5] = 0;
+            if (['center', 'right'].indexOf(textAlign) > -1) {
+              var diff = tw;
+
+              if (textAlign === 'center') {
+                diff *= 0.5;
+              }
+
+              if (diff) {
+                this.__offsetX(diff, true);
+              }
+            }
+
+            this.__width = computedStyle[WIDTH$5] = 0;
             var th = this.__height = computedStyle[HEIGHT$5] = lineHeight;
 
-            this.__ioSize(tw, th);
+            this.__ioSize(0, th);
 
             this.__sy -= marginTop + paddingTop + borderTopWidth;
             this.__sx1 = this.sx + marginLeft;

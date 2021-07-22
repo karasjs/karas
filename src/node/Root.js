@@ -661,13 +661,13 @@ class Root extends Dom {
       y = clientY - y;
       // 外边的scale影响元素事件响应，根据倍数计算真实的坐标，优先手动指定，否则自动计算
       if(!isNil(__scx)) {
-        x *= __scx;
+        x /= __scx;
       }
       else {
         x *= this.width / width;
       }
       if(!isNil(__scy)) {
-        y *= __scy;
+        y /= __scy;
       }
       else {
         y *= this.height / height;

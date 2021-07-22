@@ -30714,13 +30714,13 @@
           y = clientY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标，优先手动指定，否则自动计算
 
           if (!isNil$8(__scx)) {
-            x *= __scx;
+            x /= __scx;
           } else {
             x *= this.width / width;
           }
 
           if (!isNil$8(__scy)) {
-            y *= __scy;
+            y /= __scy;
           } else {
             y *= this.height / height;
           }
@@ -34831,7 +34831,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.6";
+  var version = "0.59.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

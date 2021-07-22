@@ -83,7 +83,7 @@ karas.parse({
   }],
 }, '#selector');
 ```
-json有压缩格式，即把常见的样式/动画的key简写别名，使得整体内容大小更短，但不易于阅读。缩写只针对了css样式的键名，以及动画的2个属性`value`和`options`，还有`options`下的内容，动画中的关键帧同样是样式。因为是驼峰结构，所以普通情况下缩写就是驼峰单词的缩写形式。当出现冲突时，有专门覆盖定义：https://github.com/karasjs/karas/blob/master/src/parser/abbr.js 。所有缩写共享一个冲突定义，下面示例2种是等价的：
+~~json有压缩格式，即把常见的样式/动画的key简写别名，使得整体内容大小更短，但不易于阅读。缩写只针对了css样式的键名，以及动画的2个属性`value`和`options`，还有`options`下的内容，动画中的关键帧同样是样式。因为是驼峰结构，所以普通情况下缩写就是驼峰单词的缩写形式。当出现冲突时，有专门覆盖定义：https://github.com/karasjs/karas/blob/master/src/parser/abbr.js 。所有缩写共享一个冲突定义，下面示例2种是等价的：~~
 ```ts
 karas.parse({
   tagName: 'div',

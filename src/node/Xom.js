@@ -2207,6 +2207,10 @@ class Xom extends Node {
   __gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi) {
     let iw = bx2 - bx1;
     let ih = by2 - by1;
+    // 无尺寸无需创建渐变
+    if(!iw || !ih) {
+      return;
+    }
     let { k, v, d, s, z, p } = bgi;
     let cx = bx1 + iw * 0.5;
     let cy = by1 + ih * 0.5;

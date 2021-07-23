@@ -18991,7 +18991,12 @@
       key: "__gradient",
       value: function __gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi) {
         var iw = bx2 - bx1;
-        var ih = by2 - by1;
+        var ih = by2 - by1; // 无尺寸无需创建渐变
+
+        if (!iw || !ih) {
+          return;
+        }
+
         var k = bgi.k,
             v = bgi.v,
             d = bgi.d,
@@ -25163,7 +25168,7 @@
             ctx.fill(fillRule);
           }
 
-          if (isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
+          if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
             ctx.stroke();
           }
 
@@ -25195,7 +25200,7 @@
             props.push(['fill', 'none']);
           }
 
-          if (isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
+          if (isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
             props.push(['stroke', stroke.v || stroke]);
             props.push(['stroke-width', strokeWidth]);
 
@@ -34831,7 +34836,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.5";
+  var version = "0.59.6";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

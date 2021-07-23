@@ -663,7 +663,7 @@ class Geom extends Xom {
       if(isFill && fill && fill !== 'none') {
         ctx.fill(fillRule);
       }
-      if(isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
+      if(isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
         ctx.stroke();
       }
       ctx.closePath();
@@ -692,7 +692,7 @@ class Geom extends Xom {
       else {
         props.push(['fill', 'none']);
       }
-      if(isStroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
+      if(isStroke && stroke && stroke !== 'none' && strokeWidth && strokeWidth > 0) {
         props.push(['stroke', stroke.v || stroke]);
         props.push(['stroke-width', strokeWidth]);
         this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);

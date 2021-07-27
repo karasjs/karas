@@ -33,3 +33,33 @@ jobs:
         with:
           run: npm run test2
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  test3:
+    runs-on: ubuntu-16.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - name: npm install
+        run: npm install
+      - name: npm test
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: npm run test3
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  test4:
+    runs-on: ubuntu-16.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - name: npm install
+        run: npm install
+      - name: npm test
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: npm run test4
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

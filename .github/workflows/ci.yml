@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build-test1:
+  test1:
     runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@v2
@@ -18,7 +18,7 @@ jobs:
         with:
           run: npm run test1
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  build-test2:
+  test2:
     runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@v2

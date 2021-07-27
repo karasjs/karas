@@ -13,7 +13,7 @@ jobs:
           node-version: 14
       - name: npm install
         run: npm install
-      - name build-test
+      - name: build-test
         run: npm run build:test
   build-test1:
     runs-on: ubuntu-16.04

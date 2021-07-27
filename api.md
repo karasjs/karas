@@ -80,7 +80,7 @@ karas.parse(
 #### options
 * **类型** `Object`
 * **说明**
-可配`autoPlay`是否默认播放，可配`controller`传入一个自定义总控制器，可配`vars`传入变量hash，可配`noAbbr`禁用缩写。
+可配`autoPlay`是否默认播放，可配`controller`传入一个自定义总控制器，可配`vars`传入变量hash，可配`abbr`为false禁用缩写。
 * **示例**
 ```jsx
 karas.parse(
@@ -95,7 +95,7 @@ karas.parse(
         console.log('click');
       },
     },
-    noAbbr: true,
+    abbr: false,
   }
 );
 ```

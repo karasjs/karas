@@ -12277,10 +12277,7 @@
         var sr = builder.initCp(cd, root, this);
         this.__cd = cd;
 
-        if (sr instanceof Text) {
-          // 文字视作为父节点的直接文字子节点，在builder里做
-          inject.warn('Component render() return a text, should not inherit style/event');
-        } else if (sr instanceof Node) {
+        if (sr instanceof Text) ; else if (sr instanceof Node) {
           var style = css.normalize(this.props.style);
           var keys = Object.keys(style);
           extend$1(sr.style, style, keys);
@@ -34836,7 +34833,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.6";
+  var version = "0.59.7";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

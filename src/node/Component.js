@@ -116,7 +116,6 @@ class Component extends Event {
     this.__cd = cd;
     if(sr instanceof Text) {
       // 文字视作为父节点的直接文字子节点，在builder里做
-      inject.warn('Component render() return a text, should not inherit style/event');
     }
     else if(sr instanceof Node) {
       let style = css.normalize(this.props.style);

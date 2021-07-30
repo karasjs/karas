@@ -11702,7 +11702,7 @@
     }, {
       key: "matrixEvent",
       get: function get() {
-        return this.domParent.matrix;
+        return this.domParent.matrixEvent;
       }
     }]);
 
@@ -34833,7 +34833,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.7";
+  var version = "0.59.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

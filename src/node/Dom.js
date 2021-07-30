@@ -1221,6 +1221,15 @@ class Dom extends Xom {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
+        // 直接text需计算size
+        flowChildren.forEach(item => {
+          if(item instanceof Component) {
+            item = item.shadowRoot;
+          }
+          if(item instanceof Text) {
+            item.__inlineSize();
+          }
+        });
       }
       // 所有inline计算size
       lineBoxManager.domList.forEach(item => {
@@ -2284,6 +2293,15 @@ class Dom extends Xom {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
+        // 直接text需计算size
+        flowChildren.forEach(item => {
+          if(item instanceof Component) {
+            item = item.shadowRoot;
+          }
+          if(item instanceof Text) {
+            item.__inlineSize();
+          }
+        });
       }
       // block的所有inline计算size
       lineBoxManager.domList.forEach(item => {

@@ -20016,10 +20016,7 @@ var LineBoxManager = /*#__PURE__*/function () {
 
       if (this.__isNewLine) {
         this.__isNewLine = false;
-        lineBox = this.genLineBox(o.x, o.y); // if(this.__lineHeight) {
-        //   lineBox.__setLB(this.__lineHeight, this.__baseLine);
-        //   this.__lineHeight = this.__baseLine = 0;
-        // }
+        lineBox = this.genLineBox(o.x, o.y);
       } else {
         var list = this.list;
         var length = list.length;
@@ -20148,8 +20145,7 @@ var LineBoxManager = /*#__PURE__*/function () {
         return list[length - 1].endY;
       }
 
-      return this.__y; // 最后一行可能为空inline，需考虑lh
-      // return this.__y + this.__lineHeight;
+      return this.__y;
     }
   }, {
     key: "isEnd",
@@ -21772,7 +21768,17 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         lineBoxManager.verticalAlign();
 
         if (['center', 'right'].indexOf(textAlign) > -1) {
-          lineBoxManager.horizonAlign(tw, textAlign);
+          lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
+
+          flowChildren.forEach(function (item) {
+            if (item instanceof Component$1) {
+              item = item.shadowRoot;
+            }
+
+            if (item instanceof Text) {
+              item.__inlineSize();
+            }
+          });
         } // 所有inline计算size
 
 
@@ -22949,7 +22955,17 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         lineBoxManager.verticalAlign();
 
         if (['center', 'right'].indexOf(textAlign) > -1) {
-          lineBoxManager.horizonAlign(tw, textAlign);
+          lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
+
+          flowChildren.forEach(function (item) {
+            if (item instanceof Component$1) {
+              item = item.shadowRoot;
+            }
+
+            if (item instanceof Text) {
+              item.__inlineSize();
+            }
+          });
         } // block的所有inline计算size
 
 

@@ -700,6 +700,10 @@ class Text extends Node {
     }
   }
 
+  getComputedStyle(key) {
+    return this.domParent.getComputedStyle(key);
+  }
+
   get content() {
     return this.__content;
   }

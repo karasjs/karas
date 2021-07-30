@@ -441,7 +441,7 @@ function normalize(style, reset = []) {
         else if({ translate: true, scale: true, skew: true }.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
           if(arr.length === 1) {
-            arr[1] = k === 'scale' ? [1] : [0];
+            arr[1] = k === 'scale' ? arr[0] : [0];
           }
           if(arr.length === 2) {
             let k1 = STYLE_KEY[style2Upper(k + 'X')];

@@ -8090,7 +8090,7 @@ function normalize(style) {
           var _arr5 = v.toString().split(/\s*,\s*/);
 
           if (_arr5.length === 1) {
-            _arr5[1] = k === 'scale' ? [1] : [0];
+            _arr5[1] = k === 'scale' ? _arr5[0] : [0];
           }
 
           if (_arr5.length === 2) {
@@ -11610,6 +11610,11 @@ var Text = /*#__PURE__*/function (_Node) {
       if (__cache) {
         __cache.release();
       }
+    }
+  }, {
+    key: "getComputedStyle",
+    value: function getComputedStyle(key) {
+      return this.domParent.getComputedStyle(key);
     }
   }, {
     key: "content",

@@ -34854,7 +34854,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.8";
+  var version = "0.59.9";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);
@@ -34974,4 +34974,4 @@
   return karas;
 
 })));
-//# sourceMappingURL=index.umd.js.map
+//# sourceMappingURL=index.js.map

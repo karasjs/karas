@@ -34848,7 +34848,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.59.8";
+var version = "0.59.9";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);
@@ -34966,4 +34966,4 @@ if (typeof window !== 'undefined') {
 }
 
 export default karas;
-//# sourceMappingURL=index.es.js.map
+//# sourceMappingURL=index.mjs.map

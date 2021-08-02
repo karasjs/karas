@@ -8,4 +8,4 @@ coverage/
 .DS_Store
 *.swp
 test/**/script.js
-index.umd.min.js*
+index.min.*

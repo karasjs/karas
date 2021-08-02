@@ -1,5 +1,5 @@
 let expect = require('expect.js');
-let karas = require('../index.umd');
+let karas = require('../index');
 
 describe('Event', function() {
   it('on && emit', function() {

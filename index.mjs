@@ -987,6 +987,8 @@ var vector = {
 
 var H = 4 * (Math.sqrt(2) - 1) / 3;
 var crossProduct$1 = vector.crossProduct;
+var calPoint$1 = mx.calPoint,
+    isE$1 = mx.isE;
 var _enums$STYLE_KEY = enums.STYLE_KEY,
     WIDTH = _enums$STYLE_KEY.WIDTH,
     HEIGHT = _enums$STYLE_KEY.HEIGHT,
@@ -1053,6 +1055,69 @@ function pointInPolygon(x, y, vertexes) {
   }
 
   return true;
+} // 判断点是否在一个4边形内，比如事件发生是否在节点上
+
+
+function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
+  if (matrix && !isE$1(matrix)) {
+    var w1, w2, w3, w4;
+
+    var _calPoint = calPoint$1([x1, y1], matrix);
+
+    var _calPoint2 = _slicedToArray(_calPoint, 4);
+
+    x1 = _calPoint2[0];
+    y1 = _calPoint2[1];
+    w1 = _calPoint2[3];
+
+    var _calPoint3 = calPoint$1([x2, y2], matrix);
+
+    var _calPoint4 = _slicedToArray(_calPoint3, 4);
+
+    x2 = _calPoint4[0];
+    y2 = _calPoint4[1];
+    w2 = _calPoint4[3];
+
+    var _calPoint5 = calPoint$1([x3, y3], matrix);
+
+    var _calPoint6 = _slicedToArray(_calPoint5, 4);
+
+    x3 = _calPoint6[0];
+    y3 = _calPoint6[1];
+    w3 = _calPoint6[3];
+
+    var _calPoint7 = calPoint$1([x4, y4], matrix);
+
+    var _calPoint8 = _slicedToArray(_calPoint7, 4);
+
+    x4 = _calPoint8[0];
+    y4 = _calPoint8[1];
+    w4 = _calPoint8[3];
+
+    if (w1 && w1 !== 1) {
+      x1 /= w1;
+      y1 /= w1;
+    }
+
+    if (w2 && w2 !== 1) {
+      x2 /= w2;
+      y2 /= w2;
+    }
+
+    if (w3 && w3 !== 1) {
+      x3 /= w3;
+      y3 /= w3;
+    }
+
+    if (w4 && w4 !== 1) {
+      x4 /= w4;
+      y4 /= w4;
+    }
+
+    return pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
+  } else {
+    return x >= x1 && y >= y1 && x <= x4 && y <= y4;
+  }
 }
 /**
  * 余弦定理3边长求夹角
@@ -1375,12 +1440,12 @@ function calCoordsInNode(px, py, node) {
       ox = _computedStyle$TRANSF2[0],
       oy = _computedStyle$TRANSF2[1];
 
-  var _mx$calPoint = mx.calPoint([px * width - ox, py * height - oy], matrix);
+  var _calPoint9 = calPoint$1([px * width - ox, py * height - oy], matrix);
 
-  var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
+  var _calPoint10 = _slicedToArray(_calPoint9, 2);
 
-  px = _mx$calPoint2[0];
-  py = _mx$calPoint2[1];
+  px = _calPoint10[0];
+  py = _calPoint10[1];
   return [px + ox, py + oy];
 }
 
@@ -1917,6 +1982,7 @@ function pointOnCircle(x, y, r, deg) {
 
 var geom = {
   pointInPolygon: pointInPolygon,
+  pointInQuadrilateral: pointInQuadrilateral,
   d2r: d2r,
   r2d: r2d,
   // 贝塞尔曲线模拟1/4圆弧比例
@@ -5214,7 +5280,7 @@ var ca = {
 
 };
 
-var calPoint$1 = mx.calPoint;
+var calPoint$2 = mx.calPoint;
 /**
  * 初始化 shader
  * @param gl GL context
@@ -5435,25 +5501,25 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
     var xb = bx + width + (dx || 0),
         yb = by + (dy || 0);
 
-    var _calPoint = calPoint$1([xa, ya], matrix),
+    var _calPoint = calPoint$2([xa, ya], matrix),
         _calPoint2 = _slicedToArray(_calPoint, 4),
         x1 = _calPoint2[0],
         y1 = _calPoint2[1],
         w1 = _calPoint2[3];
 
-    var _calPoint3 = calPoint$1([xb, ya], matrix),
+    var _calPoint3 = calPoint$2([xb, ya], matrix),
         _calPoint4 = _slicedToArray(_calPoint3, 4),
         x2 = _calPoint4[0],
         y2 = _calPoint4[1],
         w2 = _calPoint4[3];
 
-    var _calPoint5 = calPoint$1([xb, yb], matrix),
+    var _calPoint5 = calPoint$2([xb, yb], matrix),
         _calPoint6 = _slicedToArray(_calPoint5, 4),
         x3 = _calPoint6[0],
         y3 = _calPoint6[1],
         w3 = _calPoint6[3];
 
-    var _calPoint7 = calPoint$1([xa, yb], matrix),
+    var _calPoint7 = calPoint$2([xa, yb], matrix),
         _calPoint8 = _slicedToArray(_calPoint7, 4),
         x4 = _calPoint8[0],
         y4 = _calPoint8[1],
@@ -9934,9 +10000,9 @@ var PX$3 = o.PX,
 var matrix = math.matrix,
     geom$1 = math.geom;
 var identity$1 = matrix.identity,
-    calPoint$2 = matrix.calPoint,
+    calPoint$3 = matrix.calPoint,
     multiply$1 = matrix.multiply,
-    isE$1 = matrix.isE;
+    isE$2 = matrix.isE;
 var d2r$2 = geom$1.d2r,
     pointInPolygon$1 = geom$1.pointInPolygon;
 
@@ -10090,7 +10156,7 @@ function calMatrixByOrigin(m, transformOrigin) {
 
   var res = m.slice(0);
 
-  if (ox === 0 && oy === 0 || isE$1(m)) {
+  if (ox === 0 && oy === 0 || isE$2(m)) {
     return res;
   }
 
@@ -10103,69 +10169,6 @@ function calMatrixByOrigin(m, transformOrigin) {
 function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
   var m = calMatrix(transform, ow, oh);
   return calMatrixByOrigin(m, transformOrigin);
-} // 判断点是否在一个4边形内，比如事件发生是否在节点上
-
-
-function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
-  if (matrix && !isE$1(matrix)) {
-    var w1, w2, w3, w4;
-
-    var _calPoint = calPoint$2([x1, y1], matrix);
-
-    var _calPoint2 = _slicedToArray(_calPoint, 4);
-
-    x1 = _calPoint2[0];
-    y1 = _calPoint2[1];
-    w1 = _calPoint2[3];
-
-    var _calPoint3 = calPoint$2([x2, y2], matrix);
-
-    var _calPoint4 = _slicedToArray(_calPoint3, 4);
-
-    x2 = _calPoint4[0];
-    y2 = _calPoint4[1];
-    w2 = _calPoint4[3];
-
-    var _calPoint5 = calPoint$2([x3, y3], matrix);
-
-    var _calPoint6 = _slicedToArray(_calPoint5, 4);
-
-    x3 = _calPoint6[0];
-    y3 = _calPoint6[1];
-    w3 = _calPoint6[3];
-
-    var _calPoint7 = calPoint$2([x4, y4], matrix);
-
-    var _calPoint8 = _slicedToArray(_calPoint7, 4);
-
-    x4 = _calPoint8[0];
-    y4 = _calPoint8[1];
-    w4 = _calPoint8[3];
-
-    if (w1 && w1 !== 1) {
-      x1 /= w1;
-      y1 /= w1;
-    }
-
-    if (w2 && w2 !== 1) {
-      x2 /= w2;
-      y2 /= w2;
-    }
-
-    if (w3 && w3 !== 1) {
-      x3 /= w3;
-      y3 /= w3;
-    }
-
-    if (w4 && w4 !== 1) {
-      x4 /= w4;
-      y4 /= w4;
-    }
-
-    return pointInPolygon$1(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
-  } else {
-    return x >= x1 && y >= y1 && x <= x4 && y <= y4;
-  }
 }
 
 function normalizeSingle(k, v, ow, oh, root) {
@@ -10229,7 +10232,7 @@ function calOrigin(transformOrigin, w, h, root) {
 }
 
 function calMatrixByPerspective(m, pm) {
-  if (!isE$1(pm)) {
+  if (!isE$2(pm)) {
     m = multiply$1(pm, m);
   }
 
@@ -10271,7 +10274,6 @@ var tf = {
   calPerspectiveMatrix: calPerspectiveMatrix,
   calMatrixByOrigin: calMatrixByOrigin,
   calMatrixWithOrigin: calMatrixWithOrigin,
-  pointInQuadrilateral: pointInQuadrilateral,
   isPerspectiveMatrix: isPerspectiveMatrix
 };
 
@@ -18969,7 +18971,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         return;
       }
 
-      var inThis = tf.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
+      var inThis = geom.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
 
       if (inThis) {
         if (!e.target && !ignore) {
@@ -26916,7 +26918,7 @@ var NONE$2 = o$3.NONE,
     contain$2 = o$3.contain,
     MBM = o$3.MIX_BLEND_MODE,
     ppt = o$3.PERSPECTIVE;
-var isE$2 = mx.isE,
+var isE$3 = mx.isE,
     inverse$1 = mx.inverse,
     multiply$2 = mx.multiply;
 var mbmName$2 = mbm.mbmName,
@@ -27075,7 +27077,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           bbox[3] -= sy1;
           var matrix = matrixHash[parentIndex]; // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
-          if (transform && !isE$2(transform)) {
+          if (transform && !isE$3(transform)) {
             var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
             tfo[0] += __sx1 - sx1 + dx;
@@ -27228,7 +27230,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
           continue;
         }
 
-        if (transform && !isE$2(transform)) {
+        if (transform && !isE$3(transform)) {
           var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
           if (__cache && __cache.available) {
@@ -27462,7 +27464,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
           continue;
         }
 
-        if (transform && !isE$2(transform)) {
+        if (transform && !isE$3(transform)) {
           var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
           if (__cache && __cache.available) {
@@ -27830,7 +27832,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
       transformOrigin = _config$NODE_COMPUTE2[TRANSFORM_ORIGIN$5];
   var inverse;
 
-  if (isE$2(transform)) {
+  if (isE$3(transform)) {
     inverse = mx.identity();
   } else {
     var tfo = transformOrigin.slice(0);
@@ -27871,7 +27873,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
     if (target) {
       var m = void 0;
 
-      if (isE$2(_transform)) {
+      if (isE$3(_transform)) {
         m = mx.identity();
       } else {
         var _tfo = _transformOrigin.slice(0);
@@ -28218,7 +28220,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
     if (i === 0) ; else if (lv > lastLv) {
       parentMatrix = lastConfig[NODE_MATRIX_EVENT$4];
 
-      if (isE$2(parentMatrix)) {
+      if (isE$3(parentMatrix)) {
         parentMatrix = null;
       }
 
@@ -28917,7 +28919,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         var m = __config[NODE_MATRIX$3];
         util.assignMatrix(m, matrix);
 
-        if (!matrix || isE$2(matrix)) {
+        if (!matrix || isE$3(matrix)) {
           delete virtualDom.transform;
         } else {
           virtualDom.transform = 'matrix(' + util.joinArr(mx.m2m6(matrix), ',') + ')';
@@ -29062,7 +29064,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
                 if (hasTransform === -1) {
                   var _ivs = inverse$1(dom.matrix);
 
-                  if (!isE$2(_ivs)) {
+                  if (!isE$3(_ivs)) {
                     props.push(['transform', "matrix(".concat(util.joinArr(mx.m2m6(_ivs), ','), ")")]);
                   }
                 } else {
@@ -29166,7 +29168,7 @@ function renderWebgl(renderMode, gl, root) {
     if (i === 0) ; else if (lv > lastLv) {
       parentMatrix = lastConfig[NODE_MATRIX_EVENT$4];
 
-      if (isE$2(parentMatrix)) {
+      if (isE$3(parentMatrix)) {
         parentMatrix = null;
       }
 
@@ -29175,7 +29177,7 @@ function renderWebgl(renderMode, gl, root) {
       opacityList.push(parentOpacity);
       parentPm = lastConfig[NODE_PERSPECTIVE_MATRIX$1];
 
-      if (isE$2(parentPm)) {
+      if (isE$3(parentPm)) {
         parentPm = null;
       }
 
@@ -31145,6 +31147,56 @@ var Root = /*#__PURE__*/function (_Dom) {
         taskCp.push(cb);
       }
     }
+  }, {
+    key: "getTargetAtPoint",
+    value: function getTargetAtPoint(x, y) {
+      function scan(vd, x, y, path, zPath) {
+        var __sx1 = vd.__sx1,
+            __sy1 = vd.__sy1,
+            offsetWidth = vd.offsetWidth,
+            offsetHeight = vd.offsetHeight,
+            matrixEvent = vd.matrixEvent,
+            children = vd.children,
+            zIndexChildren = vd.zIndexChildren;
+
+        if (Array.isArray(zIndexChildren)) {
+          for (var i = 0, len = children.length; i < len; i++) {
+            children[i].__index__ = i;
+          }
+
+          for (var _i2 = zIndexChildren.length - 1; _i2 >= 0; _i2--) {
+            var item = zIndexChildren[_i2];
+
+            if (item instanceof karas.Text) {
+              continue;
+            }
+
+            var path2 = path.slice();
+            path2.push(item.__index__);
+            var zPath2 = zPath.slice();
+            zPath2.push(_i2);
+            var res = scan(item, x, y, path2, zPath2);
+            console.log(res, item.tagName, path2.join(','));
+
+            if (res) {
+              return res;
+            }
+          }
+        }
+
+        var inThis = geom.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
+
+        if (inThis) {
+          return {
+            target: vd,
+            path: path,
+            zPath: zPath
+          };
+        }
+      }
+
+      return scan(this, x, y, [], []);
+    }
     /**
      * 每次刷新前检查root节点的样式，有些固定的修改无效，有些继承的作为根初始化
      * @param renderMode
@@ -31359,8 +31411,8 @@ var Root = /*#__PURE__*/function (_Dom) {
         });
       }); // 做完清空留待下次刷新重来
 
-      for (var _i2 = 0, _len2 = keys.length; _i2 < _len2; _i2++) {
-        delete updateHash[keys[_i2]][UPDATE_CONFIG$3][NODE_UNIQUE_UPDATE_ID];
+      for (var _i3 = 0, _len2 = keys.length; _i3 < _len2; _i3++) {
+        delete updateHash[keys[_i3]][UPDATE_CONFIG$3][NODE_UNIQUE_UPDATE_ID];
       }
 
       return hasUpdate;
@@ -31748,8 +31800,8 @@ var Root = /*#__PURE__*/function (_Dom) {
                 lastChild;
             var isStart, startIndex; // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
 
-            for (var _i3 = 0; _i3 < length; _i3++) {
-              var item = flowChildren[_i3];
+            for (var _i4 = 0; _i4 < length; _i4++) {
+              var item = flowChildren[_i4];
 
               if (item instanceof Component$1) {
                 item = item.shadowRoot;
@@ -31760,7 +31812,7 @@ var Root = /*#__PURE__*/function (_Dom) {
               if (!isStart && isXom) {
                 if (item.hasOwnProperty('__uniqueReflowId')) {
                   isStart = true;
-                  startIndex = _i3;
+                  startIndex = _i4;
                 }
               } // 开始变更的节点，至少不是第0个
 
@@ -31776,7 +31828,7 @@ var Root = /*#__PURE__*/function (_Dom) {
                   var _diff2 = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 
                   if (_diff2) {
-                    for (var j = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); j < length; j++) {
+                    for (var j = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); j < length; j++) {
                       flowChildren[j].__offsetY(_diff2, true, REPAINT$3); // flowChildren[j].clearCache();
 
                     }
@@ -31824,7 +31876,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
 
                       if (_diff3) {
-                        for (var _j = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); _j < length; _j++) {
+                        for (var _j = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); _j < length; _j++) {
                           flowChildren[_j].__offsetY(_diff3, true, REPAINT$3); // flowChildren[j].clearCache();
 
                         }
@@ -31836,11 +31888,11 @@ var Root = /*#__PURE__*/function (_Dom) {
                   mergeMarginTopList = [];
                   mergeMarginBottomList = [_marginBottom];
                 } // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0，最后一个一定有不必判断isStart
-                else if (_i3 === length - 1) {
+                else if (_i4 === length - 1) {
                     var _diff4 = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
 
                     if (_diff4) {
-                      for (var _j2 = Math.max(startIndex, _i3 - mergeMarginBottomList.length + 1); _j2 < length; _j2++) {
+                      for (var _j2 = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); _j2 < length; _j2++) {
                         flowChildren[_j2].__offsetY(_diff4, true, REPAINT$3); // flowChildren[j].clearCache();
 
                       }
@@ -31866,8 +31918,8 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                 var container;
 
-                for (var _i4 = 0, _len3 = absChildren.length; _i4 < _len3; _i4++) {
-                  var _item = absChildren[_i4];
+                for (var _i5 = 0, _len3 = absChildren.length; _i5 < _len3; _i5++) {
+                  var _item = absChildren[_i5];
                   var _item$currentStyle = _item.currentStyle,
                       top = _item$currentStyle[TOP$4],
                       bottom = _item$currentStyle[BOTTOM$4],
@@ -31983,8 +32035,8 @@ var Root = /*#__PURE__*/function (_Dom) {
             } // 没有diff变化或者固定尺寸，可能内部发生变化，调整AUTO的abs，不递归向上
 
 
-            for (var _i5 = 0, _len4 = absChildren.length; _i5 < _len4; _i5++) {
-              var _item2 = absChildren[_i5];
+            for (var _i6 = 0, _len4 = absChildren.length; _i6 < _len4; _i6++) {
+              var _item2 = absChildren[_i6];
               var _item2$currentStyle = _item2.currentStyle,
                   _top = _item2$currentStyle[TOP$4],
                   _bottom = _item2$currentStyle[BOTTOM$4];
@@ -32048,8 +32100,8 @@ var Root = /*#__PURE__*/function (_Dom) {
             else {
                 var j = ns[STRUCT_INDEX$2] + (ns[STRUCT_TOTAL$2] || 0) + 1 + diff;
 
-                for (var _i6 = lastIndex; _i6 < j; _i6++) {
-                  structs[_i6][STRUCT_INDEX$2] += diff;
+                for (var _i7 = lastIndex; _i7 < j; _i7++) {
+                  structs[_i7][STRUCT_INDEX$2] += diff;
                 }
 
                 lastIndex = j;
@@ -32058,8 +32110,8 @@ var Root = /*#__PURE__*/function (_Dom) {
           }); // 后面的要根据偏移量校正索引
 
           if (diff) {
-            for (var _i7 = lastIndex, _len5 = structs.length; _i7 < _len5; _i7++) {
-              structs[_i7][STRUCT_INDEX$2] += diff;
+            for (var _i8 = lastIndex, _len5 = structs.length; _i8 < _len5; _i8++) {
+              structs[_i8][STRUCT_INDEX$2] += diff;
             }
           } // 清除id
 
@@ -34848,7 +34900,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.59.9";
+var version = "0.59.10";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);
@@ -34857,7 +34909,7 @@ Geom$1.register('$sector', Sector);
 Geom$1.register('$rect', Rect);
 Geom$1.register('$circle', Circle);
 Geom$1.register('$ellipse', Ellipse);
-var karas = {
+var karas$1 = {
   version: version,
   render: function render(root, dom) {
     if (!(root instanceof Root)) {
@@ -34960,10 +35012,10 @@ builder.ref({
 });
 
 if (typeof window !== 'undefined') {
-  window.karas = karas;
+  window.karas = karas$1;
 } else if (typeof self !== 'undefined') {
-  self.karas = karas;
+  self.karas = karas$1;
 }
 
-export default karas;
+export default karas$1;
 //# sourceMappingURL=index.mjs.map

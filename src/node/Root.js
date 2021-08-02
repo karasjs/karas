@@ -55,6 +55,7 @@ const {
     BORDER_TOP_WIDTH,
     BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH,
+    POINTER_EVENTS,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -1010,9 +1011,13 @@ class Root extends Dom {
     }
   }
 
-  getTargetAtPoint(x, y) {
+  getTargetAtPoint(x, y, includeIgnore) {
     function scan(vd, x, y, path, zPath) {
-      let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren } = vd;
+      let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren,
+        computedStyle: { [DISPLAY]: display, [POINTER_EVENTS]: pointerEvents } } = vd;
+      if(!includeIgnore && display === 'none') {
+        return;
+      }
       if(Array.isArray(zIndexChildren)) {
         for(let i = 0, len = children.length; i < len; i++) {
           children[i].__index__ = i;
@@ -1027,11 +1032,13 @@ class Root extends Dom {
           let zPath2 = zPath.slice();
           zPath2.push(i);
           let res = scan(item, x, y, path2, zPath2);
-          console.log(res, item.tagName, path2.join(','));
           if(res) {
             return res;
           }
         }
+      }
+      if(!includeIgnore && pointerEvents === 'none') {
+        return;
       }
       let inThis = geom.pointInQuadrilateral(
         x, y,

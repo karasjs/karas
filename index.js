@@ -30018,6 +30018,7 @@
       BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+      POINTER_EVENTS$2 = _enums$STYLE_KEY$j.POINTER_EVENTS,
       _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
       UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -31155,7 +31156,7 @@
       }
     }, {
       key: "getTargetAtPoint",
-      value: function getTargetAtPoint(x, y) {
+      value: function getTargetAtPoint(x, y, includeIgnore) {
         function scan(vd, x, y, path, zPath) {
           var __sx1 = vd.__sx1,
               __sy1 = vd.__sy1,
@@ -31163,7 +31164,14 @@
               offsetHeight = vd.offsetHeight,
               matrixEvent = vd.matrixEvent,
               children = vd.children,
-              zIndexChildren = vd.zIndexChildren;
+              zIndexChildren = vd.zIndexChildren,
+              _vd$computedStyle = vd.computedStyle,
+              display = _vd$computedStyle[DISPLAY$a],
+              pointerEvents = _vd$computedStyle[POINTER_EVENTS$2];
+
+          if (!includeIgnore && display === 'none') {
+            return;
+          }
 
           if (Array.isArray(zIndexChildren)) {
             for (var i = 0, len = children.length; i < len; i++) {
@@ -31182,12 +31190,15 @@
               var zPath2 = zPath.slice();
               zPath2.push(_i2);
               var res = scan(item, x, y, path2, zPath2);
-              console.log(res, item.tagName, path2.join(','));
 
               if (res) {
                 return res;
               }
             }
+          }
+
+          if (!includeIgnore && pointerEvents === 'none') {
+            return;
           }
 
           var inThis = geom.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);

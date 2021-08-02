@@ -734,6 +734,7 @@ console.log(root);
 * **参数**
   * x `Number`
   * y `Number`
+  * includeIgnore `Boolean` 是否包含display和pointerEvents为none的（即不可见不触发），默认否
 * **说明**  
 按z轴顺序返回最上层处于此x/y坐标的节点和path/zPath，path指从根节点开始到此节点的每层级children的索引数组，zPath则是zIndexChildren。
 * **示例**

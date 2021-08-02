@@ -4,6 +4,7 @@ import enums from '../util/enums';
 
 const H = 4 * (Math.sqrt(2) - 1) / 3;
 const { crossProduct } = vector;
+const { calPoint, isE } = mx;
 const { STYLE_KEY: {
   WIDTH,
   HEIGHT,
@@ -51,6 +52,42 @@ function pointInPolygon(x, y, vertexes) {
     }
   }
   return true;
+}
+
+// 判断点是否在一个4边形内，比如事件发生是否在节点上
+function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
+  if(matrix && !isE(matrix)) {
+    let w1, w2, w3, w4;
+    [x1, y1,, w1] = calPoint([x1, y1], matrix);
+    [x2, y2,, w2] = calPoint([x2, y2], matrix);
+    [x3, y3,, w3] = calPoint([x3, y3], matrix);
+    [x4, y4,, w4] = calPoint([x4, y4], matrix);
+    if(w1 && w1 !== 1) {
+      x1 /= w1;
+      y1 /= w1;
+    }
+    if(w2 && w2 !== 1) {
+      x2 /= w2;
+      y2 /= w2;
+    }
+    if(w3 && w3 !== 1) {
+      x3 /= w3;
+      y3 /= w3;
+    }
+    if(w4 && w4 !== 1) {
+      x4 /= w4;
+      y4 /= w4;
+    }
+    return pointInPolygon(x, y, [
+      [x1, y1],
+      [x2, y2],
+      [x4, y4],
+      [x3, y3]
+    ]);
+  }
+  else {
+    return x >= x1 && y >= y1 && x <= x4 && y <= y4;
+  }
 }
 
 /**
@@ -323,7 +360,7 @@ function isRectsInside(a, b) {
 function calCoordsInNode(px, py, node) {
   let { matrix = [1, 0, 0, 1, 0, 0], computedStyle = {} } = node;
   let { [WIDTH]: width, [HEIGHT]: height, [TRANSFORM_ORIGIN]: [ox, oy] = [width * 0.5, height * 0.5] } = computedStyle;
-  [px, py] = mx.calPoint([px * width - ox, py * height - oy], matrix);
+  [px, py] = calPoint([px * width - ox, py * height - oy], matrix);
   return [px + ox, py + oy];
 }
 
@@ -778,6 +815,7 @@ function pointOnCircle(x, y, r, deg) {
 
 export default {
   pointInPolygon,
+  pointInQuadrilateral,
   d2r,
   r2d,
   // 贝塞尔曲线模拟1/4圆弧比例

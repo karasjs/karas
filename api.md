@@ -727,6 +727,28 @@ console.log(root);
 * **说明**  
 是否不渲染，仅布局。此举在特殊场景下如仅测量节点大小时会用到。
 
+### 类方法method
+
+#### getTargetAtPoint
+* **类型** `Function`
+* **参数**
+  * x `Number`
+  * y `Number`
+* **说明**  
+按z轴顺序返回最上层处于此x/y坐标的节点和path/zPath，path指从根节点开始到此节点的每层级children的索引数组，zPath则是zIndexChildren。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas width={360} height={360}>
+    <div style={{width:100,height:100}}>
+      <span>text</span>
+    </div>
+  </canvas>,
+  '#selector'
+);
+console.log(root.getTargetAtPoint(10, 10)); // { target: span, path: [0, 0], zPath: [0, 0] }
+```
+
 <a name="Geom"></a>
 ## Geom
 * **类型** `class`
@@ -2875,6 +2897,23 @@ karas.math.matrix.calPoint([0, 0], [1, 0, 0, 100, 100]); // [100, 100]
   * vertexes `Array<Number>`
 * **说明**
 x/y点是否在由一堆顶点vertexes组成的多边形中。
+
+#### pointInQuadrilateral
+* **类型** `Function`
+* **参数**
+  * x `Number`
+  * y `Number`
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+  * x3 `Number`
+  * y3 `Number`
+  * x4 `Number`
+  * y4 `Number`
+  * matrix `Array<Number>`
+* **说明**
+  x/y点是否在一个矩形中（4个顶点），且矩形具有变换矩阵
 
 #### angleBySide
 * **类型** `Function`

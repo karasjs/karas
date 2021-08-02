@@ -2184,7 +2184,7 @@ class Xom extends Node {
     if(computedStyle[POINTER_EVENTS] === 'none') {
       return;
     }
-    let inThis = tf.pointInQuadrilateral(
+    let inThis = geom.pointInQuadrilateral(
       x, y,
       __sx1, __sy1,
       __sx1 + offsetWidth, __sy1,

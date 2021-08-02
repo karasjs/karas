@@ -11,6 +11,7 @@ import util from '../util/util';
 import domDiff from '../util/diff';
 import css from '../style/css';
 import unit from '../style/unit';
+import geom from '../math/geom';
 import enums from '../util/enums';
 import inject from '../util/inject';
 import Event from '../util/Event';
@@ -1007,6 +1008,48 @@ class Root extends Dom {
     if(taskCp.indexOf(cb) === -1) {
       taskCp.push(cb);
     }
+  }
+
+  getTargetAtPoint(x, y) {
+    function scan(vd, x, y, path, zPath) {
+      let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent, children, zIndexChildren } = vd;
+      if(Array.isArray(zIndexChildren)) {
+        for(let i = 0, len = children.length; i < len; i++) {
+          children[i].__index__ = i;
+        }
+        for(let i = zIndexChildren.length - 1; i >= 0; i--) {
+          let item = zIndexChildren[i];
+          if(item instanceof karas.Text) {
+            continue;
+          }
+          let path2 = path.slice();
+          path2.push(item.__index__);
+          let zPath2 = zPath.slice();
+          zPath2.push(i);
+          let res = scan(item, x, y, path2, zPath2);
+          console.log(res, item.tagName, path2.join(','));
+          if(res) {
+            return res;
+          }
+        }
+      }
+      let inThis = geom.pointInQuadrilateral(
+        x, y,
+        __sx1, __sy1,
+        __sx1 + offsetWidth, __sy1,
+        __sx1 + offsetWidth, __sy1 + offsetHeight,
+        __sx1, __sy1 + offsetHeight,
+        matrixEvent
+      );
+      if(inThis) {
+        return {
+          target: vd,
+          path,
+          zPath,
+        };
+      }
+    }
+    return scan(this, x, y, [], []);
   }
 
   /**

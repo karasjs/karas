@@ -1,5 +1,5 @@
 let root = karas.render(
-  <canvas width="360" height="360" noRender={true}>
+  <canvas width="360" height="360">
     <div>123</div>
   </canvas>,
   '#test'

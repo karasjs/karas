@@ -1083,8 +1083,12 @@ class Root extends Dom {
     computedStyle[HEIGHT] = height;
     // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-      dom.width = width;
-      dom.height = height;
+      if(dom.width !== width) {
+        dom.width = width;
+      }
+      if(dom.height !== height) {
+        dom.height = height;
+      }
     }
     else if(renderMode === mode.SVG) {
       dom.setAttribute('width', width);
@@ -1177,7 +1181,9 @@ class Root extends Dom {
       hasUpdate = parseUpdate(renderMode, root, updateRoot,
         reflowList, measureList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
-      root.__checkRoot(renderMode, width, height);
+      if(hasUpdate) {
+        root.__checkRoot(renderMode, width, height);
+      }
     }
     // 汇总处理每个节点，k是递增数字直接循环遍历
     let keys = Object.keys(updateHash);

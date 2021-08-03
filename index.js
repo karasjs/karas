@@ -19571,6 +19571,31 @@
         var p2 = mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent);
         var p3 = mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent);
         var p4 = mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent);
+
+        if (p1[3] && p1[3] !== 1) {
+          p1[0] /= p1[3];
+          p1[1] /= p1[3];
+          p1.splice(2);
+        }
+
+        if (p2[3] && p2[3] !== 1) {
+          p2[0] /= p2[3];
+          p2[1] /= p2[3];
+          p2.splice(2);
+        }
+
+        if (p3[3] && p3[3] !== 1) {
+          p3[0] /= p3[3];
+          p3[1] /= p3[3];
+          p3.splice(2);
+        }
+
+        if (p4[3] && p4[3] !== 1) {
+          p4[0] /= p4[3];
+          p4[1] /= p4[3];
+          p4.splice(2);
+        }
+
         return {
           left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
           top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),

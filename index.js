@@ -26948,7 +26948,7 @@
       REPAINT$2 = o$3.REPAINT,
       contain$2 = o$3.contain,
       MBM = o$3.MIX_BLEND_MODE,
-      ppt = o$3.PERSPECTIVE;
+      PPT = o$3.PERSPECTIVE;
   var isE$3 = mx.isE,
       inverse$1 = mx.inverse,
       multiply$2 = mx.multiply;
@@ -29261,7 +29261,7 @@
             __cacheStyle = __config[NODE_CACHE_STYLE$1],
             matrixEvent = __config[NODE_MATRIX_EVENT$4];
 
-        if (contain$2(refreshLevel, ppt)) {
+        if (contain$2(refreshLevel, PPT)) {
           node.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
         } // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
 

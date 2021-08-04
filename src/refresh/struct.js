@@ -84,7 +84,7 @@ const {
   REPAINT,
   contain,
   MIX_BLEND_MODE: MBM,
-  PERSPECTIVE: ppt,
+  PERSPECTIVE: PPT,
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
@@ -2062,7 +2062,7 @@ function renderWebgl(renderMode, gl, root) {
         [NODE_CACHE_STYLE]: __cacheStyle,
         [NODE_MATRIX_EVENT]: matrixEvent,
       } = __config;
-      if(contain(refreshLevel, ppt)) {
+      if(contain(refreshLevel, PPT)) {
         node.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
       }
       // transform变化，父元素的perspective变化也会在Root特殊处理重新计算

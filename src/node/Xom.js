@@ -1633,7 +1633,7 @@ class Xom extends Node {
     if(p) {
       if(p.perspectiveMatrix) {
         matrix = mx.multiply(p.perspectiveMatrix, matrix);
-        util.assignMatrix(m, matrix);
+        // util.assignMatrix(m, matrix);
       }
       matrix = mx.multiply(p.matrixEvent, matrix);
     }

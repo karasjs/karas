@@ -18333,8 +18333,7 @@
 
         if (p) {
           if (p.perspectiveMatrix) {
-            matrix = mx.multiply(p.perspectiveMatrix, matrix);
-            util.assignMatrix(m, matrix);
+            matrix = mx.multiply(p.perspectiveMatrix, matrix); // util.assignMatrix(m, matrix);
           }
 
           matrix = mx.multiply(p.matrixEvent, matrix);
@@ -29289,8 +29288,7 @@
 
 
         if (parentPm) {
-          matrix = multiply$2(parentPm, matrix);
-          util.assignMatrix(__config[NODE_MATRIX$3], matrix);
+          matrix = multiply$2(parentPm, matrix); // util.assignMatrix(__config[NODE_MATRIX], matrix);
         }
 
         if (parentMatrix) {

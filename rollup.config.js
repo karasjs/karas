@@ -23,7 +23,7 @@ export default [{
   input: 'src/index.js',
   output: {
     name: 'karas',
-    file: 'index.mjs',
+    file: 'index.es.js',
     format: 'es',
     sourcemap: true,
   },

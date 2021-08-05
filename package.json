@@ -1,7 +1,7 @@
 {
   "name": "karas",
-  "version": "0.59.11",
-  "description": "A flexible JavaScript framework for RIA on Canvas/Svg.",
+  "version": "0.59.12",
+  "description": "A flexible JavaScript framework for RIA on Canvas/Svg/Webgl.",
   "maintainers": [
     {
       "name": "army8735",

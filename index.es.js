@@ -18328,6 +18328,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       if (p) {
         if (p.perspectiveMatrix) {
           matrix = mx.multiply(p.perspectiveMatrix, matrix);
+          util.assignMatrix(m, matrix);
         }
 
         matrix = mx.multiply(p.matrixEvent, matrix);
@@ -19565,6 +19566,31 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       var p2 = mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent);
       var p3 = mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent);
       var p4 = mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent);
+
+      if (p1[3] && p1[3] !== 1) {
+        p1[0] /= p1[3];
+        p1[1] /= p1[3];
+        p1.splice(2);
+      }
+
+      if (p2[3] && p2[3] !== 1) {
+        p2[0] /= p2[3];
+        p2[1] /= p2[3];
+        p2.splice(2);
+      }
+
+      if (p3[3] && p3[3] !== 1) {
+        p3[0] /= p3[3];
+        p3[1] /= p3[3];
+        p3.splice(2);
+      }
+
+      if (p4[3] && p4[3] !== 1) {
+        p4[0] /= p4[3];
+        p4[1] /= p4[3];
+        p4.splice(2);
+      }
+
       return {
         left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
         top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
@@ -26917,7 +26943,7 @@ var NONE$2 = o$3.NONE,
     REPAINT$2 = o$3.REPAINT,
     contain$2 = o$3.contain,
     MBM = o$3.MIX_BLEND_MODE,
-    ppt = o$3.PERSPECTIVE;
+    PPT = o$3.PERSPECTIVE;
 var isE$3 = mx.isE,
     inverse$1 = mx.inverse,
     multiply$2 = mx.multiply;
@@ -29230,7 +29256,7 @@ function renderWebgl(renderMode, gl, root) {
           __cacheStyle = __config[NODE_CACHE_STYLE$1],
           matrixEvent = __config[NODE_MATRIX_EVENT$4];
 
-      if (contain$2(refreshLevel, ppt)) {
+      if (contain$2(refreshLevel, PPT)) {
         node.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
       } // transform变化，父元素的perspective变化也会在Root特殊处理重新计算
 
@@ -29258,6 +29284,7 @@ function renderWebgl(renderMode, gl, root) {
 
       if (parentPm) {
         matrix = multiply$2(parentPm, matrix);
+        util.assignMatrix(__config[NODE_MATRIX$3], matrix);
       }
 
       if (parentMatrix) {
@@ -30012,6 +30039,7 @@ var _enums$STYLE_KEY$j = enums.STYLE_KEY,
     BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
     BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+    POINTER_EVENTS$2 = _enums$STYLE_KEY$j.POINTER_EVENTS,
     _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
     UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
     UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
@@ -31149,7 +31177,7 @@ var Root = /*#__PURE__*/function (_Dom) {
     }
   }, {
     key: "getTargetAtPoint",
-    value: function getTargetAtPoint(x, y) {
+    value: function getTargetAtPoint(x, y, includeIgnore) {
       function scan(vd, x, y, path, zPath) {
         var __sx1 = vd.__sx1,
             __sy1 = vd.__sy1,
@@ -31157,7 +31185,14 @@ var Root = /*#__PURE__*/function (_Dom) {
             offsetHeight = vd.offsetHeight,
             matrixEvent = vd.matrixEvent,
             children = vd.children,
-            zIndexChildren = vd.zIndexChildren;
+            zIndexChildren = vd.zIndexChildren,
+            _vd$computedStyle = vd.computedStyle,
+            display = _vd$computedStyle[DISPLAY$a],
+            pointerEvents = _vd$computedStyle[POINTER_EVENTS$2];
+
+        if (!includeIgnore && display === 'none') {
+          return;
+        }
 
         if (Array.isArray(zIndexChildren)) {
           for (var i = 0, len = children.length; i < len; i++) {
@@ -31176,12 +31211,15 @@ var Root = /*#__PURE__*/function (_Dom) {
             var zPath2 = zPath.slice();
             zPath2.push(_i2);
             var res = scan(item, x, y, path2, zPath2);
-            console.log(res, item.tagName, path2.join(','));
 
             if (res) {
               return res;
             }
           }
+        }
+
+        if (!includeIgnore && pointerEvents === 'none') {
+          return;
         }
 
         var inThis = geom.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
@@ -31228,8 +31266,13 @@ var Root = /*#__PURE__*/function (_Dom) {
       computedStyle[HEIGHT$8] = height; // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
 
       if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-        dom.width = width;
-        dom.height = height;
+        if (dom.width !== width) {
+          dom.width = width;
+        }
+
+        if (dom.height !== height) {
+          dom.height = height;
+        }
       } else if (renderMode === mode.SVG) {
         dom.setAttribute('width', width);
         dom.setAttribute('height', height);
@@ -31325,7 +31368,9 @@ var Root = /*#__PURE__*/function (_Dom) {
         root.__updateRoot = null;
         hasUpdate = parseUpdate(renderMode, root, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
 
-        root.__checkRoot(renderMode, width, height);
+        if (hasUpdate) {
+          root.__checkRoot(renderMode, width, height);
+        }
       } // 汇总处理每个节点，k是递增数字直接循环遍历
 
 
@@ -34900,7 +34945,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.59.10";
+var version = "0.59.12";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);
@@ -35018,4 +35063,4 @@ if (typeof window !== 'undefined') {
 }
 
 export default karas$1;
-//# sourceMappingURL=index.mjs.map
+//# sourceMappingURL=index.es.js.map

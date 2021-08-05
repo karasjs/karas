@@ -18334,6 +18334,7 @@
         if (p) {
           if (p.perspectiveMatrix) {
             matrix = mx.multiply(p.perspectiveMatrix, matrix);
+            util.assignMatrix(m, matrix);
           }
 
           matrix = mx.multiply(p.matrixEvent, matrix);
@@ -29289,6 +29290,7 @@
 
         if (parentPm) {
           matrix = multiply$2(parentPm, matrix);
+          util.assignMatrix(__config[NODE_MATRIX$3], matrix);
         }
 
         if (parentMatrix) {
@@ -34949,7 +34951,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.11";
+  var version = "0.59.12";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -167,10 +167,21 @@ function m2m6(m) {
   ];
 }
 
+function point2d(point) {
+  let w = point[3];
+  if(w && w !== 1) {
+    point = point.slice(0, 2);
+    point[0] /= w;
+    point[1] /= w;
+  }
+  return point;
+}
+
 export default {
   identity,
   multiply,
   calPoint,
+  point2d,
   inverse,
   isE,
   m2m6,

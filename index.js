@@ -967,10 +967,23 @@
     return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
+  function point2d(point) {
+    var w = point[3];
+
+    if (w && w !== 1) {
+      point = point.slice(0, 2);
+      point[0] /= w;
+      point[1] /= w;
+    }
+
+    return point;
+  }
+
   var mx = {
     identity: identity,
     multiply: multiply,
     calPoint: calPoint,
+    point2d: point2d,
     inverse: inverse,
     isE: isE,
     m2m6: m2m6
@@ -16784,6 +16797,7 @@
   var GEOM$4 = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
       isValidMbm$1 = mbm.isValidMbm;
+  var point2d$1 = mx.point2d;
   var contain = o$3.contain,
       NONE = o$3.NONE,
       TF = o$3.TRANSFORM,
@@ -19567,35 +19581,10 @@
             offsetWidth = this.offsetWidth,
             offsetHeight = this.offsetHeight,
             matrixEvent = this.matrixEvent;
-        var p1 = mx.calPoint([__sx1, __sy1], matrixEvent);
-        var p2 = mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent);
-        var p3 = mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent);
-        var p4 = mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent);
-
-        if (p1[3] && p1[3] !== 1) {
-          p1[0] /= p1[3];
-          p1[1] /= p1[3];
-          p1.splice(2);
-        }
-
-        if (p2[3] && p2[3] !== 1) {
-          p2[0] /= p2[3];
-          p2[1] /= p2[3];
-          p2.splice(2);
-        }
-
-        if (p3[3] && p3[3] !== 1) {
-          p3[0] /= p3[3];
-          p3[1] /= p3[3];
-          p3.splice(2);
-        }
-
-        if (p4[3] && p4[3] !== 1) {
-          p4[0] /= p4[3];
-          p4[1] /= p4[3];
-          p4.splice(2);
-        }
-
+        var p1 = point2d$1(mx.calPoint([__sx1, __sy1], matrixEvent));
+        var p2 = point2d$1(mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent));
+        var p3 = point2d$1(mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent));
+        var p4 = point2d$1(mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent));
         return {
           left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
           top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),

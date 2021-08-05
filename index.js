@@ -18333,7 +18333,7 @@
 
         if (p) {
           if (p.perspectiveMatrix) {
-            matrix = mx.multiply(p.perspectiveMatrix, matrix); // util.assignMatrix(m, matrix);
+            matrix = mx.multiply(p.perspectiveMatrix, matrix);
           }
 
           matrix = mx.multiply(p.matrixEvent, matrix);
@@ -29288,7 +29288,7 @@
 
 
         if (parentPm) {
-          matrix = multiply$2(parentPm, matrix); // util.assignMatrix(__config[NODE_MATRIX], matrix);
+          matrix = multiply$2(parentPm, matrix);
         }
 
         if (parentMatrix) {
@@ -29395,7 +29395,7 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item6 = _slicedToArray(item, 10),
+        var _item6 = _slicedToArray(item, 9),
             i = _item6[0],
             total = _item6[2],
             node = _item6[3],
@@ -29403,8 +29403,7 @@
             limitCache = _item6[5],
             hasMask = _item6[6],
             filter = _item6[7],
-            overflow = _item6[8],
-            isPerspective = _item6[9];
+            overflow = _item6[8];
 
         var __cache = __config[NODE_CACHE$4],
             __cacheTotal = __config[NODE_CACHE_TOTAL$1],
@@ -34949,7 +34948,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.12";
+  var version = "0.59.13";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -2088,7 +2088,6 @@ function renderWebgl(renderMode, gl, root) {
       // 先左乘perspective的矩阵，再左乘父级的总矩阵
       if(parentPm) {
         matrix = multiply(parentPm, matrix);
-        // util.assignMatrix(__config[NODE_MATRIX], matrix);
       }
       if(parentMatrix) {
         matrix = multiply(parentMatrix, matrix);
@@ -2183,7 +2182,7 @@ function renderWebgl(renderMode, gl, root) {
       return b[1] - a[1];
     });
     mergeList.forEach(item => {
-      let [i, , total, node, __config, limitCache, hasMask, filter, overflow, isPerspective] = item;
+      let [i, , total, node, __config, limitCache, hasMask, filter, overflow] = item;
       let {
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,

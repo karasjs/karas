@@ -34730,7 +34730,7 @@
 
     var libraryId = json.libraryId;
 
-    if (!isNil$f(libraryId)) {
+    if (!isNil$f(libraryId) && libraryId !== "") {
       var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
       if (libraryItem) {
@@ -34937,7 +34937,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.13";
+  var version = "0.59.14";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

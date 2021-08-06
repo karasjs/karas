@@ -181,7 +181,7 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
   }
   // 先判断是否是个链接到库的节点，是则进行链接操作
   let libraryId = json.libraryId;
-  if(!isNil(libraryId)) {
+  if(!isNil(libraryId) && libraryId !== "") {
     let libraryItem = hash[libraryId];
     // 规定图层child只有init和动画，tagName和属性和子图层来自库
     if(libraryItem) {

@@ -1533,8 +1533,8 @@ class Root extends Dom {
           break;
         }
 
-        // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
-        if(!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+        // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，注意忽略有display:none变block同时为absolute的
+        if(!parent.hasOwnProperty('__uniqueMergeOffsetId') && !(isNowAbs && isLastNone)) {
           parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
           mergeOffsetList.push(parent);
         }
@@ -1601,7 +1601,6 @@ class Root extends Dom {
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REPAINT);
-                  // flowChildren[j].clearCache();
                 }
               }
             }
@@ -1642,7 +1641,6 @@ class Root extends Dom {
                   if(diff) {
                     for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                       flowChildren[j].__offsetY(diff, true, REPAINT);
-                      // flowChildren[j].clearCache();
                     }
                   }
                 }
@@ -1657,7 +1655,6 @@ class Root extends Dom {
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REPAINT);
-                  // flowChildren[j].clearCache();
                 }
               }
             }
@@ -1667,7 +1664,7 @@ class Root extends Dom {
         let cs = parent.currentStyle;
         let height = cs[HEIGHT];
         let isContainer = parent === root || parent.isShadowRoot || cs[POSITION] === 'absolute' || cs[POSITION] === 'relative';
-        if(height[1] === AUTO) {
+        if(height[1] === AUTO && lastChild) {
           let oldH = parent.height + parent.computedStyle[PADDING_TOP];
           let nowH = lastChild.y + lastChild.outerHeight - parent.y;
           let diff = nowH - oldH;

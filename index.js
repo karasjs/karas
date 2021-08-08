@@ -31786,10 +31786,10 @@
                 }
 
                 break;
-              } // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
+              } // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，注意忽略有display:none变block同时为absolute的
 
 
-              if (!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+              if (!parent.hasOwnProperty('__uniqueMergeOffsetId') && !(isNowAbs && isLastNone)) {
                 parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
                 mergeOffsetList.push(parent);
               } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
@@ -31866,8 +31866,7 @@
 
                     if (_diff2) {
                       for (var j = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); j < length; j++) {
-                        flowChildren[j].__offsetY(_diff2, true, REPAINT$3); // flowChildren[j].clearCache();
-
+                        flowChildren[j].__offsetY(_diff2, true, REPAINT$3);
                       }
                     }
                   }
@@ -31914,8 +31913,7 @@
 
                         if (_diff3) {
                           for (var _j = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); _j < length; _j++) {
-                            flowChildren[_j].__offsetY(_diff3, true, REPAINT$3); // flowChildren[j].clearCache();
-
+                            flowChildren[_j].__offsetY(_diff3, true, REPAINT$3);
                           }
                         }
                       }
@@ -31930,8 +31928,7 @@
 
                       if (_diff4) {
                         for (var _j2 = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); _j2 < length; _j2++) {
-                          flowChildren[_j2].__offsetY(_diff4, true, REPAINT$3); // flowChildren[j].clearCache();
-
+                          flowChildren[_j2].__offsetY(_diff4, true, REPAINT$3);
                         }
                       }
                     }
@@ -31943,7 +31940,7 @@
               var height = cs[HEIGHT$8];
               var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
-              if (height[1] === AUTO$8) {
+              if (height[1] === AUTO$8 && lastChild) {
                 var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
                 var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
@@ -34937,7 +34934,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.14";
+  var version = "0.59.15";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

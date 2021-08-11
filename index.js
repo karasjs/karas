@@ -12796,7 +12796,7 @@
       var bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$1][i], bgW, w, xom.root);
       var bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$1][i], bgH, h, xom.root); // 超出尺寸模拟mask截取
 
-      var needMask = bgX < bx1 || bgY < by1 || w > bgW || h > bgH; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+      var needMask = bgX < bx1 || bgY < by1 || bgX + w > bx1 + bgW || bgY + h > by1 + bgH; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
       var xnl = 0;
       var xnr = 0;
@@ -26622,6 +26622,10 @@
             var target = item.target,
                 animate = item.animate;
 
+            if (target.isDestroyed) {
+              return;
+            }
+
             if (Array.isArray(animate)) {
               animate.forEach(function (animate) {
                 var value = animate.value,
@@ -34941,7 +34945,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.16";
+  var version = "0.59.17";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

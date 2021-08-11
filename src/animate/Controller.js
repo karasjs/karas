@@ -40,6 +40,9 @@ class Controller {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
       list.splice(0).forEach(item => {
         let { target, animate } = item;
+        if(target.isDestroyed) {
+          return;
+        }
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
             let { value, options } = animate;

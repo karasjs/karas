@@ -249,7 +249,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
     let bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w, xom.root);
     let bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h, xom.root);
     // 超出尺寸模拟mask截取
-    let needMask = bgX < bx1 || bgY < by1 || w > bgW || h > bgH;
+    let needMask = bgX < bx1 || bgY < by1 || (bgX + w) > (bx1 + bgW) || (bgY + h) > (by1 + bgH);
     // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
     let xnl = 0;
     let xnr = 0;

@@ -2558,6 +2558,12 @@ class Xom extends Node {
     }
   }
 
+  clearFrameAnimate() {
+    this.__frameAnimateList.splice(0).forEach(o => {
+      frame.offFrame(o);
+    });
+  }
+
   __computeMeasure(renderMode, ctx, cb) {
     css.computeMeasure(this);
     if(util.isFunction(cb)) {

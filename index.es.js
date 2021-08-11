@@ -961,10 +961,23 @@ function m2m6(m) {
   return [m[0], m[1], m[4], m[5], m[12], m[13]];
 }
 
+function point2d(point) {
+  var w = point[3];
+
+  if (w && w !== 1) {
+    point = point.slice(0, 2);
+    point[0] /= w;
+    point[1] /= w;
+  }
+
+  return point;
+}
+
 var mx = {
   identity: identity,
   multiply: multiply,
   calPoint: calPoint,
+  point2d: point2d,
   inverse: inverse,
   isE: isE,
   m2m6: m2m6
@@ -16778,6 +16791,7 @@ var calRelative$1 = css.calRelative;
 var GEOM$4 = o$2.GEOM;
 var mbmName$1 = mbm.mbmName,
     isValidMbm$1 = mbm.isValidMbm;
+var point2d$1 = mx.point2d;
 var contain = o$3.contain,
     NONE = o$3.NONE,
     TF = o$3.TRANSFORM,
@@ -19388,6 +19402,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       }
     }
   }, {
+    key: "clearFrameAnimate",
+    value: function clearFrameAnimate() {
+      this.__frameAnimateList.splice(0).forEach(function (o) {
+        frame.offFrame(o);
+      });
+    }
+  }, {
     key: "__computeMeasure",
     value: function __computeMeasure(renderMode, ctx, cb) {
       css.computeMeasure(this);
@@ -19561,35 +19582,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           offsetWidth = this.offsetWidth,
           offsetHeight = this.offsetHeight,
           matrixEvent = this.matrixEvent;
-      var p1 = mx.calPoint([__sx1, __sy1], matrixEvent);
-      var p2 = mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent);
-      var p3 = mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent);
-      var p4 = mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent);
-
-      if (p1[3] && p1[3] !== 1) {
-        p1[0] /= p1[3];
-        p1[1] /= p1[3];
-        p1.splice(2);
-      }
-
-      if (p2[3] && p2[3] !== 1) {
-        p2[0] /= p2[3];
-        p2[1] /= p2[3];
-        p2.splice(2);
-      }
-
-      if (p3[3] && p3[3] !== 1) {
-        p3[0] /= p3[3];
-        p3[1] /= p3[3];
-        p3.splice(2);
-      }
-
-      if (p4[3] && p4[3] !== 1) {
-        p4[0] /= p4[3];
-        p4[1] /= p4[3];
-        p4.splice(2);
-      }
-
+      var p1 = point2d$1(mx.calPoint([__sx1, __sy1], matrixEvent));
+      var p2 = point2d$1(mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent));
+      var p3 = point2d$1(mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent));
+      var p4 = point2d$1(mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent));
       return {
         left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
         top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
@@ -31791,10 +31787,10 @@ var Root = /*#__PURE__*/function (_Dom) {
               }
 
               break;
-            } // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，
+            } // 去重防止abs并记录parent，整个结束后按先序顺序进行margin合并以及偏移，注意忽略有display:none变block同时为absolute的
 
 
-            if (!parent.hasOwnProperty('__uniqueMergeOffsetId')) {
+            if (!parent.hasOwnProperty('__uniqueMergeOffsetId') && !(isNowAbs && isLastNone)) {
               parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
               mergeOffsetList.push(parent);
             } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
@@ -31871,8 +31867,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                   if (_diff2) {
                     for (var j = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); j < length; j++) {
-                      flowChildren[j].__offsetY(_diff2, true, REPAINT$3); // flowChildren[j].clearCache();
-
+                      flowChildren[j].__offsetY(_diff2, true, REPAINT$3);
                     }
                   }
                 }
@@ -31919,8 +31914,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                       if (_diff3) {
                         for (var _j = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); _j < length; _j++) {
-                          flowChildren[_j].__offsetY(_diff3, true, REPAINT$3); // flowChildren[j].clearCache();
-
+                          flowChildren[_j].__offsetY(_diff3, true, REPAINT$3);
                         }
                       }
                     }
@@ -31935,8 +31929,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                     if (_diff4) {
                       for (var _j2 = Math.max(startIndex, _i4 - mergeMarginBottomList.length + 1); _j2 < length; _j2++) {
-                        flowChildren[_j2].__offsetY(_diff4, true, REPAINT$3); // flowChildren[j].clearCache();
-
+                        flowChildren[_j2].__offsetY(_diff4, true, REPAINT$3);
                       }
                     }
                   }
@@ -31948,7 +31941,7 @@ var Root = /*#__PURE__*/function (_Dom) {
             var height = cs[HEIGHT$8];
             var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
-            if (height[1] === AUTO$8) {
+            if (height[1] === AUTO$8 && lastChild) {
               var oldH = parent.height + parent.computedStyle[PADDING_TOP$5];
               var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
@@ -34735,7 +34728,7 @@ function parse(karas, json, animateRecords, opt) {
 
   var libraryId = json.libraryId;
 
-  if (!isNil$f(libraryId)) {
+  if (!isNil$f(libraryId) && libraryId !== "") {
     var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
     if (libraryItem) {
@@ -34942,7 +34935,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.59.13";
+var version = "0.59.16";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

@@ -19408,6 +19408,13 @@
         }
       }
     }, {
+      key: "clearFrameAnimate",
+      value: function clearFrameAnimate() {
+        this.__frameAnimateList.splice(0).forEach(function (o) {
+          frame.offFrame(o);
+        });
+      }
+    }, {
       key: "__computeMeasure",
       value: function __computeMeasure(renderMode, ctx, cb) {
         css.computeMeasure(this);
@@ -34934,7 +34941,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.15";
+  var version = "0.59.16";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

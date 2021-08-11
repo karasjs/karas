@@ -2537,13 +2537,20 @@ class Xom extends Node {
 
   frameAnimate(cb) {
     if(util.isFunction(cb)) {
+      let list = this.__frameAnimateList;
+      // 防止重复
+      for(let i = 0, len = list.length; i < len; i++) {
+        if(list[i].__karasFramecb === cb) {
+          return cb;
+        }
+      }
       let enter = {
         __after(diff) {
           cb(diff);
         },
         __karasFramecb: cb,
       };
-      this.__frameAnimateList.push(enter);
+      list.push(enter);
       frame.onFrame(enter);
       return cb;
     }
@@ -2553,7 +2560,8 @@ class Xom extends Node {
     for(let i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
       if(list[i].__karasFramecb === cb) {
         list.splice(i, 1);
-        frame.offFrame(cb);
+        frame.offFrame(list[i]);
+        return;
       }
     }
   }

@@ -19384,15 +19384,21 @@
       key: "frameAnimate",
       value: function frameAnimate(cb) {
         if (util.isFunction(cb)) {
+          var list = this.__frameAnimateList; // 防止重复
+
+          for (var i = 0, len = list.length; i < len; i++) {
+            if (list[i].__karasFramecb === cb) {
+              return cb;
+            }
+          }
+
           var enter = {
             __after: function __after(diff) {
               cb(diff);
             },
             __karasFramecb: cb
           };
-
-          this.__frameAnimateList.push(enter);
-
+          list.push(enter);
           frame.onFrame(enter);
           return cb;
         }
@@ -19403,7 +19409,8 @@
         for (var i = 0, list = this.__frameAnimateList, len = list.length; i < len; i++) {
           if (list[i].__karasFramecb === cb) {
             list.splice(i, 1);
-            frame.offFrame(cb);
+            frame.offFrame(list[i]);
+            return;
           }
         }
       }
@@ -34945,7 +34952,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.17";
+  var version = "0.59.18";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -796,6 +796,10 @@ class Img extends Dom {
     }
   }
 
+  appendChild() {
+    inject.error('Img can not appendChild.');
+  }
+
   get isMask() {
     return this.__isMask;
   }

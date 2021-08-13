@@ -67,6 +67,7 @@ const {
     UPDATE_OVERWRITE,
     UPDATE_LIST,
     UPDATE_CONFIG,
+    UPDATE_DOM,
   },
   NODE_KEY: {
     NODE_TAG_NAME,
@@ -314,6 +315,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [UPDATE_LIST]: list,
     [UPDATE_KEYS]: keys,
     [UPDATE_CONFIG]: __config,
+    [UPDATE_DOM]: updateDom,
   } = target;
   if(__config[NODE_IS_DESTROYED]) {
     return;
@@ -363,7 +365,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   } = __config;
   let lv = focus || NONE;
   let hasMeasure = measure;
-  let hasZ, hasVisibility, hasColor, hasDisplay, hasPerspective;
+  let hasZ, hasVisibility, hasColor, hasDisplay;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
   if(!component && style && keys) {
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -505,6 +507,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       node,
       style,
       component,
+      updateDom,
     });
     // measure需要提前先处理
     if(hasMeasure) {
@@ -1213,11 +1216,15 @@ class Root extends Dom {
       }
       let last = node;
       // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
-      let isInherit = node !== root && change.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE]);
+      // 另外dom标识表明有dom变更强制进入
+      let isInherit = updateHash[__uniqueUpdateId][UPDATE_DOM]
+        || node !== root && change.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE]);
       // 是inherit，需要向上查找，从顶部向下递归计算继承信息
       if(isInherit) {
         while(parent && parent !== root) {
-          let { __config:{ [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId, }, currentStyle } = parent;
+          let { __config: {
+            [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId,
+          }, currentStyle } = parent;
           let isInherit;
           if(parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
             let style = updateHash[__uniqueUpdateId][UPDATE_STYLE];
@@ -1281,7 +1288,7 @@ class Root extends Dom {
     let reflowHash = {};
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, component } = reflowList[i];
+      let { node, component, updateDom } = reflowList[i];
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
@@ -1293,6 +1300,7 @@ class Root extends Dom {
         reflowHash[__uniqueReflowId++] = {
           node,
           component,
+          updateDom
         };
       }
       // 每个节点都向上检查影响，以及是否从root开始完全重新
@@ -1353,7 +1361,7 @@ class Root extends Dom {
       let mergeOffsetList = [];
       let __uniqueMergeOffsetId = 0;
       uniqueList.forEach(item => {
-        let { node, component } = item;
+        let { node, component, updateDom } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         let cps = node.computedStyle, cts = node.currentStyle;
         let zIndex = cps[Z_INDEX], position = cps[POSITION], display = cps[DISPLAY];
@@ -1542,6 +1550,13 @@ class Root extends Dom {
             }
           }
         }
+        else if(updateDom) {
+          let domParent = node.domParent;
+          domParent.__zIndexChildren = null;
+          let arr = domParent.__modifyStruct(root, diffI);
+          diffI += arr[1];
+          diffList.push(arr);
+        }
         // display有none变化，重置struct和zIndexChildren
         else if(isLastNone || isNowNone) {
           node.__zIndexChildren = null;
@@ -1682,7 +1697,6 @@ class Root extends Dom {
                       let d = y - item.y;
                       if(d) {
                         item.__offsetY(d, true, REPAINT);
-                        // item.clearCache();
                       }
                       break;
                     }
@@ -1691,19 +1705,16 @@ class Root extends Dom {
                 }
                 else if(bottom[1] === PX) {
                   item.__offsetY(diff, true, REPAINT);
-                  // item.clearCache();
                 }
                 else if(bottom[1] === PERCENT) {
                   let v = (1 - bottom[0] * 0.01) * diff;
                   item.__offsetY(v, true, REPAINT);
-                  // item.clearCache();
                 }
               }
               else if(top[1] === PERCENT) {
                 if(isContainer) {
                   let v = top[0] * 0.01 * diff;
                   item.__offsetY(v, true, REPAINT);
-                  // item.clearCache();
                 }
                 // 非容器的特殊处理
                 else {
@@ -1723,7 +1734,6 @@ class Root extends Dom {
                   if(container.currentStyle[HEIGHT][1] !== PX) {
                     let v = top[0] * 0.01 * diff;
                     item.__offsetY(v, true, REPAINT);
-                    // item.clearCache();
                   }
                 }
               }

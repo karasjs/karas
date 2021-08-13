@@ -244,6 +244,7 @@ class Xom extends Node {
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
+    // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
   }
 
   __structure(i, lv, j) {

@@ -50,7 +50,7 @@ const {
     NODE_DEFS_CACHE,
   }
 } = enums;
-const { AUTO, PX, PERCENT, REM, VW, VH } = unit;
+const { PX, PERCENT, REM, VW, VH } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 

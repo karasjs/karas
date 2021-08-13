@@ -7,11 +7,13 @@ import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-// import tf from '../style/transform';
+import $$type from '../util/$$type';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
 import reflow from '../refresh/reflow';
+import builder from '../util/builder';
+import level from '../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -62,6 +64,13 @@ const {
     NODE_STRUCT,
     NODE_DOM_PARENT,
     NODE_IS_INLINE,
+  },
+  UPDATE_KEY: {
+    UPDATE_NODE,
+    UPDATE_FOCUS,
+    UPDATE_DOM,
+    UPDATE_CONFIG,
+    UPDATE_MEASURE,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -2860,6 +2869,42 @@ class Dom extends Xom {
     this.children.forEach(node => {
       node.__deepScan(cb, options);
     });
+  }
+
+  appendChild(json, cb) {
+    let self = this;
+    if(!util.isNil(json) && !self.isDestroyed) {
+      let { root, host } = self;
+      if(json instanceof Xom) {}
+      else if(json.$$type === $$type.TYPE_VD) {
+        let vd = builder.initDom(json, self, root, host);
+        root.addRefreshTask(vd.__task = {
+          __before() {
+            self.__json.children.push(json);
+            let len = self.children.length;
+            if(len) {
+              let last = self.children[len - 1];
+              last.__next = vd;
+              vd.__prev = last;
+            }
+            self.children.push(vd);
+            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+            let res = {};
+            res[UPDATE_NODE] = vd;
+            res[UPDATE_FOCUS] = level.REFLOW;
+            res[UPDATE_DOM] = true;
+            res[UPDATE_MEASURE] = true;
+            res[UPDATE_CONFIG] = vd.__config;
+            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+          },
+          __after(diff) {
+            if(util.isFunction(cb)) {
+              cb.call(vd, diff);
+            }
+          },
+        });
+      }
+    }
   }
 
   get children() {

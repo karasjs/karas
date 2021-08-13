@@ -380,7 +380,8 @@
     UPDATE_OVERWRITE: 5,
     UPDATE_KEYS: 6,
     UPDATE_LIST: 7,
-    UPDATE_CONFIG: 8
+    UPDATE_CONFIG: 8,
+    UPDATE_DOM: 9
   }; // animation计算每帧使用
 
   var KEY_FRAME_KEY = {
@@ -11799,20 +11800,29 @@
 
   function initRoot(cd, root) {
     var c = flattenJson({
+      tagName: root.tagName,
+      props: {},
       children: cd,
       $$type: TYPE_VD$2
     });
+    root.__json = c;
+    root.__host = root;
     var children = build(c.children, root, root);
     return relation(root, children);
   }
 
-  function initCp(json, root, owner) {
+  function initDom(json, parent, root, owner) {
+    var vd = build(json, root, owner);
+    return relation(parent, vd);
+  }
+
+  function initCp(json, root, host) {
     if (util.isObject(json)) {
       // cp的flatten在__init中自己做
-      var vd = build(json, root, owner, owner);
+      var vd = build(json, root, host);
 
       if (Array.isArray(vd)) {
-        relation(owner, vd);
+        relation(host, vd);
       }
 
       return vd;
@@ -11825,17 +11835,16 @@
    * 将初始json文件生成virtualDom
    * @param json
    * @param root
-   * @param owner
    * @param host
    * @param hasP 出现过p标签
    * @returns vd
    */
 
 
-  function build(json, root, owner, host, hasP) {
+  function build(json, root, host, hasP) {
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return build(item, root, owner, host);
+        return build(item, root, host);
       });
     }
 
@@ -11851,7 +11860,7 @@
           __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
 
       if (_$$type === TYPE_CP$2 && json.placeholder) {
-        return json.value;
+        return json.placeholder;
       }
 
       if (_$$type === TYPE_VD$2) {
@@ -11873,7 +11882,7 @@
         }
 
         if (Array.isArray(children)) {
-          children = relation(vd, build(children, root, owner, host, hasP));
+          children = relation(vd, build(children, root, host, hasP));
         } else {
           children = [];
         }
@@ -11888,10 +11897,11 @@
         vd.__tagName = vd.__tagName || tagName;
       } else {
         return new Text(json);
-      } // 根parse需要用到真正的vd引用
+      } // 根parse需要用到真正的vd引用，然后vd也要引用json，用以做domApi
 
 
-      json.vd = vd; // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
+      json.vd = vd;
+      vd.__json = json; // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
 
       if (__animateRecords) {
         vd.__animateRecords = __animateRecords;
@@ -11907,10 +11917,7 @@
       }
 
       vd.__root = root;
-
-      if (host) {
-        vd.__host = host;
-      }
+      vd.__host = host;
 
       if (_$$type === TYPE_CP$2) {
         vd.__init();
@@ -11919,7 +11926,7 @@
       var ref = props.ref;
 
       if (util.isString(ref) && ref || util.isNumber(ref)) {
-        owner.ref[ref] = vd;
+        host.ref[ref] = vd;
       } else if (util.isFunction(ref)) {
         ref(vd);
       }
@@ -11996,6 +12003,7 @@
       Component = o.Component;
     },
     initRoot: initRoot,
+    initDom: initDom,
     initCp: initCp,
     relation: relation
   };
@@ -16909,6 +16917,7 @@
       config[NODE_DEFS_CACHE$3] = _this.__cacheDefs;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
+      // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
 
       return _this;
     }
@@ -20530,6 +20539,12 @@
       NODE_STRUCT$2 = _enums$NODE_KEY$5.NODE_STRUCT,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$5.NODE_DOM_PARENT,
       NODE_IS_INLINE$1 = _enums$NODE_KEY$5.NODE_IS_INLINE,
+      _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
+      UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
+      UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
+      UPDATE_DOM = _enums$UPDATE_KEY$2.UPDATE_DOM,
+      UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
+      UPDATE_MEASURE = _enums$UPDATE_KEY$2.UPDATE_MEASURE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -23611,6 +23626,49 @@
         });
       }
     }, {
+      key: "appendChild",
+      value: function appendChild(json, cb) {
+        var self = this;
+
+        if (!util.isNil(json) && !self.isDestroyed) {
+          var root = self.root,
+              host = self.host;
+
+          if (json instanceof Xom$1) ; else if (json.$$type === $$type.TYPE_VD) {
+            var vd = builder.initDom(json, self, root, host);
+            root.addRefreshTask(vd.__task = {
+              __before: function __before() {
+                self.__json.children.push(json);
+
+                var len = self.children.length;
+
+                if (len) {
+                  var last = self.children[len - 1];
+                  last.__next = vd;
+                  vd.__prev = last;
+                }
+
+                self.children.push(vd); // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+                var res = {};
+                res[UPDATE_NODE$2] = vd;
+                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_DOM] = true;
+                res[UPDATE_MEASURE] = true;
+                res[UPDATE_CONFIG$2] = vd.__config;
+
+                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+              },
+              __after: function __after(diff) {
+                if (util.isFunction(cb)) {
+                  cb.call(vd, diff);
+                }
+              }
+            });
+          }
+        }
+      }
+    }, {
       key: "children",
       get: function get() {
         return this.__children;
@@ -23710,10 +23768,10 @@
       PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FLEX_BASIS$3 = _enums$STYLE_KEY$g.FLEX_BASIS,
-      _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
-      UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
-      UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
-      UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
+      _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
+      UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
+      UPDATE_FOCUS$2 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
+      UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
       NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
@@ -24312,10 +24370,10 @@
 
 
               var res = {};
-              res[UPDATE_NODE$2] = self;
-              res[UPDATE_FOCUS$1] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+              res[UPDATE_NODE$3] = self;
+              res[UPDATE_FOCUS$2] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
-              res[UPDATE_CONFIG$2] = self.__config;
+              res[UPDATE_CONFIG$3] = self.__config;
 
               root.__addUpdate(self, self.__config, root, root.__config, res);
             }
@@ -24343,9 +24401,9 @@
 
 
                     var res = {};
-                    res[UPDATE_NODE$2] = self;
-                    res[UPDATE_FOCUS$1] = o$3.REPAINT;
-                    res[UPDATE_CONFIG$2] = self.__config;
+                    res[UPDATE_NODE$3] = self;
+                    res[UPDATE_FOCUS$2] = o$3.REPAINT;
+                    res[UPDATE_CONFIG$3] = self.__config;
 
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
@@ -24364,10 +24422,10 @@
 
 
                     var res = {};
-                    res[UPDATE_NODE$2] = self;
-                    res[UPDATE_FOCUS$1] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+                    res[UPDATE_NODE$3] = self;
+                    res[UPDATE_FOCUS$2] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
-                    res[UPDATE_CONFIG$2] = self.__config;
+                    res[UPDATE_CONFIG$3] = self.__config;
 
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
@@ -24446,9 +24504,9 @@
               }
 
               var res = {};
-              res[UPDATE_NODE$2] = self;
-              res[UPDATE_FOCUS$1] = o$3.REFLOW;
-              res[UPDATE_CONFIG$2] = self.__config;
+              res[UPDATE_NODE$3] = self;
+              res[UPDATE_FOCUS$2] = o$3.REFLOW;
+              res[UPDATE_CONFIG$3] = self.__config;
 
               root.__addUpdate(self, self.__config, root, self.__config, res);
             },
@@ -24459,6 +24517,11 @@
             }
           });
         }
+      }
+    }, {
+      key: "appendChild",
+      value: function appendChild() {
+        inject.error('Img can not appendChild.');
       }
     }, {
       key: "isMask",
@@ -25906,8 +25969,7 @@
   function diffCp(oj, nj, vd) {
     // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
     // 否则需要强制触发组件更新，包含setState内容
-    nj.placeholder = true;
-    nj.value = vd;
+    nj.placeholder = vd;
     var sr = vd.shadowRoot; // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
 
     var exist = {};
@@ -30043,16 +30105,17 @@
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
       POINTER_EVENTS$2 = _enums$STYLE_KEY$j.POINTER_EVENTS,
-      _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
-      UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
-      UPDATE_STYLE$2 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
-      UPDATE_KEYS$2 = _enums$UPDATE_KEY$3.UPDATE_KEYS,
-      UPDATE_COMPONENT = _enums$UPDATE_KEY$3.UPDATE_COMPONENT,
-      UPDATE_FOCUS$2 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
-      UPDATE_MEASURE = _enums$UPDATE_KEY$3.UPDATE_MEASURE,
-      UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$3.UPDATE_OVERWRITE,
-      UPDATE_LIST = _enums$UPDATE_KEY$3.UPDATE_LIST,
-      UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
+      _enums$UPDATE_KEY$4 = enums.UPDATE_KEY,
+      UPDATE_NODE$4 = _enums$UPDATE_KEY$4.UPDATE_NODE,
+      UPDATE_STYLE$2 = _enums$UPDATE_KEY$4.UPDATE_STYLE,
+      UPDATE_KEYS$2 = _enums$UPDATE_KEY$4.UPDATE_KEYS,
+      UPDATE_COMPONENT = _enums$UPDATE_KEY$4.UPDATE_COMPONENT,
+      UPDATE_FOCUS$3 = _enums$UPDATE_KEY$4.UPDATE_FOCUS,
+      UPDATE_MEASURE$1 = _enums$UPDATE_KEY$4.UPDATE_MEASURE,
+      UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$4.UPDATE_OVERWRITE,
+      UPDATE_LIST = _enums$UPDATE_KEY$4.UPDATE_LIST,
+      UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
+      UPDATE_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_DOM,
       _enums$NODE_KEY$a = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$a.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$a.NODE_CACHE_STYLE,
@@ -30323,15 +30386,16 @@
   var uniqueUpdateId = 0;
 
   function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
-    var node = target[UPDATE_NODE$3],
+    var node = target[UPDATE_NODE$4],
         style = target[UPDATE_STYLE$2],
         overwrite = target[UPDATE_OVERWRITE$1],
-        focus = target[UPDATE_FOCUS$2],
+        focus = target[UPDATE_FOCUS$3],
         component = target[UPDATE_COMPONENT],
-        measure = target[UPDATE_MEASURE],
+        measure = target[UPDATE_MEASURE$1],
         list = target[UPDATE_LIST],
         keys = target[UPDATE_KEYS$2],
-        __config = target[UPDATE_CONFIG$3];
+        __config = target[UPDATE_CONFIG$4],
+        updateDom = target[UPDATE_DOM$1];
 
     if (__config[NODE_IS_DESTROYED$2]) {
       return;
@@ -30546,7 +30610,8 @@
         reflowList.push({
           node: node,
           style: style,
-          component: component
+          component: component,
+          updateDom: updateDom
         }); // measure需要提前先处理
 
         if (hasMeasure) {
@@ -31143,12 +31208,12 @@
                     }
 
                     var res = {};
-                    res[UPDATE_NODE$3] = sr;
+                    res[UPDATE_NODE$4] = sr;
                     res[UPDATE_STYLE$2] = sr.currentStyle;
-                    res[UPDATE_FOCUS$2] = REFLOW$2;
-                    res[UPDATE_MEASURE] = true;
+                    res[UPDATE_FOCUS$3] = REFLOW$2;
+                    res[UPDATE_MEASURE$1] = true;
                     res[UPDATE_COMPONENT] = cp;
-                    res[UPDATE_CONFIG$3] = sr.__config;
+                    res[UPDATE_CONFIG$4] = sr.__config;
 
                     _this4.__addUpdate(sr, sr.__config, _this4, _this4.__config, res);
                   });
@@ -31292,12 +31357,12 @@
           updateHash = root.__updateRoot;
 
           if (updateHash) {
-            if (o[UPDATE_FOCUS$2]) {
-              updateHash[UPDATE_FOCUS$2] |= o[UPDATE_FOCUS$2];
+            if (o[UPDATE_FOCUS$3]) {
+              updateHash[UPDATE_FOCUS$3] |= o[UPDATE_FOCUS$3];
             }
 
-            if (o[UPDATE_MEASURE]) {
-              updateHash[UPDATE_MEASURE] = true;
+            if (o[UPDATE_MEASURE$1]) {
+              updateHash[UPDATE_MEASURE$1] = true;
             } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -31317,12 +31382,12 @@
         } else if (updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
           var target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
 
-          if (o[UPDATE_FOCUS$2]) {
-            target[UPDATE_FOCUS$2] |= o[UPDATE_FOCUS$2];
+          if (o[UPDATE_FOCUS$3]) {
+            target[UPDATE_FOCUS$3] |= o[UPDATE_FOCUS$3];
           }
 
-          if (o[UPDATE_MEASURE]) {
-            target[UPDATE_MEASURE] = true;
+          if (o[UPDATE_MEASURE$1]) {
+            target[UPDATE_MEASURE$1] = true;
           } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -31408,8 +31473,9 @@
           }
 
           var last = node; // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
+          // 另外dom标识表明有dom变更强制进入
 
-          var isInherit = node !== root && o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = updateHash[__uniqueUpdateId][UPDATE_DOM$1] || node !== root && o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             while (parent && parent !== root) {
@@ -31449,7 +31515,7 @@
         }); // 做完清空留待下次刷新重来
 
         for (var _i3 = 0, _len2 = keys.length; _i3 < _len2; _i3++) {
-          delete updateHash[keys[_i3]][UPDATE_CONFIG$3][NODE_UNIQUE_UPDATE_ID];
+          delete updateHash[keys[_i3]][UPDATE_CONFIG$4][NODE_UNIQUE_UPDATE_ID];
         }
 
         return hasUpdate;
@@ -31491,7 +31557,8 @@
         for (var i = 0, len = reflowList.length; i < len; i++) {
           var _reflowList$i = reflowList[i],
               node = _reflowList$i.node,
-              component = _reflowList$i.component; // root提前跳出，完全重新布局
+              component = _reflowList$i.component,
+              updateDom = _reflowList$i.updateDom; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -31503,7 +31570,8 @@
             node.__uniqueReflowId = __uniqueReflowId;
             reflowHash[__uniqueReflowId++] = {
               node: node,
-              component: component
+              component: component,
+              updateDom: updateDom
             };
           } // 每个节点都向上检查影响，以及是否从root开始完全重新
 
@@ -31574,7 +31642,8 @@
             var __uniqueMergeOffsetId = 0;
             uniqueList.forEach(function (item) {
               var node = item.node,
-                  component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  component = item.component,
+                  updateDom = item.updateDom; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               var cps = node.computedStyle,
                   cts = node.currentStyle;
@@ -31806,14 +31875,22 @@
                     cleanSvgCache(node.domParent);
                   }
                 }
+              } else if (updateDom) {
+                var domParent = node.domParent;
+                domParent.__zIndexChildren = null;
+
+                var _arr3 = domParent.__modifyStruct(root, diffI);
+
+                diffI += _arr3[1];
+                diffList.push(_arr3);
               } // display有none变化，重置struct和zIndexChildren
               else if (isLastNone || isNowNone) {
                   node.__zIndexChildren = null;
 
-                  var _arr3 = node.__modifyStruct(root, diffI);
+                  var _arr4 = node.__modifyStruct(root, diffI);
 
-                  diffI += _arr3[1];
-                  diffList.push(_arr3);
+                  diffI += _arr4[1];
+                  diffList.push(_arr4);
                 }
             });
             /**
@@ -31979,8 +32056,7 @@
                             var d = y - _item.y;
 
                             if (d) {
-                              _item.__offsetY(d, true, REPAINT$3); // item.clearCache();
-
+                              _item.__offsetY(d, true, REPAINT$3);
                             }
 
                             break;
@@ -31989,20 +32065,17 @@
                           prev = prev.prev;
                         }
                       } else if (bottom[1] === PX$b) {
-                        _item.__offsetY(_diff5, true, REPAINT$3); // item.clearCache();
-
+                        _item.__offsetY(_diff5, true, REPAINT$3);
                       } else if (bottom[1] === PERCENT$c) {
                         var v = (1 - bottom[0] * 0.01) * _diff5;
 
-                        _item.__offsetY(v, true, REPAINT$3); // item.clearCache();
-
+                        _item.__offsetY(v, true, REPAINT$3);
                       }
                     } else if (top[1] === PERCENT$c) {
                       if (isContainer) {
                         var _v = top[0] * 0.01 * _diff5;
 
-                        _item.__offsetY(_v, true, REPAINT$3); // item.clearCache();
-
+                        _item.__offsetY(_v, true, REPAINT$3);
                       } // 非容器的特殊处理
                       else {
                           if (!container) {
@@ -32026,8 +32099,7 @@
                           if (container.currentStyle[HEIGHT$8][1] !== PX$b) {
                             var _v2 = top[0] * 0.01 * _diff5;
 
-                            _item.__offsetY(_v2, true, REPAINT$3); // item.clearCache();
-
+                            _item.__offsetY(_v2, true, REPAINT$3);
                           }
                         }
                     } // 高度百分比需发生变化的重新布局，需要在容器内

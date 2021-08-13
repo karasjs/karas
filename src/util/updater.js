@@ -326,8 +326,7 @@ function diffChildren(vd, oj, nj) {
 function diffCp(oj, nj, vd) {
   // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
   // 否则需要强制触发组件更新，包含setState内容
-  nj.placeholder = true;
-  nj.value = vd;
+  nj.placeholder = vd;
   let sr = vd.shadowRoot;
   // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
   let exist = {};

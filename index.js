@@ -23713,7 +23713,6 @@
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
-      UPDATE_IMG = _enums$UPDATE_KEY$2.UPDATE_IMG,
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
@@ -24316,8 +24315,6 @@
               res[UPDATE_NODE$2] = self;
               res[UPDATE_FOCUS$1] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
-              res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化，focus不起效
-
               res[UPDATE_CONFIG$2] = self.__config;
 
               root.__addUpdate(self, self.__config, root, root.__config, res);
@@ -24369,8 +24366,6 @@
                     var res = {};
                     res[UPDATE_NODE$2] = self;
                     res[UPDATE_FOCUS$1] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
-
-                    res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化，focus不起效
 
                     res[UPDATE_CONFIG$2] = self.__config;
 
@@ -24453,7 +24448,6 @@
               var res = {};
               res[UPDATE_NODE$2] = self;
               res[UPDATE_FOCUS$1] = o$3.REFLOW;
-              res[UPDATE_IMG] = true;
               res[UPDATE_CONFIG$2] = self.__config;
 
               root.__addUpdate(self, self.__config, root, self.__config, res);

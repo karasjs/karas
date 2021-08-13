@@ -42,7 +42,6 @@ const {
   UPDATE_KEY: {
     UPDATE_NODE,
     UPDATE_FOCUS,
-    UPDATE_IMG,
     UPDATE_CONFIG,
   },
   NODE_KEY: {
@@ -663,7 +662,6 @@ class Img extends Dom {
           let res = {};
           res[UPDATE_NODE] = self;
           res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
-          res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化，focus不起效
           res[UPDATE_CONFIG] = self.__config;
           root.__addUpdate(self, self.__config, root, root.__config, res);
         },
@@ -710,7 +708,6 @@ class Img extends Dom {
                 let res = {};
                 res[UPDATE_NODE] = self;
                 res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
-                res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化，focus不起效
                 res[UPDATE_CONFIG] = self.__config;
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
@@ -787,7 +784,6 @@ class Img extends Dom {
           let res = {};
           res[UPDATE_NODE] = self;
           res[UPDATE_FOCUS] = level.REFLOW;
-          res[UPDATE_IMG] = true;
           res[UPDATE_CONFIG] = self.__config;
           root.__addUpdate(self, self.__config, root, self.__config, res);
         },

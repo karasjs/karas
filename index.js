@@ -20732,7 +20732,7 @@
 
         var nss = this.__structure(struct[STRUCT_INDEX$1], struct[STRUCT_LV$1], struct[STRUCT_CHILD_INDEX$1]);
 
-        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct[STRUCT_INDEX$1] + offset, struct[STRUCT_TOTAL] + 1].concat(_toConsumableArray(nss)));
+        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct[STRUCT_INDEX$1] + offset, total + 1].concat(_toConsumableArray(nss)));
 
         var d = 0;
 
@@ -34932,7 +34932,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.19";
+  var version = "0.59.20";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

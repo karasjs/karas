@@ -230,7 +230,7 @@ class Dom extends Xom {
     let total = struct[STRUCT_TOTAL] || 0;
     // 新生成了struct，引用也变了
     let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
-    root.__structs.splice(struct[STRUCT_INDEX] + offset, struct[STRUCT_TOTAL] + 1, ...nss);
+    root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
     let d = 0;
     if(this !== root) {
       struct = __config[NODE_STRUCT];

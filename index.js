@@ -25839,18 +25839,18 @@
         } // 相同class的组件处理
 
 
-        if (oj.$$type === nj.$$type && oj.klass === nj.klass) {
+        if (oj && oj.$$type === nj.$$type && oj.klass === nj.klass) {
           diffCp(oj, nj, vd); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
 
           removeCpFromOldTree(vd);
         }
-      } else if (nj.$$type === TYPE_GM$3 && oj.$$type === TYPE_GM$3) {
+      } else if (nj.$$type === TYPE_GM$3 && oj && oj.$$type === TYPE_GM$3) {
         // $geom的multi必须一致
         if (oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
           nj.inheritAnimate = vd;
         }
       } // dom类型递归children
-      else if (nj.$$type === TYPE_VD$3 && oj.$$type === TYPE_VD$3) {
+      else if (nj.$$type === TYPE_VD$3 && oj && oj.$$type === TYPE_VD$3) {
           if (oj.tagName === nj.tagName) {
             nj.inheritAnimate = vd;
           }

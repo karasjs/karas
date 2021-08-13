@@ -371,11 +371,10 @@ var UPDATE_KEY = {
   UPDATE_FOCUS: 2,
   UPDATE_MEASURE: 3,
   UPDATE_COMPONENT: 4,
-  UPDATE_IMG: 5,
-  UPDATE_OVERWRITE: 6,
-  UPDATE_KEYS: 7,
-  UPDATE_LIST: 8,
-  UPDATE_CONFIG: 9
+  UPDATE_OVERWRITE: 5,
+  UPDATE_KEYS: 6,
+  UPDATE_LIST: 7,
+  UPDATE_CONFIG: 8
 }; // animation计算每帧使用
 
 var KEY_FRAME_KEY = {
@@ -30050,7 +30049,6 @@ var _enums$STYLE_KEY$j = enums.STYLE_KEY,
     UPDATE_KEYS$2 = _enums$UPDATE_KEY$3.UPDATE_KEYS,
     UPDATE_COMPONENT = _enums$UPDATE_KEY$3.UPDATE_COMPONENT,
     UPDATE_FOCUS$2 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
-    UPDATE_IMG$1 = _enums$UPDATE_KEY$3.UPDATE_IMG,
     UPDATE_MEASURE = _enums$UPDATE_KEY$3.UPDATE_MEASURE,
     UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$3.UPDATE_OVERWRITE,
     UPDATE_LIST = _enums$UPDATE_KEY$3.UPDATE_LIST,
@@ -30329,7 +30327,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       style = target[UPDATE_STYLE$2],
       overwrite = target[UPDATE_OVERWRITE$1],
       focus = target[UPDATE_FOCUS$2],
-      img = target[UPDATE_IMG$1],
       component = target[UPDATE_COMPONENT],
       measure = target[UPDATE_MEASURE],
       list = target[UPDATE_LIST],
@@ -30549,7 +30546,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       reflowList.push({
         node: node,
         style: style,
-        img: img,
         component: component
       }); // measure需要提前先处理
 
@@ -31296,10 +31292,6 @@ var Root = /*#__PURE__*/function (_Dom) {
         updateHash = root.__updateRoot;
 
         if (updateHash) {
-          if (o[UPDATE_IMG$1]) {
-            updateHash[UPDATE_IMG$1] = o[UPDATE_IMG$1];
-          }
-
           if (o[UPDATE_FOCUS$2]) {
             updateHash[UPDATE_FOCUS$2] |= o[UPDATE_FOCUS$2];
           }
@@ -31324,10 +31316,6 @@ var Root = /*#__PURE__*/function (_Dom) {
         updateHash[uniqueUpdateId++] = o;
       } else if (updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
         var target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
-
-        if (o[UPDATE_IMG$1]) {
-          target[UPDATE_IMG$1] = o[UPDATE_IMG$1];
-        }
 
         if (o[UPDATE_FOCUS$2]) {
           target[UPDATE_FOCUS$2] |= o[UPDATE_FOCUS$2];
@@ -31503,7 +31491,6 @@ var Root = /*#__PURE__*/function (_Dom) {
       for (var i = 0, len = reflowList.length; i < len; i++) {
         var _reflowList$i = reflowList[i],
             node = _reflowList$i.node,
-            img = _reflowList$i.img,
             component = _reflowList$i.component; // root提前跳出，完全重新布局
 
         if (node === this) {
@@ -31516,7 +31503,6 @@ var Root = /*#__PURE__*/function (_Dom) {
           node.__uniqueReflowId = __uniqueReflowId;
           reflowHash[__uniqueReflowId++] = {
             node: node,
-            img: img,
             component: component
           };
         } // 每个节点都向上检查影响，以及是否从root开始完全重新

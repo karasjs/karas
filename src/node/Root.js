@@ -63,7 +63,6 @@ const {
     UPDATE_KEYS,
     UPDATE_COMPONENT,
     UPDATE_FOCUS,
-    UPDATE_IMG,
     UPDATE_MEASURE,
     UPDATE_OVERWRITE,
     UPDATE_LIST,
@@ -310,7 +309,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [UPDATE_STYLE]: style,
     [UPDATE_OVERWRITE]: overwrite,
     [UPDATE_FOCUS]: focus,
-    [UPDATE_IMG]: img,
     [UPDATE_COMPONENT]: component,
     [UPDATE_MEASURE]: measure,
     [UPDATE_LIST]: list,
@@ -506,7 +504,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     reflowList.push({
       node,
       style,
-      img,
       component,
     });
     // measure需要提前先处理
@@ -1106,9 +1103,6 @@ class Root extends Dom {
     if(node === root) {
       updateHash = root.__updateRoot;
       if(updateHash) {
-        if(o[UPDATE_IMG]) {
-          updateHash[UPDATE_IMG] = o[UPDATE_IMG];
-        }
         if(o[UPDATE_FOCUS]) {
           updateHash[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
         }
@@ -1136,9 +1130,6 @@ class Root extends Dom {
     }
     else if(updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
       let target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
-      if(o[UPDATE_IMG]) {
-        target[UPDATE_IMG] = o[UPDATE_IMG];
-      }
       if(o[UPDATE_FOCUS]) {
         target[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
       }
@@ -1290,7 +1281,7 @@ class Root extends Dom {
     let reflowHash = {};
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, img, component } = reflowList[i];
+      let { node, component } = reflowList[i];
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
@@ -1301,7 +1292,6 @@ class Root extends Dom {
         node.__uniqueReflowId = __uniqueReflowId;
         reflowHash[__uniqueReflowId++] = {
           node,
-          img,
           component,
         };
       }

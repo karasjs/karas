@@ -31475,7 +31475,7 @@
           var last = node; // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
           // 另外dom标识表明有dom变更强制进入
 
-          var isInherit = updateHash[__uniqueUpdateId][UPDATE_DOM$1] || node !== root && o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = node !== root && (updateHash[__uniqueUpdateId][UPDATE_DOM$1] || o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2])); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             while (parent && parent !== root) {

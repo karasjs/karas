@@ -1,17 +1,13 @@
 let root = karas.render(
   <svg width="360" height="360">
-    <span>1</span>
+    <div>1</div>
   </svg>,
   '#test'
 );
-let div = <div style={{
-  width:100,height:100,background:'#F00',
-}}>2</div>;
+let div = <div style={{position:'absolute'}}>2</div>;
 root.appendChild(div, function() {
-  let div = <div style={{
-    width:100,height:100,background:'#00F',
-  }}>3</div>;
-  root.appendChild(div, function() {
+  let div = <div style={{position:'absolute'}}>3</div>;
+  root.children[0].appendChild(div, function() {
     let input = document.querySelector('input');
     input.value = document.querySelector('svg').innerHTML;
   });

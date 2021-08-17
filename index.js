@@ -381,7 +381,7 @@
     UPDATE_KEYS: 6,
     UPDATE_LIST: 7,
     UPDATE_CONFIG: 8,
-    UPDATE_DOM: 9
+    UPDATE_ADD_DOM: 9
   }; // animation计算每帧使用
 
   var KEY_FRAME_KEY = {
@@ -20542,7 +20542,7 @@
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
-      UPDATE_DOM = _enums$UPDATE_KEY$2.UPDATE_DOM,
+      UPDATE_ADD_DOM = _enums$UPDATE_KEY$2.UPDATE_ADD_DOM,
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
       UPDATE_MEASURE = _enums$UPDATE_KEY$2.UPDATE_MEASURE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
@@ -23634,7 +23634,7 @@
           var root = self.root,
               host = self.host;
 
-          if (json instanceof Xom$1) ; else if (json.$$type === $$type.TYPE_VD) {
+          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
             var vd = builder.initDom(json, self, root, host);
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
@@ -23648,12 +23648,13 @@
                   vd.__prev = last;
                 }
 
-                self.children.push(vd); // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+                self.children.push(vd);
+                self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
                 var res = {};
                 res[UPDATE_NODE$2] = vd;
                 res[UPDATE_FOCUS$1] = o$3.REFLOW;
-                res[UPDATE_DOM] = true;
+                res[UPDATE_ADD_DOM] = true;
                 res[UPDATE_MEASURE] = true;
                 res[UPDATE_CONFIG$2] = vd.__config;
 
@@ -23665,6 +23666,196 @@
                 }
               }
             });
+          } else {
+            throw new Error('Invalid parameter in appendChild.');
+          }
+        }
+      }
+    }, {
+      key: "prependChild",
+      value: function prependChild(json, cb) {
+        var self = this;
+
+        if (!util.isNil(json) && !self.isDestroyed) {
+          var root = self.root,
+              host = self.host;
+
+          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
+            var vd = builder.initDom(json, self, root, host);
+            root.addRefreshTask(vd.__task = {
+              __before: function __before() {
+                self.__json.children.unshift(json);
+
+                var len = self.children.length;
+
+                if (len) {
+                  var first = self.children[0];
+                  first.__prev = vd;
+                  vd.__next = first;
+                }
+
+                self.children.unshift(vd);
+                self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+                var res = {};
+                res[UPDATE_NODE$2] = vd;
+                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_ADD_DOM] = true;
+                res[UPDATE_MEASURE] = true;
+                res[UPDATE_CONFIG$2] = vd.__config;
+
+                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+              },
+              __after: function __after(diff) {
+                if (util.isFunction(cb)) {
+                  cb.call(vd, diff);
+                }
+              }
+            });
+          } else {
+            throw new Error('Invalid parameter in prependChild.');
+          }
+        }
+      }
+    }, {
+      key: "insertBefore",
+      value: function insertBefore(json, cb) {
+        var self = this;
+
+        if (!util.isNil(json) && !self.isDestroyed && self.domParent) {
+          var root = self.root,
+              domParent = self.domParent;
+          var host = domParent.host;
+
+          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
+            var vd = builder.initDom(json, domParent, root, host);
+            root.addRefreshTask(vd.__task = {
+              __before: function __before() {
+                var i = 0,
+                    has,
+                    __json = domParent.__json,
+                    children = __json.children,
+                    len = children.length;
+
+                for (; i < len; i++) {
+                  if (children[i] === self.__json) {
+                    has = true;
+                    break;
+                  }
+                }
+
+                if (!has) {
+                  throw new Error('InsertBefore exception.');
+                } // 插入注意开头位置处理
+
+
+                if (i) {
+                  children.splice(i, 0, json);
+                  vd.__next = self;
+                  vd.__prev = self.__prev;
+                  self.__prev = vd;
+                  domParent.children.splice(i, 0, vd);
+                } else {
+                  if (len) {
+                    var first = domParent.children[0];
+                    first.__prev = vd;
+                    vd.__next = first;
+                  }
+
+                  children.unshift(json);
+                  domParent.children.unshift(vd);
+                }
+
+                domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+                var res = {};
+                res[UPDATE_NODE$2] = vd;
+                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_ADD_DOM] = true;
+                res[UPDATE_MEASURE] = true;
+                res[UPDATE_CONFIG$2] = vd.__config;
+
+                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+              },
+              __after: function __after(diff) {
+                if (util.isFunction(cb)) {
+                  cb.call(vd, diff);
+                }
+              }
+            });
+          } else {
+            throw new Error('Invalid parameter in insertBefore.');
+          }
+        }
+      }
+    }, {
+      key: "insertAfter",
+      value: function insertAfter(json, cb) {
+        var self = this;
+
+        if (!util.isNil(json) && !self.isDestroyed && self.domParent) {
+          var root = self.root,
+              domParent = self.domParent;
+          var host = domParent.host;
+
+          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
+            var vd = builder.initDom(json, domParent, root, host);
+            root.addRefreshTask(vd.__task = {
+              __before: function __before() {
+                var i = 0,
+                    has,
+                    __json = domParent.__json,
+                    children = __json.children,
+                    len = children.length;
+
+                for (; i < len; i++) {
+                  if (children[i] === self.__json) {
+                    has = true;
+                    break;
+                  }
+                }
+
+                if (!has) {
+                  throw new Error('insertAfter exception.');
+                } // 插入注意末尾位置处理
+
+
+                if (i < len - 1) {
+                  children.splice(i + 1, 0, json);
+                  vd.__prev = self;
+                  vd.__next = self.__next;
+                  self.__next = vd;
+                  domParent.children.splice(i + 1, 0, vd);
+                } else {
+                  if (len) {
+                    var last = domParent.children[len - 1];
+                    last.__next = vd;
+                    vd.__prev = last;
+                  }
+
+                  children.push(json);
+                  domParent.children.push(vd);
+                }
+
+                domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+                var res = {};
+                res[UPDATE_NODE$2] = vd;
+                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_ADD_DOM] = true;
+                res[UPDATE_MEASURE] = true;
+                res[UPDATE_CONFIG$2] = vd.__config;
+
+                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+              },
+              __after: function __after(diff) {
+                if (util.isFunction(cb)) {
+                  cb.call(vd, diff);
+                }
+              }
+            });
+          } else {
+            throw new Error('Invalid parameter in insertAfter.');
           }
         }
       }
@@ -30115,7 +30306,7 @@
       UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$4.UPDATE_OVERWRITE,
       UPDATE_LIST = _enums$UPDATE_KEY$4.UPDATE_LIST,
       UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
-      UPDATE_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_DOM,
+      UPDATE_ADD_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_ADD_DOM,
       _enums$NODE_KEY$a = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$a.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$a.NODE_CACHE_STYLE,
@@ -30265,18 +30456,19 @@
 
   var __uniqueReflowId = 0;
 
-  function setLAYOUT(node, hash, component) {
+  function setLAYOUT(node, hash, component, addDom) {
     if (!node.hasOwnProperty('__uniqueReflowId')) {
       node.__uniqueReflowId = __uniqueReflowId;
       hash[__uniqueReflowId++] = {
         node: node,
-        component: component
+        component: component,
+        addDom: addDom
       };
     }
   }
   /**
    * 单独提出共用检测影响的函数，从节点本身开始向上分析影响，找到最上层的影响节点设置其重新布局
-   * 过程及__checkReflow中所提及的，各种情况
+   * 过程即__checkReflow中所提及的，各种情况
    * 将影响升至最近的父级节点，并添加布局标识，这样后面的深度遍历会以父级为准忽略本身
    * 如果最终是root，则返回true标识，直接整个重新开始布局
    * @returns {boolean}
@@ -30382,6 +30574,146 @@
       setLAYOUT(target, reflowHash, component);
     }
   }
+  /**
+   * addDom情况下的特殊影响检测，类似checkInfluence
+   * 添加的是absolute则只影响自己，大部分交互游戏情况属于此类型优化
+   * 添加的是inline/inlineBlock的话，影响最近非inline父节点
+   * 父为flex则直接影响父节点，不管添加情况如何
+   * 添加block/flex的话，上下都block/flex则只影响自己，否则还是影响父节点
+   * 如果最终是root，则返回true标识，直接整个重新开始布局
+   * @returns {boolean}
+   */
+
+
+  function checkInfluenceAddDom(root, reflowHash, node) {
+    var _node$currentStyle = node.currentStyle,
+        position = _node$currentStyle[POSITION$5],
+        display = _node$currentStyle[DISPLAY$a];
+
+    if (position === 'absolute') {
+      // 啥也不干
+      return;
+    }
+
+    var target = node; // 先检查inline，找到最近非inline父
+
+    if (['inline', 'inline-block', 'inlineBlock'].indexOf(display) > -1) {
+      do {
+        target = target.domParent; // 父到root提前跳出
+
+        if (target === root) {
+          return true;
+        } // 父已有LAYOUT跳出防重
+
+
+        if (isLAYOUT(target)) {
+          return;
+        } // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
+
+
+        if (target.currentStyle[POSITION$5] === 'absolute' || target.computedStyle[POSITION$5] === 'absolute') {
+          setLAYOUT(target, reflowHash, false, true);
+          return;
+        }
+      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
+
+
+      if (isFixedSize(target, true)) {
+        setLAYOUT(target, reflowHash, false, true);
+        return;
+      }
+    } // 此时target指向node，如果原本是inline则是其flow的非inline父
+
+
+    var parent = target.domParent; // parent有LAYOUT跳出，已被包含
+
+    if (isLAYOUT(parent)) {
+      return;
+    } // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
+
+
+    var topFlex;
+
+    do {
+      // 父已有LAYOUT跳出防重
+      if (isLAYOUT(parent)) {
+        return;
+      } // flex相关，包含变化或不变化
+
+
+      if (parent.computedStyle[DISPLAY$a] === 'flex' || parent.currentStyle[DISPLAY$a] === 'flex') {
+        topFlex = parent;
+      } // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
+
+
+      if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
+        break;
+      } // 父固定宽高跳出
+
+
+      if (isFixedSize(parent, true)) {
+        break;
+      }
+
+      parent = parent.domParent;
+    } while (parent); // 找到最上层flex，视作其更改
+
+
+    if (topFlex) {
+      target = topFlex;
+    }
+
+    if (target === root) {
+      return true;
+    }
+
+    parent = target; // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
+
+    while (parent) {
+      // 无论新老absolute，不变化则设置，变化一定会出现在列表中
+      if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
+        if (parent === root) {
+          break;
+        } // 固定尺寸的不用设置，需要跳出循环
+
+
+        if (isFixedSize(parent)) {
+          break;
+        } else {
+          setLAYOUT(parent, reflowHash, false, true);
+          return;
+        }
+      }
+
+      parent = parent.domParent;
+    } // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
+
+
+    if (target !== node) {
+      setLAYOUT(target, reflowHash, false, true);
+    } else {
+      // 前后必须都是block，否则还是视为父布局
+      var isSiblingBlock = true;
+      var prev = node.prev,
+          next = node.next;
+
+      if (prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$a]) > -1) {
+        isSiblingBlock = false;
+      } else if (next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$a]) > -1) {
+        isSiblingBlock = false;
+      }
+
+      if (!isSiblingBlock) {
+        target = node.domParent;
+
+        if (target === root) {
+          return true;
+        }
+
+        setLAYOUT(target, reflowHash, false, true);
+      }
+    }
+  }
 
   var uniqueUpdateId = 0;
 
@@ -30395,7 +30727,7 @@
         list = target[UPDATE_LIST],
         keys = target[UPDATE_KEYS$2],
         __config = target[UPDATE_CONFIG$4],
-        updateDom = target[UPDATE_DOM$1];
+        addDom = target[UPDATE_ADD_DOM$1];
 
     if (__config[NODE_IS_DESTROYED$2]) {
       return;
@@ -30611,7 +30943,7 @@
           node: node,
           style: style,
           component: component,
-          updateDom: updateDom
+          addDom: addDom
         }); // measure需要提前先处理
 
         if (hasMeasure) {
@@ -31475,7 +31807,7 @@
           var last = node; // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
           // 另外dom标识表明有dom变更强制进入
 
-          var isInherit = node !== root && (updateHash[__uniqueUpdateId][UPDATE_DOM$1] || o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2])); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = node !== root && (updateHash[__uniqueUpdateId][UPDATE_ADD_DOM$1] || o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2])); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             while (parent && parent !== root) {
@@ -31535,6 +31867,8 @@
        * 上述情况倘若发生包含重复，去掉子树，因子树视为被包含的重新布局
        * 如果有从root开始的，直接重新布局像首次那样即可
        * 如果非root，所有树根按先根顺序记录下来，依次执行局部布局
+       * =========================
+       * addDom比较特殊，是向已有节点中添加新的节点，检查影响与普通domDiff变化不同
        * @private
        */
 
@@ -31558,7 +31892,7 @@
           var _reflowList$i = reflowList[i],
               node = _reflowList$i.node,
               component = _reflowList$i.component,
-              updateDom = _reflowList$i.updateDom; // root提前跳出，完全重新布局
+              addDom = _reflowList$i.addDom; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -31571,15 +31905,22 @@
             reflowHash[__uniqueReflowId++] = {
               node: node,
               component: component,
-              updateDom: updateDom
+              addDom: addDom
             };
+          } // addDom的特殊判断
+
+
+          if (addDom) {
+            if (checkInfluenceAddDom(root, reflowHash, node)) {
+              hasRoot = true;
+              this.__zIndexChildren = null;
+              break;
+            }
           } // 每个节点都向上检查影响，以及是否从root开始完全重新
-
-
-          if (checkInfluence(root, reflowHash, node, component)) {
-            hasRoot = true;
-            break;
-          }
+          else if (checkInfluence(root, reflowHash, node, component)) {
+              hasRoot = true;
+              break;
+            }
         }
 
         __uniqueReflowId = 0;
@@ -31643,7 +31984,7 @@
             uniqueList.forEach(function (item) {
               var node = item.node,
                   component = item.component,
-                  updateDom = item.updateDom; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  addDom = item.addDom; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               var cps = node.computedStyle,
                   cts = node.currentStyle;
@@ -31717,34 +32058,48 @@
                 // 而这种情况下传cp或node都一样，所以最终统一传node
 
 
-                parent.__layoutAbs(container, null, node); // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
+                parent.__layoutAbs(container, null, node); // 优先判断dom变更
 
 
-                if (isLastAbs) {
-                  if (component) {
-                    var arr = node.__modifyStruct(root, diffI);
+                if (addDom) {
+                  var arr = parent.__modifyStruct(root, diffI);
 
-                    diffI += arr[1];
-                    diffList.push(arr);
+                  diffI += arr[1];
+                  diffList.push(arr);
 
-                    if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
-                      parent.__updateStruct(root.__structs);
+                  parent.__updateStruct(root.__structs);
 
-                      if (_this5.renderMode === mode.SVG) {
-                        cleanSvgCache(parent);
-                      }
-                    }
-                  } else if (isLastNone || isNowNone) {
-                    node.__zIndexChildren = null;
-
-                    var _arr = node.__modifyStruct(root, diffI);
-
-                    diffI += _arr[1];
-                    diffList.push(_arr);
+                  if (_this5.renderMode === mode.SVG) {
+                    cleanSvgCache(parent);
                   }
 
                   return;
-                } // 标识flow变abs，可能引发zIndex变更，重设struct和svg
+                } // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
+                else if (isLastAbs) {
+                    if (component) {
+                      var _arr = node.__modifyStruct(root, diffI);
+
+                      diffI += _arr[1];
+                      diffList.push(_arr);
+
+                      if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
+                        parent.__updateStruct(root.__structs);
+
+                        if (_this5.renderMode === mode.SVG) {
+                          cleanSvgCache(parent);
+                        }
+                      }
+                    } else if (isLastNone || isNowNone) {
+                      node.__zIndexChildren = null;
+
+                      var _arr2 = node.__modifyStruct(root, diffI);
+
+                      diffI += _arr2[1];
+                      diffList.push(_arr2);
+                    }
+
+                    return;
+                  } // 标识flow变abs，可能引发zIndex变更，重设struct和svg
 
 
                 parent.__updateStruct(root.__structs);
@@ -31844,8 +32199,7 @@
                     var cs = target.computedStyle;
 
                     if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$a] !== 'none') {
-                      target.__offsetY(_diff, true, REPAINT$3); // target.clearCache();
-
+                      target.__offsetY(_diff, true, REPAINT$3);
                     }
 
                     next = next.next;
@@ -31863,10 +32217,10 @@
 
 
               if (component) {
-                var _arr2 = node.__modifyStruct(root, diffI);
+                var _arr3 = node.__modifyStruct(root, diffI);
 
-                diffI += _arr2[1];
-                diffList.push(_arr2);
+                diffI += _arr3[1];
+                diffList.push(_arr3);
 
                 if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                   node.domParent.__updateStruct(root.__structs);
@@ -31875,22 +32229,19 @@
                     cleanSvgCache(node.domParent);
                   }
                 }
-              } else if (updateDom) {
-                var domParent = node.domParent;
-                domParent.__zIndexChildren = null;
+              } else if (addDom) {
+                var _arr4 = parent.__modifyStruct(root, diffI);
 
-                var _arr3 = domParent.__modifyStruct(root, diffI);
-
-                diffI += _arr3[1];
-                diffList.push(_arr3);
+                diffI += _arr4[1];
+                diffList.push(_arr4);
               } // display有none变化，重置struct和zIndexChildren
               else if (isLastNone || isNowNone) {
                   node.__zIndexChildren = null;
 
-                  var _arr4 = node.__modifyStruct(root, diffI);
+                  var _arr5 = node.__modifyStruct(root, diffI);
 
-                  diffI += _arr4[1];
-                  diffList.push(_arr4);
+                  diffI += _arr5[1];
+                  diffList.push(_arr5);
                 }
             });
             /**
@@ -32167,8 +32518,7 @@
                       var _d = _y - _item2.y;
 
                       if (_d) {
-                        _item2.__offsetY(_d, true, REPAINT$3); // item.clearCache();
-
+                        _item2.__offsetY(_d, true, REPAINT$3);
                       }
 
                       break;

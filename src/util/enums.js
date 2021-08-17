@@ -139,7 +139,7 @@ const UPDATE_KEY = {
   UPDATE_KEYS: 6,
   UPDATE_LIST: 7,
   UPDATE_CONFIG: 8,
-  UPDATE_DOM: 9,
+  UPDATE_ADD_DOM: 9,
 };
 
 // animation计算每帧使用

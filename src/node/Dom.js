@@ -2969,16 +2969,17 @@ class Dom extends Xom {
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
         let vd;
         if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, self);
+          vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
         }
         else {
-          vd = builder.initDom(json, root, host, self);
+          vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
         }
         root.addRefreshTask(vd.__task = {
           __before() {
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+            let pJson = self.isShadowRoot ? self.host.__json : self.__json;
             for(; i < len; i++) {
-              if(children[i] === self.__json) {
+              if(children[i] === pJson) {
                 has = true;
                 break;
               }
@@ -3034,16 +3035,17 @@ class Dom extends Xom {
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
         let vd;
         if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, host, self);
+          vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
         }
         else {
-          vd = builder.initDom(json, root, host, self);
+          vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
         }
         root.addRefreshTask(vd.__task = {
           __before() {
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+            let pJson = self.isShadowRoot ? self.host.__json : self.__json;
             for(; i < len; i++) {
-              if(children[i] === self.__json) {
+              if(children[i] === pJson) {
                 has = true;
                 break;
               }

@@ -381,7 +381,8 @@
     UPDATE_KEYS: 6,
     UPDATE_LIST: 7,
     UPDATE_CONFIG: 8,
-    UPDATE_ADD_DOM: 9
+    UPDATE_ADD_DOM: 9,
+    UPDATE_REMOVE_DOM: 10
   }; // animation计算每帧使用
 
   var KEY_FRAME_KEY = {
@@ -23753,9 +23754,9 @@
             var vd;
 
             if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, host, self);
+              vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
             } else {
-              vd = builder.initDom(json, root, host, self);
+              vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
             }
 
             root.addRefreshTask(vd.__task = {
@@ -23765,9 +23766,10 @@
                     __json = domParent.__json,
                     children = __json.children,
                     len = children.length;
+                var pJson = self.isShadowRoot ? self.host.__json : self.__json;
 
                 for (; i < len; i++) {
-                  if (children[i] === self.__json) {
+                  if (children[i] === pJson) {
                     has = true;
                     break;
                   }
@@ -23831,9 +23833,9 @@
             var vd;
 
             if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, host, self);
+              vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
             } else {
-              vd = builder.initDom(json, root, host, self);
+              vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
             }
 
             root.addRefreshTask(vd.__task = {
@@ -23843,9 +23845,10 @@
                     __json = domParent.__json,
                     children = __json.children,
                     len = children.length;
+                var pJson = self.isShadowRoot ? self.host.__json : self.__json;
 
                 for (; i < len; i++) {
-                  if (children[i] === self.__json) {
+                  if (children[i] === pJson) {
                     has = true;
                     break;
                   }

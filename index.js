@@ -19291,6 +19291,8 @@
               root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
+              node.__task = null;
+
               if (util.isFunction(cb)) {
                 cb.call(node, diff);
               }
@@ -19336,6 +19338,8 @@
               root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
+              node.__task = null;
+
               if (util.isFunction(cb)) {
                 cb.call(node, diff);
               }
@@ -19639,6 +19643,9 @@
 
           return;
         }
+
+        var root = this.root;
+        root.delRefreshTask(this.__task);
       }
     }, {
       key: "tagName",
@@ -23691,6 +23698,8 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
+                vd.__task = null;
+
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -23748,6 +23757,8 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
+                vd.__task = null;
+
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -23831,6 +23842,8 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
+                vd.__task = null;
+
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -23914,6 +23927,8 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
+                vd.__task = null;
+
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -24181,6 +24196,8 @@
         this.root.delRefreshTask(this.__task);
 
         _get(_getPrototypeOf(Img.prototype), "__destroy", this).call(this);
+
+        this.__task = null;
       } // img根据加载情况更新__hasContent
 
     }, {
@@ -24651,6 +24668,9 @@
               res[UPDATE_CONFIG$3] = self.__config;
 
               root.__addUpdate(self, self.__config, root, root.__config, res);
+            },
+            __after: function __after() {
+              self.__task = null;
             }
           });
           loadImg.source = null;
@@ -24683,6 +24703,8 @@
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
                   __after: function __after() {
+                    self.__task = null;
+
                     if (isFunction$5(cb)) {
                       cb.call(self);
                     }
@@ -24705,6 +24727,8 @@
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
                   __after: function __after() {
+                    self.__task = null;
+
                     if (isFunction$5(cb)) {
                       cb.call(self);
                     }
@@ -24786,6 +24810,8 @@
               root.__addUpdate(self, self.__config, root, self.__config, res);
             },
             __after: function __after() {
+              self.__task = null;
+
               if (isFunction$5(cb)) {
                 cb.call(self);
               }

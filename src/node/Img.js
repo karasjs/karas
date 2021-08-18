@@ -152,6 +152,7 @@ class Img extends Dom {
   __destroy() {
     this.root.delRefreshTask(this.__task);
     super.__destroy();
+    this.__task = null;
   }
 
   // img根据加载情况更新__hasContent
@@ -665,6 +666,9 @@ class Img extends Dom {
           res[UPDATE_CONFIG] = self.__config;
           root.__addUpdate(self, self.__config, root, root.__config, res);
         },
+        __after() {
+          self.__task = null;
+        },
       });
       loadImg.source = null;
     }
@@ -692,6 +696,7 @@ class Img extends Dom {
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
               __after() {
+                self.__task = null;
                 if(isFunction(cb)) {
                   cb.call(self);
                 }
@@ -712,6 +717,7 @@ class Img extends Dom {
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
               __after() {
+                self.__task = null;
                 if(isFunction(cb)) {
                   cb.call(self);
                 }
@@ -788,6 +794,7 @@ class Img extends Dom {
           root.__addUpdate(self, self.__config, root, self.__config, res);
         },
         __after() {
+          self.__task = null;
           if(isFunction(cb)) {
             cb.call(self);
           }

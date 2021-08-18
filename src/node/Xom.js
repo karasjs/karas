@@ -2451,6 +2451,7 @@ class Xom extends Node {
           root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
+          node.__task = null;
           if(util.isFunction(cb)) {
             cb.call(node, diff);
           }
@@ -2490,6 +2491,7 @@ class Xom extends Node {
           root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
+          node.__task = null;
           if(util.isFunction(cb)) {
             cb.call(node, diff);
           }
@@ -2735,6 +2737,8 @@ class Xom extends Node {
       }
       return;
     }
+    let { root } = this;
+    root.delRefreshTask(this.__task);
   }
 
   get tagName() {

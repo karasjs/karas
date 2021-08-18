@@ -2907,6 +2907,7 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
+            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }
@@ -2955,6 +2956,7 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
+            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }
@@ -3024,6 +3026,7 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
+            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }
@@ -3093,6 +3096,7 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
+            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }

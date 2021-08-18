@@ -29,19 +29,15 @@ function initRoot(cd, root) {
   return relation(root, children);
 }
 
-function initDom(json, parent, root, owner) {
-  let vd = build(json, root, owner);
+function initDom(json, parent, root, host) {
+  let vd = build(json, root, host);
   return relation(parent, vd);
 }
 
 function initCp(json, root, host) {
   if(util.isObject(json)) {
     // cp的flatten在__init中自己做
-    let vd = build(json, root, host);
-    if(Array.isArray(vd)) {
-      relation(host, vd);
-    }
-    return vd;
+    return build(json, root, host);
   }
   // text的relation会由上层如Root设置
   else {

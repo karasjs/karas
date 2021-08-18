@@ -19629,7 +19629,17 @@
       }
     }, {
       key: "remove",
-      value: function remove(cb) {}
+      value: function remove(cb) {
+        if (this.isDestroyed) {
+          inject.warn('Remove target is destroyed.');
+
+          if (util.isFunction(cb)) {
+            cb();
+          }
+
+          return;
+        }
+      }
     }, {
       key: "tagName",
       get: function get() {
@@ -23644,6 +23654,10 @@
               host = self.host;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            if (json.vd) {
+              root.delRefreshTask(json.vd.__task);
+            }
+
             var vd;
 
             if ($$type.TYPE_CP === json.$$type) {
@@ -23697,6 +23711,10 @@
               host = self.host;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            if (json.vd) {
+              root.delRefreshTask(json.vd.__task);
+            }
+
             var vd;
 
             if ($$type.TYPE_CP === json.$$type) {
@@ -23748,15 +23766,19 @@
         if (!util.isNil(json) && !self.isDestroyed && self.domParent) {
           var root = self.root,
               domParent = self.domParent;
-          var host = domParent.host;
+          var host = domParent.hostRoot;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            if (json.vd) {
+              root.delRefreshTask(json.vd.__task);
+            }
+
             var vd;
 
             if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
+              vd = builder.initCp2(json, root, host, domParent);
             } else {
-              vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
+              vd = builder.initDom(json, root, host, domParent);
             }
 
             root.addRefreshTask(vd.__task = {
@@ -23827,15 +23849,19 @@
         if (!util.isNil(json) && !self.isDestroyed && self.domParent) {
           var root = self.root,
               domParent = self.domParent;
-          var host = domParent.host;
+          var host = domParent.hostRoot;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            if (json.vd) {
+              root.delRefreshTask(json.vd.__task);
+            }
+
             var vd;
 
             if ($$type.TYPE_CP === json.$$type) {
-              vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
+              vd = builder.initCp2(json, root, host, domParent);
             } else {
-              vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
+              vd = builder.initDom(json, root, host, domParent);
             }
 
             root.addRefreshTask(vd.__task = {
@@ -23901,8 +23927,20 @@
     }, {
       key: "removeChild",
       value: function removeChild(target, cb) {
-        if (target.parent === this && (target instanceof Xom$1 || target instanceof Component$1)) {
+        if (target.domParent === this && (target instanceof Xom$1 || target instanceof Component$1)) {
+          if (this.isDestroyed) {
+            inject.warn('Remove parent is destroyed.');
+
+            if (util.isFunction(cb)) {
+              cb();
+            }
+
+            return;
+          }
+
           target.remove(cb);
+        } else {
+          throw new Error('Invalid parameter in removeChild.');
         }
       }
     }, {

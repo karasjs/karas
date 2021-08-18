@@ -2727,7 +2727,15 @@ class Xom extends Node {
     return true;
   }
 
-  remove(cb) {}
+  remove(cb) {
+    if(this.isDestroyed) {
+      inject.warn('Remove target is destroyed.');
+      if(util.isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+  }
 
   get tagName() {
     return this.__tagName;

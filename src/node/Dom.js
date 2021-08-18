@@ -2876,6 +2876,9 @@ class Dom extends Xom {
     if(!util.isNil(json) && !self.isDestroyed) {
       let { root, host } = self;
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
           vd = builder.initCp2(json, root, host, self);
@@ -2921,6 +2924,9 @@ class Dom extends Xom {
     if(!util.isNil(json) && !self.isDestroyed) {
       let { root, host } = self;
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
           vd = builder.initCp2(json, root, host, self);
@@ -2965,14 +2971,17 @@ class Dom extends Xom {
     let self = this;
     if(!util.isNil(json) && !self.isDestroyed && self.domParent) {
       let { root, domParent } = self;
-      let host = domParent.host;
+      let host = domParent.hostRoot;
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
+          vd = builder.initCp2(json, root, host, domParent);
         }
         else {
-          vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
+          vd = builder.initDom(json, root, host, domParent);
         }
         root.addRefreshTask(vd.__task = {
           __before() {
@@ -3031,14 +3040,17 @@ class Dom extends Xom {
     let self = this;
     if(!util.isNil(json) && !self.isDestroyed && self.domParent) {
       let { root, domParent } = self;
-      let host = domParent.host;
+      let host = domParent.hostRoot;
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
-          vd = builder.initCp2(json, root, self.isShadowRoot ? host.host : host, domParent);
+          vd = builder.initCp2(json, root, host, domParent);
         }
         else {
-          vd = builder.initDom(json, root, self.isShadowRoot ? host.host : host, domParent);
+          vd = builder.initDom(json, root, host, domParent);
         }
         root.addRefreshTask(vd.__task = {
           __before() {
@@ -3094,8 +3106,18 @@ class Dom extends Xom {
   }
 
   removeChild(target, cb) {
-    if(target.parent === this && (target instanceof Xom || target instanceof Component)) {
+    if(target.domParent === this && (target instanceof Xom || target instanceof Component)) {
+      if(this.isDestroyed) {
+        inject.warn('Remove parent is destroyed.');
+        if(util.isFunction(cb)) {
+          cb();
+        }
+        return;
+      }
       target.remove(cb);
+    }
+    else {
+      throw new Error('Invalid parameter in removeChild.');
     }
   }
 

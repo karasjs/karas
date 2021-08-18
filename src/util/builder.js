@@ -29,7 +29,7 @@ function initRoot(cd, root) {
   return relation(root, children);
 }
 
-function initDom(json, parent, root, host) {
+function initDom(json, root, host, parent) {
   let vd = build(json, root, host);
   return relation(parent, vd);
 }
@@ -43,6 +43,15 @@ function initCp(json, root, host) {
   else {
     return new Text(json);
   }
+}
+
+function initCp2(json, root, host, parent) {
+  let vd = new json.klass(json.props);
+  vd.__tagName = json.tagName || vd.__tagName;
+  vd.__root = root;
+  vd.__host = host;
+  vd.__init();
+  return relation(parent, vd);
 }
 
 /**
@@ -95,7 +104,7 @@ function build(json, root, host, hasP) {
     }
     else if($$type === TYPE_CP) {
       vd = new klass(props);
-      vd.__tagName = vd.__tagName || tagName;
+      vd.__tagName = tagName || vd.__tagName;
     }
     else {
       return new Text(json);
@@ -202,5 +211,6 @@ export default {
   initRoot,
   initDom,
   initCp,
+  initCp2,
   relation,
 };

@@ -156,10 +156,9 @@ class Component extends Event {
     sr.__hostRoot = this;
     if(!this.__isMounted) {
       this.__isMounted = true;
-      let { componentDidMount } = this;
-      if(isFunction(componentDidMount)) {
+      if(isFunction(this.componentDidMount)) {
         root.once(Event.REFRESH, () => {
-          componentDidMount.call(this);
+          this.componentDidMount();
         });
       }
     }

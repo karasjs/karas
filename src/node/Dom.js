@@ -2875,8 +2875,14 @@ class Dom extends Xom {
     let self = this;
     if(!util.isNil(json) && !self.isDestroyed) {
       let { root, host } = self;
-      if([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-        let vd = builder.initDom(json, self, root, host);
+      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        let vd;
+        if($$type.TYPE_CP === json.$$type) {
+          vd = builder.initCp2(json, root, host, self);
+        }
+        else {
+          vd = builder.initDom(json, root, host, self);
+        }
         root.addRefreshTask(vd.__task = {
           __before() {
             self.__json.children.push(json);
@@ -2915,7 +2921,7 @@ class Dom extends Xom {
     if(!util.isNil(json) && !self.isDestroyed) {
       let { root, host } = self;
       if([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-        let vd = builder.initDom(json, self, root, host);
+        let vd = builder.initDom(json, root, host, self);
         root.addRefreshTask(vd.__task = {
           __before() {
             self.__json.children.unshift(json);
@@ -2955,7 +2961,7 @@ class Dom extends Xom {
       let { root, domParent } = self;
       let host = domParent.host;
       if([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-        let vd = builder.initDom(json, domParent, root, host);
+        let vd = builder.initDom(json, root, host, domParent);
         root.addRefreshTask(vd.__task = {
           __before() {
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
@@ -3014,7 +3020,7 @@ class Dom extends Xom {
       let { root, domParent } = self;
       let host = domParent.host;
       if([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-        let vd = builder.initDom(json, domParent, root, host);
+        let vd = builder.initDom(json, root, host, domParent);
         root.addRefreshTask(vd.__task = {
           __before() {
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;

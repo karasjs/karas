@@ -11811,7 +11811,7 @@
     return relation(root, children);
   }
 
-  function initDom(json, parent, root, host) {
+  function initDom(json, root, host, parent) {
     var vd = build(json, root, host);
     return relation(parent, vd);
   }
@@ -11824,6 +11824,17 @@
     else {
         return new Text(json);
       }
+  }
+
+  function initCp2(json, root, host, parent) {
+    var vd = new json.klass(json.props);
+    vd.__tagName = json.tagName || vd.__tagName;
+    vd.__root = root;
+    vd.__host = host;
+
+    vd.__init();
+
+    return relation(parent, vd);
   }
   /**
    * 将初始json文件生成virtualDom
@@ -11888,7 +11899,7 @@
         vd = new _klass(tagName, props);
       } else if (_$$type === TYPE_CP$2) {
         vd = new klass(props);
-        vd.__tagName = vd.__tagName || tagName;
+        vd.__tagName = tagName || vd.__tagName;
       } else {
         return new Text(json);
       } // 根parse需要用到真正的vd引用，然后vd也要引用json，用以做domApi
@@ -11999,6 +12010,7 @@
     initRoot: initRoot,
     initDom: initDom,
     initCp: initCp,
+    initCp2: initCp2,
     relation: relation
   };
 
@@ -12342,11 +12354,10 @@
 
         if (!this.__isMounted) {
           this.__isMounted = true;
-          var componentDidMount = this.componentDidMount;
 
-          if (isFunction$2(componentDidMount)) {
+          if (isFunction$2(this.componentDidMount)) {
             root.once(Event.REFRESH, function () {
-              componentDidMount.call(_this3);
+              _this3.componentDidMount();
             });
           }
         }
@@ -23628,8 +23639,15 @@
           var root = self.root,
               host = self.host;
 
-          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, self, root, host);
+          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            var vd;
+
+            if ($$type.TYPE_CP === json.$$type) {
+              vd = builder.initCp2(json, root, host, self);
+            } else {
+              vd = builder.initDom(json, root, host, self);
+            }
+
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 self.__json.children.push(json);
@@ -23675,7 +23693,7 @@
               host = self.host;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, self, root, host);
+            var vd = builder.initDom(json, root, host, self);
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 self.__json.children.unshift(json);
@@ -23722,7 +23740,7 @@
           var host = domParent.host;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, domParent, root, host);
+            var vd = builder.initDom(json, root, host, domParent);
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 var i = 0,
@@ -23793,7 +23811,7 @@
           var host = domParent.host;
 
           if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, domParent, root, host);
+            var vd = builder.initDom(json, root, host, domParent);
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 var i = 0,

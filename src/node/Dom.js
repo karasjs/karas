@@ -2888,6 +2888,7 @@ class Dom extends Xom {
         }
         root.addRefreshTask(vd.__task = {
           __before() {
+            vd.__task = null; // 清除在before，防止after的回调增加新的task误删
             self.__json.children.push(json);
             let len = self.children.length;
             if(len) {
@@ -2907,7 +2908,6 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
-            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }
@@ -2937,6 +2937,7 @@ class Dom extends Xom {
         }
         root.addRefreshTask(vd.__task = {
           __before() {
+            vd.__task = null;
             self.__json.children.unshift(json);
             let len = self.children.length;
             if(len) {
@@ -2956,7 +2957,6 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
-            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }
@@ -2987,6 +2987,7 @@ class Dom extends Xom {
         }
         root.addRefreshTask(vd.__task = {
           __before() {
+            vd.__task = null;
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
             let pJson = self.isShadowRoot ? self.host.__json : self.__json;
             for(; i < len; i++) {
@@ -3026,7 +3027,6 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
-            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }
@@ -3057,6 +3057,7 @@ class Dom extends Xom {
         }
         root.addRefreshTask(vd.__task = {
           __before() {
+            vd.__task = null;
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
             let pJson = self.isShadowRoot ? self.host.__json : self.__json;
             for(; i < len; i++) {
@@ -3096,7 +3097,6 @@ class Dom extends Xom {
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
           __after(diff) {
-            vd.__task = null;
             if(util.isFunction(cb)) {
               cb.call(vd, diff);
             }

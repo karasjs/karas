@@ -656,6 +656,7 @@ class Img extends Dom {
       root.delRefreshTask(self.__task);
       root.addRefreshTask(self.__task = {
         __before() {
+          self.__task = null; // 清除在before，防止after的回调增加新的task误删
           if(self.isDestroyed) {
             return;
           }
@@ -665,9 +666,6 @@ class Img extends Dom {
           res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
           res[UPDATE_CONFIG] = self.__config;
           root.__addUpdate(self, self.__config, root, root.__config, res);
-        },
-        __after() {
-          self.__task = null;
         },
       });
       loadImg.source = null;
@@ -685,6 +683,7 @@ class Img extends Dom {
           if(width[1] !== AUTO && height[1] !== AUTO) {
             root.addRefreshTask(self.__task = {
               __before() {
+                self.__task = null;
                 if(self.isDestroyed) {
                   return;
                 }
@@ -696,7 +695,6 @@ class Img extends Dom {
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
               __after() {
-                self.__task = null;
                 if(isFunction(cb)) {
                   cb.call(self);
                 }
@@ -706,6 +704,7 @@ class Img extends Dom {
           else {
             root.addRefreshTask(self.__task = {
               __before() {
+                self.__task = null;
                 if(self.isDestroyed) {
                   return;
                 }
@@ -717,7 +716,6 @@ class Img extends Dom {
                 root.__addUpdate(self, self.__config, root, root.__config, res);
               },
               __after() {
-                self.__task = null;
                 if(isFunction(cb)) {
                   cb.call(self);
                 }
@@ -784,6 +782,7 @@ class Img extends Dom {
       root.delRefreshTask(self.__task);
       root.addRefreshTask(self.__task = {
         __before() {
+          self.__task = null;
           if(self.isDestroyed) {
             return;
           }
@@ -794,7 +793,6 @@ class Img extends Dom {
           root.__addUpdate(self, self.__config, root, self.__config, res);
         },
         __after() {
-          self.__task = null;
           if(isFunction(cb)) {
             cb.call(self);
           }

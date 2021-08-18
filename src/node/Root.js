@@ -68,6 +68,7 @@ const {
     UPDATE_LIST,
     UPDATE_CONFIG,
     UPDATE_ADD_DOM,
+    UPDATE_REMOVE_DOM,
   },
   NODE_KEY: {
     NODE_TAG_NAME,

@@ -16769,6 +16769,7 @@
       UPDATE_OVERWRITE = _enums$UPDATE_KEY$1.UPDATE_OVERWRITE,
       UPDATE_KEYS$1 = _enums$UPDATE_KEY$1.UPDATE_KEYS,
       UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
+      UPDATE_REMOVE_DOM = _enums$UPDATE_KEY$1.UPDATE_REMOVE_DOM,
       STRUCT_HAS_MASK = enums.STRUCT_KEY.STRUCT_HAS_MASK,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_TAG_NAME = _enums$NODE_KEY$4.NODE_TAG_NAME,
@@ -19269,6 +19270,8 @@
         if (root) {
           root.addRefreshTask(node.__task = {
             __before: function __before() {
+              node.__task = null;
+
               if (__config[NODE_IS_DESTROYED$1]) {
                 return;
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -19291,8 +19294,6 @@
               root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
-              node.__task = null;
-
               if (util.isFunction(cb)) {
                 cb.call(node, diff);
               }
@@ -19318,6 +19319,8 @@
         if (root) {
           root.addRefreshTask(node.__task = {
             __before: function __before() {
+              node.__task = null; // 清除在before，防止after的回调增加新的task误删
+
               if (__config[NODE_IS_DESTROYED$1]) {
                 return;
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -19338,8 +19341,6 @@
               root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
-              node.__task = null;
-
               if (util.isFunction(cb)) {
                 cb.call(node, diff);
               }
@@ -19634,7 +19635,9 @@
     }, {
       key: "remove",
       value: function remove(cb) {
-        if (this.isDestroyed) {
+        var self = this;
+
+        if (self.isDestroyed) {
           inject.warn('Remove target is destroyed.');
 
           if (util.isFunction(cb)) {
@@ -19644,8 +19647,40 @@
           return;
         }
 
-        var root = this.root;
-        root.delRefreshTask(this.__task);
+        var root = self.root,
+            domParent = self.domParent;
+        root.delRefreshTask(self.__task);
+        root.addRefreshTask(self.__task = {
+          __before: function __before() {
+            self.__task = null; // 清除在before，防止after的回调增加新的task误删
+
+            var pJson = domParent.__json;
+            var i = pJson.children.indexOf(self.__json);
+            var zChildren = domParent.zIndexChildren;
+            var j = zChildren.indexOf(self);
+
+            if (i === -1 || j === -1) {
+              throw new Error('Remove index Exception.');
+            }
+
+            pJson.children.splice(i, 1);
+            domParent.children.splice(i, 1);
+            zChildren.splice(j, 1); // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+            var res = {};
+            res[UPDATE_NODE$1] = self;
+            res[UPDATE_FOCUS] = o$3.REFLOW;
+            res[UPDATE_REMOVE_DOM] = true;
+            res[UPDATE_CONFIG$1] = self.__config;
+
+            root.__addUpdate(self, self.__config, root, root.__config, res);
+          },
+          __after: function __after(diff) {
+            if (util.isFunction(cb)) {
+              cb.call(self, diff);
+            }
+          }
+        });
       }
     }, {
       key: "tagName",
@@ -23675,6 +23710,8 @@
 
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
+                vd.__task = null; // 清除在before，防止after的回调增加新的task误删
+
                 self.__json.children.push(json);
 
                 var len = self.children.length;
@@ -23698,8 +23735,6 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
-                vd.__task = null;
-
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -23734,6 +23769,8 @@
 
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
+                vd.__task = null;
+
                 self.__json.children.unshift(json);
 
                 var len = self.children.length;
@@ -23757,8 +23794,6 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
-                vd.__task = null;
-
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -23794,6 +23829,7 @@
 
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
+                vd.__task = null;
                 var i = 0,
                     has,
                     __json = domParent.__json,
@@ -23842,8 +23878,6 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
-                vd.__task = null;
-
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -23879,6 +23913,7 @@
 
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
+                vd.__task = null;
                 var i = 0,
                     has,
                     __json = domParent.__json,
@@ -23927,8 +23962,6 @@
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
               __after: function __after(diff) {
-                vd.__task = null;
-
                 if (util.isFunction(cb)) {
                   cb.call(vd, diff);
                 }
@@ -24656,6 +24689,8 @@
           root.delRefreshTask(self.__task);
           root.addRefreshTask(self.__task = {
             __before: function __before() {
+              self.__task = null; // 清除在before，防止after的回调增加新的task误删
+
               if (self.isDestroyed) {
                 return;
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -24668,9 +24703,6 @@
               res[UPDATE_CONFIG$3] = self.__config;
 
               root.__addUpdate(self, self.__config, root, root.__config, res);
-            },
-            __after: function __after() {
-              self.__task = null;
             }
           });
           loadImg.source = null;
@@ -24690,6 +24722,8 @@
               if (width[1] !== AUTO$7 && height[1] !== AUTO$7) {
                 root.addRefreshTask(self.__task = {
                   __before: function __before() {
+                    self.__task = null;
+
                     if (self.isDestroyed) {
                       return;
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -24703,8 +24737,6 @@
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
                   __after: function __after() {
-                    self.__task = null;
-
                     if (isFunction$5(cb)) {
                       cb.call(self);
                     }
@@ -24713,6 +24745,8 @@
               } else {
                 root.addRefreshTask(self.__task = {
                   __before: function __before() {
+                    self.__task = null;
+
                     if (self.isDestroyed) {
                       return;
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -24727,8 +24761,6 @@
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
                   __after: function __after() {
-                    self.__task = null;
-
                     if (isFunction$5(cb)) {
                       cb.call(self);
                     }
@@ -24798,6 +24830,8 @@
           root.delRefreshTask(self.__task);
           root.addRefreshTask(self.__task = {
             __before: function __before() {
+              self.__task = null;
+
               if (self.isDestroyed) {
                 return;
               }
@@ -24810,8 +24844,6 @@
               root.__addUpdate(self, self.__config, root, self.__config, res);
             },
             __after: function __after() {
-              self.__task = null;
-
               if (isFunction$5(cb)) {
                 cb.call(self);
               }
@@ -30417,6 +30449,7 @@
       UPDATE_LIST = _enums$UPDATE_KEY$4.UPDATE_LIST,
       UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
       UPDATE_ADD_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_ADD_DOM,
+      UPDATE_REMOVE_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_REMOVE_DOM,
       _enums$NODE_KEY$a = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$a.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$a.NODE_CACHE_STYLE,

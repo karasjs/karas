@@ -111,6 +111,7 @@ const {
     UPDATE_OVERWRITE,
     UPDATE_KEYS,
     UPDATE_CONFIG,
+    UPDATE_REMOVE_DOM,
   },
   STRUCT_KEY: {
     STRUCT_HAS_MASK,
@@ -2433,6 +2434,7 @@ class Xom extends Node {
     if(root) {
       root.addRefreshTask(node.__task = {
         __before() {
+          node.__task = null;
           if(__config[NODE_IS_DESTROYED]) {
             return;
           }
@@ -2451,7 +2453,6 @@ class Xom extends Node {
           root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
-          node.__task = null;
           if(util.isFunction(cb)) {
             cb.call(node, diff);
           }
@@ -2474,6 +2475,7 @@ class Xom extends Node {
     if(root) {
       root.addRefreshTask(node.__task = {
         __before() {
+          node.__task = null; // 清除在before，防止after的回调增加新的task误删
           if(__config[NODE_IS_DESTROYED]) {
             return;
           }
@@ -2491,7 +2493,6 @@ class Xom extends Node {
           root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
-          node.__task = null;
           if(util.isFunction(cb)) {
             cb.call(node, diff);
           }
@@ -2730,15 +2731,43 @@ class Xom extends Node {
   }
 
   remove(cb) {
-    if(this.isDestroyed) {
+    let self = this;
+    if(self.isDestroyed) {
       inject.warn('Remove target is destroyed.');
       if(util.isFunction(cb)) {
         cb();
       }
       return;
     }
-    let { root } = this;
-    root.delRefreshTask(this.__task);
+    let { root, domParent } = self;
+    root.delRefreshTask(self.__task);
+    root.addRefreshTask(self.__task = {
+      __before() {
+        self.__task = null; // 清除在before，防止after的回调增加新的task误删
+        let pJson = domParent.__json;
+        let i = pJson.children.indexOf(self.__json);
+        let zChildren = domParent.zIndexChildren;
+        let j = zChildren.indexOf(self);
+        if(i === -1 || j === -1) {
+          throw new Error('Remove index Exception.')
+        }
+        pJson.children.splice(i, 1);
+        domParent.children.splice(i, 1);
+        zChildren.splice(j, 1);
+        // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        let res = {};
+        res[UPDATE_NODE] = self;
+        res[UPDATE_FOCUS] = level.REFLOW;
+        res[UPDATE_REMOVE_DOM] = true;
+        res[UPDATE_CONFIG] = self.__config;
+        root.__addUpdate(self, self.__config, root, root.__config, res);
+      },
+      __after(diff) {
+        if(util.isFunction(cb)) {
+          cb.call(self, diff);
+        }
+      },
+    });
   }
 
   get tagName() {

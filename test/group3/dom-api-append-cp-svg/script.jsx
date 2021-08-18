@@ -10,10 +10,22 @@ class Component extends karas.Component {
     input.value += 'componentDidMount';
   }
   render() {
-    return <div>2</div>
+    if(this.state.a) {
+      return <div>
+        <span>2</span>
+        <span>3</span>
+      </div>;
+    }
+    return <div>
+      <span>2</span>
+    </div>;
   }
 }
 let div = <Component/>;
 root.appendChild(div, function() {
-  input.value += document.querySelector('svg').innerHTML;
+  root.children[1].setState({
+    a: 1,
+  }, function() {
+    input.value += document.querySelector('svg').innerHTML;
+  });
 });

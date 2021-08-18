@@ -12545,7 +12545,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -19627,6 +19627,9 @@
         return true;
       }
     }, {
+      key: "remove",
+      value: function remove(cb) {}
+    }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
@@ -23692,8 +23695,15 @@
           var root = self.root,
               host = self.host;
 
-          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, root, host, self);
+          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            var vd;
+
+            if ($$type.TYPE_CP === json.$$type) {
+              vd = builder.initCp2(json, root, host, self);
+            } else {
+              vd = builder.initDom(json, root, host, self);
+            }
+
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 self.__json.children.unshift(json);
@@ -23739,8 +23749,15 @@
               domParent = self.domParent;
           var host = domParent.host;
 
-          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, root, host, domParent);
+          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            var vd;
+
+            if ($$type.TYPE_CP === json.$$type) {
+              vd = builder.initCp2(json, root, host, self);
+            } else {
+              vd = builder.initDom(json, root, host, self);
+            }
+
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 var i = 0,
@@ -23810,8 +23827,15 @@
               domParent = self.domParent;
           var host = domParent.host;
 
-          if ([$$type.TYPE_VD, $$type.TYPE_GM].indexOf(json.$$type) > -1) {
-            var vd = builder.initDom(json, root, host, domParent);
+          if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+            var vd;
+
+            if ($$type.TYPE_CP === json.$$type) {
+              vd = builder.initCp2(json, root, host, self);
+            } else {
+              vd = builder.initDom(json, root, host, self);
+            }
+
             root.addRefreshTask(vd.__task = {
               __before: function __before() {
                 var i = 0,
@@ -23869,6 +23893,13 @@
           } else {
             throw new Error('Invalid parameter in insertAfter.');
           }
+        }
+      }
+    }, {
+      key: "removeChild",
+      value: function removeChild(target, cb) {
+        if (target.parent === this && (target instanceof Xom$1 || target instanceof Component$1)) {
+          target.remove(cb);
         }
       }
     }, {

@@ -2727,6 +2727,8 @@ class Xom extends Node {
     return true;
   }
 
+  remove(cb) {}
+
   get tagName() {
     return this.__tagName;
   }

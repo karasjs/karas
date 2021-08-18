@@ -383,6 +383,12 @@ Object.keys(change.GEOM).concat([
   '__calBasis',
   '__calMinMax',
   '__computeMeasure',
+  'appendChild',
+  'prependChild',
+  'insertBefore',
+  'insertAfter',
+  'removeChild',
+  'remove',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

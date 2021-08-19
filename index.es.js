@@ -19682,9 +19682,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       }
 
       var root = self.root,
-          domParent = self.domParent; // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
+          domParent = self.domParent;
+      var target = self.isShadowRoot ? self.hostRoot : self; // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
 
-      if (domParent.children.indexOf(self) === -1) {
+      if (domParent.children.indexOf(target) === -1) {
         if (util.isFunction(cb)) {
           cb();
         }

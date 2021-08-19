@@ -11968,7 +11968,7 @@ function initCp2(json, root, host, parent) {
 function build(json, root, host, hasP) {
   if (Array.isArray(json)) {
     return json.map(function (item) {
-      return build(item, root, host);
+      return build(item, root, host, hasP);
     });
   }
 
@@ -12033,11 +12033,14 @@ function build(json, root, host, hasP) {
       __animateRecords.list.forEach(function (item) {
         item.target = item.target.vd;
       });
+
+      delete json.__animateRecords;
     } // 更新过程中key相同或者普通相同的vd继承动画
 
 
     if (inheritAnimate) {
       util.extendAnimate(inheritAnimate, vd);
+      delete json.inheritAnimate;
     }
 
     vd.__root = root;
@@ -18953,16 +18956,11 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
       var root = this.root;
-      this.animationList.forEach(function (item) {
-        return item.__destroy();
-      });
-
-      this.__frameAnimateList.splice(0).forEach(function (item) {
-        frame.offFrame(item);
-      });
-
+      this.clearAnimate();
+      this.clearFrameAnimate();
       root.delRefreshTask(this.__loadBgi.cb);
       root.delRefreshTask(this.__task);
+      this.__task = null;
       this.__root = null;
       this.clearCache();
     } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
@@ -26118,7 +26116,12 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
       }
   } else {
     check(cp.shadow);
-  }
+  } // 结束后要删除临时存的老cp以及继承信息，防止下次错误判断
+
+
+  delete cp.__json.placeholder;
+  delete cp.__json.inheritAnimate;
+  delete cp.__json.__animateRecords;
 }
 /**
  * 更新组件的props和state，清空__nextState
@@ -26146,7 +26149,7 @@ function updateCp(cp, props, state) {
   var sr = cp.shadowRoot;
 
   if (sr instanceof Xom$1) {
-    ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', '__computedStyle'].forEach(function (k) {
+    ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
     sr.__computedStyle = sr.__config[NODE_COMPUTED_STYLE$3] = oldSr.computedStyle;
@@ -26344,7 +26347,7 @@ function diffChildren(vd, oj, nj) {
 
 
 function diffCp(oj, nj, vd) {
-  // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
+  // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建，暂时存在json的placeholder上
   // 否则需要强制触发组件更新，包含setState内容
   nj.placeholder = vd;
   var sr = vd.shadowRoot; // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
@@ -31168,6 +31171,7 @@ var Root = /*#__PURE__*/function (_Dom) {
     _this.__animateController = new Controller();
     Event.mix(_assertThisInitialized(_this));
     _this.__config[NODE_UPDATE_HASH] = _this.__updateHash = {};
+    _this.__uuid = uuid$2++;
     return _this;
   }
 
@@ -31328,7 +31332,6 @@ var Root = /*#__PURE__*/function (_Dom) {
             }
           }
 
-      this.__uuid = uuid$2++;
       this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
       if (!this.width || !this.height) {
@@ -31593,7 +31596,8 @@ var Root = /*#__PURE__*/function (_Dom) {
 
       if (isDestroyed) {
         return;
-      }
+      } // 每次只执行1次
+
 
       if (!taskCp.length) {
         var clone;
@@ -35449,7 +35453,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.60.0";
+var version = "0.60.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

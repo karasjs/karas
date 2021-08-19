@@ -78,6 +78,10 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
   else {
     check(cp.shadow);
   }
+  // 结束后要删除临时存的老cp以及继承信息，防止下次错误判断
+  delete cp.__json.placeholder;
+  delete cp.__json.inheritAnimate;
+  delete cp.__json.__animateRecords;
 }
 
 /**
@@ -115,7 +119,6 @@ function updateCp(cp, props, state) {
       '__sy4',
       '__sy5',
       '__sy6',
-      '__computedStyle',
     ].forEach(k => {
       sr[k] = oldSr[k];
     });
@@ -324,7 +327,7 @@ function diffChildren(vd, oj, nj) {
  * @param vd
  */
 function diffCp(oj, nj, vd) {
-  // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
+  // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建，暂时存在json的placeholder上
   // 否则需要强制触发组件更新，包含setState内容
   nj.placeholder = vd;
   let sr = vd.shadowRoot;

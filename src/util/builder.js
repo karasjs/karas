@@ -69,11 +69,9 @@ function build(json, root, host, hasP) {
   let vd;
   if(util.isObject(json) && json.$$type) {
     let { tagName, props, children, klass, $$type, inheritAnimate, __animateRecords } = json;
-    // 更新过程中无变化的cp直接使用原来生成的，注意只使用1次，所以删除掉，否则后续特殊使用会用老的vd不重新生成
+    // 更新过程中无变化的cp直接使用原来生成的
     if($$type === TYPE_CP && json.placeholder) {
-      let p = json.placeholder;
-      delete json.placeholder;
-      return p;
+      return json.placeholder;
     }
     if($$type === TYPE_VD) {
       if(tagName === 'img') {

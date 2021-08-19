@@ -993,6 +993,7 @@ class Root extends Dom {
     if(isDestroyed) {
       return;
     }
+    // 每次只执行1次
     if(!taskCp.length) {
       let clone;
       frame.__nextFrameCp({

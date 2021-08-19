@@ -11987,12 +11987,10 @@
           klass = json.klass,
           _$$type = json.$$type,
           inheritAnimate = json.inheritAnimate,
-          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的，注意只使用1次，所以删除掉，否则后续特殊使用会用老的vd不重新生成
+          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
 
       if (_$$type === TYPE_CP$2 && json.placeholder) {
-        var p = json.placeholder;
-        delete json.placeholder;
-        return p;
+        return json.placeholder;
       }
 
       if (_$$type === TYPE_VD$2) {
@@ -26124,7 +26122,12 @@
         }
     } else {
       check(cp.shadow);
-    }
+    } // 结束后要删除临时存的老cp以及继承信息，防止下次错误判断
+
+
+    delete cp.__json.placeholder;
+    delete cp.__json.inheritAnimate;
+    delete cp.__json.__animateRecords;
   }
   /**
    * 更新组件的props和state，清空__nextState
@@ -26152,7 +26155,7 @@
     var sr = cp.shadowRoot;
 
     if (sr instanceof Xom$1) {
-      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6', '__computedStyle'].forEach(function (k) {
+      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sx5', '__sx6', '__sy2', '__sy3', '__sy4', '__sy5', '__sy6'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
       sr.__computedStyle = sr.__config[NODE_COMPUTED_STYLE$3] = oldSr.computedStyle;
@@ -26350,7 +26353,7 @@
 
 
   function diffCp(oj, nj, vd) {
-    // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
+    // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建，暂时存在json的placeholder上
     // 否则需要强制触发组件更新，包含setState内容
     nj.placeholder = vd;
     var sr = vd.shadowRoot; // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
@@ -31599,7 +31602,8 @@
 
         if (isDestroyed) {
           return;
-        }
+        } // 每次只执行1次
+
 
         if (!taskCp.length) {
           var clone;
@@ -35455,7 +35459,7 @@
     Cache: Cache
   };
 
-  var version = "0.60.0";
+  var version = "0.60.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

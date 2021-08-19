@@ -6,15 +6,21 @@ class Component extends karas.Component {
 
 let a = <Component/>;
 
+let has;
+
 class Component2 extends karas.Component {
   constructor(props) {
     super(props);
     this.state.list = [0];
   }
   componentDidMount() {
+    if(has) {
+      return;
+    }
     this.setState({
       list: [1]
     }, function() {
+      has = true;
       karas.render(
         <canvas width="360" height="360">
           {b}

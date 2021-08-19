@@ -173,9 +173,8 @@ class Component extends Event {
       return;
     }
     this.__isDestroyed = true;
-    let { componentWillUnmount } = this;
-    if(isFunction(componentWillUnmount)) {
-      componentWillUnmount.call(this);
+    if(isFunction(this.componentWillUnmount)) {
+      this.componentWillUnmount();
       this.__isMounted = false;
     }
     this.root.delRefreshTask(this.__task);

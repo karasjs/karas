@@ -12376,10 +12376,9 @@
         }
 
         this.__isDestroyed = true;
-        var componentWillUnmount = this.componentWillUnmount;
 
-        if (isFunction$2(componentWillUnmount)) {
-          componentWillUnmount.call(this);
+        if (isFunction$2(this.componentWillUnmount)) {
+          this.componentWillUnmount();
           this.__isMounted = false;
         }
 
@@ -19655,9 +19654,9 @@
             self.__task = null; // 清除在before，防止after的回调增加新的task误删
 
             var pJson = domParent.__json;
-            var i = pJson.children.indexOf(self.__json);
+            var i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
             var zChildren = domParent.zIndexChildren;
-            var j = zChildren.indexOf(self);
+            var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
 
             if (i === -1 || j === -1) {
               throw new Error('Remove index Exception.');
@@ -19676,6 +19675,8 @@
             root.__addUpdate(self, self.__config, root, root.__config, res);
           },
           __after: function __after(diff) {
+            self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
+
             if (util.isFunction(cb)) {
               cb.call(self, diff);
             }
@@ -21099,10 +21100,11 @@
             flowChildren = genOrderChildren(flowChildren);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-                var _currentStyle = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+                var _currentStyle = item.currentStyle,
+                    _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
                 if (_currentStyle[DISPLAY$6] !== 'block' && _currentStyle[DISPLAY$6] !== 'flex') {
-                  _currentStyle[DISPLAY$6] = 'block';
+                  _currentStyle[DISPLAY$6] = _computedStyle[DISPLAY$6] = 'block';
                 }
 
                 var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
@@ -21373,10 +21375,11 @@
           flowChildren = genOrderChildren(flowChildren);
           flowChildren.forEach(function (item) {
             if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-              var _currentStyle2 = item.currentStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+              var _currentStyle2 = item.currentStyle,
+                  _computedStyle2 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
               if (_currentStyle2[DISPLAY$6] !== 'block' && _currentStyle2[DISPLAY$6] !== 'flex') {
-                _currentStyle2[DISPLAY$6] = 'block';
+                _currentStyle2[DISPLAY$6] = _computedStyle2[DISPLAY$6] = 'block';
               }
 
               var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
@@ -21958,10 +21961,10 @@
         orderChildren.forEach(function (item) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _currentStyle3 = item.currentStyle,
-                _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+                _computedStyle3 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
             if (_currentStyle3[DISPLAY$6] !== 'block' && _currentStyle3[DISPLAY$6] !== 'flex') {
-              _currentStyle3[DISPLAY$6] = 'block';
+              _currentStyle3[DISPLAY$6] = _computedStyle3[DISPLAY$6] = 'block';
             } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -21988,7 +21991,7 @@
 
             var flexGrow = _currentStyle3[FLEX_GROW$1],
                 flexShrink = _currentStyle3[FLEX_SHRINK$1];
-            _computedStyle[FLEX_BASIS$2] = b;
+            _computedStyle3[FLEX_BASIS$2] = b;
             growList.push(flexGrow);
             shrinkList.push(flexShrink); // 根据basis不同，计算方式不同
 
@@ -22624,7 +22627,7 @@
                   }
                 } // 默认stretch
                 else {
-                    var _computedStyle2 = item.computedStyle,
+                    var _computedStyle4 = item.computedStyle,
                         _item$currentStyle = item.currentStyle,
                         display = _item$currentStyle[DISPLAY$6],
                         flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
@@ -22636,12 +22639,12 @@
                       }));
                     }
 
-                    var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
-                        _borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
-                        _marginTop2 = _computedStyle2[MARGIN_TOP$1],
-                        _marginBottom2 = _computedStyle2[MARGIN_BOTTOM$1],
-                        _paddingTop = _computedStyle2[PADDING_TOP$2],
-                        _paddingBottom = _computedStyle2[PADDING_BOTTOM$2];
+                    var _borderTopWidth = _computedStyle4[BORDER_TOP_WIDTH$3],
+                        _borderBottomWidth = _computedStyle4[BORDER_BOTTOM_WIDTH$3],
+                        _marginTop2 = _computedStyle4[MARGIN_TOP$1],
+                        _marginBottom2 = _computedStyle4[MARGIN_BOTTOM$1],
+                        _paddingTop = _computedStyle4[PADDING_TOP$2],
+                        _paddingBottom = _computedStyle4[PADDING_BOTTOM$2];
 
                     if (_height[1] === AUTO$6) {
                       var _old = item.height;
@@ -22675,19 +22678,19 @@
                   item.__offsetX(_diff9 * 0.5, true);
                 }
               } else if (alignSelf === 'stretch') {
-                var _computedStyle3 = item.computedStyle,
+                var _computedStyle5 = item.computedStyle,
                     width = item.currentStyle[WIDTH$5];
-                var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$4],
-                    borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
-                    marginRight = _computedStyle3[MARGIN_RIGHT$3],
-                    marginLeft = _computedStyle3[MARGIN_LEFT$3],
-                    paddingRight = _computedStyle3[PADDING_RIGHT$3],
-                    paddingLeft = _computedStyle3[PADDING_LEFT$4];
+                var borderRightWidth = _computedStyle5[BORDER_RIGHT_WIDTH$4],
+                    borderLeftWidth = _computedStyle5[BORDER_LEFT_WIDTH$5],
+                    marginRight = _computedStyle5[MARGIN_RIGHT$3],
+                    marginLeft = _computedStyle5[MARGIN_LEFT$3],
+                    paddingRight = _computedStyle5[PADDING_RIGHT$3],
+                    paddingLeft = _computedStyle5[PADDING_LEFT$4];
 
                 if (width[1] === AUTO$6) {
                   var _old2 = item.width;
 
-                  var _v2 = item.__width = _computedStyle3[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                  var _v2 = item.__width = _computedStyle5[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                   var _d2 = _v2 - _old2;
 
@@ -22727,19 +22730,19 @@
                     }
                   } // 默认stretch
                   else {
-                      var _computedStyle4 = item.computedStyle,
+                      var _computedStyle6 = item.computedStyle,
                           _width = item.currentStyle[WIDTH$5];
-                      var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
-                          _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
-                          _marginRight = _computedStyle4[MARGIN_RIGHT$3],
-                          _marginLeft = _computedStyle4[MARGIN_LEFT$3],
-                          _paddingRight = _computedStyle4[PADDING_RIGHT$3],
-                          _paddingLeft = _computedStyle4[PADDING_LEFT$4];
+                      var _borderRightWidth = _computedStyle6[BORDER_RIGHT_WIDTH$4],
+                          _borderLeftWidth = _computedStyle6[BORDER_LEFT_WIDTH$5],
+                          _marginRight = _computedStyle6[MARGIN_RIGHT$3],
+                          _marginLeft = _computedStyle6[MARGIN_LEFT$3],
+                          _paddingRight = _computedStyle6[PADDING_RIGHT$3],
+                          _paddingLeft = _computedStyle6[PADDING_LEFT$4];
 
                       if (_width[1] === AUTO$6) {
                         var _old3 = item.width;
 
-                        var _v3 = item.__width = _computedStyle4[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
+                        var _v3 = item.__width = _computedStyle6[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
 
                         var _d3 = _v3 - _old3;
 
@@ -23310,7 +23313,7 @@
           item.__mp(currentStyle, computedStyle, clientWidth);
 
           if (currentStyle[DISPLAY$6] !== 'block' && currentStyle[DISPLAY$6] !== 'flex') {
-            currentStyle[DISPLAY$6] = computedStyle[DISPLAY$6] = item.style.display = 'block';
+            currentStyle[DISPLAY$6] = computedStyle[DISPLAY$6] = 'block';
           }
 
           var left = currentStyle[LEFT$1],
@@ -30614,12 +30617,24 @@
    * 过程即__checkReflow中所提及的，各种情况
    * 将影响升至最近的父级节点，并添加布局标识，这样后面的深度遍历会以父级为准忽略本身
    * 如果最终是root，则返回true标识，直接整个重新开始布局
+   * ====
+   * addDom情况下的特殊影响检测，类似checkInfluence
+   * 添加的是absolute则只影响自己，大部分交互游戏情况属于此类型优化
+   * 添加的是inline/inlineBlock的话，影响最近非inline父节点
+   * 父为flex则直接影响父节点，不管添加情况如何
+   * 添加block/flex的话，上下都block/flex则只影响自己，否则还是影响父节点
+   * 如果最终是root，则返回true标识，直接整个重新开始布局
    * @returns {boolean}
    */
 
 
-  function checkInfluence(root, reflowHash, node, component) {
-    var target = node; // inline新老都影响，节点变为最近的父非inline
+  function checkInfluence(root, reflowHash, node, component, addDom) {
+    var target = node; // add情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
+
+    if (addDom && node.currentStyle[POSITION$5] === 'absolute') {
+      return;
+    } // inline新老都影响，节点变为最近的父非inline
+
 
     if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1) {
       do {
@@ -30636,14 +30651,14 @@
 
 
         if (target.currentStyle[POSITION$5] === 'absolute' || target.computedStyle[POSITION$5] === 'absolute') {
-          setLAYOUT(target, reflowHash, component);
+          setLAYOUT(target, reflowHash, component, addDom);
           return;
         }
       } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
 
 
       if (isFixedSize(target, true)) {
-        setLAYOUT(target, reflowHash, component);
+        setLAYOUT(target, reflowHash, component, addDom);
         return;
       }
     } // 此时target指向node，如果原本是inline则是其flow的非inline父
@@ -30704,7 +30719,7 @@
         if (isFixedSize(parent)) {
           break;
         } else {
-          setLAYOUT(parent, reflowHash, component);
+          setLAYOUT(parent, reflowHash, component, addDom);
           return;
         }
       }
@@ -30714,147 +30729,7 @@
 
 
     if (target !== node) {
-      setLAYOUT(target, reflowHash, component);
-    }
-  }
-  /**
-   * addDom情况下的特殊影响检测，类似checkInfluence
-   * 添加的是absolute则只影响自己，大部分交互游戏情况属于此类型优化
-   * 添加的是inline/inlineBlock的话，影响最近非inline父节点
-   * 父为flex则直接影响父节点，不管添加情况如何
-   * 添加block/flex的话，上下都block/flex则只影响自己，否则还是影响父节点
-   * 如果最终是root，则返回true标识，直接整个重新开始布局
-   * @returns {boolean}
-   */
-
-
-  function checkInfluenceAddDom(root, reflowHash, node) {
-    var _node$currentStyle = node.currentStyle,
-        position = _node$currentStyle[POSITION$5],
-        display = _node$currentStyle[DISPLAY$a];
-
-    if (position === 'absolute') {
-      // 啥也不干
-      return;
-    }
-
-    var target = node; // 先检查inline，找到最近非inline父
-
-    if (['inline', 'inline-block', 'inlineBlock'].indexOf(display) > -1) {
-      do {
-        target = target.domParent; // 父到root提前跳出
-
-        if (target === root) {
-          return true;
-        } // 父已有LAYOUT跳出防重
-
-
-        if (isLAYOUT(target)) {
-          return;
-        } // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
-
-
-        if (target.currentStyle[POSITION$5] === 'absolute' || target.computedStyle[POSITION$5] === 'absolute') {
-          setLAYOUT(target, reflowHash, false, true);
-          return;
-        }
-      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
-
-
-      if (isFixedSize(target, true)) {
-        setLAYOUT(target, reflowHash, false, true);
-        return;
-      }
-    } // 此时target指向node，如果原本是inline则是其flow的非inline父
-
-
-    var parent = target.domParent; // parent有LAYOUT跳出，已被包含
-
-    if (isLAYOUT(parent)) {
-      return;
-    } // 向上检查flex，如果父级中有flex，以最上层的flex视作其更改，node本身flex不进入
-
-
-    var topFlex;
-
-    do {
-      // 父已有LAYOUT跳出防重
-      if (isLAYOUT(parent)) {
-        return;
-      } // flex相关，包含变化或不变化
-
-
-      if (parent.computedStyle[DISPLAY$a] === 'flex' || parent.currentStyle[DISPLAY$a] === 'flex') {
-        topFlex = parent;
-      } // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
-
-
-      if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
-        break;
-      } // 父固定宽高跳出
-
-
-      if (isFixedSize(parent, true)) {
-        break;
-      }
-
-      parent = parent.domParent;
-    } while (parent); // 找到最上层flex，视作其更改
-
-
-    if (topFlex) {
-      target = topFlex;
-    }
-
-    if (target === root) {
-      return true;
-    }
-
-    parent = target; // 向上检查非固定尺寸的absolute，找到则视为其变更，上面过程中一定没有出现absolute
-
-    while (parent) {
-      // 无论新老absolute，不变化则设置，变化一定会出现在列表中
-      if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
-        if (parent === root) {
-          break;
-        } // 固定尺寸的不用设置，需要跳出循环
-
-
-        if (isFixedSize(parent)) {
-          break;
-        } else {
-          setLAYOUT(parent, reflowHash, false, true);
-          return;
-        }
-      }
-
-      parent = parent.domParent;
-    } // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
-
-
-    if (target !== node) {
-      setLAYOUT(target, reflowHash, false, true);
-    } else {
-      // 前后必须都是block，否则还是视为父布局
-      var isSiblingBlock = true;
-      var prev = node.prev,
-          next = node.next;
-
-      if (prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$a]) > -1) {
-        isSiblingBlock = false;
-      } else if (next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$a]) > -1) {
-        isSiblingBlock = false;
-      }
-
-      if (!isSiblingBlock) {
-        target = node.domParent;
-
-        if (target === root) {
-          return true;
-        }
-
-        setLAYOUT(target, reflowHash, false, true);
-      }
+      setLAYOUT(target, reflowHash, component, addDom);
     }
   }
 
@@ -30870,7 +30745,8 @@
         list = target[UPDATE_LIST],
         keys = target[UPDATE_KEYS$2],
         __config = target[UPDATE_CONFIG$4],
-        addDom = target[UPDATE_ADD_DOM$1];
+        addDom = target[UPDATE_ADD_DOM$1],
+        removeDom = target[UPDATE_REMOVE_DOM$1];
 
     if (__config[NODE_IS_DESTROYED$2]) {
       return;
@@ -31086,7 +30962,8 @@
           node: node,
           style: style,
           component: component,
-          addDom: addDom
+          addDom: addDom,
+          removeDom: removeDom
         }); // measure需要提前先处理
 
         if (hasMeasure) {
@@ -32027,15 +31904,17 @@
         }
 
         var root = this;
+        var uniqueList = [];
         var hasRoot;
         __uniqueReflowId = 0;
         var reflowHash = {}; // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
 
         for (var i = 0, len = reflowList.length; i < len; i++) {
-          var _reflowList$i = reflowList[i],
-              node = _reflowList$i.node,
-              component = _reflowList$i.component,
-              addDom = _reflowList$i.addDom; // root提前跳出，完全重新布局
+          var item = reflowList[i];
+          var node = item.node,
+              component = item.component,
+              addDom = item.addDom,
+              removeDom = item.removeDom; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -32045,24 +31924,21 @@
 
           if (!node.hasOwnProperty('__uniqueReflowId')) {
             node.__uniqueReflowId = __uniqueReflowId;
-            reflowHash[__uniqueReflowId++] = {
-              node: node,
-              component: component,
-              addDom: addDom
-            };
-          } // addDom的特殊判断
+            reflowHash[__uniqueReflowId++] = item;
+          } // 每个节点都向上检查影响，以及是否从root开始完全重新，remove特殊对待，影响父节点视为普通父节点relay
 
 
-          if (addDom) {
-            if (checkInfluenceAddDom(root, reflowHash, node)) {
-              hasRoot = true;
+          if (checkInfluence(root, reflowHash, node, component, addDom)) {
+            hasRoot = true;
+
+            if (addDom) {
               this.__zIndexChildren = null;
-              break;
             }
-          } // 每个节点都向上检查影响，以及是否从root开始完全重新
-          else if (checkInfluence(root, reflowHash, node, component)) {
-              hasRoot = true;
-              break;
+
+            break;
+          } // remove的要特殊对待，因为提前删除了父子兄弟关系，下面deepScan不会出现
+          else if (removeDom) {
+              uniqueList.push(item);
             }
         }
 
@@ -32096,8 +31972,6 @@
          * OFFSET节点作为局部根，其递归子节点先执行任何操作，后续根节点再偏移一次
          */
         else {
-            var uniqueList = [];
-
             this.__deepScan(function (node, options) {
               if (node.hasOwnProperty('__uniqueReflowId')) {
                 var o = reflowHash[node.__uniqueReflowId];
@@ -32127,7 +32001,8 @@
             uniqueList.forEach(function (item) {
               var node = item.node,
                   component = item.component,
-                  addDom = item.addDom; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  addDom = item.addDom,
+                  removeDom = item.removeDom; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               var cps = node.computedStyle,
                   cts = node.currentStyle;
@@ -32168,132 +32043,137 @@
                 }
 
                 ref = ref.prev;
-              } // 找不到prev以parent为基准
+              } // 找不到prev以parent为基准，找到则增加自身，排除remove
 
 
-              if (!hasFlowPrev) {
-                y += computedStyle[MARGIN_TOP$4] + computedStyle[BORDER_TOP_WIDTH$6] + computedStyle[PADDING_TOP$5];
-              }
-
-              x += computedStyle[MARGIN_LEFT$6] + computedStyle[BORDER_LEFT_WIDTH$8] + computedStyle[PADDING_LEFT$7]; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
-
-              var container = node;
-
-              if (isNowAbs) {
-                container = container.domParent;
-
-                while (container && container !== root) {
-                  if (isRelativeOrAbsolute$2(container)) {
-                    break;
-                  } // 不能用domParent，必须在组件环境内
-
-
-                  if (container.parent) {
-                    container = container.parent;
-                  } else if (container.host) {
-                    break;
-                  }
+              if (!removeDom) {
+                if (!hasFlowPrev) {
+                  y += computedStyle[MARGIN_TOP$4] + computedStyle[BORDER_TOP_WIDTH$6] + computedStyle[PADDING_TOP$5];
                 }
 
-                if (!container) {
-                  container = root;
-                } // 由setState引发的要检查是cp自身还是更上层，如果cp被abs包含，那么node是cp的父亲，否则node是cp的sr
-                // 而这种情况下传cp或node都一样，所以最终统一传node
+                x += computedStyle[MARGIN_LEFT$6] + computedStyle[BORDER_LEFT_WIDTH$8] + computedStyle[PADDING_LEFT$7];
+              } // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
 
-                parent.__layoutAbs(container, null, node); // 优先判断dom变更
+              var container = node; // remove的节点本身无需再次布局
+
+              if (!removeDom) {
+                if (isNowAbs) {
+                  container = container.domParent;
+
+                  while (container && container !== root) {
+                    if (isRelativeOrAbsolute$2(container)) {
+                      break;
+                    } // 不能用domParent，必须在组件环境内
 
 
-                if (addDom) {
-                  var arr = parent.__modifyStruct(root, diffI);
+                    if (container.parent) {
+                      container = container.parent;
+                    } else if (container.host) {
+                      break;
+                    }
+                  }
 
-                  diffI += arr[1];
-                  diffList.push(arr);
+                  if (!container) {
+                    container = root;
+                  } // 由setState引发的要检查是cp自身还是更上层，如果cp被abs包含，那么node是cp的父亲，否则node是cp的sr
+                  // 而这种情况下传cp或node都一样，所以最终统一传node
+
+
+                  parent.__layoutAbs(container, null, node); // 优先判断dom变更
+
+
+                  if (addDom) {
+                    var arr = parent.__modifyStruct(root, diffI);
+
+                    diffI += arr[1];
+                    diffList.push(arr);
+
+                    parent.__updateStruct(root.__structs);
+
+                    if (_this5.renderMode === mode.SVG) {
+                      cleanSvgCache(parent);
+                    }
+
+                    return;
+                  } // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
+                  else if (isLastAbs) {
+                      if (component) {
+                        var _arr = node.__modifyStruct(root, diffI);
+
+                        diffI += _arr[1];
+                        diffList.push(_arr);
+
+                        if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
+                          parent.__updateStruct(root.__structs);
+
+                          if (_this5.renderMode === mode.SVG) {
+                            cleanSvgCache(parent);
+                          }
+                        }
+                      } else if (isLastNone || isNowNone) {
+                        node.__zIndexChildren = null;
+
+                        var _arr2 = node.__modifyStruct(root, diffI);
+
+                        diffI += _arr2[1];
+                        diffList.push(_arr2);
+                      }
+
+                      return;
+                    } // 标识flow变abs，可能引发zIndex变更，重设struct和svg
+
 
                   parent.__updateStruct(root.__structs);
 
                   if (_this5.renderMode === mode.SVG) {
                     cleanSvgCache(parent);
                   }
-
-                  return;
-                } // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
-                else if (isLastAbs) {
-                    if (component) {
-                      var _arr = node.__modifyStruct(root, diffI);
-
-                      diffI += _arr[1];
-                      diffList.push(_arr);
-
-                      if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
-                        parent.__updateStruct(root.__structs);
-
-                        if (_this5.renderMode === mode.SVG) {
-                          cleanSvgCache(parent);
-                        }
-                      }
-                    } else if (isLastNone || isNowNone) {
-                      node.__zIndexChildren = null;
-
-                      var _arr2 = node.__modifyStruct(root, diffI);
-
-                      diffI += _arr2[1];
-                      diffList.push(_arr2);
-                    }
-
-                    return;
-                  } // 标识flow变abs，可能引发zIndex变更，重设struct和svg
-
-
-                parent.__updateStruct(root.__structs);
-
-                if (_this5.renderMode === mode.SVG) {
-                  cleanSvgCache(parent);
-                }
-              } // 现在是普通流，不管之前是啥直接布局
-              else {
-                  node.__layout({
-                    x: x,
-                    y: y,
-                    w: width,
-                    h: h
-                  });
-
-                  y += node.outerHeight;
-
-                  if (component) {
-                    container = node;
-                  } else {
-                    container = container.domParent;
-
-                    while (container && container !== root) {
-                      if (isRelativeOrAbsolute$2(container)) {
-                        break;
-                      } // 不能用domParent，必须在组件环境内
-
-
-                      if (container.parent) {
-                        container = container.parent;
-                      } else if (container.host) {
-                        break;
-                      }
-                    }
-                  }
-
-                  if (!container) {
-                    container = root;
-                  } // 防止geom
-
-
-                  if (node instanceof Dom$1) {
-                    node.__layoutAbs(container, {
+                } // 现在是普通流，不管之前是啥直接布局，排除remove删除的
+                else {
+                    node.__layout({
                       x: x,
                       y: y,
                       w: width,
                       h: h
                     });
+
+                    y += node.outerHeight;
+
+                    if (component) {
+                      container = node;
+                    } else {
+                      container = container.domParent;
+
+                      while (container && container !== root) {
+                        if (isRelativeOrAbsolute$2(container)) {
+                          break;
+                        } // 不能用domParent，必须在组件环境内
+
+
+                        if (container.parent) {
+                          container = container.parent;
+                        } else if (container.host) {
+                          break;
+                        }
+                      }
+                    }
+
+                    if (!container) {
+                      container = root;
+                    } // 防止geom
+
+
+                    if (node instanceof Dom$1) {
+                      node.__layoutAbs(container, {
+                        x: x,
+                        y: y,
+                        w: width,
+                        h: h
+                      });
+                    }
                   }
-                } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
+              } // 向上查找最近的parent是relative，需再次累加ox/oy，无需继续向上递归，因为parent已经递归包含了
               // 这样node重新布局后再次设置其使用parent的偏移
 
 
@@ -32372,20 +32252,21 @@
                     cleanSvgCache(node.domParent);
                   }
                 }
-              } else if (addDom) {
-                var _arr4 = parent.__modifyStruct(root, diffI);
+              } // add和remove都需父节点重新生成struct，zIndexChildren已在对应api操作的before()侦听做了
+              else if (addDom || removeDom) {
+                  var _arr4 = parent.__modifyStruct(root, diffI);
 
-                diffI += _arr4[1];
-                diffList.push(_arr4);
-              } // display有none变化，重置struct和zIndexChildren
-              else if (isLastNone || isNowNone) {
-                  node.__zIndexChildren = null;
+                  diffI += _arr4[1];
+                  diffList.push(_arr4);
+                } // display有none变化，重置struct和zIndexChildren
+                else if (isLastNone || isNowNone) {
+                    node.__zIndexChildren = null;
 
-                  var _arr5 = node.__modifyStruct(root, diffI);
+                    var _arr5 = node.__modifyStruct(root, diffI);
 
-                  diffI += _arr5[1];
-                  diffList.push(_arr5);
-                }
+                    diffI += _arr5[1];
+                    diffList.push(_arr5);
+                  }
             });
             /**
              * mergeMargin后续调整，记录的是变更节点的父节点，因此每个节点内部直接遍历孩子进行
@@ -32407,27 +32288,27 @@
               var isStart, startIndex; // 遍历flow孩子，从开始变化的节点开始，看变化造成的影响，对其后面节点进行偏移，并统计总偏移量
 
               for (var _i4 = 0; _i4 < length; _i4++) {
-                var item = flowChildren[_i4];
+                var _item = flowChildren[_i4];
 
-                if (item instanceof Component$1) {
-                  item = item.shadowRoot;
+                if (_item instanceof Component$1) {
+                  _item = _item.shadowRoot;
                 }
 
-                var isXom = item instanceof Xom$1; // 忽略掉前面没有变更的节点，不能合并
+                var isXom = _item instanceof Xom$1; // 忽略掉前面没有变更的节点，不能合并
 
                 if (!isStart && isXom) {
-                  if (item.hasOwnProperty('__uniqueReflowId')) {
+                  if (_item.hasOwnProperty('__uniqueReflowId')) {
                     isStart = true;
                     startIndex = _i4;
                   }
                 } // 开始变更的节点，至少不是第0个
 
 
-                var _cs = isXom && item.currentStyle;
+                var _cs = isXom && _item.currentStyle;
 
                 var isInline = isXom && _cs[DISPLAY$a] === 'inline';
                 var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$a]) > -1;
-                lastChild = item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
+                lastChild = _item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
                 if (!isXom || isInline || isInlineBlock) {
                   if (mergeMarginBottomList.length && mergeMarginTopList.length && isStart) {
@@ -32449,8 +32330,8 @@
                   var isNone = isXom && _cs[DISPLAY$a] === 'none';
                   var isEmptyBlock = void 0;
 
-                  if (!isNone && item.flowChildren && item.flowChildren.length === 0) {
-                    var _item$computedStyle = item.computedStyle,
+                  if (!isNone && _item.flowChildren && _item.flowChildren.length === 0) {
+                    var _item$computedStyle = _item.computedStyle,
                         marginTop = _item$computedStyle[MARGIN_TOP$4],
                         marginBottom = _item$computedStyle[MARGIN_BOTTOM$4],
                         paddingTop = _item$computedStyle[PADDING_TOP$5],
@@ -32468,7 +32349,7 @@
 
 
                   if (!isNone && !isEmptyBlock) {
-                    var _item$computedStyle2 = item.computedStyle,
+                    var _item$computedStyle2 = _item.computedStyle,
                         _marginTop = _item$computedStyle2[MARGIN_TOP$4],
                         _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$4]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
                     // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
@@ -32522,15 +32403,15 @@
                   var container;
 
                   for (var _i5 = 0, _len3 = absChildren.length; _i5 < _len3; _i5++) {
-                    var _item = absChildren[_i5];
-                    var _item$currentStyle = _item.currentStyle,
-                        top = _item$currentStyle[TOP$4],
-                        bottom = _item$currentStyle[BOTTOM$4],
-                        _height2 = _item$currentStyle[HEIGHT$8]; // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
+                    var _item2 = absChildren[_i5];
+                    var _item2$currentStyle = _item2.currentStyle,
+                        top = _item2$currentStyle[TOP$4],
+                        bottom = _item2$currentStyle[BOTTOM$4],
+                        _height2 = _item2$currentStyle[HEIGHT$8]; // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
 
                     if (top[1] === AUTO$8) {
                       if (bottom[1] === AUTO$8) {
-                        var prev = _item.prev;
+                        var prev = _item2.prev;
 
                         while (prev) {
                           var target = prev;
@@ -32547,10 +32428,10 @@
 
                           if (!isAbs) {
                             var y = target.y + target.outerHeight;
-                            var d = y - _item.y;
+                            var d = y - _item2.y;
 
                             if (d) {
-                              _item.__offsetY(d, true, REPAINT$3);
+                              _item2.__offsetY(d, true, REPAINT$3);
                             }
 
                             break;
@@ -32559,17 +32440,17 @@
                           prev = prev.prev;
                         }
                       } else if (bottom[1] === PX$b) {
-                        _item.__offsetY(_diff5, true, REPAINT$3);
+                        _item2.__offsetY(_diff5, true, REPAINT$3);
                       } else if (bottom[1] === PERCENT$c) {
                         var v = (1 - bottom[0] * 0.01) * _diff5;
 
-                        _item.__offsetY(v, true, REPAINT$3);
+                        _item2.__offsetY(v, true, REPAINT$3);
                       }
                     } else if (top[1] === PERCENT$c) {
                       if (isContainer) {
                         var _v = top[0] * 0.01 * _diff5;
 
-                        _item.__offsetY(_v, true, REPAINT$3);
+                        _item2.__offsetY(_v, true, REPAINT$3);
                       } // 非容器的特殊处理
                       else {
                           if (!container) {
@@ -32593,7 +32474,7 @@
                           if (container.currentStyle[HEIGHT$8][1] !== PX$b) {
                             var _v2 = top[0] * 0.01 * _diff5;
 
-                            _item.__offsetY(_v2, true, REPAINT$3);
+                            _item2.__offsetY(_v2, true, REPAINT$3);
                           }
                         }
                     } // 高度百分比需发生变化的重新布局，需要在容器内
@@ -32601,7 +32482,7 @@
 
                     if (_height2[1] === PERCENT$c) {
                       if (isContainer) {
-                        parent.__layoutAbs(parent, null, _item);
+                        parent.__layoutAbs(parent, null, _item2);
                       } // 不在容器内说明在上级，存入等结束后统一重新布局
                       else {
                           if (!container) {
@@ -32622,7 +32503,7 @@
                             }
                           }
 
-                          inDirectAbsList.push([parent, container, _item]);
+                          inDirectAbsList.push([parent, container, _item2]);
                         }
                     }
                   }
@@ -32634,13 +32515,13 @@
 
 
               for (var _i6 = 0, _len4 = absChildren.length; _i6 < _len4; _i6++) {
-                var _item2 = absChildren[_i6];
-                var _item2$currentStyle = _item2.currentStyle,
-                    _top = _item2$currentStyle[TOP$4],
-                    _bottom = _item2$currentStyle[BOTTOM$4];
+                var _item3 = absChildren[_i6];
+                var _item3$currentStyle = _item3.currentStyle,
+                    _top = _item3$currentStyle[TOP$4],
+                    _bottom = _item3$currentStyle[BOTTOM$4];
 
                 if (_top[1] === AUTO$8 && _bottom[1] === AUTO$8) {
-                  var _prev = _item2.prev;
+                  var _prev = _item3.prev;
 
                   while (_prev) {
                     var _target = _prev;
@@ -32658,10 +32539,10 @@
                     if (!_isAbs) {
                       var _y = _target.y + _target.outerHeight;
 
-                      var _d = _y - _item2.y;
+                      var _d = _y - _item3.y;
 
                       if (_d) {
-                        _item2.__offsetY(_d, true, REPAINT$3);
+                        _item3.__offsetY(_d, true, REPAINT$3);
                       }
 
                       break;
@@ -32683,9 +32564,9 @@
                 isFirst = true,
                 structs = root.__structs;
             diffList.forEach(function (item) {
-              var _item3 = _slicedToArray(item, 2),
-                  ns = _item3[0],
-                  d = _item3[1]; // 第一个有变化的，及后面无论有无变化都需更新
+              var _item4 = _slicedToArray(item, 2),
+                  ns = _item4[0],
+                  d = _item4[1]; // 第一个有变化的，及后面无论有无变化都需更新
               // 第1个变化区域无需更改前面一段
 
 

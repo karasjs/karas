@@ -2745,9 +2745,9 @@ class Xom extends Node {
       __before() {
         self.__task = null; // 清除在before，防止after的回调增加新的task误删
         let pJson = domParent.__json;
-        let i = pJson.children.indexOf(self.__json);
+        let i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
         let zChildren = domParent.zIndexChildren;
-        let j = zChildren.indexOf(self);
+        let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
         if(i === -1 || j === -1) {
           throw new Error('Remove index Exception.')
         }
@@ -2763,6 +2763,7 @@ class Xom extends Node {
         root.__addUpdate(self, self.__config, root, root.__config, res);
       },
       __after(diff) {
+        self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
         if(util.isFunction(cb)) {
           cb.call(self, diff);
         }

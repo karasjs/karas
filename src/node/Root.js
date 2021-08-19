@@ -1332,6 +1332,10 @@ class Root extends Dom {
         hasRoot = true;
         break;
       }
+      // 添加时如果是cp则node取sr来布局
+      if(addDom && node instanceof Component) {
+        node = node.shadowRoot;
+      }
       // 每个节点生成唯一的布局识别id存入hash防止重复
       if(!node.hasOwnProperty('__uniqueReflowId')) {
         node.__uniqueReflowId = __uniqueReflowId;
@@ -1592,8 +1596,14 @@ class Root extends Dom {
           mergeOffsetList.push(parent);
         }
 
+        // add和remove都需父节点重新生成struct，zIndexChildren已在对应api操作的before()侦听做了
+        if(addDom || removeDom) {
+          let arr = parent.__modifyStruct(root, diffI);
+          diffI += arr[1];
+          diffList.push(arr);
+        }
         // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
-        if(component) {
+        else if(component) {
           let arr = node.__modifyStruct(root, diffI);
           diffI += arr[1];
           diffList.push(arr);
@@ -1604,12 +1614,6 @@ class Root extends Dom {
               cleanSvgCache(node.domParent);
             }
           }
-        }
-        // add和remove都需父节点重新生成struct，zIndexChildren已在对应api操作的before()侦听做了
-        else if(addDom || removeDom) {
-          let arr = parent.__modifyStruct(root, diffI);
-          diffI += arr[1];
-          diffList.push(arr);
         }
         // display有none变化，重置struct和zIndexChildren
         else if(isLastNone || isNowNone) {

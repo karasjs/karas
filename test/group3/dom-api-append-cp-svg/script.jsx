@@ -1,6 +1,6 @@
 let root = karas.render(
   <svg width="360" height="360">
-    <span>1</span>
+    <div>1</div>
   </svg>,
   '#test'
 );
@@ -21,11 +21,12 @@ class Component extends karas.Component {
     </div>;
   }
 }
-let div = <Component/>;
-root.appendChild(div, function() {
+let cp = <Component/>;
+root.appendChild(cp, function() {
+  input.value += ',' + document.querySelector('svg').innerHTML;
   root.children[1].setState({
     a: 1,
   }, function() {
-    input.value += document.querySelector('svg').innerHTML;
+    input.value += ',' + document.querySelector('svg').innerHTML;
   });
 });

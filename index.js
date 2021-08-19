@@ -31940,6 +31940,11 @@
           if (node === this) {
             hasRoot = true;
             break;
+          } // 添加时如果是cp则node取sr来布局
+
+
+          if (addDom && node instanceof Component$1) {
+            node = node.shadowRoot;
           } // 每个节点生成唯一的布局识别id存入hash防止重复
 
 
@@ -32257,28 +32262,28 @@
               if (!parent.hasOwnProperty('__uniqueMergeOffsetId') && !(isNowAbs && isLastNone)) {
                 parent.__uniqueMergeOffsetId = __uniqueMergeOffsetId++;
                 mergeOffsetList.push(parent);
-              } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
+              } // add和remove都需父节点重新生成struct，zIndexChildren已在对应api操作的before()侦听做了
 
 
-              if (component) {
-                var _arr3 = node.__modifyStruct(root, diffI);
+              if (addDom || removeDom) {
+                var _arr3 = parent.__modifyStruct(root, diffI);
 
                 diffI += _arr3[1];
                 diffList.push(_arr3);
-
-                if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
-                  node.domParent.__updateStruct(root.__structs);
-
-                  if (_this5.renderMode === mode.SVG) {
-                    cleanSvgCache(node.domParent);
-                  }
-                }
-              } // add和remove都需父节点重新生成struct，zIndexChildren已在对应api操作的before()侦听做了
-              else if (addDom || removeDom) {
-                  var _arr4 = parent.__modifyStruct(root, diffI);
+              } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
+              else if (component) {
+                  var _arr4 = node.__modifyStruct(root, diffI);
 
                   diffI += _arr4[1];
                   diffList.push(_arr4);
+
+                  if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
+                    node.domParent.__updateStruct(root.__structs);
+
+                    if (_this5.renderMode === mode.SVG) {
+                      cleanSvgCache(node.domParent);
+                    }
+                  }
                 } // display有none变化，重置struct和zIndexChildren
                 else if (isLastNone || isNowNone) {
                     node.__zIndexChildren = null;

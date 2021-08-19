@@ -13,7 +13,7 @@ let o = karas.render(
           },
           "children": [
             {
-              "tagName": "p",
+              "tagName": "div",
               "props": {
                 "style": {
                   "display": "flex",

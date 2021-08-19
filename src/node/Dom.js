@@ -2878,6 +2878,7 @@ class Dom extends Xom {
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
         if(json.vd) {
           root.delRefreshTask(json.vd.__task);
+          json.vd.remove();
         }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
@@ -2927,6 +2928,7 @@ class Dom extends Xom {
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
         if(json.vd) {
           root.delRefreshTask(json.vd.__task);
+          json.vd.remove();
         }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
@@ -2977,6 +2979,7 @@ class Dom extends Xom {
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
         if(json.vd) {
           root.delRefreshTask(json.vd.__task);
+          json.vd.remove();
         }
         let vd;
         if($$type.TYPE_CP === json.$$type) {
@@ -3047,6 +3050,7 @@ class Dom extends Xom {
       if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
         if(json.vd) {
           root.delRefreshTask(json.vd.__task);
+          json.vd.remove();
         }
         let vd;
         if($$type.TYPE_CP === json.$$type) {

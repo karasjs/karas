@@ -19688,7 +19688,16 @@
         }
 
         var root = self.root,
-            domParent = self.domParent;
+            domParent = self.domParent; // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
+
+        if (domParent.children.indexOf(self) === -1) {
+          if (util.isFunction(cb)) {
+            cb();
+          }
+
+          return;
+        }
+
         root.delRefreshTask(self.__task);
         root.addRefreshTask(self.__task = {
           __before: function __before() {
@@ -23747,6 +23756,7 @@
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
             if (json.vd) {
               root.delRefreshTask(json.vd.__task);
+              json.vd.remove();
             }
 
             var vd;
@@ -23806,6 +23816,7 @@
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
             if (json.vd) {
               root.delRefreshTask(json.vd.__task);
+              json.vd.remove();
             }
 
             var vd;
@@ -23866,6 +23877,7 @@
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
             if (json.vd) {
               root.delRefreshTask(json.vd.__task);
+              json.vd.remove();
             }
 
             var vd;
@@ -23950,6 +23962,7 @@
           if ([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
             if (json.vd) {
               root.delRefreshTask(json.vd.__task);
+              json.vd.remove();
             }
 
             var vd;

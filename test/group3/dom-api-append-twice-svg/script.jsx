@@ -5,9 +5,8 @@ let root = karas.render(
   '#test'
 );
 let div = <div>2</div>;
+root.appendChild(div);
 root.appendChild(div, function() {
-  root.appendChild(div, function() {
-    let input = document.querySelector('input');
-    input.value = document.querySelector('svg').innerHTML;
-  });
+  let input = document.querySelector('input');
+  input.value = document.querySelector('svg').innerHTML;
 });

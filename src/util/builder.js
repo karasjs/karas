@@ -18,22 +18,26 @@ let Xom, Dom, Img, Geom, Component;
 
 function initRoot(cd, root) {
   let c = flatten({
+    tagName: root.tagName,
+    props: {},
     children: cd,
     $$type: TYPE_VD,
   });
+  root.__json = c;
+  root.__host = root;
   let children = build(c.children, root, root);
   return relation(root, children);
 }
 
+function initDom(json, root, host, parent) {
+  let vd = build(json, root, host);
+  return relation(parent, vd);
+}
 
-function initCp(json, root, owner) {
+function initCp(json, root, host) {
   if(util.isObject(json)) {
     // cp的flatten在__init中自己做
-    let vd = build(json, root, owner, owner);
-    if(Array.isArray(vd)) {
-      relation(owner, vd);
-    }
-    return vd;
+    return build(json, root, host);
   }
   // text的relation会由上层如Root设置
   else {
@@ -41,25 +45,33 @@ function initCp(json, root, owner) {
   }
 }
 
+function initCp2(json, root, host, parent) {
+  let vd = new json.klass(json.props);
+  vd.__tagName = json.tagName || vd.__tagName;
+  vd.__root = root;
+  vd.__host = host;
+  vd.__init();
+  return relation(parent, vd);
+}
+
 /**
  * 将初始json文件生成virtualDom
  * @param json
  * @param root
- * @param owner
  * @param host
  * @param hasP 出现过p标签
  * @returns vd
  */
-function build(json, root, owner, host, hasP) {
+function build(json, root, host, hasP) {
   if(Array.isArray(json)) {
-    return json.map(item => build(item, root, owner, host));
+    return json.map(item => build(item, root, host));
   }
   let vd;
   if(util.isObject(json) && json.$$type) {
     let { tagName, props, children, klass, $$type, inheritAnimate, __animateRecords } = json;
     // 更新过程中无变化的cp直接使用原来生成的
     if($$type === TYPE_CP && json.placeholder) {
-      return json.value;
+      return json.placeholder;
     }
     if($$type === TYPE_VD) {
       if(tagName === 'img') {
@@ -79,7 +91,7 @@ function build(json, root, owner, host, hasP) {
         throw new Error('Markup p can not contain div');
       }
       if(Array.isArray(children)) {
-        children = relation(vd, build(children, root, owner, host, hasP));
+        children = relation(vd, build(children, root, host, hasP));
       }
       else {
         children = [];
@@ -92,13 +104,14 @@ function build(json, root, owner, host, hasP) {
     }
     else if($$type === TYPE_CP) {
       vd = new klass(props);
-      vd.__tagName = vd.__tagName || tagName;
+      vd.__tagName = tagName || vd.__tagName;
     }
     else {
       return new Text(json);
     }
-    // 根parse需要用到真正的vd引用
+    // 根parse需要用到真正的vd引用，然后vd也要引用json，用以做domApi
     json.vd = vd;
+    vd.__json = json;
     // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
     if(__animateRecords) {
       vd.__animateRecords = __animateRecords;
@@ -111,15 +124,13 @@ function build(json, root, owner, host, hasP) {
       util.extendAnimate(inheritAnimate, vd);
     }
     vd.__root = root;
-    if(host) {
-      vd.__host = host;
-    }
+    vd.__host = host;
     if($$type === TYPE_CP) {
       vd.__init();
     }
     let ref = props.ref;
     if(util.isString(ref) && ref || util.isNumber(ref)) {
-      owner.ref[ref] = vd;
+      host.ref[ref] = vd;
     }
     else if(util.isFunction(ref)) {
       ref(vd);
@@ -198,6 +209,8 @@ export default {
     Component = o.Component;
   },
   initRoot,
+  initDom,
   initCp,
+  initCp2,
   relation,
 };

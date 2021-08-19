@@ -111,6 +111,7 @@ const {
     UPDATE_OVERWRITE,
     UPDATE_KEYS,
     UPDATE_CONFIG,
+    UPDATE_REMOVE_DOM,
   },
   STRUCT_KEY: {
     STRUCT_HAS_MASK,
@@ -244,6 +245,7 @@ class Xom extends Node {
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
+    // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
   }
 
   __structure(i, lv, j) {
@@ -2432,6 +2434,7 @@ class Xom extends Node {
     if(root) {
       root.addRefreshTask(node.__task = {
         __before() {
+          node.__task = null;
           if(__config[NODE_IS_DESTROYED]) {
             return;
           }
@@ -2472,6 +2475,7 @@ class Xom extends Node {
     if(root) {
       root.addRefreshTask(node.__task = {
         __before() {
+          node.__task = null; // 清除在before，防止after的回调增加新的task误删
           if(__config[NODE_IS_DESTROYED]) {
             return;
           }
@@ -2724,6 +2728,50 @@ class Xom extends Node {
   // img和geom返回false，在inline布局时判断是否是真的inline
   __isRealInline() {
     return true;
+  }
+
+  remove(cb) {
+    let self = this;
+    if(self.isDestroyed) {
+      inject.warn('Remove target is destroyed.');
+      if(util.isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    let { root, domParent } = self;
+    root.delRefreshTask(self.__task);
+    root.addRefreshTask(self.__task = {
+      __before() {
+        self.__task = null; // 清除在before，防止after的回调增加新的task误删
+        let pJson = domParent.__json;
+        let i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
+        let zChildren = domParent.zIndexChildren;
+        let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
+        if(i === -1 || j === -1) {
+          throw new Error('Remove index Exception.')
+        }
+        pJson.children.splice(i, 1);
+        domParent.children.splice(i, 1);
+        zChildren.splice(j, 1);
+        if(self.__prev) {
+          self.__prev.__next = self.__next;
+        }
+        // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+        let res = {};
+        res[UPDATE_NODE] = self;
+        res[UPDATE_FOCUS] = level.REFLOW;
+        res[UPDATE_REMOVE_DOM] = true;
+        res[UPDATE_CONFIG] = self.__config;
+        root.__addUpdate(self, self.__config, root, root.__config, res);
+      },
+      __after(diff) {
+        self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
+        if(util.isFunction(cb)) {
+          cb.call(self, diff);
+        }
+      },
+    });
   }
 
   get tagName() {

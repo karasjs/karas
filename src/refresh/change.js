@@ -112,10 +112,12 @@ o.isValid = function(tagName, k) {
 let MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(MEASURE).map(i => parseInt(i));
 let len = MEASURE_KEY_SET.length;
 o.isMeasureInherit = function(target) {
-  for(let i = 0; i < len; i++) {
-    let k = MEASURE_KEY_SET[i];
-    if(target.hasOwnProperty(k) && target[k][1] === INHERIT) {
-      return true;
+  if(target) {
+    for(let i = 0; i < len; i++) {
+      let k = MEASURE_KEY_SET[i];
+      if(target.hasOwnProperty(k) && target[k][1] === INHERIT) {
+        return true;
+      }
     }
   }
   return false;

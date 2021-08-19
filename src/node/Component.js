@@ -150,16 +150,16 @@ class Component extends Event {
     // 递归下去，多层级时执行顺序由里到外，最终会被最上层执行替换
     while(sr instanceof Component) {
       sr.__hostRoot = this;
+      sr.shadow.__host = sr;
       sr = sr.shadow;
     }
     this.__shadowRoot = sr;
     sr.__hostRoot = this;
     if(!this.__isMounted) {
       this.__isMounted = true;
-      let { componentDidMount } = this;
-      if(isFunction(componentDidMount)) {
+      if(isFunction(this.componentDidMount)) {
         root.once(Event.REFRESH, () => {
-          componentDidMount.call(this);
+          this.componentDidMount();
         });
       }
     }
@@ -174,9 +174,8 @@ class Component extends Event {
       return;
     }
     this.__isDestroyed = true;
-    let { componentWillUnmount } = this;
-    if(isFunction(componentWillUnmount)) {
-      componentWillUnmount.call(this);
+    if(isFunction(this.componentWillUnmount)) {
+      this.componentWillUnmount();
       this.__isMounted = false;
     }
     this.root.delRefreshTask(this.__task);
@@ -384,6 +383,12 @@ Object.keys(change.GEOM).concat([
   '__calBasis',
   '__calMinMax',
   '__computeMeasure',
+  'appendChild',
+  'prependChild',
+  'insertBefore',
+  'insertAfter',
+  'removeChild',
+  'remove',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

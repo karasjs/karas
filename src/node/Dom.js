@@ -7,11 +7,13 @@ import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-// import tf from '../style/transform';
+import $$type from '../util/$$type';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
 import reflow from '../refresh/reflow';
+import builder from '../util/builder';
+import level from '../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -62,6 +64,13 @@ const {
     NODE_STRUCT,
     NODE_DOM_PARENT,
     NODE_IS_INLINE,
+  },
+  UPDATE_KEY: {
+    UPDATE_NODE,
+    UPDATE_FOCUS,
+    UPDATE_ADD_DOM,
+    UPDATE_CONFIG,
+    UPDATE_MEASURE,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -518,10 +527,10 @@ class Dom extends Xom {
         flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let { currentStyle } = item;
+            let { currentStyle, computedStyle } = item;
             // flex的child如果是inline，变为block，在计算autoBasis前就要
             if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-              currentStyle[DISPLAY] = 'block';
+              currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
             }
             let [, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
             if(isDirectionRow) {
@@ -768,10 +777,10 @@ class Dom extends Xom {
       flowChildren = genOrderChildren(flowChildren);
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-          let { currentStyle } = item;
+          let { currentStyle, computedStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
           if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-            currentStyle[DISPLAY] = 'block';
+            currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
           }
           let [, [min2, max2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
           if(isDirectionRow) {
@@ -1277,7 +1286,7 @@ class Dom extends Xom {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
         if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-          currentStyle[DISPLAY] = 'block';
+          currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
         let [b, min, max] = item.__calBasis(isVirtual ? true : isDirectionRow, { x, y, w, h }, isVirtual);
@@ -2501,7 +2510,7 @@ class Dom extends Xom {
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, clientWidth);
       if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-        currentStyle[DISPLAY] = computedStyle[DISPLAY] = item.style.display = 'block';
+        currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
         [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height, [DISPLAY]: display,
@@ -2860,6 +2869,260 @@ class Dom extends Xom {
     this.children.forEach(node => {
       node.__deepScan(cb, options);
     });
+  }
+
+  appendChild(json, cb) {
+    let self = this;
+    if(!util.isNil(json) && !self.isDestroyed) {
+      let { root, host } = self;
+      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
+        let vd;
+        if($$type.TYPE_CP === json.$$type) {
+          vd = builder.initCp2(json, root, host, self);
+        }
+        else {
+          vd = builder.initDom(json, root, host, self);
+        }
+        root.addRefreshTask(vd.__task = {
+          __before() {
+            vd.__task = null; // 清除在before，防止after的回调增加新的task误删
+            self.__json.children.push(json);
+            let len = self.children.length;
+            if(len) {
+              let last = self.children[len - 1];
+              last.__next = vd;
+              vd.__prev = last;
+            }
+            self.children.push(vd);
+            self.__zIndexChildren = null;
+            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+            let res = {};
+            res[UPDATE_NODE] = vd;
+            res[UPDATE_FOCUS] = level.REFLOW;
+            res[UPDATE_ADD_DOM] = true;
+            res[UPDATE_MEASURE] = true;
+            res[UPDATE_CONFIG] = vd.__config;
+            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+          },
+          __after(diff) {
+            if(util.isFunction(cb)) {
+              cb.call(vd, diff);
+            }
+          },
+        });
+      }
+      else {
+        throw new Error('Invalid parameter in appendChild.');
+      }
+    }
+  }
+
+  prependChild(json, cb) {
+    let self = this;
+    if(!util.isNil(json) && !self.isDestroyed) {
+      let { root, host } = self;
+      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
+        let vd;
+        if($$type.TYPE_CP === json.$$type) {
+          vd = builder.initCp2(json, root, host, self);
+        }
+        else {
+          vd = builder.initDom(json, root, host, self);
+        }
+        root.addRefreshTask(vd.__task = {
+          __before() {
+            vd.__task = null;
+            self.__json.children.unshift(json);
+            let len = self.children.length;
+            if(len) {
+              let first = self.children[0];
+              first.__prev = vd;
+              vd.__next = first;
+            }
+            self.children.unshift(vd);
+            self.__zIndexChildren = null;
+            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+            let res = {};
+            res[UPDATE_NODE] = vd;
+            res[UPDATE_FOCUS] = level.REFLOW;
+            res[UPDATE_ADD_DOM] = true;
+            res[UPDATE_MEASURE] = true;
+            res[UPDATE_CONFIG] = vd.__config;
+            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+          },
+          __after(diff) {
+            if(util.isFunction(cb)) {
+              cb.call(vd, diff);
+            }
+          },
+        });
+      }
+      else {
+        throw new Error('Invalid parameter in prependChild.');
+      }
+    }
+  }
+
+  insertBefore(json, cb) {
+    let self = this;
+    if(!util.isNil(json) && !self.isDestroyed && self.domParent) {
+      let { root, domParent } = self;
+      let host = domParent.hostRoot;
+      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
+        let vd;
+        if($$type.TYPE_CP === json.$$type) {
+          vd = builder.initCp2(json, root, host, domParent);
+        }
+        else {
+          vd = builder.initDom(json, root, host, domParent);
+        }
+        root.addRefreshTask(vd.__task = {
+          __before() {
+            vd.__task = null;
+            let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
+            for(; i < len; i++) {
+              if(children[i] === pJson) {
+                has = true;
+                break;
+              }
+            }
+            if(!has) {
+              throw new Error('InsertBefore exception.');
+            }
+            // 插入注意开头位置处理
+            if(i) {
+              children.splice(i, 0, json);
+              vd.__next = self;
+              vd.__prev = self.__prev;
+              self.__prev = vd;
+              domParent.children.splice(i, 0, vd);
+            }
+            else {
+              if(len) {
+                let first = domParent.children[0];
+                first.__prev = vd;
+                vd.__next = first;
+              }
+              children.unshift(json);
+              domParent.children.unshift(vd);
+            }
+            domParent.__zIndexChildren = null;
+            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+            let res = {};
+            res[UPDATE_NODE] = vd;
+            res[UPDATE_FOCUS] = level.REFLOW;
+            res[UPDATE_ADD_DOM] = true;
+            res[UPDATE_MEASURE] = true;
+            res[UPDATE_CONFIG] = vd.__config;
+            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+          },
+          __after(diff) {
+            if(util.isFunction(cb)) {
+              cb.call(vd, diff);
+            }
+          },
+        });
+      }
+      else {
+        throw new Error('Invalid parameter in insertBefore.');
+      }
+    }
+  }
+
+  insertAfter(json, cb) {
+    let self = this;
+    if(!util.isNil(json) && !self.isDestroyed && self.domParent) {
+      let { root, domParent } = self;
+      let host = domParent.hostRoot;
+      if([$$type.TYPE_VD, $$type.TYPE_GM, $$type.TYPE_CP].indexOf(json.$$type) > -1) {
+        if(json.vd) {
+          root.delRefreshTask(json.vd.__task);
+        }
+        let vd;
+        if($$type.TYPE_CP === json.$$type) {
+          vd = builder.initCp2(json, root, host, domParent);
+        }
+        else {
+          vd = builder.initDom(json, root, host, domParent);
+        }
+        root.addRefreshTask(vd.__task = {
+          __before() {
+            vd.__task = null;
+            let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
+            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
+            for(; i < len; i++) {
+              if(children[i] === pJson) {
+                has = true;
+                break;
+              }
+            }
+            if(!has) {
+              throw new Error('insertAfter exception.');
+            }
+            // 插入注意末尾位置处理
+            if(i < len - 1) {
+              children.splice(i + 1, 0, json);
+              vd.__prev = self;
+              vd.__next = self.__next;
+              self.__next = vd;
+              domParent.children.splice(i + 1, 0, vd);
+            }
+            else {
+              if(len) {
+                let last = domParent.children[len - 1];
+                last.__next = vd;
+                vd.__prev = last;
+              }
+              children.push(json);
+              domParent.children.push(vd);
+            }
+            domParent.__zIndexChildren = null;
+            // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+            let res = {};
+            res[UPDATE_NODE] = vd;
+            res[UPDATE_FOCUS] = level.REFLOW;
+            res[UPDATE_ADD_DOM] = true;
+            res[UPDATE_MEASURE] = true;
+            res[UPDATE_CONFIG] = vd.__config;
+            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+          },
+          __after(diff) {
+            if(util.isFunction(cb)) {
+              cb.call(vd, diff);
+            }
+          },
+        });
+      }
+      else {
+        throw new Error('Invalid parameter in insertAfter.');
+      }
+    }
+  }
+
+  removeChild(target, cb) {
+    if(target.parent === this && (target instanceof Xom || target instanceof Component)) {
+      if(this.isDestroyed) {
+        inject.warn('Remove parent is destroyed.');
+        if(util.isFunction(cb)) {
+          cb();
+        }
+        return;
+      }
+      target.remove(cb);
+    }
+    else {
+      throw new Error('Invalid parameter in removeChild.');
+    }
   }
 
   get children() {

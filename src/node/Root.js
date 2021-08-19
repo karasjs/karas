@@ -67,6 +67,8 @@ const {
     UPDATE_OVERWRITE,
     UPDATE_LIST,
     UPDATE_CONFIG,
+    UPDATE_ADD_DOM,
+    UPDATE_REMOVE_DOM,
   },
   NODE_KEY: {
     NODE_TAG_NAME,
@@ -196,24 +198,36 @@ function isLAYOUT(node) {
 }
 
 let __uniqueReflowId = 0;
-function setLAYOUT(node, hash, component) {
+function setLAYOUT(node, hash, component, addDom) {
   if(!node.hasOwnProperty('__uniqueReflowId')) {
     node.__uniqueReflowId = __uniqueReflowId;
     hash[__uniqueReflowId++] = {
       node,
       component,
+      addDom,
     };
   }
 }
 
 /**
  * 单独提出共用检测影响的函数，从节点本身开始向上分析影响，找到最上层的影响节点设置其重新布局
- * 过程及__checkReflow中所提及的，各种情况
+ * 过程即__checkReflow中所提及的，各种情况
  * 将影响升至最近的父级节点，并添加布局标识，这样后面的深度遍历会以父级为准忽略本身
+ * 如果最终是root，则返回true标识，直接整个重新开始布局
+ * ====
+ * addDom情况下的特殊影响检测，类似checkInfluence
+ * 添加的是absolute则只影响自己，大部分交互游戏情况属于此类型优化
+ * 添加的是inline/inlineBlock的话，影响最近非inline父节点
+ * 父为flex则直接影响父节点，不管添加情况如何
+ * 添加block/flex的话，上下都block/flex则只影响自己，否则还是影响父节点
  * 如果最终是root，则返回true标识，直接整个重新开始布局
  * @returns {boolean}
  */
-function checkInfluence(root, reflowHash, node, component) {
+function checkInfluence(root, reflowHash, node, component, addDom) {
+  // add情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
+  if(addDom && node.currentStyle[POSITION] === 'absolute') {
+    return;
+  }
   let target = node;
   // inline新老都影响，节点变为最近的父非inline
   if(['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY]) > -1
@@ -230,7 +244,7 @@ function checkInfluence(root, reflowHash, node, component) {
       }
       // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
       if(target.currentStyle[POSITION] === 'absolute' || target.computedStyle[POSITION] === 'absolute') {
-        setLAYOUT(target, reflowHash, component);
+        setLAYOUT(target, reflowHash, component, addDom);
         return;
       }
     }
@@ -238,7 +252,7 @@ function checkInfluence(root, reflowHash, node, component) {
       || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY]) > -1));
     // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
     if(isFixedSize(target, true)) {
-      setLAYOUT(target, reflowHash, component);
+      setLAYOUT(target, reflowHash, component, addDom);
       return;
     }
   }
@@ -290,7 +304,7 @@ function checkInfluence(root, reflowHash, node, component) {
         break;
       }
       else {
-        setLAYOUT(parent, reflowHash, component);
+        setLAYOUT(parent, reflowHash, component, addDom);
         return;
       }
     }
@@ -298,7 +312,25 @@ function checkInfluence(root, reflowHash, node, component) {
   }
   // 向上查找了并且没提前跳出的target如果不等于自身则重新布局，自身外面设置过了
   if(target !== node) {
-    setLAYOUT(target, reflowHash, component);
+    setLAYOUT(target, reflowHash, component, addDom);
+  }
+  else if(addDom) {
+    // 前后必须都是block，否则还是视为父布局
+    let isSiblingBlock = true;
+    let { prev, next } = node;
+    if(prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY]) > -1) {
+      isSiblingBlock = false;
+    }
+    else if(next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY]) > -1) {
+      isSiblingBlock = false;
+    }
+    if(!isSiblingBlock) {
+      target = node.domParent;
+      if(target === root) {
+        return true;
+      }
+      setLAYOUT(target, reflowHash, false, true);
+    }
   }
 }
 
@@ -314,6 +346,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [UPDATE_LIST]: list,
     [UPDATE_KEYS]: keys,
     [UPDATE_CONFIG]: __config,
+    [UPDATE_ADD_DOM]: addDom,
+    [UPDATE_REMOVE_DOM]: removeDom,
   } = target;
   if(__config[NODE_IS_DESTROYED]) {
     return;
@@ -363,7 +397,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   } = __config;
   let lv = focus || NONE;
   let hasMeasure = measure;
-  let hasZ, hasVisibility, hasColor, hasDisplay, hasPerspective;
+  let hasZ, hasVisibility, hasColor, hasDisplay;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
   if(!component && style && keys) {
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -505,6 +539,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       node,
       style,
       component,
+      addDom,
+      removeDom,
     });
     // measure需要提前先处理
     if(hasMeasure) {
@@ -1213,11 +1249,16 @@ class Root extends Dom {
       }
       let last = node;
       // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
-      let isInherit = node !== root && change.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE]);
+      // 另外dom标识表明有dom变更强制进入
+      let isInherit = node !== root
+        && (updateHash[__uniqueUpdateId][UPDATE_ADD_DOM]
+        || change.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE]));
       // 是inherit，需要向上查找，从顶部向下递归计算继承信息
       if(isInherit) {
         while(parent && parent !== root) {
-          let { __config:{ [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId, }, currentStyle } = parent;
+          let { __config: {
+            [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId,
+          }, currentStyle } = parent;
           let isInherit;
           if(parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
             let style = updateHash[__uniqueUpdateId][UPDATE_STYLE];
@@ -1268,6 +1309,8 @@ class Root extends Dom {
    * 上述情况倘若发生包含重复，去掉子树，因子树视为被包含的重新布局
    * 如果有从root开始的，直接重新布局像首次那样即可
    * 如果非root，所有树根按先根顺序记录下来，依次执行局部布局
+   * =========================
+   * addDom比较特殊，是向已有节点中添加新的节点，检查影响与普通domDiff变化不同
    * @private
    */
   __checkReflow(width, height) {
@@ -1276,29 +1319,39 @@ class Root extends Dom {
       return;
     }
     let root = this;
+    let uniqueList = [];
     let hasRoot;
     __uniqueReflowId = 0;
     let reflowHash = {};
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, component } = reflowList[i];
+      let item = reflowList[i];
+      let { node, component, addDom, removeDom } = item;
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
         break;
       }
+      // 添加时如果是cp则node取sr来布局
+      if(addDom && node instanceof Component) {
+        node = node.shadowRoot;
+      }
       // 每个节点生成唯一的布局识别id存入hash防止重复
       if(!node.hasOwnProperty('__uniqueReflowId')) {
         node.__uniqueReflowId = __uniqueReflowId;
-        reflowHash[__uniqueReflowId++] = {
-          node,
-          component,
-        };
+        reflowHash[__uniqueReflowId++] = item;
       }
-      // 每个节点都向上检查影响，以及是否从root开始完全重新
-      if(checkInfluence(root, reflowHash, node, component)) {
+      // 每个节点都向上检查影响，以及是否从root开始完全重新，remove特殊对待，影响父节点视为普通父节点relay
+      if(checkInfluence(root, reflowHash, node, component, addDom)) {
         hasRoot = true;
+        if(addDom) {
+          this.__zIndexChildren = null;
+        }
         break;
+      }
+      // remove的要特殊对待，因为提前删除了父子兄弟关系，下面deepScan不会出现
+      else if(removeDom) {
+        uniqueList.push(item);
       }
     }
     __uniqueReflowId = 0;
@@ -1329,7 +1382,6 @@ class Root extends Dom {
      * OFFSET节点作为局部根，其递归子节点先执行任何操作，后续根节点再偏移一次
      */
     else {
-      let uniqueList = [];
       this.__deepScan(function(node, options) {
         if(node.hasOwnProperty('__uniqueReflowId')) {
           let o = reflowHash[node.__uniqueReflowId];
@@ -1353,7 +1405,7 @@ class Root extends Dom {
       let mergeOffsetList = [];
       let __uniqueMergeOffsetId = 0;
       uniqueList.forEach(item => {
-        let { node, component } = item;
+        let { node, component, addDom, removeDom } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         let cps = node.computedStyle, cts = node.currentStyle;
         let zIndex = cps[Z_INDEX], position = cps[POSITION], display = cps[DISPLAY];
@@ -1384,74 +1436,18 @@ class Root extends Dom {
           }
           ref = ref.prev;
         }
-        // 找不到prev以parent为基准
-        if(!hasFlowPrev) {
-          y += computedStyle[MARGIN_TOP] + computedStyle[BORDER_TOP_WIDTH] + computedStyle[PADDING_TOP];
+        // 找不到prev以parent为基准，找到则增加自身，排除remove
+        if(!removeDom) {
+          if(!hasFlowPrev) {
+            y += computedStyle[MARGIN_TOP] + computedStyle[BORDER_TOP_WIDTH] + computedStyle[PADDING_TOP];
+          }
+          x += computedStyle[MARGIN_LEFT] + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[PADDING_LEFT];
         }
-        x += computedStyle[MARGIN_LEFT] + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[PADDING_LEFT];
         // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
         let container = node;
-        if(isNowAbs) {
-          container = container.domParent;
-          while(container && container !== root) {
-            if(isRelativeOrAbsolute(container)) {
-              break;
-            }
-            // 不能用domParent，必须在组件环境内
-            if(container.parent) {
-              container = container.parent;
-            }
-            else if(container.host) {
-              break;
-            }
-          }
-          if(!container) {
-            container = root;
-          }
-          // 由setState引发的要检查是cp自身还是更上层，如果cp被abs包含，那么node是cp的父亲，否则node是cp的sr
-          // 而这种情况下传cp或node都一样，所以最终统一传node
-          parent.__layoutAbs(container, null, node);
-          // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
-          if(isLastAbs) {
-            if(component) {
-              let arr = node.__modifyStruct(root, diffI);
-              diffI += arr[1];
-              diffList.push(arr);
-              if((position !== cts[POSITION] && (position === 'static' || cts[POSITION] === 'static'))
-                || zIndex !== cts[Z_INDEX]) {
-                parent.__updateStruct(root.__structs);
-                if(this.renderMode === mode.SVG) {
-                  cleanSvgCache(parent);
-                }
-              }
-            }
-            else if(isLastNone || isNowNone) {
-              node.__zIndexChildren = null;
-              let arr = node.__modifyStruct(root, diffI);
-              diffI += arr[1];
-              diffList.push(arr);
-            }
-            return;
-          }
-          // 标识flow变abs，可能引发zIndex变更，重设struct和svg
-          parent.__updateStruct(root.__structs);
-          if(this.renderMode === mode.SVG) {
-            cleanSvgCache(parent);
-          }
-        }
-        // 现在是普通流，不管之前是啥直接布局
-        else {
-          node.__layout({
-            x,
-            y,
-            w: width,
-            h,
-          });
-          y += node.outerHeight;
-          if(component) {
-            container = node;
-          }
-          else {
+        // remove的节点本身无需再次布局
+        if(!removeDom) {
+          if(isNowAbs) {
             container = container.domParent;
             while(container && container !== root) {
               if(isRelativeOrAbsolute(container)) {
@@ -1465,18 +1461,90 @@ class Root extends Dom {
                 break;
               }
             }
+            if(!container) {
+              container = root;
+            }
+            // 由setState引发的要检查是cp自身还是更上层，如果cp被abs包含，那么node是cp的父亲，否则node是cp的sr
+            // 而这种情况下传cp或node都一样，所以最终统一传node
+            parent.__layoutAbs(container, null, node);
+            // 优先判断dom变更
+            if(addDom) {
+              let arr = parent.__modifyStruct(root, diffI);
+              diffI += arr[1];
+              diffList.push(arr);
+              parent.__updateStruct(root.__structs);
+              if(this.renderMode === mode.SVG) {
+                cleanSvgCache(parent);
+              }
+              return;
+            }
+            // 前后都是abs无需偏移后面兄弟和parent调整，component变化节点需更新struct
+            else if(isLastAbs) {
+              if(component) {
+                let arr = node.__modifyStruct(root, diffI);
+                diffI += arr[1];
+                diffList.push(arr);
+                if((position !== cts[POSITION] && (position === 'static' || cts[POSITION] === 'static'))
+                  || zIndex !== cts[Z_INDEX]) {
+                  parent.__updateStruct(root.__structs);
+                  if(this.renderMode === mode.SVG) {
+                    cleanSvgCache(parent);
+                  }
+                }
+              }
+              else if(isLastNone || isNowNone) {
+                node.__zIndexChildren = null;
+                let arr = node.__modifyStruct(root, diffI);
+                diffI += arr[1];
+                diffList.push(arr);
+              }
+              return;
+            }
+            // 标识flow变abs，可能引发zIndex变更，重设struct和svg
+            parent.__updateStruct(root.__structs);
+            if(this.renderMode === mode.SVG) {
+              cleanSvgCache(parent);
+            }
           }
-          if(!container) {
-            container = root;
-          }
-          // 防止geom
-          if(node instanceof Dom) {
-            node.__layoutAbs(container, {
+          // 现在是普通流，不管之前是啥直接布局，排除remove删除的
+          else {
+            node.__layout({
               x,
               y,
               w: width,
               h,
             });
+            y += node.outerHeight;
+            if(component) {
+              container = node;
+            }
+            else {
+              container = container.domParent;
+              while(container && container !== root) {
+                if(isRelativeOrAbsolute(container)) {
+                  break;
+                }
+                // 不能用domParent，必须在组件环境内
+                if(container.parent) {
+                  container = container.parent;
+                }
+                else if(container.host) {
+                  break;
+                }
+              }
+            }
+            if(!container) {
+              container = root;
+            }
+            // 防止geom
+            if(node instanceof Dom) {
+              node.__layoutAbs(container, {
+                x,
+                y,
+                w: width,
+                h,
+              });
+            }
           }
         }
 
@@ -1495,8 +1563,8 @@ class Root extends Dom {
         }
 
         // 向下调整next的flow位置，遇到重复LAYOUT的跳出等待其调用并处理其next，忽视掉abs，margin和abs在merge中做
-        while(node.isShadowRoot) {
-          node = node.host;
+        if(node.isShadowRoot) {
+          node = node.hostRoot;
         }
         let next = node.next;
         while(next && !next.hasOwnProperty('__uniqueReflowId')) {
@@ -1515,7 +1583,6 @@ class Root extends Dom {
               let cs = target.computedStyle;
               if(cs[POSITION] !== 'absolute' && cs[DISPLAY] !== 'none') {
                 target.__offsetY(diff, true, REPAINT);
-                // target.clearCache();
               }
               next = next.next;
             }
@@ -1529,8 +1596,17 @@ class Root extends Dom {
           mergeOffsetList.push(parent);
         }
 
+        // add和remove都需父节点重新生成struct，zIndexChildren已在对应api操作的before()侦听做了
+        if(addDom || removeDom) {
+          let arr = parent.__modifyStruct(root, diffI);
+          diffI += arr[1];
+          diffList.push(arr);
+          if(this.renderMode === mode.SVG) {
+            cleanSvgCache(parent);
+          }
+        }
         // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
-        if(component) {
+        else if(component) {
           let arr = node.__modifyStruct(root, diffI);
           diffI += arr[1];
           diffList.push(arr);
@@ -1682,7 +1758,6 @@ class Root extends Dom {
                       let d = y - item.y;
                       if(d) {
                         item.__offsetY(d, true, REPAINT);
-                        // item.clearCache();
                       }
                       break;
                     }
@@ -1691,19 +1766,16 @@ class Root extends Dom {
                 }
                 else if(bottom[1] === PX) {
                   item.__offsetY(diff, true, REPAINT);
-                  // item.clearCache();
                 }
                 else if(bottom[1] === PERCENT) {
                   let v = (1 - bottom[0] * 0.01) * diff;
                   item.__offsetY(v, true, REPAINT);
-                  // item.clearCache();
                 }
               }
               else if(top[1] === PERCENT) {
                 if(isContainer) {
                   let v = top[0] * 0.01 * diff;
                   item.__offsetY(v, true, REPAINT);
-                  // item.clearCache();
                 }
                 // 非容器的特殊处理
                 else {
@@ -1723,7 +1795,6 @@ class Root extends Dom {
                   if(container.currentStyle[HEIGHT][1] !== PX) {
                     let v = top[0] * 0.01 * diff;
                     item.__offsetY(v, true, REPAINT);
-                    // item.clearCache();
                   }
                 }
               }
@@ -1774,7 +1845,6 @@ class Root extends Dom {
                 let d = y - item.y;
                 if(d) {
                   item.__offsetY(d, true, REPAINT);
-                  // item.clearCache();
                 }
                 break;
               }

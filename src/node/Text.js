@@ -9,6 +9,7 @@ import util from '../util/util';
 import textCache from './textCache';
 import inject from '../util/inject';
 import Cache from '../refresh/Cache';
+import level from '../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -32,6 +33,12 @@ const {
     NODE_DOM_PARENT,
     NODE_MATRIX_EVENT,
     NODE_OPACITY,
+  },
+  UPDATE_KEY: {
+    UPDATE_NODE,
+    UPDATE_MEASURE,
+    UPDATE_FOCUS,
+    UPDATE_CONFIG,
   },
 } = enums;
 
@@ -702,6 +709,35 @@ class Text extends Node {
 
   getComputedStyle(key) {
     return this.domParent.getComputedStyle(key);
+  }
+
+  updateContent(s, cb) {
+    let self = this;
+    if(s === self.__content) {
+      if(util.isFunction(cb)) {
+        cb();
+      }
+      return;
+    }
+    root.delRefreshTask(self.__task);
+    root.addRefreshTask(self.__task = {
+      __before() {
+        self.__content = s;
+        let res = {};
+        let vd = self.domParent;
+        res[UPDATE_NODE] = vd;
+        res[UPDATE_MEASURE] = true;
+        res[UPDATE_FOCUS] = level.REFLOW;
+        res[UPDATE_CONFIG] = vd.__config;
+        let root = vd.root;
+        root.__addUpdate(vd, vd.__config, root, root.__config, res);
+      },
+      __after() {
+        if(util.isFunction(cb)) {
+          cb();
+        }
+      },
+    });
   }
 
   get content() {

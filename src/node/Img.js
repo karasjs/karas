@@ -152,6 +152,7 @@ class Img extends Dom {
   __destroy() {
     this.root.delRefreshTask(this.__task);
     super.__destroy();
+    this.__task = null;
   }
 
   // img根据加载情况更新__hasContent
@@ -655,6 +656,7 @@ class Img extends Dom {
       root.delRefreshTask(self.__task);
       root.addRefreshTask(self.__task = {
         __before() {
+          self.__task = null; // 清除在before，防止after的回调增加新的task误删
           if(self.isDestroyed) {
             return;
           }
@@ -681,6 +683,7 @@ class Img extends Dom {
           if(width[1] !== AUTO && height[1] !== AUTO) {
             root.addRefreshTask(self.__task = {
               __before() {
+                self.__task = null;
                 if(self.isDestroyed) {
                   return;
                 }
@@ -701,6 +704,7 @@ class Img extends Dom {
           else {
             root.addRefreshTask(self.__task = {
               __before() {
+                self.__task = null;
                 if(self.isDestroyed) {
                   return;
                 }
@@ -778,6 +782,7 @@ class Img extends Dom {
       root.delRefreshTask(self.__task);
       root.addRefreshTask(self.__task = {
         __before() {
+          self.__task = null;
           if(self.isDestroyed) {
             return;
           }
@@ -794,6 +799,10 @@ class Img extends Dom {
         },
       });
     }
+  }
+
+  appendChild() {
+    inject.error('Img can not appendChild.');
   }
 
   get isMask() {

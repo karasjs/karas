@@ -1463,6 +1463,27 @@ root.children[0].insertAfter(<div>2</div>, function() {
 });
 ```
 
+#### removeChild
+* **类型** `Function`
+* **参数**
+  * target `Xom/Component`
+  * cb `Function`
+    回调。
+* **说明**  
+异步删除孩子节点，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div>1</div>
+  </canvas>,
+  '#selector'
+);
+root.removeChild(root.children[0], function() {
+  console.log('insertAfter');
+});
+```
+
 <a name="根节点"></a>
 ## 根节点
 karas.render()方法渲染的根节点是个特殊虚拟Dom，它扩展了一些必要的功能。另见基类[Dom](#Dom)。

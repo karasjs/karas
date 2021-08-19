@@ -3110,7 +3110,7 @@ class Dom extends Xom {
   }
 
   removeChild(target, cb) {
-    if(target.domParent === this && (target instanceof Xom || target instanceof Component)) {
+    if(target.parent === this && (target instanceof Xom || target instanceof Component)) {
       if(this.isDestroyed) {
         inject.warn('Remove parent is destroyed.');
         if(util.isFunction(cb)) {

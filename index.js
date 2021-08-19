@@ -24025,7 +24025,7 @@
     }, {
       key: "removeChild",
       value: function removeChild(target, cb) {
-        if (target.domParent === this && (target instanceof Xom$1 || target instanceof Component$1)) {
+        if (target.parent === this && (target instanceof Xom$1 || target instanceof Component$1)) {
           if (this.isDestroyed) {
             inject.warn('Remove parent is destroyed.');
 

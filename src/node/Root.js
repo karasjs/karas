@@ -650,6 +650,7 @@ class Root extends Dom {
     this.__animateController = new Controller();
     Event.mix(this);
     this.__config[NODE_UPDATE_HASH] = this.__updateHash = {};
+    this.__uuid = uuid++;
   }
 
   __initProps() {
@@ -775,7 +776,6 @@ class Root extends Dom {
         this.__dom = dom.querySelector(domName);
       }
     }
-    this.__uuid = uuid++;
     this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {

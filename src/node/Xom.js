@@ -2127,12 +2127,11 @@ class Xom extends Node {
     }
     super.__destroy();
     let { root } = this;
-    this.animationList.forEach(item => item.__destroy());
-    this.__frameAnimateList.splice(0).forEach(item => {
-      frame.offFrame(item);
-    });
+    this.clearAnimate();
+    this.clearFrameAnimate();
     root.delRefreshTask(this.__loadBgi.cb);
     root.delRefreshTask(this.__task);
+    this.__task = null;
     this.__root = null;
     this.clearCache();
   }

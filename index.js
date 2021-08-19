@@ -11974,7 +11974,7 @@
   function build(json, root, host, hasP) {
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return build(item, root, host);
+        return build(item, root, host, hasP);
       });
     }
 
@@ -11987,10 +11987,12 @@
           klass = json.klass,
           _$$type = json.$$type,
           inheritAnimate = json.inheritAnimate,
-          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
+          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的，注意只使用1次，所以删除掉，否则后续特殊使用会用老的vd不重新生成
 
       if (_$$type === TYPE_CP$2 && json.placeholder) {
-        return json.placeholder;
+        var p = json.placeholder;
+        delete json.placeholder;
+        return p;
       }
 
       if (_$$type === TYPE_VD$2) {
@@ -12039,11 +12041,14 @@
         __animateRecords.list.forEach(function (item) {
           item.target = item.target.vd;
         });
+
+        delete json.__animateRecords;
       } // 更新过程中key相同或者普通相同的vd继承动画
 
 
       if (inheritAnimate) {
         util.extendAnimate(inheritAnimate, vd);
+        delete json.inheritAnimate;
       }
 
       vd.__root = root;
@@ -18959,16 +18964,11 @@
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
         var root = this.root;
-        this.animationList.forEach(function (item) {
-          return item.__destroy();
-        });
-
-        this.__frameAnimateList.splice(0).forEach(function (item) {
-          frame.offFrame(item);
-        });
-
+        this.clearAnimate();
+        this.clearFrameAnimate();
         root.delRefreshTask(this.__loadBgi.cb);
         root.delRefreshTask(this.__task);
+        this.__task = null;
         this.__root = null;
         this.clearCache();
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
@@ -31174,6 +31174,7 @@
       _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
       _this.__config[NODE_UPDATE_HASH] = _this.__updateHash = {};
+      _this.__uuid = uuid$2++;
       return _this;
     }
 
@@ -31334,7 +31335,6 @@
               }
             }
 
-        this.__uuid = uuid$2++;
         this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {

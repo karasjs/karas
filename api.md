@@ -365,6 +365,29 @@ baseLine，字母x的下边线位置。
 * **说明**  
 内容的字符宽度总和。
 
+### 类方法method
+* **类型** `Function`
+* **参数**
+  * content `String`
+  * cb `Function`
+    回调。
+* **说明**  
+异步更新文本，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div>1</div>
+  </canvas>,
+  '#selector'
+);
+root.children[0].updateContent('2', function() {
+  console.log('updateContent');
+});
+```
+
+#### updateContent
+
 <a name="Xom"></a>
 ## Xom
 Dom/Geom的基类，抽象共有部分。[Node](#Node)的派生类。
@@ -559,7 +582,7 @@ root.ref.rect.frameAnimate(function(delta) {
   * cb `Function`
     动画回调。
 * **说明**  
-  手动移除一个帧动画。
+手动移除一个帧动画。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -573,6 +596,11 @@ let cb = root.ref.rect.frameAnimate(function(delta) {
 });
 root.rect.removeFrameAnimate(cb);
 ```
+
+#### clearFrameAnimate
+* **类型** `Function`
+* **说明**  
+移除自己所有的帧动画。
 
 #### updateStyle
 * **类型** `Function`
@@ -642,6 +670,26 @@ root.ref.div.updateFormatStyleNoOverwrite({
     只清楚局部根节点。
 * **说明**  
 清除当前节点的缓存，以及向上查找清除所有缓存本节点的节点。在canvas的`cache`的渲染模式和webgl模式时，每个节点都尽可能缓存自己，一些特殊效果节点（如filter）还会生成局部根节点缓存（即以自己未根将所有子节点包括进来形成位图缓存）。在需要的时候可以用这个方法清除缓存重新生成。
+
+#### remove
+* **类型** `Function`
+* **参数**
+  * cb `Function`
+    删除后的回调。
+* **说明**  
+异步删除本节点，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div ref="div">text</div>
+  </canvas>,
+  '#selector'
+);
+root.ref.div.remove(function() {
+  console.log('remove');
+});
+```
 
 ### html属性attribute
 
@@ -1331,6 +1379,88 @@ karas.render(
   </svg>,
   '#selector'
 );
+```
+
+### 类方法method
+
+#### appendChild
+* **类型** `Function`
+* **参数**
+  * target `Xom/Component`
+  * cb `Function`
+    回调。
+* **说明**  
+异步在children后添加节点，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas></canvas>,
+  '#selector'
+);
+root.appendChild(<div>1</div>, function() {
+  console.log('appendChild');
+});
+```
+
+#### prependChild
+* **类型** `Function`
+* **参数**
+  * target `Xom/Component`
+  * cb `Function`
+    回调。
+* **说明**  
+异步在children前添加节点，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas></canvas>,
+  '#selector'
+);
+root.prependChild(<div>1</div>, function() {
+  console.log('prependChild');
+});
+```
+
+#### insertBefore
+* **类型** `Function`
+* **参数**
+  * target `Xom/Component`
+  * cb `Function`
+    回调。
+* **说明**  
+异步在自身前添加节点，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div>1</div>
+  </canvas>,
+  '#selector'
+);
+root.children[0].insertBefore(<div>0</div>, function() {
+  console.log('insertBefore');
+});
+```
+
+#### insertAfter
+* **类型** `Function`
+* **参数**
+  * target `Xom/Component`
+  * cb `Function`
+    回调。
+* **说明**  
+异步在自身后添加节点，并刷新。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div>1</div>
+  </canvas>,
+  '#selector'
+);
+root.children[0].insertAfter(<div>2</div>, function() {
+  console.log('insertAfter');
+});
 ```
 
 <a name="根节点"></a>

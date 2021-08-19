@@ -366,6 +366,8 @@ baseLine，字母x的下边线位置。
 内容的字符宽度总和。
 
 ### 类方法method
+
+#### updateContent
 * **类型** `Function`
 * **参数**
   * content `String`
@@ -377,16 +379,14 @@ baseLine，字母x的下边线位置。
 ```jsx
 let root = karas.render(
   <canvas>
-    <div>1</div>
+    <div ref="div">1</div>
   </canvas>,
   '#selector'
 );
-root.children[0].updateContent('2', function() {
+root.ref.div.children[0].updateContent('2', function() {
   console.log('updateContent');
 });
 ```
-
-#### updateContent
 
 <a name="Xom"></a>
 ## Xom

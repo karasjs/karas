@@ -30629,12 +30629,12 @@
 
 
   function checkInfluence(root, reflowHash, node, component, addDom) {
-    var target = node; // add情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
-
+    // add情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
     if (addDom && node.currentStyle[POSITION$5] === 'absolute') {
       return;
-    } // inline新老都影响，节点变为最近的父非inline
+    }
 
+    var target = node; // inline新老都影响，节点变为最近的父非inline
 
     if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$a]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$a]) > -1) {
       do {
@@ -30730,6 +30730,27 @@
 
     if (target !== node) {
       setLAYOUT(target, reflowHash, component, addDom);
+    } else if (addDom) {
+      // 前后必须都是block，否则还是视为父布局
+      var isSiblingBlock = true;
+      var prev = node.prev,
+          next = node.next;
+
+      if (prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$a]) > -1) {
+        isSiblingBlock = false;
+      } else if (next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$a]) > -1) {
+        isSiblingBlock = false;
+      }
+
+      if (!isSiblingBlock) {
+        target = node.domParent;
+
+        if (target === root) {
+          return true;
+        }
+
+        setLAYOUT(target, reflowHash, false, true);
+      }
     }
   }
 

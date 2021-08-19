@@ -19,5 +19,5 @@ let root = karas.render(
 );
 root.ref.cp.remove(function() {
   let input = document.querySelector('input');
-  input.value = document.querySelector('svg').innerHTML;
+  input.value += document.querySelector('svg').innerHTML;
 });

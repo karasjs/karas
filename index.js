@@ -7656,11 +7656,13 @@
   var len = MEASURE_KEY_SET.length;
 
   o$2.isMeasureInherit = function (target) {
-    for (var i = 0; i < len; i++) {
-      var k = MEASURE_KEY_SET[i];
+    if (target) {
+      for (var i = 0; i < len; i++) {
+        var k = MEASURE_KEY_SET[i];
 
-      if (target.hasOwnProperty(k) && target[k][1] === INHERIT$1) {
-        return true;
+        if (target.hasOwnProperty(k) && target[k][1] === INHERIT$1) {
+          return true;
+        }
       }
     }
 
@@ -10836,26 +10838,114 @@
     return Cache;
   }();
 
-  var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
-      DISPLAY$2 = _enums$STYLE_KEY$6.DISPLAY,
-      LINE_HEIGHT$1 = _enums$STYLE_KEY$6.LINE_HEIGHT,
-      FONT_SIZE$5 = _enums$STYLE_KEY$6.FONT_SIZE,
-      FONT_FAMILY$2 = _enums$STYLE_KEY$6.FONT_FAMILY,
-      FONT_STYLE$2 = _enums$STYLE_KEY$6.FONT_STYLE,
-      FONT_WEIGHT$2 = _enums$STYLE_KEY$6.FONT_WEIGHT,
-      COLOR$2 = _enums$STYLE_KEY$6.COLOR,
-      VISIBILITY$2 = _enums$STYLE_KEY$6.VISIBILITY,
-      LETTER_SPACING$2 = _enums$STYLE_KEY$6.LETTER_SPACING,
-      OVERFLOW = _enums$STYLE_KEY$6.OVERFLOW,
-      WHITE_SPACE$1 = _enums$STYLE_KEY$6.WHITE_SPACE,
-      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$6.TEXT_OVERFLOW,
-      WIDTH$2 = _enums$STYLE_KEY$6.WIDTH,
+  var _TRANSFORMS;
+  var STYLE_KEY$4 = enums.STYLE_KEY,
+      _enums$STYLE_KEY$6 = enums.STYLE_KEY,
+      TRANSLATE_X$2 = _enums$STYLE_KEY$6.TRANSLATE_X,
+      TRANSLATE_Y$2 = _enums$STYLE_KEY$6.TRANSLATE_Y,
+      TRANSLATE_Z$2 = _enums$STYLE_KEY$6.TRANSLATE_Z,
+      OPACITY$1 = _enums$STYLE_KEY$6.OPACITY,
+      FILTER$1 = _enums$STYLE_KEY$6.FILTER,
+      PERSPECTIVE$2 = _enums$STYLE_KEY$6.PERSPECTIVE,
+      PERSPECTIVE_ORIGIN$1 = _enums$STYLE_KEY$6.PERSPECTIVE_ORIGIN;
+  var ENUM = {
+    // 低位表示repaint级别
+    NONE: 0,
+    //                                          0
+    TRANSLATE_X: 1,
+    //                                   1
+    TRANSLATE_Y: 2,
+    //                                  10
+    TRANSLATE_Z: 4,
+    //                                 100
+    TRANSFORM: 8,
+    //                                  1000
+    TRANSFORM_ALL: 15,
+    //                             1111
+    OPACITY: 16,
+    //                                  10000
+    FILTER: 32,
+    //                                  100000
+    MIX_BLEND_MODE: 64,
+    //                         1000000
+    PERSPECTIVE: 128,
+    //                          10000000
+    REPAINT: 256,
+    //                             100000000
+    // 高位表示reflow
+    REFLOW: 512 //                             1000000000
+
+  };
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var o$3 = Object.assign({
+    contain: function contain(lv, value) {
+      return (lv & value) > 0;
+    },
+
+    /**
+     * 得出等级
+     * @param k
+     * @returns {number|*}
+     */
+    getLevel: function getLevel(k) {
+      if (o$2.isIgnore(k)) {
+        return ENUM.NONE;
+      }
+
+      if (k === TRANSLATE_X$2) {
+        return ENUM.TRANSLATE_X;
+      } else if (k === TRANSLATE_Y$2) {
+        return ENUM.TRANSLATE_Y;
+      } else if (k === TRANSLATE_Z$2) {
+        return ENUM.TRANSLATE_Z;
+      } else if (TRANSFORMS.hasOwnProperty(k)) {
+        return ENUM.TRANSFORM;
+      } else if (k === OPACITY$1) {
+        return ENUM.OPACITY;
+      } else if (k === FILTER$1) {
+        return ENUM.FILTER;
+      } else if (k === PERSPECTIVE$2 || k === PERSPECTIVE_ORIGIN$1) {
+        return ENUM.PERSPECTIVE;
+      } else if (o$2.isRepaint(k)) {
+        return ENUM.REPAINT;
+      }
+
+      return ENUM.REFLOW;
+    },
+    isReflow: function isReflow(lv) {
+      return !this.isRepaint(lv);
+    },
+    isRepaint: function isRepaint(lv) {
+      return lv < ENUM.REFLOW;
+    }
+  }, ENUM);
+  o$3.TRANSFORMS = TRANSFORMS;
+
+  var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
+      DISPLAY$2 = _enums$STYLE_KEY$7.DISPLAY,
+      LINE_HEIGHT$1 = _enums$STYLE_KEY$7.LINE_HEIGHT,
+      FONT_SIZE$5 = _enums$STYLE_KEY$7.FONT_SIZE,
+      FONT_FAMILY$2 = _enums$STYLE_KEY$7.FONT_FAMILY,
+      FONT_STYLE$2 = _enums$STYLE_KEY$7.FONT_STYLE,
+      FONT_WEIGHT$2 = _enums$STYLE_KEY$7.FONT_WEIGHT,
+      COLOR$2 = _enums$STYLE_KEY$7.COLOR,
+      VISIBILITY$2 = _enums$STYLE_KEY$7.VISIBILITY,
+      LETTER_SPACING$2 = _enums$STYLE_KEY$7.LETTER_SPACING,
+      OVERFLOW = _enums$STYLE_KEY$7.OVERFLOW,
+      WHITE_SPACE$1 = _enums$STYLE_KEY$7.WHITE_SPACE,
+      TEXT_OVERFLOW$1 = _enums$STYLE_KEY$7.TEXT_OVERFLOW,
+      WIDTH$2 = _enums$STYLE_KEY$7.WIDTH,
       _enums$NODE_KEY$2 = enums.NODE_KEY,
       NODE_CACHE$1 = _enums$NODE_KEY$2.NODE_CACHE,
       NODE_LIMIT_CACHE = _enums$NODE_KEY$2.NODE_LIMIT_CACHE,
       NODE_DOM_PARENT = _enums$NODE_KEY$2.NODE_DOM_PARENT,
       NODE_MATRIX_EVENT = _enums$NODE_KEY$2.NODE_MATRIX_EVENT,
-      NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY;
+      NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY,
+      _enums$UPDATE_KEY = enums.UPDATE_KEY,
+      UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
+      UPDATE_MEASURE = _enums$UPDATE_KEY.UPDATE_MEASURE,
+      UPDATE_FOCUS = _enums$UPDATE_KEY.UPDATE_FOCUS,
+      UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG;
   var ELLIPSIS = textCache.ELLIPSIS;
   var AUTO$1 = o.AUTO;
 
@@ -11546,8 +11636,8 @@
                 return;
               }
             } else {
-              var root = this.root;
-              var c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
+              var _root = this.root;
+              var c = inject.getCacheCanvas(_root.width, _root.height, '__$$OVERSIZE$$__');
               ctx = c.ctx;
               var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT].__config,
                   m = _config$NODE_DOM_PAR[NODE_MATRIX_EVENT],
@@ -11637,6 +11727,40 @@
       key: "getComputedStyle",
       value: function getComputedStyle(key) {
         return this.domParent.getComputedStyle(key);
+      }
+    }, {
+      key: "updateContent",
+      value: function updateContent(s, cb) {
+        var self = this;
+
+        if (s === self.__content) {
+          if (util.isFunction(cb)) {
+            cb();
+          }
+
+          return;
+        }
+
+        root.delRefreshTask(self.__task);
+        root.addRefreshTask(self.__task = {
+          __before: function __before() {
+            self.__content = s;
+            var res = {};
+            var vd = self.domParent;
+            res[UPDATE_NODE] = vd;
+            res[UPDATE_MEASURE] = true;
+            res[UPDATE_FOCUS] = o$3.REFLOW;
+            res[UPDATE_CONFIG] = vd.__config;
+            var root = vd.root;
+
+            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+          },
+          __after: function __after() {
+            if (util.isFunction(cb)) {
+              cb();
+            }
+          }
+        });
       }
     }, {
       key: "content",
@@ -12556,9 +12680,9 @@
     };
   });
 
-  var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
-      SCALE_X$2 = _enums$STYLE_KEY$7.SCALE_X,
-      SCALE_Y$2 = _enums$STYLE_KEY$7.SCALE_Y;
+  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
+      SCALE_X$2 = _enums$STYLE_KEY$8.SCALE_X,
+      SCALE_Y$2 = _enums$STYLE_KEY$8.SCALE_Y;
   var PERCENT$4 = o.PERCENT,
       NUMBER$3 = o.NUMBER;
 
@@ -12578,10 +12702,10 @@
     matrixResize: matrixResize
   };
 
-  var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
-      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$8.BACKGROUND_POSITION_Y,
-      FONT_SIZE$6 = _enums$STYLE_KEY$8.FONT_SIZE,
+  var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
+      BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
+      FONT_SIZE$6 = _enums$STYLE_KEY$9.FONT_SIZE,
       NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$2 = util.clone,
       joinArr$1 = util.joinArr;
@@ -13399,40 +13523,40 @@
   easing['ease-out'] = easing.easeOut;
   easing['ease-in-out'] = easing.easeInOut;
 
-  var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
-      FILTER$1 = _enums$STYLE_KEY$9.FILTER,
-      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$9.TRANSFORM_ORIGIN,
-      PERSPECTIVE_ORIGIN$1 = _enums$STYLE_KEY$9.PERSPECTIVE_ORIGIN,
-      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$9.BACKGROUND_CLIP,
-      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
-      BOX_SHADOW$1 = _enums$STYLE_KEY$9.BOX_SHADOW,
-      TRANSLATE_X$2 = _enums$STYLE_KEY$9.TRANSLATE_X,
-      TRANSLATE_Z$2 = _enums$STYLE_KEY$9.TRANSLATE_Z,
-      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$9.BACKGROUND_SIZE,
-      FONT_SIZE$7 = _enums$STYLE_KEY$9.FONT_SIZE,
-      FLEX_BASIS$1 = _enums$STYLE_KEY$9.FLEX_BASIS,
-      FLEX_DIRECTION$1 = _enums$STYLE_KEY$9.FLEX_DIRECTION,
-      WIDTH$3 = _enums$STYLE_KEY$9.WIDTH,
-      HEIGHT$2 = _enums$STYLE_KEY$9.HEIGHT,
-      TOP = _enums$STYLE_KEY$9.TOP,
-      BOTTOM = _enums$STYLE_KEY$9.BOTTOM,
-      LINE_HEIGHT$2 = _enums$STYLE_KEY$9.LINE_HEIGHT,
-      OPACITY$1 = _enums$STYLE_KEY$9.OPACITY,
-      Z_INDEX$1 = _enums$STYLE_KEY$9.Z_INDEX,
-      TRANSFORM$2 = _enums$STYLE_KEY$9.TRANSFORM,
-      COLOR$3 = _enums$STYLE_KEY$9.COLOR,
-      FONT_WEIGHT$3 = _enums$STYLE_KEY$9.FONT_WEIGHT,
-      FONT_STYLE$3 = _enums$STYLE_KEY$9.FONT_STYLE,
-      FONT_FAMILY$3 = _enums$STYLE_KEY$9.FONT_FAMILY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$9.TEXT_ALIGN,
-      MATRIX$2 = _enums$STYLE_KEY$9.MATRIX,
-      ROTATE_3D$2 = _enums$STYLE_KEY$9.ROTATE_3D,
-      _enums$UPDATE_KEY = enums.UPDATE_KEY,
-      UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
-      UPDATE_STYLE = _enums$UPDATE_KEY.UPDATE_STYLE,
-      UPDATE_KEYS = _enums$UPDATE_KEY.UPDATE_KEYS,
-      UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG,
+  var _enums$STYLE_KEY$a = enums.STYLE_KEY,
+      FILTER$2 = _enums$STYLE_KEY$a.FILTER,
+      TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$a.TRANSFORM_ORIGIN,
+      PERSPECTIVE_ORIGIN$2 = _enums$STYLE_KEY$a.PERSPECTIVE_ORIGIN,
+      BACKGROUND_CLIP$1 = _enums$STYLE_KEY$a.BACKGROUND_CLIP,
+      BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_Y,
+      BOX_SHADOW$1 = _enums$STYLE_KEY$a.BOX_SHADOW,
+      TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
+      TRANSLATE_Z$3 = _enums$STYLE_KEY$a.TRANSLATE_Z,
+      BACKGROUND_SIZE$1 = _enums$STYLE_KEY$a.BACKGROUND_SIZE,
+      FONT_SIZE$7 = _enums$STYLE_KEY$a.FONT_SIZE,
+      FLEX_BASIS$1 = _enums$STYLE_KEY$a.FLEX_BASIS,
+      FLEX_DIRECTION$1 = _enums$STYLE_KEY$a.FLEX_DIRECTION,
+      WIDTH$3 = _enums$STYLE_KEY$a.WIDTH,
+      HEIGHT$2 = _enums$STYLE_KEY$a.HEIGHT,
+      TOP = _enums$STYLE_KEY$a.TOP,
+      BOTTOM = _enums$STYLE_KEY$a.BOTTOM,
+      LINE_HEIGHT$2 = _enums$STYLE_KEY$a.LINE_HEIGHT,
+      OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
+      Z_INDEX$1 = _enums$STYLE_KEY$a.Z_INDEX,
+      TRANSFORM$2 = _enums$STYLE_KEY$a.TRANSFORM,
+      COLOR$3 = _enums$STYLE_KEY$a.COLOR,
+      FONT_WEIGHT$3 = _enums$STYLE_KEY$a.FONT_WEIGHT,
+      FONT_STYLE$3 = _enums$STYLE_KEY$a.FONT_STYLE,
+      FONT_FAMILY$3 = _enums$STYLE_KEY$a.FONT_FAMILY,
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$a.TEXT_ALIGN,
+      MATRIX$2 = _enums$STYLE_KEY$a.MATRIX,
+      ROTATE_3D$2 = _enums$STYLE_KEY$a.ROTATE_3D,
+      _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
+      UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
+      UPDATE_STYLE = _enums$UPDATE_KEY$1.UPDATE_STYLE,
+      UPDATE_KEYS = _enums$UPDATE_KEY$1.UPDATE_KEYS,
+      UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
       _enums$KEY_FRAME_KEY = enums.KEY_FRAME_KEY,
       FRAME_STYLE = _enums$KEY_FRAME_KEY.FRAME_STYLE,
       FRAME_TIME = _enums$KEY_FRAME_KEY.FRAME_TIME,
@@ -13550,10 +13674,10 @@
 
   function genBeforeRefresh(style, keys, __config, root, node) {
     var res = {};
-    res[UPDATE_NODE] = node;
+    res[UPDATE_NODE$1] = node;
     res[UPDATE_STYLE] = style;
     res[UPDATE_KEYS] = keys;
-    res[UPDATE_CONFIG] = __config[I_NODE_CONFIG];
+    res[UPDATE_CONFIG$1] = __config[I_NODE_CONFIG];
 
     root.__addUpdate(node, __config[I_NODE_CONFIG], root, __config[I_ROOT_CONFIG], res);
 
@@ -13692,7 +13816,7 @@
       }
 
       res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
-    } else if (k === FILTER$1) {
+    } else if (k === FILTER$2) {
       // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
       var pHash = {},
           nHash = {},
@@ -13762,7 +13886,7 @@
       }
 
       res[1] = v;
-    } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$1) {
+    } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
       res[1] = [];
 
       for (var i = 0; i < 2; i++) {
@@ -13855,7 +13979,7 @@
 
         res[1] = _v5;
       } else {
-        var _v6 = calByUnit(p, n, target[k === TRANSLATE_X$2 || k === TRANSLATE_Z$2 ? 'outerWidth' : 'outerHeight'], target.root);
+        var _v6 = calByUnit(p, n, target[k === TRANSLATE_X$3 || k === TRANSLATE_Z$3 ? 'outerWidth' : 'outerHeight'], target.root);
 
         if (!_v6) {
           return;
@@ -14282,7 +14406,7 @@
                 res[1] = n - p;
               }
             }
-    } else if (k === OPACITY$1 || k === Z_INDEX$1) {
+    } else if (k === OPACITY$2 || k === Z_INDEX$1) {
       if (n === p) {
         return;
       }
@@ -14402,7 +14526,7 @@
         if (v) {
           st[0] += v * percent;
         }
-      } else if (k === FILTER$1) {
+      } else if (k === FILTER$2) {
         // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
         if (!st) {
           st = style[k] = [];
@@ -14435,7 +14559,7 @@
         for (var _i16 = 0; _i16 < 2; _i16++) {
           st[_i16][0] += v[_i16] * percent;
         }
-      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$1) {
+      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
         if (v[0] !== 0) {
           st[0][0] += v[0] * percent;
         }
@@ -14622,7 +14746,7 @@
               }
             }
           }
-        } else if (k === OPACITY$1 || k === Z_INDEX$1) {
+        } else if (k === OPACITY$2 || k === Z_INDEX$1) {
           style[k] += v * percent;
         }
     };
@@ -16032,89 +16156,6 @@
     return Animation;
   }(Event);
 
-  var _TRANSFORMS;
-  var STYLE_KEY$4 = enums.STYLE_KEY,
-      _enums$STYLE_KEY$a = enums.STYLE_KEY,
-      TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
-      TRANSLATE_Y$2 = _enums$STYLE_KEY$a.TRANSLATE_Y,
-      TRANSLATE_Z$3 = _enums$STYLE_KEY$a.TRANSLATE_Z,
-      OPACITY$2 = _enums$STYLE_KEY$a.OPACITY,
-      FILTER$2 = _enums$STYLE_KEY$a.FILTER,
-      PERSPECTIVE$2 = _enums$STYLE_KEY$a.PERSPECTIVE,
-      PERSPECTIVE_ORIGIN$2 = _enums$STYLE_KEY$a.PERSPECTIVE_ORIGIN;
-  var ENUM = {
-    // 低位表示repaint级别
-    NONE: 0,
-    //                                          0
-    TRANSLATE_X: 1,
-    //                                   1
-    TRANSLATE_Y: 2,
-    //                                  10
-    TRANSLATE_Z: 4,
-    //                                 100
-    TRANSFORM: 8,
-    //                                  1000
-    TRANSFORM_ALL: 15,
-    //                             1111
-    OPACITY: 16,
-    //                                  10000
-    FILTER: 32,
-    //                                  100000
-    MIX_BLEND_MODE: 64,
-    //                         1000000
-    PERSPECTIVE: 128,
-    //                          10000000
-    REPAINT: 256,
-    //                             100000000
-    // 高位表示reflow
-    REFLOW: 512 //                             1000000000
-
-  };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
-  var o$3 = Object.assign({
-    contain: function contain(lv, value) {
-      return (lv & value) > 0;
-    },
-
-    /**
-     * 得出等级
-     * @param k
-     * @returns {number|*}
-     */
-    getLevel: function getLevel(k) {
-      if (o$2.isIgnore(k)) {
-        return ENUM.NONE;
-      }
-
-      if (k === TRANSLATE_X$3) {
-        return ENUM.TRANSLATE_X;
-      } else if (k === TRANSLATE_Y$2) {
-        return ENUM.TRANSLATE_Y;
-      } else if (k === TRANSLATE_Z$3) {
-        return ENUM.TRANSLATE_Z;
-      } else if (TRANSFORMS.hasOwnProperty(k)) {
-        return ENUM.TRANSFORM;
-      } else if (k === OPACITY$2) {
-        return ENUM.OPACITY;
-      } else if (k === FILTER$2) {
-        return ENUM.FILTER;
-      } else if (k === PERSPECTIVE$2 || k === PERSPECTIVE_ORIGIN$2) {
-        return ENUM.PERSPECTIVE;
-      } else if (o$2.isRepaint(k)) {
-        return ENUM.REPAINT;
-      }
-
-      return ENUM.REFLOW;
-    },
-    isReflow: function isReflow(lv) {
-      return !this.isRepaint(lv);
-    },
-    isRepaint: function isRepaint(lv) {
-      return lv < ENUM.REFLOW;
-    }
-  }, ENUM);
-  o$3.TRANSFORMS = TRANSFORMS;
-
   var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
   var canvasPolygon$4 = painter.canvasPolygon,
@@ -16762,14 +16803,14 @@
       FONT_SIZE$8 = _enums$STYLE_KEY$c.FONT_SIZE,
       FONT_FAMILY$4 = _enums$STYLE_KEY$c.FONT_FAMILY,
       LINE_HEIGHT$3 = _enums$STYLE_KEY$c.LINE_HEIGHT,
-      _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
-      UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
-      UPDATE_FOCUS = _enums$UPDATE_KEY$1.UPDATE_FOCUS,
-      UPDATE_STYLE$1 = _enums$UPDATE_KEY$1.UPDATE_STYLE,
-      UPDATE_OVERWRITE = _enums$UPDATE_KEY$1.UPDATE_OVERWRITE,
-      UPDATE_KEYS$1 = _enums$UPDATE_KEY$1.UPDATE_KEYS,
-      UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
-      UPDATE_REMOVE_DOM = _enums$UPDATE_KEY$1.UPDATE_REMOVE_DOM,
+      _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
+      UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
+      UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
+      UPDATE_STYLE$1 = _enums$UPDATE_KEY$2.UPDATE_STYLE,
+      UPDATE_OVERWRITE = _enums$UPDATE_KEY$2.UPDATE_OVERWRITE,
+      UPDATE_KEYS$1 = _enums$UPDATE_KEY$2.UPDATE_KEYS,
+      UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
+      UPDATE_REMOVE_DOM = _enums$UPDATE_KEY$2.UPDATE_REMOVE_DOM,
       STRUCT_HAS_MASK = enums.STRUCT_KEY.STRUCT_HAS_MASK,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_TAG_NAME = _enums$NODE_KEY$4.NODE_TAG_NAME,
@@ -17804,9 +17845,9 @@
                       __before: function __before() {
                         __cacheStyle[BACKGROUND_IMAGE$1] = undefined;
                         var res = {};
-                        res[UPDATE_NODE$1] = node;
-                        res[UPDATE_FOCUS] = REPAINT$1;
-                        res[UPDATE_CONFIG$1] = node.__config;
+                        res[UPDATE_NODE$2] = node;
+                        res[UPDATE_FOCUS$1] = REPAINT$1;
+                        res[UPDATE_CONFIG$2] = node.__config;
 
                         root.__addUpdate(node, node.__config, root, root.__config, res);
                       }
@@ -19278,7 +19319,7 @@
 
 
               var res = {};
-              res[UPDATE_NODE$1] = node;
+              res[UPDATE_NODE$2] = node;
               res[UPDATE_STYLE$1] = formatStyle;
               res[UPDATE_OVERWRITE] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
 
@@ -19289,7 +19330,7 @@
 
                 return i;
               });
-              res[UPDATE_CONFIG$1] = __config;
+              res[UPDATE_CONFIG$2] = __config;
 
               root.__addUpdate(node, __config, root, root.__config, res);
             },
@@ -19327,7 +19368,7 @@
 
 
               var res = {};
-              res[UPDATE_NODE$1] = node;
+              res[UPDATE_NODE$2] = node;
               res[UPDATE_STYLE$1] = style;
               res[UPDATE_KEYS$1] = Object.keys(style).map(function (i) {
                 if (!GEOM$4.hasOwnProperty(i)) {
@@ -19336,7 +19377,7 @@
 
                 return i;
               });
-              res[UPDATE_CONFIG$1] = __config;
+              res[UPDATE_CONFIG$2] = __config;
 
               root.__addUpdate(node, __config, root, root.__config, res);
             },
@@ -19673,10 +19714,10 @@
 
 
             var res = {};
-            res[UPDATE_NODE$1] = self;
-            res[UPDATE_FOCUS] = o$3.REFLOW;
+            res[UPDATE_NODE$2] = self;
+            res[UPDATE_FOCUS$1] = o$3.REFLOW;
             res[UPDATE_REMOVE_DOM] = true;
-            res[UPDATE_CONFIG$1] = self.__config;
+            res[UPDATE_CONFIG$2] = self.__config;
 
             root.__addUpdate(self, self.__config, root, root.__config, res);
           },
@@ -20607,12 +20648,12 @@
       NODE_STRUCT$2 = _enums$NODE_KEY$5.NODE_STRUCT,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$5.NODE_DOM_PARENT,
       NODE_IS_INLINE$1 = _enums$NODE_KEY$5.NODE_IS_INLINE,
-      _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
-      UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
-      UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
-      UPDATE_ADD_DOM = _enums$UPDATE_KEY$2.UPDATE_ADD_DOM,
-      UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
-      UPDATE_MEASURE = _enums$UPDATE_KEY$2.UPDATE_MEASURE,
+      _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
+      UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
+      UPDATE_FOCUS$2 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
+      UPDATE_ADD_DOM = _enums$UPDATE_KEY$3.UPDATE_ADD_DOM,
+      UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
+      UPDATE_MEASURE$1 = _enums$UPDATE_KEY$3.UPDATE_MEASURE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -23735,11 +23776,11 @@
                 self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
                 var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_NODE$3] = vd;
+                res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                res[UPDATE_MEASURE$1] = true;
+                res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
@@ -23794,11 +23835,11 @@
                 self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
                 var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_NODE$3] = vd;
+                res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                res[UPDATE_MEASURE$1] = true;
+                res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
@@ -23878,11 +23919,11 @@
                 domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
                 var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_NODE$3] = vd;
+                res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                res[UPDATE_MEASURE$1] = true;
+                res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
@@ -23962,11 +24003,11 @@
                 domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
                 var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$1] = o$3.REFLOW;
+                res[UPDATE_NODE$3] = vd;
+                res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                res[UPDATE_MEASURE$1] = true;
+                res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
               },
@@ -24100,10 +24141,10 @@
       PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FLEX_BASIS$3 = _enums$STYLE_KEY$g.FLEX_BASIS,
-      _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
-      UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
-      UPDATE_FOCUS$2 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
-      UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
+      _enums$UPDATE_KEY$4 = enums.UPDATE_KEY,
+      UPDATE_NODE$4 = _enums$UPDATE_KEY$4.UPDATE_NODE,
+      UPDATE_FOCUS$3 = _enums$UPDATE_KEY$4.UPDATE_FOCUS,
+      UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
       NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
@@ -24706,10 +24747,10 @@
 
 
               var res = {};
-              res[UPDATE_NODE$3] = self;
-              res[UPDATE_FOCUS$2] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+              res[UPDATE_NODE$4] = self;
+              res[UPDATE_FOCUS$3] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
-              res[UPDATE_CONFIG$3] = self.__config;
+              res[UPDATE_CONFIG$4] = self.__config;
 
               root.__addUpdate(self, self.__config, root, root.__config, res);
             }
@@ -24739,9 +24780,9 @@
 
 
                     var res = {};
-                    res[UPDATE_NODE$3] = self;
-                    res[UPDATE_FOCUS$2] = o$3.REPAINT;
-                    res[UPDATE_CONFIG$3] = self.__config;
+                    res[UPDATE_NODE$4] = self;
+                    res[UPDATE_FOCUS$3] = o$3.REPAINT;
+                    res[UPDATE_CONFIG$4] = self.__config;
 
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
@@ -24762,10 +24803,10 @@
 
 
                     var res = {};
-                    res[UPDATE_NODE$3] = self;
-                    res[UPDATE_FOCUS$2] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+                    res[UPDATE_NODE$4] = self;
+                    res[UPDATE_FOCUS$3] = o$3.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
-                    res[UPDATE_CONFIG$3] = self.__config;
+                    res[UPDATE_CONFIG$4] = self.__config;
 
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
@@ -24846,9 +24887,9 @@
               }
 
               var res = {};
-              res[UPDATE_NODE$3] = self;
-              res[UPDATE_FOCUS$2] = o$3.REFLOW;
-              res[UPDATE_CONFIG$3] = self.__config;
+              res[UPDATE_NODE$4] = self;
+              res[UPDATE_FOCUS$3] = o$3.REFLOW;
+              res[UPDATE_CONFIG$4] = self.__config;
 
               root.__addUpdate(self, self.__config, root, self.__config, res);
             },
@@ -30447,18 +30488,18 @@
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
       POINTER_EVENTS$2 = _enums$STYLE_KEY$j.POINTER_EVENTS,
-      _enums$UPDATE_KEY$4 = enums.UPDATE_KEY,
-      UPDATE_NODE$4 = _enums$UPDATE_KEY$4.UPDATE_NODE,
-      UPDATE_STYLE$2 = _enums$UPDATE_KEY$4.UPDATE_STYLE,
-      UPDATE_KEYS$2 = _enums$UPDATE_KEY$4.UPDATE_KEYS,
-      UPDATE_COMPONENT = _enums$UPDATE_KEY$4.UPDATE_COMPONENT,
-      UPDATE_FOCUS$3 = _enums$UPDATE_KEY$4.UPDATE_FOCUS,
-      UPDATE_MEASURE$1 = _enums$UPDATE_KEY$4.UPDATE_MEASURE,
-      UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$4.UPDATE_OVERWRITE,
-      UPDATE_LIST = _enums$UPDATE_KEY$4.UPDATE_LIST,
-      UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
-      UPDATE_ADD_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_ADD_DOM,
-      UPDATE_REMOVE_DOM$1 = _enums$UPDATE_KEY$4.UPDATE_REMOVE_DOM,
+      _enums$UPDATE_KEY$5 = enums.UPDATE_KEY,
+      UPDATE_NODE$5 = _enums$UPDATE_KEY$5.UPDATE_NODE,
+      UPDATE_STYLE$2 = _enums$UPDATE_KEY$5.UPDATE_STYLE,
+      UPDATE_KEYS$2 = _enums$UPDATE_KEY$5.UPDATE_KEYS,
+      UPDATE_COMPONENT = _enums$UPDATE_KEY$5.UPDATE_COMPONENT,
+      UPDATE_FOCUS$4 = _enums$UPDATE_KEY$5.UPDATE_FOCUS,
+      UPDATE_MEASURE$2 = _enums$UPDATE_KEY$5.UPDATE_MEASURE,
+      UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$5.UPDATE_OVERWRITE,
+      UPDATE_LIST = _enums$UPDATE_KEY$5.UPDATE_LIST,
+      UPDATE_CONFIG$5 = _enums$UPDATE_KEY$5.UPDATE_CONFIG,
+      UPDATE_ADD_DOM$1 = _enums$UPDATE_KEY$5.UPDATE_ADD_DOM,
+      UPDATE_REMOVE_DOM$1 = _enums$UPDATE_KEY$5.UPDATE_REMOVE_DOM,
       _enums$NODE_KEY$a = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$a.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$a.NODE_CACHE_STYLE,
@@ -30763,15 +30804,15 @@
   var uniqueUpdateId = 0;
 
   function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
-    var node = target[UPDATE_NODE$4],
+    var node = target[UPDATE_NODE$5],
         style = target[UPDATE_STYLE$2],
         overwrite = target[UPDATE_OVERWRITE$1],
-        focus = target[UPDATE_FOCUS$3],
+        focus = target[UPDATE_FOCUS$4],
         component = target[UPDATE_COMPONENT],
-        measure = target[UPDATE_MEASURE$1],
+        measure = target[UPDATE_MEASURE$2],
         list = target[UPDATE_LIST],
         keys = target[UPDATE_KEYS$2],
-        __config = target[UPDATE_CONFIG$4],
+        __config = target[UPDATE_CONFIG$5],
         addDom = target[UPDATE_ADD_DOM$1],
         removeDom = target[UPDATE_REMOVE_DOM$1];
 
@@ -31587,12 +31628,12 @@
                     }
 
                     var res = {};
-                    res[UPDATE_NODE$4] = sr;
+                    res[UPDATE_NODE$5] = sr;
                     res[UPDATE_STYLE$2] = sr.currentStyle;
-                    res[UPDATE_FOCUS$3] = REFLOW$2;
-                    res[UPDATE_MEASURE$1] = true;
+                    res[UPDATE_FOCUS$4] = REFLOW$2;
+                    res[UPDATE_MEASURE$2] = true;
                     res[UPDATE_COMPONENT] = cp;
-                    res[UPDATE_CONFIG$4] = sr.__config;
+                    res[UPDATE_CONFIG$5] = sr.__config;
 
                     _this4.__addUpdate(sr, sr.__config, _this4, _this4.__config, res);
                   });
@@ -31736,12 +31777,12 @@
           updateHash = root.__updateRoot;
 
           if (updateHash) {
-            if (o[UPDATE_FOCUS$3]) {
-              updateHash[UPDATE_FOCUS$3] |= o[UPDATE_FOCUS$3];
+            if (o[UPDATE_FOCUS$4]) {
+              updateHash[UPDATE_FOCUS$4] |= o[UPDATE_FOCUS$4];
             }
 
-            if (o[UPDATE_MEASURE$1]) {
-              updateHash[UPDATE_MEASURE$1] = true;
+            if (o[UPDATE_MEASURE$2]) {
+              updateHash[UPDATE_MEASURE$2] = true;
             } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -31761,12 +31802,12 @@
         } else if (updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
           var target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
 
-          if (o[UPDATE_FOCUS$3]) {
-            target[UPDATE_FOCUS$3] |= o[UPDATE_FOCUS$3];
+          if (o[UPDATE_FOCUS$4]) {
+            target[UPDATE_FOCUS$4] |= o[UPDATE_FOCUS$4];
           }
 
-          if (o[UPDATE_MEASURE$1]) {
-            target[UPDATE_MEASURE$1] = true;
+          if (o[UPDATE_MEASURE$2]) {
+            target[UPDATE_MEASURE$2] = true;
           } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -31894,7 +31935,7 @@
         }); // 做完清空留待下次刷新重来
 
         for (var _i3 = 0, _len2 = keys.length; _i3 < _len2; _i3++) {
-          delete updateHash[keys[_i3]][UPDATE_CONFIG$4][NODE_UNIQUE_UPDATE_ID];
+          delete updateHash[keys[_i3]][UPDATE_CONFIG$5][NODE_UNIQUE_UPDATE_ID];
         }
 
         return hasUpdate;

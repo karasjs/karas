@@ -11956,6 +11956,7 @@
     vd.__tagName = json.tagName || vd.__tagName;
     vd.__root = root;
     vd.__host = host;
+    vd.__json = json;
 
     vd.__init();
 

@@ -12347,6 +12347,7 @@
 
         while (sr instanceof Component) {
           sr.__hostRoot = this;
+          sr.shadow.__host = sr;
           sr = sr.shadow;
         }
 
@@ -35413,7 +35414,7 @@
     Cache: Cache
   };
 
-  var version = "0.59.20";
+  var version = "0.60.0-beta";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

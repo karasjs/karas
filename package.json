@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.59.20",
+  "version": "0.60.0-beta",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg/Webgl.",
   "maintainers": [
     {

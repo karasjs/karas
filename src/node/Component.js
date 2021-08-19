@@ -150,6 +150,7 @@ class Component extends Event {
     // 递归下去，多层级时执行顺序由里到外，最终会被最上层执行替换
     while(sr instanceof Component) {
       sr.__hostRoot = this;
+      sr.shadow.__host = sr;
       sr = sr.shadow;
     }
     this.__shadowRoot = sr;

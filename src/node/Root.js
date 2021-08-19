@@ -1563,8 +1563,8 @@ class Root extends Dom {
         }
 
         // 向下调整next的flow位置，遇到重复LAYOUT的跳出等待其调用并处理其next，忽视掉abs，margin和abs在merge中做
-        while(node.isShadowRoot) {
-          node = node.host;
+        if(node.isShadowRoot) {
+          node = node.hostRoot;
         }
         let next = node.next;
         while(next && !next.hasOwnProperty('__uniqueReflowId')) {
@@ -1601,6 +1601,9 @@ class Root extends Dom {
           let arr = parent.__modifyStruct(root, diffI);
           diffI += arr[1];
           diffList.push(arr);
+          if(this.renderMode === mode.SVG) {
+            cleanSvgCache(parent);
+          }
         }
         // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
         else if(component) {

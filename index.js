@@ -19664,7 +19664,12 @@
 
             pJson.children.splice(i, 1);
             domParent.children.splice(i, 1);
-            zChildren.splice(j, 1); // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+            zChildren.splice(j, 1);
+
+            if (self.__prev) {
+              self.__prev.__next = self.__next;
+            } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
 
             var res = {};
             res[UPDATE_NODE$1] = self;
@@ -23838,7 +23843,7 @@
                     __json = domParent.__json,
                     children = __json.children,
                     len = children.length;
-                var pJson = self.isShadowRoot ? self.host.__json : self.__json;
+                var pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
 
                 for (; i < len; i++) {
                   if (children[i] === pJson) {
@@ -23922,7 +23927,7 @@
                     __json = domParent.__json,
                     children = __json.children,
                     len = children.length;
-                var pJson = self.isShadowRoot ? self.host.__json : self.__json;
+                var pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
 
                 for (; i < len; i++) {
                   if (children[i] === pJson) {
@@ -32220,8 +32225,8 @@
               } // 向下调整next的flow位置，遇到重复LAYOUT的跳出等待其调用并处理其next，忽视掉abs，margin和abs在merge中做
 
 
-              while (node.isShadowRoot) {
-                node = node.host;
+              if (node.isShadowRoot) {
+                node = node.hostRoot;
               }
 
               var next = node.next;
@@ -32270,6 +32275,10 @@
 
                 diffI += _arr3[1];
                 diffList.push(_arr3);
+
+                if (_this5.renderMode === mode.SVG) {
+                  cleanSvgCache(parent);
+                }
               } // component未知dom变化，所以强制重新struct，text则为其父节点，同时防止zIndex变更影响父节点
               else if (component) {
                   var _arr4 = node.__modifyStruct(root, diffI);

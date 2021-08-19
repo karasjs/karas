@@ -2989,7 +2989,7 @@ class Dom extends Xom {
           __before() {
             vd.__task = null;
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-            let pJson = self.isShadowRoot ? self.host.__json : self.__json;
+            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
             for(; i < len; i++) {
               if(children[i] === pJson) {
                 has = true;
@@ -3059,7 +3059,7 @@ class Dom extends Xom {
           __before() {
             vd.__task = null;
             let i = 0, has, __json = domParent.__json, children = __json.children, len = children.length;
-            let pJson = self.isShadowRoot ? self.host.__json : self.__json;
+            let pJson = self.isShadowRoot ? self.hostRoot.__json : self.__json;
             for(; i < len; i++) {
               if(children[i] === pJson) {
                 has = true;

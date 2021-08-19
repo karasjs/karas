@@ -2754,6 +2754,9 @@ class Xom extends Node {
         pJson.children.splice(i, 1);
         domParent.children.splice(i, 1);
         zChildren.splice(j, 1);
+        if(self.__prev) {
+          self.__prev.__next = self.__next;
+        }
         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
         let res = {};
         res[UPDATE_NODE] = self;

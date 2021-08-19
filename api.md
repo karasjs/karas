@@ -1480,7 +1480,7 @@ let root = karas.render(
   '#selector'
 );
 root.removeChild(root.children[0], function() {
-  console.log('insertAfter');
+  console.log('removeChild');
 });
 ```
 

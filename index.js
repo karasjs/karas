@@ -17307,16 +17307,13 @@
               item.target = item.target.vd;
             }
           });
-          var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
+          var ac = ar.controller || this.root.animateController;
+          ac.__records = ac.__records.concat(ar.list);
+          ac.init(); // 不自动播放进入记录列表，等待手动调用
 
-          if (ar.options && ar.options.autoPlay === false) {
-            ac.__records = ac.__records.concat(ar.list);
-          } // 自动播放进入列表开始播放
-          else {
-              ac.__auto = ac.__auto.concat(ar.list);
-
-              ac.__playAuto();
-            }
+          if (!ar.options || ar.options.autoPlay !== false) {
+            ac.play();
+          }
         }
 
         return lineClampCount;
@@ -35427,14 +35424,12 @@
 
         animateRecords.forEach(function (item) {
           item.target = item.target.vd;
-        }); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+        });
+        ac.__records = ac.__records.concat(animateRecords);
+        ac.init(); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
         if (options.autoPlay !== false) {
-          ac.__auto = ac.__auto.concat(animateRecords);
-
-          ac.__playAuto();
-        } else {
-          ac.__records = ac.__records.concat(animateRecords);
+          ac.play();
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
       else {

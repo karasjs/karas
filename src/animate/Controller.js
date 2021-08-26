@@ -10,9 +10,9 @@ class Controller {
     this.__list2 = []; // json中autoPlay为false的初始化存入这里
   }
 
-  add(v) {
-    if(this.__list.indexOf(v) === -1) {
-      this.list.push(v);
+  add(v, list = this.list) {
+    if(list.indexOf(v) === -1) {
+      list.push(v);
     }
   }
 
@@ -36,11 +36,11 @@ class Controller {
     });
   }
 
-  init(list = this.__records) {
+  init(records = this.__records, list = this.__list) {
     // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-    if(list.length) {
+    if(records.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
-      list.splice(0).forEach(item => {
+      records.splice(0).forEach(item => {
         let { target, animate } = item;
         if(target.isDestroyed) {
           return;
@@ -50,14 +50,14 @@ class Controller {
             let { value, options } = animate;
             options.autoPlay = false;
             let o = target.animate(value, options);
-            this.add(o);
+            this.add(o, list);
           });
         }
         else {
           let { value, options } = animate;
           options.autoPlay = false;
           let o = target.animate(value, options);
-          this.add(o);
+          this.add(o, list);
         }
       });
     }
@@ -70,7 +70,12 @@ class Controller {
 
   play(cb) {
     this.init();
-    this.init(this.__records2); // 手动调用play则播放全部包含autoPlay为false的
+    // 手动调用play则播放全部包含autoPlay为false的
+    this.init(this.__records2);
+    if(this.__list2.length) {
+      this.__list = this.__list.concat(this.__list2);
+      this.__list2 = [];
+    }
     let once = true;
     this.__action('play', [cb && function(diff) {
       if(once) {
@@ -111,6 +116,12 @@ class Controller {
   }
 
   finish(cb) {
+    this.init();
+    this.init(this.__records2);
+    if(this.__list2.length) {
+      this.__list = this.__list.concat(this.__list2);
+      this.__list2 = [];
+    }
     let once = true;
     this.__action('finish', [cb && function(diff) {
       if(once) {
@@ -124,6 +135,11 @@ class Controller {
 
   gotoAndStop(v, options, cb) {
     this.init();
+    this.init(this.__records2);
+    if(this.__list2.length) {
+      this.__list = this.__list.concat(this.__list2);
+      this.__list2 = [];
+    }
     let once = true;
     this.__action('gotoAndStop', [v, options, cb && function(diff) {
       if(once) {
@@ -137,6 +153,11 @@ class Controller {
 
   gotoAndPlay(v, options, cb) {
     this.init();
+    this.init(this.__records2);
+    if(this.__list2.length) {
+      this.__list = this.__list.concat(this.__list2);
+      this.__list2 = [];
+    }
     let once = true;
     this.__action('gotoAndPlay', [v, options, cb && function(diff) {
       if(once) {

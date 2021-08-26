@@ -572,11 +572,13 @@ class Xom extends Node {
         }
       });
       let ac = ar.controller || this.root.animateController;
-      ac.__records = ac.__records.concat(ar.list);
-      ac.init();
       // 不自动播放进入记录列表，等待手动调用
-      if(!ar.options || ar.options.autoPlay !== false) {
-        ac.play();
+      if(ar.options && ar.options.autoPlay === false) {
+        ac.__records2 = ac.__records2.concat(ar.list);
+      }
+      else {
+        ac.__records = ac.__records.concat(ar.list);
+        ac.__playAuto();
       }
     }
     return lineClampCount;

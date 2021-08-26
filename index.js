@@ -17307,12 +17307,14 @@
               item.target = item.target.vd;
             }
           });
-          var ac = ar.controller || this.root.animateController;
-          ac.__records = ac.__records.concat(ar.list);
-          ac.init(); // 不自动播放进入记录列表，等待手动调用
+          var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
 
-          if (!ar.options || ar.options.autoPlay !== false) {
-            ac.play();
+          if (ar.options && ar.options.autoPlay === false) {
+            ac.__records2 = ac.__records2.concat(ar.list);
+          } else {
+            ac.__records = ac.__records.concat(ar.list);
+
+            ac.__playAuto();
           }
         }
 
@@ -27033,9 +27035,13 @@
     function Controller() {
       _classCallCheck(this, Controller);
 
-      this.__records = [];
-      this.__auto = [];
-      this.__list = [];
+      this.__records = []; // 默认记录和自动记录
+
+      this.__records2 = []; // 非自动播放的动画记录
+
+      this.__list = []; // 默认初始化播放列表，自动播放也存这里
+
+      this.__list2 = []; // json中autoPlay为false的初始化存入这里
     }
 
     _createClass(Controller, [{
@@ -27058,8 +27064,9 @@
       key: "__destroy",
       value: function __destroy() {
         this.__records = [];
-        this.__auto = [];
+        this.__records2 = [];
         this.__list = [];
+        this.__list2 = [];
       }
     }, {
       key: "__action",
@@ -27109,7 +27116,7 @@
     }, {
       key: "__playAuto",
       value: function __playAuto() {
-        this.init(this.__auto);
+        this.init();
 
         this.__action('play');
       }
@@ -27117,6 +27124,8 @@
       key: "play",
       value: function play(cb) {
         this.init();
+        this.init(this.__records2); // 手动调用play则播放全部包含autoPlay为false的
+
         var once = true;
 
         this.__action('play', [cb && function (diff) {
@@ -35424,12 +35433,14 @@
 
         animateRecords.forEach(function (item) {
           item.target = item.target.vd;
-        });
-        ac.__records = ac.__records.concat(animateRecords);
-        ac.init(); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+        }); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
         if (options.autoPlay !== false) {
-          ac.play();
+          ac.__records = ac.__records.concat(animateRecords);
+
+          ac.__playAuto();
+        } else {
+          ac.__records2 = ac.__records2.concat(animateRecords);
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
       else {

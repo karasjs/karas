@@ -4,9 +4,10 @@ const { isFunction } = util;
 
 class Controller {
   constructor() {
-    this.__records = [];
-    this.__auto = [];
-    this.__list = [];
+    this.__records = []; // 默认记录和自动记录
+    this.__records2 = []; // 非自动播放的动画记录
+    this.__list = [] // 默认初始化播放列表，自动播放也存这里
+    this.__list2 = []; // json中autoPlay为false的初始化存入这里
   }
 
   add(v) {
@@ -24,8 +25,9 @@ class Controller {
 
   __destroy() {
     this.__records = [];
-    this.__auto = [];
+    this.__records2 = [];
     this.__list = [];
+    this.__list2 = [];
   }
 
   __action(k, args) {
@@ -62,12 +64,13 @@ class Controller {
   }
 
   __playAuto() {
-    this.init(this.__auto);
+    this.init();
     this.__action('play');
   }
 
   play(cb) {
     this.init();
+    this.init(this.__records2); // 手动调用play则播放全部包含autoPlay为false的
     let once = true;
     this.__action('play', [cb && function(diff) {
       if(once) {

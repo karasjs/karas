@@ -17301,16 +17301,16 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             item.target = item.target.vd;
           }
         });
-        var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
+        var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，初始化并等待手动调用
 
         if (ar.options && ar.options.autoPlay === false) {
+          ac.__records2 = ac.__records2.concat(ar.list);
+          ac.init(ac.__records2, ac.__list2);
+        } else {
           ac.__records = ac.__records.concat(ar.list);
-        } // 自动播放进入列表开始播放
-        else {
-            ac.__auto = ac.__auto.concat(ar.list);
 
-            ac.__playAuto();
-          }
+          ac.__playAuto();
+        }
       }
 
       return lineClampCount;
@@ -27030,16 +27030,22 @@ var Controller = /*#__PURE__*/function () {
   function Controller() {
     _classCallCheck(this, Controller);
 
-    this.__records = [];
-    this.__auto = [];
-    this.__list = [];
+    this.__records = []; // 默认记录和自动记录
+
+    this.__records2 = []; // 非自动播放的动画记录
+
+    this.__list = []; // 默认初始化播放列表，自动播放也存这里
+
+    this.__list2 = []; // json中autoPlay为false的初始化存入这里
   }
 
   _createClass(Controller, [{
     key: "add",
     value: function add(v) {
-      if (this.__list.indexOf(v) === -1) {
-        this.list.push(v);
+      var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.list;
+
+      if (list.indexOf(v) === -1) {
+        list.push(v);
       }
     }
   }, {
@@ -27055,8 +27061,9 @@ var Controller = /*#__PURE__*/function () {
     key: "__destroy",
     value: function __destroy() {
       this.__records = [];
-      this.__auto = [];
+      this.__records2 = [];
       this.__list = [];
+      this.__list2 = [];
     }
   }, {
     key: "__action",
@@ -27070,12 +27077,13 @@ var Controller = /*#__PURE__*/function () {
     value: function init() {
       var _this = this;
 
-      var list = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
+      var records = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
+      var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.__list;
 
       // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-      if (list.length) {
+      if (records.length) {
         // 清除防止重复调用，并且新的json还会进入整体逻辑
-        list.splice(0).forEach(function (item) {
+        records.splice(0).forEach(function (item) {
           var target = item.target,
               animate = item.animate;
 
@@ -27090,7 +27098,7 @@ var Controller = /*#__PURE__*/function () {
               options.autoPlay = false;
               var o = target.animate(value, options);
 
-              _this.add(o);
+              _this.add(o, list);
             });
           } else {
             var value = animate.value,
@@ -27098,7 +27106,7 @@ var Controller = /*#__PURE__*/function () {
             options.autoPlay = false;
             var o = target.animate(value, options);
 
-            _this.add(o);
+            _this.add(o, list);
           }
         });
       }
@@ -27106,14 +27114,22 @@ var Controller = /*#__PURE__*/function () {
   }, {
     key: "__playAuto",
     value: function __playAuto() {
-      this.init(this.__auto);
+      this.init();
 
       this.__action('play');
     }
   }, {
     key: "play",
     value: function play(cb) {
-      this.init();
+      this.init(); // 手动调用play则播放全部包含autoPlay为false的
+
+      this.init(this.__records2);
+
+      if (this.__list2.length) {
+        this.__list = this.__list.concat(this.__list2);
+        this.__list2 = [];
+      }
+
       var once = true;
 
       this.__action('play', [cb && function (diff) {
@@ -27164,6 +27180,14 @@ var Controller = /*#__PURE__*/function () {
   }, {
     key: "finish",
     value: function finish(cb) {
+      this.init();
+      this.init(this.__records2);
+
+      if (this.__list2.length) {
+        this.__list = this.__list.concat(this.__list2);
+        this.__list2 = [];
+      }
+
       var once = true;
 
       this.__action('finish', [cb && function (diff) {
@@ -27180,6 +27204,13 @@ var Controller = /*#__PURE__*/function () {
     key: "gotoAndStop",
     value: function gotoAndStop(v, options, cb) {
       this.init();
+      this.init(this.__records2);
+
+      if (this.__list2.length) {
+        this.__list = this.__list.concat(this.__list2);
+        this.__list2 = [];
+      }
+
       var once = true;
 
       this.__action('gotoAndStop', [v, options, cb && function (diff) {
@@ -27196,6 +27227,13 @@ var Controller = /*#__PURE__*/function () {
     key: "gotoAndPlay",
     value: function gotoAndPlay(v, options, cb) {
       this.init();
+      this.init(this.__records2);
+
+      if (this.__list2.length) {
+        this.__list = this.__list.concat(this.__list2);
+        this.__list2 = [];
+      }
+
       var once = true;
 
       this.__action('gotoAndPlay', [v, options, cb && function (diff) {
@@ -35424,12 +35462,14 @@ var parser = {
       }); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
       if (options.autoPlay !== false) {
-        ac.__auto = ac.__auto.concat(animateRecords);
+        ac.__records = ac.__records.concat(animateRecords);
 
         ac.__playAuto();
-      } else {
-        ac.__records = ac.__records.concat(animateRecords);
-      }
+      } // 不自动播放进入记录列表，初始化并等待手动调用
+      else {
+          ac.__records2 = ac.__records2.concat(animateRecords);
+          ac.init(ac.__records2, ac.__list2);
+        }
     } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
     else {
         if (animateRecords.length) {
@@ -35468,7 +35508,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.60.1";
+var version = "0.60.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

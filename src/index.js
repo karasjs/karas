@@ -99,6 +99,9 @@ let karas = {
   parse(json, dom, options) {
     return parser.parse(this, json, dom, options);
   },
+  loadAndParse(json, dom, options) {
+    return parser.loadAndParse(this, json, dom, options);
+  },
   mode,
   Component,
   Node,

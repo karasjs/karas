@@ -5954,6 +5954,8 @@
   var INIT = 0;
   var LOADING = 1;
   var LOADED = 2;
+  var FONT = {};
+  var COMPONENT = {};
   var inject = {
     measureText: function measureText() {
       var list = textCache.list,
@@ -6051,6 +6053,10 @@
     LOADING: LOADING,
     measureImg: function measureImg(url, cb) {
       if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
         var count = 0;
         var len = url.length;
         var list = [];
@@ -6065,7 +6071,7 @@
         });
         return;
       } else if (!url || !util.isString(url)) {
-        inject.warn('Measure img invalid: ' + url);
+        inject.error('Measure img invalid: ' + url);
         cb && cb({
           state: LOADED,
           success: false,
@@ -6299,6 +6305,137 @@
       }
 
       return o$1.info[ff].checked = false;
+    },
+    loadFont: function loadFont(url, cb) {
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.loadFont(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Load font invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      var cache = FONT[url] = FONT[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+        var f = new FontFace(url, "url(".concat(url, ")"));
+        f.load().then(function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        }).cache(function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        });
+      }
+    },
+    loadComponent: function loadComponent(url, cb) {
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.loadComponent(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Load component invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      var cache = COMPONENT[url] = COMPONENT[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+        var script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+
+        script.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+        };
+
+        script.onerror = function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+        };
+
+        document.head.appendChild(script);
+      }
     }
   };
 
@@ -35546,7 +35683,7 @@
     return vd;
   }
 
-  var parser = {
+  var o$4 = {
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
       json = util.clone(json); // 根节点的fonts字段定义字体信息
@@ -35623,6 +35760,77 @@
         }
 
       return vd;
+    },
+    loadAndParse: function loadAndParse(karas, json, dom, options) {
+      var fonts = json.fonts,
+          components = json.components;
+      var list1 = [];
+      var list2 = [];
+
+      if (fonts) {
+        if (!Array.isArray(fonts)) {
+          fonts = [fonts];
+        }
+
+        fonts.forEach(function (item) {
+          var url = item.url;
+
+          if (url) {
+            list1.push(url);
+          }
+        });
+      }
+
+      if (components) {
+        if (!Array.isArray(components)) {
+          components = [components];
+        }
+
+        components.forEach(function (item) {
+          if (item.url) {
+            list2.push(item);
+          }
+        });
+      }
+
+      if (list1.length || list2.length) {
+        var count = 0;
+
+        var cb = function cb() {
+          if (count === list1.length + list2.length) {
+            var res = o$4.parse(karas, json, dom, options);
+
+            if (util.isFunction(options.callback)) {
+              options.callback(res);
+            }
+          }
+        };
+
+        karas.inject.loadFont(list1, function () {
+          count += list1.length;
+          cb();
+        });
+        karas.inject.loadComponent(list2.map(function (item) {
+          return item.url;
+        }), function () {
+          count += list2.length; // 默认约定加载的js组件会在全局变量申明同名tagName，已有不覆盖，防止组件代码内部本身有register
+
+          list2.forEach(function (item) {
+            var tagName = item.tagName;
+
+            if (tagName && window[tagName] && !karas.Component.hasRegister(tagName)) {
+              karas.Component.register(tagName, window[tagName]);
+            }
+          });
+          cb();
+        });
+      } else {
+        var res = o$4.parse(karas, json, dom, options);
+
+        if (util.isFunction(options.callback)) {
+          options.callback(res);
+        }
+      }
     },
     abbr: abbr$1
   };
@@ -35724,7 +35932,10 @@
       };
     },
     parse: function parse(json, dom, options) {
-      return parser.parse(this, json, dom, options);
+      return o$4.parse(this, json, dom, options);
+    },
+    loadAndParse: function loadAndParse(json, dom, options) {
+      return o$4.loadAndParse(this, json, dom, options);
     },
     mode: mode,
     Component: Component$1,
@@ -35739,7 +35950,7 @@
     util: util,
     inject: inject,
     style: style,
-    parser: parser,
+    parser: o$4,
     animate: animate,
     math: math,
     builder: builder,

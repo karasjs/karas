@@ -1,11 +1,13 @@
 import parse from './parse';
 import abbr from './abbr';
 import inject from '../util/inject';
+import util from '../util/util';
 import font from '../style/font';
 import Controller from '../animate/Controller';
 
 export default {
   parse(karas, json, dom, options = {}) {
+    json = util.clone(json);
     // 根节点的fonts字段定义字体信息
     let fonts = json.fonts;
     if(fonts) {

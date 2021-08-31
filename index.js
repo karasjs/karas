@@ -35549,7 +35549,8 @@
   var parser = {
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      // 根节点的fonts字段定义字体信息
+      json = util.clone(json); // 根节点的fonts字段定义字体信息
+
       var fonts = json.fonts;
 
       if (fonts) {
@@ -35585,7 +35586,8 @@
 
 
       if (dom) {
-        var tagName = json.tagName;
+        var _json = json,
+            tagName = _json.tagName;
 
         if (['canvas', 'svg', 'webgl'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');

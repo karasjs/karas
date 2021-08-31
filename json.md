@@ -84,7 +84,7 @@ karas.parse({
 }, '#selector');
 ```
 ~~json有压缩格式，即把常见的样式/动画的key简写别名，使得整体内容大小更短，但不易于阅读。缩写只针对了css样式的键名，以及动画的2个属性`value`和`options`，还有`options`下的内容，动画中的关键帧同样是样式。因为是驼峰结构，所以普通情况下缩写就是驼峰单词的缩写形式。当出现冲突时，有专门覆盖定义：https://github.com/karasjs/karas/blob/master/src/parser/abbr.js 。所有缩写共享一个冲突定义，下面示例2种是等价的：~~
-```ts
+```tsx
 karas.parse({
   tagName: 'div',
   props: {
@@ -136,7 +136,7 @@ karas.parse({
 });
 ```
 工具导出的json能看到`library`字段，这是编辑器专用，为了复用，所有的元件（可理解为一个dom类）均在library中，且有唯一`id`标识，json中使用`libraryId`来引用并实例化元件。实例化的json有`init`属性来覆盖`props`属性，相当于创建对象并传入初始化参数。一般情况下，实例化无法覆盖`children`和`animate`，后面会有特殊方式。
-```ts
+```tsx
 let json = {
   tagName: 'canvas',
   children: [
@@ -171,7 +171,7 @@ let json = {
 };
 ```
 ~~工具导出的json还能看到`var-`开头的字段，会出现在`props`和`style`中，即插槽变量，在`karas.parse()`时可根据id传入变量替换对应的属性。另外想要替换某个特殊字段如`children`和`animate`，会看到特殊的如`var-children.0`的字段，数字标明索引。~~
-```ts
+```tsx
 let json = {
   tagName: 'canvas',
   children: [
@@ -206,7 +206,7 @@ karas.parse(json, {
 });
 ```
 新的插槽定义变成了`vars`标识，同时用子属性`member`表达替换的成员属性，可为数组递归下去。特别的，json的直接子属性上定义的`vars`可以替换`library`中的内容，此时可以用id替代索引。
-```ts
+```tsx
 let json = {
   tagName: 'canvas',
   children: [
@@ -244,4 +244,50 @@ karas.parse(json, {
     lib: {},
   },
 });
+```
+特别的，对于`loadAndParse`方法，json直接子属性新增`fonts`和`components`来定义远程加载的字体和自定义组件。
+```tsx
+karas.parse(
+  {
+    "tagName": "canvas",
+    "props": {
+      "width": 100,
+      "height": 100
+    },
+    "children": [
+      {
+        "tagName": "Custom",
+        "props": {
+          "style": {
+            "fontFamily": "DINPro"
+          }
+        }
+      }
+    ],
+    "fonts": [
+      {
+        "fontFamily": "DINPro",
+        "data": {
+          "emSquare": 2000,
+          "ascent": 1200,
+          "descent": 800,
+          "lineGap": 60
+        },
+        "url": "xxx"
+      }
+    ],
+    "components": [
+      {
+        "tagName": "Custom",
+        "url": "xxx"
+      }
+    ]
+  },
+  '#selector',
+  {
+    callback(root) {
+      console.log(root);
+    }
+  }
+);
 ```

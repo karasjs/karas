@@ -35142,90 +35142,202 @@
     }
   }
 
-  function replaceVars(target, vars) {
-    if (target && vars) {
-      Object.keys(target).forEach(function (k) {
-        if (k.indexOf('var-') === 0) {
-          var v = target[k];
+  function replaceVars(json, vars) {
+    if (json && vars) {
+      // 新版vars语法
+      if (json.hasOwnProperty('vars')) {
+        var slot = json.vars;
 
-          if (!v) {
-            return;
-          }
+        if (!Array.isArray(slot)) {
+          slot = [slot];
+        }
 
-          var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+        if (Array.isArray(slot)) {
+          slot.forEach(function (item) {
+            var id = item.id,
+                member = item.member;
 
-          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id]; // undefined和null意义不同
+            if (!Array.isArray(member)) {
+              member = [member];
+            } // 排除特殊的library
 
-            if (value === undefined) {
-              return;
-            }
 
-            var currentTarget = target; // 如果有.则特殊处理子属性
+            if (Array.isArray(member) && member.length && member[0] !== 'library' && vars.hasOwnProperty(id)) {
+              var target = json;
 
-            if (k2.indexOf('.') > -1) {
-              var list = k2.split('.');
-              var len = list.length;
+              for (var i = 0, len = member.length; i < len; i++) {
+                var k = member[i]; // 最后一个属性可以为空
 
-              for (var i = 0; i < len - 1; i++) {
-                k2 = list[i]; // 避免异常
+                if (target.hasOwnProperty(k) || i === len - 1) {
+                  // 最后一个member表达式替换
+                  if (i === len - 1) {
+                    var v = vars[id]; // undefined和null意义不同
 
-                if (currentTarget[k2]) {
-                  currentTarget = currentTarget[k2];
+                    if (v === undefined) {
+                      return;
+                    } // 支持函数模式和值模式
+
+
+                    if (isFunction$8(v)) {
+                      v = v(target(k));
+                    }
+
+                    target[k] = v;
+                  } else {
+                    target = target[k];
+                  }
                 } else {
-                  inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  inject.error('Slot miss ' + k);
                   return;
                 }
               }
+            }
+          });
+        }
+      } else {
+        Object.keys(json).forEach(function (k) {
+          if (k.indexOf('var-') === 0) {
+            var v = json[k];
 
-              k2 = list[len - 1];
-            } // 支持函数模式和值模式
-
-
-            if (isFunction$8(value)) {
-              value = value(v);
+            if (!v) {
+              return;
             }
 
-            currentTarget[k2] = value;
+            var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+
+            if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+              var value = vars[v.id]; // undefined和null意义不同
+
+              if (value === undefined) {
+                return;
+              }
+
+              var target = json; // 如果有.则特殊处理子属性
+
+              if (k2.indexOf('.') > -1) {
+                var list = k2.split('.');
+                var len = list.length;
+
+                for (var i = 0; i < len - 1; i++) {
+                  k2 = list[i]; // 避免异常
+
+                  if (target[k2]) {
+                    target = target[k2];
+                  } else {
+                    inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                    return;
+                  }
+                }
+
+                k2 = list[len - 1];
+              } // 支持函数模式和值模式
+
+
+              if (isFunction$8(value)) {
+                value = value(v);
+              }
+
+              target[k2] = value;
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
-  function replaceLibraryVars(target, hash, vars) {
-    if (target && hash && vars) {
-      Object.keys(target).forEach(function (k) {
-        if (k.indexOf('var-library.') === 0) {
-          var v = target[k]; // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+  function replaceLibraryVars(json, hash, vars) {
+    if (vars) {
+      // 新版同级vars语法
+      if (json.hasOwnProperty('vars')) {
+        var slot = json.vars;
 
-          delete target[k];
-
-          if (!v) {
-            return;
-          }
-
-          var k2 = k.slice(12); // 有id且变量里面传入了替换的值
-
-          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id];
-
-            if (isFunction$8(value)) {
-              value = value(v);
-            } // 替换图层的值必须是一个有tagName的对象
-
-
-            if (!value || !value.tagName) {
-              return;
-            } // library对象也要加上id，与正常的library保持一致
-
-
-            hash[k2] = Object.assign({
-              id: k2
-            }, value);
-          }
+        if (!Array.isArray(slot)) {
+          slot = [slot];
         }
-      });
+
+        if (Array.isArray(slot)) {
+          slot.forEach(function (item) {
+            var id = item.id,
+                member = item.member;
+
+            if (!Array.isArray(member)) {
+              member = [member];
+            } // library.xxx，需要>=2的长度
+
+
+            if (Array.isArray(member) && member.length > 1 && vars.hasOwnProperty(id)) {
+              if (member[0] === 'library') {
+                var target = hash;
+
+                for (var i = 1, len = member.length; i < len; i++) {
+                  var k = member[i]; // 最后一个属性可以为空
+
+                  if (target.hasOwnProperty(k) || i === len - 1) {
+                    // 最后一个member表达式替换
+                    if (i === len - 1) {
+                      var v = vars[id]; // 支持函数模式和值模式
+
+                      if (isFunction$8(v)) {
+                        v = v(target(k));
+                      }
+
+                      var old = target[k]; // 直接替换library的子对象，需补充id和tagName
+
+                      if (i === 1) {
+                        target[k] = Object.assign({
+                          id: old.id,
+                          tagName: old.tagName
+                        }, v);
+                      } // 替换library中子对象的一个属性直接赋值
+                      else {
+                          target[k] = v;
+                        }
+                    } else {
+                      target = target[k];
+                    }
+                  } else {
+                    inject.error('Library slot miss ' + k);
+                    return;
+                  }
+                }
+              }
+            }
+          });
+        }
+      } // 兼容老版var-
+      else {
+          Object.keys(json).forEach(function (k) {
+            if (k.indexOf('var-library.') === 0) {
+              var v = json[k]; // 直接移除library插槽，防止下面调用replaceVars(json, vars)时报错
+
+              delete json[k];
+
+              if (!v) {
+                return;
+              }
+
+              var k2 = k.slice(12); // 有id且变量里面传入了替换的值
+
+              if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+                var value = vars[v.id];
+
+                if (isFunction$8(value)) {
+                  value = value(v);
+                } // 替换图层的值必须是一个有tagName的对象
+
+
+                if (!value || !value.tagName) {
+                  return;
+                } // library对象也要加上id，与正常的library保持一致
+
+
+                hash[k2] = Object.assign({
+                  id: k2
+                }, value);
+              }
+            }
+          });
+        }
     }
   }
   /**

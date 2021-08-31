@@ -35305,7 +35305,7 @@
 
     var libraryId = json.libraryId;
 
-    if (!isNil$f(libraryId) && libraryId !== "") {
+    if (!isNil$f(libraryId)) {
       var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
       if (libraryItem) {

@@ -245,7 +245,7 @@ karas.parse(json, {
   },
 });
 ```
-特别的，对于`loadAndParse`方法，json直接子属性新增`fonts`和`components`来定义远程加载的字体和自定义组件。
+特别的，对于`loadAndParse`方法，json直接子属性新增`fonts`和`components`来定义远程加载的字体和自定义组件。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。
 ```tsx
 karas.parse(
   {

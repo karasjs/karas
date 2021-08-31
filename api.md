@@ -106,7 +106,7 @@ let root = karas.parse(
 * **参数**
 同[parse()](#parse)方法，`options`多了一个`callback`。
 * **说明**  
-同[parse()](#parse)方法，只是json中多了`fonts`和`components`字段可以加载字体和自定义组件。
+同[parse()](#parse)方法，只是json中多了`fonts`和`components`字段可以加载字体和自定义组件。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。
 * **示例**
 ```jsx
 karas.parse(

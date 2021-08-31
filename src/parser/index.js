@@ -19,6 +19,10 @@ export default {
         }
       });
     }
+    // json中定义无abbr
+    if(json.abbr === false) {
+      options.abbr = false;
+    }
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(!inject.isDom(dom)) {
       options = dom || {};

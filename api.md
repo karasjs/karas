@@ -103,8 +103,8 @@ let root = karas.parse(
 <a name="loadAndParse"></a>
 ### loadAndParse
 * **类型** `Function`
-* **参数**
-同[parse()](#parse)方法，`options`多了一个`callback`。
+* **参数**  
+同[parse()](#parse)方法，`options`多了一个`callback`。因为是异步无法直接返回`Root`，所以用回调的方式获得。
 * **说明**  
 同[parse()](#parse)方法，只是json中多了`fonts`和`components`字段可以加载字体和自定义组件。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。
 * **示例**

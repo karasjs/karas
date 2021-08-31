@@ -170,7 +170,7 @@ let json = {
   },
 };
 ```
-工具导出的json还能看到`var-`开头的字段，会出现在`props`和`style`中，即插槽变量，在`karas.parse()`时可根据id传入变量替换对应的属性。另外想要替换某个特殊字段如`children`和`animate`，会看到特殊的如`var-children.0`的字段，数字标明索引。
+~~工具导出的json还能看到`var-`开头的字段，会出现在`props`和`style`中，即插槽变量，在`karas.parse()`时可根据id传入变量替换对应的属性。另外想要替换某个特殊字段如`children`和`animate`，会看到特殊的如`var-children.0`的字段，数字标明索引。~~
 ```ts
 let json = {
   tagName: 'canvas',
@@ -202,6 +202,46 @@ karas.parse(json, {
   vars: {
     color: '#00F',
     custom: 'text'
+  },
+});
+```
+新的插槽定义变成了`vars`标识，同时用子属性`member`表达替换的成员属性，可为数组递归下去。特别的，json的直接子属性上定义的`vars`可以替换`library`中的内容，此时可以用id替代索引。
+```ts
+let json = {
+  tagName: 'canvas',
+  children: [
+    {
+      libraryId: 'lid',
+    },
+  ],
+  library: {
+    id: 'lid',
+    tagName: 'div',
+    props: {
+      style: {
+        background: '#F00',
+        vars: [{
+          id: 'color',
+          member: 'background', // 只有1个直接属性定义key即可
+        }],
+      },
+    },
+    children: [],
+    vars: [{
+      id: 'custom',
+      member: ['children', 0], // 需要替换children的第0个所以是个数组
+    }],
+  },
+  vars: [{
+    id: 'lib',
+    member: ['library', 'lid',] // 特殊的可以用lid访问library的直接内容
+  }],
+};
+karas.parse(json, {
+  vars: {
+    color: '#00F',
+    custom: 'text',
+    lib: {},
   },
 });
 ```

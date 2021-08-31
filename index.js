@@ -35549,7 +35549,24 @@
   var parser = {
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      json = util.clone(json); // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+      // 根节点的fonts字段定义字体信息
+      var fonts = json.fonts;
+
+      if (fonts) {
+        if (!Array.isArray(fonts)) {
+          fonts = [fonts];
+        }
+
+        fonts.forEach(function (item) {
+          var fontFamily = item.fontFamily,
+              data = item.data;
+
+          if (fontFamily && data) {
+            o$1.register(fontFamily, data);
+          }
+        });
+      } // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+
 
       if (!inject.isDom(dom)) {
         options = dom || {};
@@ -35563,8 +35580,7 @@
 
 
       if (dom) {
-        var _json = json,
-            tagName = _json.tagName;
+        var tagName = json.tagName;
 
         if (['canvas', 'svg', 'webgl'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');

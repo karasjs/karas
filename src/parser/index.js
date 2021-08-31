@@ -1,12 +1,24 @@
 import parse from './parse';
 import abbr from './abbr';
 import inject from '../util/inject';
-import util from '../util/util';
+import font from '../style/font';
 import Controller from '../animate/Controller';
 
 export default {
   parse(karas, json, dom, options = {}) {
-    json = util.clone(json);
+    // 根节点的fonts字段定义字体信息
+    let fonts = json.fonts;
+    if(fonts) {
+      if(!Array.isArray(fonts)) {
+        fonts = [fonts];
+      }
+      fonts.forEach(item => {
+        let { fontFamily, data } = item;
+        if(fontFamily && data) {
+          font.register(fontFamily, data);
+        }
+      });
+    }
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(!inject.isDom(dom)) {
       options = dom || {};

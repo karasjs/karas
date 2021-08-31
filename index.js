@@ -35787,6 +35787,7 @@
         }
 
         components.forEach(function (item) {
+          // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
           if (item.url) {
             list2.push(item);
           }
@@ -35830,6 +35831,8 @@
         if (util.isFunction(options.callback)) {
           options.callback(res);
         }
+
+        return res;
       }
     },
     abbr: abbr$1
@@ -35857,7 +35860,7 @@
     Cache: Cache
   };
 
-  var version = "0.61.0-alpha";
+  var version = "0.61.0-beta";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

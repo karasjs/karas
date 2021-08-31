@@ -90,6 +90,7 @@ let o = {
         components = [components];
       }
       components.forEach(item => {
+        // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
         if(item.url) {
           list2.push(item);
         }
@@ -126,6 +127,7 @@ let o = {
       if(util.isFunction(options.callback)) {
         options.callback(res);
       }
+      return res;
     }
   },
   abbr,

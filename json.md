@@ -291,3 +291,14 @@ karas.parse(
   }
 );
 ```
+另外，json直接子属性新增`abbr`字段，当为`false`时强制不适用缩写功能，等同于`parse`的第2个参数传入`abbr`为`false`。
+```tsx
+karas.parse({
+  tagName: 'div',
+  props: {},
+  children: [],
+  abbr: false, // 等同于下面的
+}, {
+  abbr: false, // 等同于上面的
+})
+```

@@ -166,7 +166,7 @@ class Component extends Event {
   }
 
   render() {
-    inject.warn('Component must implement render()!');
+    inject.warn('Component must implement render()');
   }
 
   __destroy() {
@@ -174,9 +174,9 @@ class Component extends Event {
       return;
     }
     this.__isDestroyed = true;
+    this.__isMounted = false;
     if(isFunction(this.componentWillUnmount)) {
       this.componentWillUnmount();
-      this.__isMounted = false;
     }
     this.root.delRefreshTask(this.__task);
     if(this.shadowRoot) {

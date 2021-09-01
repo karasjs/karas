@@ -78,9 +78,8 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
   else {
     check(cp.shadow);
   }
-  // 结束后要删除临时存的老cp以及继承信息，防止下次错误判断
-  delete cp.__json.placeholder;
-  delete cp.__json.inheritAnimate;
+  // 结束后要清除继承，不能删除placeholder，由diffCp删除
+  delete cp.__json.__inheritAnimate;
   delete cp.__json.__animateRecords;
 }
 
@@ -153,12 +152,12 @@ function updateCp(cp, props, state) {
   sr.__config[NODE_STRUCT] = oldSr.__config[NODE_STRUCT];
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
-  if(!util.isObject(json) || !json.placeholder) {
+  if(!util.isObject(json) || !json.__placeholder) {
     removeList.push(oldS);
   }
   // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
-  if(json && json.placeholder) {
-    delete json.placeholder;
+  if(json && json.__placeholder) {
+    delete json.__placeholder;
   }
   // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr/host需要同时更新引用
   let host = cp.host;
@@ -221,7 +220,7 @@ function diffSr(vd, oj, nj) {
     else if(oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
       // 需判断矢量标签mutil是否相等
       if(nj.$$type !== TYPE_GM || oj.props.multi === nj.props.multi) {
-        nj.inheritAnimate = vd;
+        nj.__inheritAnimate = vd;
       }
       oj.key = nj.key = KEY_FLAG;
       // key相同的dom暂存下来
@@ -269,13 +268,13 @@ function diffChild(vd, oj, nj) {
     else if(nj.$$type === TYPE_GM && oj && oj.$$type === TYPE_GM) {
       // $geom的multi必须一致
       if(oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
-        nj.inheritAnimate = vd;
+        nj.__inheritAnimate = vd;
       }
     }
     // dom类型递归children
     else if(nj.$$type === TYPE_VD && oj && oj.$$type === TYPE_VD) {
       if(oj.tagName === nj.tagName) {
-        nj.inheritAnimate = vd;
+        nj.__inheritAnimate = vd;
       }
       diffChildren(vd, oj, nj);
     }
@@ -329,7 +328,7 @@ function diffChildren(vd, oj, nj) {
 function diffCp(oj, nj, vd) {
   // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建，暂时存在json的placeholder上
   // 否则需要强制触发组件更新，包含setState内容
-  nj.placeholder = vd;
+  nj.__placeholder = vd;
   let sr = vd.shadowRoot;
   // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
   let exist = {};

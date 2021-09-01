@@ -2,11 +2,32 @@ import parse from './parse';
 import abbr from './abbr';
 import inject from '../util/inject';
 import util from '../util/util';
+import font from '../style/font';
 import Controller from '../animate/Controller';
 
-export default {
+let o = {
   parse(karas, json, dom, options = {}) {
     json = util.clone(json);
+    // 根节点的fonts字段定义字体信息
+    let fonts = json.fonts;
+    if(fonts) {
+      if(!Array.isArray(fonts)) {
+        fonts = [fonts];
+      }
+      fonts.forEach(item => {
+        let { fontFamily, data } = item;
+        if(fontFamily && data) {
+          font.register(fontFamily, data);
+        }
+      });
+    }
+    // json中定义无abbr
+    if(json.abbr === false) {
+      options.abbr = false;
+    }
+    if(options.abbr !== false) {
+      inject.warn('Abbr in json is deprecated');
+    }
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(!inject.isDom(dom)) {
       options = dom || {};
@@ -52,5 +73,72 @@ export default {
     }
     return vd;
   },
+  loadAndParse(karas, json, dom, options) {
+    let { fonts, components } = json;
+    let list1 = [];
+    let list2 = [];
+    if(fonts) {
+      if(!Array.isArray(fonts)) {
+        fonts = [fonts];
+      }
+      fonts.forEach(item => {
+        let url = item.url;
+        if(url) {
+          list1.push(url);
+        }
+      });
+    }
+    if(components) {
+      if(!Array.isArray(components)) {
+        components = [components];
+      }
+      components.forEach(item => {
+        let { tagName, url, reload } = item;
+        // 如果没申明reload且已经被注册，则无需重复加载
+        if(tagName && karas.Component.hasRegister(tagName) && !reload) {
+          return;
+        }
+        // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
+        if(url) {
+          list2.push(item);
+        }
+      });
+    }
+    if(list1.length || list2.length) {
+      let count = 0;
+      let cb = function() {
+        if(count === list1.length + list2.length) {
+          let res = o.parse(karas, json, dom, options);
+          if(util.isFunction(options.callback)) {
+            options.callback(res);
+          }
+        }
+      };
+      karas.inject.loadFont(list1, function() {
+        count += list1.length;
+        cb();
+      });
+      karas.inject.loadComponent(list2.map(item => item.url), function() {
+        count += list2.length;
+        // 默认约定加载的js组件会在全局变量申明同名tagName，已有不覆盖，防止组件代码内部本身有register
+        list2.forEach(item => {
+          let tagName = item.tagName;
+          if(tagName && window[tagName] && !karas.Component.hasRegister(tagName)) {
+            karas.Component.register(tagName, window[tagName]);
+          }
+        });
+        cb();
+      });
+    }
+    else {
+      let res = o.parse(karas, json, dom, options);
+      if(util.isFunction(options.callback)) {
+        options.callback(res);
+      }
+      return res;
+    }
+  },
   abbr,
 };
+
+export default o;

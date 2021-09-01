@@ -87,6 +87,8 @@ const IMG = {};
 const INIT = 0;
 const LOADING = 1;
 const LOADED = 2;
+const FONT = {};
+const COMPONENT = {};
 
 let inject = {
   measureText() {
@@ -164,6 +166,9 @@ let inject = {
   LOADING,
   measureImg(url, cb) {
     if(Array.isArray(url)) {
+      if(!url.length) {
+        return cb();
+      }
       let count = 0;
       let len = url.length;
       let list = [];
@@ -178,7 +183,7 @@ let inject = {
       return;
     }
     else if(!url || !util.isString(url)) {
-      inject.warn('Measure img invalid: ' + url);
+      inject.error('Measure img invalid: ' + url);
       cb && cb({
         state: LOADED,
         success: false,
@@ -363,6 +368,124 @@ let inject = {
       }
     }
     return font.info[ff].checked = false;
+  },
+  loadFont(url, cb) {
+    if(Array.isArray(url)) {
+      if(!url.length) {
+        return cb();
+      }
+      let count = 0;
+      let len = url.length;
+      let list = [];
+      url.forEach((item, i) => {
+        inject.loadFont(item, function(cache) {
+          list[i] = cache;
+          if(++count === len) {
+            cb(list);
+          }
+        });
+      });
+      return;
+    }
+    else if(!url || !util.isString(url)) {
+      inject.error('Load font invalid: ' + url);
+      cb && cb({
+        state: LOADED,
+        success: false,
+        url,
+      });
+      return;
+    }
+    let cache = FONT[url] = FONT[url] || {
+      state: INIT,
+      task: [],
+    };
+    if(cache.state === LOADED) {
+      cb && cb(cache);
+    }
+    else if(cache.state === LOADING) {
+      cb && cache.task.push(cb);
+    }
+    else {
+      cache.state = LOADING;
+      cb && cache.task.push(cb);
+      let f = new FontFace(url, `url(${url})`);
+      f.load().then(function() {
+        cache.state = LOADED;
+        cache.success = true;
+        cache.url = url;
+        let list = cache.task.splice(0);
+        list.forEach(cb => cb(cache));
+      }).cache(function() {
+        cache.state = LOADED;
+        cache.success = false;
+        cache.url = url;
+        let list = cache.task.splice(0);
+        list.forEach(cb => cb(cache));
+      });
+    }
+  },
+  loadComponent(url, cb) {
+    if(Array.isArray(url)) {
+      if(!url.length) {
+        return cb();
+      }
+      let count = 0;
+      let len = url.length;
+      let list = [];
+      url.forEach((item, i) => {
+        inject.loadComponent(item, function(cache) {
+          list[i] = cache;
+          if(++count === len) {
+            cb(list);
+          }
+        });
+      });
+      return;
+    }
+    else if(!url || !util.isString(url)) {
+      inject.error('Load component invalid: ' + url);
+      cb && cb({
+        state: LOADED,
+        success: false,
+        url,
+      });
+      return;
+    }
+    let cache = COMPONENT[url] = COMPONENT[url] || {
+      state: INIT,
+      task: [],
+    };
+    if(cache.state === LOADED) {
+      cb && cb(cache);
+    }
+    else if(cache.state === LOADING) {
+      cb && cache.task.push(cb);
+    }
+    else {
+      cache.state = LOADING;
+      cb && cache.task.push(cb);
+      let script = document.createElement('script');
+      script.src = url;
+      script.async = true;
+      script.onload = function() {
+        cache.state = LOADED;
+        cache.success = true;
+        cache.url = url;
+        let list = cache.task.splice(0);
+        list.forEach(cb => cb(cache));
+        document.head.removeChild(script);
+      };
+      script.onerror = function() {
+        cache.state = LOADED;
+        cache.success = false;
+        cache.url = url;
+        let list = cache.task.splice(0);
+        list.forEach(cb => cb(cache));
+        document.head.removeChild(script);
+      };
+      document.head.appendChild(script);
+    }
   },
 };
 

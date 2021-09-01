@@ -5954,6 +5954,8 @@
   var INIT = 0;
   var LOADING = 1;
   var LOADED = 2;
+  var FONT = {};
+  var COMPONENT = {};
   var inject = {
     measureText: function measureText() {
       var list = textCache.list,
@@ -6051,6 +6053,10 @@
     LOADING: LOADING,
     measureImg: function measureImg(url, cb) {
       if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
         var count = 0;
         var len = url.length;
         var list = [];
@@ -6065,7 +6071,7 @@
         });
         return;
       } else if (!url || !util.isString(url)) {
-        inject.warn('Measure img invalid: ' + url);
+        inject.error('Measure img invalid: ' + url);
         cb && cb({
           state: LOADED,
           success: false,
@@ -6299,6 +6305,137 @@
       }
 
       return o$1.info[ff].checked = false;
+    },
+    loadFont: function loadFont(url, cb) {
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.loadFont(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Load font invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      var cache = FONT[url] = FONT[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+        var f = new FontFace(url, "url(".concat(url, ")"));
+        f.load().then(function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        }).cache(function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        });
+      }
+    },
+    loadComponent: function loadComponent(url, cb) {
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.loadComponent(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Load component invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      var cache = COMPONENT[url] = COMPONENT[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+        var script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+
+        script.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+        };
+
+        script.onerror = function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+        };
+
+        document.head.appendChild(script);
+      }
     }
   };
 
@@ -35141,90 +35278,202 @@
     }
   }
 
-  function replaceVars(target, vars) {
-    if (target && vars) {
-      Object.keys(target).forEach(function (k) {
-        if (k.indexOf('var-') === 0) {
-          var v = target[k];
+  function replaceVars(json, vars) {
+    if (json && vars) {
+      // 新版vars语法
+      if (json.hasOwnProperty('vars')) {
+        var slot = json.vars;
 
-          if (!v) {
-            return;
-          }
+        if (!Array.isArray(slot)) {
+          slot = [slot];
+        }
 
-          var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+        if (Array.isArray(slot)) {
+          slot.forEach(function (item) {
+            var id = item.id,
+                member = item.member;
 
-          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id]; // undefined和null意义不同
+            if (!Array.isArray(member)) {
+              member = [member];
+            } // 排除特殊的library
 
-            if (value === undefined) {
-              return;
-            }
 
-            var currentTarget = target; // 如果有.则特殊处理子属性
+            if (Array.isArray(member) && member.length && member[0] !== 'library' && vars.hasOwnProperty(id)) {
+              var target = json;
 
-            if (k2.indexOf('.') > -1) {
-              var list = k2.split('.');
-              var len = list.length;
+              for (var i = 0, len = member.length; i < len; i++) {
+                var k = member[i]; // 最后一个属性可以为空
 
-              for (var i = 0; i < len - 1; i++) {
-                k2 = list[i]; // 避免异常
+                if (target.hasOwnProperty(k) || i === len - 1) {
+                  // 最后一个member表达式替换
+                  if (i === len - 1) {
+                    var v = vars[id]; // undefined和null意义不同
 
-                if (currentTarget[k2]) {
-                  currentTarget = currentTarget[k2];
+                    if (v === undefined) {
+                      return;
+                    } // 支持函数模式和值模式
+
+
+                    if (isFunction$8(v)) {
+                      v = v(target(k));
+                    }
+
+                    target[k] = v;
+                  } else {
+                    target = target[k];
+                  }
                 } else {
-                  inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  inject.error('Slot miss ' + k);
                   return;
                 }
               }
+            }
+          });
+        }
+      } else {
+        Object.keys(json).forEach(function (k) {
+          if (k.indexOf('var-') === 0) {
+            var v = json[k];
 
-              k2 = list[len - 1];
-            } // 支持函数模式和值模式
-
-
-            if (isFunction$8(value)) {
-              value = value(v);
+            if (!v) {
+              return;
             }
 
-            currentTarget[k2] = value;
+            var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
+
+            if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+              var value = vars[v.id]; // undefined和null意义不同
+
+              if (value === undefined) {
+                return;
+              }
+
+              var target = json; // 如果有.则特殊处理子属性
+
+              if (k2.indexOf('.') > -1) {
+                var list = k2.split('.');
+                var len = list.length;
+
+                for (var i = 0; i < len - 1; i++) {
+                  k2 = list[i]; // 避免异常
+
+                  if (target[k2]) {
+                    target = target[k2];
+                  } else {
+                    inject.warn('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                    return;
+                  }
+                }
+
+                k2 = list[len - 1];
+              } // 支持函数模式和值模式
+
+
+              if (isFunction$8(value)) {
+                value = value(v);
+              }
+
+              target[k2] = value;
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
-  function replaceLibraryVars(target, hash, vars) {
-    if (target && hash && vars) {
-      Object.keys(target).forEach(function (k) {
-        if (k.indexOf('var-library.') === 0) {
-          var v = target[k]; // 直接移除library插槽，防止下面调用replaceVars(target, vars)时报错
+  function replaceLibraryVars(json, hash, vars) {
+    if (vars) {
+      // 新版同级vars语法
+      if (json.hasOwnProperty('vars')) {
+        var slot = json.vars;
 
-          delete target[k];
-
-          if (!v) {
-            return;
-          }
-
-          var k2 = k.slice(12); // 有id且变量里面传入了替换的值
-
-          if (k2 && v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id];
-
-            if (isFunction$8(value)) {
-              value = value(v);
-            } // 替换图层的值必须是一个有tagName的对象
-
-
-            if (!value || !value.tagName) {
-              return;
-            } // library对象也要加上id，与正常的library保持一致
-
-
-            hash[k2] = Object.assign({
-              id: k2
-            }, value);
-          }
+        if (!Array.isArray(slot)) {
+          slot = [slot];
         }
-      });
+
+        if (Array.isArray(slot)) {
+          slot.forEach(function (item) {
+            var id = item.id,
+                member = item.member;
+
+            if (!Array.isArray(member)) {
+              member = [member];
+            } // library.xxx，需要>=2的长度
+
+
+            if (Array.isArray(member) && member.length > 1 && vars.hasOwnProperty(id)) {
+              if (member[0] === 'library') {
+                var target = hash;
+
+                for (var i = 1, len = member.length; i < len; i++) {
+                  var k = member[i]; // 最后一个属性可以为空
+
+                  if (target.hasOwnProperty(k) || i === len - 1) {
+                    // 最后一个member表达式替换
+                    if (i === len - 1) {
+                      var v = vars[id]; // 支持函数模式和值模式
+
+                      if (isFunction$8(v)) {
+                        v = v(target(k));
+                      }
+
+                      var old = target[k]; // 直接替换library的子对象，需补充id和tagName
+
+                      if (i === 1) {
+                        target[k] = Object.assign({
+                          id: old.id,
+                          tagName: old.tagName
+                        }, v);
+                      } // 替换library中子对象的一个属性直接赋值
+                      else {
+                          target[k] = v;
+                        }
+                    } else {
+                      target = target[k];
+                    }
+                  } else {
+                    inject.error('Library slot miss ' + k);
+                    return;
+                  }
+                }
+              }
+            }
+          });
+        }
+      } // 兼容老版var-
+      else {
+          Object.keys(json).forEach(function (k) {
+            if (k.indexOf('var-library.') === 0) {
+              var v = json[k]; // 直接移除library插槽，防止下面调用replaceVars(json, vars)时报错
+
+              delete json[k];
+
+              if (!v) {
+                return;
+              }
+
+              var k2 = k.slice(12); // 有id且变量里面传入了替换的值
+
+              if (k2 && v.id && vars.hasOwnProperty(v.id)) {
+                var value = vars[v.id];
+
+                if (isFunction$8(value)) {
+                  value = value(v);
+                } // 替换图层的值必须是一个有tagName的对象
+
+
+                if (!value || !value.tagName) {
+                  return;
+                } // library对象也要加上id，与正常的library保持一致
+
+
+                hash[k2] = Object.assign({
+                  id: k2
+                }, value);
+              }
+            }
+          });
+        }
     }
   }
   /**
@@ -35304,7 +35553,7 @@
 
     var libraryId = json.libraryId;
 
-    if (!isNil$f(libraryId) && libraryId !== "") {
+    if (!isNil$f(libraryId)) {
       var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
       if (libraryItem) {
@@ -35433,10 +35682,37 @@
     return vd;
   }
 
-  var parser = {
+  var o$4 = {
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      json = util.clone(json); // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+      json = util.clone(json); // 根节点的fonts字段定义字体信息
+
+      var fonts = json.fonts;
+
+      if (fonts) {
+        if (!Array.isArray(fonts)) {
+          fonts = [fonts];
+        }
+
+        fonts.forEach(function (item) {
+          var fontFamily = item.fontFamily,
+              data = item.data;
+
+          if (fontFamily && data) {
+            o$1.register(fontFamily, data);
+          }
+        });
+      } // json中定义无abbr
+
+
+      if (json.abbr === false) {
+        options.abbr = false;
+      }
+
+      if (options.abbr !== false) {
+        inject.warn('Abbr in json is deprecated');
+      } // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+
 
       if (!inject.isDom(dom)) {
         options = dom || {};
@@ -35488,6 +35764,88 @@
 
       return vd;
     },
+    loadAndParse: function loadAndParse(karas, json, dom, options) {
+      var fonts = json.fonts,
+          components = json.components;
+      var list1 = [];
+      var list2 = [];
+
+      if (fonts) {
+        if (!Array.isArray(fonts)) {
+          fonts = [fonts];
+        }
+
+        fonts.forEach(function (item) {
+          var url = item.url;
+
+          if (url) {
+            list1.push(url);
+          }
+        });
+      }
+
+      if (components) {
+        if (!Array.isArray(components)) {
+          components = [components];
+        }
+
+        components.forEach(function (item) {
+          var tagName = item.tagName,
+              url = item.url,
+              reload = item.reload; // 如果没申明reload且已经被注册，则无需重复加载
+
+          if (tagName && karas.Component.hasRegister(tagName) && !reload) {
+            return;
+          } // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
+
+
+          if (url) {
+            list2.push(item);
+          }
+        });
+      }
+
+      if (list1.length || list2.length) {
+        var count = 0;
+
+        var cb = function cb() {
+          if (count === list1.length + list2.length) {
+            var res = o$4.parse(karas, json, dom, options);
+
+            if (util.isFunction(options.callback)) {
+              options.callback(res);
+            }
+          }
+        };
+
+        karas.inject.loadFont(list1, function () {
+          count += list1.length;
+          cb();
+        });
+        karas.inject.loadComponent(list2.map(function (item) {
+          return item.url;
+        }), function () {
+          count += list2.length; // 默认约定加载的js组件会在全局变量申明同名tagName，已有不覆盖，防止组件代码内部本身有register
+
+          list2.forEach(function (item) {
+            var tagName = item.tagName;
+
+            if (tagName && window[tagName] && !karas.Component.hasRegister(tagName)) {
+              karas.Component.register(tagName, window[tagName]);
+            }
+          });
+          cb();
+        });
+      } else {
+        var res = o$4.parse(karas, json, dom, options);
+
+        if (util.isFunction(options.callback)) {
+          options.callback(res);
+        }
+
+        return res;
+      }
+    },
     abbr: abbr$1
   };
 
@@ -35513,7 +35871,7 @@
     Cache: Cache
   };
 
-  var version = "0.60.3";
+  var version = "0.61.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);
@@ -35588,7 +35946,10 @@
       };
     },
     parse: function parse(json, dom, options) {
-      return parser.parse(this, json, dom, options);
+      return o$4.parse(this, json, dom, options);
+    },
+    loadAndParse: function loadAndParse(json, dom, options) {
+      return o$4.loadAndParse(this, json, dom, options);
     },
     mode: mode,
     Component: Component$1,
@@ -35603,7 +35964,7 @@
     util: util,
     inject: inject,
     style: style,
-    parser: parser,
+    parser: o$4,
     animate: animate,
     math: math,
     builder: builder,

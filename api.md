@@ -64,7 +64,7 @@ karas.render(
 入口方法，同[render()](#render)类似，接收的json可以动态化下发，更加灵活，但也缺少了一些编程本身的功能（如不能写逻辑和函数）。
 * **示例**
 ```jsx
-karas.parse(
+let root = karas.parse(
   {
     "tagName": "canvas",
     "props": {
@@ -83,7 +83,7 @@ karas.parse(
 可配`autoPlay`是否默认播放，可配`controller`传入一个自定义总控制器，可配`vars`传入变量hash，可配`abbr`为false禁用缩写。
 * **示例**
 ```jsx
-karas.parse(
+let root = karas.parse(
   someJson,
   '#selector',
   {
@@ -96,6 +96,60 @@ karas.parse(
       },
     },
     abbr: false,
+  }
+);
+```
+
+<a name="loadAndParse"></a>
+### loadAndParse
+* **类型** `Function`
+* **参数**  
+同[parse()](#parse)方法，`options`多了一个`callback`。因为是异步无法直接返回`Root`，所以用回调的方式获得。
+* **说明**  
+同[parse()](#parse)方法，只是json中多了`fonts`和`components`字段可以加载字体和自定义组件。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。
+* **示例**
+```jsx
+karas.parse(
+  {
+    "tagName": "canvas",
+    "props": {
+      "width": 100,
+      "height": 100
+    },
+    "children": [
+      {
+        "tagName": "Custom",
+        "props": {
+          "style": {
+            "fontFamily": "DINPro"
+          }
+        }
+      }
+    ],
+    "fonts": [
+      {
+        "fontFamily": "DINPro",
+        "data": {
+          "emSquare": 2000,
+          "ascent": 1200,
+          "descent": 800,
+          "lineGap": 60
+        },
+        "url": "xxx"
+      }
+    ],
+    "components": [
+      {
+        "tagName": "Custom",
+        "url": "xxx"
+      }
+    ]
+  },
+  '#selector',
+  {
+    callback(root) {
+      console.log(root);
+    }
   }
 );
 ```

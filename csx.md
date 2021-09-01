@@ -151,7 +151,7 @@
   * number 正整数，文本行数限制，超过则为省略号，且对所有块级节点生效
 * backgroundColor
   * transparent 默认
-  * #rgb/rgb/rgba
+  * \#rgb/rgb/rgba
 * backgroundImage
   * none 默认，可以是数组形式设置多个
   * url() 图片
@@ -206,11 +206,13 @@
   * px
 * transform
   * null 默认
-  * translate/translateX/translateY
-  * rotate/rotateZ
-  * scale/scaleX/scaleY
+  * translate/translateX/translateY/translateZ
+  * rotate/rotateX/rotateY/rotateZ
+  * scale/scaleX/scaleY/scaleZ
   * skewX/skewY
+  * rotate3d
   * matrix
+  * perspective
 * transformOrigin
   * center 默认
   * top
@@ -267,18 +269,25 @@
   * saturation
   * color
   * luminosity
+* perspective
+  * 0 默认
+  * px
+  * %
+  * rem
+  * vw
+  * vh
 * fill
   * transparent 默认，可以是数组形式设置多个
-  * #rgb/rgb/rgba
+  * \#rgb/rgb/rgba
   * linearGradient
     * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radialGradient
     * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
   * conicGradient
 * stroke
-  * #000 默认，可以是数组形式设置多个
+  * \#000 默认，可以是数组形式设置多个
   * transparent
-  * #rgb/rgb/rgba
+  * \#rgb/rgb/rgba
   * linearGradient
     * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radialGradient

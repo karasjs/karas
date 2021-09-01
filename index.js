@@ -35708,6 +35708,10 @@
 
       if (json.abbr === false) {
         options.abbr = false;
+      }
+
+      if (options.abbr !== false) {
+        inject.warn('Abbr in json is deprecated');
       } // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
 
 
@@ -35787,8 +35791,16 @@
         }
 
         components.forEach(function (item) {
-          // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
-          if (item.url) {
+          var tagName = item.tagName,
+              url = item.url,
+              reload = item.reload; // 如果没申明reload且已经被注册，则无需重复加载
+
+          if (tagName && karas.Component.hasRegister(tagName) && !reload) {
+            return;
+          } // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
+
+
+          if (url) {
             list2.push(item);
           }
         });
@@ -35860,7 +35872,7 @@
     Cache: Cache
   };
 
-  var version = "0.61.0-beta";
+  var version = "0.61.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

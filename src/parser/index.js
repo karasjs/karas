@@ -25,6 +25,9 @@ let o = {
     if(json.abbr === false) {
       options.abbr = false;
     }
+    if(options.abbr !== false) {
+      inject.warn('Abbr in json is deprecated');
+    }
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(!inject.isDom(dom)) {
       options = dom || {};
@@ -90,8 +93,13 @@ let o = {
         components = [components];
       }
       components.forEach(item => {
+        let { tagName, url, reload } = item;
+        // 如果没申明reload且已经被注册，则无需重复加载
+        if(tagName && karas.Component.hasRegister(tagName) && !reload) {
+          return;
+        }
         // 即便没有tagName也要加载，可能组件内部执行了注册逻辑
-        if(item.url) {
+        if(url) {
           list2.push(item);
         }
       });

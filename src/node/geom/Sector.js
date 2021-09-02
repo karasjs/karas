@@ -267,7 +267,7 @@ class Sector extends Geom {
       if(fill && fill !== 'none') {
         this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, false);
       }
-      if(stroke && stroke !== 'none') {
+      if(strokeWidth > 0 && stroke && stroke !== 'none') {
         this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
       }
     }

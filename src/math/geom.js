@@ -198,7 +198,6 @@ function sectorPoints(x, y, r, begin, end) {
       let p3 = [x + rx, y - ry];
       list.push(p1);
       list.push(p2.concat(p3).concat(p4));
-      // list.push([x, y]);
     }
     else if(b < 180) {
       // 第1个交点
@@ -221,7 +220,6 @@ function sectorPoints(x, y, r, begin, end) {
       let p3 = [x + rx, y + ry];
       list.push(p1);
       list.push(p2.concat(p3).concat(p4));
-      // list.push([x, y]);
     }
     else if(b < 270) {
       // 第1个交点
@@ -244,7 +242,6 @@ function sectorPoints(x, y, r, begin, end) {
       let p3 = [x - rx, y + ry];
       list.push(p1);
       list.push(p2.concat(p3).concat(p4));
-      // list.push([x, y]);
     }
     else {
       // 第1个交点
@@ -267,7 +264,6 @@ function sectorPoints(x, y, r, begin, end) {
       let p3 = [x - rx, y + ry];
       list.push(p1);
       list.push(p2.concat(p3).concat(p4));
-      // list.push([x, y]);
     }
   }
   // 跨象限循环算

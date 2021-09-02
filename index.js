@@ -1250,7 +1250,7 @@
         ry = Math.cos(deg) * c;
         var p3 = [x + rx, y - ry];
         list.push(p1);
-        list.push(p2.concat(p3).concat(p4)); // list.push([x, y]);
+        list.push(p2.concat(p3).concat(p4));
       } else if (b < 180) {
         // 第1个交点
         var _rx = Math.cos(d2r(begin - 90)) * r;
@@ -1274,7 +1274,7 @@
         _ry = Math.sin(_deg) * c;
         var _p4 = [x + _rx, y + _ry];
         list.push(_p);
-        list.push(_p2.concat(_p4).concat(_p3)); // list.push([x, y]);
+        list.push(_p2.concat(_p4).concat(_p3));
       } else if (b < 270) {
         // 第1个交点
         var _rx2 = Math.sin(d2r(begin - 180)) * r;
@@ -1298,7 +1298,7 @@
         _ry2 = Math.cos(_deg2) * c;
         var _p8 = [x - _rx2, y + _ry2];
         list.push(_p5);
-        list.push(_p6.concat(_p8).concat(_p7)); // list.push([x, y]);
+        list.push(_p6.concat(_p8).concat(_p7));
       } else {
         // 第1个交点
         var _rx3 = Math.cos(d2r(begin - 270)) * r;
@@ -1322,7 +1322,7 @@
         _ry3 = Math.sin(_deg3) * c;
         var _p12 = [x - _rx3, y + _ry3];
         list.push(_p9);
-        list.push(_p10.concat(_p12).concat(_p11)); // list.push([x, y]);
+        list.push(_p10.concat(_p12).concat(_p11));
       }
     } // 跨象限循环算
     else {
@@ -34519,7 +34519,7 @@
             this.__drawPolygon(renderMode, ctx, isMulti, list, res, true, false);
           }
 
-          if (stroke && stroke !== 'none') {
+          if (strokeWidth > 0 && stroke && stroke !== 'none') {
             this.__drawPolygon(renderMode, ctx, isMulti, sList, res, false, true);
           }
         }
@@ -35875,7 +35875,7 @@
     Cache: Cache
   };
 
-  var version = "0.61.1";
+  var version = "0.61.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

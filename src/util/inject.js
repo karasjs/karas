@@ -416,7 +416,7 @@ let inject = {
         cache.url = url;
         let list = cache.task.splice(0);
         list.forEach(cb => cb(cache));
-      }).cache(function() {
+      }).catch(function() {
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;

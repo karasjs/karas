@@ -78,9 +78,6 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
   else {
     check(cp.shadow);
   }
-  // 结束后要清除继承，不能删除placeholder，由diffCp删除
-  delete cp.__json.__inheritAnimate;
-  delete cp.__json.__animateRecords;
 }
 
 /**
@@ -158,6 +155,12 @@ function updateCp(cp, props, state) {
   // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
   if(json && json.__placeholder) {
     delete json.__placeholder;
+  }
+  if(json && json.__inheritAnimate) {
+    delete json.__inheritAnimate;
+  }
+  if(json && json.__animateRecords) {
+    delete json.__animateRecords;
   }
   // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr/host需要同时更新引用
   let host = cp.host;

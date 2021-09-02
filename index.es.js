@@ -6350,7 +6350,7 @@ var inject = {
         list.forEach(function (cb) {
           return cb(cache);
         });
-      }).cache(function () {
+      })["catch"](function () {
         cache.state = LOADED;
         cache.success = false;
         cache.url = url;
@@ -26268,11 +26268,7 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
       }
   } else {
     check(cp.shadow);
-  } // 结束后要清除继承，不能删除placeholder，由diffCp删除
-
-
-  delete cp.__json.__inheritAnimate;
-  delete cp.__json.__animateRecords;
+  }
 }
 /**
  * 更新组件的props和state，清空__nextState
@@ -26326,6 +26322,14 @@ function updateCp(cp, props, state) {
 
   if (json && json.__placeholder) {
     delete json.__placeholder;
+  }
+
+  if (json && json.__inheritAnimate) {
+    delete json.__inheritAnimate;
+  }
+
+  if (json && json.__animateRecords) {
+    delete json.__animateRecords;
   } // 高阶组件时需判断，子组件更新后生成新的sr，父组件的sr/host需要同时更新引用
 
 
@@ -35806,7 +35810,7 @@ var o$4 = {
         if (count === list1.length + list2.length) {
           var res = o$4.parse(karas, json, dom, options);
 
-          if (util.isFunction(options.callback)) {
+          if (options && util.isFunction(options.callback)) {
             options.callback(res);
           }
         }
@@ -35833,7 +35837,7 @@ var o$4 = {
     } else {
       var res = o$4.parse(karas, json, dom, options);
 
-      if (util.isFunction(options.callback)) {
+      if (options && util.isFunction(options.callback)) {
         options.callback(res);
       }
 
@@ -35865,7 +35869,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.0";
+var version = "0.61.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

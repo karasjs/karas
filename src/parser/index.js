@@ -109,7 +109,7 @@ let o = {
       let cb = function() {
         if(count === list1.length + list2.length) {
           let res = o.parse(karas, json, dom, options);
-          if(util.isFunction(options.callback)) {
+          if(options && util.isFunction(options.callback)) {
             options.callback(res);
           }
         }
@@ -132,7 +132,7 @@ let o = {
     }
     else {
       let res = o.parse(karas, json, dom, options);
-      if(util.isFunction(options.callback)) {
+      if(options && util.isFunction(options.callback)) {
         options.callback(res);
       }
       return res;

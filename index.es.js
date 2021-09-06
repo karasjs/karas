@@ -14635,7 +14635,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
   }
 
   var transition = frame[FRAME_TRANSITION];
-  var tagName = target.tagName;
 
   var _loop = function _loop(i, len) {
     var _transition$i = _slicedToArray(transition[i], 2),
@@ -14799,6 +14798,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[3] += v[3] * percent;
       } else if (GEOM$3.hasOwnProperty(k)) {
         var _st = style[k];
+        var tagName = target.tagName;
 
         if (GEOM$3[k][tagName] && isFunction$4(GEOM$3[k][tagName].calIncrease)) {
           var fn = GEOM$3[k][tagName].calIncrease;
@@ -35869,7 +35869,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.2";
+var version = "0.61.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

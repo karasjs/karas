@@ -2,8 +2,6 @@ import Geom from './Geom';
 import util from "../../util/util";
 import enums from '../../util/enums';
 import geom from '../../math/geom';
-import level from '../../refresh/level';
-import mode from '../mode';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,

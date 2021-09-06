@@ -4,7 +4,6 @@ import painter from '../../util/painter';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
-import level from '../../refresh/level';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,

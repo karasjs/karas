@@ -959,7 +959,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
     percent = timingFunction(percent);
   }
   let transition = frame[FRAME_TRANSITION];
-  let tagName = target.tagName;
   for(let i = 0, len = transition.length; i < len; i++) {
     let [k, v] = transition[i];
     let st = style[k];
@@ -1121,6 +1120,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
     }
     else if(GEOM.hasOwnProperty(k)) {
       let st = style[k];
+      let tagName = target.tagName;
       if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
         let fn = GEOM[k][tagName].calIncrease;
         if(target.isMulti) {

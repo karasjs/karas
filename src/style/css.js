@@ -801,9 +801,6 @@ function normalize(style, reset = []) {
     }
     else if(Array.isArray(temp)) {
       if(temp.length) {
-        if(!Array.isArray(temp[0])) {
-          temp = [temp];
-        }
         res[FILL] = temp.map(item => {
           if(!item) {
             return 'none';
@@ -834,9 +831,6 @@ function normalize(style, reset = []) {
     }
     else if(Array.isArray(temp)) {
       if(temp.length) {
-        if(!Array.isArray(temp[0])) {
-          temp = [temp];
-        }
         res[STROKE] = temp.map(item => {
           if(!item) {
             return 'none';

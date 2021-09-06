@@ -8680,10 +8680,6 @@
         res[FILL] = ['none'];
       } else if (Array.isArray(temp)) {
         if (temp.length) {
-          if (!Array.isArray(temp[0])) {
-            temp = [temp];
-          }
-
           res[FILL] = temp.map(function (item) {
             if (!item) {
               return 'none';
@@ -8710,10 +8706,6 @@
         res[STROKE] = ['none'];
       } else if (Array.isArray(temp)) {
         if (temp.length) {
-          if (!Array.isArray(temp[0])) {
-            temp = [temp];
-          }
-
           res[STROKE] = temp.map(function (item) {
             if (!item) {
               return 'none';

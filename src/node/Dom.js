@@ -2775,6 +2775,7 @@ class Dom extends Xom {
         }
       }
     });
+    this.__execAr();
   }
 
   /**

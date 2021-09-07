@@ -22,8 +22,8 @@ const { STYLE_KEY: {
 }} = enums;
 const { PX, PERCENT, REM, VW, VH } = unit;
 const { matrix, geom } = math;
-const { identity, calPoint, multiply, isE } = matrix;
-const { d2r, pointInPolygon } = geom;
+const { identity, multiply, isE } = matrix;
+const { d2r } = geom;
 
 function calSingle(t, k, v) {
   if(k === TRANSLATE_X) {

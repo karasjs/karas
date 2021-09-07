@@ -10119,8 +10119,7 @@
 
     t[12] = tx1;
     t[13] = ty1;
-    m = mx.multiply(t, m);
-    return mx.m2m6(m);
+    return mx.multiply(t, m);
   }
 
   var tar = {
@@ -10159,11 +10158,9 @@
   var matrix = math.matrix,
       geom$1 = math.geom;
   var identity$1 = matrix.identity,
-      calPoint$3 = matrix.calPoint,
       multiply$1 = matrix.multiply,
       isE$2 = matrix.isE;
-  var d2r$2 = geom$1.d2r,
-      pointInPolygon$1 = geom$1.pointInPolygon;
+  var d2r$2 = geom$1.d2r;
 
   function calSingle(t, k, v) {
     if (k === TRANSLATE_X$1) {
@@ -17445,8 +17442,18 @@
         }
 
         computedStyle[WIDTH$4] = this.width;
-        computedStyle[HEIGHT$3] = this.height; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+        computedStyle[HEIGHT$3] = this.height; // abs布局的不执行，在__layoutAbs末尾做，防止未布局没有尺寸从而动画计算错误
 
+        if (!fromAbs) {
+          this.__execAr();
+        }
+
+        return lineClampCount;
+      }
+    }, {
+      key: "__execAr",
+      value: function __execAr() {
+        // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
         var ar = this.__animateRecords;
 
         if (ar) {
@@ -17468,8 +17475,6 @@
             ac.__playAuto();
           }
         }
-
-        return lineClampCount;
       }
     }, {
       key: "__layoutNone",
@@ -23776,6 +23781,8 @@
             }
           }
         });
+
+        this.__execAr();
       }
       /**
        * 布局前检查继承的样式以及统计字体测量信息

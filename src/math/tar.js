@@ -217,8 +217,7 @@ function transform(source, target) {
   // t = matrix.identity();
   t[12] = tx1;
   t[13] = ty1;
-  m = matrix.multiply(t, m);
-  return matrix.m2m6(m);
+  return matrix.multiply(t, m);
 }
 
 export default {

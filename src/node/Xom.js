@@ -561,6 +561,14 @@ class Xom extends Node {
     }
     computedStyle[WIDTH] = this.width;
     computedStyle[HEIGHT] = this.height;
+    // abs布局的不执行，在__layoutAbs末尾做，防止未布局没有尺寸从而动画计算错误
+    if(!fromAbs) {
+      this.__execAr();
+    }
+    return lineClampCount;
+  }
+
+  __execAr() {
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -582,7 +590,6 @@ class Xom extends Node {
         ac.__playAuto();
       }
     }
-    return lineClampCount;
   }
 
   __layoutNone() {

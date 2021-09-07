@@ -1379,6 +1379,9 @@ class Animation extends Event {
       reverse: true,
       'alternate-reverse': true,
     }.hasOwnProperty(op.direction) ? framesR : frames;
+    // 性能优化访问
+    this[0] = this.__before;
+    this[1] = this.__after;
   }
 
   __init(list, iterations, duration, easing, target) {

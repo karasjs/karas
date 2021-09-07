@@ -13320,12 +13320,22 @@
     if (after) {
       for (var i = 0; i < length; i++) {
         var item = list[i];
-        item.__after && item.__after(diff);
+
+        if (item[1]) {
+          item[1](diff);
+        } else {
+          item.__after && item.__after(diff);
+        }
       }
     } else {
       for (var _i = 0; _i < length; _i++) {
         var _item = list[_i];
-        _item.__before && _item.__before(diff);
+
+        if (_item[0]) {
+          _item[0](diff);
+        } else {
+          _item.__before && _item.__before(diff);
+        }
       }
     }
   }
@@ -13372,8 +13382,8 @@
 
             var length = clone.length;
             var lengthCp = cloneCp.length;
-            traversal(clone, length, diff);
-            traversal(cloneCp, lengthCp, diff); // 执行动画造成的每个Root的刷新并清空
+            traversal(clone, length, diff, false);
+            traversal(cloneCp, lengthCp, diff, false); // 执行动画造成的每个Root的刷新并清空
 
             var list = self.__hookTask.splice(0);
 
@@ -15083,7 +15093,10 @@
       config[I_CURRENT_FRAMES] = {
         reverse: true,
         'alternate-reverse': true
-      }.hasOwnProperty(op.direction) ? framesR : frames;
+      }.hasOwnProperty(op.direction) ? framesR : frames; // 性能优化访问
+
+      _this[0] = _this.__before;
+      _this[1] = _this.__after;
       return _this;
     }
 

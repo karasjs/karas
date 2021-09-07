@@ -7,13 +7,23 @@ function traversal(list, length, diff, after) {
   if(after) {
     for(let i = 0; i < length; i++) {
       let item = list[i];
-      item.__after && item.__after(diff);
+      if(item[1]) {
+        item[1](diff);
+      }
+      else {
+        item.__after && item.__after(diff);
+      }
     }
   }
   else {
     for(let i = 0; i < length; i++) {
       let item = list[i];
-      item.__before && item.__before(diff);
+      if(item[0]) {
+        item[0](diff);
+      }
+      else {
+        item.__before && item.__before(diff);
+      }
     }
   }
 }
@@ -50,8 +60,8 @@ class Frame {
         let cloneCp = taskCp.splice(0); // task要常驻，taskCp只1次直接splice清空
         let length = clone.length;
         let lengthCp = cloneCp.length;
-        traversal(clone, length, diff);
-        traversal(cloneCp, lengthCp, diff);
+        traversal(clone, length, diff, false);
+        traversal(cloneCp, lengthCp, diff, false);
         // 执行动画造成的每个Root的刷新并清空
         let list = self.__hookTask.splice(0);
         for(let i = 0, len = list.length; i < len; i++) {

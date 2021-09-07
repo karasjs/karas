@@ -23,7 +23,7 @@ let o = karas.render(
 let t = o.ref.t;
 let res = karas.math.tar.transform([0, 0, 80, 10, 30, 50], [10, 20, 100, 0, 100, 100]);
 t.updateStyle({
-  transform: `matrix(${res.join(',')})`,
+  transform: `matrix3d(${res.join(',')})`,
 }, function() {
   let canvas = document.querySelector('canvas');
   let input = document.querySelector('#base64');

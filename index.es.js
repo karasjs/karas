@@ -33740,7 +33740,7 @@ function getNewList(list, len) {
   }
 
   var i = 0,
-      j = list.length - 2;
+      j = list.length - 1;
 
   if (start > 0) {
     i = getIndex(len.increase, start * len.total, i, j);
@@ -33766,6 +33766,15 @@ function getNewList(list, len) {
     if (current.length === 2) {
       var a = Math.abs(current[0] - prev[0]);
       var b = Math.abs(current[1] - prev[1]);
+
+      if (current[0] < prev[0]) {
+        a = -a;
+      }
+
+      if (current[1] < prev[1]) {
+        b = -b;
+      }
+
       list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];
     } else if (current.length === 4) {
       var res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
@@ -33797,6 +33806,14 @@ function getNewList(list, len) {
       var _a = Math.abs(_current[0] - _prev[0]);
 
       var _b = Math.abs(_current[1] - _prev[1]);
+
+      if (_current[0] < _prev[0]) {
+        _a = -_a;
+      }
+
+      if (_current[1] < _prev[1]) {
+        _b = -_b;
+      }
 
       list[i] = [_prev[0] + _t * _a, _prev[1] + _t * _b];
     } else if (_current.length === 4) {
@@ -35889,7 +35906,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.4";
+var version = "0.61.5";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

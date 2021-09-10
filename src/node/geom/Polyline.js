@@ -115,7 +115,7 @@ function getNewList(list, len, start = 0, end = 1) {
   if(start >= end) {
     return [];
   }
-  let i = 0, j = list.length - 2;
+  let i = 0, j = list.length - 1;
   if(start > 0) {
     i = getIndex(len.increase, start * len.total, i, j);
   }
@@ -135,6 +135,12 @@ function getNewList(list, len, start = 0, end = 1) {
     if(current.length === 2) {
       let a = Math.abs(current[0] - prev[0]);
       let b = Math.abs(current[1] - prev[1]);
+      if(current[0] < prev[0]) {
+        a = -a;
+      }
+      if(current[1] < prev[1]) {
+        b = -b;
+      }
       list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];
     }
     else if(current.length === 4) {
@@ -160,6 +166,12 @@ function getNewList(list, len, start = 0, end = 1) {
     if(current.length === 2) {
       let a = Math.abs(current[0] - prev[0]);
       let b = Math.abs(current[1] - prev[1]);
+      if(current[0] < prev[0]) {
+        a = -a;
+      }
+      if(current[1] < prev[1]) {
+        b = -b;
+      }
       list[i] = [prev[0] + t * a, prev[1] + t * b];
     }
     else if(current.length === 4) {

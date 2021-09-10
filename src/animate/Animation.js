@@ -100,7 +100,7 @@ function unify(frames, target) {
     keys.forEach(k => {
       if(!style.hasOwnProperty(k) || isNil(style[k])) {
         if(GEOM.hasOwnProperty(k)) {
-          style[k] = target.currentProps[k];
+          style[k] = target.getProps(k);
         }
         else {
           style[k] = target.currentStyle[k];

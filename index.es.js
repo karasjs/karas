@@ -13761,7 +13761,7 @@ function unify(frames, target) {
     keys.forEach(function (k) {
       if (!style.hasOwnProperty(k) || isNil$5(style[k])) {
         if (GEOM$3.hasOwnProperty(k)) {
-          style[k] = target.currentProps[k];
+          style[k] = target.getProps(k);
         } else {
           style[k] = target.currentStyle[k];
         }
@@ -35906,7 +35906,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.5";
+var version = "0.61.6";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

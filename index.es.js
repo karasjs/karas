@@ -14467,7 +14467,7 @@ function calDiff(prev, next, k, target, tagName) {
             }
           }
         } else if (k === 'controlA' || k === 'controlB') {
-          if (isNil$5(n) || isNil$5(p) || equalArr$2(p, n)) {
+          if (isNil$5(n) || !n.length || isNil$5(p) || !p.length || equalArr$2(p, n)) {
             return;
           }
 
@@ -14477,7 +14477,7 @@ function calDiff(prev, next, k, target, tagName) {
             var _pv4 = p[_i12];
             var _nv4 = n[_i12];
 
-            if (isNil$5(_pv4) || isNil$5(_nv4)) {
+            if (isNil$5(_pv4) || !_pv4.length || isNil$5(_nv4) || !_nv4.length) {
               res[1].push(null);
             } else {
               res[1].push([_nv4[0] - _pv4[0], _nv4[1] - _pv4[1]]);

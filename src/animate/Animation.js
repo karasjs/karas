@@ -854,7 +854,7 @@ function calDiff(prev, next, k, target, tagName) {
       }
     }
     else if(k === 'controlA' || k === 'controlB') {
-      if(isNil(n) || isNil(p) || equalArr(p, n)) {
+      if(isNil(n) || !n.length || isNil(p) || !p.length || equalArr(p, n)) {
         return;
       }
       res[1] = [

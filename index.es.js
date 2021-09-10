@@ -14535,7 +14535,7 @@ function calDiff(prev, next, k, target, tagName) {
             }
           }
         } else if (k === 'controlA' || k === 'controlB') {
-          if (isNil$5(n) || isNil$5(p) || equalArr$2(p, n)) {
+          if (isNil$5(n) || !n.length || isNil$5(p) || !p.length || equalArr$2(p, n)) {
             return;
           }
 

@@ -14424,7 +14424,7 @@ function calDiff(prev, next, k, target, tagName) {
     } // 特殊处理multi
     else if (target.isMulti) {
         if (k === 'points' || k === 'controls') {
-          if (isNil$5(n) || isNil$5(p) || equalArr$2(p, n)) {
+          if (isNil$5(n) || !n.length || isNil$5(p) || !p.length || equalArr$2(p, n)) {
             return;
           }
 
@@ -14434,7 +14434,7 @@ function calDiff(prev, next, k, target, tagName) {
             var _pv3 = p[_i11];
             var _nv3 = n[_i11];
 
-            if (isNil$5(_pv3) || isNil$5(_nv3)) {
+            if (isNil$5(_pv3) || !_pv3.length || isNil$5(_nv3) || !_nv3.length) {
               res[1].push(null);
             } else {
               var v2 = [];
@@ -14505,7 +14505,7 @@ function calDiff(prev, next, k, target, tagName) {
         }
       } // 非multi特殊处理这几类数组类型数据
       else if (k === 'points' || k === 'controls') {
-          if (isNil$5(n) || isNil$5(p) || equalArr$2(p, n)) {
+          if (isNil$5(n) || !n.length || isNil$5(p) || !p.length || equalArr$2(p, n)) {
             return;
           }
 
@@ -14515,7 +14515,7 @@ function calDiff(prev, next, k, target, tagName) {
             var _pv6 = p[_i14];
             var _nv6 = n[_i14];
 
-            if (isNil$5(_pv6) || isNil$5(_nv6)) {
+            if (isNil$5(_pv6) || !_pv6.length || isNil$5(_nv6) || !_nv6.length) {
               res[1].push(null);
             } else {
               var _v15 = [];

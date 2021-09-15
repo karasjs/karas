@@ -65,9 +65,8 @@ class Img extends Dom {
     if(!src) {
       loadImg.error = true;
     }
-    let isClip = this.__isClip = !!this.props.clip;
-    let isMask = this.__isMask = isClip || !!this.props.mask;
-    if(isMask) {
+    let config = this.__config;
+    if(config[NODE_IS_MASK]) {
       let { style, currentStyle } = this;
       style[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE] = [null];
       style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = [[0, 0, 0, 0], RGBA];
@@ -78,8 +77,6 @@ class Img extends Dom {
       style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = null;
       style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
     }
-    let config = this.__config;
-    config[NODE_IS_MASK] = isMask;
   }
 
   /**
@@ -803,14 +800,6 @@ class Img extends Dom {
 
   appendChild() {
     inject.error('Img can not appendChild.');
-  }
-
-  get isMask() {
-    return this.__isMask;
-  }
-
-  get isClip() {
-    return this.__isClip;
   }
 
   get src() {

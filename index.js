@@ -16985,7 +16985,8 @@
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$4.NODE_DEFS_CACHE,
       NODE_DOM_PARENT$2 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
       NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE,
-      NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$4.NODE_PERSPECTIVE_MATRIX;
+      NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$4.NODE_PERSPECTIVE_MATRIX,
+      NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK;
   var AUTO$4 = o.AUTO,
       PX$6 = o.PX,
       PERCENT$7 = o.PERCENT,
@@ -17104,6 +17105,8 @@
 
       _this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
 
+      var isClip = _this.__isClip = !!_this.props.clip;
+      var isMask = _this.__isMask = isClip || !!_this.props.mask;
       var config = _this.__config;
       config[NODE_TAG_NAME] = tagName;
       config[NODE_CACHE_STYLE] = _this.__cacheStyle;
@@ -17114,6 +17117,7 @@
       config[NODE_MATRIX$1] = [];
       config[NODE_MATRIX_EVENT$2] = [];
       config[NODE_DEFS_CACHE$3] = _this.__cacheDefs;
+      config[NODE_IS_MASK] = isMask;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
       // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
@@ -20026,6 +20030,16 @@
       key: "firstBaseLine",
       get: function get() {
         return this.offsetHeight;
+      }
+    }, {
+      key: "isMask",
+      get: function get() {
+        return this.__isMask;
+      }
+    }, {
+      key: "isClip",
+      get: function get() {
+        return this.__isClip;
       }
     }]);
 
@@ -24318,7 +24332,7 @@
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE,
       NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
-      NODE_IS_MASK = _enums$NODE_KEY$6.NODE_IS_MASK;
+      NODE_IS_MASK$1 = _enums$NODE_KEY$6.NODE_IS_MASK;
   var AUTO$7 = o.AUTO,
       PX$9 = o.PX,
       PERCENT$a = o.PERCENT,
@@ -24350,10 +24364,9 @@
         loadImg.error = true;
       }
 
-      var isClip = _this.__isClip = !!_this.props.clip;
-      var isMask = _this.__isMask = isClip || !!_this.props.mask;
+      var config = _this.__config;
 
-      if (isMask) {
+      if (config[NODE_IS_MASK$1]) {
         var _assertThisInitialize = _assertThisInitialized(_this),
             style = _assertThisInitialize.style,
             currentStyle = _assertThisInitialize.currentStyle;
@@ -24368,8 +24381,6 @@
         style[MIX_BLEND_MODE$1] = currentStyle[MIX_BLEND_MODE$1] = 'normal';
       }
 
-      var config = _this.__config;
-      config[NODE_IS_MASK] = isMask;
       return _this;
     }
     /**
@@ -25077,16 +25088,6 @@
         inject.error('Img can not appendChild.');
       }
     }, {
-      key: "isMask",
-      get: function get() {
-        return this.__isMask;
-      }
-    }, {
-      key: "isClip",
-      get: function get() {
-        return this.__isClip;
-      }
-    }, {
       key: "src",
       get: function get() {
         return this.__loadImg.src;
@@ -25200,7 +25201,7 @@
       NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
       NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
-      NODE_IS_MASK$1 = _enums$NODE_KEY$7.NODE_IS_MASK,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
       NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
       NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE;
   var PX$a = o.PX,
@@ -25227,13 +25228,13 @@
 
       _this = _super.call(this, tagName, props);
       _this.__isMulti = !!_this.props.multi;
-      var isClip = _this.__isClip = !!_this.props.clip;
-      var isMask = _this.__isMask = isClip || !!_this.props.mask;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style;
 
-      if (isMask) {
+      var config = _this.__config;
+
+      if (config[NODE_IS_MASK$2]) {
         style.background = null;
         style.border = null;
         style.boxShadow = null;
@@ -25243,11 +25244,9 @@
       _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
       _this.__currentStyle = util.extend({}, _this.__style);
       _this.__currentProps = util.clone(_this.props);
-      var config = _this.__config;
       config[NODE_CACHE_PROPS] = _this.__cacheProps = {};
       config[NODE_CURRENT_PROPS] = _this.__currentProps;
       config[NODE_CURRENT_STYLE$3] = _this.__currentStyle;
-      config[NODE_IS_MASK$1] = isMask;
       config[NODE_STYLE$3] = _this.__style;
       return _this;
     }
@@ -26165,16 +26164,6 @@
       key: "isMulti",
       get: function get() {
         return this.__isMulti;
-      }
-    }, {
-      key: "isMask",
-      get: function get() {
-        return this.__isMask;
-      }
-    }, {
-      key: "isClip",
-      get: function get() {
-        return this.__isClip;
       }
     }, {
       key: "currentProps",
@@ -27594,7 +27583,7 @@
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
       NODE_DEFS_CACHE$6 = _enums$NODE_KEY$9.NODE_DEFS_CACHE,
-      NODE_IS_MASK$2 = _enums$NODE_KEY$9.NODE_IS_MASK,
+      NODE_IS_MASK$3 = _enums$NODE_KEY$9.NODE_IS_MASK,
       NODE_DOM_PARENT$5 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
       NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$9.NODE_PERSPECTIVE_MATRIX,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
@@ -27899,7 +27888,7 @@
               __cacheFilter = _config[NODE_CACHE_FILTER$2],
               __cacheMask = _config[NODE_CACHE_MASK$1],
               __cacheOverflow = _config[NODE_CACHE_OVERFLOW$2],
-              isMask = _config[NODE_IS_MASK$2],
+              isMask = _config[NODE_IS_MASK$3],
               _config$NODE_COMPUTED = _config[NODE_COMPUTED_STYLE$4],
               display = _config$NODE_COMPUTED[DISPLAY$9],
               visibility = _config$NODE_COMPUTED[VISIBILITY$6],
@@ -28133,7 +28122,7 @@
               __cacheFilter = _config2[NODE_CACHE_FILTER$2],
               __cacheMask = _config2[NODE_CACHE_MASK$1],
               __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$2],
-              isMask = _config2[NODE_IS_MASK$2],
+              isMask = _config2[NODE_IS_MASK$3],
               _config2$NODE_COMPUTE = _config2[NODE_COMPUTED_STYLE$4],
               display = _config2$NODE_COMPUTE[DISPLAY$9],
               visibility = _config2$NODE_COMPUTE[VISIBILITY$6],
@@ -30724,7 +30713,7 @@
       NODE_COMPUTED_STYLE$5 = _enums$NODE_KEY$a.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$a.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$6 = _enums$NODE_KEY$a.NODE_DOM_PARENT,
-      NODE_IS_MASK$3 = _enums$NODE_KEY$a.NODE_IS_MASK,
+      NODE_IS_MASK$4 = _enums$NODE_KEY$a.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$a.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$a.NODE_IS_DESTROYED,
       NODE_STYLE$5 = _enums$NODE_KEY$a.NODE_STYLE,
@@ -31082,7 +31071,7 @@
         computedStyle = __config[NODE_COMPUTED_STYLE$5],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$6],
-        isMask = __config[NODE_IS_MASK$3];
+        isMask = __config[NODE_IS_MASK$4];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新

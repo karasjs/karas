@@ -60,10 +60,9 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
-    let isClip = this.__isClip = !!this.props.clip;
-    let isMask = this.__isMask = isClip || !!this.props.mask;
     let { style } = this;
-    if(isMask) {
+    let config = this.__config;
+    if(config[NODE_IS_MASK]) {
       style.background = null;
       style.border = null;
       style.boxShadow = null;
@@ -72,11 +71,9 @@ class Geom extends Xom {
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
-    let config = this.__config;
     config[NODE_CACHE_PROPS] = this.__cacheProps = {};
     config[NODE_CURRENT_PROPS] = this.__currentProps;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;
-    config[NODE_IS_MASK] = isMask;
     config[NODE_STYLE] = this.__style;
   }
 
@@ -959,14 +956,6 @@ class Geom extends Xom {
 
   get isMulti() {
     return this.__isMulti;
-  }
-
-  get isMask() {
-    return this.__isMask;
-  }
-
-  get isClip() {
-    return this.__isClip;
   }
 
   get currentProps() {

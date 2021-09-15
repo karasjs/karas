@@ -139,6 +139,7 @@ const {
     NODE_DOM_PARENT,
     NODE_IS_INLINE,
     NODE_PERSPECTIVE_MATRIX,
+    NODE_IS_MASK,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, DEG } = unit;
@@ -146,7 +147,7 @@ const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
-const { calPoint, point2d } = mx;
+const { point2d } = mx;
 
 const {
   contain,
@@ -233,6 +234,8 @@ class Xom extends Node {
     };
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
     this.__cacheDefs = []; // svg专用，缓存渲染时使用已有的defs，diff过程用，否则会defs被清空
+    let isClip = this.__isClip = !!this.props.clip;
+    let isMask = this.__isMask = isClip || !!this.props.mask;
     let config = this.__config;
     config[NODE_TAG_NAME] = tagName;
     config[NODE_CACHE_STYLE] = this.__cacheStyle;
@@ -243,6 +246,7 @@ class Xom extends Node {
     config[NODE_MATRIX] = [];
     config[NODE_MATRIX_EVENT] = [];
     config[NODE_DEFS_CACHE] = this.__cacheDefs;
+    config[NODE_IS_MASK] = isMask;
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
@@ -2891,6 +2895,14 @@ class Xom extends Node {
 
   get firstBaseLine() {
     return this.offsetHeight;
+  }
+
+  get isMask() {
+    return this.__isMask;
+  }
+
+  get isClip() {
+    return this.__isClip;
   }
 }
 

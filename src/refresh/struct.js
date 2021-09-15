@@ -1695,7 +1695,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       }
       // >=REPAINT重绘生成走render()跳过这里
       if(refreshLevel < REPAINT) {
-        // let hasFilter = contain(refreshLevel, FT);
         // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
         if(maskEffectHash.hasOwnProperty(i)) {
           let v = maskEffectHash[i];

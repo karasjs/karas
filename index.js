@@ -29488,7 +29488,6 @@
 
 
         if (refreshLevel < REPAINT$2) {
-          // let hasFilter = contain(refreshLevel, FT);
           // 特殊的mask判断，遮罩对象影响这个mask了，除去filter、遮罩对象无TRANSFORM变化外都可缓存
           if (maskEffectHash.hasOwnProperty(i)) {
             var v = maskEffectHash[i];
@@ -35898,7 +35897,7 @@
     Cache: Cache
   };
 
-  var version = "0.61.7";
+  var version = "0.61.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -25235,9 +25235,6 @@
       var config = _this.__config;
 
       if (config[NODE_IS_MASK$2]) {
-        style.background = null;
-        style.border = null;
-        style.boxShadow = null;
         style.mixBlendMode = 'normal';
       }
 

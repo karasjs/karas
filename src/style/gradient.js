@@ -495,7 +495,7 @@ function parseGradient(s) {
         o.p = [[50, PERCENT], [50, PERCENT]];
       }
     }
-    let v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig);
+    let v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig) || [];
     o.v = v.map(item => {
       let color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       let arr = [rgba2int(color[1])];

@@ -6930,7 +6930,7 @@ function parseGradient(s) {
       }
     }
 
-    var v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig);
+    var v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig) || [];
     o.v = v.map(function (item) {
       var color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       var arr = [rgba2int$1(color[1])];
@@ -7407,9 +7407,9 @@ var abbr = {
   borderRight: ['borderRightWidth', 'borderRightStyle', 'borderRightColor'],
   borderBottom: ['borderBottomWidth', 'borderBottomStyle', 'borderBottomColor'],
   borderLeft: ['borderLeftWidth', 'borderLeftStyle', 'borderLeftColor'],
-  borderWidth: ['borderWidthTop', 'borderWidthRight', 'borderWidthBottom', 'borderWidthLeft'],
-  borderColor: ['borderColorTop', 'borderColorRight', 'borderColorBottom', 'borderColorLeft'],
-  borderStyle: ['borderStyleTop', 'borderStyleRight', 'borderStyleBottom', 'borderStyleLeft'],
+  borderWidth: ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'],
+  borderColor: ['borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'],
+  borderStyle: ['borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle'],
   borderRadius: ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'],
   background: ['backgroundColor', 'backgroundImage', 'backgroundRepeat', 'backgroundPosition'],
   backgroundPosition: ['backgroundPositionX', 'backgroundPositionY'],

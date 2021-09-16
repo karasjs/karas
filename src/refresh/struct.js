@@ -2262,7 +2262,7 @@ function renderWebgl(renderMode, gl, root) {
         },
       } = __config;
       if(__cache && __cache.available) {
-        texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, matrixEvent, cx, cy, true);
+        texCache.addTexAndDrawWhenLimit(gl, __cache, opacity, matrixEvent, cx, cy, 0, 0,true);
       }
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
       else if(limitCache) {

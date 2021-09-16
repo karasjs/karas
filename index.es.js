@@ -28941,12 +28941,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
 
         var m = __config[NODE_MATRIX$3];
-        util.assignMatrix(m, matrix); // m[0] = matrix[0];
-        // m[1] = matrix[1];
-        // m[2] = matrix[2];
-        // m[3] = matrix[3];
-        // m[4] = matrix[4];
-        // m[5] = matrix[5];
+        util.assignMatrix(m, matrix);
       } else {
         matrix = __config[NODE_MATRIX$3];
       } // 父不为E时要点乘继承父的
@@ -28957,13 +28952,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       } // 恶心的v8性能优化
 
 
-      util.assignMatrix(matrixEvent, matrix); // matrixEvent[0] = matrix[0];
-      // matrixEvent[1] = matrix[1];
-      // matrixEvent[2] = matrix[2];
-      // matrixEvent[3] = matrix[3];
-      // matrixEvent[4] = matrix[4];
-      // matrixEvent[5] = matrix[5];
-
+      util.assignMatrix(matrixEvent, matrix);
       var opacity = void 0;
 
       if (contain$2(refreshLevel, OP)) {
@@ -29166,16 +29155,27 @@ function renderCacheCanvas(renderMode, ctx, root) {
       } // 自身cache尝试
       else {
           if (maskStartHash.hasOwnProperty(_i4)) {
-            var _maskStartHash$_i = _slicedToArray(maskStartHash[_i4], 2),
-                n = _maskStartHash$_i[0],
-                _offscreenMask = _maskStartHash$_i[1];
+            var _maskStartHash$_i = _slicedToArray(maskStartHash[_i4], 3),
+                idx = _maskStartHash$_i[0],
+                n = _maskStartHash$_i[1],
+                _offscreenMask = _maskStartHash$_i[2];
 
             var _target4 = inject.getCacheCanvas(width, height, null, 'mask2');
 
             _offscreenMask.mask = _target4; // 应用mask用到
 
-            var j = _i4 + n - 1 + (_total5 || 0);
-            var list = offscreenHash[j];
+            _offscreenMask.isClip = _node3.isClip; // 定位到最后一个mask元素上的末尾
+
+            var j = _i4 + (_total5 || 0) + 1;
+
+            while (--n) {
+              var _total6 = __structs[j][STRUCT_TOTAL$1];
+              j += (_total6 || 0) + 1;
+            }
+
+            j--;
+            var list = offscreenHash[j] = offscreenHash[j] || [];
+            list.push([idx, _lv, OFFSCREEN_MASK, _offscreenMask]);
             list.push([j, _lv, OFFSCREEN_MASK2, {
               ctx: ctx,
               // 保存等待OFFSCREEN_MASK2时还原
@@ -29268,14 +29268,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
             if (offscreenMask) {
               var _j2 = _i4 + (_total5 || 0);
 
-              maskStartHash[_j2 + 1] = [_hasMask, offscreenMask];
-              offscreenMask.isClip = __structs[_j2 + 1][STRUCT_NODE$1].isClip;
-              _j2 += _hasMask || 0; // 有start一定有end
-
-              var _list2 = offscreenHash[_j2] = offscreenHash[_j2] || [];
-
-              _list2.push([_i4, _lv, OFFSCREEN_MASK, offscreenMask]);
-
+              maskStartHash[_j2 + 1] = [_i4, _hasMask, offscreenMask];
               ctx = offscreenMask.target.ctx;
             } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
@@ -29283,9 +29276,9 @@ function renderCacheCanvas(renderMode, ctx, root) {
             if (offscreenFilter) {
               var _j3 = _i4 + (_total5 || 0) + (_hasMask || 0);
 
-              var _list3 = offscreenHash[_j3] = offscreenHash[_j3] || [];
+              var _list2 = offscreenHash[_j3] = offscreenHash[_j3] || [];
 
-              _list3.push([_i4, _lv, OFFSCREEN_FILTER, offscreenFilter]);
+              _list2.push([_i4, _lv, OFFSCREEN_FILTER, offscreenFilter]);
 
               ctx = offscreenFilter.target.ctx;
             } // overflow:hidden的离屏，最后孩子进行截取
@@ -29294,9 +29287,9 @@ function renderCacheCanvas(renderMode, ctx, root) {
             if (offscreenOverflow) {
               var _j4 = _i4 + (_total5 || 0) + (_hasMask || 0);
 
-              var _list4 = offscreenHash[_j4] = offscreenHash[_j4] || [];
+              var _list3 = offscreenHash[_j4] = offscreenHash[_j4] || [];
 
-              _list4.push([_i4, _lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+              _list3.push([_i4, _lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
 
               ctx = offscreenOverflow.target.ctx;
             }
@@ -29358,15 +29351,26 @@ function renderCanvas(renderMode, ctx, root) {
     // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
 
     if (maskStartHash.hasOwnProperty(i)) {
-      var _maskStartHash$i = _slicedToArray(maskStartHash[i], 2),
-          n = _maskStartHash$i[0],
-          _offscreenMask2 = _maskStartHash$i[1];
+      var _maskStartHash$i = _slicedToArray(maskStartHash[i], 3),
+          idx = _maskStartHash$i[0],
+          n = _maskStartHash$i[1],
+          _offscreenMask2 = _maskStartHash$i[2];
 
       var target = inject.getCacheCanvas(width, height, null, 'mask2');
       _offscreenMask2.mask = target; // 应用mask用到
 
-      var j = i + n - 1 + (total || 0);
-      var list = offscreenHash[j];
+      _offscreenMask2.isClip = node.isClip; // 定位到最后一个mask元素上的末尾
+
+      var j = i + (total || 0) + 1;
+
+      while (--n) {
+        var _total7 = __structs[j][STRUCT_TOTAL$1];
+        j += (_total7 || 0) + 1;
+      }
+
+      j--;
+      var list = offscreenHash[j] = offscreenHash[j] || [];
+      list.push([idx, lv, OFFSCREEN_MASK, _offscreenMask2]);
       list.push([j, lv, OFFSCREEN_MASK2, {
         ctx: ctx,
         // 保存等待OFFSCREEN_MASK2时还原
@@ -29387,25 +29391,19 @@ function renderCanvas(renderMode, ctx, root) {
     if (offscreenBlend) {
       var _j5 = i + (total || 0) + (hasMask || 0);
 
-      var _list5 = offscreenHash[_j5] = offscreenHash[_j5] || [];
+      var _list4 = offscreenHash[_j5] = offscreenHash[_j5] || [];
 
-      _list5.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
+      _list4.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
 
       ctx = offscreenBlend.target.ctx;
     } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
+    // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
 
 
     if (offscreenMask) {
       var _j6 = i + (total || 0);
 
-      maskStartHash[_j6 + 1] = [hasMask, offscreenMask];
-      offscreenMask.isClip = __structs[_j6 + 1][STRUCT_NODE$1].isClip;
-      _j6 += hasMask || 0; // 有start一定有end
-
-      var _list6 = offscreenHash[_j6] = offscreenHash[_j6] || [];
-
-      _list6.push([i, lv, OFFSCREEN_MASK, offscreenMask]);
-
+      maskStartHash[_j6 + 1] = [i, hasMask, offscreenMask];
       ctx = offscreenMask.target.ctx;
     } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
@@ -29413,9 +29411,9 @@ function renderCanvas(renderMode, ctx, root) {
     if (offscreenFilter) {
       var _j7 = i + (total || 0) + (hasMask || 0);
 
-      var _list7 = offscreenHash[_j7] = offscreenHash[_j7] || [];
+      var _list5 = offscreenHash[_j7] = offscreenHash[_j7] || [];
 
-      _list7.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
+      _list5.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
 
       ctx = offscreenFilter.target.ctx;
     } // overflow:hidden的离屏，最后孩子进行截取
@@ -29424,9 +29422,9 @@ function renderCanvas(renderMode, ctx, root) {
     if (offscreenOverflow) {
       var _j8 = i + (total || 0) + (hasMask || 0);
 
-      var _list8 = offscreenHash[_j8] = offscreenHash[_j8] || [];
+      var _list6 = offscreenHash[_j8] = offscreenHash[_j8] || [];
 
-      _list8.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+      _list6.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
 
       ctx = offscreenOverflow.target.ctx;
     } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -29504,7 +29502,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
   for (var _i5 = 0, _len3 = __structs.length; _i5 < _len3; _i5++) {
     var _structs$_i3 = __structs[_i5],
         _node4 = _structs$_i3[STRUCT_NODE$1],
-        _total6 = _structs$_i3[STRUCT_TOTAL$1],
+        _total8 = _structs$_i3[STRUCT_TOTAL$1],
         _hasMask2 = _structs$_i3[STRUCT_HAS_MASK$1],
         lv = _structs$_i3[STRUCT_LV$2];
     var __config = _node4.__config;
@@ -29515,7 +29513,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     var display = computedStyle[DISPLAY$9]; // 将随后的若干个mask节点范围存下来
 
     if (_hasMask2 && display !== 'none') {
-      var _start = _i5 + (_total6 || 0) + 1;
+      var _start = _i5 + (_total8 || 0) + 1;
 
       var _end = _start + _hasMask2; // svg限制了只能Geom单节点，不可能是Dom，所以end只有唯一
 
@@ -29549,7 +29547,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       virtualDom = _node4.virtualDom; // total可以跳过所有孩子节点省略循环
 
       if (__cacheTotal && __cacheTotal.available) {
-        _i5 += _total6 || 0;
+        _i5 += _total8 || 0;
         virtualDom.cache = true;
       } else {
         __cacheTotal && (__cacheTotal.available = true);
@@ -29562,7 +29560,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
         if (display === 'none') {
-          _i5 += _total6 || 0;
+          _i5 += _total8 || 0;
 
           if (_hasMask2) {
             _i5 += _hasMask2;
@@ -29640,7 +29638,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       display = computedStyle[DISPLAY$9];
 
       if (display === 'none') {
-        _i5 += _total6 || 0;
+        _i5 += _total8 || 0;
 
         if (_hasMask2) {
           _i5 += _hasMask2;
@@ -30124,7 +30122,7 @@ function renderWebgl(renderMode, gl, root) {
   for (var _i7 = 0, _len7 = __structs.length; _i7 < _len7; _i7++) {
     var _structs$_i4 = __structs[_i7],
         _node6 = _structs$_i4[STRUCT_NODE$1],
-        _total7 = _structs$_i4[STRUCT_TOTAL$1],
+        _total9 = _structs$_i4[STRUCT_TOTAL$1],
         _hasMask3 = _structs$_i4[STRUCT_HAS_MASK$1];
     var _config5 = _node6.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
@@ -30137,7 +30135,7 @@ function renderWebgl(renderMode, gl, root) {
           _opacity4 = _config5$NODE_DOM_PAR[NODE_OPACITY$3];
 
       if (__cache && __cache.available) {
-        texCache.addTexAndDrawWhenLimit(gl, __cache, _opacity4, _matrixEvent3, cx, cy, true);
+        texCache.addTexAndDrawWhenLimit(gl, __cache, _opacity4, _matrixEvent3, cx, cy, 0, 0, true);
       } // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
       else if (_limitCache2) {
           var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
@@ -30173,7 +30171,7 @@ function renderWebgl(renderMode, gl, root) {
           _mixBlendMode2 = _config5$NODE_COMPUTE[MIX_BLEND_MODE$3];
 
       if (display === 'none') {
-        _i7 += (_total7 || 0) + (_hasMask3 || 0);
+        _i7 += (_total9 || 0) + (_hasMask3 || 0);
         continue;
       } // 有total的可以直接绘制并跳过子节点索引，忽略total本身，其独占用纹理单元，注意特殊不取cacheTotal，
       // 这种情况发生在只有overflow:hidden声明但无效没有生成__cacheOverflow的情况，
@@ -30211,7 +30209,7 @@ function renderWebgl(renderMode, gl, root) {
         }
 
         if (target !== _cache) {
-          _i7 += (_total7 || 0) + (_hasMask3 || 0);
+          _i7 += (_total9 || 0) + (_hasMask3 || 0);
         }
       } else if (limitHash.hasOwnProperty(_i7)) {
         var _target5 = limitHash[_i7];
@@ -30241,7 +30239,7 @@ function renderWebgl(renderMode, gl, root) {
           texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
         }
 
-        _i7 += (_total7 || 0) + (_hasMask3 || 0);
+        _i7 += (_total9 || 0) + (_hasMask3 || 0);
       } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if (_limitCache3 && display !== 'none' && visibility !== 'hidden') {
@@ -35882,7 +35880,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.8";
+var version = "0.61.9";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

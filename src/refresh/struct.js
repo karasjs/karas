@@ -1250,12 +1250,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
         util.assignMatrix(m, matrix);
-        // m[0] = matrix[0];
-        // m[1] = matrix[1];
-        // m[2] = matrix[2];
-        // m[3] = matrix[3];
-        // m[4] = matrix[4];
-        // m[5] = matrix[5];
       }
       else {
         matrix = __config[NODE_MATRIX];
@@ -1266,12 +1260,6 @@ function renderCacheCanvas(renderMode, ctx, root) {
       }
       // 恶心的v8性能优化
       util.assignMatrix(matrixEvent, matrix);
-      // matrixEvent[0] = matrix[0];
-      // matrixEvent[1] = matrix[1];
-      // matrixEvent[2] = matrix[2];
-      // matrixEvent[3] = matrix[3];
-      // matrixEvent[4] = matrix[4];
-      // matrixEvent[5] = matrix[5];
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1460,8 +1448,16 @@ function renderCacheCanvas(renderMode, ctx, root) {
           let [n, offscreenMask] = maskStartHash[i];
           let target = inject.getCacheCanvas(width, height, null, 'mask2');
           offscreenMask.mask = target; // 应用mask用到
-          let j = i + n - 1 + (total || 0);
-          let list = offscreenHash[j];
+          offscreenMask.isClip = node.isClip;
+          // 定位到最后一个mask元素上的末尾
+          let j = i + (total || 0) + 1;
+          while(--n) {
+            let { [STRUCT_TOTAL]: total } = __structs[j];
+            j += (total || 0) + 1;
+          }
+          j--;
+          let list = offscreenHash[j] = offscreenHash[j] || [];
+          list.push([j, lv, OFFSCREEN_MASK, offscreenMask]);
           list.push([j, lv, OFFSCREEN_MASK2, {
             ctx, // 保存等待OFFSCREEN_MASK2时还原
             target,
@@ -1538,11 +1534,11 @@ function renderCacheCanvas(renderMode, ctx, root) {
           if(offscreenMask) {
             let j = i + (total || 0);
             maskStartHash[j + 1] = [hasMask, offscreenMask];
-            offscreenMask.isClip = __structs[j + 1][STRUCT_NODE].isClip;
-            j += (hasMask || 0);
+            // offscreenMask.isClip = __structs[j + 1][STRUCT_NODE].isClip;
+            // j += (hasMask || 0);
             // 有start一定有end
-            let list = offscreenHash[j] = offscreenHash[j] || [];
-            list.push([i, lv, OFFSCREEN_MASK, offscreenMask]);
+            // let list = offscreenHash[j] = offscreenHash[j] || [];
+            // list.push([i, lv, OFFSCREEN_MASK, offscreenMask]);
             ctx = offscreenMask.target.ctx;
           }
           // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
@@ -1615,8 +1611,16 @@ function renderCanvas(renderMode, ctx, root) {
       let [n, offscreenMask] = maskStartHash[i];
       let target = inject.getCacheCanvas(width, height, null, 'mask2');
       offscreenMask.mask = target; // 应用mask用到
-      let j = i + n - 1 + (total || 0);
-      let list = offscreenHash[j];
+      offscreenMask.isClip = node.isClip;
+      // 定位到最后一个mask元素上的末尾
+      let j = i + (total || 0) + 1;
+      while(--n) {
+        let { [STRUCT_TOTAL]: total } = __structs[j];
+        j += (total || 0) + 1;
+      }
+      j--;
+      let list = offscreenHash[j] = offscreenHash[j] || [];
+      list.push([j, lv, OFFSCREEN_MASK, offscreenMask]);
       list.push([j, lv, OFFSCREEN_MASK2, {
         ctx, // 保存等待OFFSCREEN_MASK2时还原
         target,
@@ -1633,14 +1637,10 @@ function renderCanvas(renderMode, ctx, root) {
       ctx = offscreenBlend.target.ctx;
     }
     // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
+    // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
     if(offscreenMask) {
       let j = i + (total || 0);
       maskStartHash[j + 1] = [hasMask, offscreenMask];
-      offscreenMask.isClip = __structs[j + 1][STRUCT_NODE].isClip;
-      j += (hasMask || 0);
-      // 有start一定有end
-      let list = offscreenHash[j] = offscreenHash[j] || [];
-      list.push([i, lv, OFFSCREEN_MASK, offscreenMask]);
       ctx = offscreenMask.target.ctx;
     }
     // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来

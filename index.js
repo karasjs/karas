@@ -29161,9 +29161,10 @@
         } // 自身cache尝试
         else {
             if (maskStartHash.hasOwnProperty(_i4)) {
-              var _maskStartHash$_i = _slicedToArray(maskStartHash[_i4], 2),
-                  n = _maskStartHash$_i[0],
-                  _offscreenMask = _maskStartHash$_i[1];
+              var _maskStartHash$_i = _slicedToArray(maskStartHash[_i4], 3),
+                  idx = _maskStartHash$_i[0],
+                  n = _maskStartHash$_i[1],
+                  _offscreenMask = _maskStartHash$_i[2];
 
               var _target4 = inject.getCacheCanvas(width, height, null, 'mask2');
 
@@ -29180,7 +29181,7 @@
 
               j--;
               var list = offscreenHash[j] = offscreenHash[j] || [];
-              list.push([j, _lv, OFFSCREEN_MASK, _offscreenMask]);
+              list.push([idx, _lv, OFFSCREEN_MASK, _offscreenMask]);
               list.push([j, _lv, OFFSCREEN_MASK2, {
                 ctx: ctx,
                 // 保存等待OFFSCREEN_MASK2时还原
@@ -29273,12 +29274,7 @@
               if (offscreenMask) {
                 var _j2 = _i4 + (_total5 || 0);
 
-                maskStartHash[_j2 + 1] = [_hasMask, offscreenMask]; // offscreenMask.isClip = __structs[j + 1][STRUCT_NODE].isClip;
-                // j += (hasMask || 0);
-                // 有start一定有end
-                // let list = offscreenHash[j] = offscreenHash[j] || [];
-                // list.push([i, lv, OFFSCREEN_MASK, offscreenMask]);
-
+                maskStartHash[_j2 + 1] = [_i4, _hasMask, offscreenMask];
                 ctx = offscreenMask.target.ctx;
               } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
@@ -29361,9 +29357,10 @@
       // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
 
       if (maskStartHash.hasOwnProperty(i)) {
-        var _maskStartHash$i = _slicedToArray(maskStartHash[i], 2),
-            n = _maskStartHash$i[0],
-            _offscreenMask2 = _maskStartHash$i[1];
+        var _maskStartHash$i = _slicedToArray(maskStartHash[i], 3),
+            idx = _maskStartHash$i[0],
+            n = _maskStartHash$i[1],
+            _offscreenMask2 = _maskStartHash$i[2];
 
         var target = inject.getCacheCanvas(width, height, null, 'mask2');
         _offscreenMask2.mask = target; // 应用mask用到
@@ -29379,7 +29376,7 @@
 
         j--;
         var list = offscreenHash[j] = offscreenHash[j] || [];
-        list.push([j, lv, OFFSCREEN_MASK, _offscreenMask2]);
+        list.push([idx, lv, OFFSCREEN_MASK, _offscreenMask2]);
         list.push([j, lv, OFFSCREEN_MASK2, {
           ctx: ctx,
           // 保存等待OFFSCREEN_MASK2时还原
@@ -29412,7 +29409,7 @@
       if (offscreenMask) {
         var _j6 = i + (total || 0);
 
-        maskStartHash[_j6 + 1] = [hasMask, offscreenMask];
+        maskStartHash[_j6 + 1] = [i, hasMask, offscreenMask];
         ctx = offscreenMask.target.ctx;
       } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 

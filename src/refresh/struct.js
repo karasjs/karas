@@ -1445,7 +1445,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       // 自身cache尝试
       else {
         if(maskStartHash.hasOwnProperty(i)) {
-          let [n, offscreenMask] = maskStartHash[i];
+          let [idx, n, offscreenMask] = maskStartHash[i];
           let target = inject.getCacheCanvas(width, height, null, 'mask2');
           offscreenMask.mask = target; // 应用mask用到
           offscreenMask.isClip = node.isClip;
@@ -1457,7 +1457,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           }
           j--;
           let list = offscreenHash[j] = offscreenHash[j] || [];
-          list.push([j, lv, OFFSCREEN_MASK, offscreenMask]);
+          list.push([idx, lv, OFFSCREEN_MASK, offscreenMask]);
           list.push([j, lv, OFFSCREEN_MASK2, {
             ctx, // 保存等待OFFSCREEN_MASK2时还原
             target,
@@ -1533,12 +1533,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
           if(offscreenMask) {
             let j = i + (total || 0);
-            maskStartHash[j + 1] = [hasMask, offscreenMask];
-            // offscreenMask.isClip = __structs[j + 1][STRUCT_NODE].isClip;
-            // j += (hasMask || 0);
-            // 有start一定有end
-            // let list = offscreenHash[j] = offscreenHash[j] || [];
-            // list.push([i, lv, OFFSCREEN_MASK, offscreenMask]);
+            maskStartHash[j + 1] = [i, hasMask, offscreenMask];
             ctx = offscreenMask.target.ctx;
           }
           // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
@@ -1608,7 +1603,7 @@ function renderCanvas(renderMode, ctx, root) {
     // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
     // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
     if(maskStartHash.hasOwnProperty(i)) {
-      let [n, offscreenMask] = maskStartHash[i];
+      let [idx, n, offscreenMask] = maskStartHash[i];
       let target = inject.getCacheCanvas(width, height, null, 'mask2');
       offscreenMask.mask = target; // 应用mask用到
       offscreenMask.isClip = node.isClip;
@@ -1620,7 +1615,7 @@ function renderCanvas(renderMode, ctx, root) {
       }
       j--;
       let list = offscreenHash[j] = offscreenHash[j] || [];
-      list.push([j, lv, OFFSCREEN_MASK, offscreenMask]);
+      list.push([idx, lv, OFFSCREEN_MASK, offscreenMask]);
       list.push([j, lv, OFFSCREEN_MASK2, {
         ctx, // 保存等待OFFSCREEN_MASK2时还原
         target,
@@ -1640,7 +1635,7 @@ function renderCanvas(renderMode, ctx, root) {
     // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
     if(offscreenMask) {
       let j = i + (total || 0);
-      maskStartHash[j + 1] = [hasMask, offscreenMask];
+      maskStartHash[j + 1] = [i, hasMask, offscreenMask];
       ctx = offscreenMask.target.ctx;
     }
     // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来

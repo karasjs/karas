@@ -60,14 +60,10 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
-    let { style } = this;
-    let config = this.__config;
-    if(config[NODE_IS_MASK]) {
-      style.mixBlendMode = 'normal';
-    }
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
+    let config = this.__config;
     config[NODE_CACHE_PROPS] = this.__cacheProps = {};
     config[NODE_CURRENT_PROPS] = this.__currentProps;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;

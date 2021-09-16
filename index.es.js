@@ -25222,19 +25222,10 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
 
     _this = _super.call(this, tagName, props);
     _this.__isMulti = !!_this.props.multi;
-
-    var _assertThisInitialize = _assertThisInitialized(_this),
-        style = _assertThisInitialize.style;
-
-    var config = _this.__config;
-
-    if (config[NODE_IS_MASK$2]) {
-      style.mixBlendMode = 'normal';
-    }
-
     _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     _this.__currentStyle = util.extend({}, _this.__style);
     _this.__currentProps = util.clone(_this.props);
+    var config = _this.__config;
     config[NODE_CACHE_PROPS] = _this.__cacheProps = {};
     config[NODE_CURRENT_PROPS] = _this.__currentProps;
     config[NODE_CURRENT_STYLE$3] = _this.__currentStyle;

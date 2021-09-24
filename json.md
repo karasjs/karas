@@ -247,7 +247,7 @@ karas.parse(json, {
 ```
 特别的，对于`loadAndParse`方法，json直接子属性新增`fonts`和`components`来通过`url`定义远程加载的字体和自定义组件。字体的`data`为字体信息。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。同时组件还有`reload`申明强制加载，即便是发现已经注册过的同名组件。
 ```tsx
-karas.parse(
+karas.loadAndParse(
   {
     "tagName": "canvas",
     "props": {

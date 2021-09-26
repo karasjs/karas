@@ -214,7 +214,7 @@ let json = {
       libraryId: 'lid',
     },
   ],
-  library: {
+  library: [{
     id: 'lid',
     tagName: 'div',
     props: {
@@ -231,7 +231,16 @@ let json = {
       id: 'custom',
       member: ['children', 0], // 需要替换children的第0个所以是个数组
     }],
-  },
+  }, {
+    tagName: 'img',
+    props: {
+      src: 'xxx',
+      vars: {
+        id: 'url',
+        member: 'src', // 单个vars可以不用数组直接用对象
+      },
+    },
+  }],
   vars: [{
     id: 'lib',
     member: ['library', 'lid',] // 特殊的可以用lid访问library的直接内容
@@ -241,6 +250,7 @@ karas.parse(json, {
   vars: {
     color: '#00F',
     custom: 'text',
+    url: 'xxx',
     lib: {},
   },
 });

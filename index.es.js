@@ -14889,7 +14889,15 @@ function calIntermediateStyle(frame, keys, percent, target) {
           }
         }
       } else if (k === OPACITY$2 || k === Z_INDEX$1) {
-        style[k] += v * percent;
+        style[k] += v * percent; // 精度问题可能会超过[0,1]区间
+
+        if (k === OPACITY$2) {
+          if (style[k] < 0) {
+            style[k] = 0;
+          } else if (style[k] > 1) {
+            style[k] = 1;
+          }
+        }
       }
   };
 
@@ -15861,9 +15869,9 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (excludeDelay) {
         v += __config[I_DELAY];
-      }
+      } // v -= __config[I_DELAY];
+      // 超过时间长度需要累加次数
 
-      v -= __config[I_DELAY]; // 超过时间长度需要累加次数
 
       __config[I_PLAY_COUNT] = 0;
 
@@ -35880,7 +35888,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.9";
+var version = "0.61.10";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

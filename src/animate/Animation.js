@@ -1205,6 +1205,15 @@ function calIntermediateStyle(frame, keys, percent, target) {
     }
     else if(k === OPACITY || k === Z_INDEX) {
       style[k] += v * percent;
+      // 精度问题可能会超过[0,1]区间
+      if(k === OPACITY) {
+        if(style[k] < 0) {
+          style[k] = 0;
+        }
+        else if(style[k] > 1) {
+          style[k] = 1;
+        }
+      }
     }
   }
   return style;
@@ -2022,7 +2031,7 @@ class Animation extends Event {
     if(excludeDelay) {
       v += __config[I_DELAY];
     }
-    v -= __config[I_DELAY];
+    // v -= __config[I_DELAY];
     // 超过时间长度需要累加次数
     __config[I_PLAY_COUNT] = 0;
     while(v > duration && __config[I_PLAY_COUNT] < __config[I_ITERATIONS] - 1) {

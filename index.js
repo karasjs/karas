@@ -12857,9 +12857,9 @@
       VW$4 = o.VW,
       VH$4 = o.VH;
 
-  function renderBgc(xom, renderMode, ctx, color, x, y, w, h, btlr, btrr, bbrr, bblr) {
-    var method = arguments.length > 12 && arguments[12] !== undefined ? arguments[12] : 'fill';
-    var isInline = arguments.length > 13 ? arguments[13] : undefined;
+  function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr) {
+    var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
+    var isInline = arguments.length > 14 ? arguments[14] : undefined;
     // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
     var matrix, cx, cy;
 
@@ -12871,7 +12871,7 @@
     } // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
 
 
-    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
+    list = list || border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
 
     if (!list) {
       list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
@@ -16884,6 +16884,7 @@
     getInlineWidth: getInlineWidth
   };
 
+  var svgPolygon$5 = painter.svgPolygon;
   var STYLE_KEY$5 = enums.STYLE_KEY,
       STYLE_RV_KEY$2 = enums.STYLE_RV_KEY,
       style2Upper$2 = enums.style2Upper,
@@ -18656,12 +18657,40 @@
           }
         } else if (renderMode === mode.SVG) {
           delete virtualDom.filter;
+        } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
+
+
+        var btlr = borderTopLeftRadius.slice(0);
+        var btrr = borderTopRightRadius.slice(0);
+        var bbrr = borderBottomRightRadius.slice(0);
+        var bblr = borderBottomLeftRadius.slice(0);
+
+        if (backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
+          btlr[0] -= borderLeftWidth;
+          btlr[1] -= borderTopWidth;
+          btrr[0] -= borderRightWidth;
+          btrr[1] -= borderTopWidth;
+          bbrr[0] -= borderRightWidth;
+          bbrr[1] -= borderBottomWidth;
+          bblr[0] -= borderLeftWidth;
+          bblr[1] -= borderBottomWidth;
+        } else if (backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
+          btlr[0] -= borderLeftWidth + paddingLeft;
+          btlr[1] -= borderTopWidth + paddingTop;
+          btrr[0] -= borderRightWidth + paddingRight;
+          btrr[1] -= borderTopWidth + paddingTop;
+          bbrr[0] -= borderRightWidth + paddingRight;
+          bbrr[1] -= borderBottomWidth + paddingBottom;
+          bblr[0] -= borderLeftWidth + paddingLeft;
+          bblr[1] -= borderBottomWidth + paddingBottom;
         } // overflow:hidden，最后判断，filter/mask优先
 
 
-        var offscreenOverflow;
+        var offscreenOverflow, borderList;
 
         if (overflow === 'hidden' && display !== 'inline') {
+          borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+
           if (renderMode === mode.CANVAS && !cache) {
             var _width3 = root.width,
                 _height3 = root.height;
@@ -18674,17 +18703,15 @@
               matrix: matrix
             };
             ctx = _c4.ctx;
-            offscreenOverflow.x = x1;
-            offscreenOverflow.y = y1;
-            offscreenOverflow.offsetWidth = offsetWidth;
-            offscreenOverflow.offsetHeight = offsetHeight;
+            offscreenOverflow.list = borderList;
           } else if (renderMode === mode.SVG) {
+            var d = svgPolygon$5(borderList);
             var v = {
               tagName: 'clipPath',
               props: [],
               children: [{
                 tagName: 'path',
-                props: [['d', "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1)]]
+                props: [['d', d]]
               }]
             };
             var id = ctx.add(v);
@@ -18712,32 +18739,6 @@
         if ((visibility === 'hidden' || res["break"]) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
           res["break"] = true;
           return res;
-        } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
-
-
-        var btlr = borderTopLeftRadius.slice(0);
-        var btrr = borderTopRightRadius.slice(0);
-        var bbrr = borderBottomRightRadius.slice(0);
-        var bblr = borderBottomLeftRadius.slice(0);
-
-        if (backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
-          btlr[0] -= borderLeftWidth;
-          btlr[1] -= borderTopWidth;
-          btrr[0] -= borderRightWidth;
-          btrr[1] -= borderTopWidth;
-          bbrr[0] -= borderRightWidth;
-          bbrr[1] -= borderBottomWidth;
-          bblr[0] -= borderLeftWidth;
-          bblr[1] -= borderBottomWidth;
-        } else if (backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
-          btlr[0] -= borderLeftWidth + paddingLeft;
-          btlr[1] -= borderTopWidth + paddingTop;
-          btrr[0] -= borderRightWidth + paddingRight;
-          btrr[1] -= borderTopWidth + paddingTop;
-          bbrr[0] -= borderRightWidth + paddingRight;
-          bbrr[1] -= borderBottomWidth + paddingBottom;
-          bblr[0] -= borderLeftWidth + paddingLeft;
-          bblr[1] -= borderBottomWidth + paddingBottom;
         }
 
         if (__cache && __cache.enabled) {
@@ -18816,7 +18817,7 @@
                           svgBgSymbol.push(_uuid);
                         }
                       } else {
-                        var _uuid2 = bg.renderBgc(_this6, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
+                        var _uuid2 = bg.renderBgc(_this6, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
 
                         if (renderMode === mode.SVG && _uuid2) {
                           svgBgSymbol.push(_uuid2);
@@ -18864,7 +18865,7 @@
                     }
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -18965,7 +18966,7 @@
                     bx2 += n;
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -19061,7 +19062,7 @@
 
 
         if (backgroundColor[3] > 0) {
-          bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+          bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
         } // 渐变或图片叠加
 
 
@@ -24349,7 +24350,7 @@
       VH$8 = o.VH,
       RGBA$2 = o.RGBA;
   var canvasPolygon$5 = painter.canvasPolygon,
-      svgPolygon$5 = painter.svgPolygon;
+      svgPolygon$6 = painter.svgPolygon;
   var isFunction$5 = util.isFunction;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
@@ -24629,7 +24630,7 @@
               virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
 
               if (!virtualDom.cache && list) {
-                var d = svgPolygon$5(list);
+                var d = svgPolygon$6(list);
                 var v = {
                   tagName: 'clipPath',
                   props: [],
@@ -24659,7 +24660,7 @@
             var props = [['xlink:href', loadImg.error ? placeholder : loadImg.src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
             if (list) {
-              var _d = svgPolygon$5(list);
+              var _d = svgPolygon$6(list);
 
               var _v = {
                 tagName: 'clipPath',
@@ -25221,7 +25222,7 @@
       isNil$7 = util.isNil,
       joinArr$3 = util.joinArr;
   var canvasPolygon$6 = painter.canvasPolygon,
-      svgPolygon$6 = painter.svgPolygon;
+      svgPolygon$7 = painter.svgPolygon;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -25830,10 +25831,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return d += svgPolygon$6(item);
+              return d += svgPolygon$7(item);
             });
           } else {
-            d = svgPolygon$6(list);
+            d = svgPolygon$7(list);
           }
 
           var props = [['d', d]]; // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
@@ -25963,10 +25964,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return d += svgPolygon$6(item);
+              return d += svgPolygon$7(item);
             });
           } else {
-            d = svgPolygon$6(list);
+            d = svgPolygon$7(list);
           }
 
           var props = [['d', d]];
@@ -26041,7 +26042,7 @@
                 tagName: 'clipPath',
                 children: [{
                   tagName: 'path',
-                  props: [['d', svgPolygon$6(item)]]
+                  props: [['d', svgPolygon$7(item)]]
                 }]
               };
               var clip = ctx.add(v);
@@ -26052,7 +26053,7 @@
                 _this3.virtualDom.bb.push({
                   type: 'item',
                   tagName: 'path',
-                  props: [['d', svgPolygon$6(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                  props: [['d', svgPolygon$7(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
                 });
               });
             });
@@ -26061,7 +26062,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$6(list)]]
+                props: [['d', svgPolygon$7(list)]]
               }]
             };
             var clip = ctx.add(v);
@@ -26072,7 +26073,7 @@
               _this3.virtualDom.bb.push({
                 type: 'item',
                 tagName: 'path',
-                props: [['d', svgPolygon$6(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                props: [['d', svgPolygon$7(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
               });
             });
           }
@@ -27551,6 +27552,7 @@
 
   var fragmentLuminosity = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}vec3 op(vec3 a,vec3 b){float l=getLuminosity(b);return setLuminosity(a,l);}vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return(1.0-a2/a3)*c1+a2/a3*((1.0-a1)*c2+a1*c3);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=op(bottom,top);float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
 
+  var canvasPolygon$7 = painter.canvasPolygon;
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$i.POSITION,
       DISPLAY$9 = _enums$STYLE_KEY$i.DISPLAY,
@@ -28710,16 +28712,13 @@
         var matrix = offscreen.matrix,
             target = offscreen.target,
             origin = offscreen.ctx,
-            x = offscreen.x,
-            y = offscreen.y,
-            offsetWidth = offscreen.offsetWidth,
-            offsetHeight = offscreen.offsetHeight;
+            _list = offscreen.list;
         ctx.globalCompositeOperation = 'destination-in';
         ctx.globalAlpha = 1;
         ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         ctx.fillStyle = '#FFF';
         ctx.beginPath();
-        ctx.rect(x, y, offsetWidth, offsetHeight);
+        canvasPolygon$7(ctx, _list);
         ctx.fill();
         ctx.closePath();
         ctx.globalCompositeOperation = 'source-over';
@@ -29271,9 +29270,9 @@
               if (offscreenBlend) {
                 var _j = _i4 + (_total5 || 0) + (_hasMask || 0);
 
-                var _list = offscreenHash[_j] = offscreenHash[_j] || [];
+                var _list2 = offscreenHash[_j] = offscreenHash[_j] || [];
 
-                _list.push([_i4, _lv, OFFSCREEN_BLEND, offscreenBlend]);
+                _list2.push([_i4, _lv, OFFSCREEN_BLEND, offscreenBlend]);
 
                 ctx = offscreenBlend.target.ctx;
               } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -29290,9 +29289,9 @@
               if (offscreenFilter) {
                 var _j3 = _i4 + (_total5 || 0) + (_hasMask || 0);
 
-                var _list2 = offscreenHash[_j3] = offscreenHash[_j3] || [];
+                var _list3 = offscreenHash[_j3] = offscreenHash[_j3] || [];
 
-                _list2.push([_i4, _lv, OFFSCREEN_FILTER, offscreenFilter]);
+                _list3.push([_i4, _lv, OFFSCREEN_FILTER, offscreenFilter]);
 
                 ctx = offscreenFilter.target.ctx;
               } // overflow:hidden的离屏，最后孩子进行截取
@@ -29301,9 +29300,9 @@
               if (offscreenOverflow) {
                 var _j4 = _i4 + (_total5 || 0) + (_hasMask || 0);
 
-                var _list3 = offscreenHash[_j4] = offscreenHash[_j4] || [];
+                var _list4 = offscreenHash[_j4] = offscreenHash[_j4] || [];
 
-                _list3.push([_i4, _lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+                _list4.push([_i4, _lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
 
                 ctx = offscreenOverflow.target.ctx;
               }
@@ -29405,9 +29404,9 @@
       if (offscreenBlend) {
         var _j5 = i + (total || 0) + (hasMask || 0);
 
-        var _list4 = offscreenHash[_j5] = offscreenHash[_j5] || [];
+        var _list5 = offscreenHash[_j5] = offscreenHash[_j5] || [];
 
-        _list4.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
+        _list5.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
 
         ctx = offscreenBlend.target.ctx;
       } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -29425,9 +29424,9 @@
       if (offscreenFilter) {
         var _j7 = i + (total || 0) + (hasMask || 0);
 
-        var _list5 = offscreenHash[_j7] = offscreenHash[_j7] || [];
+        var _list6 = offscreenHash[_j7] = offscreenHash[_j7] || [];
 
-        _list5.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
+        _list6.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
 
         ctx = offscreenFilter.target.ctx;
       } // overflow:hidden的离屏，最后孩子进行截取
@@ -29436,9 +29435,9 @@
       if (offscreenOverflow) {
         var _j8 = i + (total || 0) + (hasMask || 0);
 
-        var _list6 = offscreenHash[_j8] = offscreenHash[_j8] || [];
+        var _list7 = offscreenHash[_j8] = offscreenHash[_j8] || [];
 
-        _list6.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+        _list7.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
 
         ctx = offscreenOverflow.target.ctx;
       } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -35894,7 +35893,7 @@
     Cache: Cache
   };
 
-  var version = "0.61.10";
+  var version = "0.61.11";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -34,6 +34,7 @@ import fragmentSaturation from '../gl/mbm/saturation.frag';
 import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 import mode from '../node/mode';
+const { canvasPolygon } = painter;
 
 const {
   STYLE_KEY: {
@@ -1033,13 +1034,13 @@ function applyOffscreen(ctx, list, width, height) {
   list.forEach(item => {
     let [, , type, offscreen] = item;
     if(type === OFFSCREEN_OVERFLOW) {
-      let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight } = offscreen;
+      let { matrix, target, ctx: origin, list } = offscreen;
       ctx.globalCompositeOperation = 'destination-in';
       ctx.globalAlpha = 1;
       ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
-      ctx.rect(x, y, offsetWidth, offsetHeight);
+      canvasPolygon(ctx, list);
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';

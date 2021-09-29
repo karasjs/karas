@@ -23,6 +23,7 @@ import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
 import inline from './inline';
+const { svgPolygon } = painter;
 
 const {
   STYLE_KEY,
@@ -1715,9 +1716,35 @@ class Xom extends Node {
     else if(renderMode === mode.SVG) {
       delete virtualDom.filter;
     }
+    // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
+    let btlr = borderTopLeftRadius.slice(0);
+    let btrr = borderTopRightRadius.slice(0);
+    let bbrr = borderBottomRightRadius.slice(0);
+    let bblr = borderBottomLeftRadius.slice(0);
+    if(backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
+      btlr[0] -= borderLeftWidth;
+      btlr[1] -= borderTopWidth;
+      btrr[0] -= borderRightWidth;
+      btrr[1] -= borderTopWidth;
+      bbrr[0] -= borderRightWidth;
+      bbrr[1] -= borderBottomWidth;
+      bblr[0] -= borderLeftWidth;
+      bblr[1] -= borderBottomWidth;
+    }
+    else if(backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
+      btlr[0] -= borderLeftWidth + paddingLeft;
+      btlr[1] -= borderTopWidth + paddingTop;
+      btrr[0] -= borderRightWidth + paddingRight;
+      btrr[1] -= borderTopWidth + paddingTop;
+      bbrr[0] -= borderRightWidth + paddingRight;
+      bbrr[1] -= borderBottomWidth + paddingBottom;
+      bblr[0] -= borderLeftWidth + paddingLeft;
+      bblr[1] -= borderBottomWidth + paddingBottom;
+    }
     // overflow:hidden，最后判断，filter/mask优先
-    let offscreenOverflow;
+    let offscreenOverflow, borderList;
     if(overflow === 'hidden' && display !== 'inline') {
+      borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
       if(renderMode === mode.CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'overflow');
@@ -1727,12 +1754,10 @@ class Xom extends Node {
           matrix,
         };
         ctx = c.ctx;
-        offscreenOverflow.x = x1;
-        offscreenOverflow.y = y1;
-        offscreenOverflow.offsetWidth = offsetWidth;
-        offscreenOverflow.offsetHeight = offsetHeight;
+        offscreenOverflow.list = borderList;
       }
       else if(renderMode === mode.SVG) {
+        let d = svgPolygon(borderList);
         let v = {
           tagName: 'clipPath',
           props: [],
@@ -1740,7 +1765,7 @@ class Xom extends Node {
             {
               tagName: 'path',
               props: [
-                ['d', `M${x1},${y1}L${x1 + offsetWidth},${y1}L${x1 + offsetWidth},${y1 + offsetHeight}L${x1},${y1 + offsetHeight},L${x1},${y1}`],
+                ['d', d],
               ],
             }
           ],
@@ -1767,31 +1792,6 @@ class Xom extends Node {
     if((visibility === 'hidden' || res.break) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
       res.break = true;
       return res;
-    }
-    // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
-    let btlr = borderTopLeftRadius.slice(0);
-    let btrr = borderTopRightRadius.slice(0);
-    let bbrr = borderBottomRightRadius.slice(0);
-    let bblr = borderBottomLeftRadius.slice(0);
-    if(backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
-      btlr[0] -= borderLeftWidth;
-      btlr[1] -= borderTopWidth;
-      btrr[0] -= borderRightWidth;
-      btrr[1] -= borderTopWidth;
-      bbrr[0] -= borderRightWidth;
-      bbrr[1] -= borderBottomWidth;
-      bblr[0] -= borderLeftWidth;
-      bblr[1] -= borderBottomWidth;
-    }
-    else if(backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
-      btlr[0] -= borderLeftWidth + paddingLeft;
-      btlr[1] -= borderTopWidth + paddingTop;
-      btrr[0] -= borderRightWidth + paddingRight;
-      btrr[1] -= borderTopWidth + paddingTop;
-      bbrr[0] -= borderRightWidth + paddingRight;
-      bbrr[1] -= borderBottomWidth + paddingBottom;
-      bblr[0] -= borderLeftWidth + paddingLeft;
-      bblr[1] -= borderBottomWidth + paddingBottom;
     }
     if(__cache && __cache.enabled) {
       __cache.__available = true;
@@ -1860,7 +1860,7 @@ class Xom extends Node {
                   }
                 }
                 else {
-                  let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v,
+                  let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null,
                     0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
                   if(renderMode === mode.SVG && uuid) {
                     svgBgSymbol.push(uuid);
@@ -1895,7 +1895,7 @@ class Xom extends Node {
               bx1 -= n;
             }
             if(backgroundColor[3] > 0) {
-              bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR],
+              bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
                 ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
             }
             let w = ix2 - ix1;
@@ -1986,7 +1986,7 @@ class Xom extends Node {
             ix2 += n;
             bx2 += n;
             if(backgroundColor[3] > 0) {
-              bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR],
+              bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
                 ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
             }
             let w = ix2 - ix1;
@@ -2076,7 +2076,7 @@ class Xom extends Node {
     }
     // block渲染，bgc垫底
     if(backgroundColor[3] > 0) {
-      bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR],
+      bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], borderList,
         bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
     }
     // 渐变或图片叠加

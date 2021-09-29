@@ -4,13 +4,13 @@ on: [push, pull_request]
 
 jobs:
   test1:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
       - name: npm install
         run: npm install
       - name: npm test
@@ -19,13 +19,13 @@ jobs:
           run: npm run test1
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test2:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
       - name: npm install
         run: npm install
       - name: npm test
@@ -34,13 +34,13 @@ jobs:
           run: npm run test2
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test3:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
       - name: npm install
         run: npm install
       - name: npm test
@@ -49,13 +49,13 @@ jobs:
           run: npm run test3
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test4:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
       - name: npm install
         run: npm install
       - name: npm test

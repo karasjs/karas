@@ -7,7 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(300)
-      .assert.value('input', '9T06:05:40.1291424Z ✔ Testing if value of element <input> equals '/a/play/60,68.994140625' (16ms)'/a/play/60,68.994140625' (16ms)'/a/play/60,68.994140625' (16ms)'/a/play/60,68.994140625' (16ms)')
+      .assert.value('input', '/a/play/60,68.994140625')
       .end();
   }
 };

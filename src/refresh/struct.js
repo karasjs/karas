@@ -1034,13 +1034,18 @@ function applyOffscreen(ctx, list, width, height) {
   list.forEach(item => {
     let [, , type, offscreen] = item;
     if(type === OFFSCREEN_OVERFLOW) {
-      let { matrix, target, ctx: origin, list } = offscreen;
+      let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight, list } = offscreen;
       ctx.globalCompositeOperation = 'destination-in';
       ctx.globalAlpha = 1;
       ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
-      canvasPolygon(ctx, list);
+      if(list) {
+        canvasPolygon(ctx, list);
+      }
+      else {
+        ctx.rect(x, y, offsetWidth, offsetHeight);
+      }
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';

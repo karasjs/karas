@@ -1754,10 +1754,14 @@ class Xom extends Node {
           matrix,
         };
         ctx = c.ctx;
+        offscreenOverflow.x = x1;
+        offscreenOverflow.y = y1;
+        offscreenOverflow.offsetWidth = offsetWidth;
+        offscreenOverflow.offsetHeight = offsetHeight;
         offscreenOverflow.list = borderList;
       }
       else if(renderMode === mode.SVG) {
-        let d = svgPolygon(borderList);
+        let d = svgPolygon(borderList) || `M${x1},${y1}L${x1 + offsetWidth},${y1}L${x1 + offsetWidth},${y1 + offsetHeight}L${x1},${y1 + offsetHeight},L${x1},${y1}`;
         let v = {
           tagName: 'clipPath',
           props: [],

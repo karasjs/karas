@@ -9,7 +9,7 @@ module.exports = {
       .moveToElement('svg', 1, 1)
       .mouseButtonClick(0)
       .pause(20)
-      .assert.value('input', '1')
+      .assert.value('input', '9T06:04:35.0126153Z ✔ Testing if value of element <input> equals '1' (20ms)')
       .end();
   }
 };

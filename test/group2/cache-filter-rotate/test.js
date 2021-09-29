@@ -6,7 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .assert.value('input', '9T06:03:33.2545134Z ✔ Testing if value of element <input> equals '' (17ms)')
+      .assert.value('input', '')
       .end();
   }
 };

@@ -2103,7 +2103,7 @@ class Xom extends Node {
                 btlr, btrr, bbrr, bblr);
             }
             else {
-              bg.renderBgc(this, renderMode, ctx, gd.v,
+              bg.renderBgc(this, renderMode, ctx, gd.v, borderList,
                 bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
             }
           }

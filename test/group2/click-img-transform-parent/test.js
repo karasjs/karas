@@ -8,7 +8,7 @@ module.exports = {
       .waitForElementVisible('body', 1000)
       .moveToElement('canvas', 101, 101)
       .mouseButtonClick(0)
-      .assert.value('input', '9T06:10:36.4024355Z ✔ Testing if value of element <input> equals '0' (20ms)')
+      .assert.value('input', '0')
       .moveToElement('canvas', 1, 1)
       .mouseButtonClick(0)
       .assert.value('input', '0')

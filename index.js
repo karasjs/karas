@@ -14970,6 +14970,7 @@
   var I_NODE_CONFIG = 43;
   var I_ROOT_CONFIG = 44;
   var I_OUT_BEGIN_DELAY = 45;
+  var I_NEXT_END = 46;
 
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
@@ -15415,6 +15416,7 @@
         frame.offFrame(this);
         frame.onFrame(this);
         __config[I_START_TIME] = frame.__now;
+        __config[I_END] = false;
         return this;
       }
     }, {
@@ -15478,6 +15480,17 @@
         if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
           __config[I_OUT_BEGIN_DELAY] = false;
           __config[I_BEGIN] = true;
+        } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
+
+
+        var isLastCount = playCount >= iterations - 1;
+
+        if (!isLastCount) {
+          while (currentTime >= duration) {
+            currentTime -= duration;
+            playCount = ++__config[I_PLAY_COUNT];
+            __config[I_NEXT_BEGIN] = true;
+          }
         } // 只有2帧可优化，否则2分查找当前帧
 
 
@@ -15489,10 +15502,11 @@
         } else {
           i = binarySearch(0, length - 1, currentTime, currentFrames);
           frameTime = currentFrames[i][FRAME_TIME];
-        } // 最后一帧结束动画
+        } // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
 
 
-        var isLastFrame = i === length - 1;
+        var isLastFrame = isLastCount && i === length - 1;
+        console.log(isLastFrame, currentTime, i);
         var percent = 0;
 
         if (isLastFrame) ; // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -15503,7 +15517,6 @@
             percent = (currentTime - frameTime) / total;
           }
 
-        var isLastCount = playCount >= iterations - 1;
         var inEndDelay,
             currentFrame = currentFrames[i],
             current;
@@ -15520,40 +15533,45 @@
          */
 
         if (isLastFrame) {
-          // endDelay实际最后一次播放时生效，这里仅计算时间对比
-          inEndDelay = isLastCount && currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-          // 多次播放时到达最后一帧也会显示
+          inEndDelay = currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
-          if (stayEnd || !isLastCount) {
+          if (stayEnd) {
             current = cloneStyle$1(currentFrame[FRAME_STYLE], __config[I_KEYS]);
           } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
           else {
               current = cloneStyle$1(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
-            } // 非尾每轮次放完增加次数和计算下轮准备
+            } // 进入endDelay阶段触发end事件，注意只触发一次，防重在触发的地方做
 
 
-          if (!isLastCount) {
-            // 首轮特殊减去delay
-            if (playCount === 0 && delay) {
-              __config[I_NEXT_TIME] -= delay;
-            } // duration特别短的情况循环减去
+          if (inEndDelay) {
+            __config[I_NEXT_END] = true;
+          } else if (playCount >= iterations) {
+            __config[I_FINISHED] = true;
 
-
-            while (__config[I_NEXT_TIME] >= duration) {
-              __config[I_NEXT_TIME] -= duration;
-              playCount = ++__config[I_PLAY_COUNT];
-            }
-
-            __config[I_NEXT_BEGIN] = true;
-          } // 尾次考虑endDelay，非尾次无endDelay结束动画
-          else if (!inEndDelay) {
-              __config[I_NEXT_TIME] = 0;
-              playCount = ++__config[I_PLAY_COUNT]; // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
-
-              if (playCount >= iterations) {
-                frame.offFrame(this);
-              }
-            } // endDelay中无需特殊处理nextTime
+            this.__clean(true);
+          } // 非尾每轮次放完增加次数和计算下轮准备
+          // if(!isLastCount) {
+          //   // 首轮特殊减去delay
+          //   if(playCount === 0 && delay) {
+          //     __config[I_NEXT_TIME] -= delay;
+          //   }
+          //   // duration特别短的情况循环减去
+          //   while(__config[I_NEXT_TIME] >= duration) {
+          //     __config[I_NEXT_TIME] -= duration;
+          //     playCount = ++__config[I_PLAY_COUNT];
+          //   }
+          //   __config[I_NEXT_BEGIN] = true;
+          // }
+          // // 尾次考虑endDelay，非尾次无endDelay结束动画
+          // else if(!inEndDelay) {
+          //   __config[I_NEXT_TIME] = 0;
+          //   playCount = ++__config[I_PLAY_COUNT];
+          //   // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
+          //   if(playCount >= iterations) {
+          //     frame.offFrame(this);
+          //   }
+          // }
+          // endDelay中无需特殊处理nextTime
 
         } else {
           current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
@@ -15561,16 +15579,13 @@
 
 
         genBeforeRefresh(current, __config[I_KEYS], __config, root, target); // 每次循环完触发end事件，最后一次循环触发finish
-
-        if (isLastFrame && (!inEndDelay || isLastCount)) {
-          __config[I_END] = true;
-
-          if (playCount >= iterations) {
-            __config[I_FINISHED] = true;
-
-            this.__clean(true);
-          }
-        }
+        // if(isLastFrame && (!inEndDelay || isLastCount)) {
+        //   __config[I_END] = true;
+        //   if(playCount >= iterations) {
+        //     __config[I_FINISHED] = true;
+        //     this.__clean(true);
+        //   }
+        // }
       }
     }, {
       key: "__after",
@@ -15590,10 +15605,11 @@
         if (__config[I_BEGIN]) {
           __config[I_BEGIN] = false;
           this.emit(Event.BEGIN, __config[I_PLAY_COUNT]);
-        }
+        } // end事件只触发一次，末轮进入endDelay或直接结束时
 
-        if (__config[I_END]) {
-          __config[I_END] = false;
+
+        if (__config[I_NEXT_END] && !__config[I_END]) {
+          __config[I_END] = true;
           this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
           var direction = __config[I_DIRECTION];
           var frames = __config[I_FRAMES];

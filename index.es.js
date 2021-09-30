@@ -15869,8 +15869,12 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (excludeDelay) {
         v += __config[I_DELAY];
-      } // v -= __config[I_DELAY];
-      // 超过时间长度需要累加次数
+      } // 超过一轮去掉delay
+
+
+      if (v > duration + __config[I_DELAY]) {
+        v -= __config[I_DELAY];
+      } // 超过时间长度需要累加次数
 
 
       __config[I_PLAY_COUNT] = 0;
@@ -18697,9 +18701,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             matrix: matrix
           };
           ctx = _c4.ctx;
+          offscreenOverflow.x = x1;
+          offscreenOverflow.y = y1;
+          offscreenOverflow.offsetWidth = offsetWidth;
+          offscreenOverflow.offsetHeight = offsetHeight;
           offscreenOverflow.list = borderList;
         } else if (renderMode === mode.SVG) {
-          var d = svgPolygon$5(borderList);
+          var d = svgPolygon$5(borderList) || "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1);
           var v = {
             tagName: 'clipPath',
             props: [],
@@ -28706,13 +28714,23 @@ function applyOffscreen(ctx, list, width, height) {
       var matrix = offscreen.matrix,
           target = offscreen.target,
           origin = offscreen.ctx,
+          x = offscreen.x,
+          y = offscreen.y,
+          offsetWidth = offscreen.offsetWidth,
+          offsetHeight = offscreen.offsetHeight,
           _list = offscreen.list;
       ctx.globalCompositeOperation = 'destination-in';
       ctx.globalAlpha = 1;
       ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
-      canvasPolygon$7(ctx, _list);
+
+      if (_list) {
+        canvasPolygon$7(ctx, _list);
+      } else {
+        ctx.rect(x, y, offsetWidth, offsetHeight);
+      }
+
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';

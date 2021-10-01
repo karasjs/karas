@@ -1707,14 +1707,12 @@ class Animation extends Event {
       __config[I_BEGIN] = true;
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
-    let isLastCount = playCount >= iterations - 1;
-    if(!isLastCount) {
-      while(currentTime >= duration) {
-        currentTime -= duration;
-        playCount = ++__config[I_PLAY_COUNT];
-        __config[I_NEXT_BEGIN] = true;
-      }
+    while(currentTime >= duration && playCount < iterations - 1) {
+      currentTime -= duration;
+      playCount = ++__config[I_PLAY_COUNT];
+      __config[I_NEXT_BEGIN] = true;
     }
+    let isLastCount = playCount >= iterations - 1;
     // 只有2帧可优化，否则2分查找当前帧
     let i, frameTime;
     if(is2) {
@@ -1727,7 +1725,6 @@ class Animation extends Event {
     }
     // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
     let isLastFrame = isLastCount && i === length - 1;
-    console.log(isLastFrame, currentTime, i);
     let percent = 0;
     if(isLastFrame) {
       // 无需任何处理
@@ -1766,7 +1763,8 @@ class Animation extends Event {
       if(inEndDelay) {
         __config[I_NEXT_END] = true;
       }
-      else if(playCount >= iterations){
+      else {
+        __config[I_PLAY_COUNT]++;
         __config[I_FINISHED] = true;
         this.__clean(true);
       }

@@ -15483,16 +15483,13 @@
         } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
 
 
-        var isLastCount = playCount >= iterations - 1;
+        while (currentTime >= duration && playCount < iterations - 1) {
+          currentTime -= duration;
+          playCount = ++__config[I_PLAY_COUNT];
+          __config[I_NEXT_BEGIN] = true;
+        }
 
-        if (!isLastCount) {
-          while (currentTime >= duration) {
-            currentTime -= duration;
-            playCount = ++__config[I_PLAY_COUNT];
-            __config[I_NEXT_BEGIN] = true;
-          }
-        } // 只有2帧可优化，否则2分查找当前帧
-
+        var isLastCount = playCount >= iterations - 1; // 只有2帧可优化，否则2分查找当前帧
 
         var i, frameTime;
 
@@ -15506,7 +15503,6 @@
 
 
         var isLastFrame = isLastCount && i === length - 1;
-        console.log(isLastFrame, currentTime, i);
         var percent = 0;
 
         if (isLastFrame) ; // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -15545,7 +15541,8 @@
 
           if (inEndDelay) {
             __config[I_NEXT_END] = true;
-          } else if (playCount >= iterations) {
+          } else {
+            __config[I_PLAY_COUNT]++;
             __config[I_FINISHED] = true;
 
             this.__clean(true);

@@ -1235,7 +1235,7 @@ const I_IS_DELAY = 2;
 const I_BEGIN = 3;
 const I_END = 4;
 const I_FINISHED = 5;
-const I_NEXT_BEGIN = 6;
+const I_NEXT_END = 6;
 const I_FIRST_PLAY = 7;
 const I_FRAME_CB = 8;
 const I_PLAY_CB = 9;
@@ -1275,7 +1275,7 @@ const I_END_TIME = 42;
 const I_NODE_CONFIG = 43;
 const I_ROOT_CONFIG = 44;
 const I_OUT_BEGIN_DELAY = 45;
-const I_NEXT_END = 46;
+// const I_NEXT_END = 46;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1699,9 +1699,10 @@ class Animation extends Event {
       return;
     }
     // 减去delay，计算在哪一帧，仅首轮
-    if(playCount === 0) {
-      currentTime -= delay;
-    }
+    currentTime -= delay;
+    // if(playCount === 0) {
+    //   currentTime -= delay;
+    // }
     if(currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
       __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;
@@ -1710,7 +1711,7 @@ class Animation extends Event {
     while(currentTime >= duration && playCount < iterations - 1) {
       currentTime -= duration;
       playCount = ++__config[I_PLAY_COUNT];
-      __config[I_NEXT_BEGIN] = true;
+      __config[I_BEGIN] = true;
     }
     let isLastCount = playCount >= iterations - 1;
     // 只有2帧可优化，否则2分查找当前帧
@@ -1760,11 +1761,9 @@ class Animation extends Event {
       else {
         current = cloneStyle(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
       }
-      // 进入endDelay阶段触发end事件，注意只触发一次，防重在触发的地方做
-      if(inEndDelay) {
-        __config[I_NEXT_END] = true;
-      }
-      else {
+      // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
+      __config[I_NEXT_END] = true;
+      if(!inEndDelay) {
         __config[I_PLAY_COUNT]++;
         __config[I_FINISHED] = true;
         frame.offFrame(this);
@@ -1848,10 +1847,10 @@ class Animation extends Event {
         }
       }
     }
-    if(__config[I_NEXT_BEGIN]) {
-      __config[I_NEXT_BEGIN] = false;
-      __config[I_BEGIN] = true;
-    }
+    // if(__config[I_NEXT_BEGIN]) {
+    //   __config[I_NEXT_BEGIN] = false;
+    //   __config[I_BEGIN] = true;
+    // }
     if(__config[I_FINISHED]) {
       __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
         = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;

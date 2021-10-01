@@ -1749,6 +1749,7 @@ class Animation extends Event {
      * 7. 多次播放有endDelay且fill不停留
      * 8. 多次播放有endDelay且fill停留
      */
+    let needClean;
     if(isLastFrame) {
       inEndDelay = currentTime < duration + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
@@ -1766,7 +1767,9 @@ class Animation extends Event {
       else {
         __config[I_PLAY_COUNT]++;
         __config[I_FINISHED] = true;
-        this.__clean(true);
+        frame.offFrame(this);
+        needClean = true;
+        // this.__clean(true);
       }
       // 非尾每轮次放完增加次数和计算下轮准备
       // if(!isLastCount) {
@@ -1797,6 +1800,9 @@ class Animation extends Event {
     }
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
     genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
+    if(needClean) {
+      this.__clean(true);
+    }
     // 每次循环完触发end事件，最后一次循环触发finish
     // if(isLastFrame && (!inEndDelay || isLastCount)) {
     //   __config[I_END] = true;

@@ -1699,7 +1699,6 @@ class Animation extends Event {
       return;
     }
     // 减去delay，计算在哪一帧，仅首轮
-    // currentTime -= delay;
     if(playCount === 0) {
       currentTime -= delay;
     }
@@ -1770,31 +1769,7 @@ class Animation extends Event {
         frame.offFrame(this);
         needClean = true;
         __config[I_NEXT_TIME] = 0;
-        // this.__clean(true);
       }
-      // 非尾每轮次放完增加次数和计算下轮准备
-      // if(!isLastCount) {
-      //   // 首轮特殊减去delay
-      //   if(playCount === 0 && delay) {
-      //     __config[I_NEXT_TIME] -= delay;
-      //   }
-      //   // duration特别短的情况循环减去
-      //   while(__config[I_NEXT_TIME] >= duration) {
-      //     __config[I_NEXT_TIME] -= duration;
-      //     playCount = ++__config[I_PLAY_COUNT];
-      //   }
-      //   __config[I_NEXT_BEGIN] = true;
-      // }
-      // // 尾次考虑endDelay，非尾次无endDelay结束动画
-      // else if(!inEndDelay) {
-      //   __config[I_NEXT_TIME] = 0;
-      //   playCount = ++__config[I_PLAY_COUNT];
-      //   // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
-      //   if(playCount >= iterations) {
-      //     frame.offFrame(this);
-      //   }
-      // }
-      // endDelay中无需特殊处理nextTime
     }
     else {
       current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
@@ -1804,14 +1779,6 @@ class Animation extends Event {
     if(needClean) {
       this.__clean(true);
     }
-    // 每次循环完触发end事件，最后一次循环触发finish
-    // if(isLastFrame && (!inEndDelay || isLastCount)) {
-    //   __config[I_END] = true;
-    //   if(playCount >= iterations) {
-    //     __config[I_FINISHED] = true;
-    //     this.__clean(true);
-    //   }
-    // }
   }
 
   __after(diff) {

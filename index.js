@@ -15470,11 +15470,12 @@
           __config[I_IS_DELAY] = true;
           return;
         } // 减去delay，计算在哪一帧，仅首轮
+        // currentTime -= delay;
 
 
-        currentTime -= delay; // if(playCount === 0) {
-        //   currentTime -= delay;
-        // }
+        if (playCount === 0) {
+          currentTime -= delay;
+        }
 
         if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
           __config[I_OUT_BEGIN_DELAY] = false;
@@ -15484,6 +15485,7 @@
 
         while (currentTime >= duration && playCount < iterations - 1) {
           currentTime -= duration;
+          __config[I_NEXT_TIME] -= duration;
           playCount = ++__config[I_PLAY_COUNT];
           __config[I_BEGIN] = true;
         }
@@ -15546,7 +15548,8 @@
             __config[I_PLAY_COUNT]++;
             __config[I_FINISHED] = true;
             frame.offFrame(this);
-            needClean = true; // this.__clean(true);
+            needClean = true;
+            __config[I_NEXT_TIME] = 0; // this.__clean(true);
           } // 非尾每轮次放完增加次数和计算下轮准备
           // if(!isLastCount) {
           //   // 首轮特殊减去delay

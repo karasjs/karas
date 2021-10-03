@@ -18,7 +18,7 @@ function parseFlex(style, grow, shrink, basis) {
 function parseMarginPadding(style, key, list) {
   let temp = style[key];
   if(!isNil(temp)) {
-    let match = temp.toString().match(/(-?[\d.]+[pxremvwh%]*)|(auto)/ig);
+    let match = temp.toString().match(/([-+]?[\d.]+[pxremvwh%]*)|(auto)/ig);
     if(match) {
       if(match.length === 1) {
         match[3] = match[2] = match[1] = match[0];

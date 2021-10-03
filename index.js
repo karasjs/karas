@@ -776,7 +776,7 @@
   o$1.info['宋体'] = o$1.info.simsun;
 
   var reg = {
-    position: /((-?[\d.]+[pxremvwh%]*)|(left|top|right|bottom|center)){1,2}/ig,
+    position: /(([-+]?[\d.]+[pxremvwh%]*)|(left|top|right|bottom|center)){1,2}/ig,
     // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     gradient: /\b(\w+)-?gradient\((.+)\)/i,
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
@@ -6474,7 +6474,7 @@
       deg = 315;
     } // 数字角度，没有的话取默认角度
     else {
-        var match = /(-?[\d.]+)deg/.exec(v);
+        var match = /([-+]?[\d.]+)deg/.exec(v);
 
         if (match) {
           deg = parseFloat(match[1]);
@@ -6485,7 +6485,7 @@
   }
 
   function getRadialPosition(data) {
-    if (/^-?[\d.]/.test(data)) {
+    if (/^[-+]?[\d.]/.test(data)) {
       var v = calUnit(data);
 
       if ([NUMBER, DEG].indexOf(v[1]) > -1) {
@@ -6868,13 +6868,13 @@
       };
 
       if (o.k === 'linear') {
-        var deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+        var deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
 
         if (deg) {
           o.d = getLinearDeg(deg[0].toLowerCase());
         } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
         else {
-            var points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
+            var points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
 
             if (points) {
               o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
@@ -6890,7 +6890,7 @@
           o.z = size[0].toLowerCase();
         } // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
         else {
-            var _points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
+            var _points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
 
             if (_points) {
               o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4])];
@@ -6905,7 +6905,7 @@
             }
           }
 
-        var position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+        var position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
 
         if (position) {
           var x = getRadialPosition(position[1]);
@@ -6915,7 +6915,7 @@
           o.p = [[50, PERCENT$1], [50, PERCENT$1]];
         }
       } else if (o.k === 'conic') {
-        var _deg = /(-?[\d.]+deg)/i.exec(gradient[2]);
+        var _deg = /([-+]?[\d.]+deg)/i.exec(gradient[2]);
 
         if (_deg) {
           o.d = parseFloat(_deg[0]) % 360;
@@ -6923,7 +6923,7 @@
           o.d = 0;
         }
 
-        var _position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+        var _position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
 
         if (_position) {
           var _x = getRadialPosition(_position[1]);
@@ -6936,11 +6936,11 @@
         }
       }
 
-      var v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig) || [];
+      var v = gradient[2].match(/([-+]?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwh%]+)?/ig) || [];
       o.v = v.map(function (item) {
         var color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
         var arr = [rgba2int$1(color[1])];
-        var percent = /-?[\d.]+[pxremvwh%]+/.exec(item);
+        var percent = /[-+]?[\d.]+[pxremvwh%]+/.exec(item);
 
         if (percent) {
           var _v = calUnit(percent[0]);
@@ -7352,7 +7352,7 @@
     var temp = style[key];
 
     if (!isNil$2(temp)) {
-      var match = temp.toString().match(/(-?[\d.]+[pxremvwh%]*)|(auto)/ig);
+      var match = temp.toString().match(/([-+]?[\d.]+[pxremvwh%]*)|(auto)/ig);
 
       if (match) {
         if (match.length === 1) {
@@ -8125,7 +8125,7 @@
         }
 
         res[k] = temp.map(function (item) {
-          if (/^-?[\d.]/.test(item)) {
+          if (/^[-+]?[\d.]/.test(item)) {
             var v = calUnit$1(item);
 
             if ([NUMBER$1, DEG$1].indexOf(v[1]) > -1) {
@@ -8158,7 +8158,7 @@
           return [[0, AUTO], [0, AUTO]];
         }
 
-        var match = item.toString().match(/\b(?:(-?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
+        var match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
 
         if (match) {
           if (match.length === 1) {
@@ -8174,7 +8174,7 @@
           for (var i = 0; i < 2; i++) {
             var _item = match[i];
 
-            if (/^-?[\d.]/.test(_item)) {
+            if (/^[-+]?[\d.]/.test(_item)) {
               var n = calUnit$1(_item);
 
               if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
@@ -8220,7 +8220,7 @@
         for (var i = 0; i < 2; i++) {
           var item = arr[i];
 
-          if (/^-?[\d.]/.test(item)) {
+          if (/^[-+]?[\d.]/.test(item)) {
             var n = calUnit$1(item);
 
             if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
@@ -8392,7 +8392,7 @@
           for (var i = 0; i < 2; i++) {
             var item = _match[i];
 
-            if (/^-?[\d.]/.test(item)) {
+            if (/^[-+]?[\d.]/.test(item)) {
               var n = calUnit$1(item);
 
               if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
@@ -8642,7 +8642,7 @@
         res[LETTER_SPACING] = [0, INHERIT$2];
       } else if (temp === 'normal') {
         res[LETTER_SPACING] = [0, PX$2];
-      } else if (/^-?[\d.]/.test(temp)) {
+      } else if (/^[-+]?[\d.]/.test(temp)) {
         var _v3 = calUnit$1(temp);
 
         if ([NUMBER$1, DEG$1].indexOf(_v3[1]) > -1) {
@@ -8787,7 +8787,7 @@
     temp = style.filter;
 
     if (temp !== undefined) {
-      var _match3 = (temp || '').toString().match(/\b[\w-]+\s*\(\s*-?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
+      var _match3 = (temp || '').toString().match(/\b[\w-]+\s*\(\s*[-+]?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
 
       var f = null;
 
@@ -8795,7 +8795,7 @@
         f = [];
 
         _match3.forEach(function (item) {
-          var m2 = /([\w-]+)\s*\(\s*(-?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
+          var m2 = /([\w-]+)\s*\(\s*([-+]?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
 
           if (m2) {
             var k = m2[1].toLowerCase(),
@@ -8859,11 +8859,11 @@
     if (temp !== undefined) {
       var bs = null;
 
-      var _match4 = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+      var _match4 = (temp || '').match(/([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
       if (_match4) {
         _match4.forEach(function (item) {
-          var boxShadow = /(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+          var boxShadow = /([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
           if (boxShadow) {
             bs = bs || [];

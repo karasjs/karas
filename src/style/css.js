@@ -73,6 +73,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   ORDER,
   FLEX_WRAP,
   ALIGN_CONTENT,
+  TRANSLATE_PATH,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -1526,6 +1527,11 @@ function cloneStyle(style, keys) {
           return n;
         });
         res[k] = v;
+      }
+    }
+    else if(k === TRANSLATE_PATH) {
+      if(v) {
+        res[k] = v.map(item => item.slice(0));
       }
     }
     // position等直接值类型赋值

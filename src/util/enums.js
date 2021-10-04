@@ -93,12 +93,13 @@ const STYLE_KEY = {
   STROKE_LINEJOIN: 90,
   STROKE_MITERLIMIT: 91,
   FILL_RULE: 92,
-  // 无此样式，仅cache需要
+  // 无此样式，仅cache或特殊情况需要
   MATRIX: 93,
   BORDER_TOP: 94,
   BORDER_RIGHT: 95,
   BORDER_BOTTOM: 96,
   BORDER_LEFT: 97,
+  TRANSLATE_PATH: 98,
 };
 
 function style2Lower(s) {

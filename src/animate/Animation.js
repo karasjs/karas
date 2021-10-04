@@ -22,6 +22,7 @@ const {
     BACKGROUND_POSITION_Y,
     BOX_SHADOW,
     TRANSLATE_X,
+    TRANSLATE_Y,
     TRANSLATE_Z,
     BACKGROUND_SIZE,
     FONT_SIZE,
@@ -42,6 +43,7 @@ const {
     TEXT_ALIGN,
     MATRIX,
     ROTATE_3D,
+    TRANSLATE_PATH,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -56,7 +58,7 @@ const {
     FRAME_TRANSITION,
   },
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH } = unit;
+const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
@@ -84,11 +86,21 @@ function unify(frames, target) {
     let style = item[FRAME_STYLE];
     Object.keys(style).forEach(k => {
       let v = style[k];
-      // 空的过滤掉
+      // 未定义的过滤掉，null空有意义
       if(v !== undefined && !hash.hasOwnProperty(k)) {
         hash[k] = true;
+        // geom为属性字符串，style都为枚举int
         if(!GEOM.hasOwnProperty(k)) {
           k = parseInt(k);
+        }
+        // path动画要转为translateXY，所以手动添加
+        if(k === TRANSLATE_PATH) {
+          if(!hash.hasOwnProperty(TRANSLATE_X)) {
+            keys.push(TRANSLATE_X);
+          }
+          if(!hash.hasOwnProperty(TRANSLATE_Y)) {
+            keys.push(TRANSLATE_Y);
+          }
         }
         keys.push(k);
       }
@@ -182,7 +194,12 @@ function framing(style, duration, es) {
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
+  // translatePath特殊对待，ae的曲线运动动画
+  let translatePath = style.translatePath;
   style = css.normalize(style);
+  if(Array.isArray(translatePath) && [4, 6, 8].indexOf(translatePath.length) > -1) {
+    style[TRANSLATE_PATH] = translatePath.map(item => calUnit(item));
+  }
   let res = [];
   res[FRAME_STYLE] = style;
   res[FRAME_TIME] = offset * duration;
@@ -878,6 +895,19 @@ function calDiff(prev, next, k, target, tagName) {
     }
     res[1] = n - p;
   }
+  // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
+  else if(k === TRANSLATE_PATH && p) {
+    res[1] = p.map(item => {
+      let [v, u] = item; //TODO
+      if(u === PERCENT) {}
+      else if(u === REM) {}
+      else if(u === VW) {}
+      else if(u === VH) {}
+      else {
+        return [parseFloat(v) || 0, PX];
+      }
+    });
+  }
   // display等不能有增量过程的
   else {
     return;
@@ -970,6 +1000,41 @@ function calIntermediateStyle(frame, keys, percent, target) {
       for(let i = 0; i < 16; i++) {
         st[0][1][i] += v[i] * percent;
       }
+    }
+    else if(k === TRANSLATE_PATH) {
+      // 特殊的曲线运动计算，转换为translateXY
+      let t = 1 - percent;
+      if(v.length === 8) {
+        style[TRANSLATE_X] = [
+          v[0][0] * t * t * t
+          + 3 * v[2][0] * percent * t * t
+          + 3 * v[4][0] * percent * percent * t
+          + v[6][0] * percent * percent * percent,
+          PX,
+        ];
+        style[TRANSLATE_Y] = [
+          v[1][0] * t * t * t
+          + 3 * v[3][0] * percent * t * t
+          + 3 * v[5][0] * percent * percent * t
+          + v[7][0] * percent * percent * percent,
+          PX,
+        ];
+      }
+      else if(v.length === 6) {
+        style[TRANSLATE_X] = [
+          v[0][0] * t * t
+          + 2 * v[2][0] * percent * t
+          + v[4][0] * percent * percent,
+          PX,
+        ];
+        style[TRANSLATE_Y] = [
+          v[1][0] * t * t
+          + 3 * v[3][0] * percent * t
+          + v[5][0] * percent * percent,
+          PX,
+        ];
+      }
+      else {}
     }
     else if(k === ROTATE_3D) {
       st[0] += v[0] * percent;

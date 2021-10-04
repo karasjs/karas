@@ -336,12 +336,13 @@
     STROKE_LINEJOIN: 90,
     STROKE_MITERLIMIT: 91,
     FILL_RULE: 92,
-    // 无此样式，仅cache需要
+    // 无此样式，仅cache或特殊情况需要
     MATRIX: 93,
     BORDER_TOP: 94,
     BORDER_RIGHT: 95,
     BORDER_BOTTOM: 96,
-    BORDER_LEFT: 97
+    BORDER_LEFT: 97,
+    TRANSLATE_PATH: 98
   };
 
   function style2Lower(s) {
@@ -7784,6 +7785,10 @@
       return GEOM$1[k].hasOwnProperty(tagName);
     }
 
+    if (k === 'translatePath') {
+      return true;
+    }
+
     return false;
   };
 
@@ -7894,7 +7899,8 @@
       LINE_CLAMP = _enums$STYLE_KEY$2.LINE_CLAMP,
       ORDER = _enums$STYLE_KEY$2.ORDER,
       FLEX_WRAP = _enums$STYLE_KEY$2.FLEX_WRAP,
-      ALIGN_CONTENT = _enums$STYLE_KEY$2.ALIGN_CONTENT;
+      ALIGN_CONTENT = _enums$STYLE_KEY$2.ALIGN_CONTENT,
+      TRANSLATE_PATH = _enums$STYLE_KEY$2.TRANSLATE_PATH;
   var AUTO = o.AUTO,
       PX$2 = o.PX,
       PERCENT$2 = o.PERCENT,
@@ -9363,6 +9369,12 @@
             return n;
           });
           res[k] = v;
+        }
+      } else if (k === TRANSLATE_PATH) {
+        if (v) {
+          res[k] = v.map(function (item) {
+            return item.slice(0);
+          });
         }
       } // position等直接值类型赋值
       else if (VALUE.hasOwnProperty(k)) {
@@ -13680,6 +13692,7 @@
       BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_Y,
       BOX_SHADOW$1 = _enums$STYLE_KEY$a.BOX_SHADOW,
       TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
+      TRANSLATE_Y$3 = _enums$STYLE_KEY$a.TRANSLATE_Y,
       TRANSLATE_Z$3 = _enums$STYLE_KEY$a.TRANSLATE_Z,
       BACKGROUND_SIZE$1 = _enums$STYLE_KEY$a.BACKGROUND_SIZE,
       FONT_SIZE$7 = _enums$STYLE_KEY$a.FONT_SIZE,
@@ -13700,6 +13713,7 @@
       TEXT_ALIGN$1 = _enums$STYLE_KEY$a.TEXT_ALIGN,
       MATRIX$2 = _enums$STYLE_KEY$a.MATRIX,
       ROTATE_3D$2 = _enums$STYLE_KEY$a.ROTATE_3D,
+      TRANSLATE_PATH$1 = _enums$STYLE_KEY$a.TRANSLATE_PATH,
       _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
       UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
       UPDATE_STYLE = _enums$UPDATE_KEY$1.UPDATE_STYLE,
@@ -13719,7 +13733,8 @@
       NUMBER$4 = o.NUMBER,
       REM$5 = o.REM,
       VW$5 = o.VW,
-      VH$5 = o.VH;
+      VH$5 = o.VH,
+      calUnit$2 = o.calUnit;
   var isNil$5 = util.isNil,
       isFunction$4 = util.isFunction,
       isNumber$1 = util.isNumber,
@@ -13748,13 +13763,24 @@
     frames.forEach(function (item) {
       var style = item[FRAME_STYLE];
       Object.keys(style).forEach(function (k) {
-        var v = style[k]; // 空的过滤掉
+        var v = style[k]; // 未定义的过滤掉，null空有意义
 
         if (v !== undefined && !hash.hasOwnProperty(k)) {
-          hash[k] = true;
+          hash[k] = true; // geom为属性字符串，style都为枚举int
 
           if (!GEOM$3.hasOwnProperty(k)) {
             k = parseInt(k);
+          } // path动画要转为translateXY，所以手动添加
+
+
+          if (k === TRANSLATE_PATH$1) {
+            if (!hash.hasOwnProperty(TRANSLATE_X$3)) {
+              keys.push(TRANSLATE_X$3);
+            }
+
+            if (!hash.hasOwnProperty(TRANSLATE_Y$3)) {
+              keys.push(TRANSLATE_Y$3);
+            }
           }
 
           keys.push(k);
@@ -13850,8 +13876,17 @@
         easing = _style.easing; // 这两个特殊值提出来存储不干扰style
 
     delete style.offset;
-    delete style.easing;
+    delete style.easing; // translatePath特殊对待，ae的曲线运动动画
+
+    var translatePath = style.translatePath;
     style = css.normalize(style);
+
+    if (Array.isArray(translatePath) && [4, 6, 8].indexOf(translatePath.length) > -1) {
+      style[TRANSLATE_PATH$1] = translatePath.map(function (item) {
+        return calUnit$2(item);
+      });
+    }
+
     var res = [];
     res[FRAME_STYLE] = style;
     res[FRAME_TIME] = offset * duration;
@@ -14560,10 +14595,22 @@
       }
 
       res[1] = n - p;
-    } // display等不能有增量过程的
-    else {
-        return;
-      }
+    } // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
+    else if (k === TRANSLATE_PATH$1 && p) {
+        res[1] = p.map(function (item) {
+          var _item = _slicedToArray(item, 2),
+              v = _item[0],
+              u = _item[1]; //TODO
+
+
+          if (u === PERCENT$6) ; else if (u === REM$5) ; else if (u === VW$5) ; else if (u === VH$5) ; else {
+            return [parseFloat(v) || 0, PX$5];
+          }
+        });
+      } // display等不能有增量过程的
+      else {
+          return;
+        }
 
     return res;
   } // 计算两帧之间不相同的变化，存入transition，相同的忽略
@@ -14663,6 +14710,17 @@
 
         for (var _i15 = 0; _i15 < 16; _i15++) {
           st[0][1][_i15] += v[_i15] * percent;
+        }
+      } else if (k === TRANSLATE_PATH$1) {
+        // 特殊的曲线运动计算，转换为translateXY
+        var t = 1 - percent;
+
+        if (v.length === 8) {
+          style[TRANSLATE_X$3] = [v[0][0] * t * t * t + 3 * v[2][0] * percent * t * t + 3 * v[4][0] * percent * percent * t + v[6][0] * percent * percent * percent, PX$5];
+          style[TRANSLATE_Y$3] = [v[1][0] * t * t * t + 3 * v[3][0] * percent * t * t + 3 * v[5][0] * percent * percent * t + v[7][0] * percent * percent * percent, PX$5];
+        } else if (v.length === 6) {
+          style[TRANSLATE_X$3] = [v[0][0] * t * t + 2 * v[2][0] * percent * t + v[4][0] * percent * percent, PX$5];
+          style[TRANSLATE_Y$3] = [v[1][0] * t * t + 3 * v[3][0] * percent * t + v[5][0] * percent * percent, PX$5];
         }
       } else if (k === ROTATE_3D$2) {
         st[0] += v[0] * percent;
@@ -16908,7 +16966,7 @@
       HEIGHT$3 = _enums$STYLE_KEY$c.HEIGHT,
       MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
       TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
-      TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
+      TRANSLATE_Y$4 = _enums$STYLE_KEY$c.TRANSLATE_Y,
       TRANSLATE_Z$4 = _enums$STYLE_KEY$c.TRANSLATE_Z,
       TRANSFORM$3 = _enums$STYLE_KEY$c.TRANSFORM,
       SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
@@ -17694,7 +17752,7 @@
           }
 
           if (contain(lv, TY)) {
-            var _v = currentStyle[TRANSLATE_Y$3];
+            var _v = currentStyle[TRANSLATE_Y$4];
 
             if (isNil$6(_v)) {
               _v = 0;
@@ -17710,8 +17768,8 @@
               _v = _v[0];
             }
 
-            y = _v - (computedStyle[TRANSLATE_Y$3] || 0);
-            computedStyle[TRANSLATE_Y$3] = _v;
+            y = _v - (computedStyle[TRANSLATE_Y$4] || 0);
+            computedStyle[TRANSLATE_Y$4] = _v;
             computedStyle[TRANSFORM$3][13] += y;
             matrixCache[13] += y;
           }
@@ -17755,8 +17813,8 @@
               computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
             }
 
-            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
-              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
+            if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$4] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+              __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$4] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
               matrixCache = null;
               var matrix; // transform相对于自身
 
@@ -17765,7 +17823,7 @@
               } // 没有transform则看是否有扩展的css独立变换属性
               else {
                   var temp = [];
-                  [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+                  [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                     // 删除之前遗留的
                     delete computedStyle[k];
                     var v = currentStyle[k];
@@ -17796,25 +17854,25 @@
                     if (v[1] === PERCENT$7) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * offsetWidth * 0.01;
-                      } else if (k === TRANSLATE_Y$3) {
+                      } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * offsetHeight * 0.01;
                       }
                     } else if (v[1] === REM$6) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
-                      } else if (k === TRANSLATE_Y$3) {
+                      } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       }
                     } else if (v[1] === VW$6) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
-                      } else if (k === TRANSLATE_Y$3) {
+                      } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       }
                     } else if (v[1] === VH$6) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
-                      } else if (k === TRANSLATE_Y$3) {
+                      } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
                       }
                     }

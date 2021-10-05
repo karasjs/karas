@@ -51,7 +51,7 @@ function getLinearDeg(v) {
   }
   // 数字角度，没有的话取默认角度
   else {
-    let match = /(-?[\d.]+)deg/.exec(v);
+    let match = /([-+]?[\d.]+)deg/.exec(v);
     if(match) {
       deg = parseFloat(match[1]);
     }
@@ -60,7 +60,7 @@ function getLinearDeg(v) {
 }
 
 function getRadialPosition(data) {
-  if(/^-?[\d.]/.test(data)) {
+  if(/^[-+]?[\d.]/.test(data)) {
     let v = calUnit(data);
     if([NUMBER, DEG].indexOf(v[1]) > -1) {
       v[1] = PX;
@@ -430,13 +430,13 @@ function parseGradient(s) {
       k: gradient[1],
     };
     if(o.k === 'linear') {
-      let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      let deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
       if(deg) {
         o.d = getLinearDeg(deg[0].toLowerCase());
       }
       // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        let points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
+        let points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
         if(points) {
           o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
         }
@@ -453,7 +453,7 @@ function parseGradient(s) {
       }
       // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
       else {
-        let points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
+        let points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
         if(points) {
           o.z = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
           if(!isNil(points[5])) {
@@ -467,7 +467,7 @@ function parseGradient(s) {
           o.z = 'farthest-corner';
         }
       }
-      let position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      let position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
         let x = getRadialPosition(position[1]);
         let y = position[2] ? getRadialPosition(position[2]) : x;
@@ -478,14 +478,14 @@ function parseGradient(s) {
       }
     }
     else if(o.k === 'conic') {
-      let deg = /(-?[\d.]+deg)/i.exec(gradient[2]);
+      let deg = /([-+]?[\d.]+deg)/i.exec(gradient[2]);
       if(deg) {
         o.d = parseFloat(deg[0]) % 360;
       }
       else {
         o.d = 0;
       }
-      let position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      let position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
         let x = getRadialPosition(position[1]);
         let y = position[2] ? getRadialPosition(position[2]) : x;
@@ -495,11 +495,11 @@ function parseGradient(s) {
         o.p = [[50, PERCENT], [50, PERCENT]];
       }
     }
-    let v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig) || [];
+    let v = gradient[2].match(/([-+]?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwh%]+)?/ig) || [];
     o.v = v.map(item => {
       let color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       let arr = [rgba2int(color[1])];
-      let percent = /-?[\d.]+[pxremvwh%]+/.exec(item);
+      let percent = /[-+]?[\d.]+[pxremvwh%]+/.exec(item);
       if(percent) {
         let v = calUnit(percent[0]);
         if([NUMBER, DEG].indexOf(v[1]) > -1) {

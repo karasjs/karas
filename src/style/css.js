@@ -73,6 +73,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   ORDER,
   FLEX_WRAP,
   ALIGN_CONTENT,
+  TRANSLATE_PATH,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -273,7 +274,7 @@ function normalize(style, reset = []) {
         temp = [temp];
       }
       res[k] = temp.map(item => {
-        if(/^-?[\d.]/.test(item)) {
+        if(/^[-+]?[\d.]/.test(item)) {
           let v = calUnit(item);
           if([NUMBER, DEG].indexOf(v[1]) > -1) {
             v[1] = PX;
@@ -308,7 +309,7 @@ function normalize(style, reset = []) {
           [0, AUTO],
         ];
       }
-      let match = item.toString().match(/\b(?:(-?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
+      let match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
       if(match) {
         if(match.length === 1) {
           if(match[0] === 'contain' || match[0] === 'cover') {
@@ -321,7 +322,7 @@ function normalize(style, reset = []) {
         let v = [];
         for(let i = 0; i < 2; i++) {
           let item = match[i];
-          if(/^-?[\d.]/.test(item)) {
+          if(/^[-+]?[\d.]/.test(item)) {
             let n = calUnit(item);
             if([NUMBER, DEG].indexOf(n[1]) > -1) {
               n[1] = PX;
@@ -364,7 +365,7 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = arr[i];
-        if(/^-?[\d.]/.test(item)) {
+        if(/^[-+]?[\d.]/.test(item)) {
           let n = calUnit(item);
           if([NUMBER, DEG].indexOf(n[1]) > -1) {
             n[1] = PX;
@@ -501,7 +502,7 @@ function normalize(style, reset = []) {
         }
         for(let i = 0; i < 2; i++) {
           let item = match[i];
-          if(/^-?[\d.]/.test(item)) {
+          if(/^[-+]?[\d.]/.test(item)) {
             let n = calUnit(item);
             if([NUMBER, DEG].indexOf(n[1]) > -1) {
               n[1] = PX;
@@ -768,7 +769,7 @@ function normalize(style, reset = []) {
     else if(temp === 'normal') {
       res[LETTER_SPACING] = [0, PX];
     }
-    else if(/^-?[\d.]/.test(temp)) {
+    else if(/^[-+]?[\d.]/.test(temp)) {
       let v = calUnit(temp);
       if([NUMBER, DEG].indexOf(v[1]) > -1) {
         v[1] = PX;
@@ -899,12 +900,12 @@ function normalize(style, reset = []) {
   }
   temp = style.filter;
   if(temp !== undefined) {
-    let match = (temp || '').toString().match(/\b[\w-]+\s*\(\s*-?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
+    let match = (temp || '').toString().match(/\b[\w-]+\s*\(\s*[-+]?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
     let f = null;
     if(match) {
       f = [];
       match.forEach(item => {
-        let m2 = /([\w-]+)\s*\(\s*(-?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
+        let m2 = /([\w-]+)\s*\(\s*([-+]?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
         if(m2) {
           let k = m2[1].toLowerCase(), v = calUnit(m2[2]);
           if(k === 'blur') {
@@ -957,10 +958,10 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    let match = (temp || '').match(/([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
     if(match) {
       match.forEach(item => {
-        let boxShadow = /(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        let boxShadow = /([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
         if(boxShadow) {
           bs = bs || [];
           let res = [];
@@ -1526,6 +1527,11 @@ function cloneStyle(style, keys) {
           return n;
         });
         res[k] = v;
+      }
+    }
+    else if(k === TRANSLATE_PATH) {
+      if(v) {
+        res[k] = v.map(item => item.slice(0));
       }
     }
     // position等直接值类型赋值

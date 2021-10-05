@@ -22,6 +22,7 @@ const {
     BACKGROUND_POSITION_Y,
     BOX_SHADOW,
     TRANSLATE_X,
+    TRANSLATE_Y,
     TRANSLATE_Z,
     BACKGROUND_SIZE,
     FONT_SIZE,
@@ -42,6 +43,7 @@ const {
     TEXT_ALIGN,
     MATRIX,
     ROTATE_3D,
+    TRANSLATE_PATH,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -56,7 +58,7 @@ const {
     FRAME_TRANSITION,
   },
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH } = unit;
+const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
@@ -84,11 +86,22 @@ function unify(frames, target) {
     let style = item[FRAME_STYLE];
     Object.keys(style).forEach(k => {
       let v = style[k];
-      // 空的过滤掉
+      // 未定义的过滤掉，null空有意义
       if(v !== undefined && !hash.hasOwnProperty(k)) {
         hash[k] = true;
+        // geom为属性字符串，style都为枚举int
         if(!GEOM.hasOwnProperty(k)) {
           k = parseInt(k);
+        }
+        // path动画要转为translateXY，所以手动添加，使2帧之间存在过渡，有可能之前已存在这个动画，可忽视
+        if(k === TRANSLATE_PATH) {
+          if(!hash.hasOwnProperty(TRANSLATE_X)) {
+            keys.push(TRANSLATE_X);
+          }
+          if(!hash.hasOwnProperty(TRANSLATE_Y)) {
+            keys.push(TRANSLATE_Y);
+          }
+          hash[TRANSLATE_X] = hash[TRANSLATE_Y] = true;
         }
         keys.push(k);
       }
@@ -182,7 +195,12 @@ function framing(style, duration, es) {
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
+  // translatePath特殊对待，ae的曲线运动动画
+  let translatePath = style.translatePath;
   style = css.normalize(style);
+  if(Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
+    style[TRANSLATE_PATH] = translatePath.map(item => calUnit(item));
+  }
   let res = [];
   res[FRAME_STYLE] = style;
   res[FRAME_TIME] = offset * duration;
@@ -878,6 +896,41 @@ function calDiff(prev, next, k, target, tagName) {
     }
     res[1] = n - p;
   }
+  // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
+  else if(k === TRANSLATE_PATH && p) {
+    let k1 = 'offsetWidth', k2 = 'offsetHeight';
+    if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'clientWidth';
+      k2 = 'clientHeight';
+    }
+    else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'width';
+      k2 = 'height';
+    }
+    res[1] = p.map((item, i) => {
+      let [v, u] = item;
+      if(u === PERCENT) {
+        if(i % 2 === 0) {
+          return [(parseFloat(v) || 0) * 0.01 * target[k1], PX];
+        }
+        else {
+          return [(parseFloat(v) || 0) * 0.01 * target[k2], PX];
+        }
+      }
+      else if(u === REM) {
+        return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE] * 100, PX];
+      }
+      else if(u === VW) {
+        return [(parseFloat(v) || 0) * 0.01 * root.width, PX];
+      }
+      else if(u === VH) {
+        return [(parseFloat(v) || 0) * 0.01 * root.height, PX];
+      }
+      else {
+        return [parseFloat(v) || 0, PX];
+      }
+    });
+  }
   // display等不能有增量过程的
   else {
     return;
@@ -969,6 +1022,40 @@ function calIntermediateStyle(frame, keys, percent, target) {
       }
       for(let i = 0; i < 16; i++) {
         st[0][1][i] += v[i] * percent;
+      }
+    }
+    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
+    else if(k === TRANSLATE_PATH) {
+      let t = 1 - percent;
+      if(v.length === 8) {
+        style[TRANSLATE_X] = [
+          v[0][0] * t * t * t
+          + 3 * v[2][0] * percent * t * t
+          + 3 * v[4][0] * percent * percent * t
+          + v[6][0] * percent * percent * percent,
+          PX,
+        ];
+        style[TRANSLATE_Y] = [
+          v[1][0] * t * t * t
+          + 3 * v[3][0] * percent * t * t
+          + 3 * v[5][0] * percent * percent * t
+          + v[7][0] * percent * percent * percent,
+          PX,
+        ];
+      }
+      else if(v.length === 6) {
+        style[TRANSLATE_X] = [
+          v[0][0] * t * t
+          + 2 * v[2][0] * percent * t
+          + v[4][0] * percent * percent,
+          PX,
+        ];
+        style[TRANSLATE_Y] = [
+          v[1][0] * t * t
+          + 3 * v[3][0] * percent * t
+          + v[5][0] * percent * percent,
+          PX,
+        ];
       }
     }
     else if(k === ROTATE_3D) {
@@ -1235,7 +1322,7 @@ const I_IS_DELAY = 2;
 const I_BEGIN = 3;
 const I_END = 4;
 const I_FINISHED = 5;
-const I_NEXT_BEGIN = 6;
+const I_NEXT_END = 6;
 const I_FIRST_PLAY = 7;
 const I_FRAME_CB = 8;
 const I_PLAY_CB = 9;
@@ -1275,6 +1362,7 @@ const I_END_TIME = 42;
 const I_NODE_CONFIG = 43;
 const I_ROOT_CONFIG = 44;
 const I_OUT_BEGIN_DELAY = 45;
+// const I_NEXT_END = 46;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1652,6 +1740,7 @@ class Animation extends Event {
     frame.offFrame(this);
     frame.onFrame(this);
     __config[I_START_TIME] = frame.__now;
+    __config[I_END] = false;
     return this;
   }
 
@@ -1704,6 +1793,14 @@ class Animation extends Event {
       __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;
     }
+    // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
+    while(currentTime >= duration && playCount < iterations - 1) {
+      currentTime -= duration;
+      __config[I_NEXT_TIME] -= duration;
+      playCount = ++__config[I_PLAY_COUNT];
+      __config[I_BEGIN] = true;
+    }
+    let isLastCount = playCount >= iterations - 1;
     // 只有2帧可优化，否则2分查找当前帧
     let i, frameTime;
     if(is2) {
@@ -1714,8 +1811,8 @@ class Animation extends Event {
       i = binarySearch(0, length - 1, currentTime, currentFrames);
       frameTime = currentFrames[i][FRAME_TIME];
     }
-    // 最后一帧结束动画
-    let isLastFrame = i === length - 1;
+    // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
+    let isLastFrame = isLastCount && i === length - 1;
     let percent = 0;
     if(isLastFrame) {
       // 无需任何处理
@@ -1728,7 +1825,6 @@ class Animation extends Event {
       let total = currentFrames[i + 1][FRAME_TIME] - frameTime;
       percent = (currentTime - frameTime) / total;
     }
-    let isLastCount = playCount >= iterations - 1;
     let inEndDelay, currentFrame = currentFrames[i], current;
     __config[I_CURRENT_FRAME] = currentFrame;
     /** 这里要考虑全几种场景：
@@ -1741,54 +1837,34 @@ class Animation extends Event {
      * 7. 多次播放有endDelay且fill不停留
      * 8. 多次播放有endDelay且fill停留
      */
+    let needClean;
     if(isLastFrame) {
-      // endDelay实际最后一次播放时生效，这里仅计算时间对比
-      inEndDelay = isLastCount && currentTime < duration + endDelay;
+      inEndDelay = currentTime < duration + endDelay;
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-      // 多次播放时到达最后一帧也会显示
-      if(stayEnd || !isLastCount) {
+      if(stayEnd) {
         current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
         current = cloneStyle(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
       }
-      // 非尾每轮次放完增加次数和计算下轮准备
-      if(!isLastCount) {
-        // 首轮特殊减去delay
-        if(playCount === 0 && delay) {
-          __config[I_NEXT_TIME] -= delay;
-        }
-        // duration特别短的情况循环减去
-        while(__config[I_NEXT_TIME] >= duration) {
-          __config[I_NEXT_TIME] -= duration;
-          playCount = ++__config[I_PLAY_COUNT];
-        }
-        __config[I_NEXT_BEGIN] = true;
-      }
-      // 尾次考虑endDelay，非尾次无endDelay结束动画
-      else if(!inEndDelay) {
+      // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
+      __config[I_NEXT_END] = true;
+      if(!inEndDelay) {
+        __config[I_PLAY_COUNT]++;
+        __config[I_FINISHED] = true;
+        frame.offFrame(this);
+        needClean = true;
         __config[I_NEXT_TIME] = 0;
-        playCount = ++__config[I_PLAY_COUNT];
-        // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
-        if(playCount >= iterations) {
-          frame.offFrame(this);
-        }
       }
-      // endDelay中无需特殊处理nextTime
     }
     else {
       current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
     }
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
     genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
-    // 每次循环完触发end事件，最后一次循环触发finish
-    if(isLastFrame && (!inEndDelay || isLastCount)) {
-      __config[I_END] = true;
-      if(playCount >= iterations) {
-        __config[I_FINISHED] = true;
-        this.__clean(true);
-      }
+    if(needClean) {
+      this.__clean(true);
     }
   }
 
@@ -1805,8 +1881,9 @@ class Animation extends Event {
       __config[I_BEGIN] = false;
       this.emit(Event.BEGIN, __config[I_PLAY_COUNT]);
     }
-    if(__config[I_END]) {
-      __config[I_END] = false;
+    // end事件只触发一次，末轮进入endDelay或直接结束时
+    if(__config[I_NEXT_END] && !__config[I_END]) {
+      __config[I_END] = true;
       this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
       let direction = __config[I_DIRECTION];
       let frames = __config[I_FRAMES];
@@ -1826,10 +1903,10 @@ class Animation extends Event {
         }
       }
     }
-    if(__config[I_NEXT_BEGIN]) {
-      __config[I_NEXT_BEGIN] = false;
-      __config[I_BEGIN] = true;
-    }
+    // if(__config[I_NEXT_BEGIN]) {
+    //   __config[I_NEXT_BEGIN] = false;
+    //   __config[I_BEGIN] = true;
+    // }
     if(__config[I_FINISHED]) {
       __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
         = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;

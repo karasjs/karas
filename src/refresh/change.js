@@ -106,6 +106,9 @@ o.isValid = function(tagName, k) {
   if(GEOM.hasOwnProperty(k)) {
     return GEOM[k].hasOwnProperty(tagName);
   }
+  if(k === 'translatePath') {
+    return true;
+  }
   return false;
 };
 

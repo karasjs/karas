@@ -1354,7 +1354,7 @@ a.on(karas.Event.BEGIN, function() {
 #### END
 * **类型** `String`
 * **说明**  
-枚举变量，一般在侦听[Animation](#Animation)每轮结束时使用。
+枚举变量，一般在侦听[Animation](#Animation)动画末轮结束时使用，不包含endDelay时间。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -1375,7 +1375,7 @@ let a = root.ref.div.animate([
   iterations: 2,
 });
 a.on(karas.Event.END, function() {
-  console.log('end'); // 因为播放循环2次，所以有2轮结束。
+  console.log('end'); // 因为播放循环2次，所以第2轮结束时才会触发。
 });
 ```
 

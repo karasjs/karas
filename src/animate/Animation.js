@@ -93,7 +93,7 @@ function unify(frames, target) {
         if(!GEOM.hasOwnProperty(k)) {
           k = parseInt(k);
         }
-        // path动画要转为translateXY，所以手动添加
+        // path动画要转为translateXY，所以手动添加，使2帧之间存在过渡，有可能之前已存在这个动画，可忽视
         if(k === TRANSLATE_PATH) {
           if(!hash.hasOwnProperty(TRANSLATE_X)) {
             keys.push(TRANSLATE_X);
@@ -101,6 +101,7 @@ function unify(frames, target) {
           if(!hash.hasOwnProperty(TRANSLATE_Y)) {
             keys.push(TRANSLATE_Y);
           }
+          hash[TRANSLATE_X] = hash[TRANSLATE_Y] = true;
         }
         keys.push(k);
       }
@@ -197,7 +198,7 @@ function framing(style, duration, es) {
   // translatePath特殊对待，ae的曲线运动动画
   let translatePath = style.translatePath;
   style = css.normalize(style);
-  if(Array.isArray(translatePath) && [4, 6, 8].indexOf(translatePath.length) > -1) {
+  if(Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
     style[TRANSLATE_PATH] = translatePath.map(item => calUnit(item));
   }
   let res = [];
@@ -897,12 +898,34 @@ function calDiff(prev, next, k, target, tagName) {
   }
   // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
   else if(k === TRANSLATE_PATH && p) {
-    res[1] = p.map(item => {
-      let [v, u] = item; //TODO
-      if(u === PERCENT) {}
-      else if(u === REM) {}
-      else if(u === VW) {}
-      else if(u === VH) {}
+    let k1 = 'offsetWidth', k2 = 'offsetHeight';
+    if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'clientWidth';
+      k2 = 'clientHeight';
+    }
+    else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'width';
+      k2 = 'height';
+    }
+    res[1] = p.map((item, i) => {
+      let [v, u] = item;
+      if(u === PERCENT) {
+        if(i % 2 === 0) {
+          return [(parseFloat(v) || 0) * 0.01 * target[k1], PX];
+        }
+        else {
+          return [(parseFloat(v) || 0) * 0.01 * target[k2], PX];
+        }
+      }
+      else if(u === REM) {
+        return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE] * 100, PX];
+      }
+      else if(u === VW) {
+        return [(parseFloat(v) || 0) * 0.01 * root.width, PX];
+      }
+      else if(u === VH) {
+        return [(parseFloat(v) || 0) * 0.01 * root.height, PX];
+      }
       else {
         return [parseFloat(v) || 0, PX];
       }
@@ -1001,8 +1024,8 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[0][1][i] += v[i] * percent;
       }
     }
+    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
     else if(k === TRANSLATE_PATH) {
-      // 特殊的曲线运动计算，转换为translateXY
       let t = 1 - percent;
       if(v.length === 8) {
         style[TRANSLATE_X] = [
@@ -1034,7 +1057,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
           PX,
         ];
       }
-      else {}
     }
     else if(k === ROTATE_3D) {
       st[0] += v[0] * percent;

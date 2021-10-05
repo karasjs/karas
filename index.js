@@ -13770,7 +13770,7 @@
 
           if (!GEOM$3.hasOwnProperty(k)) {
             k = parseInt(k);
-          } // path动画要转为translateXY，所以手动添加
+          } // path动画要转为translateXY，所以手动添加，使2帧之间存在过渡，有可能之前已存在这个动画，可忽视
 
 
           if (k === TRANSLATE_PATH$1) {
@@ -13781,6 +13781,8 @@
             if (!hash.hasOwnProperty(TRANSLATE_Y$3)) {
               keys.push(TRANSLATE_Y$3);
             }
+
+            hash[TRANSLATE_X$3] = hash[TRANSLATE_Y$3] = true;
           }
 
           keys.push(k);
@@ -13881,7 +13883,7 @@
     var translatePath = style.translatePath;
     style = css.normalize(style);
 
-    if (Array.isArray(translatePath) && [4, 6, 8].indexOf(translatePath.length) > -1) {
+    if (Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
       style[TRANSLATE_PATH$1] = translatePath.map(function (item) {
         return calUnit$2(item);
       });
@@ -14597,13 +14599,35 @@
       res[1] = n - p;
     } // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
     else if (k === TRANSLATE_PATH$1 && p) {
-        res[1] = p.map(function (item) {
+        var k1 = 'offsetWidth',
+            _k3 = 'offsetHeight';
+
+        if (['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP$1]) > -1) {
+          k1 = 'clientWidth';
+          _k3 = 'clientHeight';
+        } else if (['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP$1]) > -1) {
+          k1 = 'width';
+          _k3 = 'height';
+        }
+
+        res[1] = p.map(function (item, i) {
           var _item = _slicedToArray(item, 2),
               v = _item[0],
-              u = _item[1]; //TODO
+              u = _item[1];
 
-
-          if (u === PERCENT$6) ; else if (u === REM$5) ; else if (u === VW$5) ; else if (u === VH$5) ; else {
+          if (u === PERCENT$6) {
+            if (i % 2 === 0) {
+              return [(parseFloat(v) || 0) * 0.01 * target[k1], PX$5];
+            } else {
+              return [(parseFloat(v) || 0) * 0.01 * target[_k3], PX$5];
+            }
+          } else if (u === REM$5) {
+            return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE$7] * 100, PX$5];
+          } else if (u === VW$5) {
+            return [(parseFloat(v) || 0) * 0.01 * root.width, PX$5];
+          } else if (u === VH$5) {
+            return [(parseFloat(v) || 0) * 0.01 * root.height, PX$5];
+          } else {
             return [parseFloat(v) || 0, PX$5];
           }
         });
@@ -14711,258 +14735,258 @@
         for (var _i15 = 0; _i15 < 16; _i15++) {
           st[0][1][_i15] += v[_i15] * percent;
         }
-      } else if (k === TRANSLATE_PATH$1) {
-        // 特殊的曲线运动计算，转换为translateXY
-        var t = 1 - percent;
+      } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
+      else if (k === TRANSLATE_PATH$1) {
+          var t = 1 - percent;
 
-        if (v.length === 8) {
-          style[TRANSLATE_X$3] = [v[0][0] * t * t * t + 3 * v[2][0] * percent * t * t + 3 * v[4][0] * percent * percent * t + v[6][0] * percent * percent * percent, PX$5];
-          style[TRANSLATE_Y$3] = [v[1][0] * t * t * t + 3 * v[3][0] * percent * t * t + 3 * v[5][0] * percent * percent * t + v[7][0] * percent * percent * percent, PX$5];
-        } else if (v.length === 6) {
-          style[TRANSLATE_X$3] = [v[0][0] * t * t + 2 * v[2][0] * percent * t + v[4][0] * percent * percent, PX$5];
-          style[TRANSLATE_Y$3] = [v[1][0] * t * t + 3 * v[3][0] * percent * t + v[5][0] * percent * percent, PX$5];
-        }
-      } else if (k === ROTATE_3D$2) {
-        st[0] += v[0] * percent;
-        st[1] += v[1] * percent;
-        st[2] += v[2] * percent;
-        st[3][0] += v[3][0] * percent;
-      } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
-        if (v) {
-          st[0] += v * percent;
-        }
-      } else if (k === FILTER$2) {
-        // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
-        if (!st) {
-          st = style[k] = [];
-        } // 将已有的样式按key存入引用来操作
-
-
-        var hash = {};
-        st.forEach(function (item) {
-          hash[item[0]] = item[1];
-        });
-        Object.keys(v).forEach(function (k) {
-          if (hash.hasOwnProperty(k)) {
-            hash[k][0] += v[k][0] * percent;
-          } else {
-            // 2个关键帧中有1个未声明，需新建样式存入
-            if (k === 'blur' || k === 'hue-rotate' || k === 'grayscale') {
-              var n = v[k].slice(0);
-              n[0] *= percent;
-              st.push([k, n]);
-            } // 默认值是1而非0
-            else if (k === 'saturate' || k === 'brightness' || k === 'contrast') {
-                var _n = v[k].slice(0);
-
-                _n[0] = 100 + _n[0] * percent;
-                st.push([k, _n]);
-              }
+          if (v.length === 8) {
+            style[TRANSLATE_X$3] = [v[0][0] * t * t * t + 3 * v[2][0] * percent * t * t + 3 * v[4][0] * percent * percent * t + v[6][0] * percent * percent * percent, PX$5];
+            style[TRANSLATE_Y$3] = [v[1][0] * t * t * t + 3 * v[3][0] * percent * t * t + 3 * v[5][0] * percent * percent * t + v[7][0] * percent * percent * percent, PX$5];
+          } else if (v.length === 6) {
+            style[TRANSLATE_X$3] = [v[0][0] * t * t + 2 * v[2][0] * percent * t + v[4][0] * percent * percent, PX$5];
+            style[TRANSLATE_Y$3] = [v[1][0] * t * t + 3 * v[3][0] * percent * t + v[5][0] * percent * percent, PX$5];
           }
-        });
-      } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
-        for (var _i16 = 0; _i16 < 2; _i16++) {
-          st[_i16][0] += v[_i16] * percent;
-        }
-      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
-        if (v[0] !== 0) {
-          st[0][0] += v[0] * percent;
-        }
-
-        if (v[1] !== 0) {
-          st[1][0] += v[1] * percent;
-        }
-      } else if (k === BOX_SHADOW$1) {
-        for (var _i17 = 0, _len8 = Math.min(st.length, v.length); _i17 < _len8; _i17++) {
-          // x/y/blur/spread
-          for (var j = 0; j < 4; j++) {
-            st[_i17][j] += v[_i17][j] * percent;
-          } // rgba
-
-
-          for (var _j5 = 0; _j5 < 4; _j5++) {
-            st[_i17][4][_j5] += v[_i17][4][_j5] * percent;
-          }
-        }
-      } else if (k === BACKGROUND_SIZE$1) {
-        st.forEach(function (item, i) {
-          if (v[i]) {
-            item[0][0] += v[i][0] * percent;
-            item[1][0] += v[i][1] * percent;
-          }
-        });
-      } else if (k === BACKGROUND_POSITION_X$2 || k === BACKGROUND_POSITION_Y$2) {
-        st.forEach(function (item, i) {
-          if (v[i]) {
-            item[0] += v[i] * percent;
-          }
-        });
-      } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
-        st.forEach(function (st2, i) {
-          var v2 = v[i];
-
-          if (!v2) {
-            return;
-          }
-
-          var _v16 = _slicedToArray(v2, 4),
-              c = _v16[0],
-              d = _v16[1],
-              p = _v16[2],
-              z = _v16[3];
-
-          if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
-            for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
-              var a = st2.v[_i18];
-              var b = c[_i18];
-              a[0][0] += b[0][0] * percent;
-              a[0][1] += b[0][1] * percent;
-              a[0][2] += b[0][2] * percent;
-              a[0][3] += b[0][3] * percent;
-
-              if (a[1] && b[1]) {
-                a[1][0] += b[1] * percent;
-              }
-            }
-
-            if (st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
-              if (Array.isArray(d)) {
-                st2.d[0] += d[0] * percent;
-                st2.d[1] += d[1] * percent;
-                st2.d[2] += d[2] * percent;
-                st2.d[3] += d[3] * percent;
-              } else {
-                st2.d += d * percent;
-              }
-            }
-
-            if (st2.k === 'radial') {
-              if (st2.z !== undefined && z !== undefined) {
-                st2.z[0] += z[0] * percent;
-                st2.z[1] += z[1] * percent;
-                st2.z[2] += z[2] * percent;
-                st2.z[3] += z[3] * percent;
-                st2.z[4] += z[4] * percent;
-              } else if (st2.p !== undefined && p !== undefined) {
-                st2.p[0][0] += p[0] * percent;
-                st2.p[1][0] += p[1] * percent;
-              }
-            } else if (st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
-              st2.d += d * percent;
-              st2.p[0][0] += p[0] * percent;
-              st2.p[1][0] += p[1] * percent;
-            }
-          } // fill纯色
-          else {
-              st2[0] += c[0] * percent;
-              st2[1] += c[1] * percent;
-              st2[2] += c[2] * percent;
-              st2[3] += c[3] * percent;
-            }
-        });
-      } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-      else if (COLOR_HASH$2.hasOwnProperty(k)) {
-          st = st[0];
+        } else if (k === ROTATE_3D$2) {
           st[0] += v[0] * percent;
           st[1] += v[1] * percent;
           st[2] += v[2] * percent;
-          st[3] += v[3] * percent;
-        } else if (GEOM$3.hasOwnProperty(k)) {
-          var _st = style[k];
-          var tagName = target.tagName;
+          st[3][0] += v[3][0] * percent;
+        } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
+          if (v) {
+            st[0] += v * percent;
+          }
+        } else if (k === FILTER$2) {
+          // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
+          if (!st) {
+            st = style[k] = [];
+          } // 将已有的样式按key存入引用来操作
 
-          if (GEOM$3[k][tagName] && isFunction$4(GEOM$3[k][tagName].calIncrease)) {
-            var fn = GEOM$3[k][tagName].calIncrease;
 
-            if (target.isMulti) {
-              style[k] = _st.map(function (item, i) {
-                return fn(item, v[i], percent);
-              });
+          var hash = {};
+          st.forEach(function (item) {
+            hash[item[0]] = item[1];
+          });
+          Object.keys(v).forEach(function (k) {
+            if (hash.hasOwnProperty(k)) {
+              hash[k][0] += v[k][0] * percent;
             } else {
-              style[k] = fn(_st, v, percent);
+              // 2个关键帧中有1个未声明，需新建样式存入
+              if (k === 'blur' || k === 'hue-rotate' || k === 'grayscale') {
+                var n = v[k].slice(0);
+                n[0] *= percent;
+                st.push([k, n]);
+              } // 默认值是1而非0
+              else if (k === 'saturate' || k === 'brightness' || k === 'contrast') {
+                  var _n = v[k].slice(0);
+
+                  _n[0] = 100 + _n[0] * percent;
+                  st.push([k, _n]);
+                }
             }
-          } else if (target.isMulti) {
-            if (k === 'points' || k === 'controls') {
-              for (var _i19 = 0, _len10 = Math.min(_st.length, v.length); _i19 < _len10; _i19++) {
-                var o = _st[_i19];
-                var n = v[_i19];
+          });
+        } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
+          for (var _i16 = 0; _i16 < 2; _i16++) {
+            st[_i16][0] += v[_i16] * percent;
+          }
+        } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
+          if (v[0] !== 0) {
+            st[0][0] += v[0] * percent;
+          }
 
-                if (!isNil$5(o) && !isNil$5(n)) {
-                  for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
-                    var o2 = o[_j6];
-                    var n2 = n[_j6];
+          if (v[1] !== 0) {
+            st[1][0] += v[1] * percent;
+          }
+        } else if (k === BOX_SHADOW$1) {
+          for (var _i17 = 0, _len8 = Math.min(st.length, v.length); _i17 < _len8; _i17++) {
+            // x/y/blur/spread
+            for (var j = 0; j < 4; j++) {
+              st[_i17][j] += v[_i17][j] * percent;
+            } // rgba
 
-                    if (!isNil$5(o2) && !isNil$5(n2)) {
-                      for (var _k3 = 0, len3 = Math.min(o2.length, n2.length); _k3 < len3; _k3++) {
-                        if (!isNil$5(o2[_k3]) && !isNil$5(n2[_k3])) {
-                          o2[_k3] += n2[_k3] * percent;
+
+            for (var _j5 = 0; _j5 < 4; _j5++) {
+              st[_i17][4][_j5] += v[_i17][4][_j5] * percent;
+            }
+          }
+        } else if (k === BACKGROUND_SIZE$1) {
+          st.forEach(function (item, i) {
+            if (v[i]) {
+              item[0][0] += v[i][0] * percent;
+              item[1][0] += v[i][1] * percent;
+            }
+          });
+        } else if (k === BACKGROUND_POSITION_X$2 || k === BACKGROUND_POSITION_Y$2) {
+          st.forEach(function (item, i) {
+            if (v[i]) {
+              item[0] += v[i] * percent;
+            }
+          });
+        } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
+          st.forEach(function (st2, i) {
+            var v2 = v[i];
+
+            if (!v2) {
+              return;
+            }
+
+            var _v16 = _slicedToArray(v2, 4),
+                c = _v16[0],
+                d = _v16[1],
+                p = _v16[2],
+                z = _v16[3];
+
+            if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
+              for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
+                var a = st2.v[_i18];
+                var b = c[_i18];
+                a[0][0] += b[0][0] * percent;
+                a[0][1] += b[0][1] * percent;
+                a[0][2] += b[0][2] * percent;
+                a[0][3] += b[0][3] * percent;
+
+                if (a[1] && b[1]) {
+                  a[1][0] += b[1] * percent;
+                }
+              }
+
+              if (st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
+                if (Array.isArray(d)) {
+                  st2.d[0] += d[0] * percent;
+                  st2.d[1] += d[1] * percent;
+                  st2.d[2] += d[2] * percent;
+                  st2.d[3] += d[3] * percent;
+                } else {
+                  st2.d += d * percent;
+                }
+              }
+
+              if (st2.k === 'radial') {
+                if (st2.z !== undefined && z !== undefined) {
+                  st2.z[0] += z[0] * percent;
+                  st2.z[1] += z[1] * percent;
+                  st2.z[2] += z[2] * percent;
+                  st2.z[3] += z[3] * percent;
+                  st2.z[4] += z[4] * percent;
+                } else if (st2.p !== undefined && p !== undefined) {
+                  st2.p[0][0] += p[0] * percent;
+                  st2.p[1][0] += p[1] * percent;
+                }
+              } else if (st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
+                st2.d += d * percent;
+                st2.p[0][0] += p[0] * percent;
+                st2.p[1][0] += p[1] * percent;
+              }
+            } // fill纯色
+            else {
+                st2[0] += c[0] * percent;
+                st2[1] += c[1] * percent;
+                st2[2] += c[2] * percent;
+                st2[3] += c[3] * percent;
+              }
+          });
+        } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
+        else if (COLOR_HASH$2.hasOwnProperty(k)) {
+            st = st[0];
+            st[0] += v[0] * percent;
+            st[1] += v[1] * percent;
+            st[2] += v[2] * percent;
+            st[3] += v[3] * percent;
+          } else if (GEOM$3.hasOwnProperty(k)) {
+            var _st = style[k];
+            var tagName = target.tagName;
+
+            if (GEOM$3[k][tagName] && isFunction$4(GEOM$3[k][tagName].calIncrease)) {
+              var fn = GEOM$3[k][tagName].calIncrease;
+
+              if (target.isMulti) {
+                style[k] = _st.map(function (item, i) {
+                  return fn(item, v[i], percent);
+                });
+              } else {
+                style[k] = fn(_st, v, percent);
+              }
+            } else if (target.isMulti) {
+              if (k === 'points' || k === 'controls') {
+                for (var _i19 = 0, _len10 = Math.min(_st.length, v.length); _i19 < _len10; _i19++) {
+                  var o = _st[_i19];
+                  var n = v[_i19];
+
+                  if (!isNil$5(o) && !isNil$5(n)) {
+                    for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
+                      var o2 = o[_j6];
+                      var n2 = n[_j6];
+
+                      if (!isNil$5(o2) && !isNil$5(n2)) {
+                        for (var _k4 = 0, len3 = Math.min(o2.length, n2.length); _k4 < len3; _k4++) {
+                          if (!isNil$5(o2[_k4]) && !isNil$5(n2[_k4])) {
+                            o2[_k4] += n2[_k4] * percent;
+                          }
                         }
                       }
                     }
                   }
                 }
+              } else if (k === 'controlA' || k === 'controlB') {
+                v.forEach(function (item, i) {
+                  var st2 = _st[i];
+
+                  if (!isNil$5(item) && !isNil$5(st2)) {
+                    for (var _i20 = 0, _len11 = Math.min(st2.length, item.length); _i20 < _len11; _i20++) {
+                      var _o = st2[_i20];
+                      var _n2 = item[_i20];
+
+                      if (!isNil$5(_o) && !isNil$5(_n2)) {
+                        st2[_i20] += _n2 * percent;
+                      }
+                    }
+                  }
+                });
+              } else {
+                v.forEach(function (item, i) {
+                  if (!isNil$5(item) && !isNil$5(_st[i])) {
+                    _st[i] += item * percent;
+                  }
+                });
               }
-            } else if (k === 'controlA' || k === 'controlB') {
-              v.forEach(function (item, i) {
-                var st2 = _st[i];
+            } else {
+              if (k === 'points' || k === 'controls') {
+                for (var _i21 = 0, _len12 = Math.min(_st.length, v.length); _i21 < _len12; _i21++) {
+                  var _o2 = _st[_i21];
+                  var _n3 = v[_i21];
 
-                if (!isNil$5(item) && !isNil$5(st2)) {
-                  for (var _i20 = 0, _len11 = Math.min(st2.length, item.length); _i20 < _len11; _i20++) {
-                    var _o = st2[_i20];
-                    var _n2 = item[_i20];
-
-                    if (!isNil$5(_o) && !isNil$5(_n2)) {
-                      st2[_i20] += _n2 * percent;
+                  if (!isNil$5(_o2) && !isNil$5(_n3)) {
+                    for (var _j7 = 0, _len13 = Math.min(_o2.length, _n3.length); _j7 < _len13; _j7++) {
+                      if (!isNil$5(_o2[_j7]) && !isNil$5(_n3[_j7])) {
+                        _o2[_j7] += _n3[_j7] * percent;
+                      }
                     }
                   }
                 }
-              });
-            } else {
-              v.forEach(function (item, i) {
-                if (!isNil$5(item) && !isNil$5(_st[i])) {
-                  _st[i] += item * percent;
+              } else if (k === 'controlA' || k === 'controlB') {
+                if (!isNil$5(_st[0]) && !isNil$5(v[0])) {
+                  _st[0] += v[0] * percent;
                 }
-              });
+
+                if (!isNil$5(_st[1]) && !isNil$5(v[1])) {
+                  _st[1] += v[1] * percent;
+                }
+              } else {
+                if (!isNil$5(_st) && !isNil$5(v)) {
+                  style[k] += v * percent;
+                }
+              }
             }
-          } else {
-            if (k === 'points' || k === 'controls') {
-              for (var _i21 = 0, _len12 = Math.min(_st.length, v.length); _i21 < _len12; _i21++) {
-                var _o2 = _st[_i21];
-                var _n3 = v[_i21];
+          } else if (k === OPACITY$2 || k === Z_INDEX$1) {
+            style[k] += v * percent; // 精度问题可能会超过[0,1]区间
 
-                if (!isNil$5(_o2) && !isNil$5(_n3)) {
-                  for (var _j7 = 0, _len13 = Math.min(_o2.length, _n3.length); _j7 < _len13; _j7++) {
-                    if (!isNil$5(_o2[_j7]) && !isNil$5(_n3[_j7])) {
-                      _o2[_j7] += _n3[_j7] * percent;
-                    }
-                  }
-                }
-              }
-            } else if (k === 'controlA' || k === 'controlB') {
-              if (!isNil$5(_st[0]) && !isNil$5(v[0])) {
-                _st[0] += v[0] * percent;
-              }
-
-              if (!isNil$5(_st[1]) && !isNil$5(v[1])) {
-                _st[1] += v[1] * percent;
-              }
-            } else {
-              if (!isNil$5(_st) && !isNil$5(v)) {
-                style[k] += v * percent;
+            if (k === OPACITY$2) {
+              if (style[k] < 0) {
+                style[k] = 0;
+              } else if (style[k] > 1) {
+                style[k] = 1;
               }
             }
           }
-        } else if (k === OPACITY$2 || k === Z_INDEX$1) {
-          style[k] += v * percent; // 精度问题可能会超过[0,1]区间
-
-          if (k === OPACITY$2) {
-            if (style[k] < 0) {
-              style[k] = 0;
-            } else if (style[k] > 1) {
-              style[k] = 1;
-            }
-          }
-        }
     };
 
     for (var i = 0, len = transition.length; i < len; i++) {
@@ -35958,7 +35982,7 @@
     Cache: Cache
   };
 
-  var version = "0.61.11";
+  var version = "0.62.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -330,12 +330,13 @@ var STYLE_KEY = {
   STROKE_LINEJOIN: 90,
   STROKE_MITERLIMIT: 91,
   FILL_RULE: 92,
-  // 无此样式，仅cache需要
+  // 无此样式，仅cache或特殊情况需要
   MATRIX: 93,
   BORDER_TOP: 94,
   BORDER_RIGHT: 95,
   BORDER_BOTTOM: 96,
-  BORDER_LEFT: 97
+  BORDER_LEFT: 97,
+  TRANSLATE_PATH: 98
 };
 
 function style2Lower(s) {
@@ -770,7 +771,7 @@ var o$1 = {
 o$1.info['宋体'] = o$1.info.simsun;
 
 var reg = {
-  position: /((-?[\d.]+[pxremvwh%]*)|(left|top|right|bottom|center)){1,2}/ig,
+  position: /(([-+]?[\d.]+[pxremvwh%]*)|(left|top|right|bottom|center)){1,2}/ig,
   // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
   gradient: /\b(\w+)-?gradient\((.+)\)/i,
   img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
@@ -6468,7 +6469,7 @@ function getLinearDeg(v) {
     deg = 315;
   } // 数字角度，没有的话取默认角度
   else {
-      var match = /(-?[\d.]+)deg/.exec(v);
+      var match = /([-+]?[\d.]+)deg/.exec(v);
 
       if (match) {
         deg = parseFloat(match[1]);
@@ -6479,7 +6480,7 @@ function getLinearDeg(v) {
 }
 
 function getRadialPosition(data) {
-  if (/^-?[\d.]/.test(data)) {
+  if (/^[-+]?[\d.]/.test(data)) {
     var v = calUnit(data);
 
     if ([NUMBER, DEG].indexOf(v[1]) > -1) {
@@ -6862,13 +6863,13 @@ function parseGradient(s) {
     };
 
     if (o.k === 'linear') {
-      var deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      var deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
 
       if (deg) {
         o.d = getLinearDeg(deg[0].toLowerCase());
       } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-          var points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
+          var points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
 
           if (points) {
             o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
@@ -6884,7 +6885,7 @@ function parseGradient(s) {
         o.z = size[0].toLowerCase();
       } // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
       else {
-          var _points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
+          var _points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
 
           if (_points) {
             o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4])];
@@ -6899,7 +6900,7 @@ function parseGradient(s) {
           }
         }
 
-      var position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      var position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
 
       if (position) {
         var x = getRadialPosition(position[1]);
@@ -6909,7 +6910,7 @@ function parseGradient(s) {
         o.p = [[50, PERCENT$1], [50, PERCENT$1]];
       }
     } else if (o.k === 'conic') {
-      var _deg = /(-?[\d.]+deg)/i.exec(gradient[2]);
+      var _deg = /([-+]?[\d.]+deg)/i.exec(gradient[2]);
 
       if (_deg) {
         o.d = parseFloat(_deg[0]) % 360;
@@ -6917,7 +6918,7 @@ function parseGradient(s) {
         o.d = 0;
       }
 
-      var _position = /at\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      var _position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
 
       if (_position) {
         var _x = getRadialPosition(_position[1]);
@@ -6930,11 +6931,11 @@ function parseGradient(s) {
       }
     }
 
-    var v = gradient[2].match(/(-?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+[pxremvwh%]+)?/ig) || [];
+    var v = gradient[2].match(/([-+]?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwh%]+)?/ig) || [];
     o.v = v.map(function (item) {
       var color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       var arr = [rgba2int$1(color[1])];
-      var percent = /-?[\d.]+[pxremvwh%]+/.exec(item);
+      var percent = /[-+]?[\d.]+[pxremvwh%]+/.exec(item);
 
       if (percent) {
         var _v = calUnit(percent[0]);
@@ -7346,7 +7347,7 @@ function parseMarginPadding(style, key, list) {
   var temp = style[key];
 
   if (!isNil$2(temp)) {
-    var match = temp.toString().match(/(-?[\d.]+[pxremvwh%]*)|(auto)/ig);
+    var match = temp.toString().match(/([-+]?[\d.]+[pxremvwh%]*)|(auto)/ig);
 
     if (match) {
       if (match.length === 1) {
@@ -7778,6 +7779,10 @@ o$2.isValid = function (tagName, k) {
     return GEOM$1[k].hasOwnProperty(tagName);
   }
 
+  if (k === 'translatePath') {
+    return true;
+  }
+
   return false;
 };
 
@@ -7888,7 +7893,8 @@ var STYLE_KEY$3 = enums.STYLE_KEY,
     LINE_CLAMP = _enums$STYLE_KEY$2.LINE_CLAMP,
     ORDER = _enums$STYLE_KEY$2.ORDER,
     FLEX_WRAP = _enums$STYLE_KEY$2.FLEX_WRAP,
-    ALIGN_CONTENT = _enums$STYLE_KEY$2.ALIGN_CONTENT;
+    ALIGN_CONTENT = _enums$STYLE_KEY$2.ALIGN_CONTENT,
+    TRANSLATE_PATH = _enums$STYLE_KEY$2.TRANSLATE_PATH;
 var AUTO = o.AUTO,
     PX$2 = o.PX,
     PERCENT$2 = o.PERCENT,
@@ -8119,7 +8125,7 @@ function normalize(style) {
       }
 
       res[k] = temp.map(function (item) {
-        if (/^-?[\d.]/.test(item)) {
+        if (/^[-+]?[\d.]/.test(item)) {
           var v = calUnit$1(item);
 
           if ([NUMBER$1, DEG$1].indexOf(v[1]) > -1) {
@@ -8152,7 +8158,7 @@ function normalize(style) {
         return [[0, AUTO], [0, AUTO]];
       }
 
-      var match = item.toString().match(/\b(?:(-?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
+      var match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
 
       if (match) {
         if (match.length === 1) {
@@ -8168,7 +8174,7 @@ function normalize(style) {
         for (var i = 0; i < 2; i++) {
           var _item = match[i];
 
-          if (/^-?[\d.]/.test(_item)) {
+          if (/^[-+]?[\d.]/.test(_item)) {
             var n = calUnit$1(_item);
 
             if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
@@ -8214,7 +8220,7 @@ function normalize(style) {
       for (var i = 0; i < 2; i++) {
         var item = arr[i];
 
-        if (/^-?[\d.]/.test(item)) {
+        if (/^[-+]?[\d.]/.test(item)) {
           var n = calUnit$1(item);
 
           if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
@@ -8386,7 +8392,7 @@ function normalize(style) {
         for (var i = 0; i < 2; i++) {
           var item = _match[i];
 
-          if (/^-?[\d.]/.test(item)) {
+          if (/^[-+]?[\d.]/.test(item)) {
             var n = calUnit$1(item);
 
             if ([NUMBER$1, DEG$1].indexOf(n[1]) > -1) {
@@ -8636,7 +8642,7 @@ function normalize(style) {
       res[LETTER_SPACING] = [0, INHERIT$2];
     } else if (temp === 'normal') {
       res[LETTER_SPACING] = [0, PX$2];
-    } else if (/^-?[\d.]/.test(temp)) {
+    } else if (/^[-+]?[\d.]/.test(temp)) {
       var _v3 = calUnit$1(temp);
 
       if ([NUMBER$1, DEG$1].indexOf(_v3[1]) > -1) {
@@ -8781,7 +8787,7 @@ function normalize(style) {
   temp = style.filter;
 
   if (temp !== undefined) {
-    var _match3 = (temp || '').toString().match(/\b[\w-]+\s*\(\s*-?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
+    var _match3 = (temp || '').toString().match(/\b[\w-]+\s*\(\s*[-+]?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
 
     var f = null;
 
@@ -8789,7 +8795,7 @@ function normalize(style) {
       f = [];
 
       _match3.forEach(function (item) {
-        var m2 = /([\w-]+)\s*\(\s*(-?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
+        var m2 = /([\w-]+)\s*\(\s*([-+]?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
 
         if (m2) {
           var k = m2[1].toLowerCase(),
@@ -8853,11 +8859,11 @@ function normalize(style) {
   if (temp !== undefined) {
     var bs = null;
 
-    var _match4 = (temp || '').match(/(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    var _match4 = (temp || '').match(/([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
     if (_match4) {
       _match4.forEach(function (item) {
-        var boxShadow = /(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*)\s*(-?[\d.]+[pxremvwh%]*\s*)?(-?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        var boxShadow = /([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
         if (boxShadow) {
           bs = bs || [];
@@ -9357,6 +9363,12 @@ function cloneStyle(style, keys) {
           return n;
         });
         res[k] = v;
+      }
+    } else if (k === TRANSLATE_PATH) {
+      if (v) {
+        res[k] = v.map(function (item) {
+          return item.slice(0);
+        });
       }
     } // position等直接值类型赋值
     else if (VALUE.hasOwnProperty(k)) {
@@ -13674,6 +13686,7 @@ var _enums$STYLE_KEY$a = enums.STYLE_KEY,
     BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$a.BACKGROUND_POSITION_Y,
     BOX_SHADOW$1 = _enums$STYLE_KEY$a.BOX_SHADOW,
     TRANSLATE_X$3 = _enums$STYLE_KEY$a.TRANSLATE_X,
+    TRANSLATE_Y$3 = _enums$STYLE_KEY$a.TRANSLATE_Y,
     TRANSLATE_Z$3 = _enums$STYLE_KEY$a.TRANSLATE_Z,
     BACKGROUND_SIZE$1 = _enums$STYLE_KEY$a.BACKGROUND_SIZE,
     FONT_SIZE$7 = _enums$STYLE_KEY$a.FONT_SIZE,
@@ -13694,6 +13707,7 @@ var _enums$STYLE_KEY$a = enums.STYLE_KEY,
     TEXT_ALIGN$1 = _enums$STYLE_KEY$a.TEXT_ALIGN,
     MATRIX$2 = _enums$STYLE_KEY$a.MATRIX,
     ROTATE_3D$2 = _enums$STYLE_KEY$a.ROTATE_3D,
+    TRANSLATE_PATH$1 = _enums$STYLE_KEY$a.TRANSLATE_PATH,
     _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
     UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
     UPDATE_STYLE = _enums$UPDATE_KEY$1.UPDATE_STYLE,
@@ -13713,7 +13727,8 @@ var AUTO$3 = o.AUTO,
     NUMBER$4 = o.NUMBER,
     REM$5 = o.REM,
     VW$5 = o.VW,
-    VH$5 = o.VH;
+    VH$5 = o.VH,
+    calUnit$2 = o.calUnit;
 var isNil$5 = util.isNil,
     isFunction$4 = util.isFunction,
     isNumber$1 = util.isNumber,
@@ -13742,13 +13757,26 @@ function unify(frames, target) {
   frames.forEach(function (item) {
     var style = item[FRAME_STYLE];
     Object.keys(style).forEach(function (k) {
-      var v = style[k]; // 空的过滤掉
+      var v = style[k]; // 未定义的过滤掉，null空有意义
 
       if (v !== undefined && !hash.hasOwnProperty(k)) {
-        hash[k] = true;
+        hash[k] = true; // geom为属性字符串，style都为枚举int
 
         if (!GEOM$3.hasOwnProperty(k)) {
           k = parseInt(k);
+        } // path动画要转为translateXY，所以手动添加，使2帧之间存在过渡，有可能之前已存在这个动画，可忽视
+
+
+        if (k === TRANSLATE_PATH$1) {
+          if (!hash.hasOwnProperty(TRANSLATE_X$3)) {
+            keys.push(TRANSLATE_X$3);
+          }
+
+          if (!hash.hasOwnProperty(TRANSLATE_Y$3)) {
+            keys.push(TRANSLATE_Y$3);
+          }
+
+          hash[TRANSLATE_X$3] = hash[TRANSLATE_Y$3] = true;
         }
 
         keys.push(k);
@@ -13844,8 +13872,17 @@ function framing(style, duration, es) {
       easing = _style.easing; // 这两个特殊值提出来存储不干扰style
 
   delete style.offset;
-  delete style.easing;
+  delete style.easing; // translatePath特殊对待，ae的曲线运动动画
+
+  var translatePath = style.translatePath;
   style = css.normalize(style);
+
+  if (Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
+    style[TRANSLATE_PATH$1] = translatePath.map(function (item) {
+      return calUnit$2(item);
+    });
+  }
+
   var res = [];
   res[FRAME_STYLE] = style;
   res[FRAME_TIME] = offset * duration;
@@ -14554,10 +14591,44 @@ function calDiff(prev, next, k, target, tagName) {
     }
 
     res[1] = n - p;
-  } // display等不能有增量过程的
-  else {
-      return;
-    }
+  } // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
+  else if (k === TRANSLATE_PATH$1 && p) {
+      var k1 = 'offsetWidth',
+          _k3 = 'offsetHeight';
+
+      if (['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP$1]) > -1) {
+        k1 = 'clientWidth';
+        _k3 = 'clientHeight';
+      } else if (['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP$1]) > -1) {
+        k1 = 'width';
+        _k3 = 'height';
+      }
+
+      res[1] = p.map(function (item, i) {
+        var _item = _slicedToArray(item, 2),
+            v = _item[0],
+            u = _item[1];
+
+        if (u === PERCENT$6) {
+          if (i % 2 === 0) {
+            return [(parseFloat(v) || 0) * 0.01 * target[k1], PX$5];
+          } else {
+            return [(parseFloat(v) || 0) * 0.01 * target[_k3], PX$5];
+          }
+        } else if (u === REM$5) {
+          return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE$7] * 100, PX$5];
+        } else if (u === VW$5) {
+          return [(parseFloat(v) || 0) * 0.01 * root.width, PX$5];
+        } else if (u === VH$5) {
+          return [(parseFloat(v) || 0) * 0.01 * root.height, PX$5];
+        } else {
+          return [parseFloat(v) || 0, PX$5];
+        }
+      });
+    } // display等不能有增量过程的
+    else {
+        return;
+      }
 
   return res;
 } // 计算两帧之间不相同的变化，存入transition，相同的忽略
@@ -14658,247 +14729,258 @@ function calIntermediateStyle(frame, keys, percent, target) {
       for (var _i15 = 0; _i15 < 16; _i15++) {
         st[0][1][_i15] += v[_i15] * percent;
       }
-    } else if (k === ROTATE_3D$2) {
-      st[0] += v[0] * percent;
-      st[1] += v[1] * percent;
-      st[2] += v[2] * percent;
-      st[3][0] += v[3][0] * percent;
-    } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
-      if (v) {
-        st[0] += v * percent;
-      }
-    } else if (k === FILTER$2) {
-      // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
-      if (!st) {
-        st = style[k] = [];
-      } // 将已有的样式按key存入引用来操作
+    } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
+    else if (k === TRANSLATE_PATH$1) {
+        var t = 1 - percent;
 
-
-      var hash = {};
-      st.forEach(function (item) {
-        hash[item[0]] = item[1];
-      });
-      Object.keys(v).forEach(function (k) {
-        if (hash.hasOwnProperty(k)) {
-          hash[k][0] += v[k][0] * percent;
-        } else {
-          // 2个关键帧中有1个未声明，需新建样式存入
-          if (k === 'blur' || k === 'hue-rotate' || k === 'grayscale') {
-            var n = v[k].slice(0);
-            n[0] *= percent;
-            st.push([k, n]);
-          } // 默认值是1而非0
-          else if (k === 'saturate' || k === 'brightness' || k === 'contrast') {
-              var _n = v[k].slice(0);
-
-              _n[0] = 100 + _n[0] * percent;
-              st.push([k, _n]);
-            }
+        if (v.length === 8) {
+          style[TRANSLATE_X$3] = [v[0][0] * t * t * t + 3 * v[2][0] * percent * t * t + 3 * v[4][0] * percent * percent * t + v[6][0] * percent * percent * percent, PX$5];
+          style[TRANSLATE_Y$3] = [v[1][0] * t * t * t + 3 * v[3][0] * percent * t * t + 3 * v[5][0] * percent * percent * t + v[7][0] * percent * percent * percent, PX$5];
+        } else if (v.length === 6) {
+          style[TRANSLATE_X$3] = [v[0][0] * t * t + 2 * v[2][0] * percent * t + v[4][0] * percent * percent, PX$5];
+          style[TRANSLATE_Y$3] = [v[1][0] * t * t + 3 * v[3][0] * percent * t + v[5][0] * percent * percent, PX$5];
         }
-      });
-    } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
-      for (var _i16 = 0; _i16 < 2; _i16++) {
-        st[_i16][0] += v[_i16] * percent;
-      }
-    } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
-      if (v[0] !== 0) {
-        st[0][0] += v[0] * percent;
-      }
-
-      if (v[1] !== 0) {
-        st[1][0] += v[1] * percent;
-      }
-    } else if (k === BOX_SHADOW$1) {
-      for (var _i17 = 0, _len8 = Math.min(st.length, v.length); _i17 < _len8; _i17++) {
-        // x/y/blur/spread
-        for (var j = 0; j < 4; j++) {
-          st[_i17][j] += v[_i17][j] * percent;
-        } // rgba
-
-
-        for (var _j5 = 0; _j5 < 4; _j5++) {
-          st[_i17][4][_j5] += v[_i17][4][_j5] * percent;
-        }
-      }
-    } else if (k === BACKGROUND_SIZE$1) {
-      st.forEach(function (item, i) {
-        if (v[i]) {
-          item[0][0] += v[i][0] * percent;
-          item[1][0] += v[i][1] * percent;
-        }
-      });
-    } else if (k === BACKGROUND_POSITION_X$2 || k === BACKGROUND_POSITION_Y$2) {
-      st.forEach(function (item, i) {
-        if (v[i]) {
-          item[0] += v[i] * percent;
-        }
-      });
-    } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
-      st.forEach(function (st2, i) {
-        var v2 = v[i];
-
-        if (!v2) {
-          return;
-        }
-
-        var _v16 = _slicedToArray(v2, 4),
-            c = _v16[0],
-            d = _v16[1],
-            p = _v16[2],
-            z = _v16[3];
-
-        if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
-          for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
-            var a = st2.v[_i18];
-            var b = c[_i18];
-            a[0][0] += b[0][0] * percent;
-            a[0][1] += b[0][1] * percent;
-            a[0][2] += b[0][2] * percent;
-            a[0][3] += b[0][3] * percent;
-
-            if (a[1] && b[1]) {
-              a[1][0] += b[1] * percent;
-            }
-          }
-
-          if (st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
-            if (Array.isArray(d)) {
-              st2.d[0] += d[0] * percent;
-              st2.d[1] += d[1] * percent;
-              st2.d[2] += d[2] * percent;
-              st2.d[3] += d[3] * percent;
-            } else {
-              st2.d += d * percent;
-            }
-          }
-
-          if (st2.k === 'radial') {
-            if (st2.z !== undefined && z !== undefined) {
-              st2.z[0] += z[0] * percent;
-              st2.z[1] += z[1] * percent;
-              st2.z[2] += z[2] * percent;
-              st2.z[3] += z[3] * percent;
-              st2.z[4] += z[4] * percent;
-            } else if (st2.p !== undefined && p !== undefined) {
-              st2.p[0][0] += p[0] * percent;
-              st2.p[1][0] += p[1] * percent;
-            }
-          } else if (st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
-            st2.d += d * percent;
-            st2.p[0][0] += p[0] * percent;
-            st2.p[1][0] += p[1] * percent;
-          }
-        } // fill纯色
-        else {
-            st2[0] += c[0] * percent;
-            st2[1] += c[1] * percent;
-            st2[2] += c[2] * percent;
-            st2[3] += c[3] * percent;
-          }
-      });
-    } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-    else if (COLOR_HASH$2.hasOwnProperty(k)) {
-        st = st[0];
+      } else if (k === ROTATE_3D$2) {
         st[0] += v[0] * percent;
         st[1] += v[1] * percent;
         st[2] += v[2] * percent;
-        st[3] += v[3] * percent;
-      } else if (GEOM$3.hasOwnProperty(k)) {
-        var _st = style[k];
-        var tagName = target.tagName;
+        st[3][0] += v[3][0] * percent;
+      } else if (NUM_CAL_HASH.hasOwnProperty(k)) {
+        if (v) {
+          st[0] += v * percent;
+        }
+      } else if (k === FILTER$2) {
+        // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
+        if (!st) {
+          st = style[k] = [];
+        } // 将已有的样式按key存入引用来操作
 
-        if (GEOM$3[k][tagName] && isFunction$4(GEOM$3[k][tagName].calIncrease)) {
-          var fn = GEOM$3[k][tagName].calIncrease;
 
-          if (target.isMulti) {
-            style[k] = _st.map(function (item, i) {
-              return fn(item, v[i], percent);
-            });
+        var hash = {};
+        st.forEach(function (item) {
+          hash[item[0]] = item[1];
+        });
+        Object.keys(v).forEach(function (k) {
+          if (hash.hasOwnProperty(k)) {
+            hash[k][0] += v[k][0] * percent;
           } else {
-            style[k] = fn(_st, v, percent);
+            // 2个关键帧中有1个未声明，需新建样式存入
+            if (k === 'blur' || k === 'hue-rotate' || k === 'grayscale') {
+              var n = v[k].slice(0);
+              n[0] *= percent;
+              st.push([k, n]);
+            } // 默认值是1而非0
+            else if (k === 'saturate' || k === 'brightness' || k === 'contrast') {
+                var _n = v[k].slice(0);
+
+                _n[0] = 100 + _n[0] * percent;
+                st.push([k, _n]);
+              }
           }
-        } else if (target.isMulti) {
-          if (k === 'points' || k === 'controls') {
-            for (var _i19 = 0, _len10 = Math.min(_st.length, v.length); _i19 < _len10; _i19++) {
-              var o = _st[_i19];
-              var n = v[_i19];
+        });
+      } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
+        for (var _i16 = 0; _i16 < 2; _i16++) {
+          st[_i16][0] += v[_i16] * percent;
+        }
+      } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
+        if (v[0] !== 0) {
+          st[0][0] += v[0] * percent;
+        }
 
-              if (!isNil$5(o) && !isNil$5(n)) {
-                for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
-                  var o2 = o[_j6];
-                  var n2 = n[_j6];
+        if (v[1] !== 0) {
+          st[1][0] += v[1] * percent;
+        }
+      } else if (k === BOX_SHADOW$1) {
+        for (var _i17 = 0, _len8 = Math.min(st.length, v.length); _i17 < _len8; _i17++) {
+          // x/y/blur/spread
+          for (var j = 0; j < 4; j++) {
+            st[_i17][j] += v[_i17][j] * percent;
+          } // rgba
 
-                  if (!isNil$5(o2) && !isNil$5(n2)) {
-                    for (var _k3 = 0, len3 = Math.min(o2.length, n2.length); _k3 < len3; _k3++) {
-                      if (!isNil$5(o2[_k3]) && !isNil$5(n2[_k3])) {
-                        o2[_k3] += n2[_k3] * percent;
+
+          for (var _j5 = 0; _j5 < 4; _j5++) {
+            st[_i17][4][_j5] += v[_i17][4][_j5] * percent;
+          }
+        }
+      } else if (k === BACKGROUND_SIZE$1) {
+        st.forEach(function (item, i) {
+          if (v[i]) {
+            item[0][0] += v[i][0] * percent;
+            item[1][0] += v[i][1] * percent;
+          }
+        });
+      } else if (k === BACKGROUND_POSITION_X$2 || k === BACKGROUND_POSITION_Y$2) {
+        st.forEach(function (item, i) {
+          if (v[i]) {
+            item[0] += v[i] * percent;
+          }
+        });
+      } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
+        st.forEach(function (st2, i) {
+          var v2 = v[i];
+
+          if (!v2) {
+            return;
+          }
+
+          var _v16 = _slicedToArray(v2, 4),
+              c = _v16[0],
+              d = _v16[1],
+              p = _v16[2],
+              z = _v16[3];
+
+          if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
+            for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
+              var a = st2.v[_i18];
+              var b = c[_i18];
+              a[0][0] += b[0][0] * percent;
+              a[0][1] += b[0][1] * percent;
+              a[0][2] += b[0][2] * percent;
+              a[0][3] += b[0][3] * percent;
+
+              if (a[1] && b[1]) {
+                a[1][0] += b[1] * percent;
+              }
+            }
+
+            if (st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
+              if (Array.isArray(d)) {
+                st2.d[0] += d[0] * percent;
+                st2.d[1] += d[1] * percent;
+                st2.d[2] += d[2] * percent;
+                st2.d[3] += d[3] * percent;
+              } else {
+                st2.d += d * percent;
+              }
+            }
+
+            if (st2.k === 'radial') {
+              if (st2.z !== undefined && z !== undefined) {
+                st2.z[0] += z[0] * percent;
+                st2.z[1] += z[1] * percent;
+                st2.z[2] += z[2] * percent;
+                st2.z[3] += z[3] * percent;
+                st2.z[4] += z[4] * percent;
+              } else if (st2.p !== undefined && p !== undefined) {
+                st2.p[0][0] += p[0] * percent;
+                st2.p[1][0] += p[1] * percent;
+              }
+            } else if (st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
+              st2.d += d * percent;
+              st2.p[0][0] += p[0] * percent;
+              st2.p[1][0] += p[1] * percent;
+            }
+          } // fill纯色
+          else {
+              st2[0] += c[0] * percent;
+              st2[1] += c[1] * percent;
+              st2[2] += c[2] * percent;
+              st2[3] += c[3] * percent;
+            }
+        });
+      } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
+      else if (COLOR_HASH$2.hasOwnProperty(k)) {
+          st = st[0];
+          st[0] += v[0] * percent;
+          st[1] += v[1] * percent;
+          st[2] += v[2] * percent;
+          st[3] += v[3] * percent;
+        } else if (GEOM$3.hasOwnProperty(k)) {
+          var _st = style[k];
+          var tagName = target.tagName;
+
+          if (GEOM$3[k][tagName] && isFunction$4(GEOM$3[k][tagName].calIncrease)) {
+            var fn = GEOM$3[k][tagName].calIncrease;
+
+            if (target.isMulti) {
+              style[k] = _st.map(function (item, i) {
+                return fn(item, v[i], percent);
+              });
+            } else {
+              style[k] = fn(_st, v, percent);
+            }
+          } else if (target.isMulti) {
+            if (k === 'points' || k === 'controls') {
+              for (var _i19 = 0, _len10 = Math.min(_st.length, v.length); _i19 < _len10; _i19++) {
+                var o = _st[_i19];
+                var n = v[_i19];
+
+                if (!isNil$5(o) && !isNil$5(n)) {
+                  for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
+                    var o2 = o[_j6];
+                    var n2 = n[_j6];
+
+                    if (!isNil$5(o2) && !isNil$5(n2)) {
+                      for (var _k4 = 0, len3 = Math.min(o2.length, n2.length); _k4 < len3; _k4++) {
+                        if (!isNil$5(o2[_k4]) && !isNil$5(n2[_k4])) {
+                          o2[_k4] += n2[_k4] * percent;
+                        }
                       }
                     }
                   }
                 }
               }
+            } else if (k === 'controlA' || k === 'controlB') {
+              v.forEach(function (item, i) {
+                var st2 = _st[i];
+
+                if (!isNil$5(item) && !isNil$5(st2)) {
+                  for (var _i20 = 0, _len11 = Math.min(st2.length, item.length); _i20 < _len11; _i20++) {
+                    var _o = st2[_i20];
+                    var _n2 = item[_i20];
+
+                    if (!isNil$5(_o) && !isNil$5(_n2)) {
+                      st2[_i20] += _n2 * percent;
+                    }
+                  }
+                }
+              });
+            } else {
+              v.forEach(function (item, i) {
+                if (!isNil$5(item) && !isNil$5(_st[i])) {
+                  _st[i] += item * percent;
+                }
+              });
             }
-          } else if (k === 'controlA' || k === 'controlB') {
-            v.forEach(function (item, i) {
-              var st2 = _st[i];
+          } else {
+            if (k === 'points' || k === 'controls') {
+              for (var _i21 = 0, _len12 = Math.min(_st.length, v.length); _i21 < _len12; _i21++) {
+                var _o2 = _st[_i21];
+                var _n3 = v[_i21];
 
-              if (!isNil$5(item) && !isNil$5(st2)) {
-                for (var _i20 = 0, _len11 = Math.min(st2.length, item.length); _i20 < _len11; _i20++) {
-                  var _o = st2[_i20];
-                  var _n2 = item[_i20];
-
-                  if (!isNil$5(_o) && !isNil$5(_n2)) {
-                    st2[_i20] += _n2 * percent;
+                if (!isNil$5(_o2) && !isNil$5(_n3)) {
+                  for (var _j7 = 0, _len13 = Math.min(_o2.length, _n3.length); _j7 < _len13; _j7++) {
+                    if (!isNil$5(_o2[_j7]) && !isNil$5(_n3[_j7])) {
+                      _o2[_j7] += _n3[_j7] * percent;
+                    }
                   }
                 }
               }
-            });
-          } else {
-            v.forEach(function (item, i) {
-              if (!isNil$5(item) && !isNil$5(_st[i])) {
-                _st[i] += item * percent;
+            } else if (k === 'controlA' || k === 'controlB') {
+              if (!isNil$5(_st[0]) && !isNil$5(v[0])) {
+                _st[0] += v[0] * percent;
               }
-            });
+
+              if (!isNil$5(_st[1]) && !isNil$5(v[1])) {
+                _st[1] += v[1] * percent;
+              }
+            } else {
+              if (!isNil$5(_st) && !isNil$5(v)) {
+                style[k] += v * percent;
+              }
+            }
           }
-        } else {
-          if (k === 'points' || k === 'controls') {
-            for (var _i21 = 0, _len12 = Math.min(_st.length, v.length); _i21 < _len12; _i21++) {
-              var _o2 = _st[_i21];
-              var _n3 = v[_i21];
+        } else if (k === OPACITY$2 || k === Z_INDEX$1) {
+          style[k] += v * percent; // 精度问题可能会超过[0,1]区间
 
-              if (!isNil$5(_o2) && !isNil$5(_n3)) {
-                for (var _j7 = 0, _len13 = Math.min(_o2.length, _n3.length); _j7 < _len13; _j7++) {
-                  if (!isNil$5(_o2[_j7]) && !isNil$5(_n3[_j7])) {
-                    _o2[_j7] += _n3[_j7] * percent;
-                  }
-                }
-              }
-            }
-          } else if (k === 'controlA' || k === 'controlB') {
-            if (!isNil$5(_st[0]) && !isNil$5(v[0])) {
-              _st[0] += v[0] * percent;
-            }
-
-            if (!isNil$5(_st[1]) && !isNil$5(v[1])) {
-              _st[1] += v[1] * percent;
-            }
-          } else {
-            if (!isNil$5(_st) && !isNil$5(v)) {
-              style[k] += v * percent;
+          if (k === OPACITY$2) {
+            if (style[k] < 0) {
+              style[k] = 0;
+            } else if (style[k] > 1) {
+              style[k] = 1;
             }
           }
         }
-      } else if (k === OPACITY$2 || k === Z_INDEX$1) {
-        style[k] += v * percent; // 精度问题可能会超过[0,1]区间
-
-        if (k === OPACITY$2) {
-          if (style[k] < 0) {
-            style[k] = 0;
-          } else if (style[k] > 1) {
-            style[k] = 1;
-          }
-        }
-      }
   };
 
   for (var i = 0, len = transition.length; i < len; i++) {
@@ -14924,7 +15006,7 @@ var I_IS_DELAY = 2;
 var I_BEGIN = 3;
 var I_END = 4;
 var I_FINISHED = 5;
-var I_NEXT_BEGIN = 6;
+var I_NEXT_END = 6;
 var I_FIRST_PLAY = 7;
 var I_FRAME_CB = 8;
 var I_PLAY_CB = 9;
@@ -14963,7 +15045,7 @@ var I_IS2 = 41;
 var I_END_TIME = 42;
 var I_NODE_CONFIG = 43;
 var I_ROOT_CONFIG = 44;
-var I_OUT_BEGIN_DELAY = 45;
+var I_OUT_BEGIN_DELAY = 45; // const I_NEXT_END = 46;
 
 var Animation = /*#__PURE__*/function (_Event) {
   _inherits(Animation, _Event);
@@ -15409,6 +15491,7 @@ var Animation = /*#__PURE__*/function (_Event) {
       frame.offFrame(this);
       frame.onFrame(this);
       __config[I_START_TIME] = frame.__now;
+      __config[I_END] = false;
       return this;
     }
   }, {
@@ -15472,8 +15555,17 @@ var Animation = /*#__PURE__*/function (_Event) {
       if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
         __config[I_OUT_BEGIN_DELAY] = false;
         __config[I_BEGIN] = true;
-      } // 只有2帧可优化，否则2分查找当前帧
+      } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
 
+
+      while (currentTime >= duration && playCount < iterations - 1) {
+        currentTime -= duration;
+        __config[I_NEXT_TIME] -= duration;
+        playCount = ++__config[I_PLAY_COUNT];
+        __config[I_BEGIN] = true;
+      }
+
+      var isLastCount = playCount >= iterations - 1; // 只有2帧可优化，否则2分查找当前帧
 
       var i, frameTime;
 
@@ -15483,10 +15575,10 @@ var Animation = /*#__PURE__*/function (_Event) {
       } else {
         i = binarySearch(0, length - 1, currentTime, currentFrames);
         frameTime = currentFrames[i][FRAME_TIME];
-      } // 最后一帧结束动画
+      } // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
 
 
-      var isLastFrame = i === length - 1;
+      var isLastFrame = isLastCount && i === length - 1;
       var percent = 0;
 
       if (isLastFrame) ; // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -15497,7 +15589,6 @@ var Animation = /*#__PURE__*/function (_Event) {
           percent = (currentTime - frameTime) / total;
         }
 
-      var isLastCount = playCount >= iterations - 1;
       var inEndDelay,
           currentFrame = currentFrames[i],
           current;
@@ -15513,57 +15604,37 @@ var Animation = /*#__PURE__*/function (_Event) {
        * 8. 多次播放有endDelay且fill停留
        */
 
-      if (isLastFrame) {
-        // endDelay实际最后一次播放时生效，这里仅计算时间对比
-        inEndDelay = isLastCount && currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-        // 多次播放时到达最后一帧也会显示
+      var needClean;
 
-        if (stayEnd || !isLastCount) {
+      if (isLastFrame) {
+        inEndDelay = currentTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+
+        if (stayEnd) {
           current = cloneStyle$1(currentFrame[FRAME_STYLE], __config[I_KEYS]);
         } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
         else {
             current = cloneStyle$1(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
-          } // 非尾每轮次放完增加次数和计算下轮准备
+          } // 进入endDelay或结束阶段触发end事件，注意只触发一次，防重在触发的地方做
 
 
-        if (!isLastCount) {
-          // 首轮特殊减去delay
-          if (playCount === 0 && delay) {
-            __config[I_NEXT_TIME] -= delay;
-          } // duration特别短的情况循环减去
+        __config[I_NEXT_END] = true;
 
-
-          while (__config[I_NEXT_TIME] >= duration) {
-            __config[I_NEXT_TIME] -= duration;
-            playCount = ++__config[I_PLAY_COUNT];
-          }
-
-          __config[I_NEXT_BEGIN] = true;
-        } // 尾次考虑endDelay，非尾次无endDelay结束动画
-        else if (!inEndDelay) {
-            __config[I_NEXT_TIME] = 0;
-            playCount = ++__config[I_PLAY_COUNT]; // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
-
-            if (playCount >= iterations) {
-              frame.offFrame(this);
-            }
-          } // endDelay中无需特殊处理nextTime
-
+        if (!inEndDelay) {
+          __config[I_PLAY_COUNT]++;
+          __config[I_FINISHED] = true;
+          frame.offFrame(this);
+          needClean = true;
+          __config[I_NEXT_TIME] = 0;
+        }
       } else {
         current = calIntermediateStyle(currentFrame, __config[I_KEYS], percent, target);
       } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
-      genBeforeRefresh(current, __config[I_KEYS], __config, root, target); // 每次循环完触发end事件，最后一次循环触发finish
+      genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
 
-      if (isLastFrame && (!inEndDelay || isLastCount)) {
-        __config[I_END] = true;
-
-        if (playCount >= iterations) {
-          __config[I_FINISHED] = true;
-
-          this.__clean(true);
-        }
+      if (needClean) {
+        this.__clean(true);
       }
     }
   }, {
@@ -15584,10 +15655,11 @@ var Animation = /*#__PURE__*/function (_Event) {
       if (__config[I_BEGIN]) {
         __config[I_BEGIN] = false;
         this.emit(Event.BEGIN, __config[I_PLAY_COUNT]);
-      }
+      } // end事件只触发一次，末轮进入endDelay或直接结束时
 
-      if (__config[I_END]) {
-        __config[I_END] = false;
+
+      if (__config[I_NEXT_END] && !__config[I_END]) {
+        __config[I_END] = true;
         this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
         var direction = __config[I_DIRECTION];
         var frames = __config[I_FRAMES];
@@ -15606,12 +15678,11 @@ var Animation = /*#__PURE__*/function (_Event) {
             __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
           }
         }
-      }
+      } // if(__config[I_NEXT_BEGIN]) {
+      //   __config[I_NEXT_BEGIN] = false;
+      //   __config[I_BEGIN] = true;
+      // }
 
-      if (__config[I_NEXT_BEGIN]) {
-        __config[I_NEXT_BEGIN] = false;
-        __config[I_BEGIN] = true;
-      }
 
       if (__config[I_FINISHED]) {
         __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
@@ -16913,7 +16984,7 @@ var STYLE_KEY$5 = enums.STYLE_KEY,
     HEIGHT$3 = _enums$STYLE_KEY$c.HEIGHT,
     MATRIX$3 = _enums$STYLE_KEY$c.MATRIX,
     TRANSLATE_X$4 = _enums$STYLE_KEY$c.TRANSLATE_X,
-    TRANSLATE_Y$3 = _enums$STYLE_KEY$c.TRANSLATE_Y,
+    TRANSLATE_Y$4 = _enums$STYLE_KEY$c.TRANSLATE_Y,
     TRANSLATE_Z$4 = _enums$STYLE_KEY$c.TRANSLATE_Z,
     TRANSFORM$3 = _enums$STYLE_KEY$c.TRANSFORM,
     SCALE_X$3 = _enums$STYLE_KEY$c.SCALE_X,
@@ -17699,7 +17770,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         }
 
         if (contain(lv, TY)) {
-          var _v = currentStyle[TRANSLATE_Y$3];
+          var _v = currentStyle[TRANSLATE_Y$4];
 
           if (isNil$6(_v)) {
             _v = 0;
@@ -17715,8 +17786,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             _v = _v[0];
           }
 
-          y = _v - (computedStyle[TRANSLATE_Y$3] || 0);
-          computedStyle[TRANSLATE_Y$3] = _v;
+          y = _v - (computedStyle[TRANSLATE_Y$4] || 0);
+          computedStyle[TRANSLATE_Y$4] = _v;
           computedStyle[TRANSFORM$3][13] += y;
           matrixCache[13] += y;
         }
@@ -17760,8 +17831,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             computedStyle[TRANSFORM_ORIGIN$4] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
           }
 
-          if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$3] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
-            __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$3] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
+          if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$4] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+            __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$4] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
             matrixCache = null;
             var matrix; // transform相对于自身
 
@@ -17770,7 +17841,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
                 var temp = [];
-                [TRANSLATE_X$4, TRANSLATE_Y$3, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+                [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                   // 删除之前遗留的
                   delete computedStyle[k];
                   var v = currentStyle[k];
@@ -17801,25 +17872,25 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                   if (v[1] === PERCENT$7) {
                     if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                       computedStyle[k] = v[0] * offsetWidth * 0.01;
-                    } else if (k === TRANSLATE_Y$3) {
+                    } else if (k === TRANSLATE_Y$4) {
                       computedStyle[k] = v[0] * offsetHeight * 0.01;
                     }
                   } else if (v[1] === REM$6) {
                     if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                       computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
-                    } else if (k === TRANSLATE_Y$3) {
+                    } else if (k === TRANSLATE_Y$4) {
                       computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                     }
                   } else if (v[1] === VW$6) {
                     if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                       computedStyle[k] = v[0] * _this3.root.width * 0.01;
-                    } else if (k === TRANSLATE_Y$3) {
+                    } else if (k === TRANSLATE_Y$4) {
                       computedStyle[k] = v[0] * _this3.root.width * 0.01;
                     }
                   } else if (v[1] === VH$6) {
                     if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                       computedStyle[k] = v[0] * _this3.root.height * 0.01;
-                    } else if (k === TRANSLATE_Y$3) {
+                    } else if (k === TRANSLATE_Y$4) {
                       computedStyle[k] = v[0] * _this3.root.height * 0.01;
                     }
                   }
@@ -35905,7 +35976,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.61.11";
+var version = "0.62.0";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

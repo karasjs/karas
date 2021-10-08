@@ -37,6 +37,7 @@ let o = karas.parse({
 }, '#test', {
   controller,
 });
+let input = document.querySelector('input');
 controller.on('finish', function() {
   input.value = o.children[0].getComputedStyle().translateX;
 });

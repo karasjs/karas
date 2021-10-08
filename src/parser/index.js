@@ -58,7 +58,7 @@ let o = {
       // 不自动播放进入记录列表，初始化并等待手动调用
       else {
         ac.__records2 = ac.__records2.concat(animateRecords);
-        ac.init(ac.__records2, ac.__list2);
+        ac.init(ac.__records2, ac.list2);
       }
     }
     // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集

@@ -6,8 +6,9 @@ class Event {
   constructor() {
     this.__eHash = {};
   }
+
   on(id, handle) {
-    if(!handle) {
+    if(!isFunction(handle)) {
       return;
     }
     let self = this;
@@ -16,7 +17,7 @@ class Event {
         self.on(id[i], handle);
       }
     }
-    else if(handle) {
+    else {
       if(!self.__eHash.hasOwnProperty(id)) {
         self.__eHash[id] = [];
       }
@@ -30,16 +31,19 @@ class Event {
     }
     return self;
   }
+
   once(id, handle) {
     if(!isFunction(handle)) {
       return;
     }
     let self = this;
+
     // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
     function cb(...data) {
       handle.apply(self, data);
       self.off(id, cb);
     }
+
     cb.__karasEventCb = handle;
     if(Array.isArray(id)) {
       for(let i = 0, len = id.length; i < len; i++) {
@@ -51,6 +55,7 @@ class Event {
     }
     return this;
   }
+
   off(id, handle) {
     let self = this;
     if(Array.isArray(id)) {
@@ -75,6 +80,7 @@ class Event {
     }
     return this;
   }
+
   emit(id, ...data) {
     let self = this;
     if(Array.isArray(id)) {

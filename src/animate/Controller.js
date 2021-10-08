@@ -8,6 +8,9 @@ class Controller {
     this.__records2 = []; // 非自动播放的动画记录
     this.__list = [] // 默认初始化播放列表，自动播放也存这里
     this.__list2 = []; // json中autoPlay为false的初始化存入这里
+    this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
+    this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
+    this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
   }
 
   add(v, list = this.list) {
@@ -36,7 +39,8 @@ class Controller {
     });
   }
 
-  init(records = this.__records, list = this.__list) {
+  init(records = this.__records, list = this.list) {
+    let res = [];
     // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
     if(records.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
@@ -51,6 +55,7 @@ class Controller {
             options.autoPlay = false;
             let o = target.animate(value, options);
             this.add(o, list);
+            res.push(o);
           });
         }
         else {
@@ -58,8 +63,21 @@ class Controller {
           options.autoPlay = false;
           let o = target.animate(value, options);
           this.add(o, list);
+          res.push(o);
         }
       });
+    }
+    // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
+    if(list === this.list2) {
+      let onList = this.__onList;
+      if(res.length && onList.length) {
+        res.forEach(item => {
+          onList.forEach(arr => {
+            item.on(arr[0], arr[1]);
+          });
+        });
+      }
+      this.__onList = [];
     }
   }
 
@@ -103,7 +121,17 @@ class Controller {
     }]);
   }
 
+  __mergeAuto() {
+    this.init();
+    this.init(this.__records2);
+    if(this.__list2.length) {
+      this.__list = this.__list.concat(this.__list2);
+      this.__list2 = [];
+    }
+  }
+
   cancel(cb) {
+    this.__mergeAuto();
     let once = true;
     this.__action('cancel', [cb && function(diff) {
       if(once) {
@@ -116,12 +144,7 @@ class Controller {
   }
 
   finish(cb) {
-    this.init();
-    this.init(this.__records2);
-    if(this.__list2.length) {
-      this.__list = this.__list.concat(this.__list2);
-      this.__list2 = [];
-    }
+    this.__mergeAuto();
     let once = true;
     this.__action('finish', [cb && function(diff) {
       if(once) {
@@ -134,12 +157,7 @@ class Controller {
   }
 
   gotoAndStop(v, options, cb) {
-    this.init();
-    this.init(this.__records2);
-    if(this.__list2.length) {
-      this.__list = this.__list.concat(this.__list2);
-      this.__list2 = [];
-    }
+    this.__mergeAuto();
     let once = true;
     this.__action('gotoAndStop', [v, options, cb && function(diff) {
       if(once) {
@@ -152,12 +170,7 @@ class Controller {
   }
 
   gotoAndPlay(v, options, cb) {
-    this.init();
-    this.init(this.__records2);
-    if(this.__list2.length) {
-      this.__list = this.__list.concat(this.__list2);
-      this.__list2 = [];
-    }
+    this.__mergeAuto();
     let once = true;
     this.__action('gotoAndPlay', [v, options, cb && function(diff) {
       if(once) {
@@ -169,8 +182,60 @@ class Controller {
     }]);
   }
 
+  on(id, handle) {
+    if(!isFunction(handle)) {
+      return;
+    }
+    if(Array.isArray(id)) {
+      for(let i = 0, len = id.length; i < len; i++) {
+        this.list.forEach(item => {
+          item.on(id, handle);
+        });
+      }
+      this.__onList.push([id, handle]);
+    }
+    else {
+      this.list.forEach(item => {
+        item.on(id, handle);
+      });
+      this.__onList.push([id, handle]);
+    }
+  }
+
+  off(id, handle) {
+    let onList = this.__onList;
+    if(Array.isArray(id)) {
+      for(let i = 0, len = id.length; i < len; i++) {
+        this.list.forEach(item => {
+          item.off(id, handle);
+        });
+      }
+      for(let i = onList.length - 1; i >= 0; i--) {
+        let item = onList[i];
+        if(id === item[0] && handle === item[1]) {
+          onList.splice(i, 1);
+        }
+      }
+    }
+    else {
+      this.list.forEach(item => {
+        item.off(id, handle);
+      });
+      for(let i = onList.length - 1; i >= 0; i--) {
+        let item = onList[i];
+        if(id === item[0] && handle === item[1]) {
+          onList.splice(i, 1);
+        }
+      }
+    }
+  }
+
   get list() {
     return this.__list;
+  }
+
+  get list2() {
+    return this.__list2;
   }
 
   __set(key, value) {

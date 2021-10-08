@@ -588,7 +588,7 @@ class Xom extends Node {
       // 不自动播放进入记录列表，初始化并等待手动调用
       if(ar.options && ar.options.autoPlay === false) {
         ac.__records2 = ac.__records2.concat(ar.list);
-        ac.init(ac.__records2, ac.__list2);
+        ac.init(ac.__records2, ac.list2);
       }
       else {
         ac.__records = ac.__records.concat(ar.list);

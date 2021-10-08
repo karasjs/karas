@@ -12295,7 +12295,7 @@ var Event = /*#__PURE__*/function () {
   _createClass(Event, [{
     key: "on",
     value: function on(id, handle) {
-      if (!handle) {
+      if (!isFunction$1(handle)) {
         return;
       }
 
@@ -12305,7 +12305,7 @@ var Event = /*#__PURE__*/function () {
         for (var i = 0, len = id.length; i < len; i++) {
           self.on(id[i], handle);
         }
-      } else if (handle) {
+      } else {
         if (!self.__eHash.hasOwnProperty(id)) {
           self.__eHash[id] = [];
         } // 遍历防止此handle被侦听过了
@@ -17550,7 +17550,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
         if (ar.options && ar.options.autoPlay === false) {
           ac.__records2 = ac.__records2.concat(ar.list);
-          ac.init(ac.__records2, ac.__list2);
+          ac.init(ac.__records2, ac.list2);
         } else {
           ac.__records = ac.__records.concat(ar.list);
 
@@ -27262,6 +27262,12 @@ var Controller = /*#__PURE__*/function () {
     this.__list = []; // 默认初始化播放列表，自动播放也存这里
 
     this.__list2 = []; // json中autoPlay为false的初始化存入这里
+
+    this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
+
+    this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
+
+    this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
   }
 
   _createClass(Controller, [{
@@ -27303,9 +27309,9 @@ var Controller = /*#__PURE__*/function () {
       var _this = this;
 
       var records = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
-      var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.__list;
+      var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.list;
+      var res = []; // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
 
-      // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
       if (records.length) {
         // 清除防止重复调用，并且新的json还会进入整体逻辑
         records.splice(0).forEach(function (item) {
@@ -27324,6 +27330,8 @@ var Controller = /*#__PURE__*/function () {
               var o = target.animate(value, options);
 
               _this.add(o, list);
+
+              res.push(o);
             });
           } else {
             var value = animate.value,
@@ -27332,8 +27340,25 @@ var Controller = /*#__PURE__*/function () {
             var o = target.animate(value, options);
 
             _this.add(o, list);
+
+            res.push(o);
           }
         });
+      } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
+
+
+      if (list === this.list2) {
+        var onList = this.__onList;
+
+        if (res.length && onList.length) {
+          res.forEach(function (item) {
+            onList.forEach(function (arr) {
+              item.on(arr[0], arr[1]);
+            });
+          });
+        }
+
+        this.__onList = [];
       }
     }
   }, {
@@ -27388,8 +27413,21 @@ var Controller = /*#__PURE__*/function () {
       }]);
     }
   }, {
+    key: "__mergeAuto",
+    value: function __mergeAuto() {
+      this.init();
+      this.init(this.__records2);
+
+      if (this.__list2.length) {
+        this.__list = this.__list.concat(this.__list2);
+        this.__list2 = [];
+      }
+    }
+  }, {
     key: "cancel",
     value: function cancel(cb) {
+      this.__mergeAuto();
+
       var once = true;
 
       this.__action('cancel', [cb && function (diff) {
@@ -27405,13 +27443,7 @@ var Controller = /*#__PURE__*/function () {
   }, {
     key: "finish",
     value: function finish(cb) {
-      this.init();
-      this.init(this.__records2);
-
-      if (this.__list2.length) {
-        this.__list = this.__list.concat(this.__list2);
-        this.__list2 = [];
-      }
+      this.__mergeAuto();
 
       var once = true;
 
@@ -27428,13 +27460,7 @@ var Controller = /*#__PURE__*/function () {
   }, {
     key: "gotoAndStop",
     value: function gotoAndStop(v, options, cb) {
-      this.init();
-      this.init(this.__records2);
-
-      if (this.__list2.length) {
-        this.__list = this.__list.concat(this.__list2);
-        this.__list2 = [];
-      }
+      this.__mergeAuto();
 
       var once = true;
 
@@ -27451,13 +27477,7 @@ var Controller = /*#__PURE__*/function () {
   }, {
     key: "gotoAndPlay",
     value: function gotoAndPlay(v, options, cb) {
-      this.init();
-      this.init(this.__records2);
-
-      if (this.__list2.length) {
-        this.__list = this.__list.concat(this.__list2);
-        this.__list2 = [];
-      }
+      this.__mergeAuto();
 
       var once = true;
 
@@ -27472,9 +27492,70 @@ var Controller = /*#__PURE__*/function () {
       }]);
     }
   }, {
+    key: "on",
+    value: function on(id, handle) {
+      if (!isFunction$6(handle)) {
+        return;
+      }
+
+      if (Array.isArray(id)) {
+        for (var i = 0, len = id.length; i < len; i++) {
+          this.list.forEach(function (item) {
+            item.on(id, handle);
+          });
+        }
+
+        this.__onList.push([id, handle]);
+      } else {
+        this.list.forEach(function (item) {
+          item.on(id, handle);
+        });
+
+        this.__onList.push([id, handle]);
+      }
+    }
+  }, {
+    key: "off",
+    value: function off(id, handle) {
+      var onList = this.__onList;
+
+      if (Array.isArray(id)) {
+        for (var i = 0, len = id.length; i < len; i++) {
+          this.list.forEach(function (item) {
+            item.off(id, handle);
+          });
+        }
+
+        for (var _i = onList.length - 1; _i >= 0; _i--) {
+          var item = onList[_i];
+
+          if (id === item[0] && handle === item[1]) {
+            onList.splice(_i, 1);
+          }
+        }
+      } else {
+        this.list.forEach(function (item) {
+          item.off(id, handle);
+        });
+
+        for (var _i2 = onList.length - 1; _i2 >= 0; _i2--) {
+          var _item = onList[_i2];
+
+          if (id === _item[0] && handle === _item[1]) {
+            onList.splice(_i2, 1);
+          }
+        }
+      }
+    }
+  }, {
     key: "list",
     get: function get() {
       return this.__list;
+    }
+  }, {
+    key: "list2",
+    get: function get() {
+      return this.__list2;
     }
   }, {
     key: "__set",
@@ -35854,7 +35935,7 @@ var o$4 = {
       } // 不自动播放进入记录列表，初始化并等待手动调用
       else {
           ac.__records2 = ac.__records2.concat(animateRecords);
-          ac.init(ac.__records2, ac.__list2);
+          ac.init(ac.__records2, ac.list2);
         }
     } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
     else {

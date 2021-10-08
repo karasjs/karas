@@ -36057,7 +36057,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.62.0";
+var version = "0.62.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

@@ -27310,8 +27310,8 @@ var Controller = /*#__PURE__*/function () {
 
       var records = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
       var list = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.list;
-      var res = []; // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
 
+      // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
       if (records.length) {
         // 清除防止重复调用，并且新的json还会进入整体逻辑
         records.splice(0).forEach(function (item) {
@@ -27330,8 +27330,6 @@ var Controller = /*#__PURE__*/function () {
               var o = target.animate(value, options);
 
               _this.add(o, list);
-
-              res.push(o);
             });
           } else {
             var value = animate.value,
@@ -27340,8 +27338,6 @@ var Controller = /*#__PURE__*/function () {
             var o = target.animate(value, options);
 
             _this.add(o, list);
-
-            res.push(o);
           }
         });
       } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
@@ -27349,16 +27345,16 @@ var Controller = /*#__PURE__*/function () {
 
       if (records === this.__records2) {
         var onList = this.__onList;
+        var list2 = this.list2;
 
-        if (res.length && onList.length) {
-          res.forEach(function (item) {
+        if (list2.length && onList.length) {
+          list2.forEach(function (item) {
             onList.forEach(function (arr) {
+              item.off(arr[0], arr[1]);
               item.on(arr[0], arr[1]);
             });
           });
         }
-
-        this.__onList = [];
       }
     }
   }, {
@@ -27373,6 +27369,7 @@ var Controller = /*#__PURE__*/function () {
     value: function play(cb) {
       this.__mergeAuto();
 
+      this.__onList = [];
       var once = true;
 
       this.__action('play', [cb && function (diff) {
@@ -27421,6 +27418,7 @@ var Controller = /*#__PURE__*/function () {
     value: function cancel(cb) {
       this.__mergeAuto();
 
+      this.__onList = [];
       var once = true;
 
       this.__action('cancel', [cb && function (diff) {
@@ -27438,6 +27436,7 @@ var Controller = /*#__PURE__*/function () {
     value: function finish(cb) {
       this.__mergeAuto();
 
+      this.__onList = [];
       var once = true;
 
       this.__action('finish', [cb && function (diff) {
@@ -27455,6 +27454,7 @@ var Controller = /*#__PURE__*/function () {
     value: function gotoAndStop(v, options, cb) {
       this.__mergeAuto();
 
+      this.__onList = [];
       var once = true;
 
       this.__action('gotoAndStop', [v, options, cb && function (diff) {
@@ -27472,6 +27472,7 @@ var Controller = /*#__PURE__*/function () {
     value: function gotoAndPlay(v, options, cb) {
       this.__mergeAuto();
 
+      this.__onList = [];
       var once = true;
 
       this.__action('gotoAndPlay', [v, options, cb && function (diff) {
@@ -36050,7 +36051,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.62.1";
+var version = "0.62.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

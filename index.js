@@ -27353,7 +27353,7 @@
         } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
 
 
-        if (list === this.list2) {
+        if (records === this.__records2) {
           var onList = this.__onList;
 
           if (res.length && onList.length) {
@@ -27377,14 +27377,7 @@
     }, {
       key: "play",
       value: function play(cb) {
-        this.init(); // 手动调用play则播放全部包含autoPlay为false的
-
-        this.init(this.__records2);
-
-        if (this.__list2.length) {
-          this.__list = this.__list.concat(this.__list2);
-          this.__list2 = [];
-        }
+        this.__mergeAuto();
 
         var once = true;
 

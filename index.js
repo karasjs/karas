@@ -15051,7 +15051,8 @@
   var I_END_TIME = 42;
   var I_NODE_CONFIG = 43;
   var I_ROOT_CONFIG = 44;
-  var I_OUT_BEGIN_DELAY = 45; // const I_NEXT_END = 46;
+  var I_OUT_BEGIN_DELAY = 45;
+  var I_TIME_STAMP = 46;
 
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
@@ -15180,7 +15181,9 @@
       config[I_CURRENT_FRAMES] = {
         reverse: true,
         'alternate-reverse': true
-      }.hasOwnProperty(op.direction) ? framesR : frames; // 性能优化访问
+      }.hasOwnProperty(op.direction) ? framesR : frames; // 时间戳
+
+      config[I_TIME_STAMP] = frame.__now; // 性能优化访问
 
       _this[0] = _this.__before;
       _this[1] = _this.__after;
@@ -15504,6 +15507,7 @@
       key: "__before",
       value: function __before(diff) {
         var __config = this.__config;
+        __config[I_TIME_STAMP] = frame.__now;
         var target = __config[I_TARGET];
         var fps = __config[I_FPS];
         var playCount = __config[I_PLAY_COUNT];
@@ -16311,6 +16315,11 @@
         }
 
         return v;
+      }
+    }, {
+      key: "timestamp",
+      get: function get() {
+        return this.__config[I_TIME_STAMP];
       }
     }, {
       key: "pending",
@@ -27271,9 +27280,8 @@
 
       this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
 
-      this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
-
-      this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
+      this.__lastTime = -1; // this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
+      // this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
     }
 
     _createClass(Controller, [{
@@ -27500,51 +27508,47 @@
 
         if (Array.isArray(id)) {
           for (var i = 0, len = id.length; i < len; i++) {
-            this.list.forEach(function (item) {
-              item.on(id, handle);
-            });
+            this.__on(id[i], handle);
           }
 
           this.__onList.push([id, handle]);
         } else {
-          this.list.forEach(function (item) {
-            item.on(id, handle);
-          });
+          this.__on(id, handle);
 
           this.__onList.push([id, handle]);
         }
       }
     }, {
+      key: "__on",
+      value: function __on(id, handle) {
+        var _this2 = this;
+
+        this.list.forEach(function (item) {
+          var cb = function cb() {
+            var time = item.timestamp;
+            console.log(time);
+
+            if (time !== _this2.__lastTime) {
+              _this2.__lastTime = time;
+              handle();
+            }
+          };
+
+          cb.__karasEventCb = handle;
+          item.on(id, cb);
+        });
+      }
+    }, {
       key: "off",
       value: function off(id, handle) {
-        var onList = this.__onList;
-
         if (Array.isArray(id)) {
           for (var i = 0, len = id.length; i < len; i++) {
-            this.list.forEach(function (item) {
-              item.off(id, handle);
-            });
-          }
-
-          for (var _i = onList.length - 1; _i >= 0; _i--) {
-            var item = onList[_i];
-
-            if (id === item[0] && handle === item[1]) {
-              onList.splice(_i, 1);
-            }
+            this.off(id[i], handle);
           }
         } else {
           this.list.forEach(function (item) {
             item.off(id, handle);
           });
-
-          for (var _i2 = onList.length - 1; _i2 >= 0; _i2--) {
-            var _item = onList[_i2];
-
-            if (id === _item[0] && handle === _item[1]) {
-              onList.splice(_i2, 1);
-            }
-          }
         }
       }
     }, {
@@ -36057,7 +36061,7 @@
     Cache: Cache
   };
 
-  var version = "0.62.2";
+  var version = "0.62.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

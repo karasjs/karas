@@ -1362,7 +1362,7 @@ const I_END_TIME = 42;
 const I_NODE_CONFIG = 43;
 const I_ROOT_CONFIG = 44;
 const I_OUT_BEGIN_DELAY = 45;
-// const I_NEXT_END = 46;
+const I_TIME_STAMP = 46;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1476,6 +1476,8 @@ class Animation extends Event {
       reverse: true,
       'alternate-reverse': true,
     }.hasOwnProperty(op.direction) ? framesR : frames;
+    // 时间戳
+    config[I_TIME_STAMP] = frame.__now;
     // 性能优化访问
     this[0] = this.__before;
     this[1] = this.__after;
@@ -1746,6 +1748,7 @@ class Animation extends Event {
 
   __before(diff) {
     let __config = this.__config;
+    __config[I_TIME_STAMP] = frame.__now;
     let target = __config[I_TARGET];
     let fps = __config[I_FPS];
     let playCount = __config[I_PLAY_COUNT];
@@ -2411,6 +2414,10 @@ class Animation extends Event {
       __config[I_NEXT_TIME] = v;
     }
     return v;
+  }
+
+  get timestamp() {
+    return this.__config[I_TIME_STAMP];
   }
 
   get pending() {

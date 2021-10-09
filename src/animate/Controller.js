@@ -9,8 +9,9 @@ class Controller {
     this.__list = [] // 默认初始化播放列表，自动播放也存这里
     this.__list2 = []; // json中autoPlay为false的初始化存入这里
     this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
-    this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
-    this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
+    this.__lastTime = -1;
+    // this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
+    // this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
   }
 
   add(v, list = this.list) {
@@ -185,45 +186,41 @@ class Controller {
     }
     if(Array.isArray(id)) {
       for(let i = 0, len = id.length; i < len; i++) {
-        this.list.forEach(item => {
-          item.on(id, handle);
-        });
+        this.__on(id[i], handle);
       }
       this.__onList.push([id, handle]);
     }
     else {
-      this.list.forEach(item => {
-        item.on(id, handle);
-      });
+      this.__on(id, handle);
       this.__onList.push([id, handle]);
     }
   }
 
+  __on(id, handle) {
+    this.list.forEach(item => {
+      let cb = () => {
+        let time = item.timestamp;
+        console.log(time);
+        if(time !== this.__lastTime) {
+          this.__lastTime = time;
+          handle();
+        }
+      };
+      cb.__karasEventCb = handle;
+      item.on(id, cb);
+    });
+  }
+
   off(id, handle) {
-    let onList = this.__onList;
     if(Array.isArray(id)) {
       for(let i = 0, len = id.length; i < len; i++) {
-        this.list.forEach(item => {
-          item.off(id, handle);
-        });
-      }
-      for(let i = onList.length - 1; i >= 0; i--) {
-        let item = onList[i];
-        if(id === item[0] && handle === item[1]) {
-          onList.splice(i, 1);
-        }
+        this.off(id[i], handle);
       }
     }
     else {
       this.list.forEach(item => {
         item.off(id, handle);
       });
-      for(let i = onList.length - 1; i >= 0; i--) {
-        let item = onList[i];
-        if(id === item[0] && handle === item[1]) {
-          onList.splice(i, 1);
-        }
-      }
     }
   }
 

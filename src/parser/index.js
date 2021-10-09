@@ -74,9 +74,10 @@ let o = {
     return vd;
   },
   loadAndParse(karas, json, dom, options) {
-    let { fonts, components } = json;
+    let { fonts, components, imgs } = json;
     let list1 = [];
     let list2 = [];
+    let list3 = [];
     if(fonts) {
       if(!Array.isArray(fonts)) {
         fonts = [fonts];
@@ -104,10 +105,22 @@ let o = {
         }
       });
     }
-    if(list1.length || list2.length) {
+    if(imgs) {
+      if(!Array.isArray(imgs)) {
+        imgs = [imgs];
+      }
+      imgs.forEach(item => {
+        let url = item.url;
+        if(url) {
+          list3.push(url);
+        }
+      });
+    }
+    let a = list1.length, b = list2.length, c = list3.length;
+    if(a || b || c) {
       let count = 0;
       let cb = function() {
-        if(count === list1.length + list2.length) {
+        if(count === a + b + c) {
           let res = o.parse(karas, json, dom, options);
           if(options && util.isFunction(options.callback)) {
             options.callback(res);
@@ -115,11 +128,11 @@ let o = {
         }
       };
       karas.inject.loadFont(list1, function() {
-        count += list1.length;
+        count += a;
         cb();
       });
       karas.inject.loadComponent(list2.map(item => item.url), function() {
-        count += list2.length;
+        count += b;
         // 默认约定加载的js组件会在全局变量申明同名tagName，已有不覆盖，防止组件代码内部本身有register
         list2.forEach(item => {
           let tagName = item.tagName;
@@ -127,6 +140,10 @@ let o = {
             karas.Component.register(tagName, window[tagName]);
           }
         });
+        cb();
+      });
+      karas.inject.measureImg(list3, function() {
+        count += c;
         cb();
       });
     }

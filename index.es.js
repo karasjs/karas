@@ -35949,9 +35949,11 @@ var o$4 = {
   },
   loadAndParse: function loadAndParse(karas, json, dom, options) {
     var fonts = json.fonts,
-        components = json.components;
+        components = json.components,
+        imgs = json.imgs;
     var list1 = [];
     var list2 = [];
+    var list3 = [];
 
     if (fonts) {
       if (!Array.isArray(fonts)) {
@@ -35988,11 +35990,29 @@ var o$4 = {
       });
     }
 
-    if (list1.length || list2.length) {
+    if (imgs) {
+      if (!Array.isArray(imgs)) {
+        imgs = [imgs];
+      }
+
+      imgs.forEach(function (item) {
+        var url = item.url;
+
+        if (url) {
+          list3.push(url);
+        }
+      });
+    }
+
+    var a = list1.length,
+        b = list2.length,
+        c = list3.length;
+
+    if (a || b || c) {
       var count = 0;
 
       var cb = function cb() {
-        if (count === list1.length + list2.length) {
+        if (count === a + b + c) {
           var res = o$4.parse(karas, json, dom, options);
 
           if (options && util.isFunction(options.callback)) {
@@ -36002,13 +36022,13 @@ var o$4 = {
       };
 
       karas.inject.loadFont(list1, function () {
-        count += list1.length;
+        count += a;
         cb();
       });
       karas.inject.loadComponent(list2.map(function (item) {
         return item.url;
       }), function () {
-        count += list2.length; // 默认约定加载的js组件会在全局变量申明同名tagName，已有不覆盖，防止组件代码内部本身有register
+        count += b; // 默认约定加载的js组件会在全局变量申明同名tagName，已有不覆盖，防止组件代码内部本身有register
 
         list2.forEach(function (item) {
           var tagName = item.tagName;
@@ -36017,6 +36037,10 @@ var o$4 = {
             karas.Component.register(tagName, window[tagName]);
           }
         });
+        cb();
+      });
+      karas.inject.measureImg(list3, function () {
+        count += c;
         cb();
       });
     } else {
@@ -36054,7 +36078,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.62.3";
+var version = "0.62.4";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

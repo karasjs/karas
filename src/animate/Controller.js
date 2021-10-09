@@ -200,7 +200,6 @@ class Controller {
     this.list.forEach(item => {
       let cb = () => {
         let time = item.timestamp;
-        console.log(time);
         if(time !== this.__lastTime) {
           this.__lastTime = time;
           handle();

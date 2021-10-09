@@ -27520,7 +27520,6 @@ var Controller = /*#__PURE__*/function () {
       this.list.forEach(function (item) {
         var cb = function cb() {
           var time = item.timestamp;
-          console.log(time);
 
           if (time !== _this2.__lastTime) {
             _this2.__lastTime = time;

@@ -27280,8 +27280,7 @@
 
       this.__onList = []; // list中已存在的侦听事件，list2初始化时也需要增加上
 
-      this.__lastTime = -1; // this.__timeList = []; // on侦听事件时，每个动画可能都会触发一次，记录帧时间防重
-      // this.__timeHash = {}; // 同上，同时防止过长列表每次清除上帧记录
+      this.__lastTime = {}; // 每个类型的上次触发时间，防止重复emit
     }
 
     _createClass(Controller, [{
@@ -27527,8 +27526,8 @@
           var cb = function cb() {
             var time = item.timestamp;
 
-            if (time !== _this2.__lastTime) {
-              _this2.__lastTime = time;
+            if (time !== _this2.__lastTime[id]) {
+              _this2.__lastTime[id] = time;
               handle();
             }
           };

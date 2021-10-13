@@ -23,7 +23,9 @@ import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
 import inline from './inline';
+
 const { svgPolygon } = painter;
+const { CANVAS, SVG, WEBGL } = mode;
 
 const {
   STYLE_KEY,
@@ -141,6 +143,7 @@ const {
     NODE_IS_INLINE,
     NODE_PERSPECTIVE_MATRIX,
     NODE_IS_MASK,
+    NODE_VIRTUAL_DOM,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, DEG } = unit;
@@ -1382,7 +1385,7 @@ class Xom extends Node {
   }
 
   __calContent(renderMode, lv, currentStyle, computedStyle) {
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
       if(lv < REPAINT) {
         return this.__hasContent;
       }
@@ -1459,8 +1462,8 @@ class Xom extends Node {
     }
     let virtualDom;
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
-    if(renderMode === mode.SVG) {
-      virtualDom = this.__virtualDom = {
+    if(renderMode === SVG) {
+      virtualDom = __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
         bb: [],
         children: [],
         visibility: 'visible',
@@ -1529,7 +1532,7 @@ class Xom extends Node {
     let matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
-    if(cache && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+    if(cache && (renderMode === CANVAS || renderMode === WEBGL)) {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
       if(!hasContent && this.__releaseWhenEmpty(__cache)) {
         res.break = true;
@@ -1578,7 +1581,7 @@ class Xom extends Node {
       }
     }
     // 降级的webgl绘制
-    else if(renderMode === mode.WEBGL) {
+    else if(renderMode === WEBGL) {
       let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
       res.ctx = ctx = c.ctx;
     }
@@ -1618,13 +1621,13 @@ class Xom extends Node {
       [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
     // 先设置透明度，canvas可以向上累积
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
       if(p) {
         opacity *= p.__config[NODE_OPACITY];
       }
       __config[NODE_OPACITY] = opacity;
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       if(opacity === 1) {
         delete virtualDom.opacity;
       }
@@ -1633,7 +1636,7 @@ class Xom extends Node {
       }
     }
     // canvas/svg/事件需要3种不同的matrix
-    if(renderMode === mode.SVG) {
+    if(renderMode === SVG) {
       if(!mx.isE(matrix)) {
         virtualDom.transform = 'matrix(' + joinArr(mx.m2m6(matrix), ',') + ')';
       }
@@ -1662,7 +1665,7 @@ class Xom extends Node {
     let offscreenBlend;
     if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
       mixBlendMode = mbmName(mixBlendMode);
-      if(renderMode === mode.CANVAS && !cache) {
+      if(renderMode === CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'blend');
         offscreenBlend = {
@@ -1673,17 +1676,17 @@ class Xom extends Node {
         };
         ctx = c.ctx;
       }
-      else if(renderMode === mode.SVG) {
+      else if(renderMode === SVG) {
         virtualDom.mixBlendMode = mixBlendMode;
       }
     }
     // svg特殊没有mbm删除
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       delete virtualDom.mixBlendMode;
     }
     let offscreenMask;
     if(__hasMask) {
-      if(renderMode === mode.CANVAS && !cache) {
+      if(renderMode === CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'mask1');
         offscreenMask = {
@@ -1698,7 +1701,7 @@ class Xom extends Node {
     let hasFilter = filter && filter.length;
     let offscreenFilter;
     if(hasFilter) {
-      if(renderMode === mode.CANVAS && !cache) {
+      if(renderMode === CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'filter1');
         offscreenFilter = {
@@ -1709,11 +1712,11 @@ class Xom extends Node {
         };
         ctx = c.ctx;
       }
-      else if(renderMode === mode.SVG) {
+      else if(renderMode === SVG) {
         virtualDom.filter = painter.svgFilter(filter);
       }
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       delete virtualDom.filter;
     }
     // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
@@ -1745,7 +1748,7 @@ class Xom extends Node {
     let offscreenOverflow, borderList;
     if(overflow === 'hidden' && display !== 'inline') {
       borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
-      if(renderMode === mode.CANVAS && !cache) {
+      if(renderMode === CANVAS && !cache) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'overflow');
         offscreenOverflow = {
@@ -1760,7 +1763,7 @@ class Xom extends Node {
         offscreenOverflow.offsetHeight = offsetHeight;
         offscreenOverflow.list = borderList;
       }
-      else if(renderMode === mode.SVG) {
+      else if(renderMode === SVG) {
         let d = svgPolygon(borderList) || `M${x1},${y1}L${x1 + offsetWidth},${y1}L${x1 + offsetWidth},${y1 + offsetHeight}L${x1},${y1 + offsetHeight},L${x1},${y1}`;
         let v = {
           tagName: 'clipPath',
@@ -1779,11 +1782,11 @@ class Xom extends Node {
         virtualDom.overflow = 'url(#' + id + ')';
       }
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       delete virtualDom.overflow;
     }
     // 无法使用缓存时主画布直接绘制需设置
-    if(renderMode === mode.CANVAS && !cache) {
+    if(renderMode === CANVAS && !cache) {
       res.offscreenBlend = offscreenBlend;
       res.offscreenMask = offscreenMask;
       res.offscreenFilter = offscreenFilter;
@@ -1793,7 +1796,7 @@ class Xom extends Node {
       ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     }
     // 隐藏不渲染
-    if((visibility === 'hidden' || res.break) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+    if((visibility === 'hidden' || res.break) && (renderMode === CANVAS || renderMode === WEBGL)) {
       res.break = true;
       return res;
     }
@@ -1833,7 +1836,7 @@ class Xom extends Node {
             iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
             ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
           }
-          if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+          if(renderMode === CANVAS || renderMode === WEBGL) {
             offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
           }
           let length = backgroundImage.length;
@@ -1848,7 +1851,7 @@ class Xom extends Node {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx || ctx, loadBgi,
                   0, 0, iw, ih, btlr, btrr, bbrr, bblr,
                   currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
-                if(renderMode === mode.SVG && uuid) {
+                if(renderMode === SVG && uuid) {
                   svgBgSymbol.push(uuid);
                 }
               }
@@ -1859,14 +1862,14 @@ class Xom extends Node {
                 if(gd.k === 'conic') {
                   let uuid = gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
                     btlr, btrr, bbrr, bblr, true);
-                  if(renderMode === mode.SVG && uuid) {
+                  if(renderMode === SVG && uuid) {
                     svgBgSymbol.push(uuid);
                   }
                 }
                 else {
                   let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null,
                     0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
-                  if(renderMode === mode.SVG && uuid) {
+                  if(renderMode === SVG && uuid) {
                     svgBgSymbol.push(uuid);
                   }
                 }
@@ -1904,11 +1907,11 @@ class Xom extends Node {
             }
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
-            if((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && offscreen) {
+            if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
               ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
             }
             //svg则特殊判断
-            else if(renderMode === mode.SVG && svgBgSymbol.length) {
+            else if(renderMode === SVG && svgBgSymbol.length) {
               svgBgSymbol.forEach(symbol => {
                 if(symbol) {
                   let v = {
@@ -1995,11 +1998,11 @@ class Xom extends Node {
             }
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
-            if((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && offscreen) {
+            if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
               ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
             }
             //svg则特殊判断
-            else if(renderMode === mode.SVG && svgBgSymbol.length) {
+            else if(renderMode === SVG && svgBgSymbol.length) {
               svgBgSymbol.forEach(symbol => {
                 if(symbol) {
                   let v = {
@@ -2256,14 +2259,14 @@ class Xom extends Node {
   }
 
   __getLg(renderMode, ctx, gd) {
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
       let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
       gd.stop.forEach(item => {
         lg.addColorStop(item[1], int2rgba(item[0]));
       });
       return lg;
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       let v = {
         tagName: 'linearGradient',
         props: [
@@ -2289,14 +2292,14 @@ class Xom extends Node {
   }
 
   __getRg(renderMode, ctx, gd) {
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
       let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
       gd.stop.forEach(item => {
         rg.addColorStop(item[1], int2rgba(item[0]));
       });
       return rg;
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       let v = {
         tagName: 'radialGradient',
         props: [
@@ -2331,10 +2334,10 @@ class Xom extends Node {
     }
     // canvas采用点色值计算法，svg则分360度画块
     let res = [];
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
       return gd;
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       let offset = 0.5;
       let prev;
       // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算

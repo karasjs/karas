@@ -34,6 +34,7 @@ import fragmentSaturation from '../gl/mbm/saturation.frag';
 import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
 import mode from '../node/mode';
+
 const { canvasPolygon } = painter;
 
 const {
@@ -69,6 +70,7 @@ const {
     NODE_IS_MASK,
     NODE_DOM_PARENT,
     NODE_PERSPECTIVE_MATRIX,
+    NODE_VIRTUAL_DOM,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -1716,12 +1718,12 @@ function renderSvg(renderMode, ctx, root, isFirst) {
   }
   let maskHash = {};
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
-  let parentMatrixList = [];
+  let matrixList = [];
   let parentMatrix;
-  let parentVdList = [];
+  let vdList = [];
   let parentVd;
   let lastLv = 0;
-  let last;
+  let lastConfig;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
       [STRUCT_NODE]: node,
@@ -1751,17 +1753,19 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
     if(lv < lastLv) {
-      parentMatrixList.splice(lv);
-      parentMatrix = parentMatrixList[lv - 1];
-      parentVdList.splice(lv);
-      parentVd = parentVdList[lv - 1];
+      let diff = lastLv - lv;
+      matrixList.splice(-diff);
+      parentMatrix = matrixList[lv - 1];
+      vdList.splice(-diff);
+      parentVd = vdList[lv - 1];
     }
     else if(lv > lastLv) {
-      parentMatrixList.push(last.__matrix);
-      let vd = last.virtualDom;
-      parentVdList.push(vd);
+      matrixList.push(lastConfig[NODE_MATRIX]);
+      let vd = lastConfig[NODE_VIRTUAL_DOM];
+      vdList.push(vd);
       parentVd = vd;
     }
+    lastConfig = __config;
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(refreshLevel < REPAINT && !(node instanceof Text)) {
@@ -1774,7 +1778,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       }
       else {
         __cacheTotal && (__cacheTotal.available = true);
-        virtualDom = node.__virtualDom = util.extend({}, virtualDom);
+        virtualDom = __config[NODE_VIRTUAL_DOM] = node.__virtualDom = util.extend({}, virtualDom);
         // dom要清除children缓存，geom和img无需
         if(node instanceof Dom && !(node instanceof Img)) {
           virtualDom.children = [];
@@ -1957,7 +1961,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       parentVd = virtualDom;
     }
     lastLv = lv;
-    last = node;
   }
 }
 

@@ -33,6 +33,7 @@ const {
     NODE_DOM_PARENT,
     NODE_MATRIX_EVENT,
     NODE_OPACITY,
+    NODE_VIRTUAL_DOM,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -588,13 +589,13 @@ class Text extends Node {
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
+    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(renderMode === mode.SVG) {
-      this.__virtualDom = {
+      __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
         type: 'text',
         children: [],
       };
     }
-    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
       return;

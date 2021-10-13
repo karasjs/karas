@@ -11088,6 +11088,7 @@
       NODE_DOM_PARENT = _enums$NODE_KEY$2.NODE_DOM_PARENT,
       NODE_MATRIX_EVENT = _enums$NODE_KEY$2.NODE_MATRIX_EVENT,
       NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY,
+      NODE_VIRTUAL_DOM = _enums$NODE_KEY$2.NODE_VIRTUAL_DOM,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_MEASURE = _enums$UPDATE_KEY.UPDATE_MEASURE,
@@ -11736,14 +11737,6 @@
       value: function render(renderMode, lv, ctx, cache) {
         var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
         var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
-
-        if (renderMode === mode.SVG) {
-          this.__virtualDom = {
-            type: 'text',
-            children: []
-          };
-        }
-
         var isDestroyed = this.isDestroyed,
             computedStyle = this.computedStyle,
             textBoxes = this.textBoxes,
@@ -11751,6 +11744,13 @@
             __ellipsis = this.__ellipsis,
             __bp = this.__bp,
             __config = this.__config;
+
+        if (renderMode === mode.SVG) {
+          __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+            type: 'text',
+            children: []
+          };
+        }
 
         if (isDestroyed || computedStyle[DISPLAY$2] === 'none' || computedStyle[VISIBILITY$2] === 'hidden' || !textBoxes.length) {
           return;
@@ -17084,7 +17084,7 @@
       NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE,
       NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$4.NODE_PERSPECTIVE_MATRIX,
       NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK,
-      NODE_VIRTUAL_DOM = _enums$NODE_KEY$4.NODE_VIRTUAL_DOM;
+      NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$4.NODE_VIRTUAL_DOM;
   var AUTO$4 = o.AUTO,
       PX$6 = o.PX,
       PERCENT$7 = o.PERCENT,
@@ -18450,7 +18450,7 @@
         var virtualDom; // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
 
         if (renderMode === SVG) {
-          virtualDom = __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+          virtualDom = __config[NODE_VIRTUAL_DOM$1] = this.__virtualDom = {
             bb: [],
             children: [],
             visibility: 'visible'
@@ -27745,7 +27745,7 @@
       NODE_IS_MASK$3 = _enums$NODE_KEY$9.NODE_IS_MASK,
       NODE_DOM_PARENT$5 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
       NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$9.NODE_PERSPECTIVE_MATRIX,
-      NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$9.NODE_VIRTUAL_DOM,
+      NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$9.NODE_VIRTUAL_DOM,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
@@ -29721,7 +29721,7 @@
         parentVd = vdList[lv - 1];
       } else if (lv > lastLv) {
         matrixList.push(lastConfig[NODE_MATRIX$3]);
-        var vd = lastConfig[NODE_VIRTUAL_DOM$1];
+        var vd = lastConfig[NODE_VIRTUAL_DOM$2];
         vdList.push(vd);
         parentVd = vd;
       }
@@ -29738,13 +29738,12 @@
           virtualDom.cache = true;
         } else {
           __cacheTotal && (__cacheTotal.available = true);
-          virtualDom = __config[NODE_VIRTUAL_DOM$1] = _node4.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
+          virtualDom = __config[NODE_VIRTUAL_DOM$2] = _node4.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
 
           if (_node4 instanceof Dom$1 && !(_node4 instanceof Img$1)) {
             virtualDom.children = [];
-          }
+          } // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
-          delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
           if (display === 'none') {
             _i5 += _total8 || 0;
@@ -29752,6 +29751,8 @@
             if (_hasMask2) {
               _i5 += _hasMask2;
             }
+          } else {
+            delete virtualDom.cache;
           }
         }
 

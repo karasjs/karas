@@ -1783,13 +1783,15 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         if(node instanceof Dom && !(node instanceof Img)) {
           virtualDom.children = [];
         }
-        delete virtualDom.cache;
         // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
         if(display === 'none') {
           i += (total || 0);
           if(hasMask) {
             i += hasMask;
           }
+        }
+        else {
+          delete virtualDom.cache;
         }
       }
       let {

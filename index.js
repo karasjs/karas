@@ -29731,7 +29731,7 @@
 
       if (_refreshLevel2 < REPAINT$2 && !(_node4 instanceof Text)) {
         __config[NODE_REFRESH_LV$1] = NONE$2;
-        virtualDom = _node4.virtualDom; // total可以跳过所有孩子节点省略循环
+        virtualDom = __config[NODE_VIRTUAL_DOM$2]; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
           _i5 += _total8 || 0;
@@ -29821,7 +29821,7 @@
 
         _node4.render(renderMode, _refreshLevel2, ctx);
 
-        virtualDom = _node4.virtualDom; // 渲染后更新取值
+        virtualDom = __config[NODE_VIRTUAL_DOM$2]; // 渲染后更新取值
 
         display = computedStyle[DISPLAY$9];
 
@@ -36091,7 +36091,7 @@
     Cache: Cache
   };
 
-  var version = "0.62.4";
+  var version = "0.62.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

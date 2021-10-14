@@ -414,7 +414,8 @@ var NODE_KEY = {
   NODE_UPDATE_HASH: 23,
   NODE_UNIQUE_UPDATE_ID: 24,
   NODE_DEFS_CACHE: 25,
-  NODE_PERSPECTIVE_MATRIX: 26
+  NODE_PERSPECTIVE_MATRIX: 26,
+  NODE_VIRTUAL_DOM: 27
 }; // struct用
 
 var STRUCT_KEY = {
@@ -11081,6 +11082,7 @@ var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
     NODE_DOM_PARENT = _enums$NODE_KEY$2.NODE_DOM_PARENT,
     NODE_MATRIX_EVENT = _enums$NODE_KEY$2.NODE_MATRIX_EVENT,
     NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY,
+    NODE_VIRTUAL_DOM = _enums$NODE_KEY$2.NODE_VIRTUAL_DOM,
     _enums$UPDATE_KEY = enums.UPDATE_KEY,
     UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
     UPDATE_MEASURE = _enums$UPDATE_KEY.UPDATE_MEASURE,
@@ -11729,14 +11731,6 @@ var Text = /*#__PURE__*/function (_Node) {
     value: function render(renderMode, lv, ctx, cache) {
       var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
       var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
-
-      if (renderMode === mode.SVG) {
-        this.__virtualDom = {
-          type: 'text',
-          children: []
-        };
-      }
-
       var isDestroyed = this.isDestroyed,
           computedStyle = this.computedStyle,
           textBoxes = this.textBoxes,
@@ -11744,6 +11738,13 @@ var Text = /*#__PURE__*/function (_Node) {
           __ellipsis = this.__ellipsis,
           __bp = this.__bp,
           __config = this.__config;
+
+      if (renderMode === mode.SVG) {
+        __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+          type: 'text',
+          children: []
+        };
+      }
 
       if (isDestroyed || computedStyle[DISPLAY$2] === 'none' || computedStyle[VISIBILITY$2] === 'hidden' || !textBoxes.length) {
         return;
@@ -16963,6 +16964,9 @@ var inline = {
 };
 
 var svgPolygon$5 = painter.svgPolygon;
+var CANVAS$1 = mode.CANVAS,
+    SVG = mode.SVG,
+    WEBGL$1 = mode.WEBGL;
 var STYLE_KEY$5 = enums.STYLE_KEY,
     STYLE_RV_KEY$2 = enums.STYLE_RV_KEY,
     style2Upper$2 = enums.style2Upper,
@@ -17073,7 +17077,8 @@ var STYLE_KEY$5 = enums.STYLE_KEY,
     NODE_DOM_PARENT$2 = _enums$NODE_KEY$4.NODE_DOM_PARENT,
     NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE,
     NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$4.NODE_PERSPECTIVE_MATRIX,
-    NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK;
+    NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK,
+    NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$4.NODE_VIRTUAL_DOM;
 var AUTO$4 = o.AUTO,
     PX$6 = o.PX,
     PERCENT$7 = o.PERCENT,
@@ -18341,7 +18346,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
   }, {
     key: "__calContent",
     value: function __calContent(renderMode, lv, currentStyle, computedStyle) {
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
         if (lv < REPAINT$1) {
           return this.__hasContent;
         }
@@ -18438,8 +18443,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
       var virtualDom; // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
 
-      if (renderMode === mode.SVG) {
-        virtualDom = this.__virtualDom = {
+      if (renderMode === SVG) {
+        virtualDom = __config[NODE_VIRTUAL_DOM$1] = this.__virtualDom = {
           bb: [],
           children: [],
           visibility: 'visible'
@@ -18534,7 +18539,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       var dx = 0,
           dy = 0;
 
-      if (cache && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+      if (cache && (renderMode === CANVAS$1 || renderMode === WEBGL$1)) {
         // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
         if (!hasContent && this.__releaseWhenEmpty(__cache)) {
           res["break"] = true;
@@ -18584,7 +18589,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             __config[NODE_CACHE$2] = __cache;
           }
       } // 降级的webgl绘制
-      else if (renderMode === mode.WEBGL) {
+      else if (renderMode === WEBGL$1) {
           var c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
           res.ctx = ctx = c.ctx;
         }
@@ -18623,13 +18628,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           mixBlendMode = computedStyle[MIX_BLEND_MODE],
           backgroundClip = computedStyle[BACKGROUND_CLIP$2]; // 先设置透明度，canvas可以向上累积
 
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
         if (p) {
           opacity *= p.__config[NODE_OPACITY$2];
         }
 
         __config[NODE_OPACITY$2] = opacity;
-      } else if (renderMode === mode.SVG) {
+      } else if (renderMode === SVG) {
         if (opacity === 1) {
           delete virtualDom.opacity;
         } else {
@@ -18638,7 +18643,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       } // canvas/svg/事件需要3种不同的matrix
 
 
-      if (renderMode === mode.SVG) {
+      if (renderMode === SVG) {
         if (!mx.isE(matrix)) {
           virtualDom.transform = 'matrix(' + joinArr$2(mx.m2m6(matrix), ',') + ')';
         } else {
@@ -18673,7 +18678,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
         mixBlendMode = mbmName$1(mixBlendMode);
 
-        if (renderMode === mode.CANVAS && !cache) {
+        if (renderMode === CANVAS$1 && !cache) {
           var width = root.width,
               height = root.height;
 
@@ -18686,18 +18691,18 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             matrix: matrix
           };
           ctx = _c.ctx;
-        } else if (renderMode === mode.SVG) {
+        } else if (renderMode === SVG) {
           virtualDom.mixBlendMode = mixBlendMode;
         }
       } // svg特殊没有mbm删除
-      else if (renderMode === mode.SVG) {
+      else if (renderMode === SVG) {
           delete virtualDom.mixBlendMode;
         }
 
       var offscreenMask;
 
       if (__hasMask) {
-        if (renderMode === mode.CANVAS && !cache) {
+        if (renderMode === CANVAS$1 && !cache) {
           var _width = root.width,
               _height = root.height;
 
@@ -18717,7 +18722,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       var offscreenFilter;
 
       if (hasFilter) {
-        if (renderMode === mode.CANVAS && !cache) {
+        if (renderMode === CANVAS$1 && !cache) {
           var _width2 = root.width,
               _height2 = root.height;
 
@@ -18730,10 +18735,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             matrix: matrix
           };
           ctx = _c3.ctx;
-        } else if (renderMode === mode.SVG) {
+        } else if (renderMode === SVG) {
           virtualDom.filter = painter.svgFilter(filter);
         }
-      } else if (renderMode === mode.SVG) {
+      } else if (renderMode === SVG) {
         delete virtualDom.filter;
       } // 根据backgroundClip的不同值要调整bg渲染坐标尺寸，也会影响borderRadius
 
@@ -18769,7 +18774,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       if (overflow === 'hidden' && display !== 'inline') {
         borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
 
-        if (renderMode === mode.CANVAS && !cache) {
+        if (renderMode === CANVAS$1 && !cache) {
           var _width3 = root.width,
               _height3 = root.height;
 
@@ -18786,7 +18791,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           offscreenOverflow.offsetWidth = offsetWidth;
           offscreenOverflow.offsetHeight = offsetHeight;
           offscreenOverflow.list = borderList;
-        } else if (renderMode === mode.SVG) {
+        } else if (renderMode === SVG) {
           var d = svgPolygon$5(borderList) || "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1);
           var v = {
             tagName: 'clipPath',
@@ -18802,12 +18807,12 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
           virtualDom.overflow = 'url(#' + id + ')';
         }
-      } else if (renderMode === mode.SVG) {
+      } else if (renderMode === SVG) {
         delete virtualDom.overflow;
       } // 无法使用缓存时主画布直接绘制需设置
 
 
-      if (renderMode === mode.CANVAS && !cache) {
+      if (renderMode === CANVAS$1 && !cache) {
         res.offscreenBlend = offscreenBlend;
         res.offscreenMask = offscreenMask;
         res.offscreenFilter = offscreenFilter;
@@ -18818,7 +18823,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       } // 隐藏不渲染
 
 
-      if ((visibility === 'hidden' || res["break"]) && (renderMode === mode.CANVAS || renderMode === mode.WEBGL)) {
+      if ((visibility === 'hidden' || res["break"]) && (renderMode === CANVAS$1 || renderMode === WEBGL$1)) {
         res["break"] = true;
         return res;
       }
@@ -18866,7 +18871,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                 ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
               }
 
-              if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+              if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
                 offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
               }
 
@@ -18884,7 +18889,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                   if (loadBgi.url === backgroundImage[i]) {
                     var uuid = bg.renderImage(_this6, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
 
-                    if (renderMode === mode.SVG && uuid) {
+                    if (renderMode === SVG && uuid) {
                       svgBgSymbol.push(uuid);
                     }
                   }
@@ -18895,13 +18900,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                     if (gd.k === 'conic') {
                       var _uuid = gradient$1.renderConic(_this6, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
 
-                      if (renderMode === mode.SVG && _uuid) {
+                      if (renderMode === SVG && _uuid) {
                         svgBgSymbol.push(_uuid);
                       }
                     } else {
                       var _uuid2 = bg.renderBgc(_this6, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
 
-                      if (renderMode === mode.SVG && _uuid2) {
+                      if (renderMode === SVG && _uuid2) {
                         svgBgSymbol.push(_uuid2);
                       }
                     }
@@ -18952,10 +18957,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
                   var w = ix2 - ix1; // canvas的bg位图裁剪
 
-                  if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && offscreen) {
+                  if ((renderMode === CANVAS$1 || renderMode === WEBGL$1) && offscreen) {
                     ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
                   } //svg则特殊判断
-                  else if (renderMode === mode.SVG && svgBgSymbol.length) {
+                  else if (renderMode === SVG && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
                           var _v3 = {
@@ -19053,10 +19058,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
                   var w = ix2 - ix1; // canvas的bg位图裁剪
 
-                  if ((renderMode === mode.CANVAS || renderMode === mode.WEBGL) && offscreen) {
+                  if ((renderMode === CANVAS$1 || renderMode === WEBGL$1) && offscreen) {
                     ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
                   } //svg则特殊判断
-                  else if (renderMode === mode.SVG && svgBgSymbol.length) {
+                  else if (renderMode === SVG && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
                           var _v4 = {
@@ -19360,13 +19365,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
   }, {
     key: "__getLg",
     value: function __getLg(renderMode, ctx, gd) {
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
         var lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
         gd.stop.forEach(function (item) {
           lg.addColorStop(item[1], int2rgba$2(item[0]));
         });
         return lg;
-      } else if (renderMode === mode.SVG) {
+      } else if (renderMode === SVG) {
         var v = {
           tagName: 'linearGradient',
           props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
@@ -19387,13 +19392,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
   }, {
     key: "__getRg",
     value: function __getRg(renderMode, ctx, gd) {
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
         var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
         gd.stop.forEach(function (item) {
           rg.addColorStop(item[1], int2rgba$2(item[0]));
         });
         return rg;
-      } else if (renderMode === mode.SVG) {
+      } else if (renderMode === SVG) {
         var v = {
           tagName: 'radialGradient',
           props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
@@ -19432,9 +19437,9 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
       var res = [];
 
-      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
         return gd;
-      } else if (renderMode === mode.SVG) {
+      } else if (renderMode === SVG) {
         var offset = 0.5;
         var prev; // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
 
@@ -27734,6 +27739,7 @@ var _enums$STYLE_KEY$i = enums.STYLE_KEY,
     NODE_IS_MASK$3 = _enums$NODE_KEY$9.NODE_IS_MASK,
     NODE_DOM_PARENT$5 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
     NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$9.NODE_PERSPECTIVE_MATRIX,
+    NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$9.NODE_VIRTUAL_DOM,
     _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
     STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
     STRUCT_TOTAL$1 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
@@ -29665,12 +29671,12 @@ function renderSvg(renderMode, ctx, root, isFirst) {
 
   var maskHash = {}; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 
-  var parentMatrixList = [];
+  var matrixList = [];
   var parentMatrix;
-  var parentVdList = [];
+  var vdList = [];
   var parentVd;
   var lastLv = 0;
-  var last;
+  var lastConfig;
 
   for (var _i5 = 0, _len3 = __structs.length; _i5 < _len3; _i5++) {
     var _structs$_i3 = __structs[_i5],
@@ -29702,35 +29708,36 @@ function renderSvg(renderMode, ctx, root, isFirst) {
 
 
     if (lv < lastLv) {
-      parentMatrixList.splice(lv);
-      parentMatrix = parentMatrixList[lv - 1];
-      parentVdList.splice(lv);
-      parentVd = parentVdList[lv - 1];
+      var diff = lastLv - lv;
+      matrixList.splice(-diff);
+      parentMatrix = matrixList[lv - 1];
+      vdList.splice(-diff);
+      parentVd = vdList[lv - 1];
     } else if (lv > lastLv) {
-      parentMatrixList.push(last.__matrix);
-      var vd = last.virtualDom;
-      parentVdList.push(vd);
+      matrixList.push(lastConfig[NODE_MATRIX$3]);
+      var vd = lastConfig[NODE_VIRTUAL_DOM$2];
+      vdList.push(vd);
       parentVd = vd;
     }
 
+    lastConfig = __config;
     var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
 
     if (_refreshLevel2 < REPAINT$2 && !(_node4 instanceof Text)) {
       __config[NODE_REFRESH_LV$1] = NONE$2;
-      virtualDom = _node4.virtualDom; // total可以跳过所有孩子节点省略循环
+      virtualDom = __config[NODE_VIRTUAL_DOM$2]; // total可以跳过所有孩子节点省略循环
 
       if (__cacheTotal && __cacheTotal.available) {
         _i5 += _total8 || 0;
         virtualDom.cache = true;
       } else {
         __cacheTotal && (__cacheTotal.available = true);
-        virtualDom = _node4.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
+        virtualDom = __config[NODE_VIRTUAL_DOM$2] = _node4.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
 
         if (_node4 instanceof Dom$1 && !(_node4 instanceof Img$1)) {
           virtualDom.children = [];
-        }
+        } // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
-        delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
 
         if (display === 'none') {
           _i5 += _total8 || 0;
@@ -29738,6 +29745,8 @@ function renderSvg(renderMode, ctx, root, isFirst) {
           if (_hasMask2) {
             _i5 += _hasMask2;
           }
+        } else {
+          delete virtualDom.cache;
         }
       }
 
@@ -29806,7 +29815,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
 
       _node4.render(renderMode, _refreshLevel2, ctx);
 
-      virtualDom = _node4.virtualDom; // 渲染后更新取值
+      virtualDom = __config[NODE_VIRTUAL_DOM$2]; // 渲染后更新取值
 
       display = computedStyle[DISPLAY$9];
 
@@ -29948,7 +29957,6 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     }
 
     lastLv = lv;
-    last = _node4;
   }
 }
 
@@ -36077,7 +36085,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.62.4";
+var version = "0.62.5";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

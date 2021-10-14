@@ -1770,7 +1770,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     // svg小刷新等级时直接修改vd，这样Geom不再感知
     if(refreshLevel < REPAINT && !(node instanceof Text)) {
       __config[NODE_REFRESH_LV] = NONE;
-      virtualDom = node.virtualDom;
+      virtualDom = __config[NODE_VIRTUAL_DOM];
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
@@ -1851,7 +1851,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
       node.render(renderMode, refreshLevel, ctx);
-      virtualDom = node.virtualDom;
+      virtualDom = __config[NODE_VIRTUAL_DOM];
       // 渲染后更新取值
       display = computedStyle[DISPLAY];
       if(display === 'none') {

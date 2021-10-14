@@ -878,6 +878,7 @@ class Root extends Dom {
 
   destroy() {
     this.__destroy();
+    this.animateController.__destroy();
     let n = this.dom;
     if(n) {
       removeEvent(n, this.__eventCbList || []);

@@ -31827,6 +31827,8 @@
       value: function destroy() {
         this.__destroy();
 
+        this.animateController.__destroy();
+
         var n = this.dom;
 
         if (n) {
@@ -36091,7 +36093,7 @@
     Cache: Cache
   };
 
-  var version = "0.62.5";
+  var version = "0.62.6";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

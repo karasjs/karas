@@ -1454,6 +1454,8 @@ class Animation extends Event {
     let [frames, framesR, keys, originStyle] = this.__init(list, iterations, duration, op.easing, target);
     config[I_FRAMES] = frames;
     config[I_FRAMES_R] = framesR;
+    // console.warn(JSON.stringify(frames));
+    // console.warn(JSON.stringify(framesR));
     config[I_KEYS] = keys;
     config[I_ORIGIN_STYLE] = originStyle;
     if(frames.length === 2) {
@@ -1797,11 +1799,33 @@ class Animation extends Event {
       __config[I_BEGIN] = true;
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
+    let round;
     while(currentTime >= duration && playCount < iterations - 1) {
       currentTime -= duration;
       __config[I_NEXT_TIME] -= duration;
       playCount = ++__config[I_PLAY_COUNT];
       __config[I_BEGIN] = true;
+      round = true;
+    }
+    // 如果发生轮换，需重新确定正反向
+    if(round) {
+      let direction = __config[I_DIRECTION];
+      let frames = __config[I_FRAMES];
+      let framesR = __config[I_FRAMES_R];
+      let isAlternate = {
+        alternate: true,
+        'alternate-reverse': true,
+      }.hasOwnProperty(direction);
+      // 有正反向播放需要重设帧序列
+      if(isAlternate) {
+        let isEven = playCount % 2 === 0;
+        if(direction === 'alternate') {
+          currentFrames = __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+        }
+        else {
+          currentFrames = __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+        }
+      }
     }
     let isLastCount = playCount >= iterations - 1;
     // 只有2帧可优化，否则2分查找当前帧
@@ -1888,23 +1912,23 @@ class Animation extends Event {
     if(__config[I_NEXT_END] && !__config[I_END]) {
       __config[I_END] = true;
       this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
-      let direction = __config[I_DIRECTION];
-      let frames = __config[I_FRAMES];
-      let framesR = __config[I_FRAMES_R];
-      let isAlternate = {
-        alternate: true,
-        'alternate-reverse': true,
-      }.hasOwnProperty(direction);
-      // 有正反播放需要重设帧序列
-      if(isAlternate) {
-        let isEven = __config[I_PLAY_COUNT] % 2 === 0;
-        if(direction === 'alternate') {
-          __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
-        }
-        else {
-          __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
-        }
-      }
+      // let direction = __config[I_DIRECTION];
+      // let frames = __config[I_FRAMES];
+      // let framesR = __config[I_FRAMES_R];
+      // let isAlternate = {
+      //   alternate: true,
+      //   'alternate-reverse': true,
+      // }.hasOwnProperty(direction);
+      // // 有正反播放需要重设帧序列
+      // if(isAlternate) {
+      //   let isEven = __config[I_PLAY_COUNT] % 2 === 0;
+      //   if(direction === 'alternate') {
+      //     __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+      //   }
+      //   else {
+      //     __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+      //   }
+      // }
     }
     // if(__config[I_NEXT_BEGIN]) {
     //   __config[I_NEXT_BEGIN] = false;

@@ -351,7 +351,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(needMask) {
         ctx.save();
-        renderBgc(this, renderMode, ctx, '#FFF',
+        renderBgc(this, renderMode, ctx, '#FFF', null,
           bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
       }
       // 先画不考虑repeat的中心声明的

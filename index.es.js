@@ -13199,7 +13199,7 @@ function renderImage(xom, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, bt
     if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if (needMask) {
         ctx.save();
-        renderBgc(this, renderMode, ctx, '#FFF', bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
+        renderBgc(this, renderMode, ctx, '#FFF', null, bx1, by1, bgW, bgH, btlr, btrr, bbrr, bblr, 'clip');
       } // 先画不考虑repeat的中心声明的
 
 
@@ -15563,11 +15563,35 @@ var Animation = /*#__PURE__*/function (_Event) {
       } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
 
 
+      var round;
+
       while (currentTime >= duration && playCount < iterations - 1) {
         currentTime -= duration;
         __config[I_NEXT_TIME] -= duration;
         playCount = ++__config[I_PLAY_COUNT];
         __config[I_BEGIN] = true;
+        round = true;
+      } // 如果发生轮换，需重新确定正反向
+
+
+      if (round) {
+        var direction = __config[I_DIRECTION];
+        var frames = __config[I_FRAMES];
+        var framesR = __config[I_FRAMES_R];
+        var isAlternate = {
+          alternate: true,
+          'alternate-reverse': true
+        }.hasOwnProperty(direction); // 有正反向播放需要重设帧序列
+
+        if (isAlternate) {
+          var isEven = playCount % 2 === 0;
+
+          if (direction === 'alternate') {
+            currentFrames = __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
+          } else {
+            currentFrames = __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
+          }
+        }
       }
 
       var isLastCount = playCount >= iterations - 1; // 只有2帧可优化，否则2分查找当前帧
@@ -15666,28 +15690,7 @@ var Animation = /*#__PURE__*/function (_Event) {
       if (__config[I_NEXT_END] && !__config[I_END]) {
         __config[I_END] = true;
         this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
-        var direction = __config[I_DIRECTION];
-        var frames = __config[I_FRAMES];
-        var framesR = __config[I_FRAMES_R];
-        var isAlternate = {
-          alternate: true,
-          'alternate-reverse': true
-        }.hasOwnProperty(direction); // 有正反播放需要重设帧序列
-
-        if (isAlternate) {
-          var isEven = __config[I_PLAY_COUNT] % 2 === 0;
-
-          if (direction === 'alternate') {
-            __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
-          } else {
-            __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
-          }
-        }
-      } // if(__config[I_NEXT_BEGIN]) {
-      //   __config[I_NEXT_BEGIN] = false;
-      //   __config[I_BEGIN] = true;
-      // }
-
+      }
 
       if (__config[I_FINISHED]) {
         __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
@@ -36087,7 +36090,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.62.6";
+var version = "0.62.7";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

@@ -15156,9 +15156,7 @@
           originStyle = _this$__init2[3];
 
       config[I_FRAMES] = frames;
-      config[I_FRAMES_R] = framesR; // console.warn(JSON.stringify(frames));
-      // console.warn(JSON.stringify(framesR));
-
+      config[I_FRAMES_R] = framesR;
       config[I_KEYS] = keys;
       config[I_ORIGIN_STYLE] = originStyle;
 
@@ -15697,28 +15695,8 @@
 
         if (__config[I_NEXT_END] && !__config[I_END]) {
           __config[I_END] = true;
-          this.emit(Event.END, __config[I_PLAY_COUNT] - 1); // let direction = __config[I_DIRECTION];
-          // let frames = __config[I_FRAMES];
-          // let framesR = __config[I_FRAMES_R];
-          // let isAlternate = {
-          //   alternate: true,
-          //   'alternate-reverse': true,
-          // }.hasOwnProperty(direction);
-          // // 有正反播放需要重设帧序列
-          // if(isAlternate) {
-          //   let isEven = __config[I_PLAY_COUNT] % 2 === 0;
-          //   if(direction === 'alternate') {
-          //     __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
-          //   }
-          //   else {
-          //     __config[I_CURRENT_FRAMES] = isEven ? framesR : frames;
-          //   }
-          // }
-        } // if(__config[I_NEXT_BEGIN]) {
-        //   __config[I_NEXT_BEGIN] = false;
-        //   __config[I_BEGIN] = true;
-        // }
-
+          this.emit(Event.END, __config[I_PLAY_COUNT] - 1);
+        }
 
         if (__config[I_FINISHED]) {
           __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;

@@ -16,7 +16,7 @@ let animation = t.animate([
   duration: 200,
   easing: 'steps(2)',
   direction: 'alternate',
-  iterations: 2,
+  iterations: 3,
   fill: 'forwards',
 });
 let n = 0;

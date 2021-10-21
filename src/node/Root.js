@@ -919,6 +919,9 @@ class Root extends Dom {
         height: h,
       }, cb);
     }
+    else if(isFunction(cb)) {
+      cb();
+    }
   }
 
   addRefreshTask(cb) {

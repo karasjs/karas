@@ -31882,6 +31882,8 @@
             width: w,
             height: h
           }, cb);
+        } else if (isFunction$7(cb)) {
+          cb();
         }
       }
     }, {

@@ -31752,8 +31752,7 @@
           this.dom.__root.destroy();
         }
 
-        this.__eventCbList = initEvent(this.dom, Root); // this.dom.__uuid = this.__uuid;
-
+        this.__eventCbList = initEvent(this.dom, Root);
         this.dom.__root = this;
       }
     }, {

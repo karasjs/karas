@@ -10,6 +10,8 @@ const { STYLE_KEY: {
   FONT_SIZE,
   FONT_STYLE,
   LETTER_SPACING,
+  TEXT_STROKE_COLOR,
+  TEXT_STROKE_WIDTH,
 } } = enums;
 
 /**
@@ -48,17 +50,27 @@ class TextBox {
     y += oy + dy;
     this.__endX = x + width;
     this.__endY = y;
-    let { [LETTER_SPACING]: letterSpacing } = computedStyle;
+    let {
+      [LETTER_SPACING]: letterSpacing,
+      [TEXT_STROKE_WIDTH]: textStrokeWidth,
+      [TEXT_STROKE_COLOR]: textStrokeColor,
+    } = computedStyle;
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(letterSpacing) {
         for(; i < length; i++) {
           ctx.fillText(content.charAt(i), x, y);
+          if(textStrokeWidth && textStrokeColor[3] > 0) {
+            ctx.strokeText(content.charAt(i), x, y);
+          }
           x += wList[i] + letterSpacing;
         }
       }
       else {
         ctx.fillText(content, x, y);
+        if(textStrokeWidth && textStrokeColor[3] > 0) {
+          ctx.strokeText(content, x, y);
+        }
       }
     }
     else if(renderMode === mode.SVG) {
@@ -71,6 +83,10 @@ class TextBox {
         ['font-style', computedStyle[FONT_STYLE]],
         ['font-size', computedStyle[FONT_SIZE] + 'px'],
       ];
+      if(textStrokeWidth && textStrokeColor[3] > 0) {
+        props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR]]);
+        props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH]]);
+      }
       if(letterSpacing) {
         props.push(['letter-spacing', letterSpacing]);
       }

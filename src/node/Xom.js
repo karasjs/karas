@@ -106,6 +106,8 @@ const {
     FONT_SIZE,
     FONT_FAMILY,
     LINE_HEIGHT,
+    TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -1308,6 +1310,35 @@ class Xom extends Node {
     else if(isNil(__cacheStyle[COLOR])) {
       computedStyle[COLOR] = rgba2int(currentStyle[COLOR][0]);
       __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+    }
+    if(currentStyle[TEXT_STROKE_COLOR][1] === INHERIT) {
+      computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+    }
+    else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
+      computedStyle[TEXT_STROKE_COLOR] = rgba2int(currentStyle[TEXT_STROKE_COLOR][0]);
+      __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+    }
+    if(currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
+      computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : 0;
+      __cacheStyle[TEXT_STROKE_WIDTH] = true;
+    }
+    else if(isNil(__cacheStyle[TEXT_STROKE_WIDTH])) {
+      let v = currentStyle[TEXT_STROKE_WIDTH];
+      if(v[1] === REM) {
+        v = v[0] * this.root.computedStyle[FONT_SIZE];
+      }
+      else if(v[1] === VW) {
+        v = v[0] * this.root.width * 0.01;
+      }
+      else if(v[1] === VH) {
+        v = v[0] * this.root.height * 0.01;
+      }
+      else {
+        v = v[0];
+      }
+      computedStyle[TEXT_STROKE_WIDTH] = v;
+      __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
     if(currentStyle[VISIBILITY][1] === INHERIT) {
       computedStyle[VISIBILITY] = parent ? parentComputedStyle[VISIBILITY] : 'visible';

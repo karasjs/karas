@@ -106,7 +106,7 @@ const DIRECTION_HASH = {
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { isRelativeOrAbsolute, equalStyle } = css;
-const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW } = level;
+const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW, REBUILD } = level;
 const { isIgnore, isGeom, isMeasure } = change;
 
 const ROOT_DOM_NAME = {
@@ -549,6 +549,12 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
   __config[NODE_REFRESH_LV] |= lv;
+  if(component || addDom || removeDom) {
+    root.__rlv = REBUILD;
+  }
+  else {
+    root.__rlv = Math.max(root.__rlv, lv);
+  }
   // dom在>=REPAINT时total失效，svg的Geom比较特殊
   let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {
@@ -651,6 +657,7 @@ class Root extends Dom {
     Event.mix(this);
     this.__config[NODE_UPDATE_HASH] = this.__updateHash = {};
     this.__uuid = uuid++;
+    this.__rlv = REBUILD; // 每次刷新最大lv
   }
 
   __initProps() {
@@ -872,7 +879,8 @@ class Root extends Dom {
     if(isFunction(cb)) {
       cb();
     }
-    this.emit(Event.REFRESH);
+    this.emit(Event.REFRESH, this.__rlv);
+    this.__rlv = NONE;
   }
 
   destroy() {

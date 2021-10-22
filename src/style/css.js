@@ -74,6 +74,8 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   FLEX_WRAP,
   ALIGN_CONTENT,
   TRANSLATE_PATH,
+  TEXT_STROKE_COLOR,
+  TEXT_STROKE_WIDTH,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -188,6 +190,10 @@ function normalize(style, reset = []) {
   temp = style.padding;
   if(!isNil(temp)) {
     abbr.toFull(style, 'padding');
+  }
+  temp = style.textStroke;
+  if(temp) {
+    abbr.toFull(style, 'textStroke');
   }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
   ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(k => {
@@ -669,6 +675,15 @@ function normalize(style, reset = []) {
       res[COLOR] = [rgba2int(temp), RGBA];
     }
   }
+  temp = style.textStrokeColor;
+  if(!isNil(temp)) {
+    if(temp === 'inherit') {
+      res[TEXT_STROKE_COLOR] = [[], INHERIT];
+    }
+    else {
+      res[TEXT_STROKE_COLOR] = [rgba2int(temp), RGBA];
+    }
+  }
   temp = style.fontSize;
   if(temp || temp === 0) {
     if(temp === 'inherit') {
@@ -685,6 +700,25 @@ function normalize(style, reset = []) {
           v[1] = PX;
         }
         res[FONT_SIZE] = v;
+      }
+    }
+  }
+  temp = style.textStrokeWidth;
+  if(!isNil(temp)) {
+    if(temp === 'inherit') {
+      res[TEXT_STROKE_WIDTH] = [0, INHERIT];
+    }
+    else {
+      let v = calUnit(temp);
+      // textStrokeWidth不能为负数，否则为继承
+      if(v < 0) {
+        res[TEXT_STROKE_WIDTH] = [0, INHERIT];
+      }
+      else {
+        if([NUMBER, DEG, PERCENT].indexOf(v[1]) > -1) {
+          v[1] = PX;
+        }
+        res[TEXT_STROKE_WIDTH] = v;
       }
     }
   }
@@ -1456,6 +1490,7 @@ const VALUE = {
 // 仅1维数组
 const ARRAY_0 = {
   [COLOR]: true,
+  [TEXT_STROKE_COLOR]: true,
   [BACKGROUND_COLOR]: true,
   [STYLE_KEY.BORDER_TOP_COLOR]: true,
   [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
@@ -1542,7 +1577,7 @@ function cloneStyle(style, keys) {
     else if(GEOM.hasOwnProperty(k)) {
       res[k] = util.clone(v);
     }
-    // 其余皆是数组或空
+    // 其余皆是数组或空，默认是一维数组只需slice即可
     else if(v) {
       let n = res[k] = v.slice(0);
       // 特殊引用里数组某项再次clone

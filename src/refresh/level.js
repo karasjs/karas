@@ -12,7 +12,7 @@ const { STYLE_KEY, STYLE_KEY: {
 } } = enums;
 
 const ENUM = {
-  // 低位表示repaint级别
+  // 低位表示<repaint级别
   NONE: 0, //                                          0
   TRANSLATE_X: 1, //                                   1
   TRANSLATE_Y: 2, //                                  10
@@ -23,16 +23,18 @@ const ENUM = {
   FILTER: 32, //                                  100000
   MIX_BLEND_MODE: 64, //                         1000000
   PERSPECTIVE: 128, //                          10000000
+
   REPAINT: 256, //                             100000000
 
   // 高位表示reflow
   REFLOW: 512, //                             1000000000
+
+  // 特殊高位表示rebuild
+  REBUILD: 1024, //                          10000000000
 };
 
 const TRANSFORMS = {
-  // [STYLE_KEY.TRANSLATE_X]: true,
-  // [STYLE_KEY.TRANSLATE_Y]: true,
-  // [STYLE_KEY.TRANSLATE_Z]: true,
+  // translate特殊对待
   [STYLE_KEY.SCALE_X]: true,
   [STYLE_KEY.SCALE_Y]: true,
   [STYLE_KEY.SCALE_Z]: true,

@@ -26,6 +26,8 @@ const {
     WHITE_SPACE,
     TEXT_OVERFLOW,
     WIDTH,
+    TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -648,6 +650,14 @@ class Text extends Node {
       let color = cacheStyle[COLOR];
       if(ctx.fillStyle !== color) {
         ctx.fillStyle = color;
+      }
+      let strokeWidth = computedStyle[TEXT_STROKE_WIDTH];
+      if(ctx.strokeWidth !== strokeWidth) {
+        ctx.strokeWidth = strokeWidth;
+      }
+      let strokeColor = cacheStyle[TEXT_STROKE_COLOR];
+      if(ctx.strokeStyle !== strokeColor) {
+        ctx.strokeStyle = strokeColor;
       }
     }
     // 可能为空，整个是个ellipsis

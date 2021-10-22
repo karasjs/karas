@@ -83,6 +83,8 @@ const DOM = {
   whiteSpace: 'inherit',
   textOverflow: 'clip',
   lineClamp: 0,
+  textStrokeWidth: 'inherit',
+  textStrokeColor: 'inherit',
 };
 
 const GEOM = {
@@ -127,6 +129,8 @@ let INHERIT = {
   textAlign: 'left',
   visibility: 'visible',
   pointerEvents: 'auto',
+  textStrokeColor: '#000',
+  textStrokeWidth: 1,
 };
 
 let INHERIT_KEY_SET = [];

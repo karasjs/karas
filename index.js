@@ -31039,7 +31039,8 @@
       FILTER$6 = o$3.FILTER,
       PERSPECTIVE$5 = o$3.PERSPECTIVE,
       REPAINT$3 = o$3.REPAINT,
-      REFLOW$2 = o$3.REFLOW;
+      REFLOW$2 = o$3.REFLOW,
+      REBUILD = o$3.REBUILD;
   var isIgnore = o$2.isIgnore,
       isGeom$3 = o$2.isGeom,
       isMeasure = o$2.isMeasure;
@@ -31538,7 +31539,14 @@
       } // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
 
 
-    __config[NODE_REFRESH_LV$2] |= lv; // dom在>=REPAINT时total失效，svg的Geom比较特殊
+    __config[NODE_REFRESH_LV$2] |= lv;
+
+    if (component || addDom || removeDom) {
+      root.__rlv = REBUILD;
+    } else {
+      root.__rlv = Math.max(root.__rlv, lv);
+    } // dom在>=REPAINT时total失效，svg的Geom比较特殊
+
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
@@ -31673,6 +31681,8 @@
       Event.mix(_assertThisInitialized(_this));
       _this.__config[NODE_UPDATE_HASH] = _this.__updateHash = {};
       _this.__uuid = uuid$2++;
+      _this.__rlv = REBUILD; // 每次刷新最大lv
+
       return _this;
     }
 
@@ -31946,7 +31956,8 @@
           cb();
         }
 
-        this.emit(Event.REFRESH);
+        this.emit(Event.REFRESH, this.__rlv);
+        this.__rlv = NONE$3;
       }
     }, {
       key: "destroy",

@@ -44,6 +44,7 @@ const {
     MATRIX,
     ROTATE_3D,
     TRANSLATE_PATH,
+    TEXT_STROKE_COLOR,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -142,8 +143,8 @@ function inherit(frames, keys, target) {
         style[k] = [[MATRIX, m]];
       }
       else if(v[1] === INHERIT) {
-        if(k === COLOR) {
-          style[k] = [util.rgba2int(computedStyle[k]), RGBA ];
+        if(k === COLOR || k === TEXT_STROKE_COLOR) {
+          style[k] = [util.rgba2int(computedStyle[k]), RGBA];
         }
         else if(LENGTH_HASH.hasOwnProperty(k)) {
           style[k] = [computedStyle[k], PX];

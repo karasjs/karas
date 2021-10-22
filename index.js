@@ -7434,6 +7434,7 @@
     scale3d: ['scaleX', 'scaleY', 'scaleZ'],
     rotate: ['rotateZ'],
     skew: ['skewX', 'skewY'],
+    textStroke: ['textStrokeWidth', 'textStrokeColor'],
     toFull: function toFull(style, k) {
       var _this = this;
 
@@ -7666,10 +7667,10 @@
       } else if (/^border((Top)|(Right)|(Bottom)|(Left))$/.test(k)) {
         parseOneBorder(style, k);
       } else if (k === 'textStroke') {
-        var w = /([-+]?[\d.]+[pxremvwh%]*)/.exec(v);
+        var w = /(?:^|\s)([-+]?[\d.]+[pxremvwh%]*)/.exec(v);
 
         if (w) {
-          style.textStrokeWidth = w[0];
+          style.textStrokeWidth = w[1];
         }
 
         var c = /(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
@@ -13807,6 +13808,7 @@
       MATRIX$2 = _enums$STYLE_KEY$a.MATRIX,
       ROTATE_3D$2 = _enums$STYLE_KEY$a.ROTATE_3D,
       TRANSLATE_PATH$1 = _enums$STYLE_KEY$a.TRANSLATE_PATH,
+      TEXT_STROKE_COLOR$3 = _enums$STYLE_KEY$a.TEXT_STROKE_COLOR,
       _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
       UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
       UPDATE_STYLE = _enums$UPDATE_KEY$1.UPDATE_STYLE,
@@ -13916,7 +13918,7 @@
           var m = tf.calMatrix(v, ow, oh);
           style[k] = [[MATRIX$2, m]];
         } else if (v[1] === INHERIT$3) {
-          if (k === COLOR$3) {
+          if (k === COLOR$3 || k === TEXT_STROKE_COLOR$3) {
             style[k] = [util.rgba2int(computedStyle[k]), RGBA$1];
           } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
             style[k] = [computedStyle[k], PX$5];
@@ -17146,7 +17148,7 @@
       FONT_SIZE$8 = _enums$STYLE_KEY$c.FONT_SIZE,
       FONT_FAMILY$4 = _enums$STYLE_KEY$c.FONT_FAMILY,
       LINE_HEIGHT$3 = _enums$STYLE_KEY$c.LINE_HEIGHT,
-      TEXT_STROKE_COLOR$3 = _enums$STYLE_KEY$c.TEXT_STROKE_COLOR,
+      TEXT_STROKE_COLOR$4 = _enums$STYLE_KEY$c.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$3 = _enums$STYLE_KEY$c.TEXT_STROKE_WIDTH,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
@@ -18363,12 +18365,12 @@
           __cacheStyle[COLOR$4] = int2rgba$2(computedStyle[COLOR$4]);
         }
 
-        if (currentStyle[TEXT_STROKE_COLOR$3][1] === INHERIT$4) {
-          computedStyle[TEXT_STROKE_COLOR$3] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$3] : [0, 0, 0, 1];
-          __cacheStyle[TEXT_STROKE_COLOR$3] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$3]);
-        } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$3])) {
-          computedStyle[TEXT_STROKE_COLOR$3] = rgba2int$3(currentStyle[TEXT_STROKE_COLOR$3][0]);
-          __cacheStyle[TEXT_STROKE_COLOR$3] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$3]);
+        if (currentStyle[TEXT_STROKE_COLOR$4][1] === INHERIT$4) {
+          computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
+          __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
+        } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
+          computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(currentStyle[TEXT_STROKE_COLOR$4][0]);
+          __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
         }
 
         if (currentStyle[TEXT_STROKE_WIDTH$3][1] === INHERIT$4) {

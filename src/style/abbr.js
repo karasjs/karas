@@ -89,6 +89,7 @@ export default {
   scale3d: ['scaleX', 'scaleY', 'scaleZ'],
   rotate: ['rotateZ'],
   skew: ['skewX', 'skewY'],
+  textStroke: ['textStrokeWidth', 'textStrokeColor'],
 
   toFull(style, k) {
     let v = style[k];
@@ -306,9 +307,9 @@ export default {
       parseOneBorder(style, k);
     }
     else if(k === 'textStroke') {
-      let w = /([-+]?[\d.]+[pxremvwh%]*)/.exec(v);
+      let w = /(?:^|\s)([-+]?[\d.]+[pxremvwh%]*)/.exec(v);
       if(w) {
-        style.textStrokeWidth = w[0];
+        style.textStrokeWidth = w[1];
       }
       let c = /(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
       if(c) {

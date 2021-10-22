@@ -1170,6 +1170,9 @@ obj.emit('event-id');
 #### REFRESH
 * **类型** `String`
 * **值** `refresh`
+* **参数**
+  * lv `Number`
+    最大刷新等级。
 * **说明**  
 枚举变量，一般在侦听[Root](#Root)刷新时使用。
 * **示例**
@@ -1177,8 +1180,8 @@ obj.emit('event-id');
 let root = karas.render(
   <canvas>Hello Root!</canvas>
 );
-root.on(karas.Event.REFRESH, function() {
-  console.log('refresh');
+root.on(karas.Event.REFRESH, function(lv) {
+  console.log(lv); // 本次刷新中最大的lv
 });
 root.appendTo('#selector');
 ```
@@ -3190,19 +3193,25 @@ x/y点是否在由一堆顶点vertexes组成的多边形中。
 * **示例**
 ```jsx
 const ENUM = {
-  // 低4位表示repaint级别
+  // 低位表示<repaint级别
   NONE: 0, //                                          0
   TRANSLATE_X: 1, //                                   1
   TRANSLATE_Y: 2, //                                  10
-  TRANSFORM: 4, //                                   100
-  TRANSFORM_ALL: 7, //                               111
-  OPACITY: 8, //                                    1000
-  FILTER: 16, //                                   10000
-  MIX_BLEND_MODE: 32, //                          100000
-  REPAINT: 64, //                                1000000
+  TRANSLATE_Z: 4, //                                 100
+  TRANSFORM: 8, //                                  1000
+  TRANSFORM_ALL: 15, //                             1111
+  OPACITY: 16, //                                  10000
+  FILTER: 32, //                                  100000
+  MIX_BLEND_MODE: 64, //                         1000000
+  PERSPECTIVE: 128, //                          10000000
+
+  REPAINT: 256, //                             100000000
 
   // 高位表示reflow
-  REFLOW: 128, //                               10000000
+  REFLOW: 512, //                             1000000000
+
+  // 特殊高位表示rebuild
+  REBUILD: 1024, //                          10000000000
 };
 ```
 

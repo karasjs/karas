@@ -91,6 +91,9 @@ let o = Object.assign({
   isRepaint(lv) {
     return lv < ENUM.REFLOW;
   },
+  isRebuild(lv) {
+    return lv >= ENUM.REBUILD;
+  },
 }, ENUM);
 o.TRANSFORMS = TRANSFORMS;
 

@@ -1735,7 +1735,7 @@ root.delRefreshTask(cb);
   * h `Number`
     新高度。
   * cb `Function`
-    刷新回调。
+    刷新回调，参数为异步时间毫秒，-1是立即说明没发生变化。
 * **说明**  
   重设根节点尺寸并刷新，注意不会修改Dom的css样式，需外部控制。
 * **示例**
@@ -1746,8 +1746,8 @@ let root = karas.render(
   </canvas>,
   '#selector'
 );
-root.resize(720, 720, function() {
-  console.log('resize');
+root.resize(720, 720, function(diff) {
+  console.log(diff);
 });
 ```
 

@@ -11143,6 +11143,9 @@
     },
     isRepaint: function isRepaint(lv) {
       return lv < ENUM.REFLOW;
+    },
+    isRebuild: function isRebuild(lv) {
+      return lv >= ENUM.REBUILD;
     }
   }, ENUM);
   o$3.TRANSFORMS = TRANSFORMS;
@@ -32018,7 +32021,7 @@
             height: h
           }, cb);
         } else if (isFunction$7(cb)) {
-          cb();
+          cb(-1);
         }
       }
     }, {

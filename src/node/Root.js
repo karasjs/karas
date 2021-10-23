@@ -928,7 +928,7 @@ class Root extends Dom {
       }, cb);
     }
     else if(isFunction(cb)) {
-      cb();
+      cb(-1);
     }
   }
 

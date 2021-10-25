@@ -423,7 +423,8 @@
     NODE_UNIQUE_UPDATE_ID: 24,
     NODE_DEFS_CACHE: 25,
     NODE_PERSPECTIVE_MATRIX: 26,
-    NODE_VIRTUAL_DOM: 27
+    NODE_VIRTUAL_DOM: 27,
+    NODE_CACHE_AS_BITMAP: 28
   }; // struct用
 
   var STRUCT_KEY = {
@@ -17237,7 +17238,8 @@
       NODE_IS_INLINE = _enums$NODE_KEY$4.NODE_IS_INLINE,
       NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$4.NODE_PERSPECTIVE_MATRIX,
       NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK,
-      NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$4.NODE_VIRTUAL_DOM;
+      NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$4.NODE_VIRTUAL_DOM,
+      NODE_CACHE_AS_BITMAP = _enums$NODE_KEY$4.NODE_CACHE_AS_BITMAP;
   var AUTO$4 = o.AUTO,
       PX$6 = o.PX,
       PERCENT$7 = o.PERCENT,
@@ -17373,6 +17375,7 @@
       _this.__contentBoxList = []; // inline存储内容用
       // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
 
+      config[NODE_CACHE_AS_BITMAP] = _this.__cacheAsBitmap = !!_this.props.cacheAsBitmap;
       return _this;
     }
 
@@ -20323,6 +20326,14 @@
       key: "isClip",
       get: function get() {
         return this.__isClip;
+      }
+    }, {
+      key: "cacheAsBitmap",
+      get: function get() {
+        return this.__cacheAsBitmap;
+      },
+      set: function set(v) {
+        this.__config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!v;
       }
     }]);
 

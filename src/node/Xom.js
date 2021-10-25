@@ -146,6 +146,7 @@ const {
     NODE_PERSPECTIVE_MATRIX,
     NODE_IS_MASK,
     NODE_VIRTUAL_DOM,
+    NODE_CACHE_AS_BITMAP,
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, DEG } = unit;
@@ -256,6 +257,7 @@ class Xom extends Node {
     this.__frameAnimateList = [];
     this.__contentBoxList = []; // inline存储内容用
     // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
+    config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
   }
 
   __structure(i, lv, j) {
@@ -2941,6 +2943,14 @@ class Xom extends Node {
 
   get isClip() {
     return this.__isClip;
+  }
+
+  get cacheAsBitmap() {
+    return this.__cacheAsBitmap;
+  }
+
+  set cacheAsBitmap(v) {
+    this.__config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!v;
   }
 }
 

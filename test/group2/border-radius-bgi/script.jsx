@@ -1,4 +1,4 @@
-karas.render(
+let root = karas.render(
   <canvas width="360" height="360">
     <div style={{
       width: 50,
@@ -9,3 +9,7 @@ karas.render(
   </canvas>,
   '#test'
 );
+root.on('refresh', function() {
+  let input = document.querySelector('input');
+  input.value = document.querySelector('canvas').toDataURL();
+});

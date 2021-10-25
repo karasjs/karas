@@ -435,6 +435,55 @@
     STRUCT_TOTAL: 5,
     STRUCT_HAS_MASK: 6
   };
+  var ANIMATE_KEY = {
+    I_ASSIGNING: 0,
+    I_IN_FPS: 1,
+    I_IS_DELAY: 2,
+    I_BEGIN: 3,
+    I_END: 4,
+    I_FINISHED: 5,
+    I_NEXT_END: 6,
+    I_FIRST_PLAY: 7,
+    I_FRAME_CB: 8,
+    I_PLAY_CB: 9,
+    I_TARGET: 10,
+    I_ROOT: 11,
+    I_FRAMES: 12,
+    I_FRAMES_R: 13,
+    I_CURRENT_TIME: 14,
+    I_NEXT_TIME: 15,
+    I_STYLE: 16,
+    I_DURATION: 17,
+    I_ITERATIONS: 18,
+    I_FILL: 19,
+    I_PLAYBACK_RATE: 20,
+    I_PLAY_COUNT: 21,
+    I_PLAY_STATE: 22,
+    I_DESTROYED: 23,
+    I_START_TIME: 24,
+    I_FPS_TIME: 25,
+    I_EASING: 26,
+    I_ENTER_FRAME: 27,
+    I_DELAY: 28,
+    I_END_DELAY: 29,
+    I_KEYS: 30,
+    I_ORIGIN_STYLE: 31,
+    I_CURRENT_FRAMES: 32,
+    I_CURRENT_FRAME: 33,
+    I_SPF_LIMIT: 34,
+    I_FPS: 35,
+    I_DIRECTION: 36,
+    I_CAL_DIFF_TIME: 37,
+    I_FIRST_ENTER: 38,
+    I_STAY_BEGIN: 39,
+    I_STAY_END: 40,
+    I_IS2: 41,
+    I_END_TIME: 42,
+    I_NODE_CONFIG: 43,
+    I_ROOT_CONFIG: 44,
+    I_OUT_BEGIN_DELAY: 45,
+    I_TIME_STAMP: 46
+  };
   var enums = {
     STYLE_KEY: STYLE_KEY,
     // 大写常量为k，数字为值
@@ -449,7 +498,8 @@
     UPDATE_KEY: UPDATE_KEY,
     KEY_FRAME_KEY: KEY_FRAME_KEY,
     NODE_KEY: NODE_KEY,
-    STRUCT_KEY: STRUCT_KEY
+    STRUCT_KEY: STRUCT_KEY,
+    ANIMATE_KEY: ANIMATE_KEY
   };
 
   var _enums$STRUCT_KEY = enums.STRUCT_KEY,
@@ -13821,7 +13871,55 @@
       FRAME_STYLE = _enums$KEY_FRAME_KEY.FRAME_STYLE,
       FRAME_TIME = _enums$KEY_FRAME_KEY.FRAME_TIME,
       FRAME_EASING = _enums$KEY_FRAME_KEY.FRAME_EASING,
-      FRAME_TRANSITION = _enums$KEY_FRAME_KEY.FRAME_TRANSITION;
+      FRAME_TRANSITION = _enums$KEY_FRAME_KEY.FRAME_TRANSITION,
+      _enums$ANIMATE_KEY = enums.ANIMATE_KEY,
+      I_ASSIGNING = _enums$ANIMATE_KEY.I_ASSIGNING,
+      I_IN_FPS = _enums$ANIMATE_KEY.I_IN_FPS,
+      I_IS_DELAY = _enums$ANIMATE_KEY.I_IS_DELAY,
+      I_BEGIN = _enums$ANIMATE_KEY.I_BEGIN,
+      I_END = _enums$ANIMATE_KEY.I_END,
+      I_FINISHED = _enums$ANIMATE_KEY.I_FINISHED,
+      I_NEXT_END = _enums$ANIMATE_KEY.I_NEXT_END,
+      I_FIRST_PLAY = _enums$ANIMATE_KEY.I_FIRST_PLAY,
+      I_FRAME_CB = _enums$ANIMATE_KEY.I_FRAME_CB,
+      I_PLAY_CB = _enums$ANIMATE_KEY.I_PLAY_CB,
+      I_TARGET = _enums$ANIMATE_KEY.I_TARGET,
+      I_ROOT = _enums$ANIMATE_KEY.I_ROOT,
+      I_FRAMES = _enums$ANIMATE_KEY.I_FRAMES,
+      I_FRAMES_R = _enums$ANIMATE_KEY.I_FRAMES_R,
+      I_CURRENT_TIME = _enums$ANIMATE_KEY.I_CURRENT_TIME,
+      I_NEXT_TIME = _enums$ANIMATE_KEY.I_NEXT_TIME,
+      I_STYLE = _enums$ANIMATE_KEY.I_STYLE,
+      I_DURATION = _enums$ANIMATE_KEY.I_DURATION,
+      I_ITERATIONS = _enums$ANIMATE_KEY.I_ITERATIONS,
+      I_FILL = _enums$ANIMATE_KEY.I_FILL,
+      I_PLAYBACK_RATE = _enums$ANIMATE_KEY.I_PLAYBACK_RATE,
+      I_PLAY_COUNT = _enums$ANIMATE_KEY.I_PLAY_COUNT,
+      I_PLAY_STATE = _enums$ANIMATE_KEY.I_PLAY_STATE,
+      I_DESTROYED = _enums$ANIMATE_KEY.I_DESTROYED,
+      I_START_TIME = _enums$ANIMATE_KEY.I_START_TIME,
+      I_FPS_TIME = _enums$ANIMATE_KEY.I_FPS_TIME,
+      I_EASING = _enums$ANIMATE_KEY.I_EASING,
+      I_ENTER_FRAME = _enums$ANIMATE_KEY.I_ENTER_FRAME,
+      I_DELAY = _enums$ANIMATE_KEY.I_DELAY,
+      I_END_DELAY = _enums$ANIMATE_KEY.I_END_DELAY,
+      I_KEYS = _enums$ANIMATE_KEY.I_KEYS,
+      I_ORIGIN_STYLE = _enums$ANIMATE_KEY.I_ORIGIN_STYLE,
+      I_CURRENT_FRAMES = _enums$ANIMATE_KEY.I_CURRENT_FRAMES,
+      I_CURRENT_FRAME = _enums$ANIMATE_KEY.I_CURRENT_FRAME,
+      I_SPF_LIMIT = _enums$ANIMATE_KEY.I_SPF_LIMIT,
+      I_FPS = _enums$ANIMATE_KEY.I_FPS,
+      I_DIRECTION = _enums$ANIMATE_KEY.I_DIRECTION,
+      I_CAL_DIFF_TIME = _enums$ANIMATE_KEY.I_CAL_DIFF_TIME,
+      I_FIRST_ENTER = _enums$ANIMATE_KEY.I_FIRST_ENTER,
+      I_STAY_BEGIN = _enums$ANIMATE_KEY.I_STAY_BEGIN,
+      I_STAY_END = _enums$ANIMATE_KEY.I_STAY_END,
+      I_IS2 = _enums$ANIMATE_KEY.I_IS2,
+      I_END_TIME = _enums$ANIMATE_KEY.I_END_TIME,
+      I_NODE_CONFIG = _enums$ANIMATE_KEY.I_NODE_CONFIG,
+      I_ROOT_CONFIG = _enums$ANIMATE_KEY.I_ROOT_CONFIG,
+      I_OUT_BEGIN_DELAY = _enums$ANIMATE_KEY.I_OUT_BEGIN_DELAY,
+      I_TIME_STAMP = _enums$ANIMATE_KEY.I_TIME_STAMP;
   var AUTO$3 = o.AUTO,
       PX$5 = o.PX,
       PERCENT$6 = o.PERCENT,
@@ -15103,54 +15201,53 @@
     return [options || {}, cb];
   }
 
-  var uuid$1 = 0;
-  var I_ASSIGNING = 0;
-  var I_IN_FPS = 1;
-  var I_IS_DELAY = 2;
-  var I_BEGIN = 3;
-  var I_END = 4;
-  var I_FINISHED = 5;
-  var I_NEXT_END = 6;
-  var I_FIRST_PLAY = 7;
-  var I_FRAME_CB = 8;
-  var I_PLAY_CB = 9;
-  var I_TARGET = 10;
-  var I_ROOT = 11;
-  var I_FRAMES = 12;
-  var I_FRAMES_R = 13;
-  var I_CURRENT_TIME = 14;
-  var I_NEXT_TIME = 15;
-  var I_STYLE = 16;
-  var I_DURATION = 17;
-  var I_ITERATIONS = 18;
-  var I_FILL = 19;
-  var I_PLAYBACK_RATE = 20;
-  var I_PLAY_COUNT = 21;
-  var I_PLAY_STATE = 22;
-  var I_DESTROYED = 23;
-  var I_START_TIME = 24;
-  var I_FPS_TIME = 25;
-  var I_EASING = 26;
-  var I_ENTER_FRAME = 27;
-  var I_DELAY = 28;
-  var I_END_DELAY = 29;
-  var I_KEYS = 30;
-  var I_ORIGIN_STYLE = 31;
-  var I_CURRENT_FRAMES = 32;
-  var I_CURRENT_FRAME = 33;
-  var I_SPF_LIMIT = 34;
-  var I_FPS = 35;
-  var I_DIRECTION = 36;
-  var I_CAL_DIFF_TIME = 37;
-  var I_FIRST_ENTER = 38;
-  var I_STAY_BEGIN = 39;
-  var I_STAY_END = 40;
-  var I_IS2 = 41;
-  var I_END_TIME = 42;
-  var I_NODE_CONFIG = 43;
-  var I_ROOT_CONFIG = 44;
-  var I_OUT_BEGIN_DELAY = 45;
-  var I_TIME_STAMP = 46;
+  var uuid$1 = 0; // const I_ASSIGNING = 0;
+  // const I_IN_FPS = 1;
+  // const I_IS_DELAY = 2;
+  // const I_BEGIN = 3;
+  // const I_END = 4;
+  // const I_FINISHED = 5;
+  // const I_NEXT_END = 6;
+  // const I_FIRST_PLAY = 7;
+  // const I_FRAME_CB = 8;
+  // const I_PLAY_CB = 9;
+  // const I_TARGET = 10;
+  // const I_ROOT = 11;
+  // const I_FRAMES = 12;
+  // const I_FRAMES_R = 13;
+  // const I_CURRENT_TIME = 14;
+  // const I_NEXT_TIME = 15;
+  // const I_STYLE = 16;
+  // const I_DURATION = 17;
+  // const I_ITERATIONS = 18;
+  // const I_FILL = 19;
+  // const I_PLAYBACK_RATE = 20;
+  // const I_PLAY_COUNT = 21;
+  // const I_PLAY_STATE = 22;
+  // const I_DESTROYED = 23;
+  // const I_START_TIME = 24;
+  // const I_FPS_TIME = 25;
+  // const I_EASING = 26;
+  // const I_ENTER_FRAME = 27;
+  // const I_DELAY = 28;
+  // const I_END_DELAY = 29;
+  // const I_KEYS = 30;
+  // const I_ORIGIN_STYLE = 31;
+  // const I_CURRENT_FRAMES = 32;
+  // const I_CURRENT_FRAME = 33;
+  // const I_SPF_LIMIT = 34;
+  // const I_FPS = 35;
+  // const I_DIRECTION = 36;
+  // const I_CAL_DIFF_TIME = 37;
+  // const I_FIRST_ENTER = 38;
+  // const I_STAY_BEGIN = 39;
+  // const I_STAY_END = 40;
+  // const I_IS2 = 41;
+  // const I_END_TIME = 42;
+  // const I_NODE_CONFIG = 43;
+  // const I_ROOT_CONFIG = 44;
+  // const I_OUT_BEGIN_DELAY = 45;
+  // const I_TIME_STAMP = 46;
 
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);

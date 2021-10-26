@@ -765,7 +765,7 @@ class Img extends Dom {
     // 相等或空且当前error直接返回
     if(v === loadImg.src || !v && loadImg.error) {
       if(isFunction(cb)) {
-        cb.call(self);
+        cb(-1);
       }
     }
     else if(v) {
@@ -789,9 +789,9 @@ class Img extends Dom {
           res[UPDATE_CONFIG] = self.__config;
           root.__addUpdate(self, self.__config, root, self.__config, res);
         },
-        __after() {
+        __after(diff) {
           if(isFunction(cb)) {
-            cb.call(self);
+            cb(diff);
           }
         },
       });

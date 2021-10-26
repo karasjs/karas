@@ -348,19 +348,15 @@
   };
 
   function style2Lower(s) {
-    return s.replace(/[A-Z]/g, function ($0) {
-      return $0.toLowerCase();
-    }).replace(/_([a-z])/g, function ($0, $1) {
+    return s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
       return $1.toUpperCase();
     });
   }
 
   function style2Upper(s) {
-    return s.replace(/[A-Z]/g, function ($0) {
-      return '_' + $0.toUpperCase();
-    }).replace(/[a-z]/g, function ($0) {
-      return $0.toUpperCase();
-    });
+    return s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+      return $1 + '_' + $2;
+    }).toUpperCase();
   }
 
   var STYLE_R_KEY = {};
@@ -11978,7 +11974,7 @@
 
         if (s === self.__content) {
           if (util.isFunction(cb)) {
-            cb();
+            cb(-1);
           }
 
           return;
@@ -11998,9 +11994,9 @@
 
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
-          __after: function __after() {
+          __after: function __after(diff) {
             if (util.isFunction(cb)) {
-              cb();
+              cb(diff);
             }
           }
         });
@@ -25280,7 +25276,7 @@
 
         if (v === loadImg.src || !v && loadImg.error) {
           if (isFunction$5(cb)) {
-            cb.call(self);
+            cb(-1);
           }
         } else if (v) {
           loadImg.src = v;
@@ -25306,9 +25302,9 @@
 
               root.__addUpdate(self, self.__config, root, self.__config, res);
             },
-            __after: function __after() {
+            __after: function __after(diff) {
               if (isFunction$5(cb)) {
-                cb.call(self);
+                cb(diff);
               }
             }
           });

@@ -726,7 +726,7 @@ class Text extends Node {
     let self = this;
     if(s === self.__content) {
       if(util.isFunction(cb)) {
-        cb();
+        cb(-1);
       }
       return;
     }
@@ -743,9 +743,9 @@ class Text extends Node {
         let root = vd.root;
         root.__addUpdate(vd, vd.__config, root, root.__config, res);
       },
-      __after() {
+      __after(diff) {
         if(util.isFunction(cb)) {
-          cb();
+          cb(diff);
         }
       },
     });

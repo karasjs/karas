@@ -342,19 +342,15 @@ var STYLE_KEY = {
 };
 
 function style2Lower(s) {
-  return s.replace(/[A-Z]/g, function ($0) {
-    return $0.toLowerCase();
-  }).replace(/_([a-z])/g, function ($0, $1) {
+  return s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
     return $1.toUpperCase();
   });
 }
 
 function style2Upper(s) {
-  return s.replace(/[A-Z]/g, function ($0) {
-    return '_' + $0.toUpperCase();
-  }).replace(/[a-z]/g, function ($0) {
-    return $0.toUpperCase();
-  });
+  return s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+    return $1 + '_' + $2;
+  }).toUpperCase();
 }
 
 var STYLE_R_KEY = {};
@@ -11972,7 +11968,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       if (s === self.__content) {
         if (util.isFunction(cb)) {
-          cb();
+          cb(-1);
         }
 
         return;
@@ -11992,9 +11988,9 @@ var Text = /*#__PURE__*/function (_Node) {
 
           root.__addUpdate(vd, vd.__config, root, root.__config, res);
         },
-        __after: function __after() {
+        __after: function __after(diff) {
           if (util.isFunction(cb)) {
-            cb();
+            cb(diff);
           }
         }
       });
@@ -25274,7 +25270,7 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
 
       if (v === loadImg.src || !v && loadImg.error) {
         if (isFunction$5(cb)) {
-          cb.call(self);
+          cb(-1);
         }
       } else if (v) {
         loadImg.src = v;
@@ -25300,9 +25296,9 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
 
             root.__addUpdate(self, self.__config, root, self.__config, res);
           },
-          __after: function __after() {
+          __after: function __after(diff) {
             if (isFunction$5(cb)) {
-              cb.call(self);
+              cb(diff);
             }
           }
         });
@@ -36229,7 +36225,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.63.1";
+var version = "0.63.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

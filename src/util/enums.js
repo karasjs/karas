@@ -105,19 +105,15 @@ const STYLE_KEY = {
 };
 
 function style2Lower(s) {
-  return s.replace(/[A-Z]/g, function($0) {
-    return $0.toLowerCase();
-  }).replace(/_([a-z])/g, function($0, $1) {
+  return s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
     return $1.toUpperCase();
   });
 }
 
 function style2Upper(s) {
-  return s.replace(/[A-Z]/g, function($0) {
-    return '_' + $0.toUpperCase();
-  }).replace(/[a-z]/g, function($0) {
-    return $0.toUpperCase();
-  });
+  return s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
+    return $1 + '_' + $2;
+  }).toUpperCase();
 }
 
 const STYLE_R_KEY = {};

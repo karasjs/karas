@@ -322,35 +322,41 @@ var STYLE_KEY = {
   ALIGN_CONTENT: 83,
   TEXT_STROKE_WIDTH: 84,
   TEXT_STROKE_COLOR: 85,
+  TEXT_STROKE_OVER: 86,
   // GEOM
-  FILL: 86,
-  STROKE: 87,
-  STROKE_WIDTH: 88,
-  STROKE_DASHARRAY: 89,
-  STROKE_DASHARRAY_STR: 90,
-  STROKE_LINECAP: 91,
-  STROKE_LINEJOIN: 92,
-  STROKE_MITERLIMIT: 93,
-  FILL_RULE: 94,
+  FILL: 87,
+  STROKE: 88,
+  STROKE_WIDTH: 89,
+  STROKE_DASHARRAY: 90,
+  STROKE_DASHARRAY_STR: 91,
+  STROKE_LINECAP: 92,
+  STROKE_LINEJOIN: 93,
+  STROKE_MITERLIMIT: 94,
+  FILL_RULE: 95,
   // 无此样式，仅cache或特殊情况需要
-  MATRIX: 95,
-  BORDER_TOP: 96,
-  BORDER_RIGHT: 97,
-  BORDER_BOTTOM: 98,
-  BORDER_LEFT: 99,
-  TRANSLATE_PATH: 100
+  MATRIX: 96,
+  BORDER_TOP: 97,
+  BORDER_RIGHT: 98,
+  BORDER_BOTTOM: 99,
+  BORDER_LEFT: 100,
+  TRANSLATE_PATH: 101
 };
+var STYLE2LOWER_MAP = {};
 
 function style2Lower(s) {
-  return s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
+  STYLE2LOWER_MAP[s] = STYLE2LOWER_MAP[s] || s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
     return $1.toUpperCase();
   });
+  return STYLE2LOWER_MAP[s];
 }
 
+var STYLE2UPPER_MAP = {};
+
 function style2Upper(s) {
-  return s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+  STYLE2UPPER_MAP[s] = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
     return $1 + '_' + $2;
   }).toUpperCase();
+  return STYLE2UPPER_MAP[s];
 }
 
 var STYLE_R_KEY = {};
@@ -7268,7 +7274,8 @@ var DOM = {
   textOverflow: 'clip',
   lineClamp: 0,
   textStrokeWidth: 'inherit',
-  textStrokeColor: 'inherit'
+  textStrokeColor: 'inherit',
+  textStrokeOver: 'inherit'
 };
 var GEOM = {
   fill: 'transparent',
@@ -7310,7 +7317,8 @@ var INHERIT = {
   visibility: 'visible',
   pointerEvents: 'auto',
   textStrokeColor: '#000',
-  textStrokeWidth: 1
+  textStrokeWidth: 1,
+  textStrokeOver: 'none'
 };
 var INHERIT_KEY_SET = [];
 Object.keys(INHERIT).forEach(function (k) {
@@ -7424,7 +7432,7 @@ var abbr = {
   scale3d: ['scaleX', 'scaleY', 'scaleZ'],
   rotate: ['rotateZ'],
   skew: ['skewX', 'skewY'],
-  textStroke: ['textStrokeWidth', 'textStrokeColor'],
+  textStroke: ['textStrokeWidth', 'textStrokeColor', 'textStrokeOver'],
   toFull: function toFull(style, k) {
     var _this = this;
 
@@ -7668,6 +7676,12 @@ var abbr = {
       if (c) {
         style.textStrokeColor = c[0];
       }
+
+      if (/\bfill\b/i.test(v)) {
+        style.textStrokeOver = 'fill';
+      } else {
+        style.textStrokeOver = 'none';
+      }
     } else if (this[k]) {
       this[k].forEach(function (k) {
         if (isNil$2(style[k])) {
@@ -7735,7 +7749,7 @@ var GEOM_KEY_SET$1 = [];
 
 var IGNORE = _defineProperty({}, STYLE_KEY$2.POINTER_EVENTS, true);
 
-var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$2.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$2.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$2.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_CLIP, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_COLOR, true), _REPAINT);
+var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$2.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$2.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$2.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_CLIP, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_OVER, true), _REPAINT);
 var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$2.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$2.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$2.FONT_FAMILY, true), _MEASURE);
 var o$2 = {
   GEOM: GEOM$1,
@@ -7912,7 +7926,8 @@ var STYLE_KEY$3 = enums.STYLE_KEY,
     ALIGN_CONTENT = _enums$STYLE_KEY$2.ALIGN_CONTENT,
     TRANSLATE_PATH = _enums$STYLE_KEY$2.TRANSLATE_PATH,
     TEXT_STROKE_COLOR = _enums$STYLE_KEY$2.TEXT_STROKE_COLOR,
-    TEXT_STROKE_WIDTH = _enums$STYLE_KEY$2.TEXT_STROKE_WIDTH;
+    TEXT_STROKE_WIDTH = _enums$STYLE_KEY$2.TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER = _enums$STYLE_KEY$2.TEXT_STROKE_OVER;
 var AUTO = o.AUTO,
     PX$2 = o.PX,
     PERCENT$2 = o.PERCENT,
@@ -8616,6 +8631,22 @@ function normalize(style) {
     }
   }
 
+  temp = style.textStrokeOver;
+
+  if (!isNil$3(temp)) {
+    if (temp === 'inherit') {
+      res[TEXT_STROKE_OVER] = [0, INHERIT$2];
+    } else {
+      var _v3 = temp.toString();
+
+      if (_v3 !== 'none' && _v3 !== 'fill') {
+        _v3 = 'none';
+      }
+
+      res[TEXT_STROKE_OVER] = [_v3, STRING];
+    }
+  }
+
   temp = style.fontWeight;
 
   if (!isNil$3(temp)) {
@@ -8672,13 +8703,13 @@ function normalize(style) {
       res[LINE_HEIGHT] = [0, AUTO];
     } // lineHeight默认数字，想要px必须强制带单位
     else if (/^[\d.]+/i.test(temp)) {
-        var _v3 = calUnit$1(temp);
+        var _v4 = calUnit$1(temp);
 
-        if ([DEG$1].indexOf(_v3[1]) > -1) {
-          _v3[1] = NUMBER$1;
+        if ([DEG$1].indexOf(_v4[1]) > -1) {
+          _v4[1] = NUMBER$1;
         }
 
-        res[LINE_HEIGHT] = _v3;
+        res[LINE_HEIGHT] = _v4;
       } else {
         var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
@@ -8698,13 +8729,13 @@ function normalize(style) {
     } else if (temp === 'normal') {
       res[LETTER_SPACING] = [0, PX$2];
     } else if (/^[-+]?[\d.]/.test(temp)) {
-      var _v4 = calUnit$1(temp);
+      var _v5 = calUnit$1(temp);
 
-      if ([NUMBER$1, DEG$1].indexOf(_v4[1]) > -1) {
-        _v4[1] = PX$2;
+      if ([NUMBER$1, DEG$1].indexOf(_v5[1]) > -1) {
+        _v5[1] = PX$2;
       }
 
-      res[LETTER_SPACING] = _v4;
+      res[LETTER_SPACING] = _v5;
     } else {
       res[LETTER_SPACING] = [parseFloat(temp) || 0, PX$2];
     }
@@ -8854,33 +8885,33 @@ function normalize(style) {
 
         if (m2) {
           var k = m2[1].toLowerCase(),
-              _v5 = calUnit$1(m2[2]);
+              _v6 = calUnit$1(m2[2]);
 
           if (k === 'blur') {
-            if (_v5[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v5[1]) > -1) {
+            if (_v6[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v6[1]) > -1) {
               return;
             }
 
-            if (_v5[1] === NUMBER$1) {
-              _v5[1] = PX$2;
+            if (_v6[1] === NUMBER$1) {
+              _v6[1] = PX$2;
             }
 
-            f.push([k, _v5]);
+            f.push([k, _v6]);
           } else if (k === 'hue-rotate') {
-            if ([NUMBER$1, DEG$1].indexOf(_v5[1]) === -1) {
+            if ([NUMBER$1, DEG$1].indexOf(_v6[1]) === -1) {
               return;
             }
 
-            _v5[1] = DEG$1;
-            f.push([k, _v5]);
+            _v6[1] = DEG$1;
+            f.push([k, _v6]);
           } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
-            if ([NUMBER$1, PERCENT$2].indexOf(_v5[1]) === -1) {
+            if ([NUMBER$1, PERCENT$2].indexOf(_v6[1]) === -1) {
               return;
             }
 
-            _v5[0] = Math.max(_v5[0], 0);
-            _v5[1] = PERCENT$2;
-            f.push([k, _v5]);
+            _v6[0] = Math.max(_v6[0], 0);
+            _v6[1] = PERCENT$2;
+            f.push([k, _v6]);
           }
         }
       });
@@ -8925,18 +8956,18 @@ function normalize(style) {
           var _res = []; // v,h,blur,spread,color,inset
 
           for (var i = 0; i < 4; i++) {
-            var _v6 = calUnit$1(boxShadow[i + 1]);
+            var _v7 = calUnit$1(boxShadow[i + 1]);
 
-            if ([NUMBER$1, DEG$1].indexOf(_v6[1]) > -1) {
-              _v6[1] = PX$2;
+            if ([NUMBER$1, DEG$1].indexOf(_v7[1]) > -1) {
+              _v7[1] = PX$2;
             } // x/y可以负，blur和spread不行
 
 
-            if (i > 1 && _v6[0] < 0) {
-              _v6 = 0;
+            if (i > 1 && _v7[0] < 0) {
+              _v7 = 0;
             }
 
-            _res.push(_v6);
+            _res.push(_v7);
           }
 
           _res.push(rgba2int$2(boxShadow[5]));
@@ -8972,8 +9003,8 @@ function normalize(style) {
 
   ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
     if (style.hasOwnProperty(k)) {
-      var _v7 = style[k];
-      res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v7) ? _v7 : [_v7];
+      var _v8 = style[k];
+      res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v8) ? _v8 : [_v8];
     }
   });
   GEOM_KEY_SET$2.forEach(function (k) {
@@ -9486,7 +9517,8 @@ var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
     FONT_STYLE$1 = _enums$STYLE_KEY$3.FONT_STYLE,
     LETTER_SPACING$1 = _enums$STYLE_KEY$3.LETTER_SPACING,
     TEXT_STROKE_COLOR$1 = _enums$STYLE_KEY$3.TEXT_STROKE_COLOR,
-    TEXT_STROKE_WIDTH$1 = _enums$STYLE_KEY$3.TEXT_STROKE_WIDTH;
+    TEXT_STROKE_WIDTH$1 = _enums$STYLE_KEY$3.TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER$1 = _enums$STYLE_KEY$3.TEXT_STROKE_OVER;
 /**
  * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
  * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
@@ -9542,27 +9574,41 @@ var TextBox = /*#__PURE__*/function () {
           length = content.length;
 
       if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+        var overFill = computedStyle[TEXT_STROKE_OVER$1] === 'fill';
+
         if (letterSpacing) {
           for (; i < length; i++) {
-            ctx.fillText(content.charAt(i), x, y);
+            if (overFill) {
+              ctx.fillText(content.charAt(i), x, y);
+            }
 
-            if (textStrokeWidth && textStrokeColor[3] > 0) {
+            if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
               ctx.strokeText(content.charAt(i), x, y);
+            }
+
+            if (!overFill) {
+              ctx.fillText(content.charAt(i), x, y);
             }
 
             x += wList[i] + letterSpacing;
           }
         } else {
-          ctx.fillText(content, x, y);
+          if (overFill) {
+            ctx.fillText(content, x, y);
+          }
 
-          if (textStrokeWidth && textStrokeColor[3] > 0) {
+          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
             ctx.strokeText(content, x, y);
+          }
+
+          if (!overFill) {
+            ctx.fillText(content, x, y);
           }
         }
       } else if (renderMode === mode.SVG) {
-        var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']];
+        var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']]; // svg无法定义stroke的over
 
-        if (textStrokeWidth && textStrokeColor[3] > 0) {
+        if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
           props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR$1]]);
           props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH$1]]);
         }
@@ -11882,8 +11928,8 @@ var Text = /*#__PURE__*/function (_Node) {
 
         var strokeWidth = computedStyle[TEXT_STROKE_WIDTH$2];
 
-        if (ctx.strokeWidth !== strokeWidth) {
-          ctx.strokeWidth = strokeWidth;
+        if (ctx.lineWidth !== strokeWidth) {
+          ctx.lineWidth = strokeWidth;
         }
 
         var strokeColor = cacheStyle[TEXT_STROKE_COLOR$2];
@@ -12064,8 +12110,11 @@ var Text = /*#__PURE__*/function (_Node) {
       var sx = this.sx,
           sy = this.sy,
           width = this.width,
-          height = this.height;
-      return [sx, sy, sx + width, sy + height];
+          height = this.height,
+          _this$computedStyle$T = this.computedStyle[TEXT_STROKE_WIDTH$2],
+          textStrokeWidth = _this$computedStyle$T === void 0 ? 0 : _this$computedStyle$T;
+      textStrokeWidth *= 0.5;
+      return [sx - textStrokeWidth, sy - textStrokeWidth, sx + width + textStrokeWidth, sy + height + textStrokeWidth];
     }
   }, {
     key: "isShadowRoot",
@@ -13802,6 +13851,7 @@ var _enums$STYLE_KEY$a = enums.STYLE_KEY,
     ROTATE_3D$2 = _enums$STYLE_KEY$a.ROTATE_3D,
     TRANSLATE_PATH$1 = _enums$STYLE_KEY$a.TRANSLATE_PATH,
     TEXT_STROKE_COLOR$3 = _enums$STYLE_KEY$a.TEXT_STROKE_COLOR,
+    TEXT_STROKE_OVER$2 = _enums$STYLE_KEY$a.TEXT_STROKE_OVER,
     _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
     UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
     UPDATE_STYLE = _enums$UPDATE_KEY$1.UPDATE_STYLE,
@@ -13917,7 +13967,7 @@ function inherit(frames, keys, target) {
           style[k] = [computedStyle[k], PX$5];
         } else if (k === FONT_WEIGHT$3) {
           style[k] = [computedStyle[k], NUMBER$4];
-        } else if (k === FONT_STYLE$3 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$1) {
+        } else if (k === FONT_STYLE$3 || k === FONT_FAMILY$3 || k === TEXT_ALIGN$1 || k === TEXT_STROKE_OVER$2) {
           style[k] = [computedStyle[k], STRING$2];
         }
       }
@@ -17143,6 +17193,7 @@ var STYLE_KEY$5 = enums.STYLE_KEY,
     LINE_HEIGHT$3 = _enums$STYLE_KEY$c.LINE_HEIGHT,
     TEXT_STROKE_COLOR$4 = _enums$STYLE_KEY$c.TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH$3 = _enums$STYLE_KEY$c.TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER$3 = _enums$STYLE_KEY$c.TEXT_STROKE_OVER,
     _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
     UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
     UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -18384,6 +18435,12 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
         computedStyle[TEXT_STROKE_WIDTH$3] = v;
         __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
+      }
+
+      if (currentStyle[TEXT_STROKE_OVER$3][1] === INHERIT$4) {
+        __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = parent ? parentComputedStyle[TEXT_STROKE_OVER$3] : 'none';
+      } else {
+        __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = currentStyle[TEXT_STROKE_OVER$3][0];
       }
 
       if (currentStyle[VISIBILITY$3][1] === INHERIT$4) {
@@ -36225,7 +36282,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.63.2";
+var version = "0.63.4";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

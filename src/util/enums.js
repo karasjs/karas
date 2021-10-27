@@ -85,35 +85,42 @@ const STYLE_KEY = {
   ALIGN_CONTENT: 83,
   TEXT_STROKE_WIDTH: 84,
   TEXT_STROKE_COLOR: 85,
+  TEXT_STROKE_OVER: 86,
   // GEOM
-  FILL: 86,
-  STROKE: 87,
-  STROKE_WIDTH: 88,
-  STROKE_DASHARRAY: 89,
-  STROKE_DASHARRAY_STR: 90,
-  STROKE_LINECAP: 91,
-  STROKE_LINEJOIN: 92,
-  STROKE_MITERLIMIT: 93,
-  FILL_RULE: 94,
+  FILL: 87,
+  STROKE: 88,
+  STROKE_WIDTH: 89,
+  STROKE_DASHARRAY: 90,
+  STROKE_DASHARRAY_STR: 91,
+  STROKE_LINECAP: 92,
+  STROKE_LINEJOIN: 93,
+  STROKE_MITERLIMIT: 94,
+  FILL_RULE: 95,
   // 无此样式，仅cache或特殊情况需要
-  MATRIX: 95,
-  BORDER_TOP: 96,
-  BORDER_RIGHT: 97,
-  BORDER_BOTTOM: 98,
-  BORDER_LEFT: 99,
-  TRANSLATE_PATH: 100,
+  MATRIX: 96,
+  BORDER_TOP: 97,
+  BORDER_RIGHT: 98,
+  BORDER_BOTTOM: 99,
+  BORDER_LEFT: 100,
+  TRANSLATE_PATH: 101,
 };
 
+const STYLE2LOWER_MAP = {};
 function style2Lower(s) {
-  return s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
+  STYLE2LOWER_MAP[s] = STYLE2LOWER_MAP[s] || s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
     return $1.toUpperCase();
   });
+
+  return STYLE2LOWER_MAP[s];
 }
 
+const STYLE2UPPER_MAP = {};
 function style2Upper(s) {
-  return s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
+  STYLE2UPPER_MAP[s] = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
     return $1 + '_' + $2;
   }).toUpperCase();
+
+  return STYLE2UPPER_MAP[s];
 }
 
 const STYLE_R_KEY = {};

@@ -108,6 +108,7 @@ const {
     LINE_HEIGHT,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -1341,6 +1342,12 @@ class Xom extends Node {
       }
       computedStyle[TEXT_STROKE_WIDTH] = v;
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
+    }
+    if(currentStyle[TEXT_STROKE_OVER][1] === INHERIT) {
+      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : 'none';
+    }
+    else {
+      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = currentStyle[TEXT_STROKE_OVER][0];
     }
     if(currentStyle[VISIBILITY][1] === INHERIT) {
       computedStyle[VISIBILITY] = parent ? parentComputedStyle[VISIBILITY] : 'visible';

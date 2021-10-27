@@ -85,6 +85,7 @@ const DOM = {
   lineClamp: 0,
   textStrokeWidth: 'inherit',
   textStrokeColor: 'inherit',
+  textStrokeOver: 'inherit',
 };
 
 const GEOM = {
@@ -131,6 +132,7 @@ let INHERIT = {
   pointerEvents: 'auto',
   textStrokeColor: '#000',
   textStrokeWidth: 1,
+  textStrokeOver: 'none',
 };
 
 let INHERIT_KEY_SET = [];

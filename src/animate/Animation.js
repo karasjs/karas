@@ -45,6 +45,7 @@ const {
     ROTATE_3D,
     TRANSLATE_PATH,
     TEXT_STROKE_COLOR,
+    TEXT_STROKE_OVER,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -201,7 +202,7 @@ function inherit(frames, keys, target) {
         else if(k === FONT_WEIGHT) {
           style[k] = [computedStyle[k], NUMBER];
         }
-        else if(k === FONT_STYLE || k === FONT_FAMILY || k === TEXT_ALIGN) {
+        else if(k === FONT_STYLE || k === FONT_FAMILY || k === TEXT_ALIGN || k === TEXT_STROKE_OVER) {
           style[k] = [computedStyle[k], STRING];
         }
       }

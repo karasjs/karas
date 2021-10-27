@@ -652,8 +652,8 @@ class Text extends Node {
         ctx.fillStyle = color;
       }
       let strokeWidth = computedStyle[TEXT_STROKE_WIDTH];
-      if(ctx.strokeWidth !== strokeWidth) {
-        ctx.strokeWidth = strokeWidth;
+      if(ctx.lineWidth !== strokeWidth) {
+        ctx.lineWidth = strokeWidth;
       }
       let strokeColor = cacheStyle[TEXT_STROKE_COLOR];
       if(ctx.strokeStyle !== strokeColor) {
@@ -804,8 +804,9 @@ class Text extends Node {
   }
 
   get bbox() {
-    let { sx, sy, width, height } = this;
-    return [sx, sy, sx + width, sy + height];
+    let { sx, sy, width, height, computedStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth = 0 } } = this;
+    textStrokeWidth *= 0.5;
+    return [sx - textStrokeWidth, sy - textStrokeWidth, sx + width + textStrokeWidth, sy + height + textStrokeWidth];
   }
 
   get isShadowRoot() {

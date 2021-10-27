@@ -652,8 +652,8 @@ class Text extends Node {
         ctx.fillStyle = color;
       }
       let strokeWidth = computedStyle[TEXT_STROKE_WIDTH];
-      if(ctx.strokeWidth !== strokeWidth) {
-        ctx.strokeWidth = strokeWidth;
+      if(ctx.lineWidth !== strokeWidth) {
+        ctx.lineWidth = strokeWidth;
       }
       let strokeColor = cacheStyle[TEXT_STROKE_COLOR];
       if(ctx.strokeStyle !== strokeColor) {

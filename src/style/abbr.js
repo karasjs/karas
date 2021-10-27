@@ -89,7 +89,7 @@ export default {
   scale3d: ['scaleX', 'scaleY', 'scaleZ'],
   rotate: ['rotateZ'],
   skew: ['skewX', 'skewY'],
-  textStroke: ['textStrokeWidth', 'textStrokeColor'],
+  textStroke: ['textStrokeWidth', 'textStrokeColor', 'textStrokeOver'],
 
   toFull(style, k) {
     let v = style[k];
@@ -314,6 +314,12 @@ export default {
       let c = /(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
       if(c) {
         style.textStrokeColor = c[0];
+      }
+      if(/\bfill\b/i.test(v)) {
+        style.textStrokeOver = 'fill';
+      }
+      else {
+        style.textStrokeOver = 'none';
       }
     }
     else if(this[k]) {

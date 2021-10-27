@@ -12,6 +12,7 @@ const { STYLE_KEY: {
   LETTER_SPACING,
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
+  TEXT_STROKE_OVER,
 } } = enums;
 
 /**
@@ -57,19 +58,30 @@ class TextBox {
     } = computedStyle;
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
       if(letterSpacing) {
         for(; i < length; i++) {
-          ctx.fillText(content.charAt(i), x, y);
-          if(textStrokeWidth && textStrokeColor[3] > 0) {
+          if(overFill) {
+            ctx.fillText(content.charAt(i), x, y);
+          }
+          if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
             ctx.strokeText(content.charAt(i), x, y);
+          }
+          if(!overFill) {
+            ctx.fillText(content.charAt(i), x, y);
           }
           x += wList[i] + letterSpacing;
         }
       }
       else {
-        ctx.fillText(content, x, y);
-        if(textStrokeWidth && textStrokeColor[3] > 0) {
+        if(overFill) {
+          ctx.fillText(content, x, y);
+        }
+        if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
           ctx.strokeText(content, x, y);
+        }
+        if(!overFill) {
+          ctx.fillText(content, x, y);
         }
       }
     }

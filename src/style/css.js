@@ -76,6 +76,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   TRANSLATE_PATH,
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
+  TEXT_STROKE_OVER,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -720,6 +721,19 @@ function normalize(style, reset = []) {
         }
         res[TEXT_STROKE_WIDTH] = v;
       }
+    }
+  }
+  temp = style.textStrokeOver;
+  if(!isNil(temp)) {
+    if(temp === 'inherit') {
+      res[TEXT_STROKE_OVER] = [0, INHERIT];
+    }
+    else {
+      let v = temp.toString();
+      if(v !== 'none' && v !== 'fill') {
+        v = 'none';
+      }
+      res[TEXT_STROKE_OVER] = [v, STRING];
     }
   }
   temp = style.fontWeight;

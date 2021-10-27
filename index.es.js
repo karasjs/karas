@@ -9546,7 +9546,7 @@ var TextBox = /*#__PURE__*/function () {
           for (; i < length; i++) {
             ctx.fillText(content.charAt(i), x, y);
 
-            if (textStrokeWidth && textStrokeColor[3] > 0) {
+            if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
               ctx.strokeText(content.charAt(i), x, y);
             }
 
@@ -9555,7 +9555,7 @@ var TextBox = /*#__PURE__*/function () {
         } else {
           ctx.fillText(content, x, y);
 
-          if (textStrokeWidth && textStrokeColor[3] > 0) {
+          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
             ctx.strokeText(content, x, y);
           }
         }
@@ -36225,7 +36225,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.63.2";
+var version = "0.63.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

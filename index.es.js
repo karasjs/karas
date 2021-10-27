@@ -9601,8 +9601,7 @@ var TextBox = /*#__PURE__*/function () {
           }
         }
       } else if (renderMode === mode.SVG) {
-        var props = [['x', x], ['y', y], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']];
-        props.push(['fill', cacheStyle[COLOR$1]]); // svg无法定义stroke的over
+        var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']]; // svg无法定义stroke的over
 
         if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
           props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR$1]]);

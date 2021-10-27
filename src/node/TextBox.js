@@ -89,12 +89,12 @@ class TextBox {
       let props = [
         ['x', x],
         ['y', y],
+        ['fill', cacheStyle[COLOR]],
         ['font-family', computedStyle[FONT_FAMILY]],
         ['font-weight', computedStyle[FONT_WEIGHT]],
         ['font-style', computedStyle[FONT_STYLE]],
         ['font-size', computedStyle[FONT_SIZE] + 'px'],
       ];
-      props.push(['fill', cacheStyle[COLOR]]);
       // svg无法定义stroke的over
       if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
         props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR]]);

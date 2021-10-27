@@ -347,17 +347,22 @@
     BORDER_LEFT: 100,
     TRANSLATE_PATH: 101
   };
+  var STYLE2LOWER_MAP = {};
 
   function style2Lower(s) {
-    return s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
+    STYLE2LOWER_MAP[s] = STYLE2LOWER_MAP[s] || s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
       return $1.toUpperCase();
     });
+    return STYLE2LOWER_MAP[s];
   }
 
+  var STYLE2UPPER_MAP = {};
+
   function style2Upper(s) {
-    return s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+    STYLE2UPPER_MAP[s] = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
       return $1 + '_' + $2;
     }).toUpperCase();
+    return STYLE2UPPER_MAP[s];
   }
 
   var STYLE_R_KEY = {};
@@ -36283,7 +36288,7 @@
     Cache: Cache
   };
 
-  var version = "0.63.3";
+  var version = "0.63.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

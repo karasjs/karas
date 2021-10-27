@@ -9607,9 +9607,10 @@
             }
           }
         } else if (renderMode === mode.SVG) {
-          var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']];
+          var props = [['x', x], ['y', y], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']];
+          props.push(['fill', cacheStyle[COLOR$1]]); // svg无法定义stroke的over
 
-          if (textStrokeWidth && textStrokeColor[3] > 0) {
+          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
             props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR$1]]);
             props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH$1]]);
           }
@@ -12111,8 +12112,11 @@
         var sx = this.sx,
             sy = this.sy,
             width = this.width,
-            height = this.height;
-        return [sx, sy, sx + width, sy + height];
+            height = this.height,
+            _this$computedStyle$T = this.computedStyle[TEXT_STROKE_WIDTH$2],
+            textStrokeWidth = _this$computedStyle$T === void 0 ? 0 : _this$computedStyle$T;
+        textStrokeWidth *= 0.5;
+        return [sx - textStrokeWidth, sy - textStrokeWidth, sx + width + textStrokeWidth, sy + height + textStrokeWidth];
       }
     }, {
       key: "isShadowRoot",

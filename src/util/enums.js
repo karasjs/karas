@@ -105,16 +105,22 @@ const STYLE_KEY = {
   TRANSLATE_PATH: 101,
 };
 
+const STYLE2LOWER_MAP = {};
 function style2Lower(s) {
-  return s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
+  STYLE2LOWER_MAP[s] = STYLE2LOWER_MAP[s] || s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
     return $1.toUpperCase();
   });
+
+  return STYLE2LOWER_MAP[s];
 }
 
+const STYLE2UPPER_MAP = {};
 function style2Upper(s) {
-  return s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
+  STYLE2UPPER_MAP[s] = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
     return $1 + '_' + $2;
   }).toUpperCase();
+
+  return STYLE2UPPER_MAP[s];
 }
 
 const STYLE_R_KEY = {};

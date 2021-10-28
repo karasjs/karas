@@ -12128,6 +12128,7 @@ var Text = /*#__PURE__*/function (_Node) {
         half = Math.max(textStrokeWidth[0] * 0.5, half);
       }
 
+      half += 1;
       return [sx - half, sy - half, sx + width + half, sy + height + half];
     }
   }, {
@@ -20259,7 +20260,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
         clientWidth += borderLeftWidth[0] + borderRightWidth[0];
         clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-        this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
+        var half = 1;
+        this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
       }
 
       return this.__bbox;
@@ -33918,6 +33920,7 @@ var Line = /*#__PURE__*/function (_Geom) {
           half = Math.max(item[0] * 0.5, half);
         }
       });
+      half += 1;
 
       var _this$__spreadBbox = this.__spreadBbox(boxShadow),
           _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -34521,6 +34524,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
             half = Math.max(item[0] * 0.5, half);
           }
         });
+        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35042,6 +35046,7 @@ var Sector = /*#__PURE__*/function (_Geom) {
             half = Math.max(item[0] * 0.5, half);
           }
         });
+        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35246,6 +35251,7 @@ var Rect = /*#__PURE__*/function (_Geom) {
             half = Math.max(item[0] * 0.5, half);
           }
         });
+        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35408,6 +35414,7 @@ var Circle = /*#__PURE__*/function (_Geom) {
             half = Math.max(item[0] * 0.5, half);
           }
         });
+        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35627,6 +35634,7 @@ var Ellipse = /*#__PURE__*/function (_Geom) {
             half = Math.max(item[0] * 0.5, half);
           }
         });
+        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),

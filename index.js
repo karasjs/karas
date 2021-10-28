@@ -11904,8 +11904,8 @@
                 __config[NODE_CACHE$1] = __cache;
                 __cache.__available = true;
                 ctx = __cache.ctx;
-                dx += -sx + __cache.x;
-                dy += -sy + __cache.y;
+                dx += __cache.dx;
+                dy += __cache.dy;
                 __config[NODE_LIMIT_CACHE] = false;
               } else {
                 __config[NODE_LIMIT_CACHE] = true;

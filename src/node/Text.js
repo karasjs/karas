@@ -618,8 +618,8 @@ class Text extends Node {
             __config[NODE_CACHE] = __cache;
             __cache.__available = true;
             ctx = __cache.ctx;
-            dx += -sx + __cache.x;
-            dy += -sy + __cache.y;
+            dx += __cache.dx;
+            dy += __cache.dy;
             __config[NODE_LIMIT_CACHE] = false;
           }
           else {

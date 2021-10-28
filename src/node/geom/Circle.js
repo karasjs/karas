@@ -2,12 +2,15 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
+import unit from '../../style/unit';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
+  FONT_SIZE,
 } } = enums;
 const { isNil } = util;
+const { REM, VW, VH } = unit;
 
 function getR(v) {
   v = parseFloat(v);
@@ -70,7 +73,7 @@ class Circle extends Geom {
   get bbox() {
     if(!this.__bbox) {
       let {
-        isMulti, __cacheProps,
+        isMulti, __cacheProps, root,
         __sx3: originX, __sy3: originY, width, height,
         currentStyle: {
           [STROKE_WIDTH]: strokeWidth,
@@ -94,8 +97,20 @@ class Circle extends Geom {
       let bbox = super.bbox;
       let half = 0;
       strokeWidth.forEach(item => {
-        half = Math.max(item[0], half);
+        if(item[1] === REM) {
+          half = Math.max(item[0] * root.computedStyle[FONT_SIZE] * 0.5, half);
+        }
+        else if(item[1] === VW) {
+          half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+        }
+        else if(item[1] === VH) {
+          half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+        }
+        else {
+          half = Math.max(item[0] * 0.5, half);
+        }
       });
+      half += 1;
       let [ox, oy] = this.__spreadBbox(boxShadow);
       ox += half;
       oy += half;

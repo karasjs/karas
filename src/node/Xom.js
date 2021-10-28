@@ -2889,7 +2889,7 @@ class Xom extends Node {
       let [ox, oy] = this.__spreadBbox(boxShadow);
       clientWidth += borderLeftWidth[0] + borderRightWidth[0];
       clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-      let half = 0;
+      let half = 1;
       this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
     }
     return this.__bbox;

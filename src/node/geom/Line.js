@@ -405,7 +405,7 @@ class Line extends Geom {
         half = Math.max(item[0] * 0.5, half);
       }
     });
-    half += 0.5;
+    half += 1;
     let [ox, oy] = this.__spreadBbox(boxShadow);
     ox += half;
     oy += half;

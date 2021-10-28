@@ -20266,7 +20266,7 @@
 
           clientWidth += borderLeftWidth[0] + borderRightWidth[0];
           clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-          var half = 0;
+          var half = 1;
           this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
         }
 
@@ -33926,7 +33926,7 @@
             half = Math.max(item[0] * 0.5, half);
           }
         });
-        half += 0.5;
+        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -34530,7 +34530,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 0.5;
+          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35052,7 +35052,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 0.5;
+          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35257,7 +35257,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 0.5;
+          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35420,7 +35420,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 0.5;
+          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35640,7 +35640,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 0.5;
+          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),

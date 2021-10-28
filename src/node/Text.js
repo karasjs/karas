@@ -46,7 +46,7 @@ const {
 } = enums;
 
 const ELLIPSIS = textCache.ELLIPSIS;
-const AUTO = unit.AUTO;
+const { AUTO, REM, VW, VH } = unit;
 
 class Text extends Node {
   constructor(content) {
@@ -804,9 +804,21 @@ class Text extends Node {
   }
 
   get bbox() {
-    let { sx, sy, width, height, computedStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth = 0 } } = this;
-    textStrokeWidth *= 0.5;
-    return [sx - textStrokeWidth, sy - textStrokeWidth, sx + width + textStrokeWidth, sy + height + textStrokeWidth];
+    let { sx, sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
+    let half = 0;
+    if(textStrokeWidth[1] === REM) {
+      half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE] * 0.5, half);
+    }
+    else if(textStrokeWidth[1] === VW) {
+      half = Math.max(textStrokeWidth[0] * root.width * 0.01 * 0.5, half);
+    }
+    else if(textStrokeWidth[1] === VH) {
+      half = Math.max(textStrokeWidth[0] * root.height * 0.01 * 0.5, half);
+    }
+    else {
+      half = Math.max(textStrokeWidth[0] * 0.5, half);
+    }
+    return [sx - half, sy - half, sx + width + half, sy + height + half];
   }
 
   get isShadowRoot() {

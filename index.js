@@ -11221,7 +11221,10 @@
       UPDATE_FOCUS = _enums$UPDATE_KEY.UPDATE_FOCUS,
       UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG;
   var ELLIPSIS = textCache.ELLIPSIS;
-  var AUTO$1 = o.AUTO;
+  var AUTO$1 = o.AUTO,
+      REM$4 = o.REM,
+      VW$4 = o.VW,
+      VH$4 = o.VH;
 
   var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
@@ -12117,10 +12120,21 @@
             sy = this.sy,
             width = this.width,
             height = this.height,
-            _this$computedStyle$T = this.computedStyle[TEXT_STROKE_WIDTH$2],
-            textStrokeWidth = _this$computedStyle$T === void 0 ? 0 : _this$computedStyle$T;
-        textStrokeWidth *= 0.5;
-        return [sx - textStrokeWidth, sy - textStrokeWidth, sx + width + textStrokeWidth, sy + height + textStrokeWidth];
+            root = this.root,
+            textStrokeWidth = this.currentStyle[TEXT_STROKE_WIDTH$2];
+        var half = 0;
+
+        if (textStrokeWidth[1] === REM$4) {
+          half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE$5] * 0.5, half);
+        } else if (textStrokeWidth[1] === VW$4) {
+          half = Math.max(textStrokeWidth[0] * root.width * 0.01 * 0.5, half);
+        } else if (textStrokeWidth[1] === VH$4) {
+          half = Math.max(textStrokeWidth[0] * root.height * 0.01 * 0.5, half);
+        } else {
+          half = Math.max(textStrokeWidth[0] * 0.5, half);
+        }
+
+        return [sx - half, sy - half, sx + width + half, sy + height + half];
       }
     }, {
       key: "isShadowRoot",
@@ -13007,9 +13021,9 @@
       PX$4 = o.PX,
       PERCENT$5 = o.PERCENT,
       STRING$1 = o.STRING,
-      REM$4 = o.REM,
-      VW$4 = o.VW,
-      VH$4 = o.VH;
+      REM$5 = o.REM,
+      VW$5 = o.VW,
+      VH$5 = o.VH;
 
   function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr) {
     var method = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : 'fill';
@@ -13113,11 +13127,11 @@
         res.push(item[0]);
       } else if (item[1] === PERCENT$5) {
         res.push(item[0] * (i ? h : w) * 0.01);
-      } else if (item[1] === REM$4) {
+      } else if (item[1] === REM$5) {
         res.push(item[0] * root.computedStyle[FONT_SIZE$6]);
-      } else if (item[1] === VW$4) {
+      } else if (item[1] === VW$5) {
         res.push(item[0] * root.width * 0.01);
-      } else if (item[1] === VH$4) {
+      } else if (item[1] === VH$5) {
         res.push(item[0] * root.height * 0.01);
       } else if (item[1] === AUTO$2) {
         res.push(-1);
@@ -13134,11 +13148,11 @@
         return position[0];
       } else if (position[1] === PERCENT$5) {
         return (container - size) * position[0] * 0.01;
-      } else if (position[1] === REM$4) {
+      } else if (position[1] === REM$5) {
         return position[0] * root.computedStyle[FONT_SIZE$6];
-      } else if (position[1] === VW$4) {
+      } else if (position[1] === VW$5) {
         return position[0] * root.width * 0.01;
-      } else if (position[1] === VH$4) {
+      } else if (position[1] === VH$5) {
         return position[0] * root.height * 0.01;
       }
     }
@@ -13875,9 +13889,9 @@
       RGBA$1 = o.RGBA,
       STRING$2 = o.STRING,
       NUMBER$4 = o.NUMBER,
-      REM$5 = o.REM,
-      VW$5 = o.VW,
-      VH$5 = o.VH,
+      REM$6 = o.REM,
+      VW$6 = o.VW,
+      VH$6 = o.VH,
       calUnit$2 = o.calUnit;
   var isNil$5 = util.isNil,
       isFunction$4 = util.isFunction,
@@ -14045,49 +14059,49 @@
     if (p[1] === PX$5) {
       if (n[1] === PERCENT$6) {
         return n[0] * 0.01 * container - p[0];
-      } else if (n[1] === REM$5) {
+      } else if (n[1] === REM$6) {
         return n[0] * root.computedStyle[FONT_SIZE$7] - p[0];
-      } else if (n[1] === VW$5) {
+      } else if (n[1] === VW$6) {
         return n[0] * root.width * 0.01 - p[0];
-      } else if (n[1] === VH$5) {
+      } else if (n[1] === VH$6) {
         return n[0] * root.height * 0.01 - p[0];
       }
     } else if (p[1] === PERCENT$6) {
       if (n[1] === PX$5) {
         return n[0] * 100 / container - p[0];
-      } else if (n[1] === REM$5) {
+      } else if (n[1] === REM$6) {
         return n[0] * root.computedStyle[FONT_SIZE$7] * 100 / container - p[0];
-      } else if (n[1] === VW$5) {
+      } else if (n[1] === VW$6) {
         return n[0] * root.width / container - p[0];
-      } else if (n[1] === VH$5) {
+      } else if (n[1] === VH$6) {
         return n[0] * root.height / container - p[0];
       }
-    } else if (p[1] === REM$5) {
+    } else if (p[1] === REM$6) {
       if (n[1] === PX$5) {
         return n[0] / root.computedStyle[FONT_SIZE$7] - p[0];
       } else if (n[1] === PERCENT$6) {
         return n[0] * 0.01 * container / root.computedStyle[FONT_SIZE$7] - p[0];
-      } else if (n[1] === VW$5) {
+      } else if (n[1] === VW$6) {
         return n[0] * root.width * 0.01 / root.computedStyle[FONT_SIZE$7] - p[0];
-      } else if (n[1] === VH$5) {
+      } else if (n[1] === VH$6) {
         return n[0] * root.height * 0.01 / root.computedStyle[FONT_SIZE$7] - p[0];
       }
-    } else if (p[1] === VW$5) {
+    } else if (p[1] === VW$6) {
       if (n[1] === PX$5) {
         return n[0] * 100 / root.width - p[0];
-      } else if (n[1] === REM$5) {
+      } else if (n[1] === REM$6) {
         return n[0] * 100 * root.computedStyle[FONT_SIZE$7] / root.width - p[0];
       } else if (n[1] === PERCENT$6) {
         return n[0] * container / root.width - p[0];
-      } else if (n[1] === VH$5) {
+      } else if (n[1] === VH$6) {
         return n[0] * root.height / root.width - p[0];
       }
-    } else if (p[1] === VH$5) {
+    } else if (p[1] === VH$6) {
       if (n[1] === PX$5) {
         return n[0] * 100 / root.height - p[0];
-      } else if (n[1] === REM$5) {
+      } else if (n[1] === REM$6) {
         return n[0] * 100 * root.computedStyle[FONT_SIZE$7] / root.height - p[0];
-      } else if (n[1] === VW$5) {
+      } else if (n[1] === VW$6) {
         return n[0] * root.width / root.height - p[0];
       } else if (n[1] === PERCENT$6) {
         return n[0] * container / root.height - p[0];
@@ -14765,11 +14779,11 @@
             } else {
               return [(parseFloat(v) || 0) * 0.01 * target[_k3], PX$5];
             }
-          } else if (u === REM$5) {
+          } else if (u === REM$6) {
             return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE$7] * 100, PX$5];
-          } else if (u === VW$5) {
+          } else if (u === VW$6) {
             return [(parseFloat(v) || 0) * 0.01 * root.width, PX$5];
-          } else if (u === VH$5) {
+          } else if (u === VH$6) {
             return [(parseFloat(v) || 0) * 0.01 * root.height, PX$5];
           } else {
             return [parseFloat(v) || 0, PX$5];
@@ -17239,9 +17253,9 @@
       PERCENT$7 = o.PERCENT,
       INHERIT$4 = o.INHERIT,
       NUMBER$5 = o.NUMBER,
-      REM$6 = o.REM,
-      VW$6 = o.VW,
-      VH$6 = o.VH,
+      REM$7 = o.REM,
+      VW$7 = o.VW,
+      VH$7 = o.VH,
       DEG$2 = o.DEG;
   var int2rgba$2 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
@@ -17404,11 +17418,11 @@
           return mp[0];
         } else if (mp[1] === PERCENT$7) {
           return mp[0] * w * 0.01;
-        } else if (mp[1] === REM$6) {
+        } else if (mp[1] === REM$7) {
           return mp[0] * this.root.computedStyle[FONT_SIZE$8];
-        } else if (mp[1] === VW$6) {
+        } else if (mp[1] === VW$7) {
           return mp[0] * this.root.width * 0.01;
-        } else if (mp[1] === VH$6) {
+        } else if (mp[1] === VH$7) {
           return mp[0] * this.root.height * 0.01;
         }
 
@@ -17438,11 +17452,11 @@
           v[0] *= w * 0.01;
           v[1] = PX$6;
           n += v[0];
-        } else if (v[1] === REM$6) {
+        } else if (v[1] === REM$7) {
           n += v[0] * this.root.computedStyle[FONT_SIZE$8];
-        } else if (v[1] === VW$6) {
+        } else if (v[1] === VW$7) {
           n += v[0] * this.root.width * 0.01;
-        } else if (v[1] === VH$6) {
+        } else if (v[1] === VH$7) {
           n += v[0] * this.root.height * 0.01;
         }
 
@@ -17470,21 +17484,21 @@
 
           if (borderLeftWidth[1] === PX$6) {
             mp += borderLeftWidth[0];
-          } else if (borderLeftWidth[1] === REM$6) {
+          } else if (borderLeftWidth[1] === REM$7) {
             mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-          } else if (borderLeftWidth[1] === VW$6) {
+          } else if (borderLeftWidth[1] === VW$7) {
             mp += borderLeftWidth[0] * this.root.width * 0.01;
-          } else if (borderLeftWidth[1] === VH$6) {
+          } else if (borderLeftWidth[1] === VH$7) {
             mp += borderLeftWidth[0] * this.root.height * 0.01;
           }
 
           if (borderRightWidth[1] === PX$6) {
             mp += borderRightWidth[0];
-          } else if (borderRightWidth[1] === REM$6) {
+          } else if (borderRightWidth[1] === REM$7) {
             mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-          } else if (borderRightWidth[1] === VW$6) {
+          } else if (borderRightWidth[1] === VW$7) {
             mp += borderRightWidth[0] * this.root.width * 0.01;
-          } else if (borderRightWidth[1] === VH$6) {
+          } else if (borderRightWidth[1] === VH$7) {
             mp += borderRightWidth[0] * this.root.height * 0.01;
           }
 
@@ -17496,21 +17510,21 @@
 
           if (borderTopWidth[1] === PX$6) {
             _mp += borderTopWidth[0];
-          } else if (borderTopWidth[1] === REM$6) {
+          } else if (borderTopWidth[1] === REM$7) {
             _mp += borderTopWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-          } else if (borderTopWidth[1] === VW$6) {
+          } else if (borderTopWidth[1] === VW$7) {
             _mp += borderTopWidth[0] * this.root.width * 0.01;
-          } else if (borderTopWidth[1] === VH$6) {
+          } else if (borderTopWidth[1] === VH$7) {
             _mp += borderTopWidth[0] * this.root.height * 0.01;
           }
 
           if (borderBottomWidth[1] === PX$6) {
             _mp += borderBottomWidth[0];
-          } else if (borderBottomWidth[1] === REM$6) {
+          } else if (borderBottomWidth[1] === REM$7) {
             _mp += borderBottomWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-          } else if (borderBottomWidth[1] === VW$6) {
+          } else if (borderBottomWidth[1] === VW$7) {
             _mp += borderBottomWidth[0] * this.root.width * 0.01;
-          } else if (borderBottomWidth[1] === VH$6) {
+          } else if (borderBottomWidth[1] === VH$7) {
             _mp += borderBottomWidth[0] * this.root.height * 0.01;
           }
 
@@ -17599,15 +17613,15 @@
                 w *= width[0] * 0.01;
                 break;
 
-              case REM$6:
+              case REM$7:
                 w = width[0] * this.root.computedStyle[FONT_SIZE$8];
                 break;
 
-              case VW$6:
+              case VW$7:
                 w = width[0] * this.root.width * 0.01;
                 break;
 
-              case VH$6:
+              case VH$7:
                 w = width[0] * this.root.height * 0.01;
                 break;
             }
@@ -17792,15 +17806,15 @@
                 w *= width[0] * 0.01;
                 break;
 
-              case REM$6:
+              case REM$7:
                 w = width[0] * this.root.computedStyle[FONT_SIZE$8];
                 break;
 
-              case VW$6:
+              case VW$7:
                 w = width[0] * this.root.width * 0.01;
                 break;
 
-              case VH$6:
+              case VH$7:
                 w = width[0] * this.root.height * 0.01;
                 break;
             }
@@ -17824,15 +17838,15 @@
               h *= height[0] * 0.01;
               break;
 
-            case REM$6:
+            case REM$7:
               h = height[0] * this.root.computedStyle[FONT_SIZE$8];
               break;
 
-            case VW$6:
+            case VW$7:
               h = height[0] * this.root.width * 0.01;
               break;
 
-            case VH$6:
+            case VH$7:
               h = height[0] * this.root.height * 0.01;
               break;
           }
@@ -17922,11 +17936,11 @@
               v = 0;
             } else if (v[1] === PERCENT$7) {
               v = v[0] * this.offsetWidth * 0.01;
-            } else if (v[1] === REM$6) {
+            } else if (v[1] === REM$7) {
               v = v[0] * this.root.computedStyle[FONT_SIZE$8];
-            } else if (v[1] === VW$6) {
+            } else if (v[1] === VW$7) {
               v = v[0] * this.root.width * 0.01;
-            } else if (v[1] === VH$6) {
+            } else if (v[1] === VH$7) {
               v = v[0] * this.root.height * 0.01;
             } else {
               v = v[0];
@@ -17945,11 +17959,11 @@
               _v = 0;
             } else if (_v[1] === PERCENT$7) {
               _v = _v[0] * this.offsetHeight * 0.01;
-            } else if (_v[1] === REM$6) {
+            } else if (_v[1] === REM$7) {
               _v = _v[0] * this.root.computedStyle[FONT_SIZE$8];
-            } else if (_v[1] === VW$6) {
+            } else if (_v[1] === VW$7) {
               _v = _v[0] * this.root.width * 0.01;
-            } else if (_v[1] === VH$6) {
+            } else if (_v[1] === VH$7) {
               _v = _v[0] * this.root.height * 0.01;
             } else {
               _v = _v[0];
@@ -17968,11 +17982,11 @@
               _v2 = 0;
             } else if (_v2[1] === PERCENT$7) {
               _v2 = _v2[0] * this.offsetWidth * 0.01;
-            } else if (_v2[1] === REM$6) {
+            } else if (_v2[1] === REM$7) {
               _v2 = _v2[0] * this.root.computedStyle[FONT_SIZE$8];
-            } else if (_v2[1] === VW$6) {
+            } else if (_v2[1] === VW$7) {
               _v2 = _v2[0] * this.root.width * 0.01;
-            } else if (_v2[1] === VH$6) {
+            } else if (_v2[1] === VH$7) {
               _v2 = _v2[0] * this.root.height * 0.01;
             } else {
               _v2 = _v2[0];
@@ -18044,19 +18058,19 @@
                       } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * offsetHeight * 0.01;
                       }
-                    } else if (v[1] === REM$6) {
+                    } else if (v[1] === REM$7) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * _this3.root.computedStyle[FONT_SIZE$8];
                       }
-                    } else if (v[1] === VW$6) {
+                    } else if (v[1] === VW$7) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       } else if (k === TRANSLATE_Y$4) {
                         computedStyle[k] = v[0] * _this3.root.width * 0.01;
                       }
-                    } else if (v[1] === VH$6) {
+                    } else if (v[1] === VH$7) {
                       if (k === TRANSLATE_X$4 || k === TRANSLATE_Z$4) {
                         computedStyle[k] = v[0] * _this3.root.height * 0.01;
                       } else if (k === TRANSLATE_Y$4) {
@@ -18170,15 +18184,15 @@
               return item[0];
             }
 
-            if (item[1] === REM$6) {
+            if (item[1] === REM$7) {
               return item[0] * _this4.root.computedStyle[FONT_SIZE$8];
             }
 
-            if (item[1] === VW$6) {
+            if (item[1] === VW$7) {
               return item[0] * _this4.root.width * 0.01;
             }
 
-            if (item[1] === VH$6) {
+            if (item[1] === VH$7) {
               return item[0] * _this4.root.height * 0.01;
             }
 
@@ -18196,15 +18210,15 @@
               return item[0];
             }
 
-            if (item[1] === REM$6) {
+            if (item[1] === REM$7) {
               return item[0] * _this4.root.computedStyle[FONT_SIZE$8];
             }
 
-            if (item[1] === VW$6) {
+            if (item[1] === VW$7) {
               return item[0] * _this4.root.width * 0.01;
             }
 
-            if (item[1] === VH$6) {
+            if (item[1] === VH$7) {
               return item[0] * _this4.root.height * 0.01;
             }
 
@@ -18295,11 +18309,11 @@
                 } else {
                   v *= 0.01 * (by2 - by1);
                 }
-              } else if (item2[1] === REM$6) {
+              } else if (item2[1] === REM$7) {
                 v = v * _this4.root.computedStyle[FONT_SIZE$8];
-              } else if (item2[1] === VW$6) {
+              } else if (item2[1] === VW$7) {
                 v = v * _this4.root.width * 0.01;
-              } else if (item2[1] === VH$6) {
+              } else if (item2[1] === VH$7) {
                 v = v * _this4.root.height * 0.01;
               }
 
@@ -18429,11 +18443,11 @@
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_WIDTH$3])) {
           var v = currentStyle[TEXT_STROKE_WIDTH$3];
 
-          if (v[1] === REM$6) {
+          if (v[1] === REM$7) {
             v = v[0] * this.root.computedStyle[FONT_SIZE$8];
-          } else if (v[1] === VW$6) {
+          } else if (v[1] === VW$7) {
             v = v[0] * this.root.width * 0.01;
-          } else if (v[1] === VH$6) {
+          } else if (v[1] === VH$7) {
             v = v[0] * this.root.height * 0.01;
           } else {
             v = v[0];
@@ -18477,11 +18491,11 @@
           var v = currentStyle[PERSPECTIVE$3];
           var ppt = 0;
 
-          if (v[1] === REM$6) {
+          if (v[1] === REM$7) {
             ppt = v[0] * this.root.computedStyle[FONT_SIZE$8];
-          } else if (v[1] === VW$6) {
+          } else if (v[1] === VW$7) {
             ppt = v[0] * this.root.width * 0.01;
-          } else if (v[1] === VH$6) {
+          } else if (v[1] === VH$7) {
             ppt = v[0] * this.root.height * 0.01;
           } else {
             ppt = v[0];
@@ -18521,11 +18535,11 @@
 
           if (v[1] === PX$6 || v[1] === DEG$2 || v[1] === PERCENT$7 || v[1] === NUMBER$5) {
             v = v[0];
-          } else if (v[1] === REM$6) {
+          } else if (v[1] === REM$7) {
             v = v[0] * _this5.root.computedStyle[FONT_SIZE$8];
-          } else if (v[1] === VW$6) {
+          } else if (v[1] === VW$7) {
             v = v[0] * _this5.root.width * 0.01;
-          } else if (v[1] === VH$6) {
+          } else if (v[1] === VH$7) {
             v = v[0] * _this5.root.height * 0.01;
           }
 
@@ -21126,9 +21140,9 @@
   var AUTO$6 = o.AUTO,
       PX$8 = o.PX,
       PERCENT$9 = o.PERCENT,
-      REM$7 = o.REM,
-      VW$7 = o.VW,
-      VH$7 = o.VH;
+      REM$8 = o.REM,
+      VW$8 = o.VW,
+      VH$8 = o.VH;
   var calAbsolute$1 = css.calAbsolute,
       isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
@@ -21440,11 +21454,11 @@
               w -= width[0];
             } else if (width[1] === PERCENT$9) {
               w -= total * width[0] * 0.01;
-            } else if (width[1] === REM$7) {
+            } else if (width[1] === REM$8) {
               w -= width[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (width[1] === VW$7) {
+            } else if (width[1] === VW$8) {
               w -= width[0] * this.root.width * 0.01;
-            } else if (width[1] === VH$7) {
+            } else if (width[1] === VH$8) {
               w -= width[0] * this.root.height * 0.01;
             } else {
               for (var i = 0; i < flowChildren.length; i++) {
@@ -21473,11 +21487,11 @@
               w -= marginRight[0];
             } else if (marginRight[1] === PERCENT$9) {
               w -= marginRight[0] * total * 0.01;
-            } else if (marginRight[1] === REM$7) {
+            } else if (marginRight[1] === REM$8) {
               w -= marginRight[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (marginRight[1] === VW$7) {
+            } else if (marginRight[1] === VW$8) {
               w -= marginRight[0] * this.root.width * 0.01;
-            } else if (marginRight[1] === VH$7) {
+            } else if (marginRight[1] === VH$8) {
               w -= marginRight[0] * this.root.height * 0.01;
             }
 
@@ -21485,21 +21499,21 @@
               w -= paddingRight[0];
             } else if (paddingRight[1] === PERCENT$9) {
               w -= paddingRight[0] * total * 0.01;
-            } else if (paddingRight[1] === REM$7) {
+            } else if (paddingRight[1] === REM$8) {
               w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (paddingRight[1] === VW$7) {
+            } else if (paddingRight[1] === VW$8) {
               w -= paddingRight[0] * this.root.width * 0.01;
-            } else if (paddingRight[1] === VH$7) {
+            } else if (paddingRight[1] === VH$8) {
               w -= paddingRight[0] * this.root.height * 0.01;
             }
 
             if (borderRightWidth[1] === PX$8) {
               w -= borderRightWidth[0];
-            } else if (borderRightWidth[1] === REM$7) {
+            } else if (borderRightWidth[1] === REM$8) {
               w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (borderRightWidth[1] === VW$7) {
+            } else if (borderRightWidth[1] === VW$8) {
               w -= borderRightWidth[0] * this.root.width * 0.01;
-            } else if (borderRightWidth[1] === VH$7) {
+            } else if (borderRightWidth[1] === VH$8) {
               w -= borderRightWidth[0] * this.root.height * 0.01;
             }
           } // 还要减去开头的mpb
@@ -21509,11 +21523,11 @@
           w -= marginLeft[0];
         } else if (marginLeft[1] === PERCENT$9) {
           w -= marginLeft[0] * total * 0.01;
-        } else if (marginLeft[1] === REM$7) {
+        } else if (marginLeft[1] === REM$8) {
           w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE$9];
-        } else if (marginLeft[1] === VW$7) {
+        } else if (marginLeft[1] === VW$8) {
           w -= marginLeft[0] * this.root.width * 0.01;
-        } else if (marginLeft[1] === VH$7) {
+        } else if (marginLeft[1] === VH$8) {
           w -= marginLeft[0] * this.root.height * 0.01;
         }
 
@@ -21521,21 +21535,21 @@
           w -= paddingLeft[0];
         } else if (paddingLeft[1] === PERCENT$9) {
           w -= paddingLeft[0] * total * 0.01;
-        } else if (paddingLeft[1] === REM$7) {
+        } else if (paddingLeft[1] === REM$8) {
           w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE$9];
-        } else if (paddingLeft[1] === VW$7) {
+        } else if (paddingLeft[1] === VW$8) {
           w -= paddingLeft[0] * this.root.width * 0.01;
-        } else if (paddingLeft[1] === VH$7) {
+        } else if (paddingLeft[1] === VH$8) {
           w -= paddingLeft[0] * this.root.height * 0.01;
         }
 
         if (borderLeftWidth[1] === PX$8) {
           w -= borderLeftWidth[0];
-        } else if (borderLeftWidth[1] === REM$7) {
+        } else if (borderLeftWidth[1] === REM$8) {
           w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$9];
-        } else if (borderLeftWidth[1] === VW$7) {
+        } else if (borderLeftWidth[1] === VW$8) {
           w -= borderLeftWidth[0] * this.root.width * 0.01;
-        } else if (borderLeftWidth[1] === VH$7) {
+        } else if (borderLeftWidth[1] === VH$8) {
           w -= borderLeftWidth[0] * this.root.height * 0.01;
         }
 
@@ -21598,11 +21612,11 @@
 
         if (main[1] === PX$8) {
           min = max = main[0];
-        } else if (main[1] === REM$7) {
+        } else if (main[1] === REM$8) {
           min = max = main[0] * this.root.computedStyle[FONT_SIZE$9];
-        } else if (main[1] === VW$7) {
+        } else if (main[1] === VW$8) {
           min = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$7) {
+        } else if (main[1] === VH$8) {
           min = max = main[0] * this.root.height * 0.01;
         } else {
           if (display === 'flex') {
@@ -21845,7 +21859,7 @@
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
         var isAuto = flexBasis[1] === AUTO$6;
-        var isFixed = [PX$8, PERCENT$9, REM$7, VW$7, VH$7].indexOf(flexBasis[1]) > -1;
+        var isFixed = [PX$8, PERCENT$9, REM$8, VW$8, VH$8].indexOf(flexBasis[1]) > -1;
         var isContent = !isAuto && !isFixed;
         var fixedSize; // flex的item固定basis计算
 
@@ -21854,24 +21868,24 @@
             b = fixedSize = flexBasis[0];
           } else if (flexBasis[1] === PERCENT$9) {
             b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
-          } else if (flexBasis[1] === REM$7) {
+          } else if (flexBasis[1] === REM$8) {
             b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE$9];
-          } else if (flexBasis[1] === VW$7) {
+          } else if (flexBasis[1] === VW$8) {
             b = fixedSize = flexBasis[0] * this.root.width * 0.01;
-          } else if (flexBasis[1] === VH$7) {
+          } else if (flexBasis[1] === VH$8) {
             b = fixedSize = flexBasis[0] * this.root.height * 0.01;
           }
         } // 已声明主轴尺寸的，当basis是auto时为值
-        else if ([PX$8, PERCENT$9, REM$7, VW$7, VH$7].indexOf(main[1]) > -1 && isAuto) {
+        else if ([PX$8, PERCENT$9, REM$8, VW$8, VH$8].indexOf(main[1]) > -1 && isAuto) {
             if (main[1] === PX$8) {
               b = fixedSize = main[0];
             } else if (main[1] === PERCENT$9) {
               b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
-            } else if (main[1] === REM$7) {
+            } else if (main[1] === REM$8) {
               b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE$9];
-            } else if (main[1] === VW$7) {
+            } else if (main[1] === VW$8) {
               b = fixedSize = main[0] * this.root.width * 0.01;
-            } else if (main[1] === VH$7) {
+            } else if (main[1] === VH$8) {
               b = fixedSize = main[0] * this.root.height * 0.01;
             }
           } // 非固定尺寸的basis为auto时降级为content
@@ -23880,11 +23894,11 @@
             if (width[1] !== AUTO$6) {
               if (width[1] === PERCENT$9) {
                 w2 = width[0] * clientWidth * 0.01;
-              } else if (width[1] === REM$7) {
+              } else if (width[1] === REM$8) {
                 w2 = width[0] * _this4.root.computedStyle[FONT_SIZE$9];
-              } else if (width[1] === VW$7) {
+              } else if (width[1] === VW$8) {
                 w2 = width[0] * _this4.root.width * 0.01;
-              } else if (width[1] === VH$7) {
+              } else if (width[1] === VH$8) {
                 w2 = width[0] * _this4.root.height * 0.01;
               } else {
                 w2 = width[0];
@@ -23894,11 +23908,11 @@
             if (width[1] !== AUTO$6) {
               if (width[1] === PERCENT$9) {
                 w2 = width[0] * clientWidth * 0.01;
-              } else if (width[1] === REM$7) {
+              } else if (width[1] === REM$8) {
                 w2 = width[0] * _this4.root.computedStyle[FONT_SIZE$9];
-              } else if (width[1] === VW$7) {
+              } else if (width[1] === VW$8) {
                 w2 = width[0] * _this4.root.width * 0.01;
-              } else if (width[1] === VH$7) {
+              } else if (width[1] === VH$8) {
                 w2 = width[0] * _this4.root.height * 0.01;
               } else {
                 w2 = width[0];
@@ -23921,11 +23935,11 @@
             if (width[1] !== AUTO$6) {
               if (width[1] === PERCENT$9) {
                 w2 = width[0] * clientWidth * 0.01;
-              } else if (width[1] === REM$7) {
+              } else if (width[1] === REM$8) {
                 w2 = width[0] * _this4.root.computedStyle[FONT_SIZE$9];
-              } else if (width[1] === VW$7) {
+              } else if (width[1] === VW$8) {
                 w2 = width[0] * _this4.root.width * 0.01;
-              } else if (width[1] === VH$7) {
+              } else if (width[1] === VH$8) {
                 w2 = width[0] * _this4.root.height * 0.01;
               } else {
                 w2 = width[0];
@@ -23943,11 +23957,11 @@
             if (height[1] !== AUTO$6) {
               if (height[1] === PERCENT$9) {
                 h2 = height[0] * clientHeight * 0.01;
-              } else if (height[1] === REM$7) {
+              } else if (height[1] === REM$8) {
                 h2 = height[0] * _this4.root.computedStyle[FONT_SIZE$9];
-              } else if (height[1] === VW$7) {
+              } else if (height[1] === VW$8) {
                 h2 = height[0] * _this4.root.width * 0.01;
-              } else if (height[1] === VH$7) {
+              } else if (height[1] === VH$8) {
                 h2 = height[0] * _this4.root.height * 0.01;
               } else {
                 h2 = height[0];
@@ -23957,11 +23971,11 @@
             if (height[1] !== AUTO$6) {
               if (height[1] === PERCENT$9) {
                 h2 = height[0] * clientHeight * 0.01;
-              } else if (height[1] === REM$7) {
+              } else if (height[1] === REM$8) {
                 h2 = height[0] * _this4.root.computedStyle[FONT_SIZE$9];
-              } else if (height[1] === VW$7) {
+              } else if (height[1] === VW$8) {
                 h2 = height[0] * _this4.root.width * 0.01;
-              } else if (height[1] === VH$7) {
+              } else if (height[1] === VH$8) {
                 h2 = height[0] * _this4.root.height * 0.01;
               } else {
                 h2 = height[0];
@@ -23995,11 +24009,11 @@
 
               if (height[1] === PERCENT$9) {
                 h2 = height[0] * clientHeight * 0.01;
-              } else if (height[1] === REM$7) {
+              } else if (height[1] === REM$8) {
                 h2 = height[0] * _this4.root.computedStyle[FONT_SIZE$9];
-              } else if (height[1] === VW$7) {
+              } else if (height[1] === VW$8) {
                 h2 = height[0] * _this4.root.width * 0.01;
-              } else if (height[1] === VH$7) {
+              } else if (height[1] === VH$8) {
                 h2 = height[0] * _this4.root.height * 0.01;
               } else if (height[1] === PX$8) {
                 h2 = height[0];
@@ -24621,9 +24635,9 @@
   var AUTO$7 = o.AUTO,
       PX$9 = o.PX,
       PERCENT$a = o.PERCENT,
-      REM$8 = o.REM,
-      VW$8 = o.VW,
-      VH$8 = o.VH,
+      REM$9 = o.REM,
+      VW$9 = o.VW,
+      VH$9 = o.VH,
       RGBA$2 = o.RGBA;
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
@@ -25003,11 +25017,11 @@
           w -= width[0];
         } else if (width[1] === PERCENT$a) {
           w -= total * width[0] * 0.01;
-        } else if (width[1] === REM$8) {
+        } else if (width[1] === REM$9) {
           w -= width[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (width[1] === VW$8) {
+        } else if (width[1] === VW$9) {
           w -= width[0] * this.root.width * 0.01;
-        } else if (width[1] === VH$8) {
+        } else if (width[1] === VH$9) {
           w -= width[0] * this.root.height * 0.01;
         } else {
           var loadImg = this.__loadImg; // 加载成功计算缩放后的宽度
@@ -25017,11 +25031,11 @@
               w -= loadImg.width * height[0] / loadImg.height;
             } else if (height[1] === PERCENT$a) {
               w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
-            } else if (height[1] === REM$8) {
+            } else if (height[1] === REM$9) {
               w -= loadImg.width * height[0] * this.root.computedStyle[FONT_SIZE$a] / loadImg.height;
-            } else if (height[1] === VW$8) {
+            } else if (height[1] === VW$9) {
               w -= loadImg.width * height[0] * this.root.width * 0.01 / loadImg.height;
-            } else if (height[1] === VH$8) {
+            } else if (height[1] === VH$9) {
               w -= loadImg.width * height[0] * this.root.height * 0.01 / loadImg.height;
             } else {
               w -= loadImg.width;
@@ -25034,11 +25048,11 @@
           w -= marginLeft[0];
         } else if (marginLeft[1] === PERCENT$a) {
           w -= marginLeft[0] * total * 0.01;
-        } else if (marginLeft[1] === REM$8) {
+        } else if (marginLeft[1] === REM$9) {
           w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (marginLeft[1] === VW$8) {
+        } else if (marginLeft[1] === VW$9) {
           w -= marginLeft[0] * this.root.width * 0.01;
-        } else if (marginLeft[1] === VH$8) {
+        } else if (marginLeft[1] === VH$9) {
           w -= marginLeft[0] * this.root.height * 0.01;
         }
 
@@ -25046,21 +25060,21 @@
           w -= paddingLeft[0];
         } else if (paddingLeft[1] === PERCENT$a) {
           w -= paddingLeft[0] * total * 0.01;
-        } else if (paddingLeft[1] === REM$8) {
+        } else if (paddingLeft[1] === REM$9) {
           w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (paddingLeft[1] === VW$8) {
+        } else if (paddingLeft[1] === VW$9) {
           w -= paddingLeft[0] * this.root.width * 0.01;
-        } else if (paddingLeft[1] === VH$8) {
+        } else if (paddingLeft[1] === VH$9) {
           w -= paddingLeft[0] * this.root.height * 0.01;
         }
 
         if (borderLeftWidth[1] === PX$9) {
           w -= borderLeftWidth[0];
-        } else if (borderLeftWidth[1] === REM$8) {
+        } else if (borderLeftWidth[1] === REM$9) {
           w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (borderLeftWidth[1] === VW$8) {
+        } else if (borderLeftWidth[1] === VW$9) {
           w -= borderLeftWidth[0] * this.root.width * 0.01;
-        } else if (borderLeftWidth[1] === VH$8) {
+        } else if (borderLeftWidth[1] === VH$9) {
           w -= borderLeftWidth[0] * this.root.height * 0.01;
         }
 
@@ -25068,11 +25082,11 @@
           w -= marginRight[0];
         } else if (marginRight[1] === PERCENT$a) {
           w -= marginRight[0] * total * 0.01;
-        } else if (marginRight[1] === REM$8) {
+        } else if (marginRight[1] === REM$9) {
           w -= marginRight[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (marginRight[1] === VW$8) {
+        } else if (marginRight[1] === VW$9) {
           w -= marginRight[0] * this.root.width * 0.01;
-        } else if (marginRight[1] === VH$8) {
+        } else if (marginRight[1] === VH$9) {
           w -= marginRight[0] * this.root.height * 0.01;
         }
 
@@ -25080,21 +25094,21 @@
           w -= paddingRight[0];
         } else if (paddingRight[1] === PERCENT$a) {
           w -= paddingRight[0] * total * 0.01;
-        } else if (paddingRight[1] === REM$8) {
+        } else if (paddingRight[1] === REM$9) {
           w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (paddingRight[1] === VW$8) {
+        } else if (paddingRight[1] === VW$9) {
           w -= paddingRight[0] * this.root.width * 0.01;
-        } else if (paddingRight[1] === VH$8) {
+        } else if (paddingRight[1] === VH$9) {
           w -= paddingRight[0] * this.root.height * 0.01;
         }
 
         if (borderRightWidth[1] === PX$9) {
           w -= borderRightWidth[0];
-        } else if (borderRightWidth[1] === REM$8) {
+        } else if (borderRightWidth[1] === REM$9) {
           w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$a];
-        } else if (borderRightWidth[1] === VW$8) {
+        } else if (borderRightWidth[1] === VW$9) {
           w -= borderRightWidth[0] * this.root.width * 0.01;
-        } else if (borderRightWidth[1] === VH$8) {
+        } else if (borderRightWidth[1] === VH$9) {
           w -= borderRightWidth[0] * this.root.height * 0.01;
         }
 
@@ -25129,30 +25143,30 @@
         var main = isDirectionRow ? width : height;
         var cross = isDirectionRow ? height : width; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        var isFixed = [PX$9, PERCENT$a, REM$8, VW$8, VH$8].indexOf(flexBasis[1]) > -1;
+        var isFixed = [PX$9, PERCENT$a, REM$9, VW$9, VH$9].indexOf(flexBasis[1]) > -1;
 
         if (isFixed) {
           if (flexBasis[1] === PX$9) {
             b = max = min = flexBasis[0];
           } else if (flexBasis[1] === PERCENT$a) {
             b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
-          } else if (flexBasis[1] === REM$8) {
+          } else if (flexBasis[1] === REM$9) {
             b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE$a];
-          } else if (flexBasis[1] === VW$8) {
+          } else if (flexBasis[1] === VW$9) {
             b = max = min = flexBasis[0] * this.root.width * 0.01;
-          } else if (flexBasis[1] === VH$8) {
+          } else if (flexBasis[1] === VH$9) {
             b = max = min = flexBasis[0] * this.root.height * 0.01;
           }
-        } else if ([PX$9, PERCENT$a, REM$8, VW$8, VH$8].indexOf(main[1]) > -1) {
+        } else if ([PX$9, PERCENT$a, REM$9, VW$9, VH$9].indexOf(main[1]) > -1) {
           if (main[1] === PX$9) {
             b = max = min = main[0];
           } else if (main[1] === PERCENT$a) {
             b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
-          } else if (main[1] === REM$8) {
+          } else if (main[1] === REM$9) {
             b = max = min = main[0] * this.root.computedStyle[FONT_SIZE$a];
-          } else if (main[1] === VW$8) {
+          } else if (main[1] === VW$9) {
             b = max = min = main[0] * this.root.width * 0.01;
-          } else if (main[1] === VH$8) {
+          } else if (main[1] === VH$9) {
             b = max = min = main[0] * this.root.height * 0.01;
           }
         } // auto和content固定尺寸比例计算
@@ -25162,11 +25176,11 @@
                 cross = cross[0];
               } else if (cross[1] === PERCENT$a) {
                 cross = cross[0] * 0.01 * (isDirectionRow ? h : w);
-              } else if (cross[1] === REM$8) {
+              } else if (cross[1] === REM$9) {
                 cross = cross[0] * this.root.computedStyle[FONT_SIZE$a];
-              } else if (cross[1] === VW$8) {
+              } else if (cross[1] === VW$9) {
                 cross = cross[0] * this.root.width * 0.01;
-              } else if (cross[1] === VH$8) {
+              } else if (cross[1] === VH$9) {
                 cross = cross[0] * this.root.height * 0.01;
               }
 
@@ -25486,14 +25500,13 @@
       NODE_CACHE_PROPS = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
       NODE_CURRENT_PROPS = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
       NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
-      NODE_IS_MASK$2 = _enums$NODE_KEY$7.NODE_IS_MASK,
       NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
       NODE_DEFS_CACHE$5 = _enums$NODE_KEY$7.NODE_DEFS_CACHE;
   var PX$a = o.PX,
       PERCENT$b = o.PERCENT,
-      REM$9 = o.REM,
-      VW$9 = o.VW,
-      VH$9 = o.VH;
+      REM$a = o.REM,
+      VW$a = o.VW,
+      VH$a = o.VH;
   var int2rgba$3 = util.int2rgba,
       isNil$7 = util.isNil,
       joinArr$3 = util.joinArr;
@@ -25541,11 +25554,11 @@
           w -= width[0];
         } else if (width[1] === PERCENT$b) {
           w -= total * width[0] * 0.01;
-        } else if (width[1] === REM$9) {
+        } else if (width[1] === REM$a) {
           w -= width[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (width[1] === VW$9) {
+        } else if (width[1] === VW$a) {
           w -= width[0] * this.root.width * 0.01;
-        } else if (width[1] === VH$9) {
+        } else if (width[1] === VH$a) {
           w -= width[0] * this.root.height * 0.01;
         } // 减去水平mbp
 
@@ -25554,11 +25567,11 @@
           w -= marginLeft[0];
         } else if (marginLeft[1] === PERCENT$b) {
           w -= marginLeft[0] * total * 0.01;
-        } else if (marginLeft[1] === REM$9) {
+        } else if (marginLeft[1] === REM$a) {
           w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (marginLeft[1] === VW$9) {
+        } else if (marginLeft[1] === VW$a) {
           w -= marginLeft[0] * this.root.width * 0.01;
-        } else if (marginLeft[1] === VH$9) {
+        } else if (marginLeft[1] === VH$a) {
           w -= marginLeft[0] * this.root.height * 0.01;
         }
 
@@ -25566,21 +25579,21 @@
           w -= paddingLeft[0];
         } else if (paddingLeft[1] === PERCENT$b) {
           w -= paddingLeft[0] * total * 0.01;
-        } else if (paddingLeft[1] === REM$9) {
+        } else if (paddingLeft[1] === REM$a) {
           w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (paddingLeft[1] === VW$9) {
+        } else if (paddingLeft[1] === VW$a) {
           w -= paddingLeft[0] * this.root.width * 0.01;
-        } else if (paddingLeft[1] === VH$9) {
+        } else if (paddingLeft[1] === VH$a) {
           w -= paddingLeft[0] * this.root.height * 0.01;
         }
 
         if (borderLeftWidth[1] === PX$a) {
           w -= borderLeftWidth[0];
-        } else if (borderLeftWidth[1] === REM$9) {
+        } else if (borderLeftWidth[1] === REM$a) {
           w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (borderLeftWidth[1] === VW$9) {
+        } else if (borderLeftWidth[1] === VW$a) {
           w -= borderLeftWidth[0] * this.root.width * 0.01;
-        } else if (borderLeftWidth[1] === VH$9) {
+        } else if (borderLeftWidth[1] === VH$a) {
           w -= borderLeftWidth[0] * this.root.height * 0.01;
         }
 
@@ -25588,11 +25601,11 @@
           w -= marginRight[0];
         } else if (marginRight[1] === PERCENT$b) {
           w -= marginRight[0] * total * 0.01;
-        } else if (marginRight[1] === REM$9) {
+        } else if (marginRight[1] === REM$a) {
           w -= marginRight[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (marginRight[1] === VW$9) {
+        } else if (marginRight[1] === VW$a) {
           w -= marginRight[0] * this.root.width * 0.01;
-        } else if (marginRight[1] === VH$9) {
+        } else if (marginRight[1] === VH$a) {
           w -= marginRight[0] * this.root.height * 0.01;
         }
 
@@ -25600,21 +25613,21 @@
           w -= paddingRight[0];
         } else if (paddingRight[1] === PERCENT$b) {
           w -= paddingRight[0] * total * 0.01;
-        } else if (paddingRight[1] === REM$9) {
+        } else if (paddingRight[1] === REM$a) {
           w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (paddingRight[1] === VW$9) {
+        } else if (paddingRight[1] === VW$a) {
           w -= paddingRight[0] * this.root.width * 0.01;
-        } else if (paddingRight[1] === VH$9) {
+        } else if (paddingRight[1] === VH$a) {
           w -= paddingRight[0] * this.root.height * 0.01;
         }
 
         if (borderRightWidth[1] === PX$a) {
           w -= borderRightWidth[0];
-        } else if (borderRightWidth[1] === REM$9) {
+        } else if (borderRightWidth[1] === REM$a) {
           w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (borderRightWidth[1] === VW$9) {
+        } else if (borderRightWidth[1] === VW$a) {
           w -= borderRightWidth[0] * this.root.width * 0.01;
-        } else if (borderRightWidth[1] === VH$9) {
+        } else if (borderRightWidth[1] === VH$a) {
           w -= borderRightWidth[0] * this.root.height * 0.01;
         }
 
@@ -25635,11 +25648,11 @@
 
         if (main[1] === PX$a) {
           min = max = main[0];
-        } else if (main[1] === REM$9) {
+        } else if (main[1] === REM$a) {
           min = max = main[0] * this.root.computedStyle[FONT_SIZE$b];
-        } else if (main[1] === VW$9) {
+        } else if (main[1] === VW$a) {
           min = max = main[0] * this.root.width * 0.01;
-        } else if (main[1] === VH$9) {
+        } else if (main[1] === VH$a) {
           min = max = main[0] * this.root.height * 0.01;
         }
 
@@ -25672,30 +25685,30 @@
             borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$7];
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        var isFixed = [PX$a, PERCENT$b, REM$9, VW$9, VH$9].indexOf(flexBasis[1]) > -1;
+        var isFixed = [PX$a, PERCENT$b, REM$a, VW$a, VH$a].indexOf(flexBasis[1]) > -1;
 
         if (isFixed) {
           if (flexBasis[1] === PX$a) {
             b = max = min = flexBasis[0];
           } else if (flexBasis[1] === PERCENT$b) {
             b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
-          } else if (flexBasis[1] === REM$9) {
+          } else if (flexBasis[1] === REM$a) {
             b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE$b];
-          } else if (flexBasis[1] === VW$9) {
+          } else if (flexBasis[1] === VW$a) {
             b = max = min = flexBasis[0] * this.root.width * 0.01;
-          } else if (flexBasis[1] === VH$9) {
+          } else if (flexBasis[1] === VH$a) {
             b = max = min = flexBasis[0] * this.root.height * 0.01;
           }
-        } else if ([PX$a, PERCENT$b, REM$9, VW$9, VH$9].indexOf(main[1]) > -1) {
+        } else if ([PX$a, PERCENT$b, REM$a, VW$a, VH$a].indexOf(main[1]) > -1) {
           if (main[1] === PX$a) {
             b = max = min = main[0];
           } else if (main[1] === PERCENT$b) {
             b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
-          } else if (main[1] === REM$9) {
+          } else if (main[1] === REM$a) {
             b = max = min = main[0] * this.root.computedStyle[FONT_SIZE$b];
-          } else if (main[1] === VW$9) {
+          } else if (main[1] === VW$a) {
             b = max = min = main[0] * this.root.width * 0.01;
-          } else if (main[1] === VH$9) {
+          } else if (main[1] === VH$a) {
             b = max = min = main[0] * this.root.height * 0.01;
           }
         } // border也得计算在内
@@ -25784,11 +25797,11 @@
               return item[0];
             } else if (item[1] === PERCENT$b) {
               return item[0] * w * 0.01;
-            } else if (item[1] === REM$9) {
+            } else if (item[1] === REM$a) {
               return item[0] * _this2.root.computedStyle[FONT_SIZE$b];
-            } else if (item[1] === VW$9) {
+            } else if (item[1] === VW$a) {
               return item[0] * _this2.root.width * 0.01;
-            } else if (item[1] === VH$9) {
+            } else if (item[1] === VH$a) {
               return item[0] * _this2.root.height * 0.01;
             } else {
               return 0;
@@ -27925,7 +27938,7 @@
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$9.NODE_REFRESH_LV,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$9.NODE_CACHE_STYLE,
       NODE_DEFS_CACHE$6 = _enums$NODE_KEY$9.NODE_DEFS_CACHE,
-      NODE_IS_MASK$3 = _enums$NODE_KEY$9.NODE_IS_MASK,
+      NODE_IS_MASK$2 = _enums$NODE_KEY$9.NODE_IS_MASK,
       NODE_DOM_PARENT$5 = _enums$NODE_KEY$9.NODE_DOM_PARENT,
       NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$9.NODE_PERSPECTIVE_MATRIX,
       NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$9.NODE_VIRTUAL_DOM,
@@ -28231,7 +28244,7 @@
               __cacheFilter = _config[NODE_CACHE_FILTER$2],
               __cacheMask = _config[NODE_CACHE_MASK$1],
               __cacheOverflow = _config[NODE_CACHE_OVERFLOW$2],
-              isMask = _config[NODE_IS_MASK$3],
+              isMask = _config[NODE_IS_MASK$2],
               _config$NODE_COMPUTED = _config[NODE_COMPUTED_STYLE$4],
               display = _config$NODE_COMPUTED[DISPLAY$9],
               visibility = _config$NODE_COMPUTED[VISIBILITY$6],
@@ -28465,7 +28478,7 @@
               __cacheFilter = _config2[NODE_CACHE_FILTER$2],
               __cacheMask = _config2[NODE_CACHE_MASK$1],
               __cacheOverflow = _config2[NODE_CACHE_OVERFLOW$2],
-              isMask = _config2[NODE_IS_MASK$3],
+              isMask = _config2[NODE_IS_MASK$2],
               _config2$NODE_COMPUTE = _config2[NODE_COMPUTED_STYLE$4],
               display = _config2$NODE_COMPUTE[DISPLAY$9],
               visibility = _config2$NODE_COMPUTE[VISIBILITY$6],
@@ -31062,7 +31075,7 @@
       NODE_COMPUTED_STYLE$5 = _enums$NODE_KEY$a.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$a.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$6 = _enums$NODE_KEY$a.NODE_DOM_PARENT,
-      NODE_IS_MASK$4 = _enums$NODE_KEY$a.NODE_IS_MASK,
+      NODE_IS_MASK$3 = _enums$NODE_KEY$a.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$a.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$a.NODE_IS_DESTROYED,
       NODE_STYLE$5 = _enums$NODE_KEY$a.NODE_STYLE,
@@ -31421,7 +31434,7 @@
         computedStyle = __config[NODE_COMPUTED_STYLE$5],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$6],
-        isMask = __config[NODE_IS_MASK$4];
+        isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
@@ -33339,8 +33352,12 @@
 
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
       STROKE_WIDTH$2 = _enums$STYLE_KEY$k.STROKE_WIDTH,
-      BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW;
+      BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW,
+      FONT_SIZE$c = _enums$STYLE_KEY$k.FONT_SIZE;
   var isNil$9 = util.isNil;
+  var REM$b = o.REM,
+      VW$b = o.VW,
+      VH$b = o.VH;
 
   function reBuild(target, origin, base, isMulti) {
     if (isMulti) {
@@ -33877,13 +33894,14 @@
     }, {
       key: "bbox",
       get: function get() {
-        var originX = this.__sx3,
+        var isMulti = this.isMulti,
+            __cacheProps = this.__cacheProps,
+            root = this.root,
+            originX = this.__sx3,
             originY = this.__sy3,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
-            boxShadow = _this$currentStyle[BOX_SHADOW$4],
-            isMulti = this.isMulti,
-            __cacheProps = this.__cacheProps;
+            boxShadow = _this$currentStyle[BOX_SHADOW$4];
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
             y1 = __cacheProps.y1,
@@ -33896,7 +33914,15 @@
 
         var half = 0;
         strokeWidth.forEach(function (item) {
-          half = Math.max(item[0], half);
+          if (item[1] === REM$b) {
+            half = Math.max(item[0] * root.computedStyle[FONT_SIZE$c] * 0.5, half);
+          } else if (item[1] === VW$b) {
+            half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+          } else if (item[1] === VH$b) {
+            half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+          } else {
+            half = Math.max(item[0] * 0.5, half);
+          }
         });
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
@@ -33975,8 +34001,12 @@
 
   var _enums$STYLE_KEY$l = enums.STYLE_KEY,
       STROKE_WIDTH$3 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-      BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW;
+      BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW,
+      FONT_SIZE$d = _enums$STYLE_KEY$l.FONT_SIZE;
   var isNil$a = util.isNil;
+  var REM$c = o.REM,
+      VW$c = o.VW,
+      VH$c = o.VH;
 
   function concatPointAndControl(point, control) {
     if (Array.isArray(control) && (control.length === 2 || control.length === 4) && Array.isArray(point) && point.length === 2) {
@@ -34473,20 +34503,29 @@
       key: "bbox",
       get: function get() {
         if (!this.__bbox) {
-          var originX = this.__sx3,
+          var isMulti = this.isMulti,
+              __cacheProps = this.__cacheProps,
+              root = this.root,
+              originX = this.__sx3,
               originY = this.__sy3,
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
-              boxShadow = _this$currentStyle[BOX_SHADOW$5],
-              isMulti = this.isMulti,
-              __cacheProps = this.__cacheProps;
+              boxShadow = _this$currentStyle[BOX_SHADOW$5];
           this.buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
 
           var half = 0;
           strokeWidth.forEach(function (item) {
-            half = Math.max(item[0], half);
+            if (item[1] === REM$c) {
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$d] * 0.5, half);
+            } else if (item[1] === VW$c) {
+              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+            } else if (item[1] === VH$c) {
+              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+            } else {
+              half = Math.max(item[0] * 0.5, half);
+            }
           });
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
@@ -34585,9 +34624,13 @@
 
   var _enums$STYLE_KEY$m = enums.STYLE_KEY,
       STROKE_WIDTH$4 = _enums$STYLE_KEY$m.STROKE_WIDTH,
-      BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW;
+      BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW,
+      FONT_SIZE$e = _enums$STYLE_KEY$m.FONT_SIZE;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
+  var REM$d = o.REM,
+      VW$d = o.VW,
+      VH$d = o.VH;
 
   function getR(v, dft) {
     v = parseFloat(v);
@@ -34966,6 +35009,7 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
+              root = this.root,
               originX = this.__sx3,
               originY = this.__sy3,
               width = this.width,
@@ -34994,7 +35038,15 @@
 
           var half = 0;
           strokeWidth.forEach(function (item) {
-            half = Math.max(item[0], half);
+            if (item[1] === REM$d) {
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$e] * 0.5, half);
+            } else if (item[1] === VW$d) {
+              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+            } else if (item[1] === VH$d) {
+              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+            } else {
+              half = Math.max(item[0] * 0.5, half);
+            }
           });
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
@@ -35024,8 +35076,12 @@
 
   var _enums$STYLE_KEY$n = enums.STYLE_KEY,
       STROKE_WIDTH$5 = _enums$STYLE_KEY$n.STROKE_WIDTH,
-      BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW;
+      BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW,
+      FONT_SIZE$f = _enums$STYLE_KEY$n.FONT_SIZE;
   var isNil$c = util.isNil;
+  var REM$e = o.REM,
+      VW$e = o.VW,
+      VH$e = o.VH;
 
   function genVertex(x, y, width, height) {
     var rx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
@@ -35172,7 +35228,8 @@
       key: "bbox",
       get: function get() {
         if (!this.__bbox) {
-          var originX = this.__sx3,
+          var root = this.root,
+              originX = this.__sx3,
               originY = this.__sy3,
               width = this.width,
               height = this.height,
@@ -35185,7 +35242,15 @@
 
           var half = 0;
           strokeWidth.forEach(function (item) {
-            half = Math.max(item[0], half);
+            if (item[1] === REM$e) {
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$f] * 0.5, half);
+            } else if (item[1] === VW$e) {
+              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+            } else if (item[1] === VH$e) {
+              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+            } else {
+              half = Math.max(item[0] * 0.5, half);
+            }
           });
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
@@ -35211,8 +35276,12 @@
 
   var _enums$STYLE_KEY$o = enums.STYLE_KEY,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
-      BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW;
+      BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
+      FONT_SIZE$g = _enums$STYLE_KEY$o.FONT_SIZE;
   var isNil$d = util.isNil;
+  var REM$f = o.REM,
+      VW$f = o.VW,
+      VH$f = o.VH;
 
   function getR$2(v) {
     v = parseFloat(v);
@@ -35306,6 +35375,7 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
+              root = this.root,
               originX = this.__sx3,
               originY = this.__sy3,
               width = this.width,
@@ -35334,7 +35404,15 @@
 
           var half = 0;
           strokeWidth.forEach(function (item) {
-            half = Math.max(item[0], half);
+            if (item[1] === REM$f) {
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$g] * 0.5, half);
+            } else if (item[1] === VW$f) {
+              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+            } else if (item[1] === VH$f) {
+              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+            } else {
+              half = Math.max(item[0] * 0.5, half);
+            }
           });
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
@@ -35364,8 +35442,12 @@
 
   var _enums$STYLE_KEY$p = enums.STYLE_KEY,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
-      BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW;
+      BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
+      FONT_SIZE$h = _enums$STYLE_KEY$p.FONT_SIZE;
   var isNil$e = util.isNil;
+  var REM$g = o.REM,
+      VW$g = o.VW,
+      VH$g = o.VH;
 
   function getR$3(v) {
     v = parseFloat(v);
@@ -35507,6 +35589,7 @@
         if (!this.__bbox) {
           var isMulti = this.isMulti,
               __cacheProps = this.__cacheProps,
+              root = this.root,
               originX = this.__sx3,
               originY = this.__sy3,
               width = this.width,
@@ -35540,7 +35623,15 @@
 
           var half = 0;
           strokeWidth.forEach(function (item) {
-            half = Math.max(item[0], half);
+            if (item[1] === REM$g) {
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$h] * 0.5, half);
+            } else if (item[1] === VW$g) {
+              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+            } else if (item[1] === VH$g) {
+              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+            } else {
+              half = Math.max(item[0] * 0.5, half);
+            }
           });
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
@@ -36288,7 +36379,7 @@
     Cache: Cache
   };
 
-  var version = "0.63.4";
+  var version = "0.63.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

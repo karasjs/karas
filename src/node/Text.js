@@ -818,6 +818,7 @@ class Text extends Node {
     else {
       half = Math.max(textStrokeWidth[0] * 0.5, half);
     }
+    half += 0.5;
     return [sx - half, sy - half, sx + width + half, sy + height + half];
   }
 

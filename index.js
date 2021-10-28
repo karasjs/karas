@@ -12134,6 +12134,7 @@
           half = Math.max(textStrokeWidth[0] * 0.5, half);
         }
 
+        half += 0.5;
         return [sx - half, sy - half, sx + width + half, sy + height + half];
       }
     }, {
@@ -20265,7 +20266,8 @@
 
           clientWidth += borderLeftWidth[0] + borderRightWidth[0];
           clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-          this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
+          var half = 0;
+          this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
         }
 
         return this.__bbox;
@@ -33924,6 +33926,7 @@
             half = Math.max(item[0] * 0.5, half);
           }
         });
+        half += 0.5;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -34527,6 +34530,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
+          half += 0.5;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35048,6 +35052,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
+          half += 0.5;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35252,6 +35257,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
+          half += 0.5;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35414,6 +35420,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
+          half += 0.5;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -35633,6 +35640,7 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
+          half += 0.5;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),

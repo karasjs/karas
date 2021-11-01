@@ -848,12 +848,13 @@ class Root extends Dom {
     if(renderMode === mode.CANVAS && !this.props.noRender) {
       this.__clear(ctx, renderMode);
       // 利用list循环代替tree递归快速渲染
-      if(this.cache) {
-        struct.renderCacheCanvas(renderMode, ctx, this);
-      }
-      else {
-        struct.renderCanvas(renderMode, ctx, this);
-      }
+      // if(this.cache) {
+      //   struct.renderCacheCanvas(renderMode, ctx, this);
+      // }
+      // else {
+      //   struct.renderCanvas(renderMode, ctx, this);
+      // }
+      struct.renderCanvas2(renderMode, ctx, this);
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG && !this.props.noRender) {

@@ -22,7 +22,7 @@ const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { AUTO, PX, PERCENT, STRING, REM, VW, VH } = unit;
 
-function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
+function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline, dx, dy) {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
   let matrix, cx, cy;
   if(Array.isArray(color)) {
@@ -71,7 +71,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
-    canvasPolygon(ctx, list);
+    canvasPolygon(ctx, list, dx, dy);
     ctx[method]();
     ctx.closePath();
     if(matrix) {

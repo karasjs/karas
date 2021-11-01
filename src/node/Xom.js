@@ -1363,6 +1363,10 @@ class Xom extends Node {
       computedStyle[POINTER_EVENTS] = currentStyle[POINTER_EVENTS][0];
     }
     __cacheStyle[POINTER_EVENTS] = computedStyle[POINTER_EVENTS];
+    this.__bx1 = bx1;
+    this.__bx2 = bx2;
+    this.__by1 = by1;
+    this.__by2 = by2;
     return [bx1, by1, bx2, by2];
   }
 
@@ -1473,17 +1477,19 @@ class Xom extends Node {
    * @param renderMode
    * @param lv
    * @param ctx canvas/svg/webgl共用
-   * @param cache 是否开启缓存
+   * @param cache 是否是局部根节点缓存模式下的绘制
+   * @param dx cache时偏移x
+   * @param dy cache时偏移y
    * @return Object
    * x1/x2/x3/x4/y1/y2/y3/y4 坐标
    * break svg判断无变化提前跳出
    * cacheError 离屏申请失败，仅canvas
    * offscreenBlend 无cache时的离屏canvas，仅canvas
    * offscreenFilter 无cache时的离屏canvas，仅canvas
-   * offscreenMask 无cache时的离屏canvas，仅canvas
    * offscreenOverflow 无cache时的离屏canvas，仅canvas
+   * offscreenMask 无cache时的离屏canvas，仅canvas
    */
-  render(renderMode, lv, ctx, cache) {
+  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     let {
       isDestroyed,
       root,
@@ -1568,11 +1574,20 @@ class Xom extends Node {
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
-    this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
-    let matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
-    // canvas特殊申请离屏缓存
-    let dx = 0, dy = 0;
-    if(cache && (renderMode === CANVAS || renderMode === WEBGL)) {
+    if(renderMode === WEBGL) {
+      this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
+    }
+    // cache模式已经提前计算好了，其它需要现在计算
+    let matrix;
+    if(cache) {
+      matrix = __config[NODE_MATRIX];
+    }
+    else {
+      matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
+    }
+    // webgl特殊申请离屏缓存
+    // let dx = 0, dy = 0;
+    if(cache && renderMode === WEBGL) {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
       if(!hasContent && this.__releaseWhenEmpty(__cache)) {
         res.break = true;
@@ -1591,8 +1606,8 @@ class Xom extends Node {
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
           ctx = __cache.ctx;
-          dx = __cache.dx;
-          dy = __cache.dy;
+          dx + __cache.dx;
+          dy += __cache.dy;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
           if(dx) {
             res.x1 = x1 += dx;
@@ -1627,14 +1642,23 @@ class Xom extends Node {
     }
     res.dx = dx;
     res.dy = dy;
-    // 计算好cacheStyle的内容，以及位图缓存指数
-    let [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
-      __cacheStyle, currentStyle, computedStyle,
-      clientWidth, clientHeight, offsetWidth, offsetHeight,
-      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-      paddingTop, paddingRight, paddingBottom, paddingLeft,
-      x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-    );
+    // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+    let bx1, by1, bx2, by2;
+    if(cache && renderMode === CANVAS) {
+      bx1 = this.__bx1;
+      bx2 = this.__bx2;
+      by1 = this.__by1;
+      by2 = this.__by2;
+    }
+    else {
+      [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
+        __cacheStyle, currentStyle, computedStyle,
+        clientWidth, clientHeight, offsetWidth, offsetHeight,
+        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+        paddingTop, paddingRight, paddingBottom, paddingLeft,
+        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
+      );
+    }
     res.bx1 = bx1;
     res.by1 = by1;
     res.bx2 = bx2;
@@ -2124,7 +2148,7 @@ class Xom extends Node {
     // block渲染，bgc垫底
     if(backgroundColor[3] > 0) {
       bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], borderList,
-        bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+        bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
     }
     // 渐变或图片叠加
     if(backgroundImage) {

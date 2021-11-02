@@ -1684,8 +1684,11 @@ class Xom extends Node {
       [MIX_BLEND_MODE]: mixBlendMode,
       [BACKGROUND_CLIP]: backgroundClip,
     } = computedStyle;
-    // 先设置透明度，canvas可以向上累积
-    if(renderMode === CANVAS || renderMode === WEBGL) {
+    // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
+    if(cache && renderMode === CANVAS) {
+      opacity = __config[NODE_OPACITY];
+    }
+    else if(renderMode === CANVAS || renderMode === WEBGL) {
       if(p) {
         opacity *= p.__config[NODE_OPACITY];
       }
@@ -1709,18 +1712,24 @@ class Xom extends Node {
       }
       virtualDom.visibility = visibility;
     }
-    let m = __config[NODE_MATRIX];
-    util.assignMatrix(m, matrix);
-    // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
-    if(p) {
-      if(p.perspectiveMatrix) {
-        matrix = mx.multiply(p.perspectiveMatrix, matrix);
-      }
-      matrix = mx.multiply(p.matrixEvent, matrix);
+    // cache模式的canvas的matrix计算在外部做好了，且perspective无效
+    if(renderMode === CANVAS && cache) {
+      matrix = __config[NODE_MATRIX_EVENT];
     }
-    // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
-    m = __config[NODE_MATRIX_EVENT];
-    util.assignMatrix(m, matrix);
+    else {
+      let m = __config[NODE_MATRIX];
+      util.assignMatrix(m, matrix);
+      // 变换和canvas要以父元素matrixEvent为基础，svg使用自身即css规则，webgl在struct渲染时另算
+      if(p) {
+        if(p.perspectiveMatrix) {
+          matrix = mx.multiply(p.perspectiveMatrix, matrix);
+        }
+        matrix = mx.multiply(p.matrixEvent, matrix);
+      }
+      // 为了引用不变，防止变化后text子节点获取不到，恶心的v8优化，初始化在构造函数中空数组
+      m = __config[NODE_MATRIX_EVENT];
+      util.assignMatrix(m, matrix);
+    }
     // 无离屏功能或超限视为不可缓存本身，等降级无cache再次绘制，webgl一样
     if(res.limitCache) {
       return res;
@@ -1850,7 +1859,7 @@ class Xom extends Node {
       delete virtualDom.overflow;
     }
     // 无法使用缓存时主画布直接绘制需设置
-    if(renderMode === CANVAS && !cache) {
+    if(renderMode === CANVAS) {
       res.offscreenBlend = offscreenBlend;
       res.offscreenMask = offscreenMask;
       res.offscreenFilter = offscreenFilter;

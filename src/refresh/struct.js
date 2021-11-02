@@ -449,18 +449,18 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     [NODE_CACHE_OVERFLOW]: cacheOverflow,
     [NODE_CURRENT_STYLE]: currentStyle,
     [NODE_COMPUTED_STYLE]: computedStyle,
-    [NODE_DOM_PARENT]: domParent,
   } = __config;
-  let needGen;
+  let needGen, reGenTotal;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!cacheTotal || !cacheTotal.available) {
-    needGen = true; // total重新生成了，其它基于的也一定需要重新生成
-    let d = 0;
+    needGen = reGenTotal = true; // total重新生成了，其它基于的也一定需要重新生成
     let bboxTotal;
     let { __sx1: sx1, __sy1: sy1 } = node;
     // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
     let matrixList = [];
     let parentMatrix;
+    let opacityList = [];
+    let parentOpacity = 1;
     let lastConfig;
     let lastLv = lv;
     // 先遍历每个节点，以局部根节点左上角为原点，求得所占的总的bbox，即合并所有bbox
@@ -484,12 +484,16 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
           parentMatrix = null;
         }
         matrixList.push(parentMatrix);
+        parentOpacity = lastConfig[NODE_OPACITY];
+        opacityList.push(parentOpacity);
       }
       // 变小出栈索引需注意，可能不止一层，多层计算diff层级
       else if(lv < lastLv) {
         let diff = lastLv - lv;
         matrixList.splice(-diff);
         parentMatrix = matrixList[lv - 1];
+        opacityList.splice(-diff);
+        parentOpacity = opacityList[lv - 1];
       }
       // 不变是同级兄弟，无需特殊处理
       lastConfig = __config;
@@ -512,7 +516,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         [NODE_CURRENT_STYLE]: currentStyle,
         [NODE_CACHE_STYLE]: __cacheStyle,
       } = __config;
-      let matrix;
+      let matrix, opacity;
       /**
        * lv<REPAINT，bbox基本不变（除非filter），无需重新生成，否则置空后重新计算获得
        * 同时计算matrix，并以局部根节点为原点，计算matrixEvent，临时保存下来
@@ -523,15 +527,24 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
           util.assignMatrix(__config[NODE_MATRIX], matrix);
         }
+        else {
+          matrix = __config[NODE_MATRIX];
+        }
+        if(contain(refreshLevel, OP)) {
+          computedStyle[OPACITY] = currentStyle[OPACITY];
+        }
+        opacity = computedStyle[OPACITY];
         if(contain(refreshLevel, FT)) {
           node.__bbox = null;
           node.__calFilter(currentStyle, computedStyle);
-          // 无需清除cacheFilter，updateStyle时肯定release过了
         }
         matrix = __config[NODE_MATRIX];
+        if(contain(refreshLevel, MBM)) {
+          computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+        }
       }
       /**
-       * >=REPAINT重新渲染，bbox重新生成，matrix重新生成
+       * >=REPAINT重新渲染，bbox重新生成，matrix重新生成，filter重新生成
        */
       else {
         node.__bbox = null;
@@ -540,22 +553,14 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         }
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         util.assignMatrix(__config[NODE_MATRIX], matrix);
+        opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
       }
-      // 计算临时matrixEvent，以局部根节点为基准，父不为E时要点乘继承父的
+      // 计算临时matrixEvent和opacity，以局部根节点为基准（E和1），父不为E时要点乘继承父的
       if(parentMatrix) {
         matrix = multiply(parentMatrix, matrix);
       }
       util.assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
-      // 局部根节点的filter的blur影响bbox
-      if(i === index) {
-        let filter = computedStyle[FILTER];
-        filter.forEach(item => {
-          let [k, v] = item;
-          if(k === 'blur') {
-            d = blur.outerSize(v);
-          }
-        });
-      }
+      __config[NODE_OPACITY] = parentOpacity * opacity;
       let bbox;
       // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
@@ -567,7 +572,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         bbox = node.bbox;
       }
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-      bbox = util.transformBbox(bbox, matrix, d, d);
+      bbox = util.transformBbox(bbox, matrix, 0, 0);
       if(i === index) {
         bboxTotal = bbox;
       }
@@ -581,14 +586,11 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     let dx = cacheTotal.dx, dy = cacheTotal.dy;
     let ctxTotal = cacheTotal.ctx;
     /**
-     * 再次遍历每个节点，以局部根节点左上角为原点，将所有节点绘制上去
-     * 这里需要假设局部根节点opacity为1，子节点内部render时以此为根据计算自己opacity
-     * 最终向主画布绘制时将cacheTotal和局部根节点opacity设置一下就行
+     * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
+     * 每个子节点的matrix/opacity有父继承计算在上面循环已经做好了，直接获取
+     * 另外每个节点的refreshLevel需要设置|=REPAINT
+     * 这样cacheTotal取消时子节点需确保重新计算一次matrix/opacity/filter，保证下次和父元素继承正确
      */
-    let opacityParent = domParent.__config[NODE_OPACITY];
-    domParent.__config[NODE_OPACITY] = 1;
-    let opacityTotal = currentStyle[OPACITY];
-    currentStyle[OPACITY] = 1;
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
@@ -619,13 +621,25 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
         if(target) {
           i += (total || 0) + (hasMask || 0);
+          let mixBlendMode = computedStyle[MIX_BLEND_MODE];
+          if(isValidMbm(mixBlendMode)) {
+            ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
+          }
+          else {
+            ctxTotal.globalCompositeOperation = 'source-over';
+          }
+          ctxTotal.globalAlpha = __config[NODE_OPACITY];
+          let m = __config[NODE_MATRIX_EVENT];
+          ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           Cache.drawCache(target, cacheTotal);
+          ctxTotal.globalCompositeOperation = 'source-over';
         }
         else {
           node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
         }
       }
       else {
+        // 手动计算cacheStyle和根据border-box的坐标再渲染
         node.__calCache(renderMode, ctxTotal, __config[NODE_DOM_PARENT],
           __config[NODE_CACHE_STYLE], __config[NODE_CURRENT_STYLE], computedStyle,
           node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
@@ -637,11 +651,27 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
           node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
         node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
       }
-      __config[NODE_REFRESH_LV] = NONE;
     }
-    // 结束恢复局部根节点和其parent的opacity
-    domParent.__config[NODE_OPACITY] = opacityParent;
-    currentStyle[OPACITY] = computedStyle[OPACITY] = __config[NODE_OPACITY] = opacityTotal;
+  }
+  // cacheTotal仍在说明<REPAINT，需计算各种新的参数
+  else {
+    let {
+      [NODE_REFRESH_LV]: refreshLevel,
+      [NODE_CACHE_STYLE]: __cacheStyle,
+    } = __config;
+    if(contain(refreshLevel, TRANSFORM_ALL)) {
+      let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
+      util.assignMatrix(__config[NODE_MATRIX], matrix);
+    }
+    if(contain(refreshLevel, OP)) {
+      __config[NODE_OPACITY] = computedStyle[OPACITY] = currentStyle[OPACITY];
+    }
+    if(contain(refreshLevel, FT)) {
+      node.__calFilter(currentStyle, computedStyle);
+    }
+    if(contain(refreshLevel, MBM)) {
+      computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+    }
   }
   // 其它基于total的cache，为了防止失败超限，必须有total结果
   if(cacheTotal && cacheTotal.available) {
@@ -665,9 +695,11 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
       target = __config[NODE_CACHE_FILTER] || target;
     }
     if(hasMask && (!cacheMask || !cacheMask.available || needGen)) {
-      __config[NODE_CACHE_MASK] = genMask(node, target);
+      // __config[NODE_CACHE_MASK] = genMask(node, target);
+      // TODO mask不是固定单个了
     }
   }
+  return reGenTotal;
 }
 
 function genFilter(node, cache, v) {
@@ -2742,11 +2774,14 @@ function renderCanvas2(renderMode, ctx, root) {
     });
     mergeList.forEach(item => {
       let [i, lv, total, node, __config, hasMask] = item;
-      genTotal2(renderMode, node, __config, i, lv, total || 0, __structs, hasMask);
+      let reGenTotal = genTotal2(renderMode, node, __config, i, lv, total || 0, __structs, hasMask);
+      if(reGenTotal) {
+        // TODO 设置所有节点matrix/opacity回为以root为基准
+      }
     });
   }
   /**
-   * 最后先序遍历一次应用__cacheTotal即可，没有的普通绘制，以及剩下的超尺寸的和Text
+   * 最后先序遍历一次并应用__cacheTotal即可，没有的普通绘制，以及剩下的超尺寸的和Text
    * 特殊离屏和cacheAsBitmap的离屏都已经产生了cacheTotal，除非超限
    * 离屏功能的数据结构和算法逻辑非常复杂，需用到下面2个hash，来完成一些filter、mask等离屏才能完成的绘制
    * 其中overflow、filter、mix-blend-mode是对自身及子节点，mask则是对自身和后续next遮罩节点
@@ -2775,8 +2810,6 @@ function renderCanvas2(renderMode, ctx, root) {
     else {
       let __config = node.__config;
       let {
-        [NODE_OPACITY]: opacity,
-        [NODE_MATRIX_EVENT]: matrixEvent,
         [NODE_CACHE_TOTAL]: __cacheTotal,
         [NODE_CACHE_FILTER]: __cacheFilter,
         [NODE_CACHE_MASK]: __cacheMask,
@@ -2785,6 +2818,7 @@ function renderCanvas2(renderMode, ctx, root) {
         [NODE_COMPUTED_STYLE]: {
           [DISPLAY]: display,
           [MIX_BLEND_MODE]: mixBlendMode,
+          [OPACITY]: opacity,
         },
       } = __config;
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
@@ -2801,6 +2835,13 @@ function renderCanvas2(renderMode, ctx, root) {
         else {
           ctx.globalCompositeOperation = 'source-over';
         }
+        // cache需要计算matrixEvent，因为局部根节点临时视为E，根据refreshLevel决定
+        let matrix = __config[NODE_MATRIX], matrixEvent = __config[NODE_MATRIX_EVENT];
+        let parentMatrix = __config[NODE_DOM_PARENT].matrixEvent;
+        if(parentMatrix && !isE(parentMatrix)) {
+          matrix = multiply(parentMatrix, matrix);
+        }
+        util.assignMatrix(matrixEvent, matrix);
         Cache.draw(ctx, opacity, matrixEvent, target);
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
@@ -2808,10 +2849,8 @@ function renderCanvas2(renderMode, ctx, root) {
         if(offscreenHash.hasOwnProperty(i)) {
           ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
         }
-        // 有cache的可以跳过子节点，但如果matrix变化还是需要遍历计算一下的，虽然跳过了渲染
-        if(contain(refreshLevel, TRANSFORM_ALL)) {
-          // TODO
-        }
+        // TODO 有cache的可以跳过子节点，但如果matrixEvent变化还是需要遍历计算一下的，虽然跳过了渲染
+        // TODO 这里计算下局部根节点再对比下看是否有变化即可
       }
       // 没有cacheTotal是普通节点绘制
       else {

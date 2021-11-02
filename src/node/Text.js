@@ -659,7 +659,6 @@ class Text extends Node {
       if(ctx.strokeStyle !== strokeColor) {
         ctx.strokeStyle = strokeColor;
       }
-      ctx.fillStyle = '#000';
     }
     // 可能为空，整个是个ellipsis
     textBoxes.forEach(item => {

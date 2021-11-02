@@ -1577,16 +1577,15 @@ class Xom extends Node {
     if(renderMode === WEBGL) {
       this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
     }
-    // cache模式已经提前计算好了，其它需要现在计算
+    // cache的canvas模式已经提前计算好了，其它需要现在计算
     let matrix;
-    if(cache) {
+    if(cache && renderMode === CANVAS) {
       matrix = __config[NODE_MATRIX];
     }
     else {
       matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
     }
     // webgl特殊申请离屏缓存
-    // let dx = 0, dy = 0;
     if(cache && renderMode === WEBGL) {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
       if(!hasContent && this.__releaseWhenEmpty(__cache)) {
@@ -1606,7 +1605,7 @@ class Xom extends Node {
         if(__cache && __cache.enabled) {
           __cache.__bbox = bbox;
           ctx = __cache.ctx;
-          dx + __cache.dx;
+          dx += __cache.dx;
           dy += __cache.dy;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
           if(dx) {

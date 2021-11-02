@@ -2318,8 +2318,7 @@ function renderWebgl(renderMode, gl, root) {
       pmList.splice(-diff);
       parentPm = pmList[lv - 1];
     }
-    // 不变是同级兄弟，无需特殊处理
-    else {}
+    // 不变是同级兄弟，无需特殊处理 else {}
     lastRefreshLevel = refreshLevel;
     lastConfig = __config;
     lastLv = lv;
@@ -2399,10 +2398,6 @@ function renderWebgl(renderMode, gl, root) {
       if(contain(refreshLevel, FT)) {
         node.__bbox = null;
         let filter = node.__calFilter(currentStyle, computedStyle);
-        let __cacheFilter = __config[NODE_CACHE_FILTER];
-        if(__cacheFilter) {
-          __cacheFilter.release();
-        }
         // 防重
         if(hasRecordAsMask) {
           hasRecordAsMask[7] = filter;

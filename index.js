@@ -13137,7 +13137,12 @@
         ctx.fillStyle = color;
       }
 
-      canvasPolygon$3(ctx, list, dx, dy);
+      if (renderMode === mode.CANVAS) {
+        canvasPolygon$3(ctx, list, dx, dy);
+      } else {
+        canvasPolygon$3(ctx, list);
+      }
+
       ctx[method]();
       ctx.closePath();
 
@@ -18803,17 +18808,16 @@
 
         if (renderMode === WEBGL$1) {
           this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
-        } // cache模式已经提前计算好了，其它需要现在计算
+        } // cache的canvas模式已经提前计算好了，其它需要现在计算
 
 
         var matrix;
 
-        if (cache) {
+        if (cache && renderMode === CANVAS$1) {
           matrix = __config[NODE_MATRIX$1];
         } else {
           matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
         } // webgl特殊申请离屏缓存
-        // let dx = 0, dy = 0;
 
 
         if (cache && renderMode === WEBGL$1) {
@@ -18835,7 +18839,7 @@
               if (__cache && __cache.enabled) {
                 __cache.__bbox = bbox;
                 ctx = __cache.ctx;
-                dx + __cache.dx;
+                dx += __cache.dx;
                 dy += __cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
                 if (dx) {
@@ -30635,7 +30639,8 @@
           parentOpacity = opacityList[lv - 1];
           pmList.splice(-diff);
           parentPm = pmList[lv - 1];
-        }
+        } // 不变是同级兄弟，无需特殊处理 else {}
+
 
       lastRefreshLevel = refreshLevel;
       lastConfig = __config;
@@ -30723,13 +30728,7 @@
         if (contain$2(refreshLevel, FT)) {
           node.__bbox = null;
 
-          var _filter3 = node.__calFilter(currentStyle, computedStyle);
-
-          var __cacheFilter = __config[NODE_CACHE_FILTER$2];
-
-          if (__cacheFilter) {
-            __cacheFilter.release();
-          } // 防重
+          var _filter3 = node.__calFilter(currentStyle, computedStyle); // 防重
 
 
           if (hasRecordAsMask) {
@@ -30945,7 +30944,7 @@
             _limitCache3 = _config7[NODE_LIMIT_CACHE$2],
             _cache = _config7[NODE_CACHE$4],
             _cacheTotal3 = _config7[NODE_CACHE_TOTAL$1],
-            _cacheFilter3 = _config7[NODE_CACHE_FILTER$2],
+            __cacheFilter = _config7[NODE_CACHE_FILTER$2],
             __cacheMask = _config7[NODE_CACHE_MASK$1],
             __cacheOverflow = _config7[NODE_CACHE_OVERFLOW$2],
             _refreshLevel5 = _config7[NODE_REFRESH_LV$1],
@@ -30963,7 +30962,7 @@
         // 已取消，因为perspective需要进行独立上下文渲染
 
 
-        var target = getCache([__cacheMask, _cacheFilter3, __cacheOverflow, _cacheTotal3, _cache]); // total和自身cache的尝试
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal3, _cache]); // total和自身cache的尝试
 
         if (target) {
           // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成

@@ -28621,13 +28621,8 @@
           dx = _cacheTotal.dx,
           dy = _cacheTotal.dy,
           dbx = _cacheTotal.dbx,
-          dby = _cacheTotal.dby,
-          sx2 = _cacheTotal.sx1,
-          sy2 = _cacheTotal.sy1,
-          tx = _cacheTotal.x,
-          ty = _cacheTotal.y;
-      var ctxTotal = cacheTotal.ctx; // console.warn(bboxTotal, dx, dy, sx1, sy1, sx2, sy2, dbx, dby, tx, ty);
-
+          dby = _cacheTotal.dby;
+      var ctxTotal = cacheTotal.ctx;
       /**
        * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
        * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -28726,12 +28721,16 @@
             ctxTotal.globalCompositeOperation = 'source-over';
           } else {
             _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
+
+            _config3[NODE_REFRESH_LV$1] |= REPAINT$2;
           }
         } else {
           // 手动计算cacheStyle和根据border-box的坐标再渲染
           _node3.__calCache(renderMode, ctxTotal, _config3[NODE_DOM_PARENT$5], _config3[NODE_CACHE_STYLE$1], _config3[NODE_CURRENT_STYLE$5], _computedStyle2, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$6], _computedStyle2[BORDER_RIGHT_WIDTH$7], _computedStyle2[BORDER_BOTTOM_WIDTH$6], _computedStyle2[BORDER_LEFT_WIDTH$8], _computedStyle2[PADDING_TOP$5], _computedStyle2[PADDING_RIGHT$6], _computedStyle2[PADDING_BOTTOM$5], _computedStyle2[PADDING_LEFT$7], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
 
           _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
+
+          _config3[NODE_REFRESH_LV$1] |= REPAINT$2;
         }
       }
     } // cacheTotal仍在说明<REPAINT，需计算各种新的参数

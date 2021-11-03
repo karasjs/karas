@@ -585,9 +585,8 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     // 生成cacheTotal，获取偏移dx/dy
     __config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
     cacheTotal.__available = true;
-    let { dx, dy, dbx, dby, sx1: sx2, sy1: sy2, x: tx, y: ty } = cacheTotal;
+    let { dx, dy, dbx, dby } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
-    // console.warn(bboxTotal, dx, dy, sx1, sy1, sx2, sy2, dbx, dby, tx, ty);
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -682,6 +681,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         }
         else {
           node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
+          __config[NODE_REFRESH_LV] |= REPAINT;
         }
       }
       else {
@@ -696,6 +696,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
           node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
           node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
         node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
+        __config[NODE_REFRESH_LV] |= REPAINT;
       }
     }
   }

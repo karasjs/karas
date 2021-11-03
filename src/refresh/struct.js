@@ -587,7 +587,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
-    console.warn(bboxTotal, dx, dy, dbx, dby)
+    // console.warn(bboxTotal, dx, dy, dbx, dby)
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -2864,6 +2864,29 @@ function renderCanvas2(renderMode, ctx, root) {
           [OPACITY]: opacity,
         },
       } = __config;
+      // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
+      // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
+      // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
+      if(maskStartHash.hasOwnProperty(i)) {
+        let [idx, n, offscreenMask] = maskStartHash[i];
+        let target = inject.getCacheCanvas(width, height, null, 'mask2');
+        offscreenMask.mask = target; // 应用mask用到
+        offscreenMask.isClip = node.isClip;
+        // 定位到最后一个mask元素上的末尾
+        let j = i + (total || 0) + 1;
+        while(--n) {
+          let { [STRUCT_TOTAL]: total } = __structs[j];
+          j += (total || 0) + 1;
+        }
+        j--;
+        let list = offscreenHash[j] = offscreenHash[j] || [];
+        list.push([idx, lv, OFFSCREEN_MASK, offscreenMask]);
+        list.push([j, lv, OFFSCREEN_MASK2, {
+          ctx, // 保存等待OFFSCREEN_MASK2时还原
+          target,
+        }]);
+        ctx = target.ctx;
+      }
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
       if(target) {
@@ -2897,29 +2920,6 @@ function renderCanvas2(renderMode, ctx, root) {
       }
       // 没有cacheTotal是普通节点绘制
       else {
-        // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
-        // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
-        // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
-        if(maskStartHash.hasOwnProperty(i)) {
-          let [idx, n, offscreenMask] = maskStartHash[i];
-          let target = inject.getCacheCanvas(width, height, null, 'mask2');
-          offscreenMask.mask = target; // 应用mask用到
-          offscreenMask.isClip = node.isClip;
-          // 定位到最后一个mask元素上的末尾
-          let j = i + (total || 0) + 1;
-          while(--n) {
-            let { [STRUCT_TOTAL]: total } = __structs[j];
-            j += (total || 0) + 1;
-          }
-          j--;
-          let list = offscreenHash[j] = offscreenHash[j] || [];
-          list.push([idx, lv, OFFSCREEN_MASK, offscreenMask]);
-          list.push([j, lv, OFFSCREEN_MASK2, {
-            ctx, // 保存等待OFFSCREEN_MASK2时还原
-            target,
-          }]);
-          ctx = target.ctx;
-        }
         let res = node.render(renderMode, refreshLevel, ctx);
         let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
         // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反

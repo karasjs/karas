@@ -28622,8 +28622,8 @@
           dy = _cacheTotal.dy,
           dbx = _cacheTotal.dbx,
           dby = _cacheTotal.dby;
-      var ctxTotal = cacheTotal.ctx;
-      console.warn(bboxTotal, dx, dy, dbx, dby);
+      var ctxTotal = cacheTotal.ctx; // console.warn(bboxTotal, dx, dy, dbx, dby)
+
       /**
        * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
        * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -31257,7 +31257,40 @@
             _config8$NODE_COMPUTE = _config8[NODE_COMPUTED_STYLE$4],
             display = _config8$NODE_COMPUTE[DISPLAY$9],
             mixBlendMode = _config8$NODE_COMPUTE[MIX_BLEND_MODE$3],
-            opacity = _config8$NODE_COMPUTE[OPACITY$5]; // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
+            opacity = _config8$NODE_COMPUTE[OPACITY$5]; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
+        // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
+        // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
+
+        if (maskStartHash.hasOwnProperty(_i9)) {
+          var _maskStartHash$_i2 = _slicedToArray(maskStartHash[_i9], 3),
+              idx = _maskStartHash$_i2[0],
+              n = _maskStartHash$_i2[1],
+              offscreenMask = _maskStartHash$_i2[2];
+
+          var _target8 = inject.getCacheCanvas(width, height, null, 'mask2');
+
+          offscreenMask.mask = _target8; // 应用mask用到
+
+          offscreenMask.isClip = _node9.isClip; // 定位到最后一个mask元素上的末尾
+
+          var j = _i9 + (_total12 || 0) + 1;
+
+          while (--n) {
+            var _total13 = __structs[j][STRUCT_TOTAL$1];
+            j += (_total13 || 0) + 1;
+          }
+
+          j--;
+          var list = offscreenHash[j] = offscreenHash[j] || [];
+          list.push([idx, _lv4, OFFSCREEN_MASK, offscreenMask]);
+          list.push([j, _lv4, OFFSCREEN_MASK2, {
+            ctx: ctx,
+            // 保存等待OFFSCREEN_MASK2时还原
+            target: _target8
+          }]);
+          ctx = _target8.ctx;
+        } // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
+
 
         var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
 
@@ -31295,44 +31328,11 @@
 
         } // 没有cacheTotal是普通节点绘制
         else {
-            // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
-            // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
-            // 这样当mask本身有filter时优先自身，然后才是OFFSCREEN_MASK2
-            if (maskStartHash.hasOwnProperty(_i9)) {
-              var _maskStartHash$_i2 = _slicedToArray(maskStartHash[_i9], 3),
-                  idx = _maskStartHash$_i2[0],
-                  n = _maskStartHash$_i2[1],
-                  _offscreenMask3 = _maskStartHash$_i2[2];
-
-              var _target8 = inject.getCacheCanvas(width, height, null, 'mask2');
-
-              _offscreenMask3.mask = _target8; // 应用mask用到
-
-              _offscreenMask3.isClip = _node9.isClip; // 定位到最后一个mask元素上的末尾
-
-              var j = _i9 + (_total12 || 0) + 1;
-
-              while (--n) {
-                var _total13 = __structs[j][STRUCT_TOTAL$1];
-                j += (_total13 || 0) + 1;
-              }
-
-              j--;
-              var list = offscreenHash[j] = offscreenHash[j] || [];
-              list.push([idx, _lv4, OFFSCREEN_MASK, _offscreenMask3]);
-              list.push([j, _lv4, OFFSCREEN_MASK2, {
-                ctx: ctx,
-                // 保存等待OFFSCREEN_MASK2时还原
-                target: _target8
-              }]);
-              ctx = _target8.ctx;
-            }
-
             var res = _node9.render(renderMode, _refreshLevel6, ctx);
 
             var _ref2 = res || {},
                 offscreenBlend = _ref2.offscreenBlend,
-                offscreenMask = _ref2.offscreenMask,
+                _offscreenMask3 = _ref2.offscreenMask,
                 offscreenFilter = _ref2.offscreenFilter,
                 offscreenOverflow = _ref2.offscreenOverflow; // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
 
@@ -31349,11 +31349,11 @@
             // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
 
 
-            if (offscreenMask) {
+            if (_offscreenMask3) {
               var _j12 = _i9 + (_total12 || 0);
 
-              maskStartHash[_j12 + 1] = [_i9, _hasMask6, offscreenMask];
-              ctx = offscreenMask.target.ctx;
+              maskStartHash[_j12 + 1] = [_i9, _hasMask6, _offscreenMask3];
+              ctx = _offscreenMask3.target.ctx;
             } // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
 

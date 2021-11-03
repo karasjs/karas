@@ -1865,7 +1865,10 @@ class Xom extends Node {
       res.offscreenOverflow = offscreenOverflow;
       res.ctx = ctx;
       ctx.globalAlpha = opacity;
-      ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+      // cache模式在外面设置
+      if(!cache) {
+        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+      }
     }
     // 隐藏不渲染
     if((visibility === 'hidden' || res.break) && (renderMode === CANVAS || renderMode === WEBGL)) {

@@ -13,10 +13,10 @@ function multiply(a, b) {
   }
   let c = [];
   for(let i = 0; i < 4; i++) {
-    let a0 = a[i];
-    let a1 = a[i + 4];
-    let a2 = a[i + 8];
-    let a3 = a[i + 12];
+    let a0 = a[i] || 0;
+    let a1 = a[i + 4] || 0;
+    let a2 = a[i + 8] || 0;
+    let a3 = a[i + 12] || 0;
     c[i] = a0 * b[0] + a1 * b[1] + a2 * b[2] + a3 * b[3];
     c[i + 4] = a0 * b[4] + a1 * b[5] + a2 * b[6] + a3 * b[7];
     c[i + 8] = a0 * b[8] + a1 * b[9] + a2 * b[10] + a3 * b[11];
@@ -73,7 +73,7 @@ function inverse(m) {
 
 // 16位或者6位单位矩阵判断，空也认为是
 function isE(m) {
-  if(!m) {
+  if(!m || !m.length) {
     return true;
   }
   if(m.length === 16) {

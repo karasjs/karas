@@ -5,6 +5,7 @@ let o = karas.render(
         {
           "tagName": "div",
           "props": {
+            cacheAsBitmap: 1,
             "style": {
               "position": "absolute",
               "top": "5%",

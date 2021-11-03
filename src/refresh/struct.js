@@ -100,6 +100,7 @@ const {
 } = level;
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
+const { assignMatrix, transformBbox } = util;
 
 // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 const OFFSCREEN_OVERFLOW = 0;
@@ -261,7 +262,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           if(pm) {
             matrix = multiply(pm, matrix);
           }
-          bbox = util.transformBbox(bbox, matrix, d, d);
+          bbox = transformBbox(bbox, matrix, d, d);
           // 有孩子才继续存入下层级广度运算
           if(total && !hasTotal) {
             list.push(i);
@@ -476,6 +477,14 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         continue;
       }
       let __config = node.__config;
+      let {
+        [NODE_REFRESH_LV]: refreshLevel,
+        [NODE_CACHE_TOTAL]: __cacheTotal,
+        [NODE_CACHE_FILTER]: __cacheFilter,
+        [NODE_CACHE_MASK]: __cacheMask,
+        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+        [NODE_COMPUTED_STYLE]: computedStyle,
+      } = __config;
       // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
       if(i === index) {}
       else if(lv > lastLv) {
@@ -495,17 +504,9 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         opacityList.splice(-diff);
         parentOpacity = opacityList[lv - 1];
       }
-      // 不变是同级兄弟，无需特殊处理
+      // 不变是同级兄弟，无需特殊处理 else {}
       lastConfig = __config;
       lastLv = lv;
-      let {
-        [NODE_REFRESH_LV]: refreshLevel,
-        [NODE_CACHE_TOTAL]: __cacheTotal,
-        [NODE_CACHE_FILTER]: __cacheFilter,
-        [NODE_CACHE_MASK]: __cacheMask,
-        [NODE_CACHE_OVERFLOW]: __cacheOverflow,
-        [NODE_COMPUTED_STYLE]: computedStyle,
-      } = __config;
       // 跳过display:none元素和它的所有子节点
       if(computedStyle[DISPLAY] === 'none') {
         i += (total || 0);
@@ -525,7 +526,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
       if(refreshLevel < REPAINT) {
         if(contain(refreshLevel, TRANSFORM_ALL)) {
           matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
-          util.assignMatrix(__config[NODE_MATRIX], matrix);
+          assignMatrix(__config[NODE_MATRIX], matrix);
         }
         else {
           matrix = __config[NODE_MATRIX];
@@ -552,14 +553,15 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
           node.__calFilter(currentStyle, computedStyle);
         }
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
-        util.assignMatrix(__config[NODE_MATRIX], matrix);
+        assignMatrix(__config[NODE_MATRIX], matrix);
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
       }
       // 计算临时matrixEvent和opacity，以局部根节点为基准（E和1），父不为E时要点乘继承父的
       if(parentMatrix) {
         matrix = multiply(parentMatrix, matrix);
       }
-      util.assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
+      // opacity可临时赋值下面循环渲染用，matrixEvent可能需重新计算，因为局部根节点为E没考虑继承，这里仅计算bbox用
+      assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
       __config[NODE_OPACITY] = parentOpacity * opacity;
       let bbox;
       // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
@@ -572,29 +574,36 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         bbox = node.bbox;
       }
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
-      bbox = util.transformBbox(bbox, matrix, 0, 0);
+      bbox = transformBbox(bbox, matrix, 0, 0);
       if(i === index) {
-        bboxTotal = bbox;
+        bboxTotal = bbox.slice(0);
       }
       else {
-        mergeBbox(bboxTotal, bbox, sx1, sy1);
+        mergeBbox(bboxTotal, bbox, 0, 0);
       }
     }
-    // 生成cacheTotal，获取偏移xy
+    // 生成cacheTotal，获取偏移dx/dy
     __config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
     cacheTotal.__available = true;
-    let dx = cacheTotal.dx, dy = cacheTotal.dy;
+    let { dx, dy, dbx, dby, sx1: sx2, sy1: sy2, x: tx, y: ty } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
+    // console.warn(bboxTotal, dx, dy, sx1, sy1, sx2, sy2, dbx, dby, tx, ty);
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
-     * 每个子节点的matrix/opacity有父继承计算在上面循环已经做好了，直接获取
+     * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
+     * 但matrixEvent可能需要重算，因为原点不一定是根节点的原点，影响tfo
      * 另外每个节点的refreshLevel需要设置|=REPAINT
      * 这样cacheTotal取消时子节点需确保重新计算一次matrix/opacity/filter，保证下次和父元素继承正确
      */
+    parentMatrix = null;
+    lastConfig = null;
+    lastLv = lv;
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
+        [STRUCT_LV]: lv,
         [STRUCT_TOTAL]: total,
+        [STRUCT_HAS_MASK]: hasMask,
       } = __structs[i];
       // 排除Text
       if(node instanceof Text) {
@@ -610,11 +619,50 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         [NODE_CACHE_OVERFLOW]: __cacheOverflow,
         [NODE_COMPUTED_STYLE]: computedStyle,
       } = __config;
+      // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+      if(i === index) {}
+      else if(lv > lastLv) {
+        parentMatrix = lastConfig[NODE_MATRIX_EVENT];
+        if(isE(parentMatrix)) {
+          parentMatrix = null;
+        }
+        matrixList.push(parentMatrix);
+      }
+      // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+      else if(lv < lastLv) {
+        let diff = lastLv - lv;
+        matrixList.splice(-diff);
+        parentMatrix = matrixList[lv - 1];
+      }
+      // 不变是同级兄弟，无需特殊处理 else {}
+      lastConfig = __config;
+      lastLv = lv;
       // 跳过display:none元素和它的所有子节点
       if(computedStyle[DISPLAY] === 'none') {
         i += (total || 0);
         // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
         continue;
+      }
+      let {
+        [TRANSFORM]: transform,
+        [TRANSFORM_ORIGIN]: tfo,
+      } = computedStyle;
+      // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
+      if(i === index) {
+        ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      else if(!isE(parentMatrix) || !isE(transform)) {
+        tfo = tfo.slice(0);
+        tfo[0] += dbx + node.__sx1 - sx1;
+        tfo[1] += dby + node.__sy1 - sy1;
+        let m = tf.calMatrixByOrigin(transform, tfo);
+        if(!isE(parentMatrix)) {
+          m = multiply(parentMatrix, m);
+        }
+        ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+      }
+      else {
+        ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
       }
       // 子元素有cacheTotal优先使用，此时一定是<REPAINT的，也一定是子元素，局部根节点不会进
       if(refreshLevel < REPAINT) {
@@ -629,8 +677,6 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
             ctxTotal.globalCompositeOperation = 'source-over';
           }
           ctxTotal.globalAlpha = __config[NODE_OPACITY];
-          let m = __config[NODE_MATRIX_EVENT];
-          ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           Cache.drawCache(target, cacheTotal);
           ctxTotal.globalCompositeOperation = 'source-over';
         }
@@ -661,7 +707,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     } = __config;
     if(contain(refreshLevel, TRANSFORM_ALL)) {
       let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
-      util.assignMatrix(__config[NODE_MATRIX], matrix);
+      assignMatrix(__config[NODE_MATRIX], matrix);
     }
     if(contain(refreshLevel, OP)) {
       __config[NODE_OPACITY] = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1545,7 +1591,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        util.assignMatrix(m, matrix);
+        assignMatrix(m, matrix);
       }
       else {
         matrix = __config[NODE_MATRIX];
@@ -1555,7 +1601,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
         matrix = multiply(parentMatrix, matrix);
       }
       // 恶心的v8性能优化
-      util.assignMatrix(matrixEvent, matrix);
+      assignMatrix(matrixEvent, matrix);
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -2091,7 +2137,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        util.assignMatrix(m, matrix);
+        assignMatrix(m, matrix);
         if(!matrix || isE(matrix)) {
           delete virtualDom.transform;
         }
@@ -2103,7 +2149,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         }
         // 恶心的v8性能优化
         m = __config[NODE_MATRIX_EVENT];
-        util.assignMatrix(m, matrix);
+        assignMatrix(m, matrix);
       }
       if(contain(refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -2363,7 +2409,7 @@ function renderWebgl(renderMode, gl, root) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        util.assignMatrix(m, matrix);
+        assignMatrix(m, matrix);
       }
       else {
         matrix = __config[NODE_MATRIX];
@@ -2385,7 +2431,7 @@ function renderWebgl(renderMode, gl, root) {
         matrix = multiply(parentMatrix, matrix);
       }
       // 恶心的v8性能优化
-      util.assignMatrix(matrixEvent, matrix);
+      assignMatrix(matrixEvent, matrix);
       let opacity;
       if(contain(refreshLevel, OP)) {
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];

@@ -7016,7 +7016,13 @@
   }
 
   function getLinear(v, d, ox, oy, cx, cy, w, h, root) {
-    // d为数组是2个坐标点，数字是css标准角度
+    var dx = arguments.length > 9 && arguments[9] !== undefined ? arguments[9] : 0;
+    var dy = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : 0;
+    ox += dx;
+    oy += dy;
+    cx += dx;
+    cy += dy; // d为数组是2个坐标点，数字是css标准角度
+
     var x1, y1, x2, y2, stop;
 
     if (Array.isArray(d)) {
@@ -7053,12 +7059,15 @@
       var _total = max - min;
 
       var r1 = min / len;
-      var dx = coords[2] - coords[0];
-      var dy = coords[3] - coords[1];
-      x1 = coords[0] + dx * r1;
-      y1 = coords[1] + dy * r1;
-      x2 = coords[2] - dx * r1;
-      y2 = coords[3] - dy * r1;
+
+      var _dx = coords[2] - coords[0];
+
+      var _dy = coords[3] - coords[1];
+
+      x1 = coords[0] + _dx * r1;
+      y1 = coords[1] + _dy * r1;
+      x2 = coords[2] - _dx * r1;
+      y2 = coords[3] - _dy * r1;
       stop = getColorStop(v, _total, root);
     }
 
@@ -13220,9 +13229,15 @@
   }
 
   function renderImage(xom, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
+    var dx = arguments.length > 18 && arguments[18] !== undefined ? arguments[18] : 0;
+    var dy = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : 0;
     var source = loadBgi.source; // 无source不绘制，可能错误或加载中
 
     if (source) {
+      bx1 += dx;
+      by1 += dy;
+      bx2 += dx;
+      by2 += dy;
       var bgW = bx2 - bx1;
       var bgH = by2 - by1;
       var width = loadBgi.width,
@@ -16626,6 +16641,13 @@
       svgPolygon$4 = painter.svgPolygon;
 
   function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
+    var dx = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : 0;
+    var dy = arguments.length > 11 && arguments[11] !== undefined ? arguments[11] : 0;
+    x1 += dx;
+    y1 += dy;
+    x2 += dx;
+    y2 += dy;
+
     var _data = _slicedToArray(data, 6),
         x = _data[0],
         y = _data[1],
@@ -19467,16 +19489,16 @@
               var loadBgi = _this6.__loadBgi[i];
 
               if (loadBgi.url === backgroundImage[i]) {
-                bg.renderImage(_this6, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config);
+                bg.renderImage(_this6, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
               }
             } else if (bgi.k) {
-              var gd = _this6.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
+              var gd = _this6.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
 
               if (gd) {
                 if (gd.k === 'conic') {
                   gradient$1.renderConic(_this6, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
                 } else {
-                  bg.renderBgc(_this6, renderMode, ctx, gd.v, borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                  bg.renderBgc(_this6, renderMode, ctx, gd.v, borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
                 }
               }
             }
@@ -19486,25 +19508,25 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            bs.renderBoxShadow(_this6, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1);
+            bs.renderBoxShadow(_this6, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1, dx, dy);
           });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
         if (borderTopWidth > 0 && borderTopColor[3] > 0) {
-          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR]);
+          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR], dx, dy);
         }
 
         if (borderRightWidth > 0 && borderRightColor[3] > 0) {
-          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR]);
+          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
         }
 
         if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR]);
+          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
         }
 
         if (borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR]);
+          border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
         }
 
         return res;
@@ -19619,6 +19641,8 @@
     }, {
       key: "__gradient",
       value: function __gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi) {
+        var dx = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
+        var dy = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : 0;
         var iw = bx2 - bx1;
         var ih = by2 - by1; // 无尺寸无需创建渐变
 
@@ -19639,10 +19663,10 @@
         };
 
         if (k === 'linear') {
-          var gd = gradient$1.getLinear(v, d, bx1, by1, cx, cy, iw, ih, this.root);
+          var gd = gradient$1.getLinear(v, d, bx1, by1, cx, cy, iw, ih, this.root, dx, dy);
           res.v = this.__getLg(renderMode, ctx, gd);
         } else if (k === 'radial') {
-          var _gd = gradient$1.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root);
+          var _gd = gradient$1.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root, dx, dy);
 
           if (_gd) {
             res.v = this.__getRg(renderMode, ctx, _gd);
@@ -19656,7 +19680,7 @@
           var m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
           var m2 = Math.max(Math.abs(iw), Math.abs(ih));
 
-          var _gd2 = gradient$1.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2, this.root);
+          var _gd2 = gradient$1.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2, this.root, dx, dy);
 
           res.v = this.__getCg(renderMode, ctx, _gd2);
         }

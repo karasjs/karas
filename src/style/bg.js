@@ -172,10 +172,15 @@ function calBackgroundPosition(position, container, size, root) {
 
 function renderImage(xom, renderMode, ctx, loadBgi,
                      bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-                     currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
+                     currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline,
+                     dx = 0, dy = 0) {
   let source = loadBgi.source;
   // 无source不绘制，可能错误或加载中
   if(source) {
+    bx1 += dx;
+    by1 += dy;
+    bx2 += dx;
+    by2 += dy;
     let bgW = bx2 - bx1;
     let bgH = by2 - by1;
     let { width, height } = loadBgi;

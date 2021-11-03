@@ -13,7 +13,11 @@ const {
 const { int2rgba } = util;
 const { canvasPolygon, svgPolygon } = painter;
 
-function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
+function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 0, dy = 0) {
+  x1 += dx;
+  y1 += dy;
+  x2 += dx;
+  y2 += dy;
   let [x, y, sigma, spread, color, inset] = data;
   let c = int2rgba(color);
   let n = Math.abs(sigma) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2;

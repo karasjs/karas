@@ -2174,11 +2174,11 @@ class Xom extends Node {
           if(loadBgi.url === backgroundImage[i]) {
             bg.renderImage(this, renderMode, ctx, loadBgi,
               bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-              currentStyle, i, backgroundSize, backgroundRepeat, __config);
+              currentStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
           }
         }
         else if(bgi.k) {
-          let gd = this.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi);
+          let gd = this.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
           if(gd) {
             if(gd.k === 'conic') {
               gradient.renderConic(this, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1,
@@ -2186,7 +2186,7 @@ class Xom extends Node {
             }
             else {
               bg.renderBgc(this, renderMode, ctx, gd.v, borderList,
-                bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
             }
           }
         }
@@ -2195,21 +2195,21 @@ class Xom extends Node {
     // boxShadow可能会有多个
     if(boxShadow) {
       boxShadow.forEach(item => {
-        bs.renderBoxShadow(this, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1);
+        bs.renderBoxShadow(this, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1, dx, dy);
       });
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR]);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_TOP], __cacheStyle[BORDER_TOP_COLOR], dx, dy);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR]);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_RIGHT], __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR]);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_BOTTOM], __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR]);
+      border.renderBorder(this, renderMode, ctx, __cacheStyle[BORDER_LEFT], __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
     }
     return res;
   }
@@ -2299,7 +2299,7 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi) {
+  __gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx = 0, dy = 0) {
     let iw = bx2 - bx1;
     let ih = by2 - by1;
     // 无尺寸无需创建渐变
@@ -2311,11 +2311,11 @@ class Xom extends Node {
     let cy = by1 + ih * 0.5;
     let res = { k };
     if(k === 'linear') {
-      let gd = gradient.getLinear(v, d, bx1, by1, cx, cy, iw, ih, this.root);
+      let gd = gradient.getLinear(v, d, bx1, by1, cx, cy, iw, ih, this.root, dx, dy);
       res.v = this.__getLg(renderMode, ctx, gd);
     }
     else if(k === 'radial') {
-      let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root);
+      let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root, dx, dy);
       if(gd) {
         res.v = this.__getRg(renderMode, ctx, gd);
         if(gd.matrix) {
@@ -2327,7 +2327,7 @@ class Xom extends Node {
       let bbox = this.bbox;
       let m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
       let m2 = Math.max(Math.abs(iw), Math.abs(ih));
-      let gd = gradient.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2, this.root);
+      let gd = gradient.getConic(v, d, p, bx1, by1, bx2, by2, m1 / m2, this.root, dx, dy);
       res.v = this.__getCg(renderMode, ctx, gd);
     }
     return res;

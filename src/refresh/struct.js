@@ -587,6 +587,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
+    console.warn(bboxTotal, dx, dy, dbx, dby)
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取

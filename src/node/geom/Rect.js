@@ -104,8 +104,8 @@ class Rect extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, cache) {
-    let res = super.render(renderMode, lv, ctx, cache);
+  render(renderMode, lv, ctx, cache, dx, dy) {
+    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
     if(res.break) {
       return res;
     }

@@ -19153,6 +19153,11 @@
 
         if (__cache && __cache.enabled) {
           __cache.__available = true;
+        } // webgl由于cache模式不同，无视偏移
+
+
+        if (renderMode === WEBGL$1) {
+          dx = dy = 0;
         }
         /**
          * inline的渲染同block/ib不一样，不是一个矩形区域

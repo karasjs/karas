@@ -1878,6 +1878,10 @@ class Xom extends Node {
     if(__cache && __cache.enabled) {
       __cache.__available = true;
     }
+    // webgl由于cache模式不同，无视偏移
+    if(renderMode === WEBGL) {
+      dx = dy = 0;
+    }
     /**
      * inline的渲染同block/ib不一样，不是一个矩形区域
      * 它根据内部的contentBox渲染，contentBox是指lineBox中的内容，即TextBox/inline/ib元素

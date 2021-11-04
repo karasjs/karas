@@ -1608,22 +1608,22 @@ class Xom extends Node {
           dx += __cache.dx;
           dy += __cache.dy;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
-          if(dx) {
-            res.x1 = x1 += dx;
-            res.x2 = x2 += dx;
-            res.x3 = x3 += dx;
-            res.x4 = x4 += dx;
-            res.x5 = x5 += dx;
-            res.x6 = x6 += dx;
-          }
-          if(dy) {
-            res.y1 = y1 += dy;
-            res.y2 = y2 += dy;
-            res.y3 = y3 += dy;
-            res.y4 = y4 += dy;
-            res.y5 = y5 += dy;
-            res.y6 = y6 += dy;
-          }
+          // if(dx) {
+          //   res.x1 = x1 += dx;
+          //   res.x2 = x2 += dx;
+          //   res.x3 = x3 += dx;
+          //   res.x4 = x4 += dx;
+          //   res.x5 = x5 += dx;
+          //   res.x6 = x6 += dx;
+          // }
+          // if(dy) {
+          //   res.y1 = y1 += dy;
+          //   res.y2 = y2 += dy;
+          //   res.y3 = y3 += dy;
+          //   res.y4 = y4 += dy;
+          //   res.y5 = y5 += dy;
+          //   res.y6 = y6 += dy;
+          // }
           res.ctx = ctx;
         }
         else {
@@ -1878,10 +1878,6 @@ class Xom extends Node {
     if(__cache && __cache.enabled) {
       __cache.__available = true;
     }
-    // webgl由于cache模式不同，无视偏移
-    if(renderMode === WEBGL) {
-      dx = dy = 0;
-    }
     /**
      * inline的渲染同block/ib不一样，不是一个矩形区域
      * 它根据内部的contentBox渲染，contentBox是指lineBox中的内容，即TextBox/inline/ib元素
@@ -1929,14 +1925,14 @@ class Xom extends Node {
               if(loadBgi.url === backgroundImage[i]) {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx || ctx, loadBgi,
                   0, 0, iw, ih, btlr, btrr, bbrr, bblr,
-                  currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
+                  currentStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
                 if(renderMode === SVG && uuid) {
                   svgBgSymbol.push(uuid);
                 }
               }
             }
             else if(bgi.k) {
-              let gd = this.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi);
+              let gd = this.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
               if(gd) {
                 if(gd.k === 'conic') {
                   let uuid = gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
@@ -1982,7 +1978,7 @@ class Xom extends Node {
             }
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
-                ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
             }
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
@@ -2023,7 +2019,7 @@ class Xom extends Node {
             countW += w;
             if(boxShadow) {
               boxShadow.forEach(item => {
-                bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
               });
             }
             if(borderTopWidth > 0 && borderTopColor[3] > 0) {
@@ -2073,7 +2069,7 @@ class Xom extends Node {
             bx2 += n;
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
-                ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+                ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', dx, dy);
             }
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
@@ -2113,7 +2109,7 @@ class Xom extends Node {
             }
             if(boxShadow) {
               boxShadow.forEach(item => {
-                bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
               });
             }
             if(borderTopWidth > 0 && borderTopColor[3] > 0) {

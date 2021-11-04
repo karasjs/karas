@@ -18861,24 +18861,22 @@
                 ctx = __cache.ctx;
                 dx += __cache.dx;
                 dy += __cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
-
-                if (dx) {
-                  res.x1 = x1 += dx;
-                  res.x2 = x2 += dx;
-                  res.x3 = x3 += dx;
-                  res.x4 = x4 += dx;
-                  res.x5 = x5 += dx;
-                  res.x6 = x6 += dx;
-                }
-
-                if (dy) {
-                  res.y1 = y1 += dy;
-                  res.y2 = y2 += dy;
-                  res.y3 = y3 += dy;
-                  res.y4 = y4 += dy;
-                  res.y5 = y5 += dy;
-                  res.y6 = y6 += dy;
-                }
+                // if(dx) {
+                //   res.x1 = x1 += dx;
+                //   res.x2 = x2 += dx;
+                //   res.x3 = x3 += dx;
+                //   res.x4 = x4 += dx;
+                //   res.x5 = x5 += dx;
+                //   res.x6 = x6 += dx;
+                // }
+                // if(dy) {
+                //   res.y1 = y1 += dy;
+                //   res.y2 = y2 += dy;
+                //   res.y3 = y3 += dy;
+                //   res.y4 = y4 += dy;
+                //   res.y5 = y5 += dy;
+                //   res.y6 = y6 += dy;
+                // }
 
                 res.ctx = ctx;
               } else {
@@ -19153,11 +19151,6 @@
 
         if (__cache && __cache.enabled) {
           __cache.__available = true;
-        } // webgl由于cache模式不同，无视偏移
-
-
-        if (renderMode === WEBGL$1) {
-          dx = dy = 0;
         }
         /**
          * inline的渲染同block/ib不一样，不是一个矩形区域
@@ -19215,14 +19208,14 @@
                     var loadBgi = _this6.__loadBgi[i];
 
                     if (loadBgi.url === backgroundImage[i]) {
-                      var uuid = bg.renderImage(_this6, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true);
+                      var uuid = bg.renderImage(_this6, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
 
                       if (renderMode === SVG && uuid) {
                         svgBgSymbol.push(uuid);
                       }
                     }
                   } else if (bgi.k) {
-                    var gd = _this6.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi);
+                    var gd = _this6.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
 
                     if (gd) {
                       if (gd.k === 'conic') {
@@ -19280,7 +19273,7 @@
                     }
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr);
+                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -19316,7 +19309,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this6, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                        bs.renderBoxShadow(_this6, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
                       });
                     }
 
@@ -19381,7 +19374,7 @@
                     bx2 += n;
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0]);
+                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', dx, dy);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -19415,7 +19408,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this6, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1);
+                        bs.renderBoxShadow(_this6, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
                       });
                     }
 
@@ -28621,6 +28614,11 @@
 
 
         assignMatrix$1(_config2[NODE_MATRIX_EVENT$4], matrix);
+
+        if (i === index) {
+          opacity = 1;
+        }
+
         _config2[NODE_OPACITY$3] = parentOpacity * opacity;
         var bbox = void 0; // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
 
@@ -28923,7 +28921,7 @@
     } // limitCache无cache需先绘制到统一的离屏画布上
     else if (limitCache) {
         var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(mode.WEBGL, 0, gl);
+        node.render(mode.WEBGL, 0, gl, false, 0, 0);
         var j = texCache.lockOneChannel();
 
         var _texture = webgl.createTexture(gl, c.canvas, j);
@@ -29871,7 +29869,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-          node.render(renderMode, refreshLevel, ctx, true);
+          node.render(renderMode, refreshLevel, ctx, true, 0, 0);
         } // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
 
@@ -29980,7 +29978,7 @@
         ctx.globalAlpha = _opacity;
         ctx.setTransform(_matrixEvent[0], _matrixEvent[1], _matrixEvent[4], _matrixEvent[5], _matrixEvent[12], _matrixEvent[13]);
 
-        _node5.render(renderMode, 0, ctx);
+        _node5.render(renderMode, 0, ctx, false, 0, 0);
 
         if (offscreenHash.hasOwnProperty(_i5)) {
           ctx = applyOffscreen(ctx, offscreenHash[_i5], width, height);
@@ -30118,7 +30116,7 @@
                 }
               } else {
                 // 连cache都没生成的超限
-                var res = _node5.render(renderMode, _refreshLevel3, ctx) || {};
+                var res = _node5.render(renderMode, _refreshLevel3, ctx, false, 0, 0) || {};
                 offscreenBlend = res.offscreenBlend;
                 offscreenMask = res.offscreenMask;
                 offscreenFilter = res.offscreenFilter;
@@ -30167,7 +30165,7 @@
               }
 
               if (_limitCache && _node5 instanceof Geom$1) {
-                _node5.render(renderMode, _refreshLevel3, ctx);
+                _node5.render(renderMode, _refreshLevel3, ctx, false, 0, 0);
               }
             } // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
             else if (_hasMask3) {
@@ -30251,7 +30249,7 @@
         ctx = target.ctx;
       }
 
-      var res = node.render(renderMode, refreshLevel, ctx);
+      var res = node.render(renderMode, refreshLevel, ctx, false, 0, 0);
 
       var _ref = res || {},
           offscreenBlend = _ref.offscreenBlend,
@@ -30506,7 +30504,7 @@
         // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
         __config[NODE_DEFS_CACHE$6] && __config[NODE_DEFS_CACHE$6].splice(0);
 
-        _node6.render(renderMode, _refreshLevel4, ctx);
+        _node6.render(renderMode, _refreshLevel4, ctx, false, 0, 0);
 
         virtualDom = __config[NODE_VIRTUAL_DOM$2]; // 渲染后更新取值
 
@@ -30690,7 +30688,7 @@
 
       if (node instanceof Text) {
         if (lastRefreshLevel >= REPAINT$2) {
-          node.render(renderMode, 0, gl, true);
+          node.render(renderMode, 0, gl, true, 0, 0);
         }
 
         continue;
@@ -30841,7 +30839,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-          var res = node.render(renderMode, refreshLevel, gl, true); // geom可返回texture纹理，替代原有xom的__cache纹理
+          var res = node.render(renderMode, refreshLevel, gl, true, 0, 0); // geom可返回texture纹理，替代原有xom的__cache纹理
 
           if (res && inject.isWebGLTexture(res.texture)) {
             var sx1 = node.__sx1,
@@ -31009,7 +31007,7 @@
         else if (_limitCache2) {
             var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
-            _node8.render(renderMode, 0, gl);
+            _node8.render(renderMode, 0, gl, false, 0, 0);
 
             var j = texCache.lockOneChannel();
 
@@ -31115,7 +31113,7 @@
             // let m = mx.m2Mat4(matrixEvent, cx, cy);
             var _c5 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
-            _node8.render(renderMode, _refreshLevel5, gl);
+            _node8.render(renderMode, _refreshLevel5, gl, false, 0, 0);
 
             var _j10 = texCache.lockOneChannel();
 
@@ -31271,7 +31269,7 @@
           _hasMask6 = _structs$_i6[STRUCT_HAS_MASK$1]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (_node9 instanceof Text) {
-        _node9.render(renderMode, REPAINT$2, ctx);
+        _node9.render(renderMode, REPAINT$2, ctx, false, 0, 0);
 
         if (offscreenHash.hasOwnProperty(_i9)) {
           ctx = applyOffscreen(ctx, offscreenHash[_i9], width, height);
@@ -31357,7 +31355,7 @@
 
         } // 没有cacheTotal是普通节点绘制
         else {
-            var res = _node9.render(renderMode, _refreshLevel6, ctx);
+            var res = _node9.render(renderMode, _refreshLevel6, ctx, false, 0, 0);
 
             var _ref2 = res || {},
                 offscreenBlend = _ref2.offscreenBlend,

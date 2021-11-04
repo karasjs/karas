@@ -562,6 +562,9 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
       }
       // opacity可临时赋值下面循环渲染用，matrixEvent可能需重新计算，因为局部根节点为E没考虑继承，这里仅计算bbox用
       assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
+      if(i === index) {
+        opacity = 1;
+      }
       __config[NODE_OPACITY] = parentOpacity * opacity;
       let bbox;
       // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
@@ -834,7 +837,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   // limitCache无cache需先绘制到统一的离屏画布上
   else if(limitCache) {
     let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-    node.render(mode.WEBGL, 0, gl);
+    node.render(mode.WEBGL, 0, gl, false, 0, 0);
     let j = texCache.lockOneChannel();
     let texture = webgl.createTexture(gl, c.canvas, j);
     let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -1644,7 +1647,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      node.render(renderMode, refreshLevel, ctx, true);
+      node.render(renderMode, refreshLevel, ctx, true, 0, 0);
     }
     // 每个元素检查cacheTotal生成，已有的上面会continue跳过
     let {
@@ -1739,7 +1742,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
       } = __config[NODE_DOM_PARENT].__config;
       ctx.globalAlpha = opacity;
       ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[4], matrixEvent[5], matrixEvent[12], matrixEvent[13]);
-      node.render(renderMode, 0, ctx);
+      node.render(renderMode, 0, ctx, false, 0, 0);
       if(offscreenHash.hasOwnProperty(i)) {
         ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
       }
@@ -1861,7 +1864,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
           }
           else {
             // 连cache都没生成的超限
-            let res = node.render(renderMode, refreshLevel, ctx) || {};
+            let res = node.render(renderMode, refreshLevel, ctx, false, 0, 0) || {};
             offscreenBlend = res.offscreenBlend;
             offscreenMask = res.offscreenMask;
             offscreenFilter = res.offscreenFilter;
@@ -1895,7 +1898,7 @@ function renderCacheCanvas(renderMode, ctx, root) {
             ctx = offscreenOverflow.target.ctx;
           }
           if(limitCache && node instanceof Geom) {
-            node.render(renderMode, refreshLevel, ctx);
+            node.render(renderMode, refreshLevel, ctx, false, 0, 0);
           }
         }
         // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
@@ -1966,7 +1969,7 @@ function renderCanvas(renderMode, ctx, root) {
       }]);
       ctx = target.ctx;
     }
-    let res = node.render(renderMode, refreshLevel, ctx);
+    let res = node.render(renderMode, refreshLevel, ctx, false, 0, 0);
     let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
     // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
     if(offscreenBlend) {
@@ -2186,7 +2189,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     else {
       // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
       __config[NODE_DEFS_CACHE] && __config[NODE_DEFS_CACHE].splice(0);
-      node.render(renderMode, refreshLevel, ctx);
+      node.render(renderMode, refreshLevel, ctx, false, 0, 0);
       virtualDom = __config[NODE_VIRTUAL_DOM];
       // 渲染后更新取值
       display = computedStyle[DISPLAY];
@@ -2334,7 +2337,7 @@ function renderWebgl(renderMode, gl, root) {
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
       if(lastRefreshLevel >= REPAINT) {
-        node.render(renderMode, 0, gl, true);
+        node.render(renderMode, 0, gl, true, 0, 0);
       }
       continue;
     }
@@ -2470,7 +2473,7 @@ function renderWebgl(renderMode, gl, root) {
      * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
      */
     else {
-      let res = node.render(renderMode, refreshLevel, gl, true);
+      let res = node.render(renderMode, refreshLevel, gl, true, 0, 0);
       // geom可返回texture纹理，替代原有xom的__cache纹理
       if(res && inject.isWebGLTexture(res.texture)) {
         let { __sx1: sx1, __sy1: sy1, offsetWidth: w, offsetHeight: h, bbox } = node;
@@ -2609,7 +2612,7 @@ function renderWebgl(renderMode, gl, root) {
       // 超限特殊处理，先生成画布尺寸大小的纹理然后原始位置绘制
       else if(limitCache) {
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(renderMode, 0, gl);
+        node.render(renderMode, 0, gl, false, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2690,7 +2693,7 @@ function renderWebgl(renderMode, gl, root) {
       else if(limitCache && display !== 'none' && visibility !== 'hidden') {
         // let m = mx.m2Mat4(matrixEvent, cx, cy);
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(renderMode, refreshLevel, gl);
+        node.render(renderMode, refreshLevel, gl, false, 0, 0);
         let j = texCache.lockOneChannel();
         let texture = webgl.createTexture(gl, c.canvas, j);
         let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
@@ -2845,7 +2848,7 @@ function renderCanvas2(renderMode, ctx, root) {
     } = __structs[i];
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
-      node.render(renderMode, REPAINT, ctx);
+      node.render(renderMode, REPAINT, ctx, false, 0, 0);
       if(offscreenHash.hasOwnProperty(i)) {
         ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
       }
@@ -2920,7 +2923,7 @@ function renderCanvas2(renderMode, ctx, root) {
       }
       // 没有cacheTotal是普通节点绘制
       else {
-        let res = node.render(renderMode, refreshLevel, ctx);
+        let res = node.render(renderMode, refreshLevel, ctx, false, 0, 0);
         let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
         // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
         if(offscreenBlend) {

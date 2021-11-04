@@ -19268,7 +19268,7 @@
                     }
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', true, dx, dy);
+                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -19369,7 +19369,7 @@
                     bx2 += n;
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', true, dx, dy);
+                      bg.renderBgc(_this6, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -24905,7 +24905,15 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, cache) {
-        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, cache);
+        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+
+        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, cache, dx, dy);
+
+        if (renderMode === mode.WEBGL) {
+          dx = res.dx;
+          dy = res.dy;
+        }
 
         var offscreenBlend = res.offscreenBlend,
             offscreenMask = res.offscreenMask,
@@ -24960,8 +24968,8 @@
         }
 
         var originX, originY;
-        originX = res.x3;
-        originY = res.y3; // 根据配置以及占位图显示error
+        originX = res.x3 + dx;
+        originY = res.y3 + dy; // 根据配置以及占位图显示error
 
         var source = loadImg.source;
 
@@ -25029,7 +25037,7 @@
             if (list) {
               ctx.save();
               ctx.beginPath();
-              canvasPolygon$5(ctx, list);
+              canvasPolygon$5(ctx, list, dx, dy);
               ctx.clip();
               ctx.closePath();
               ctx.drawImage(source, originX, originY, width, height);

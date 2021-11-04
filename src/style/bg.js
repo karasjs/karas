@@ -71,12 +71,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
-    if(renderMode === mode.CANVAS) {
-      canvasPolygon(ctx, list, dx, dy);
-    }
-    else {
-      canvasPolygon(ctx, list);
-    }
+    canvasPolygon(ctx, list, dx, dy);
     ctx[method]();
     ctx.closePath();
     if(matrix) {

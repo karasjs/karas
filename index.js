@@ -13144,12 +13144,7 @@
         ctx.fillStyle = color;
       }
 
-      if (renderMode === mode.CANVAS) {
-        canvasPolygon$3(ctx, list, dx, dy);
-      } else {
-        canvasPolygon$3(ctx, list);
-      }
-
+      canvasPolygon$3(ctx, list, dx, dy);
       ctx[method]();
       ctx.closePath();
 

@@ -442,7 +442,7 @@ function genTotal(renderMode, node, __config, index, total, __structs, cacheTop,
  * @param hasMask
  * @returns {{enabled}|Cache|*}
  */
-function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasMask) {
+function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMask) {
   let {
     [NODE_CACHE_TOTAL]: cacheTotal,
     [NODE_CACHE_FILTER]: cacheFilter,
@@ -450,7 +450,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     [NODE_CACHE_OVERFLOW]: cacheOverflow,
     [NODE_CURRENT_STYLE]: currentStyle,
     [NODE_COMPUTED_STYLE]: computedStyle,
-  } = __config;
+  } = config;
   let needGen, reGenTotal;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!cacheTotal || !cacheTotal.available) {
@@ -586,7 +586,7 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
       }
     }
     // 生成cacheTotal，获取偏移dx/dy
-    __config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
+    config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
@@ -601,6 +601,9 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     parentMatrix = null;
     lastConfig = null;
     lastLv = lv;
+    // 暂存根节点的matrix，并设置为E，然后恢复
+    let baseMatrix = config[NODE_MATRIX_EVENT].slice(0);
+    assignMatrix(config[NODE_MATRIX_EVENT], mx.identity());
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
@@ -703,19 +706,21 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
         __config[NODE_REFRESH_LV] |= REPAINT;
       }
     }
+    // 恢复
+    assignMatrix(config[NODE_MATRIX_EVENT], baseMatrix);
   }
   // cacheTotal仍在说明<REPAINT，需计算各种新的参数
   else {
     let {
       [NODE_REFRESH_LV]: refreshLevel,
       [NODE_CACHE_STYLE]: __cacheStyle,
-    } = __config;
+    } = config;
     if(contain(refreshLevel, TRANSFORM_ALL)) {
       let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
-      assignMatrix(__config[NODE_MATRIX], matrix);
+      assignMatrix(config[NODE_MATRIX], matrix);
     }
     if(contain(refreshLevel, OP)) {
-      __config[NODE_OPACITY] = computedStyle[OPACITY] = currentStyle[OPACITY];
+      config[NODE_OPACITY] = computedStyle[OPACITY] = currentStyle[OPACITY];
     }
     if(contain(refreshLevel, FT)) {
       node.__calFilter(currentStyle, computedStyle);
@@ -733,20 +738,20 @@ function genTotal2(renderMode, node, __config, index, lv, total, __structs, hasM
     let target = cacheTotal;
     if(overflow === 'hidden') {
       if(!cacheOverflow || !cacheOverflow.available || needGen) {
-        __config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
+        config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
         needGen = true;
       }
-      target = __config[NODE_CACHE_OVERFLOW] || target;
+      target = config[NODE_CACHE_OVERFLOW] || target;
     }
     if(filter && filter.length) {
       if(!cacheFilter || !cacheFilter.available || needGen) {
-        __config[NODE_CACHE_FILTER] = genFilter(node, target, filter);
+        config[NODE_CACHE_FILTER] = genFilter(node, target, filter);
         needGen = true;
       }
-      target = __config[NODE_CACHE_FILTER] || target;
+      target = config[NODE_CACHE_FILTER] || target;
     }
     if(hasMask && (!cacheMask || !cacheMask.available || needGen)) {
-      // __config[NODE_CACHE_MASK] = genMask(node, target);
+      // config[NODE_CACHE_MASK] = genMask(node, target);
       // TODO mask不是固定单个了
     }
   }

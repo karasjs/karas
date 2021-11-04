@@ -1978,7 +1978,7 @@ class Xom extends Node {
             }
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
-                ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
+                ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', true, dx, dy);
             }
             let w = ix2 - ix1;
             // canvas的bg位图裁剪
@@ -2069,7 +2069,7 @@ class Xom extends Node {
             bx2 += n;
             if(backgroundColor[3] > 0) {
               bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
-                ix1 + dx, iy1 + dy, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', dx, dy);
+                ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', true, dx, dy);
             }
             let w = ix2 - ix1;
             // canvas的bg位图裁剪

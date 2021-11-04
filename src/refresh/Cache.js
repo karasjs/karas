@@ -17,7 +17,7 @@ const {
   },
   NODE_KEY: {
     NODE_OPACITY,
-    NODE_CACHE,
+    NODE_CACHE_TOTAL,
     NODE_CACHE_FILTER,
     NODE_CACHE_OVERFLOW,
     NODE_HAS_CONTENT,
@@ -241,28 +241,34 @@ class Cache {
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {
       let __config = item.__config;
-      let cacheOverflow = __config[NODE_CACHE_OVERFLOW], cacheFilter = __config[NODE_CACHE_FILTER], cache = __config[NODE_CACHE];
-      let source = cacheOverflow && cacheOverflow.available && cacheOverflow;
-      if(!source) {
-        source = cacheFilter && cacheFilter.available && cacheFilter;
-      }
-      if(!source) {
-        source = cache && cache.available && cache;
-      }
-      if(source) {
+      let target = Cache.getCache([
+        __config[NODE_CACHE_FILTER],
+        __config[NODE_CACHE_OVERFLOW],
+        __config[NODE_CACHE_TOTAL],
+      ]);
+      // let cacheOverflow = __config[NODE_CACHE_OVERFLOW], cacheFilter = __config[NODE_CACHE_FILTER], cache = __config[NODE_CACHE];
+      // let source = target && target.available && target;
+      // if(!source) {
+      //   source = cacheFilter && cacheFilter.available && cacheFilter;
+      // }
+      // if(!source) {
+      //   source = cache && cache.available && cache;
+      // }
+      let computedStyle = __config[NODE_COMPUTED_STYLE];
+      if(target) {
         ctx.globalAlpha = __config[NODE_OPACITY];
         Cache.drawCache(
-          source, cacheMask,
-          __config[NODE_COMPUTED_STYLE][TRANSFORM],
+          target, cacheMask,
+          computedStyle[TRANSFORM],
           mx.identity(),
-          __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN].slice(0),
+          computedStyle[TRANSFORM_ORIGIN].slice(0),
           inverse
         );
       }
       // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
       else if(__config[NODE_HAS_CONTENT]
-        && __config[NODE_COMPUTED_STYLE][DISPLAY] !== 'none'
-        && __config[NODE_COMPUTED_STYLE][VISIBILITY] !== 'hidden') {
+        && computedStyle[DISPLAY] !== 'none'
+        && computedStyle[VISIBILITY] !== 'hidden') {
         inject.error('CacheMask is oversize');
       }
     });
@@ -362,6 +368,15 @@ class Cache {
     ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
     let { x, y, canvas, sx1, sy1, dbx, dby, width, height } = cache;
     ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
+  }
+
+  static getCache(list) {
+    for(let i = 0, len = list.length; i < len; i++) {
+      let item = list[i];
+      if(item && item.available) {
+        return item;
+      }
+    }
   }
 }
 

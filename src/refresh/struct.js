@@ -110,14 +110,7 @@ const OFFSCREEN_BLEND = 3;
 const OFFSCREEN_MASK2 = 4;
 
 // 依次从list获取首个available可用的cache
-function getCache(list) {
-  for(let i = 0, len = list.length; i < len; i++) {
-    let item = list[i];
-    if(item && item.available) {
-      return item;
-    }
-  }
-}
+const getCache = Cache.getCache;
 
 /**
  * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
@@ -591,7 +584,6 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
-    // console.warn(bboxTotal, dx, dy, dbx, dby)
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -716,7 +708,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
       [NODE_CACHE_STYLE]: __cacheStyle,
     } = config;
     if(contain(refreshLevel, TRANSFORM_ALL)) {
-      let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
+      let matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, config);
       assignMatrix(config[NODE_MATRIX], matrix);
     }
     if(contain(refreshLevel, OP)) {
@@ -751,8 +743,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
       target = config[NODE_CACHE_FILTER] || target;
     }
     if(hasMask && (!cacheMask || !cacheMask.available || needGen)) {
-      // config[NODE_CACHE_MASK] = genMask(node, target);
-      // TODO mask不是固定单个了
+      config[NODE_CACHE_MASK] = genMask(node, target);
     }
   }
   return reGenTotal;

@@ -455,7 +455,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!cacheTotal || !cacheTotal.available) {
     needGen = reGenTotal = true; // total重新生成了，其它基于的也一定需要重新生成
-    let bboxTotal;
+    let bboxTotal, baseMatrix;
     let { __sx1: sx1, __sy1: sy1 } = node;
     // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
     let matrixList = [];
@@ -556,15 +556,16 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
         assignMatrix(__config[NODE_MATRIX], matrix);
         opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
       }
-      // 计算临时matrixEvent和opacity，以局部根节点为基准（E和1），父不为E时要点乘继承父的
-      if(parentMatrix) {
-        matrix = multiply(parentMatrix, matrix);
-      }
       // opacity可临时赋值下面循环渲染用，matrixEvent可能需重新计算，因为局部根节点为E没考虑继承，这里仅计算bbox用
-      assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
       if(i === index) {
         opacity = 1;
+        baseMatrix = matrix;
+        matrix = mx.identity();
       }
+      else if(parentMatrix) {
+        matrix = multiply(parentMatrix, matrix);
+      }
+      assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
       __config[NODE_OPACITY] = parentOpacity * opacity;
       let bbox;
       // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
@@ -588,22 +589,19 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
     // 生成cacheTotal，获取偏移dx/dy
     config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
     cacheTotal.__available = true;
-    let { dx, dy, dbx, dby } = cacheTotal;
+    let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
     let ctxTotal = cacheTotal.ctx;
     // console.warn(bboxTotal, dx, dy, dbx, dby)
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
      * 但matrixEvent可能需要重算，因为原点不一定是根节点的原点，影响tfo
-     * 另外每个节点的refreshLevel需要设置|=REPAINT
+     * 另外每个节点的refreshLevel需要设置REPAINT
      * 这样cacheTotal取消时子节点需确保重新计算一次matrix/opacity/filter，保证下次和父元素继承正确
      */
     parentMatrix = null;
-    lastConfig = null;
+    let lastMatrix;
     lastLv = lv;
-    // 暂存根节点的matrix，并设置为E，然后恢复
-    let baseMatrix = config[NODE_MATRIX_EVENT].slice(0);
-    assignMatrix(config[NODE_MATRIX_EVENT], mx.identity());
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
@@ -628,7 +626,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
       // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
       if(i === index) {}
       else if(lv > lastLv) {
-        parentMatrix = lastConfig[NODE_MATRIX_EVENT];
+        parentMatrix = lastMatrix;
         if(isE(parentMatrix)) {
           parentMatrix = null;
         }
@@ -641,8 +639,6 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
         parentMatrix = matrixList[lv - 1];
       }
       // 不变是同级兄弟，无需特殊处理 else {}
-      lastConfig = __config;
-      lastLv = lv;
       // 跳过display:none元素和它的所有子节点
       if(computedStyle[DISPLAY] === 'none') {
         i += (total || 0);
@@ -654,42 +650,45 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
         [TRANSFORM_ORIGIN]: tfo,
       } = computedStyle;
       // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
-      if(i === index) {
-        ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-      }
-      else if(!isE(parentMatrix) || !isE(transform)) {
+      let m;
+      if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
         tfo = tfo.slice(0);
-        tfo[0] += dbx + node.__sx1 - sx1;
-        tfo[1] += dby + node.__sy1 - sy1;
-        let m = tf.calMatrixByOrigin(transform, tfo);
+        tfo[0] += dbx + node.__sx1 - sx1 + tx;
+        tfo[1] += dby + node.__sy1 - sy1 + ty;
+        m = tf.calMatrixByOrigin(transform, tfo);
         if(!isE(parentMatrix)) {
           m = multiply(parentMatrix, m);
         }
+      }
+      else {
+        m = null;
+      }
+      if(m) {
         ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
       }
       else {
         ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
       }
-      // 子元素有cacheTotal优先使用，此时一定是<REPAINT的，也一定是子元素，局部根节点不会进
-      if(refreshLevel < REPAINT) {
-        let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
-        if(target) {
-          i += (total || 0) + (hasMask || 0);
-          let mixBlendMode = computedStyle[MIX_BLEND_MODE];
-          if(isValidMbm(mixBlendMode)) {
-            ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
-          }
-          else {
-            ctxTotal.globalCompositeOperation = 'source-over';
-          }
-          ctxTotal.globalAlpha = __config[NODE_OPACITY];
-          Cache.drawCache(target, cacheTotal);
-          ctxTotal.globalCompositeOperation = 'source-over';
+      lastLv = lv;
+      lastMatrix = m;
+      // 子元素有cacheTotal优先使用，也一定是子元素，局部根节点不会进
+      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+      if(i !== index && target) {
+        i += (total || 0) + (hasMask || 0);
+        let mixBlendMode = computedStyle[MIX_BLEND_MODE];
+        if(isValidMbm(mixBlendMode)) {
+          ctxTotal.globalCompositeOperation = mbmName(mixBlendMode);
         }
         else {
-          node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
-          __config[NODE_REFRESH_LV] |= REPAINT;
+          ctxTotal.globalCompositeOperation = 'source-over';
         }
+        ctxTotal.globalAlpha = __config[NODE_OPACITY];
+        Cache.drawCache(target, cacheTotal);
+        ctxTotal.globalCompositeOperation = 'source-over';
+      }
+      else if(refreshLevel < REPAINT) {
+        node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
+        __config[NODE_REFRESH_LV] = REPAINT;
       }
       else {
         // 手动计算cacheStyle和根据border-box的坐标再渲染
@@ -703,11 +702,12 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
           node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
           node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
         node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
-        __config[NODE_REFRESH_LV] |= REPAINT;
+        __config[NODE_REFRESH_LV] = REPAINT;
       }
     }
-    // 恢复
+    // 恢复，且局部根节点设置NONE
     assignMatrix(config[NODE_MATRIX_EVENT], baseMatrix);
+    config[NODE_REFRESH_LV] = NONE;
   }
   // cacheTotal仍在说明<REPAINT，需计算各种新的参数
   else {

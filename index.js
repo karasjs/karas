@@ -28500,7 +28500,7 @@
     if (!cacheTotal || !cacheTotal.available) {
       needGen = reGenTotal = true; // total重新生成了，其它基于的也一定需要重新生成
 
-      var bboxTotal;
+      var bboxTotal, baseMatrix;
       var sx1 = node.__sx1,
           sy1 = node.__sy1; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 
@@ -28608,20 +28608,18 @@
             matrix = _node2.__calMatrix(refreshLevel, __cacheStyle, _currentStyle, _computedStyle, _config2);
             assignMatrix$1(_config2[NODE_MATRIX$3], matrix);
             opacity = _computedStyle[OPACITY$5] = _currentStyle[OPACITY$5];
-          } // 计算临时matrixEvent和opacity，以局部根节点为基准（E和1），父不为E时要点乘继承父的
+          } // opacity可临时赋值下面循环渲染用，matrixEvent可能需重新计算，因为局部根节点为E没考虑继承，这里仅计算bbox用
 
-
-        if (parentMatrix) {
-          matrix = multiply$2(parentMatrix, matrix);
-        } // opacity可临时赋值下面循环渲染用，matrixEvent可能需重新计算，因为局部根节点为E没考虑继承，这里仅计算bbox用
-
-
-        assignMatrix$1(_config2[NODE_MATRIX_EVENT$4], matrix);
 
         if (i === index) {
           opacity = 1;
+          baseMatrix = matrix;
+          matrix = mx.identity();
+        } else if (parentMatrix) {
+          matrix = multiply$2(parentMatrix, matrix);
         }
 
+        assignMatrix$1(_config2[NODE_MATRIX_EVENT$4], matrix);
         _config2[NODE_OPACITY$3] = parentOpacity * opacity;
         var bbox = void 0; // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
 
@@ -28651,23 +28649,22 @@
           dx = _cacheTotal.dx,
           dy = _cacheTotal.dy,
           dbx = _cacheTotal.dbx,
-          dby = _cacheTotal.dby;
+          dby = _cacheTotal.dby,
+          tx = _cacheTotal.x,
+          ty = _cacheTotal.y;
       var ctxTotal = cacheTotal.ctx; // console.warn(bboxTotal, dx, dy, dbx, dby)
 
       /**
        * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
        * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
        * 但matrixEvent可能需要重算，因为原点不一定是根节点的原点，影响tfo
-       * 另外每个节点的refreshLevel需要设置|=REPAINT
+       * 另外每个节点的refreshLevel需要设置REPAINT
        * 这样cacheTotal取消时子节点需确保重新计算一次matrix/opacity/filter，保证下次和父元素继承正确
        */
 
       parentMatrix = null;
-      lastConfig = null;
-      lastLv = lv; // 暂存根节点的matrix，并设置为E，然后恢复
-
-      var baseMatrix = config[NODE_MATRIX_EVENT$4].slice(0);
-      assignMatrix$1(config[NODE_MATRIX_EVENT$4], mx.identity());
+      var lastMatrix;
+      lastLv = lv;
 
       for (var _i2 = index, _len2 = index + (total || 0) + 1; _i2 < _len2; _i2++) {
         var _structs$_i2 = __structs[_i2],
@@ -28691,7 +28688,7 @@
             _computedStyle2 = _config3[NODE_COMPUTED_STYLE$4]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
         if (_i2 === index) ; else if (_lv2 > lastLv) {
-          parentMatrix = lastConfig[NODE_MATRIX_EVENT$4];
+          parentMatrix = lastMatrix;
 
           if (isE$3(parentMatrix)) {
             parentMatrix = null;
@@ -28705,10 +28702,8 @@
             matrixList.splice(-_diff);
             parentMatrix = matrixList[_lv2 - 1];
           } // 不变是同级兄弟，无需特殊处理 else {}
+        // 跳过display:none元素和它的所有子节点
 
-
-        lastConfig = _config3;
-        lastLv = _lv2; // 跳过display:none元素和它的所有子节点
 
         if (_computedStyle2[DISPLAY$9] === 'none') {
           _i2 += _total5 || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
@@ -28719,57 +28714,62 @@
         var transform = _computedStyle2[TRANSFORM$4],
             tfo = _computedStyle2[TRANSFORM_ORIGIN$5]; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
 
-        if (_i2 === index) {
-          ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-        } else if (!isE$3(parentMatrix) || !isE$3(transform)) {
+        var m = void 0;
+
+        if (_i2 !== index && (!isE$3(parentMatrix) || !isE$3(transform))) {
           tfo = tfo.slice(0);
-          tfo[0] += dbx + _node3.__sx1 - sx1;
-          tfo[1] += dby + _node3.__sy1 - sy1;
-          var m = tf.calMatrixByOrigin(transform, tfo);
+          tfo[0] += dbx + _node3.__sx1 - sx1 + tx;
+          tfo[1] += dby + _node3.__sy1 - sy1 + ty;
+          m = tf.calMatrixByOrigin(transform, tfo);
 
           if (!isE$3(parentMatrix)) {
             m = multiply$2(parentMatrix, m);
           }
+        } else {
+          m = null;
+        }
 
+        if (m) {
           ctxTotal.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
         } else {
           ctxTotal.setTransform(1, 0, 0, 1, 0, 0);
-        } // 子元素有cacheTotal优先使用，此时一定是<REPAINT的，也一定是子元素，局部根节点不会进
+        }
 
+        lastLv = _lv2;
+        lastMatrix = m; // 子元素有cacheTotal优先使用，也一定是子元素，局部根节点不会进
 
-        if (_refreshLevel < REPAINT$2) {
-          var _target = getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
+        var _target = getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
 
-          if (_target) {
-            _i2 += (_total5 || 0) + (_hasMask2 || 0);
-            var mixBlendMode = _computedStyle2[MIX_BLEND_MODE$3];
+        if (_i2 !== index && _target) {
+          _i2 += (_total5 || 0) + (_hasMask2 || 0);
+          var mixBlendMode = _computedStyle2[MIX_BLEND_MODE$3];
 
-            if (isValidMbm$2(mixBlendMode)) {
-              ctxTotal.globalCompositeOperation = mbmName$2(mixBlendMode);
-            } else {
-              ctxTotal.globalCompositeOperation = 'source-over';
-            }
-
-            ctxTotal.globalAlpha = _config3[NODE_OPACITY$3];
-            Cache.drawCache(_target, cacheTotal);
-            ctxTotal.globalCompositeOperation = 'source-over';
+          if (isValidMbm$2(mixBlendMode)) {
+            ctxTotal.globalCompositeOperation = mbmName$2(mixBlendMode);
           } else {
-            _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
-
-            _config3[NODE_REFRESH_LV$1] |= REPAINT$2;
+            ctxTotal.globalCompositeOperation = 'source-over';
           }
+
+          ctxTotal.globalAlpha = _config3[NODE_OPACITY$3];
+          Cache.drawCache(_target, cacheTotal);
+          ctxTotal.globalCompositeOperation = 'source-over';
+        } else if (_refreshLevel < REPAINT$2) {
+          _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
+
+          _config3[NODE_REFRESH_LV$1] = REPAINT$2;
         } else {
           // 手动计算cacheStyle和根据border-box的坐标再渲染
           _node3.__calCache(renderMode, ctxTotal, _config3[NODE_DOM_PARENT$5], _config3[NODE_CACHE_STYLE$1], _config3[NODE_CURRENT_STYLE$5], _computedStyle2, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$6], _computedStyle2[BORDER_RIGHT_WIDTH$7], _computedStyle2[BORDER_BOTTOM_WIDTH$6], _computedStyle2[BORDER_LEFT_WIDTH$8], _computedStyle2[PADDING_TOP$5], _computedStyle2[PADDING_RIGHT$6], _computedStyle2[PADDING_BOTTOM$5], _computedStyle2[PADDING_LEFT$7], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
 
           _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
 
-          _config3[NODE_REFRESH_LV$1] |= REPAINT$2;
+          _config3[NODE_REFRESH_LV$1] = REPAINT$2;
         }
-      } // 恢复
+      } // 恢复，且局部根节点设置NONE
 
 
       assignMatrix$1(config[NODE_MATRIX_EVENT$4], baseMatrix);
+      config[NODE_REFRESH_LV$1] = NONE$2;
     } // cacheTotal仍在说明<REPAINT，需计算各种新的参数
     else {
         var _refreshLevel2 = config[NODE_REFRESH_LV$1],

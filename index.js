@@ -10979,9 +10979,14 @@
       }
     }, {
       key: "genMask",
-      value: function genMask(target, next, isClip, cb, transform, tfo) {
+      value: function genMask(target, node, cb) {
         var cacheMask = genSingle(target, 'mask1');
         var list = [];
+        var _node$computedStyle = node.computedStyle,
+            transform = _node$computedStyle[TRANSFORM$1],
+            tfo = _node$computedStyle[TRANSFORM_ORIGIN$2];
+        var next = node.next;
+        var isClip = next.isClip;
 
         while (next && next.isMask && next.isClip === isClip) {
           list.push(next);
@@ -10993,8 +10998,8 @@
             ctx = cacheMask.ctx,
             dbx = cacheMask.dbx,
             dby = cacheMask.dby;
-        tfo[0] += x + dbx;
-        tfo[1] += y + dby;
+        tfo[0] += x + dbx + node.__sx1 - target.sx1;
+        tfo[1] += y + dby + node.__sy1 - target.sy1;
         var inverse = tf.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
 
         list.forEach(function (item) {
@@ -28844,8 +28849,7 @@
           dbx = _cacheTotal.dbx,
           dby = _cacheTotal.dby,
           tx = _cacheTotal.x,
-          ty = _cacheTotal.y; // console.warn(node.tagName, bboxTotal, dx, dy)
-
+          ty = _cacheTotal.y;
       var ctxTotal = cacheTotal.ctx;
       /**
        * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
@@ -29210,8 +29214,7 @@
                 } // 不变是同级兄弟，无需特殊处理 else {}
 
 
-              lastLv = _lv3; // 跳过display:none元素和它的所有子节点和mask
-              // 计算临时的matrix
+              lastLv = _lv3; // 计算临时的matrix
 
               var _display = _computedStyle3[DISPLAY$9],
                   _transform = _computedStyle3[TRANSFORM$4],
@@ -29331,7 +29334,7 @@
                     _node4.__calCache(renderMode, ctx, _config3[NODE_DOM_PARENT$5], _config3[NODE_CACHE_STYLE$1], _config3[NODE_CURRENT_STYLE$5], _computedStyle3, _node4.clientWidth, _node4.clientHeight, _node4.offsetWidth, _node4.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$6], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$6], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$5], _computedStyle3[PADDING_RIGHT$6], _computedStyle3[PADDING_BOTTOM$5], _computedStyle3[PADDING_LEFT$7], _node4.__sx1, _node4.__sx2, _node4.__sx3, _node4.__sx4, _node4.__sx5, _node4.__sx6, _node4.__sy1, _node4.__sy2, _node4.__sy3, _node4.__sy4, _node4.__sy5, _node4.__sy6);
                   }
 
-                  var _res = _node4.render(renderMode, _refreshLevel3, ctx, _i3 === index ? LOCAL$1 : CHILD, dx, dy);
+                  var _res = _node4.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
 
                   _config3[NODE_REFRESH_LV$1] = REPAINT$2;
 
@@ -29408,11 +29411,7 @@
   }
 
   function genMask(node, cache, cb) {
-    var _node$computedStyle = node.computedStyle,
-        transform = _node$computedStyle[TRANSFORM$4],
-        transformOrigin = _node$computedStyle[TRANSFORM_ORIGIN$5];
-    var isClip = node.next.isClip;
-    return Cache.genMask(cache, node.next, isClip, cb, transform, transformOrigin);
+    return Cache.genMask(cache, node, cb);
   }
 
   function genOverflow(node, cache) {
@@ -31625,8 +31624,7 @@
 
         mergeList.push([i, lv, total, node, __config, hasMask]);
       }
-    } // console.log(mergeList);
-
+    }
     /**
      * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
      * 这样保证子节点在前，后节点在前（mask在后面），渲染顺序正确

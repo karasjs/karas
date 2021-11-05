@@ -594,7 +594,6 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
     }
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
-    // console.warn(node.tagName, bboxTotal, dx, dy)
     let ctxTotal = cacheTotal.ctx;
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
@@ -904,7 +903,6 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
             }
             // 不变是同级兄弟，无需特殊处理 else {}
             lastLv = lv;
-            // 跳过display:none元素和它的所有子节点和mask
             // 计算临时的matrix
             let {
               [DISPLAY]: display,
@@ -1020,7 +1018,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
                   node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
                   node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
               }
-              let res = node.render(renderMode, refreshLevel, ctx, i === index ? LOCAL : CHILD, dx, dy);
+              let res = node.render(renderMode, refreshLevel, ctx, CHILD, dx, dy);
               __config[NODE_REFRESH_LV] = REPAINT;
               let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
               // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
@@ -1074,9 +1072,7 @@ function genFilter(node, cache, v) {
 }
 
 function genMask(node, cache, cb) {
-  let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: transformOrigin } = node.computedStyle;
-  let isClip = node.next.isClip;
-  return Cache.genMask(cache, node.next, isClip, cb, transform, transformOrigin);
+  return Cache.genMask(cache, node, cb);
 }
 
 function genOverflow(node, cache) {
@@ -2977,7 +2973,6 @@ function renderCanvas2(renderMode, ctx, root) {
       mergeList.push([i, lv, total, node, __config, hasMask]);
     }
   }
-  // console.log(mergeList);
   /**
    * 根据收集的需要合并局部根的索引，尝试合并，按照层级从大到小，索引从大到小的顺序，
    * 这样保证子节点在前，后节点在前（mask在后面），渲染顺序正确

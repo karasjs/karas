@@ -227,16 +227,19 @@ class Cache {
     return offscreen;
   }
 
-  static genMask(target, next, isClip, cb, transform, tfo) {
+  static genMask(target, node, cb) {
     let cacheMask = genSingle(target, 'mask1');
     let list = [];
+    let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: tfo } = node.computedStyle;
+    let next = node.next;
+    let isClip = next.isClip;
     while(next && (next.isMask) && (next.isClip === isClip)) {
       list.push(next);
       next = next.next;
     }
     let { x, y, ctx, dbx, dby } = cacheMask;
-    tfo[0] += x + dbx;
-    tfo[1] += y + dby;
+    tfo[0] += x + dbx + node.__sx1 - target.sx1;
+    tfo[1] += y + dby + node.__sy1 - target.sy1;
     let inverse = tf.calMatrixByOrigin(transform, tfo);
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {

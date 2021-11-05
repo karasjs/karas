@@ -207,7 +207,7 @@ class Cache {
     bbox[1] -= d;
     bbox[2] += d;
     bbox[3] += d;
-    let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter1');
+    let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
     offscreen.ctx.filter = painter.canvasFilter(filter);
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';
@@ -264,7 +264,7 @@ class Cache {
         inject.error('CacheMask is oversize');
       }
       else {
-        // TOOD
+        // TODO
       }
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -373,6 +373,11 @@ class Cache {
       }
     }
   }
+
+  static NA = 0; // 无缓存模式
+  static LOCAL = 1; // 局部根节点
+  static CHILD = 2; // 其子节点
+  static SELF = 3; // webgl专用
 }
 
 export default Cache;

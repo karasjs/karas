@@ -10958,7 +10958,7 @@
         bbox[1] -= d;
         bbox[2] += d;
         bbox[3] += d;
-        var offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter1');
+        var offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
         offscreen.ctx.filter = painter.canvasFilter(filter);
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
@@ -11158,11 +11158,20 @@
             return item;
           }
         }
-      }
+      } // webgl专用
+
     }]);
 
     return Cache;
   }();
+
+  _defineProperty(Cache, "NA", 0);
+
+  _defineProperty(Cache, "LOCAL", 1);
+
+  _defineProperty(Cache, "CHILD", 2);
+
+  _defineProperty(Cache, "SELF", 3);
 
   var _TRANSFORMS;
   var STYLE_KEY$4 = enums.STYLE_KEY,
@@ -17211,6 +17220,7 @@
   var CANVAS$1 = mode.CANVAS,
       SVG = mode.SVG,
       WEBGL$1 = mode.WEBGL;
+  var LOCAL = Cache.LOCAL;
   var STYLE_KEY$5 = enums.STYLE_KEY,
       STYLE_RV_KEY$2 = enums.STYLE_RV_KEY,
       style2Upper$2 = enums.style2Upper,
@@ -18856,24 +18866,7 @@
                 __cache.__bbox = bbox;
                 ctx = __cache.ctx;
                 dx += __cache.dx;
-                dy += __cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
-                // if(dx) {
-                //   res.x1 = x1 += dx;
-                //   res.x2 = x2 += dx;
-                //   res.x3 = x3 += dx;
-                //   res.x4 = x4 += dx;
-                //   res.x5 = x5 += dx;
-                //   res.x6 = x6 += dx;
-                // }
-                // if(dy) {
-                //   res.y1 = y1 += dy;
-                //   res.y2 = y2 += dy;
-                //   res.y3 = y3 += dy;
-                //   res.y4 = y4 += dy;
-                //   res.y5 = y5 += dy;
-                //   res.y6 = y6 += dy;
-                // }
-
+                dy += __cache.dy;
                 res.ctx = ctx;
               } else {
                 __config[NODE_LIMIT_CACHE$1] = true;
@@ -18992,7 +18985,7 @@
         if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
 
-          if (renderMode === CANVAS$1 && !cache) {
+          if (renderMode === CANVAS$1 && cache !== LOCAL) {
             var width = root.width,
                 height = root.height;
 
@@ -19016,7 +19009,7 @@
         var offscreenMask;
 
         if (__hasMask) {
-          if (renderMode === CANVAS$1 && !cache) {
+          if (renderMode === CANVAS$1 && cache !== LOCAL) {
             var _width = root.width,
                 _height = root.height;
 
@@ -19036,11 +19029,11 @@
         var offscreenFilter;
 
         if (hasFilter) {
-          if (renderMode === CANVAS$1 && !cache) {
+          if (renderMode === CANVAS$1 && cache !== LOCAL) {
             var _width2 = root.width,
                 _height2 = root.height;
 
-            var _c3 = inject.getCacheCanvas(_width2, _height2, null, 'filter1');
+            var _c3 = inject.getCacheCanvas(_width2, _height2, null, 'filter');
 
             offscreenFilter = {
               ctx: ctx,
@@ -19088,7 +19081,7 @@
         if (overflow === 'hidden' && display !== 'inline') {
           borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
 
-          if (renderMode === CANVAS$1 && !cache) {
+          if (renderMode === CANVAS$1 && cache !== LOCAL) {
             var _width3 = root.width,
                 _height3 = root.height;
 
@@ -28044,6 +28037,10 @@
   var fragmentLuminosity = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}vec3 op(vec3 a,vec3 b){float l=getLuminosity(b);return setLuminosity(a,l);}vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return(1.0-a2/a3)*c1+a2/a3*((1.0-a1)*c2+a1*c3);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=op(bottom,top);float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
 
   var canvasPolygon$7 = painter.canvasPolygon;
+  var NA = Cache.NA,
+      LOCAL$1 = Cache.LOCAL,
+      CHILD = Cache.CHILD,
+      SELF = Cache.SELF;
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$i.POSITION,
       DISPLAY$9 = _enums$STYLE_KEY$i.DISPLAY,
@@ -28372,7 +28369,7 @@
         var m = matrix || mx.identity();
         ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
-        _node.render(renderMode, 0, ctx, true, tx - sx1 + dbx, ty - sy1 + dby);
+        _node.render(renderMode, 0, ctx, CHILD, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
           var __cache = _config[NODE_CACHE$3],
@@ -28652,7 +28649,7 @@
           dbx = _cacheTotal.dbx,
           dby = _cacheTotal.dby,
           tx = _cacheTotal.x,
-          ty = _cacheTotal.y; // console.warn(bboxTotal, dx, dy)
+          ty = _cacheTotal.y; // console.warn(node.tagName, bboxTotal, dx, dy)
 
       var ctxTotal = cacheTotal.ctx;
       /**
@@ -28678,7 +28675,7 @@
             _hasMask2 = _structs$_i2[STRUCT_HAS_MASK$1]; // 排除Text
 
         if (_node3 instanceof Text) {
-          _node3.render(renderMode, REPAINT$2, ctxTotal, true, dx, dy);
+          _node3.render(renderMode, REPAINT$2, ctxTotal, CHILD, dx, dy);
 
           if (offscreenHash.hasOwnProperty(_i2)) {
             ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height);
@@ -28792,13 +28789,13 @@
             var res = void 0;
 
             if (_refreshLevel < REPAINT$2) {
-              res = _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
+              res = _node3.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL$1 : CHILD, dx, dy);
               _config2[NODE_REFRESH_LV$1] = REPAINT$2;
             } else {
               // 手动计算cacheStyle和根据border-box的坐标再渲染
               _node3.__calCache(renderMode, ctxTotal, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle2, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$6], _computedStyle2[BORDER_RIGHT_WIDTH$7], _computedStyle2[BORDER_BOTTOM_WIDTH$6], _computedStyle2[BORDER_LEFT_WIDTH$8], _computedStyle2[PADDING_TOP$5], _computedStyle2[PADDING_RIGHT$6], _computedStyle2[PADDING_BOTTOM$5], _computedStyle2[PADDING_LEFT$7], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
 
-              res = _node3.render(renderMode, _refreshLevel, ctxTotal, true, dx, dy);
+              res = _node3.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL$1 : CHILD, dx, dy);
               _config2[NODE_REFRESH_LV$1] = REPAINT$2;
             }
 
@@ -29029,7 +29026,7 @@
     } // limitCache无cache需先绘制到统一的离屏画布上
     else if (limitCache) {
         var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
-        node.render(mode.WEBGL, 0, gl, false, 0, 0);
+        node.render(mode.WEBGL, 0, gl, NA, 0, 0);
         var j = texCache.lockOneChannel();
 
         var _texture = webgl.createTexture(gl, c.canvas, j);
@@ -29703,7 +29700,7 @@
             filter = offscreen.filter; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
 
         if (ctx.filter) {
-          var apply = inject.getCacheCanvas(width, height, null, 'filter2');
+          var apply = inject.getCacheCanvas(width, height, null, 'filter');
           apply.ctx.filter = painter.canvasFilter(filter);
           apply.ctx.drawImage(_target4.canvas, 0, 0, width, height, 0, 0, width, height);
           apply.ctx.filter = 'none';
@@ -29977,7 +29974,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-          node.render(renderMode, refreshLevel, ctx, true, 0, 0);
+          node.render(renderMode, refreshLevel, ctx, SELF, 0, 0);
         } // 每个元素检查cacheTotal生成，已有的上面会continue跳过
 
 
@@ -30086,7 +30083,7 @@
         ctx.globalAlpha = _opacity;
         ctx.setTransform(_matrixEvent[0], _matrixEvent[1], _matrixEvent[4], _matrixEvent[5], _matrixEvent[12], _matrixEvent[13]);
 
-        _node5.render(renderMode, 0, ctx, false, 0, 0);
+        _node5.render(renderMode, 0, ctx, NA, 0, 0);
 
         if (offscreenHash.hasOwnProperty(_i5)) {
           ctx = applyOffscreen(ctx, offscreenHash[_i5], width, height);
@@ -30193,7 +30190,7 @@
                 }
 
                 if (_filter2 && _filter2.length) {
-                  var _c3 = inject.getCacheCanvas(width, height, null, 'filter1');
+                  var _c3 = inject.getCacheCanvas(width, height, null, 'filter');
 
                   offscreenFilter = {
                     ctx: ctx,
@@ -30224,7 +30221,7 @@
                 }
               } else {
                 // 连cache都没生成的超限
-                var res = _node5.render(renderMode, _refreshLevel3, ctx, false, 0, 0) || {};
+                var res = _node5.render(renderMode, _refreshLevel3, ctx, NA, 0, 0) || {};
                 offscreenBlend = res.offscreenBlend;
                 offscreenMask = res.offscreenMask;
                 offscreenFilter = res.offscreenFilter;
@@ -30273,7 +30270,7 @@
               }
 
               if (_limitCache && _node5 instanceof Geom$1) {
-                _node5.render(renderMode, _refreshLevel3, ctx, false, 0, 0);
+                _node5.render(renderMode, _refreshLevel3, ctx, NA, 0, 0);
               }
             } // 没内容的遮罩跳过，比如未加载的img，否则会将遮罩绘制出来
             else if (_hasMask3) {
@@ -30357,7 +30354,7 @@
         ctx = target.ctx;
       }
 
-      var res = node.render(renderMode, refreshLevel, ctx, false, 0, 0);
+      var res = node.render(renderMode, refreshLevel, ctx, NA, 0, 0);
 
       var _ref2 = res || {},
           offscreenBlend = _ref2.offscreenBlend,
@@ -30612,7 +30609,7 @@
         // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
         __config[NODE_DEFS_CACHE$6] && __config[NODE_DEFS_CACHE$6].splice(0);
 
-        _node6.render(renderMode, _refreshLevel4, ctx, false, 0, 0);
+        _node6.render(renderMode, _refreshLevel4, ctx, NA, 0, 0);
 
         virtualDom = __config[NODE_VIRTUAL_DOM$2]; // 渲染后更新取值
 
@@ -30796,7 +30793,7 @@
 
       if (node instanceof Text) {
         if (lastRefreshLevel >= REPAINT$2) {
-          node.render(renderMode, 0, gl, true, 0, 0);
+          node.render(renderMode, 0, gl, SELF, 0, 0);
         }
 
         continue;
@@ -30947,7 +30944,7 @@
        * Geom没有子节点无需汇总局部根，Dom中Img也是，它们的局部根等于自身的cache，其它符合条件的Dom需要生成
        */
       else {
-          var res = node.render(renderMode, refreshLevel, gl, true, 0, 0); // geom可返回texture纹理，替代原有xom的__cache纹理
+          var res = node.render(renderMode, refreshLevel, gl, SELF, 0, 0); // geom可返回texture纹理，替代原有xom的__cache纹理
 
           if (res && inject.isWebGLTexture(res.texture)) {
             var sx1 = node.__sx1,
@@ -31115,7 +31112,7 @@
         else if (_limitCache2) {
             var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
-            _node8.render(renderMode, 0, gl, false, 0, 0);
+            _node8.render(renderMode, 0, gl, NA, 0, 0);
 
             var j = texCache.lockOneChannel();
 
@@ -31221,7 +31218,7 @@
             // let m = mx.m2Mat4(matrixEvent, cx, cy);
             var _c5 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
-            _node8.render(renderMode, _refreshLevel5, gl, false, 0, 0);
+            _node8.render(renderMode, _refreshLevel5, gl, NA, 0, 0);
 
             var _j14 = texCache.lockOneChannel();
 
@@ -31376,7 +31373,7 @@
           _hasMask6 = _structs$_i6[STRUCT_HAS_MASK$1]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (_node9 instanceof Text) {
-        _node9.render(renderMode, REPAINT$2, ctx, false, 0, 0);
+        _node9.render(renderMode, REPAINT$2, ctx, NA, 0, 0);
 
         if (offscreenHash.hasOwnProperty(_i9)) {
           ctx = applyOffscreen(ctx, offscreenHash[_i9], width, height);
@@ -31462,7 +31459,7 @@
 
         } // 没有cacheTotal是普通节点绘制
         else {
-            var res = _node9.render(renderMode, _refreshLevel6, ctx, false, 0, 0);
+            var res = _node9.render(renderMode, _refreshLevel6, ctx, NA, 0, 0);
 
             var _ref3 = res || {},
                 offscreenBlend = _ref3.offscreenBlend,

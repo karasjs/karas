@@ -26,6 +26,7 @@ import inline from './inline';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
+const { LOCAL } = Cache;
 
 const {
   STYLE_KEY,
@@ -1607,23 +1608,6 @@ class Xom extends Node {
           ctx = __cache.ctx;
           dx += __cache.dx;
           dy += __cache.dy;
-          // 重置ctx为cache的，以及绘制坐标为cache的区域
-          // if(dx) {
-          //   res.x1 = x1 += dx;
-          //   res.x2 = x2 += dx;
-          //   res.x3 = x3 += dx;
-          //   res.x4 = x4 += dx;
-          //   res.x5 = x5 += dx;
-          //   res.x6 = x6 += dx;
-          // }
-          // if(dy) {
-          //   res.y1 = y1 += dy;
-          //   res.y2 = y2 += dy;
-          //   res.y3 = y3 += dy;
-          //   res.y4 = y4 += dy;
-          //   res.y5 = y5 += dy;
-          //   res.y6 = y6 += dy;
-          // }
           res.ctx = ctx;
         }
         else {
@@ -1737,7 +1721,7 @@ class Xom extends Node {
     let offscreenBlend;
     if(mixBlendMode !== 'normal' && isValidMbm(mixBlendMode)) {
       mixBlendMode = mbmName(mixBlendMode);
-      if(renderMode === CANVAS && !cache) {
+      if(renderMode === CANVAS && cache !== LOCAL) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'blend');
         offscreenBlend = {
@@ -1758,7 +1742,7 @@ class Xom extends Node {
     }
     let offscreenMask;
     if(__hasMask) {
-      if(renderMode === CANVAS && !cache) {
+      if(renderMode === CANVAS && cache !== LOCAL) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'mask1');
         offscreenMask = {
@@ -1773,9 +1757,9 @@ class Xom extends Node {
     let hasFilter = filter && filter.length;
     let offscreenFilter;
     if(hasFilter) {
-      if(renderMode === CANVAS && !cache) {
+      if(renderMode === CANVAS && cache !== LOCAL) {
         let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height, null, 'filter1');
+        let c = inject.getCacheCanvas(width, height, null, 'filter');
         offscreenFilter = {
           ctx,
           filter,
@@ -1820,7 +1804,7 @@ class Xom extends Node {
     let offscreenOverflow, borderList;
     if(overflow === 'hidden' && display !== 'inline') {
       borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
-      if(renderMode === CANVAS && !cache) {
+      if(renderMode === CANVAS && cache !== LOCAL) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, null, 'overflow');
         offscreenOverflow = {

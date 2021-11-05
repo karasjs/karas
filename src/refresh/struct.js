@@ -829,6 +829,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
         let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
         let {
           [STRUCT_INDEX]:index,
+          [STRUCT_TOTAL]: total,
           [STRUCT_LV]: lv,
         } = item.__config[NODE_STRUCT];
         let matrixList = [];
@@ -904,7 +905,12 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
             // 不变是同级兄弟，无需特殊处理 else {}
             lastLv = lv;
             // 跳过display:none元素和它的所有子节点和mask
-            let display = computedStyle[DISPLAY];
+            // 计算临时的matrix
+            let {
+              [DISPLAY]: display,
+              [TRANSFORM]: transform,
+              [TRANSFORM_ORIGIN]: tfo,
+            } = computedStyle;
             // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
             let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
             if(target) {
@@ -921,7 +927,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
                 ctx.globalCompositeOperation = 'source-over';
               }
               ctx.globalAlpha = __config[NODE_OPACITY];
-              Cache.drawCache(target, cacheMask);
+              Cache.drawCache(target, cacheMask, transform, mx.identity(), tfo.slice(0), parentMatrix, inverse);
               ctx.globalCompositeOperation = 'source-over';
             }
             // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容
@@ -971,11 +977,6 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
               }
               assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
               __config[NODE_OPACITY] = parentOpacity * opacity;
-              // 计算临时的matrix
-              let {
-                [TRANSFORM]: transform,
-                [TRANSFORM_ORIGIN]: tfo,
-              } = computedStyle;
               // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
               let m;
               if(i !== index && (!isE(parentMatrix) || !isE(transform))) {

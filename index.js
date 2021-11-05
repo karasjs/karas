@@ -11081,7 +11081,7 @@
       }
     }, {
       key: "drawCache",
-      value: function drawCache(source, target, transform, matrix, tfo, inverse) {
+      value: function drawCache(source, target, transform, matrix, tfo, parentMatrix, inverse) {
         var tx = target.x,
             ty = target.y,
             sx1 = target.sx1,
@@ -11106,6 +11106,10 @@
           tfo[1] += oy;
           var m = tf.calMatrixByOrigin(transform, tfo);
           matrix = mx.multiply(matrix, m);
+
+          if (!mx.isE(parentMatrix)) {
+            matrix = mx.multiply(parentMatrix, matrix);
+          }
 
           if (inverse) {
             // 很多情况mask和target相同matrix，可简化计算
@@ -29118,6 +29122,7 @@
               ctx = cacheMask.ctx;
           var _item$__config$NODE_S = item.__config[NODE_STRUCT$4],
               index = _item$__config$NODE_S[STRUCT_INDEX$2],
+              total = _item$__config$NODE_S[STRUCT_TOTAL$1],
               lv = _item$__config$NODE_S[STRUCT_LV$2];
           var matrixList = [];
           var parentMatrix;
@@ -29206,8 +29211,11 @@
 
 
               lastLv = _lv3; // 跳过display:none元素和它的所有子节点和mask
+              // 计算临时的matrix
 
-              var _display = _computedStyle3[DISPLAY$9]; // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
+              var _display = _computedStyle3[DISPLAY$9],
+                  _transform = _computedStyle3[TRANSFORM$4],
+                  _tfo = _computedStyle3[TRANSFORM_ORIGIN$5]; // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
               var _target4 = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal3]);
 
@@ -29227,7 +29235,7 @@
                 }
 
                 ctx.globalAlpha = _config3[NODE_OPACITY$3];
-                Cache.drawCache(_target4, cacheMask);
+                Cache.drawCache(_target4, cacheMask, _transform, mx.identity(), _tfo.slice(0), parentMatrix, inverse);
                 ctx.globalCompositeOperation = 'source-over';
               } // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容
               else {
@@ -29283,10 +29291,7 @@
                   }
 
                   assignMatrix$1(_config3[NODE_MATRIX_EVENT$4], _matrix2);
-                  _config3[NODE_OPACITY$3] = parentOpacity * _opacity; // 计算临时的matrix
-
-                  var _transform = _computedStyle3[TRANSFORM$4],
-                      _tfo = _computedStyle3[TRANSFORM_ORIGIN$5]; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
+                  _config3[NODE_OPACITY$3] = parentOpacity * _opacity; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
 
                   var _m2 = void 0;
 

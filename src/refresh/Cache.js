@@ -308,7 +308,7 @@ class Cache {
     }
   }
 
-  static drawCache(source, target, transform, matrix, tfo, inverse) {
+  static drawCache(source, target, transform, matrix, tfo, parentMatrix, inverse) {
     let { x: tx, y: ty, sx1, sy1, ctx, dbx, dby } = target;
     let { x, y, canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
     let ox = tx + sx2 - sx1 + dbx - dbx2;
@@ -318,6 +318,9 @@ class Cache {
       tfo[1] += oy;
       let m = tf.calMatrixByOrigin(transform, tfo);
       matrix = mx.multiply(matrix, m);
+      if(!mx.isE(parentMatrix)) {
+        matrix = mx.multiply(parentMatrix, matrix);
+      }
       if(inverse) {
         // 很多情况mask和target相同matrix，可简化计算
         if(util.equalArr(matrix, inverse)) {

@@ -227,7 +227,7 @@ class Cache {
     return offscreen;
   }
 
-  static genMask(target, next, isClip, transform, tfo) {
+  static genMask(target, next, isClip, __structs, __config, transform, tfo) {
     let cacheMask = genSingle(target, 'mask1');
     let list = [];
     while(next && (next.isMask)) {
@@ -247,6 +247,7 @@ class Cache {
         __config[NODE_CACHE_TOTAL],
       ]);
       let computedStyle = __config[NODE_COMPUTED_STYLE];
+      // 有cache用cache，没有则普通绘制，和struct遍历一样
       if(target) {
         ctx.globalAlpha = __config[NODE_OPACITY];
         Cache.drawCache(
@@ -258,11 +259,11 @@ class Cache {
         );
       }
       // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
-      else if(__config[NODE_HAS_CONTENT]
-        && computedStyle[DISPLAY] !== 'none'
-        && computedStyle[VISIBILITY] !== 'hidden') {
-        inject.error('CacheMask is oversize');
-      }
+      // else if(__config[NODE_HAS_CONTENT]
+      //   && computedStyle[DISPLAY] !== 'none'
+      //   && computedStyle[VISIBILITY] !== 'hidden') {
+      //   inject.error('CacheMask is oversize');
+      // }
       else {
         // TODO
       }

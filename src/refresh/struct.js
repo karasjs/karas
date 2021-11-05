@@ -1,14 +1,15 @@
+import Cache from './Cache';
+import offscreen from './offscreen';
 import Geom from '../node/geom/Geom';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
+import mode from '../node/mode';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import level from './level';
 import util from '../util/util';
 import inject from '../util/inject';
-import painter from '../util/painter';
-import Cache from './Cache';
 import tf from '../style/transform';
 import mbm from '../style/mbm';
 import enums from '../util/enums';
@@ -33,10 +34,16 @@ import fragmentHue from '../gl/mbm/hue.frag';
 import fragmentSaturation from '../gl/mbm/saturation.frag';
 import fragmentColor from '../gl/mbm/color.frag';
 import fragmentLuminosity from '../gl/mbm/luminosity.frag';
-import mode from '../node/mode';
 
-const { canvasPolygon } = painter;
-const { NA, LOCAL, CHILD, SELF } = Cache;
+const { NA, LOCAL, CHILD, SELF, getCache } = Cache;
+const {
+  OFFSCREEN_OVERFLOW,
+  OFFSCREEN_FILTER,
+  OFFSCREEN_MASK,
+  OFFSCREEN_BLEND,
+  OFFSCREEN_MASK2,
+  applyOffscreen,
+} = offscreen;
 
 const {
   STYLE_KEY: {
@@ -102,16 +109,6 @@ const {
 const { isE, inverse, multiply } = mx;
 const { mbmName, isValidMbm } = mbm;
 const { assignMatrix, transformBbox } = util;
-
-// 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
-const OFFSCREEN_OVERFLOW = 0;
-const OFFSCREEN_FILTER = 1;
-const OFFSCREEN_MASK = 2;
-const OFFSCREEN_BLEND = 3;
-const OFFSCREEN_MASK2 = 4;
-
-// 依次从list获取首个available可用的cache
-const getCache = Cache.getCache;
 
 /**
  * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
@@ -447,10 +444,10 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
     [NODE_CURRENT_STYLE]: currentStyle,
     [NODE_COMPUTED_STYLE]: computedStyle,
   } = config;
-  let needGen, reGenTotal;
+  let needGen;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!cacheTotal || !cacheTotal.available) {
-    needGen = reGenTotal = true; // total重新生成了，其它基于的也一定需要重新生成
+    needGen = true; // total重新生成了，其它基于的也一定需要重新生成
     let bboxTotal, baseMatrix;
     let { __sx1: sx1, __sy1: sy1 } = node;
     // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
@@ -589,6 +586,9 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
     }
     // 生成cacheTotal，获取偏移dx/dy
     config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
+    if(!cacheTotal) {
+      return false;
+    }
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
     // console.warn(node.tagName, bboxTotal, dx, dy)
@@ -820,20 +820,20 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
       target = config[NODE_CACHE_FILTER] || target;
     }
     if(hasMask && (!cacheMask || !cacheMask.available || needGen)) {
-      config[NODE_CACHE_MASK] = genMask(node, target);
+      config[NODE_CACHE_MASK] = genMask(node, target, __structs, config);
     }
   }
-  return reGenTotal;
+  return true;
 }
 
 function genFilter(node, cache, v) {
   return Cache.genFilter(cache, v);
 }
 
-function genMask(node, cache) {
+function genMask(node, cache, __structs, __config) {
   let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: transformOrigin } = node.computedStyle;
   let isClip = node.next.isClip;
-  return Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
+  return Cache.genMask(cache, node.next, isClip, __structs, __config, transform, transformOrigin);
 }
 
 function genOverflow(node, cache) {
@@ -1433,150 +1433,6 @@ function genMbmWebgl(gl, texCache, i, j, fbo, tex, mbm, W, H) {
   texCache.releaseLockChannel(i);
   texCache.releaseLockChannel(j);
   return [n, frameBuffer, texture];
-}
-
-function applyOffscreen(ctx, list, width, height) {
-  list.sort(function(a, b) {
-    if(a[1] === b[1]) {
-      if(a[0] === b[0]) {
-        return a[2] - b[2];
-      }
-      return b[0] - a[0];
-    }
-    return b[1] - a[1];
-  });
-  list.forEach(item => {
-    let [, , type, offscreen] = item;
-    if(type === OFFSCREEN_OVERFLOW) {
-      let { matrix, target, ctx: origin, x, y, offsetWidth, offsetHeight, list } = offscreen;
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.globalAlpha = 1;
-      ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-      ctx.fillStyle = '#FFF';
-      ctx.beginPath();
-      if(list) {
-        canvasPolygon(ctx, list);
-      }
-      else {
-        ctx.rect(x, y, offsetWidth, offsetHeight);
-      }
-      ctx.fill();
-      ctx.closePath();
-      ctx.globalCompositeOperation = 'source-over';
-      target.draw();
-      ctx = origin;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
-      ctx.draw && ctx.draw(true);
-      target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      target.ctx.clearRect(0, 0, width, height);
-      target.draw();
-      inject.releaseCacheCanvas(target.canvas);
-    }
-    else if(type === OFFSCREEN_FILTER) {
-      let { target, ctx: origin, filter } = offscreen;
-      // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
-      if(ctx.filter) {
-        let apply = inject.getCacheCanvas(width, height, null, 'filter');
-        apply.ctx.filter = painter.canvasFilter(filter);
-        apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
-        apply.ctx.filter = 'none';
-        apply.draw();
-        target.ctx.globalAlpha = 1;
-        target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        target.ctx.clearRect(0, 0, width, height);
-        target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
-        target.draw();
-        apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        apply.ctx.clearRect(0, 0, width, height);
-        apply.draw();
-        inject.releaseCacheCanvas(apply.canvas);
-      }
-      // 绘制回主画布，如果不支持则等同无filter原样绘制
-      ctx = origin;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
-      ctx.draw && ctx.draw(true);
-      target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      target.ctx.globalAlpha = 1;
-      target.ctx.clearRect(0, 0, width, height);
-      target.draw();
-      inject.releaseCacheCanvas(target.canvas);
-    }
-    else if(type === OFFSCREEN_MASK) {
-      let { mask, isClip } = offscreen;
-      if(isClip) {
-        offscreen.target.draw();
-        ctx = mask.ctx;
-        ctx.globalCompositeOperation = 'source-out';
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
-        mask.draw();
-        ctx.globalCompositeOperation = 'source-over';
-        offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        offscreen.target.ctx.clearRect(0, 0, width, height);
-        offscreen.target.draw();
-        inject.releaseCacheCanvas(offscreen.target.canvas);
-        ctx = offscreen.ctx;
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
-        ctx.draw && ctx.draw(true);
-        mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        mask.ctx.clearRect(0, 0, width, height);
-        mask.draw();
-        inject.releaseCacheCanvas(mask.canvas);
-      }
-      else {
-        mask.draw();
-        let target = offscreen.target;
-        ctx = target.ctx;
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-over';
-        target.draw();
-        mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        mask.ctx.clearRect(0, 0, width, height);
-        mask.draw();
-        inject.releaseCacheCanvas(mask.canvas);
-        ctx = offscreen.ctx;
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
-        ctx.draw && ctx.draw(true);
-        target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        target.ctx.clearRect(0, 0, width, height);
-        target.draw();
-        inject.releaseCacheCanvas(target.canvas);
-      }
-    }
-    else if(type === OFFSCREEN_BLEND) {
-      let target = offscreen.target;
-      ctx = offscreen.ctx;
-      ctx.globalCompositeOperation = offscreen.mixBlendMode;
-      target.draw();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.draw && ctx.draw(true);
-      target.ctx.globalAlpha = 1;
-      target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      target.ctx.clearRect(0, 0, width, height);
-      target.draw();
-      inject.releaseCacheCanvas(target.canvas);
-    }
-    // 特殊的mask节点汇总结束，还原ctx
-    else if(type === OFFSCREEN_MASK2) {
-      ctx = offscreen.ctx;
-    }
-  });
-  return ctx;
 }
 
 function renderCacheCanvas(renderMode, ctx, root) {
@@ -2892,8 +2748,8 @@ function renderCanvas2(renderMode, ctx, root) {
     });
     mergeList.forEach(item => {
       let [i, lv, total, node, __config, hasMask] = item;
-      let reGenTotal = genTotal2(renderMode, node, __config, i, lv, total || 0, __structs, hasMask, width, height);
-      if(reGenTotal) {
+      let success = genTotal2(renderMode, node, __config, i, lv, total || 0, __structs, hasMask, width, height);
+      if(success) {
         // TODO 设置所有节点matrix/opacity回为以root为基准
       }
     });

@@ -2348,7 +2348,7 @@
     return s;
   }
 
-  var painter = {
+  var painter$1 = {
     canvasPolygon: canvasPolygon,
     svgPolygon: svgPolygon,
     canvasLine: canvasLine,
@@ -2363,8 +2363,8 @@
       REM = o.REM,
       VW = o.VW,
       VH = o.VH;
-  var canvasPolygon$1 = painter.canvasPolygon,
-      svgPolygon$1 = painter.svgPolygon;
+  var canvasPolygon$1 = painter$1.canvasPolygon,
+      svgPolygon$1 = painter$1.svgPolygon;
   var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
       BORDER_LEFT_WIDTH = _enums$STYLE_KEY$1.BORDER_LEFT_WIDTH,
       BORDER_TOP_WIDTH = _enums$STYLE_KEY$1.BORDER_TOP_WIDTH,
@@ -6507,8 +6507,8 @@
       VH$1 = o.VH,
       calUnit = o.calUnit;
   var d2r$1 = geom.d2r;
-  var canvasPolygon$2 = painter.canvasPolygon,
-      svgPolygon$2 = painter.svgPolygon;
+  var canvasPolygon$2 = painter$1.canvasPolygon,
+      svgPolygon$2 = painter$1.svgPolygon;
   var FONT_SIZE$1 = enums.STYLE_KEY.FONT_SIZE,
       NODE_DEFS_CACHE = enums.NODE_KEY.NODE_DEFS_CACHE;
 
@@ -10959,7 +10959,7 @@
         bbox[2] += d;
         bbox[3] += d;
         var offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
-        offscreen.ctx.filter = painter.canvasFilter(filter);
+        offscreen.ctx.filter = painter$1.canvasFilter(filter);
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
         offscreen.draw();
@@ -10979,7 +10979,7 @@
       }
     }, {
       key: "genMask",
-      value: function genMask(target, next, isClip, transform, tfo) {
+      value: function genMask(target, next, isClip, __structs, __config, transform, tfo) {
         var cacheMask = genSingle(target, 'mask1');
         var list = [];
 
@@ -11000,15 +11000,12 @@
         list.forEach(function (item) {
           var __config = item.__config;
           var target = Cache.getCache([__config[NODE_CACHE_FILTER], __config[NODE_CACHE_OVERFLOW], __config[NODE_CACHE_TOTAL]]);
-          var computedStyle = __config[NODE_COMPUTED_STYLE];
+          var computedStyle = __config[NODE_COMPUTED_STYLE]; // 有cache用cache，没有则普通绘制，和struct遍历一样
 
           if (target) {
             ctx.globalAlpha = __config[NODE_OPACITY];
             Cache.drawCache(target, cacheMask, computedStyle[TRANSFORM$1], mx.identity(), computedStyle[TRANSFORM_ORIGIN$2].slice(0), inverse);
-          } // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
-          else if (__config[NODE_HAS_CONTENT] && computedStyle[DISPLAY$1] !== 'none' && computedStyle[VISIBILITY$1] !== 'hidden') {
-              inject.error('CacheMask is oversize');
-            }
+          }
         });
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
@@ -13086,8 +13083,8 @@
       NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$2 = util.clone,
       joinArr$1 = util.joinArr;
-  var canvasPolygon$3 = painter.canvasPolygon,
-      svgPolygon$3 = painter.svgPolygon;
+  var canvasPolygon$3 = painter$1.canvasPolygon,
+      svgPolygon$3 = painter$1.svgPolygon;
   var AUTO$2 = o.AUTO,
       PX$4 = o.PX,
       PERCENT$5 = o.PERCENT,
@@ -16642,8 +16639,8 @@
 
   var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
-  var canvasPolygon$4 = painter.canvasPolygon,
-      svgPolygon$4 = painter.svgPolygon;
+  var canvasPolygon$4 = painter$1.canvasPolygon,
+      svgPolygon$4 = painter$1.svgPolygon;
 
   function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
     var dx = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : 0;
@@ -17216,7 +17213,7 @@
     getInlineWidth: getInlineWidth
   };
 
-  var svgPolygon$5 = painter.svgPolygon;
+  var svgPolygon$5 = painter$1.svgPolygon;
   var CANVAS$1 = mode.CANVAS,
       SVG = mode.SVG,
       WEBGL$1 = mode.WEBGL;
@@ -19043,7 +19040,7 @@
             };
             ctx = _c3.ctx;
           } else if (renderMode === SVG) {
-            virtualDom.filter = painter.svgFilter(filter);
+            virtualDom.filter = painter$1.svgFilter(filter);
           }
         } else if (renderMode === SVG) {
           delete virtualDom.filter;
@@ -24758,8 +24755,8 @@
       VW$9 = o.VW,
       VH$9 = o.VH,
       RGBA$2 = o.RGBA;
-  var canvasPolygon$5 = painter.canvasPolygon,
-      svgPolygon$6 = painter.svgPolygon;
+  var canvasPolygon$5 = painter$1.canvasPolygon,
+      svgPolygon$6 = painter$1.svgPolygon;
   var isFunction$5 = util.isFunction;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
@@ -25637,8 +25634,8 @@
   var int2rgba$3 = util.int2rgba,
       isNil$7 = util.isNil,
       joinArr$3 = util.joinArr;
-  var canvasPolygon$6 = painter.canvasPolygon,
-      svgPolygon$7 = painter.svgPolygon;
+  var canvasPolygon$6 = painter$1.canvasPolygon,
+      svgPolygon$7 = painter$1.svgPolygon;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -26363,7 +26360,7 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item, dx, dy);
+              return painter$1.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
             canvasPolygon$6(ctx, list, dx, dy);
@@ -27949,6 +27946,202 @@
     return Controller;
   }();
 
+  var canvasPolygon$7 = painter$1.canvasPolygon; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
+
+  var OFFSCREEN_OVERFLOW = 0;
+  var OFFSCREEN_FILTER = 1;
+  var OFFSCREEN_MASK = 2;
+  var OFFSCREEN_BLEND = 3;
+  var OFFSCREEN_MASK2 = 4;
+
+  function applyOffscreen(ctx, list, width, height) {
+    list.sort(function (a, b) {
+      if (a[1] === b[1]) {
+        if (a[0] === b[0]) {
+          return a[2] - b[2];
+        }
+
+        return b[0] - a[0];
+      }
+
+      return b[1] - a[1];
+    });
+    list.forEach(function (item) {
+      var _item = _slicedToArray(item, 4),
+          type = _item[2],
+          offscreen = _item[3];
+
+      if (type === OFFSCREEN_OVERFLOW) {
+        var matrix = offscreen.matrix,
+            target = offscreen.target,
+            origin = offscreen.ctx,
+            x = offscreen.x,
+            y = offscreen.y,
+            offsetWidth = offscreen.offsetWidth,
+            offsetHeight = offscreen.offsetHeight,
+            _list = offscreen.list;
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+
+        if (_list) {
+          canvasPolygon$7(ctx, _list);
+        } else {
+          ctx.rect(x, y, offsetWidth, offsetHeight);
+        }
+
+        ctx.fill();
+        ctx.closePath();
+        ctx.globalCompositeOperation = 'source-over';
+        target.draw();
+        ctx = origin;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+        ctx.draw && ctx.draw(true);
+        target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        target.ctx.clearRect(0, 0, width, height);
+        target.draw();
+        inject.releaseCacheCanvas(target.canvas);
+      } else if (type === OFFSCREEN_FILTER) {
+        var _target = offscreen.target,
+            _origin = offscreen.ctx,
+            filter = offscreen.filter; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
+
+        if (ctx.filter) {
+          var apply = inject.getCacheCanvas(width, height, null, 'filter');
+          apply.ctx.filter = painter$1.canvasFilter(filter);
+          apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+          apply.ctx.filter = 'none';
+          apply.draw();
+          _target.ctx.globalAlpha = 1;
+
+          _target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+          _target.ctx.clearRect(0, 0, width, height);
+
+          _target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+
+          _target.draw();
+
+          apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          apply.ctx.clearRect(0, 0, width, height);
+          apply.draw();
+          inject.releaseCacheCanvas(apply.canvas);
+        } // 绘制回主画布，如果不支持则等同无filter原样绘制
+
+
+        ctx = _origin;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+        ctx.draw && ctx.draw(true);
+
+        _target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        _target.ctx.globalAlpha = 1;
+
+        _target.ctx.clearRect(0, 0, width, height);
+
+        _target.draw();
+
+        inject.releaseCacheCanvas(_target.canvas);
+      } else if (type === OFFSCREEN_MASK) {
+        var mask = offscreen.mask,
+            isClip = offscreen.isClip;
+
+        if (isClip) {
+          offscreen.target.draw();
+          ctx = mask.ctx;
+          ctx.globalCompositeOperation = 'source-out';
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+          mask.draw();
+          ctx.globalCompositeOperation = 'source-over';
+          offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          offscreen.target.ctx.clearRect(0, 0, width, height);
+          offscreen.target.draw();
+          inject.releaseCacheCanvas(offscreen.target.canvas);
+          ctx = offscreen.ctx;
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+          ctx.draw && ctx.draw(true);
+          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          mask.ctx.clearRect(0, 0, width, height);
+          mask.draw();
+          inject.releaseCacheCanvas(mask.canvas);
+        } else {
+          mask.draw();
+          var _target2 = offscreen.target;
+          ctx = _target2.ctx;
+          ctx.globalCompositeOperation = 'destination-in';
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+          ctx.globalCompositeOperation = 'source-over';
+
+          _target2.draw();
+
+          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          mask.ctx.clearRect(0, 0, width, height);
+          mask.draw();
+          inject.releaseCacheCanvas(mask.canvas);
+          ctx = offscreen.ctx;
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
+          ctx.draw && ctx.draw(true);
+
+          _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+          _target2.ctx.clearRect(0, 0, width, height);
+
+          _target2.draw();
+
+          inject.releaseCacheCanvas(_target2.canvas);
+        }
+      } else if (type === OFFSCREEN_BLEND) {
+        var _target3 = offscreen.target;
+        ctx = offscreen.ctx;
+        ctx.globalCompositeOperation = offscreen.mixBlendMode;
+
+        _target3.draw();
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.draw && ctx.draw(true);
+        _target3.ctx.globalAlpha = 1;
+
+        _target3.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        _target3.ctx.clearRect(0, 0, width, height);
+
+        _target3.draw();
+
+        inject.releaseCacheCanvas(_target3.canvas);
+      } // 特殊的mask节点汇总结束，还原ctx
+      else if (type === OFFSCREEN_MASK2) {
+          ctx = offscreen.ctx;
+        }
+    });
+    return ctx;
+  }
+
+  var offscreen = {
+    OFFSCREEN_OVERFLOW: OFFSCREEN_OVERFLOW,
+    OFFSCREEN_FILTER: OFFSCREEN_FILTER,
+    OFFSCREEN_MASK: OFFSCREEN_MASK,
+    OFFSCREEN_BLEND: OFFSCREEN_BLEND,
+    OFFSCREEN_MASK2: OFFSCREEN_MASK2,
+    applyOffscreen: applyOffscreen
+  };
+
   var MockPage = function MockPage(texture, width, height) {
     _classCallCheck(this, MockPage);
 
@@ -28036,11 +28229,17 @@
 
   var fragmentLuminosity = "#version 100\n#ifdef GL_ES\nprecision mediump float;\n#define GLSLIFY 1\n#endif\nvarying vec2 v_texCoords;uniform sampler2D u_texture1;uniform sampler2D u_texture2;float getLuminosity(vec3 color){return 0.3*color[0]+0.59*color[1]+0.11*color[2];}float clipLowest(float channel,float lowestChannel,float luminosity){return luminosity+((channel-luminosity)*luminosity)/(luminosity-lowestChannel);}float clipHighest(float channel,float highestChannel,float luminosity){return luminosity+((channel-luminosity)*(1.0-luminosity))/(highestChannel-luminosity);}vec3 clipColor(vec3 rgb){float luminosity=getLuminosity(rgb);float lowestChannel=min(rgb[0],min(rgb[1],rgb[2]));float highestChannel=max(rgb[0],max(rgb[1],rgb[2]));float r=rgb[0],g=rgb[1],b=rgb[2];if(lowestChannel<0.0){r=clipLowest(r,lowestChannel,luminosity);g=clipLowest(g,lowestChannel,luminosity);b=clipLowest(b,lowestChannel,luminosity);}if(highestChannel>1.0){r=clipHighest(r,highestChannel,luminosity);g=clipHighest(g,highestChannel,luminosity);b=clipHighest(b,highestChannel,luminosity);}return vec3(r,g,b);}vec3 setLuminosity(vec3 rgb,float luminosity){float delta=luminosity-getLuminosity(rgb);float r=rgb[0],g=rgb[1],b=rgb[2];return clipColor(vec3(r+delta,g+delta,b+delta));}float getSaturation(vec3 rgb){return max(rgb[0],max(rgb[1],rgb[2]))-min(rgb[0],min(rgb[1],rgb[2]));}vec3 setSaturation(vec3 rgb,float saturation){float r=rgb[0],g=rgb[1],b=rgb[2];float maxC=0.0,minC=0.0,midC=0.0;int maxI=0,minI=0,midI=0;if(r>=g&&r>=b){maxI=0;maxC=r;if(g>=b){minI=2;midI=1;minC=b;midC=g;}else{minI=1;midI=2;minC=g;midC=b;}}else if(g>=r&&g>=b){maxI=1;maxC=g;if(r>=b){minI=2;midI=0;minC=b;midC=r;}else{minI=0;midI=2;minC=r;midC=b;}}else if(b>=r&&b>=g){maxI=2;maxC=b;if(r>=g){minI=1;midI=0;minC=g;midC=r;}else{minI=0;midI=1;minC=r;midC=g;}}vec3 result=vec3(r,g,b);if(maxC>minC){midC=(midC-minC)*saturation/(maxC-minC);maxC=saturation;}else{maxC=midC=0.0;}minC=0.0;if(maxI==0){result[0]=maxC;}else if(maxI==1){result[1]=maxC;}else if(maxI==2){result[2]=maxC;}if(minI==0){result[0]=minC;}else if(minI==1){result[1]=minC;}else if(minI==2){result[2]=minC;}if(midI==0){result[0]=midC;}else if(midI==1){result[1]=midC;}else if(midI==2){result[2]=midC;}return result;}vec3 op(vec3 a,vec3 b){float l=getLuminosity(b);return setLuminosity(a,l);}vec3 premultipliedAlpha(vec4 color){float a=color.a;if(a==0.0){return vec3(0.0,0.0,0.0);}return vec3(color.r/a,color.g/a,color.b/a);}float alphaCompose(float a1,float a2,float a3,float c1,float c2,float c3){return(1.0-a2/a3)*c1+a2/a3*((1.0-a1)*c2+a1*c3);}void main(){vec4 color1=texture2D(u_texture1,v_texCoords);vec4 color2=texture2D(u_texture2,v_texCoords);if(color1.a==0.0){gl_FragColor=color2;}else if(color2.a==0.0){gl_FragColor=color1;}else{vec3 bottom=premultipliedAlpha(color1);vec3 top=premultipliedAlpha(color2);vec3 res=op(bottom,top);float a=color1.a+color2.a-color1.a*color2.a;gl_FragColor=vec4(alphaCompose(color1.a,color2.a,a,bottom.r,top.r,res.r)*a,alphaCompose(color1.a,color2.a,a,bottom.g,top.g,res.g)*a,alphaCompose(color1.a,color2.a,a,bottom.b,top.b,res.b)*a,a);}}"; // eslint-disable-line
 
-  var canvasPolygon$7 = painter.canvasPolygon;
   var NA = Cache.NA,
       LOCAL$1 = Cache.LOCAL,
       CHILD = Cache.CHILD,
-      SELF = Cache.SELF;
+      SELF = Cache.SELF,
+      getCache = Cache.getCache;
+  var OFFSCREEN_OVERFLOW$1 = offscreen.OFFSCREEN_OVERFLOW,
+      OFFSCREEN_FILTER$1 = offscreen.OFFSCREEN_FILTER,
+      OFFSCREEN_MASK$1 = offscreen.OFFSCREEN_MASK,
+      OFFSCREEN_BLEND$1 = offscreen.OFFSCREEN_BLEND,
+      OFFSCREEN_MASK2$1 = offscreen.OFFSCREEN_MASK2,
+      applyOffscreen$1 = offscreen.applyOffscreen;
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$i.POSITION,
       DISPLAY$9 = _enums$STYLE_KEY$i.DISPLAY,
@@ -28101,15 +28300,7 @@
   var mbmName$2 = mbm.mbmName,
       isValidMbm$2 = mbm.isValidMbm;
   var assignMatrix$1 = util.assignMatrix,
-      transformBbox$1 = util.transformBbox; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
-
-  var OFFSCREEN_OVERFLOW = 0;
-  var OFFSCREEN_FILTER = 1;
-  var OFFSCREEN_MASK = 2;
-  var OFFSCREEN_BLEND = 3;
-  var OFFSCREEN_MASK2 = 4; // 依次从list获取首个available可用的cache
-
-  var getCache = Cache.getCache;
+      transformBbox$1 = util.transformBbox;
   /**
    * 生成一个节点及其子节点所包含的矩形范围盒，canvas和webgl的最大尺寸限制不一样，由外部传入
    * 如果某个子节点超限，则视为整个超限，超限返回空
@@ -28487,10 +28678,10 @@
         cacheOverflow = config[NODE_CACHE_OVERFLOW$2],
         currentStyle = config[NODE_CURRENT_STYLE$5],
         computedStyle = config[NODE_COMPUTED_STYLE$4];
-    var needGen, reGenTotal; // 先绘制形成基础的total，有可能已经存在无变化，就可省略
+    var needGen; // 先绘制形成基础的total，有可能已经存在无变化，就可省略
 
     if (!cacheTotal || !cacheTotal.available) {
-      needGen = reGenTotal = true; // total重新生成了，其它基于的也一定需要重新生成
+      needGen = true; // total重新生成了，其它基于的也一定需要重新生成
 
       var bboxTotal, baseMatrix;
       var sx1 = node.__sx1,
@@ -28642,6 +28833,11 @@
 
 
       config[NODE_CACHE_TOTAL$2] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
+
+      if (!cacheTotal) {
+        return false;
+      }
+
       cacheTotal.__available = true;
       var _cacheTotal = cacheTotal,
           dx = _cacheTotal.dx,
@@ -28678,7 +28874,7 @@
           _node3.render(renderMode, REPAINT$2, ctxTotal, CHILD, dx, dy);
 
           if (offscreenHash.hasOwnProperty(_i2)) {
-            ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height);
+            ctxTotal = applyOffscreen$1(ctxTotal, offscreenHash[_i2], width, height);
           }
         } else {
           var _config2 = _node3.__config;
@@ -28710,8 +28906,8 @@
 
             j--;
             var list = offscreenHash[j] = offscreenHash[j] || [];
-            list.push([idx, _lv2, OFFSCREEN_MASK, offscreenMask]);
-            list.push([j, _lv2, OFFSCREEN_MASK2, {
+            list.push([idx, _lv2, OFFSCREEN_MASK$1, offscreenMask]);
+            list.push([j, _lv2, OFFSCREEN_MASK2$1, {
               ctx: ctxTotal,
               // 保存等待OFFSCREEN_MASK2时还原
               target: _target2
@@ -28811,7 +29007,7 @@
 
               var _list = offscreenHash[_j] = offscreenHash[_j] || [];
 
-              _list.push([_i2, _lv2, OFFSCREEN_BLEND, offscreenBlend]);
+              _list.push([_i2, _lv2, OFFSCREEN_BLEND$1, offscreenBlend]);
 
               ctxTotal = offscreenBlend.target.ctx;
             } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -28831,7 +29027,7 @@
 
               var _list2 = offscreenHash[_j3] = offscreenHash[_j3] || [];
 
-              _list2.push([_i2, _lv2, OFFSCREEN_FILTER, offscreenFilter]);
+              _list2.push([_i2, _lv2, OFFSCREEN_FILTER$1, offscreenFilter]);
 
               ctxTotal = offscreenFilter.target.ctx;
             } // overflow:hidden的离屏，最后孩子进行截取
@@ -28842,7 +29038,7 @@
 
               var _list3 = offscreenHash[_j4] = offscreenHash[_j4] || [];
 
-              _list3.push([_i2, _lv2, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+              _list3.push([_i2, _lv2, OFFSCREEN_OVERFLOW$1, offscreenOverflow]);
 
               ctxTotal = offscreenOverflow.target.ctx;
             } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -28850,7 +29046,7 @@
 
 
             if (offscreenHash.hasOwnProperty(_i2)) {
-              ctxTotal = applyOffscreen(ctxTotal, offscreenHash[_i2], width, height);
+              ctxTotal = applyOffscreen$1(ctxTotal, offscreenHash[_i2], width, height);
             } // render后判断可见状态，此时computedStyle才有值
 
 
@@ -28913,23 +29109,23 @@
       }
 
       if (hasMask && (!cacheMask || !cacheMask.available || needGen)) {
-        config[NODE_CACHE_MASK$1] = genMask(node, _target3);
+        config[NODE_CACHE_MASK$1] = genMask(node, _target3, __structs, config);
       }
     }
 
-    return reGenTotal;
+    return true;
   }
 
   function genFilter(node, cache, v) {
     return Cache.genFilter(cache, v);
   }
 
-  function genMask(node, cache) {
+  function genMask(node, cache, __structs, __config) {
     var _node$computedStyle = node.computedStyle,
         transform = _node$computedStyle[TRANSFORM$4],
         transformOrigin = _node$computedStyle[TRANSFORM_ORIGIN$5];
     var isClip = node.next.isClip;
-    return Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
+    return Cache.genMask(cache, node.next, isClip, __structs, __config, transform, transformOrigin);
   }
 
   function genOverflow(node, cache) {
@@ -29643,185 +29839,6 @@
     return [n, frameBuffer, texture];
   }
 
-  function applyOffscreen(ctx, list, width, height) {
-    list.sort(function (a, b) {
-      if (a[1] === b[1]) {
-        if (a[0] === b[0]) {
-          return a[2] - b[2];
-        }
-
-        return b[0] - a[0];
-      }
-
-      return b[1] - a[1];
-    });
-    list.forEach(function (item) {
-      var _item3 = _slicedToArray(item, 4),
-          type = _item3[2],
-          offscreen = _item3[3];
-
-      if (type === OFFSCREEN_OVERFLOW) {
-        var matrix = offscreen.matrix,
-            target = offscreen.target,
-            origin = offscreen.ctx,
-            x = offscreen.x,
-            y = offscreen.y,
-            offsetWidth = offscreen.offsetWidth,
-            offsetHeight = offscreen.offsetHeight,
-            _list4 = offscreen.list;
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.globalAlpha = 1;
-        ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
-        ctx.fillStyle = '#FFF';
-        ctx.beginPath();
-
-        if (_list4) {
-          canvasPolygon$7(ctx, _list4);
-        } else {
-          ctx.rect(x, y, offsetWidth, offsetHeight);
-        }
-
-        ctx.fill();
-        ctx.closePath();
-        ctx.globalCompositeOperation = 'source-over';
-        target.draw();
-        ctx = origin;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
-        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
-        ctx.draw && ctx.draw(true);
-        target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        target.ctx.clearRect(0, 0, width, height);
-        target.draw();
-        inject.releaseCacheCanvas(target.canvas);
-      } else if (type === OFFSCREEN_FILTER) {
-        var _target4 = offscreen.target,
-            _origin = offscreen.ctx,
-            filter = offscreen.filter; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
-
-        if (ctx.filter) {
-          var apply = inject.getCacheCanvas(width, height, null, 'filter');
-          apply.ctx.filter = painter.canvasFilter(filter);
-          apply.ctx.drawImage(_target4.canvas, 0, 0, width, height, 0, 0, width, height);
-          apply.ctx.filter = 'none';
-          apply.draw();
-          _target4.ctx.globalAlpha = 1;
-
-          _target4.ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-          _target4.ctx.clearRect(0, 0, width, height);
-
-          _target4.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
-
-          _target4.draw();
-
-          apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          apply.ctx.clearRect(0, 0, width, height);
-          apply.draw();
-          inject.releaseCacheCanvas(apply.canvas);
-        } // 绘制回主画布，如果不支持则等同无filter原样绘制
-
-
-        ctx = _origin;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
-        ctx.drawImage(_target4.canvas, 0, 0, width, height, 0, 0, width, height);
-        ctx.draw && ctx.draw(true);
-
-        _target4.ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-        _target4.ctx.globalAlpha = 1;
-
-        _target4.ctx.clearRect(0, 0, width, height);
-
-        _target4.draw();
-
-        inject.releaseCacheCanvas(_target4.canvas);
-      } else if (type === OFFSCREEN_MASK) {
-        var mask = offscreen.mask,
-            isClip = offscreen.isClip;
-
-        if (isClip) {
-          offscreen.target.draw();
-          ctx = mask.ctx;
-          ctx.globalCompositeOperation = 'source-out';
-          ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
-          mask.draw();
-          ctx.globalCompositeOperation = 'source-over';
-          offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          offscreen.target.ctx.clearRect(0, 0, width, height);
-          offscreen.target.draw();
-          inject.releaseCacheCanvas(offscreen.target.canvas);
-          ctx = offscreen.ctx;
-          ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
-          ctx.draw && ctx.draw(true);
-          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          mask.ctx.clearRect(0, 0, width, height);
-          mask.draw();
-          inject.releaseCacheCanvas(mask.canvas);
-        } else {
-          mask.draw();
-          var _target5 = offscreen.target;
-          ctx = _target5.ctx;
-          ctx.globalCompositeOperation = 'destination-in';
-          ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
-          ctx.globalCompositeOperation = 'source-over';
-
-          _target5.draw();
-
-          mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          mask.ctx.clearRect(0, 0, width, height);
-          mask.draw();
-          inject.releaseCacheCanvas(mask.canvas);
-          ctx = offscreen.ctx;
-          ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(_target5.canvas, 0, 0, width, height, 0, 0, width, height);
-          ctx.draw && ctx.draw(true);
-
-          _target5.ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-          _target5.ctx.clearRect(0, 0, width, height);
-
-          _target5.draw();
-
-          inject.releaseCacheCanvas(_target5.canvas);
-        }
-      } else if (type === OFFSCREEN_BLEND) {
-        var _target6 = offscreen.target;
-        ctx = offscreen.ctx;
-        ctx.globalCompositeOperation = offscreen.mixBlendMode;
-
-        _target6.draw();
-
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 1;
-        ctx.drawImage(_target6.canvas, 0, 0, width, height, 0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.draw && ctx.draw(true);
-        _target6.ctx.globalAlpha = 1;
-
-        _target6.ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-        _target6.ctx.clearRect(0, 0, width, height);
-
-        _target6.draw();
-
-        inject.releaseCacheCanvas(_target6.canvas);
-      } // 特殊的mask节点汇总结束，还原ctx
-      else if (type === OFFSCREEN_MASK2) {
-          ctx = offscreen.ctx;
-        }
-    });
-    return ctx;
-  }
-
   function renderCacheCanvas(renderMode, ctx, root) {
     var __structs = root.__structs,
         width = root.width,
@@ -30005,14 +30022,14 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item4 = _slicedToArray(item, 8),
-            i = _item4[0],
-            total = _item4[2],
-            node = _item4[3],
-            __config = _item4[4],
-            hasMask = _item4[5],
-            filter = _item4[6],
-            overflow = _item4[7];
+        var _item3 = _slicedToArray(item, 8),
+            i = _item3[0],
+            total = _item3[2],
+            node = _item3[3],
+            __config = _item3[4],
+            hasMask = _item3[5],
+            filter = _item3[6],
+            overflow = _item3[7];
 
         var __cache = __config[NODE_CACHE$3],
             __cacheTotal = __config[NODE_CACHE_TOTAL$2],
@@ -30086,7 +30103,7 @@
         _node5.render(renderMode, 0, ctx, NA, 0, 0);
 
         if (offscreenHash.hasOwnProperty(_i5)) {
-          ctx = applyOffscreen(ctx, offscreenHash[_i5], width, height);
+          ctx = applyOffscreen$1(ctx, offscreenHash[_i5], width, height);
         }
       } else {
         var _opacity2 = _config5[NODE_OPACITY$3],
@@ -30125,7 +30142,7 @@
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
           if (offscreenHash.hasOwnProperty(_i5)) {
-            ctx = applyOffscreen(ctx, offscreenHash[_i5], width, height);
+            ctx = applyOffscreen$1(ctx, offscreenHash[_i5], width, height);
           }
         } // 自身cache尝试
         else {
@@ -30135,9 +30152,9 @@
                   n = _maskStartHash$_i2[1],
                   _offscreenMask2 = _maskStartHash$_i2[2];
 
-              var _target7 = inject.getCacheCanvas(width, height, null, 'mask2');
+              var _target4 = inject.getCacheCanvas(width, height, null, 'mask2');
 
-              _offscreenMask2.mask = _target7; // 应用mask用到
+              _offscreenMask2.mask = _target4; // 应用mask用到
 
               _offscreenMask2.isClip = _node5.isClip; // 定位到最后一个mask元素上的末尾
 
@@ -30150,13 +30167,13 @@
 
               j--;
               var list = offscreenHash[j] = offscreenHash[j] || [];
-              list.push([idx, _lv3, OFFSCREEN_MASK, _offscreenMask2]);
-              list.push([j, _lv3, OFFSCREEN_MASK2, {
+              list.push([idx, _lv3, OFFSCREEN_MASK$1, _offscreenMask2]);
+              list.push([j, _lv3, OFFSCREEN_MASK2$1, {
                 ctx: ctx,
                 // 保存等待OFFSCREEN_MASK2时还原
-                target: _target7
+                target: _target4
               }]);
-              ctx = _target7.ctx;
+              ctx = _target4.ctx;
             }
 
             var offscreenBlend = void 0,
@@ -30232,9 +30249,9 @@
               if (offscreenBlend) {
                 var _j5 = _i5 + (_total8 || 0) + (_hasMask3 || 0);
 
-                var _list5 = offscreenHash[_j5] = offscreenHash[_j5] || [];
+                var _list4 = offscreenHash[_j5] = offscreenHash[_j5] || [];
 
-                _list5.push([_i5, _lv3, OFFSCREEN_BLEND, offscreenBlend]);
+                _list4.push([_i5, _lv3, OFFSCREEN_BLEND$1, offscreenBlend]);
 
                 ctx = offscreenBlend.target.ctx;
               } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -30251,9 +30268,9 @@
               if (offscreenFilter) {
                 var _j7 = _i5 + (_total8 || 0) + (_hasMask3 || 0);
 
-                var _list6 = offscreenHash[_j7] = offscreenHash[_j7] || [];
+                var _list5 = offscreenHash[_j7] = offscreenHash[_j7] || [];
 
-                _list6.push([_i5, _lv3, OFFSCREEN_FILTER, offscreenFilter]);
+                _list5.push([_i5, _lv3, OFFSCREEN_FILTER$1, offscreenFilter]);
 
                 ctx = offscreenFilter.target.ctx;
               } // overflow:hidden的离屏，最后孩子进行截取
@@ -30262,9 +30279,9 @@
               if (offscreenOverflow) {
                 var _j8 = _i5 + (_total8 || 0) + (_hasMask3 || 0);
 
-                var _list7 = offscreenHash[_j8] = offscreenHash[_j8] || [];
+                var _list6 = offscreenHash[_j8] = offscreenHash[_j8] || [];
 
-                _list7.push([_i5, _lv3, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+                _list6.push([_i5, _lv3, OFFSCREEN_OVERFLOW$1, offscreenOverflow]);
 
                 ctx = offscreenOverflow.target.ctx;
               }
@@ -30279,7 +30296,7 @@
 
 
             if (offscreenHash.hasOwnProperty(_i5)) {
-              ctx = applyOffscreen(ctx, offscreenHash[_i5], width, height);
+              ctx = applyOffscreen$1(ctx, offscreenHash[_i5], width, height);
             }
 
             if (display === 'none') {
@@ -30345,8 +30362,8 @@
 
         j--;
         var list = offscreenHash[j] = offscreenHash[j] || [];
-        list.push([idx, lv, OFFSCREEN_MASK, _offscreenMask3]);
-        list.push([j, lv, OFFSCREEN_MASK2, {
+        list.push([idx, lv, OFFSCREEN_MASK$1, _offscreenMask3]);
+        list.push([j, lv, OFFSCREEN_MASK2$1, {
           ctx: ctx,
           // 保存等待OFFSCREEN_MASK2时还原
           target: target
@@ -30366,9 +30383,9 @@
       if (offscreenBlend) {
         var _j9 = i + (total || 0) + (hasMask || 0);
 
-        var _list8 = offscreenHash[_j9] = offscreenHash[_j9] || [];
+        var _list7 = offscreenHash[_j9] = offscreenHash[_j9] || [];
 
-        _list8.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
+        _list7.push([i, lv, OFFSCREEN_BLEND$1, offscreenBlend]);
 
         ctx = offscreenBlend.target.ctx;
       } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -30386,9 +30403,9 @@
       if (offscreenFilter) {
         var _j11 = i + (total || 0) + (hasMask || 0);
 
-        var _list9 = offscreenHash[_j11] = offscreenHash[_j11] || [];
+        var _list8 = offscreenHash[_j11] = offscreenHash[_j11] || [];
 
-        _list9.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
+        _list8.push([i, lv, OFFSCREEN_FILTER$1, offscreenFilter]);
 
         ctx = offscreenFilter.target.ctx;
       } // overflow:hidden的离屏，最后孩子进行截取
@@ -30397,9 +30414,9 @@
       if (offscreenOverflow) {
         var _j12 = i + (total || 0) + (hasMask || 0);
 
-        var _list10 = offscreenHash[_j12] = offscreenHash[_j12] || [];
+        var _list9 = offscreenHash[_j12] = offscreenHash[_j12] || [];
 
-        _list10.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+        _list9.push([i, lv, OFFSCREEN_OVERFLOW$1, offscreenOverflow]);
 
         ctx = offscreenOverflow.target.ctx;
       } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -30407,7 +30424,7 @@
 
 
       if (offscreenHash.hasOwnProperty(i)) {
-        ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
+        ctx = applyOffscreen$1(ctx, offscreenHash[i], width, height);
       } // render后判断可见状态，此时computedStyle才有值，以及svg的virtualDom也要生成
 
 
@@ -30722,9 +30739,9 @@
 
 
         for (var _i7 = _defsCache.length - 1; _i7 >= 0; _i7--) {
-          var _item5 = _defsCache[_i7];
+          var _item4 = _defsCache[_i7];
 
-          if (_item5.tagName === 'mask') {
+          if (_item4.tagName === 'mask') {
             _defsCache.splice(_i7, 1);
           }
         }
@@ -30996,15 +31013,15 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item6 = _slicedToArray(item, 9),
-            i = _item6[0],
-            total = _item6[2],
-            node = _item6[3],
-            __config = _item6[4],
-            limitCache = _item6[5],
-            hasMask = _item6[6],
-            filter = _item6[7],
-            overflow = _item6[8];
+        var _item5 = _slicedToArray(item, 9),
+            i = _item5[0],
+            total = _item5[2],
+            node = _item5[3],
+            __config = _item5[4],
+            limitCache = _item5[5],
+            hasMask = _item5[6],
+            filter = _item5[7],
+            overflow = _item5[8];
 
         var __cache = __config[NODE_CACHE$3],
             __cacheTotal = __config[NODE_CACHE_TOTAL$2],
@@ -31184,7 +31201,7 @@
             _i8 += (_total12 || 0) + (_hasMask5 || 0);
           }
         } else if (limitHash.hasOwnProperty(_i8)) {
-          var _target8 = limitHash[_i8];
+          var _target5 = limitHash[_i8];
 
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
             texCache.refresh(gl, cx, cy, true);
@@ -31195,7 +31212,7 @@
                 _frameBuffer = _genFrameBufferWithTe22[1],
                 _texture3 = _genFrameBufferWithTe22[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, _target8, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
 
             var _genMbmWebgl5 = genMbmWebgl(gl, texCache, n, _n, frameBuffer, texture, mbmName$2(_mixBlendMode2), width, height);
@@ -31208,7 +31225,7 @@
             gl.deleteFramebuffer(_frameBuffer);
             gl.deleteTexture(_texture3);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, _target8, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
+            texCache.addTexAndDrawWhenLimit(gl, _target5, _opacity5, _matrixEvent4, cx, cy, 0, 0, true);
           }
 
           _i8 += (_total12 || 0) + (_hasMask5 || 0);
@@ -31338,15 +31355,15 @@
         return b[1] - a[1];
       });
       mergeList.forEach(function (item) {
-        var _item7 = _slicedToArray(item, 6),
-            i = _item7[0],
-            lv = _item7[1],
-            total = _item7[2],
-            node = _item7[3],
-            __config = _item7[4],
-            hasMask = _item7[5];
+        var _item6 = _slicedToArray(item, 6),
+            i = _item6[0],
+            lv = _item6[1],
+            total = _item6[2],
+            node = _item6[3],
+            __config = _item6[4],
+            hasMask = _item6[5];
 
-        var reGenTotal = genTotal2(renderMode, node, __config, i, lv, total || 0, __structs, hasMask, width, height);
+        var success = genTotal2(renderMode, node, __config, i, lv, total || 0, __structs, hasMask, width, height);
       });
     }
     /**
@@ -31376,7 +31393,7 @@
         _node9.render(renderMode, REPAINT$2, ctx, NA, 0, 0);
 
         if (offscreenHash.hasOwnProperty(_i9)) {
-          ctx = applyOffscreen(ctx, offscreenHash[_i9], width, height);
+          ctx = applyOffscreen$1(ctx, offscreenHash[_i9], width, height);
         }
       } else {
         var _config7 = _node9.__config;
@@ -31398,9 +31415,9 @@
               n = _maskStartHash$_i3[1],
               offscreenMask = _maskStartHash$_i3[2];
 
-          var _target9 = inject.getCacheCanvas(width, height, null, 'mask2');
+          var _target6 = inject.getCacheCanvas(width, height, null, 'mask2');
 
-          offscreenMask.mask = _target9; // 应用mask用到
+          offscreenMask.mask = _target6; // 应用mask用到
 
           offscreenMask.isClip = _node9.isClip; // 定位到最后一个mask元素上的末尾
 
@@ -31413,13 +31430,13 @@
 
           j--;
           var list = offscreenHash[j] = offscreenHash[j] || [];
-          list.push([idx, _lv4, OFFSCREEN_MASK, offscreenMask]);
-          list.push([j, _lv4, OFFSCREEN_MASK2, {
+          list.push([idx, _lv4, OFFSCREEN_MASK$1, offscreenMask]);
+          list.push([j, _lv4, OFFSCREEN_MASK2$1, {
             ctx: ctx,
             // 保存等待OFFSCREEN_MASK2时还原
-            target: _target9
+            target: _target6
           }]);
-          ctx = _target9.ctx;
+          ctx = _target6.ctx;
         } // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
 
@@ -31453,7 +31470,7 @@
           ctx.globalCompositeOperation = 'source-over'; // 父超限但子有total的时候，i此时已经增加到了末尾，也需要检查
 
           if (offscreenHash.hasOwnProperty(_i9)) {
-            ctx = applyOffscreen(ctx, offscreenHash[_i9], width, height);
+            ctx = applyOffscreen$1(ctx, offscreenHash[_i9], width, height);
           } // TODO 有cache的可以跳过子节点，但如果matrixEvent变化还是需要遍历计算一下的，虽然跳过了渲染
           // TODO 这里计算下局部根节点再对比下看是否有变化即可
 
@@ -31471,9 +31488,9 @@
             if (offscreenBlend) {
               var _j15 = _i9 + (_total13 || 0) + (_hasMask6 || 0);
 
-              var _list11 = offscreenHash[_j15] = offscreenHash[_j15] || [];
+              var _list10 = offscreenHash[_j15] = offscreenHash[_j15] || [];
 
-              _list11.push([_i9, _lv4, OFFSCREEN_BLEND, offscreenBlend]);
+              _list10.push([_i9, _lv4, OFFSCREEN_BLEND$1, offscreenBlend]);
 
               ctx = offscreenBlend.target.ctx;
             } // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
@@ -31491,9 +31508,9 @@
             if (offscreenFilter) {
               var _j17 = _i9 + (_total13 || 0) + (_hasMask6 || 0);
 
-              var _list12 = offscreenHash[_j17] = offscreenHash[_j17] || [];
+              var _list11 = offscreenHash[_j17] = offscreenHash[_j17] || [];
 
-              _list12.push([_i9, _lv4, OFFSCREEN_FILTER, offscreenFilter]);
+              _list11.push([_i9, _lv4, OFFSCREEN_FILTER$1, offscreenFilter]);
 
               ctx = offscreenFilter.target.ctx;
             } // overflow:hidden的离屏，最后孩子进行截取
@@ -31502,9 +31519,9 @@
             if (offscreenOverflow) {
               var _j18 = _i9 + (_total13 || 0) + (_hasMask6 || 0);
 
-              var _list13 = offscreenHash[_j18] = offscreenHash[_j18] || [];
+              var _list12 = offscreenHash[_j18] = offscreenHash[_j18] || [];
 
-              _list13.push([_i9, _lv4, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+              _list12.push([_i9, _lv4, OFFSCREEN_OVERFLOW$1, offscreenOverflow]);
 
               ctx = offscreenOverflow.target.ctx;
             } // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
@@ -31512,7 +31529,7 @@
 
 
             if (offscreenHash.hasOwnProperty(_i9)) {
-              ctx = applyOffscreen(ctx, offscreenHash[_i9], width, height);
+              ctx = applyOffscreen$1(ctx, offscreenHash[_i9], width, height);
             } // render后判断可见状态，此时computedStyle才有值
 
 
@@ -34560,7 +34577,7 @@
                 cb = _getNewPoint2[5];
               }
 
-              d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
+              d += painter$1.svgLine(xa, ya, xb, yb, ca, cb, curve);
             });
           } else {
             var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
@@ -34586,7 +34603,7 @@
               controlB = _getNewPoint4[5];
             }
 
-            d = painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
+            d = painter$1.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
           }
 
           __cacheProps.d = d;
@@ -34637,7 +34654,7 @@
                     cb = _getNewPoint6[5];
                   }
 
-                  painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
+                  painter$1.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
                 });
               } else {
                 var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
@@ -34664,7 +34681,7 @@
                   _controlB = _getNewPoint8[5];
                 }
 
-                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
+                painter$1.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
               }
 
               ctx.stroke();

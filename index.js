@@ -2348,7 +2348,7 @@
     return s;
   }
 
-  var painter$1 = {
+  var painter = {
     canvasPolygon: canvasPolygon,
     svgPolygon: svgPolygon,
     canvasLine: canvasLine,
@@ -2363,8 +2363,8 @@
       REM = o.REM,
       VW = o.VW,
       VH = o.VH;
-  var canvasPolygon$1 = painter$1.canvasPolygon,
-      svgPolygon$1 = painter$1.svgPolygon;
+  var canvasPolygon$1 = painter.canvasPolygon,
+      svgPolygon$1 = painter.svgPolygon;
   var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
       BORDER_LEFT_WIDTH = _enums$STYLE_KEY$1.BORDER_LEFT_WIDTH,
       BORDER_TOP_WIDTH = _enums$STYLE_KEY$1.BORDER_TOP_WIDTH,
@@ -6507,8 +6507,8 @@
       VH$1 = o.VH,
       calUnit = o.calUnit;
   var d2r$1 = geom.d2r;
-  var canvasPolygon$2 = painter$1.canvasPolygon,
-      svgPolygon$2 = painter$1.svgPolygon;
+  var canvasPolygon$2 = painter.canvasPolygon,
+      svgPolygon$2 = painter.svgPolygon;
   var FONT_SIZE$1 = enums.STYLE_KEY.FONT_SIZE,
       NODE_DEFS_CACHE = enums.NODE_KEY.NODE_DEFS_CACHE;
 
@@ -10959,7 +10959,7 @@
         bbox[2] += d;
         bbox[3] += d;
         var offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
-        offscreen.ctx.filter = painter$1.canvasFilter(filter);
+        offscreen.ctx.filter = painter.canvasFilter(filter);
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
         offscreen.draw();
@@ -13083,8 +13083,8 @@
       NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$2 = util.clone,
       joinArr$1 = util.joinArr;
-  var canvasPolygon$3 = painter$1.canvasPolygon,
-      svgPolygon$3 = painter$1.svgPolygon;
+  var canvasPolygon$3 = painter.canvasPolygon,
+      svgPolygon$3 = painter.svgPolygon;
   var AUTO$2 = o.AUTO,
       PX$4 = o.PX,
       PERCENT$5 = o.PERCENT,
@@ -16639,8 +16639,8 @@
 
   var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
-  var canvasPolygon$4 = painter$1.canvasPolygon,
-      svgPolygon$4 = painter$1.svgPolygon;
+  var canvasPolygon$4 = painter.canvasPolygon,
+      svgPolygon$4 = painter.svgPolygon;
 
   function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
     var dx = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : 0;
@@ -17213,7 +17213,7 @@
     getInlineWidth: getInlineWidth
   };
 
-  var svgPolygon$5 = painter$1.svgPolygon;
+  var svgPolygon$5 = painter.svgPolygon;
   var CANVAS$1 = mode.CANVAS,
       SVG = mode.SVG,
       WEBGL$1 = mode.WEBGL;
@@ -19040,7 +19040,7 @@
             };
             ctx = _c3.ctx;
           } else if (renderMode === SVG) {
-            virtualDom.filter = painter$1.svgFilter(filter);
+            virtualDom.filter = painter.svgFilter(filter);
           }
         } else if (renderMode === SVG) {
           delete virtualDom.filter;
@@ -24755,8 +24755,8 @@
       VW$9 = o.VW,
       VH$9 = o.VH,
       RGBA$2 = o.RGBA;
-  var canvasPolygon$5 = painter$1.canvasPolygon,
-      svgPolygon$6 = painter$1.svgPolygon;
+  var canvasPolygon$5 = painter.canvasPolygon,
+      svgPolygon$6 = painter.svgPolygon;
   var isFunction$5 = util.isFunction;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
@@ -25634,8 +25634,8 @@
   var int2rgba$3 = util.int2rgba,
       isNil$7 = util.isNil,
       joinArr$3 = util.joinArr;
-  var canvasPolygon$6 = painter$1.canvasPolygon,
-      svgPolygon$7 = painter$1.svgPolygon;
+  var canvasPolygon$6 = painter.canvasPolygon,
+      svgPolygon$7 = painter.svgPolygon;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -26360,7 +26360,7 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return painter$1.canvasPolygon(ctx, item, dx, dy);
+              return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
             canvasPolygon$6(ctx, list, dx, dy);
@@ -27946,7 +27946,7 @@
     return Controller;
   }();
 
-  var canvasPolygon$7 = painter$1.canvasPolygon; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
+  var canvasPolygon$7 = painter.canvasPolygon; // 无cache时应用离屏时的优先级，从小到大，OFFSCREEN_MASK2是个特殊的
 
   var OFFSCREEN_OVERFLOW = 0;
   var OFFSCREEN_FILTER = 1;
@@ -28012,7 +28012,7 @@
 
         if (ctx.filter) {
           var apply = inject.getCacheCanvas(width, height, null, 'filter');
-          apply.ctx.filter = painter$1.canvasFilter(filter);
+          apply.ctx.filter = painter.canvasFilter(filter);
           apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
           apply.ctx.filter = 'none';
           apply.draw();
@@ -34577,7 +34577,7 @@
                 cb = _getNewPoint2[5];
               }
 
-              d += painter$1.svgLine(xa, ya, xb, yb, ca, cb, curve);
+              d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
             });
           } else {
             var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
@@ -34603,7 +34603,7 @@
               controlB = _getNewPoint4[5];
             }
 
-            d = painter$1.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
+            d = painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
           }
 
           __cacheProps.d = d;
@@ -34654,7 +34654,7 @@
                     cb = _getNewPoint6[5];
                   }
 
-                  painter$1.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
+                  painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
                 });
               } else {
                 var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
@@ -34681,7 +34681,7 @@
                   _controlB = _getNewPoint8[5];
                 }
 
-                painter$1.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
+                painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
               }
 
               ctx.stroke();

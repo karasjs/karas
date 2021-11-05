@@ -8,6 +8,7 @@ import mode from '../node/mode';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import level from './level';
+import painter from '../util/painter';
 import util from '../util/util';
 import inject from '../util/inject';
 import tf from '../style/transform';

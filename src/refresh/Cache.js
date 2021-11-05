@@ -246,14 +246,6 @@ class Cache {
         __config[NODE_CACHE_OVERFLOW],
         __config[NODE_CACHE_TOTAL],
       ]);
-      // let cacheOverflow = __config[NODE_CACHE_OVERFLOW], cacheFilter = __config[NODE_CACHE_FILTER], cache = __config[NODE_CACHE];
-      // let source = target && target.available && target;
-      // if(!source) {
-      //   source = cacheFilter && cacheFilter.available && cacheFilter;
-      // }
-      // if(!source) {
-      //   source = cache && cache.available && cache;
-      // }
       let computedStyle = __config[NODE_COMPUTED_STYLE];
       if(target) {
         ctx.globalAlpha = __config[NODE_OPACITY];
@@ -270,6 +262,9 @@ class Cache {
         && computedStyle[DISPLAY] !== 'none'
         && computedStyle[VISIBILITY] !== 'hidden') {
         inject.error('CacheMask is oversize');
+      }
+      else {
+        // TOOD
       }
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);

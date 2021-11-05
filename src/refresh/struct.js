@@ -481,8 +481,8 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
         [NODE_COMPUTED_STYLE]: computedStyle,
         [NODE_IS_MASK]: isMask,
       } = __config;
-      // mask不占bbox
-      if(isMask) {
+      // mask不占bbox，本身除外
+      if(i !== index && isMask) {
         i += (total || 0) + (hasMask || 0);
         continue;
       }
@@ -508,10 +508,9 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
       // 不变是同级兄弟，无需特殊处理 else {}
       lastConfig = __config;
       lastLv = lv;
-      // 跳过display:none元素和它的所有子节点
+      // 跳过display:none元素和它的所有子节点和mask
       if(computedStyle[DISPLAY] === 'none') {
         i += (total || 0) + (hasMask || 0);
-        // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
         continue;
       }
       let {
@@ -591,6 +590,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
     config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
+    // console.warn(bboxTotal, dx, dy)
     let ctxTotal = cacheTotal.ctx;
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
@@ -771,24 +771,6 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
             i += (total || 0) + (hasMask || 0);
           }
         }
-        // else if(refreshLevel < REPAINT) {
-        //   node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
-        //   __config[NODE_REFRESH_LV] = REPAINT;
-        // }
-        // else {
-        //   // 手动计算cacheStyle和根据border-box的坐标再渲染
-        //   node.__calCache(renderMode, ctxTotal, __config[NODE_DOM_PARENT],
-        //     __config[NODE_CACHE_STYLE], __config[NODE_CURRENT_STYLE], computedStyle,
-        //     node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
-        //     computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
-        //     computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
-        //     computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
-        //     computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
-        //     node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
-        //     node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
-        //   node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
-        //   __config[NODE_REFRESH_LV] = REPAINT;
-        // }
       }
     }
     // 恢复，且局部根节点设置NONE
@@ -2889,8 +2871,7 @@ function renderCanvas2(renderMode, ctx, root) {
     if(cacheAsBitmap) {
       // 跳过display:none元素和它的所有子节点
       if(computedStyle[DISPLAY] === 'none') {
-        i += (total || 0);
-        // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
+        i += (total || 0) + (hasMask || 0);
         continue;
       }
       mergeList.push([i, lv, total, node, __config, hasMask]);

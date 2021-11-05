@@ -10999,15 +10999,7 @@
 
         list.forEach(function (item) {
           var __config = item.__config;
-          var target = Cache.getCache([__config[NODE_CACHE_FILTER], __config[NODE_CACHE_OVERFLOW], __config[NODE_CACHE_TOTAL]]); // let cacheOverflow = __config[NODE_CACHE_OVERFLOW], cacheFilter = __config[NODE_CACHE_FILTER], cache = __config[NODE_CACHE];
-          // let source = target && target.available && target;
-          // if(!source) {
-          //   source = cacheFilter && cacheFilter.available && cacheFilter;
-          // }
-          // if(!source) {
-          //   source = cache && cache.available && cache;
-          // }
-
+          var target = Cache.getCache([__config[NODE_CACHE_FILTER], __config[NODE_CACHE_OVERFLOW], __config[NODE_CACHE_TOTAL]]);
           var computedStyle = __config[NODE_COMPUTED_STYLE];
 
           if (target) {
@@ -19000,7 +18992,7 @@
         if (mixBlendMode !== 'normal' && isValidMbm$1(mixBlendMode)) {
           mixBlendMode = mbmName$1(mixBlendMode);
 
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && !cache) {
             var width = root.width,
                 height = root.height;
 
@@ -19024,7 +19016,7 @@
         var offscreenMask;
 
         if (__hasMask) {
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && !cache) {
             var _width = root.width,
                 _height = root.height;
 
@@ -19044,7 +19036,7 @@
         var offscreenFilter;
 
         if (hasFilter) {
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && !cache) {
             var _width2 = root.width,
                 _height2 = root.height;
 
@@ -19096,7 +19088,7 @@
         if (overflow === 'hidden' && display !== 'inline') {
           borderList = border.calRadius(bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
 
-          if (renderMode === CANVAS$1) {
+          if (renderMode === CANVAS$1 && !cache) {
             var _width3 = root.width,
                 _height3 = root.height;
 
@@ -28532,9 +28524,9 @@
             __cacheMask = __config[NODE_CACHE_MASK$1],
             __cacheOverflow = __config[NODE_CACHE_OVERFLOW$2],
             _computedStyle = __config[NODE_COMPUTED_STYLE$4],
-            isMask = __config[NODE_IS_MASK$2]; // mask不占bbox
+            isMask = __config[NODE_IS_MASK$2]; // mask不占bbox，本身除外
 
-        if (isMask) {
+        if (i !== index && isMask) {
           i += (_total4 || 0) + (_hasMask || 0);
           continue;
         } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
@@ -28561,11 +28553,10 @@
 
 
         lastConfig = __config;
-        lastLv = _lv; // 跳过display:none元素和它的所有子节点
+        lastLv = _lv; // 跳过display:none元素和它的所有子节点和mask
 
         if (_computedStyle[DISPLAY$9] === 'none') {
-          i += (_total4 || 0) + (_hasMask || 0); // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
-
+          i += (_total4 || 0) + (_hasMask || 0);
           continue;
         }
 
@@ -28661,7 +28652,8 @@
           dbx = _cacheTotal.dbx,
           dby = _cacheTotal.dby,
           tx = _cacheTotal.x,
-          ty = _cacheTotal.y;
+          ty = _cacheTotal.y; // console.warn(bboxTotal, dx, dy)
+
       var ctxTotal = cacheTotal.ctx;
       /**
        * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
@@ -28868,25 +28860,7 @@
             if (display === 'none') {
               _i2 += (_total5 || 0) + (_hasMask2 || 0);
             }
-          } // else if(refreshLevel < REPAINT) {
-          //   node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
-          //   __config[NODE_REFRESH_LV] = REPAINT;
-          // }
-          // else {
-          //   // 手动计算cacheStyle和根据border-box的坐标再渲染
-          //   node.__calCache(renderMode, ctxTotal, __config[NODE_DOM_PARENT],
-          //     __config[NODE_CACHE_STYLE], __config[NODE_CURRENT_STYLE], computedStyle,
-          //     node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
-          //     computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
-          //     computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
-          //     computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
-          //     computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
-          //     node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
-          //     node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
-          //   node.render(renderMode, refreshLevel, ctxTotal, true, dx, dy);
-          //   __config[NODE_REFRESH_LV] = REPAINT;
-          // }
-
+          }
         }
       } // 恢复，且局部根节点设置NONE
 
@@ -31344,8 +31318,7 @@
       if (cacheAsBitmap) {
         // 跳过display:none元素和它的所有子节点
         if (computedStyle[DISPLAY$9] === 'none') {
-          i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
-
+          i += (total || 0) + (hasMask || 0);
           continue;
         }
 

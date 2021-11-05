@@ -89,9 +89,11 @@ const {
     NODE_PERSPECTIVE_MATRIX,
     NODE_VIRTUAL_DOM,
     NODE_CACHE_AS_BITMAP,
+    NODE_STRUCT,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
+    STRUCT_INDEX,
     STRUCT_TOTAL,
     STRUCT_HAS_MASK,
     STRUCT_LV,
@@ -652,8 +654,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
           ctxTotal = target.ctx;
         }
         // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
-        if(i === index) {
-        }
+        if(i === index) {}
         else if(lv > lastLv) {
           parentMatrix = lastMatrix;
           if(isE(parentMatrix)) {
@@ -715,12 +716,7 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
           ctxTotal.globalCompositeOperation = 'source-over';
         }
         else {
-          let res;
-          if(refreshLevel < REPAINT) {
-            res = node.render(renderMode, refreshLevel, ctxTotal, i === index ? LOCAL : CHILD, dx, dy);
-            __config[NODE_REFRESH_LV] = REPAINT;
-          }
-          else {
+          if(refreshLevel >= REPAINT) {
             // 手动计算cacheStyle和根据border-box的坐标再渲染
             node.__calCache(renderMode, ctxTotal, __config[NODE_DOM_PARENT],
               __config[NODE_CACHE_STYLE], __config[NODE_CURRENT_STYLE], computedStyle,
@@ -731,9 +727,9 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
               computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
               node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
               node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
-            res = node.render(renderMode, refreshLevel, ctxTotal, i === index ? LOCAL : CHILD, dx, dy);
-            __config[NODE_REFRESH_LV] = REPAINT;
           }
+          let res = node.render(renderMode, refreshLevel, ctxTotal, i === index ? LOCAL : CHILD, dx, dy);
+          __config[NODE_REFRESH_LV] = REPAINT;
           let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
           // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
           if(offscreenBlend) {
@@ -821,7 +817,252 @@ function genTotal2(renderMode, node, config, index, lv, total, __structs, hasMas
       target = config[NODE_CACHE_FILTER] || target;
     }
     if(hasMask && (!cacheMask || !cacheMask.available || needGen)) {
-      config[NODE_CACHE_MASK] = genMask(node, target, __structs, config);
+      /**
+       * 回调给Cache.genMask()使用，汇集所有mask到离屏mask2中
+       * 当mask节点有cache时内部直接调用绘制了cache位图
+       * 当mask没有缓存可用时进这里的普通渲染逻辑
+       */
+      config[NODE_CACHE_MASK] = genMask(node, target, function(item, cacheMask, inverse) {
+        // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
+        let maskStartHash = {};
+        let offscreenHash = {};
+        let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
+        let {
+          [STRUCT_INDEX]:index,
+          [STRUCT_LV]: lv,
+        } = item.__config[NODE_STRUCT];
+        let matrixList = [];
+        let parentMatrix;
+        let lastMatrix;
+        let opacityList = [];
+        let parentOpacity = 1;
+        let lastOpacity;
+        let lastLv = lv;
+        for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
+          let {
+            [STRUCT_NODE]: node,
+            [STRUCT_LV]: lv,
+            [STRUCT_TOTAL]: total,
+            [STRUCT_HAS_MASK]: hasMask,
+          } = __structs[i];
+          // 排除Text
+          if(node instanceof Text) {
+            node.render(renderMode, REPAINT, ctx, CHILD, dx, dy);
+            if(offscreenHash.hasOwnProperty(i)) {
+              ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
+            }
+          }
+          else {
+            let __config = node.__config;
+            let {
+              [NODE_REFRESH_LV]: refreshLevel,
+              [NODE_CACHE_TOTAL]: __cacheTotal,
+              [NODE_CACHE_FILTER]: __cacheFilter,
+              [NODE_CACHE_MASK]: __cacheMask,
+              [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+              [NODE_COMPUTED_STYLE]: computedStyle,
+            } = __config;
+            if(maskStartHash.hasOwnProperty(i)) {
+              let [idx, n, offscreenMask] = maskStartHash[i];
+              let target = inject.getCacheCanvas(width, height, null, 'mask2');
+              offscreenMask.mask = target; // 应用mask用到
+              offscreenMask.isClip = node.isClip;
+              // 定位到最后一个mask元素上的末尾
+              let j = i + (total || 0) + 1;
+              while(--n) {
+                let { [STRUCT_TOTAL]: total } = __structs[j];
+                j += (total || 0) + 1;
+              }
+              j--;
+              let list = offscreenHash[j] = offscreenHash[j] || [];
+              list.push([idx, lv, OFFSCREEN_MASK, offscreenMask]);
+              list.push([j, lv, OFFSCREEN_MASK2, {
+                ctx, // 保存等待OFFSCREEN_MASK2时还原
+                target,
+              }]);
+              ctx = target.ctx;
+            }
+            // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+            if(i === index) {}
+            else if(lv > lastLv) {
+              parentMatrix = lastMatrix;
+              if(isE(parentMatrix)) {
+                parentMatrix = null;
+              }
+              matrixList.push(parentMatrix);
+              parentOpacity = lastOpacity;
+              opacityList.push(parentOpacity);
+            }
+            // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+            else if(lv < lastLv) {
+              let diff = lastLv - lv;
+              matrixList.splice(-diff);
+              parentMatrix = matrixList[lv - 1];
+              opacityList.splice(-diff);
+              parentOpacity = opacityList[lv - 1];
+            }
+            // 不变是同级兄弟，无需特殊处理 else {}
+            lastLv = lv;
+            // 跳过display:none元素和它的所有子节点和mask
+            let display = computedStyle[DISPLAY];
+            // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
+            let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+            if(target) {
+              i += (total || 0) + (hasMask || 0);
+              // 跳过display:none元素和它的所有子节点
+              if(display === 'none') {
+                continue;
+              }
+              let mixBlendMode = computedStyle[MIX_BLEND_MODE];
+              if(isValidMbm(mixBlendMode)) {
+                ctx.globalCompositeOperation = mbmName(mixBlendMode);
+              }
+              else {
+                ctx.globalCompositeOperation = 'source-over';
+              }
+              ctx.globalAlpha = __config[NODE_OPACITY];
+              Cache.drawCache(target, cacheMask);
+              ctx.globalCompositeOperation = 'source-over';
+            }
+            // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容
+            else {
+              let {
+                [NODE_CURRENT_STYLE]: currentStyle,
+                [NODE_CACHE_STYLE]: __cacheStyle,
+              } = __config;
+              let matrix, opacity;
+              if(refreshLevel < REPAINT) {
+                if(contain(refreshLevel, TRANSFORM_ALL)) {
+                  matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
+                  assignMatrix(__config[NODE_MATRIX], matrix);
+                }
+                else {
+                  matrix = __config[NODE_MATRIX];
+                }
+                if(contain(refreshLevel, OP)) {
+                  computedStyle[OPACITY] = currentStyle[OPACITY];
+                }
+                opacity = computedStyle[OPACITY];
+                if(contain(refreshLevel, FT)) {
+                  node.__bbox = null;
+                  node.__calFilter(currentStyle, computedStyle);
+                }
+                matrix = __config[NODE_MATRIX];
+                if(contain(refreshLevel, MBM)) {
+                  computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
+                }
+              }
+              else {
+                node.__bbox = null;
+                if(i === index) {
+                  node.__calFilter(currentStyle, computedStyle);
+                }
+                matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
+                assignMatrix(__config[NODE_MATRIX], matrix);
+                opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
+              }
+              // opacity可临时赋值下面循环渲染用，matrixEvent可能需重新计算，因为局部根节点为E没考虑继承，这里仅计算bbox用
+              if(i === index) {
+                opacity = 1;
+                matrix = mx.identity();
+              }
+              else if(parentMatrix) {
+                matrix = multiply(parentMatrix, matrix);
+              }
+              assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
+              __config[NODE_OPACITY] = parentOpacity * opacity;
+              // 计算临时的matrix
+              let {
+                [TRANSFORM]: transform,
+                [TRANSFORM_ORIGIN]: tfo,
+              } = computedStyle;
+              // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
+              let m;
+              if(i !== index && (!isE(parentMatrix) || !isE(transform))) {
+                tfo = tfo.slice(0);
+                tfo[0] += dbx + node.__sx1 - sx1 + tx;
+                tfo[1] += dby + node.__sy1 - sy1 + ty;
+                m = tf.calMatrixByOrigin(transform, tfo);
+                if(!isE(parentMatrix)) {
+                  m = multiply(parentMatrix, m);
+                }
+              }
+              else {
+                m = null;
+              }
+              lastMatrix = m;
+              if(m) {
+                // 很多情况mask和target相同matrix，可简化计算
+                if(util.equalArr(m, inverse)) {
+                  m = mx.identity();
+                }
+                else {
+                  inverse = mx.inverse(inverse);
+                  m = mx.multiply(inverse, m);
+                }
+              }
+              if(m) {
+                ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              }
+              else {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+              }
+              if(refreshLevel >= REPAINT) {
+                // 手动计算cacheStyle和根据border-box的坐标再渲染
+                node.__calCache(renderMode, ctx, __config[NODE_DOM_PARENT],
+                  __config[NODE_CACHE_STYLE], __config[NODE_CURRENT_STYLE], computedStyle,
+                  node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
+                  computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
+                  computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
+                  computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
+                  computedStyle[PADDING_BOTTOM], computedStyle[PADDING_LEFT],
+                  node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
+                  node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+              }
+              let res = node.render(renderMode, refreshLevel, ctx, i === index ? LOCAL : CHILD, dx, dy);
+              __config[NODE_REFRESH_LV] = REPAINT;
+              let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
+              // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
+              if(offscreenBlend) {
+                let j = i + (total || 0) + (hasMask || 0);
+                let list = offscreenHash[j] = offscreenHash[j] || [];
+                list.push([i, lv, OFFSCREEN_BLEND, offscreenBlend]);
+                ctx = offscreenBlend.target.ctx;
+              }
+              // 被遮罩的节点要为第一个遮罩和最后一个遮罩的索引打标，被遮罩的本身在一个离屏canvas，遮罩的元素在另外一个
+              // 最后一个遮罩索引因数量不好计算，放在maskStartHash做
+              if(offscreenMask) {
+                let j = i + (total || 0);
+                maskStartHash[j + 1] = [i, hasMask, offscreenMask];
+                ctx = offscreenMask.target.ctx;
+              }
+              // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
+              if(offscreenFilter) {
+                let j = i + (total || 0) + (hasMask || 0);
+                let list = offscreenHash[j] = offscreenHash[j] || [];
+                list.push([i, lv, OFFSCREEN_FILTER, offscreenFilter]);
+                ctx = offscreenFilter.target.ctx;
+              }
+              // overflow:hidden的离屏，最后孩子进行截取
+              if(offscreenOverflow) {
+                let j = i + (total || 0) + (hasMask || 0);
+                let list = offscreenHash[j] = offscreenHash[j] || [];
+                list.push([i, lv, OFFSCREEN_OVERFLOW, offscreenOverflow]);
+                ctx = offscreenOverflow.target.ctx;
+              }
+              // 离屏应用，按照lv从大到小即子节点在前先应用，同一个节点多个效果按offscreen优先级从小到大来，
+              // 由于mask特殊索引影响，所有离屏都在最后一个mask索引判断，此时mask本身优先结算，以index序大到小判断
+              if(offscreenHash.hasOwnProperty(i)) {
+                ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
+              }
+              // render后判断可见状态，此时computedStyle才有值
+              if(display === 'none') {
+                i += (total || 0) + (hasMask || 0);
+              }
+            }
+          }
+        }
+      });
     }
   }
   return true;
@@ -831,10 +1072,10 @@ function genFilter(node, cache, v) {
   return Cache.genFilter(cache, v);
 }
 
-function genMask(node, cache, __structs, __config) {
+function genMask(node, cache, cb) {
   let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: transformOrigin } = node.computedStyle;
   let isClip = node.next.isClip;
-  return Cache.genMask(cache, node.next, isClip, __structs, __config, transform, transformOrigin);
+  return Cache.genMask(cache, node.next, isClip, cb, transform, transformOrigin);
 }
 
 function genOverflow(node, cache) {

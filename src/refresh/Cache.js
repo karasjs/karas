@@ -227,10 +227,10 @@ class Cache {
     return offscreen;
   }
 
-  static genMask(target, next, isClip, __structs, __config, transform, tfo) {
+  static genMask(target, next, isClip, cb, transform, tfo) {
     let cacheMask = genSingle(target, 'mask1');
     let list = [];
-    while(next && (next.isMask)) {
+    while(next && (next.isMask) && (next.isClip === isClip)) {
       list.push(next);
       next = next.next;
     }
@@ -240,33 +240,7 @@ class Cache {
     let inverse = tf.calMatrixByOrigin(transform, tfo);
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {
-      let __config = item.__config;
-      let target = Cache.getCache([
-        __config[NODE_CACHE_FILTER],
-        __config[NODE_CACHE_OVERFLOW],
-        __config[NODE_CACHE_TOTAL],
-      ]);
-      let computedStyle = __config[NODE_COMPUTED_STYLE];
-      // 有cache用cache，没有则普通绘制，和struct遍历一样
-      if(target) {
-        ctx.globalAlpha = __config[NODE_OPACITY];
-        Cache.drawCache(
-          target, cacheMask,
-          computedStyle[TRANSFORM],
-          mx.identity(),
-          computedStyle[TRANSFORM_ORIGIN].slice(0),
-          inverse
-        );
-      }
-      // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
-      // else if(__config[NODE_HAS_CONTENT]
-      //   && computedStyle[DISPLAY] !== 'none'
-      //   && computedStyle[VISIBILITY] !== 'hidden') {
-      //   inject.error('CacheMask is oversize');
-      // }
-      else {
-        // TODO
-      }
+      cb(item, cacheMask, inverse);
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;

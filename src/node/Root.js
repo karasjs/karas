@@ -847,13 +847,6 @@ class Root extends Dom {
     this.__checkReflow(width, height);
     if(renderMode === mode.CANVAS && !this.props.noRender) {
       this.__clear(ctx, renderMode);
-      // 利用list循环代替tree递归快速渲染
-      // if(this.cache) {
-      //   struct.renderCacheCanvas(renderMode, ctx, this);
-      // }
-      // else {
-      //   struct.renderCanvas(renderMode, ctx, this);
-      // }
       struct.renderCanvas2(renderMode, ctx, this);
     }
     // svg的特殊diff需要

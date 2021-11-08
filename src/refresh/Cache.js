@@ -59,6 +59,7 @@ class Cache {
     this.__x = x;
     this.__y = y;
     this.__appendData(x1, y1);
+    this.__isNew = true;
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
@@ -92,6 +93,7 @@ class Cache {
       let size = this.page.size;
       ctx.clearRect(this.x, this.y, size, size);
       this.__available = false;
+      this.__isNew = true;
     }
   }
 
@@ -170,6 +172,10 @@ class Cache {
 
   get pos() {
     return this.__pos;
+  }
+
+  get isNew() {
+    return this.__isNew;
   }
 
   static get MAX() {

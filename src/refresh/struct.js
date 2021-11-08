@@ -48,7 +48,6 @@ const {
 
 const {
   STYLE_KEY: {
-    POSITION,
     DISPLAY,
     OPACITY,
     VISIBILITY,
@@ -68,6 +67,7 @@ const {
     BORDER_RIGHT_WIDTH,
     BORDER_BOTTOM_WIDTH,
     BORDER_LEFT_WIDTH,
+    MATRIX,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -340,6 +340,11 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
         [NODE_COMPUTED_STYLE]: computedStyle,
         [NODE_IS_MASK]: isMask,
       } = __config;
+      // 跳过display:none元素和它的所有子节点和mask
+      if(computedStyle[DISPLAY] === 'none') {
+        i += (total || 0) + (hasMask || 0);
+        continue;
+      }
       // mask不占bbox，本身除外
       if(i !== index && isMask) {
         i += (total || 0) + (hasMask || 0);
@@ -367,11 +372,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       // 不变是同级兄弟，无需特殊处理 else {}
       lastConfig = __config;
       lastLv = lv;
-      // 跳过display:none元素和它的所有子节点和mask
-      if(computedStyle[DISPLAY] === 'none') {
-        i += (total || 0) + (hasMask || 0);
-        continue;
-      }
       let {
         [NODE_CURRENT_STYLE]: currentStyle,
         [NODE_CACHE_STYLE]: __cacheStyle,
@@ -421,7 +421,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
         baseMatrix = matrix;
         matrix = mx.identity();
       }
-      else if(parentMatrix) {
+      else if(!isE(parentMatrix)) {
         matrix = multiply(parentMatrix, matrix);
       }
       assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
@@ -447,8 +447,8 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
     }
     // 生成cacheTotal，获取偏移dx/dy
     config[NODE_CACHE_TOTAL] = cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
-    if(!cacheTotal) {
-      return false;
+    if(!cacheTotal || !cacheTotal.enabled) {
+      return;
     }
     cacheTotal.__available = true;
     let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
@@ -922,7 +922,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       });
     }
   }
-  return true;
 }
 
 function genFilter(node, cache, v) {
@@ -941,6 +940,73 @@ function genOverflow(node, cache) {
     return;
   }
   return Cache.genOverflow(cache, node);
+}
+
+function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
+  let matrixList = [];
+  let parentMatrix;
+  let lastMatrix = matrixEvent;
+  let lastLv = lv;
+  for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
+    let {
+      [STRUCT_NODE]: node,
+      [STRUCT_LV]: lv,
+      [STRUCT_TOTAL]: total,
+      [STRUCT_HAS_MASK]: hasMask,
+    } = __structs[i];
+    // 排除Text
+    if(node instanceof Text) {
+      continue;
+    }
+    let __config = node.__config;
+    let {
+      [NODE_MATRIX_EVENT]: old,
+      [NODE_CACHE_TOTAL]: __cacheTotal,
+      [NODE_CURRENT_STYLE]: currentStyle,
+      [NODE_COMPUTED_STYLE]: computedStyle,
+      [NODE_CACHE_STYLE]: cacheStyle,
+    } = __config;
+    // 跳过display:none元素和它的所有子节点和mask
+    if(computedStyle[DISPLAY] === 'none') {
+      i += (total || 0) + (hasMask || 0);
+      continue;
+    }
+    // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
+    if(lv > lastLv) {
+      parentMatrix = lastMatrix;
+      if(isE(parentMatrix)) {
+        parentMatrix = null;
+      }
+      matrixList.push(parentMatrix);
+    }
+    // 变小出栈索引需注意，可能不止一层，多层计算diff层级
+    else if(lv < lastLv) {
+      let diff = lastLv - lv;
+      matrixList.splice(-diff);
+      parentMatrix = matrixList[lv - 1];
+    }
+    // 不变是同级兄弟，无需特殊处理 else {}
+    lastLv = lv;
+    old = old.slice(0);
+    // 计算真正的相对于root原点的matrix
+    cacheStyle[MATRIX] = null;
+    let matrix = node.__calMatrix(REPAINT, cacheStyle, currentStyle, computedStyle, __config);
+    assignMatrix(__config[NODE_MATRIX], matrix);
+    if(!isE(parentMatrix)) {
+      matrix = multiply(parentMatrix, matrix);
+    }
+    assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
+    lastMatrix = matrix;
+    // 深度遍历递归进行
+    let needReset = __cacheTotal.isNew;
+    if(!needReset && !util.equalArr(old, matrix)) {
+      needReset = true;
+    }
+    if(needReset) {
+      resetMatrixCacheTotal(__structs, i, total || 0, lv, matrix);
+    }
+    __cacheTotal.__isNew = false;
+  }
 }
 
 // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
@@ -2338,10 +2404,7 @@ function renderCanvas(renderMode, ctx, root) {
     });
     mergeList.forEach(item => {
       let [i, lv, total, node, __config, hasMask] = item;
-      let success = genTotal(renderMode, node, __config, i, lv, total || 0, __structs, hasMask, width, height);
-      if(success) {
-        // TODO 设置所有节点matrix/opacity回为以root为基准
-      }
+      genTotal(renderMode, node, __config, i, lv, total || 0, __structs, hasMask, width, height);
     });
   }
   /**
@@ -2411,6 +2474,7 @@ function renderCanvas(renderMode, ctx, root) {
       // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
       let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
       if(target) {
+        let j = i;
         i += (total || 0) + (hasMask || 0);
         // total的none直接跳过
         if(display === 'none') {
@@ -2424,6 +2488,7 @@ function renderCanvas(renderMode, ctx, root) {
         }
         // cache需要计算matrixEvent，因为局部根节点临时视为E，根据refreshLevel决定
         let matrix = __config[NODE_MATRIX], matrixEvent = __config[NODE_MATRIX_EVENT];
+        let old = matrixEvent.slice(0);
         let parentMatrix = __config[NODE_DOM_PARENT].matrixEvent;
         if(parentMatrix && !isE(parentMatrix)) {
           matrix = multiply(parentMatrix, matrix);
@@ -2436,8 +2501,17 @@ function renderCanvas(renderMode, ctx, root) {
         if(offscreenHash.hasOwnProperty(i)) {
           ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
         }
-        // TODO 有cache的可以跳过子节点，但如果matrixEvent变化还是需要遍历计算一下的，虽然跳过了渲染
-        // TODO 这里计算下局部根节点再对比下看是否有变化即可
+        // 有cache的可以跳过子节点，但如果matrixEvent变化还是需要遍历计算一下的，虽然跳过了渲染
+        // 如果cache是新的，则需要完整遍历设置一次
+        // 如果isNew为false，则计算下局部根节点再对比下看是否有变化，无变化可省略
+        let needReset = __cacheTotal.isNew;
+        if(!needReset && !util.equalArr(old, matrixEvent)) {
+          needReset = true;
+        }
+        if(needReset) {
+          resetMatrixCacheTotal(__structs, j, total || 0, lv, matrixEvent);
+        }
+        __cacheTotal.__isNew = false;
       }
       // 没有cacheTotal是普通节点绘制
       else {

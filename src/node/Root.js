@@ -847,7 +847,7 @@ class Root extends Dom {
     this.__checkReflow(width, height);
     if(renderMode === mode.CANVAS && !this.props.noRender) {
       this.__clear(ctx, renderMode);
-      struct.renderCanvas2(renderMode, ctx, this);
+      struct.renderCanvas(renderMode, ctx, this);
     }
     // svg的特殊diff需要
     else if(renderMode === mode.SVG && !this.props.noRender) {

@@ -29325,17 +29325,20 @@
       assignMatrix$1(__config[NODE_MATRIX_EVENT$4], matrix);
       lastMatrix = matrix; // 深度遍历递归进行
 
-      var needReset = __cacheTotal.isNew;
+      if (__cacheTotal && __cacheTotal.available) {
+        var needReset = __cacheTotal.isNew;
 
-      if (!needReset && !util.equalArr(old, matrix)) {
-        needReset = true;
+        if (!needReset && !util.equalArr(old, matrix)) {
+          needReset = true;
+        }
+
+        if (needReset) {
+          resetMatrixCacheTotal(__structs, i, _total8 || 0, _lv4, matrix);
+        }
+
+        __cacheTotal.__isNew = false;
+        i += (_total8 || 0) + (hasMask || 0);
       }
-
-      if (needReset) {
-        resetMatrixCacheTotal(__structs, i, _total8 || 0, _lv4, matrix);
-      }
-
-      __cacheTotal.__isNew = false;
     }
   } // webgl不太一样，使用fbo离屏绘制到一个纹理上进行汇总
 

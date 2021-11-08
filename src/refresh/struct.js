@@ -998,14 +998,17 @@ function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
     assignMatrix(__config[NODE_MATRIX_EVENT], matrix);
     lastMatrix = matrix;
     // 深度遍历递归进行
-    let needReset = __cacheTotal.isNew;
-    if(!needReset && !util.equalArr(old, matrix)) {
-      needReset = true;
+    if(__cacheTotal && __cacheTotal.available) {
+      let needReset = __cacheTotal.isNew;
+      if(!needReset && !util.equalArr(old, matrix)) {
+        needReset = true;
+      }
+      if(needReset) {
+        resetMatrixCacheTotal(__structs, i, total || 0, lv, matrix);
+      }
+      __cacheTotal.__isNew = false;
+      i += (total || 0) + (hasMask || 0);
     }
-    if(needReset) {
-      resetMatrixCacheTotal(__structs, i, total || 0, lv, matrix);
-    }
-    __cacheTotal.__isNew = false;
   }
 }
 

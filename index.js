@@ -29868,12 +29868,16 @@
         sy1 = cache.sy1,
         width = cache.width,
         height = cache.height,
-        bbox = cache.bbox; // cache一定是mockCache，可能是total/filter/overflow一种
+        bbox = cache.bbox,
+        dbx = cache.dbx,
+        dby = cache.dby,
+        dx = cache.dx,
+        dy = cache.dy,
+        tx = cache.x,
+        ty = cache.y; // cache一定是mockCache，可能是total/filter/overflow一种
 
     var cx = width * 0.5,
-        cy = height * 0.5;
-    var dx = -bbox[0],
-        dy = -bbox[1]; // 先求得被遮罩的matrix，用作inverse给mask计算
+        cy = height * 0.5; // 先求得被遮罩的matrix，用作inverse给mask计算
 
     var _config$NODE_COMPUTE2 = __config[NODE_COMPUTED_STYLE$4],
         transform = _config$NODE_COMPUTE2[TRANSFORM$4],
@@ -29884,8 +29888,8 @@
       inverse = mx.identity();
     } else {
       var tfo = transformOrigin.slice(0);
-      tfo[0] += sx1 + dx;
-      tfo[1] += sy1 + dx;
+      tfo[0] += tx + dbx + node.sx1 - sx1;
+      tfo[1] += ty + dby + node.sy1 - sy1;
       inverse = tf.calMatrixByOrigin(transform, tfo);
     }
 
@@ -29911,6 +29915,11 @@
     //   let parentOpacity = 1;
     //   let lastOpacity;
     //   let lastLv = lv;
+    //   let {
+    //     [STRUCT_INDEX]:index,
+    //     [STRUCT_TOTAL]: total,
+    //     [STRUCT_LV]: lv,
+    //   } = item.__config[NODE_STRUCT];
     // });
 
     while (next && next.isMask && next.isClip === isClip) {
@@ -29940,8 +29949,8 @@
         } else {
           var _tfo2 = _transformOrigin.slice(0);
 
-          _tfo2[0] += target.bbox[0] + dx;
-          _tfo2[1] += target.bbox[1] + dy;
+          _tfo2[0] += dbx + next.__sx1 - sx1 + tx;
+          _tfo2[1] += dby + next.__sy1 - sy1 + ty;
           m = tf.calMatrixByOrigin(_transform2, _tfo2);
         }
 

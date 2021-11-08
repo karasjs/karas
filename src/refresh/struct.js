@@ -1438,10 +1438,9 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
 }
 
 function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
-  let { sx1, sy1, width, height, bbox } = cache;
+  let { sx1, sy1, width, height, bbox, dbx, dby, dx, dy, x: tx, y: ty } = cache;
   // cache一定是mockCache，可能是total/filter/overflow一种
   let cx = width * 0.5, cy = height * 0.5;
-  let dx = -bbox[0], dy = -bbox[1];
   // 先求得被遮罩的matrix，用作inverse给mask计算
   let {
     [NODE_COMPUTED_STYLE]: {
@@ -1455,8 +1454,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
   }
   else {
     let tfo = transformOrigin.slice(0);
-    tfo[0] += sx1 + dx;
-    tfo[1] += sy1 + dx;
+    tfo[0] += tx + dbx + node.sx1 - sx1;
+    tfo[1] += ty + dby + node.sy1 - sy1;
     inverse = tf.calMatrixByOrigin(transform, tfo);
   }
   inverse = mx.inverse(inverse);
@@ -1477,6 +1476,11 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
   //   let parentOpacity = 1;
   //   let lastOpacity;
   //   let lastLv = lv;
+  //   let {
+  //     [STRUCT_INDEX]:index,
+  //     [STRUCT_TOTAL]: total,
+  //     [STRUCT_LV]: lv,
+  //   } = item.__config[NODE_STRUCT];
   // });
   while(next && next.isMask && next.isClip === isClip) {
     let __config = next.__config;
@@ -1504,8 +1508,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
       }
       else {
         let tfo = transformOrigin.slice(0);
-        tfo[0] += target.bbox[0] + dx;
-        tfo[1] += target.bbox[1] + dy;
+        tfo[0] += dbx + next.__sx1 - sx1 + tx;
+        tfo[1] += dby + next.__sy1 - sy1 + ty;
         m = tf.calMatrixByOrigin(transform, tfo);
       }
       m = mx.multiply(inverse, m);

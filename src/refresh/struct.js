@@ -1479,7 +1479,6 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
   //   let lastLv = lv;
   // });
   while(next && next.isMask && next.isClip === isClip) {
-    next = next.next;
     let __config = next.__config;
     let {
       [NODE_CACHE]: __cache,

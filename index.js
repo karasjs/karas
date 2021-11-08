@@ -29914,7 +29914,6 @@
     // });
 
     while (next && next.isMask && next.isClip === isClip) {
-      next = next.next;
       var _config4 = next.__config;
       var __cache = _config4[NODE_CACHE$3],
           __cacheFilter = _config4[NODE_CACHE_FILTER$2],

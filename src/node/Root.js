@@ -755,7 +755,6 @@ class Root extends Dom {
     this.__children = builder.initRoot(this.__cd, this);
     this.__initProps();
     this.__root = this;
-    this.cache = !!this.props.cache;
     let tagName = this.tagName;
     let domName = ROOT_DOM_NAME[tagName];
     // OffscreenCanvas兼容，包含worker的

@@ -22,7 +22,8 @@ const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { AUTO, PX, PERCENT, STRING, REM, VW, VH } = unit;
 
-function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr, method = 'fill', isInline) {
+function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr,
+                   method = 'fill', isInline = false, dx = 0, dy = 0) {
   // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
   let matrix, cx, cy;
   if(Array.isArray(color)) {
@@ -71,7 +72,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
-    canvasPolygon(ctx, list);
+    canvasPolygon(ctx, list, dx, dy);
     ctx[method]();
     ctx.closePath();
     if(matrix) {
@@ -167,10 +168,15 @@ function calBackgroundPosition(position, container, size, root) {
 
 function renderImage(xom, renderMode, ctx, loadBgi,
                      bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-                     currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline) {
+                     currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline,
+                     dx = 0, dy = 0) {
   let source = loadBgi.source;
   // 无source不绘制，可能错误或加载中
   if(source) {
+    bx1 += dx;
+    by1 += dy;
+    bx2 += dx;
+    by2 += dy;
     let bgW = bx2 - bx1;
     let bgH = by2 - by1;
     let { width, height } = loadBgi;

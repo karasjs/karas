@@ -17,7 +17,7 @@ const {
   },
   NODE_KEY: {
     NODE_OPACITY,
-    NODE_CACHE,
+    NODE_CACHE_TOTAL,
     NODE_CACHE_FILTER,
     NODE_CACHE_OVERFLOW,
     NODE_HAS_CONTENT,
@@ -59,6 +59,7 @@ class Cache {
     this.__x = x;
     this.__y = y;
     this.__appendData(x1, y1);
+    this.__isNew = true;
     if(page.canvas) {
       this.__enabled = true;
       let ctx = page.ctx;
@@ -92,6 +93,7 @@ class Cache {
       let size = this.page.size;
       ctx.clearRect(this.x, this.y, size, size);
       this.__available = false;
+      this.__isNew = true;
     }
   }
 
@@ -172,6 +174,10 @@ class Cache {
     return this.__pos;
   }
 
+  get isNew() {
+    return this.__isNew;
+  }
+
   static get MAX() {
     return Page.MAX;
   }
@@ -207,7 +213,7 @@ class Cache {
     bbox[1] -= d;
     bbox[2] += d;
     bbox[3] += d;
-    let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter1');
+    let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
     offscreen.ctx.filter = painter.canvasFilter(filter);
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';
@@ -227,44 +233,23 @@ class Cache {
     return offscreen;
   }
 
-  static genMask(target, next, isClip, transform, tfo) {
+  static genMask(target, node, cb) {
     let cacheMask = genSingle(target, 'mask1');
     let list = [];
-    while(next && (next.isMask)) {
+    let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: tfo } = node.computedStyle;
+    let next = node.next;
+    let isClip = next.isClip;
+    while(next && next.isMask) {
       list.push(next);
       next = next.next;
     }
     let { x, y, ctx, dbx, dby } = cacheMask;
-    tfo[0] += x + dbx;
-    tfo[1] += y + dby;
+    tfo[0] += x + dbx + node.__sx1 - target.sx1;
+    tfo[1] += y + dby + node.__sy1 - target.sy1;
     let inverse = tf.calMatrixByOrigin(transform, tfo);
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {
-      let __config = item.__config;
-      let cacheOverflow = __config[NODE_CACHE_OVERFLOW], cacheFilter = __config[NODE_CACHE_FILTER], cache = __config[NODE_CACHE];
-      let source = cacheOverflow && cacheOverflow.available && cacheOverflow;
-      if(!source) {
-        source = cacheFilter && cacheFilter.available && cacheFilter;
-      }
-      if(!source) {
-        source = cache && cache.available && cache;
-      }
-      if(source) {
-        ctx.globalAlpha = __config[NODE_OPACITY];
-        Cache.drawCache(
-          source, cacheMask,
-          __config[NODE_COMPUTED_STYLE][TRANSFORM],
-          mx.identity(),
-          __config[NODE_COMPUTED_STYLE][TRANSFORM_ORIGIN].slice(0),
-          inverse
-        );
-      }
-      // 没有内容或者img没加载成功导致没有内容，有内容且可见则是超限，不可能进这里
-      else if(__config[NODE_HAS_CONTENT]
-        && __config[NODE_COMPUTED_STYLE][DISPLAY] !== 'none'
-        && __config[NODE_COMPUTED_STYLE][VISIBILITY] !== 'hidden') {
-        inject.error('CacheMask is oversize');
-      }
+      cb(item, cacheMask, inverse);
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
@@ -332,7 +317,7 @@ class Cache {
     }
   }
 
-  static drawCache(source, target, transform, matrix, tfo, inverse) {
+  static drawCache(source, target, transform, matrix, tfo, parentMatrix, inverse) {
     let { x: tx, y: ty, sx1, sy1, ctx, dbx, dby } = target;
     let { x, y, canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
     let ox = tx + sx2 - sx1 + dbx - dbx2;
@@ -342,6 +327,9 @@ class Cache {
       tfo[1] += oy;
       let m = tf.calMatrixByOrigin(transform, tfo);
       matrix = mx.multiply(matrix, m);
+      if(!mx.isE(parentMatrix)) {
+        matrix = mx.multiply(parentMatrix, matrix);
+      }
       if(inverse) {
         // 很多情况mask和target相同matrix，可简化计算
         if(util.equalArr(matrix, inverse)) {
@@ -363,6 +351,20 @@ class Cache {
     let { x, y, canvas, sx1, sy1, dbx, dby, width, height } = cache;
     ctx.drawImage(canvas, x, y, width, height, sx1 - dbx, sy1 - dby, width, height);
   }
+
+  static getCache(list) {
+    for(let i = 0, len = list.length; i < len; i++) {
+      let item = list[i];
+      if(item && item.available) {
+        return item;
+      }
+    }
+  }
+
+  static NA = 0; // 无缓存模式
+  static LOCAL = 1; // 局部根节点
+  static CHILD = 2; // 其子节点
+  static SELF = 3; // webgl专用
 }
 
 export default Cache;

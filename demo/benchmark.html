@@ -23,6 +23,7 @@
         list.map(i => {
           let background = `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`;
           return <div ref={i}
+                      cacheAsBitmap={1}
                       style={{
                         position: 'absolute',
                         left: '50%',

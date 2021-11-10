@@ -59,6 +59,55 @@ const {
     FRAME_EASING,
     FRAME_TRANSITION,
   },
+  ANIMATE_KEY: {
+    I_ASSIGNING,
+    I_IN_FPS,
+    I_IS_DELAY,
+    I_BEGIN,
+    I_END,
+    I_FINISHED,
+    I_NEXT_END,
+    I_FIRST_PLAY,
+    I_FRAME_CB,
+    I_PLAY_CB,
+    I_TARGET,
+    I_ROOT,
+    I_FRAMES,
+    I_FRAMES_R,
+    I_CURRENT_TIME,
+    I_NEXT_TIME,
+    I_STYLE,
+    I_DURATION,
+    I_ITERATIONS,
+    I_FILL,
+    I_PLAYBACK_RATE,
+    I_PLAY_COUNT,
+    I_PLAY_STATE,
+    I_DESTROYED,
+    I_START_TIME,
+    I_FPS_TIME,
+    I_EASING,
+    I_ENTER_FRAME,
+    I_DELAY,
+    I_END_DELAY,
+    I_KEYS,
+    I_ORIGIN_STYLE,
+    I_CURRENT_FRAMES,
+    I_CURRENT_FRAME,
+    I_SPF_LIMIT,
+    I_FPS,
+    I_DIRECTION,
+    I_CAL_DIFF_TIME,
+    I_FIRST_ENTER,
+    I_STAY_BEGIN,
+    I_STAY_END,
+    I_IS2,
+    I_END_TIME,
+    I_NODE_CONFIG,
+    I_ROOT_CONFIG,
+    I_OUT_BEGIN_DELAY,
+    I_TIME_STAMP,
+  },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
@@ -1317,54 +1366,6 @@ function gotoOverload(options, cb) {
 }
 
 let uuid = 0;
-
-const I_ASSIGNING = 0;
-const I_IN_FPS = 1;
-const I_IS_DELAY = 2;
-const I_BEGIN = 3;
-const I_END = 4;
-const I_FINISHED = 5;
-const I_NEXT_END = 6;
-const I_FIRST_PLAY = 7;
-const I_FRAME_CB = 8;
-const I_PLAY_CB = 9;
-const I_TARGET = 10;
-const I_ROOT = 11;
-const I_FRAMES = 12;
-const I_FRAMES_R = 13;
-const I_CURRENT_TIME = 14;
-const I_NEXT_TIME = 15;
-const I_STYLE = 16;
-const I_DURATION = 17;
-const I_ITERATIONS = 18;
-const I_FILL = 19;
-const I_PLAYBACK_RATE = 20;
-const I_PLAY_COUNT = 21;
-const I_PLAY_STATE = 22;
-const I_DESTROYED = 23;
-const I_START_TIME = 24;
-const I_FPS_TIME = 25;
-const I_EASING = 26;
-const I_ENTER_FRAME = 27;
-const I_DELAY = 28;
-const I_END_DELAY = 29;
-const I_KEYS = 30;
-const I_ORIGIN_STYLE = 31;
-const I_CURRENT_FRAMES = 32;
-const I_CURRENT_FRAME = 33;
-const I_SPF_LIMIT = 34;
-const I_FPS = 35;
-const I_DIRECTION = 36;
-const I_CAL_DIFF_TIME = 37;
-const I_FIRST_ENTER = 38;
-const I_STAY_BEGIN = 39;
-const I_STAY_END = 40;
-const I_IS2 = 41;
-const I_END_TIME = 42;
-const I_NODE_CONFIG = 43;
-const I_ROOT_CONFIG = 44;
-const I_OUT_BEGIN_DELAY = 45;
-const I_TIME_STAMP = 46;
 
 class Animation extends Event {
   constructor(target, list, options) {

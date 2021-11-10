@@ -167,8 +167,12 @@ class Img extends Dom {
     return res;
   }
 
-  render(renderMode, lv, ctx, cache) {
-    let res = super.render(renderMode, lv, ctx, cache);
+  render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
+    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+    if(renderMode === mode.WEBGL) {
+      dx = res.dx;
+      dy = res.dy;
+    }
     let {
       offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow,
     } = res;
@@ -215,8 +219,8 @@ class Img extends Dom {
       ctx = __cache.ctx;
     }
     let originX, originY;
-    originX = res.x3;
-    originY = res.y3;
+    originX = res.x3 + dx;
+    originY = res.y3 + dy;
     // 根据配置以及占位图显示error
     let source = loadImg.source;
     if(loadImg.error && !placeholder && Img.showError) {
@@ -299,7 +303,7 @@ class Img extends Dom {
         if(list) {
           ctx.save();
           ctx.beginPath();
-          canvasPolygon(ctx, list);
+          canvasPolygon(ctx, list, dx, dy);
           ctx.clip();
           ctx.closePath();
           ctx.drawImage(source, originX, originY, width, height);

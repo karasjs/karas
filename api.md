@@ -446,6 +446,23 @@ root.ref.div.children[0].updateContent('2', function() {
 ## Xom
 Dom/Geom的基类，抽象共有部分。[Node](#Node)的派生类。
 
+### html属性attribute
+
+#### mask
+* **类型** `boolean` 只读
+* **说明**  
+是否作为遮罩影响前面兄弟节点。
+
+#### clip
+* **类型** `boolean` 只读
+* **说明**  
+是否作为反向遮罩影响前面兄弟节点。优先级比mask高。
+
+#### cacheAsBitmap
+* **类型** `boolean` 读写
+* **说明**  
+是否开启节点位图缓存模式。
+
 ### 类属性property
 
 #### tagName
@@ -508,7 +525,30 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 * **说明**  
 是否已被销毁。
 
+#### cacheAsBitmap
+* **类型** `boolean` 读写
+* **说明**  
+是否开启节点位图缓存模式。
+
 ### 类方法method
+
+### render
+* **类型** `Function`
+* **参数**
+  * renderMode `Number`
+    渲染模式枚举。
+  * refreshLevel `Number`
+    渲染等级。
+  * ctx `Object`
+    渲染上下文，canvas/webgl即ctx，svg为特殊Defs类型。
+  * cache `Number`
+    缓存模式，见Cache的枚举。
+  * dx `Number`
+    x偏移，可选，默认为0。
+  * dy `Number`
+    y偏移，可选，默认为0。
+* **说明**  
+节点默认实现的渲染方法，可被覆盖。
 
 #### getComputedStyle
 * **类型** `Function`
@@ -3325,6 +3365,15 @@ canvas的位图缓存功能实现，可以调整多少个节点进行一次局�
 * **类型** `Number` 读写
 * **说明**  
 读取/设置多少个节点进行局部缓存。默认5。
+* **示例**
+```jsx
+karas.refresh.Cache.NUM = 5;
+```
+
+#### NA/LOCAL/CHILD/SELF
+* **类型** `Number` 只读
+* **说明**  
+节点绘制render()方法中标示当前模式。NA为非缓存（svg渲染时），LOCAL为局部根节点（canvas/webgl当声明cacheAsBitmap时），CHILD为局部根节点的子节点，SELF为webgl模式特殊使用的每个节点位图缓存。
 * **示例**
 ```jsx
 karas.refresh.Cache.NUM = 5;

@@ -513,7 +513,11 @@ function parseGradient(s) {
   }
 }
 
-function getLinear(v, d, ox, oy, cx, cy, w, h, root) {
+function getLinear(v, d, ox, oy, cx, cy, w, h, root, dx = 0, dy = 0) {
+  ox += dx;
+  oy += dy;
+  cx += dx;
+  cy += dy;
   // d为数组是2个坐标点，数字是css标准角度
   let x1, y1, x2, y2, stop;
   if(Array.isArray(d)) {

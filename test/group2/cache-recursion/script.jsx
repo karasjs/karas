@@ -8,6 +8,7 @@ let json = {
   children: [{
     tagName: 'div',
     props: {
+      cacheAsBitmap: 1,
       style: {
         position: 'absolute',
         left: '50%',

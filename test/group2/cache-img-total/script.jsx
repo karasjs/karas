@@ -1,6 +1,6 @@
 let o = karas.render(
   <canvas width="360" height="360" cache={true}>
-    <div style={{position:'relative',background:'#00F',padding:10}}>
+    <div cacheAsBitmap={1} style={{background:'#00F',padding:10}}>
       <img src="../../image.png" style={{position:'relative'}}/>
     </div>
   </canvas>,

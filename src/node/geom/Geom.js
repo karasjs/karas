@@ -497,8 +497,8 @@ class Geom extends Xom {
     }
   }
 
-  render(renderMode, lv, ctx, cache) {
-    let res = super.render(renderMode, lv, ctx, cache);
+  render(renderMode, lv, ctx, cache, dx, dy) {
+    let res = super.render(renderMode, lv, ctx, cache, dx, dy);
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }

@@ -11642,7 +11642,7 @@ var Text = /*#__PURE__*/function (_Node) {
           } // 换行后Text的x重设为lx
 
 
-          if (!lineCount) {
+          if (lineCount) {
             this.__x = this.__sx1 = lx;
           } // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
           // 声明了lineClamp时特殊考虑，这里一定是最后一行，要对比行数不能超过，超过忽略掉这些文本
@@ -28870,7 +28870,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
   } else {
     var tfo = transformOrigin.slice(0);
     tfo[0] += sx1 + dx;
-    tfo[1] += sy1 + dx;
+    tfo[1] += sy1 + dy;
     inverse = tf.calMatrixByOrigin(transform, tfo);
   }
 
@@ -36381,7 +36381,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.63.5";
+var version = "0.63.6";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

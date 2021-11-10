@@ -446,6 +446,23 @@ root.ref.div.children[0].updateContent('2', function() {
 ## Xom
 Dom/Geom的基类，抽象共有部分。[Node](#Node)的派生类。
 
+### html属性attribute
+
+#### mask
+* **类型** `boolean` 只读
+* **说明**  
+是否作为遮罩影响前面兄弟节点。
+
+#### clip
+* **类型** `boolean` 只读
+* **说明**  
+是否作为反向遮罩影响前面兄弟节点。优先级比mask高。
+
+#### cacheAsBitmap
+* **类型** `boolean` 读写
+* **说明**  
+是否开启节点位图缓存模式。
+
 ### 类属性property
 
 #### tagName
@@ -507,6 +524,11 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 * **类型** `boolean` 只读
 * **说明**  
 是否已被销毁。
+
+#### cacheAsBitmap
+* **类型** `boolean` 读写
+* **说明**  
+是否开启节点位图缓存模式。
 
 ### 类方法method
 

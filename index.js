@@ -11725,7 +11725,7 @@
             } // 换行后Text的x重设为lx
 
 
-            if (!lineCount) {
+            if (lineCount) {
               this.__x = this.__sx1 = lx;
             } // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
             // 声明了lineClamp时特殊考虑，这里一定是最后一行，要对比行数不能超过，超过忽略掉这些文本
@@ -11913,6 +11913,7 @@
         });
         this.__x = minX;
         this.__sx = this.__sx1 = minX + this.ox;
+        console.log(22222);
         this.__width = maxX - minX;
       }
     }, {
@@ -12193,8 +12194,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var sx = this.sx,
-            sy = this.sy,
+        var sx = this.__sx1,
+            sy = this.__sy1,
             width = this.width,
             height = this.height,
             root = this.root,
@@ -30509,7 +30510,7 @@
 
       if (node instanceof Text) {
         if (lastRefreshLevel >= REPAINT$2) {
-          node.render(renderMode, 0, gl, SELF, 0, 0);
+          node.render(renderMode, REPAINT$2, gl, SELF, 0, 0);
         }
 
         continue;

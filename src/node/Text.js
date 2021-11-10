@@ -395,7 +395,7 @@ class Text extends Node {
         }
       }
       // 换行后Text的x重设为lx
-      if(!lineCount) {
+      if(lineCount) {
         this.__x = this.__sx1 = lx;
       }
       // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
@@ -569,7 +569,7 @@ class Text extends Node {
       }
     });
     this.__x = minX;
-    this.__sx = this.__sx1 = minX + this.ox;
+    this.__sx = this.__sx1 = minX + this.ox;console.log(22222)
     this.__width = maxX - minX;
   }
 
@@ -804,7 +804,7 @@ class Text extends Node {
   }
 
   get bbox() {
-    let { sx, sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
+    let { __sx1: sx, __sy1: sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
     let half = 0;
     if(textStrokeWidth[1] === REM) {
       half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE] * 0.5, half);

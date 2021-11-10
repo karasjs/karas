@@ -262,6 +262,13 @@ class TexCache {
   get locks() {
     return this.__locks;
   }
+
+  get last() {
+    let list = this.__list, len = list.length;
+    if(len) {
+      return list[len - 1];
+    }
+  }
 }
 
 export default TexCache;

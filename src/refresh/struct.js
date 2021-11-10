@@ -859,7 +859,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H) {
   else {
     let tfo = transformOrigin.slice(0);
     tfo[0] += sx1 + dx;
-    tfo[1] += sy1 + dx;
+    tfo[1] += sy1 + dy;
     inverse = tf.calMatrixByOrigin(transform, tfo);
   }
   inverse = mx.inverse(inverse);

@@ -395,7 +395,7 @@ class Text extends Node {
         }
       }
       // 换行后Text的x重设为lx
-      if(!lineCount) {
+      if(lineCount) {
         this.__x = this.__sx1 = lx;
       }
       // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符

@@ -1454,8 +1454,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
   }
   else {
     let tfo = transformOrigin.slice(0);
-    tfo[0] += tx + dbx + node.sx1 - sx1;
-    tfo[1] += ty + dby + node.sy1 - sy1;
+    tfo[0] += sx1 + dx;
+    tfo[1] += sy1 + dx;
     inverse = tf.calMatrixByOrigin(transform, tfo);
   }
   inverse = mx.inverse(inverse);
@@ -1508,8 +1508,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv) {
       }
       else {
         let tfo = transformOrigin.slice(0);
-        tfo[0] += dbx + next.__sx1 - sx1 + tx;
-        tfo[1] += dby + next.__sy1 - sy1 + ty;
+        tfo[0] += target.bbox[0] + dx;
+        tfo[1] += target.bbox[1] + dy;
         m = tf.calMatrixByOrigin(transform, tfo);
       }
       m = mx.multiply(inverse, m);

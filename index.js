@@ -29888,8 +29888,8 @@
       inverse = mx.identity();
     } else {
       var tfo = transformOrigin.slice(0);
-      tfo[0] += tx + dbx + node.sx1 - sx1;
-      tfo[1] += ty + dby + node.sy1 - sy1;
+      tfo[0] += sx1 + dx;
+      tfo[1] += sy1 + dx;
       inverse = tf.calMatrixByOrigin(transform, tfo);
     }
 
@@ -29949,8 +29949,8 @@
         } else {
           var _tfo2 = _transformOrigin.slice(0);
 
-          _tfo2[0] += dbx + next.__sx1 - sx1 + tx;
-          _tfo2[1] += dby + next.__sy1 - sy1 + ty;
+          _tfo2[0] += target.bbox[0] + dx;
+          _tfo2[1] += target.bbox[1] + dy;
           m = tf.calMatrixByOrigin(_transform2, _tfo2);
         }
 

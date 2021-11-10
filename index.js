@@ -29918,7 +29918,7 @@
       var lastLv = lv;
       var _item$__config$NODE_S2 = item.__config[NODE_STRUCT$4],
           index = _item$__config$NODE_S2[STRUCT_INDEX$2],
-          total = _item$__config$NODE_S2[STRUCT_TOTAL$1];
+          total = _item$__config$NODE_S2[STRUCT_TOTAL$1]; // 可以忽略mbm，因为只有透明遮罩
 
       for (var _i7 = index, _len4 = index + (total || 0) + 1; _i7 < _len4; _i7++) {
         var _structs$_i4 = __structs[_i7],
@@ -29952,8 +29952,7 @@
               _config4$NODE_COMPUTE = _config4[NODE_COMPUTED_STYLE$4],
               opacity = _config4$NODE_COMPUTE[OPACITY$5],
               _transform2 = _config4$NODE_COMPUTE[TRANSFORM$4],
-              _transformOrigin = _config4$NODE_COMPUTE[TRANSFORM_ORIGIN$5],
-              mixBlendMode = _config4$NODE_COMPUTE[MIX_BLEND_MODE$3]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
+              _transformOrigin = _config4$NODE_COMPUTE[TRANSFORM_ORIGIN$5]; // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理
 
           if (_i7 === index) ; else if (_lv5 > lastLv) {
             parentMatrix = lastMatrix;
@@ -36952,7 +36951,7 @@
     Cache: Cache
   };
 
-  var version = "0.63.5";
+  var version = "0.64.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

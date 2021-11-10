@@ -1482,6 +1482,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
       [STRUCT_INDEX]: index,
       [STRUCT_TOTAL]: total,
     } = item.__config[NODE_STRUCT];
+    // 可以忽略mbm，因为只有透明遮罩
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
@@ -1520,7 +1521,6 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
             [OPACITY]: opacity,
             [TRANSFORM]: transform,
             [TRANSFORM_ORIGIN]: transformOrigin,
-            [MIX_BLEND_MODE]: mixBlendMode,
           },
         } = __config;
         // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，根节点是第一个特殊处理

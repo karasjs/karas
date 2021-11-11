@@ -2225,15 +2225,19 @@ function canvasPolygon(ctx, list) {
     return;
   }
 
-  var start = 0;
+  var start = -1;
 
   for (var i = 0, len = list.length; i < len; i++) {
     var item = list[i];
 
-    if (Array.isArray(item)) {
+    if (Array.isArray(item) && item.length) {
       start = i;
       break;
     }
+  }
+
+  if (start === -1) {
+    return;
   }
 
   ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
@@ -2260,15 +2264,19 @@ function svgPolygon(list) {
     return '';
   }
 
-  var start = 0;
+  var start = -1;
 
   for (var i = 0, len = list.length; i < len; i++) {
     var item = list[i];
 
-    if (Array.isArray(item)) {
+    if (Array.isArray(item) && item.length) {
       start = i;
       break;
     }
+  }
+
+  if (start === -1) {
+    return '';
   }
 
   var s = 'M' + list[start][0] + ',' + list[start][1];
@@ -7830,52 +7838,44 @@ var o$2 = {
       var hash = GEOM$1[ks] = GEOM$1[ks] || {};
       hash[tagName] = cb || true;
     }
-  }
-};
+  },
+  isIgnore: function isIgnore(k) {
+    return IGNORE.hasOwnProperty(k);
+  },
+  isGeom: function isGeom(tagName, k) {
+    return tagName && k && GEOM$1.hasOwnProperty(k) && GEOM$1[k].hasOwnProperty(tagName);
+  },
+  isRepaint: function isRepaint(k, tagName) {
+    return REPAINT.hasOwnProperty(k) || o$2.isGeom(tagName, k);
+  },
+  isMeasure: function isMeasure(k) {
+    return MEASURE.hasOwnProperty(k);
+  },
+  isValid: function isValid(tagName, k) {
+    if (!k) {
+      return false;
+    }
 
-o$2.isIgnore = function (k) {
-  return IGNORE.hasOwnProperty(k);
-};
+    if (RESET_DOM.hasOwnProperty(k)) {
+      return true;
+    } // geom的fill等矢量才有的样式
 
-function isGeom(tagName, k) {
-  return tagName && k && GEOM$1.hasOwnProperty(k) && GEOM$1[k].hasOwnProperty(tagName);
-}
 
-o$2.isGeom = isGeom;
+    if (tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
+      return true;
+    }
 
-o$2.isRepaint = function (k, tagName) {
-  return REPAINT.hasOwnProperty(k) || isGeom(tagName, k);
-};
+    if (GEOM$1.hasOwnProperty(k)) {
+      return GEOM$1[k].hasOwnProperty(tagName);
+    }
 
-o$2.isMeasure = function (k) {
-  return MEASURE.hasOwnProperty(k);
-};
+    if (k === 'translatePath') {
+      return true;
+    }
 
-o$2.isValid = function (tagName, k) {
-  if (!k) {
     return false;
   }
-
-  if (RESET_DOM.hasOwnProperty(k)) {
-    return true;
-  } // geom的fill等矢量才有的样式
-
-
-  if (tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
-    return true;
-  }
-
-  if (GEOM$1.hasOwnProperty(k)) {
-    return GEOM$1[k].hasOwnProperty(tagName);
-  }
-
-  if (k === 'translatePath') {
-    return true;
-  }
-
-  return false;
 };
-
 var MEASURE_KEY_SET = o$2.MEASURE_KEY_SET = Object.keys(MEASURE).map(function (i) {
   return parseInt(i);
 });
@@ -7915,7 +7915,7 @@ o$2.addGeom('$ellipse', ['rx', 'ry']);
 o$2.addGeom('$rect', ['rx', 'ry']);
 o$2.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
 o$2.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
-o$2.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
+o$2.addGeom('$polygon', ['points', 'controls', 'start', 'end', 'booleanOperations']);
 
 var _VALUE, _ARRAY_, _ARRAY_0_;
 var STYLE_KEY$3 = enums.STYLE_KEY,
@@ -8004,7 +8004,7 @@ var isNil$3 = util.isNil,
     rgba2int$2 = util.rgba2int,
     equalArr$1 = util.equalArr;
 var MEASURE_KEY_SET$1 = o$2.MEASURE_KEY_SET,
-    isGeom$1 = o$2.isGeom,
+    isGeom = o$2.isGeom,
     GEOM$2 = o$2.GEOM,
     GEOM_KEY_SET$2 = o$2.GEOM_KEY_SET;
 var COLOR_HASH$1 = key.COLOR_HASH,
@@ -9435,7 +9435,7 @@ function equalStyle(k, a, b, target) {
   } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
 
 
-  if (isGeom$1(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
+  if (isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
     return equalArr$1(a, b);
   }
 
@@ -12668,7 +12668,7 @@ var math = {
   matrix: mx,
   tar: tar,
   geom: geom,
-  martinez: {
+  booleanOperations: {
     union: union,
     diff: diff,
     intersection: intersection$1,
@@ -16388,7 +16388,7 @@ var isNil$5 = util.isNil,
     equalArr$2 = util.equalArr;
 var linear = easing.linear;
 var cloneStyle$1 = css.cloneStyle;
-var isGeom$2 = o$2.isGeom,
+var isGeom$1 = o$2.isGeom,
     GEOM$3 = o$2.GEOM;
 var COLOR_HASH$2 = key.COLOR_HASH,
     LENGTH_HASH$2 = key.LENGTH_HASH,
@@ -17171,7 +17171,7 @@ function calDiff(prev, next, k, target, tagName) {
             }
           }
         } else {
-          if (n === p || equalArr$2(n, p) || k === 'edge' || k === 'closure') {
+          if (n === p || equalArr$2(n, p) || k === 'edge' || k === 'closure' || k === 'booleanOperations') {
             return;
           }
 
@@ -17227,9 +17227,9 @@ function calDiff(prev, next, k, target, tagName) {
           }
 
           res[1] = [n[0] - p[0], n[1] - p[1]];
-        } // 其它简单数据，除了edge/closure没有增量
+        } // 其它简单数据，除了edge/closure/booleanOperations没有增量
         else {
-            if (n === p || k === 'edge' || k === 'closure') {
+            if (n === p || k === 'edge' || k === 'closure' || k === 'booleanOperations') {
               return;
             } else {
               res[1] = n - p;
@@ -17932,7 +17932,7 @@ var Animation = /*#__PURE__*/function (_Event) {
           props = target.props;
       var originStyle = {};
       keys.forEach(function (k) {
-        if (isGeom$2(tagName, k)) {
+        if (isGeom$1(tagName, k)) {
           originStyle[k] = props[k];
         }
 
@@ -34042,7 +34042,7 @@ var contain$3 = o$3.contain,
     REFLOW$2 = o$3.REFLOW,
     REBUILD = o$3.REBUILD;
 var isIgnore = o$2.isIgnore,
-    isGeom$3 = o$2.isGeom,
+    isGeom$2 = o$2.isGeom,
     isMeasure = o$2.isMeasure;
 var ROOT_DOM_NAME = {
   canvas: 'canvas',
@@ -34375,7 +34375,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       var k = keys[i];
       var v = style[k]; // 只有geom的props和style2种可能
 
-      if (node instanceof Geom$1 && isGeom$3(tagName, k)) {
+      if (node instanceof Geom$1 && isGeom$2(tagName, k)) {
         if (!equalStyle$1(k, v, currentProps[k], node)) {
           lv |= REPAINT$3;
           __cacheProps[k] = undefined;
@@ -37278,7 +37278,17 @@ var Polyline = /*#__PURE__*/function (_Geom) {
 
         return res;
       });
-    }
+    } // 供polygon覆盖，后处理booleanOperations
+
+  }, {
+    key: "__reprocessing",
+    value: function __reprocessing(list) {
+      return list;
+    } // 同polygon覆盖，booleanOperations改变时需刷新缓冲顶点坐标
+
+  }, {
+    key: "__needRebuildSE",
+    value: function __needRebuildSE() {}
   }, {
     key: "buildCache",
     value: function buildCache(originX, originY) {
@@ -37332,6 +37342,10 @@ var Polyline = /*#__PURE__*/function (_Geom) {
       if (isNil$a(__cacheProps.end)) {
         rebuildSE = true;
         __cacheProps.end = end;
+      }
+
+      if (this.__needRebuildSE(__cacheProps)) {
+        rebuildSE = true;
       } // points/controls有变化就需要重建顶点
 
 
@@ -37340,9 +37354,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
             _controls = __cacheProps.controls;
 
         if (isMulti) {
-          __cacheProps.list2 = _points.filter(function (item) {
-            return Array.isArray(item);
-          }).map(function (item, i) {
+          __cacheProps.list2 = _points.map(function (item, i) {
             var cl = _controls[i];
 
             if (Array.isArray(item)) {
@@ -37357,9 +37369,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
           });
           __cacheProps.len = getLength(__cacheProps.list2, isMulti);
         } else {
-          __cacheProps.list2 = _points.filter(function (item) {
-            return Array.isArray(item);
-          }).map(function (point, i) {
+          __cacheProps.list2 = _points.map(function (point, i) {
             if (i) {
               return concatPointAndControl(point, _controls[i - 1]);
             }
@@ -37384,7 +37394,10 @@ var Polyline = /*#__PURE__*/function (_Geom) {
           });
         } else {
           __cacheProps.list = getNewList(__cacheProps.list2, __cacheProps.len, __cacheProps.start, __cacheProps.end);
-        }
+        } // 后处理一次，让polygon支持布尔运算
+
+
+        __cacheProps.list = this.__reprocessing(__cacheProps.list, isMulti);
       }
 
       return rebuild || rebuildSE;
@@ -37528,9 +37541,17 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
   var _super = _createSuper(Polygon);
 
   function Polygon(tagName, props) {
+    var _this;
+
     _classCallCheck(this, Polygon);
 
-    return _super.call(this, tagName, props);
+    _this = _super.call(this, tagName, props);
+
+    if (props.booleanOperations) {
+      _this.__booleanOperations = props.booleanOperations;
+    }
+
+    return _this;
   }
 
   _createClass(Polygon, [{
@@ -37543,6 +37564,106 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
       }
 
       return res;
+    } // 布尔运算覆盖，仅multi才发生，因为需要多个多边形数据
+
+  }, {
+    key: "__reprocessing",
+    value: function __reprocessing(list, isMulti) {
+      if (!isMulti) {
+        return list;
+      }
+
+      var bo = this.booleanOperations,
+          len = list.length;
+
+      if (!Array.isArray(bo) && bo) {
+        var old = bo;
+        bo = [bo];
+
+        for (var i = 1; i < len - 1; i++) {
+          bo.push(old);
+        }
+      }
+
+      if (Array.isArray(bo) && bo.length) {
+        var res = [];
+        var last;
+
+        for (var _i = 0; _i < len - 1; _i++) {
+          var a = list[_i],
+              b = list[_i + 1];
+          var type = void 0;
+
+          switch (bo[_i]) {
+            case 'intersection':
+              if (!a || !a.length || !b || !b.length) {
+                res.push(null);
+              } else {
+                res.push(intersection$1([a], [b])[0][0]);
+              }
+
+              last = true;
+              break;
+
+            case 'union':
+              type = union;
+              last = true;
+              break;
+
+            case 'diff':
+              type = diff;
+              last = true;
+              break;
+
+            case 'xor':
+              type = xor;
+              last = true;
+              break;
+
+            default:
+              res.push(list[_i]);
+              last = false;
+              break;
+          }
+
+          if (type) {
+            if ((!a || !a.length) && (!b || !b.length)) {
+              res.push(null);
+            } else if (!a || !a.length) {
+              res.push(b);
+            } else if (!b || !b.length) {
+              res.push(a);
+            } else {
+              res.push(type([a], [b])[0][0]);
+            }
+
+            last = true;
+          }
+        } // 最后一个没参与布尔运算，原封不动装载
+
+
+        if (!last) {
+          res.push(list[len - 1]);
+        }
+
+        return res;
+      }
+
+      return list;
+    } // 覆盖，当booleanOperations动画改变时刷新顶点缓存
+
+  }, {
+    key: "__needRebuildSE",
+    value: function __needRebuildSE(__cacheProps) {
+      if (util.isNil(__cacheProps.booleanOperations)) {
+        __cacheProps.booleanOperations = true;
+        return true;
+      }
+    }
+  }, {
+    key: "booleanOperations",
+    get: function get() {
+      return this.getProps('booleanOperations');
     }
   }]);
 
@@ -39310,7 +39431,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.64.1";
+var version = "0.65.0";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

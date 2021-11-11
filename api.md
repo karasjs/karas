@@ -3308,6 +3308,7 @@ karas.refresh.change.isIgnore('visibility'); // false
 * **类型** `Function`
 * **参数**
   * k `String`
+  * tagName `String` 可选，矢量标签的属性判断时需要。
 * **说明**  
 判断一个k是否是`REPAINT`刷新等级，否则是`REFLOW`。
 * **示例**

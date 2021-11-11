@@ -3,33 +3,65 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>cache</title>
+  <title>bo</title>
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">可以为节点开启位图缓存cacheAsBitmap，在重复渲染情况下能缓存自身子树，增加性能。仅canvas/webgl支持。</div>
+<div class="pre">布尔运算，在多边形$polygon标签上支持，且必须声明multi。多个多边形两两之间进行布尔运算。下面是运算前后对比。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   karas.render(
     <canvas width="360" height="360">
-      <div cacheAsBitmap={true}>
-        <span style={{background:'#F00'}}>aaa</span>
-        <strong style={{background:'#0F0'}}>bbb</strong>
-        <p style={{background:'#00F'}}>ccc</p>
-      </div>
+      <$polygon points={[
+        [
+          [0, 0],
+          [0.6, 0],
+          [0.6, 0.6],
+          [0, 0.6]
+        ],
+        [
+          [0.4, 0.2],
+          [1, 0.2],
+          [1, 1],
+          [0.4, 1]
+        ],
+      ]} multi={true} booleanOperations={['intersection']} style={{
+        position: 'absolute',
+        left: 20,
+        top: 20,
+        width: 200,
+        height: 200,
+        fill: '#F00',
+      }}/>
     </canvas>,
     '#example'
   );
   karas.render(
-    <webgl width="360" height="360">
-      <div cacheAsBitmap={true}>
-        <span style={{background:'#F00'}}>aaa</span>
-        <strong style={{background:'#0F0'}}>bbb</strong>
-        <p style={{background:'#00F'}}>ccc</p>
-      </div>
-    </webgl>,
+    <svg width="360" height="360">
+      <$polygon points={[
+        [
+          [0, 0],
+          [0.6, 0],
+          [0.6, 0.6],
+          [0, 0.6]
+        ],
+        [
+          [0.4, 0.2],
+          [1, 0.2],
+          [1, 1],
+          [0.4, 1]
+        ],
+      ]} multi={true} style={{
+        position: 'absolute',
+        left: 20,
+        top: 20,
+        width: 200,
+        height: 200,
+        fill: '#F00',
+      }}/>
+    </svg>,
     '#example2'
   );
 </script>

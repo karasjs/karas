@@ -86,11 +86,11 @@ o.isIgnore = function(k) {
   return IGNORE.hasOwnProperty(k);
 };
 function isGeom(tagName, k) {
-  return GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);
+  return tagName && k && GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);
 }
 o.isGeom = isGeom;
-o.isRepaint = function(k) {
-  return REPAINT.hasOwnProperty(k) || isGeom(k);
+o.isRepaint = function(k, tagName) {
+  return REPAINT.hasOwnProperty(k) || isGeom(tagName, k);
 };
 o.isMeasure = function(k) {
   return MEASURE.hasOwnProperty(k);

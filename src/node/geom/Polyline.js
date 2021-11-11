@@ -291,6 +291,11 @@ class Polyline extends Geom {
     });
   }
 
+  // 供polygon覆盖，后处理booleanOperations
+  reprocessing(list) {
+    return list;
+  }
+
   buildCache(originX, originY) {
     let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
     let rebuild, rebuildSE;
@@ -372,6 +377,7 @@ class Polyline extends Geom {
       else {
         __cacheProps.list = getNewList(__cacheProps.list2, __cacheProps.len, __cacheProps.start, __cacheProps.end);
       }
+      __cacheProps.list = this.reprocessing(__cacheProps.list, isMulti);
     }
     return rebuild || rebuildSE;
   }

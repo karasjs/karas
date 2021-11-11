@@ -7838,13 +7838,13 @@ o$2.isIgnore = function (k) {
 };
 
 function isGeom(tagName, k) {
-  return GEOM$1.hasOwnProperty(k) && GEOM$1[k].hasOwnProperty(tagName);
+  return tagName && k && GEOM$1.hasOwnProperty(k) && GEOM$1[k].hasOwnProperty(tagName);
 }
 
 o$2.isGeom = isGeom;
 
-o$2.isRepaint = function (k) {
-  return REPAINT.hasOwnProperty(k) || isGeom(k);
+o$2.isRepaint = function (k, tagName) {
+  return REPAINT.hasOwnProperty(k) || isGeom(tagName, k);
 };
 
 o$2.isMeasure = function (k) {
@@ -18265,7 +18265,14 @@ var Animation = /*#__PURE__*/function (_Event) {
       genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
 
       if (needClean) {
-        this.__clean(true);
+        var playCb = __config[I_PLAY_CB];
+
+        this.__clean(true); // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
+
+
+        if (playCb) {
+          __config[I_PLAY_CB] = playCb;
+        }
       }
     }
   }, {
@@ -39303,7 +39310,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.64.0";
+var version = "0.64.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

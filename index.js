@@ -12673,6 +12673,7 @@
   var math = {
     matrix: mx,
     tar: tar,
+    vector: vector,
     geom: geom,
     booleanOperations: {
       union: union,

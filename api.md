@@ -3071,7 +3071,7 @@ karas.animate.frame.resume();
 
 <a name="math包"></a>
 ## math包
-数学工具集，包含`matrix`，`tar`，`vector`，`geom`几种，分别处理矩阵、仿射变换、向量、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
+数学工具集，包含`matrix`，`tar`，`geom`，`vector`，`booleanOperations`几种，分别处理矩阵、仿射变换、向量、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
 
 ### matrix
 
@@ -3222,6 +3222,40 @@ x/y点是否在由一堆顶点vertexes组成的多边形中。
     结束，[0, 1]。
 * **说明**
 根据开始结束百分比截取贝塞尔曲线的一部分。
+
+### booleanOperations
+
+#### union
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+合集。
+
+#### diff
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+减集。
+
+#### intersection
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+交集。
+
+#### xor
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+差集。
 
 <a name="refresh包"></a>
 ## refresh包

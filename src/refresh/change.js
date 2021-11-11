@@ -80,39 +80,37 @@ let o = {
       hash[tagName] = cb || true;
     }
   },
-};
-
-o.isIgnore = function(k) {
-  return IGNORE.hasOwnProperty(k);
-};
-function isGeom(tagName, k) {
-  return GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);
-}
-o.isGeom = isGeom;
-o.isRepaint = function(k) {
-  return REPAINT.hasOwnProperty(k) || isGeom(k);
-};
-o.isMeasure = function(k) {
-  return MEASURE.hasOwnProperty(k);
-};
-o.isValid = function(tagName, k) {
-  if(!k) {
+  isIgnore(k) {
+    return IGNORE.hasOwnProperty(k);
+  },
+  isGeom(tagName, k) {
+    return tagName && k && GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);
+  },
+  isRepaint(k, tagName) {
+    return REPAINT.hasOwnProperty(k) || o.isGeom(tagName, k);
+  },
+  isMeasure(k) {
+    return MEASURE.hasOwnProperty(k);
+  },
+  isValid(tagName, k) {
+    if(!k) {
+      return false;
+    }
+    if(RESET_DOM.hasOwnProperty(k)) {
+      return true;
+    }
+    // geom的fill等矢量才有的样式
+    if(tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
+      return true;
+    }
+    if(GEOM.hasOwnProperty(k)) {
+      return GEOM[k].hasOwnProperty(tagName);
+    }
+    if(k === 'translatePath') {
+      return true;
+    }
     return false;
-  }
-  if(RESET_DOM.hasOwnProperty(k)) {
-    return true;
-  }
-  // geom的fill等矢量才有的样式
-  if(tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
-    return true;
-  }
-  if(GEOM.hasOwnProperty(k)) {
-    return GEOM[k].hasOwnProperty(tagName);
-  }
-  if(k === 'translatePath') {
-    return true;
-  }
-  return false;
+  },
 };
 
 let MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(MEASURE).map(i => parseInt(i));
@@ -145,6 +143,6 @@ o.addGeom('$ellipse', ['rx', 'ry']);
 o.addGeom('$rect', ['rx', 'ry']);
 o.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
 o.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
-o.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
+o.addGeom('$polygon', ['points', 'controls', 'start', 'end', 'booleanOperations']);
 
 export default o;

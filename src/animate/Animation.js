@@ -878,7 +878,7 @@ function calDiff(prev, next, k, target, tagName) {
         }
       }
       else {
-        if(n === p || equalArr(n, p) || k === 'edge' || k === 'closure') {
+        if(n === p || equalArr(n, p) || k === 'edge' || k === 'closure' || k === 'booleanOperations') {
           return;
         }
         let v = [];
@@ -931,9 +931,9 @@ function calDiff(prev, next, k, target, tagName) {
         n[1] - p[1],
       ];
     }
-    // 其它简单数据，除了edge/closure没有增量
+    // 其它简单数据，除了edge/closure/booleanOperations没有增量
     else {
-      if(n === p || k === 'edge' || k === 'closure') {
+      if(n === p || k === 'edge' || k === 'closure' || k === 'booleanOperations') {
         return;
       }
       else {
@@ -1892,7 +1892,12 @@ class Animation extends Event {
     // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
     genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
     if(needClean) {
+      let playCb = __config[I_PLAY_CB];
       this.__clean(true);
+      // 丑陋的做法，防止gotoAndStop()这样的cb被clean()掉
+      if(playCb) {
+        __config[I_PLAY_CB] = playCb;
+      }
     }
   }
 

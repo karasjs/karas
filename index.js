@@ -2231,15 +2231,19 @@
       return;
     }
 
-    var start = 0;
+    var start = -1;
 
     for (var i = 0, len = list.length; i < len; i++) {
       var item = list[i];
 
-      if (Array.isArray(item)) {
+      if (Array.isArray(item) && item.length) {
         start = i;
         break;
       }
+    }
+
+    if (start === -1) {
+      return;
     }
 
     ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
@@ -2266,15 +2270,19 @@
       return '';
     }
 
-    var start = 0;
+    var start = -1;
 
     for (var i = 0, len = list.length; i < len; i++) {
       var item = list[i];
 
-      if (Array.isArray(item)) {
+      if (Array.isArray(item) && item.length) {
         start = i;
         break;
       }
+    }
+
+    if (start === -1) {
+      return '';
     }
 
     var s = 'M' + list[start][0] + ',' + list[start][1];

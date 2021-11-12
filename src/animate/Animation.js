@@ -878,7 +878,7 @@ function calDiff(prev, next, k, target, tagName) {
         }
       }
       else {
-        if(n === p || equalArr(n, p) || k === 'edge' || k === 'closure') {
+        if(n === p || equalArr(n, p) || k === 'edge' || k === 'closure' || k === 'booleanOperations') {
           return;
         }
         let v = [];
@@ -931,9 +931,9 @@ function calDiff(prev, next, k, target, tagName) {
         n[1] - p[1],
       ];
     }
-    // 其它简单数据，除了edge/closure没有增量
+    // 其它简单数据，除了edge/closure/booleanOperations没有增量
     else {
-      if(n === p || k === 'edge' || k === 'closure') {
+      if(n === p || k === 'edge' || k === 'closure' || k === 'booleanOperations') {
         return;
       }
       else {

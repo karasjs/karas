@@ -36,7 +36,6 @@ class Polygon extends Polyline {
       let last;
       for(let i = 0; i < len - 1; i++) {
         let a = list[i], b = list[i + 1];
-        let type;
         switch(bo[i]) {
           case 'intersection':
             if(!a || !a.length || !b || !b.length) {
@@ -48,36 +47,51 @@ class Polygon extends Polyline {
             last = true;
             break;
           case 'union':
-            type = union;
+            if((!a || !a.length) && (!b || !b.length)) {
+              res.push(null);
+            }
+            else if(!a || !a.length) {
+              res.push(b);
+            }
+            else if(!b || !b.length) {
+              res.push(a);
+            }
+            else {
+              res.push(union([a], [b])[0][0]);
+            }
             last = true;
             break;
           case 'diff':
-            type = diff;
+            if(!a || !a.length) {
+              res.push(null);
+            }
+            else if(!b || !b.length) {
+              res.push(a);
+            }
+            else {
+              res.push(diff([a], [b])[0][0]);
+            }
             last = true;
             break;
           case 'xor':
-            type = xor;
+            if((!a || !a.length) && (!b || !b.length)) {
+              res.push(null);
+            }
+            else if(!a || !a.length) {
+              res.push(b);
+            }
+            else if(!b || !b.length) {
+              res.push(a);
+            }
+            else {
+              res.push(xor([a], [b])[0][0]);
+            }
             last = true;
             break;
           default:
             res.push(list[i]);
             last = false;
             break;
-        }
-        if(type) {
-          if((!a || !a.length) && (!b || !b.length)) {
-            res.push(null);
-          }
-          else if(!a || !a.length) {
-            res.push(b);
-          }
-          else if(!b || !b.length) {
-            res.push(a);
-          }
-          else {
-            res.push(type([a], [b])[0][0]);
-          }
-          last = true;
         }
       }
       // 最后一个没参与布尔运算，原封不动装载

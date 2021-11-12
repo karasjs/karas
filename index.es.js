@@ -37593,7 +37593,6 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
         for (var _i = 0; _i < len - 1; _i++) {
           var a = list[_i],
               b = list[_i + 1];
-          var type = void 0;
 
           switch (bo[_i]) {
             case 'intersection':
@@ -37607,17 +37606,42 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
               break;
 
             case 'union':
-              type = union;
+              if ((!a || !a.length) && (!b || !b.length)) {
+                res.push(null);
+              } else if (!a || !a.length) {
+                res.push(b);
+              } else if (!b || !b.length) {
+                res.push(a);
+              } else {
+                res.push(union([a], [b])[0][0]);
+              }
+
               last = true;
               break;
 
             case 'diff':
-              type = diff;
+              if (!a || !a.length) {
+                res.push(null);
+              } else if (!b || !b.length) {
+                res.push(a);
+              } else {
+                res.push(diff([a], [b])[0][0]);
+              }
+
               last = true;
               break;
 
             case 'xor':
-              type = xor;
+              if ((!a || !a.length) && (!b || !b.length)) {
+                res.push(null);
+              } else if (!a || !a.length) {
+                res.push(b);
+              } else if (!b || !b.length) {
+                res.push(a);
+              } else {
+                res.push(xor([a], [b])[0][0]);
+              }
+
               last = true;
               break;
 
@@ -37625,20 +37649,6 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
               res.push(list[_i]);
               last = false;
               break;
-          }
-
-          if (type) {
-            if ((!a || !a.length) && (!b || !b.length)) {
-              res.push(null);
-            } else if (!a || !a.length) {
-              res.push(b);
-            } else if (!b || !b.length) {
-              res.push(a);
-            } else {
-              res.push(type([a], [b])[0][0]);
-            }
-
-            last = true;
           }
         } // 最后一个没参与布尔运算，原封不动装载
 

@@ -291,6 +291,14 @@ class Polyline extends Geom {
     });
   }
 
+  // 供polygon覆盖，后处理booleanOperations
+  __reprocessing(list) {
+    return list;
+  }
+
+  // 同polygon覆盖，booleanOperations改变时需刷新缓冲顶点坐标
+  __needRebuildSE() {}
+
   buildCache(originX, originY) {
     let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
     let rebuild, rebuildSE;
@@ -329,11 +337,14 @@ class Polyline extends Geom {
       rebuildSE = true;
       __cacheProps.end = end;
     }
+    if(this.__needRebuildSE(__cacheProps)) {
+      rebuildSE = true;
+    }
     // points/controls有变化就需要重建顶点
     if(rebuild) {
       let { points, controls } = __cacheProps;
       if(isMulti) {
-        __cacheProps.list2 = points.filter(item => Array.isArray(item)).map((item, i) => {
+        __cacheProps.list2 = points.map((item, i) => {
           let cl = controls[i];
           if(Array.isArray(item)) {
             return item.map((point, j) => {
@@ -347,7 +358,7 @@ class Polyline extends Geom {
         __cacheProps.len = getLength(__cacheProps.list2, isMulti);
       }
       else {
-        __cacheProps.list2 = points.filter(item => Array.isArray(item)).map((point, i) => {
+        __cacheProps.list2 = points.map((point, i) => {
           if(i) {
             return concatPointAndControl(point, controls[i - 1]);
           }
@@ -372,6 +383,8 @@ class Polyline extends Geom {
       else {
         __cacheProps.list = getNewList(__cacheProps.list2, __cacheProps.len, __cacheProps.start, __cacheProps.end);
       }
+      // 后处理一次，让polygon支持布尔运算
+      __cacheProps.list = this.__reprocessing(__cacheProps.list, isMulti);
     }
     return rebuild || rebuildSE;
   }

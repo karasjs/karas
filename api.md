@@ -3071,7 +3071,7 @@ karas.animate.frame.resume();
 
 <a name="math包"></a>
 ## math包
-数学工具集，包含`matrix`，`tar`，`vector`，`geom`几种，分别处理矩阵、仿射变换、向量、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
+数学工具集，包含`matrix`，`tar`，`geom`，`vector`，`booleanOperations`几种，分别处理矩阵、仿射变换、向量、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
 
 ### matrix
 
@@ -3223,6 +3223,40 @@ x/y点是否在由一堆顶点vertexes组成的多边形中。
 * **说明**
 根据开始结束百分比截取贝塞尔曲线的一部分。
 
+### booleanOperations
+
+#### union
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+合集。
+
+#### diff
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+减集。
+
+#### intersection
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+交集。
+
+#### xor
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+差集。
+
 <a name="refresh包"></a>
 ## refresh包
 刷新工具集，包含`level`，`change`、`Cache`，`Page`4个大类，分别处理刷新等级枚举、变更计算、缓存分页算法、渲染缓存逻辑。此举是面向框架开发维护人员的，普通开发者无需关注。
@@ -3308,6 +3342,7 @@ karas.refresh.change.isIgnore('visibility'); // false
 * **类型** `Function`
 * **参数**
   * k `String`
+  * tagName `String` 可选，矢量标签的属性判断时需要。
 * **说明**  
 判断一个k是否是`REPAINT`刷新等级，否则是`REFLOW`。
 * **示例**

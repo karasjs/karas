@@ -7,7 +7,7 @@
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">可以为一个geom图形设置mask属性，这样它就作为下一个相邻节点的遮罩层出现。
+<div class="pre">可以为一个节点（svg仅支持Geom）设置mask属性，这样它就作为上一个相邻节点的遮罩层出现。
 mask可以叠加多个，同时作用于下一个相邻非mask节点。
 注意由于canvas/webgl和svg的细节不同，只能统一使用fill填充色做遮罩，不能使用stroke。另外canvas只认透明度，svg除此之外还根据灰度识别遮罩透明。
 还有比较大的差异点是canvas/webgl任意非文本节点都可以作为遮罩，但svg只能是img或矢量节点。</div>

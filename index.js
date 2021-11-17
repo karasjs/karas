@@ -35135,6 +35135,8 @@
 
                 if (len) {
                   updater.updateList.forEach(function (cp) {
+                    var root = cp.root; // 多个root并存时可能cp的引用不相同，需分别获取
+
                     var sr = cp.shadowRoot; // 可能返回text，需视为其parentNode
 
                     if (sr instanceof Text) {
@@ -35149,7 +35151,7 @@
                     res[UPDATE_COMPONENT] = cp;
                     res[UPDATE_CONFIG$5] = sr.__config;
 
-                    _this4.__addUpdate(sr, sr.__config, _this4, _this4.__config, res);
+                    _this4.__addUpdate(sr, sr.__config, root, root.__config, res);
                   });
                 }
               }
@@ -39448,7 +39450,7 @@
     Cache: Cache
   };
 
-  var version = "0.65.0";
+  var version = "0.65.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

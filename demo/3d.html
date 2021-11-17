@@ -18,8 +18,8 @@
       super(tagName, props);
     }
 
-    render(renderMode, refreshLevel, ctx, defs) {
-      super.render(renderMode, refreshLevel, ctx, defs);
+    render(renderMode, refreshLevel, ctx, cache, dx, dy) {
+      super.render(renderMode, refreshLevel, ctx, cache, dx, dy);
       let { sx: x, sy: y, width, height } = this;
       let percent = parseFloat(this.props.percent) || 1;
       let h = height - 20;
@@ -92,7 +92,7 @@
         ctx.closePath();
       }
       else if(renderMode === karas.mode.SVG) {
-        let lg = defs.add({
+        let lg = ctx.add({
           tagName: 'linearGradient',
           props: [
             ['x1', x + width],
@@ -121,7 +121,7 @@
           points: front,
           fill: `url(#${lg})`,
         });
-        lg = defs.add({
+        lg = ctx.add({
           tagName: 'linearGradient',
           props: [
             ['x1', x + width],
@@ -150,7 +150,7 @@
           points: side,
           fill: `url(#${lg})`,
         });
-        lg = defs.add({
+        lg = ctx.add({
           tagName: 'linearGradient',
           props: [
             ['x1', x + width],

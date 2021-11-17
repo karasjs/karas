@@ -1014,6 +1014,7 @@ class Root extends Dom {
             let len = updater.updateList.length;
             if(len) {
               updater.updateList.forEach(cp => {
+                let root = cp.root; // 多个root并存时可能cp的引用不相同，需分别获取
                 let sr = cp.shadowRoot;
                 // 可能返回text，需视为其parentNode
                 if(sr instanceof Text) {
@@ -1026,7 +1027,7 @@ class Root extends Dom {
                 res[UPDATE_MEASURE] = true;
                 res[UPDATE_COMPONENT] = cp;
                 res[UPDATE_CONFIG] = sr.__config;
-                this.__addUpdate(sr, sr.__config, this, this.__config, res);
+                this.__addUpdate(sr, sr.__config, root, root.__config, res);
               });
             }
           }

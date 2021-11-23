@@ -23,7 +23,7 @@ npm install karas
 
 ## Demo
 * demo目录下是一个web端的演示教程示例，可直接本地预览
-* `csx`预编译工具建议使用`babel-preset-karas`：https://github.com/karasjs/babel-preset-karas [![NPM version](https://img.shields.io/npm/v/babel-preset-karas.svg)](https://npmjs.org/package/babel-preset-karas)
+* `CSX`（扩展$矢量标签的JSX）预编译工具建议使用`babel-preset-karas`：https://github.com/karasjs/babel-preset-karas [![NPM version](https://img.shields.io/npm/v/babel-preset-karas.svg)](https://npmjs.org/package/babel-preset-karas)
 * 在线预览：http://army8735.me/karasjs/karas/demo/
 
 ## Webpack config

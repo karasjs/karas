@@ -596,7 +596,7 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
   let [cx, cy, r, xl, yl, tx, ty, d] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2, root);
   // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
   let matrix, scx = 1, scy = 1;
-  if(d) {
+  if(xl !== yl || d) {
     matrix = [1, 0, 0, 1, 0, 0];
     if(d) {
       let sin = Math.sin(d);

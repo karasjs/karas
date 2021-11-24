@@ -7131,7 +7131,7 @@
         scx = 1,
         scy = 1;
 
-    if (d) {
+    if (xl !== yl || d) {
       matrix = [1, 0, 0, 1, 0, 0];
 
       if (d) {

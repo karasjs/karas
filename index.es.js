@@ -7125,7 +7125,7 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
       scx = 1,
       scy = 1;
 
-  if (d) {
+  if (xl !== yl || d) {
     matrix = [1, 0, 0, 1, 0, 0];
 
     if (d) {

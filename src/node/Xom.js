@@ -2303,7 +2303,7 @@ class Xom extends Node {
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, s, z, p, bx1, by1, bx2, by2, this.root, dx, dy);
       if(gd) {
-        res.v = this.__getRg(renderMode, ctx, gd);
+        res.v = this.__getRg(renderMode, ctx, gd)
         if(gd.matrix) {
           res.v = [res.v, gd.matrix, gd.cx, gd.cy];
         }
@@ -2354,7 +2354,7 @@ class Xom extends Node {
 
   __getRg(renderMode, ctx, gd) {
     if(renderMode === CANVAS || renderMode === WEBGL) {
-      let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+      let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.r);
       gd.stop.forEach(item => {
         rg.addColorStop(item[1], int2rgba(item[0]));
       });
@@ -2364,8 +2364,8 @@ class Xom extends Node {
       let v = {
         tagName: 'radialGradient',
         props: [
-          ['cx', gd.cx],
-          ['cy', gd.cy],
+          ['cx', gd.tx],
+          ['cy', gd.ty],
           ['r', gd.r],
         ],
         children: gd.stop.map(item => {
@@ -2378,6 +2378,12 @@ class Xom extends Node {
           };
         }),
       };
+      if(gd.tx !== gd.cx) {
+        v.props.push(['fx', gd.cx]);
+      }
+      if(gd.ty !== gd.cy) {
+        v.props.push(['fy', gd.cy]);
+      }
       let uuid = ctx.add(v);
       this.__config[NODE_DEFS_CACHE].push(v);
       return 'url(#' + uuid + ')';

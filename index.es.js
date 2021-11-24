@@ -6794,30 +6794,36 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2, root) {
       xl,
       yl,
       r,
+      tx,
+      ty,
       d = 0; // 扩展的from to ratio格式，圆心、长轴坐标、短轴缩放比
 
   if (Array.isArray(size)) {
     cx = x1 + size[0] * iw;
     cy = y1 + size[1] * ih;
+    tx = x1 + size[4] * iw;
+    ty = y1 + size[5] * ih;
 
-    if (size[4] <= 0) {
+    if (size[6] <= 0) {
       r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
     } else {
       xl = Math.sqrt(Math.pow((size[2] - size[0]) * iw, 2) + Math.pow((size[3] - size[1]) * ih, 2));
-      yl = xl * size[4];
+      yl = xl * size[6];
       r = Math.max(xl, yl); // 看旋转
 
-      if (size[2] >= size[0]) {
-        if (size[3] >= size[1]) {
-          d = Math.asin((size[3] - size[1]) * ih / xl);
+      if (xl !== yl) {
+        if (size[2] >= size[0]) {
+          if (size[3] >= size[1]) {
+            d = Math.asin((size[3] - size[1]) * ih / xl);
+          } else {
+            d = -Math.asin((size[1] - size[3]) * ih / xl);
+          }
         } else {
-          d = -Math.asin((size[1] - size[3]) * ih / xl);
-        }
-      } else {
-        if (size[3] >= size[1]) {
-          d = d2r$1(180) - Math.asin((size[3] - size[1]) * ih / xl);
-        } else {
-          d = Math.asin((size[1] - size[3]) * ih / xl) - d2r$1(180);
+          if (size[3] >= size[1]) {
+            d = d2r$1(180) - Math.asin((size[3] - size[1]) * ih / xl);
+          } else {
+            d = Math.asin((size[1] - size[3]) * ih / xl) - d2r$1(180);
+          }
         }
       }
     }
@@ -6829,6 +6835,8 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2, root) {
 
     cx = _calCircleCentre2[0];
     cy = _calCircleCentre2[1];
+    tx = cx;
+    ty = cy;
     var ratio = 1;
 
     if (size === 'closest-corner' && shape === 'circle') {
@@ -6915,7 +6923,7 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2, root) {
     xl = yl = r;
   }
 
-  return [cx, cy, r, xl, yl, d];
+  return [cx, cy, r, xl, yl, tx, ty, d];
 }
 
 function parseGradient(s) {
@@ -6949,14 +6957,29 @@ function parseGradient(s) {
         o.z = size[0].toLowerCase();
       } // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
       else {
-          var _points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
+          var _points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([-+]?[\d.]+))?(?:\s+([-+]?[\d.]+))?(?:\s+([-+]?[\d.]+))?/.exec(gradient[2]);
 
           if (_points) {
             o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4])];
+            var i5 = !isNil$1(_points[5]),
+                i6 = !isNil$1(_points[6]),
+                i7 = !isNil$1(_points[7]); // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
 
-            if (!isNil$1(_points[5])) {
+            if (i5 && i6 && i7) {
+              o.z.push(parseFloat(_points[5]));
+              o.z.push(parseFloat(_points[6]));
+              o.z.push(parseFloat(_points[7]));
+            } else if (i5 && i6) {
+              o.z.push(parseFloat(_points[5]));
+              o.z.push(parseFloat(_points[6]));
+              o.z.push(1);
+            } else if (i5) {
+              o.z.push(o.z[0]);
+              o.z.push(o.z[1]);
               o.z.push(parseFloat(_points[5]));
             } else {
+              o.z.push(o.z[0]);
+              o.z.push(o.z[1]);
               o.z.push(1);
             }
           } else {
@@ -7087,20 +7110,22 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
   var h = y2 - y1;
 
   var _calRadialRadius = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2, root),
-      _calRadialRadius2 = _slicedToArray(_calRadialRadius, 6),
+      _calRadialRadius2 = _slicedToArray(_calRadialRadius, 8),
       cx = _calRadialRadius2[0],
       cy = _calRadialRadius2[1],
       r = _calRadialRadius2[2],
       xl = _calRadialRadius2[3],
       yl = _calRadialRadius2[4],
-      d = _calRadialRadius2[5]; // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
+      tx = _calRadialRadius2[5],
+      ty = _calRadialRadius2[6],
+      d = _calRadialRadius2[7]; // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
 
 
   var matrix,
       scx = 1,
       scy = 1;
 
-  if (xl !== yl || d) {
+  if (d) {
     matrix = [1, 0, 0, 1, 0, 0];
 
     if (d) {
@@ -7126,6 +7151,8 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
   return {
     cx: cx,
     cy: cy,
+    tx: tx,
+    ty: ty,
     r: r,
     stop: stop,
     scx: scx,
@@ -22073,7 +22100,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
     key: "__getRg",
     value: function __getRg(renderMode, ctx, gd) {
       if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-        var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+        var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.r);
         gd.stop.forEach(function (item) {
           rg.addColorStop(item[1], int2rgba$2(item[0]));
         });
@@ -22081,7 +22108,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       } else if (renderMode === SVG) {
         var v = {
           tagName: 'radialGradient',
-          props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
+          props: [['cx', gd.tx], ['cy', gd.ty], ['r', gd.r]],
           children: gd.stop.map(function (item) {
             return {
               tagName: 'stop',
@@ -22089,6 +22116,15 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             };
           })
         };
+
+        if (gd.tx !== gd.cx) {
+          v.props.push(['fx', gd.cx]);
+        }
+
+        if (gd.ty !== gd.cy) {
+          v.props.push(['fy', gd.cy]);
+        }
+
         var uuid = ctx.add(v);
 
         this.__config[NODE_DEFS_CACHE$3].push(v);
@@ -39444,7 +39480,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.65.2";
+var version = "0.65.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

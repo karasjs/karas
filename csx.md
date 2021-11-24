@@ -158,7 +158,7 @@
   * linearGradient
     * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限，color-stop为css格式
   * radialGradient
-    * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形，color-stop为css格式
+    * 扩展支持radialGradient(cx cy ax ay tx ty ratio, color-stop)格式，其中c为开始圆心，a为长轴或半径，t为结束圆心默认同c，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形，color-stop为css格式
   * conicGradient
 * backgroundPositionX
   * 0 默认，可以是数组形式设置多个
@@ -282,7 +282,7 @@
   * linearGradient
     * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radialGradient
-    * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+    * 扩展支持radialGradient(cx cy ax ay tx ty ratio, color-stop)格式，其中c为开始圆心，a为长轴或半径，t为结束圆心默认同c，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
   * conicGradient
 * stroke
   * \#000 默认，可以是数组形式设置多个
@@ -291,7 +291,7 @@
   * linearGradient
     * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radialGradient
-    * 扩展支持radialGradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+    * 扩展支持radialGradient(cx cy ax ay tx ty ratio, color-stop)格式，其中c为开始圆心，a为长轴或半径，t为结束圆心默认同c，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
   * conicGradient
 * strokeWidth
   * 1 默认，可以是数组形式设置多个

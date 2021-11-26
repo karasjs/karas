@@ -316,6 +316,9 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
   replaceVars(props, opt.vars);
   // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
   replaceVars(json, opt.vars);
+  if(!Array.isArray(children)) {
+    throw new Error('children must be an array');
+  }
   let vd;
   if(tagName.charAt(0) === '$') {
     vd = karas.createGm(tagName, props);

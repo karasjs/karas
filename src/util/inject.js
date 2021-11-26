@@ -225,13 +225,13 @@ let inject = {
       if(url.substr(0, 5) !== 'data:') {
         let host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
         if(host) {
-          if(location.hostname !== host[1]) {
+          if(typeof location === 'undefined' || location.hostname !== host[1]) {
             img.crossOrigin = 'anonymous';
           }
         }
       }
       img.src = url;
-      if(debug.flag) {
+      if(debug.flag && typeof document !== 'undefined') {
         document.body.appendChild(img);
       }
     }
@@ -336,7 +336,7 @@ let inject = {
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();
     // 强制arial兜底
-    if(ff === 'arial') {
+    if(ff === 'arial' || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
       return true;
     }
     if(!font.info.hasOwnProperty(ff)) {

@@ -6186,7 +6186,7 @@
           var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
 
           if (host) {
-            if (location.hostname !== host[1]) {
+            if (typeof location === 'undefined' || location.hostname !== host[1]) {
               img.crossOrigin = 'anonymous';
             }
           }
@@ -6194,7 +6194,7 @@
 
         img.src = url;
 
-        if (debug.flag) {
+        if (debug.flag && typeof document !== 'undefined') {
           document.body.appendChild(img);
         }
       }
@@ -6331,7 +6331,7 @@
     checkSupportFontFamily: function checkSupportFontFamily(ff) {
       ff = ff.toLowerCase(); // 强制arial兜底
 
-      if (ff === 'arial') {
+      if (ff === 'arial' || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
         return true;
       }
 
@@ -39203,6 +39203,11 @@
     replaceVars(props, opt.vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
 
     replaceVars(json, opt.vars);
+
+    if (!Array.isArray(children)) {
+      throw new Error('children must be an array');
+    }
+
     var vd;
 
     if (tagName.charAt(0) === '$') {

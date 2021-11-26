@@ -42,7 +42,9 @@ class Polygon extends Polyline {
               res.push(null);
             }
             else {
-              res.push(intersection([a], [b])[0][0]);
+              intersection([a], [b]).forEach(item => {
+                res.push(item[0]);
+              });
             }
             last = true;
             break;
@@ -57,7 +59,9 @@ class Polygon extends Polyline {
               res.push(a);
             }
             else {
-              res.push(union([a], [b])[0][0]);
+              union([a], [b]).forEach(item => {
+                res.push(item[0]);
+              });
             }
             last = true;
             break;
@@ -69,7 +73,9 @@ class Polygon extends Polyline {
               res.push(a);
             }
             else {
-              res.push(diff([a], [b])[0][0]);
+              diff([a], [b]).forEach(item => {
+                res.push(item[0]);
+              });
             }
             last = true;
             break;
@@ -84,7 +90,9 @@ class Polygon extends Polyline {
               res.push(a);
             }
             else {
-              res.push(xor([a], [b])[0][0]);
+              xor([a], [b]).forEach(item => {
+                res.push(item[0]);
+              });
             }
             last = true;
             break;

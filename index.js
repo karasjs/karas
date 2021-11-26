@@ -37631,77 +37631,91 @@
         }
 
         if (Array.isArray(bo) && bo.length) {
-          var res = [];
-          var last;
+          var _ret = function () {
+            var res = [];
+            var last;
 
-          for (var _i = 0; _i < len - 1; _i++) {
-            var a = list[_i],
-                b = list[_i + 1];
+            for (var _i = 0; _i < len - 1; _i++) {
+              var a = list[_i],
+                  b = list[_i + 1];
 
-            switch (bo[_i]) {
-              case 'intersection':
-                if (!a || !a.length || !b || !b.length) {
-                  res.push(null);
-                } else {
-                  res.push(intersection$1([a], [b])[0][0]);
-                }
+              switch (bo[_i]) {
+                case 'intersection':
+                  if (!a || !a.length || !b || !b.length) {
+                    res.push(null);
+                  } else {
+                    intersection$1([a], [b]).forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  }
 
-                last = true;
-                break;
+                  last = true;
+                  break;
 
-              case 'union':
-                if ((!a || !a.length) && (!b || !b.length)) {
-                  res.push(null);
-                } else if (!a || !a.length) {
-                  res.push(b);
-                } else if (!b || !b.length) {
-                  res.push(a);
-                } else {
-                  res.push(union([a], [b])[0][0]);
-                }
+                case 'union':
+                  if ((!a || !a.length) && (!b || !b.length)) {
+                    res.push(null);
+                  } else if (!a || !a.length) {
+                    res.push(b);
+                  } else if (!b || !b.length) {
+                    res.push(a);
+                  } else {
+                    union([a], [b]).forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  }
 
-                last = true;
-                break;
+                  last = true;
+                  break;
 
-              case 'diff':
-                if (!a || !a.length) {
-                  res.push(null);
-                } else if (!b || !b.length) {
-                  res.push(a);
-                } else {
-                  res.push(diff([a], [b])[0][0]);
-                }
+                case 'diff':
+                  if (!a || !a.length) {
+                    res.push(null);
+                  } else if (!b || !b.length) {
+                    res.push(a);
+                  } else {
+                    diff([a], [b]).forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  }
 
-                last = true;
-                break;
+                  last = true;
+                  break;
 
-              case 'xor':
-                if ((!a || !a.length) && (!b || !b.length)) {
-                  res.push(null);
-                } else if (!a || !a.length) {
-                  res.push(b);
-                } else if (!b || !b.length) {
-                  res.push(a);
-                } else {
-                  res.push(xor([a], [b])[0][0]);
-                }
+                case 'xor':
+                  if ((!a || !a.length) && (!b || !b.length)) {
+                    res.push(null);
+                  } else if (!a || !a.length) {
+                    res.push(b);
+                  } else if (!b || !b.length) {
+                    res.push(a);
+                  } else {
+                    xor([a], [b]).forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  }
 
-                last = true;
-                break;
+                  last = true;
+                  break;
 
-              default:
-                res.push(list[_i]);
-                last = false;
-                break;
+                default:
+                  res.push(list[_i]);
+                  last = false;
+                  break;
+              }
+            } // 最后一个没参与布尔运算，原封不动装载
+
+
+            if (!last) {
+              res.push(list[len - 1]);
             }
-          } // 最后一个没参与布尔运算，原封不动装载
 
+            return {
+              v: res
+            };
+          }();
 
-          if (!last) {
-            res.push(list[len - 1]);
-          }
-
-          return res;
+          if (_typeof(_ret) === "object") return _ret.v;
         }
 
         return list;
@@ -39486,7 +39500,7 @@
     Cache: Cache
   };
 
-  var version = "0.65.3";
+  var version = "0.65.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

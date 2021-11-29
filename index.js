@@ -702,6 +702,8 @@
     EM: 9,
     VW: 10,
     VH: 11,
+    VMAX: 12,
+    VMIN: 13,
 
     /**
      * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
@@ -729,6 +731,10 @@
         return [n, o.VW];
       } else if (/vh$/i.test(v)) {
         return [n, o.VH];
+      } else if (/vmax$/i.test(v)) {
+        return [n, o.VMAX];
+      } else if (/vmin$/i.test(v)) {
+        return [n, o.VMIN];
       }
 
       return [n, o.NUMBER];
@@ -39295,7 +39301,12 @@
   var o$4 = {
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      json = util.clone(json); // 根节点的fonts字段定义字体信息
+
+      // 特殊单例声明无需clone加速解析
+      if (!options.singleton && !json.singleton) {
+        json = util.clone(json);
+      } // 根节点的fonts字段定义字体信息
+
 
       var fonts = json.fonts;
 

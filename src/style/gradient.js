@@ -12,7 +12,7 @@ import enums from '../util/enums';
 import inject from '../util/inject';
 
 const { rgba2int, isNil } = util;
-const { PX, PERCENT, DEG, NUMBER, REM, VW, VH, calUnit } = unit;
+const { PX, PERCENT, DEG, NUMBER, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
 const { d2r } = geom;
 const { canvasPolygon, svgPolygon } = painter;
 const {
@@ -102,6 +102,12 @@ function getColorStop(v, length, root) {
       }
       else if(p[1] === VH) {
         list.push([item[0], p[0] * root.height / length]);
+      }
+      else if(p[1] === VMAX) {
+        list.push([item[0], p[0] * Math.max(root.width, root.height) / length]);
+      }
+      else if(p[1] === VMIN) {
+        list.push([item[0], p[0] * Math.min(root.width, root.height) / length]);
       }
       else {
         list.push([item[0], p[0] / length]);
@@ -276,6 +282,12 @@ function calCircleCentre(position, x1, y1, iw, ih, root) {
   else if(positionX[1] === VH) {
     cx = x1 + positionX[0] * root.height * 0.01;
   }
+  else if(positionX[1] === VMAX) {
+    cx = x1 + positionX[0] * Math.max(root.width, root.height) * 0.01;
+  }
+  else if(positionX[1] === VMIN) {
+    cx = x1 + positionX[0] * Math.min(root.width, root.height) * 0.01;
+  }
   else {
     cx = x1 + positionX[0];
   }
@@ -290,6 +302,12 @@ function calCircleCentre(position, x1, y1, iw, ih, root) {
   }
   else if(positionY[1] === VH) {
     cy = y1 + positionY[0] * root.height * 0.01;
+  }
+  else if(positionY[1] === VH) {
+    cy = y1 + positionY[0] * Math.max(root.width, root.height) * 0.01;
+  }
+  else if(positionY[1] === VH) {
+    cy = y1 + positionY[0] * Math.min(root.width, root.height) * 0.01;
   }
   else {
     cy = y1 + positionY[0];
@@ -489,7 +507,7 @@ function parseGradient(s) {
           o.z = 'farthest-corner';
         }
       }
-      let position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      let position = /at\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
         let x = getRadialPosition(position[1]);
         let y = position[2] ? getRadialPosition(position[2]) : x;
@@ -507,7 +525,7 @@ function parseGradient(s) {
       else {
         o.d = 0;
       }
-      let position = /at\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwh%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      let position = /at\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
         let x = getRadialPosition(position[1]);
         let y = position[2] ? getRadialPosition(position[2]) : x;
@@ -517,11 +535,11 @@ function parseGradient(s) {
         o.p = [[50, PERCENT], [50, PERCENT]];
       }
     }
-    let v = gradient[2].match(/([-+]?[\d.]+[pxremvwh%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwh%]+)?/ig) || [];
+    let v = gradient[2].match(/([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?/ig) || [];
     o.v = v.map(item => {
       let color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
       let arr = [rgba2int(color[1])];
-      let percent = /[-+]?[\d.]+[pxremvwh%]+/.exec(item);
+      let percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
       if(percent) {
         let v = calUnit(percent[0]);
         if([NUMBER, DEG].indexOf(v[1]) > -1) {

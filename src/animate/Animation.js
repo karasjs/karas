@@ -109,7 +109,7 @@ const {
     I_TIME_STAMP,
   },
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, calUnit } = unit;
+const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
@@ -274,6 +274,12 @@ function calByUnit(p, n, container, root) {
     else if(n[1] === VH) {
       return n[0] * root.height * 0.01 - p[0];
     }
+    else if(n[1] === VMAX) {
+      return n[0] * Math.max(root.width, root.height) * 0.01 - p[0];
+    }
+    else if(n[1] === VMIN) {
+      return n[0] * Math.min(root.width, root.height) * 0.01 - p[0];
+    }
   }
   else if(p[1] === PERCENT) {
     if(n[1] === PX) {
@@ -287,6 +293,12 @@ function calByUnit(p, n, container, root) {
     }
     else if(n[1] === VH) {
       return n[0] * root.height / container - p[0];
+    }
+    else if(n[1] === VMAX) {
+      return n[0] * Math.max(root.width, root.height) / container - p[0];
+    }
+    else if(n[1] === VMIN) {
+      return n[0] * Math.min(root.width, root.height) / container - p[0];
     }
   }
   else if(p[1] === REM) {
@@ -302,6 +314,12 @@ function calByUnit(p, n, container, root) {
     else if(n[1] === VH) {
       return n[0] * root.height * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
     }
+    else if(n[1] === VMAX) {
+      return n[0] * Math.max(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
+    }
+    else if(n[1] === VMIN) {
+      return n[0] * Math.min(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE] - p[0];
+    }
   }
   else if(p[1] === VW) {
     if(n[1] === PX) {
@@ -316,6 +334,12 @@ function calByUnit(p, n, container, root) {
     else if(n[1] === VH) {
       return n[0] * root.height / root.width - p[0];
     }
+    else if(n[1] === VMAX) {
+      return n[0] * Math.max(root.width, root.height) / root.width - p[0];
+    }
+    else if(n[1] === VMIN) {
+      return n[0] * Math.min(root.width, root.height) / root.width - p[0];
+    }
   }
   else if(p[1] === VH) {
     if(n[1] === PX) {
@@ -329,6 +353,52 @@ function calByUnit(p, n, container, root) {
     }
     else if(n[1] === PERCENT) {
       return n[0] * container / root.height - p[0];
+    }
+    else if(n[1] === VMAX) {
+      return n[0] * Math.max(root.width, root.height) / root.height - p[0];
+    }
+    else if(n[1] === VMIN) {
+      return n[0] * Math.min(root.width, root.height) / root.height - p[0];
+    }
+  }
+  else if(p[1] === VMAX) {
+    if(n[1] === PX) {
+      return n[0] * 100 / Math.max(root.width, root.height) - p[0];
+    }
+    else if(n[1] === REM) {
+      return n[0] * 100 * root.computedStyle[FONT_SIZE] / Math.max(root.width, root.height) - p[0];
+    }
+    else if(n[1] === PERCENT) {
+      return n[0] * container / Math.max(root.width, root.height) - p[0];
+    }
+    else if(n[1] === VW) {
+      return n[0] * root.width / Math.max(root.width, root.height) - p[0];
+    }
+    else if(n[1] === VH) {
+      return n[0] * root.height / Math.max(root.width, root.height) - p[0];
+    }
+    else if(n[1] === VMIN) {
+      return n[0] * Math.min(root.width, root.height) / Math.max(root.width, root.height) - p[0];
+    }
+  }
+  else if(p[1] === VMIN) {
+    if(n[1] === PX) {
+      return n[0] * 100 / Math.min(root.width, root.height) - p[0];
+    }
+    else if(n[1] === REM) {
+      return n[0] * 100 * root.computedStyle[FONT_SIZE] / Math.min(root.width, root.height) - p[0];
+    }
+    else if(n[1] === PERCENT) {
+      return n[0] * container / Math.min(root.width, root.height) - p[0];
+    }
+    else if(n[1] === VW) {
+      return n[0] * root.width / Math.min(root.width, root.height) - p[0];
+    }
+    else if(n[1] === VH) {
+      return n[0] * root.height / Math.min(root.width, root.height) - p[0];
+    }
+    else if(n[1] === VMAX) {
+      return n[0] * Math.max(root.width, root.height) / Math.min(root.width, root.height) - p[0];
     }
   }
 }
@@ -412,7 +482,7 @@ function calDiff(prev, next, k, target, tagName) {
       })
     }
     let v = {}, hasChange;
-    // 只有blur支持px/rem/vw/vh，其余都是特殊固定单位
+    // 只有blur支持px/rem/vw/vh/vmax/vmin，其余都是特殊固定单位
     Object.keys(keyHash).forEach(k => {
       if(k === 'blur') {
         if(!pHash[k]) {
@@ -976,6 +1046,12 @@ function calDiff(prev, next, k, target, tagName) {
       }
       else if(u === VH) {
         return [(parseFloat(v) || 0) * 0.01 * root.height, PX];
+      }
+      else if(u === VMAX) {
+        return [(parseFloat(v) || 0) * 0.01 * Math.max(root.width, root.height), PX];
+      }
+      else if(u === VMIN) {
+        return [(parseFloat(v) || 0) * 0.01 * Math.min(root.width, root.height), PX];
       }
       else {
         return [parseFloat(v) || 0, PX];

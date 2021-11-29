@@ -18,7 +18,7 @@ function parseFlex(style, grow, shrink, basis) {
 function parseMarginPadding(style, key, list) {
   let temp = style[key];
   if(!isNil(temp)) {
-    let match = temp.toString().match(/([-+]?[\d.]+[pxremvwh%]*)|(auto)/ig);
+    let match = temp.toString().match(/([-+]?[\d.]+[pxremvwhina%]*)|(auto)/ig);
     if(match) {
       if(match.length === 1) {
         match[3] = match[2] = match[1] = match[0];
@@ -46,7 +46,7 @@ function parseOneBorder(style, k) {
   }
   // 后面会统一格式化处理
   if(isNil(style[k + 'Width'])) {
-    let w = /\b[\d.]+[pxremvwh%]*\b/i.exec(v);
+    let w = /\b[\d.]+[pxremvwhina%]*\b/i.exec(v);
     style[k + 'Width'] = w ? w[0] : 0;
   }
   if(isNil(style[k + 'Style'])) {
@@ -194,7 +194,7 @@ export default {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
       }
-      else if(/^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwh%]*/.test(v)) {
+      else if(/^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwhina%]*/.test(v)) {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
       }
@@ -202,14 +202,14 @@ export default {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), 0);
       }
-      else if(/^[\d.]+\s+[\d.]+[pxremvwh%]+/.test(v)) {
+      else if(/^[\d.]+\s+[\d.]+[pxremvwhina%]+/.test(v)) {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), 1, arr[1]);
       }
       else if(/^[\d.]+$/.test(v)) {
         parseFlex(style, parseFloat(v), 1, 0);
       }
-      else if(/^[\d.]+[pxremvwh%]+/i.test(v)) {
+      else if(/^[\d.]+[pxremvwhina%]+/i.test(v)) {
         parseFlex(style, 1, 1, v);
       }
       else {
@@ -307,7 +307,7 @@ export default {
       parseOneBorder(style, k);
     }
     else if(k === 'textStroke') {
-      let w = /(?:^|\s)([-+]?[\d.]+[pxremvwh%]*)/.exec(v);
+      let w = /(?:^|\s)([-+]?[\d.]+[pxremvwhina%]*)/.exec(v);
       if(w) {
         style.textStrokeWidth = w[1];
       }

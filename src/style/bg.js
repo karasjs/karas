@@ -169,10 +169,10 @@ function calBackgroundPosition(position, container, size, root) {
       return position[0] * root.height * 0.01;
     }
     else if(position[1] === VMAX) {
-      res.push(position[0] * Math.max(root.width, root.height) * 0.01);
+      return position[0] * Math.max(root.width, root.height) * 0.01;
     }
     else if(position[1] === VMIN) {
-      res.push(position[0] * Math.min(root.width, root.height) * 0.01);
+      return position[0] * Math.min(root.width, root.height) * 0.01;
     }
   }
   return 0;

@@ -2801,7 +2801,8 @@ class Dom extends Xom {
         else if(height[1] === VMIN) {
           h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
         }
-        else {
+        // 特殊必须声明防止AUTO
+        else if(height[1] === PX) {
           h2 = height[0];
         }
       }

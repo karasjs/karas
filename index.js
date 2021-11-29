@@ -15703,9 +15703,9 @@
       } else if (position[1] === VH$5) {
         return position[0] * root.height * 0.01;
       } else if (position[1] === VMAX$5) {
-        res.push(position[0] * Math.max(root.width, root.height) * 0.01);
+        return position[0] * Math.max(root.width, root.height) * 0.01;
       } else if (position[1] === VMIN$5) {
-        res.push(position[0] * Math.min(root.width, root.height) * 0.01);
+        return position[0] * Math.min(root.width, root.height) * 0.01;
       }
     }
 
@@ -26855,9 +26855,10 @@
                 h2 = height[0] * Math.max(_this4.root.width, _this4.root.height) * 0.01;
               } else if (height[1] === VMIN$8) {
                 h2 = height[0] * Math.min(_this4.root.width, _this4.root.height) * 0.01;
-              } else {
-                h2 = height[0];
-              }
+              } // 特殊必须声明防止AUTO
+              else if (height[1] === PX$8) {
+                  h2 = height[0];
+                }
             } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
 

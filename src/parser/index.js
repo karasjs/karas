@@ -7,7 +7,10 @@ import Controller from '../animate/Controller';
 
 let o = {
   parse(karas, json, dom, options = {}) {
-    json = util.clone(json);
+    // 特殊单例声明无需clone加速解析
+    if(!options.singleton && !json.singleton) {
+      json = util.clone(json);
+    }
     // 根节点的fonts字段定义字体信息
     let fonts = json.fonts;
     if(fonts) {

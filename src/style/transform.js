@@ -20,7 +20,7 @@ const { STYLE_KEY: {
   MATRIX,
   FONT_SIZE,
 }} = enums;
-const { PX, PERCENT, REM, VW, VH } = unit;
+const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { matrix, geom } = math;
 const { identity, multiply, isE } = matrix;
 const { d2r } = geom;
@@ -198,6 +198,12 @@ function normalizeSingle(k, v, ow, oh, root) {
     else if(v[1] === VH) {
       return v[0] * root.height * 0.01;
     }
+    else if(v[1] === VMAX) {
+      return v[0] * Math.max(root.width, root.height) * 0.01;
+    }
+    else if(v[1] === VMIN) {
+      return v[0] * Math.min(root.width, root.height) * 0.01;
+    }
   }
   else if(k === TRANSLATE_Y) {
     if(v[1] === PERCENT) {
@@ -211,6 +217,12 @@ function normalizeSingle(k, v, ow, oh, root) {
     }
     else if(v[1] === VH) {
       return v[0] * root.height * 0.01;
+    }
+    else if(v[1] === VMAX) {
+      return v[0] * Math.max(root.width, root.height) * 0.01;
+    }
+    else if(v[1] === VMIN) {
+      return v[0] * Math.min(root.width, root.height) * 0.01;
     }
   }
   else if(k === MATRIX) {
@@ -248,6 +260,12 @@ function calOrigin(transformOrigin, w, h, root) {
     }
     else if(item[1] === VH) {
       tfo.push(item[0] * root.height * 0.01);
+    }
+    else if(item[1] === VMAX) {
+      tfo.push(item[0] * Math.max(root.width, root.height) * 0.01);
+    }
+    else if(item[1] === VMIN) {
+      tfo.push(item[0] * Math.min(root.width, root.height) * 0.01);
     }
   });
   return tfo;

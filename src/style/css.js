@@ -78,7 +78,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, calUnit } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
 const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
 
@@ -316,7 +316,7 @@ function normalize(style, reset = []) {
           [0, AUTO],
         ];
       }
-      let match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwh%]*)|(contain|cover|auto))/ig);
+      let match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwhina%]*)|(contain|cover|auto))/ig);
       if(match) {
         if(match.length === 1) {
           if(match[0] === 'contain' || match[0] === 'cover') {
@@ -1006,10 +1006,10 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    let match = (temp || '').match(/([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
     if(match) {
       match.forEach(item => {
-        let boxShadow = /([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*)\s*([-+]?[\d.]+[pxremvwh%]*\s*)?([-+]?[\d.]+[pxremvwh%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        let boxShadow = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
         if(boxShadow) {
           bs = bs || [];
           let res = [];
@@ -1127,6 +1127,12 @@ function computeMeasure(node, isRoot) {
     else if(v[1] === VH) {
       computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.height * 0.01 * v[0]);
     }
+    else if(v[1] === VMAX) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(node.root.width, node.root.height) * 0.01 * v[0]);
+    }
+    else if(v[1] === VMIN) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(node.root.width, node.root.height) * 0.01 * v[0]);
+    }
     else {
       computedStyle[k] = v[0];
     }
@@ -1162,6 +1168,12 @@ function computeReflow(node, isHost) {
     }
     else if(item[1] === VH) {
       computedStyle[k] = item[0] * root.height * 0.01;
+    }
+    else if(item[1] === VMAX) {
+      computedStyle[k] = item[0] * Math.max(root.width, root.height) * 0.01;
+    }
+    else if(item[1] === VMIN) {
+      computedStyle[k] = item[0] * Math.min(root.width, root.height) * 0.01;
     }
     else {
       computedStyle[k] = 0;
@@ -1237,6 +1249,12 @@ function computeReflow(node, isHost) {
   else if(lineHeight[1] === VH) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * root.height * 0.01, 0) || calNormalLineHeight(computedStyle);
   }
+  else if(lineHeight[1] === VMAX) {
+    computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * Math.max(root.width, root.height) * 0.01, 0) || calNormalLineHeight(computedStyle);
+  }
+  else if(lineHeight[1] === VMIN) {
+    computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0] * Math.min(root.width, root.height) * 0.01, 0) || calNormalLineHeight(computedStyle);
+  }
   else if(lineHeight[1] === NUMBER) {
     computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
   }
@@ -1259,6 +1277,12 @@ function computeReflow(node, isHost) {
   }
   else if(letterSpacing[1] === VH) {
     computedStyle[LETTER_SPACING] = root.height * 0.01 * letterSpacing[0];
+  }
+  else if(letterSpacing[1] === VMAX) {
+    computedStyle[LETTER_SPACING] = Math.max(root.width, root.height) * 0.01 * letterSpacing[0];
+  }
+  else if(letterSpacing[1] === VMIN) {
+    computedStyle[LETTER_SPACING] = Math.min(root.width, root.height) * 0.01 * letterSpacing[0];
   }
   else {
     computedStyle[LETTER_SPACING] = letterSpacing[0];
@@ -1331,6 +1355,12 @@ function calRelativePercent(n, parent, k) {
     else if(style[1] === VH) {
       return n * style[0] * parent.root.height * 0.01;
     }
+    else if(style[1] === VMAX) {
+      return n * style[0] * Math.max(parent.root.width, parent.root.height) * 0.01;
+    }
+    else if(style[1] === VMIN) {
+      return n * style[0] * Math.min(parent.root.width, parent.root.height) * 0.01;
+    }
   }
   return n;
 }
@@ -1359,6 +1389,12 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
   else if(v[1] === VH) {
     v = v[0] * parent.root.height * 0.01;
   }
+  else if(v[1] === VMAX) {
+    v = v[0] * Math.max(parent.root.width, parent.root.height) * 0.01;
+  }
+  else if(v[1] === VMIN) {
+    v = v[0] * Math.min(parent.root.width, parent.root.height) * 0.01;
+  }
   return v;
 }
 
@@ -1380,6 +1416,12 @@ function calAbsolute(currentStyle, k, v, size, root) {
   }
   else if(v[1] === VH) {
     v = v[0] * root.height * 0.01;
+  }
+  else if(v[1] === VMAX) {
+    v = v[0] * Math.max(root.width, root.height) * 0.01;
+  }
+  else if(v[1] === VMIN) {
+    v = v[0] * Math.min(root.width, root.height) * 0.01;
   }
   return v;
 }

@@ -10,7 +10,7 @@ const { STYLE_KEY: {
   FONT_SIZE,
 } } = enums;
 const { isNil } = util;
-const { REM, VW, VH } = unit;
+const { REM, VW, VH, VMAX, VMIN } = unit;
 
 function genVertex(x, y, width, height, rx = 0, ry = 0) {
   if(rx === 0 || ry === 0) {
@@ -145,6 +145,12 @@ class Rect extends Geom {
         }
         else if(item[1] === VH) {
           half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+        }
+        else if(item[1] === VMAX) {
+          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+        }
+        else if(item[1] === VMIN) {
+          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
         }
         else {
           half = Math.max(item[0] * 0.5, half);

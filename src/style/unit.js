@@ -11,6 +11,8 @@ let o = {
   EM: 9,
   VW: 10,
   VH: 11,
+  VMAX: 12,
+  VMIN: 13,
   /**
    * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
    * @param v value
@@ -44,6 +46,12 @@ let o = {
     }
     else if(/vh$/i.test(v)) {
       return [n, o.VH];
+    }
+    else if(/vmax$/i.test(v)) {
+      return [n, o.VMAX];
+    }
+    else if(/vmin$/i.test(v)) {
+      return [n, o.VMIN];
     }
     return [n, o.NUMBER];
   },

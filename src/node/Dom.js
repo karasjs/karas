@@ -80,7 +80,7 @@ const {
     STRUCT_INDEX,
   },
 } = enums;
-const { AUTO, PX, PERCENT, REM, VW, VH } = unit;
+const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
 
 function genZIndexChildren(dom) {
@@ -355,6 +355,12 @@ class Dom extends Xom {
       else if(width[1] === VH) {
         w -= width[0] * this.root.height * 0.01;
       }
+      else if(width[1] === VMAX) {
+        w -= width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(width[1] === VMIN) {
+        w -= width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       else {
         for(let i = 0; i < flowChildren.length; i++) {
           // 当放不下时直接返回，无需继续多余的尝试计算
@@ -390,6 +396,12 @@ class Dom extends Xom {
       else if(marginRight[1] === VH) {
         w -= marginRight[0] * this.root.height * 0.01;
       }
+      else if(marginRight[1] === VMAX) {
+        w -= marginRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(marginRight[1] === VMIN) {
+        w -= marginRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       if(paddingRight[1] === PX) {
         w -= paddingRight[0];
       }
@@ -405,6 +417,12 @@ class Dom extends Xom {
       else if(paddingRight[1] === VH) {
         w -= paddingRight[0] * this.root.height * 0.01;
       }
+      else if(paddingRight[1] === VMAX) {
+        w -= paddingRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(paddingRight[1] === VMIN) {
+        w -= paddingRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       if(borderRightWidth[1] === PX) {
         w -= borderRightWidth[0];
       }
@@ -416,6 +434,12 @@ class Dom extends Xom {
       }
       else if(borderRightWidth[1] === VH) {
         w -= borderRightWidth[0] * this.root.height * 0.01;
+      }
+      else if(borderRightWidth[1] === VMAX) {
+        w -= borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(borderRightWidth[1] === VMIN) {
+        w -= borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
     // 还要减去开头的mpb
@@ -434,6 +458,12 @@ class Dom extends Xom {
     else if(marginLeft[1] === VH) {
       w -= marginLeft[0] * this.root.height * 0.01;
     }
+    else if(marginLeft[1] === VMAX) {
+      w -= marginLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(marginLeft[1] === VMIN) {
+      w -= marginLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     if(paddingLeft[1] === PX) {
       w -= paddingLeft[0];
     }
@@ -449,6 +479,12 @@ class Dom extends Xom {
     else if(paddingLeft[1] === VH) {
       w -= paddingLeft[0] * this.root.height * 0.01;
     }
+    else if(paddingLeft[1] === VMAX) {
+      w -= paddingLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(paddingLeft[1] === VMIN) {
+      w -= paddingLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     if(borderLeftWidth[1] === PX) {
       w -= borderLeftWidth[0];
     }
@@ -460,6 +496,12 @@ class Dom extends Xom {
     }
     else if(borderLeftWidth[1] === VH) {
       w -= borderLeftWidth[0] * this.root.height * 0.01;
+    }
+    else if(borderLeftWidth[1] === VMAX) {
+      w -= borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(borderLeftWidth[1] === VMIN) {
+      w -= borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     return w;
   }
@@ -520,6 +562,12 @@ class Dom extends Xom {
     }
     else if(main[1] === VH) {
       min = max = main[0] * this.root.height * 0.01;
+    }
+    else if(main[1] === VMAX) {
+      min = max = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(main[1] === VMIN) {
+      min = max = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     else {
       if(display === 'flex') {
@@ -728,7 +776,7 @@ class Dom extends Xom {
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
-    let isFixed = [PX, PERCENT, REM, VW, VH].indexOf(flexBasis[1]) > -1;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
     let isContent = !isAuto && !isFixed;
     let fixedSize;
     // flex的item固定basis计算
@@ -748,9 +796,15 @@ class Dom extends Xom {
       else if(flexBasis[1] === VH) {
         b = fixedSize = flexBasis[0] * this.root.height * 0.01;
       }
+      else if(flexBasis[1] === VMAX) {
+        b = fixedSize = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(flexBasis[1] === VMIN) {
+        b = fixedSize = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
     }
     // 已声明主轴尺寸的，当basis是auto时为值
-    else if(([PX, PERCENT, REM, VW, VH].indexOf(main[1]) > -1) && isAuto) {
+    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1) && isAuto) {
       if(main[1] === PX) {
         b = fixedSize = main[0];
       }
@@ -765,6 +819,12 @@ class Dom extends Xom {
       }
       else if(main[1] === VH) {
         b = fixedSize = main[0] * this.root.height * 0.01;
+      }
+      else if(main[1] === VMAX) {
+        b = fixedSize = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(main[1] === VMIN) {
+        b = fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
     // 非固定尺寸的basis为auto时降级为content
@@ -2571,6 +2631,12 @@ class Dom extends Xom {
           else if(width[1] === VH) {
             w2 = width[0] * this.root.height * 0.01;
           }
+          else if(width[1] === VMAX) {
+            w2 = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          }
+          else if(width[1] === VMIN) {
+            w2 = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          }
           else {
             w2 = width[0];
           }
@@ -2589,6 +2655,12 @@ class Dom extends Xom {
           }
           else if(width[1] === VH) {
             w2 = width[0] * this.root.height * 0.01;
+          }
+          else if(width[1] === VMAX) {
+            w2 = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          }
+          else if(width[1] === VMIN) {
+            w2 = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
           else {
             w2 = width[0];
@@ -2621,6 +2693,12 @@ class Dom extends Xom {
           else if(width[1] === VH) {
             w2 = width[0] * this.root.height * 0.01;
           }
+          else if(width[1] === VMAX) {
+            w2 = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          }
+          else if(width[1] === VMIN) {
+            w2 = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          }
           else {
             w2 = width[0];
           }
@@ -2646,6 +2724,12 @@ class Dom extends Xom {
           else if(height[1] === VH) {
             h2 = height[0] * this.root.height * 0.01;
           }
+          else if(height[1] === VMAX) {
+            h2 = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          }
+          else if(height[1] === VMIN) {
+            h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          }
           else {
             h2 = height[0];
           }
@@ -2664,6 +2748,12 @@ class Dom extends Xom {
           }
           else if(height[1] === VH) {
             h2 = height[0] * this.root.height * 0.01;
+          }
+          else if(height[1] === VMAX) {
+            h2 = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          }
+          else if(height[1] === VMIN) {
+            h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
           else {
             h2 = height[0];
@@ -2705,6 +2795,13 @@ class Dom extends Xom {
         else if(height[1] === VH) {
           h2 = height[0] * this.root.height * 0.01;
         }
+        else if(height[1] === VMAX) {
+          h2 = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        else if(height[1] === VMIN) {
+          h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        }
+        // 特殊必须声明防止AUTO
         else if(height[1] === PX) {
           h2 = height[0];
         }

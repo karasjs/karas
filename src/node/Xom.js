@@ -151,7 +151,7 @@ const {
     NODE_CACHE_AS_BITMAP,
   }
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, DEG } = unit;
+const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, VMAX, VMIN, DEG } = unit;
 const { int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { GEOM } = change;
@@ -302,6 +302,12 @@ class Xom extends Node {
     else if(mp[1] === VH) {
       return mp[0] * this.root.height * 0.01;
     }
+    else if(mp[1] === VMAX) {
+      return mp[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(mp[1] === VMIN) {
+      return mp[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     return 0;
   }
 
@@ -335,6 +341,12 @@ class Xom extends Node {
     }
     else if(v[1] === VH) {
       n += v[0] * this.root.height * 0.01;
+    }
+    else if(v[1] === VMAX) {
+      n += v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(v[1] === VMIN) {
+      n += v[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     return n;
   }
@@ -372,6 +384,12 @@ class Xom extends Node {
       else if(borderLeftWidth[1] === VH) {
         mp += borderLeftWidth[0] * this.root.height * 0.01;
       }
+      else if(borderLeftWidth[1] === VMAX) {
+        mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(borderLeftWidth[1] === VMIN) {
+        mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       if(borderRightWidth[1] === PX) {
         mp += borderRightWidth[0];
       }
@@ -383,6 +401,12 @@ class Xom extends Node {
       }
       else if(borderRightWidth[1] === VH) {
         mp += borderRightWidth[0] * this.root.height * 0.01;
+      }
+      else if(borderRightWidth[1] === VMAX) {
+        mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(borderRightWidth[1] === VMIN) {
+        mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
       res = res.map(item => item + mp);
     }
@@ -403,6 +427,12 @@ class Xom extends Node {
       else if(borderTopWidth[1] === VH) {
         mp += borderTopWidth[0] * this.root.height * 0.01;
       }
+      else if(borderTopWidth[1] === VMAX) {
+        mp += borderTopWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(borderTopWidth[1] === VMIN) {
+        mp += borderTopWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       if(borderBottomWidth[1] === PX) {
         mp += borderBottomWidth[0];
       }
@@ -414,6 +444,12 @@ class Xom extends Node {
       }
       else if(borderBottomWidth[1] === VH) {
         mp += borderBottomWidth[0] * this.root.height * 0.01;
+      }
+      else if(borderBottomWidth[1] === VMAX) {
+        mp += borderBottomWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(borderBottomWidth[1] === VMIN) {
+        mp += borderBottomWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
       res = res.map(item => item + mp);
     }
@@ -500,6 +536,12 @@ class Xom extends Node {
             break;
           case VH:
             w = width[0] * this.root.height * 0.01;
+            break;
+          case VMAX:
+            w = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+            break;
+          case VMIN:
+            w = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
             break;
         }
       }
@@ -675,6 +717,12 @@ class Xom extends Node {
         case VH:
           w = width[0] * this.root.height * 0.01;
           break;
+        case VMAX:
+          w = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          break;
+        case VMIN:
+          w = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          break;
       }
     }
     if(h2 !== undefined) {
@@ -702,6 +750,12 @@ class Xom extends Node {
           break;
         case VH:
           h = height[0] * this.root.height * 0.01;
+          break;
+        case VMAX:
+          h = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          break;
+        case VMIN:
+          h = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
           break;
       }
     }
@@ -786,6 +840,12 @@ class Xom extends Node {
         else if(v[1] === VH) {
           v = v[0] * this.root.height * 0.01;
         }
+        else if(v[1] === VMAX) {
+          v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        else if(v[1] === VMIN) {
+          v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        }
         else {
           v = v[0];
         }
@@ -811,6 +871,12 @@ class Xom extends Node {
         else if(v[1] === VH) {
           v = v[0] * this.root.height * 0.01;
         }
+        else if(v[1] === VMAX) {
+          v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        else if(v[1] === VMIN) {
+          v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        }
         else {
           v = v[0];
         }
@@ -835,6 +901,12 @@ class Xom extends Node {
         }
         else if(v[1] === VH) {
           v = v[0] * this.root.height * 0.01;
+        }
+        else if(v[1] === VMAX) {
+          v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        else if(v[1] === VMIN) {
+          v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
         }
         else {
           v = v[0];
@@ -960,6 +1032,22 @@ class Xom extends Node {
                 computedStyle[k] = v[0] * this.root.height * 0.01;
               }
             }
+            else if(v[1] === VMAX) {
+              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
+                computedStyle[k] = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+              }
+              else if(k === TRANSLATE_Y) {
+                computedStyle[k] = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+              }
+            }
+            else if(v[1] === VMIN) {
+              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
+                computedStyle[k] = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+              }
+              else if(k === TRANSLATE_Y) {
+                computedStyle[k] = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+              }
+            }
             temp.push([k, v]);
           });
           if(temp.length) {
@@ -1076,6 +1164,12 @@ class Xom extends Node {
         if(item[1] === VH) {
           return item[0] * this.root.height * 0.01;
         }
+        if(item[1] === VMAX) {
+          return item[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        if(item[1] === VMIN) {
+          return item[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        }
         if(item[1] === PERCENT) {
           return item[0] + '%';
         }
@@ -1098,6 +1192,12 @@ class Xom extends Node {
         }
         if(item[1] === VH) {
           return item[0] * this.root.height * 0.01;
+        }
+        if(item[1] === VMAX) {
+          return item[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        if(item[1] === VMIN) {
+          return item[0] * Math.min(this.root.width, this.root.height) * 0.01;
         }
         if(item[1] === PERCENT) {
           return item[0] + '%';
@@ -1189,6 +1289,12 @@ class Xom extends Node {
           }
           else if(item2[1] === VH) {
             v = v * this.root.height * 0.01;
+          }
+          else if(item2[1] === VMAX) {
+            v = v * Math.max(this.root.width, this.root.height) * 0.01;
+          }
+          else if(item2[1] === VMIN) {
+            v = v * Math.min(this.root.width, this.root.height) * 0.01;
           }
           return v;
         });
@@ -1338,6 +1444,12 @@ class Xom extends Node {
       else if(v[1] === VH) {
         v = v[0] * this.root.height * 0.01;
       }
+      else if(v[1] === VMAX) {
+        v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(v[1] === VMIN) {
+        v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       else {
         v = v[0];
       }
@@ -1387,6 +1499,12 @@ class Xom extends Node {
       else if(v[1] === VH) {
         ppt = v[0] * this.root.height * 0.01;
       }
+      else if(v[1] === VMAX) {
+        ppt = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(v[1] === VMIN) {
+        ppt = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
       else {
         ppt = v[0];
       }
@@ -1424,6 +1542,12 @@ class Xom extends Node {
       }
       else if(v[1] === VH) {
         v = v[0] * this.root.height * 0.01;
+      }
+      else if(v[1] === VMAX) {
+        v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(v[1] === VMIN) {
+        v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
       return [k, v];
     });

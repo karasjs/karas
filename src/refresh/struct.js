@@ -1557,7 +1557,7 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
             tfo[1] += target.bbox[1] + dy;
             m = tf.calMatrixByOrigin(transform, tfo);
           }
-          m = mx.multiply(inverse, m);console.log(m);
+          m = mx.multiply(inverse, m);
           let tfo = transformOrigin.slice(0);
           tfo[0] += target.bbox[0] + dx;
           tfo[1] += target.bbox[1] + dy;

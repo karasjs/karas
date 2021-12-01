@@ -569,7 +569,7 @@ class Text extends Node {
       }
     });
     this.__x = minX;
-    this.__sx = this.__sx1 = minX + this.ox;console.log(22222)
+    this.__sx = this.__sx1 = minX + this.ox;
     this.__width = maxX - minX;
   }
 

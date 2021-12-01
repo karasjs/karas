@@ -14298,7 +14298,6 @@
         });
         this.__x = minX;
         this.__sx = this.__sx1 = minX + this.ox;
-        console.log(22222);
         this.__width = maxX - minX;
       }
     }, {
@@ -32393,7 +32392,6 @@
             }
 
             m = mx.multiply(inverse, m);
-            console.log(m);
 
             var _tfo2 = _transformOrigin.slice(0);
 

@@ -20,7 +20,7 @@ const {
 } = enums;
 const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
-const { AUTO, PX, PERCENT, STRING, REM, VW, VH } = unit;
+const { AUTO, PX, PERCENT, STRING, REM, VW, VH, VMAX, VMIN } = unit;
 
 function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr,
                    method = 'fill', isInline = false, dx = 0, dy = 0) {
@@ -135,6 +135,12 @@ function calBackgroundSize(value, w, h, root) {
     else if(item[1] === VH) {
       res.push(item[0] * root.height * 0.01);
     }
+    else if(item[1] === VMAX) {
+      res.push(item[0] * Math.max(root.width, root.height) * 0.01);
+    }
+    else if(item[1] === VMIN) {
+      res.push(item[0] * Math.min(root.width, root.height) * 0.01);
+    }
     else if(item[1] === AUTO) {
       res.push(-1);
     }
@@ -161,6 +167,12 @@ function calBackgroundPosition(position, container, size, root) {
     }
     else if(position[1] === VH) {
       return position[0] * root.height * 0.01;
+    }
+    else if(position[1] === VMAX) {
+      return position[0] * Math.max(root.width, root.height) * 0.01;
+    }
+    else if(position[1] === VMIN) {
+      return position[0] * Math.min(root.width, root.height) * 0.01;
     }
   }
   return 0;

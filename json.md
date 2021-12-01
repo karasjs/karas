@@ -313,3 +313,14 @@ karas.parse({
   abbr: false, // 等同于上面的
 });
 ```
+对于每个json，`parse`的时候都进行复制一份解析，以避免对传入原始数据的修改，这会造成一些性能损失。如果确保只有1个实例且无需保护原有json数据，不进行复制操作，那么json中或者`parse`的第3个`options`参数可声明`singleton`。
+```tsx
+karas.parse({
+  tagName: 'div',
+  props: {},
+  children: [],
+  singleton: true, // 等同于下面的
+}, {
+  singleton: true, // 等同于上面的
+});
+```

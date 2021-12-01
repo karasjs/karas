@@ -49,7 +49,7 @@ const {
     NODE_DEFS_CACHE,
   }
 } = enums;
-const { PX, PERCENT, REM, VW, VH } = unit;
+const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 
@@ -95,6 +95,12 @@ class Geom extends Xom {
     else if(width[1] === VH) {
       w -= width[0] * this.root.height * 0.01;
     }
+    else if(width[1] === VMAX) {
+      w -= width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(width[1] === VMIN) {
+      w -= width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     // 减去水平mbp
     if(marginLeft[1] === PX) {
       w -= marginLeft[0];
@@ -111,6 +117,12 @@ class Geom extends Xom {
     else if(marginLeft[1] === VH) {
       w -= marginLeft[0] * this.root.height * 0.01;
     }
+    else if(marginLeft[1] === VMAX) {
+      w -= marginLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(marginLeft[1] === VMIN) {
+      w -= marginLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     if(paddingLeft[1] === PX) {
       w -= paddingLeft[0];
     }
@@ -126,6 +138,12 @@ class Geom extends Xom {
     else if(paddingLeft[1] === VH) {
       w -= paddingLeft[0] * this.root.height * 0.01;
     }
+    else if(paddingLeft[1] === VMAX) {
+      w -= paddingLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(paddingLeft[1] === VMIN) {
+      w -= paddingLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     if(borderLeftWidth[1] === PX) {
       w -= borderLeftWidth[0];
     }
@@ -137,6 +155,12 @@ class Geom extends Xom {
     }
     else if(borderLeftWidth[1] === VH) {
       w -= borderLeftWidth[0] * this.root.height * 0.01;
+    }
+    else if(borderLeftWidth[1] === VMAX) {
+      w -= borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(borderLeftWidth[1] === VMIN) {
+      w -= borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     if(marginRight[1] === PX) {
       w -= marginRight[0];
@@ -153,6 +177,12 @@ class Geom extends Xom {
     else if(marginRight[1] === VH) {
       w -= marginRight[0] * this.root.height * 0.01;
     }
+    else if(marginRight[1] === VMAX) {
+      w -= marginRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(marginRight[1] === VMIN) {
+      w -= marginRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     if(paddingRight[1] === PX) {
       w -= paddingRight[0];
     }
@@ -168,6 +198,12 @@ class Geom extends Xom {
     else if(paddingRight[1] === VH) {
       w -= paddingRight[0] * this.root.height * 0.01;
     }
+    else if(paddingRight[1] === VMAX) {
+      w -= paddingRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(paddingRight[1] === VMIN) {
+      w -= paddingRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
     if(borderRightWidth[1] === PX) {
       w -= borderRightWidth[0];
     }
@@ -179,6 +215,12 @@ class Geom extends Xom {
     }
     else if(borderRightWidth[1] === VH) {
       w -= borderRightWidth[0] * this.root.height * 0.01;
+    }
+    else if(borderRightWidth[1] === VMAX) {
+      w -= borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(borderRightWidth[1] === VMIN) {
+      w -= borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     return w;
   }
@@ -207,6 +249,12 @@ class Geom extends Xom {
     }
     else if(main[1] === VH) {
       min = max = main[0] * this.root.height * 0.01;
+    }
+    else if(main[1] === VMAX) {
+      min = max = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(main[1] === VMIN) {
+      min = max = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
   }
@@ -237,7 +285,7 @@ class Geom extends Xom {
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content，只区分固定和其它
-    let isFixed = [PX, PERCENT, REM, VW, VH].indexOf(flexBasis[1]) > -1;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
     if(isFixed) {
       if(flexBasis[1] === PX) {
         b = max = min = flexBasis[0];
@@ -254,8 +302,14 @@ class Geom extends Xom {
       else if(flexBasis[1] === VH) {
         b = max = min = flexBasis[0] * this.root.height * 0.01;
       }
+      else if(flexBasis[1] === VMAX) {
+        b = max = min = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(flexBasis[1] === VMIN) {
+        b = max = min = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
     }
-    else if(([PX, PERCENT, REM, VW, VH].indexOf(main[1]) > -1)) {
+    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
       if(main[1] === PX) {
         b = max = min = main[0];
       }
@@ -270,6 +324,12 @@ class Geom extends Xom {
       }
       else if(main[1] === VH) {
         b = max = min = main[0] * this.root.height * 0.01;
+      }
+      else if(main[1] === VMAX) {
+        b = max = min = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      }
+      else if(main[1] === VMIN) {
+        b = max = min = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
     // border也得计算在内
@@ -352,6 +412,12 @@ class Geom extends Xom {
         }
         else if(item[1] === VH) {
           return item[0] * this.root.height * 0.01;
+        }
+        else if(item[1] === VMAX) {
+          return item[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        }
+        else if(item[1] === VMIN) {
+          return item[0] * Math.min(this.root.width, this.root.height) * 0.01;
         }
         else {
           return 0;

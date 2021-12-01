@@ -46,7 +46,7 @@ const {
 } = enums;
 
 const ELLIPSIS = textCache.ELLIPSIS;
-const { AUTO, REM, VW, VH } = unit;
+const { AUTO, REM, VW, VH, VMAX, VMIN } = unit;
 
 class Text extends Node {
   constructor(content) {
@@ -814,6 +814,12 @@ class Text extends Node {
     }
     else if(textStrokeWidth[1] === VH) {
       half = Math.max(textStrokeWidth[0] * root.height * 0.01 * 0.5, half);
+    }
+    else if(textStrokeWidth[1] === VMAX) {
+      half = Math.max(textStrokeWidth[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+    }
+    else if(textStrokeWidth[1] === VMIN) {
+      half = Math.max(textStrokeWidth[0] * Math.min(root.width, root.height) * 0.01 * 0.5, half);
     }
     else {
       half = Math.max(textStrokeWidth[0] * 0.5, half);

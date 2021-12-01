@@ -5,7 +5,7 @@ import enums from '../util/enums';
 import unit from './unit';
 
 const { H } = geom;
-const { PX, PERCENT, REM, VW, VH } = unit;
+const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const {
   STYLE_KEY: {
@@ -2782,6 +2782,12 @@ function calBorderRadius(w, h, currentStyle, computedStyle, root) {
       }
       else if(item[1] === VH) {
         return Math.max(0, item[0] * root.height * 0.01);
+      }
+      else if(item[1] === VMAX) {
+        return Math.max(0, item[0] * Math.max(root.width, root.height) * 0.01);
+      }
+      else if(item[1] === VMIN) {
+        return Math.max(0, item[0] * Math.min(root.width, root.height) * 0.01);
       }
       return 0;
     });

@@ -205,15 +205,22 @@ function getNewList(list, len, start = 0, end = 1) {
         // list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1], res[3][0], res[3][1]];
         endPoint = [r[1][0], r[1][1], r[2][0], r[2][1], r[3][0], r[3][1]];
       }
+      console.log(endPoint)
     }
     start2 *= len.total;
     if(start2 > len.increase[i]) {
+      let current;
       let prev = list[i].slice(list[i].length - 2);
-      let current = list[i + 1];
       let l = len.list[i];
       // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
       if(i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
         l *= prePercent;
+        if(endPoint) {
+          current = endPoint;
+        }
+      }
+      if(!current) {
+        current = list[i + 1];
       }
       let diff = start2 - len.increase[i];
       let t = diff / l;
@@ -244,6 +251,10 @@ function getNewList(list, len, start = 0, end = 1) {
         // list[i + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
         res.push(r[0]);
         res.push([r[1][0], r[1][1], r[2][0], r[2][1]]);
+        // 同一条线段上去除end冲突
+        if(i === j && !isStartLt0 && !isEndGt1) {
+          endPoint = null;
+        }
       }
       else if(current.length === 6) {
         let r = geom.sliceBezier([[current[4], current[5]], [current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
@@ -251,6 +262,9 @@ function getNewList(list, len, start = 0, end = 1) {
         // list[i + 1] = [res[1][0], res[1][1], res[2][0], res[2][1], current[4], current[5]];
         res.push(r[0])
         res.push([r[1][0], r[1][1], r[2][0], r[2][1], current[4], current[5]]);
+        if(i === j && !isStartLt0 && !isEndGt1) {
+          endPoint = null;
+        }
       }
     }
     // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了

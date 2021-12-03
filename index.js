@@ -37604,18 +37604,29 @@
 
           endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
         }
+
+        console.log(endPoint);
       }
 
       start2 *= len.total;
 
       if (start2 > len.increase[i]) {
+        var _current;
+
         var _prev = list[i].slice(list[i].length - 2);
 
-        var _current = list[i + 1];
         var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
 
         if (i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
           _l *= prePercent;
+
+          if (endPoint) {
+            _current = endPoint;
+          }
+        }
+
+        if (!_current) {
+          _current = list[i + 1];
         }
 
         var _diff = start2 - len.increase[i];
@@ -37650,7 +37661,11 @@
 
 
           res.push(_r2[0]);
-          res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]);
+          res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
+
+          if (i === j && !isStartLt0 && !isEndGt1) {
+            endPoint = null;
+          }
         } else if (_current.length === 6) {
           var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse(); // list[i] = res[0];
           // list[i + 1] = [res[1][0], res[1][1], res[2][0], res[2][1], current[4], current[5]];
@@ -37658,6 +37673,10 @@
 
           res.push(_r3[0]);
           res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
+
+          if (i === j && !isStartLt0 && !isEndGt1) {
+            endPoint = null;
+          }
         }
       } // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
 

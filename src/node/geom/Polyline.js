@@ -20,16 +20,6 @@ function concatPointAndControl(point, control) {
   return point;
 }
 
-function limitStartEnd(v) {
-  // if(v < 0) {
-  //   v = 0;
-  // }
-  // else if(v > 1) {
-  //   v = 1;
-  // }
-  return v;
-}
-
 function getLength(list, isMulti) {
   let res = [];
   let total = 0;
@@ -242,13 +232,13 @@ class Polyline extends Geom {
       this.__start = [0];
       this.__end = [1];
       if(Array.isArray(props.start)) {
-        this.__start = props.start.map(i => limitStartEnd(parseFloat(i) || 0));
+        this.__start = props.start.map(i => parseFloat(i) || 0);
         for(let i = this.__start.length; i  < this.__points.length; i++) {
           this.__start.push(0);
         }
       }
       else if(!isNil(props.start)) {
-        let v = limitStartEnd(parseFloat(props.start) || 0);
+        let v = parseFloat(props.start) || 0;
         this.__start = this.__points.map(() => v);
       }
       if(Array.isArray(props.end)) {
@@ -257,7 +247,7 @@ class Polyline extends Geom {
           if(isNaN(v)) {
             v = 1;
           }
-          return limitStartEnd(v);
+          return v;
         });
         for(let i = this.__end.length; i  < this.__points.length; i++) {
           this.__end.push(1);
@@ -268,7 +258,6 @@ class Polyline extends Geom {
         if(isNaN(v)) {
           v = 1;
         }
-        v = limitStartEnd(v);
         this.__end = this.__points.map(() => v);
       }
     }
@@ -279,14 +268,14 @@ class Polyline extends Geom {
       this.__start = 0;
       this.__end = 1;
       if(!isNil(props.start)) {
-        this.__start = limitStartEnd(parseFloat(props.start) || 0);
+        this.__start = parseFloat(props.start) || 0;
       }
       if(!isNil(props.end)) {
         let v = parseFloat(props.end);
         if(isNaN(v)) {
           v = 1;
         }
-        this.__end = limitStartEnd(v);
+        this.__end = v;
       }
     }
     if(Array.isArray(props.controls)) {

@@ -51,35 +51,32 @@ function curveNum(controlA, controlB) {
   return num;
 }
 
-function limitStartEnd(v) {
-  if(v < 0) {
-    v = 0;
-  }
-  else if(v > 1) {
-    v = 1;
-  }
-  return v;
-}
-
 function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start = 0, end = 1) {
-  if(start > 0 || end < 1) {
-    if(num === 3) {
-      [[x1, y1], controlA, controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
-    }
-    else if(num === 2) {
-      [[x1, y1], controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
-    }
-    else if(num === 1) {
-      [[x1, y1], controlA, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
-    }
-    else {
-      let a = Math.abs(x1 - x2);
-      let b = Math.abs(y1 - y2);
-      x1 += a * start;
-      y1 += b * start;
-      x2 -= a * (1 - end);
-      y2 -= b * (1 - end);
-    }
+  if(start === 0 && end === 1) {
+    return [x1, y1, x2, y2, controlA, controlB];
+  }
+  if(start === end) {
+    return [];
+  }
+  if(start > end) {
+    [start, end] = [end, start];
+  }
+  if(num === 3) {
+    [[x1, y1], controlA, controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+  }
+  else if(num === 2) {
+    [[x1, y1], controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+  }
+  else if(num === 1) {
+    [[x1, y1], controlA, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+  }
+  else {
+    let a = x2 - x1;
+    let b = y2 - y1;
+    x1 += a * start;
+    y1 += b * start;
+    x2 += a * (1 - end);
+    y2 += b * (1 - end);
   }
   return [x1, y1, x2, y2, controlA, controlB];
 }
@@ -138,13 +135,13 @@ class Line extends Geom {
         });
       }
       if(Array.isArray(props.start)) {
-        this.__start = props.start.map(i => limitStartEnd(parseFloat(i) || 0));
+        this.__start = props.start.map(i => parseFloat(i) || 0);
         for(let i = this.__start.length; i  < this.__x1.length; i++) {
           this.__start.push(0);
         }
       }
       else if(!isNil(props.start)) {
-        let v = limitStartEnd(parseFloat(props.start) || 0);
+        let v = parseFloat(props.start) || 0;
         this.__start = this.__x1.map(() => v);
       }
       if(Array.isArray(props.end)) {
@@ -153,7 +150,7 @@ class Line extends Geom {
           if(isNaN(v)) {
             v = 1;
           }
-          return limitStartEnd(v);
+          return v;
         });
         for(let i = this.__end.length; i  < this.__x1.length; i++) {
           this.__end.push(1);
@@ -164,7 +161,7 @@ class Line extends Geom {
         if(isNaN(v)) {
           v = 1;
         }
-        v = limitStartEnd(v);
+        v = v;
         this.__end = this.__x1.map(() => v);
       }
     }
@@ -186,14 +183,14 @@ class Line extends Geom {
         this.__y2 = parseFloat(props.y2) || 0;
       }
       if(!isNil(props.start)) {
-        this.__start = limitStartEnd(parseFloat(props.start) || 0);
+        this.__start = parseFloat(props.start) || 0;
       }
       if(!isNil(props.end)) {
         let v = parseFloat(props.end);
         if(isNaN(v)) {
           v = 1;
         }
-        this.__end = limitStartEnd(v);
+        this.__end = v;
       }
       if(Array.isArray(props.controlA)) {
         this.__controlA = props.controlA;

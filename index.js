@@ -36774,75 +36774,77 @@
     return num;
   }
 
-  function limitStartEnd(v) {
-    if (v < 0) {
-      v = 0;
-    } else if (v > 1) {
-      v = 1;
-    }
-
-    return v;
-  }
-
   function getNewPoint(x1, y1, x2, y2, controlA, controlB, num) {
     var start = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
     var end = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : 1;
 
-    if (start > 0 || end < 1) {
-      if (num === 3) {
-        var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+    if (start === 0 && end === 1) {
+      return [x1, y1, x2, y2, controlA, controlB];
+    }
 
-        var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
+    if (start === end) {
+      return [];
+    }
 
-        var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
+    if (start > end) {
+      var _ref = [end, start];
+      start = _ref[0];
+      end = _ref[1];
+    }
 
-        x1 = _geom$sliceBezier2Bot3[0];
-        y1 = _geom$sliceBezier2Bot3[1];
-        controlA = _geom$sliceBezier2Bot2[1];
-        controlB = _geom$sliceBezier2Bot2[2];
+    if (num === 3) {
+      var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
 
-        var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
+      var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
 
-        x2 = _geom$sliceBezier2Bot4[0];
-        y2 = _geom$sliceBezier2Bot4[1];
-      } else if (num === 2) {
-        var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+      var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
 
-        var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
+      x1 = _geom$sliceBezier2Bot3[0];
+      y1 = _geom$sliceBezier2Bot3[1];
+      controlA = _geom$sliceBezier2Bot2[1];
+      controlB = _geom$sliceBezier2Bot2[2];
 
-        var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
+      var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
 
-        x1 = _geom$sliceBezier2Bot7[0];
-        y1 = _geom$sliceBezier2Bot7[1];
-        controlB = _geom$sliceBezier2Bot6[1];
+      x2 = _geom$sliceBezier2Bot4[0];
+      y2 = _geom$sliceBezier2Bot4[1];
+    } else if (num === 2) {
+      var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
 
-        var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
+      var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
 
-        x2 = _geom$sliceBezier2Bot8[0];
-        y2 = _geom$sliceBezier2Bot8[1];
-      } else if (num === 1) {
-        var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+      var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
 
-        var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+      x1 = _geom$sliceBezier2Bot7[0];
+      y1 = _geom$sliceBezier2Bot7[1];
+      controlB = _geom$sliceBezier2Bot6[1];
 
-        var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+      var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
 
-        x1 = _geom$sliceBezier2Bot11[0];
-        y1 = _geom$sliceBezier2Bot11[1];
-        controlA = _geom$sliceBezier2Bot10[1];
+      x2 = _geom$sliceBezier2Bot8[0];
+      y2 = _geom$sliceBezier2Bot8[1];
+    } else if (num === 1) {
+      var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
 
-        var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+      var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
 
-        x2 = _geom$sliceBezier2Bot12[0];
-        y2 = _geom$sliceBezier2Bot12[1];
-      } else {
-        var a = Math.abs(x1 - x2);
-        var b = Math.abs(y1 - y2);
-        x1 += a * start;
-        y1 += b * start;
-        x2 -= a * (1 - end);
-        y2 -= b * (1 - end);
-      }
+      var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+
+      x1 = _geom$sliceBezier2Bot11[0];
+      y1 = _geom$sliceBezier2Bot11[1];
+      controlA = _geom$sliceBezier2Bot10[1];
+
+      var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+
+      x2 = _geom$sliceBezier2Bot12[0];
+      y2 = _geom$sliceBezier2Bot12[1];
+    } else {
+      var a = x2 - x1;
+      var b = y2 - y1;
+      x1 += a * start;
+      y1 += b * start;
+      x2 += a * (1 - end);
+      y2 += b * (1 - end);
     }
 
     return [x1, y1, x2, y2, controlA, controlB];
@@ -36924,14 +36926,14 @@
 
         if (Array.isArray(props.start)) {
           _this.__start = props.start.map(function (i) {
-            return limitStartEnd(parseFloat(i) || 0);
+            return parseFloat(i) || 0;
           });
 
           for (var i = _this.__start.length; i < _this.__x1.length; i++) {
             _this.__start.push(0);
           }
         } else if (!isNil$9(props.start)) {
-          var v = limitStartEnd(parseFloat(props.start) || 0);
+          var v = parseFloat(props.start) || 0;
           _this.__start = _this.__x1.map(function () {
             return v;
           });
@@ -36945,7 +36947,7 @@
               v = 1;
             }
 
-            return limitStartEnd(v);
+            return v;
           });
 
           for (var _i = _this.__end.length; _i < _this.__x1.length; _i++) {
@@ -36958,7 +36960,7 @@
             _v = 1;
           }
 
-          _v = limitStartEnd(_v);
+          _v = _v;
           _this.__end = _this.__x1.map(function () {
             return _v;
           });
@@ -36986,7 +36988,7 @@
         }
 
         if (!isNil$9(props.start)) {
-          _this.__start = limitStartEnd(parseFloat(props.start) || 0);
+          _this.__start = parseFloat(props.start) || 0;
         }
 
         if (!isNil$9(props.end)) {
@@ -36996,7 +36998,7 @@
             _v2 = 1;
           }
 
-          _this.__end = limitStartEnd(_v2);
+          _this.__end = _v2;
         }
 
         if (Array.isArray(props.controlA)) {
@@ -37398,16 +37400,6 @@
     return point;
   }
 
-  function limitStartEnd$1(v) {
-    // if(v < 0) {
-    //   v = 0;
-    // }
-    // else if(v > 1) {
-    //   v = 1;
-    // }
-    return v;
-  }
-
   function getLength(list, isMulti) {
     var res = [];
     var total = 0;
@@ -37666,14 +37658,14 @@
 
         if (Array.isArray(props.start)) {
           _this.__start = props.start.map(function (i) {
-            return limitStartEnd$1(parseFloat(i) || 0);
+            return parseFloat(i) || 0;
           });
 
           for (var i = _this.__start.length; i < _this.__points.length; i++) {
             _this.__start.push(0);
           }
         } else if (!isNil$a(props.start)) {
-          var v = limitStartEnd$1(parseFloat(props.start) || 0);
+          var v = parseFloat(props.start) || 0;
           _this.__start = _this.__points.map(function () {
             return v;
           });
@@ -37687,7 +37679,7 @@
               v = 1;
             }
 
-            return limitStartEnd$1(v);
+            return v;
           });
 
           for (var _i2 = _this.__end.length; _i2 < _this.__points.length; _i2++) {
@@ -37700,7 +37692,6 @@
             _v = 1;
           }
 
-          _v = limitStartEnd$1(_v);
           _this.__end = _this.__points.map(function () {
             return _v;
           });
@@ -37713,7 +37704,7 @@
         _this.__end = 1;
 
         if (!isNil$a(props.start)) {
-          _this.__start = limitStartEnd$1(parseFloat(props.start) || 0);
+          _this.__start = parseFloat(props.start) || 0;
         }
 
         if (!isNil$a(props.end)) {
@@ -37723,7 +37714,7 @@
             _v2 = 1;
           }
 
-          _this.__end = limitStartEnd$1(_v2);
+          _this.__end = _v2;
         }
       }
 

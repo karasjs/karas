@@ -61,6 +61,8 @@ function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start = 0, end = 1
   if(start > end) {
     [start, end] = [end, start];
   }
+  start = Math.max(0, start);
+  end = Math.min(1, end);
   if(num === 3) {
     [[x1, y1], controlA, controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
   }

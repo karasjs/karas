@@ -36792,6 +36792,9 @@
       end = _ref[1];
     }
 
+    start = Math.max(0, start);
+    end = Math.min(1, end);
+
     if (num === 3) {
       var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
 
@@ -39977,7 +39980,7 @@
     Cache: Cache
   };
 
-  var version = "0.66.0";
+  var version = "0.66.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

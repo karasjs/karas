@@ -14364,7 +14364,6 @@ var Text = /*#__PURE__*/function (_Node) {
       });
       this.__x = minX;
       this.__sx = this.__sx1 = minX + this.ox;
-      console.log(22222);
       this.__width = maxX - minX;
     }
   }, {
@@ -32792,7 +32791,6 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
           }
 
           m = mx.multiply(inverse, m);
-          console.log(m);
 
           var _tfo2 = _transformOrigin.slice(0);
 
@@ -36770,75 +36768,80 @@ function curveNum(controlA, controlB) {
   return num;
 }
 
-function limitStartEnd(v) {
-  if (v < 0) {
-    v = 0;
-  } else if (v > 1) {
-    v = 1;
-  }
-
-  return v;
-}
-
 function getNewPoint(x1, y1, x2, y2, controlA, controlB, num) {
   var start = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
   var end = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : 1;
 
-  if (start > 0 || end < 1) {
-    if (num === 3) {
-      var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+  if (start === 0 && end === 1) {
+    return [x1, y1, x2, y2, controlA, controlB];
+  }
 
-      var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
+  if (start === end) {
+    return [];
+  }
 
-      var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
+  if (start > end) {
+    var _ref = [end, start];
+    start = _ref[0];
+    end = _ref[1];
+  }
 
-      x1 = _geom$sliceBezier2Bot3[0];
-      y1 = _geom$sliceBezier2Bot3[1];
-      controlA = _geom$sliceBezier2Bot2[1];
-      controlB = _geom$sliceBezier2Bot2[2];
+  start = Math.max(0, start);
+  end = Math.min(1, end);
 
-      var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
+  if (num === 3) {
+    var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
 
-      x2 = _geom$sliceBezier2Bot4[0];
-      y2 = _geom$sliceBezier2Bot4[1];
-    } else if (num === 2) {
-      var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+    var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
 
-      var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
+    var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
 
-      var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
+    x1 = _geom$sliceBezier2Bot3[0];
+    y1 = _geom$sliceBezier2Bot3[1];
+    controlA = _geom$sliceBezier2Bot2[1];
+    controlB = _geom$sliceBezier2Bot2[2];
 
-      x1 = _geom$sliceBezier2Bot7[0];
-      y1 = _geom$sliceBezier2Bot7[1];
-      controlB = _geom$sliceBezier2Bot6[1];
+    var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
 
-      var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
+    x2 = _geom$sliceBezier2Bot4[0];
+    y2 = _geom$sliceBezier2Bot4[1];
+  } else if (num === 2) {
+    var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
 
-      x2 = _geom$sliceBezier2Bot8[0];
-      y2 = _geom$sliceBezier2Bot8[1];
-    } else if (num === 1) {
-      var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+    var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
 
-      var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+    var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
 
-      var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+    x1 = _geom$sliceBezier2Bot7[0];
+    y1 = _geom$sliceBezier2Bot7[1];
+    controlB = _geom$sliceBezier2Bot6[1];
 
-      x1 = _geom$sliceBezier2Bot11[0];
-      y1 = _geom$sliceBezier2Bot11[1];
-      controlA = _geom$sliceBezier2Bot10[1];
+    var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
 
-      var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+    x2 = _geom$sliceBezier2Bot8[0];
+    y2 = _geom$sliceBezier2Bot8[1];
+  } else if (num === 1) {
+    var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
 
-      x2 = _geom$sliceBezier2Bot12[0];
-      y2 = _geom$sliceBezier2Bot12[1];
-    } else {
-      var a = Math.abs(x1 - x2);
-      var b = Math.abs(y1 - y2);
-      x1 += a * start;
-      y1 += b * start;
-      x2 -= a * (1 - end);
-      y2 -= b * (1 - end);
-    }
+    var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+
+    var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+
+    x1 = _geom$sliceBezier2Bot11[0];
+    y1 = _geom$sliceBezier2Bot11[1];
+    controlA = _geom$sliceBezier2Bot10[1];
+
+    var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+
+    x2 = _geom$sliceBezier2Bot12[0];
+    y2 = _geom$sliceBezier2Bot12[1];
+  } else {
+    var a = x2 - x1;
+    var b = y2 - y1;
+    x1 += a * start;
+    y1 += b * start;
+    x2 += a * (1 - end);
+    y2 += b * (1 - end);
   }
 
   return [x1, y1, x2, y2, controlA, controlB];
@@ -36920,14 +36923,14 @@ var Line = /*#__PURE__*/function (_Geom) {
 
       if (Array.isArray(props.start)) {
         _this.__start = props.start.map(function (i) {
-          return limitStartEnd(parseFloat(i) || 0);
+          return parseFloat(i) || 0;
         });
 
         for (var i = _this.__start.length; i < _this.__x1.length; i++) {
           _this.__start.push(0);
         }
       } else if (!isNil$9(props.start)) {
-        var v = limitStartEnd(parseFloat(props.start) || 0);
+        var v = parseFloat(props.start) || 0;
         _this.__start = _this.__x1.map(function () {
           return v;
         });
@@ -36941,7 +36944,7 @@ var Line = /*#__PURE__*/function (_Geom) {
             v = 1;
           }
 
-          return limitStartEnd(v);
+          return v;
         });
 
         for (var _i = _this.__end.length; _i < _this.__x1.length; _i++) {
@@ -36954,7 +36957,7 @@ var Line = /*#__PURE__*/function (_Geom) {
           _v = 1;
         }
 
-        _v = limitStartEnd(_v);
+        _v = _v;
         _this.__end = _this.__x1.map(function () {
           return _v;
         });
@@ -36982,7 +36985,7 @@ var Line = /*#__PURE__*/function (_Geom) {
       }
 
       if (!isNil$9(props.start)) {
-        _this.__start = limitStartEnd(parseFloat(props.start) || 0);
+        _this.__start = parseFloat(props.start) || 0;
       }
 
       if (!isNil$9(props.end)) {
@@ -36992,7 +36995,7 @@ var Line = /*#__PURE__*/function (_Geom) {
           _v2 = 1;
         }
 
-        _this.__end = limitStartEnd(_v2);
+        _this.__end = _v2;
       }
 
       if (Array.isArray(props.controlA)) {
@@ -37394,16 +37397,6 @@ function concatPointAndControl(point, control) {
   return point;
 }
 
-function limitStartEnd$1(v) {
-  if (v < 0) {
-    v = 0;
-  } else if (v > 1) {
-    v = 1;
-  }
-
-  return v;
-}
-
 function getLength(list, isMulti) {
   var res = [];
   var total = 0;
@@ -37501,109 +37494,145 @@ function getNewList(list, len) {
     return list;
   }
 
-  if (start >= end) {
+  if (start === end) {
     return [];
   }
 
-  var i = 0,
-      j = list.length - 1;
+  if (start > end) {
+    var _ref = [end, start];
+    start = _ref[0];
+    end = _ref[1];
+  } // start和end只能相差<=1，如果>1则校正
 
-  if (start > 0) {
-    i = getIndex(len.increase, start * len.total, i, j);
+
+  while (end - start > 1) {
+    end--;
+  } // 将start和end统一至最接近0的正值
+
+
+  while (end < 0 || start < 0) {
+    end++;
+    start++;
   }
 
-  if (end < 1) {
-    j = getIndex(len.increase, end * len.total, i, j);
-  }
+  while (end >= 1 && start >= 1) {
+    end--;
+    start--;
+  } // clone出原本顶点列表，防止干扰
 
+
+  var length = list.length;
   list = util.clone(list);
-  end *= len.total;
-  var prePercent = 1;
+  var res = [];
+  var start2 = start > 1 ? start - 1 : start;
+  var end2 = end > 1 ? end - 1 : end;
+  var i = getIndex(len.increase, start2 * len.total, 0, length - 1);
+  var j = getIndex(len.increase, end2 * len.total, 0, length - 1); // start<0或者end>1或者普通情况，一共3种，start和end不可能同时超限
 
-  if (end > len.increase[j]) {
+  var isStartLt0 = start < 0;
+  var isEndGt1 = end > 1;
+  end2 *= len.total;
+  var prePercent = 1;
+  var endPoint;
+
+  if (end2 > len.increase[j]) {
     var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
 
     var current = list[j + 1];
     var l = len.list[j];
-    var diff = end - len.increase[j];
+    var diff = end2 - len.increase[j];
     var t = diff / l;
     prePercent = t;
 
     if (current.length === 2) {
-      var a = Math.abs(current[0] - prev[0]);
-      var b = Math.abs(current[1] - prev[1]);
+      var a = current[0] - prev[0];
+      var b = current[1] - prev[1];
 
-      if (current[0] < prev[0]) {
-        a = -a;
+      if (isEndGt1) {
+        endPoint = [prev[0] + t * a, prev[1] + t * b];
+      } else {
+        t = 1 - t;
+        endPoint = [current[0] - t * a, current[1] - t * b];
       }
-
-      if (current[1] < prev[1]) {
-        b = -b;
-      }
-
-      list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];
     } else if (current.length === 4) {
-      var res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
-      list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
+      var r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+      endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
     } else if (current.length === 6) {
-      var _res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+      var _r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
 
-      list[j + 1] = [_res[1][0], _res[1][1], _res[2][0], _res[2][1], _res[3][0], _res[3][1]];
+      endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
     }
   }
 
-  start *= len.total;
+  start2 *= len.total;
 
-  if (start > len.increase[i]) {
+  if (start2 > len.increase[i]) {
+    var _current;
+
     var _prev = list[i].slice(list[i].length - 2);
 
-    var _current = list[i + 1];
-    var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度
+    var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
 
-    if (i === j && prePercent !== 1) {
+    if (i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
       _l *= prePercent;
+
+      if (endPoint) {
+        _current = endPoint;
+      }
     }
 
-    var _diff = start - len.increase[i];
+    if (!_current) {
+      _current = list[i + 1];
+    }
+
+    var _diff = start2 - len.increase[i];
 
     var _t = _diff / _l;
 
     if (_current.length === 2) {
-      var _a = Math.abs(_current[0] - _prev[0]);
+      var _a = _current[0] - _prev[0];
 
-      var _b = Math.abs(_current[1] - _prev[1]);
+      var _b = _current[1] - _prev[1];
 
-      if (_current[0] < _prev[0]) {
-        _a = -_a;
+      if (isStartLt0) {
+        _t = 1 - _t;
+        res.push([_current[0] - _t * _a, _current[1] - _t * _b]);
+      } else {
+        res.push([_prev[0] + _t * _a, _prev[1] + _t * _b]);
       }
 
-      if (_current[1] < _prev[1]) {
-        _b = -_b;
-      }
-
-      list[i] = [_prev[0] + _t * _a, _prev[1] + _t * _b];
+      res.push(_current);
     } else if (_current.length === 4) {
-      var _res2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+      var _r2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
 
-      list[i] = _res2[0];
-      list[i + 1] = [_res2[1][0], _res2[1][1], _res2[2][0], _res2[2][1]];
+      res.push(_r2[0]);
+      res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
+
+      if (i === j && !isStartLt0 && !isEndGt1) {
+        endPoint = null;
+      }
     } else if (_current.length === 6) {
-      var _res3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+      var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
 
-      list[i] = _res3[0];
-      list[i + 1] = [_res3[1][0], _res3[1][1], _res3[2][0], _res3[2][1], _current[4], _current[5]];
+      res.push(_r3[0]);
+      res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
+
+      if (i === j && !isStartLt0 && !isEndGt1) {
+        endPoint = null;
+      }
     }
+  } // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
+
+
+  for (var k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
+    res.push(list[k % length]);
   }
 
-  if (j < list.length - 2) {
-    list = list.slice(0, j + 2);
+  if (endPoint) {
+    res.push(endPoint);
   }
 
-  if (i > 0) {
-    list = list.slice(i);
-  }
-
-  return list;
+  return res;
 }
 
 var Polyline = /*#__PURE__*/function (_Geom) {
@@ -37626,14 +37655,14 @@ var Polyline = /*#__PURE__*/function (_Geom) {
 
       if (Array.isArray(props.start)) {
         _this.__start = props.start.map(function (i) {
-          return limitStartEnd$1(parseFloat(i) || 0);
+          return parseFloat(i) || 0;
         });
 
         for (var i = _this.__start.length; i < _this.__points.length; i++) {
           _this.__start.push(0);
         }
       } else if (!isNil$a(props.start)) {
-        var v = limitStartEnd$1(parseFloat(props.start) || 0);
+        var v = parseFloat(props.start) || 0;
         _this.__start = _this.__points.map(function () {
           return v;
         });
@@ -37647,7 +37676,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
             v = 1;
           }
 
-          return limitStartEnd$1(v);
+          return v;
         });
 
         for (var _i2 = _this.__end.length; _i2 < _this.__points.length; _i2++) {
@@ -37660,7 +37689,6 @@ var Polyline = /*#__PURE__*/function (_Geom) {
           _v = 1;
         }
 
-        _v = limitStartEnd$1(_v);
         _this.__end = _this.__points.map(function () {
           return _v;
         });
@@ -37673,7 +37701,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
       _this.__end = 1;
 
       if (!isNil$a(props.start)) {
-        _this.__start = limitStartEnd$1(parseFloat(props.start) || 0);
+        _this.__start = parseFloat(props.start) || 0;
       }
 
       if (!isNil$a(props.end)) {
@@ -37683,7 +37711,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
           _v2 = 1;
         }
 
-        _this.__end = limitStartEnd$1(_v2);
+        _this.__end = _v2;
       }
     }
 
@@ -37794,7 +37822,8 @@ var Polyline = /*#__PURE__*/function (_Geom) {
       if (isNil$a(__cacheProps.end)) {
         rebuildSE = true;
         __cacheProps.end = end;
-      }
+      } // polygon会覆盖检查booleanOperations缓存
+
 
       if (this.__needRebuildSE(__cacheProps)) {
         rebuildSE = true;
@@ -37940,7 +37969,7 @@ var Polyline = /*#__PURE__*/function (_Geom) {
         }
 
         points.forEach(function (pointList, i) {
-          if (!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
+          if (!pointList || pointList.length < 2 || !pointList[0] || !pointList[1] || pointList[0].length < 2 || pointList[1].length < 2) {
             return;
           }
 
@@ -39945,7 +39974,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.66.0";
+var version = "0.66.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

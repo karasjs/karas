@@ -37500,8 +37500,6 @@
   function getNewList(list, len) {
     var start = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
     var end = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-    console.log(list);
-    console.log(len);
 
     if (start === 0 && end === 1) {
       return list;
@@ -37534,19 +37532,8 @@
     while (end >= 1 && start >= 1) {
       end--;
       start--;
-    }
+    } // clone出原本顶点列表，防止干扰
 
-    console.log(start, end, reverse); // if(start >= end) {
-    //   return [];
-    // }
-    // let i = 0, j = list.length - 1;
-    // if(start > 0) {
-    //   i = getIndex(len.increase, start * len.total, i, j);
-    // }
-    // if(end < 1) {
-    //   j = getIndex(len.increase, end * len.total, i, j);
-    // }
-    // clone出原本顶点列表，防止干扰
 
     var length = list.length;
     list = util.clone(list);
@@ -37554,9 +37541,7 @@
     var start2 = start > 1 ? start - 1 : start;
     var end2 = end > 1 ? end - 1 : end;
     var i = getIndex(len.increase, start2 * len.total, 0, length - 1);
-    var j = getIndex(len.increase, end2 * len.total, 0, length - 1);
-    console.warn(i, j);
-    console.log(start2, end2); // start<0或者end>1或者普通情况，一共3种，start和end不可能同时超限
+    var j = getIndex(len.increase, end2 * len.total, 0, length - 1); // start<0或者end>1或者普通情况，一共3种，start和end不可能同时超限
 
     var isStartLt0 = start < 0;
     var isEndGt1 = end > 1;
@@ -37576,15 +37561,6 @@
         prePercent = t;
 
         if (current.length === 2) {
-          // let a = Math.abs(current[0] - prev[0]);
-          // let b = Math.abs(current[1] - prev[1]);
-          // if(current[0] < prev[0]) {
-          //   a = -a;
-          // }
-          // if(current[1] < prev[1]) {
-          //   b = -b;
-          // }
-          // list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];{
           var a = current[0] - prev[0];
           var b = current[1] - prev[1];
 
@@ -37595,17 +37571,13 @@
             endPoint = [current[0] - t * a, current[1] - t * b];
           }
         } else if (current.length === 4) {
-          var r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t); // list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
-
+          var r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
           endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
         } else if (current.length === 6) {
-          var _r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t); // list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1], res[3][0], res[3][1]];
-
+          var _r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
 
           endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
         }
-
-        console.log(endPoint);
       }
 
       start2 *= len.total;
@@ -37634,15 +37606,6 @@
         var _t = _diff / _l;
 
         if (_current.length === 2) {
-          // let a = Math.abs(current[0] - prev[0]);
-          // let b = Math.abs(current[1] - prev[1]);
-          // if(current[0] < prev[0]) {
-          //   a = -a;
-          // }
-          // if(current[1] < prev[1]) {
-          //   b = -b;
-          // }
-          // list[i] = [prev[0] + t * a, prev[1] + t * b];
           var _a = _current[0] - _prev[0];
 
           var _b = _current[1] - _prev[1];
@@ -37656,9 +37619,7 @@
 
           res.push(_current);
         } else if (_current.length === 4) {
-          var _r2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse(); // list[i] = res[0];
-          // list[i + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
-
+          var _r2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
 
           res.push(_r2[0]);
           res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
@@ -37667,9 +37628,7 @@
             endPoint = null;
           }
         } else if (_current.length === 6) {
-          var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse(); // list[i] = res[0];
-          // list[i + 1] = [res[1][0], res[1][1], res[2][0], res[2][1], current[4], current[5]];
-
+          var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
 
           res.push(_r3[0]);
           res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
@@ -37683,20 +37642,13 @@
 
       for (var k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
         res.push(list[k % length]);
-      } // if(j < list.length - 2) {
-      //   list = list.slice(0, j + 2);
-      // }
-      // if(i > 0) {
-      //   list = list.slice(i);
-      // }
-
+      }
 
       if (endPoint) {
         res.push(endPoint);
       }
     }
 
-    console.log(JSON.stringify(res));
     return res;
   }
 

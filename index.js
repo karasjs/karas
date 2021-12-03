@@ -37509,10 +37509,7 @@
       return [];
     }
 
-    var reverse;
-
     if (start > end) {
-      reverse = true;
       var _ref = [end, start];
       start = _ref[0];
       end = _ref[1];
@@ -37545,108 +37542,105 @@
 
     var isStartLt0 = start < 0;
     var isEndGt1 = end > 1;
+    end2 *= len.total;
+    var prePercent = 1;
+    var endPoint;
 
-    if (reverse) ; else {
-      end2 *= len.total;
-      var prePercent = 1;
-      var endPoint;
+    if (end2 > len.increase[j]) {
+      var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
 
-      if (end2 > len.increase[j]) {
-        var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
+      var current = list[j + 1];
+      var l = len.list[j];
+      var diff = end2 - len.increase[j];
+      var t = diff / l;
+      prePercent = t;
 
-        var current = list[j + 1];
-        var l = len.list[j];
-        var diff = end2 - len.increase[j];
-        var t = diff / l;
-        prePercent = t;
+      if (current.length === 2) {
+        var a = current[0] - prev[0];
+        var b = current[1] - prev[1];
 
-        if (current.length === 2) {
-          var a = current[0] - prev[0];
-          var b = current[1] - prev[1];
+        if (isEndGt1) {
+          endPoint = [prev[0] + t * a, prev[1] + t * b];
+        } else {
+          t = 1 - t;
+          endPoint = [current[0] - t * a, current[1] - t * b];
+        }
+      } else if (current.length === 4) {
+        var r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+        endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
+      } else if (current.length === 6) {
+        var _r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
 
-          if (isEndGt1) {
-            endPoint = [prev[0] + t * a, prev[1] + t * b];
-          } else {
-            t = 1 - t;
-            endPoint = [current[0] - t * a, current[1] - t * b];
-          }
-        } else if (current.length === 4) {
-          var r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
-          endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
-        } else if (current.length === 6) {
-          var _r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+        endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
+      }
+    }
 
-          endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
+    start2 *= len.total;
+
+    if (start2 > len.increase[i]) {
+      var _current;
+
+      var _prev = list[i].slice(list[i].length - 2);
+
+      var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
+
+      if (i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
+        _l *= prePercent;
+
+        if (endPoint) {
+          _current = endPoint;
         }
       }
 
-      start2 *= len.total;
-
-      if (start2 > len.increase[i]) {
-        var _current;
-
-        var _prev = list[i].slice(list[i].length - 2);
-
-        var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
-
-        if (i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
-          _l *= prePercent;
-
-          if (endPoint) {
-            _current = endPoint;
-          }
-        }
-
-        if (!_current) {
-          _current = list[i + 1];
-        }
-
-        var _diff = start2 - len.increase[i];
-
-        var _t = _diff / _l;
-
-        if (_current.length === 2) {
-          var _a = _current[0] - _prev[0];
-
-          var _b = _current[1] - _prev[1];
-
-          if (isStartLt0) {
-            _t = 1 - _t;
-            res.push([_current[0] - _t * _a, _current[1] - _t * _b]);
-          } else {
-            res.push([_prev[0] + _t * _a, _prev[1] + _t * _b]);
-          }
-
-          res.push(_current);
-        } else if (_current.length === 4) {
-          var _r2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
-
-          res.push(_r2[0]);
-          res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
-
-          if (i === j && !isStartLt0 && !isEndGt1) {
-            endPoint = null;
-          }
-        } else if (_current.length === 6) {
-          var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
-
-          res.push(_r3[0]);
-          res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
-
-          if (i === j && !isStartLt0 && !isEndGt1) {
-            endPoint = null;
-          }
-        }
-      } // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
-
-
-      for (var k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
-        res.push(list[k % length]);
+      if (!_current) {
+        _current = list[i + 1];
       }
 
-      if (endPoint) {
-        res.push(endPoint);
+      var _diff = start2 - len.increase[i];
+
+      var _t = _diff / _l;
+
+      if (_current.length === 2) {
+        var _a = _current[0] - _prev[0];
+
+        var _b = _current[1] - _prev[1];
+
+        if (isStartLt0) {
+          _t = 1 - _t;
+          res.push([_current[0] - _t * _a, _current[1] - _t * _b]);
+        } else {
+          res.push([_prev[0] + _t * _a, _prev[1] + _t * _b]);
+        }
+
+        res.push(_current);
+      } else if (_current.length === 4) {
+        var _r2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        res.push(_r2[0]);
+        res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
+
+        if (i === j && !isStartLt0 && !isEndGt1) {
+          endPoint = null;
+        }
+      } else if (_current.length === 6) {
+        var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        res.push(_r3[0]);
+        res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
+
+        if (i === j && !isStartLt0 && !isEndGt1) {
+          endPoint = null;
+        }
       }
+    } // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
+
+
+    for (var k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
+      res.push(list[k % length]);
+    }
+
+    if (endPoint) {
+      res.push(endPoint);
     }
 
     return res;

@@ -118,9 +118,7 @@ function getNewList(list, len, start = 0, end = 1) {
   if(start === end) {
     return [];
   }
-  let reverse;
   if(start > end) {
-    reverse = true;
     [start, end] = [end, start];
   }
   // start和end只能相差<=1，如果>1则校正
@@ -147,93 +145,89 @@ function getNewList(list, len, start = 0, end = 1) {
   // start<0或者end>1或者普通情况，一共3种，start和end不可能同时超限
   let isStartLt0 = start < 0;
   let isEndGt1 = end > 1;
-  let offset = 0;
-  if(reverse) {}
-  else {
-    end2 *= len.total;
-    let prePercent = 1;
-    let endPoint;
-    if(end2 > len.increase[j]) {
-      let prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
-      let current = list[j + 1];
-      let l = len.list[j];
-      let diff = end2 - len.increase[j];
-      let t = diff / l;
-      prePercent = t;
-      if(current.length === 2) {
-        let a = current[0] - prev[0];
-        let b = current[1] - prev[1];
-        if(isEndGt1) {
-          endPoint = [prev[0] + t * a, prev[1] + t * b];
-        }
-        else {
-          t = 1 - t;
-          endPoint = [current[0] - t * a, current[1] - t * b];
-        }
+  end2 *= len.total;
+  let prePercent = 1;
+  let endPoint;
+  if(end2 > len.increase[j]) {
+    let prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
+    let current = list[j + 1];
+    let l = len.list[j];
+    let diff = end2 - len.increase[j];
+    let t = diff / l;
+    prePercent = t;
+    if(current.length === 2) {
+      let a = current[0] - prev[0];
+      let b = current[1] - prev[1];
+      if(isEndGt1) {
+        endPoint = [prev[0] + t * a, prev[1] + t * b];
       }
-      else if(current.length === 4) {
-        let r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
-        endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
-      }
-      else if(current.length === 6) {
-        let r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
-        endPoint = [r[1][0], r[1][1], r[2][0], r[2][1], r[3][0], r[3][1]];
+      else {
+        t = 1 - t;
+        endPoint = [current[0] - t * a, current[1] - t * b];
       }
     }
-    start2 *= len.total;
-    if(start2 > len.increase[i]) {
-      let current;
-      let prev = list[i].slice(list[i].length - 2);
-      let l = len.list[i];
-      // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
-      if(i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
-        l *= prePercent;
-        if(endPoint) {
-          current = endPoint;
-        }
-      }
-      if(!current) {
-        current = list[i + 1];
-      }
-      let diff = start2 - len.increase[i];
-      let t = diff / l;
-      if(current.length === 2) {
-        let a = current[0] - prev[0];
-        let b = current[1] - prev[1];
-        if(isStartLt0) {
-          t = 1 - t;
-          res.push([current[0] - t * a, current[1] - t * b]);
-        }
-        else {
-          res.push([prev[0] + t * a, prev[1] + t * b]);
-        }
-        res.push(current);
-      }
-      else if(current.length === 4) {
-        let r = geom.sliceBezier([[current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
-        res.push(r[0]);
-        res.push([r[1][0], r[1][1], r[2][0], r[2][1]]);
-        // 同一条线段上去除end冲突
-        if(i === j && !isStartLt0 && !isEndGt1) {
-          endPoint = null;
-        }
-      }
-      else if(current.length === 6) {
-        let r = geom.sliceBezier([[current[4], current[5]], [current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
-        res.push(r[0])
-        res.push([r[1][0], r[1][1], r[2][0], r[2][1], current[4], current[5]]);
-        if(i === j && !isStartLt0 && !isEndGt1) {
-          endPoint = null;
-        }
+    else if(current.length === 4) {
+      let r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+      endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
+    }
+    else if(current.length === 6) {
+      let r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+      endPoint = [r[1][0], r[1][1], r[2][0], r[2][1], r[3][0], r[3][1]];
+    }
+  }
+  start2 *= len.total;
+  if(start2 > len.increase[i]) {
+    let current;
+    let prev = list[i].slice(list[i].length - 2);
+    let l = len.list[i];
+    // 同一条线段时如果有end裁剪，会影响start长度，这里还要防止头尾绕了一圈的情况
+    if(i === j && !isStartLt0 && !isEndGt1 && prePercent !== 1) {
+      l *= prePercent;
+      if(endPoint) {
+        current = endPoint;
       }
     }
-    // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
-    for(let k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
-      res.push(list[k % length]);
+    if(!current) {
+      current = list[i + 1];
     }
-    if(endPoint) {
-      res.push(endPoint);
+    let diff = start2 - len.increase[i];
+    let t = diff / l;
+    if(current.length === 2) {
+      let a = current[0] - prev[0];
+      let b = current[1] - prev[1];
+      if(isStartLt0) {
+        t = 1 - t;
+        res.push([current[0] - t * a, current[1] - t * b]);
+      }
+      else {
+        res.push([prev[0] + t * a, prev[1] + t * b]);
+      }
+      res.push(current);
     }
+    else if(current.length === 4) {
+      let r = geom.sliceBezier([[current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
+      res.push(r[0]);
+      res.push([r[1][0], r[1][1], r[2][0], r[2][1]]);
+      // 同一条线段上去除end冲突
+      if(i === j && !isStartLt0 && !isEndGt1) {
+        endPoint = null;
+      }
+    }
+    else if(current.length === 6) {
+      let r = geom.sliceBezier([[current[4], current[5]], [current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
+      res.push(r[0])
+      res.push([r[1][0], r[1][1], r[2][0], r[2][1], current[4], current[5]]);
+      if(i === j && !isStartLt0 && !isEndGt1) {
+        endPoint = null;
+      }
+    }
+  }
+  // start和end之间的线段，注意头尾饶了一圈的情况，以及起始点被上方考虑过了
+  for(let k = i + 2; k <= j + (!isStartLt0 && !isEndGt1 ? 0 : length); k++) {
+    res.push(list[k % length]);
+  }
+  if(endPoint) {
+    res.push(endPoint);
   }
   return res;
 }

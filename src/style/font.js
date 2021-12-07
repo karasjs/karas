@@ -14,6 +14,11 @@ let o = {
         f: 0.9,
       },
     },
+    helvetica: {
+      lhr: 1.14990234375, // (8+1900+447)/2048
+      blr: 0.927734375, // 1900/2048
+      lgr: 0.00390625, // 8/2048
+    },
     verdana: {
       lhr: 1.21533203125, // (0+2059+430)/2048
       blr: 1.00537109375, // 2059/2048
@@ -72,5 +77,6 @@ let o = {
 };
 
 o.info['宋体'] = o.info.simsun;
+o.info['pingfang'] = o.info['pingfang sc'];
 
 export default o;

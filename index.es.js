@@ -752,6 +752,14 @@ var o$1 = {
         f: 0.9
       }
     },
+    helvetica: {
+      lhr: 1.14990234375,
+      // (8+1900+447)/2048
+      blr: 0.927734375,
+      // 1900/2048
+      lgr: 0.00390625 // 8/2048
+
+    },
     verdana: {
       lhr: 1.21533203125,
       // (0+2059+430)/2048
@@ -831,6 +839,7 @@ var o$1 = {
   }
 };
 o$1.info['宋体'] = o$1.info.simsun;
+o$1.info['pingfang'] = o$1.info['pingfang sc'];
 
 var reg = {
   position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
@@ -9302,8 +9311,14 @@ function computeReflow(node, isHost) {
 }
 
 function setFontStyle(style) {
-  var fontSize = style[FONT_SIZE$2];
-  return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY] || 'arial');
+  var fontSize = style[FONT_SIZE$2] || 0;
+  var fontFamily = style[FONT_FAMILY] || 'arial';
+
+  if (/\s/.test(fontFamily)) {
+    fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
+  }
+
+  return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
 }
 
 function getFontFamily(str) {
@@ -39974,7 +39989,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.66.1";
+var version = "0.66.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

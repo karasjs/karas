@@ -1298,9 +1298,13 @@ function computeReflow(node, isHost) {
 }
 
 function setFontStyle(style) {
-  let fontSize = style[FONT_SIZE];
+  let fontSize = style[FONT_SIZE] || 0;
+  let fontFamily = style[FONT_FAMILY] || 'arial';
+  if(/\s/.test(fontFamily)) {
+    fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
+  }
   return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT] || '400') + ' '
-    + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY] || 'arial');
+    + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
 }
 
 function getFontFamily(str) {

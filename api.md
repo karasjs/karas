@@ -872,7 +872,12 @@ console.log(root);
 #### noRender
 * **类型** `boolean`
 * **说明**  
-是否不渲染，仅布局。此举在特殊场景下如仅测量节点大小时会用到。
+是否不渲染，仅布局。此举在特殊场景下如仅测量节点大小时会用到。默认false。
+
+#### contextAttributes
+* **类型** `boolean`
+* **说明**  
+新建上下文参数。此举在getContext('2d')或getContext('webgl')时会传递给第2个参数。默认alpha/antialias/premultipliedAlpha/preserveDrawingBuffer为true。
 
 ### 类方法method
 

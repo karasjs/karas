@@ -35311,16 +35311,17 @@ var Root = /*#__PURE__*/function (_Dom) {
           this.__height = parseFloat(_css.getPropertyValue('height')) || 0;
           dom.setAttribute('height', this.height);
         }
-      } // 只有canvas有ctx，svg用真实dom
+      }
 
+      var params = Object.assign({}, ca, this.props.contextAttributes); // 只有canvas有ctx，svg用真实dom
 
       if (this.tagName === 'canvas') {
-        this.__ctx = this.__dom.getContext('2d');
+        this.__ctx = this.__dom.getContext('2d', params);
         this.__renderMode = mode.CANVAS;
       } else if (this.tagName === 'svg') {
         this.__renderMode = mode.SVG;
       } else if (this.tagName === 'webgl') {
-        var gl = this.__ctx = this.__dom.getContext('webgl', ca);
+        var gl = this.__ctx = this.__dom.getContext('webgl', params);
 
         this.__renderMode = mode.WEBGL;
         gl.program = webgl.initShaders(gl, vertex, fragment);
@@ -39989,7 +39990,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.66.2";
+var version = "0.66.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

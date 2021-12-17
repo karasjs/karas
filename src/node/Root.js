@@ -795,16 +795,17 @@ class Root extends Dom {
         dom.setAttribute('height', this.height);
       }
     }
+    let params = Object.assign({}, ca, this.props.contextAttributes);
     // 只有canvas有ctx，svg用真实dom
     if(this.tagName === 'canvas') {
-      this.__ctx = this.__dom.getContext('2d');
+      this.__ctx = this.__dom.getContext('2d', params);
       this.__renderMode = mode.CANVAS;
     }
     else if(this.tagName === 'svg') {
       this.__renderMode = mode.SVG;
     }
     else if(this.tagName === 'webgl') {
-      let gl = this.__ctx = this.__dom.getContext('webgl', ca);
+      let gl = this.__ctx = this.__dom.getContext('webgl', params);
       this.__renderMode = mode.WEBGL;
       gl.program = webgl.initShaders(gl, vertex, fragment);
       gl.programMask = webgl.initShaders(gl, vertexMask, fragmentMask);

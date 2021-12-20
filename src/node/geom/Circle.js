@@ -46,11 +46,11 @@ class Circle extends Geom {
     if(isNil(__cacheProps.r) || focus) {
       if(isMulti) {
         __cacheProps.r = r.map(i => i * width * 0.5);
-        __cacheProps.list = __cacheProps.r.map(r => geom.ellipsePoints(cx, cy, r));
+        __cacheProps.list = __cacheProps.r.map(r => geom.ellipsePoints(cx, cy, r, r));
       }
       else {
         __cacheProps.r = r * width * 0.5;
-        __cacheProps.list = geom.ellipsePoints(cx, cy, __cacheProps.r);
+        __cacheProps.list = geom.ellipsePoints(cx, cy, __cacheProps.r, __cacheProps.r);
       }
     }
   }

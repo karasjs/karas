@@ -3,12 +3,13 @@ import mode from './mode';
 import painter from '../util/painter';
 import inject from '../util/inject';
 import util from '../util/util';
+import enums from '../util/enums';
 import unit from '../style/unit';
 import image from '../style/image';
 import border from '../style/border';
-import enums from '../util/enums';
 import level from '../refresh/level';
 import mx from '../math/matrix';
+import geom from '../math/geom';
 
 const {
   STYLE_KEY: {
@@ -251,7 +252,8 @@ class Img extends Dom {
         ctx.stroke();
         ctx.closePath();
         ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        let points = geom.ellipsePoints(cx, cy, r, r);
+        painter.canvasPolygon(ctx, points, 0, 0);
         ctx.fill();
         ctx.closePath();
         ctx.beginPath();

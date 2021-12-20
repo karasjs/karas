@@ -27722,7 +27722,8 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
           ctx.stroke();
           ctx.closePath();
           ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+          var points = geom.ellipsePoints(cx, cy, r, r);
+          painter.canvasPolygon(ctx, points, 0, 0);
           ctx.fill();
           ctx.closePath();
           ctx.beginPath();
@@ -38929,11 +38930,11 @@ var Circle = /*#__PURE__*/function (_Geom) {
             return i * width * 0.5;
           });
           __cacheProps.list = __cacheProps.r.map(function (r) {
-            return geom.ellipsePoints(cx, cy, r);
+            return geom.ellipsePoints(cx, cy, r, r);
           });
         } else {
           __cacheProps.r = r * width * 0.5;
-          __cacheProps.list = geom.ellipsePoints(cx, cy, __cacheProps.r);
+          __cacheProps.list = geom.ellipsePoints(cx, cy, __cacheProps.r, __cacheProps.r);
         }
       }
     }

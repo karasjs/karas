@@ -34263,13 +34263,14 @@ var TexCache = /*#__PURE__*/function () {
           var last = channels[_i3];
 
           if (!last || last[0] !== page || page.update) {
-            // page可能为一个已有纹理，或者贴图
+            // page可能为一个已有fbo纹理，或者贴图
             if (page instanceof MockPage) {
               webgl.bindTexture(gl, page.texture, _i3);
+              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, page.texture);
               channels[_i3] = page;
             } else {
-              // 可能老的先删除
-              if (last) {
+              // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
+              if (last && !(last instanceof MockPage)) {
                 gl.deleteTexture(last.texture);
               }
 
@@ -39991,7 +39992,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.66.3";
+var version = "0.66.4";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

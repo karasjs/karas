@@ -142,14 +142,15 @@ class TexCache {
         }
         let last = channels[i];
         if(!last || last[0] !== page || page.update) {
-          // page可能为一个已有纹理，或者贴图
+          // page可能为一个已有fbo纹理，或者贴图
           if(page instanceof MockPage) {
             webgl.bindTexture(gl, page.texture, i);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, page.texture);
             channels[i] = page;
           }
           else {
-            // 可能老的先删除
-            if(last) {
+            // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
+            if(last && !(last instanceof MockPage)) {
               gl.deleteTexture(last.texture);
             }
             page.texture = webgl.createTexture(gl, page.canvas, i);

@@ -145,7 +145,6 @@ class TexCache {
           // page可能为一个已有fbo纹理，或者贴图
           if(page instanceof MockPage) {
             webgl.bindTexture(gl, page.texture, i);
-            channels[i] = page;
           }
           else {
             // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
@@ -153,13 +152,10 @@ class TexCache {
               gl.deleteTexture(last.texture);
             }
             page.texture = webgl.createTexture(gl, page.canvas, i);
-            channels[i] = page;
           }
-          hash[page.uuid] = i;
+          channels[i] = page;
         }
-        else {
-          hash[page.uuid] = i;
-        }
+        hash[page.uuid] = i;
         // 标识没有更新，以及最后使用时间
         page.update = false;
         page.time = inject.now();

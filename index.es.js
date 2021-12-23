@@ -34266,7 +34266,6 @@ var TexCache = /*#__PURE__*/function () {
             // page可能为一个已有fbo纹理，或者贴图
             if (page instanceof MockPage) {
               webgl.bindTexture(gl, page.texture, _i3);
-              channels[_i3] = page;
             } else {
               // 可能老的先删除，注意只删Page，MockPage是fbo生成的texture即total缓存不能自动清除
               if (last && !(last instanceof MockPage)) {
@@ -34274,14 +34273,12 @@ var TexCache = /*#__PURE__*/function () {
               }
 
               page.texture = webgl.createTexture(gl, page.canvas, _i3);
-              channels[_i3] = page;
             }
 
-            hash[page.uuid] = _i3;
-          } else {
-            hash[page.uuid] = _i3;
-          } // 标识没有更新，以及最后使用时间
+            channels[_i3] = page;
+          }
 
+          hash[page.uuid] = _i3; // 标识没有更新，以及最后使用时间
 
           page.update = false;
           page.time = inject.now();

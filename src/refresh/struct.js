@@ -1338,15 +1338,15 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   let r = Math.floor(d * 0.5);
   for(let i = 0; i < r; i++) {
     let c = (r - i) * 0.01;
-    vert += `\nv_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;`;
-    frag += `\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};`;
+    vert += `v_texCoordsBlur[${i}] = a_texCoords + vec2(-${c}, -${c}) * u_direction;`;
+    frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i}]) * ${weights[i]};`;
   }
-  vert += `\nv_texCoordsBlur[${r}] = a_texCoords;`;
-  frag += `\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};`;
+  vert += `v_texCoordsBlur[${r}] = a_texCoords;`;
+  frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${r}]) * ${weights[r]};`;
   for(let i = 0; i < r; i++) {
     let c = (i + 1) * 0.01;
-    vert += `\nv_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;`;
-    frag += `\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};`;
+    vert += `v_texCoordsBlur[${i + r + 1}] = a_texCoords + vec2(${c}, ${c}) * u_direction;`;
+    frag += `gl_FragColor += texture2D(u_texture, v_texCoordsBlur[${i + r + 1}]) * ${weights[i + r + 1]};`;
   }
   vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');

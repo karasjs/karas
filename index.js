@@ -32562,18 +32562,18 @@
 
     for (var _i4 = 0; _i4 < r; _i4++) {
       var c = (r - _i4) * 0.01;
-      vert += "\nv_texCoordsBlur[".concat(_i4, "] = a_texCoords + vec2(-").concat(c, ", -").concat(c, ") * u_direction;");
-      frag += "\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i4, "]) * ").concat(weights[_i4], ";");
+      vert += "v_texCoordsBlur[".concat(_i4, "] = a_texCoords + vec2(-").concat(c, ", -").concat(c, ") * u_direction;");
+      frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i4, "]) * ").concat(weights[_i4], ";");
     }
 
-    vert += "\nv_texCoordsBlur[".concat(r, "] = a_texCoords;");
-    frag += "\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(r, "]) * ").concat(weights[r], ";");
+    vert += "v_texCoordsBlur[".concat(r, "] = a_texCoords;");
+    frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(r, "]) * ").concat(weights[r], ";");
 
     for (var _i5 = 0; _i5 < r; _i5++) {
       var _c = (_i5 + 1) * 0.01;
 
-      vert += "\nv_texCoordsBlur[".concat(_i5 + r + 1, "] = a_texCoords + vec2(").concat(_c, ", ").concat(_c, ") * u_direction;");
-      frag += "\ngl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i5 + r + 1, "]) * ").concat(weights[_i5 + r + 1], ";");
+      vert += "v_texCoordsBlur[".concat(_i5 + r + 1, "] = a_texCoords + vec2(").concat(_c, ", ").concat(_c, ") * u_direction;");
+      frag += "gl_FragColor += texture2D(u_texture, v_texCoordsBlur[".concat(_i5 + r + 1, "]) * ").concat(weights[_i5 + r + 1], ";");
     }
 
     vert = vertexBlur.replace('[3]', '[' + d + ']').replace(/}$/, vert + '}');

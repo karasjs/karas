@@ -39780,7 +39780,11 @@
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
-      // 特殊单例声明无需clone加速解析
+      if (!json) {
+        return;
+      } // 特殊单例声明无需clone加速解析
+
+
       if (!options.singleton && !json.singleton) {
         json = util.clone(json);
       } // 根节点的fonts字段定义字体信息

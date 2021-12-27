@@ -33510,8 +33510,9 @@ function renderWebgl(renderMode, gl, root) {
         hasRecordAsMask[7] = filter;
         hasRecordAsMask[8] = overflow;
         hasRecordAsMask[9] = isPerspective;
+        hasRecordAsMask[10] = cacheAsBitmap;
       } else {
-        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective]);
+        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective, cacheAsBitmap]);
       }
     }
   }
@@ -33531,7 +33532,7 @@ function renderWebgl(renderMode, gl, root) {
 
     var pptHash = {};
     mergeList.forEach(function (item) {
-      var _item4 = _slicedToArray(item, 10),
+      var _item4 = _slicedToArray(item, 11),
           i = _item4[0],
           lv = _item4[1],
           total = _item4[2],
@@ -33541,7 +33542,8 @@ function renderWebgl(renderMode, gl, root) {
           hasMask = _item4[6],
           filter = _item4[7],
           overflow = _item4[8],
-          isPerspective = _item4[9]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
+          isPerspective = _item4[9],
+          cacheAsBitmap = _item4[10]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
 
 
       if (isPerspective) {
@@ -33562,7 +33564,7 @@ function renderWebgl(renderMode, gl, root) {
           parent = config[NODE_DOM_PARENT$5];
         }
 
-        if (!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden') {
+        if (!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !cacheAsBitmap) {
           return;
         }
       }

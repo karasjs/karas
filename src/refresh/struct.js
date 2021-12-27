@@ -2187,9 +2187,10 @@ function renderWebgl(renderMode, gl, root) {
         hasRecordAsMask[7] = filter;
         hasRecordAsMask[8] = overflow;
         hasRecordAsMask[9] = isPerspective;
+        hasRecordAsMask[10] = cacheAsBitmap;
       }
       else {
-        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective]);
+        mergeList.push([i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective, cacheAsBitmap]);
       }
     }
   }
@@ -2207,7 +2208,7 @@ function renderWebgl(renderMode, gl, root) {
     // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
     let pptHash = {};
     mergeList.forEach(item => {
-      let [i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective] = item;
+      let [i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective, cacheAsBitmap] = item;
       // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
       if(isPerspective) {
         let parent = __config[NODE_DOM_PARENT];
@@ -2222,7 +2223,7 @@ function renderWebgl(renderMode, gl, root) {
           }
           parent = config[NODE_DOM_PARENT];
         }
-        if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden') {
+        if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden' && !cacheAsBitmap) {
           return;
         }
       }

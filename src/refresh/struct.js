@@ -2203,8 +2203,29 @@ function renderWebgl(renderMode, gl, root) {
       }
       return b[1] - a[1];
     });
+    // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
+    // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
+    let pptHash = {};
     mergeList.forEach(item => {
-      let [i, lv, total, node, __config, limitCache, hasMask, filter, overflow] = item;
+      let [i, lv, total, node, __config, limitCache, hasMask, filter, overflow, isPerspective] = item;
+      // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
+      if(isPerspective) {
+        let parent = __config[NODE_DOM_PARENT];
+        while(parent) {
+          let config = parent.__config;
+          let idx = config[NODE_STRUCT][STRUCT_INDEX];
+          if(pptHash[idx]) {
+            break;
+          }
+          if(tf.isPerspectiveMatrix(config[NODE_MATRIX]) || config[NODE_PERSPECTIVE_MATRIX]) {
+            pptHash[idx] = true;
+          }
+          parent = config[NODE_DOM_PARENT];
+        }
+        if(!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden') {
+          return;
+        }
+      }
       let {
         [NODE_CACHE]: __cache,
         [NODE_CACHE_TOTAL]: __cacheTotal,

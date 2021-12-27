@@ -33532,9 +33532,12 @@
         }
 
         return b[1] - a[1];
-      });
+      }); // ppt只有嵌套才需要生成，最下面的孩子节点的ppt无需，因此记录一个hash存index，
+      // 同时因为是后序遍历，孩子先存所有父亲的index即可保证父亲才能生成cacheTotal
+
+      var pptHash = {};
       mergeList.forEach(function (item) {
-        var _item4 = _slicedToArray(item, 9),
+        var _item4 = _slicedToArray(item, 10),
             i = _item4[0],
             lv = _item4[1],
             total = _item4[2],
@@ -33543,7 +33546,32 @@
             limitCache = _item4[5],
             hasMask = _item4[6],
             filter = _item4[7],
-            overflow = _item4[8];
+            overflow = _item4[8],
+            isPerspective = _item4[9]; // 有ppt的，向上查找所有父亲index记录，可能出现重复记得提前跳出
+
+
+        if (isPerspective) {
+          var parent = __config[NODE_DOM_PARENT$5];
+
+          while (parent) {
+            var config = parent.__config;
+            var idx = config[NODE_STRUCT$4][STRUCT_INDEX$2];
+
+            if (pptHash[idx]) {
+              break;
+            }
+
+            if (tf.isPerspectiveMatrix(config[NODE_MATRIX$3]) || config[NODE_PERSPECTIVE_MATRIX$1]) {
+              pptHash[idx] = true;
+            }
+
+            parent = config[NODE_DOM_PARENT$5];
+          }
+
+          if (!pptHash[i] && !hasMask && !filter.length && overflow !== 'hidden') {
+            return;
+          }
+        }
 
         var __cache = __config[NODE_CACHE$3],
             __cacheTotal = __config[NODE_CACHE_TOTAL$2],

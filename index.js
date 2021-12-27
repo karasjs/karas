@@ -33602,11 +33602,15 @@
 
         if (overflow === 'hidden') {
           if (!__cacheOverflow || !__cacheOverflow.available || needGen) {
-            target = genOverflowWebgl(gl, texCache, node, target, width, height);
-            needGen = true;
+            var temp = genOverflowWebgl(gl, texCache, node, target, width, height);
 
-            if (!limitCache) {
-              __config[NODE_CACHE_FILTER$2] = target;
+            if (temp) {
+              target = temp;
+              needGen = true;
+
+              if (!limitCache) {
+                __config[NODE_CACHE_FILTER$2] = target;
+              }
             }
           }
         }
@@ -40028,7 +40032,7 @@
     Cache: Cache
   };
 
-  var version = "0.66.5";
+  var version = "0.66.6";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

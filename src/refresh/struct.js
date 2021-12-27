@@ -2250,10 +2250,13 @@ function renderWebgl(renderMode, gl, root) {
       let target = __cacheTotal;
       if(overflow === 'hidden') {
         if(!__cacheOverflow || !__cacheOverflow.available || needGen) {
-          target = genOverflowWebgl(gl, texCache, node, target, width, height);
-          needGen = true;
-          if(!limitCache) {
-            __config[NODE_CACHE_FILTER] = target;
+          let temp = genOverflowWebgl(gl, texCache, node, target, width, height);
+          if(temp) {
+            target = temp;
+            needGen = true;
+            if(!limitCache) {
+              __config[NODE_CACHE_FILTER] = target;
+            }
           }
         }
       }

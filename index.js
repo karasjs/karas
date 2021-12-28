@@ -31164,7 +31164,7 @@
     if (cache && cache.available) {
       bboxTotal = cache.bbox.slice(0);
     } else {
-      bboxTotal = node.bbox;
+      bboxTotal = node.bbox.slice(0);
     } // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
 
 
@@ -31261,7 +31261,7 @@
             dx = __cache.dbx;
             dy = __cache.dby;
           } else {
-            bbox = node2.bbox;
+            bbox = node2.bbox.slice(0);
           } // 可能Xom没有内容
 
 
@@ -40032,7 +40032,7 @@
     Cache: Cache
   };
 
-  var version = "0.66.6";
+  var version = "0.66.7";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

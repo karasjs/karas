@@ -142,7 +142,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
     bboxTotal = cache.bbox.slice(0);
   }
   else {
-    bboxTotal = node.bbox;
+    bboxTotal = node.bbox.slice(0);
   }
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
   let pm;
@@ -227,7 +227,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           dy = __cache.dby;
         }
         else {
-          bbox = node2.bbox;
+          bbox = node2.bbox.slice(0);
         }
         // 可能Xom没有内容
         if(bbox) {

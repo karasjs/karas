@@ -1857,7 +1857,7 @@ class Animation extends Event {
       __config[I_FPS_TIME] = 0;
     }
     __config[I_FIRST_ENTER] = false;
-    // delay仅第一次生效
+    // delay仅第一次生效等待
     if(playCount === 0 && currentTime < delay) {
       if(stayBegin) {
         let currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
@@ -1869,17 +1869,15 @@ class Animation extends Event {
       __config[I_IS_DELAY] = true;
       return;
     }
-    // 减去delay，计算在哪一帧，仅首轮
-    if(playCount === 0) {
-      currentTime -= delay;
-    }
+    // 减去delay，计算在哪一帧
+    currentTime -= delay;
     if(currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
       __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
     let round;
-    while(currentTime >= duration) {
+    while(currentTime >= duration && playCount < iterations - 1) {
       currentTime -= duration;
       playCount = ++__config[I_PLAY_COUNT];
       __config[I_BEGIN] = true;
@@ -2183,6 +2181,7 @@ class Animation extends Event {
     });
   }
 
+  // 返回不包含delay且去除多轮的时间
   __goto(v, isFrame, excludeDelay) {
     let __config = this.__config;
     let duration = __config[I_DURATION];
@@ -2197,12 +2196,9 @@ class Animation extends Event {
     if(excludeDelay) {
       v += __config[I_DELAY];
     }
-    // 超过一轮去掉delay
-    if(v > duration + __config[I_DELAY]) {
-      v -= __config[I_DELAY];
-    }
     // 在时间范围内设置好时间，复用play直接跳到播放点
     __config[I_NEXT_TIME] = v;
+    v -= __config[I_DELAY];
     // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
     __config[I_PLAY_COUNT] = 0;
     while(v > duration) {

@@ -18328,7 +18328,7 @@
           __config[I_FPS_TIME] = 0;
         }
 
-        __config[I_FIRST_ENTER] = false; // delay仅第一次生效
+        __config[I_FIRST_ENTER] = false; // delay仅第一次生效等待
 
         if (playCount === 0 && currentTime < delay) {
           if (stayBegin) {
@@ -18342,12 +18342,10 @@
           __config[I_OUT_BEGIN_DELAY] = true;
           __config[I_IS_DELAY] = true;
           return;
-        } // 减去delay，计算在哪一帧，仅首轮
+        } // 减去delay，计算在哪一帧
 
 
-        if (playCount === 0) {
-          currentTime -= delay;
-        }
+        currentTime -= delay;
 
         if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
           __config[I_OUT_BEGIN_DELAY] = false;
@@ -18357,7 +18355,7 @@
 
         var round;
 
-        while (currentTime >= duration) {
+        while (currentTime >= duration && playCount < iterations - 1) {
           currentTime -= duration;
           playCount = ++__config[I_PLAY_COUNT];
           __config[I_BEGIN] = true;
@@ -18726,7 +18724,8 @@
               }
           }
         });
-      }
+      } // 返回不包含delay且去除多轮的时间
+
     }, {
       key: "__goto",
       value: function __goto(v, isFrame, excludeDelay) {
@@ -18746,15 +18745,11 @@
 
         if (excludeDelay) {
           v += __config[I_DELAY];
-        } // 超过一轮去掉delay
-
-
-        if (v > duration + __config[I_DELAY]) {
-          v -= __config[I_DELAY];
         } // 在时间范围内设置好时间，复用play直接跳到播放点
 
 
-        __config[I_NEXT_TIME] = v; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
+        __config[I_NEXT_TIME] = v;
+        v -= __config[I_DELAY]; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
 
         __config[I_PLAY_COUNT] = 0;
 

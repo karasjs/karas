@@ -97,7 +97,6 @@ const {
     I_SPF_LIMIT,
     I_FPS,
     I_DIRECTION,
-    I_CAL_DIFF_TIME,
     I_FIRST_ENTER,
     I_STAY_BEGIN,
     I_STAY_END,
@@ -1441,6 +1440,28 @@ function gotoOverload(options, cb) {
   return [options || {}, cb];
 }
 
+function calDiffTime(__config, diff) {
+  let playbackRate = __config[I_PLAYBACK_RATE];
+  let spfLimit = __config[I_SPF_LIMIT];
+  let fps = __config[I_FPS];
+  let v = __config[I_CURRENT_TIME] = __config[I_NEXT_TIME];
+  // 定帧限制每帧时间间隔最大为spf
+  if(spfLimit) {
+    if(spfLimit === true) {
+      diff = Math.min(diff, 1000 / fps);
+    }
+    else if(spfLimit > 0) {
+      diff = Math.min(diff, spfLimit);
+    }
+  }
+  // 播放时间累加，并且考虑播放速度加成
+  if(playbackRate !== 1 && playbackRate > 0) {
+    diff *= playbackRate;
+  }
+  __config[I_NEXT_TIME] += diff;
+  return [v, diff];
+}
+
 let uuid = 0;
 
 class Animation extends Event {
@@ -1518,7 +1539,6 @@ class Animation extends Event {
       false, // spfLimit
       60, // fps
       'normal', // direction
-      this.__calDiffTime,
       true, // firstEnter,
       false, // stayBegin
       false, // stayEnd
@@ -1714,7 +1734,11 @@ class Animation extends Event {
     let keys = __config[I_KEYS];
     let target = __config[I_TARGET];
     if(isFinish) {
-      __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
+      // gotoAndStop到一个很大的时间的话，不能设短
+      let time = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
+      if(__config[I_CURRENT_TIME] < time) {
+        __config[I_CURRENT_TIME] = time;
+      }
       if(__config[I_PLAY_STATE] === 'finish') {
         return;
       }
@@ -1761,28 +1785,6 @@ class Animation extends Event {
       __config[I_PLAY_CB].call(this, diff, isDelay);
       __config[I_PLAY_CB] = null;
     }
-  }
-
-  __calDiffTime(__config, diff) {
-    let playbackRate = __config[I_PLAYBACK_RATE];
-    let spfLimit = __config[I_SPF_LIMIT];
-    let fps = __config[I_FPS];
-    let v = __config[I_CURRENT_TIME] = __config[I_NEXT_TIME];
-    // 定帧限制每帧时间间隔最大为spf
-    if(spfLimit) {
-      if(spfLimit === true) {
-        diff = Math.min(diff, 1000 / fps);
-      }
-      else if(spfLimit > 0) {
-        diff = Math.min(diff, spfLimit);
-      }
-    }
-    // 播放时间累加，并且考虑播放速度加成
-    if(playbackRate !== 1 && playbackRate > 0) {
-      diff *= playbackRate;
-    }
-    __config[I_NEXT_TIME] += diff;
-    return [v, diff];
   }
 
   play(cb) {
@@ -1843,7 +1845,7 @@ class Animation extends Event {
     let endDelay = __config[I_END_DELAY];
     let length = currentFrames.length;
     // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-    let [currentTime, d] = __config[I_CAL_DIFF_TIME](__config, diff);
+    let [currentTime, d] = calDiffTime(__config, diff);
     diff = d;
     // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
     if(!__config[I_FIRST_ENTER] && fps < 60) {
@@ -1879,7 +1881,7 @@ class Animation extends Event {
     let round;
     while(currentTime >= duration && playCount < iterations - 1) {
       currentTime -= duration;
-      __config[I_NEXT_TIME] -= duration;
+      // __config[I_NEXT_TIME] -= duration;
       playCount = ++__config[I_PLAY_COUNT];
       __config[I_BEGIN] = true;
       round = true;
@@ -2200,14 +2202,14 @@ class Animation extends Event {
     if(v > duration + __config[I_DELAY]) {
       v -= __config[I_DELAY];
     }
-    // 超过时间长度需要累加次数
+    // 在时间范围内设置好时间，复用play直接跳到播放点
+    __config[I_NEXT_TIME] = v;
+    // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
     __config[I_PLAY_COUNT] = 0;
-    while(v > duration && __config[I_PLAY_COUNT] < __config[I_ITERATIONS] - 1) {
+    while(v > duration) {
       __config[I_PLAY_COUNT]++;
       v -= duration;
     }
-    // 在时间范围内设置好时间，复用play直接跳到播放点
-    __config[I_NEXT_TIME] = v;
     // 防止play()重置时间和当前帧组，提前计算好
     __config[I_ENTER_FRAME] = true;
     let frames = __config[I_FRAMES];

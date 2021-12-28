@@ -25,5 +25,5 @@ animation.on(karas.Event.FRAME, () => {
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.getComputedStyle().height;
+  input.value += '/' + t.getComputedStyle().height + '/' + animation.currentTime;
 });

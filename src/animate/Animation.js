@@ -1879,9 +1879,8 @@ class Animation extends Event {
     }
     // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮
     let round;
-    while(currentTime >= duration && playCount < iterations - 1) {
+    while(currentTime >= duration) {
       currentTime -= duration;
-      // __config[I_NEXT_TIME] -= duration;
       playCount = ++__config[I_PLAY_COUNT];
       __config[I_BEGIN] = true;
       round = true;

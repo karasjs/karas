@@ -18357,9 +18357,8 @@
 
         var round;
 
-        while (currentTime >= duration && playCount < iterations - 1) {
-          currentTime -= duration; // __config[I_NEXT_TIME] -= duration;
-
+        while (currentTime >= duration) {
+          currentTime -= duration;
           playCount = ++__config[I_PLAY_COUNT];
           __config[I_BEGIN] = true;
           round = true;
@@ -40034,7 +40033,7 @@
     Cache: Cache
   };
 
-  var version = "0.66.7";
+  var version = "0.66.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

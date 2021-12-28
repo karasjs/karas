@@ -470,16 +470,15 @@ var ANIMATE_KEY = {
   I_SPF_LIMIT: 34,
   I_FPS: 35,
   I_DIRECTION: 36,
-  I_CAL_DIFF_TIME: 37,
-  I_FIRST_ENTER: 38,
-  I_STAY_BEGIN: 39,
-  I_STAY_END: 40,
-  I_IS2: 41,
-  I_END_TIME: 42,
-  I_NODE_CONFIG: 43,
-  I_ROOT_CONFIG: 44,
-  I_OUT_BEGIN_DELAY: 45,
-  I_TIME_STAMP: 46
+  I_FIRST_ENTER: 37,
+  I_STAY_BEGIN: 38,
+  I_STAY_END: 39,
+  I_IS2: 40,
+  I_END_TIME: 41,
+  I_NODE_CONFIG: 42,
+  I_ROOT_CONFIG: 43,
+  I_OUT_BEGIN_DELAY: 44,
+  I_TIME_STAMP: 45
 };
 var enums = {
   STYLE_KEY: STYLE_KEY,
@@ -16486,7 +16485,6 @@ var _enums$STYLE_KEY$a = enums.STYLE_KEY,
     I_SPF_LIMIT = _enums$ANIMATE_KEY.I_SPF_LIMIT,
     I_FPS = _enums$ANIMATE_KEY.I_FPS,
     I_DIRECTION = _enums$ANIMATE_KEY.I_DIRECTION,
-    I_CAL_DIFF_TIME = _enums$ANIMATE_KEY.I_CAL_DIFF_TIME,
     I_FIRST_ENTER = _enums$ANIMATE_KEY.I_FIRST_ENTER,
     I_STAY_BEGIN = _enums$ANIMATE_KEY.I_STAY_BEGIN,
     I_STAY_END = _enums$ANIMATE_KEY.I_STAY_END,
@@ -17831,6 +17829,29 @@ function gotoOverload(options, cb) {
   return [options || {}, cb];
 }
 
+function calDiffTime(__config, diff) {
+  var playbackRate = __config[I_PLAYBACK_RATE];
+  var spfLimit = __config[I_SPF_LIMIT];
+  var fps = __config[I_FPS];
+  var v = __config[I_CURRENT_TIME] = __config[I_NEXT_TIME]; // 定帧限制每帧时间间隔最大为spf
+
+  if (spfLimit) {
+    if (spfLimit === true) {
+      diff = Math.min(diff, 1000 / fps);
+    } else if (spfLimit > 0) {
+      diff = Math.min(diff, spfLimit);
+    }
+  } // 播放时间累加，并且考虑播放速度加成
+
+
+  if (playbackRate !== 1 && playbackRate > 0) {
+    diff *= playbackRate;
+  }
+
+  __config[I_NEXT_TIME] += diff;
+  return [v, diff];
+}
+
 var uuid$1 = 0;
 
 var Animation = /*#__PURE__*/function (_Event) {
@@ -17914,7 +17935,7 @@ var Animation = /*#__PURE__*/function (_Event) {
     false, // spfLimit
     60, // fps
     'normal', // direction
-    _this.__calDiffTime, true, // firstEnter,
+    true, // firstEnter,
     false, // stayBegin
     false, // stayEnd
     false, // is2
@@ -18157,7 +18178,12 @@ var Animation = /*#__PURE__*/function (_Event) {
       var target = __config[I_TARGET];
 
       if (isFinish) {
-        __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
+        // gotoAndStop到一个很大的时间的话，不能设短
+        var time = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
+
+        if (__config[I_CURRENT_TIME] < time) {
+          __config[I_CURRENT_TIME] = time;
+        }
 
         if (__config[I_PLAY_STATE] === 'finish') {
           return;
@@ -18211,30 +18237,6 @@ var Animation = /*#__PURE__*/function (_Event) {
 
         __config[I_PLAY_CB] = null;
       }
-    }
-  }, {
-    key: "__calDiffTime",
-    value: function __calDiffTime(__config, diff) {
-      var playbackRate = __config[I_PLAYBACK_RATE];
-      var spfLimit = __config[I_SPF_LIMIT];
-      var fps = __config[I_FPS];
-      var v = __config[I_CURRENT_TIME] = __config[I_NEXT_TIME]; // 定帧限制每帧时间间隔最大为spf
-
-      if (spfLimit) {
-        if (spfLimit === true) {
-          diff = Math.min(diff, 1000 / fps);
-        } else if (spfLimit > 0) {
-          diff = Math.min(diff, spfLimit);
-        }
-      } // 播放时间累加，并且考虑播放速度加成
-
-
-      if (playbackRate !== 1 && playbackRate > 0) {
-        diff *= playbackRate;
-      }
-
-      __config[I_NEXT_TIME] += diff;
-      return [v, diff];
     }
   }, {
     key: "play",
@@ -18302,10 +18304,10 @@ var Animation = /*#__PURE__*/function (_Event) {
       var endDelay = __config[I_END_DELAY];
       var length = currentFrames.length; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
-      var _config$I_CAL_DIFF_T = __config[I_CAL_DIFF_TIME](__config, diff),
-          _config$I_CAL_DIFF_T2 = _slicedToArray(_config$I_CAL_DIFF_T, 2),
-          currentTime = _config$I_CAL_DIFF_T2[0],
-          d = _config$I_CAL_DIFF_T2[1];
+      var _calDiffTime = calDiffTime(__config, diff),
+          _calDiffTime2 = _slicedToArray(_calDiffTime, 2),
+          currentTime = _calDiffTime2[0],
+          d = _calDiffTime2[1];
 
       diff = d; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
@@ -18349,9 +18351,8 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       var round;
 
-      while (currentTime >= duration && playCount < iterations - 1) {
+      while (currentTime >= duration) {
         currentTime -= duration;
-        __config[I_NEXT_TIME] -= duration;
         playCount = ++__config[I_PLAY_COUNT];
         __config[I_BEGIN] = true;
         round = true;
@@ -18744,18 +18745,18 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       if (v > duration + __config[I_DELAY]) {
         v -= __config[I_DELAY];
-      } // 超过时间长度需要累加次数
-
-
-      __config[I_PLAY_COUNT] = 0;
-
-      while (v > duration && __config[I_PLAY_COUNT] < __config[I_ITERATIONS] - 1) {
-        __config[I_PLAY_COUNT]++;
-        v -= duration;
       } // 在时间范围内设置好时间，复用play直接跳到播放点
 
 
-      __config[I_NEXT_TIME] = v; // 防止play()重置时间和当前帧组，提前计算好
+      __config[I_NEXT_TIME] = v; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
+
+      __config[I_PLAY_COUNT] = 0;
+
+      while (v > duration) {
+        __config[I_PLAY_COUNT]++;
+        v -= duration;
+      } // 防止play()重置时间和当前帧组，提前计算好
+
 
       __config[I_ENTER_FRAME] = true;
       var frames = __config[I_FRAMES];
@@ -40026,7 +40027,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.66.7";
+var version = "0.66.8";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

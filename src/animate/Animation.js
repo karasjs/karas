@@ -1734,11 +1734,8 @@ class Animation extends Event {
     let keys = __config[I_KEYS];
     let target = __config[I_TARGET];
     if(isFinish) {
-      // gotoAndStop到一个很大的时间的话，不能设短
-      let time = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
-      if(__config[I_CURRENT_TIME] < time) {
-        __config[I_CURRENT_TIME] = time;
-      }
+      // gotoAndStop到一个很大的时间的话，也需要防止超过
+      __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] * __config[I_ITERATIONS] + __config[I_END_DELAY];
       if(__config[I_PLAY_STATE] === 'finish') {
         return;
       }

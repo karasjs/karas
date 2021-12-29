@@ -18178,12 +18178,8 @@ var Animation = /*#__PURE__*/function (_Event) {
       var target = __config[I_TARGET];
 
       if (isFinish) {
-        // gotoAndStop到一个很大的时间的话，不能设短
-        var time = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
-
-        if (__config[I_CURRENT_TIME] < time) {
-          __config[I_CURRENT_TIME] = time;
-        }
+        // gotoAndStop到一个很大的时间的话，也需要防止超过
+        __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] * __config[I_ITERATIONS] + __config[I_END_DELAY];
 
         if (__config[I_PLAY_STATE] === 'finish') {
           return;
@@ -18352,6 +18348,9 @@ var Animation = /*#__PURE__*/function (_Event) {
       while (currentTime >= duration && playCount < iterations - 1) {
         currentTime -= duration;
         playCount++;
+      }
+
+      if (__config[I_PLAY_COUNT] < playCount) {
         __config[I_BEGIN] = true;
         round = true;
       }

@@ -1880,6 +1880,8 @@ class Animation extends Event {
     while(currentTime >= duration && playCount < iterations - 1) {
       currentTime -= duration;
       playCount++;
+    }
+    if(__config[I_PLAY_COUNT] < playCount) {
       __config[I_BEGIN] = true;
       round = true;
     }

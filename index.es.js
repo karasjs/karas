@@ -18291,7 +18291,7 @@ var Animation = /*#__PURE__*/function (_Event) {
       __config[I_TIME_STAMP] = frame.__now;
       var target = __config[I_TARGET];
       var fps = __config[I_FPS];
-      var playCount = __config[I_PLAY_COUNT];
+      var playCount = 0;
       var currentFrames = __config[I_CURRENT_FRAMES];
       var iterations = __config[I_ITERATIONS];
       var stayBegin = __config[I_STAY_BEGIN];
@@ -18324,7 +18324,7 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       __config[I_FIRST_ENTER] = false; // delay仅第一次生效等待
 
-      if (playCount === 0 && currentTime < delay) {
+      if (currentTime < delay) {
         if (stayBegin) {
           var _currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
 
@@ -18351,11 +18351,12 @@ var Animation = /*#__PURE__*/function (_Event) {
 
       while (currentTime >= duration && playCount < iterations - 1) {
         currentTime -= duration;
-        playCount = ++__config[I_PLAY_COUNT];
+        playCount++;
         __config[I_BEGIN] = true;
         round = true;
-      } // 如果发生轮换，需重新确定正反向
+      }
 
+      __config[I_PLAY_COUNT] = playCount; // 如果发生轮换，需重新确定正反向
 
       if (round) {
         var direction = __config[I_DIRECTION];
@@ -18724,6 +18725,7 @@ var Animation = /*#__PURE__*/function (_Event) {
     key: "__goto",
     value: function __goto(v, isFrame, excludeDelay) {
       var __config = this.__config;
+      var iterations = __config[I_ITERATIONS];
       var duration = __config[I_DURATION];
       __config[I_PLAY_STATE] = 'paused';
 
@@ -18745,13 +18747,14 @@ var Animation = /*#__PURE__*/function (_Event) {
       __config[I_NEXT_TIME] = v;
       v -= __config[I_DELAY]; // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
 
-      __config[I_PLAY_COUNT] = 0;
+      var playCount = 0;
 
-      while (v > duration) {
-        __config[I_PLAY_COUNT]++;
+      while (v >= duration && playCount < iterations - 1) {
+        playCount++;
         v -= duration;
-      } // 防止play()重置时间和当前帧组，提前计算好
+      }
 
+      __config[I_PLAY_COUNT] = playCount; // 防止play()重置时间和当前帧组，提前计算好
 
       __config[I_ENTER_FRAME] = true;
       var frames = __config[I_FRAMES];
@@ -18762,7 +18765,7 @@ var Animation = /*#__PURE__*/function (_Event) {
         alternate: true,
         'alternate-reverse': true
       }.hasOwnProperty(direction)) {
-        var isEven = __config[I_PLAY_COUNT] % 2 === 0;
+        var isEven = playCount % 2 === 0;
 
         if (direction === 'alternate') {
           __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
@@ -40022,7 +40025,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.66.8";
+var version = "0.66.9";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

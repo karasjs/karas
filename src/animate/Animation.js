@@ -1832,7 +1832,7 @@ class Animation extends Event {
     __config[I_TIME_STAMP] = frame.__now;
     let target = __config[I_TARGET];
     let fps = __config[I_FPS];
-    let playCount = __config[I_PLAY_COUNT];
+    let playCount = 0;
     let currentFrames = __config[I_CURRENT_FRAMES];
     let iterations = __config[I_ITERATIONS];
     let stayBegin = __config[I_STAY_BEGIN];
@@ -1858,7 +1858,7 @@ class Animation extends Event {
     }
     __config[I_FIRST_ENTER] = false;
     // delay仅第一次生效等待
-    if(playCount === 0 && currentTime < delay) {
+    if(currentTime < delay) {
       if(stayBegin) {
         let currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
         let current = currentFrame[FRAME_STYLE];
@@ -1879,10 +1879,11 @@ class Animation extends Event {
     let round;
     while(currentTime >= duration && playCount < iterations - 1) {
       currentTime -= duration;
-      playCount = ++__config[I_PLAY_COUNT];
+      playCount++;
       __config[I_BEGIN] = true;
       round = true;
     }
+    __config[I_PLAY_COUNT] = playCount;
     // 如果发生轮换，需重新确定正反向
     if(round) {
       let direction = __config[I_DIRECTION];
@@ -2184,6 +2185,7 @@ class Animation extends Event {
   // 返回不包含delay且去除多轮的时间
   __goto(v, isFrame, excludeDelay) {
     let __config = this.__config;
+    let iterations = __config[I_ITERATIONS];
     let duration = __config[I_DURATION];
     __config[I_PLAY_STATE] = 'paused';
     this.__cancelTask();
@@ -2200,11 +2202,12 @@ class Animation extends Event {
     __config[I_NEXT_TIME] = v;
     v -= __config[I_DELAY];
     // 超过时间长度需要累加次数，这里可以超过iterations，因为设定也许会非常大
-    __config[I_PLAY_COUNT] = 0;
-    while(v > duration) {
-      __config[I_PLAY_COUNT]++;
+    let playCount = 0;
+    while(v >= duration && playCount < iterations - 1) {
+      playCount++;
       v -= duration;
     }
+    __config[I_PLAY_COUNT] = playCount;
     // 防止play()重置时间和当前帧组，提前计算好
     __config[I_ENTER_FRAME] = true;
     let frames = __config[I_FRAMES];
@@ -2214,7 +2217,7 @@ class Animation extends Event {
       alternate: true,
       'alternate-reverse': true,
     }.hasOwnProperty(direction)) {
-      let isEven = __config[I_PLAY_COUNT] % 2 === 0;
+      let isEven = playCount % 2 === 0;
       if(direction === 'alternate') {
         __config[I_CURRENT_FRAMES] = isEven ? frames : framesR;
       }

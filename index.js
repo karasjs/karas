@@ -32395,7 +32395,7 @@
             }
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
           else if (_node4.__hookGlRender) {
-              _node4.__hookGlRender(gl, opacity, cx, cy);
+              _node4.__hookGlRender(gl, opacity, cx, cy, dx, dy);
             }
         }
     } // 绘制到fbo的纹理对象上并删除fbo恢复
@@ -33807,7 +33807,7 @@
             texCache.releaseLockChannel(_j11);
           } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
           else if (_node8.__hookGlRender) {
-              _node8.__hookGlRender(gl, _opacity4, cx, cy);
+              _node8.__hookGlRender(gl, _opacity4, cx, cy, 0, 0, true);
             }
       }
     }

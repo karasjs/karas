@@ -1207,7 +1207,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
       else if(node.__hookGlRender) {
-        node.__hookGlRender(gl, opacity, cx, cy);
+        node.__hookGlRender(gl, opacity, cx, cy, dx, dy);
       }
     }
   }
@@ -2418,7 +2418,7 @@ function renderWebgl(renderMode, gl, root) {
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
       else if(node.__hookGlRender) {
-        node.__hookGlRender(gl, opacity, cx, cy);
+        node.__hookGlRender(gl, opacity, cx, cy, 0, 0, true);
       }
     }
   }

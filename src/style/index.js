@@ -3,6 +3,7 @@ import reset from './reset';
 import unit from './unit';
 import font from './font';
 import abbr from './abbr';
+import transform from './transform';
 
 export default {
   css,
@@ -10,4 +11,5 @@ export default {
   unit,
   font,
   abbr,
+  transform,
 };

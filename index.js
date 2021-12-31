@@ -32393,7 +32393,10 @@
             if (target !== __cache) {
               i += (_total9 || 0) + countMaskNum(__structs, i + (_total9 || 0) + 1, hasMask || 0);
             }
-          }
+          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          else if (_node4.__hookGlRender) {
+              _node4.__hookGlRender(gl, opacity, cx, cy);
+            }
         }
     } // 绘制到fbo的纹理对象上并删除fbo恢复
 

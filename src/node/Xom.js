@@ -1698,7 +1698,6 @@ class Xom extends Node {
     };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = __config[NODE_DOM_PARENT];
-    let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
     if(renderMode === WEBGL) {
       this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
     }
@@ -1710,10 +1709,32 @@ class Xom extends Node {
     else {
       matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
     }
+    // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+    let bx1, by1, bx2, by2;
+    if(cache && renderMode === CANVAS) {
+      bx1 = this.__bx1;
+      bx2 = this.__bx2;
+      by1 = this.__by1;
+      by2 = this.__by2;
+    }
+    else {
+      [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
+        __cacheStyle, currentStyle, computedStyle,
+        clientWidth, clientHeight, offsetWidth, offsetHeight,
+        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+        paddingTop, paddingRight, paddingBottom, paddingLeft,
+        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
+      );
+    }
+    res.bx1 = bx1;
+    res.by1 = by1;
+    res.bx2 = bx2;
+    res.by2 = by2;
+    let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
     // webgl特殊申请离屏缓存
     if(cache && renderMode === WEBGL) {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-      if(!hasContent && this.__releaseWhenEmpty(__cache)) {
+      if(!hasContent && this.__releaseWhenEmpty(__cache, computedStyle)) {
         res.break = true;
         __config[NODE_LIMIT_CACHE] = false;
       }
@@ -1749,27 +1770,6 @@ class Xom extends Node {
     }
     res.dx = dx;
     res.dy = dy;
-    // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
-    let bx1, by1, bx2, by2;
-    if(cache && renderMode === CANVAS) {
-      bx1 = this.__bx1;
-      bx2 = this.__bx2;
-      by1 = this.__by1;
-      by2 = this.__by2;
-    }
-    else {
-      [bx1, by1, bx2, by2] = this.__calCache(renderMode, ctx, p,
-        __cacheStyle, currentStyle, computedStyle,
-        clientWidth, clientHeight, offsetWidth, offsetHeight,
-        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-        paddingTop, paddingRight, paddingBottom, paddingLeft,
-        x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6
-      );
-    }
-    res.bx1 = bx1;
-    res.by1 = by1;
-    res.bx2 = bx2;
-    res.by2 = by2;
     let {
       [BACKGROUND_COLOR]: backgroundColor,
       [BORDER_TOP_COLOR]: borderTopColor,

@@ -2399,7 +2399,6 @@ function renderWebgl(renderMode, gl, root) {
       // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
       // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
       else if(limitCache && display !== 'none' && visibility !== 'hidden') {
-        // let m = mx.m2Mat4(matrixEvent, cx, cy);
         let c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
         node.render(renderMode, refreshLevel, gl, NA, 0, 0);
         let j = texCache.lockOneChannel();
@@ -2412,6 +2411,10 @@ function renderWebgl(renderMode, gl, root) {
         c.ctx.clearRect(0, 0, width, height);
         mockCache.release();
         texCache.releaseLockChannel(j);
+      }
+      // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+      else if(node.__hookGlRender) {
+        node.__hookGlRender(gl, opacity, cx, cy);
       }
     }
   }

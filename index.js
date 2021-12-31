@@ -21479,8 +21479,6 @@
 
         var p = __config[NODE_DOM_PARENT$2];
 
-        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle);
-
         if (renderMode === WEBGL$1) {
           this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
         } // cache的canvas模式已经提前计算好了，其它需要现在计算
@@ -21492,12 +21490,38 @@
           matrix = __config[NODE_MATRIX$1];
         } else {
           matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
-        } // webgl特殊申请离屏缓存
+        } // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+
+
+        var bx1, by1, bx2, by2;
+
+        if (cache && renderMode === CANVAS$1) {
+          bx1 = this.__bx1;
+          bx2 = this.__bx2;
+          by1 = this.__by1;
+          by2 = this.__by2;
+        } else {
+          var _this$__calCache = this.__calCache(renderMode, ctx, p, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
+
+          var _this$__calCache2 = _slicedToArray(_this$__calCache, 4);
+
+          bx1 = _this$__calCache2[0];
+          by1 = _this$__calCache2[1];
+          bx2 = _this$__calCache2[2];
+          by2 = _this$__calCache2[3];
+        }
+
+        res.bx1 = bx1;
+        res.by1 = by1;
+        res.bx2 = bx2;
+        res.by2 = by2;
+
+        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle); // webgl特殊申请离屏缓存
 
 
         if (cache && renderMode === WEBGL$1) {
           // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
-          if (!hasContent && this.__releaseWhenEmpty(__cache)) {
+          if (!hasContent && this.__releaseWhenEmpty(__cache, computedStyle)) {
             res["break"] = true;
             __config[NODE_LIMIT_CACHE$1] = false;
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
@@ -21532,30 +21556,7 @@
           }
 
         res.dx = dx;
-        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
-
-        var bx1, by1, bx2, by2;
-
-        if (cache && renderMode === CANVAS$1) {
-          bx1 = this.__bx1;
-          bx2 = this.__bx2;
-          by1 = this.__by1;
-          by2 = this.__by2;
-        } else {
-          var _this$__calCache = this.__calCache(renderMode, ctx, p, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
-
-          var _this$__calCache2 = _slicedToArray(_this$__calCache, 4);
-
-          bx1 = _this$__calCache2[0];
-          by1 = _this$__calCache2[1];
-          bx2 = _this$__calCache2[2];
-          by2 = _this$__calCache2[3];
-        }
-
-        res.bx1 = bx1;
-        res.by1 = by1;
-        res.bx2 = bx2;
-        res.by2 = by2;
+        res.dy = dy;
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
             borderRightColor = computedStyle[BORDER_RIGHT_COLOR],
@@ -29331,11 +29332,13 @@
         if (strokeMiterlimit && strokeMiterlimit !== 4) {
           props.push(['stroke-miterlimit', strokeMiterlimit]);
         }
-      } // geom的cache无内容也不清除
+      } // geom的cache无内容也不清除，因为子类不清楚内容，除非看不见
 
     }, {
       key: "__releaseWhenEmpty",
-      value: function __releaseWhenEmpty() {} // offset/resize时要多一步清空props上记录的缓存
+      value: function __releaseWhenEmpty(cache, computedStyle) {
+        return computedStyle[VISIBILITY$4] === 'hidden';
+      } // offset/resize时要多一步清空props上记录的缓存
 
     }, {
       key: "__offsetX",
@@ -33777,7 +33780,6 @@
         } // 超限的情况，这里是普通单节点超限，没有合成total后再合成特殊cache如filter/mask/mbm之类的，
         // 直接按原始位置绘制到离屏canvas，再作为纹理绘制即可，特殊的在total那做过降级了
         else if (_limitCache2 && display !== 'none' && visibility !== 'hidden') {
-            // let m = mx.m2Mat4(matrixEvent, cx, cy);
             var _c2 = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
 
             _node8.render(renderMode, _refreshLevel5, gl, NA, 0, 0);
@@ -33800,7 +33802,10 @@
             _mockCache2.release();
 
             texCache.releaseLockChannel(_j11);
-          }
+          } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
+          else if (_node8.__hookGlRender) {
+              _node8.__hookGlRender(gl, _opacity4, cx, cy);
+            }
       }
     }
 
@@ -40022,7 +40027,7 @@
     Cache: Cache
   };
 
-  var version = "0.66.9";
+  var version = "0.66.10";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

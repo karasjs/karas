@@ -967,8 +967,10 @@ class Geom extends Xom {
     }
   }
 
-  // geom的cache无内容也不清除
-  __releaseWhenEmpty() {}
+  // geom的cache无内容也不清除，因为子类不清楚内容，除非看不见
+  __releaseWhenEmpty(cache, computedStyle) {
+    return computedStyle[VISIBILITY] === 'hidden';
+  }
 
   // offset/resize时要多一步清空props上记录的缓存
   __offsetX(diff, isLayout, lv) {

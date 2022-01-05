@@ -183,6 +183,8 @@ class Cache {
     return new Cache(w, h, bbox, page, pos, x1, y1);
   }
 
+  // TODO 已有page
+
   /**
    * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
    * @param cache

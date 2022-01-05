@@ -4754,15 +4754,9 @@
   };
 
   // 类型为引用防止json仿造
-  var TYPE_VD = {
-    _: 1
-  };
-  var TYPE_GM = {
-    _: 2
-  };
-  var TYPE_CP = {
-    _: 3
-  };
+  var TYPE_VD = Symbol('Dom');
+  var TYPE_GM = Symbol('Geom');
+  var TYPE_CP = Symbol('Component');
   var $$type = {
     TYPE_VD: TYPE_VD,
     TYPE_GM: TYPE_GM,
@@ -13391,7 +13385,8 @@
         var page = res.page,
             pos = res.pos;
         return new Cache(w, h, bbox, page, pos, x1, y1);
-      }
+      } // TODO 已有page
+
       /**
        * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
        * @param cache

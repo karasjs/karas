@@ -14860,12 +14860,12 @@
 
         vd.__children = children;
       } else if (_$$type === TYPE_GM$2) {
-        if (tagName instanceof Geom) {
-          vd = new tagName('$', props);
-        } else {
+        if (util.isString(tagName)) {
           var _klass = Geom.getRegister(tagName);
 
           vd = new _klass(tagName, props);
+        } else if (tagName) {
+          vd = new tagName('$', props);
         }
       } else if (_$$type === TYPE_CP$2) {
         vd = new klass(props);
@@ -33406,10 +33406,8 @@
         var matrix = void 0;
 
         if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
-          matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
-
-          var m = __config[NODE_MATRIX$3];
-          assignMatrix$1(m, matrix);
+          matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
+          assignMatrix$1(__config[NODE_MATRIX$3], matrix);
         } else {
           matrix = __config[NODE_MATRIX$3];
         } // node本身有或者父有perspective都认为需要生成3d渲染上下文

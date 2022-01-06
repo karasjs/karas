@@ -100,12 +100,12 @@ function build(json, root, host, hasP) {
       vd.__children = children;
     }
     else if($$type === TYPE_GM) {
-      if(tagName instanceof Geom) {
-        vd = new tagName('$', props);
-      }
-      else {
+      if(util.isString(tagName)) {
         let klass = Geom.getRegister(tagName);
         vd = new klass(tagName, props);
+      }
+      else if(tagName) {
+        vd = new tagName('$', props);
       }
     }
     else if($$type === TYPE_CP) {

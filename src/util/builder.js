@@ -100,8 +100,13 @@ function build(json, root, host, hasP) {
       vd.__children = children;
     }
     else if($$type === TYPE_GM) {
-      let klass = Geom.getRegister(tagName);
-      vd = new klass(tagName, props);
+      if(tagName instanceof Geom) {
+        vd = new tagName('$', props);
+      }
+      else {
+        let klass = Geom.getRegister(tagName);
+        vd = new klass(tagName, props);
+      }
     }
     else if($$type === TYPE_CP) {
       vd = new klass(props);

@@ -1,6 +1,5 @@
 import Cache from './Cache';
 import offscreen from './offscreen';
-import Geom from '../node/geom/Geom';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
@@ -2098,9 +2097,7 @@ function renderWebgl(renderMode, gl, root) {
       let matrix;
       if(contain(refreshLevel, TRANSFORM_ALL)) {
         matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
-        // 恶心的v8性能优化
-        let m = __config[NODE_MATRIX];
-        assignMatrix(m, matrix);
+        assignMatrix(__config[NODE_MATRIX], matrix);
       }
       else {
         matrix = __config[NODE_MATRIX];

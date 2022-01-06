@@ -44,7 +44,7 @@
     "selenium-server": "^3.141.59",
     "through2": "^3.0.0",
     "webstorm-disable-index": "^1.2.0",
-    "yurine": "~0.4.1"
+    "yurine": "~0.5.0"
   },
   "main": "./index.js",
   "browser": "./index.js",

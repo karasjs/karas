@@ -13385,8 +13385,7 @@
         var page = res.page,
             pos = res.pos;
         return new Cache(w, h, bbox, page, pos, x1, y1);
-      } // TODO 已有page
-
+      }
       /**
        * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用浏览器原生ctx.filter滤镜
        * @param cache
@@ -14861,9 +14860,13 @@
 
         vd.__children = children;
       } else if (_$$type === TYPE_GM$2) {
-        var _klass = Geom.getRegister(tagName);
+        if (tagName instanceof Geom) {
+          vd = new tagName('$', props);
+        } else {
+          var _klass = Geom.getRegister(tagName);
 
-        vd = new _klass(tagName, props);
+          vd = new _klass(tagName, props);
+        }
       } else if (_$$type === TYPE_CP$2) {
         vd = new klass(props);
         vd.__tagName = tagName || vd.__tagName;
@@ -40062,6 +40065,11 @@
           return this.createVd(tagName, props, children);
         }
       } else if (tagName) {
+        // 特殊的$匿名类
+        if (tagName instanceof Geom$1) {
+          return this.createGm(tagName, props);
+        }
+
         return this.createCp(tagName, props, children);
       }
     },

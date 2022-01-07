@@ -4754,15 +4754,9 @@
   };
 
   // 类型为引用防止json仿造
-  var TYPE_VD = {
-    _: 1
-  };
-  var TYPE_GM = {
-    _: 2
-  };
-  var TYPE_CP = {
-    _: 3
-  };
+  var TYPE_VD = Symbol('Dom');
+  var TYPE_GM = Symbol('Geom');
+  var TYPE_CP = Symbol('Component');
   var $$type = {
     TYPE_VD: TYPE_VD,
     TYPE_GM: TYPE_GM,
@@ -14866,9 +14860,13 @@
 
         vd.__children = children;
       } else if (_$$type === TYPE_GM$2) {
-        var _klass = Geom.getRegister(tagName);
+        if (util.isString(tagName)) {
+          var _klass = Geom.getRegister(tagName);
 
-        vd = new _klass(tagName, props);
+          vd = new _klass(tagName, props);
+        } else if (tagName) {
+          vd = new tagName('$', props);
+        }
       } else if (_$$type === TYPE_CP$2) {
         vd = new klass(props);
         vd.__tagName = tagName || vd.__tagName;
@@ -33408,10 +33406,8 @@
         var matrix = void 0;
 
         if (contain$2(refreshLevel, TRANSFORM_ALL$1)) {
-          matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config); // 恶心的v8性能优化
-
-          var m = __config[NODE_MATRIX$3];
-          assignMatrix$1(m, matrix);
+          matrix = node.__calMatrix(refreshLevel, __cacheStyle, currentStyle, computedStyle, __config);
+          assignMatrix$1(__config[NODE_MATRIX$3], matrix);
         } else {
           matrix = __config[NODE_MATRIX$3];
         } // node本身有或者父有perspective都认为需要生成3d渲染上下文
@@ -40067,6 +40063,11 @@
           return this.createVd(tagName, props, children);
         }
       } else if (tagName) {
+        // 特殊的$匿名类
+        if (tagName instanceof Geom$1) {
+          return this.createGm(tagName, props);
+        }
+
         return this.createCp(tagName, props, children);
       }
     },

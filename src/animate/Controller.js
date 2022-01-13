@@ -153,6 +153,10 @@ class Controller {
   gotoAndStop(v, options, cb) {
     this.__mergeAuto();
     this.__onList = [];
+    if(isFunction(options)) {
+      cb = options;
+      options = {};
+    }
     let once = true;
     this.__action('gotoAndStop', [v, options, cb && function(diff) {
       if(once) {
@@ -167,6 +171,10 @@ class Controller {
   gotoAndPlay(v, options, cb) {
     this.__mergeAuto();
     this.__onList = [];
+    if(isFunction(options)) {
+      cb = options;
+      options = {};
+    }
     let once = true;
     this.__action('gotoAndPlay', [v, options, cb && function(diff) {
       if(once) {

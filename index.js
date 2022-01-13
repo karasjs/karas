@@ -30615,6 +30615,12 @@
         this.__mergeAuto();
 
         this.__onList = [];
+
+        if (isFunction$6(options)) {
+          cb = options;
+          options = {};
+        }
+
         var once = true;
 
         this.__action('gotoAndStop', [v, options, cb && function (diff) {
@@ -30633,6 +30639,12 @@
         this.__mergeAuto();
 
         this.__onList = [];
+
+        if (isFunction$6(options)) {
+          cb = options;
+          options = {};
+        }
+
         var once = true;
 
         this.__action('gotoAndPlay', [v, options, cb && function (diff) {
@@ -40026,7 +40038,7 @@
     Cache: Cache
   };
 
-  var version = "0.67.0";
+  var version = "0.67.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

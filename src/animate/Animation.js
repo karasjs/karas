@@ -68,7 +68,6 @@ const {
     I_FINISHED,
     I_NEXT_END,
     I_FIRST_PLAY,
-    I_FRAME_CB,
     I_PLAY_CB,
     I_TARGET,
     I_ROOT,
@@ -1462,6 +1461,22 @@ function calDiffTime(__config, diff) {
   return [v, diff];
 }
 
+function frameCb(self, __config, diff, isDelay) {
+  self.emit(Event.FRAME, diff, isDelay);
+  if(__config[I_FIRST_PLAY]) {
+    __config[I_FIRST_PLAY] = false;
+    self.emit(Event.PLAY);
+  }
+  let cb = __config[I_PLAY_CB];
+  if(isFunction(cb)) {
+    cb.call(self, diff, isDelay);
+    // 清理要检查，gotoAndStop()这种cb回调中直接再次调用goto的话cb会不一致不能删除
+    if(__config[I_PLAY_CB] === cb) {
+      __config[I_PLAY_CB] = null;
+    }
+  }
+}
+
 let uuid = 0;
 
 class Animation extends Event {
@@ -1510,7 +1525,6 @@ class Animation extends Event {
       false, // finished
       false, // nextBegin
       true, // firstPlay
-      this.__frameCb,
       null, // playCb
       target,
       root,
@@ -1772,18 +1786,6 @@ class Animation extends Event {
     }
   }
 
-  __frameCb(__config, diff, isDelay) {
-    this.emit(Event.FRAME, diff, isDelay);
-    if(__config[I_FIRST_PLAY]) {
-      __config[I_FIRST_PLAY] = false;
-      this.emit(Event.PLAY);
-    }
-    if(isFunction(__config[I_PLAY_CB])) {
-      __config[I_PLAY_CB].call(this, diff, isDelay);
-      __config[I_PLAY_CB] = null;
-    }
-  }
-
   play(cb) {
     let __config = this.__config;
     let isDestroyed = __config[I_DESTROYED];
@@ -1817,7 +1819,7 @@ class Animation extends Event {
       __config[I_CURRENT_TIME] = __config[I_NEXT_TIME] = __config[I_FPS_TIME] = 0;
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
-    frame.offFrame(this);
+    // frame.offFrame(this);
     frame.onFrame(this);
     __config[I_START_TIME] = frame.__now;
     __config[I_END] = false;
@@ -1983,7 +1985,7 @@ class Animation extends Event {
       __config[I_IN_FPS] = false;
       return;
     }
-    __config[I_FRAME_CB].call(this, __config, diff, __config[I_IS_DELAY]);
+    frameCb(this, __config, diff, __config[I_IS_DELAY]);
     __config[I_IS_DELAY] = false;
     if(__config[I_BEGIN]) {
       __config[I_BEGIN] = false;
@@ -2063,7 +2065,7 @@ class Animation extends Event {
           if(!self.__hasFin) {
             self.__hasFin = true;
             __config[I_ASSIGNING] = false;
-            __config[I_FRAME_CB].call(self, __config, diff);
+            frameCb(self, __config, diff);
             __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
               = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
             self.emit(Event.FINISH);
@@ -2101,7 +2103,7 @@ class Animation extends Event {
           if(!self.__hasCancel) {
             self.__hasCancel = true;
             __config[I_ASSIGNING] = false;
-            __config[I_FRAME_CB].call(self, __config, diff);
+            frameCb(self, __config, diff);
             __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
               = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
             self.emit(Event.CANCEL);
@@ -2187,7 +2189,7 @@ class Animation extends Event {
     let iterations = __config[I_ITERATIONS];
     let duration = __config[I_DURATION];
     __config[I_PLAY_STATE] = 'paused';
-    this.__cancelTask();
+    // this.__cancelTask(); // 应该不需要，gotoAndXxx都会调用play()，里面有
     if(isNaN(v) || v < 0) {
       throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
     }

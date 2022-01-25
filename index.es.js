@@ -518,13 +518,13 @@ var Node = /*#__PURE__*/function () {
     this.__width = 0;
     this.__height = 0;
     this.__baseLine = 0;
-    this.__config = {}; // 默认undefined
-    // this.__prev = undefined;
-    // this.__next = undefined;
-    // this.__parent = undefined;
-    // this.__domParent = undefined;
-    // this.__root = undefined;
-    // this.__host = undefined;
+    this.__config = {};
+    this.__prev = null;
+    this.__next = null;
+    this.__parent = null;
+    this.__domParent = null;
+    this.__root = null;
+    this.__host = null;
   }
 
   _createClass(Node, [{
@@ -22166,9 +22166,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
       var root = this.root;
       this.clearAnimate();
-      this.clearFrameAnimate();
-      root.delRefreshTask(this.__loadBgi.cb);
-      root.delRefreshTask(this.__task);
+      this.clearFrameAnimate(); // root在没有初始化到真实dom渲染的情况下没有
+
+      root && root.delRefreshTask(this.__loadBgi.cb);
+      root && root.delRefreshTask(this.__task);
       this.__task = null;
       this.__root = null;
       this.clearCache();

@@ -23,13 +23,12 @@ class Node {
     this.__height = 0;
     this.__baseLine = 0;
     this.__config = {};
-    // 默认undefined
-    // this.__prev = undefined;
-    // this.__next = undefined;
-    // this.__parent = undefined;
-    // this.__domParent = undefined;
-    // this.__root = undefined;
-    // this.__host = undefined;
+    this.__prev = null;
+    this.__next = null;
+    this.__parent = null;
+    this.__domParent = null;
+    this.__root = null;
+    this.__host = null;
   }
 
   __structure(i, lv, j) {

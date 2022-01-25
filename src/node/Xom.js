@@ -2332,8 +2332,9 @@ class Xom extends Node {
     let { root } = this;
     this.clearAnimate();
     this.clearFrameAnimate();
-    root.delRefreshTask(this.__loadBgi.cb);
-    root.delRefreshTask(this.__task);
+    // root在没有初始化到真实dom渲染的情况下没有
+    root && root.delRefreshTask(this.__loadBgi.cb);
+    root && root.delRefreshTask(this.__task);
     this.__task = null;
     this.__root = null;
     this.clearCache();

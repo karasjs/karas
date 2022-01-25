@@ -39497,6 +39497,14 @@ function replaceVars(json, vars) {
   }
 }
 
+function replaceAnimateOptions(options, opt) {
+  ['iterations', 'fill', 'duration', 'direction', 'easing', 'fps', 'delay', 'endDelay', 'playbackRate', 'spfLimit'].forEach(function (k) {
+    if (opt.hasOwnProperty(k)) {
+      options[k] = opt[k];
+    }
+  });
+}
+
 function replaceLibraryVars(json, hash, vars) {
   if (vars) {
     // 新版同级vars语法
@@ -39742,62 +39750,38 @@ function parse(karas, json, animateRecords, opt) {
     }));
   }
 
-  var animationRecord;
-
   if (animate) {
-    if (Array.isArray(animate)) {
-      var has;
-      animate.forEach(function (item) {
-        opt.abbr !== false && abbr2full(item, abbrAnimate$1);
-        var value = item.value,
-            options = item.options; // 忽略空动画
+    if (!Array.isArray(animate)) {
+      animate = [animate];
+    }
 
-        if (Array.isArray(value) && value.length) {
-          has = true;
-          value.forEach(function (item) {
-            opt.abbr !== false && abbr2full(item, abbrCssProperty$1);
-            replaceVars(item, opt.vars);
-          });
-        }
-
-        if (options) {
-          opt.abbr !== false && abbr2full(options, abbrAnimateOption$1);
-          replaceVars(options, opt.vars);
-        }
-      });
-
-      if (has) {
-        animationRecord = {
-          animate: animate,
-          target: vd
-        };
-      }
-    } else {
-      opt.abbr !== false && abbr2full(animate, abbrAnimate$1);
-      var value = animate.value,
-          options = animate.options;
+    var has;
+    animate.forEach(function (item) {
+      opt.abbr !== false && abbr2full(item, abbrAnimate$1);
+      var value = item.value,
+          options = item.options; // 忽略空动画
 
       if (Array.isArray(value) && value.length) {
+        has = true;
         value.forEach(function (item) {
           opt.abbr !== false && abbr2full(item, abbrCssProperty$1);
           replaceVars(item, opt.vars);
         });
-        animationRecord = {
-          animate: animate,
-          target: vd
-        };
       }
 
       if (options) {
         opt.abbr !== false && abbr2full(options, abbrAnimateOption$1);
         replaceVars(options, opt.vars);
+        replaceAnimateOptions(options, opt);
       }
+    }); // 产生实际动画运行才存入列表供root调用执行
+
+    if (has) {
+      animateRecords.push({
+        animate: animate,
+        target: vd
+      });
     }
-  } // 产生实际动画运行才存入列表供root调用执行
-
-
-  if (animationRecord) {
-    animateRecords.push(animationRecord);
   }
 
   return vd;

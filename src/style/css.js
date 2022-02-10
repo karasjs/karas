@@ -196,6 +196,10 @@ function normalize(style, reset = []) {
   if(temp) {
     abbr.toFull(style, 'textStroke');
   }
+  temp = style.rotate3d;
+  if(temp) {
+    abbr.toFull(style, 'rotate3d');
+  }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
   ['translate', 'scale', 'skew', 'translate3d', 'scale3d', 'rotate'].forEach(k => {
     temp = style[k];
@@ -219,7 +223,7 @@ function normalize(style, reset = []) {
     'rotate3d',
   ].forEach(k => {
     let v = style[k];
-    if(!isNil(v) && style.transform) {
+    if(v !== undefined && style.transform) {
       inject.warn(`Can not use expand style "${k}" with transform`);
     }
   });
@@ -262,7 +266,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.backgroundColor;
-  if(temp) {
+  if(temp !== undefined) {
+    temp = temp || 'transparent';
     // 先赋值默认透明，后续操作有合法值覆盖
     let bgc = /^#[0-9a-f]{3,8}/i.exec(temp);
     if(bgc && [4, 7, 9].indexOf(bgc[0].length) > -1) {
@@ -275,7 +280,8 @@ function normalize(style, reset = []) {
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach((k, i) => {
     temp = style[k];
-    if(!isNil(temp)) {
+    if(temp !== undefined) {
+      temp = temp || 0;
       k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
       if(!Array.isArray(temp)) {
         temp = [temp];
@@ -305,7 +311,7 @@ function normalize(style, reset = []) {
   });
   // 背景尺寸
   temp = style.backgroundSize;
-  if(temp) {
+  if(temp !== undefined) {
     if(!Array.isArray(temp)) {
       temp = [temp];
     }
@@ -357,15 +363,16 @@ function normalize(style, reset = []) {
   ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
     k = 'border' + k + 'Color';
     let v = style[k];
-    if(!isNil(v)) {
-      res[STYLE_KEY[style2Upper(k)]] = [rgba2int(v), RGBA];
+    if(v !== undefined) {
+      res[STYLE_KEY[style2Upper(k)]] = [rgba2int(v || 'transparent'), RGBA];
     }
   });
   // border-radius
   ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
     k = 'border' + k + 'Radius';
     let v = style[k];
-    if(!isNil(v)) {
+    if(v !== undefined) {
+      v = v || 0;
       let arr = v.toString().split(/\s+/);
       if(arr.length === 1) {
         arr[1] = arr[0];
@@ -390,7 +397,7 @@ function normalize(style, reset = []) {
     }
   });
   temp = style.transform;
-  if(temp) {
+  if(temp !== undefined) {
     let transform = res[TRANSFORM] = [];
     let match = (temp || '').toString().match(/\w+\(.+?\)/g);
     if(match) {
@@ -490,8 +497,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.perspective;
-  if(!isNil(temp)) {
-    let arr = calUnit(temp);
+  if(temp !== undefined) {
+    let arr = calUnit(temp || 0);
     if(arr[0] < 0) {
       arr[0] = 0;
     }
@@ -500,9 +507,9 @@ function normalize(style, reset = []) {
   }
   ['perspectiveOrigin', 'transformOrigin'].forEach(k => {
     temp = style[k];
-    if(!isNil(temp)) {
+    if(temp !== undefined) {
       let arr = res[STYLE_KEY[style2Upper(k)]] = [];
-      let match = temp.toString().match(reg.position);
+      let match = (temp || '').toString().match(reg.position);
       if(match) {
         if(match.length === 1) {
           match[1] = match[0];
@@ -555,8 +562,16 @@ function normalize(style, reset = []) {
     'rotate',
   ].forEach(k => {
     let v = style[k];
-    if(isNil(v)) {
+    if(v === undefined) {
       return;
+    }
+    if(v === null) {
+      if(k.indexOf('scale') === 0) {
+        v = 1;
+      }
+      else {
+        v = 0;
+      }
     }
     let k2 = TRANSFORM_HASH[k];
     let n = calUnit(v);
@@ -564,21 +579,11 @@ function normalize(style, reset = []) {
     compatibleTransform(k2, n);
     res[k2] = n;
   });
-  temp = style.rotate3d;
-  if(temp) {
-    let arr = temp.toString().split(/\s*,\s*/);
-    if(arr.length === 4) {
-      let deg = calUnit(arr[3]);
-      compatibleTransform(ROTATE_3D, deg);
-      arr[0] = parseFloat(arr[0]);
-      arr[1] = parseFloat(arr[1]);
-      arr[2] = parseFloat(arr[2]);
-      arr[3] = deg;
-      res[ROTATE_3D] = arr;
-    }
-  }
   temp = style.opacity;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
+    if(temp === null) {
+      temp = 1;
+    }
     temp = parseFloat(temp);
     if(!isNaN(temp)) {
       temp = Math.max(temp, 0);
@@ -590,7 +595,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.zIndex;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     res[Z_INDEX] = parseInt(temp) || 0;
   }
   // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
@@ -615,14 +620,14 @@ function normalize(style, reset = []) {
     'height',
   ].forEach(k => {
     let v = style[k];
-    if(isNil(v)) {
+    if(v === undefined) {
       return;
     }
     if(v === 'auto') {
       v = [0, AUTO];
     }
     else {
-      v = calUnit(v);
+      v = calUnit(v || 0);
       // 无单位视为px
       if([NUMBER, DEG].indexOf(v[1]) > -1) {
         v[1] = PX;
@@ -647,7 +652,7 @@ function normalize(style, reset = []) {
     }
   });
   temp = style.flexBasis;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'content') {
       res[FLEX_BASIS] = [temp, STRING];
     }
@@ -664,11 +669,11 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.order;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     res[ORDER] = parseInt(temp) || 0;
   }
   temp = style.color;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'inherit') {
       res[COLOR] = [[], INHERIT];
     }
@@ -677,7 +682,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.textStrokeColor;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'inherit') {
       res[TEXT_STROKE_COLOR] = [[], INHERIT];
     }
@@ -686,7 +691,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.fontSize;
-  if(temp || temp === 0) {
+  if(temp !== undefined) {
     if(temp === 'inherit') {
       res[FONT_SIZE] = [0, INHERIT];
     }
@@ -705,7 +710,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.textStrokeWidth;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'inherit') {
       res[TEXT_STROKE_WIDTH] = [0, INHERIT];
     }
@@ -724,12 +729,12 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.textStrokeOver;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'inherit') {
       res[TEXT_STROKE_OVER] = [0, INHERIT];
     }
     else {
-      let v = temp.toString();
+      let v = (temp || '').toString();
       if(v !== 'none' && v !== 'fill') {
         v = 'none';
       }
@@ -737,7 +742,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.fontWeight;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(temp === 'bold') {
       res[FONT_WEIGHT] = [700, NUMBER];
     }
@@ -755,8 +760,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.fontStyle;
-  if(temp) {
-    if(temp === 'inherit') {
+  if(temp !== undefined) {
+    if(temp === null || temp === 'inherit') {
       res[FONT_STYLE] = [0, INHERIT];
     }
     else {
@@ -764,8 +769,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.fontFamily;
-  if(temp) {
-    if(temp === 'inherit') {
+  if(temp !== undefined) {
+    if(temp === null || temp === 'inherit') {
       res[FONT_FAMILY] = [0, INHERIT];
     }
     else {
@@ -774,8 +779,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.textAlign;
-  if(temp) {
-    if(temp === 'inherit') {
+  if(temp !== undefined) {
+    if(temp === null || temp === 'inherit') {
       res[TEXT_ALIGN] = [0, INHERIT];
     }
     else {
@@ -811,7 +816,7 @@ function normalize(style, reset = []) {
   }
   temp = style.letterSpacing;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(temp === null || temp === 'inherit') {
       res[LETTER_SPACING] = [0, INHERIT];
     }
     else if(temp === 'normal') {
@@ -829,8 +834,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.whiteSpace;
-  if(temp) {
-    if(temp === 'inherit') {
+  if(temp !== undefined) {
+    if(temp === null || temp === 'inherit') {
       res[WHITE_SPACE] = [0, INHERIT];
     }
     else {
@@ -904,7 +909,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.strokeWidth;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(!Array.isArray(temp)) {
       temp = [temp];
     }
@@ -918,10 +923,10 @@ function normalize(style, reset = []) {
     });
   }
   temp = style.strokeDasharray;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     if(Array.isArray(temp)) {
       res[STROKE_DASHARRAY] = temp.map(item => {
-        let match = item.toString().match(/[\d.]+/g);
+        let match = (item || '').toString().match(/[\d.]+/g);
         if(match) {
           match = match.map(item => parseFloat(item));
           if(match.length % 2 === 1) {
@@ -933,7 +938,7 @@ function normalize(style, reset = []) {
       });
     }
     else {
-      let match = temp.toString().match(/[\d.]+/g);
+      let match = (temp || '').toString().match(/[\d.]+/g);
       if(match) {
         match = match.map(item => parseFloat(item));
         if(match.length % 2 === 1) {
@@ -986,8 +991,8 @@ function normalize(style, reset = []) {
     res[FILTER] = f;
   }
   temp = style.visibility;
-  if(temp) {
-    if(temp === 'inherit') {
+  if(temp !== undefined) {
+    if(temp === null || temp === 'inherit') {
       res[VISIBILITY] = [0, INHERIT];
     }
     else {
@@ -995,8 +1000,8 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.pointerEvents;
-  if(temp) {
-    if(temp === 'inherit') {
+  if(temp !== undefined) {
+    if(temp === null || temp === 'inherit') {
       res[POINTER_EVENTS] = [0, INHERIT];
     }
     else {
@@ -1066,7 +1071,7 @@ function normalize(style, reset = []) {
     }
   });
   temp = style.zIndex;
-  if(!isNil(temp)) {
+  if(temp !== undefined) {
     res[Z_INDEX] = parseFloat(temp) || 0;
   }
   // 这些支持多个的用数组表示

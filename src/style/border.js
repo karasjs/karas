@@ -106,6 +106,9 @@ function calDashed(style, m1, m2, m3, m4, bw) {
 // direction为上右下左0123
 function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, direction, beginRadius, endRadius) {
   let points = [];
+  if(borderStyle === 'none') {
+    return points;
+  }
   if(['dashed', 'dotted'].indexOf(borderStyle) > -1) {
     // 寻找一个合适的虚线线段长度和之间空白边距长度
     let { n, ps, pd } = (direction === 0 || direction === 2)

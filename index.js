@@ -8418,7 +8418,9 @@
     });
     temp = style.transform;
 
-    if (temp !== undefined) {
+    if (temp === null) {
+      res[TRANSFORM] = null;
+    } else if (temp !== undefined) {
       var transform = res[TRANSFORM] = [];
       var match = (temp || '').toString().match(/\w+\(.+?\)/g);
 

@@ -585,6 +585,19 @@ function normalize(style, reset = []) {
     compatibleTransform(k2, n);
     res[k2] = n;
   });
+  temp = style.rotate3d;
+  if(temp !== undefined) {
+    let arr = (temp || '').toString().split(/\s*,\s*/);
+    if(arr.length === 4) {
+      let deg = calUnit(arr[3]);
+      compatibleTransform(ROTATE_3D, deg);
+      arr[0] = parseFloat(arr[0]);
+      arr[1] = parseFloat(arr[1]);
+      arr[2] = parseFloat(arr[2]);
+      arr[3] = deg;
+    }
+    res[ROTATE_3D] = arr;
+  }
   temp = style.opacity;
   if(temp !== undefined) {
     if(temp === null) {

@@ -8619,6 +8619,23 @@ function normalize(style) {
     compatibleTransform(k2, n);
     res[k2] = n;
   });
+  temp = style.rotate3d;
+
+  if (temp !== undefined) {
+    var _arr10 = (temp || '').toString().split(/\s*,\s*/);
+
+    if (_arr10.length === 4) {
+      var deg = calUnit$1(_arr10[3]);
+      compatibleTransform(ROTATE_3D, deg);
+      _arr10[0] = parseFloat(_arr10[0]);
+      _arr10[1] = parseFloat(_arr10[1]);
+      _arr10[2] = parseFloat(_arr10[2]);
+      _arr10[3] = deg;
+    }
+
+    res[ROTATE_3D] = _arr10;
+  }
+
   temp = style.opacity;
 
   if (temp !== undefined) {
@@ -40028,7 +40045,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.68.1";
+var version = "0.68.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

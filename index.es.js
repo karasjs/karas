@@ -8552,9 +8552,13 @@ function normalize(style) {
     temp = style[k];
 
     if (temp !== undefined) {
+      if (temp === null) {
+        temp = '';
+      }
+
       var _arr9 = res[STYLE_KEY$3[style2Upper$1(k)]] = [];
 
-      var _match = (temp || '').toString().match(reg.position);
+      var _match = temp.toString().match(reg.position);
 
       if (_match) {
         if (_match.length === 1) {
@@ -8763,10 +8767,10 @@ function normalize(style) {
   temp = style.textStrokeOver;
 
   if (temp !== undefined) {
-    if (temp === 'inherit') {
+    if (temp === null || temp === 'inherit') {
       res[TEXT_STROKE_OVER] = [0, INHERIT$2];
     } else {
-      var _v3 = (temp || '').toString();
+      var _v3 = temp.toString();
 
       if (_v3 !== 'none' && _v3 !== 'fill') {
         _v3 = 'none';

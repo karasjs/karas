@@ -511,8 +511,11 @@ function normalize(style, reset = []) {
   ['perspectiveOrigin', 'transformOrigin'].forEach(k => {
     temp = style[k];
     if(temp !== undefined) {
+      if(temp === null) {
+        temp = '';
+      }
       let arr = res[STYLE_KEY[style2Upper(k)]] = [];
-      let match = (temp || '').toString().match(reg.position);
+      let match = temp.toString().match(reg.position);
       if(match) {
         if(match.length === 1) {
           match[1] = match[0];
@@ -733,11 +736,11 @@ function normalize(style, reset = []) {
   }
   temp = style.textStrokeOver;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(temp === null || temp === 'inherit') {
       res[TEXT_STROKE_OVER] = [0, INHERIT];
     }
     else {
-      let v = (temp || '').toString();
+      let v = temp.toString();
       if(v !== 'none' && v !== 'fill') {
         v = 'none';
       }

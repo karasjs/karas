@@ -15197,11 +15197,11 @@
 
   function setUpdateFlag(cp) {
     // 去重
-    if (cp.__hasUpdate) {
+    if (cp.__hasCpUpdate) {
       return;
     }
 
-    cp.__hasUpdate = true;
+    cp.__hasCpUpdate = true;
     var host = cp.host;
 
     if (host) {
@@ -29506,15 +29506,15 @@
       vd.children.forEach(function (child) {
         if (child instanceof Dom$1) {
           check(child);
-        } // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
-        else if (child instanceof Component$1 && child.__hasUpdate) {
-          child.__hasUpdate = false;
+        } // 当组件有setState更新时，从叶子到根链路会标识__hasCpUpdate，以便节约遍历成本忽略那些没变化的链路
+        else if (child instanceof Component$1 && child.__hasCpUpdate) {
+          child.__hasCpUpdate = false;
           checkCp(child, child.props);
         }
       });
     } // 高阶组件会进入此分支，被父组件调用
-    else if (vd instanceof Component$1 && vd.__hasUpdate) {
-      vd.__hasUpdate = false;
+    else if (vd instanceof Component$1 && vd.__hasCpUpdate) {
+      vd.__hasCpUpdate = false;
       checkCp(vd, vd.props);
     }
   }
@@ -35611,7 +35611,7 @@
     }, {
       key: "addFocusRefreshTask",
       value: function addFocusRefreshTask(cb) {
-        this.__hasUpdate = true;
+        this.__hasRootUpdate = true;
         this.addRefreshTask(cb);
       }
     }, {
@@ -35895,8 +35895,8 @@
         var updateRoot = root.__updateRoot;
         var updateHash = root.__updateHash; // 给个方式使得外部可以强制刷新
 
-        var hasUpdate = root.__hasUpdate;
-        root.__hasUpdate = false; // root更新特殊提前，因为有继承因素
+        var hasUpdate = root.__hasRootUpdate;
+        root.__hasRootUpdate = false; // root更新特殊提前，因为有继承因素
 
         if (updateRoot) {
           root.__updateRoot = null;
@@ -40071,7 +40071,7 @@
     Cache: Cache
   };
 
-  var version = "0.68.2";
+  var version = "0.69.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

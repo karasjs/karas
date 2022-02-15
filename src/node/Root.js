@@ -971,7 +971,7 @@ class Root extends Dom {
   }
 
   addFocusRefreshTask(cb) {
-    this.__hasUpdate = true;
+    this.__hasRootUpdate = true;
     this.addRefreshTask(cb);
   }
 
@@ -1214,8 +1214,8 @@ class Root extends Dom {
     let updateRoot = root.__updateRoot;
     let updateHash = root.__updateHash;
     // 给个方式使得外部可以强制刷新
-    let hasUpdate = root.__hasUpdate;
-    root.__hasUpdate = false;
+    let hasUpdate = root.__hasRootUpdate;
+    root.__hasRootUpdate = false;
     // root更新特殊提前，因为有继承因素
     if(updateRoot) {
       root.__updateRoot = null;

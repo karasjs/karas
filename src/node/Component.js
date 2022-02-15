@@ -19,10 +19,10 @@ const REGISTER = {};
  */
 function setUpdateFlag(cp) {
   // 去重
-  if(cp.__hasUpdate) {
+  if(cp.__hasCpUpdate) {
     return;
   }
-  cp.__hasUpdate = true;
+  cp.__hasCpUpdate = true;
   let host = cp.host;
   if(host) {
     setUpdateFlag(host);

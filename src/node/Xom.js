@@ -1600,9 +1600,12 @@ class Xom extends Node {
   /**
    * 渲染基础方法，Dom/Geom公用
    * @param renderMode
+   * @see node/mode
    * @param lv
+   * @see refresh/level
    * @param ctx canvas/svg/webgl共用
    * @param cache 是否是局部根节点缓存模式下的绘制
+   * @see refresh/Cache.NA
    * @param dx cache时偏移x
    * @param dy cache时偏移y
    * @return Object

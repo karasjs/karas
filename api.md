@@ -1757,6 +1757,24 @@ root.addRefreshTask(function() {
 });
 ```
 
+#### addFocusRefreshTask
+* **类型** `Function`
+* **参数**
+  * cb `Function`
+  强制异步刷新整个[Root](#Root)，完成后的回调。一般开发用不到。
+* **说明**  
+当特殊情况自定义更新但不触发整个Root刷新画布时，使用这个方法。强制无法撤回。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>Hello Root!</canvas>,
+  '#selector'
+);
+root.addFocusRefreshTask(function() {
+  console.log('focus refresh');
+});
+```
+
 #### delRefreshTask
 * **类型** `Function`
 * **参数**

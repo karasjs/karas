@@ -152,7 +152,7 @@ const {
   }
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, VMAX, VMIN, DEG } = unit;
-const { int2rgba, rgba2int, joinArr, isNil } = util;
+const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
 const { calRelative } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
@@ -2357,7 +2357,7 @@ class Xom extends Node {
     }
     // touchmove之类强制的直接由Root通知即可
     if(force) {
-      if(computedStyle[POINTER_EVENTS] !== 'none' && util.isFunction(cb) && !e.__stopImmediatePropagation) {
+      if(computedStyle[POINTER_EVENTS] !== 'none' && isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
       return true;
@@ -2380,7 +2380,7 @@ class Xom extends Node {
           return;
         }
       }
-      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+      if(isFunction(cb) && !e.__stopImmediatePropagation) {
         cb.call(this, e);
       }
       return true;
@@ -2665,7 +2665,7 @@ class Xom extends Node {
           root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
-          if(util.isFunction(cb)) {
+          if(isFunction(cb)) {
             cb.call(node, diff);
           }
         },
@@ -2674,7 +2674,7 @@ class Xom extends Node {
     // 没有是在如parse()还未添加的时候，可以直接同步覆盖
     else {
       Object.assign(this.currentStyle, formatStyle);
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb.call(node, -1);
       }
     }
@@ -2705,7 +2705,7 @@ class Xom extends Node {
           root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
-          if(util.isFunction(cb)) {
+          if(isFunction(cb)) {
             cb.call(node, diff);
           }
         },
@@ -2714,7 +2714,7 @@ class Xom extends Node {
     // 没有是在如parse()还未添加的时候，可以直接同步覆盖
     else {
       Object.assign(this.currentStyle, style);
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb.call(node, -1);
       }
     }
@@ -2752,7 +2752,7 @@ class Xom extends Node {
   }
 
   frameAnimate(cb) {
-    if(util.isFunction(cb)) {
+    if(isFunction(cb)) {
       let list = this.__frameAnimateList;
       // 防止重复
       for(let i = 0, len = list.length; i < len; i++) {
@@ -2790,7 +2790,7 @@ class Xom extends Node {
 
   __computeMeasure(renderMode, ctx, cb) {
     css.computeMeasure(this);
-    if(util.isFunction(cb)) {
+    if(isFunction(cb)) {
       cb(this);
     }
   }
@@ -2946,7 +2946,7 @@ class Xom extends Node {
     let self = this;
     if(self.isDestroyed) {
       inject.warn('Remove target is destroyed.');
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb();
       }
       return;
@@ -2955,7 +2955,7 @@ class Xom extends Node {
     let target = self.isShadowRoot ? self.hostRoot : self;
     // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
     if(domParent.children.indexOf(target) === -1) {
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb();
       }
       return;
@@ -2987,7 +2987,7 @@ class Xom extends Node {
       },
       __after(diff) {
         self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
-        if(util.isFunction(cb)) {
+        if(isFunction(cb)) {
           cb.call(self, diff);
         }
       },

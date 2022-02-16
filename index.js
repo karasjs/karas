@@ -15197,11 +15197,11 @@
 
   function setUpdateFlag(cp) {
     // 去重
-    if (cp.__hasUpdate) {
+    if (cp.__hasCpUpdate) {
       return;
     }
 
-    cp.__hasUpdate = true;
+    cp.__hasCpUpdate = true;
     var host = cp.host;
 
     if (host) {
@@ -19920,7 +19920,8 @@
   var int2rgba$2 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
       joinArr$2 = util.joinArr,
-      isNil$6 = util.isNil;
+      isNil$6 = util.isNil,
+      isFunction$5 = util.isFunction;
   var calRelative$1 = css.calRelative;
   var GEOM$4 = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
@@ -21376,9 +21377,12 @@
       /**
        * 渲染基础方法，Dom/Geom公用
        * @param renderMode
+       * @see node/mode
        * @param lv
+       * @see refresh/level
        * @param ctx canvas/svg/webgl共用
        * @param cache 是否是局部根节点缓存模式下的绘制
+       * @see refresh/Cache.NA
        * @param dx cache时偏移x
        * @param dy cache时偏移y
        * @return Object
@@ -22237,7 +22241,7 @@
 
 
         if (force) {
-          if (computedStyle[POINTER_EVENTS$1] !== 'none' && util.isFunction(cb) && !e.__stopImmediatePropagation) {
+          if (computedStyle[POINTER_EVENTS$1] !== 'none' && isFunction$5(cb) && !e.__stopImmediatePropagation) {
             cb.call(this, e);
           }
 
@@ -22266,7 +22270,7 @@
             }
           }
 
-          if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
+          if (isFunction$5(cb) && !e.__stopImmediatePropagation) {
             cb.call(this, e);
           }
 
@@ -22588,7 +22592,7 @@
               root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
-              if (util.isFunction(cb)) {
+              if (isFunction$5(cb)) {
                 cb.call(node, diff);
               }
             }
@@ -22597,7 +22601,7 @@
         else {
           Object.assign(this.currentStyle, formatStyle);
 
-          if (util.isFunction(cb)) {
+          if (isFunction$5(cb)) {
             cb.call(node, -1);
           }
         }
@@ -22635,7 +22639,7 @@
               root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
-              if (util.isFunction(cb)) {
+              if (isFunction$5(cb)) {
                 cb.call(node, diff);
               }
             }
@@ -22644,7 +22648,7 @@
         else {
           Object.assign(this.currentStyle, style);
 
-          if (util.isFunction(cb)) {
+          if (isFunction$5(cb)) {
             cb.call(node, -1);
           }
         }
@@ -22696,7 +22700,7 @@
     }, {
       key: "frameAnimate",
       value: function frameAnimate(cb) {
-        if (util.isFunction(cb)) {
+        if (isFunction$5(cb)) {
           var list = this.__frameAnimateList; // 防止重复
 
           for (var i = 0, len = list.length; i < len; i++) {
@@ -22739,7 +22743,7 @@
       value: function __computeMeasure(renderMode, ctx, cb) {
         css.computeMeasure(this);
 
-        if (util.isFunction(cb)) {
+        if (isFunction$5(cb)) {
           cb(this);
         }
       }
@@ -22934,7 +22938,7 @@
         if (self.isDestroyed) {
           inject.warn('Remove target is destroyed.');
 
-          if (util.isFunction(cb)) {
+          if (isFunction$5(cb)) {
             cb();
           }
 
@@ -22946,7 +22950,7 @@
         var target = self.isShadowRoot ? self.hostRoot : self; // 特殊情况连续append/remove时候，还未被添加进来找不到所以无需删除
 
         if (domParent.children.indexOf(target) === -1) {
-          if (util.isFunction(cb)) {
+          if (isFunction$5(cb)) {
             cb();
           }
 
@@ -22987,7 +22991,7 @@
           __after: function __after(diff) {
             self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
 
-            if (util.isFunction(cb)) {
+            if (isFunction$5(cb)) {
               cb.call(self, diff);
             }
           }
@@ -27515,7 +27519,7 @@
       RGBA$2 = o.RGBA;
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
-  var isFunction$5 = util.isFunction;
+  var isFunction$6 = util.isFunction;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -28194,7 +28198,7 @@
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
                   __after: function __after() {
-                    if (isFunction$5(cb)) {
+                    if (isFunction$6(cb)) {
                       cb.call(self);
                     }
                   }
@@ -28218,7 +28222,7 @@
                     root.__addUpdate(self, self.__config, root, root.__config, res);
                   },
                   __after: function __after() {
-                    if (isFunction$5(cb)) {
+                    if (isFunction$6(cb)) {
                       cb.call(self);
                     }
                   }
@@ -28273,7 +28277,7 @@
         var root = this.root; // 相等或空且当前error直接返回
 
         if (v === loadImg.src || !v && loadImg.error) {
-          if (isFunction$5(cb)) {
+          if (isFunction$6(cb)) {
             cb(-1);
           }
         } else if (v) {
@@ -28301,7 +28305,7 @@
               root.__addUpdate(self, self.__config, root, self.__config, res);
             },
             __after: function __after(diff) {
-              if (isFunction$5(cb)) {
+              if (isFunction$6(cb)) {
                 cb(diff);
               }
             }
@@ -29502,15 +29506,15 @@
       vd.children.forEach(function (child) {
         if (child instanceof Dom$1) {
           check(child);
-        } // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
-        else if (child instanceof Component$1 && child.__hasUpdate) {
-          child.__hasUpdate = false;
+        } // 当组件有setState更新时，从叶子到根链路会标识__hasCpUpdate，以便节约遍历成本忽略那些没变化的链路
+        else if (child instanceof Component$1 && child.__hasCpUpdate) {
+          child.__hasCpUpdate = false;
           checkCp(child, child.props);
         }
       });
     } // 高阶组件会进入此分支，被父组件调用
-    else if (vd instanceof Component$1 && vd.__hasUpdate) {
-      vd.__hasUpdate = false;
+    else if (vd instanceof Component$1 && vd.__hasCpUpdate) {
+      vd.__hasCpUpdate = false;
       checkCp(vd, vd.props);
     }
   }
@@ -30440,7 +30444,7 @@
     }
   }
 
-  var isFunction$6 = util.isFunction;
+  var isFunction$7 = util.isFunction;
 
   var Controller = /*#__PURE__*/function () {
     function Controller() {
@@ -30565,7 +30569,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$6(cb)) {
+            if (isFunction$7(cb)) {
               cb(diff);
             }
           }
@@ -30585,7 +30589,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$6(cb)) {
+            if (isFunction$7(cb)) {
               cb(diff);
             }
           }
@@ -30614,7 +30618,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$6(cb)) {
+            if (isFunction$7(cb)) {
               cb(diff);
             }
           }
@@ -30632,7 +30636,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$6(cb)) {
+            if (isFunction$7(cb)) {
               cb(diff);
             }
           }
@@ -30645,7 +30649,7 @@
 
         this.__onList = [];
 
-        if (isFunction$6(options)) {
+        if (isFunction$7(options)) {
           cb = options;
           options = {};
         }
@@ -30656,7 +30660,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$6(cb)) {
+            if (isFunction$7(cb)) {
               cb(diff);
             }
           }
@@ -30669,7 +30673,7 @@
 
         this.__onList = [];
 
-        if (isFunction$6(options)) {
+        if (isFunction$7(options)) {
           cb = options;
           options = {};
         }
@@ -30680,7 +30684,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$6(cb)) {
+            if (isFunction$7(cb)) {
               cb(diff);
             }
           }
@@ -30689,7 +30693,7 @@
     }, {
       key: "on",
       value: function on(id, handle) {
-        if (!isFunction$6(handle)) {
+        if (!isFunction$7(handle)) {
           return;
         }
 
@@ -32298,7 +32302,7 @@
         dby = sy1 - bboxTotal[1]; // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
 
     if (cache && cache.available) {
-      texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy);
+      texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
     } // limitCache无cache需先绘制到统一的离屏画布上
     else if (limitCache) {
       var c = inject.getCacheCanvas(width, height, '__$$OVERSIZE$$__');
@@ -32309,7 +32313,7 @@
 
       var _mockCache = new MockCache(gl, _texture, 0, 0, width, height, [0, 0, width, height]);
 
-      texCache.addTexAndDrawWhenLimit(gl, _mockCache, 1, null, cx, cy, 0, 0);
+      texCache.addTexAndDrawWhenLimit(gl, _mockCache, 1, null, cx, cy, 0, 0, false);
       texCache.refresh(gl, cx, cy);
       c.ctx.setTransform(1, 0, 0, 1, 0, 0);
       c.ctx.globalAlpha = 1;
@@ -32340,7 +32344,7 @@
           matrix = multiply$2(parentPm, matrix);
         }
 
-        texCache.addTexAndDrawWhenLimit(gl, _config3[NODE_CACHE$3], opacity, matrix, cx, cy, dx, dy);
+        texCache.addTexAndDrawWhenLimit(gl, _config3[NODE_CACHE$3], opacity, matrix, cx, cy, dx, dy, false);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
         var __cache = _config3[NODE_CACHE$3],
@@ -32362,7 +32366,7 @@
         } // mask和不可见不能被汇总到top上
 
 
-        if (visibility === 'hidden' || isMask) {
+        if ((visibility === 'hidden' || isMask) && !_node4.hookGlRender) {
           continue;
         }
 
@@ -32413,7 +32417,7 @@
                 frameBuffer2 = _genFrameBufferWithTe4[1],
                 texture2 = _genFrameBufferWithTe4[2];
 
-            texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
+            texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
             texCache.refresh(gl, cx, cy); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
 
             var _genMbmWebgl = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName$2(mixBlendMode), width, height);
@@ -32426,17 +32430,23 @@
             gl.deleteFramebuffer(frameBuffer2);
             gl.deleteTexture(texture2);
           } else {
-            texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
+            texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
           }
 
           if (target !== __cache) {
             i += (_total9 || 0) + countMaskNum(__structs, i + (_total9 || 0) + 1, hasMask || 0);
           }
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        else if (_node4.__hookGlRender) {
-          _node4.__hookGlRender(gl, opacity, cx, cy, dx, dy);
+
+
+        if (_node4.hookGlRender) {
+          _node4.hookGlRender(gl, opacity, matrix, cx, cy, dx, dy, false);
         }
       }
+    }
+
+    if (node.hookGlRender) {
+      node.hookGlRender(gl, 1, null, cx, cy, dx, dy, false);
     } // 绘制到fbo的纹理对象上并删除fbo恢复
 
 
@@ -33843,8 +33853,10 @@
 
           texCache.releaseLockChannel(_j11);
         } // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-        else if (_node8.__hookGlRender) {
-          _node8.__hookGlRender(gl, _opacity4, cx, cy, 0, 0, true);
+
+
+        if (_node8.hookGlRender) {
+          _node8.hookGlRender(gl, _opacity4, _matrixEvent2, cx, cy, 0, 0, true);
         }
       }
     }
@@ -34552,7 +34564,7 @@
   var DIRECTION_HASH = (_DIRECTION_HASH = {}, _defineProperty(_DIRECTION_HASH, TOP$4, true), _defineProperty(_DIRECTION_HASH, RIGHT$2, true), _defineProperty(_DIRECTION_HASH, BOTTOM$4, true), _defineProperty(_DIRECTION_HASH, LEFT$2, true), _DIRECTION_HASH);
   var isNil$8 = util.isNil,
       isObject$2 = util.isObject,
-      isFunction$7 = util.isFunction;
+      isFunction$8 = util.isFunction;
   var AUTO$8 = o.AUTO,
       PX$b = o.PX,
       PERCENT$c = o.PERCENT,
@@ -35474,7 +35486,7 @@
         } // 特殊cb，供小程序绘制完回调使用
 
 
-        if (isFunction$7(cb)) {
+        if (isFunction$8(cb)) {
           cb();
         }
 
@@ -35539,7 +35551,7 @@
             width: w,
             height: h
           }, cb);
-        } else if (isFunction$7(cb)) {
+        } else if (isFunction$8(cb)) {
           cb(-1);
         }
       }
@@ -35568,7 +35580,7 @@
 
               if (clone.length) {
                 clone.forEach(function (item, i) {
-                  if (isObject$2(item) && isFunction$7(item.__before)) {
+                  if (isObject$2(item) && isFunction$8(item.__before)) {
                     item.__before(diff);
                   }
                 });
@@ -35580,9 +35592,9 @@
               }
 
               clone.forEach(function (item) {
-                if (isObject$2(item) && isFunction$7(item.__after)) {
+                if (isObject$2(item) && isFunction$8(item.__after)) {
                   item.__after(diff);
-                } else if (isFunction$7(item)) {
+                } else if (isFunction$8(item)) {
                   item(diff);
                 }
               });
@@ -35595,6 +35607,12 @@
         if (taskUp.indexOf(cb) === -1) {
           taskUp.push(cb);
         }
+      }
+    }, {
+      key: "addFocusRefreshTask",
+      value: function addFocusRefreshTask(cb) {
+        this.__hasRootUpdate = true;
+        this.addRefreshTask(cb);
       }
     }, {
       key: "delRefreshTask",
@@ -35875,8 +35893,10 @@
         var zHash = {};
         var zList = [];
         var updateRoot = root.__updateRoot;
-        var updateHash = root.__updateHash;
-        var hasUpdate; // root更新特殊提前，因为有继承因素
+        var updateHash = root.__updateHash; // 给个方式使得外部可以强制刷新
+
+        var hasUpdate = root.__hasRootUpdate;
+        root.__hasRootUpdate = false; // root更新特殊提前，因为有继承因素
 
         if (updateRoot) {
           root.__updateRoot = null;
@@ -39399,7 +39419,7 @@
       TYPE_GM$4 = $$type.TYPE_GM,
       TYPE_CP$4 = $$type.TYPE_CP;
   var isNil$f = util.isNil,
-      isFunction$8 = util.isFunction,
+      isFunction$9 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$4 = util.clone,
       extend$2 = util.extend;
@@ -39471,7 +39491,7 @@
                     } // 支持函数模式和值模式
 
 
-                    if (isFunction$8(v)) {
+                    if (isFunction$9(v)) {
                       v = v(target(k));
                     }
 
@@ -39526,7 +39546,7 @@
               } // 支持函数模式和值模式
 
 
-              if (isFunction$8(value)) {
+              if (isFunction$9(value)) {
                 value = value(v);
               }
 
@@ -39578,7 +39598,7 @@
                     if (i === len - 1) {
                       var v = vars[id]; // 支持函数模式和值模式
 
-                      if (isFunction$8(v)) {
+                      if (isFunction$9(v)) {
                         v = v(target(k));
                       }
 
@@ -39622,7 +39642,7 @@
             if (k2 && v.id && vars.hasOwnProperty(v.id)) {
               var value = vars[v.id];
 
-              if (isFunction$8(value)) {
+              if (isFunction$9(value)) {
                 value = value(v);
               } // 替换图层的值必须是一个有tagName的对象
 
@@ -40051,7 +40071,7 @@
     Cache: Cache
   };
 
-  var version = "0.68.2";
+  var version = "0.69.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

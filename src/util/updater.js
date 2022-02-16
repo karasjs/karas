@@ -34,16 +34,16 @@ function check(vd) {
       if(child instanceof Dom) {
         check(child);
       }
-      // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
-      else if(child instanceof Component && child.__hasUpdate) {
-        child.__hasUpdate = false;
+      // 当组件有setState更新时，从叶子到根链路会标识__hasCpUpdate，以便节约遍历成本忽略那些没变化的链路
+      else if(child instanceof Component && child.__hasCpUpdate) {
+        child.__hasCpUpdate = false;
         checkCp(child, child.props);
       }
     });
   }
   // 高阶组件会进入此分支，被父组件调用
-  else if(vd instanceof Component && vd.__hasUpdate) {
-    vd.__hasUpdate = false;
+  else if(vd instanceof Component && vd.__hasCpUpdate) {
+    vd.__hasCpUpdate = false;
     checkCp(vd, vd.props);
   }
 }

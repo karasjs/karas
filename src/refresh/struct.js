@@ -1093,7 +1093,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   let dbx = sx1 - bboxTotal[0], dby = sy1 - bboxTotal[1];
   // 先绘制自己的cache，起点所以matrix视作E为空，opacity固定1
   if(cache && cache.available) {
-    texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy);
+    texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
   }
   // limitCache无cache需先绘制到统一的离屏画布上
   else if(limitCache) {
@@ -1102,7 +1102,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
     let j = texCache.lockOneChannel();
     let texture = webgl.createTexture(gl, c.canvas, j);
     let mockCache = new MockCache(gl, texture, 0, 0, width, height, [0, 0, width, height]);
-    texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, 0, 0);
+    texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, 0, 0, false);
     texCache.refresh(gl, cx, cy);
     c.ctx.setTransform(1, 0, 0, 1, 0, 0);
     c.ctx.globalAlpha = 1;
@@ -1128,7 +1128,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
       if(parentPm) {
         matrix = multiply(parentPm, matrix);
       }
-      texCache.addTexAndDrawWhenLimit(gl, __config[NODE_CACHE], opacity, matrix, cx, cy, dx, dy);
+      texCache.addTexAndDrawWhenLimit(gl, __config[NODE_CACHE], opacity, matrix, cx, cy, dx, dy, false);
     }
     // 再看total缓存/cache，都没有的是无内容的Xom节点
     else {
@@ -1152,7 +1152,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
         continue;
       }
       // mask和不可见不能被汇总到top上
-      if(visibility === 'hidden' || isMask) {
+      if((visibility === 'hidden' || isMask) && !node.hookGlRender) {
         continue;
       }
       if(transform && !isE(transform)) {
@@ -1190,7 +1190,7 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
         if(isValidMbm(mixBlendMode)) {
           texCache.refresh(gl, cx, cy);
           let [n2, frameBuffer2, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
           texCache.refresh(gl, cx, cy);
           // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前fbo作为绘制对象
           [n, frameBuffer, texture] = genMbmWebgl(gl, texCache, n, n2, frameBuffer, texture, mbmName(mixBlendMode), width, height);
@@ -1198,17 +1198,20 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
           gl.deleteTexture(texture2);
         }
         else {
-          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy);
+          texCache.addTexAndDrawWhenLimit(gl, target, opacity, matrix, cx, cy, dx, dy, false);
         }
         if(target !== __cache) {
           i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
         }
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      else if(node.__hookGlRender) {
-        node.__hookGlRender(gl, opacity, cx, cy, dx, dy);
+      if(node.hookGlRender) {
+        node.hookGlRender(gl, opacity, matrix, cx, cy, dx, dy, false);
       }
     }
+  }
+  if(node.hookGlRender) {
+    node.hookGlRender(gl, 1, null, cx, cy, dx, dy, false);
   }
   // 绘制到fbo的纹理对象上并删除fbo恢复
   texCache.refresh(gl, cx, cy);
@@ -2414,8 +2417,8 @@ function renderWebgl(renderMode, gl, root) {
         texCache.releaseLockChannel(j);
       }
       // webgl特殊的外部钩子，比如粒子组件自定义渲染时调用
-      else if(node.__hookGlRender) {
-        node.__hookGlRender(gl, opacity, cx, cy, 0, 0, true);
+      if(node.hookGlRender) {
+        node.hookGlRender(gl, opacity, matrixEvent, cx, cy, 0, 0, true);
       }
     }
   }

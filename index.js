@@ -21520,31 +21520,7 @@
           matrix = __config[NODE_MATRIX$1];
         } else {
           matrix = this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, __config, x1, y1, offsetWidth, offsetHeight);
-        } // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
-
-
-        var bx1, by1, bx2, by2;
-
-        if (cache && renderMode === CANVAS$1) {
-          bx1 = this.__bx1;
-          bx2 = this.__bx2;
-          by1 = this.__by1;
-          by2 = this.__by2;
-        } else {
-          var _this$__calCache = this.__calCache(renderMode, ctx, p, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
-
-          var _this$__calCache2 = _slicedToArray(_this$__calCache, 4);
-
-          bx1 = _this$__calCache2[0];
-          by1 = _this$__calCache2[1];
-          bx2 = _this$__calCache2[2];
-          by2 = _this$__calCache2[3];
         }
-
-        res.bx1 = bx1;
-        res.by1 = by1;
-        res.bx2 = bx2;
-        res.by2 = by2;
 
         var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calContent(renderMode, lv, currentStyle, computedStyle); // webgl特殊申请离屏缓存
 
@@ -21586,7 +21562,31 @@
         }
 
         res.dx = dx;
-        res.dy = dy;
+        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+
+        var bx1, by1, bx2, by2;
+
+        if (cache && renderMode === CANVAS$1) {
+          bx1 = this.__bx1;
+          bx2 = this.__bx2;
+          by1 = this.__by1;
+          by2 = this.__by2;
+        } else {
+          var _this$__calCache = this.__calCache(renderMode, ctx, p, __cacheStyle, currentStyle, computedStyle, clientWidth, clientHeight, offsetWidth, offsetHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, x5, x6, y1, y2, y3, y4, y5, y6);
+
+          var _this$__calCache2 = _slicedToArray(_this$__calCache, 4);
+
+          bx1 = _this$__calCache2[0];
+          by1 = _this$__calCache2[1];
+          bx2 = _this$__calCache2[2];
+          by2 = _this$__calCache2[3];
+        }
+
+        res.bx1 = bx1;
+        res.by1 = by1;
+        res.bx2 = bx2;
+        res.by2 = by2; // 渲染样式
+
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
             borderRightColor = computedStyle[BORDER_RIGHT_COLOR],
@@ -28432,7 +28432,8 @@
       NODE_CURRENT_PROPS = _enums$NODE_KEY$6.NODE_CURRENT_PROPS,
       NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$6.NODE_CURRENT_STYLE,
       NODE_STYLE$3 = _enums$NODE_KEY$6.NODE_STYLE,
-      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$6.NODE_DEFS_CACHE;
+      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
+      NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE;
   var PX$a = o.PX,
       PERCENT$b = o.PERCENT,
       REM$a = o.REM,
@@ -28445,6 +28446,7 @@
       joinArr$3 = util.joinArr;
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$7 = painter.svgPolygon;
+  var WEBGL$2 = mode.WEBGL;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -28808,6 +28810,14 @@
             if (Array.isArray(v)) {
               v.forEach(function (item) {
                 if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+                  if (renderMode === WEBGL$2) {
+                    var cache = _this2.__config[NODE_CACHE$3];
+                    x3 += cache.dx;
+                    x4 += cache.dx;
+                    y3 += cache.dy;
+                    y4 += cache.dy;
+                  }
+
                   _res.push(_this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
                 } else if (item[3] > 0) {
                   _res.push(int2rgba$3(item));
@@ -31129,7 +31139,7 @@
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$i.BORDER_LEFT_WIDTH,
       MATRIX$4 = _enums$STYLE_KEY$i.MATRIX,
       _enums$NODE_KEY$8 = enums.NODE_KEY,
-      NODE_CACHE$3 = _enums$NODE_KEY$8.NODE_CACHE,
+      NODE_CACHE$4 = _enums$NODE_KEY$8.NODE_CACHE,
       NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$8.NODE_CACHE_TOTAL,
       NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$8.NODE_CACHE_OVERFLOW,
       NODE_CACHE_MASK$1 = _enums$NODE_KEY$8.NODE_CACHE_MASK,
@@ -31188,7 +31198,7 @@
     var sx1 = node.__sx1,
         sy1 = node.__sy1,
         __config = node.__config;
-    var cache = __config[NODE_CACHE$3],
+    var cache = __config[NODE_CACHE$4],
         _config$NODE_COMPUTE = __config[NODE_COMPUTED_STYLE$3],
         filter = _config$NODE_COMPUTE[FILTER$5],
         perspective = _config$NODE_COMPUTE[PERSPECTIVE$4],
@@ -31246,7 +31256,7 @@
               __sy1 = node2.__sy1,
               _node2$__config = node2.__config,
               limitCache = _node2$__config[NODE_LIMIT_CACHE$2],
-              __cache = _node2$__config[NODE_CACHE$3],
+              __cache = _node2$__config[NODE_CACHE$4],
               __cacheTotal = _node2$__config[NODE_CACHE_TOTAL$1],
               __cacheFilter = _node2$__config[NODE_CACHE_FILTER$1],
               __cacheMask = _node2$__config[NODE_CACHE_MASK$1],
@@ -32344,10 +32354,10 @@
           matrix = multiply$2(parentPm, matrix);
         }
 
-        texCache.addTexAndDrawWhenLimit(gl, _config3[NODE_CACHE$3], opacity, matrix, cx, cy, dx, dy, false);
+        texCache.addTexAndDrawWhenLimit(gl, _config3[NODE_CACHE$4], opacity, matrix, cx, cy, dx, dy, false);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
-        var __cache = _config3[NODE_CACHE$3],
+        var __cache = _config3[NODE_CACHE$4],
             __cacheTotal = _config3[NODE_CACHE_TOTAL$1],
             __cacheFilter = _config3[NODE_CACHE_FILTER$1],
             __cacheMask = _config3[NODE_CACHE_MASK$1],
@@ -32793,7 +32803,7 @@
             _total10 = _structs$_i4[STRUCT_TOTAL$1],
             hasMask = _structs$_i4[STRUCT_HAS_MASK$1];
         var _config4 = _node5.__config;
-        var __cache = _config4[NODE_CACHE$3],
+        var __cache = _config4[NODE_CACHE$4],
             computedStyle = _config4[NODE_COMPUTED_STYLE$3],
             limitCache = _config4[NODE_LIMIT_CACHE$2]; // 跳过display:none元素和它的所有子节点和mask
 
@@ -32810,7 +32820,7 @@
             return;
           }
         } else {
-          var _cache = _config4[NODE_CACHE$3],
+          var _cache = _config4[NODE_CACHE$4],
               __cacheMask = _config4[NODE_CACHE_MASK$1],
               __cacheFilter = _config4[NODE_CACHE_FILTER$1],
               __cacheOverflow = _config4[NODE_CACHE_OVERFLOW$1],
@@ -33531,7 +33541,7 @@
               w = node.offsetWidth,
               h = node.offsetHeight,
               bbox = node.bbox;
-          __config[NODE_CACHE$3] = new MockCache(gl, res.texture, _sx2, _sy2, w, h, bbox);
+          __config[NODE_CACHE$4] = new MockCache(gl, res.texture, _sx2, _sy2, w, h, bbox);
           gl.viewport(0, 0, width, height);
           gl.useProgram(gl.program);
         }
@@ -33617,7 +33627,7 @@
           }
         }
 
-        var __cache = __config[NODE_CACHE$3],
+        var __cache = __config[NODE_CACHE$4],
             __cacheTotal = __config[NODE_CACHE_TOTAL$1],
             __cacheFilter = __config[NODE_CACHE_FILTER$1],
             __cacheMask = __config[NODE_CACHE_MASK$1],
@@ -33715,7 +33725,7 @@
 
       if (_node8 instanceof Text) {
         // text特殊之处，__config部分是复用parent的
-        var __cache = _config5[NODE_CACHE$3],
+        var __cache = _config5[NODE_CACHE$4],
             _limitCache = _config5[NODE_LIMIT_CACHE$2],
             _config5$NODE_DOM_PAR = _config5[NODE_DOM_PARENT$5].__config,
             _matrixEvent = _config5$NODE_DOM_PAR[NODE_MATRIX_EVENT$4],
@@ -33746,7 +33756,7 @@
         var _opacity4 = _config5[NODE_OPACITY$2],
             _matrixEvent2 = _config5[NODE_MATRIX_EVENT$4],
             _limitCache2 = _config5[NODE_LIMIT_CACHE$2],
-            _cache2 = _config5[NODE_CACHE$3],
+            _cache2 = _config5[NODE_CACHE$4],
             _cacheTotal4 = _config5[NODE_CACHE_TOTAL$1],
             __cacheFilter = _config5[NODE_CACHE_FILTER$1],
             __cacheMask = _config5[NODE_CACHE_MASK$1],
@@ -34551,7 +34561,7 @@
       NODE_STYLE$5 = _enums$NODE_KEY$9.NODE_STYLE,
       NODE_UPDATE_HASH = _enums$NODE_KEY$9.NODE_UPDATE_HASH,
       NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$9.NODE_UNIQUE_UPDATE_ID,
-      NODE_CACHE$4 = _enums$NODE_KEY$9.NODE_CACHE,
+      NODE_CACHE$5 = _enums$NODE_KEY$9.NODE_CACHE,
       NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$9.NODE_CACHE_TOTAL,
       NODE_CACHE_FILTER$2 = _enums$NODE_KEY$9.NODE_CACHE_FILTER,
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$9.NODE_CACHE_OVERFLOW,
@@ -35090,8 +35100,8 @@
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
     if (need) {
-      if (__config[NODE_CACHE$4]) {
-        __config[NODE_CACHE$4].release();
+      if (__config[NODE_CACHE$5]) {
+        __config[NODE_CACHE$5].release();
       }
     } // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
 
@@ -35138,8 +35148,8 @@
 
       var _need2 = _lv >= REPAINT$3;
 
-      if (_need2 && _config3[NODE_CACHE$4]) {
-        _config3[NODE_CACHE$4].release();
+      if (_need2 && _config3[NODE_CACHE$5]) {
+        _config3[NODE_CACHE$5].release();
       } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
 
 

@@ -47,11 +47,13 @@ const {
     NODE_CURRENT_STYLE,
     NODE_STYLE,
     NODE_DEFS_CACHE,
+    NODE_CACHE,
   }
 } = enums;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
+const { WEBGL } = mode;
 
 const REGISTER = {};
 
@@ -447,6 +449,13 @@ class Geom extends Xom {
         if(Array.isArray(v)) {
           v.forEach(item => {
             if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+              if(renderMode === WEBGL) {
+                let cache = this.__config[NODE_CACHE];
+                x3 += cache.dx;
+                x4 += cache.dx;
+                y3 += cache.dy;
+                y4 += cache.dy;
+              }
               res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
             }
             else if(item[3] > 0) {

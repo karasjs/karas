@@ -970,7 +970,7 @@ class Root extends Dom {
     }
   }
 
-  addFocusRefreshTask(cb) {
+  addForceRefreshTask(cb) {
     this.__hasRootUpdate = true;
     this.addRefreshTask(cb);
   }

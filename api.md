@@ -1757,7 +1757,7 @@ root.addRefreshTask(function() {
 });
 ```
 
-#### addFocusRefreshTask
+#### addForceRefreshTask
 * **类型** `Function`
 * **参数**
   * cb `Function`
@@ -1770,8 +1770,8 @@ let root = karas.render(
   <canvas>Hello Root!</canvas>,
   '#selector'
 );
-root.addFocusRefreshTask(function() {
-  console.log('focus refresh');
+root.addForceRefreshTask(function() {
+  console.log('force refresh');
 });
 ```
 

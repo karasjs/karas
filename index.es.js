@@ -35603,8 +35603,8 @@ var Root = /*#__PURE__*/function (_Dom) {
       }
     }
   }, {
-    key: "addFocusRefreshTask",
-    value: function addFocusRefreshTask(cb) {
+    key: "addForceRefreshTask",
+    value: function addForceRefreshTask(cb) {
       this.__hasRootUpdate = true;
       this.addRefreshTask(cb);
     }
@@ -40065,7 +40065,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.69.0";
+var version = "0.69.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

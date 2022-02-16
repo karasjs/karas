@@ -2364,7 +2364,7 @@
         s += "blur(".concat(v, "px)");
       } else if (k === 'hue-rotate') {
         s += "hue-rotate(".concat(v, "deg)");
-      } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
+      } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia') {
         s += "".concat(k, "(").concat(v, "%)");
       }
     });
@@ -9060,7 +9060,7 @@
 
               _v6[1] = DEG$1;
               f.push([k, _v6]);
-            } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
+            } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia') {
               if ([NUMBER$1, PERCENT$2].indexOf(_v6[1]) === -1) {
                 return;
               }
@@ -16892,7 +16892,7 @@
             v[k] = [nv - pv, PERCENT$6];
             hasChange = true;
           }
-        } else if (k === 'saturate' || k === 'brightness' || k === 'contrast') {
+        } else if (k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia') {
           var _nv = isNil$5(nHash[k]) ? 100 : nHash[k][0];
 
           var _pv = isNil$5(pHash[k]) ? 100 : pHash[k][0];
@@ -17627,7 +17627,7 @@
               n[0] *= percent;
               st.push([k, n]);
             } // 默认值是1而非0
-            else if (k === 'saturate' || k === 'brightness' || k === 'contrast') {
+            else if (k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia') {
               var _n = v[k].slice(0);
 
               _n[0] = 100 + _n[0] * percent;
@@ -32535,6 +32535,7 @@
           bbox = _res8[3];
         }
       } else if (k === 'grayscale' && v > 0) {
+        v = Math.min(v, 100);
         var oneMinusAmount = 1 - v * 0.01;
 
         if (oneMinusAmount < 0) {
@@ -32556,7 +32557,7 @@
       } else if (k === 'contrast' && v !== 100) {
         var _amount = v * 0.01;
 
-        var o = -0.5 * _amount;
+        var o = -0.5 * _amount + 0.5;
 
         var _res11 = genColorMatrixWebgl(gl, texCache, mockCache, [_amount, 0, 0, 0, o, 0, _amount, 0, 0, o, 0, 0, _amount, 0, o, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
 
@@ -32567,6 +32568,27 @@
           width = _res12[1];
           height = _res12[2];
           bbox = _res12[3];
+        }
+      } else if (k === 'sepia' && v > 0) {
+        v = Math.min(v, 100);
+
+        var _oneMinusAmount = 1 - v * 0.01;
+
+        if (_oneMinusAmount < 0) {
+          _oneMinusAmount = 0;
+        } else if (_oneMinusAmount > 1) {
+          _oneMinusAmount = 1;
+        }
+
+        var _res13 = genColorMatrixWebgl(gl, texCache, mockCache, [0.393 + 0.607 * _oneMinusAmount, 0.769 - 0.769 * _oneMinusAmount, 0.189 - 0.189 * _oneMinusAmount, 0, 0, 0.349 - 0.349 * _oneMinusAmount, 0.686 + 0.314 * _oneMinusAmount, 0.168 - 0.168 * _oneMinusAmount, 0, 0, 0.272 - 0.272 * _oneMinusAmount, 0.534 - 0.534 * _oneMinusAmount, 0.131 + 0.869 * _oneMinusAmount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+
+        if (_res13) {
+          var _res14 = _slicedToArray(_res13, 4);
+
+          mockCache = _res14[0];
+          width = _res14[1];
+          height = _res14[2];
+          bbox = _res14[3];
         }
       }
     }); // 切换回主程序
@@ -33638,14 +33660,14 @@
           var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, hasMbm, width, height),
               _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
               limit = _genTotalWebgl2[0],
-              _res13 = _genTotalWebgl2[1];
+              _res15 = _genTotalWebgl2[1];
 
-          __cacheTotal = _res13;
+          __cacheTotal = _res15;
           needGen = true;
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
-            __config[NODE_CACHE_TOTAL$1] = _res13;
+            __config[NODE_CACHE_TOTAL$1] = _res15;
           }
         } // 即使超限，也有total结果
 
@@ -40081,7 +40103,7 @@
     Cache: Cache
   };
 
-  var version = "0.69.1";
+  var version = "0.69.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

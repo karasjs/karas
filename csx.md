@@ -265,6 +265,7 @@
   * brightness
   * grayscale
   * contrast
+  * sepia
 * pointerEvents
   * inherit 默认
   * none

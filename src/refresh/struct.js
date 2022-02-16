@@ -1274,6 +1274,7 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
       }
     }
     else if(k === 'grayscale' && v > 0) {
+      v = Math.min(v, 100);
       let oneMinusAmount = 1 - v * 0.01;
       if(oneMinusAmount < 0) {
         oneMinusAmount = 0;
@@ -1293,11 +1294,30 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
     }
     else if(k === 'contrast' && v !== 100) {
       let amount = v * 0.01;
-      let o = -0.5 * amount;
+      let o = -0.5 * amount + 0.5;
       let res = genColorMatrixWebgl(gl, texCache, mockCache, [
         amount, 0, 0, 0, o,
         0, amount, 0, 0, o,
         0, 0, amount, 0, o,
+        0, 0, 0, 1, 0,
+      ], width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
+    }
+    else if(k === 'sepia' && v > 0) {
+      v = Math.min(v, 100);
+      let oneMinusAmount = 1 - v * 0.01;
+      if(oneMinusAmount < 0) {
+        oneMinusAmount = 0;
+      }
+      else if(oneMinusAmount > 1) {
+        oneMinusAmount = 1;
+      }
+      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+        0.393 + 0.607 * oneMinusAmount, 0.769 - 0.769 * oneMinusAmount, 0.189 - 0.189 * oneMinusAmount, 0, 0,
+        0.349 - 0.349 * oneMinusAmount, 0.686 + 0.314 * oneMinusAmount, 0.168 - 0.168 * oneMinusAmount, 0, 0,
+        0.272 - 0.272 * oneMinusAmount, 0.534 - 0.534 * oneMinusAmount, 0.131 + 0.869 * oneMinusAmount, 0, 0,
         0, 0, 0, 1, 0,
       ], width, height, sx1, sy1, bbox);
       if(res) {

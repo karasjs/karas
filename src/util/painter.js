@@ -116,7 +116,7 @@ function canvasFilter(filter) {
     else if(k === 'hue-rotate') {
       s += `hue-rotate(${v}deg)`;
     }
-    else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast') {
+    else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia') {
       s += `${k}(${v}%)`;
     }
   });

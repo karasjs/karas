@@ -42,10 +42,10 @@ function reBuildC(target, originX, originY, width, height, isMulti) {
 
 function curveNum(controlA, controlB) {
   let num = 0;
-  if(controlA.length >= 2) {
+  if(controlA && controlA.length >= 2) {
     num++;
   }
-  if(controlB.length >= 2) {
+  if(controlB && controlB.length >= 2) {
     num += 2;
   }
   return num;

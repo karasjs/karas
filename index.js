@@ -36897,11 +36897,11 @@
   function curveNum(controlA, controlB) {
     var num = 0;
 
-    if (controlA.length >= 2) {
+    if (controlA && controlA.length >= 2) {
       num++;
     }
 
-    if (controlB.length >= 2) {
+    if (controlB && controlB.length >= 2) {
       num += 2;
     }
 
@@ -40103,7 +40103,7 @@
     Cache: Cache
   };
 
-  var version = "0.69.2";
+  var version = "0.69.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

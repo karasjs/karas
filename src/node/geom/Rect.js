@@ -156,13 +156,15 @@ class Rect extends Geom {
           half = Math.max(item[0] * 0.5, half);
         }
       });
-      let [ox, oy] = this.__spreadBbox(boxShadow);
-      ox += half;
-      oy += half;
-      bbox[0] = Math.min(bbox[0], originX - ox);
-      bbox[1] = Math.min(bbox[1], originY - oy);
-      bbox[2] = Math.max(bbox[2], originX + width + ox);
-      bbox[3] = Math.max(bbox[3], originY + height + oy);
+      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
+      x1 -= half;
+      y1 -= half;
+      x2 += half;
+      y2 += half;
+      bbox[0] = Math.min(bbox[0], originX + x1);
+      bbox[1] = Math.min(bbox[1], originY + y1);
+      bbox[2] = Math.max(bbox[2], originX + width + x2);
+      bbox[3] = Math.max(bbox[3], originY + height + y2);
       this.__bbox = bbox;
     }
     return this.__bbox;

@@ -22841,9 +22841,15 @@
       }
     }, {
       key: "__spreadBbox",
-      value: function __spreadBbox(boxShadow) {
-        var ox = 0,
-            oy = 0;
+      value: function __spreadBbox(boxShadow, filter) {
+        var x1 = 0,
+            y1 = 0,
+            x2 = 0,
+            y2 = 0;
+        var xl = [],
+            yt = [],
+            xr = [],
+            yb = [];
 
         if (Array.isArray(boxShadow)) {
           boxShadow.forEach(function (item) {
@@ -22854,16 +22860,53 @@
                 spread = _item2[3],
                 inset = _item2[5];
 
+            x1 = x2 = x;
+            y1 = y2 = y;
+
             if (inset !== 'inset') {
               var d = blur.outerSize(sigma);
               d += spread;
-              ox = Math.max(ox, x + d);
-              oy = Math.max(oy, y + d);
+              xl.push(x - d);
+              xr.push(x + d);
+              yt.push(y - d);
+              yb.push(y + d);
             }
           });
         }
 
-        return [ox, oy];
+        if (Array.isArray(filter)) {
+          filter.forEach(function (item) {
+            var _item3 = _slicedToArray(item, 2),
+                k = _item3[0],
+                sigma = _item3[1];
+
+            if (k === 'blur' && sigma > 0) {
+              var d = blur.kernelSize(sigma);
+              var spread = blur.outerSizeByD(d);
+
+              if (spread) {
+                xl.push(-spread);
+                xr.push(spread);
+                yt.push(-spread);
+                yb.push(spread);
+              }
+            }
+          });
+        }
+
+        xl.forEach(function (n) {
+          return x1 = Math.min(x1, n);
+        });
+        xr.forEach(function (n) {
+          return x2 = Math.max(x2, n);
+        });
+        yt.forEach(function (n) {
+          return y1 = Math.min(y1, n);
+        });
+        yb.forEach(function (n) {
+          return y2 = Math.max(y2, n);
+        });
+        return [x1, y1, x2, y2];
       }
     }, {
       key: "__releaseWhenEmpty",
@@ -23059,14 +23102,18 @@
               __sy1 = this.__sy1,
               offsetWidth = this.offsetWidth,
               offsetHeight = this.offsetHeight,
-              boxShadow = this.currentStyle[BOX_SHADOW$2];
+              _this$currentStyle = this.currentStyle,
+              boxShadow = _this$currentStyle[BOX_SHADOW$2],
+              filter = _this$currentStyle[FILTER$3];
 
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-              ox = _this$__spreadBbox2[0],
-              oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+              x1 = _this$__spreadBbox2[0],
+              y1 = _this$__spreadBbox2[1],
+              x2 = _this$__spreadBbox2[2],
+              y2 = _this$__spreadBbox2[3];
 
-          this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + offsetWidth + ox, __sy1 + offsetHeight + oy];
+          this.__bbox = [__sx1 + x1, __sy1 + y1, __sx1 + offsetWidth + x2, __sy1 + offsetHeight + y2];
         }
 
         return this.__bbox;
@@ -36860,7 +36907,8 @@
   var _enums$STYLE_KEY$k = enums.STYLE_KEY,
       STROKE_WIDTH$2 = _enums$STYLE_KEY$k.STROKE_WIDTH,
       BOX_SHADOW$4 = _enums$STYLE_KEY$k.BOX_SHADOW,
-      FONT_SIZE$c = _enums$STYLE_KEY$k.FONT_SIZE;
+      FONT_SIZE$c = _enums$STYLE_KEY$k.FONT_SIZE,
+      FILTER$7 = _enums$STYLE_KEY$k.FILTER;
   var isNil$9 = util.isNil;
   var REM$b = o.REM,
       VW$b = o.VW,
@@ -37415,7 +37463,8 @@
             originY = this.__sy3,
             _this$currentStyle = this.currentStyle,
             strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
-            boxShadow = _this$currentStyle[BOX_SHADOW$4];
+            boxShadow = _this$currentStyle[BOX_SHADOW$4],
+            filter = _this$currentStyle[FILTER$7];
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
             y1 = __cacheProps.y1,
@@ -37443,13 +37492,17 @@
           }
         });
 
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-            ox = _this$__spreadBbox2[0],
-            oy = _this$__spreadBbox2[1];
+        var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+            x1s = _this$__spreadBbox2[0],
+            y1s = _this$__spreadBbox2[1],
+            x2s = _this$__spreadBbox2[2],
+            y2s = _this$__spreadBbox2[3];
 
-        ox += half;
-        oy += half;
+        x1s -= half;
+        y1s -= half;
+        x2s += half;
+        y2s += half;
 
         if (!isMulti) {
           x1 = [x1];
@@ -37468,46 +37521,46 @@
           var cb = controlB[i];
 
           if ((isNil$9(ca) || ca.length < 2) && (isNil$9(cb) || cb.length < 2)) {
-            bbox[0] = Math.min(bbox[0], xa - ox);
-            bbox[0] = Math.min(bbox[0], xb - ox);
-            bbox[1] = Math.min(bbox[1], ya - oy);
-            bbox[1] = Math.min(bbox[1], yb - oy);
-            bbox[2] = Math.max(bbox[2], xa + ox);
-            bbox[2] = Math.max(bbox[2], xb + ox);
-            bbox[3] = Math.max(bbox[3], ya + oy);
-            bbox[3] = Math.max(bbox[3], yb + oy);
+            bbox[0] = Math.min(bbox[0], xa + x1s);
+            bbox[0] = Math.min(bbox[0], xb + x1s);
+            bbox[1] = Math.min(bbox[1], ya + y1s);
+            bbox[1] = Math.min(bbox[1], yb + y1s);
+            bbox[2] = Math.max(bbox[2], xa + x2s);
+            bbox[2] = Math.max(bbox[2], xb + x2s);
+            bbox[3] = Math.max(bbox[3], ya + y2s);
+            bbox[3] = Math.max(bbox[3], yb + y2s);
           } else if (isNil$9(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-            bbox[0] = Math.min(bbox[0], bezierBox[2] - ox);
-            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-            bbox[1] = Math.min(bbox[1], bezierBox[3] - oy);
-            bbox[2] = Math.max(bbox[2], bezierBox[0] + ox);
-            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-            bbox[3] = Math.max(bbox[3], bezierBox[1] + oy);
-            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] + x1s);
+            bbox[0] = Math.min(bbox[0], bezierBox[2] + x1s);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] + y1s);
+            bbox[1] = Math.min(bbox[1], bezierBox[3] + y1s);
+            bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
+            bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + y2s);
           } else if (isNil$9(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
-            bbox[0] = Math.min(bbox[0], _bezierBox[2] - ox);
-            bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
-            bbox[1] = Math.min(bbox[1], _bezierBox[3] - oy);
-            bbox[2] = Math.max(bbox[2], _bezierBox[0] + ox);
-            bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
-            bbox[3] = Math.max(bbox[3], _bezierBox[1] + oy);
-            bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
+            bbox[0] = Math.min(bbox[0], _bezierBox[0] + x1s);
+            bbox[0] = Math.min(bbox[0], _bezierBox[2] + x1s);
+            bbox[1] = Math.min(bbox[1], _bezierBox[1] + y1s);
+            bbox[1] = Math.min(bbox[1], _bezierBox[3] + y1s);
+            bbox[2] = Math.max(bbox[2], _bezierBox[0] + x2s);
+            bbox[2] = Math.max(bbox[2], _bezierBox[2] + x2s);
+            bbox[3] = Math.max(bbox[3], _bezierBox[1] + y2s);
+            bbox[3] = Math.max(bbox[3], _bezierBox[3] + y2s);
           } else {
             var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - ox);
-            bbox[0] = Math.min(bbox[0], _bezierBox2[2] - ox);
-            bbox[1] = Math.min(bbox[1], _bezierBox2[1] - oy);
-            bbox[1] = Math.min(bbox[1], _bezierBox2[3] - oy);
-            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + ox);
-            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + ox);
-            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + oy);
-            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + oy);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0] + x1s);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[2] + x1s);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[1] + y1s);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[3] + y1s);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + x2s);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + x2s);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + y2s);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + y2s);
           }
         });
         return bbox;
@@ -37520,7 +37573,8 @@
   var _enums$STYLE_KEY$l = enums.STYLE_KEY,
       STROKE_WIDTH$3 = _enums$STYLE_KEY$l.STROKE_WIDTH,
       BOX_SHADOW$5 = _enums$STYLE_KEY$l.BOX_SHADOW,
-      FONT_SIZE$d = _enums$STYLE_KEY$l.FONT_SIZE;
+      FONT_SIZE$d = _enums$STYLE_KEY$l.FONT_SIZE,
+      FILTER$8 = _enums$STYLE_KEY$l.FILTER;
   var isNil$a = util.isNil;
   var REM$c = o.REM,
       VW$c = o.VW,
@@ -38069,7 +38123,8 @@
               originY = this.__sy3,
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
-              boxShadow = _this$currentStyle[BOX_SHADOW$5];
+              boxShadow = _this$currentStyle[BOX_SHADOW$5],
+              filter = _this$currentStyle[FILTER$8];
           this.buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
@@ -38091,13 +38146,17 @@
             }
           });
 
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-              ox = _this$__spreadBbox2[0],
-              oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+              x1 = _this$__spreadBbox2[0],
+              y1 = _this$__spreadBbox2[1],
+              x2 = _this$__spreadBbox2[2],
+              y2 = _this$__spreadBbox2[3];
 
-          ox += half;
-          oy += half;
+          x1 -= half;
+          y1 -= half;
+          x2 += half;
+          y2 += half;
           var points = __cacheProps.points,
               controls = __cacheProps.controls;
 
@@ -38126,22 +38185,22 @@
 
               if (c && c.length === 4) {
                 var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-                bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-                bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-                bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-                bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+                bbox[0] = Math.min(bbox[0], bezierBox[0] + x1);
+                bbox[1] = Math.min(bbox[1], bezierBox[1] + y1);
+                bbox[2] = Math.max(bbox[2], bezierBox[2] + x2);
+                bbox[3] = Math.max(bbox[3], bezierBox[3] + y2);
               } else if (c && c.length === 2) {
                 var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
 
-                bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
-                bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
-                bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
-                bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
+                bbox[0] = Math.min(bbox[0], _bezierBox[0] + x1);
+                bbox[1] = Math.min(bbox[1], _bezierBox[1] + y1);
+                bbox[2] = Math.max(bbox[2], _bezierBox[2] + x2);
+                bbox[3] = Math.max(bbox[3], _bezierBox[3] + y2);
               } else {
-                bbox[0] = Math.min(bbox[0], xa - ox);
-                bbox[1] = Math.min(bbox[1], ya - oy);
-                bbox[2] = Math.max(bbox[2], xa + ox);
-                bbox[3] = Math.max(bbox[3], ya + oy);
+                bbox[0] = Math.min(bbox[0], xa + x1);
+                bbox[1] = Math.min(bbox[1], ya + y1);
+                bbox[2] = Math.max(bbox[2], xa + x2);
+                bbox[3] = Math.max(bbox[3], ya + y2);
               }
 
               xa = xb;
@@ -38750,17 +38809,21 @@
             }
           });
 
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-              ox = _this$__spreadBbox2[0],
-              oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+              x1 = _this$__spreadBbox2[0],
+              y1 = _this$__spreadBbox2[1],
+              x2 = _this$__spreadBbox2[2],
+              y2 = _this$__spreadBbox2[3];
 
-          ox += half;
-          oy += half;
-          var xa = cx - r - ox;
-          var xb = cx + r + ox;
-          var ya = cy - r - oy;
-          var yb = cy + r + oy;
+          x1 -= half;
+          y1 -= half;
+          x2 += half;
+          y2 += half;
+          var xa = cx - r + x1;
+          var xb = cx + r + x2;
+          var ya = cy - r + y1;
+          var yb = cy + r + y2;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);
@@ -38960,17 +39023,21 @@
             }
           });
 
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-              ox = _this$__spreadBbox2[0],
-              oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+              x1 = _this$__spreadBbox2[0],
+              y1 = _this$__spreadBbox2[1],
+              x2 = _this$__spreadBbox2[2],
+              y2 = _this$__spreadBbox2[3];
 
-          ox += half;
-          oy += half;
-          bbox[0] = Math.min(bbox[0], originX - ox);
-          bbox[1] = Math.min(bbox[1], originY - oy);
-          bbox[2] = Math.max(bbox[2], originX + width + ox);
-          bbox[3] = Math.max(bbox[3], originY + height + oy);
+          x1 -= half;
+          y1 -= half;
+          x2 += half;
+          y2 += half;
+          bbox[0] = Math.min(bbox[0], originX + x1);
+          bbox[1] = Math.min(bbox[1], originY + y1);
+          bbox[2] = Math.max(bbox[2], originX + width + x2);
+          bbox[3] = Math.max(bbox[3], originY + height + y2);
           this.__bbox = bbox;
         }
 
@@ -38984,7 +39051,8 @@
   var _enums$STYLE_KEY$o = enums.STYLE_KEY,
       STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
       BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
-      FONT_SIZE$g = _enums$STYLE_KEY$o.FONT_SIZE;
+      FONT_SIZE$g = _enums$STYLE_KEY$o.FONT_SIZE,
+      FILTER$9 = _enums$STYLE_KEY$o.FILTER;
   var isNil$d = util.isNil;
   var REM$f = o.REM,
       VW$f = o.VW,
@@ -39091,7 +39159,8 @@
               height = this.height,
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$6],
-              boxShadow = _this$currentStyle[BOX_SHADOW$8];
+              boxShadow = _this$currentStyle[BOX_SHADOW$8],
+              filter = _this$currentStyle[FILTER$9];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -39128,17 +39197,21 @@
             }
           });
 
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-              ox = _this$__spreadBbox2[0],
-              oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+              x1 = _this$__spreadBbox2[0],
+              y1 = _this$__spreadBbox2[1],
+              x2 = _this$__spreadBbox2[2],
+              y2 = _this$__spreadBbox2[3];
 
-          ox += half;
-          oy += half;
-          var xa = cx - r - ox;
-          var xb = cx + r + ox;
-          var ya = cy - r - oy;
-          var yb = cy + r + oy;
+          x1 -= half;
+          y1 -= half;
+          x2 += half;
+          y2 += half;
+          var xa = cx - r + x1;
+          var xb = cx + r + x2;
+          var ya = cy - r + y1;
+          var yb = cy + r + y2;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);
@@ -39156,7 +39229,8 @@
   var _enums$STYLE_KEY$p = enums.STYLE_KEY,
       STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
       BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
-      FONT_SIZE$h = _enums$STYLE_KEY$p.FONT_SIZE;
+      FONT_SIZE$h = _enums$STYLE_KEY$p.FONT_SIZE,
+      FILTER$a = _enums$STYLE_KEY$p.FILTER;
   var isNil$e = util.isNil;
   var REM$g = o.REM,
       VW$g = o.VW,
@@ -39311,7 +39385,8 @@
               height = this.height,
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
-              boxShadow = _this$currentStyle[BOX_SHADOW$9];
+              boxShadow = _this$currentStyle[BOX_SHADOW$9],
+              filter = _this$currentStyle[FILTER$a];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -39353,17 +39428,21 @@
             }
           });
 
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
-              ox = _this$__spreadBbox2[0],
-              oy = _this$__spreadBbox2[1];
+          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
+              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
+              x1 = _this$__spreadBbox2[0],
+              y1 = _this$__spreadBbox2[1],
+              x2 = _this$__spreadBbox2[2],
+              y2 = _this$__spreadBbox2[3];
 
-          ox += half;
-          oy += half;
-          var xa = cx - rx - ox;
-          var xb = cx + rx + ox;
-          var ya = cy - ry - oy;
-          var yb = cy + ry + oy;
+          x1 -= half;
+          y1 -= half;
+          x2 += half;
+          y2 += half;
+          var xa = cx - r + x1;
+          var xb = cx + r + x2;
+          var ya = cy - r + y1;
+          var yb = cy + r + y2;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);

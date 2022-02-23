@@ -371,13 +371,15 @@ class Sector extends Geom {
           half = Math.max(item[0] * 0.5, half);
         }
       });
-      let [ox, oy] = this.__spreadBbox(boxShadow);
-      ox += half;
-      oy += half;
-      let xa = cx - r - ox;
-      let xb = cx + r + ox;
-      let ya = cy - r - oy;
-      let yb = cy + r + oy;
+      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
+      x1 -= half;
+      y1 -= half;
+      x2 += half;
+      y2 += half;
+      let xa = cx - r + x1;
+      let xb = cx + r + x2;
+      let ya = cy - r + y1;
+      let yb = cy + r + y2;
       bbox[0] = Math.min(bbox[0], xa);
       bbox[1] = Math.min(bbox[1], ya);
       bbox[2] = Math.max(bbox[2], xb);

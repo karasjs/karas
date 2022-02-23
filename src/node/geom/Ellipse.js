@@ -8,6 +8,7 @@ const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
   FONT_SIZE,
+  FILTER,
 } } = enums;
 const { isNil } = util;
 const { REM, VW, VH, VMAX, VMIN } = unit;
@@ -112,6 +113,7 @@ class Ellipse extends Geom {
         currentStyle: {
           [STROKE_WIDTH]: strokeWidth,
           [BOX_SHADOW]: boxShadow,
+          [FILTER]: filter,
         }
       } = this;
       let cx = originX + width * 0.5;
@@ -153,13 +155,15 @@ class Ellipse extends Geom {
           half = Math.max(item[0] * 0.5, half);
         }
       });
-      let [ox, oy] = this.__spreadBbox(boxShadow);
-      ox += half;
-      oy += half;
-      let xa = cx - rx - ox;
-      let xb = cx + rx + ox;
-      let ya = cy - ry - oy;
-      let yb = cy + ry + oy;
+      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
+      x1 -= half;
+      y1 -= half;
+      x2 += half;
+      y2 += half;
+      let xa = cx - r + x1;
+      let xb = cx + r + x2;
+      let ya = cy - r + y1;
+      let yb = cy + r + y2;
       bbox[0] = Math.min(bbox[0], xa);
       bbox[1] = Math.min(bbox[1], ya);
       bbox[2] = Math.max(bbox[2], xb);

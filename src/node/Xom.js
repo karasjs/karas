@@ -2891,7 +2891,8 @@ class Xom extends Node {
     }
     if(Array.isArray(filter)) {
       filter.forEach(item => {
-        let [k, sigma] = item;
+        let [k, v] = item;
+        let sigma = v[0];
         if(k === 'blur' && sigma > 0) {
           let d = blur.kernelSize(sigma);
           let spread = blur.outerSizeByD(d);

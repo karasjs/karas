@@ -22878,7 +22878,9 @@
           filter.forEach(function (item) {
             var _item3 = _slicedToArray(item, 2),
                 k = _item3[0],
-                sigma = _item3[1];
+                v = _item3[1];
+
+            var sigma = v[0];
 
             if (k === 'blur' && sigma > 0) {
               var d = blur.kernelSize(sigma);

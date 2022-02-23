@@ -1324,6 +1324,20 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
         [mockCache, width, height, bbox] = res;
       }
     }
+    else if(k === 'invert' && v > 0) {
+      v = Math.min(v, 100);
+      let o = v * 0.01;
+      let amount = 1 - 2 * o;
+      let res = genColorMatrixWebgl(gl, texCache, mockCache, [
+        amount, 0, 0, 0, o,
+        0, amount, 0, 0, o,
+        0, 0, amount, 0, o,
+        0, 0, 0, 1, 0,
+      ], width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
+    }
   });
   // 切换回主程序
   gl.useProgram(gl.program);

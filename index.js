@@ -2364,7 +2364,7 @@
         s += "blur(".concat(v, "px)");
       } else if (k === 'hue-rotate') {
         s += "hue-rotate(".concat(v, "deg)");
-      } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia') {
+      } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
         s += "".concat(k, "(").concat(v, "%)");
       }
     });
@@ -9060,7 +9060,7 @@
 
               _v6[1] = DEG$1;
               f.push([k, _v6]);
-            } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia') {
+            } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
               if ([NUMBER$1, PERCENT$2].indexOf(_v6[1]) === -1) {
                 return;
               }
@@ -16892,7 +16892,7 @@
             v[k] = [nv - pv, PERCENT$6];
             hasChange = true;
           }
-        } else if (k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia') {
+        } else if (k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia' || k === 'invert') {
           var _nv = isNil$5(nHash[k]) ? 100 : nHash[k][0];
 
           var _pv = isNil$5(pHash[k]) ? 100 : pHash[k][0];
@@ -17627,7 +17627,7 @@
               n[0] *= percent;
               st.push([k, n]);
             } // 默认值是1而非0
-            else if (k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia') {
+            else if (k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia' || k === 'invert') {
               var _n = v[k].slice(0);
 
               _n[0] = 100 + _n[0] * percent;
@@ -32639,6 +32639,23 @@
           height = _res14[2];
           bbox = _res14[3];
         }
+      } else if (k === 'invert' && v > 0) {
+        v = Math.min(v, 100);
+
+        var _o = v * 0.01;
+
+        var _amount2 = 1 - 2 * _o;
+
+        var _res15 = genColorMatrixWebgl(gl, texCache, mockCache, [_amount2, 0, 0, 0, _o, 0, _amount2, 0, 0, _o, 0, 0, _amount2, 0, _o, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+
+        if (_res15) {
+          var _res16 = _slicedToArray(_res15, 4);
+
+          mockCache = _res16[0];
+          width = _res16[1];
+          height = _res16[2];
+          bbox = _res16[3];
+        }
       }
     }); // 切换回主程序
 
@@ -33709,14 +33726,14 @@
           var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, hasMbm, width, height),
               _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
               limit = _genTotalWebgl2[0],
-              _res15 = _genTotalWebgl2[1];
+              _res17 = _genTotalWebgl2[1];
 
-          __cacheTotal = _res15;
+          __cacheTotal = _res17;
           needGen = true;
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
-            __config[NODE_CACHE_TOTAL$1] = _res15;
+            __config[NODE_CACHE_TOTAL$1] = _res17;
           }
         } // 即使超限，也有total结果
 
@@ -40182,7 +40199,7 @@
     Cache: Cache
   };
 
-  var version = "0.69.3";
+  var version = "0.69.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

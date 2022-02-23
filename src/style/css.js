@@ -996,7 +996,7 @@ function normalize(style, reset = []) {
             v[1] = DEG;
             f.push([k, v]);
           }
-          else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia') {
+          else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
             if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
               return;
             }

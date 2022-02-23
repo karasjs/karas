@@ -8,6 +8,7 @@ const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
   FONT_SIZE,
+  FILTER,
 } } = enums;
 const { isNil } = util;
 const { REM, VW, VH, VMAX, VMIN } = unit;
@@ -131,6 +132,7 @@ class Rect extends Geom {
         currentStyle: {
           [STROKE_WIDTH]: strokeWidth,
           [BOX_SHADOW]: boxShadow,
+          [FILTER]: filter,
         }
       } = this;
       this.buildCache(originX, originY);

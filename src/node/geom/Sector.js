@@ -9,6 +9,7 @@ const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
   FONT_SIZE,
+  FILTER,
 } } = enums;
 const { isNil } = util;
 const { sectorPoints } = geom;
@@ -333,6 +334,7 @@ class Sector extends Geom {
         currentStyle: {
           [STROKE_WIDTH]: strokeWidth,
           [BOX_SHADOW]: boxShadow,
+          [FILTER]: fitler,
         }
       } = this;
       let cx = originX + width * 0.5;

@@ -38379,7 +38379,8 @@
   var _enums$STYLE_KEY$m = enums.STYLE_KEY,
       STROKE_WIDTH$4 = _enums$STYLE_KEY$m.STROKE_WIDTH,
       BOX_SHADOW$6 = _enums$STYLE_KEY$m.BOX_SHADOW,
-      FONT_SIZE$e = _enums$STYLE_KEY$m.FONT_SIZE;
+      FONT_SIZE$e = _enums$STYLE_KEY$m.FONT_SIZE,
+      FILTER$9 = _enums$STYLE_KEY$m.FILTER;
   var isNil$b = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
   var REM$d = o.REM,
@@ -38772,7 +38773,8 @@
               height = this.height,
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
-              boxShadow = _this$currentStyle[BOX_SHADOW$6];
+              boxShadow = _this$currentStyle[BOX_SHADOW$6],
+              fitler = _this$currentStyle[FILTER$9];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -38841,7 +38843,8 @@
   var _enums$STYLE_KEY$n = enums.STYLE_KEY,
       STROKE_WIDTH$5 = _enums$STYLE_KEY$n.STROKE_WIDTH,
       BOX_SHADOW$7 = _enums$STYLE_KEY$n.BOX_SHADOW,
-      FONT_SIZE$f = _enums$STYLE_KEY$n.FONT_SIZE;
+      FONT_SIZE$f = _enums$STYLE_KEY$n.FONT_SIZE,
+      FILTER$a = _enums$STYLE_KEY$n.FILTER;
   var isNil$c = util.isNil;
   var REM$e = o.REM,
       VW$e = o.VW,
@@ -39001,7 +39004,8 @@
               height = this.height,
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$5],
-              boxShadow = _this$currentStyle[BOX_SHADOW$7];
+              boxShadow = _this$currentStyle[BOX_SHADOW$7],
+              filter = _this$currentStyle[FILTER$a];
           this.buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
@@ -39052,7 +39056,7 @@
       STROKE_WIDTH$6 = _enums$STYLE_KEY$o.STROKE_WIDTH,
       BOX_SHADOW$8 = _enums$STYLE_KEY$o.BOX_SHADOW,
       FONT_SIZE$g = _enums$STYLE_KEY$o.FONT_SIZE,
-      FILTER$9 = _enums$STYLE_KEY$o.FILTER;
+      FILTER$b = _enums$STYLE_KEY$o.FILTER;
   var isNil$d = util.isNil;
   var REM$f = o.REM,
       VW$f = o.VW,
@@ -39160,7 +39164,7 @@
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$6],
               boxShadow = _this$currentStyle[BOX_SHADOW$8],
-              filter = _this$currentStyle[FILTER$9];
+              filter = _this$currentStyle[FILTER$b];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -39230,7 +39234,7 @@
       STROKE_WIDTH$7 = _enums$STYLE_KEY$p.STROKE_WIDTH,
       BOX_SHADOW$9 = _enums$STYLE_KEY$p.BOX_SHADOW,
       FONT_SIZE$h = _enums$STYLE_KEY$p.FONT_SIZE,
-      FILTER$a = _enums$STYLE_KEY$p.FILTER;
+      FILTER$c = _enums$STYLE_KEY$p.FILTER;
   var isNil$e = util.isNil;
   var REM$g = o.REM,
       VW$g = o.VW,
@@ -39386,7 +39390,7 @@
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
               boxShadow = _this$currentStyle[BOX_SHADOW$9],
-              filter = _this$currentStyle[FILTER$a];
+              filter = _this$currentStyle[FILTER$c];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);

@@ -39445,10 +39445,10 @@
           y1 -= half;
           x2 += half;
           y2 += half;
-          var xa = cx - r + x1;
-          var xb = cx + r + x2;
-          var ya = cy - r + y1;
-          var yb = cy + r + y2;
+          var xa = cx - rx + x1;
+          var xb = cx + rx + x2;
+          var ya = cy - ry + y1;
+          var yb = cy + ry + y2;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);

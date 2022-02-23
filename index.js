@@ -22906,16 +22906,24 @@
       }
     }, {
       key: "getBoundingClientRect",
-      value: function getBoundingClientRect() {
-        var __sx1 = this.__sx1,
-            __sy1 = this.__sy1,
-            offsetWidth = this.offsetWidth,
-            offsetHeight = this.offsetHeight,
-            matrixEvent = this.matrixEvent;
-        var p1 = point2d$1(mx.calPoint([__sx1, __sy1], matrixEvent));
-        var p2 = point2d$1(mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent));
-        var p3 = point2d$1(mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent));
-        var p4 = point2d$1(mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent));
+      value: function getBoundingClientRect(includeBbox) {
+        var box = [];
+
+        if (includeBbox) {
+          box = this.bbox;
+        } else {
+          var __sx1 = this.__sx1,
+              __sy1 = this.__sy1,
+              offsetWidth = this.offsetWidth,
+              offsetHeight = this.offsetHeight;
+          box = [__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight];
+        }
+
+        var matrixEvent = this.matrixEvent;
+        var p1 = point2d$1(mx.calPoint([box[0], box[1]], matrixEvent));
+        var p2 = point2d$1(mx.calPoint([box[2], box[1]], matrixEvent));
+        var p3 = point2d$1(mx.calPoint([box[2], box[3]], matrixEvent));
+        var p4 = point2d$1(mx.calPoint([box[0], box[3]], matrixEvent));
         return {
           left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
           top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
@@ -23049,24 +23057,16 @@
         if (!this.__bbox) {
           var __sx1 = this.__sx1,
               __sy1 = this.__sy1,
-              clientWidth = this.clientWidth,
-              clientHeight = this.clientHeight,
-              _this$currentStyle = this.currentStyle,
-              borderTopWidth = _this$currentStyle[BORDER_TOP_WIDTH$2],
-              borderRightWidth = _this$currentStyle[BORDER_RIGHT_WIDTH$2],
-              borderBottomWidth = _this$currentStyle[BORDER_BOTTOM_WIDTH$2],
-              borderLeftWidth = _this$currentStyle[BORDER_LEFT_WIDTH$3],
-              boxShadow = _this$currentStyle[BOX_SHADOW$2];
+              offsetWidth = this.offsetWidth,
+              offsetHeight = this.offsetHeight,
+              boxShadow = this.currentStyle[BOX_SHADOW$2];
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
               ox = _this$__spreadBbox2[0],
               oy = _this$__spreadBbox2[1];
 
-          clientWidth += borderLeftWidth[0] + borderRightWidth[0];
-          clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-          var half = 1;
-          this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
+          this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + offsetWidth + ox, __sy1 + offsetHeight + oy];
         }
 
         return this.__bbox;
@@ -37442,7 +37442,6 @@
             half = Math.max(item[0] * 0.5, half);
           }
         });
-        half += 1;
 
         var _this$__spreadBbox = this.__spreadBbox(boxShadow),
             _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -38091,7 +38090,6 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -38751,7 +38749,6 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -38962,7 +38959,6 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -39131,7 +39127,6 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),
@@ -39357,7 +39352,6 @@
               half = Math.max(item[0] * 0.5, half);
             }
           });
-          half += 1;
 
           var _this$__spreadBbox = this.__spreadBbox(boxShadow),
               _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 2),

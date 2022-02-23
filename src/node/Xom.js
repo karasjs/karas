@@ -2923,12 +2923,20 @@ class Xom extends Node {
     return res;
   }
 
-  getBoundingClientRect() {
-    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent } = this;
-    let p1 = point2d(mx.calPoint([__sx1, __sy1], matrixEvent));
-    let p2 = point2d(mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent));
-    let p3 = point2d(mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent));
-    let p4 = point2d(mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent));
+  getBoundingClientRect(includeBbox) {
+    let box = [];
+    if(includeBbox) {
+      box = this.bbox;
+    }
+    else {
+      let { __sx1, __sy1, offsetWidth, offsetHeight } = this;
+      box = [__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight];
+    }
+    let matrixEvent = this.matrixEvent;
+    let p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
+    let p2 = point2d(mx.calPoint([box[2], box[1]], matrixEvent));
+    let p3 = point2d(mx.calPoint([box[2], box[3]], matrixEvent));
+    let p4 = point2d(mx.calPoint([box[0], box[3]], matrixEvent));
     return {
       left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
       top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
@@ -3035,20 +3043,13 @@ class Xom extends Node {
   get bbox() {
     if(!this.__bbox) {
       let {
-        __sx1, __sy1, clientWidth, clientHeight,
+        __sx1, __sy1, offsetWidth, offsetHeight,
         currentStyle: {
-          [BORDER_TOP_WIDTH]: borderTopWidth,
-          [BORDER_RIGHT_WIDTH]: borderRightWidth,
-          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-          [BORDER_LEFT_WIDTH]: borderLeftWidth,
           [BOX_SHADOW]: boxShadow,
         },
       } = this;
       let [ox, oy] = this.__spreadBbox(boxShadow);
-      clientWidth += borderLeftWidth[0] + borderRightWidth[0];
-      clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-      let half = 1;
-      this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
+      this.__bbox = [__sx1 - ox, __sy1 - oy, __sx1 + offsetWidth + ox, __sy1 + offsetHeight + oy];
     }
     return this.__bbox;
   }

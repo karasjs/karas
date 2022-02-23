@@ -37480,17 +37480,17 @@
         var half = 0;
         strokeWidth.forEach(function (item) {
           if (item[1] === REM$b) {
-            half = Math.max(item[0] * root.computedStyle[FONT_SIZE$c] * 0.5, half);
+            half = Math.max(item[0] * root.computedStyle[FONT_SIZE$c], half);
           } else if (item[1] === VW$b) {
-            half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+            half = Math.max(item[0] * root.width * 0.01, half);
           } else if (item[1] === VH$b) {
-            half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+            half = Math.max(item[0] * root.height * 0.01, half);
           } else if (item[1] === VMAX$b) {
-            half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+            half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
           } else if (item[1] === VMIN$b) {
-            half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+            half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
           } else {
-            half = Math.max(item[0] * 0.5, half);
+            half = Math.max(item[0], half);
           }
         });
 
@@ -38134,17 +38134,17 @@
           var half = 0;
           strokeWidth.forEach(function (item) {
             if (item[1] === REM$c) {
-              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$d] * 0.5, half);
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$d], half);
             } else if (item[1] === VW$c) {
-              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.width * 0.01, half);
             } else if (item[1] === VH$c) {
-              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.height * 0.01, half);
             } else if (item[1] === VMAX$c) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else if (item[1] === VMIN$c) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else {
-              half = Math.max(item[0] * 0.5, half);
+              half = Math.max(item[0], half);
             }
           });
 
@@ -38776,7 +38776,7 @@
               _this$currentStyle = this.currentStyle,
               strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
               boxShadow = _this$currentStyle[BOX_SHADOW$6],
-              fitler = _this$currentStyle[FILTER$9];
+              filter = _this$currentStyle[FILTER$9];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -38799,17 +38799,17 @@
           var half = 0;
           strokeWidth.forEach(function (item) {
             if (item[1] === REM$d) {
-              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$e] * 0.5, half);
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$e], half);
             } else if (item[1] === VW$d) {
-              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.width * 0.01, half);
             } else if (item[1] === VH$d) {
-              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.height * 0.01, half);
             } else if (item[1] === VMAX$d) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else if (item[1] === VMIN$d) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else {
-              half = Math.max(item[0] * 0.5, half);
+              half = Math.max(item[0], half);
             }
           });
 
@@ -39015,17 +39015,17 @@
           var half = 0;
           strokeWidth.forEach(function (item) {
             if (item[1] === REM$e) {
-              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$f] * 0.5, half);
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$f], half);
             } else if (item[1] === VW$e) {
-              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.width * 0.01, half);
             } else if (item[1] === VH$e) {
-              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.height * 0.01, half);
             } else if (item[1] === VMAX$e) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else if (item[1] === VMIN$e) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else {
-              half = Math.max(item[0] * 0.5, half);
+              half = Math.max(item[0], half);
             }
           });
 
@@ -39189,17 +39189,17 @@
           var half = 0;
           strokeWidth.forEach(function (item) {
             if (item[1] === REM$f) {
-              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$g] * 0.5, half);
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$g], half);
             } else if (item[1] === VW$f) {
-              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.width * 0.01, half);
             } else if (item[1] === VH$f) {
-              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.height * 0.01, half);
             } else if (item[1] === VMAX$f) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else if (item[1] === VMIN$f) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else {
-              half = Math.max(item[0] * 0.5, half);
+              half = Math.max(item[0], half);
             }
           });
 
@@ -39420,17 +39420,17 @@
           var half = 0;
           strokeWidth.forEach(function (item) {
             if (item[1] === REM$g) {
-              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$h] * 0.5, half);
+              half = Math.max(item[0] * root.computedStyle[FONT_SIZE$h], half);
             } else if (item[1] === VW$g) {
-              half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.width * 0.01, half);
             } else if (item[1] === VH$g) {
-              half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+              half = Math.max(item[0] * root.height * 0.01, half);
             } else if (item[1] === VMAX$g) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else if (item[1] === VMIN$g) {
-              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+              half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
             } else {
-              half = Math.max(item[0] * 0.5, half);
+              half = Math.max(item[0], half);
             }
           });
 

@@ -505,7 +505,7 @@ function calDiff(prev, next, k, target, tagName) {
           hasChange = true;
         }
       }
-      else if(k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia') {
+      else if(k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia' || k === 'invert') {
         let nv = isNil(nHash[k]) ? 100 : nHash[k][0];
         let pv = isNil(pHash[k]) ? 100 : pHash[k][0];
         if(pv !== nv) {
@@ -1216,7 +1216,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
             st.push([k, n]);
           }
           // 默认值是1而非0
-          else if(k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia') {
+          else if(k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia' || k === 'invert') {
             let n = v[k].slice(0);
             n[0] = 100 + n[0] * percent;
             st.push([k, n]);

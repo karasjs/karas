@@ -8,6 +8,7 @@ const { STYLE_KEY: {
   STROKE_WIDTH,
   BOX_SHADOW,
   FONT_SIZE,
+  FILTER,
 } } = enums;
 const { isNil } = util;
 const { REM, VW, VH, VMAX, VMIN } = unit;
@@ -449,6 +450,7 @@ class Polyline extends Geom {
         currentStyle: {
           [STROKE_WIDTH]: strokeWidth,
           [BOX_SHADOW]: boxShadow,
+          [FILTER]: filter,
         },
       } = this;
       this.buildCache(originX, originY);
@@ -456,28 +458,29 @@ class Polyline extends Geom {
       let half = 0;
       strokeWidth.forEach(item => {
         if(item[1] === REM) {
-          half = Math.max(item[0] * root.computedStyle[FONT_SIZE] * 0.5, half);
+          half = Math.max(item[0] * root.computedStyle[FONT_SIZE], half);
         }
         else if(item[1] === VW) {
-          half = Math.max(item[0] * root.width * 0.01 * 0.5, half);
+          half = Math.max(item[0] * root.width * 0.01, half);
         }
         else if(item[1] === VH) {
-          half = Math.max(item[0] * root.height * 0.01 * 0.5, half);
+          half = Math.max(item[0] * root.height * 0.01, half);
         }
         else if(item[1] === VMAX) {
-          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
         }
         else if(item[1] === VMIN) {
-          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
         }
         else {
-          half = Math.max(item[0] * 0.5, half);
+          half = Math.max(item[0], half);
         }
       });
-      half += 1;
-      let [ox, oy] = this.__spreadBbox(boxShadow);
-      ox += half;
-      oy += half;
+      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
+      x1 -= half;
+      y1 -= half;
+      x2 += half;
+      y2 += half;
       let { points, controls } = __cacheProps;
       if(!isMulti) {
         points = [points];
@@ -495,23 +498,23 @@ class Polyline extends Geom {
           let c = controlList[i - 1];
           if(c && c.length === 4) {
             let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] + x1);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] + y1);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + x2);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + y2);
           }
           else if(c && c.length === 2) {
             let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
-            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
-            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] + x1);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] + y1);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + x2);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + y2);
           }
           else {
-            bbox[0] = Math.min(bbox[0], xa - ox);
-            bbox[1] = Math.min(bbox[1], ya - oy);
-            bbox[2] = Math.max(bbox[2], xa + ox);
-            bbox[3] = Math.max(bbox[3], ya + oy);
+            bbox[0] = Math.min(bbox[0], xa + x1);
+            bbox[1] = Math.min(bbox[1], ya + y1);
+            bbox[2] = Math.max(bbox[2], xa + x2);
+            bbox[3] = Math.max(bbox[3], ya + y2);
           }
           xa = xb;
           ya = yb;

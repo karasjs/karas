@@ -577,6 +577,9 @@ console.log(root.ref.div.getComputedStyle(['width']).width); // 等同
 
 #### getBoundingClientRect
 * **类型** `Function`
+* **参数**
+  * includeBbox `Boolean`
+  是否包含扩展bbox，默认否仅考虑节点本身盒子。一些样式如filter会扩展范围，用bbox更为精确。
 * **说明**  
   获取当前节点距离左上角的矩形区域坐标。
 * **示例**
@@ -587,7 +590,7 @@ let root = karas.render(
   </canvas>,
   '#selector'
 );
-console.log(root.ref.div.getBoundingClientRect().width); // {"left":99.13499492031626,"top":-0.8650050796837405,"right":200.86500507968373,"bottom":100.86500507968374}
+console.log(root.ref.div.getBoundingClientRect()); // {"left":99.13499492031626,"top":-0.8650050796837405,"right":200.86500507968373,"bottom":100.86500507968374}
 ```
 
 #### animate

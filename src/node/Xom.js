@@ -2871,20 +2871,45 @@ class Xom extends Node {
     this.clearCache();
   }
 
-  __spreadBbox(boxShadow) {
-    let ox = 0, oy = 0;
+  __spreadBbox(boxShadow, filter) {
+    let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    let xl = [], yt = [], xr = [], yb = [];
     if(Array.isArray(boxShadow)) {
       boxShadow.forEach(item => {
         let [x, y, sigma, spread, , inset] = item;
+        x1 = x2 = x;
+        y1 = y2 = y;
         if(inset !== 'inset') {
           let d = blur.outerSize(sigma);
           d += spread;
-          ox = Math.max(ox, x + d);
-          oy = Math.max(oy, y + d);
+          xl.push(x - d);
+          xr.push(x + d);
+          yt.push(y - d);
+          yb.push(y + d);
         }
       });
     }
-    return [ox, oy];
+    if(Array.isArray(filter)) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        let sigma = v[0];
+        if(k === 'blur' && sigma > 0) {
+          let d = blur.kernelSize(sigma);
+          let spread = blur.outerSizeByD(d);
+          if(spread) {
+            xl.push(-spread);
+            xr.push(spread);
+            yt.push(-spread);
+            yb.push(spread);
+          }
+        }
+      });
+    }
+    xl.forEach(n => x1 = Math.min(x1, n));
+    xr.forEach(n => x2 = Math.max(x2, n));
+    yt.forEach(n => y1 = Math.min(y1, n));
+    yb.forEach(n => y2 = Math.max(y2, n));
+    return [x1, y1, x2, y2];
   }
 
   __releaseWhenEmpty(__cache) {
@@ -2923,12 +2948,20 @@ class Xom extends Node {
     return res;
   }
 
-  getBoundingClientRect() {
-    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent } = this;
-    let p1 = point2d(mx.calPoint([__sx1, __sy1], matrixEvent));
-    let p2 = point2d(mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent));
-    let p3 = point2d(mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent));
-    let p4 = point2d(mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent));
+  getBoundingClientRect(includeBbox) {
+    let box = [];
+    if(includeBbox) {
+      box = this.bbox;
+    }
+    else {
+      let { __sx1, __sy1, offsetWidth, offsetHeight } = this;
+      box = [__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight];
+    }
+    let matrixEvent = this.matrixEvent;
+    let p1 = point2d(mx.calPoint([box[0], box[1]], matrixEvent));
+    let p2 = point2d(mx.calPoint([box[2], box[1]], matrixEvent));
+    let p3 = point2d(mx.calPoint([box[2], box[3]], matrixEvent));
+    let p4 = point2d(mx.calPoint([box[0], box[3]], matrixEvent));
     return {
       left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
       top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
@@ -3035,20 +3068,14 @@ class Xom extends Node {
   get bbox() {
     if(!this.__bbox) {
       let {
-        __sx1, __sy1, clientWidth, clientHeight,
+        __sx1, __sy1, offsetWidth, offsetHeight,
         currentStyle: {
-          [BORDER_TOP_WIDTH]: borderTopWidth,
-          [BORDER_RIGHT_WIDTH]: borderRightWidth,
-          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-          [BORDER_LEFT_WIDTH]: borderLeftWidth,
           [BOX_SHADOW]: boxShadow,
+          [FILTER]: filter,
         },
       } = this;
-      let [ox, oy] = this.__spreadBbox(boxShadow);
-      clientWidth += borderLeftWidth[0] + borderRightWidth[0];
-      clientHeight += borderTopWidth[0] + borderBottomWidth[0];
-      let half = 1;
-      this.__bbox = [__sx1 - ox - half, __sy1 - oy - half, __sx1 + clientWidth + ox + half, __sy1 + clientHeight + oy + half];
+      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
+      this.__bbox = [__sx1 + x1, __sy1 + y1, __sx1 + offsetWidth + x2, __sy1 + offsetHeight + y2];
     }
     return this.__bbox;
   }

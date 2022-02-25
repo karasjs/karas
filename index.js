@@ -14131,8 +14131,8 @@
 
 
             if (count === w) {
-              // 多行文本截断，这里肯定需要回退
-              if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+              // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
+              if (lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i < length - 1) {
                 var _this$__lineBack3 = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
 
                 var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);

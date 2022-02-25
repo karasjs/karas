@@ -320,8 +320,8 @@ class Text extends Node {
         }
         // 换行都要判断i不是0的时候，第1个字符强制不换行
         if(count === w) {
-          // 多行文本截断，这里肯定需要回退
-          if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+          // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
+          if(lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i < length - 1) {
             [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
               lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
             lineCount++;

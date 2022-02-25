@@ -157,7 +157,7 @@
   * breakAll
 * textOverflow
   * clip 默认
-  * ellipse
+  * ellipsis
 * lineClamp
   * 0 默认，即无效
   * number 正整数，文本行数限制，超过则为省略号，且对所有块级节点生效

@@ -13854,7 +13854,13 @@
         var bp = this.domParent;
 
         while (bp.currentStyle[DISPLAY$1] === 'inline') {
-          bp = bp.domParent;
+          var p = bp.domParent;
+
+          if (p.currentStyle[DISPLAY$1] === 'flex') {
+            break;
+          }
+
+          bp = p;
         }
 
         this.__bp = bp;

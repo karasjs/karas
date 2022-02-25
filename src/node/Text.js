@@ -93,7 +93,11 @@ class Text extends Node {
     // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
     let bp = this.domParent;
     while(bp.currentStyle[DISPLAY] === 'inline') {
-      bp = bp.domParent;
+      let p = bp.domParent;
+      if(p.currentStyle[DISPLAY] === 'flex') {
+        break;
+      }
+      bp = p;
     }
     this.__bp = bp;
     let parentComputedStyle = bp.computedStyle;

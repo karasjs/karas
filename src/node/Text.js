@@ -28,6 +28,7 @@ const {
     WIDTH,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
+    POSITION,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -92,7 +93,7 @@ class Text extends Node {
     let needMeasure = false;
     // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
     let bp = this.domParent;
-    while(bp.currentStyle[DISPLAY] === 'inline') {
+    while(bp.currentStyle[DISPLAY] === 'inline' && bp.currentStyle[POSITION] !== 'absolute') {
       let p = bp.domParent;
       if(p.currentStyle[DISPLAY] === 'flex') {
         break;

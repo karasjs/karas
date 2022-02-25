@@ -13766,6 +13766,7 @@ var _enums$STYLE_KEY$7 = enums.STYLE_KEY,
     WIDTH$2 = _enums$STYLE_KEY$7.WIDTH,
     TEXT_STROKE_COLOR$2 = _enums$STYLE_KEY$7.TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH$2 = _enums$STYLE_KEY$7.TEXT_STROKE_WIDTH,
+    POSITION$1 = _enums$STYLE_KEY$7.POSITION,
     _enums$NODE_KEY$1 = enums.NODE_KEY,
     NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
     NODE_LIMIT_CACHE = _enums$NODE_KEY$1.NODE_LIMIT_CACHE,
@@ -13847,7 +13848,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       var bp = this.domParent;
 
-      while (bp.currentStyle[DISPLAY$1] === 'inline') {
+      while (bp.currentStyle[DISPLAY$1] === 'inline' && bp.currentStyle[POSITION$1] !== 'absolute') {
         var p = bp.domParent;
 
         if (p.currentStyle[DISPLAY$1] === 'flex') {
@@ -19814,7 +19815,7 @@ var STYLE_KEY$5 = enums.STYLE_KEY,
     RIGHT = _enums$STYLE_KEY$c.RIGHT,
     BOTTOM$1 = _enums$STYLE_KEY$c.BOTTOM,
     LEFT = _enums$STYLE_KEY$c.LEFT,
-    POSITION$1 = _enums$STYLE_KEY$c.POSITION,
+    POSITION$2 = _enums$STYLE_KEY$c.POSITION,
     DISPLAY$2 = _enums$STYLE_KEY$c.DISPLAY,
     WIDTH$4 = _enums$STYLE_KEY$c.WIDTH,
     HEIGHT$3 = _enums$STYLE_KEY$c.HEIGHT,
@@ -20234,7 +20235,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           __config = this.__config;
       var display = computedStyle[DISPLAY$2];
       var width = currentStyle[WIDTH$4],
-          position = currentStyle[POSITION$1];
+          position = currentStyle[POSITION$2];
       this.clearCache();
       this.__layoutData = {
         x: data.x,
@@ -20608,7 +20609,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
   }, {
     key: "__marginAuto",
     value: function __marginAuto(style, data) {
-      var position = style[POSITION$1],
+      var position = style[POSITION$2],
           display = style[DISPLAY$2],
           marginLeft = style[MARGIN_LEFT$1],
           marginRight = style[MARGIN_RIGHT$1],
@@ -23757,7 +23758,7 @@ var _enums$STYLE_KEY$e = enums.STYLE_KEY,
     DISPLAY$4 = _enums$STYLE_KEY$e.DISPLAY,
     TOP$2 = _enums$STYLE_KEY$e.TOP,
     BOTTOM$2 = _enums$STYLE_KEY$e.BOTTOM,
-    POSITION$2 = _enums$STYLE_KEY$e.POSITION,
+    POSITION$3 = _enums$STYLE_KEY$e.POSITION,
     HEIGHT$4 = _enums$STYLE_KEY$e.HEIGHT;
 var AUTO$5 = o.AUTO,
     PX$7 = o.PX,
@@ -23780,7 +23781,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
 
       if (parent) {
         var cs = parent.computedStyle;
-        var ps = cs[POSITION$2];
+        var ps = cs[POSITION$3];
         isContainer = parent === root || parent.isShadowRoot || ps === 'relative' || ps === 'absolute';
       } // 先偏移next，忽略有定位的absolute，本身非container也忽略
 
@@ -23790,7 +23791,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
 
       while (next) {
         if (next.currentStyle[DISPLAY$4] !== 'none') {
-          if (next.currentStyle[POSITION$2] === 'absolute') {
+          if (next.currentStyle[POSITION$3] === 'absolute') {
             var _next$currentStyle = next.currentStyle,
                 top = _next$currentStyle[TOP$2],
                 bottom = _next$currentStyle[BOTTOM$2],
@@ -23831,7 +23832,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
 
                     var _cs = container.currentStyle;
 
-                    if (_cs[POSITION$2] === 'absolute' || _cs[POSITION$2] === 'relative') {
+                    if (_cs[POSITION$3] === 'absolute' || _cs[POSITION$3] === 'relative') {
                       break;
                     }
 
@@ -23861,7 +23862,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
 
       var _node = node,
           currentStyle = _node.currentStyle;
-      var isAbs = currentStyle[POSITION$2] === 'absolute';
+      var isAbs = currentStyle[POSITION$3] === 'absolute';
       var need = void 0;
 
       if (isAbs) {
@@ -23939,7 +23940,7 @@ var reflow = {
 };
 
 var _enums$STYLE_KEY$f = enums.STYLE_KEY,
-    POSITION$3 = _enums$STYLE_KEY$f.POSITION,
+    POSITION$4 = _enums$STYLE_KEY$f.POSITION,
     DISPLAY$5 = _enums$STYLE_KEY$f.DISPLAY,
     FONT_WEIGHT$4 = _enums$STYLE_KEY$f.FONT_WEIGHT,
     MARGIN_LEFT$3 = _enums$STYLE_KEY$f.MARGIN_LEFT,
@@ -26919,7 +26920,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
           while (prev) {
             // 目前不考虑margin合并，直接以前面的flow的最近的prev末尾为准
-            if (prev instanceof Text || prev.computedStyle[POSITION$3] !== 'absolute') {
+            if (prev instanceof Text || prev.computedStyle[POSITION$4] !== 'absolute') {
               y2 = prev.y + prev.outerHeight;
               break;
             }
@@ -27462,7 +27463,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           item = item.shadowRoot;
         }
 
-        return item instanceof Text || item.currentStyle[POSITION$3] !== 'absolute';
+        return item instanceof Text || item.currentStyle[POSITION$4] !== 'absolute';
       });
     }
   }, {
@@ -27473,7 +27474,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           item = item.shadowRoot;
         }
 
-        return item instanceof Xom$1 && item.currentStyle[POSITION$3] === 'absolute';
+        return item instanceof Xom$1 && item.currentStyle[POSITION$4] === 'absolute';
       });
     }
   }, {
@@ -34606,7 +34607,7 @@ var _enums$STYLE_KEY$j = enums.STYLE_KEY,
     RIGHT$2 = _enums$STYLE_KEY$j.RIGHT,
     BOTTOM$4 = _enums$STYLE_KEY$j.BOTTOM,
     LEFT$2 = _enums$STYLE_KEY$j.LEFT,
-    POSITION$4 = _enums$STYLE_KEY$j.POSITION,
+    POSITION$5 = _enums$STYLE_KEY$j.POSITION,
     DISPLAY$9 = _enums$STYLE_KEY$j.DISPLAY,
     VISIBILITY$6 = _enums$STYLE_KEY$j.VISIBILITY,
     COLOR$5 = _enums$STYLE_KEY$j.COLOR,
@@ -34813,7 +34814,7 @@ function setLAYOUT(node, hash, component, addDom) {
 
 function checkInfluence(root, reflowHash, node, component, addDom) {
   // add情况abs节点特殊对待不影响其它节点，不能判断display，因为inline会强制block
-  if (addDom && node.currentStyle[POSITION$4] === 'absolute') {
+  if (addDom && node.currentStyle[POSITION$5] === 'absolute') {
     return;
   }
 
@@ -34833,7 +34834,7 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
       } // 遇到absolute跳出，设置其布局；如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
 
 
-      if (target.currentStyle[POSITION$4] === 'absolute' || target.computedStyle[POSITION$4] === 'absolute') {
+      if (target.currentStyle[POSITION$5] === 'absolute' || target.computedStyle[POSITION$5] === 'absolute') {
         setLAYOUT(target, reflowHash, component, addDom);
         return;
       }
@@ -34868,7 +34869,7 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
     } // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
 
 
-    if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
+    if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
       break;
     } // 父固定宽高跳出
 
@@ -34893,7 +34894,7 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
 
   while (parent) {
     // 无论新老absolute，不变化则设置，变化一定会出现在列表中
-    if (parent.currentStyle[POSITION$4] === 'absolute' || parent.computedStyle[POSITION$4] === 'absolute') {
+    if (parent.currentStyle[POSITION$5] === 'absolute' || parent.computedStyle[POSITION$5] === 'absolute') {
       if (parent === root) {
         break;
       } // 固定尺寸的不用设置，需要跳出循环
@@ -35028,7 +35029,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
           } else {
             // TRBL变化只对relative/absolute起作用，其它忽视
             if (DIRECTION_HASH.hasOwnProperty(k)) {
-              var position = currentStyle[POSITION$4];
+              var position = currentStyle[POSITION$5];
 
               if (position !== 'relative' && position !== 'absolute') {
                 delete style[k];
@@ -35893,8 +35894,8 @@ var Root = /*#__PURE__*/function (_Dom) {
       } // 同理position不能为absolute
 
 
-      if (currentStyle[POSITION$4] === 'absolute') {
-        computedStyle[POSITION$4] = currentStyle[POSITION$4] = 'static';
+      if (currentStyle[POSITION$5] === 'absolute') {
+        computedStyle[POSITION$5] = currentStyle[POSITION$5] = 'static';
       } // 根节点满宽高
 
 
@@ -36235,10 +36236,10 @@ var Root = /*#__PURE__*/function (_Dom) {
           var cps = node.computedStyle,
               cts = node.currentStyle;
           var zIndex = cps[Z_INDEX$4],
-              position = cps[POSITION$4],
+              position = cps[POSITION$5],
               display = cps[DISPLAY$9];
           var isLastAbs = position === 'absolute';
-          var isNowAbs = cts[POSITION$4] === 'absolute';
+          var isNowAbs = cts[POSITION$5] === 'absolute';
           var isLastNone = display === 'none';
           var isNowNone = cts[DISPLAY$9] === 'none'; // none不可见布局无效可以无视
 
@@ -36264,7 +36265,7 @@ var Root = /*#__PURE__*/function (_Dom) {
           var hasFlowPrev;
 
           while (ref) {
-            if (ref instanceof Text || ref.computedStyle[POSITION$4] !== 'absolute' && ref.computedStyle[DISPLAY$9] !== 'none') {
+            if (ref instanceof Text || ref.computedStyle[POSITION$5] !== 'absolute' && ref.computedStyle[DISPLAY$9] !== 'none') {
               y = ref.y + ref.outerHeight;
               hasFlowPrev = true;
               break;
@@ -36332,7 +36333,7 @@ var Root = /*#__PURE__*/function (_Dom) {
                   diffI += _arr[1];
                   diffList.push(_arr);
 
-                  if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
+                  if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                     parent.__updateStruct(root.__structs);
 
                     if (_this5.renderMode === mode.SVG) {
@@ -36411,7 +36412,7 @@ var Root = /*#__PURE__*/function (_Dom) {
             p = p.domParent;
             computedStyle = p.computedStyle;
 
-            if (computedStyle[POSITION$4] === 'relative') {
+            if (computedStyle[POSITION$5] === 'relative') {
               var _p = p,
                   ox = _p.ox,
                   oy = _p.oy;
@@ -36429,7 +36430,7 @@ var Root = /*#__PURE__*/function (_Dom) {
           var next = node.next;
 
           while (next && !next.hasOwnProperty('__uniqueReflowId')) {
-            if (next.computedStyle[POSITION$4] === 'absolute') {
+            if (next.computedStyle[POSITION$5] === 'absolute') {
               next = next.next;
               continue;
             }
@@ -36449,7 +36450,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                 var cs = target.computedStyle;
 
-                if (cs[POSITION$4] !== 'absolute' && cs[DISPLAY$9] !== 'none') {
+                if (cs[POSITION$5] !== 'absolute' && cs[DISPLAY$9] !== 'none') {
                   target.__offsetY(_diff, true, REPAINT$3);
                 }
 
@@ -36483,7 +36484,7 @@ var Root = /*#__PURE__*/function (_Dom) {
             diffI += _arr4[1];
             diffList.push(_arr4);
 
-            if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
+            if (position !== cts[POSITION$5] && (position === 'static' || cts[POSITION$5] === 'static') || zIndex !== cts[Z_INDEX$4]) {
               node.domParent.__updateStruct(root.__structs);
 
               if (_this5.renderMode === mode.SVG) {
@@ -36620,7 +36621,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
           var cs = parent.currentStyle;
           var height = cs[HEIGHT$8];
-          var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$4] === 'absolute' || cs[POSITION$4] === 'relative';
+          var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$5] === 'absolute' || cs[POSITION$5] === 'relative';
 
           if (height[1] === AUTO$8 && lastChild) {
             var oldH = parent.height + parent.computedStyle[PADDING_TOP$6];
@@ -36656,7 +36657,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                       var _cs2 = _isXom && target.currentStyle;
 
-                      var isAbs = _isXom && _cs2[POSITION$4] === 'absolute';
+                      var isAbs = _isXom && _cs2[POSITION$5] === 'absolute';
 
                       if (!isAbs) {
                         var y = target.y + target.outerHeight;
@@ -36695,7 +36696,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                         var _cs3 = container.currentStyle;
 
-                        if (_cs3[POSITION$4] === 'absolute' || _cs3[POSITION$4] === 'relative') {
+                        if (_cs3[POSITION$5] === 'absolute' || _cs3[POSITION$5] === 'relative') {
                           break;
                         }
 
@@ -36727,7 +36728,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                         var _cs4 = container.currentStyle;
 
-                        if (_cs4[POSITION$4] === 'absolute' || _cs4[POSITION$4] === 'relative') {
+                        if (_cs4[POSITION$5] === 'absolute' || _cs4[POSITION$5] === 'relative') {
                           break;
                         }
 
@@ -36766,7 +36767,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
                 var _cs5 = _isXom2 && _target.currentStyle;
 
-                var _isAbs = _isXom2 && _cs5[POSITION$4] === 'absolute';
+                var _isAbs = _isXom2 && _cs5[POSITION$5] === 'absolute';
 
                 if (!_isAbs) {
                   var _y = _target.y + _target.outerHeight;

@@ -14698,20 +14698,19 @@
         var half = 0;
 
         if (textStrokeWidth[1] === REM$4) {
-          half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE$5] * 0.5, half);
+          half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE$5], half);
         } else if (textStrokeWidth[1] === VW$4) {
-          half = Math.max(textStrokeWidth[0] * root.width * 0.01 * 0.5, half);
+          half = Math.max(textStrokeWidth[0] * root.width, half);
         } else if (textStrokeWidth[1] === VH$4) {
-          half = Math.max(textStrokeWidth[0] * root.height * 0.01 * 0.5, half);
+          half = Math.max(textStrokeWidth[0] * root.height, half);
         } else if (textStrokeWidth[1] === VMAX$4) {
-          half = Math.max(textStrokeWidth[0] * Math.max(root.width, root.height) * 0.01 * 0.5, half);
+          half = Math.max(textStrokeWidth[0] * Math.max(root.width, root.height) * 0.01, half);
         } else if (textStrokeWidth[1] === VMIN$4) {
-          half = Math.max(textStrokeWidth[0] * Math.min(root.width, root.height) * 0.01 * 0.5, half);
+          half = Math.max(textStrokeWidth[0] * Math.min(root.width, root.height) * 0.01, half);
         } else {
-          half = Math.max(textStrokeWidth[0] * 0.5, half);
+          half = Math.max(textStrokeWidth[0], half);
         }
 
-        half += 1;
         return [sx - half, sy - half, sx + width + half, sy + height + half];
       }
     }, {

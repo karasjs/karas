@@ -21417,9 +21417,11 @@
         var currentStyle = __config[NODE_CURRENT_STYLE$1];
         var computedStyle = __config[NODE_COMPUTED_STYLE$1]; // 渲染完认为完全无变更，等布局/动画/更新重置
 
-        __config[NODE_REFRESH_LV] = NONE; // >=REPAINT才会进入这里，清空bbox
+        __config[NODE_REFRESH_LV] = NONE; // >=REPAINT清空bbox
 
-        this.__bbox = null;
+        if (lv >= REPAINT$1) {
+          this.__bbox = null;
+        }
 
         if (isDestroyed) {
           return {
@@ -23042,7 +23044,7 @@
 
             var res = {};
             res[UPDATE_NODE$2] = self;
-            res[UPDATE_FOCUS$1] = o$3.REFLOW;
+            res[UPDATE_FOCUS$1] = REFLOW;
             res[UPDATE_REMOVE_DOM] = true;
             res[UPDATE_CONFIG$2] = self.__config;
 

@@ -1629,8 +1629,10 @@ class Xom extends Node {
     let computedStyle = __config[NODE_COMPUTED_STYLE];
     // 渲染完认为完全无变更，等布局/动画/更新重置
     __config[NODE_REFRESH_LV] = NONE;
-    // >=REPAINT才会进入这里，清空bbox
-    this.__bbox = null;
+    // >=REPAINT清空bbox
+    if(lv >= REPAINT) {
+      this.__bbox = null;
+    }
     if(isDestroyed) {
       return { isDestroyed, break: true };
     }
@@ -3014,7 +3016,7 @@ class Xom extends Node {
         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
         let res = {};
         res[UPDATE_NODE] = self;
-        res[UPDATE_FOCUS] = level.REFLOW;
+        res[UPDATE_FOCUS] = REFLOW;
         res[UPDATE_REMOVE_DOM] = true;
         res[UPDATE_CONFIG] = self.__config;
         root.__addUpdate(self, self.__config, root, root.__config, res);

@@ -1289,6 +1289,13 @@ class Dom extends Xom {
     let spread = lineBoxManager.verticalAlign();
     if(spread) {
       th = this.__height += spread;
+      // 所有next都需要偏移
+      let next = this.next;
+      while(next) {
+        next.__offsetY(spread);
+        next = next.next;
+      }
+      // parent以及parent的next无需处理，因为深度遍历后面还会进行
     }
     // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {

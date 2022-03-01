@@ -23252,17 +23252,27 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        var n = this.baseLine; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
+        var n = this.baseLine;
+        var diff = 0; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
 
         if (this.list.length) {
           this.list.forEach(function (item) {
             var m = item.baseLine;
 
             if (m !== n) {
-              item.__offsetY(n - m);
+              var d = n - m;
+
+              item.__offsetY(d); // text的话对齐下移可能影响lineHeight，在同行有img这样的替换元素下
+
+
+              if (d > 0 && !item.tagName) {
+                diff = Math.max(diff, item.height + d - n);
+              }
             }
           });
         }
+
+        return diff;
       }
     }, {
       key: "__offsetX",
@@ -23271,8 +23281,23 @@
       }
     }, {
       key: "__offsetY",
-      value: function __offsetY(diff) {
-        this.__y += diff;
+      value: function __offsetY(diff, isVerticalAlign) {
+        this.__y += diff; // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
+
+        if (isVerticalAlign) {
+          this.list.forEach(function (item) {
+            // 是text的第一个的box的话，text也需要偏移
+            if (item instanceof TextBox) {
+              var text = item.parent;
+
+              if (text.textBoxes[0] === item) {
+                text.__offsetY(diff);
+              }
+            } else {
+              item.__offsetY(diff);
+            }
+          });
+        }
       }
       /**
        * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
@@ -23562,12 +23587,24 @@
           }
         });
       }
+      /**
+       * 垂直对齐过程中，如果遇到占位元素如img，可能会导致每行lineBox高度增加，需返回增加量，
+       * next行也需要y偏移
+       * @returns {number}
+       */
+
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
+        var spread = 0;
         this.list.forEach(function (lineBox) {
-          lineBox.verticalAlign();
+          if (spread) {
+            lineBox.__offsetY(spread, true);
+          }
+
+          spread += lineBox.verticalAlign();
         });
+        return spread;
       }
     }, {
       key: "addX",
@@ -25312,12 +25349,17 @@
         var tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__ioSize(tw, th); // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+        this.__ioSize(tw, th); // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
+
+
+        var spread = lineBoxManager.verticalAlign();
+
+        if (spread) {
+          th = this.__height += spread;
+        } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
         if (!isVirtual) {
-          lineBoxManager.verticalAlign();
-
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
 
@@ -26192,7 +26234,7 @@
         });
       }
       /**
-       * inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
+       * inline比较特殊，先简单顶部对齐，后续还需根据vertical和lineHeight计算y偏移
        * inlineBlock复用逻辑，可以设置w/h，在混排时表现不同，inlineBlock换行限制在规定的矩形内，
        * 且ib会在没设置width且换行的时候撑满上一行，即便内部尺寸没抵达边界
        * 而inline换行则会从父容器start处开始，且首尾可能占用矩形不同

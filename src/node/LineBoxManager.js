@@ -138,10 +138,20 @@ class LineBoxManager {
     });
   }
 
+  /**
+   * 垂直对齐过程中，如果遇到占位元素如img，可能会导致每行lineBox高度增加，需返回增加量，
+   * next行也需要y偏移
+   * @returns {number}
+   */
   verticalAlign() {
+    let spread = 0;
     this.list.forEach(lineBox => {
-      lineBox.verticalAlign();
+      if(spread) {
+        lineBox.__offsetY(spread, true);
+      }
+      spread += lineBox.verticalAlign();
     });
+    return spread;
   }
 
   addX(n) {

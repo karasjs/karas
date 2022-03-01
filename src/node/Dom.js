@@ -1285,9 +1285,13 @@ class Dom extends Xom {
     let tw = this.__width = (fixedWidth || !isVirtual) ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
+    // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
+    let spread = lineBoxManager.verticalAlign();
+    if(spread) {
+      th = this.__height += spread;
+    }
     // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {
-      lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
         // 直接text需计算size
@@ -2069,7 +2073,7 @@ class Dom extends Xom {
   }
 
   /**
-   * inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
+   * inline比较特殊，先简单顶部对齐，后续还需根据vertical和lineHeight计算y偏移
    * inlineBlock复用逻辑，可以设置w/h，在混排时表现不同，inlineBlock换行限制在规定的矩形内，
    * 且ib会在没设置width且换行的时候撑满上一行，即便内部尺寸没抵达边界
    * 而inline换行则会从父容器start处开始，且首尾可能占用矩形不同

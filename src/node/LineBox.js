@@ -38,23 +38,44 @@ class LineBox {
 
   verticalAlign() {
     let n = this.baseLine;
+    let diff = 0;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
     if(this.list.length) {
       this.list.forEach(item => {
         let m = item.baseLine;
         if(m !== n) {
-          item.__offsetY(n - m);
+          let d = n - m;
+          item.__offsetY(d);
+          // text的话对齐下移可能影响lineHeight，在同行有img这样的替换元素下
+          if(d > 0 && !item.tagName) {
+            diff = Math.max(diff, item.height + d - n);
+          }
         }
       });
     }
+    return diff;
   }
 
   __offsetX(diff) {
     this.__x += diff;
   }
 
-  __offsetY(diff) {
+  __offsetY(diff, isVerticalAlign) {
     this.__y += diff;
+    // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
+    if(isVerticalAlign) {
+      this.list.forEach(item => {
+        // 是text的第一个的box的话，text也需要偏移
+        if (item instanceof TextBox) {
+          let text = item.parent;
+          if (text.textBoxes[0] === item) {
+            text.__offsetY(diff);
+          }
+        } else {
+          item.__offsetY(diff);
+        }
+      });
+    }
   }
 
   /**

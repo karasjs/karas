@@ -672,6 +672,11 @@ var Node = /*#__PURE__*/function () {
     get: function get() {
       return this.__config[NODE_IS_DESTROYED];
     }
+  }, {
+    key: "isReplaced",
+    get: function get() {
+      return false;
+    }
   }]);
 
   return Node;
@@ -9888,6 +9893,11 @@ var TextBox = /*#__PURE__*/function () {
     key: "wList",
     get: function get() {
       return this.__wList;
+    }
+  }, {
+    key: "isReplaced",
+    get: function get() {
+      return false;
     }
   }]);
 
@@ -20614,7 +20624,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           marginRight = style[MARGIN_RIGHT$1],
           width = style[WIDTH$4];
 
-      if (position !== 'absolute' && (display === 'block' || display === 'flex') && (width[1] !== AUTO$4 || this.tagName === 'img') && marginLeft[1] === AUTO$4 && marginRight[1] === AUTO$4) {
+      if (position !== 'absolute' && (display === 'block' || display === 'flex') && (width[1] !== AUTO$4 || this.isReplaced) && marginLeft[1] === AUTO$4 && marginRight[1] === AUTO$4) {
         var ow = this.outerWidth;
 
         if (ow < data.w) {
@@ -23246,17 +23256,46 @@ var LineBox = /*#__PURE__*/function () {
   }, {
     key: "verticalAlign",
     value: function verticalAlign() {
-      var n = this.baseLine; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
+      var baseLine = this.baseLine;
+      var lineHeight = this.lineHeight;
+      var increasedHeight = lineHeight;
+      var hasReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
 
       if (this.list.length) {
         this.list.forEach(function (item) {
-          var m = item.baseLine;
+          if (item.isReplaced) {
+            hasReplaced = true;
+          }
 
-          if (m !== n) {
-            item.__offsetY(n - m);
+          var n = item.baseLine;
+
+          if (n !== baseLine) {
+            var d = baseLine - n;
+
+            item.__offsetY(d); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+            // 比如一个字符和img，字符下调y即字符的baseLine和图片底部对齐，导致高度增加lineHeight和baseLine的差值
+
+
+            if (d > 0) {
+              increasedHeight = Math.max(increasedHeight, item.height + d);
+            }
           }
         });
       }
+
+      var diff = 0; // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
+      // 因为此时img要参与这一行和baseLine的对齐扩充
+
+      if (hasReplaced) {
+        diff = this.__lineHeight - this.__baseLine;
+      } // 增加过的高度比最大还大时需要调整
+
+
+      if (increasedHeight > lineHeight) {
+        diff = Math.max(increasedHeight - lineHeight);
+      }
+
+      return diff;
     }
   }, {
     key: "__offsetX",
@@ -23265,8 +23304,23 @@ var LineBox = /*#__PURE__*/function () {
     }
   }, {
     key: "__offsetY",
-    value: function __offsetY(diff) {
-      this.__y += diff;
+    value: function __offsetY(diff, isVerticalAlign) {
+      this.__y += diff; // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
+
+      if (isVerticalAlign) {
+        this.list.forEach(function (item) {
+          // 是text的第一个的box的话，text也需要偏移
+          if (item instanceof TextBox) {
+            var text = item.parent;
+
+            if (text.textBoxes[0] === item) {
+              text.__offsetY(diff);
+            }
+          } else {
+            item.__offsetY(diff);
+          }
+        });
+      }
     }
     /**
      * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
@@ -23372,21 +23426,22 @@ var LineBox = /*#__PURE__*/function () {
   }, {
     key: "baseLine",
     get: function get() {
-      var baseLine = 0;
+      var baseLine = this.__baseLine; // 只有TextBox和InlineBlock或replaced
+
       this.list.forEach(function (item) {
         baseLine = Math.max(baseLine, item.baseLine);
       });
-      return Math.max(this.__baseLine, baseLine);
+      return baseLine;
     }
   }, {
     key: "lineHeight",
     get: function get() {
-      var lineHeight = 0; // 只有TextBox和InlineBlock
+      var lineHeight = this.__lineHeight; // 只有TextBox和InlineBlock或replaced
 
       this.list.forEach(function (item) {
         lineHeight = Math.max(lineHeight, item.outerHeight);
       });
-      return Math.max(this.__lineHeight, lineHeight);
+      return lineHeight;
     }
   }]);
 
@@ -23556,12 +23611,24 @@ var LineBoxManager = /*#__PURE__*/function () {
         }
       });
     }
+    /**
+     * 垂直对齐过程中，如果遇到占位元素如img，可能会导致每行lineBox高度增加，需返回增加量，
+     * next行也需要y偏移
+     * @returns {number}
+     */
+
   }, {
     key: "verticalAlign",
     value: function verticalAlign() {
+      var spread = 0;
       this.list.forEach(function (lineBox) {
-        lineBox.verticalAlign();
+        if (spread) {
+          lineBox.__offsetY(spread, true);
+        }
+
+        spread += lineBox.verticalAlign();
       });
+      return spread;
     }
   }, {
     key: "addX",
@@ -25026,7 +25093,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
         var isInline = isXom && item.currentStyle[DISPLAY$5] === 'inline';
         var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
-        var isImg = item.tagName === 'img'; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
+        var isReplaced = item.isReplaced; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
 
         if (!isXom || isInline || isInlineBlock) {
           if (mergeMarginBottomList.length && mergeMarginTopList.length) {
@@ -25067,7 +25134,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 lineBoxManager.setNotEnd();
               } // inline和不折行的ib，其中ib需要手动存入当前lb中
               else {
-                (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // abs统计宽度
@@ -25096,7 +25163,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
 
-                (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
@@ -25122,7 +25189,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   lineBoxManager.setNotEnd();
                 } // inline和不折行的ib，其中ib需要手动存入当前lb中
                 else {
-                  (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                  (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 }
@@ -25306,12 +25373,18 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
       var th = this.__height = fixedHeight ? h : y - data.y;
 
-      this.__ioSize(tw, th); // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+      this.__ioSize(tw, th); // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
+
+
+      var spread = lineBoxManager.verticalAlign();
+
+      if (spread) {
+        this.__resizeY(spread); // parent以及next无需处理，因为深度遍历后面还会进行
+
+      } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
       if (!isVirtual) {
-        lineBoxManager.verticalAlign();
-
         if (['center', 'right'].indexOf(textAlign) > -1) {
           lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
 
@@ -26186,7 +26259,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       });
     }
     /**
-     * inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
+     * inline比较特殊，先简单顶部对齐，后续还需根据vertical和lineHeight计算y偏移
      * inlineBlock复用逻辑，可以设置w/h，在混排时表现不同，inlineBlock换行限制在规定的矩形内，
      * 且ib会在没设置width且换行的时候撑满上一行，即便内部尺寸没抵达边界
      * 而inline换行则会从父容器start处开始，且首尾可能占用矩形不同
@@ -28372,6 +28445,11 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
     key: "src",
     get: function get() {
       return this.__loadImg.src;
+    }
+  }, {
+    key: "isReplaced",
+    get: function get() {
+      return true;
     }
   }]);
 
@@ -40201,7 +40279,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.69.6";
+var version = "0.69.7";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

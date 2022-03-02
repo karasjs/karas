@@ -175,6 +175,10 @@ class TextBox {
   get wList() {
     return this.__wList;
   }
+
+  get isReplaced() {
+    return false;
+  }
 }
 
 export default TextBox;

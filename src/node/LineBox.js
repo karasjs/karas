@@ -37,29 +37,39 @@ class LineBox {
   }
 
   verticalAlign() {
-    let n = this.baseLine;
-    let max = this.lineHeight;
-    let diff = 0;
+    let baseLine = this.baseLine;
+    let lineHeight = this.lineHeight;
+    let increasedHeight = lineHeight;
+    let hasReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
     if(this.list.length) {
       this.list.forEach(item => {
-        let m = item.baseLine;
-        max = Math.max(max, item.outerHeight);
-        if(m !== n) {
-          let d = n - m;
+        if(item.isReplaced) {
+          hasReplaced = true;
+        }
+        let n = item.baseLine;
+        if(n !== baseLine) {
+          let d = baseLine - n;
           item.__offsetY(d);
           // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+          // 比如一个字符和img，字符下调y即字符的baseLine和图片底部对齐，导致高度增加lineHeight和baseLine的差值
           if(d > 0) {
-            diff = Math.max(diff, item.height + d);
+            increasedHeight = Math.max(increasedHeight, item.height + d);
           }
         }
       });
     }
-    // 比最大的还大时才会影响高度，否则不需要调整
-    if(diff > max) {
-      return diff - max;
+    let diff = 0;
+    // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
+    // 因为此时img要参与这一行和baseLine的对齐扩充
+    if(hasReplaced) {
+      diff = this.__lineHeight - this.__baseLine;
     }
-    return 0;
+    // 增加过的高度比最大还大时需要调整
+    if(increasedHeight > lineHeight) {
+      diff = Math.max(increasedHeight - lineHeight);
+    }
+    return diff;
   }
 
   __offsetX(diff) {
@@ -169,20 +179,21 @@ class LineBox {
   }
 
   get baseLine() {
-    let baseLine = 0;
+    let baseLine = this.__baseLine;
+    // 只有TextBox和InlineBlock或replaced
     this.list.forEach(item => {
       baseLine = Math.max(baseLine, item.baseLine);
     });
-    return Math.max(this.__baseLine, baseLine);
+    return baseLine;
   }
 
   get lineHeight() {
-    let lineHeight = 0;
-    // 只有TextBox和InlineBlock
+    let lineHeight = this.__lineHeight;
+    // 只有TextBox和InlineBlock或replaced
     this.list.forEach(item => {
       lineHeight = Math.max(lineHeight, item.outerHeight);
     });
-    return Math.max(this.__lineHeight, lineHeight);
+    return lineHeight;
   }
 }
 

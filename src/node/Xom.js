@@ -806,7 +806,7 @@ class Xom extends Node {
       [WIDTH]: width,
     } = style;
     if(position !== 'absolute' && (display === 'block' || display === 'flex')
-      && (width[1] !== AUTO || this.tagName === 'img') && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
+      && (width[1] !== AUTO || this.isReplaced) && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
       let ow = this.outerWidth;
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5, true);

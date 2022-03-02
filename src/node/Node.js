@@ -151,6 +151,10 @@ class Node {
   get isDestroyed() {
     return this.__config[NODE_IS_DESTROYED];
   }
+
+  get isReplaced() {
+    return false;
+  }
 }
 
 export default Node;

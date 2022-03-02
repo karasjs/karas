@@ -1025,7 +1025,7 @@ class Dom extends Xom {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
-      let isImg = item.tagName === 'img';
+      let isReplaced = item.isReplaced;
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
       if((!isXom || isInline || isInlineBlock)) {
         if(mergeMarginBottomList.length && mergeMarginTopList.length) {
@@ -1062,7 +1062,7 @@ class Dom extends Xom {
             }
             // inline和不折行的ib，其中ib需要手动存入当前lb中
             else {
-              (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+              (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
@@ -1089,7 +1089,7 @@ class Dom extends Xom {
                 lineClampCount,
               }, isVirtual);
               // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
-              (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+              (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
             }
@@ -1117,7 +1117,7 @@ class Dom extends Xom {
               }
               // inline和不折行的ib，其中ib需要手动存入当前lb中
               else {
-                (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               }
@@ -1288,14 +1288,8 @@ class Dom extends Xom {
     // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
     let spread = lineBoxManager.verticalAlign();
     if(spread) {
-      th = this.__height += spread;
-      // 所有next都需要偏移
-      let next = this.next;
-      while(next) {
-        next.__offsetY(spread);
-        next = next.next;
-      }
-      // parent以及parent的next无需处理，因为深度遍历后面还会进行
+      this.__resizeY(spread);
+      // parent以及next无需处理，因为深度遍历后面还会进行
     }
     // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isVirtual) {

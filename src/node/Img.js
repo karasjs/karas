@@ -878,6 +878,10 @@ class Img extends Dom {
     return this.__loadImg.src;
   }
 
+  get isReplaced() {
+    return true;
+  }
+
   static showError = true;
 }
 

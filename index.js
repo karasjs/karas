@@ -678,6 +678,11 @@
       get: function get() {
         return this.__config[NODE_IS_DESTROYED];
       }
+    }, {
+      key: "isReplaced",
+      get: function get() {
+        return false;
+      }
     }]);
 
     return Node;
@@ -9894,6 +9899,11 @@
       key: "wList",
       get: function get() {
         return this.__wList;
+      }
+    }, {
+      key: "isReplaced",
+      get: function get() {
+        return false;
       }
     }]);
 
@@ -20620,7 +20630,7 @@
             marginRight = style[MARGIN_RIGHT$1],
             width = style[WIDTH$4];
 
-        if (position !== 'absolute' && (display === 'block' || display === 'flex') && (width[1] !== AUTO$4 || this.tagName === 'img') && marginLeft[1] === AUTO$4 && marginRight[1] === AUTO$4) {
+        if (position !== 'absolute' && (display === 'block' || display === 'flex') && (width[1] !== AUTO$4 || this.isReplaced) && marginLeft[1] === AUTO$4 && marginRight[1] === AUTO$4) {
           var ow = this.outerWidth;
 
           if (ow < data.w) {
@@ -23252,34 +23262,46 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        var n = this.baseLine;
-        var max = this.lineHeight;
-        var diff = 0; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
+        var baseLine = this.baseLine;
+        var lineHeight = this.lineHeight;
+        var increasedHeight = lineHeight;
+        var hasReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
 
         if (this.list.length) {
           this.list.forEach(function (item) {
-            var m = item.baseLine;
-            max = Math.max(max, item.outerHeight);
+            if (item.isReplaced) {
+              hasReplaced = true;
+            }
 
-            if (m !== n) {
-              var d = n - m;
+            var n = item.baseLine;
+
+            if (n !== baseLine) {
+              var d = baseLine - n;
 
               item.__offsetY(d); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+              // 比如一个字符和img，字符下调y即字符的baseLine和图片底部对齐，导致高度增加lineHeight和baseLine的差值
 
 
               if (d > 0) {
-                diff = Math.max(diff, item.height + d);
+                increasedHeight = Math.max(increasedHeight, item.height + d);
               }
             }
           });
-        } // 比最大的还大时才会影响高度，否则不需要调整
-
-
-        if (diff > max) {
-          return diff - max;
         }
 
-        return 0;
+        var diff = 0; // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
+        // 因为此时img要参与这一行和baseLine的对齐扩充
+
+        if (hasReplaced) {
+          diff = this.__lineHeight - this.__baseLine;
+        } // 增加过的高度比最大还大时需要调整
+
+
+        if (increasedHeight > lineHeight) {
+          diff = Math.max(increasedHeight - lineHeight);
+        }
+
+        return diff;
       }
     }, {
       key: "__offsetX",
@@ -23410,21 +23432,22 @@
     }, {
       key: "baseLine",
       get: function get() {
-        var baseLine = 0;
+        var baseLine = this.__baseLine; // 只有TextBox和InlineBlock或replaced
+
         this.list.forEach(function (item) {
           baseLine = Math.max(baseLine, item.baseLine);
         });
-        return Math.max(this.__baseLine, baseLine);
+        return baseLine;
       }
     }, {
       key: "lineHeight",
       get: function get() {
-        var lineHeight = 0; // 只有TextBox和InlineBlock
+        var lineHeight = this.__lineHeight; // 只有TextBox和InlineBlock或replaced
 
         this.list.forEach(function (item) {
           lineHeight = Math.max(lineHeight, item.outerHeight);
         });
-        return Math.max(this.__lineHeight, lineHeight);
+        return lineHeight;
       }
     }]);
 
@@ -25076,7 +25099,7 @@
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
           var isInline = isXom && item.currentStyle[DISPLAY$5] === 'inline';
           var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
-          var isImg = item.tagName === 'img'; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
+          var isReplaced = item.isReplaced; // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
 
           if (!isXom || isInline || isInlineBlock) {
             if (mergeMarginBottomList.length && mergeMarginTopList.length) {
@@ -25117,7 +25140,7 @@
                   lineBoxManager.setNotEnd();
                 } // inline和不折行的ib，其中ib需要手动存入当前lb中
                 else {
-                  (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                  (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 } // abs统计宽度
@@ -25146,7 +25169,7 @@
                   }, isVirtual); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
 
-                  (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                  (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                   x = lineBoxManager.lastX;
                   y = lineBoxManager.lastY;
                 } // 放不下处理之前的lineBox，并重新开头
@@ -25172,7 +25195,7 @@
                     lineBoxManager.setNotEnd();
                   } // inline和不折行的ib，其中ib需要手动存入当前lb中
                   else {
-                    (isInlineBlock || isImg) && lineBoxManager.addItem(item);
+                    (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY;
                   }
@@ -25362,15 +25385,7 @@
         var spread = lineBoxManager.verticalAlign();
 
         if (spread) {
-          th = this.__height += spread; // 所有next都需要偏移
-
-          var next = this.next;
-
-          while (next) {
-            next.__offsetY(spread);
-
-            next = next.next;
-          } // parent以及parent的next无需处理，因为深度遍历后面还会进行
+          this.__resizeY(spread); // parent以及next无需处理，因为深度遍历后面还会进行
 
         } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
@@ -28436,6 +28451,11 @@
       key: "src",
       get: function get() {
         return this.__loadImg.src;
+      }
+    }, {
+      key: "isReplaced",
+      get: function get() {
+        return true;
       }
     }]);
 

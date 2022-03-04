@@ -352,7 +352,7 @@ class Xom extends Node {
   }
 
   // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
-  __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
+  __addMp(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
     let {
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_TOP]: marginTop,
@@ -367,47 +367,48 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
+    let mp = this.__calMp(marginLeft, w, !isDirectItem)
+      + this.__calMp(marginRight, w, !isDirectItem)
+      + this.__calMp(paddingLeft, w, !isDirectItem)
+      + this.__calMp(paddingRight, w, !isDirectItem);
+    if(borderLeftWidth[1] === PX) {
+      mp += borderLeftWidth[0];
+    }
+    else if(borderLeftWidth[1] === REM) {
+      mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(borderLeftWidth[1] === VW) {
+      mp += borderLeftWidth[0] * this.root.width * 0.01;
+    }
+    else if(borderLeftWidth[1] === VH) {
+      mp += borderLeftWidth[0] * this.root.height * 0.01;
+    }
+    else if(borderLeftWidth[1] === VMAX) {
+      mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(borderLeftWidth[1] === VMIN) {
+      mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
+    if(borderRightWidth[1] === PX) {
+      mp += borderRightWidth[0];
+    }
+    else if(borderRightWidth[1] === REM) {
+      mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(borderRightWidth[1] === VW) {
+      mp += borderRightWidth[0] * this.root.width * 0.01;
+    }
+    else if(borderRightWidth[1] === VH) {
+      mp += borderRightWidth[0] * this.root.height * 0.01;
+    }
+    else if(borderRightWidth[1] === VMAX) {
+      mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(borderRightWidth[1] === VMIN) {
+      mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
+    res2 = res2.map(item => item + mp);
     if(isDirectionRow) {
-      let mp = this.__calMp(marginLeft, w, !isDirectItem)
-        + this.__calMp(marginRight, w, !isDirectItem)
-        + this.__calMp(paddingLeft, w, !isDirectItem)
-        + this.__calMp(paddingRight, w, !isDirectItem);
-      if(borderLeftWidth[1] === PX) {
-        mp += borderLeftWidth[0];
-      }
-      else if(borderLeftWidth[1] === REM) {
-        mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(borderLeftWidth[1] === VW) {
-        mp += borderLeftWidth[0] * this.root.width * 0.01;
-      }
-      else if(borderLeftWidth[1] === VH) {
-        mp += borderLeftWidth[0] * this.root.height * 0.01;
-      }
-      else if(borderLeftWidth[1] === VMAX) {
-        mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(borderLeftWidth[1] === VMIN) {
-        mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-      if(borderRightWidth[1] === PX) {
-        mp += borderRightWidth[0];
-      }
-      else if(borderRightWidth[1] === REM) {
-        mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(borderRightWidth[1] === VW) {
-        mp += borderRightWidth[0] * this.root.width * 0.01;
-      }
-      else if(borderRightWidth[1] === VH) {
-        mp += borderRightWidth[0] * this.root.height * 0.01;
-      }
-      else if(borderRightWidth[1] === VMAX) {
-        mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(borderRightWidth[1] === VMIN) {
-        mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
       res = res.map(item => item + mp);
     }
     else {
@@ -453,7 +454,7 @@ class Xom extends Node {
       }
       res = res.map(item => item + mp);
     }
-    return res;
+    return [res, res2];
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时

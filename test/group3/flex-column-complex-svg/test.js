@@ -1,0 +1,12 @@
+let path = require('path');
+let fs = require('fs');
+
+module.exports = {
+  'init': function(browser) {
+    browser
+      .url('file://' + path.join(__dirname, 'index.html'))
+      .waitForElementVisible('body', 1000)
+      .assert.value('input', '{"bb":[],"children":[{"bb":[],"children":[{"bb":[],"children":[{"bb":[],"children":[{"type":"item","tagName":"path","props":[["d","M136,27L360,27L360,195L136,195L136,27"],["fill","none"],["stroke","rgba(0,0,0,1)"],["stroke-width",1]]}],"visibility":"visible","type":"geom"},{"bb":[],"children":[{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",0],["y",48.7265625],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"aaaaaaaa"},{"type":"item","tagName":"text","props":[["x",0],["y",76.32421875],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"aaaaaaaa"},{"type":"item","tagName":"text","props":[["x",0],["y",103.921875],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"aaaa"}]},{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",0],["y",131.51953125],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"bbbbbbbb"},{"type":"item","tagName":"text","props":[["x",0],["y",159.1171875],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"bbbbbbbb"},{"type":"item","tagName":"text","props":[["x",0],["y",186.71484375],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"bbbb"}]}],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom"},{"bb":[],"children":[{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",279.8436],["y",240.7265625],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"123"}]},{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",319.92179999999996],["y",240.7265625],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"456"}]}],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom","defs":[]}')
+      .end();
+  }
+};

@@ -199,8 +199,8 @@ class Text extends Node {
       __cache.release();
     }
     let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
-    this.__x = this.__sx1 = x;
-    this.__y = this.__sy1 = y;
+    this.__x = this.__sx = this.__sx1 = x;
+    this.__y = this.__sy = this.__sy1 = y;
     let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
     textBoxes.splice(0);
     let __config = this.__config;
@@ -488,7 +488,7 @@ class Text extends Node {
     if(i < 0) {
       let lineBox = lineBoxManager.lineBox;
       // lineBox为空是行首，至少放1个字符
-      if(!lineBox.size) {
+      if(!lineBox || !lineBox.size) {
         maxW = count - (lineCount ? 0 : beginSpace);
         let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
           content.charAt(begin), charWidthList.slice(begin, begin + 1));
@@ -575,6 +575,7 @@ class Text extends Node {
     });
     this.__x = minX;
     this.__sx = this.__sx1 = minX + this.ox;
+    this.__sy = this.__sy1;
     this.__width = maxX - minX;
   }
 

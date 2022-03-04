@@ -517,6 +517,8 @@ var Node = /*#__PURE__*/function () {
     this.__ox = 0; // relative造成的偏移量
 
     this.__oy = 0;
+    this.__sx = 0;
+    this.__sy = 0;
     this.__width = 0;
     this.__height = 0;
     this.__baseLine = 0;
@@ -13996,8 +13998,8 @@ var Text = /*#__PURE__*/function (_Node) {
           lineClamp = _data$lineClamp === void 0 ? 0 : _data$lineClamp,
           _data$lineClampCount = data.lineClampCount,
           lineClampCount = _data$lineClampCount === void 0 ? 0 : _data$lineClampCount;
-      this.__x = this.__sx1 = x;
-      this.__y = this.__sy1 = y;
+      this.__x = this.__sx = this.__sx1 = x;
+      this.__y = this.__sy = this.__sy1 = y;
       var isDestroyed = this.isDestroyed,
           content = this.content,
           currentStyle = this.currentStyle,
@@ -14317,7 +14319,7 @@ var Text = /*#__PURE__*/function (_Node) {
       if (i < 0) {
         var lineBox = lineBoxManager.lineBox; // lineBox为空是行首，至少放1个字符
 
-        if (!lineBox.size) {
+        if (!lineBox || !lineBox.size) {
           maxW = count - (lineCount ? 0 : beginSpace);
 
           var _textBox4 = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight, content.charAt(begin), charWidthList.slice(begin, begin + 1));
@@ -14413,6 +14415,7 @@ var Text = /*#__PURE__*/function (_Node) {
       });
       this.__x = minX;
       this.__sx = this.__sx1 = minX + this.ox;
+      this.__sy = this.__sy1;
       this.__width = maxX - minX;
     }
   }, {
@@ -20145,7 +20148,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
   }, {
     key: "__addMp",
-    value: function __addMp(isDirectionRow, w, currentStyle, res, isDirectItem) {
+    value: function __addMp(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
       var marginLeft = currentStyle[MARGIN_LEFT$1],
           marginTop = currentStyle[MARGIN_TOP],
           marginRight = currentStyle[MARGIN_RIGHT$1],
@@ -20159,37 +20162,41 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$2],
           borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$3];
 
+      var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
+
+      if (borderLeftWidth[1] === PX$6) {
+        mp += borderLeftWidth[0];
+      } else if (borderLeftWidth[1] === REM$7) {
+        mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$8];
+      } else if (borderLeftWidth[1] === VW$7) {
+        mp += borderLeftWidth[0] * this.root.width * 0.01;
+      } else if (borderLeftWidth[1] === VH$7) {
+        mp += borderLeftWidth[0] * this.root.height * 0.01;
+      } else if (borderLeftWidth[1] === VMAX$7) {
+        mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      } else if (borderLeftWidth[1] === VMIN$7) {
+        mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
+
+      if (borderRightWidth[1] === PX$6) {
+        mp += borderRightWidth[0];
+      } else if (borderRightWidth[1] === REM$7) {
+        mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$8];
+      } else if (borderRightWidth[1] === VW$7) {
+        mp += borderRightWidth[0] * this.root.width * 0.01;
+      } else if (borderRightWidth[1] === VH$7) {
+        mp += borderRightWidth[0] * this.root.height * 0.01;
+      } else if (borderRightWidth[1] === VMAX$7) {
+        mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      } else if (borderRightWidth[1] === VMIN$7) {
+        mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
+
+      res2 = res2.map(function (item) {
+        return item + mp;
+      });
+
       if (isDirectionRow) {
-        var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
-
-        if (borderLeftWidth[1] === PX$6) {
-          mp += borderLeftWidth[0];
-        } else if (borderLeftWidth[1] === REM$7) {
-          mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-        } else if (borderLeftWidth[1] === VW$7) {
-          mp += borderLeftWidth[0] * this.root.width * 0.01;
-        } else if (borderLeftWidth[1] === VH$7) {
-          mp += borderLeftWidth[0] * this.root.height * 0.01;
-        } else if (borderLeftWidth[1] === VMAX$7) {
-          mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        } else if (borderLeftWidth[1] === VMIN$7) {
-          mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
-
-        if (borderRightWidth[1] === PX$6) {
-          mp += borderRightWidth[0];
-        } else if (borderRightWidth[1] === REM$7) {
-          mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-        } else if (borderRightWidth[1] === VW$7) {
-          mp += borderRightWidth[0] * this.root.width * 0.01;
-        } else if (borderRightWidth[1] === VH$7) {
-          mp += borderRightWidth[0] * this.root.height * 0.01;
-        } else if (borderRightWidth[1] === VMAX$7) {
-          mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        } else if (borderRightWidth[1] === VMIN$7) {
-          mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
-
         res = res.map(function (item) {
           return item + mp;
         });
@@ -20229,7 +20236,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         });
       }
 
-      return res;
+      return [res, res2];
     } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
     // fromAbs为absolute节点特有省略计算标识，本节点是abs时真正布局传入
 
@@ -24565,7 +24572,11 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           width = currentStyle[WIDTH$5],
           height = currentStyle[HEIGHT$5];
       var lineHeight = computedStyle[LINE_HEIGHT$4];
-      var main = isDirectionRow ? width : height; // 只绝对值生效，%不生效，依旧要判断
+      var main = isDirectionRow ? width : height;
+      var length = flowChildren.length;
+      var hasLayout;
+      var columnCrossCount = 0,
+          columnCrossMax = 0; // 只绝对值生效，%不生效，依旧要判断
 
       if (main[1] === PX$8) {
         min = max = main[0];
@@ -24580,6 +24591,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       } else if (main[1] === VMIN$8) {
         min = max = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       } else {
+        hasLayout = true;
+
         if (display === 'flex') {
           var isRow = flexDirection !== 'column';
           flowChildren = genOrderChildren(flowChildren);
@@ -24599,34 +24612,42 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 h: h
               }),
                   _item$__calMinMax2 = _slicedToArray(_item$__calMinMax, 2),
-                  _item$__calMinMax2$ = _slicedToArray(_item$__calMinMax2[1], 2),
+                  _item$__calMinMax2$ = _slicedToArray(_item$__calMinMax2[0], 2),
                   min2 = _item$__calMinMax2$[0],
-                  max2 = _item$__calMinMax2$[1];
+                  max2 = _item$__calMinMax2$[1],
+                  _item$__calMinMax2$2 = _slicedToArray(_item$__calMinMax2[1], 1),
+                  columnCrossMax2 = _item$__calMinMax2$2[0];
 
               if (isDirectionRow) {
                 if (isRow) {
                   min += min2;
                   max += max2;
+                  columnCrossMax += columnCrossMax2;
                 } else {
                   min = Math.max(min, min2);
                   max = Math.max(max, max2);
+                  columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
                 }
               } else {
                 if (isRow) {
                   min = Math.max(min, min2);
                   max = Math.max(max, max2);
+                  columnCrossMax += columnCrossMax2;
                 } else {
                   min += min2;
                   max += max2;
+                  columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
                 }
               }
             } else if (isDirectionRow) {
               if (isRow) {
                 min += item.charWidth;
                 max += item.textWidth;
+                columnCrossMax += item.width;
               } else {
                 min = Math.max(min, item.charWidth);
                 max = Math.max(max, item.textWidth);
+                columnCrossMax = Math.max(columnCrossMax, item.width);
               }
             } else {
               var _lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
@@ -24642,9 +24663,11 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               if (isRow) {
                 min = Math.max(min, item.height);
                 max = Math.max(max, item.height);
+                columnCrossMax += item.width;
               } else {
                 min += item.height;
                 max += item.height;
+                columnCrossMax = Math.max(columnCrossMax, item.width);
               }
             }
           });
@@ -24654,7 +24677,6 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
           var _lineBoxManager2 = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
 
-          var length = flowChildren.length;
           flowChildren.forEach(function (item, i) {
             if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
               var _item$__calMinMax3 = item.__calMinMax(isDirectionRow, {
@@ -24665,54 +24687,67 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 lineBoxManager: _lineBoxManager2
               }),
                   _item$__calMinMax4 = _slicedToArray(_item$__calMinMax3, 2),
-                  _display = _item$__calMinMax4[0],
-                  _item$__calMinMax4$ = _slicedToArray(_item$__calMinMax4[1], 2),
+                  _item$__calMinMax4$ = _slicedToArray(_item$__calMinMax4[0], 2),
                   min2 = _item$__calMinMax4$[0],
-                  max2 = _item$__calMinMax4$[1]; // 块级查看之前是否有行内元素，设置换行
+                  max2 = _item$__calMinMax4$[1],
+                  _item$__calMinMax4$2 = _slicedToArray(_item$__calMinMax4[1], 1),
+                  columnCrossMax2 = _item$__calMinMax4$2[0];
 
+              var _display = item.currentStyle[DISPLAY$5]; // 块级查看之前是否有行内元素，设置换行
 
               if ((_display === 'block' || _display === 'flex') && _lineBoxManager2.isEnd) {
                 _lineBoxManager2.setNotEnd();
 
                 _lineBoxManager2.setNewLine();
-              }
+              } // row看块级最大尺寸和连续行级最大尺寸的宽
+
 
               if (isDirectionRow) {
                 if (_display === 'block' || _display === 'flex') {
                   min = Math.max(min, min2);
                   max = Math.max(max, max2);
-                  countMin = countMax = 0;
+                  columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                  countMin = countMax = columnCrossCount = 0;
                 } else {
                   countMin += min2;
                   countMax += max2;
+                  columnCrossCount += columnCrossMax2;
                   min = Math.max(min, countMin);
                   max = Math.max(max, countMax);
+                  columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
                 }
-              } else {
+              } // column看块级高度和连续行级最大尺寸高度的和
+              else {
                 if (_display === 'block' || _display === 'flex') {
                   // 之前行积累的极值，并清空
                   min += countMin;
                   max += countMax;
-                  countMin = countMax = 0; // 本身的
+                  columnCrossMax += columnCrossCount;
+                  countMin = countMax = columnCrossCount = 0; // 本身的
 
                   min += min2;
                   max += max2;
+                  columnCrossMax += columnCrossMax2;
                 } else {
                   // 行内取极值，最后一个记得应用
                   countMin = Math.max(countMin, min2);
                   countMax = Math.max(countMax, max2);
+                  columnCrossCount = Math.max(columnCrossCount, columnCrossMax2);
 
                   if (i === length - 1) {
                     min += countMin;
                     max += countMax;
+                    columnCrossMax += columnCrossCount;
                   }
                 }
               }
             } else if (isDirectionRow) {
               countMin += item.charWidth;
               countMax += item.textWidth;
+              columnCrossCount += item.width;
               min = Math.max(min, countMin);
               max = Math.max(max, countMax);
+              columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
             } else {
               item.__layout({
                 x: x,
@@ -24725,10 +24760,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
               countMin = Math.max(countMin, item.height);
               countMax = Math.max(countMax, item.height);
+              columnCrossCount = Math.max(columnCrossCount, item.width);
 
               if (i === length - 1) {
                 min += countMin;
                 max += countMax;
+                columnCrossMax += columnCrossCount;
               }
             }
           });
@@ -24747,20 +24784,25 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 lineBoxManager: lineBoxManager
               }),
                   _item$__calMinMax6 = _slicedToArray(_item$__calMinMax5, 2),
-                  _item$__calMinMax6$ = _slicedToArray(_item$__calMinMax6[1], 2),
+                  _item$__calMinMax6$ = _slicedToArray(_item$__calMinMax6[0], 2),
                   min2 = _item$__calMinMax6$[0],
-                  max2 = _item$__calMinMax6$[1];
+                  max2 = _item$__calMinMax6$[1],
+                  _item$__calMinMax6$2 = _slicedToArray(_item$__calMinMax6[1], 1),
+                  columnCrossMax2 = _item$__calMinMax6$2[0];
 
               if (isDirectionRow) {
                 min += min2;
                 max += max2;
+                columnCrossMax += columnCrossMax2;
               } else {
                 min = Math.max(min, min2);
                 max = Math.max(max, max2);
+                columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
               }
             } else if (isDirectionRow) {
               min += item.charWidth;
               max += item.textWidth;
+              columnCrossMax += item.width;
             } else {
               item.__layout({
                 x: x,
@@ -24772,12 +24814,203 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
               min = Math.max(min, item.height);
               max = Math.max(max, item.height);
+              columnCrossMax = Math.max(columnCrossMax, item.width);
             }
           });
         }
+      } // column且isContent需要计算合适的最大宽度返回，上面有可能计算过了
+
+
+      if (!isDirectionRow) {
+        if (width[1] !== AUTO$6) {
+          if (width[1] === PX$8) {
+            columnCrossMax = width[0];
+          } else if (width[1] === PERCENT$9) {
+            columnCrossMax = width[0] * 0.01 * w;
+          } else if (width[1] === REM$8) {
+            columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE$9];
+          } else if (width[1] === VW$8) {
+            columnCrossMax = width[0] * this.root.width * 0.01;
+          } else if (width[1] === VH$8) {
+            columnCrossMax = width[0] * this.root.height * 0.01;
+          } else if (width[1] === VMAX$8) {
+            columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          } else if (width[1] === VMIN$8) {
+            columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          }
+        } else if (!hasLayout) {
+          if (display === 'flex') {
+            var _isRow = flexDirection !== 'column';
+
+            flowChildren = genOrderChildren(flowChildren);
+            flowChildren.forEach(function (item) {
+              if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
+                var _currentStyle2 = item.currentStyle,
+                    _computedStyle2 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+
+                if (_currentStyle2[DISPLAY$5] !== 'block' && _currentStyle2[DISPLAY$5] !== 'flex') {
+                  _currentStyle2[DISPLAY$5] = _computedStyle2[DISPLAY$5] = 'block';
+                }
+
+                var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h
+                }),
+                    _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
+                    _item$__calMinMax8$ = _slicedToArray(_item$__calMinMax8[1], 1),
+                    columnCrossMax2 = _item$__calMinMax8$[0];
+
+                if (isDirectionRow) {
+                  if (_isRow) {
+                    columnCrossMax += columnCrossMax2;
+                  } else {
+                    columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                  }
+                } else {
+                  if (_isRow) {
+                    columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                  } else {
+                    columnCrossMax += columnCrossMax2;
+                  }
+                }
+              } else if (isDirectionRow) {
+                if (_isRow) {
+                  columnCrossMax += item.width;
+                } else {
+                  columnCrossMax = Math.max(columnCrossMax, item.width);
+                }
+              } else {
+                var _lineBoxManager3 = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+
+                item.__layout({
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: _lineBoxManager3
+                });
+
+                if (_isRow) {
+                  columnCrossMax = Math.max(columnCrossMax, item.width);
+                } else {
+                  columnCrossMax += item.width;
+                }
+              }
+            });
+          } else if (display === 'block') {
+            var _lineBoxManager4 = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+
+            flowChildren.forEach(function (item, i) {
+              if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
+                var _item$__calMinMax9 = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: _lineBoxManager4
+                }),
+                    _item$__calMinMax10 = _slicedToArray(_item$__calMinMax9, 2),
+                    _item$__calMinMax10$ = _slicedToArray(_item$__calMinMax10[1], 1),
+                    columnCrossMax2 = _item$__calMinMax10$[0];
+
+                var _display2 = item.currentStyle[DISPLAY$5]; // 块级查看之前是否有行内元素，设置换行
+
+                if ((_display2 === 'block' || _display2 === 'flex') && _lineBoxManager4.isEnd) {
+                  _lineBoxManager4.setNotEnd();
+
+                  _lineBoxManager4.setNewLine();
+                } // row看块级最大尺寸和连续行级最大尺寸的宽
+
+
+                if (isDirectionRow) {
+                  if (_display2 === 'block' || _display2 === 'flex') {
+                    columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                    columnCrossCount = 0;
+                  } else {
+                    columnCrossCount += columnCrossMax2;
+                    columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
+                  }
+                } // column看块级高度和连续行级最大尺寸高度的和
+                else {
+                  if (_display2 === 'block' || _display2 === 'flex') {
+                    // 之前行积累的极值，并清空
+                    columnCrossMax += columnCrossCount;
+                    columnCrossCount = 0; // 本身的
+
+                    columnCrossMax += columnCrossMax2;
+                  } else {
+                    // 行内取极值，最后一个记得应用
+                    columnCrossCount = Math.max(columnCrossCount, columnCrossMax2);
+
+                    if (i === length - 1) {
+                      columnCrossMax += columnCrossCount;
+                    }
+                  }
+                }
+              } else if (isDirectionRow) {
+                columnCrossCount += item.width;
+                columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
+              } else {
+                item.__layout({
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: _lineBoxManager4
+                }); // 行内取极值，最后一个记得应用
+
+
+                columnCrossCount = Math.max(columnCrossCount, item.width);
+
+                if (i === length - 1) {
+                  columnCrossMax += columnCrossCount;
+                }
+              }
+            });
+          } else {
+            if (display === 'inlineBlock' || display === 'inline-block') {
+              lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            }
+
+            flowChildren.forEach(function (item) {
+              if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
+                var _item$__calMinMax11 = item.__calMinMax(isDirectionRow, {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: lineBoxManager
+                }),
+                    _item$__calMinMax12 = _slicedToArray(_item$__calMinMax11, 2),
+                    _item$__calMinMax12$ = _slicedToArray(_item$__calMinMax12[1], 1),
+                    columnCrossMax2 = _item$__calMinMax12$[0];
+
+                if (isDirectionRow) {
+                  columnCrossMax += columnCrossMax2;
+                } else {
+                  columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                }
+              } else if (isDirectionRow) {
+                columnCrossMax += item.width;
+              } else {
+                item.__layout({
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h,
+                  lineBoxManager: lineBoxManager
+                });
+
+                columnCrossMax = Math.max(columnCrossMax, item.width);
+              }
+            });
+          }
+        }
       }
 
-      return [display, this.__addMp(isDirectionRow, w, currentStyle, [min, max])];
+      return this.__addMp(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
     }
     /**
      * flex布局时，计算basis尺寸，如果有固定声明则以其为标准，content为内容最大尺寸，auto依赖w/h或降级content
@@ -24790,15 +25023,15 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
      * 返回b，声明则按css值，否则是auto/content
      * 返回min为最小宽度，遇到字符/inline则单列排版后需要的最大宽度
      * 返回max为最大宽度，理想情况一排最大值，在abs时isVirtual状态参与计算，文本抵达边界才进行换行
+     * 当为column方向时，还需返回每个节点的cross即宽度，真实布局传入，除非stretch模式按100%宽度
      * @param isDirectionRow
      * @param data
-     * @param isVirtual abs非固定尺寸时先进行虚拟布局标识
      * @private
      */
 
   }, {
     key: "__calBasis",
-    value: function __calBasis(isDirectionRow, data, isVirtual) {
+    value: function __calBasis(isDirectionRow, data) {
       css.computeReflow(this, this.isShadowRoot);
       var b = 0;
       var min = 0;
@@ -24860,56 +25093,68 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       } // 非固定尺寸的basis为auto时降级为content
       else if (isAuto) {
         isContent = true;
-      } // flex的item还是flex时
+      }
 
+      var countMin = 0,
+          countMax = 0;
+      var columnCrossCount = 0,
+          columnCrossMax = 0; // flex的item还是flex时
 
       if (display === 'flex') {
         var isRow = flexDirection !== 'column';
         flowChildren = genOrderChildren(flowChildren);
-        flowChildren.forEach(function (item) {
+        flowChildren.forEach(function (item, i) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-            var _currentStyle2 = item.currentStyle,
-                _computedStyle2 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+            var _currentStyle3 = item.currentStyle,
+                _computedStyle3 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-            if (_currentStyle2[DISPLAY$5] !== 'block' && _currentStyle2[DISPLAY$5] !== 'flex') {
-              _currentStyle2[DISPLAY$5] = _computedStyle2[DISPLAY$5] = 'block';
+            if (_currentStyle3[DISPLAY$5] !== 'block' && _currentStyle3[DISPLAY$5] !== 'flex') {
+              _currentStyle3[DISPLAY$5] = _computedStyle3[DISPLAY$5] = 'block';
             }
 
-            var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
+            var _item$__calMinMax13 = item.__calMinMax(isDirectionRow, {
               x: x,
               y: y,
               w: w,
               h: h
             }),
-                _item$__calMinMax8 = _slicedToArray(_item$__calMinMax7, 2),
-                _item$__calMinMax8$ = _slicedToArray(_item$__calMinMax8[1], 2),
-                min2 = _item$__calMinMax8$[0],
-                max2 = _item$__calMinMax8$[1];
+                _item$__calMinMax14 = _slicedToArray(_item$__calMinMax13, 2),
+                _item$__calMinMax14$ = _slicedToArray(_item$__calMinMax14[0], 2),
+                min2 = _item$__calMinMax14$[0],
+                max2 = _item$__calMinMax14$[1],
+                _item$__calMinMax14$2 = _slicedToArray(_item$__calMinMax14[1], 1),
+                columnCrossMax2 = _item$__calMinMax14$2[0];
 
             if (isDirectionRow) {
               if (isRow) {
                 min += min2;
                 max += max2;
+                columnCrossMax += columnCrossMax2;
               } else {
                 min = Math.max(min, min2);
                 max = Math.max(max, max2);
+                columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
               }
             } else {
               if (isRow) {
                 min = Math.max(min, min2);
                 max = Math.max(max, max2);
+                columnCrossMax += columnCrossMax2;
               } else {
                 min += min2;
                 max += max2;
+                columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
               }
             }
           } else if (isDirectionRow) {
             if (isRow) {
               min += item.charWidth;
               max += item.textWidth;
+              columnCrossMax += item.width;
             } else {
               min = Math.max(min, item.charWidth);
               max = Math.max(max, item.textWidth);
+              columnCrossMax = Math.max(columnCrossMax, item.width);
             }
           } else {
             var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
@@ -24925,75 +25170,88 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             if (isRow) {
               min = Math.max(min, item.height);
               max = Math.max(max, item.height);
+              columnCrossMax += item.width;
             } else {
               min += item.height;
               max += item.height;
+              columnCrossMax = Math.max(columnCrossMax, item.width);
             }
           }
         });
       } // flex的item是block/inline时，inline也会变成block统一对待
       else {
-        var countMin = 0,
-            countMax = 0;
         var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
         var length = flowChildren.length;
         flowChildren.forEach(function (item, i) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-            var _item$__calMinMax9 = item.__calMinMax(isDirectionRow, {
+            var _item$__calMinMax15 = item.__calMinMax(isDirectionRow, {
               x: x,
               y: y,
               w: w,
               h: h,
               lineBoxManager: lineBoxManager
             }),
-                _item$__calMinMax10 = _slicedToArray(_item$__calMinMax9, 2),
-                _display2 = _item$__calMinMax10[0],
-                _item$__calMinMax10$ = _slicedToArray(_item$__calMinMax10[1], 2),
-                min2 = _item$__calMinMax10$[0],
-                max2 = _item$__calMinMax10$[1]; // 块级查看之前是否有行内元素，设置换行
+                _item$__calMinMax16 = _slicedToArray(_item$__calMinMax15, 2),
+                _item$__calMinMax16$ = _slicedToArray(_item$__calMinMax16[0], 2),
+                min2 = _item$__calMinMax16$[0],
+                max2 = _item$__calMinMax16$[1],
+                _item$__calMinMax16$2 = _slicedToArray(_item$__calMinMax16[1], 1),
+                columnCrossMax2 = _item$__calMinMax16$2[0];
 
+            var _display3 = item.currentStyle[DISPLAY$5]; // 块级查看之前是否有行内元素，设置换行
 
-            if ((_display2 === 'block' || _display2 === 'flex') && lineBoxManager.isEnd) {
+            if ((_display3 === 'block' || _display3 === 'flex') && lineBoxManager.isEnd) {
               lineBoxManager.setNotEnd();
               lineBoxManager.setNewLine();
-            }
+            } // row看块级最大尺寸和连续行级最大尺寸的宽
+
 
             if (isDirectionRow) {
-              if (_display2 === 'block' || _display2 === 'flex') {
+              if (_display3 === 'block' || _display3 === 'flex') {
                 min = Math.max(min, min2);
                 max = Math.max(max, max2);
-                countMin = countMax = 0;
+                columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                countMin = countMax = columnCrossCount = 0;
               } else {
                 countMin += min2;
                 countMax += max2;
+                columnCrossCount += columnCrossMax2;
                 min = Math.max(min, countMin);
                 max = Math.max(max, countMax);
+                columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
               }
-            } else {
-              if (_display2 === 'block' || _display2 === 'flex') {
+            } // column看块级高度和连续行级最大尺寸高度的和
+            else {
+              if (_display3 === 'block' || _display3 === 'flex') {
                 // 之前行积累的极值，并清空
                 min += countMin;
                 max += countMax;
-                countMin = countMax = 0; // 本身的
+                columnCrossMax += columnCrossCount;
+                countMin = countMax = columnCrossCount = 0; // 本身的
 
                 min += min2;
                 max += max2;
+                columnCrossMax += columnCrossMax2;
               } else {
-                // 行内取极值，最后一个记得应用
+                // 行内取极值，最后一个记得应用因为后面没有循环去累加了
                 countMin = Math.max(countMin, min2);
                 countMax = Math.max(countMax, max2);
+                columnCrossCount = Math.max(columnCrossCount, columnCrossMax2);
 
                 if (i === length - 1) {
                   min += countMin;
                   max += countMax;
+                  columnCrossMax += columnCrossCount;
                 }
               }
             }
           } else if (isDirectionRow) {
             countMin += item.charWidth;
             countMax += item.textWidth;
+            columnCrossCount += item.width;
             min = Math.max(min, countMin);
             max = Math.max(max, countMax);
+            columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
           } else {
             item.__layout({
               x: x,
@@ -25006,10 +25264,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
             countMin = Math.max(countMin, item.height);
             countMax = Math.max(countMax, item.height);
+            columnCrossCount = Math.max(columnCrossCount, item.width);
 
             if (i === length - 1) {
               min += countMin;
               max += countMax;
+              columnCrossMax += columnCrossCount;
             }
           }
         });
@@ -25021,10 +25281,28 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
       if (isContent) {
         b = max;
+      }
+
+      if (!isDirectionRow && width[1] !== AUTO$6) {
+        if (width[1] === PX$8) {
+          columnCrossMax = width[0];
+        } else if (width[1] === PERCENT$9) {
+          columnCrossMax = width[0] * 0.01 * w;
+        } else if (width[1] === REM$8) {
+          columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE$9];
+        } else if (width[1] === VW$8) {
+          columnCrossMax = width[0] * this.root.width * 0.01;
+        } else if (width[1] === VH$8) {
+          columnCrossMax = width[0] * this.root.height * 0.01;
+        } else if (width[1] === VMAX$8) {
+          columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        } else if (width[1] === VMIN$8) {
+          columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        }
       } // 直接item的mpb影响basis
 
 
-      return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], true);
+      return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
     }
   }, {
     key: "__layoutNone",
@@ -25456,14 +25734,16 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var basisList = [];
       var maxList = [];
       var minList = [];
+      var columnCrossList = []; // column时特殊求每个子节点的宽度，布局时传入，不能按stretch拉满
+
       var orderChildren = genOrderChildren(flowChildren);
       orderChildren.forEach(function (item) {
         if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-          var _currentStyle3 = item.currentStyle,
-              _computedStyle3 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
+          var _currentStyle4 = item.currentStyle,
+              _computedStyle4 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
-          if (_currentStyle3[DISPLAY$5] !== 'block' && _currentStyle3[DISPLAY$5] !== 'flex') {
-            _currentStyle3[DISPLAY$5] = _computedStyle3[DISPLAY$5] = 'block';
+          if (_currentStyle4[DISPLAY$5] !== 'block' && _currentStyle4[DISPLAY$5] !== 'flex') {
+            _currentStyle4[DISPLAY$5] = _computedStyle4[DISPLAY$5] = 'block';
           } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -25472,11 +25752,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             y: y,
             w: w,
             h: h
-          }, isVirtual),
-              _item$__calBasis2 = _slicedToArray(_item$__calBasis, 3),
-              b = _item$__calBasis2[0],
-              min = _item$__calBasis2[1],
-              max = _item$__calBasis2[2];
+          }),
+              _item$__calBasis2 = _slicedToArray(_item$__calBasis, 2),
+              _item$__calBasis2$ = _slicedToArray(_item$__calBasis2[0], 3),
+              b = _item$__calBasis2$[0],
+              min = _item$__calBasis2$[1],
+              max = _item$__calBasis2$[2],
+              _item$__calBasis2$2 = _slicedToArray(_item$__calBasis2[1], 1),
+              columnCross = _item$__calBasis2$2[0];
 
           if (isVirtual) {
             if (isDirectionRow) {
@@ -25488,15 +25771,16 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             return;
           }
 
-          var flexGrow = _currentStyle3[FLEX_GROW$1],
-              flexShrink = _currentStyle3[FLEX_SHRINK$1];
-          _computedStyle3[FLEX_BASIS$2] = b;
+          var flexGrow = _currentStyle4[FLEX_GROW$1],
+              flexShrink = _currentStyle4[FLEX_SHRINK$1];
+          _computedStyle4[FLEX_BASIS$2] = b;
           growList.push(flexGrow);
           shrinkList.push(flexShrink); // 根据basis不同，计算方式不同
 
           basisList.push(b);
           maxList.push(max);
           minList.push(min);
+          columnCrossList.push(columnCross);
         } // 文本
         else {
           if (isVirtual) {
@@ -25518,6 +25802,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             basisList.push(_tw);
             maxList.push(_tw);
             minList.push(cw);
+            columnCrossList.push(item.width);
           } else {
             var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
 
@@ -25533,7 +25818,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
             var _h = item.height;
             basisList.push(_h);
+            maxList.push(_h);
             minList.push(_h);
+            columnCrossList.push(item.width);
           }
         }
       }); // abs时，只需关注宽度即可，无需真正布局
@@ -25614,7 +25901,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         var length = item.length;
         var end = offset + length;
 
-        var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+        var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end), columnCrossList.slice(offset, end)),
             _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
             x1 = _this2$__layoutFlexLi2[0],
             y1 = _this2$__layoutFlexLi2[1],
@@ -25811,7 +26098,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
   }, {
     key: "__layoutFlexLine",
-    value: function __layoutFlexLine(data, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+    value: function __layoutFlexLine(data, isDirectionRow, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList, columnCrossList) {
       var _this3 = this;
 
       var x = data.x,
@@ -25970,10 +26257,25 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
             });
           } else {
+            // 特殊的地方，column子元素的宽度限制为非stretch时，否则还是满宽
+            var alignSelf = item.currentStyle[ALIGN_SELF$1];
+            var w3;
+
+            if (alignItems === 'stretch') {
+              if (alignSelf !== 'auto' && alignSelf !== 'stretch') {
+                w3 = columnCrossList[i];
+              }
+            } else {
+              if (alignSelf !== 'stretch') {
+                w3 = columnCrossList[i];
+              }
+            }
+
             item.__layout({
               x: x,
               y: y,
               w: w,
+              w3: w3,
               h: main,
               h3: main // 同w2
 
@@ -25986,7 +26288,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           item.__layout({
             x: x,
             y: y,
-            w: isDirectionRow ? main : w,
+            w: isDirectionRow ? main : columnCrossList[i],
             h: isDirectionRow ? h : main,
             lineBoxManager: lineBoxManager,
             lineClamp: lineClamp,
@@ -26126,7 +26428,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
             } // 默认stretch
             else {
-              var _computedStyle4 = item.computedStyle,
+              var _computedStyle5 = item.computedStyle,
                   _item$currentStyle = item.currentStyle,
                   display = _item$currentStyle[DISPLAY$5],
                   flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
@@ -26138,12 +26440,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 }));
               }
 
-              var _borderTopWidth = _computedStyle4[BORDER_TOP_WIDTH$3],
-                  _borderBottomWidth = _computedStyle4[BORDER_BOTTOM_WIDTH$3],
-                  _marginTop2 = _computedStyle4[MARGIN_TOP$1],
-                  _marginBottom2 = _computedStyle4[MARGIN_BOTTOM$1],
-                  _paddingTop = _computedStyle4[PADDING_TOP$2],
-                  _paddingBottom = _computedStyle4[PADDING_BOTTOM$2];
+              var _borderTopWidth = _computedStyle5[BORDER_TOP_WIDTH$3],
+                  _borderBottomWidth = _computedStyle5[BORDER_BOTTOM_WIDTH$3],
+                  _marginTop2 = _computedStyle5[MARGIN_TOP$1],
+                  _marginBottom2 = _computedStyle5[MARGIN_BOTTOM$1],
+                  _paddingTop = _computedStyle5[PADDING_TOP$2],
+                  _paddingBottom = _computedStyle5[PADDING_BOTTOM$2];
 
               if (_height[1] === AUTO$6) {
                 var _old = item.height;
@@ -26177,19 +26479,19 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               item.__offsetX(_diff9 * 0.5, true);
             }
           } else if (alignSelf === 'stretch') {
-            var _computedStyle5 = item.computedStyle,
+            var _computedStyle6 = item.computedStyle,
                 width = item.currentStyle[WIDTH$5];
-            var borderRightWidth = _computedStyle5[BORDER_RIGHT_WIDTH$4],
-                borderLeftWidth = _computedStyle5[BORDER_LEFT_WIDTH$5],
-                marginRight = _computedStyle5[MARGIN_RIGHT$3],
-                marginLeft = _computedStyle5[MARGIN_LEFT$3],
-                paddingRight = _computedStyle5[PADDING_RIGHT$3],
-                paddingLeft = _computedStyle5[PADDING_LEFT$4];
+            var borderRightWidth = _computedStyle6[BORDER_RIGHT_WIDTH$4],
+                borderLeftWidth = _computedStyle6[BORDER_LEFT_WIDTH$5],
+                marginRight = _computedStyle6[MARGIN_RIGHT$3],
+                marginLeft = _computedStyle6[MARGIN_LEFT$3],
+                paddingRight = _computedStyle6[PADDING_RIGHT$3],
+                paddingLeft = _computedStyle6[PADDING_LEFT$4];
 
             if (width[1] === AUTO$6) {
               var _old2 = item.width;
 
-              var _v2 = item.__width = _computedStyle5[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+              var _v2 = item.__width = _computedStyle6[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
               var _d2 = _v2 - _old2;
 
@@ -26229,19 +26531,19 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
             } // 默认stretch
             else {
-              var _computedStyle6 = item.computedStyle,
+              var _computedStyle7 = item.computedStyle,
                   _width = item.currentStyle[WIDTH$5];
-              var _borderRightWidth = _computedStyle6[BORDER_RIGHT_WIDTH$4],
-                  _borderLeftWidth = _computedStyle6[BORDER_LEFT_WIDTH$5],
-                  _marginRight = _computedStyle6[MARGIN_RIGHT$3],
-                  _marginLeft = _computedStyle6[MARGIN_LEFT$3],
-                  _paddingRight = _computedStyle6[PADDING_RIGHT$3],
-                  _paddingLeft = _computedStyle6[PADDING_LEFT$4];
+              var _borderRightWidth = _computedStyle7[BORDER_RIGHT_WIDTH$4],
+                  _borderLeftWidth = _computedStyle7[BORDER_LEFT_WIDTH$5],
+                  _marginRight = _computedStyle7[MARGIN_RIGHT$3],
+                  _marginLeft = _computedStyle7[MARGIN_LEFT$3],
+                  _paddingRight = _computedStyle7[PADDING_RIGHT$3],
+                  _paddingLeft = _computedStyle7[PADDING_LEFT$4];
 
               if (_width[1] === AUTO$6) {
                 var _old3 = item.width;
 
-                var _v3 = item.__width = _computedStyle6[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
+                var _v3 = item.__width = _computedStyle7[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
 
                 var _d3 = _v3 - _old3;
 
@@ -26566,12 +26868,18 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         th = this.__height = fixedHeight ? h : y - data.y;
 
         this.__ioSize(tw, th);
+      } // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
+
+
+      var spread = lineBoxManager.verticalAlign();
+
+      if (spread) {
+        this.__resizeY(spread); // parent以及next无需处理，因为深度遍历后面还会进行
+
       } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
 
 
       if (!isVirtual && !isInline) {
-        lineBoxManager.verticalAlign();
-
         if (['center', 'right'].indexOf(textAlign) > -1) {
           lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
 
@@ -28158,6 +28466,12 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
       return w;
     }
   }, {
+    key: "__calMinMax",
+    value: function __calMinMax(isDirectionRow, data) {
+      css.computeReflow(this, this.isShadowRoot);
+      return this.__calBasis(isDirectionRow, data);
+    }
+  }, {
     key: "__calBasis",
     value: function __calBasis(isDirectionRow, data) {
       var b = 0;
@@ -28222,6 +28536,8 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
         }
       } // auto和content固定尺寸比例计算
       else if (__loadImg.source || __loadImg.error) {
+        var res = this.__preLayout(data);
+
         if (cross[1] !== AUTO$7) {
           if (cross[1] === PX$9) {
             cross = cross[0];
@@ -28239,10 +28555,10 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
             cross = cross[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
 
-          var ratio = __loadImg.width / __loadImg.height;
+          var ratio = res.w / res.h;
           b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
         } else {
-          b = max = min = isDirectionRow ? __loadImg.width : __loadImg.height;
+          b = max = min = isDirectionRow ? res.w : res.h;
         }
       } // border也得计算在内
 
@@ -28263,7 +28579,30 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
         min += h2;
       }
 
-      return [b, min, max];
+      var columnCrossMax = 0;
+
+      if (width[1] === PX$9) {
+        columnCrossMax = width[0];
+      } else if (width[1] === PERCENT$a) {
+        columnCrossMax = width[0] * 0.01 * (isDirectionRow ? w : h);
+      } else if (width[1] === REM$9) {
+        columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE$a];
+      } else if (width[1] === VW$9) {
+        columnCrossMax = width[0] * this.root.width * 0.01;
+      } else if (width[1] === VH$9) {
+        columnCrossMax = width[0] * this.root.height * 0.01;
+      } else if (width[1] === VMAX$9) {
+        columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      } else if (width[1] === VMIN$9) {
+        columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      } else if (__loadImg.source || __loadImg.error) {
+        var _res = this.__preLayout(data);
+
+        columnCrossMax = _res.w;
+      }
+
+      columnCrossMax += this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w) + borderLeftWidth[0] + borderRightWidth[0];
+      return [[b, min, max], [columnCrossMax]];
     }
   }, {
     key: "__loadAndRefresh",
@@ -28729,30 +29068,7 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
     key: "__calMinMax",
     value: function __calMinMax(isDirectionRow, data) {
       css.computeReflow(this, this.isShadowRoot);
-      var min = 0;
-      var max = 0;
-      var currentStyle = this.currentStyle; // 计算需考虑style的属性
-
-      var width = currentStyle[WIDTH$7],
-          height = currentStyle[HEIGHT$7],
-          display = currentStyle[DISPLAY$7];
-      var main = isDirectionRow ? width : height; // 只绝对值生效，%不生效，依旧要判断
-
-      if (main[1] === PX$a) {
-        min = max = main[0];
-      } else if (main[1] === REM$a) {
-        min = max = main[0] * this.root.computedStyle[FONT_SIZE$b];
-      } else if (main[1] === VW$a) {
-        min = max = main[0] * this.root.width * 0.01;
-      } else if (main[1] === VH$a) {
-        min = max = main[0] * this.root.height * 0.01;
-      } else if (main[1] === VMAX$a) {
-        min = max = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      } else if (main[1] === VMIN$a) {
-        min = max = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-
-      return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
+      return this.__calBasis(isDirectionRow, data);
     }
   }, {
     key: "__calBasis",
@@ -28834,7 +29150,26 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
         min += h2;
       }
 
-      return [b, min, max];
+      var columnCrossMax = 0;
+
+      if (width[1] === PX$a) {
+        columnCrossMax = width[0];
+      } else if (width[1] === PERCENT$b) {
+        columnCrossMax = width[0] * 0.01 * (isDirectionRow ? w : h);
+      } else if (width[1] === REM$a) {
+        columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE$b];
+      } else if (width[1] === VW$a) {
+        columnCrossMax = width[0] * this.root.width * 0.01;
+      } else if (width[1] === VH$a) {
+        columnCrossMax = width[0] * this.root.height * 0.01;
+      } else if (width[1] === VMAX$a) {
+        columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      } else if (width[1] === VMIN$a) {
+        columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
+
+      columnCrossMax += this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w) + borderLeftWidth[0] + borderRightWidth[0];
+      return [[b, min, max], [columnCrossMax]];
     }
   }, {
     key: "__layoutBlock",
@@ -40279,7 +40614,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.69.7";
+var version = "0.69.8";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

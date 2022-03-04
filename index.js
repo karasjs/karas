@@ -26874,12 +26874,18 @@
           th = this.__height = fixedHeight ? h : y - data.y;
 
           this.__ioSize(tw, th);
+        } // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
+
+
+        var spread = lineBoxManager.verticalAlign();
+
+        if (spread) {
+          this.__resizeY(spread); // parent以及next无需处理，因为深度遍历后面还会进行
+
         } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
 
 
         if (!isVirtual && !isInline) {
-          lineBoxManager.verticalAlign();
-
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
 
@@ -40614,7 +40620,7 @@
     Cache: Cache
   };
 
-  var version = "0.69.7";
+  var version = "0.69.8";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

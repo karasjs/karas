@@ -19,6 +19,8 @@ class Node {
     this.__y = 0;
     this.__ox = 0; // relative造成的偏移量
     this.__oy = 0;
+    this.__sx = 0;
+    this.__sy = 0;
     this.__width = 0;
     this.__height = 0;
     this.__baseLine = 0;

@@ -229,36 +229,7 @@ class Geom extends Xom {
 
   __calMinMax(isDirectionRow, data) {
     css.computeReflow(this, this.isShadowRoot);
-    let min = 0;
-    let max = 0;
-    let { currentStyle } = this;
-    // 计算需考虑style的属性
-    let {
-      [WIDTH]: width,
-      [HEIGHT]: height,
-      [DISPLAY]: display,
-    } = currentStyle;
-    let main = isDirectionRow ? width : height;
-    // 只绝对值生效，%不生效，依旧要判断
-    if(main[1] === PX) {
-      min = max = main[0];
-    }
-    else if(main[1] === REM) {
-      min = max = main[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(main[1] === VW) {
-      min = max = main[0] * this.root.width * 0.01;
-    }
-    else if(main[1] === VH) {
-      min = max = main[0] * this.root.height * 0.01;
-    }
-    else if(main[1] === VMAX) {
-      min = max = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(main[1] === VMIN) {
-      min = max = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    return [display, this.__addMp(isDirectionRow, data.w, currentStyle, [min, max])];
+    return this.__calBasis(isDirectionRow, data);
   }
 
   __calBasis(isDirectionRow, data) {
@@ -355,7 +326,34 @@ class Geom extends Xom {
       max += h2;
       min += h2;
     }
-    return [b, min, max];
+    let columnCrossMax = 0;
+    if(width[1] === PX) {
+      columnCrossMax = width[0];
+    }
+    else if(width[1] === PERCENT) {
+      columnCrossMax = width[0] * 0.01 * (isDirectionRow ? w : h);
+    }
+    else if(width[1] === REM) {
+      columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(width[1] === VW) {
+      columnCrossMax = width[0] * this.root.width * 0.01;
+    }
+    else if(width[1] === VH) {
+      columnCrossMax = width[0] * this.root.height * 0.01;
+    }
+    else if(width[1] === VMAX) {
+      columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(width[1] === VMIN) {
+      columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
+    columnCrossMax += this.__calMp(marginLeft, w)
+      + this.__calMp(marginRight, w)
+      + this.__calMp(paddingLeft, w)
+      + this.__calMp(paddingRight, w)
+      + borderLeftWidth[0] + borderRightWidth[0];
+    return [[b, min, max], [columnCrossMax]];
   }
 
   __layoutBlock(data, isVirtual) {

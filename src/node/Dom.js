@@ -1712,7 +1712,6 @@ class Dom extends Xom {
         line.push(orderChildren[i]);
       }
     });
-    console.log(basisList,minList,maxList,hypotheticalList)
     if(line.length) {
       __flexLine.push(line);
     }

@@ -2068,9 +2068,9 @@ class Xom extends Node {
             }
           });
         }
-        // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
+        // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         let ff = css.getFontFamily(fontFamily);
-        let baseLine = css.getBaseLine(computedStyle);
+        let baseline = css.getBaseline(computedStyle);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
         let diffL = fontSize * (font.info[ff].lgr || 0);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
@@ -2083,7 +2083,7 @@ class Xom extends Node {
           if(contentBox.parentLineBox !== lastLineBox) {
             // 上一行
             let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
-              lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false,
+              lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             // 要算上开头空白inline，可能有多个和递归嵌套
@@ -2170,7 +2170,7 @@ class Xom extends Node {
           // 最后一个特殊判断
           if(i === length - 1) {
             let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
-              lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true,
+              lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             // 要算上开头空白inline，可能有多个和递归嵌套
@@ -3123,11 +3123,11 @@ class Xom extends Node {
     return this.__contentBoxList;
   }
 
-  get baseLine() {
+  get baseline() {
     return this.offsetHeight;
   }
 
-  get firstBaseLine() {
+  get firstBaseline() {
     return this.offsetHeight;
   }
 

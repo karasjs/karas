@@ -23,7 +23,7 @@ class Node {
     this.__sy = 0;
     this.__width = 0;
     this.__height = 0;
-    this.__baseLine = 0;
+    this.__baseline = 0;
     this.__config = {};
     this.__prev = null;
     this.__next = null;
@@ -142,8 +142,8 @@ class Node {
     return this.__hostRoot;
   }
 
-  get baseLine() {
-    return this.__baseLine;
+  get baseline() {
+    return this.__baseline;
   }
 
   get virtualDom() {

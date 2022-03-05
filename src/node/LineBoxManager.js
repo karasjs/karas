@@ -6,7 +6,7 @@ import LineBox from './LineBox';
  * 同时LineBox可能连续也可能不连续，不连续的是中间有block之类的隔离开来
  */
 class LineBoxManager {
-  constructor(x, y, lineHeight, baseLine) {
+  constructor(x, y, lineHeight, baseline) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
     this.__maxX = x;
@@ -15,7 +15,7 @@ class LineBoxManager {
     this.__list = []; // 包含若干LineBox
     this.__isNewLine = true; // 区域内是否是新行，容器dom（block）开头肯定是
     this.__lineHeight = lineHeight;
-    this.__baseLine = baseLine;
+    this.__baseline = baseline;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
   }
 
@@ -24,7 +24,7 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   genLineBox(x, y) {
-    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseLine);
+    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline);
     this.list.push(lineBox);
     this.__isEnd = true;
     return lineBox;
@@ -41,9 +41,9 @@ class LineBoxManager {
    */
   genLineBoxByInlineIfNewLine(x, y, l, b) {
     let lineHeight = Math.max(this.__lineHeight, l);
-    let baseLine = Math.max(this.__baseLine, b);
+    let baseline = Math.max(this.__baseline, b);
     if(this.__isNewLine) {
-      let lineBox = new LineBox(x, y, lineHeight, baseLine);
+      let lineBox = new LineBox(x, y, lineHeight, baseline);
       this.list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
@@ -53,11 +53,11 @@ class LineBoxManager {
 
   setLbOrGenLineBoxByInline(x, y, l, b) {
     let lineHeight = Math.max(this.__lineHeight, l);
-    let baseLine = Math.max(this.__baseLine, b);
+    let baseline = Math.max(this.__baseline, b);
     let lineBox;
     let list = this.list;
     if(this.__isNewLine) {
-      lineBox = new LineBox(x, y, lineHeight, baseLine);
+      lineBox = new LineBox(x, y, lineHeight, baseline);
       list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
@@ -233,7 +233,7 @@ class LineBoxManager {
     return this.__domList;
   }
 
-  get baseLine() {
+  get baseline() {
     let list = this.list;
     let length = list.length;
     if(length) {
@@ -241,16 +241,16 @@ class LineBoxManager {
       for(let i = 0; i < length - 1; i++) {
         n += list[i].height;
       }
-      return n + list[length - 1].baseLine;
+      return n + list[length - 1].baseline;
     }
     return 0;
   }
 
-  get firstBaseLine() {
+  get firstBaseline() {
     let list = this.list;
     let length = list.length;
     if(length) {
-      return list[0].baseLine;
+      return list[0].baseline;
     }
     return 0;
   }

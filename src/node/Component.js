@@ -322,7 +322,7 @@ Object.keys(change.GEOM).concat([
   'currentStyle',
   'computedStyle',
   'currentProps',
-  'baseLine',
+  'baseline',
   'virtualDom',
   'mask',
   'maskId',

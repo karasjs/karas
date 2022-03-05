@@ -461,7 +461,7 @@ class Text extends Node {
     }
     this.__width = maxW;
     this.__height = y - data.y;
-    this.__baseLine = css.getBaseLine(computedStyle);
+    this.__baseline = css.getBaseline(computedStyle);
     return lineCount;
   }
 
@@ -785,8 +785,8 @@ class Text extends Node {
     return this.__textWidth;
   }
 
-  get baseLine() {
-    return this.__baseLine;
+  get baseline() {
+    return this.__baseline;
   }
 
   get root() {

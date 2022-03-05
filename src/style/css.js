@@ -1343,7 +1343,7 @@ function getFontFamily(str) {
   return f;
 }
 
-function getBaseLine(style) {
+function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
   let ff = getFontFamily(style[FONT_FAMILY]);
   let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
@@ -1703,7 +1703,7 @@ export default {
   computeReflow,
   setFontStyle,
   getFontFamily,
-  getBaseLine,
+  getBaseline,
   calRelative,
   calAbsolute,
   equalStyle,

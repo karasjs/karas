@@ -20,15 +20,15 @@ const { STYLE_KEY: {
  * inline则不会有此对象和列表，其复用最近block父层的，这样解决嵌套问题，
  * block在布局时将列表向孩子传递下去，每遇到block会重新生成
  * 每当发生换行时，专门列表中会新生成一个LineBox，让后续内容继续跟随新的LB
- * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseLine，inlineBlock等节点按最后一行baseLine
+ * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseline，inlineBlock等节点按最后一行baseline
  */
 class LineBox {
-  constructor(x, y, lineHeight, baseLine) {
+  constructor(x, y, lineHeight, baseline) {
     this.__list = [];
     this.__x = x;
     this.__y = y;
-    this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseLine
-    this.__baseLine = baseLine;
+    this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
+    this.__baseline = baseline;
   }
 
   add(item) {
@@ -37,22 +37,22 @@ class LineBox {
   }
 
   verticalAlign() {
-    let baseLine = this.baseLine;
+    let baseline = this.baseline;
     let lineHeight = this.lineHeight;
     let increasedHeight = lineHeight;
     let hasReplaced;
-    // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
+    // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
       this.list.forEach(item => {
         if(item.isReplaced) {
           hasReplaced = true;
         }
-        let n = item.baseLine;
-        if(n !== baseLine) {
-          let d = baseLine - n;
+        let n = item.baseline;
+        if(n !== baseline) {
+          let d = baseline - n;
           item.__offsetY(d);
           // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
-          // 比如一个字符和img，字符下调y即字符的baseLine和图片底部对齐，导致高度增加lineHeight和baseLine的差值
+          // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
           if(d > 0) {
             increasedHeight = Math.max(increasedHeight, item.height + d);
           }
@@ -61,9 +61,9 @@ class LineBox {
     }
     let diff = 0;
     // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
-    // 因为此时img要参与这一行和baseLine的对齐扩充
+    // 因为此时img要参与这一行和baseline的对齐扩充
     if(hasReplaced) {
-      diff = this.__lineHeight - this.__baseLine;
+      diff = this.__lineHeight - this.__baseline;
     }
     // 增加过的高度比最大还大时需要调整
     if(increasedHeight > lineHeight) {
@@ -95,14 +95,14 @@ class LineBox {
   }
 
   /**
-   * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
+   * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseline，这样有最小值兜底
    * @param l
    * @param b
    * @private
    */
   __setLB(l, b) {
     this.__lineHeight = Math.max(l, this.__lineHeight);
-    this.__baseLine = Math.max(b, this.__baseLine);
+    this.__baseline = Math.max(b, this.__baseline);
   }
 
   get list() {
@@ -178,13 +178,13 @@ class LineBox {
     return this.lineHeight;
   }
 
-  get baseLine() {
-    let baseLine = this.__baseLine;
+  get baseline() {
+    let baseline = this.__baseline;
     // 只有TextBox和InlineBlock或replaced
     this.list.forEach(item => {
-      baseLine = Math.max(baseLine, item.baseLine);
+      baseline = Math.max(baseline, item.baseline);
     });
-    return baseLine;
+    return baseline;
   }
 
   get lineHeight() {

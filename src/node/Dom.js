@@ -623,7 +623,7 @@ class Dom extends Xom {
             }
           }
           else {
-            let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
             item.__layout({
               x,
               y,
@@ -646,7 +646,7 @@ class Dom extends Xom {
       }
       else if(display === 'block') {
         let countMin = 0, countMax = 0;
-        let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+        let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         flowChildren.forEach((item, i) => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [[min2, max2], [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
@@ -729,7 +729,7 @@ class Dom extends Xom {
       }
       else {
         if(display === 'inlineBlock' || display === 'inline-block') {
-          lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+          lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -828,7 +828,7 @@ class Dom extends Xom {
               }
             }
             else {
-              let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+              let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
               item.__layout({
                 x,
                 y,
@@ -846,7 +846,7 @@ class Dom extends Xom {
           });
         }
         else if(display === 'block') {
-          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
           flowChildren.forEach((item, i) => {
             if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
               let [, [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h, lineBoxManager });
@@ -907,7 +907,7 @@ class Dom extends Xom {
         }
         else {
           if(display === 'inlineBlock' || display === 'inline-block') {
-            lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
           }
           flowChildren.forEach(item => {
             if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1083,7 +1083,7 @@ class Dom extends Xom {
           }
         }
         else {
-          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
           item.__layout({
             x,
             y,
@@ -1106,7 +1106,7 @@ class Dom extends Xom {
     }
     // flex的item是block/inline时，inline也会变成block统一对待
     else {
-      let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+      let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
       let length = flowChildren.length;
       flowChildren.forEach((item, i) => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1260,7 +1260,7 @@ class Dom extends Xom {
     let lineClampCount = 0;
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
-    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxW = 0;
     let cw = 0;
@@ -1643,7 +1643,7 @@ class Dom extends Xom {
           columnCrossList.push(item.width);
         }
         else {
-          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
           item.__layout({
             x,
             y,
@@ -1712,6 +1712,7 @@ class Dom extends Xom {
         line.push(orderChildren[i]);
       }
     });
+    console.log(basisList,minList,maxList,hypotheticalList)
     if(line.length) {
       __flexLine.push(line);
     }
@@ -2069,7 +2070,7 @@ class Dom extends Xom {
         }
       }
       else {
-        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         lbmList.push(lineBoxManager);
         item.__layout({
           x,
@@ -2140,9 +2141,9 @@ class Dom extends Xom {
 
   // 每个flexLine的侧轴对齐，单行时就是一行对齐
   __crossAlign(line, alignItems, isDirectionRow, maxCross) {
-    let baseLine = 0;
+    let baseline = 0;
     line.forEach(item => {
-      baseLine = Math.max(baseLine, item.firstBaseLine);
+      baseline = Math.max(baseline, item.firstBaseline);
     });
     line.forEach(item => {
       let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
@@ -2184,7 +2185,7 @@ class Dom extends Xom {
           }
         }
         else if(alignSelf === 'baseline') {
-          let diff = baseLine - item.firstBaseLine;
+          let diff = baseline - item.firstBaseline;
           if(diff !== 0) {
             item.__offsetY(diff, true);
           }
@@ -2205,7 +2206,7 @@ class Dom extends Xom {
             }
           }
           else if(alignItems === 'baseline') {
-            let diff = baseLine - item.firstBaseLine;
+            let diff = baseline - item.firstBaseline;
             if(diff !== 0) {
               item.__offsetY(diff, true);
             }
@@ -2283,7 +2284,7 @@ class Dom extends Xom {
           }
         }
         else if(alignItems === 'baseline') {
-          let diff = baseLine - item.firstBaseLine;
+          let diff = baseline - item.firstBaseline;
           if(diff !== 0) {
             item.__offsetX(diff, true);
           }
@@ -2304,7 +2305,7 @@ class Dom extends Xom {
             }
           }
           else if(alignItems === 'baseline') {
-            let diff = baseLine - item.firstBaseLine;
+            let diff = baseline - item.firstBaseline;
             if(diff !== 0) {
               item.__offsetX(diff, true);
             }
@@ -2387,25 +2388,25 @@ class Dom extends Xom {
     if(isInline) {
       this.__config[NODE_IS_INLINE] = true;
       this.__lineBoxManager = lineBoxManager;
-      let baseLine = css.getBaseLine(computedStyle);
+      let baseline = css.getBaseline(computedStyle);
       // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
       if(marginLeft || marginRight
         || paddingLeft || paddingRight
         || borderLeftWidth || borderRightWidth) {
         if(lineBoxManager.isNewLine) {
-          lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseLine);
+          lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseline);
         }
         else {
-          lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+          lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseline);
         }
       }
       else {
-        lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+        lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseline);
       }
       lineClamp = data.lineClamp || 0;
     }
     else {
-      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
       lx = x;
       endSpace = selfEndSpace = lineClampCount = 0;
     }
@@ -2658,7 +2659,7 @@ class Dom extends Xom {
    * 且这个尺寸又并非真实LineBox中的内容直接合并计算而来，比如包含了个更大尺寸的ib却不会计入
    * 具体方法为遍历持有的LineBox下的内容，x取两侧极值，同时首尾要考虑mpb，y值取上下极值，同样首尾考虑mpb
    * 首尾行LineBox可能不是不是占满一行，比如前后都有同行inline的情况，非首尾行则肯定占满
-   * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseLine得来，并非LineBox全部
+   * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseline得来，并非LineBox全部
    * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
    * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
    * @private
@@ -3529,7 +3530,7 @@ class Dom extends Xom {
     return this.__lineBoxManager;
   }
 
-  get baseLine() {
+  get baseline() {
     if(!this.lineBoxManager || !this.lineBoxManager.size) {
       return this.offsetHeight;
     }
@@ -3538,10 +3539,10 @@ class Dom extends Xom {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [PADDING_TOP]: paddingTop,
     } = this.computedStyle;
-    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
+    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseline;
   }
 
-  get firstBaseLine() {
+  get firstBaseline() {
     if(!this.lineBoxManager || !this.lineBoxManager.size) {
       return this.offsetHeight;
     }
@@ -3550,7 +3551,7 @@ class Dom extends Xom {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [PADDING_TOP]: paddingTop,
     } = this.computedStyle;
-    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseLine;
+    return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseline;
   }
 
   get parentLineBox() {

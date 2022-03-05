@@ -46,7 +46,7 @@ class TextBox {
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
     let { content, x, y, parent, wList, width } = this;
     let { ox, oy } = parent;
-    y += css.getBaseLine(computedStyle);
+    y += css.getBaseline(computedStyle);
     x += ox + dx;
     y += oy + dy;
     this.__endX = x + width;
@@ -156,8 +156,8 @@ class TextBox {
     return this.__content;
   }
 
-  get baseLine() {
-    return this.parent.baseLine;
+  get baseline() {
+    return this.parent.baseline;
   }
 
   get virtualDom() {

@@ -19,7 +19,7 @@ const {
  * @param start
  * @param end
  * @param lineBox
- * @param baseLine
+ * @param baseline
  * @param lineHeight
  * @param diffL
  * @param isStart
@@ -35,7 +35,7 @@ const {
  * @param borderLeftWidth
  * @returns {(*|number)[]}
  */
-function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHeight, diffL, isStart, isEnd,
+function getInlineBox(xom, contentBoxList, start, end, lineBox, baseline, lineHeight, diffL, isStart, isEnd,
                       backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
                       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
   // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
@@ -51,9 +51,9 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHe
   // 同y的border伸展范围，其影响border渲染
   let pbt = paddingTop + borderTopWidth;
   let pbb = paddingBottom + borderBottomWidth;
-  // inline的baseLine和lineBox的差值
-  let diff = lineBox.baseLine - baseLine;
-  // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseLine对齐后计算的
+  // inline的baseline和lineBox的差值
+  let diff = lineBox.baseline - baseline;
+  // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
   let x1 = start.x;
   let dom = start instanceof TextBox ? start.parent.domParent : start.domParent;
   while(dom !== xom) {

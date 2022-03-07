@@ -1534,16 +1534,30 @@ class Dom extends Xom {
     // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
     let spread = lineBoxManager.verticalAlign();
     if(spread) {
-      this.__resizeY(spread);
+      if(!fixedHeight) {
+        this.__resizeY(spread);
+      }
       /**
        * parent以及parent的next无需处理，因为深度遍历后面还会进行，
-       * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block
+       * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
+       * 同时由于block和inline区域可能不连续，每个增加的y不一样，
+       * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
        */
+      let count = 0, syl = lineBoxManager.spreadYList;
+      let isLastBlock = false;
       flowChildren.forEach(item => {
         let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
         let isBlock = isXom && item.currentStyle[DISPLAY] === 'block';
         if(isBlock) {
-          item.__offsetY(spread, true);
+          isLastBlock = true;
+          // console.log(count);
+          item.__offsetY(syl[count], true);
+        }
+        else {
+          if(isLastBlock) {
+            count++;
+          }
+          isLastBlock = false;
         }
       });
     }

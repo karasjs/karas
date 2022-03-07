@@ -23484,6 +23484,8 @@
       this.__lineHeight = lineHeight;
       this.__baseline = baseline;
       this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
+
+      this.__spreadYList = []; // verticalAlign时每个区域增加的y高度
     }
     /**
      * 每次换行时重新生成LineBox存入列表，同时由于flow流当前一定是流（dom）的结尾，设置isEnd
@@ -23633,6 +23635,8 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
+        var syl = this.__spreadYList;
+        syl.splice(0);
         var spread = 0;
         this.list.forEach(function (lineBox) {
           if (spread) {
@@ -23640,6 +23644,7 @@
           }
 
           spread += lineBox.verticalAlign();
+          syl.push(spread);
         });
         return spread;
       }
@@ -23805,6 +23810,11 @@
           w = Math.max(w, item.width);
         });
         return w;
+      }
+    }, {
+      key: "spreadYList",
+      get: function get() {
+        return this.__spreadYList;
       }
     }]);
 
@@ -25663,19 +25673,34 @@
         var spread = lineBoxManager.verticalAlign();
 
         if (spread) {
-          this.__resizeY(spread);
+          if (!fixedHeight) {
+            this.__resizeY(spread);
+          }
           /**
            * parent以及parent的next无需处理，因为深度遍历后面还会进行，
-           * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block
+           * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
+           * 同时由于block和inline区域可能不连续，每个增加的y不一样，
+           * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
            */
 
 
+          var count = 0,
+              syl = lineBoxManager.spreadYList;
+          var isLastBlock = false;
           flowChildren.forEach(function (item) {
             var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
             var isBlock = isXom && item.currentStyle[DISPLAY$5] === 'block';
 
             if (isBlock) {
-              item.__offsetY(spread, true);
+              isLastBlock = true; // console.log(count);
+
+              item.__offsetY(syl[count], true);
+            } else {
+              if (isLastBlock) {
+                count++;
+              }
+
+              isLastBlock = false;
             }
           });
         } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐

@@ -17,6 +17,7 @@ class LineBoxManager {
     this.__lineHeight = lineHeight;
     this.__baseline = baseline;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
+    this.__spreadYList = []; // verticalAlign时每个区域增加的y高度
   }
 
   /**
@@ -144,12 +145,15 @@ class LineBoxManager {
    * @returns {number}
    */
   verticalAlign() {
+    let syl = this.__spreadYList;
+    syl.splice(0);
     let spread = 0;
     this.list.forEach(lineBox => {
       if(spread) {
         lineBox.__offsetY(spread, true);
       }
       spread += lineBox.verticalAlign();
+      syl.push(spread);
     });
     return spread;
   }
@@ -280,6 +284,10 @@ class LineBoxManager {
       w = Math.max(w, item.width);
     });
     return w;
+  }
+
+  get spreadYList() {
+    return this.__spreadYList;
   }
 }
 

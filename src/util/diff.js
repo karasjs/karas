@@ -127,6 +127,10 @@ function diffChild(elem, ovd, nvd) {
       replaceWith(elem, nvd);
     }
   }
+  // 特殊情况，当有连续2个img，后面1个发生error时，其children内容不是type为img的图片，而是矢量图item，会进入此分支
+  else if(ovd.type === 'item' && nvd.type === 'item') {
+    diffItemSelf(elem, ovd, nvd);
+  }
 }
 
 function diffX2X(elem, ovd, nvd) {

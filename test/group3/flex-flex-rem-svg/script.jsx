@@ -32,7 +32,7 @@ let o = karas.render(
                         },
                       },
                       "children": [
-                        "本周收益"
+                        "abcd"
                       ]
                     },
                     {

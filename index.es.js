@@ -521,7 +521,7 @@ var Node = /*#__PURE__*/function () {
     this.__sy = 0;
     this.__width = 0;
     this.__height = 0;
-    this.__baseLine = 0;
+    this.__baseline = 0;
     this.__config = {};
     this.__prev = null;
     this.__next = null;
@@ -660,9 +660,9 @@ var Node = /*#__PURE__*/function () {
       return this.__hostRoot;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
-      return this.__baseLine;
+      return this.__baseline;
     }
   }, {
     key: "virtualDom",
@@ -9368,7 +9368,7 @@ function getFontFamily(str) {
   return f;
 }
 
-function getBaseLine(style) {
+function getBaseline(style) {
   var fontSize = style[FONT_SIZE$2];
   var ff = getFontFamily(style[FONT_FAMILY]);
   var normal = fontSize * (o$1.info[ff] || o$1.info.arial).lhr;
@@ -9692,7 +9692,7 @@ var css = {
   computeReflow: computeReflow,
   setFontStyle: setFontStyle,
   getFontFamily: getFontFamily,
-  getBaseLine: getBaseLine,
+  getBaseline: getBaseline,
   calRelative: calRelative,
   calAbsolute: calAbsolute,
   equalStyle: equalStyle,
@@ -9753,7 +9753,7 @@ var TextBox = /*#__PURE__*/function () {
           width = this.width;
       var ox = parent.ox,
           oy = parent.oy;
-      y += css.getBaseLine(computedStyle);
+      y += css.getBaseline(computedStyle);
       x += ox + dx;
       y += oy + dy;
       this.__endX = x + width;
@@ -9872,9 +9872,9 @@ var TextBox = /*#__PURE__*/function () {
       return this.__content;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
-      return this.parent.baseLine;
+      return this.parent.baseline;
     }
   }, {
     key: "virtualDom",
@@ -14291,7 +14291,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
       this.__width = maxW;
       this.__height = y - data.y;
-      this.__baseLine = css.getBaseLine(computedStyle);
+      this.__baseline = css.getBaseline(computedStyle);
       return lineCount;
     } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
 
@@ -14664,9 +14664,9 @@ var Text = /*#__PURE__*/function (_Node) {
       return this.__textWidth;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
-      return this.__baseLine;
+      return this.__baseline;
     }
   }, {
     key: "root",
@@ -15553,7 +15553,7 @@ Object.keys(o$2.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', // '__sx1',
 // '__sy4',
 // '__sy5',
 // '__sy6',
-'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
+'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseline', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config', 'contentBoxList', 'listener', 'matrix', 'matrixEvent']).forEach(function (fn) {
   Object.defineProperty(Component$1.prototype, fn, {
     get: function get() {
       var sr = this.shadowRoot;
@@ -19639,7 +19639,7 @@ var _enums$STYLE_KEY$b = enums.STYLE_KEY,
  * @param start
  * @param end
  * @param lineBox
- * @param baseLine
+ * @param baseline
  * @param lineHeight
  * @param diffL
  * @param isStart
@@ -19656,7 +19656,7 @@ var _enums$STYLE_KEY$b = enums.STYLE_KEY,
  * @returns {(*|number)[]}
  */
 
-function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHeight, diffL, isStart, isEnd, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
+function getInlineBox(xom, contentBoxList, start, end, lineBox, baseline, lineHeight, diffL, isStart, isEnd, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
   // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
   var eyt = 0,
       eyb = 0;
@@ -19671,9 +19671,9 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseLine, lineHe
 
 
   var pbt = paddingTop + borderTopWidth;
-  var pbb = paddingBottom + borderBottomWidth; // inline的baseLine和lineBox的差值
+  var pbb = paddingBottom + borderBottomWidth; // inline的baseline和lineBox的差值
 
-  var diff = lineBox.baseLine - baseLine; // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseLine对齐后计算的
+  var diff = lineBox.baseline - baseline; // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
 
   var x1 = start.x;
   var dom = start instanceof TextBox ? start.parent.domParent : start.domParent;
@@ -21923,11 +21923,11 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                   }
                 }
               });
-            } // 获取当前dom的baseLine，再减去lineBox的baseLine得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
+            } // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
 
 
             var ff = css.getFontFamily(fontFamily);
-            var baseLine = css.getBaseLine(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
+            var baseline = css.getBaseline(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
 
             var diffL = fontSize * (o$1.info[ff].lgr || 0); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
@@ -21943,7 +21943,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
               if (contentBox.parentLineBox !== lastLineBox) {
                 (function () {
                   // 上一行
-                  var _inline$getInlineBox = inline.getInlineBox(_this6, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseLine, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                  var _inline$getInlineBox = inline.getInlineBox(_this6, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                       _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
                       ix1 = _inline$getInlineBox2[0],
                       iy1 = _inline$getInlineBox2[1],
@@ -22038,7 +22038,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
               if (i === length - 1) {
                 (function () {
-                  var _inline$getInlineBox3 = inline.getInlineBox(_this6, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseLine, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                  var _inline$getInlineBox3 = inline.getInlineBox(_this6, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                       _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
                       ix1 = _inline$getInlineBox4[0],
                       iy1 = _inline$getInlineBox4[1],
@@ -23190,12 +23190,12 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       return this.__contentBoxList;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
       return this.offsetHeight;
     }
   }, {
-    key: "firstBaseLine",
+    key: "firstBaseline",
     get: function get() {
       return this.offsetHeight;
     }
@@ -23239,19 +23239,19 @@ var _enums$STYLE_KEY$d = enums.STYLE_KEY,
  * inline则不会有此对象和列表，其复用最近block父层的，这样解决嵌套问题，
  * block在布局时将列表向孩子传递下去，每遇到block会重新生成
  * 每当发生换行时，专门列表中会新生成一个LineBox，让后续内容继续跟随新的LB
- * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseLine，inlineBlock等节点按最后一行baseLine
+ * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseline，inlineBlock等节点按最后一行baseline
  */
 
 var LineBox = /*#__PURE__*/function () {
-  function LineBox(x, y, lineHeight, baseLine) {
+  function LineBox(x, y, lineHeight, baseline) {
     _classCallCheck(this, LineBox);
 
     this.__list = [];
     this.__x = x;
     this.__y = y;
-    this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseLine
+    this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
-    this.__baseLine = baseLine;
+    this.__baseline = baseline;
   }
 
   _createClass(LineBox, [{
@@ -23263,10 +23263,10 @@ var LineBox = /*#__PURE__*/function () {
   }, {
     key: "verticalAlign",
     value: function verticalAlign() {
-      var baseLine = this.baseLine;
+      var baseline = this.baseline;
       var lineHeight = this.lineHeight;
       var increasedHeight = lineHeight;
-      var hasReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseLine发生变化
+      var hasReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
       if (this.list.length) {
         this.list.forEach(function (item) {
@@ -23274,13 +23274,13 @@ var LineBox = /*#__PURE__*/function () {
             hasReplaced = true;
           }
 
-          var n = item.baseLine;
+          var n = item.baseline;
 
-          if (n !== baseLine) {
-            var d = baseLine - n;
+          if (n !== baseline) {
+            var d = baseline - n;
 
             item.__offsetY(d); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
-            // 比如一个字符和img，字符下调y即字符的baseLine和图片底部对齐，导致高度增加lineHeight和baseLine的差值
+            // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
 
             if (d > 0) {
@@ -23291,10 +23291,10 @@ var LineBox = /*#__PURE__*/function () {
       }
 
       var diff = 0; // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
-      // 因为此时img要参与这一行和baseLine的对齐扩充
+      // 因为此时img要参与这一行和baseline的对齐扩充
 
       if (hasReplaced) {
-        diff = this.__lineHeight - this.__baseLine;
+        diff = this.__lineHeight - this.__baseline;
       } // 增加过的高度比最大还大时需要调整
 
 
@@ -23330,7 +23330,7 @@ var LineBox = /*#__PURE__*/function () {
       }
     }
     /**
-     * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseLine，这样有最小值兜底
+     * 防止非行首空inline，每当遇到inline就设置当前lineBox的lineHeight/baseline，这样有最小值兜底
      * @param l
      * @param b
      * @private
@@ -23340,7 +23340,7 @@ var LineBox = /*#__PURE__*/function () {
     key: "__setLB",
     value: function __setLB(l, b) {
       this.__lineHeight = Math.max(l, this.__lineHeight);
-      this.__baseLine = Math.max(b, this.__baseLine);
+      this.__baseline = Math.max(b, this.__baseline);
     }
   }, {
     key: "list",
@@ -23431,14 +23431,14 @@ var LineBox = /*#__PURE__*/function () {
       return this.lineHeight;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
-      var baseLine = this.__baseLine; // 只有TextBox和InlineBlock或replaced
+      var baseline = this.__baseline; // 只有TextBox和InlineBlock或replaced
 
       this.list.forEach(function (item) {
-        baseLine = Math.max(baseLine, item.baseLine);
+        baseline = Math.max(baseline, item.baseline);
       });
-      return baseLine;
+      return baseline;
     }
   }, {
     key: "lineHeight",
@@ -23462,7 +23462,7 @@ var LineBox = /*#__PURE__*/function () {
  */
 
 var LineBoxManager = /*#__PURE__*/function () {
-  function LineBoxManager(x, y, lineHeight, baseLine) {
+  function LineBoxManager(x, y, lineHeight, baseline) {
     _classCallCheck(this, LineBoxManager);
 
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
@@ -23476,7 +23476,7 @@ var LineBoxManager = /*#__PURE__*/function () {
     this.__isNewLine = true; // 区域内是否是新行，容器dom（block）开头肯定是
 
     this.__lineHeight = lineHeight;
-    this.__baseLine = baseLine;
+    this.__baseline = baseline;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
   }
   /**
@@ -23488,7 +23488,7 @@ var LineBoxManager = /*#__PURE__*/function () {
   _createClass(LineBoxManager, [{
     key: "genLineBox",
     value: function genLineBox(x, y) {
-      var lineBox = new LineBox(x, y, this.__lineHeight, this.__baseLine);
+      var lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline);
       this.list.push(lineBox);
       this.__isEnd = true;
       return lineBox;
@@ -23507,10 +23507,10 @@ var LineBoxManager = /*#__PURE__*/function () {
     key: "genLineBoxByInlineIfNewLine",
     value: function genLineBoxByInlineIfNewLine(x, y, l, b) {
       var lineHeight = Math.max(this.__lineHeight, l);
-      var baseLine = Math.max(this.__baseLine, b);
+      var baseline = Math.max(this.__baseline, b);
 
       if (this.__isNewLine) {
-        var lineBox = new LineBox(x, y, lineHeight, baseLine);
+        var lineBox = new LineBox(x, y, lineHeight, baseline);
         this.list.push(lineBox);
         this.__isEnd = true;
         this.__isNewLine = false;
@@ -23521,12 +23521,12 @@ var LineBoxManager = /*#__PURE__*/function () {
     key: "setLbOrGenLineBoxByInline",
     value: function setLbOrGenLineBoxByInline(x, y, l, b) {
       var lineHeight = Math.max(this.__lineHeight, l);
-      var baseLine = Math.max(this.__baseLine, b);
+      var baseline = Math.max(this.__baseline, b);
       var lineBox;
       var list = this.list;
 
       if (this.__isNewLine) {
-        lineBox = new LineBox(x, y, lineHeight, baseLine);
+        lineBox = new LineBox(x, y, lineHeight, baseline);
         list.push(lineBox);
         this.__isEnd = true;
         this.__isNewLine = false;
@@ -23737,7 +23737,7 @@ var LineBoxManager = /*#__PURE__*/function () {
       return this.__domList;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
       var list = this.list;
       var length = list.length;
@@ -23749,19 +23749,19 @@ var LineBoxManager = /*#__PURE__*/function () {
           n += list[i].height;
         }
 
-        return n + list[length - 1].baseLine;
+        return n + list[length - 1].baseline;
       }
 
       return 0;
     }
   }, {
-    key: "firstBaseLine",
+    key: "firstBaseline",
     get: function get() {
       var list = this.list;
       var length = list.length;
 
       if (length) {
-        return list[0].baseLine;
+        return list[0].baseline;
       }
 
       return 0;
@@ -24650,7 +24650,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 columnCrossMax = Math.max(columnCrossMax, item.width);
               }
             } else {
-              var _lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+              var _lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
               item.__layout({
                 x: x,
@@ -24675,7 +24675,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           var countMin = 0,
               countMax = 0;
 
-          var _lineBoxManager2 = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+          var _lineBoxManager2 = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
           flowChildren.forEach(function (item, i) {
             if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -24771,7 +24771,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           });
         } else {
           if (display === 'inlineBlock' || display === 'inline-block') {
-            lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
           }
 
           flowChildren.forEach(function (item) {
@@ -24882,7 +24882,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   columnCrossMax = Math.max(columnCrossMax, item.width);
                 }
               } else {
-                var _lineBoxManager3 = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+                var _lineBoxManager3 = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
                 item.__layout({
                   x: x,
@@ -24900,7 +24900,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
             });
           } else if (display === 'block') {
-            var _lineBoxManager4 = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            var _lineBoxManager4 = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
             flowChildren.forEach(function (item, i) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -24971,7 +24971,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             });
           } else {
             if (display === 'inlineBlock' || display === 'inline-block') {
-              lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+              lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
             }
 
             flowChildren.forEach(function (item) {
@@ -25157,7 +25157,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               columnCrossMax = Math.max(columnCrossMax, item.width);
             }
           } else {
-            var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
             item.__layout({
               x: x,
@@ -25180,7 +25180,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         });
       } // flex的item是block/inline时，inline也会变成block统一对待
       else {
-        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         var length = flowChildren.length;
         flowChildren.forEach(function (item, i) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -25359,7 +25359,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
       // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
 
-      var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle)); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+      var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle)); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
       var maxW = 0;
       var cw = 0; // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
@@ -25657,8 +25657,21 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var spread = lineBoxManager.verticalAlign();
 
       if (spread) {
-        this.__resizeY(spread); // parent以及next无需处理，因为深度遍历后面还会进行
+        this.__resizeY(spread);
+        /**
+         * parent以及parent的next无需处理，因为深度遍历后面还会进行，
+         * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block
+         */
 
+
+        flowChildren.forEach(function (item) {
+          var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
+          var isBlock = isXom && item.currentStyle[DISPLAY$5] === 'block';
+
+          if (isBlock) {
+            item.__offsetY(spread, true);
+          }
+        });
       } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
@@ -25804,7 +25817,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             minList.push(cw);
             columnCrossList.push(item.width);
           } else {
-            var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+            var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
             item.__layout({
               x: x,
@@ -26282,7 +26295,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             });
           }
         } else {
-          var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+          var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
           lbmList.push(lineBoxManager);
 
           item.__layout({
@@ -26358,9 +26371,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__crossAlign",
     value: function __crossAlign(line, alignItems, isDirectionRow, maxCross) {
-      var baseLine = 0;
+      var baseline = 0;
       line.forEach(function (item) {
-        baseLine = Math.max(baseLine, item.firstBaseLine);
+        baseline = Math.max(baseline, item.firstBaseline);
       });
       line.forEach(function (item) {
         var alignSelf = item.currentStyle[ALIGN_SELF$1];
@@ -26401,7 +26414,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               item.__outerHeight += d;
             }
           } else if (alignSelf === 'baseline') {
-            var _diff4 = baseLine - item.firstBaseLine;
+            var _diff4 = baseline - item.firstBaseline;
 
             if (_diff4 !== 0) {
               item.__offsetY(_diff4, true);
@@ -26421,7 +26434,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 item.__offsetY(_diff6, true);
               }
             } else if (alignItems === 'baseline') {
-              var _diff7 = baseLine - item.firstBaseLine;
+              var _diff7 = baseline - item.firstBaseline;
 
               if (_diff7 !== 0) {
                 item.__offsetY(_diff7, true);
@@ -26504,7 +26517,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               item.__outerWidth += _d2;
             }
           } else if (alignItems === 'baseline') {
-            var _diff10 = baseLine - item.firstBaseLine;
+            var _diff10 = baseline - item.firstBaseline;
 
             if (_diff10 !== 0) {
               item.__offsetX(_diff10, true);
@@ -26524,7 +26537,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 item.__offsetX(_diff12, true);
               }
             } else if (alignItems === 'baseline') {
-              var _diff13 = baseLine - item.firstBaseLine;
+              var _diff13 = baseline - item.firstBaseline;
 
               if (_diff13 !== 0) {
                 item.__offsetX(_diff13, true);
@@ -26625,21 +26638,21 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       if (isInline) {
         this.__config[NODE_IS_INLINE$1] = true;
         this.__lineBoxManager = lineBoxManager;
-        var baseLine = css.getBaseLine(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+        var baseline = css.getBaseline(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
 
         if (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth) {
           if (lineBoxManager.isNewLine) {
-            lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseLine);
+            lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseline);
           } else {
-            lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+            lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseline);
           }
         } else {
-          lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseLine);
+          lineBoxManager.setLbByInlineIfNotNewLine(lineHeight, baseline);
         }
 
         lineClamp = data.lineClamp || 0;
       } else {
-        lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseLine(computedStyle));
+        lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         lx = x;
         endSpace = selfEndSpace = lineClampCount = 0;
       } // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
@@ -26902,7 +26915,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
      * 且这个尺寸又并非真实LineBox中的内容直接合并计算而来，比如包含了个更大尺寸的ib却不会计入
      * 具体方法为遍历持有的LineBox下的内容，x取两侧极值，同时首尾要考虑mpb，y值取上下极值，同样首尾考虑mpb
      * 首尾行LineBox可能不是不是占满一行，比如前后都有同行inline的情况，非首尾行则肯定占满
-     * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseLine得来，并非LineBox全部
+     * 绘制内容（如背景色）的区域也很特殊，每行LineBox根据lineHeight对齐baseline得来，并非LineBox全部
      * 当LineBox只有直属Text时如果font没有lineGap则等价于全部，如有则需减去
      * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
      * @private
@@ -27864,7 +27877,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       return this.__lineBoxManager;
     }
   }, {
-    key: "baseLine",
+    key: "baseline",
     get: function get() {
       if (!this.lineBoxManager || !this.lineBoxManager.size) {
         return this.offsetHeight;
@@ -27874,10 +27887,10 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           marginTop = _this$computedStyle[MARGIN_TOP$1],
           borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$3],
           paddingTop = _this$computedStyle[PADDING_TOP$2];
-      return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseLine;
+      return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseline;
     }
   }, {
-    key: "firstBaseLine",
+    key: "firstBaseline",
     get: function get() {
       if (!this.lineBoxManager || !this.lineBoxManager.size) {
         return this.offsetHeight;
@@ -27887,7 +27900,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           marginTop = _this$computedStyle2[MARGIN_TOP$1],
           borderTopWidth = _this$computedStyle2[BORDER_TOP_WIDTH$3],
           paddingTop = _this$computedStyle2[PADDING_TOP$2];
-      return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseLine;
+      return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseline;
     }
   }, {
     key: "parentLineBox",

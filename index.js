@@ -25663,8 +25663,21 @@
         var spread = lineBoxManager.verticalAlign();
 
         if (spread) {
-          this.__resizeY(spread); // parent以及next无需处理，因为深度遍历后面还会进行
+          this.__resizeY(spread);
+          /**
+           * parent以及parent的next无需处理，因为深度遍历后面还会进行，
+           * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block
+           */
 
+
+          flowChildren.forEach(function (item) {
+            var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
+            var isBlock = isXom && item.currentStyle[DISPLAY$5] === 'block';
+
+            if (isBlock) {
+              item.__offsetY(spread, true);
+            }
+          });
         } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 

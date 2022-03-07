@@ -57,4 +57,6 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-input.value = JSON.stringify(o.virtualDom);
+o.on('refresh', function() {
+  input.value = JSON.stringify(o.virtualDom);
+});

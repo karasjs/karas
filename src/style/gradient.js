@@ -5,7 +5,7 @@ import vector from '../math/vector';
 import mx from '../math/matrix';
 import gradient from '../math/gradient';
 import border from './border';
-import mode from '../node/mode';
+import mode from '../refresh/mode';
 import util from '../util/util';
 import painter from '../util/painter';
 import enums from '../util/enums';

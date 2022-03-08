@@ -1,6 +1,6 @@
 import Node from './Node';
 import TextBox from './TextBox';
-import mode from './mode';
+import mode from '../refresh/mode';
 import css from '../style/css';
 import font from '../style/font';
 import unit from '../style/unit';

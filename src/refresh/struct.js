@@ -3,7 +3,7 @@ import offscreen from './offscreen';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
 import Img from '../node/Img';
-import mode from '../node/mode';
+import mode from './mode';
 import mx from '../math/matrix';
 import geom from '../math/geom';
 import level from './level';

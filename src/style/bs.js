@@ -1,4 +1,4 @@
-import mode from '../node/mode';
+import mode from '../refresh/mode';
 import geom from '../math/geom';
 import blur from '../math/blur';
 import util from '../util/util';

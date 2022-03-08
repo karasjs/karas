@@ -1,6 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
-import mode from './mode';
+import mode from '../refresh/mode';
 import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';

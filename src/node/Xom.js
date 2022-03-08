@@ -1,5 +1,5 @@
 import Node from './Node';
-import mode from './mode';
+import mode from '../refresh/mode';
 import Component from './Component';
 import unit from '../style/unit';
 import tf from '../style/transform';

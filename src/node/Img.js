@@ -1,5 +1,5 @@
 import Dom from './Dom';
-import mode from './mode';
+import mode from '../refresh/mode';
 import painter from '../util/painter';
 import inject from '../util/inject';
 import util from '../util/util';

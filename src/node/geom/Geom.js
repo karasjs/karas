@@ -3,7 +3,7 @@ import reset from '../../style/reset';
 import css from '../../style/css';
 import unit from '../../style/unit';
 import enums from '../../util/enums';
-import mode from '../mode';
+import mode from '../../refresh/mode';
 import util from '../../util/util';
 import painter from '../../util/painter';
 import transform from '../../style/transform';

@@ -936,7 +936,7 @@ class Dom extends Xom {
         }
       }
     }
-    return this.__addMp(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
+    return this.__addMBP(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
   }
 
   /**
@@ -1218,7 +1218,7 @@ class Dom extends Xom {
       }
     }
     // 直接item的mpb影响basis
-    return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
+    return this.__addMBP(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
   }
 
   __layoutNone() {

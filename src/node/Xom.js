@@ -352,7 +352,7 @@ class Xom extends Node {
   }
 
   // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
-  __addMp(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
+  __addMBP(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
     let {
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_TOP]: marginTop,
@@ -367,94 +367,49 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
-    let mp = this.__calMp(marginLeft, w, !isDirectItem)
+    let mbp = this.__calMp(marginLeft, w, !isDirectItem)
       + this.__calMp(marginRight, w, !isDirectItem)
       + this.__calMp(paddingLeft, w, !isDirectItem)
-      + this.__calMp(paddingRight, w, !isDirectItem);
-    if(borderLeftWidth[1] === PX) {
-      mp += borderLeftWidth[0];
-    }
-    else if(borderLeftWidth[1] === REM) {
-      mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(borderLeftWidth[1] === VW) {
-      mp += borderLeftWidth[0] * this.root.width * 0.01;
-    }
-    else if(borderLeftWidth[1] === VH) {
-      mp += borderLeftWidth[0] * this.root.height * 0.01;
-    }
-    else if(borderLeftWidth[1] === VMAX) {
-      mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(borderLeftWidth[1] === VMIN) {
-      mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(borderRightWidth[1] === PX) {
-      mp += borderRightWidth[0];
-    }
-    else if(borderRightWidth[1] === REM) {
-      mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(borderRightWidth[1] === VW) {
-      mp += borderRightWidth[0] * this.root.width * 0.01;
-    }
-    else if(borderRightWidth[1] === VH) {
-      mp += borderRightWidth[0] * this.root.height * 0.01;
-    }
-    else if(borderRightWidth[1] === VMAX) {
-      mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(borderRightWidth[1] === VMIN) {
-      mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    res2 = res2.map(item => item + mp);
+      + this.__calMp(paddingRight, w, !isDirectItem)
+      + this.__calBorder(borderLeftWidth)
+      + this.__calBorder(borderRightWidth);
+    res2 = res2.map(item => item + mbp);
     if(isDirectionRow) {
-      res = res.map(item => item + mp);
+      res = res.map(item => item + mbp);
     }
     else {
-      let mp = this.__calMp(marginTop, w, !isDirectItem)
+      let mbp = this.__calMp(marginTop, w, !isDirectItem)
         + this.__calMp(marginBottom, w, !isDirectItem)
         + this.__calMp(paddingTop, w, !isDirectItem)
-        + this.__calMp(paddingBottom, w, !isDirectItem);
-      if(borderTopWidth[1] === PX) {
-        mp += borderTopWidth[0];
-      }
-      else if(borderTopWidth[1] === REM) {
-        mp += borderTopWidth[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(borderTopWidth[1] === VW) {
-        mp += borderTopWidth[0] * this.root.width * 0.01;
-      }
-      else if(borderTopWidth[1] === VH) {
-        mp += borderTopWidth[0] * this.root.height * 0.01;
-      }
-      else if(borderTopWidth[1] === VMAX) {
-        mp += borderTopWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(borderTopWidth[1] === VMIN) {
-        mp += borderTopWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-      if(borderBottomWidth[1] === PX) {
-        mp += borderBottomWidth[0];
-      }
-      else if(borderBottomWidth[1] === REM) {
-        mp += borderBottomWidth[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(borderBottomWidth[1] === VW) {
-        mp += borderBottomWidth[0] * this.root.width * 0.01;
-      }
-      else if(borderBottomWidth[1] === VH) {
-        mp += borderBottomWidth[0] * this.root.height * 0.01;
-      }
-      else if(borderBottomWidth[1] === VMAX) {
-        mp += borderBottomWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(borderBottomWidth[1] === VMIN) {
-        mp += borderBottomWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-      res = res.map(item => item + mp);
+        + this.__calMp(paddingBottom, w, !isDirectItem)
+        + this.__calBorder(borderTopWidth)
+        + this.__calBorder(borderBottomWidth);
+      res = res.map(item => item + mbp);
     }
     return [res, res2];
+  }
+
+  __calBorder(data) {
+    let n = 0;
+    if(data[1] === PX) {
+      n = data[0];
+    }
+    else if(data[1] === REM) {
+      n = data[0] * this.root.computedStyle[FONT_SIZE];
+    }
+    else if(data[1] === VW) {
+      n = data[0] * this.root.width * 0.01;
+    }
+    else if(data[1] === VH) {
+      n = data[0] * this.root.height * 0.01;
+    }
+    else if(data[1] === VMAX) {
+      n = data[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    }
+    else if(data[1] === VMIN) {
+      n = data[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    }
+    return n;
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
@@ -731,8 +686,7 @@ class Xom extends Node {
       h = h2;
     }
     else if(h3 !== undefined) {
-      // TODO: 暂时解决问题，当column的flex排版时，计算的高度不能视作fixedHeight，另其child的mbp未参与basis计算
-      // fixedHeight = true;
+      fixedHeight = true;
       h = h3;
     }
     else if(height[1] !== AUTO) {

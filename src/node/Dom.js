@@ -1037,7 +1037,7 @@ class Dom extends Xom {
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
       flowChildren = genOrderChildren(flowChildren);
-      flowChildren.forEach((item, i) => {
+      flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let { currentStyle, computedStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
@@ -1550,7 +1550,6 @@ class Dom extends Xom {
         let isBlock = isXom && item.currentStyle[DISPLAY] === 'block';
         if(isBlock) {
           isLastBlock = true;
-          // console.log(count);
           item.__offsetY(syl[count], true);
         }
         else {
@@ -1677,10 +1676,10 @@ class Dom extends Xom {
             lineClamp,
             lineClampCount,
           });
-          let h = item.height;
-          basisList.push(h);
-          maxList.push(h);
-          minList.push(h);
+          let hh = item.height;
+          basisList.push(hh);
+          maxList.push(hh);
+          minList.push(hh);
           columnCrossList.push(item.width);
         }
       }

@@ -20549,7 +20549,8 @@
           fixedHeight = true;
           h = h2;
         } else if (h3 !== undefined) {
-          fixedHeight = true;
+          // TODO: 暂时解决问题，当column的flex排版时，计算的高度不能视作fixedHeight，另其child的mbp未参与basis计算
+          // fixedHeight = true;
           h = h3;
         } else if (height[1] !== AUTO$4) {
           fixedHeight = true;
@@ -25119,7 +25120,7 @@
         if (display === 'flex') {
           var isRow = flexDirection !== 'column';
           flowChildren = genOrderChildren(flowChildren);
-          flowChildren.forEach(function (item, i) {
+          flowChildren.forEach(function (item) {
             if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
               var _currentStyle3 = item.currentStyle,
                   _computedStyle3 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
@@ -25692,7 +25693,7 @@
             var isBlock = isXom && item.currentStyle[DISPLAY$5] === 'block';
 
             if (isBlock) {
-              isLastBlock = true; // console.log(count);
+              isLastBlock = true;
 
               item.__offsetY(syl[count], true);
             } else {
@@ -25854,16 +25855,16 @@
                 x: x,
                 y: y,
                 w: w,
-                h: _h,
+                h: h,
                 lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
               });
 
-              var _h = item.height;
-              basisList.push(_h);
-              maxList.push(_h);
-              minList.push(_h);
+              var hh = item.height;
+              basisList.push(hh);
+              maxList.push(hh);
+              minList.push(hh);
               columnCrossList.push(item.width);
             }
           }

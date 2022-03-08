@@ -731,7 +731,8 @@ class Xom extends Node {
       h = h2;
     }
     else if(h3 !== undefined) {
-      fixedHeight = true;
+      // TODO: 暂时解决问题，当column的flex排版时，计算的高度不能视作fixedHeight，另其child的mbp未参与basis计算
+      // fixedHeight = true;
       h = h3;
     }
     else if(height[1] !== AUTO) {

@@ -91,7 +91,7 @@ let o = {
       fonts.forEach(item => {
         let url = item.url;
         if(url) {
-          list1.push(url);
+          list1.push(item);
         }
       });
     }

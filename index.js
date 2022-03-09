@@ -837,7 +837,7 @@
           _ref$descent = _ref.descent,
           descent = _ref$descent === void 0 ? 434 : _ref$descent,
           _ref$lineGap = _ref.lineGap,
-          lineGap = _ref$lineGap === void 0 ? 67 : _ref$lineGap,
+          lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap,
           _ref$padding = _ref.padding,
           padding = _ref$padding === void 0 ? {} : _ref$padding;
 
@@ -6397,7 +6397,12 @@
 
       return o$1.info[ff].checked = false;
     },
-    loadFont: function loadFont(url, cb) {
+    loadFont: function loadFont(fontFamily, url, cb) {
+      if (util.isFunction(url)) {
+        cb = url;
+        url = fontFamily;
+      }
+
       if (Array.isArray(url)) {
         if (!url.length) {
           return cb();
@@ -6407,7 +6412,7 @@
         var len = url.length;
         var list = [];
         url.forEach(function (item, i) {
-          inject.loadFont(item, function (cache) {
+          inject.loadFont(item.fontFamily, item.url, function (cache) {
             list[i] = cache;
 
             if (++count === len) {
@@ -6426,6 +6431,10 @@
         return;
       }
 
+      if (!fontFamily) {
+        fontFamily = url;
+      }
+
       var cache = FONT[url] = FONT[url] || {
         state: INIT,
         task: []
@@ -6438,8 +6447,14 @@
       } else {
         cache.state = LOADING;
         cb && cache.task.push(cb);
-        var f = new FontFace(url, "url(".concat(url, ")"));
+
+        if (!/url\(/.test(url)) {
+          url = "url(".concat(url, ")");
+        }
+
+        var f = new FontFace(fontFamily, url);
         f.load().then(function () {
+          document.fonts.add(f);
           cache.state = LOADED;
           cache.success = true;
           cache.url = url;
@@ -40499,7 +40514,7 @@
           var url = item.url;
 
           if (url) {
-            list1.push(url);
+            list1.push(item);
           }
         });
       }

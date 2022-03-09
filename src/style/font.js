@@ -64,7 +64,7 @@ let o = {
     return this.info.hasOwnProperty(fontFamily);
   },
   register(name, info) {
-    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 67, padding = {} } = info || {};
+    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0, padding = {} } = info || {};
     this.info[name.toLowerCase()] = {
       lhr: (ascent + descent + lineGap) / emSquare,
       blr: ascent / emSquare,

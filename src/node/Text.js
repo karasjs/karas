@@ -201,7 +201,7 @@ class Text extends Node {
     let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
-    let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
+    let { isDestroyed, content, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
     textBoxes.splice(0);
     let __config = this.__config;
     __config[NODE_LIMIT_CACHE] = false;

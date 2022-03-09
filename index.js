@@ -14012,7 +14012,6 @@
         this.__y = this.__sy = this.__sy1 = y;
         var isDestroyed = this.isDestroyed,
             content = this.content,
-            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             textBoxes = this.textBoxes,
             charWidthList = this.charWidthList,
@@ -27116,7 +27115,7 @@
 
           item.__mp(currentStyle, computedStyle, clientWidth);
 
-          if (currentStyle[DISPLAY$5] !== 'block' && currentStyle[DISPLAY$5] !== 'flex') {
+          if (currentStyle[DISPLAY$5] === 'inline') {
             computedStyle[DISPLAY$5] = 'block';
           }
 
@@ -27126,8 +27125,8 @@
               bottom = currentStyle[BOTTOM$3],
               width = currentStyle[WIDTH$5],
               height = currentStyle[HEIGHT$5],
-              display = currentStyle[DISPLAY$5],
               flexDirection = currentStyle[FLEX_DIRECTION$2];
+          var display = computedStyle[DISPLAY$5];
           var x2, y2, w2, h2;
           var onlyRight;
           var onlyBottom;

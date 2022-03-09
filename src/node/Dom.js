@@ -2864,12 +2864,13 @@ class Dom extends Xom {
       }
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, clientWidth);
-      if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
+      if(currentStyle[DISPLAY] === 'inline') {
         computedStyle[DISPLAY] = 'block';
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
-        [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height, [DISPLAY]: display,
+        [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height,
         [FLEX_DIRECTION]: flexDirection } = currentStyle;
+      let display = computedStyle[DISPLAY];
       let x2, y2, w2, h2;
       let onlyRight;
       let onlyBottom;

@@ -82,7 +82,7 @@ class Img extends Dom {
   }
 
   /**
-   * 覆盖xom的方法，在__layout3个分支中会首先被调用
+   * 覆盖xom的方法，在__layout()3个分支中会首先被调用
    * 当样式中固定宽高时，图片按样式尺寸，加载后重新绘制即可
    * 只固定宽高一个时，加载完要计算缩放比，重新布局绘制
    * 都没有固定，按照图片尺寸，重新布局绘制
@@ -91,8 +91,8 @@ class Img extends Dom {
    * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
    * @private
    */
-  __preLayout(data) {
-    let res = super.__preLayout(data);
+  __preLayout(data, isInline) {
+    let res = super.__preLayout(data, isInline);
     let loadImg = this.__loadImg;
     // 可能已提前加载好了，或有缓存，为减少刷新直接使用
     if(!loadImg.error) {

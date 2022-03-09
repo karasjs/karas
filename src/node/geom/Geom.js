@@ -356,10 +356,10 @@ class Geom extends Xom {
     return [[b, min, max], [columnCrossMax]];
   }
 
-  __layoutBlock(data, isVirtual) {
-    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data);
+  __layoutBlock(data, virtualMode) {
+    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data, false);
     this.__height = fixedHeight ? h : 0;
-    if(isVirtual) {
+    if(virtualMode) {
       this.__width = fixedWidth ? w : 0;
       return;
     }
@@ -369,13 +369,13 @@ class Geom extends Xom {
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
-  __layoutFlex(data) {
+  __layoutFlex(data, virtualMode) {
     // 无children所以等同于block
-    this.__layoutBlock(data);
+    this.__layoutBlock(data, virtualMode);
   }
 
-  __layoutInline(data) {
-    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
+  __layoutInline(data, virtualMode, isInline) {
+    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, isInline);
     // 元素的width不能超过父元素w
     let tw = this.__width = fixedWidth ? w : x - data.x;
     let th = this.__height = fixedHeight ? h : y - data.y;

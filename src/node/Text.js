@@ -577,14 +577,6 @@ class Text extends Node {
     this.__width = maxX - minX;
   }
 
-  __calMaxAndMinWidth() {
-    let n = 0;
-    this.charWidthList.forEach(item => {
-      n = Math.max(n, item);
-    });
-    return { max: this.textWidth, min: n };
-  }
-
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(renderMode === mode.SVG) {

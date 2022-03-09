@@ -3,7 +3,7 @@ import Text from './Text';
 import Xom from './Xom';
 import Component from './Component';
 import Defs from './Defs';
-import mode from '../refresh/mode';
+import virtual from './virtual';
 import Geom from './geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
@@ -17,6 +17,7 @@ import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from '../animate/frame';
 import Controller from '../animate/Controller';
+import mode from '../refresh/mode';
 import change from '../refresh/change';
 import level from '../refresh/level';
 import struct from '../refresh/struct';
@@ -1379,7 +1380,7 @@ class Root extends Dom {
         y: 0,
         w: width,
         h: height,
-      });
+      }, virtual.NORMAL);
       // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
       this.__layoutAbs(this, {
         x: 0,
@@ -1527,7 +1528,7 @@ class Root extends Dom {
               y,
               w: width,
               h,
-            });
+            }, virtual.NORMAL);
             y += node.outerHeight;
             if(component) {
               container = node;

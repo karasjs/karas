@@ -14437,17 +14437,6 @@
         };
       }
     }, {
-      key: "__calAbsWidth",
-      value: function __calAbsWidth(x, y, w) {
-        this.__layout({
-          x: x,
-          y: y,
-          w: w
-        }, true);
-
-        return this.width;
-      }
-    }, {
       key: "render",
       value: function render(renderMode, lv, ctx, cache) {
         var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
@@ -20548,7 +20537,7 @@
               h = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
               break;
           }
-        } // margin/padding/border影响x和y和尺寸，注意inline的y不受mpb影响
+        } // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响
 
 
         x += borderLeftWidth + marginLeft + paddingLeft;
@@ -20565,7 +20554,7 @@
 
         if (isInline) {
           selfEndSpace = paddingRight + borderRightWidth + marginRight;
-        } // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb，其一定是block和inline互斥
+        } // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
 
 
         if (!isInline) {
@@ -24583,7 +24572,7 @@
                     _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
                 if (_currentStyle[DISPLAY$5] !== 'block' && _currentStyle[DISPLAY$5] !== 'flex') {
-                  _currentStyle[DISPLAY$5] = _computedStyle[DISPLAY$5] = 'block';
+                  _computedStyle[DISPLAY$5] = 'block';
                 }
 
                 var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
@@ -24830,7 +24819,7 @@
                       _computedStyle2 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
                   if (_currentStyle2[DISPLAY$5] !== 'block' && _currentStyle2[DISPLAY$5] !== 'flex') {
-                    _currentStyle2[DISPLAY$5] = _computedStyle2[DISPLAY$5] = 'block';
+                    _computedStyle2[DISPLAY$5] = 'block';
                   }
 
                   var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
@@ -25090,7 +25079,7 @@
                   _computedStyle3 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
               if (_currentStyle3[DISPLAY$5] !== 'block' && _currentStyle3[DISPLAY$5] !== 'flex') {
-                _currentStyle3[DISPLAY$5] = _computedStyle3[DISPLAY$5] = 'block';
+                _computedStyle3[DISPLAY$5] = 'block';
               }
 
               var _item$__calMinMax13 = item.__calMinMax(isDirectionRow, {
@@ -25752,7 +25741,7 @@
                 _computedStyle4 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
             if (_currentStyle4[DISPLAY$5] !== 'block' && _currentStyle4[DISPLAY$5] !== 'flex') {
-              _currentStyle4[DISPLAY$5] = _computedStyle4[DISPLAY$5] = 'block';
+              _computedStyle4[DISPLAY$5] = 'block';
             } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -27123,7 +27112,7 @@
           item.__mp(currentStyle, computedStyle, clientWidth);
 
           if (currentStyle[DISPLAY$5] !== 'block' && currentStyle[DISPLAY$5] !== 'flex') {
-            currentStyle[DISPLAY$5] = computedStyle[DISPLAY$5] = 'block';
+            computedStyle[DISPLAY$5] = 'block';
           }
 
           var left = currentStyle[LEFT$1],

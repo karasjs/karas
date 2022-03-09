@@ -587,15 +587,6 @@ class Text extends Node {
     return { max: this.textWidth, min: n };
   }
 
-  __calAbsWidth(x, y, w) {
-    this.__layout({
-      x,
-      y,
-      w,
-    }, true);
-    return this.width;
-  }
-
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
     if(renderMode === mode.SVG) {

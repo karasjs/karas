@@ -582,7 +582,7 @@ class Dom extends Xom {
             let { currentStyle, computedStyle } = item;
             // flex的child如果是inline，变为block，在计算autoBasis前就要
             if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-              currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+              computedStyle[DISPLAY] = 'block';
             }
             let [[min2, max2], [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
             if(isDirectionRow) {
@@ -799,7 +799,7 @@ class Dom extends Xom {
               let { currentStyle, computedStyle } = item;
               // flex的child如果是inline，变为block，在计算autoBasis前就要
               if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-                currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+                computedStyle[DISPLAY] = 'block';
               }
               let [, [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
               if(isDirectionRow) {
@@ -1042,7 +1042,7 @@ class Dom extends Xom {
           let { currentStyle, computedStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
           if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-            currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+            computedStyle[DISPLAY] = 'block';
           }
           let [[min2, max2], [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
           if(isDirectionRow) {
@@ -1621,7 +1621,7 @@ class Dom extends Xom {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
         if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-          currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+          computedStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
         let [[b, min, max], [columnCross]] = item.__calBasis(isVirtual ? true : isDirectionRow, { x, y, w, h });
@@ -2865,7 +2865,7 @@ class Dom extends Xom {
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, clientWidth);
       if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-        currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+        computedStyle[DISPLAY] = 'block';
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
         [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height, [DISPLAY]: display,

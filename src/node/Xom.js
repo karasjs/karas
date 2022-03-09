@@ -715,7 +715,7 @@ class Xom extends Node {
           break;
       }
     }
-    // margin/padding/border影响x和y和尺寸，注意inline的y不受mpb影响
+    // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响
     x += borderLeftWidth + marginLeft + paddingLeft;
     data.x = x;
     if(!isInline) {
@@ -728,7 +728,7 @@ class Xom extends Node {
     if(isInline) {
       selfEndSpace = paddingRight + borderRightWidth + marginRight;
     }
-    // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb，其一定是block和inline互斥
+    // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
     if(!isInline) {
       if(width[1] === AUTO || w3 !== undefined) {
         w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;

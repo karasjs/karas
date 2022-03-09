@@ -2862,10 +2862,13 @@ class Dom extends Xom {
         item.__layoutNone();
         return;
       }
-      // 先根据容器宽度计算margin/padding
+      // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
       item.__mp(currentStyle, computedStyle, clientWidth);
-      if(currentStyle[DISPLAY] === 'inline') {
+      if(['inline', 'inlineBlock', 'inline-block'].indexOf(currentStyle[DISPLAY]) > -1) {
         computedStyle[DISPLAY] = 'block';
+      }
+      else {
+        computedStyle[DISPLAY] = currentStyle[DISPLAY];
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
         [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height,

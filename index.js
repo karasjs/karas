@@ -27110,13 +27110,15 @@
             item.__layoutNone();
 
             return;
-          } // 先根据容器宽度计算margin/padding
+          } // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
 
 
           item.__mp(currentStyle, computedStyle, clientWidth);
 
-          if (currentStyle[DISPLAY$5] === 'inline') {
+          if (['inline', 'inlineBlock', 'inline-block'].indexOf(currentStyle[DISPLAY$5]) > -1) {
             computedStyle[DISPLAY$5] = 'block';
+          } else {
+            computedStyle[DISPLAY$5] = currentStyle[DISPLAY$5];
           }
 
           var left = currentStyle[LEFT$1],

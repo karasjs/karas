@@ -219,20 +219,20 @@ class Text extends Node {
     let needReduce = !!padding;
     let lastChar;
     let ew = textCache.charWidth[this.__pKey][ELLIPSIS];
+    // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+    let bp = this.domParent;
+    while(bp.computedStyle[DISPLAY] === 'inline') {
+      let p = bp.domParent;
+      if(p.computedStyle[DISPLAY] === 'flex') {
+        break;
+      }
+      bp = p;
+    }
+    this.__bp = bp;
     let lineCount = 0;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
       let isTextOverflow;
-      // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
-      let bp = this.domParent;
-      while(bp.computedStyle[DISPLAY] === 'inline') {
-        let p = bp.domParent;
-        if(p.computedStyle[DISPLAY] === 'flex') {
-          break;
-        }
-        bp = p;
-      }
-      this.__bp = bp;
       let {
         [DISPLAY]: display,
         [OVERFLOW]: overflow,

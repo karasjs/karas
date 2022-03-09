@@ -14032,25 +14032,25 @@
         var padding = o$1.info[__ff].padding;
         var needReduce = !!padding;
         var lastChar;
-        var ew = textCache.charWidth[this.__pKey][ELLIPSIS];
+        var ew = textCache.charWidth[this.__pKey][ELLIPSIS]; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+
+        var bp = this.domParent;
+
+        while (bp.computedStyle[DISPLAY$1] === 'inline') {
+          var p = bp.domParent;
+
+          if (p.computedStyle[DISPLAY$1] === 'flex') {
+            break;
+          }
+
+          bp = p;
+        }
+
+        this.__bp = bp;
         var lineCount = 0; // 不换行特殊对待，同时考虑overflow和textOverflow
 
         if (whiteSpace === 'nowrap') {
-          var isTextOverflow; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
-
-          var bp = this.domParent;
-
-          while (bp.computedStyle[DISPLAY$1] === 'inline') {
-            var p = bp.domParent;
-
-            if (p.computedStyle[DISPLAY$1] === 'flex') {
-              break;
-            }
-
-            bp = p;
-          }
-
-          this.__bp = bp;
+          var isTextOverflow;
           var _bp$currentStyle = bp.currentStyle,
               display = _bp$currentStyle[DISPLAY$1],
               overflow = _bp$currentStyle[OVERFLOW],

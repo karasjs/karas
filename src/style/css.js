@@ -1220,7 +1220,9 @@ function computeReflow(node) {
   });
   // 匿名块对象
   if(computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
-    computedStyle[DISPLAY] = 'block';
+    if(['block', 'flex'].indexOf(computedStyle[DISPLAY]) === -1) {
+      computedStyle[DISPLAY] = 'block';
+    }
   }
   let textAlign = currentStyle[TEXT_ALIGN];
   if(textAlign[1] === INHERIT) {

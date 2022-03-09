@@ -541,12 +541,12 @@ class Dom extends Xom {
     let { x, y, w, h, lineBoxManager } = data;
     // 计算需考虑style的属性
     let {
-      [DISPLAY]: display,
       [FLEX_DIRECTION]: flexDirection,
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
     let {
+      [DISPLAY]: display,
       [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
@@ -964,7 +964,6 @@ class Dom extends Xom {
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {
-      [DISPLAY]: display,
       [FLEX_DIRECTION]: flexDirection,
       [WIDTH]: width,
       [HEIGHT]: height,
@@ -972,6 +971,7 @@ class Dom extends Xom {
     } = currentStyle;
     let {
       [LINE_HEIGHT]: lineHeight,
+      [DISPLAY]: display,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
@@ -2864,7 +2864,7 @@ class Dom extends Xom {
       }
       // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
       item.__mp(currentStyle, computedStyle, clientWidth);
-      if(['inline', 'inlineBlock', 'inline-block'].indexOf(currentStyle[DISPLAY]) > -1) {
+      if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
         computedStyle[DISPLAY] = 'block';
       }
       else {

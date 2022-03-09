@@ -4,7 +4,7 @@ karas.render(
       <div>1</div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f00' }}>
         <div>2</div>
-        <div style={{ flex: 1, background: '#00f' }}>3</div>
+        <div style={{ flex: 1, background: 'rgba(0,0,255,0.5)' }}>3</div>
       </div>
     </div>
   </canvas>,

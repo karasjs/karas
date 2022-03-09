@@ -9259,7 +9259,9 @@
     }); // 匿名块对象
 
     if (computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
-      computedStyle[DISPLAY] = 'block';
+      if (['block', 'flex'].indexOf(computedStyle[DISPLAY]) === -1) {
+        computedStyle[DISPLAY] = 'block';
+      }
     }
 
     var textAlign = currentStyle[TEXT_ALIGN];
@@ -24541,11 +24543,11 @@
             h = data.h,
             lineBoxManager = data.lineBoxManager; // 计算需考虑style的属性
 
-        var display = currentStyle[DISPLAY$5],
-            flexDirection = currentStyle[FLEX_DIRECTION$2],
+        var flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5];
-        var lineHeight = computedStyle[LINE_HEIGHT$4];
+        var display = computedStyle[DISPLAY$5],
+            lineHeight = computedStyle[LINE_HEIGHT$4];
         var main = isDirectionRow ? width : height;
         var length = flowChildren.length;
         var hasLayout;
@@ -25018,12 +25020,12 @@
             w = data.w,
             h = data.h; // 计算需考虑style的属性
 
-        var display = currentStyle[DISPLAY$5],
-            flexDirection = currentStyle[FLEX_DIRECTION$2],
+        var flexDirection = currentStyle[FLEX_DIRECTION$2],
             width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5],
             flexBasis = currentStyle[FLEX_BASIS$2];
-        var lineHeight = computedStyle[LINE_HEIGHT$4];
+        var lineHeight = computedStyle[LINE_HEIGHT$4],
+            display = computedStyle[DISPLAY$5];
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
         var isAuto = flexBasis[1] === AUTO$6;
@@ -27115,7 +27117,7 @@
 
           item.__mp(currentStyle, computedStyle, clientWidth);
 
-          if (['inline', 'inlineBlock', 'inline-block'].indexOf(currentStyle[DISPLAY$5]) > -1) {
+          if (currentStyle[DISPLAY$5] !== 'block' && currentStyle[DISPLAY$5] !== 'flex') {
             computedStyle[DISPLAY$5] = 'block';
           } else {
             computedStyle[DISPLAY$5] = currentStyle[DISPLAY$5];

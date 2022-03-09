@@ -417,7 +417,7 @@ class Xom extends Node {
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this, this.isShadowRoot);
     let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle, __config } = this;
+    let { isDestroyed, currentStyle, computedStyle, __config, domParent } = this;
     let {
       [DISPLAY]: display,
     } = computedStyle;
@@ -501,6 +501,10 @@ class Xom extends Node {
             break;
         }
       }
+    }
+    // 匿名块对象
+    if(position === 'absolute' || domParent.computedStyle[DISPLAY] === 'flex') {
+      display = 'block';
     }
     let lineClampCount = 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
@@ -611,10 +615,18 @@ class Xom extends Node {
       = computedStyle[MARGIN_RIGHT]
       = computedStyle[MARGIN_BOTTOM]
       = computedStyle[MARGIN_LEFT]
+      = computedStyle[BORDER_TOP_WIDTH]
+      = computedStyle[BORDER_RIGHT_WIDTH]
+      = computedStyle[BORDER_BOTTOM_WIDTH]
+      = computedStyle[BORDER_LEFT_WIDTH]
       = computedStyle[PADDING_TOP]
       = computedStyle[PADDING_RIGHT]
       = computedStyle[PADDING_BOTTOM]
       = computedStyle[PADDING_LEFT]
+      = computedStyle[WIDTH]
+      = computedStyle[HEIGHT]
+      = this.__width
+      = this.__height
       = 0;
   }
 

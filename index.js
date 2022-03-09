@@ -20208,7 +20208,8 @@
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
-            __config = this.__config;
+            __config = this.__config,
+            domParent = this.domParent;
         var display = computedStyle[DISPLAY$2];
         var width = currentStyle[WIDTH$4],
             position = currentStyle[POSITION$2];
@@ -20297,6 +20298,11 @@
                 break;
             }
           }
+        } // 匿名块对象
+
+
+        if (position === 'absolute' || domParent.computedStyle[DISPLAY$2] === 'flex') {
+          display = 'block';
         }
 
         var lineClampCount = 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
@@ -20417,7 +20423,7 @@
       value: function __layoutNone() {
         var computedStyle = this.computedStyle;
         computedStyle[DISPLAY$2] = 'none';
-        computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$1] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$1] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$1] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$2] = 0;
+        computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$1] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$1] = computedStyle[BORDER_TOP_WIDTH$2] = computedStyle[BORDER_RIGHT_WIDTH$2] = computedStyle[BORDER_BOTTOM_WIDTH$2] = computedStyle[BORDER_LEFT_WIDTH$3] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$1] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$2] = computedStyle[WIDTH$4] = computedStyle[HEIGHT$3] = this.__width = this.__height = 0;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {

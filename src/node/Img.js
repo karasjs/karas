@@ -1,5 +1,5 @@
 import Dom from './Dom';
-import mode from './mode';
+import mode from '../refresh/mode';
 import painter from '../util/painter';
 import inject from '../util/inject';
 import util from '../util/util';
@@ -591,7 +591,7 @@ class Img extends Dom {
   }
 
   __calMinMax(isDirectionRow, data) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     return this.__calBasis(isDirectionRow, data);
   }
 

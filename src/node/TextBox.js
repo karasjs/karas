@@ -1,4 +1,4 @@
-import mode from './mode';
+import mode from '../refresh/mode';
 import css from '../style/css';
 import enums from '../util/enums';
 import util from '../util/util';

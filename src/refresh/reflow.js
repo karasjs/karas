@@ -33,7 +33,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
       let next = node.next;
       let container;
       while(next) {
-        if(next.currentStyle[DISPLAY] !== 'none') {
+        if(next.computedStyle[DISPLAY] !== 'none') {
           if(next.currentStyle[POSITION] === 'absolute') {
             let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
             if(top[1] === AUTO) {

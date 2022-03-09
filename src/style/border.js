@@ -1,5 +1,5 @@
 import geom from '../math/geom';
-import mode from '../node/mode';
+import mode from '../refresh/mode';
 import painter from '../util/painter';
 import enums from '../util/enums';
 import unit from './unit';

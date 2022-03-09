@@ -1,6 +1,6 @@
 import Node from './Node';
 import TextBox from './TextBox';
-import mode from './mode';
+import mode from '../refresh/mode';
 import css from '../style/css';
 import font from '../style/font';
 import unit from '../style/unit';
@@ -91,17 +91,7 @@ class Text extends Node {
     let cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
     let sum = 0;
     let needMeasure = false;
-    // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
-    let bp = this.domParent;
-    while(bp.currentStyle[DISPLAY] === 'inline' && bp.currentStyle[POSITION] !== 'absolute') {
-      let p = bp.domParent;
-      if(p.currentStyle[DISPLAY] === 'flex') {
-        break;
-      }
-      bp = p;
-    }
-    this.__bp = bp;
-    let parentComputedStyle = bp.computedStyle;
+    let parentComputedStyle = this.domParent.computedStyle;
     let pff = 'arial';
     for(let i = 0, pffs = parentComputedStyle[FONT_FAMILY].split(','), len = pffs.length; i < len; i++) {
       if(inject.checkSupportFontFamily(pffs[i])) {
@@ -201,12 +191,12 @@ class Text extends Node {
     let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
-    let { isDestroyed, content, currentStyle, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
+    let { isDestroyed, content, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
     textBoxes.splice(0);
     let __config = this.__config;
     __config[NODE_LIMIT_CACHE] = false;
     // 空内容w/h都为0可以提前跳出
-    if(isDestroyed || currentStyle[DISPLAY] === 'none' || !content) {
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content) {
       return lineClampCount;
     }
     this.__ox = this.__oy = 0;
@@ -229,12 +219,20 @@ class Text extends Node {
     let needReduce = !!padding;
     let lastChar;
     let ew = textCache.charWidth[this.__pKey][ELLIPSIS];
+    // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+    let bp = this.domParent;
+    while(bp.computedStyle[DISPLAY] === 'inline') {
+      let p = bp.domParent;
+      if(p.computedStyle[DISPLAY] === 'flex') {
+        break;
+      }
+      bp = p;
+    }
+    this.__bp = bp;
     let lineCount = 0;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
       let isTextOverflow;
-      // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
-      let bp = this.__bp;
       let {
         [DISPLAY]: display,
         [OVERFLOW]: overflow,
@@ -585,15 +583,6 @@ class Text extends Node {
       n = Math.max(n, item);
     });
     return { max: this.textWidth, min: n };
-  }
-
-  __calAbsWidth(x, y, w) {
-    this.__layout({
-      x,
-      y,
-      w,
-    }, true);
-    return this.width;
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {

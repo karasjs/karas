@@ -5,7 +5,7 @@ import Dom from './node/Dom';
 import Img from './node/Img';
 import Root from './node/Root';
 import tag from './node/tag';
-import mode from './node/mode';
+import mode from './refresh/mode';
 import Geom from './node/geom/Geom';
 import Line from './node/geom/Line';
 import Polyline from './node/geom/Polyline';

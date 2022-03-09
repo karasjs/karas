@@ -1,6 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
-import mode from './mode';
+import mode from '../refresh/mode';
 import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
@@ -534,19 +534,19 @@ class Dom extends Xom {
 
   // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
   __calMinMax(isDirectionRow, data) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     let min = 0;
     let max = 0;
     let { flowChildren, currentStyle, computedStyle } = this;
     let { x, y, w, h, lineBoxManager } = data;
     // 计算需考虑style的属性
     let {
-      [DISPLAY]: display,
       [FLEX_DIRECTION]: flexDirection,
       [WIDTH]: width,
       [HEIGHT]: height,
     } = currentStyle;
     let {
+      [DISPLAY]: display,
       [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
@@ -582,7 +582,7 @@ class Dom extends Xom {
             let { currentStyle, computedStyle } = item;
             // flex的child如果是inline，变为block，在计算autoBasis前就要
             if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-              currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+              computedStyle[DISPLAY] = 'block';
             }
             let [[min2, max2], [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
             if(isDirectionRow) {
@@ -799,7 +799,7 @@ class Dom extends Xom {
               let { currentStyle, computedStyle } = item;
               // flex的child如果是inline，变为block，在计算autoBasis前就要
               if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-                currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+                computedStyle[DISPLAY] = 'block';
               }
               let [, [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
               if(isDirectionRow) {
@@ -936,7 +936,7 @@ class Dom extends Xom {
         }
       }
     }
-    return this.__addMp(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
+    return this.__addMBP(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
   }
 
   /**
@@ -956,7 +956,7 @@ class Dom extends Xom {
    * @private
    */
   __calBasis(isDirectionRow, data) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     let b = 0;
     let min = 0;
     let max = 0;
@@ -964,7 +964,6 @@ class Dom extends Xom {
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {
-      [DISPLAY]: display,
       [FLEX_DIRECTION]: flexDirection,
       [WIDTH]: width,
       [HEIGHT]: height,
@@ -972,6 +971,7 @@ class Dom extends Xom {
     } = currentStyle;
     let {
       [LINE_HEIGHT]: lineHeight,
+      [DISPLAY]: display,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
@@ -1037,12 +1037,12 @@ class Dom extends Xom {
     if(display === 'flex') {
       let isRow = flexDirection !== 'column';
       flowChildren = genOrderChildren(flowChildren);
-      flowChildren.forEach((item, i) => {
+      flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
           let { currentStyle, computedStyle } = item;
           // flex的child如果是inline，变为block，在计算autoBasis前就要
           if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-            currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+            computedStyle[DISPLAY] = 'block';
           }
           let [[min2, max2], [columnCrossMax2]] = item.__calMinMax(isDirectionRow, { x, y, w, h });
           if(isDirectionRow) {
@@ -1218,7 +1218,7 @@ class Dom extends Xom {
       }
     }
     // 直接item的mpb影响basis
-    return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
+    return this.__addMBP(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
   }
 
   __layoutNone() {
@@ -1396,7 +1396,7 @@ class Dom extends Xom {
             w,
             h,
           }, isVirtual);
-          let isNone = item.currentStyle[DISPLAY] === 'none';
+          let isNone = item.computedStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
           if(!isNone && item.flowChildren && item.flowChildren.length === 0) {
@@ -1547,10 +1547,9 @@ class Dom extends Xom {
       let isLastBlock = false;
       flowChildren.forEach(item => {
         let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
-        let isBlock = isXom && item.currentStyle[DISPLAY] === 'block';
+        let isBlock = isXom && item.computedStyle[DISPLAY] === 'block';
         if(isBlock) {
           isLastBlock = true;
-          // console.log(count);
           item.__offsetY(syl[count], true);
         }
         else {
@@ -1622,7 +1621,7 @@ class Dom extends Xom {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
         if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-          currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+          computedStyle[DISPLAY] = 'block';
         }
         // abs虚拟布局计算时纵向也是看横向宽度
         let [[b, min, max], [columnCross]] = item.__calBasis(isVirtual ? true : isDirectionRow, { x, y, w, h });
@@ -1677,10 +1676,10 @@ class Dom extends Xom {
             lineClamp,
             lineClampCount,
           });
-          let h = item.height;
-          basisList.push(h);
-          maxList.push(h);
-          minList.push(h);
+          let hh = item.height;
+          basisList.push(hh);
+          maxList.push(hh);
+          minList.push(hh);
           columnCrossList.push(item.width);
         }
       }
@@ -2863,14 +2862,18 @@ class Dom extends Xom {
         item.__layoutNone();
         return;
       }
-      // 先根据容器宽度计算margin/padding
+      // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
       item.__mp(currentStyle, computedStyle, clientWidth);
       if(currentStyle[DISPLAY] !== 'block' && currentStyle[DISPLAY] !== 'flex') {
-        currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+        computedStyle[DISPLAY] = 'block';
+      }
+      else {
+        computedStyle[DISPLAY] = currentStyle[DISPLAY];
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
-        [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height, [DISPLAY]: display,
+        [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height,
         [FLEX_DIRECTION]: flexDirection } = currentStyle;
+      let display = computedStyle[DISPLAY];
       let x2, y2, w2, h2;
       let onlyRight;
       let onlyBottom;

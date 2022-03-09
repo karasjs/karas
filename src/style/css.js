@@ -1166,9 +1166,8 @@ function computeMeasure(node, isRoot) {
 /**
  * 每次布局前需要计算的reflow相关的computedStyle
  * @param node 对象节点
- * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
  */
-function computeReflow(node, isHost) {
+function computeReflow(node) {
   let { currentStyle, computedStyle, domParent: parent, root } = node;
   let rem = root.computedStyle[FONT_SIZE];
   let isRoot = !parent;
@@ -1219,6 +1218,10 @@ function computeReflow(node, isHost) {
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
+  // 匿名块对象
+  if(computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
+    computedStyle[DISPLAY] = 'block';
+  }
   let textAlign = currentStyle[TEXT_ALIGN];
   if(textAlign[1] === INHERIT) {
     computedStyle[TEXT_ALIGN] = isRoot ? 'left' : parentComputedStyle[TEXT_ALIGN];

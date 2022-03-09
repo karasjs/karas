@@ -93,9 +93,9 @@ class Text extends Node {
     let needMeasure = false;
     // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
     let bp = this.domParent;
-    while(bp.currentStyle[DISPLAY] === 'inline' && bp.currentStyle[POSITION] !== 'absolute') {
+    while(bp.computedStyle[DISPLAY] === 'inline' && bp.computedStyle[POSITION] !== 'absolute') {
       let p = bp.domParent;
-      if(p.currentStyle[DISPLAY] === 'flex') {
+      if(p.computedStyle[DISPLAY] === 'flex') {
         break;
       }
       bp = p;
@@ -206,7 +206,7 @@ class Text extends Node {
     let __config = this.__config;
     __config[NODE_LIMIT_CACHE] = false;
     // 空内容w/h都为0可以提前跳出
-    if(isDestroyed || currentStyle[DISPLAY] === 'none' || !content) {
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content) {
       return lineClampCount;
     }
     this.__ox = this.__oy = 0;

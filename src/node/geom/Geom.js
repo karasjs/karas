@@ -228,7 +228,7 @@ class Geom extends Xom {
   }
 
   __calMinMax(isDirectionRow, data) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     return this.__calBasis(isDirectionRow, data);
   }
 

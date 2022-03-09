@@ -415,7 +415,7 @@ class Xom extends Node {
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
   // fromAbs为absolute节点特有省略计算标识，本节点是abs时真正布局传入
   __layout(data, isVirtual, fromAbs) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __config, domParent } = this;
     let {
@@ -472,7 +472,7 @@ class Xom extends Node {
     }
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
-      if(this.__isRealInline() && currentStyle[DISPLAY] === 'inline') {
+      if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
         width[0] = 0;
         width[1] = AUTO;
       }
@@ -501,10 +501,6 @@ class Xom extends Node {
             break;
         }
       }
-    }
-    // 匿名块对象
-    if(position === 'absolute' || domParent.computedStyle[DISPLAY] === 'flex') {
-      display = 'block';
     }
     let lineClampCount = 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸

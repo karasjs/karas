@@ -9223,11 +9223,10 @@
   /**
    * 每次布局前需要计算的reflow相关的computedStyle
    * @param node 对象节点
-   * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
    */
 
 
-  function computeReflow(node, isHost) {
+  function computeReflow(node) {
     var currentStyle = node.currentStyle,
         computedStyle = node.computedStyle,
         parent = node.domParent,
@@ -9257,7 +9256,12 @@
     });
     [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP, ORDER, FLEX_WRAP, ALIGN_CONTENT].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
-    });
+    }); // 匿名块对象
+
+    if (computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
+      computedStyle[DISPLAY] = 'block';
+    }
+
     var textAlign = currentStyle[TEXT_ALIGN];
 
     if (textAlign[1] === INHERIT$2) {
@@ -13866,10 +13870,10 @@
 
         var bp = this.domParent;
 
-        while (bp.currentStyle[DISPLAY$1] === 'inline' && bp.currentStyle[POSITION$1] !== 'absolute') {
+        while (bp.computedStyle[DISPLAY$1] === 'inline' && bp.computedStyle[POSITION$1] !== 'absolute') {
           var p = bp.domParent;
 
-          if (p.currentStyle[DISPLAY$1] === 'flex') {
+          if (p.computedStyle[DISPLAY$1] === 'flex') {
             break;
           }
 
@@ -14019,7 +14023,7 @@
         var __config = this.__config;
         __config[NODE_LIMIT_CACHE] = false; // 空内容w/h都为0可以提前跳出
 
-        if (isDestroyed || currentStyle[DISPLAY$1] === 'none' || !content) {
+        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || !content) {
           return lineClampCount;
         }
 
@@ -20203,7 +20207,7 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual, fromAbs) {
-        css.computeReflow(this, this.isShadowRoot);
+        css.computeReflow(this);
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -20264,7 +20268,7 @@
 
 
         if (width[1] !== AUTO$4) {
-          if (this.__isRealInline() && currentStyle[DISPLAY$2] === 'inline') {
+          if (this.__isRealInline() && computedStyle[DISPLAY$2] === 'inline') {
             width[0] = 0;
             width[1] = AUTO$4;
           } else {
@@ -20298,11 +20302,6 @@
                 break;
             }
           }
-        } // 匿名块对象
-
-
-        if (position === 'absolute' || domParent.computedStyle[DISPLAY$2] === 'flex') {
-          display = 'block';
         }
 
         var lineClampCount = 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
@@ -23841,7 +23840,7 @@
         var container = void 0;
 
         while (next) {
-          if (next.currentStyle[DISPLAY$4] !== 'none') {
+          if (next.computedStyle[DISPLAY$4] !== 'none') {
             if (next.currentStyle[POSITION$3] === 'absolute') {
               var _next$currentStyle = next.currentStyle,
                   top = _next$currentStyle[TOP$2],
@@ -24531,7 +24530,7 @@
     }, {
       key: "__calMinMax",
       value: function __calMinMax(isDirectionRow, data) {
-        css.computeReflow(this, this.isShadowRoot);
+        css.computeReflow(this);
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
@@ -25008,7 +25007,7 @@
     }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, data) {
-        css.computeReflow(this, this.isShadowRoot);
+        css.computeReflow(this);
         var b = 0;
         var min = 0;
         var max = 0;
@@ -25481,7 +25480,7 @@
                 h: h
               }, isVirtual);
 
-              var isNone = item.currentStyle[DISPLAY$5] === 'none'; // 自身无内容
+              var isNone = item.computedStyle[DISPLAY$5] === 'none'; // 自身无内容
 
               var isEmptyBlock;
 
@@ -25649,7 +25648,7 @@
           var isLastBlock = false;
           flowChildren.forEach(function (item) {
             var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-            var isBlock = isXom && item.currentStyle[DISPLAY$5] === 'block';
+            var isBlock = isXom && item.computedStyle[DISPLAY$5] === 'block';
 
             if (isBlock) {
               isLastBlock = true;
@@ -28466,7 +28465,7 @@
     }, {
       key: "__calMinMax",
       value: function __calMinMax(isDirectionRow, data) {
-        css.computeReflow(this, this.isShadowRoot);
+        css.computeReflow(this);
         return this.__calBasis(isDirectionRow, data);
       }
     }, {
@@ -29065,7 +29064,7 @@
     }, {
       key: "__calMinMax",
       value: function __calMinMax(isDirectionRow, data) {
-        css.computeReflow(this, this.isShadowRoot);
+        css.computeReflow(this);
         return this.__calBasis(isDirectionRow, data);
       }
     }, {

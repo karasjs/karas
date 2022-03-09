@@ -534,7 +534,7 @@ class Dom extends Xom {
 
   // item的递归子节点求min/max，只考虑固定值单位，忽略百分比，同时按方向和display
   __calMinMax(isDirectionRow, data) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     let min = 0;
     let max = 0;
     let { flowChildren, currentStyle, computedStyle } = this;
@@ -956,7 +956,7 @@ class Dom extends Xom {
    * @private
    */
   __calBasis(isDirectionRow, data) {
-    css.computeReflow(this, this.isShadowRoot);
+    css.computeReflow(this);
     let b = 0;
     let min = 0;
     let max = 0;
@@ -1396,7 +1396,7 @@ class Dom extends Xom {
             w,
             h,
           }, isVirtual);
-          let isNone = item.currentStyle[DISPLAY] === 'none';
+          let isNone = item.computedStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
           if(!isNone && item.flowChildren && item.flowChildren.length === 0) {
@@ -1547,7 +1547,7 @@ class Dom extends Xom {
       let isLastBlock = false;
       flowChildren.forEach(item => {
         let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
-        let isBlock = isXom && item.currentStyle[DISPLAY] === 'block';
+        let isBlock = isXom && item.computedStyle[DISPLAY] === 'block';
         if(isBlock) {
           isLastBlock = true;
           item.__offsetY(syl[count], true);

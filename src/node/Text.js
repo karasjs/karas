@@ -91,17 +91,7 @@ class Text extends Node {
     let cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
     let sum = 0;
     let needMeasure = false;
-    // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
-    let bp = this.domParent;
-    while(bp.computedStyle[DISPLAY] === 'inline' && bp.computedStyle[POSITION] !== 'absolute') {
-      let p = bp.domParent;
-      if(p.computedStyle[DISPLAY] === 'flex') {
-        break;
-      }
-      bp = p;
-    }
-    this.__bp = bp;
-    let parentComputedStyle = bp.computedStyle;
+    let parentComputedStyle = this.domParent.computedStyle;
     let pff = 'arial';
     for(let i = 0, pffs = parentComputedStyle[FONT_FAMILY].split(','), len = pffs.length; i < len; i++) {
       if(inject.checkSupportFontFamily(pffs[i])) {
@@ -234,7 +224,15 @@ class Text extends Node {
     if(whiteSpace === 'nowrap') {
       let isTextOverflow;
       // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
-      let bp = this.__bp;
+      let bp = this.domParent;
+      while(bp.computedStyle[DISPLAY] === 'inline') {
+        let p = bp.domParent;
+        if(p.computedStyle[DISPLAY] === 'flex') {
+          break;
+        }
+        bp = p;
+      }
+      this.__bp = bp;
       let {
         [DISPLAY]: display,
         [OVERFLOW]: overflow,

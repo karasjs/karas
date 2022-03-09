@@ -417,7 +417,7 @@ class Xom extends Node {
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this);
     let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle, __config, domParent } = this;
+    let { isDestroyed, currentStyle, computedStyle, __config } = this;
     let {
       [DISPLAY]: display,
     } = computedStyle;

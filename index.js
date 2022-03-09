@@ -13868,22 +13868,8 @@
         };
         var cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
         var sum = 0;
-        var needMeasure = false; // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
-
-        var bp = this.domParent;
-
-        while (bp.computedStyle[DISPLAY$1] === 'inline' && bp.computedStyle[POSITION$1] !== 'absolute') {
-          var p = bp.domParent;
-
-          if (p.computedStyle[DISPLAY$1] === 'flex') {
-            break;
-          }
-
-          bp = p;
-        }
-
-        this.__bp = bp;
-        var parentComputedStyle = bp.computedStyle;
+        var needMeasure = false;
+        var parentComputedStyle = this.domParent.computedStyle;
         var pff = 'arial';
 
         for (var _i = 0, pffs = parentComputedStyle[FONT_FAMILY$2].split(','), _len = pffs.length; _i < _len; _i++) {
@@ -14052,7 +14038,19 @@
         if (whiteSpace === 'nowrap') {
           var isTextOverflow; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
 
-          var bp = this.__bp;
+          var bp = this.domParent;
+
+          while (bp.computedStyle[DISPLAY$1] === 'inline') {
+            var p = bp.domParent;
+
+            if (p.computedStyle[DISPLAY$1] === 'flex') {
+              break;
+            }
+
+            bp = p;
+          }
+
+          this.__bp = bp;
           var _bp$currentStyle = bp.currentStyle,
               display = _bp$currentStyle[DISPLAY$1],
               overflow = _bp$currentStyle[OVERFLOW],
@@ -14110,12 +14108,12 @@
 
               if (_char2 === lastChar && padding.hasOwnProperty(_char2) && padding[_char2]) {
                 var hasCache = void 0,
-                    p = textCache.padding[__key] = textCache.padding[__key] || {};
+                    _p = textCache.padding[__key] = textCache.padding[__key] || {};
 
                 if (textCache.padding.hasOwnProperty(__key)) {
-                  if (p.hasOwnProperty(_char2)) {
+                  if (_p.hasOwnProperty(_char2)) {
                     hasCache = true;
-                    count -= p[_char2];
+                    count -= _p[_char2];
                   }
                 }
 
@@ -14134,7 +14132,7 @@
                   }
 
                   count -= n;
-                  p[_char2] = n;
+                  _p[_char2] = n;
                 }
               }
 
@@ -20213,8 +20211,7 @@
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
-            __config = this.__config,
-            domParent = this.domParent;
+            __config = this.__config;
         var display = computedStyle[DISPLAY$2];
         var width = currentStyle[WIDTH$4],
             position = currentStyle[POSITION$2];

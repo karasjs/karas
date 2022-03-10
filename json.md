@@ -277,13 +277,13 @@ karas.loadAndParse(
     "fonts": [
       {
         "fontFamily": "DINPro",
+        "url": "xxx", // 加载的url
         "data": {
           "emSquare": 2000,
           "ascent": 1200,
           "descent": 800,
           "lineGap": 60
-        },
-        "url": "xxx" // 加载的url
+        }
       }
     ],
     "components": [

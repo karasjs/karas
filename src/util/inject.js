@@ -369,7 +369,11 @@ let inject = {
     }
     return font.info[ff].checked = false;
   },
-  loadFont(url, cb) {
+  loadFont(fontFamily, url, cb) {
+    if(util.isFunction(url)) {
+      cb = url;
+      url = fontFamily;
+    }
     if(Array.isArray(url)) {
       if(!url.length) {
         return cb();
@@ -378,7 +382,7 @@ let inject = {
       let len = url.length;
       let list = [];
       url.forEach((item, i) => {
-        inject.loadFont(item, function(cache) {
+        inject.loadFont(item.fontFamily, item.url, function(cache) {
           list[i] = cache;
           if(++count === len) {
             cb(list);
@@ -396,6 +400,9 @@ let inject = {
       });
       return;
     }
+    if(!fontFamily) {
+      fontFamily = url;
+    }
     let cache = FONT[url] = FONT[url] || {
       state: INIT,
       task: [],
@@ -409,8 +416,12 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      let f = new FontFace(url, `url(${url})`);
+      if(!/url\(/.test(url)) {
+        url = `url(${url})`;
+      }
+      let f = new FontFace(fontFamily, url);
       f.load().then(function() {
+        document.fonts.add(f);
         cache.state = LOADED;
         cache.success = true;
         cache.url = url;

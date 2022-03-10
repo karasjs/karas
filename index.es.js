@@ -831,7 +831,7 @@ var o$1 = {
         _ref$descent = _ref.descent,
         descent = _ref$descent === void 0 ? 434 : _ref$descent,
         _ref$lineGap = _ref.lineGap,
-        lineGap = _ref$lineGap === void 0 ? 67 : _ref$lineGap,
+        lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap,
         _ref$padding = _ref.padding,
         padding = _ref$padding === void 0 ? {} : _ref$padding;
 
@@ -6391,7 +6391,12 @@ var inject = {
 
     return o$1.info[ff].checked = false;
   },
-  loadFont: function loadFont(url, cb) {
+  loadFont: function loadFont(fontFamily, url, cb) {
+    if (util.isFunction(url)) {
+      cb = url;
+      url = fontFamily;
+    }
+
     if (Array.isArray(url)) {
       if (!url.length) {
         return cb();
@@ -6401,7 +6406,7 @@ var inject = {
       var len = url.length;
       var list = [];
       url.forEach(function (item, i) {
-        inject.loadFont(item, function (cache) {
+        inject.loadFont(item.fontFamily, item.url, function (cache) {
           list[i] = cache;
 
           if (++count === len) {
@@ -6420,6 +6425,10 @@ var inject = {
       return;
     }
 
+    if (!fontFamily) {
+      fontFamily = url;
+    }
+
     var cache = FONT[url] = FONT[url] || {
       state: INIT,
       task: []
@@ -6432,8 +6441,14 @@ var inject = {
     } else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      var f = new FontFace(url, "url(".concat(url, ")"));
+
+      if (!/url\(/.test(url)) {
+        url = "url(".concat(url, ")");
+      }
+
+      var f = new FontFace(fontFamily, url);
       f.load().then(function () {
+        document.fonts.add(f);
         cache.state = LOADED;
         cache.success = true;
         cache.url = url;
@@ -9217,11 +9232,10 @@ function computeMeasure(node, isRoot) {
 /**
  * 每次布局前需要计算的reflow相关的computedStyle
  * @param node 对象节点
- * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
  */
 
 
-function computeReflow(node, isHost) {
+function computeReflow(node) {
   var currentStyle = node.currentStyle,
       computedStyle = node.computedStyle,
       parent = node.domParent,
@@ -9251,7 +9265,14 @@ function computeReflow(node, isHost) {
   });
   [POSITION, DISPLAY, FLEX_DIRECTION, JUSTIFY_CONTENT, ALIGN_ITEMS, ALIGN_SELF, FLEX_GROW, FLEX_SHRINK, LINE_CLAMP, ORDER, FLEX_WRAP, ALIGN_CONTENT].forEach(function (k) {
     computedStyle[k] = currentStyle[k];
-  });
+  }); // 匿名块对象
+
+  if (computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
+    if (['block', 'flex'].indexOf(computedStyle[DISPLAY]) === -1) {
+      computedStyle[DISPLAY] = 'block';
+    }
+  }
+
   var textAlign = currentStyle[TEXT_ALIGN];
 
   if (textAlign[1] === INHERIT$2) {
@@ -13856,22 +13877,8 @@ var Text = /*#__PURE__*/function (_Node) {
       };
       var cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
       var sum = 0;
-      var needMeasure = false; // text-overflow:ellipse需要，即便没有也要先测量，其基于最近非inline父节点的字体
-
-      var bp = this.domParent;
-
-      while (bp.currentStyle[DISPLAY$1] === 'inline' && bp.currentStyle[POSITION$1] !== 'absolute') {
-        var p = bp.domParent;
-
-        if (p.currentStyle[DISPLAY$1] === 'flex') {
-          break;
-        }
-
-        bp = p;
-      }
-
-      this.__bp = bp;
-      var parentComputedStyle = bp.computedStyle;
+      var needMeasure = false;
+      var parentComputedStyle = this.domParent.computedStyle;
       var pff = 'arial';
 
       for (var _i = 0, pffs = parentComputedStyle[FONT_FAMILY$2].split(','), _len = pffs.length; _i < _len; _i++) {
@@ -14002,7 +14009,6 @@ var Text = /*#__PURE__*/function (_Node) {
       this.__y = this.__sy = this.__sy1 = y;
       var isDestroyed = this.isDestroyed,
           content = this.content,
-          currentStyle = this.currentStyle,
           computedStyle = this.computedStyle,
           textBoxes = this.textBoxes,
           charWidthList = this.charWidthList,
@@ -14013,7 +14019,7 @@ var Text = /*#__PURE__*/function (_Node) {
       var __config = this.__config;
       __config[NODE_LIMIT_CACHE] = false; // 空内容w/h都为0可以提前跳出
 
-      if (isDestroyed || currentStyle[DISPLAY$1] === 'none' || !content) {
+      if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || !content) {
         return lineClampCount;
       }
 
@@ -14035,13 +14041,25 @@ var Text = /*#__PURE__*/function (_Node) {
       var padding = o$1.info[__ff].padding;
       var needReduce = !!padding;
       var lastChar;
-      var ew = textCache.charWidth[this.__pKey][ELLIPSIS];
+      var ew = textCache.charWidth[this.__pKey][ELLIPSIS]; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+
+      var bp = this.domParent;
+
+      while (bp.computedStyle[DISPLAY$1] === 'inline') {
+        var p = bp.domParent;
+
+        if (p.computedStyle[DISPLAY$1] === 'flex') {
+          break;
+        }
+
+        bp = p;
+      }
+
+      this.__bp = bp;
       var lineCount = 0; // 不换行特殊对待，同时考虑overflow和textOverflow
 
       if (whiteSpace === 'nowrap') {
-        var isTextOverflow; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
-
-        var bp = this.__bp;
+        var isTextOverflow;
         var _bp$currentStyle = bp.currentStyle,
             display = _bp$currentStyle[DISPLAY$1],
             overflow = _bp$currentStyle[OVERFLOW],
@@ -14099,12 +14117,12 @@ var Text = /*#__PURE__*/function (_Node) {
 
             if (_char2 === lastChar && padding.hasOwnProperty(_char2) && padding[_char2]) {
               var hasCache = void 0,
-                  p = textCache.padding[__key] = textCache.padding[__key] || {};
+                  _p = textCache.padding[__key] = textCache.padding[__key] || {};
 
               if (textCache.padding.hasOwnProperty(__key)) {
-                if (p.hasOwnProperty(_char2)) {
+                if (_p.hasOwnProperty(_char2)) {
                   hasCache = true;
-                  count -= p[_char2];
+                  count -= _p[_char2];
                 }
               }
 
@@ -14123,7 +14141,7 @@ var Text = /*#__PURE__*/function (_Node) {
                 }
 
                 count -= n;
-                p[_char2] = n;
+                _p[_char2] = n;
               }
             }
 
@@ -14429,17 +14447,6 @@ var Text = /*#__PURE__*/function (_Node) {
         max: this.textWidth,
         min: n
       };
-    }
-  }, {
-    key: "__calAbsWidth",
-    value: function __calAbsWidth(x, y, w) {
-      this.__layout({
-        x: x,
-        y: y,
-        w: w
-      }, true);
-
-      return this.width;
     }
   }, {
     key: "render",
@@ -20147,8 +20154,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
     } // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
 
   }, {
-    key: "__addMp",
-    value: function __addMp(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
+    key: "__addMBP",
+    value: function __addMBP(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
       var marginLeft = currentStyle[MARGIN_LEFT$1],
           marginTop = currentStyle[MARGIN_TOP],
           marginRight = currentStyle[MARGIN_RIGHT$1],
@@ -20162,88 +20169,53 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           borderBottomWidth = currentStyle[BORDER_BOTTOM_WIDTH$2],
           borderLeftWidth = currentStyle[BORDER_LEFT_WIDTH$3];
 
-      var mp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem);
-
-      if (borderLeftWidth[1] === PX$6) {
-        mp += borderLeftWidth[0];
-      } else if (borderLeftWidth[1] === REM$7) {
-        mp += borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-      } else if (borderLeftWidth[1] === VW$7) {
-        mp += borderLeftWidth[0] * this.root.width * 0.01;
-      } else if (borderLeftWidth[1] === VH$7) {
-        mp += borderLeftWidth[0] * this.root.height * 0.01;
-      } else if (borderLeftWidth[1] === VMAX$7) {
-        mp += borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      } else if (borderLeftWidth[1] === VMIN$7) {
-        mp += borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-
-      if (borderRightWidth[1] === PX$6) {
-        mp += borderRightWidth[0];
-      } else if (borderRightWidth[1] === REM$7) {
-        mp += borderRightWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-      } else if (borderRightWidth[1] === VW$7) {
-        mp += borderRightWidth[0] * this.root.width * 0.01;
-      } else if (borderRightWidth[1] === VH$7) {
-        mp += borderRightWidth[0] * this.root.height * 0.01;
-      } else if (borderRightWidth[1] === VMAX$7) {
-        mp += borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      } else if (borderRightWidth[1] === VMIN$7) {
-        mp += borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
+      var mbp = this.__calMp(marginLeft, w, !isDirectItem) + this.__calMp(marginRight, w, !isDirectItem) + this.__calMp(paddingLeft, w, !isDirectItem) + this.__calMp(paddingRight, w, !isDirectItem) + this.__calBorder(borderLeftWidth) + this.__calBorder(borderRightWidth);
 
       res2 = res2.map(function (item) {
-        return item + mp;
+        return item + mbp;
       });
 
       if (isDirectionRow) {
         res = res.map(function (item) {
-          return item + mp;
+          return item + mbp;
         });
       } else {
-        var _mp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem);
-
-        if (borderTopWidth[1] === PX$6) {
-          _mp += borderTopWidth[0];
-        } else if (borderTopWidth[1] === REM$7) {
-          _mp += borderTopWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-        } else if (borderTopWidth[1] === VW$7) {
-          _mp += borderTopWidth[0] * this.root.width * 0.01;
-        } else if (borderTopWidth[1] === VH$7) {
-          _mp += borderTopWidth[0] * this.root.height * 0.01;
-        } else if (borderTopWidth[1] === VMAX$7) {
-          _mp += borderTopWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        } else if (borderTopWidth[1] === VMIN$7) {
-          _mp += borderTopWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
-
-        if (borderBottomWidth[1] === PX$6) {
-          _mp += borderBottomWidth[0];
-        } else if (borderBottomWidth[1] === REM$7) {
-          _mp += borderBottomWidth[0] * this.root.computedStyle[FONT_SIZE$8];
-        } else if (borderBottomWidth[1] === VW$7) {
-          _mp += borderBottomWidth[0] * this.root.width * 0.01;
-        } else if (borderBottomWidth[1] === VH$7) {
-          _mp += borderBottomWidth[0] * this.root.height * 0.01;
-        } else if (borderBottomWidth[1] === VMAX$7) {
-          _mp += borderBottomWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        } else if (borderBottomWidth[1] === VMIN$7) {
-          _mp += borderBottomWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
+        var _mbp = this.__calMp(marginTop, w, !isDirectItem) + this.__calMp(marginBottom, w, !isDirectItem) + this.__calMp(paddingTop, w, !isDirectItem) + this.__calMp(paddingBottom, w, !isDirectItem) + this.__calBorder(borderTopWidth) + this.__calBorder(borderBottomWidth);
 
         res = res.map(function (item) {
-          return item + _mp;
+          return item + _mbp;
         });
       }
 
       return [res, res2];
+    }
+  }, {
+    key: "__calBorder",
+    value: function __calBorder(data) {
+      var n = 0;
+
+      if (data[1] === PX$6) {
+        n = data[0];
+      } else if (data[1] === REM$7) {
+        n = data[0] * this.root.computedStyle[FONT_SIZE$8];
+      } else if (data[1] === VW$7) {
+        n = data[0] * this.root.width * 0.01;
+      } else if (data[1] === VH$7) {
+        n = data[0] * this.root.height * 0.01;
+      } else if (data[1] === VMAX$7) {
+        n = data[0] * Math.max(this.root.width, this.root.height) * 0.01;
+      } else if (data[1] === VMIN$7) {
+        n = data[0] * Math.min(this.root.width, this.root.height) * 0.01;
+      }
+
+      return n;
     } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，还有flex列计算时
     // fromAbs为absolute节点特有省略计算标识，本节点是abs时真正布局传入
 
   }, {
     key: "__layout",
     value: function __layout(data, isVirtual, fromAbs) {
-      css.computeReflow(this, this.isShadowRoot);
+      css.computeReflow(this);
       var w = data.w;
       var isDestroyed = this.isDestroyed,
           currentStyle = this.currentStyle,
@@ -20303,7 +20275,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
 
       if (width[1] !== AUTO$4) {
-        if (this.__isRealInline() && currentStyle[DISPLAY$2] === 'inline') {
+        if (this.__isRealInline() && computedStyle[DISPLAY$2] === 'inline') {
           width[0] = 0;
           width[1] = AUTO$4;
         } else {
@@ -20457,7 +20429,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
     value: function __layoutNone() {
       var computedStyle = this.computedStyle;
       computedStyle[DISPLAY$2] = 'none';
-      computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$1] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$1] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$1] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$2] = 0;
+      computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$1] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$1] = computedStyle[BORDER_TOP_WIDTH$2] = computedStyle[BORDER_RIGHT_WIDTH$2] = computedStyle[BORDER_BOTTOM_WIDTH$2] = computedStyle[BORDER_LEFT_WIDTH$3] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$1] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$2] = computedStyle[WIDTH$4] = computedStyle[HEIGHT$3] = this.__width = this.__height = 0;
     } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
   }, {
@@ -20543,8 +20515,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         fixedHeight = true;
         h = h2;
       } else if (h3 !== undefined) {
-        // fixedHeight = true;
-        // TODO: 暂时解决问题，当column的flex排版时，计算的高度不能视作fixedHeight，另其child的mbp未参与basis计算
+        fixedHeight = true;
         h = h3;
       } else if (height[1] !== AUTO$4) {
         fixedHeight = true;
@@ -20578,7 +20549,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             h = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
             break;
         }
-      } // margin/padding/border影响x和y和尺寸，注意inline的y不受mpb影响
+      } // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响
 
 
       x += borderLeftWidth + marginLeft + paddingLeft;
@@ -20595,7 +20566,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
       if (isInline) {
         selfEndSpace = paddingRight + borderRightWidth + marginRight;
-      } // 传入w3/h3时，flex的item已知目标主尺寸，需减去mpb，其一定是block和inline互斥
+      } // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
 
 
       if (!isInline) {
@@ -23876,7 +23847,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
       var container = void 0;
 
       while (next) {
-        if (next.currentStyle[DISPLAY$4] !== 'none') {
+        if (next.computedStyle[DISPLAY$4] !== 'none') {
           if (next.currentStyle[POSITION$3] === 'absolute') {
             var _next$currentStyle = next.currentStyle,
                 top = _next$currentStyle[TOP$2],
@@ -24566,7 +24537,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__calMinMax",
     value: function __calMinMax(isDirectionRow, data) {
-      css.computeReflow(this, this.isShadowRoot);
+      css.computeReflow(this);
       var min = 0;
       var max = 0;
       var flowChildren = this.flowChildren,
@@ -24578,11 +24549,11 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           h = data.h,
           lineBoxManager = data.lineBoxManager; // 计算需考虑style的属性
 
-      var display = currentStyle[DISPLAY$5],
-          flexDirection = currentStyle[FLEX_DIRECTION$2],
+      var flexDirection = currentStyle[FLEX_DIRECTION$2],
           width = currentStyle[WIDTH$5],
           height = currentStyle[HEIGHT$5];
-      var lineHeight = computedStyle[LINE_HEIGHT$4];
+      var display = computedStyle[DISPLAY$5],
+          lineHeight = computedStyle[LINE_HEIGHT$4];
       var main = isDirectionRow ? width : height;
       var length = flowChildren.length;
       var hasLayout;
@@ -24613,7 +24584,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   _computedStyle = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
               if (_currentStyle[DISPLAY$5] !== 'block' && _currentStyle[DISPLAY$5] !== 'flex') {
-                _currentStyle[DISPLAY$5] = _computedStyle[DISPLAY$5] = 'block';
+                _computedStyle[DISPLAY$5] = 'block';
               }
 
               var _item$__calMinMax = item.__calMinMax(isDirectionRow, {
@@ -24860,7 +24831,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                     _computedStyle2 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
                 if (_currentStyle2[DISPLAY$5] !== 'block' && _currentStyle2[DISPLAY$5] !== 'flex') {
-                  _currentStyle2[DISPLAY$5] = _computedStyle2[DISPLAY$5] = 'block';
+                  _computedStyle2[DISPLAY$5] = 'block';
                 }
 
                 var _item$__calMinMax7 = item.__calMinMax(isDirectionRow, {
@@ -25021,7 +24992,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         }
       }
 
-      return this.__addMp(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
+      return this.__addMBP(isDirectionRow, w, currentStyle, [min, max], [columnCrossMax]);
     }
     /**
      * flex布局时，计算basis尺寸，如果有固定声明则以其为标准，content为内容最大尺寸，auto依赖w/h或降级content
@@ -25043,7 +25014,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__calBasis",
     value: function __calBasis(isDirectionRow, data) {
-      css.computeReflow(this, this.isShadowRoot);
+      css.computeReflow(this);
       var b = 0;
       var min = 0;
       var max = 0;
@@ -25055,12 +25026,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           w = data.w,
           h = data.h; // 计算需考虑style的属性
 
-      var display = currentStyle[DISPLAY$5],
-          flexDirection = currentStyle[FLEX_DIRECTION$2],
+      var flexDirection = currentStyle[FLEX_DIRECTION$2],
           width = currentStyle[WIDTH$5],
           height = currentStyle[HEIGHT$5],
           flexBasis = currentStyle[FLEX_BASIS$2];
-      var lineHeight = computedStyle[LINE_HEIGHT$4];
+      var lineHeight = computedStyle[LINE_HEIGHT$4],
+          display = computedStyle[DISPLAY$5];
       var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
       var isAuto = flexBasis[1] === AUTO$6;
@@ -25120,7 +25091,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 _computedStyle3 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
             if (_currentStyle3[DISPLAY$5] !== 'block' && _currentStyle3[DISPLAY$5] !== 'flex') {
-              _currentStyle3[DISPLAY$5] = _computedStyle3[DISPLAY$5] = 'block';
+              _computedStyle3[DISPLAY$5] = 'block';
             }
 
             var _item$__calMinMax13 = item.__calMinMax(isDirectionRow, {
@@ -25313,7 +25284,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       } // 直接item的mpb影响basis
 
 
-      return this.__addMp(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
+      return this.__addMBP(isDirectionRow, w, currentStyle, [b, min, max], [columnCrossMax], true);
     }
   }, {
     key: "__layoutNone",
@@ -25516,7 +25487,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               h: h
             }, isVirtual);
 
-            var isNone = item.currentStyle[DISPLAY$5] === 'none'; // 自身无内容
+            var isNone = item.computedStyle[DISPLAY$5] === 'none'; // 自身无内容
 
             var isEmptyBlock;
 
@@ -25684,7 +25655,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         var isLastBlock = false;
         flowChildren.forEach(function (item) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-          var isBlock = isXom && item.currentStyle[DISPLAY$5] === 'block';
+          var isBlock = isXom && item.computedStyle[DISPLAY$5] === 'block';
 
           if (isBlock) {
             isLastBlock = true;
@@ -25782,7 +25753,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               _computedStyle4 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
 
           if (_currentStyle4[DISPLAY$5] !== 'block' && _currentStyle4[DISPLAY$5] !== 'flex') {
-            _currentStyle4[DISPLAY$5] = _computedStyle4[DISPLAY$5] = 'block';
+            _computedStyle4[DISPLAY$5] = 'block';
           } // abs虚拟布局计算时纵向也是看横向宽度
 
 
@@ -27147,13 +27118,15 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           item.__layoutNone();
 
           return;
-        } // 先根据容器宽度计算margin/padding
+        } // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
 
 
         item.__mp(currentStyle, computedStyle, clientWidth);
 
         if (currentStyle[DISPLAY$5] !== 'block' && currentStyle[DISPLAY$5] !== 'flex') {
-          currentStyle[DISPLAY$5] = computedStyle[DISPLAY$5] = 'block';
+          computedStyle[DISPLAY$5] = 'block';
+        } else {
+          computedStyle[DISPLAY$5] = currentStyle[DISPLAY$5];
         }
 
         var left = currentStyle[LEFT$1],
@@ -27162,8 +27135,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             bottom = currentStyle[BOTTOM$3],
             width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5],
-            display = currentStyle[DISPLAY$5],
             flexDirection = currentStyle[FLEX_DIRECTION$2];
+        var display = computedStyle[DISPLAY$5];
         var x2, y2, w2, h2;
         var onlyRight;
         var onlyBottom;
@@ -28501,7 +28474,7 @@ var Img$1 = /*#__PURE__*/function (_Dom) {
   }, {
     key: "__calMinMax",
     value: function __calMinMax(isDirectionRow, data) {
-      css.computeReflow(this, this.isShadowRoot);
+      css.computeReflow(this);
       return this.__calBasis(isDirectionRow, data);
     }
   }, {
@@ -29100,7 +29073,7 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__calMinMax",
     value: function __calMinMax(isDirectionRow, data) {
-      css.computeReflow(this, this.isShadowRoot);
+      css.computeReflow(this);
       return this.__calBasis(isDirectionRow, data);
     }
   }, {
@@ -40535,7 +40508,7 @@ var o$4 = {
         var url = item.url;
 
         if (url) {
-          list1.push(url);
+          list1.push(item);
         }
       });
     }
@@ -40650,7 +40623,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.69.9";
+var version = "0.70.0";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

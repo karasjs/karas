@@ -2309,7 +2309,44 @@ karas.inject.measureImg('http://xxx', function(cache) {
 判断参数是否是个真实Dom节点。
 * **示例**
 ```jsx
-karas.inject.isDom(document.body);
+karas.inject.isDom(document.body); // true
+```
+
+### isWebGLTexture
+* **类型** `Function`
+* **参数**
+  * target `Object`
+* **说明**  
+  判断参数是否是个WebGLTexture。
+* **示例**
+```jsx
+karas.inject.isWebGLTexture(gl.createTexture()); // true
+```
+
+### checkSupportFontFamily
+* **类型** `Function`
+* **参数**
+  * fontFamily `String`
+* **说明**  
+  判断字体是否被注册。
+* **示例**
+```jsx
+karas.inject.checkSupportFontFamily('Arial');
+```
+
+### loadFont
+* **类型** `Function`
+* **参数**
+  * fontFamily `String/Array<Object>`
+  * url `String`
+  * cb `Function`
+* **说明**  
+  加载并注册字体，可重载为加载一个字体列表。注册使用`document.fonts.add()`。
+* **示例**
+```jsx
+karas.inject.loadFont('puhui', 'xxx', function() {});
+// or
+karas.inject.loadFont([{fontFamily: 'puhui', url: 'xxx'}], function() {});
 ```
 
 ### now
@@ -2516,10 +2553,10 @@ Geom矢量几何图形的样式键值对列表。
 #### register
 * **类型** `Function`
 * **参数**
-  * name `String`
+  * fontFamily `String`
     注册的字体名。
   * data `Object`
-    字体信息，需包含`emSquare`、`ascent`、`descent`、`lineGap`。
+    字体信息，需包含`emSquare`、`ascent`、`descent`、`lineGap`（默认0）。
 * **说明**  
   注册使用的新字体。
 * **示例**
@@ -2535,7 +2572,7 @@ karas.style.font.register('newFont', {
 #### support
 * **类型** `Function`
 * **参数**
-  * name `String`
+  * fontFamily `String`
     字体名。
 * **说明**  
   返回是否支持字体。

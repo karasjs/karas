@@ -3,7 +3,6 @@ import Text from './Text';
 import Xom from './Xom';
 import Component from './Component';
 import Defs from './Defs';
-import virtual from './virtual';
 import Geom from './geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
@@ -1380,7 +1379,7 @@ class Root extends Dom {
         y: 0,
         w: width,
         h: height,
-      }, virtual.NORMAL);
+      }, false);
       // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
       this.__layoutAbs(this, {
         x: 0,
@@ -1528,7 +1527,7 @@ class Root extends Dom {
               y,
               w: width,
               h,
-            }, virtual.NORMAL);
+            }, false);
             y += node.outerHeight;
             if(component) {
               container = node;

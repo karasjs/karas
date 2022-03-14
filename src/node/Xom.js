@@ -1,5 +1,4 @@
 import Node from './Node';
-import virtual from './virtual';
 import Component from './Component';
 import unit from '../style/unit';
 import tf from '../style/transform';
@@ -28,7 +27,6 @@ import inline from './inline';
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
 const { LOCAL } = Cache;
-const { NORMAL, ABSOLUTE, containVirtual } = virtual;
 
 const {
   STYLE_KEY,
@@ -318,11 +316,14 @@ class Xom extends Node {
   __ioSize(w, h) {
     let computedStyle = this.computedStyle;
     this.__clientWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
-    this.__clientHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
     this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-    this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
     this.__outerWidth = w + computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT];
-    this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
+    // 可能不传h
+    if(!isNil(h)) {
+      this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
+      this.__clientHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
+      this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
+    }
   }
 
   // 换算margin/padding为px单位，onlyFixedValue只考虑绝对值，不考虑百分比等
@@ -355,7 +356,7 @@ class Xom extends Node {
   }
 
   // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
-  __addMBP(isDirectionRow, w, currentStyle, res, res2, isDirectItem) {
+  __addMBP(isDirectionRow, w, currentStyle, computedStyle, res, isDirectItem) {
     let {
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_TOP]: marginTop,
@@ -365,18 +366,18 @@ class Xom extends Node {
       [PADDING_TOP]: paddingTop,
       [PADDING_RIGHT]: paddingRight,
       [PADDING_BOTTOM]: paddingBottom,
+    } = currentStyle;
+    let {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
-    } = currentStyle;
+    } = computedStyle;
     let mbp = this.__calMp(marginLeft, w, !isDirectItem)
       + this.__calMp(marginRight, w, !isDirectItem)
       + this.__calMp(paddingLeft, w, !isDirectItem)
       + this.__calMp(paddingRight, w, !isDirectItem)
-      + this.__calBorder(borderLeftWidth)
-      + this.__calBorder(borderRightWidth);
-    res2 = res2.map(item => item + mbp);
+      + borderLeftWidth + borderRightWidth;
     if(isDirectionRow) {
       res = res.map(item => item + mbp);
     }
@@ -385,38 +386,14 @@ class Xom extends Node {
         + this.__calMp(marginBottom, w, !isDirectItem)
         + this.__calMp(paddingTop, w, !isDirectItem)
         + this.__calMp(paddingBottom, w, !isDirectItem)
-        + this.__calBorder(borderTopWidth)
-        + this.__calBorder(borderBottomWidth);
+        + borderTopWidth + borderBottomWidth;
       res = res.map(item => item + mbp);
     }
-    return [res, res2];
-  }
-
-  __calBorder(data) {
-    let n = 0;
-    if(data[1] === PX) {
-      n = data[0];
-    }
-    else if(data[1] === REM) {
-      n = data[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(data[1] === VW) {
-      n = data[0] * this.root.width * 0.01;
-    }
-    else if(data[1] === VH) {
-      n = data[0] * this.root.height * 0.01;
-    }
-    else if(data[1] === VMAX) {
-      n = data[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(data[1] === VMIN) {
-      n = data[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    return n;
+    return res;
   }
 
   // absolute且无尺寸时，virtualMode标明先假布局一次计算尺寸，还有flex列计算时
-  __layout(data, virtualMode) {
+  __layout(data, isVirtual) {
     css.computeReflow(this);
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __config } = this;
@@ -428,7 +405,7 @@ class Xom extends Node {
       [POSITION]: position,
     } = currentStyle;
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
-    if(virtualMode === NORMAL) {
+    if(!isVirtual) {
       this.clearCache();
       this.__layoutData = {
         x: data.x,
@@ -507,19 +484,19 @@ class Xom extends Node {
     let lineClampCount = 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {
-      this.__layoutFlex(data, virtualMode);
+      this.__layoutFlex(data, isVirtual);
     }
     else if(display === 'inlineBlock' || display === 'inline-block') {
-      lineClampCount = this.__layoutInline(data, virtualMode);
+      lineClampCount = this.__layoutInline(data, isVirtual);
     }
     else if(display === 'inline') {
-      lineClampCount = this.__layoutInline(data, virtualMode, true);
+      lineClampCount = this.__layoutInline(data, isVirtual, true);
     }
     else {
-      this.__layoutBlock(data, virtualMode);
+      this.__layoutBlock(data, isVirtual);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-    if(virtualMode === NORMAL) {
+    if(!isVirtual) {
       if (position === 'relative') {
         let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = currentStyle;
         let {parent} = this;
@@ -552,7 +529,7 @@ class Xom extends Node {
       } else if (position !== 'absolute') {
         computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
       }
-    }
+    // }
     // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
     let x = this.__sx = this.x + this.ox;
     let y = this.__sy = this.y + this.oy;
@@ -572,8 +549,8 @@ class Xom extends Node {
     }
     computedStyle[WIDTH] = this.width;
     computedStyle[HEIGHT] = this.height;
-    // abs布局的不执行，在__layoutAbs末尾做，防止未布局没有尺寸从而动画计算错误
-    if(virtualMode === NORMAL) {
+    // flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
+    // if(!isVirtual) {
       this.__execAr();
     }
     return lineClampCount;

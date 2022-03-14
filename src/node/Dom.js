@@ -3,7 +3,6 @@ import Text from './Text';
 import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
-import virtual from './virtual';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
@@ -81,7 +80,6 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
-const { NORMAL, ABSOLUTE, FLEX_COLUMN, FLEX_ROW, FLEX, containVirtual } = virtual;
 
 function genZIndexChildren(dom) {
   let normal = [];
@@ -178,6 +176,31 @@ function genOrderChildren(flowChildren) {
     return a.__iIndex - b.__iIndex;
   });
   return normal;
+}
+
+function calAbsFixedSize(value, size, root) {
+  if(value[1] === PX) {
+    return value[0];
+  }
+  else if(value[1] === PERCENT) {
+    return value[0] * 0.01 * size;
+  }
+  else if(value[1] === REM) {
+    return value[0] * root.computedStyle[FONT_SIZE];
+  }
+  else if(value[1] === VW) {
+    return value[0] * root.width * 0.01;
+  }
+  else if(value[1] === VH) {
+    return value[0] * root.height * 0.01;
+  }
+  else if(value[1] === VMAX) {
+    return value[0] * Math.max(root.width, root.height) * 0.01;
+  }
+  else if(value[1] === VMIN) {
+    return value[0] * Math.min(root.width, root.height) * 0.01;
+  }
+  return 0;
 }
 
 class Dom extends Xom {
@@ -633,7 +656,7 @@ class Dom extends Xom {
               w,
               h,
               lineBoxManager,
-            }, NORMAL);
+            }, false);
             if(isRow) {
               min = Math.max(min, item.height);
               max = Math.max(max, item.height);
@@ -717,7 +740,7 @@ class Dom extends Xom {
               w,
               h,
               lineBoxManager,
-            }, NORMAL);
+            }, false);
             // 行内取极值，最后一个记得应用
             countMin = Math.max(countMin, item.height);
             countMax = Math.max(countMax, item.height);
@@ -760,7 +783,7 @@ class Dom extends Xom {
               w,
               h,
               lineBoxManager,
-            }, NORMAL);
+            }, false);
             min = Math.max(min, item.height);
             max = Math.max(max, item.height);
             columnCrossMax = Math.max(columnCrossMax, item.width);
@@ -841,7 +864,7 @@ class Dom extends Xom {
                 w,
                 h,
                 lineBoxManager,
-              }, NORMAL);
+              }, false);
               if(isRow) {
                 columnCrossMax = Math.max(columnCrossMax, item.width);
               }
@@ -902,7 +925,7 @@ class Dom extends Xom {
                 w,
                 h,
                 lineBoxManager,
-              }, NORMAL);
+              }, false);
               // 行内取极值，最后一个记得应用
               columnCrossCount = Math.max(columnCrossCount, item.width);
               if(i === length - 1) {
@@ -935,7 +958,7 @@ class Dom extends Xom {
                 w,
                 h,
                 lineBoxManager,
-              }, NORMAL);
+              }, false);
               columnCrossMax = Math.max(columnCrossMax, item.width);
             }
           });
@@ -946,85 +969,176 @@ class Dom extends Xom {
   }
 
   __calBasis2(isDirectionRow, data) {
+    css.computeReflow(this);
     let b = 0;
     let min = 0;
     let max = 0;
-    let columnCross = 0;
     let { flowChildren, currentStyle, computedStyle } = this;
     let { x, y, w, h } = data;
     // 计算需考虑style的属性
     let {
       [FLEX_DIRECTION]: flexDirection,
-      [FLEX_BASIS]: flexBasis,
-      [LINE_HEIGHT]: lineHeight,
-      [DISPLAY]: display,
       [WIDTH]: width,
       [HEIGHT]: height,
+      [FLEX_BASIS]: flexBasis,
+    } = currentStyle;
+    let {
+      [LINE_HEIGHT]: lineHeight,
+      [DISPLAY]: display,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
     let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
-    let isContent = !isAuto && !isFixed;
+    // let isContent = !isAuto && !isFixed;
     let fixedSize;
     // flex的item固定basis计算
     if(isFixed) {
       if(flexBasis[1] === PX) {
-        b = fixedSize = flexBasis[0];
+        fixedSize = flexBasis[0];
       }
       else if(flexBasis[1] === PERCENT) {
-        b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+        fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
       }
       else if(flexBasis[1] === REM) {
-        b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
+        fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
       }
       else if(flexBasis[1] === VW) {
-        b = fixedSize = flexBasis[0] * this.root.width * 0.01;
+        fixedSize = flexBasis[0] * this.root.width * 0.01;
       }
       else if(flexBasis[1] === VH) {
-        b = fixedSize = flexBasis[0] * this.root.height * 0.01;
+        fixedSize = flexBasis[0] * this.root.height * 0.01;
       }
       else if(flexBasis[1] === VMAX) {
-        b = fixedSize = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        fixedSize = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
       }
       else if(flexBasis[1] === VMIN) {
-        b = fixedSize = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        fixedSize = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
-    // 已声明主轴尺寸的，当basis是auto时为值
+    // 已声明主轴尺寸的，当basis是auto时为main值
     else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1) && isAuto) {
+      // isContent = false;
       if(main[1] === PX) {
-        b = fixedSize = main[0];
+        fixedSize = main[0];
       }
       else if(main[1] === PERCENT) {
-        b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
+        fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
       }
       else if(main[1] === REM) {
-        b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE];
+        fixedSize = main[0] * this.root.computedStyle[FONT_SIZE];
       }
       else if(main[1] === VW) {
-        b = fixedSize = main[0] * this.root.width * 0.01;
+        fixedSize = main[0] * this.root.width * 0.01;
       }
       else if(main[1] === VH) {
-        b = fixedSize = main[0] * this.root.height * 0.01;
+        fixedSize = main[0] * this.root.height * 0.01;
       }
       else if(main[1] === VMAX) {
-        b = fixedSize = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
+        fixedSize = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
       }
       else if(main[1] === VMIN) {
-        b = fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
+        fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
     // 非固定尺寸的basis为auto时降级为content
-    else if(isAuto) {
-      isContent = true;
+    // else if(isAuto) {
+    //   isContent = true;
+    // }
+    // 固定basis忽略min/max计算，包含auto降为main固定值的
+    if(fixedSize !== undefined) {
+      b = min = max = fixedSize;
+      return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
     }
-    if(fixedSize) {
-      max = Math.max(fixedSize, max);
-    }
-    if(isContent) {
+    let countMin = 0, countMax = 0;
+    let columnCrossCount = 0, columnCrossMax = 0;
+    // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
+    if(isDirectionRow) {
+      // flex的item还是flex时
+      if(display === 'flex') {
+        let isRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1;
+        flowChildren = genOrderChildren(flowChildren);
+        flowChildren.forEach(item => {
+          if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+            let [, min2, max2] = item.__calBasis2(isDirectionRow, { x, y, w, h });
+            if(isRow) {
+              min += min2;
+              max += max2;
+              // columnCrossMax += columnCrossMax2;
+            }
+            else {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+              // columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+            }
+          }
+          else if(isDirectionRow) {
+            if(isRow) {
+              min += item.charWidth;
+              max += item.textWidth;
+              // columnCrossMax += item.width;
+            }
+            else {
+              min = Math.max(min, item.charWidth);
+              max = Math.max(max, item.textWidth);
+              // columnCrossMax = Math.max(columnCrossMax, item.width);
+            }
+          }
+        });
+      }
+      // flex的item是block/inline时，inline也会变成block统一对待
+      else {
+        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+        flowChildren.forEach(item => {
+          if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+            let [, min2, max2] = item.__calBasis2(isDirectionRow, { x, y, w, h, lineBoxManager });
+            let display = item.computedStyle[DISPLAY];
+            // // 块级查看之前是否有行内元素，设置换行
+            // if((display === 'block' || display === 'flex') && lineBoxManager.isEnd) {
+            //   lineBoxManager.setNotEnd();
+            //   lineBoxManager.setNewLine();
+            // }
+            // row看块级最大尺寸和连续行级最大尺寸的宽
+            if(display === 'block' || display === 'flex') {
+              min = Math.max(min, min2);
+              max = Math.max(max, max2);
+              // columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+              countMin = countMax = columnCrossCount = 0;
+            }
+            else {
+              countMin += min2;
+              countMax += max2;
+              // columnCrossCount += columnCrossMax2;
+              min = Math.max(min, countMin);
+              max = Math.max(max, countMax);
+              // columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
+            }
+          }
+          else {
+            countMin += item.charWidth;
+            countMax += item.textWidth;
+            // columnCrossCount += item.width;
+            min = Math.max(min, countMin);
+            max = Math.max(max, countMax);
+            // columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
+          }
+        });
+      }
+      // row降级为内容时basis等同于max
       b = max;
     }
+    // column的flex时，每个child做一次虚拟布局，获取到每个child的高度和宽度
+    else {
+      this.__layout({
+        x,
+        y,
+        w,
+        h,
+      }, true);
+      min = max = b = this.height; // column的child，max和b总相等
+    }
+    // 直接item的mpb影响basis
+    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
   }
 
   /**
@@ -1181,7 +1295,7 @@ class Dom extends Xom {
             w,
             h,
             lineBoxManager,
-          }, NORMAL);
+          }, false);
           if(isRow) {
             min = Math.max(min, item.height);
             max = Math.max(max, item.height);
@@ -1266,7 +1380,7 @@ class Dom extends Xom {
             w,
             h,
             lineBoxManager,
-          }, NORMAL);
+          }, false);
           // 行内取极值，最后一个记得应用
           countMin = Math.max(countMin, item.height);
           countMax = Math.max(countMax, item.height);
@@ -1279,9 +1393,11 @@ class Dom extends Xom {
         }
       });
     }
+    // 固定尺寸的话max不能<固定尺寸
     if(fixedSize) {
       max = Math.max(fixedSize, max);
     }
+    // 降级为内容时basis等同于max
     if(isContent) {
       b = max;
     }
@@ -1328,18 +1444,19 @@ class Dom extends Xom {
    * LineBoxManager只有block和inlineBlock内部生成，inline会复用最近父级的
    * 内部的block在垂直方向要考虑margin合并的问题，强制所有节点为bfc，精简逻辑
    * @param data
-   * @param virtualMode abs/flex无尺寸时提前虚拟布局计算尺寸
+   * @param isVirtual flex无尺寸时提前虚拟布局计算尺寸
    * @private
    */
-  __layoutBlock(data, virtualMode) {
+  __layoutBlock(data, isVirtual) {
     let { flowChildren, currentStyle, computedStyle } = this;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
     // abs虚拟布局需预知width，固定可提前返回
-    if(fixedWidth && containVirtual(virtualMode, ABSOLUTE)) {
-      this.__width = w;
-      this.__ioSize(w, this.height);
-      return;
-    }
+    // if(fixedWidth && containVirtual(isVirtual, ABSOLUTE)) {
+    //   this.__width = w;
+    //   this.__ioSize(w, this.height);
+    //   return;
+    // }
+    console.log(this.tagName, fixedWidth, fixedHeight, w, h);
     let {
       [TEXT_ALIGN]: textAlign,
       [WHITE_SPACE]: whiteSpace,
@@ -1390,7 +1507,7 @@ class Dom extends Xom {
               lineBoxManager, // ib内部新生成会内部判断，这里不管统一传入
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
             if(item.__isIbFull) {
               x = data.x;
@@ -1404,11 +1521,11 @@ class Dom extends Xom {
               y = lineBoxManager.lastY;
             }
             // abs统计宽度
-            if(virtualMode) {
-              maxW = Math.max(maxW, cw);
-              cw = item.outerWidth;
-              maxW = Math.max(maxW, cw);
-            }
+            // if(isVirtual) {
+            //   maxW = Math.max(maxW, cw);
+            //   cw = item.outerWidth;
+            //   maxW = Math.max(maxW, cw);
+            // }
           }
           else {
             // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
@@ -1424,7 +1541,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-              }, virtualMode);
+              }, isVirtual);
               // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
               (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
@@ -1445,7 +1562,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-              }, virtualMode);
+              }, isVirtual);
               // 重新开头的ib和上面开头处一样逻辑
               if(item.__isIbFull) {
                 x = data.x;
@@ -1458,15 +1575,15 @@ class Dom extends Xom {
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               }
-              if(virtualMode) {
-                maxW = Math.max(maxW, cw);
-                cw = 0;
-              }
+              // if(isVirtual) {
+              //   maxW = Math.max(maxW, cw);
+              //   cw = 0;
+              // }
             }
-            if(virtualMode) {
-              cw += item.outerWidth;
-              maxW = Math.max(maxW, cw);
-            }
+            // if(isVirtual) {
+            //   cw += item.outerWidth;
+            //   maxW = Math.max(maxW, cw);
+            // }
           }
         }
         // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
@@ -1486,7 +1603,7 @@ class Dom extends Xom {
             y,
             w,
             h,
-          }, virtualMode);
+          }, isVirtual);
           let isNone = item.computedStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
@@ -1510,10 +1627,10 @@ class Dom extends Xom {
           y += item.outerHeight;
           lineBoxManager.__lastY = y;
           // absolute/flex前置虚拟计算
-          if(virtualMode) {
-            maxW = Math.max(maxW, item.outerWidth);
-            cw = 0;
-          }
+          // if(isVirtual) {
+          //   maxW = Math.max(maxW, item.outerWidth);
+          //   cw = 0;
+          // }
           // 空block要留下轮循环看，除非是最后一个，此处非空本轮处理掉看是否要合并
           if(!isNone && !isEmptyBlock) {
             let { [MARGIN_TOP]: marginTop, [MARGIN_BOTTOM]: marginBottom } = item.computedStyle;
@@ -1557,14 +1674,14 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-          }, virtualMode);
+          }, isVirtual);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
-          if(virtualMode) {
-            maxW = Math.max(maxW, cw);
-            cw = item.width;
-            maxW = Math.max(maxW, cw);
-          }
+          // if(isVirtual) {
+          //   maxW = Math.max(maxW, cw);
+          //   cw = item.width;
+          //   maxW = Math.max(maxW, cw);
+          // }
         }
         else {
           // 非开头先尝试是否放得下
@@ -1580,7 +1697,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -1599,18 +1716,18 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
-            if(virtualMode) {
-              maxW = Math.max(maxW, item.width);
-              cw = 0;
-            }
+            // if(isVirtual) {
+            //   maxW = Math.max(maxW, item.width);
+            //   cw = 0;
+            // }
           }
-          if(virtualMode) {
-            cw += item.width;
-            maxW = Math.max(maxW, cw);
-          }
+          // if(isVirtual) {
+          //   cw += item.width;
+          //   maxW = Math.max(maxW, cw);
+          // }
         }
       }
     });
@@ -1619,8 +1736,9 @@ class Dom extends Xom {
     if(lineBoxManager.isEnd) {
       y = lineBoxManager.endY;
     }
-    let tw = this.__width = (fixedWidth || !virtualMode) ? w : maxW;
+    let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
+    // console.log(tw, th);
     this.__ioSize(tw, th);
     // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
     let spread = lineBoxManager.verticalAlign();
@@ -1652,7 +1770,7 @@ class Dom extends Xom {
       });
     }
     // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
-    if(!virtualMode) {
+    if(!isVirtual) {
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
         // 直接text需计算size
@@ -1674,14 +1792,14 @@ class Dom extends Xom {
   }
 
   // 弹性布局时的计算位置
-  __layoutFlex(data, virtualMode) {
+  __layoutFlex(data, isVirtual) {console.warn(this.tagName,isVirtual)
     let { flowChildren, currentStyle, computedStyle, __flexLine } = this;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
-    if(fixedWidth && virtualMode) {
-      this.__width = w;
-      this.__ioSize(w, this.height);
-      return;
-    }
+    // if(fixedWidth && isVirtual) {
+    //   this.__width = w;
+    //   this.__ioSize(w, this.height);
+    //   return;
+    // }
     // 每次布局情况多行内容
     __flexLine.splice(0);
     let {
@@ -1707,9 +1825,8 @@ class Dom extends Xom {
     let minList = [];
     let columnCrossList = []; // column时特殊求每个子节点的宽度，布局时传入，不能按stretch拉满
     let orderChildren = genOrderChildren(flowChildren);
-    console.error(this.tagName, w, h, virtualMode);
+    // console.error(this.tagName, flexDirection, w, h, isVirtual);
     orderChildren.forEach((item, i) => {
-      console.log(i, item.tagName);
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         // flex的child如果是inline，变为block，在计算autoBasis前就要
@@ -1719,12 +1836,18 @@ class Dom extends Xom {
         // else {
         //   computedStyle[DISPLAY] = currentStyle[DISPLAY];
         // }
-        item.__layout(data, virtualMode | (isDirectionRow ? FLEX_ROW : FLEX_COLUMN));
-        console.log(item.outerWidth, item.outerHeight);
-        let [b, min, max, columnCross] = item.__calBasis2(isDirectionRow, data);
+        // if(computedStyle[DISPLAY] === 'flex') {
+        //   if(!isDirectionRow) {
+        //     item.__layout(data, isVirtual | FLEX_COLUMN);
+        //     return;
+        //   }
+        // }
+        // item.__layout(data, isVirtual | (isDirectionRow ? FLEX_ROW : FLEX_COLUMN));
+        // let [b, min, max, columnCross] = item.__calBasis2(isDirectionRow, data);
         // abs虚拟布局计算时纵向也是看横向宽度
-        // let [[b, min, max], [columnCross]] = item.__calBasis(virtualMode ? true : isDirectionRow, { x, y, w, h });
-        // if(virtualMode) {
+        // let [[b, min, max], [columnCross]] = item.__calBasis(isDirectionRow, { x, y, w, h });
+        let [b, min, max] = item.__calBasis2(isDirectionRow, { x, y, w, h });
+        // if(isVirtual) {
         //   if(isDirectionRow) {
         //     maxX += max;
         //   }
@@ -1733,27 +1856,27 @@ class Dom extends Xom {
         //   }
         //   return;
         // }
-        // let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink } = currentStyle;
-        // computedStyle[FLEX_BASIS] = b;
-        // growList.push(flexGrow);
-        // shrinkList.push(flexShrink);
-        // // 根据basis不同，计算方式不同
-        // basisList.push(b);
-        // maxList.push(max);
-        // minList.push(min);
+        let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink } = currentStyle;
+        computedStyle[FLEX_BASIS] = b;
+        growList.push(flexGrow);
+        shrinkList.push(flexShrink);
+        // 根据basis不同，计算方式不同
+        basisList.push(b);
+        maxList.push(max);
+        minList.push(min);
         // columnCrossList.push(columnCross);
       }
       // 文本
       else {
-        if(virtualMode) {
-          if(isDirectionRow) {
-            maxX += item.textWidth;
-          }
-          else {
-            maxX = Math.max(maxX, item.textWidth);
-          }
-          return;
-        }
+        // if(isVirtual) {
+        //   if(isDirectionRow) {
+        //     maxX += item.textWidth;
+        //   }
+        //   else {
+        //     maxX = Math.max(maxX, item.textWidth);
+        //   }
+        //   return;
+        // }
         growList.push(0);
         shrinkList.push(1);
         if(isDirectionRow) {
@@ -1774,20 +1897,20 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-          }, NORMAL);
+          }, false);
           let hh = item.height;
           basisList.push(hh);
           maxList.push(hh);
           minList.push(hh);
-          columnCrossList.push(item.width);
+          // columnCrossList.push(item.width);
         }
       }
     });
     // abs时，只需关注宽度即可，无需真正布局
-    if(virtualMode) {
-      let tw = this.__width = Math.min(maxX, w);
-      this.__ioSize(tw, this.height);
-      return;
+    if(isVirtual) {
+      // let tw = this.__width = Math.min(maxX, w);
+      // this.__ioSize(tw, this.height);
+      // return;
     }
     let containerSize = isDirectionRow ? w : h;
     let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
@@ -1842,7 +1965,7 @@ class Dom extends Xom {
     __flexLine.forEach(item => {
       let length = item.length;
       let end = offset + length;
-      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, containerSize,
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isVirtual, containerSize,
         fixedWidth, fixedHeight, lineClamp, lineClampCount,
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
@@ -1916,7 +2039,7 @@ class Dom extends Xom {
     // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
     // 先做整体的，得出交叉轴空白再均分给每一行做单行的，整体的只有1行忽略
     let per;
-    if(!virtualMode && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
+    if(!isVirtual && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
       let diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x);
       // 有空余时才进行对齐
       if(diff > 0) {
@@ -1991,7 +2114,7 @@ class Dom extends Xom {
       }
     }
     // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
-    if(!virtualMode) {
+    if(!isVirtual) {
       if(length > 1) {
         __flexLine.forEach((item, i) => {
           let maxCross = maxCrossList[i];
@@ -2013,8 +2136,8 @@ class Dom extends Xom {
         }
         this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
       }
+      this.__marginAuto(currentStyle, data);
     }
-    this.__marginAuto(currentStyle, data);
   }
 
   /**
@@ -2025,7 +2148,7 @@ class Dom extends Xom {
    * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
    * 先收集basis和假设主尺寸
    */
-  __layoutFlexLine(data, isDirectionRow, containerSize,
+  __layoutFlexLine(data, isDirectionRow, isVirtual, containerSize,
                    fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    lineHeight, computedStyle, justifyContent, alignItems,
                    orderChildren, flexLine, textAlign,
@@ -2164,30 +2287,26 @@ class Dom extends Xom {
             w: main,
             h,
             w3: main, // w3假设固定宽度，忽略原始style中的设置
-          }, NORMAL);
+          }, false);
         }
         else {
-          // 特殊的地方，column子元素的宽度限制为非stretch时，否则还是满宽
-          let alignSelf = item.currentStyle[ALIGN_SELF];
-          let w3;
-          if(alignItems === 'stretch') {
-            if(alignSelf !== 'auto' && alignSelf !== 'stretch') {
-              w3 = columnCrossList[i];
-            }
-          }
-          else {
-            if(alignSelf !== 'stretch') {
-              w3 = columnCrossList[i];
-            }
-          }
+          // console.log(x,y,w,main);
           item.__layout({
             x,
             y,
             w,
-            w3,
+            // w3,
             h: main,
             h3: main, // 同w2
-          }, NORMAL);
+          }, false);
+          // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
+          let alignSelf = item.currentStyle[ALIGN_SELF];
+          if(alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch') {
+            let wa = item.__calAjustWidth(w, true);
+            if(wa < w) {
+              item.__resizeX(wa - w);
+            }
+          }
         }
       }
       else {
@@ -2196,12 +2315,12 @@ class Dom extends Xom {
         item.__layout({
           x,
           y,
-          w: isDirectionRow ? main : columnCrossList[i],
+          w: isDirectionRow ? main : w,
           h: isDirectionRow ? h : main,
           lineBoxManager,
           lineClamp,
           lineClampCount,
-        }, NORMAL);
+        }, false);
       }
       if(isDirectionRow) {
         x += item.outerWidth;
@@ -2215,7 +2334,7 @@ class Dom extends Xom {
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
     // 主轴对齐方式
-    if(diff > 0) {
+    if(!isVirtual && diff > 0) {
       let len = orderChildren.length;
       if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
@@ -2252,7 +2371,7 @@ class Dom extends Xom {
       x += maxCross;
     }
     // flex的直接text对齐比较特殊
-    if(['center', 'right'].indexOf(textAlign) > -1) {
+    if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lbmList.forEach(item => {
         item.horizonAlign(item.width, textAlign);
       })
@@ -2341,7 +2460,7 @@ class Dom extends Xom {
             } } = item;
             // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
             if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }), NORMAL);
+              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }), false);
             }
             let {
               [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -2471,20 +2590,20 @@ class Dom extends Xom {
    * 然后根据是否在最后一个元素进行叠加父元素的，多层嵌套则多层尾部叠加，均以最后一个元素为依据判断
    * Text获取这个叠加的endSpace值即可，无需感知是否最后一个，外层（此处）进行逻辑封装
    * @param data
-   * @param virtualMode
+   * @param isVirtual
    * @param isInline
    * @private
    */
-  __layoutInline(data, virtualMode, isInline) {
+  __layoutInline(data, isVirtual, isInline) {
     let { flowChildren, currentStyle, computedStyle } = this;
     let { fixedWidth, fixedHeight, x, y, w, h, lx,
       lineBoxManager, nowrap, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
-    if(fixedWidth && virtualMode) {
-      this.__width = w;
-      this.__ioSize(w, this.height);
-      return;
-    }
+    // if(fixedWidth && isVirtual) {
+    //   this.__width = w;
+    //   this.__ioSize(w, this.height);
+    //   return;
+    // }
     let {
       [WIDTH]: width,
     } = currentStyle;
@@ -2567,7 +2686,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-          }, virtualMode);
+          }, isVirtual);
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
             isInlineBlock2 && (w[1] === AUTO) && (isIbFull = true);
@@ -2599,7 +2718,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
             (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
@@ -2621,7 +2740,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             // 重新开头的ib和上面开头处一样逻辑
             if(item.__isIbFull) {
               lineBoxManager.addItem(item);
@@ -2654,7 +2773,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-          }, virtualMode);
+          }, isVirtual);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // ib情况发生折行，且非定宽
@@ -2685,7 +2804,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
@@ -2706,7 +2825,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, virtualMode);
+            }, isVirtual);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
@@ -2740,9 +2859,9 @@ class Dom extends Xom {
       // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
       lineBoxManager.popContentBoxList();
       // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，
-      if(virtualMode) {
-        this.__inlineSize();
-      }
+      // if(isVirtual) {
+      //   this.__inlineSize();
+      // }
     }
     else {
       // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
@@ -2752,7 +2871,7 @@ class Dom extends Xom {
       this.__ioSize(tw, th);
     }
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
-    if(!virtualMode && !isInline) {
+    if(!isVirtual && !isInline) {
       lineBoxManager.verticalAlign();
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxManager.horizonAlign(tw, textAlign);
@@ -2957,21 +3076,22 @@ class Dom extends Xom {
         }
       }
       let { currentStyle, computedStyle } = item;
-      if(currentStyle[DISPLAY] === 'none') {
+      if(item.isDestroyed || currentStyle[DISPLAY] === 'none') {
         item.__layoutNone();
         return;
       }
       // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
+      css.computeReflow(item);
       item.__mp(currentStyle, computedStyle, clientWidth);
-      if(['block', 'flex'].indexOf(currentStyle[DISPLAY]) === -1) {
-        computedStyle[DISPLAY] = 'block';
-      }
-      else {
-        computedStyle[DISPLAY] = currentStyle[DISPLAY];
-      }
-      let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
-        [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height,
-        [FLEX_DIRECTION]: flexDirection } = currentStyle;
+      let {
+        [LEFT]: left,
+        [TOP]: top,
+        [RIGHT]: right,
+        [BOTTOM]: bottom,
+        [WIDTH]: width,
+        [HEIGHT]: height,
+        // [FLEX_DIRECTION]: flexDirection,
+      } = currentStyle;
       let display = computedStyle[DISPLAY];
       let x2, y2, w2, h2;
       let onlyRight;
@@ -3017,52 +3137,12 @@ class Dom extends Xom {
       else if(fixedLeft) {
         x2 = x + computedStyle[LEFT];
         if(width[1] !== AUTO) {
-          if(width[1] === PERCENT) {
-            w2 = width[0] * clientWidth * 0.01;
-          }
-          else if(width[1] === REM) {
-            w2 = width[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          else if(width[1] === VW) {
-            w2 = width[0] * this.root.width * 0.01;
-          }
-          else if(width[1] === VH) {
-            w2 = width[0] * this.root.height * 0.01;
-          }
-          else if(width[1] === VMAX) {
-            w2 = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          }
-          else if(width[1] === VMIN) {
-            w2 = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          }
-          else {
-            w2 = width[0];
-          }
+          w2 = calAbsFixedSize(width, clientWidth, this.root);
         }
       }
       else if(fixedRight) {
         if(width[1] !== AUTO) {
-          if(width[1] === PERCENT) {
-            w2 = width[0] * clientWidth * 0.01;
-          }
-          else if(width[1] === REM) {
-            w2 = width[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          else if(width[1] === VW) {
-            w2 = width[0] * this.root.width * 0.01;
-          }
-          else if(width[1] === VH) {
-            w2 = width[0] * this.root.height * 0.01;
-          }
-          else if(width[1] === VMAX) {
-            w2 = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          }
-          else if(width[1] === VMIN) {
-            w2 = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          }
-          else {
-            w2 = width[0];
-          }
+          w2 = calAbsFixedSize(width, clientWidth, this.root);
         }
         else {
           onlyRight = true;
@@ -3073,33 +3153,13 @@ class Dom extends Xom {
         x2 -= computedStyle[MARGIN_RIGHT];
         x2 -= computedStyle[PADDING_LEFT];
         x2 -= computedStyle[PADDING_RIGHT];
-        x2 -= currentStyle[BORDER_LEFT_WIDTH][0];
-        x2 -= currentStyle[BORDER_RIGHT_WIDTH][0];
+        x2 -= computedStyle[BORDER_LEFT_WIDTH];
+        x2 -= computedStyle[BORDER_RIGHT_WIDTH];
       }
       else {
         x2 = x + paddingLeft;
         if(width[1] !== AUTO) {
-          if(width[1] === PERCENT) {
-            w2 = width[0] * clientWidth * 0.01;
-          }
-          else if(width[1] === REM) {
-            w2 = width[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          else if(width[1] === VW) {
-            w2 = width[0] * this.root.width * 0.01;
-          }
-          else if(width[1] === VH) {
-            w2 = width[0] * this.root.height * 0.01;
-          }
-          else if(width[1] === VMAX) {
-            w2 = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          }
-          else if(width[1] === VMIN) {
-            w2 = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          }
-          else {
-            w2 = width[0];
-          }
+          w2 = calAbsFixedSize(width, clientWidth, this.root);
         }
       }
       // top/bottom/height优先级同上
@@ -3110,52 +3170,12 @@ class Dom extends Xom {
       else if(fixedTop) {
         y2 = y + computedStyle[TOP];
         if(height[1] !== AUTO) {
-          if(height[1] === PERCENT) {
-            h2 = height[0] * clientHeight * 0.01;
-          }
-          else if(height[1] === REM) {
-            h2 = height[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          else if(height[1] === VW) {
-            h2 = height[0] * this.root.width * 0.01;
-          }
-          else if(height[1] === VH) {
-            h2 = height[0] * this.root.height * 0.01;
-          }
-          else if(height[1] === VMAX) {
-            h2 = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          }
-          else if(height[1] === VMIN) {
-            h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          }
-          else {
-            h2 = height[0];
-          }
+          h2 = calAbsFixedSize(height, clientHeight, this.root);
         }
       }
       else if(fixedBottom) {
         if(height[1] !== AUTO) {
-          if(height[1] === PERCENT) {
-            h2 = height[0] * clientHeight * 0.01;
-          }
-          else if(height[1] === REM) {
-            h2 = height[0] * this.root.computedStyle[FONT_SIZE];
-          }
-          else if(height[1] === VW) {
-            h2 = height[0] * this.root.width * 0.01;
-          }
-          else if(height[1] === VH) {
-            h2 = height[0] * this.root.height * 0.01;
-          }
-          else if(height[1] === VMAX) {
-            h2 = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          }
-          else if(height[1] === VMIN) {
-            h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          }
-          else {
-            h2 = height[0];
-          }
+          h2 = calAbsFixedSize(height, clientHeight, this.root);
         }
         else {
           onlyBottom = true;
@@ -3166,80 +3186,41 @@ class Dom extends Xom {
         y2 -= computedStyle[MARGIN_BOTTOM];
         y2 -= computedStyle[PADDING_TOP];
         y2 -= computedStyle[PADDING_BOTTOM];
-        y2 -= currentStyle[BORDER_TOP_WIDTH][0];
-        y2 -= currentStyle[BORDER_BOTTOM_WIDTH][0];
+        y2 -= computedStyle[BORDER_TOP_WIDTH];
+        y2 -= computedStyle[BORDER_BOTTOM_WIDTH];
       }
       // 未声明y的找到之前的流布局child，紧随其下
       else {
         y2 = y + paddingTop;
         let prev = item.prev;
         while(prev) {
-          // 目前不考虑margin合并，直接以前面的flow的最近的prev末尾为准
+          // 以前面的flow的最近的prev末尾为准
           if(prev instanceof Text || prev.computedStyle[POSITION] !== 'absolute') {
             y2 = prev.y + prev.outerHeight;
             break;
           }
           prev = prev.prev;
         }
-        if(height[1] === PERCENT) {
-          h2 = height[0] * clientHeight * 0.01;
-        }
-        else if(height[1] === REM) {
-          h2 = height[0] * this.root.computedStyle[FONT_SIZE];
-        }
-        else if(height[1] === VW) {
-          h2 = height[0] * this.root.width * 0.01;
-        }
-        else if(height[1] === VH) {
-          h2 = height[0] * this.root.height * 0.01;
-        }
-        else if(height[1] === VMAX) {
-          h2 = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        }
-        else if(height[1] === VMIN) {
-          h2 = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
-        // 特殊必须声明防止AUTO
-        else if(height[1] === PX) {
-          h2 = height[0];
-        }
-      }
-      // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
-      let needCalWidth;
-      if((display === 'block' || ['inlineBlock', 'inline-block'].indexOf(display) > -1) && w2 === undefined) {
-        needCalWidth = true;
-      }
-      else if(display === 'flex') {
-        if(w2 === undefined) {
-          needCalWidth = true;
-        }
-        else if(flexDirection === 'column' && h2 === undefined) {
-          needCalWidth = true;
+        if(height[1] !== AUTO) {
+          h2 = calAbsFixedSize(height, clientHeight, this.root);
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
-      let wl = onlyRight ? x2 - x : clientWidth + x - x2;
+      let widthLimit = onlyRight ? x2 - x : clientWidth + x - x2;
       // onlyBottom相同，正常情况是左上到右下的尺寸限制
-      let hl = onlyBottom ? y2 - y : clientHeight + y - y2;
-      // 未直接或间接定义尺寸，取孩子宽度最大值
-      if(needCalWidth) {
-        item.__layout({
-          x: x2,
-          y: y2,
-          w: wl,
-          h: hl,
-        }, ABSOLUTE);
-        wl = item.outerWidth;
+      let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
+      // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
+      if(w2 === undefined) {
+        w2 = widthLimit = item.__calAjustWidth(widthLimit, true);
       }
-      // needCalWidth传入，因为自适应尺寸上面已经计算过一次margin/padding了
       item.__layout({
         x: x2,
         y: y2,
-        w: wl,
-        h: hl,
+        w: widthLimit,
+        h: heightLimit,
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
-      }, NORMAL);
+      });
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }
@@ -3271,6 +3252,107 @@ class Dom extends Xom {
       }
     });
     this.__execAr();
+  }
+
+  /**
+   * absolute的节点未定义宽度情况下预先计算宽度，取尽可能满足所有children的最小尺寸，且不能超过widthLimit即边界
+   * 最小尺寸在inline发生换行等特殊情况下，依旧取未换行情况下最大尺寸，这点比较特殊
+   * @param widthLimit
+   * @param isAbsRoot 由abs节点发起，由于本身一定未定宽且计算过一些属性，可以省略
+   * @private
+   */
+  __calAjustWidth(widthLimit, isAbsRoot) {
+    if(!isAbsRoot) {
+      css.computeReflow(this);
+    }
+    let { flowChildren, currentStyle, computedStyle } = this;
+    let {
+      [WIDTH]: width,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+    } = currentStyle;
+    let {
+      [DISPLAY]: display,
+      [FLEX_DIRECTION]: flexDirection,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } = computedStyle;
+    let mbp = this.__calMp(marginLeft, widthLimit, false)
+      + this.__calMp(marginRight, widthLimit, false)
+      + this.__calMp(paddingLeft, widthLimit, false)
+      + this.__calMp(paddingRight, widthLimit, false)
+      + borderLeftWidth + borderRightWidth;
+    // flex根据方向获取尺寸，row取和，column取每项最大值
+    if(display === 'flex') {
+      if(width[1] !== AUTO) {
+        return Math.min(widthLimit, calAbsFixedSize(width, widthLimit, this.root) + mbp);
+      }
+      let count = 0;
+      let isRow = ['column', 'columnReverse', 'column-reverse'].indexOf(flexDirection) === -1;
+      for(let i = 0, len = flowChildren.length; i < len; i++) {
+        let item = flowChildren[i];
+        let w = item.__calAjustWidth(widthLimit, false);
+        if(isRow) {
+          count += w;
+        }
+        else {
+          count = Math.max(count, w);
+        }
+        // 提前跳出
+        if(count >= widthLimit) {
+          count = widthLimit;
+          break;
+        }
+      }
+      return Math.min(widthLimit, count + mbp);
+    }
+    else if(display === 'block') {
+      if(width[1] !== AUTO) {
+        return Math.min(widthLimit, calAbsFixedSize(width, widthLimit, this.root) + mbp);
+      }
+      let count = 0, max = 0;
+      for(let i = 0, len = flowChildren.length; i < len; i++) {
+        let item = flowChildren[i];
+        let w = item.__calAjustWidth(widthLimit, false);
+        let display = item.computedStyle[DISPLAY];
+        // 块节点取之前inline累计以及当前尺寸的最大值
+        if(['block', 'flex'].indexOf(display) > -1) {
+          max = Math.max(count, max);
+          max = Math.max(w, max);
+        }
+        else {
+          count += w;
+          max = Math.max(count, max);
+        }
+        // 提前跳出
+        if(max >= widthLimit) {
+          max = widthLimit;
+          break;
+        }
+      }
+      return Math.min(widthLimit, max + mbp);
+    }
+    else {
+      if(['inlineBlock', 'inline-block'].indexOf(display) > -1) {
+        if(width[1] !== AUTO) {
+          return Math.min(widthLimit, calAbsFixedSize(width, widthLimit, this.root) + mbp);
+        }
+      }
+      let count = 0;
+      for(let i = 0, len = flowChildren.length; i < len; i++) {
+        let item = flowChildren[i];
+        let w = item.__calAjustWidth(widthLimit, false);
+        count += w;
+        // 提前跳出
+        if(count >= widthLimit) {
+          count = widthLimit;
+          break;
+        }
+      }
+      return Math.min(widthLimit, count + mbp);
+    }
   }
 
   /**

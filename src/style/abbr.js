@@ -190,11 +190,7 @@ export default {
       else if(v === 'auto') {
         parseFlex(style, 1, 1, 'auto');
       }
-      else if(/^[\d.]+\s+[\d.]+\s+(auto|none|content)/.test(v)) {
-        let arr = v.split(/\s+/);
-        parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
-      }
-      else if(/^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwhina%]*/.test(v)) {
+      else if(/^[\d.]+\s+[\d.]+\s+(auto|none|content)/.test(v) || /^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwhina%]*/.test(v)) {
         let arr = v.split(/\s+/);
         parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
       }

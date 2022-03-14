@@ -7705,21 +7705,17 @@
           parseFlex(style, 0, 0, 'auto');
         } else if (v === 'auto') {
           parseFlex(style, 1, 1, 'auto');
-        } else if (/^[\d.]+\s+[\d.]+\s+(auto|none|content)/.test(v)) {
+        } else if (/^[\d.]+\s+[\d.]+\s+(auto|none|content)/.test(v) || /^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwhina%]*/.test(v)) {
           var arr = v.split(/\s+/);
           parseFlex(style, parseFloat(arr[0]), parseFloat(arr[1]), arr[2]);
-        } else if (/^[\d.]+\s+[\d.]+\s+[\d.]+[pxremvwhina%]*/.test(v)) {
+        } else if (/^[\d.]+\s+[\d.]+$/.test(v)) {
           var _arr = v.split(/\s+/);
 
-          parseFlex(style, parseFloat(_arr[0]), parseFloat(_arr[1]), _arr[2]);
-        } else if (/^[\d.]+\s+[\d.]+$/.test(v)) {
+          parseFlex(style, parseFloat(_arr[0]), parseFloat(_arr[1]), 0);
+        } else if (/^[\d.]+\s+[\d.]+[pxremvwhina%]+/.test(v)) {
           var _arr2 = v.split(/\s+/);
 
-          parseFlex(style, parseFloat(_arr2[0]), parseFloat(_arr2[1]), 0);
-        } else if (/^[\d.]+\s+[\d.]+[pxremvwhina%]+/.test(v)) {
-          var _arr3 = v.split(/\s+/);
-
-          parseFlex(style, parseFloat(_arr3[0]), 1, _arr3[1]);
+          parseFlex(style, parseFloat(_arr2[0]), 1, _arr2[1]);
         } else if (/^[\d.]+$/.test(v)) {
           parseFlex(style, parseFloat(v), 1, 0);
         } else if (/^[\d.]+[pxremvwhina%]+/i.test(v)) {
@@ -7791,29 +7787,29 @@
           });
         });
       } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
+        var _arr3 = v.toString().split(/\s*,\s*/);
+
+        if (_arr3.length === 1) {
+          _arr3[1] = _arr3[0];
+        }
+
+        this[k].forEach(function (k, i) {
+          if (isNil$2(style[k])) {
+            style[k] = _arr3[i];
+          }
+        });
+      } else if (['translate3d', 'scale3d'].indexOf(k) > -1) {
         var _arr4 = v.toString().split(/\s*,\s*/);
 
         if (_arr4.length === 1) {
-          _arr4[1] = _arr4[0];
+          _arr4[2] = _arr4[1] = _arr4[0];
+        } else if (_arr4.length === 2) {
+          _arr4[2] = k === 'scale3d' ? 1 : 0;
         }
 
         this[k].forEach(function (k, i) {
           if (isNil$2(style[k])) {
             style[k] = _arr4[i];
-          }
-        });
-      } else if (['translate3d', 'scale3d'].indexOf(k) > -1) {
-        var _arr5 = v.toString().split(/\s*,\s*/);
-
-        if (_arr5.length === 1) {
-          _arr5[2] = _arr5[1] = _arr5[0];
-        } else if (_arr5.length === 2) {
-          _arr5[2] = k === 'scale3d' ? 1 : 0;
-        }
-
-        this[k].forEach(function (k, i) {
-          if (isNil$2(style[k])) {
-            style[k] = _arr5[i];
           }
         });
       } else if (k === 'margin' || k === 'padding') {
@@ -25874,12 +25870,7 @@
             x = _this$__preLayout2.x,
             y = _this$__preLayout2.y,
             w = _this$__preLayout2.w,
-            h = _this$__preLayout2.h; // if(fixedWidth && isVirtual) {
-        //   this.__width = w;
-        //   this.__ioSize(w, this.height);
-        //   return;
-        // }
-        // 每次布局情况多行内容
+            h = _this$__preLayout2.h; // 每次布局情况多行内容
 
 
         __flexLine.splice(0);
@@ -25908,23 +25899,7 @@
         orderChildren.forEach(function (item, i) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _currentStyle4 = item.currentStyle,
-                _computedStyle4 = item.computedStyle; // flex的child如果是inline，变为block，在计算autoBasis前就要
-            // if(['block', 'flex'].indexOf(currentStyle[DISPLAY]) === -1) {
-            //   computedStyle[DISPLAY] = 'block';
-            // }
-            // else {
-            //   computedStyle[DISPLAY] = currentStyle[DISPLAY];
-            // }
-            // if(computedStyle[DISPLAY] === 'flex') {
-            //   if(!isDirectionRow) {
-            //     item.__layout(data, isVirtual | FLEX_COLUMN);
-            //     return;
-            //   }
-            // }
-            // item.__layout(data, isVirtual | (isDirectionRow ? FLEX_ROW : FLEX_COLUMN));
-            // let [b, min, max, columnCross] = item.__calBasis2(isDirectionRow, data);
-            // abs虚拟布局计算时纵向也是看横向宽度
-            // let [[b, min, max], [columnCross]] = item.__calBasis(isDirectionRow, { x, y, w, h });
+                _computedStyle4 = item.computedStyle;
 
             var _item$__calBasis5 = item.__calBasis2(isDirectionRow, {
               x: x,
@@ -25935,16 +25910,7 @@
                 _item$__calBasis6 = _slicedToArray(_item$__calBasis5, 3),
                 b = _item$__calBasis6[0],
                 min = _item$__calBasis6[1],
-                max = _item$__calBasis6[2]; // if(isVirtual) {
-            //   if(isDirectionRow) {
-            //     maxX += max;
-            //   }
-            //   else {
-            //     maxX = Math.max(maxX, max);
-            //   }
-            //   return;
-            // }
-
+                max = _item$__calBasis6[2];
 
             var flexGrow = _currentStyle4[FLEX_GROW$1],
                 flexShrink = _currentStyle4[FLEX_SHRINK$1];
@@ -25954,18 +25920,9 @@
 
             basisList.push(b);
             maxList.push(max);
-            minList.push(min); // columnCrossList.push(columnCross);
+            minList.push(min);
           } // 文本
           else {
-            // if(isVirtual) {
-            //   if(isDirectionRow) {
-            //     maxX += item.textWidth;
-            //   }
-            //   else {
-            //     maxX = Math.max(maxX, item.textWidth);
-            //   }
-            //   return;
-            // }
             growList.push(0);
             shrinkList.push(1);
 
@@ -25992,11 +25949,10 @@
               var hh = item.height;
               basisList.push(hh);
               maxList.push(hh);
-              minList.push(hh); // columnCrossList.push(item.width);
+              minList.push(hh);
             }
           }
-        }); // abs时，只需关注宽度即可，无需真正布局
-
+        });
         var containerSize = isDirectionRow ? w : h;
         var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
         /**
@@ -26432,9 +26388,11 @@
               }, false); // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
 
 
-              var alignSelf = item.currentStyle[ALIGN_SELF$1];
+              var _item$currentStyle = item.currentStyle,
+                  alignSelf = _item$currentStyle[ALIGN_SELF$1],
+                  width = _item$currentStyle[WIDTH$5];
 
-              if (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch') {
+              if (width[1] === AUTO$6 && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
                 var wa = item.__calAjustWidth(w, true);
 
                 if (wa < w) {
@@ -26590,10 +26548,10 @@
               } // 默认stretch
               else {
                 var _computedStyle5 = item.computedStyle,
-                    _item$currentStyle = item.currentStyle,
-                    display = _item$currentStyle[DISPLAY$5],
-                    flexDirection = _item$currentStyle[FLEX_DIRECTION$2],
-                    _height = _item$currentStyle[HEIGHT$5]; // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
+                    _item$currentStyle2 = item.currentStyle,
+                    display = _item$currentStyle2[DISPLAY$5],
+                    flexDirection = _item$currentStyle2[FLEX_DIRECTION$2],
+                    _height = _item$currentStyle2[HEIGHT$5]; // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
 
                 if (isDirectionRow && display === 'flex' && flexDirection === 'column' && _height[1] === AUTO$6 && item.outerHeight < maxCross) {
                   item.__layout(Object.assign(item.__layoutData, {
@@ -27277,8 +27235,7 @@
               right = currentStyle[RIGHT$1],
               bottom = currentStyle[BOTTOM$3],
               width = currentStyle[WIDTH$5],
-              height = currentStyle[HEIGHT$5]; // let display = computedStyle[DISPLAY];
-
+              height = currentStyle[HEIGHT$5];
           var x2, y2, w2, h2;
           var onlyRight;
           var onlyBottom;
@@ -27394,10 +27351,7 @@
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 
 
-          var widthLimit = onlyRight ? x2 - x : clientWidth + x - x2; // onlyBottom相同，正常情况是左上到右下的尺寸限制
-          // let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
-          // console.log(w2, widthLimit);
-          // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
+          var widthLimit = onlyRight ? x2 - x : clientWidth + x - x2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
 
           if (w2 === undefined) {
             w2 = item.__calAjustWidth(widthLimit, true);

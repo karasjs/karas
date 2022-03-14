@@ -1793,11 +1793,6 @@ class Dom extends Xom {
   __layoutFlex(data, isVirtual) {
     let { flowChildren, currentStyle, computedStyle, __flexLine } = this;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
-    // if(fixedWidth && isVirtual) {
-    //   this.__width = w;
-    //   this.__ioSize(w, this.height);
-    //   return;
-    // }
     // 每次布局情况多行内容
     __flexLine.splice(0);
     let {
@@ -1826,33 +1821,7 @@ class Dom extends Xom {
     orderChildren.forEach((item, i) => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
-        // flex的child如果是inline，变为block，在计算autoBasis前就要
-        // if(['block', 'flex'].indexOf(currentStyle[DISPLAY]) === -1) {
-        //   computedStyle[DISPLAY] = 'block';
-        // }
-        // else {
-        //   computedStyle[DISPLAY] = currentStyle[DISPLAY];
-        // }
-        // if(computedStyle[DISPLAY] === 'flex') {
-        //   if(!isDirectionRow) {
-        //     item.__layout(data, isVirtual | FLEX_COLUMN);
-        //     return;
-        //   }
-        // }
-        // item.__layout(data, isVirtual | (isDirectionRow ? FLEX_ROW : FLEX_COLUMN));
-        // let [b, min, max, columnCross] = item.__calBasis2(isDirectionRow, data);
-        // abs虚拟布局计算时纵向也是看横向宽度
-        // let [[b, min, max], [columnCross]] = item.__calBasis(isDirectionRow, { x, y, w, h });
         let [b, min, max] = item.__calBasis2(isDirectionRow, { x, y, w, h });
-        // if(isVirtual) {
-        //   if(isDirectionRow) {
-        //     maxX += max;
-        //   }
-        //   else {
-        //     maxX = Math.max(maxX, max);
-        //   }
-        //   return;
-        // }
         let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink } = currentStyle;
         computedStyle[FLEX_BASIS] = b;
         growList.push(flexGrow);
@@ -1861,19 +1830,9 @@ class Dom extends Xom {
         basisList.push(b);
         maxList.push(max);
         minList.push(min);
-        // columnCrossList.push(columnCross);
       }
       // 文本
       else {
-        // if(isVirtual) {
-        //   if(isDirectionRow) {
-        //     maxX += item.textWidth;
-        //   }
-        //   else {
-        //     maxX = Math.max(maxX, item.textWidth);
-        //   }
-        //   return;
-        // }
         growList.push(0);
         shrinkList.push(1);
         if(isDirectionRow) {
@@ -1899,16 +1858,9 @@ class Dom extends Xom {
           basisList.push(hh);
           maxList.push(hh);
           minList.push(hh);
-          // columnCrossList.push(item.width);
         }
       }
     });
-    // abs时，只需关注宽度即可，无需真正布局
-    if(isVirtual) {
-      // let tw = this.__width = Math.min(maxX, w);
-      // this.__ioSize(tw, this.height);
-      // return;
-    }
     let containerSize = isDirectionRow ? w : h;
     let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
     /**
@@ -2296,8 +2248,12 @@ class Dom extends Xom {
             h3: main, // 同w2
           }, false);
           // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
-          let alignSelf = item.currentStyle[ALIGN_SELF];
-          if(alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch') {
+          let {
+            [ALIGN_SELF]: alignSelf,
+            [WIDTH]: width,
+          } = item.currentStyle;
+          if(width[1] === AUTO
+            && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
             let wa = item.__calAjustWidth(w, true);
             if(wa < w) {
               item.__resizeX(wa - w);

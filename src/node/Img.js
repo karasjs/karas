@@ -590,16 +590,11 @@ class Img extends Dom {
     return w;
   }
 
-  __calMinMax(isDirectionRow, data) {
-    css.computeReflow(this);
-    return this.__calBasis(isDirectionRow, data);
-  }
-
   __calBasis(isDirectionRow, data) {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { currentStyle, __loadImg } = this;
+    let { currentStyle, computedStyle, __loadImg } = this;
     let { w, h } = data;
     // 计算需考虑style的属性
     let {
@@ -701,59 +696,8 @@ class Img extends Dom {
         b = max = min = isDirectionRow ? res.w : res.h;
       }
     }
-    // border也得计算在内
-    if(isDirectionRow) {
-      let mp = this.__calMp(marginLeft, w)
-        + this.__calMp(marginRight, w)
-        + this.__calMp(paddingLeft, w)
-        + this.__calMp(paddingRight, w);
-      let w2 = borderLeftWidth[0] + borderRightWidth[0] + mp;
-      b += w2;
-      max += w2;
-      min += w2;
-    }
-    else {
-      let mp = this.__calMp(marginTop, w)
-        + this.__calMp(marginBottom, w)
-        + this.__calMp(paddingTop, w)
-        + this.__calMp(paddingBottom, w);
-      let h2 = borderTopWidth[0] + borderBottomWidth[0] + mp;
-      b += h2;
-      max += h2;
-      min += h2;
-    }
-    let columnCrossMax = 0;
-    if(width[1] === PX) {
-      columnCrossMax = width[0];
-    }
-    else if(width[1] === PERCENT) {
-      columnCrossMax = width[0] * 0.01 * (isDirectionRow ? w : h);
-    }
-    else if(width[1] === REM) {
-      columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(width[1] === VW) {
-      columnCrossMax = width[0] * this.root.width * 0.01;
-    }
-    else if(width[1] === VH) {
-      columnCrossMax = width[0] * this.root.height * 0.01;
-    }
-    else if(width[1] === VMAX) {
-      columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(width[1] === VMIN) {
-      columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    else if(__loadImg.source || __loadImg.error) {
-      let res = this.__preLayout(data);
-      columnCrossMax = res.w;
-    }
-    columnCrossMax += this.__calMp(marginLeft, w)
-      + this.__calMp(marginRight, w)
-      + this.__calMp(paddingLeft, w)
-      + this.__calMp(paddingRight, w)
-      + borderLeftWidth[0] + borderRightWidth[0];
-    return [[b, min, max], [columnCrossMax]];
+    // 直接item的mpb影响basis
+    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
   }
 
   __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {

@@ -1702,6 +1702,31 @@ function cloneStyle(style, keys) {
   return res;
 }
 
+function calAbsFixedSize(value, size, root) {
+  if(value[1] === PX) {
+    return value[0];
+  }
+  else if(value[1] === PERCENT) {
+    return value[0] * 0.01 * size;
+  }
+  else if(value[1] === REM) {
+    return value[0] * root.computedStyle[FONT_SIZE];
+  }
+  else if(value[1] === VW) {
+    return value[0] * root.width * 0.01;
+  }
+  else if(value[1] === VH) {
+    return value[0] * root.height * 0.01;
+  }
+  else if(value[1] === VMAX) {
+    return value[0] * Math.max(root.width, root.height) * 0.01;
+  }
+  else if(value[1] === VMIN) {
+    return value[0] * Math.min(root.width, root.height) * 0.01;
+  }
+  return 0;
+}
+
 export default {
   normalize,
   computeMeasure,
@@ -1711,6 +1736,7 @@ export default {
   getBaseline,
   calRelative,
   calAbsolute,
+  calAbsFixedSize,
   equalStyle,
   isRelativeOrAbsolute,
   cloneStyle,

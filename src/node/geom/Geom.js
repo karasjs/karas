@@ -250,7 +250,11 @@ class Geom extends Xom {
       + this.__calMp(paddingLeft, containerWidth, false)
       + this.__calMp(paddingRight, containerWidth, false)
       + borderLeftWidth + borderRightWidth;
-    return Math.min(widthLimit, calAbsFixedSize(width, containerWidth, this.root) + mbp);
+    let w = 0;
+    if(display !== 'inline') {
+      w = calAbsFixedSize(width, containerWidth, this.root);
+    }
+    return Math.min(widthLimit, w + mbp);
   }
 
   __calBasis(isDirectionRow, data) {

@@ -55,6 +55,7 @@ const {
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const { isFunction } = util;
+const { computeReflow, calAbsFixedSize } = css;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -88,6 +89,7 @@ class Img extends Dom {
    * 都没有固定，按照图片尺寸，重新布局绘制
    * 这里计算非固定的情况，将其改为固定供布局渲染使用，未加载完成为0
    * @param data
+   * @param isInline
    * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
    * @private
    */
@@ -588,6 +590,43 @@ class Img extends Dom {
       w -= borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     return w;
+  }
+
+  __calAjustWidth(widthLimit, containerWidth, isAbsRoot) {
+    if(!isAbsRoot) {
+      computeReflow(this);
+    }
+    let { currentStyle, computedStyle, __loadImg } = this;
+    let {
+      [WIDTH]: width,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+    } = currentStyle;
+    let {
+      [DISPLAY]: display,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } = computedStyle;
+    let mbp = this.__calMp(marginLeft, containerWidth, false)
+      + this.__calMp(marginRight, containerWidth, false)
+      + this.__calMp(paddingLeft, containerWidth, false)
+      + this.__calMp(paddingRight, containerWidth, false)
+      + borderLeftWidth + borderRightWidth;
+    let w = 0;
+    if(display !== 'inline') {
+      w = calAbsFixedSize(width, containerWidth, this.root);
+    }
+    if(width[1] === AUTO) {
+      if(__loadImg.source) {
+        w = __loadImg.width;
+      }
+      else if(__loadImg.error) {
+        w = 32;
+      }
+    }
+    return Math.min(widthLimit, w + mbp);
   }
 
   __calBasis(isDirectionRow, data) {

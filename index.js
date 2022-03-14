@@ -27262,6 +27262,8 @@
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
   var isFunction$7 = util.isFunction;
+  var computeReflow$2 = css.computeReflow,
+      calAbsFixedSize$2 = css.calAbsFixedSize;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -27309,6 +27311,7 @@
      * 都没有固定，按照图片尺寸，重新布局绘制
      * 这里计算非固定的情况，将其改为固定供布局渲染使用，未加载完成为0
      * @param data
+     * @param isInline
      * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
      * @private
      */
@@ -27776,6 +27779,41 @@
         return w;
       }
     }, {
+      key: "__calAjustWidth",
+      value: function __calAjustWidth(widthLimit, containerWidth, isAbsRoot) {
+        if (!isAbsRoot) {
+          computeReflow$2(this);
+        }
+
+        var currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle,
+            __loadImg = this.__loadImg;
+        var width = currentStyle[WIDTH$6],
+            marginLeft = currentStyle[MARGIN_LEFT$4],
+            marginRight = currentStyle[MARGIN_RIGHT$4],
+            paddingLeft = currentStyle[PADDING_LEFT$5],
+            paddingRight = currentStyle[PADDING_RIGHT$4];
+        var display = computedStyle[DISPLAY$6],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5];
+        var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth;
+        var w = 0;
+
+        if (display !== 'inline') {
+          w = calAbsFixedSize$2(width, containerWidth, this.root);
+        }
+
+        if (width[1] === AUTO$7) {
+          if (__loadImg.source) {
+            w = __loadImg.width;
+          } else if (__loadImg.error) {
+            w = 32;
+          }
+        }
+
+        return Math.min(widthLimit, w + mbp);
+      }
+    }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, data) {
         var b = 0;
@@ -28181,8 +28219,8 @@
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$7 = painter.svgPolygon;
   var WEBGL$2 = mode.WEBGL;
-  var calAbsFixedSize$2 = css.calAbsFixedSize,
-      computeReflow$2 = css.computeReflow;
+  var calAbsFixedSize$3 = css.calAbsFixedSize,
+      computeReflow$3 = css.computeReflow;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -28336,7 +28374,7 @@
       key: "__calAjustWidth",
       value: function __calAjustWidth(widthLimit, containerWidth, isAbsRoot) {
         if (!isAbsRoot) {
-          computeReflow$2(this);
+          computeReflow$3(this);
         }
 
         var currentStyle = this.currentStyle,
@@ -28350,7 +28388,13 @@
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$7],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$6];
         var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth;
-        return Math.min(widthLimit, calAbsFixedSize$2(width, containerWidth, this.root) + mbp);
+        var w = 0;
+
+        if (display !== 'inline') {
+          w = calAbsFixedSize$3(width, containerWidth, this.root);
+        }
+
+        return Math.min(widthLimit, w + mbp);
       }
     }, {
       key: "__calBasis",

@@ -20090,13 +20090,13 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
           var a = STYLE_KEY$5[style2Upper$2('margin' + k)];
           var b = STYLE_KEY$5[style2Upper$2('padding' + k)];
-          computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
-          computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
+          computedStyle[a] = _this2.__mpSize(currentStyle[a], w);
+          computedStyle[b] = _this2.__mpSize(currentStyle[b], w);
         });
       }
     }, {
-      key: "__mpWidth",
-      value: function __mpWidth(mp, w) {
+      key: "__mpSize",
+      value: function __mpSize(mp, w) {
         if (mp[1] === PX$6) {
           return mp[0];
         } else if (mp[1] === PERCENT$7) {
@@ -20243,12 +20243,9 @@
           this.__layoutNone();
 
           return;
-        } // margin/padding在abs前已经计算过了，无需二次计算
-        // if(!containVirtual(virtualMode, ABSOLUTE)) {
+        }
 
-
-        this.__mp(currentStyle, computedStyle, w); // }
-        // inline的width/height无效，其它有效
+        this.__mp(currentStyle, computedStyle, w); // inline的width/height无效，其它有效
 
 
         if (width[1] !== AUTO$4) {
@@ -20346,8 +20343,7 @@
             }
           } else if (position !== 'absolute') {
             computedStyle[TOP$1] = computedStyle[BOTTOM$1] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
-          } // }
-          // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
+          } // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
 
 
           var x = this.__sx = this.x + this.ox;
@@ -20370,7 +20366,6 @@
 
           computedStyle[WIDTH$4] = this.width;
           computedStyle[HEIGHT$3] = this.height; // flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
-          // if(!isVirtual) {
 
           this.__execAr();
         }
@@ -27282,8 +27277,8 @@
               right = currentStyle[RIGHT$1],
               bottom = currentStyle[BOTTOM$3],
               width = currentStyle[WIDTH$5],
-              height = currentStyle[HEIGHT$5];
-          var display = computedStyle[DISPLAY$5];
+              height = currentStyle[HEIGHT$5]; // let display = computedStyle[DISPLAY];
+
           var x2, y2, w2, h2;
           var onlyRight;
           var onlyBottom;
@@ -27400,18 +27395,19 @@
 
 
           var widthLimit = onlyRight ? x2 - x : clientWidth + x - x2; // onlyBottom相同，正常情况是左上到右下的尺寸限制
-
-          var heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
+          // let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
+          // console.log(w2, widthLimit);
+          // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
 
           if (w2 === undefined) {
-            w2 = widthLimit = item.__calAjustWidth(widthLimit, true);
+            w2 = item.__calAjustWidth(widthLimit, true);
           }
 
           item.__layout({
             x: x2,
             y: y2,
-            w: widthLimit,
-            h: heightLimit,
+            w: container.width,
+            h: container.height,
             w2: w2,
             // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
             h2: h2
@@ -27450,9 +27446,7 @@
               sr.__layoutAbs(sr, data);
             }
           }
-        });
-
-        this.__execAr();
+        }); // this.__execAr();
       }
       /**
        * absolute的节点未定义宽度情况下预先计算宽度，取尽可能满足所有children的最小尺寸，且不能超过widthLimit即边界

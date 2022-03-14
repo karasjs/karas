@@ -282,12 +282,12 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      computedStyle[a] = this.__mpWidth(currentStyle[a], w);
-      computedStyle[b] = this.__mpWidth(currentStyle[b], w);
+      computedStyle[a] = this.__mpSize(currentStyle[a], w);
+      computedStyle[b] = this.__mpSize(currentStyle[b], w);
     });
   }
 
-  __mpWidth(mp, w) {
+  __mpSize(mp, w) {
     if(mp[1] === PX) {
       return mp[0];
     }
@@ -445,10 +445,7 @@ class Xom extends Node {
       this.__layoutNone();
       return;
     }
-    // margin/padding在abs前已经计算过了，无需二次计算
-    // if(!containVirtual(virtualMode, ABSOLUTE)) {
-      this.__mp(currentStyle, computedStyle, w);
-    // }
+    this.__mp(currentStyle, computedStyle, w);
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
       if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
@@ -497,60 +494,63 @@ class Xom extends Node {
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
     if(!isVirtual) {
-      if (position === 'relative') {
+      if(position === 'relative') {
         let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = currentStyle;
         let {parent} = this;
-        if (top[1] !== AUTO) {
+        if(top[1] !== AUTO) {
           let n = calRelative(currentStyle, TOP, top, parent);
           this.__offsetY(n);
           computedStyle[TOP] = n;
           computedStyle[BOTTOM] = 'auto';
-        } else if (bottom[1] !== AUTO) {
+        }
+        else if(bottom[1] !== AUTO) {
           let n = calRelative(currentStyle, BOTTOM, bottom, parent);
           this.__offsetY(-n);
           computedStyle[BOTTOM] = n;
           computedStyle[TOP] = 'auto';
-        } else {
+        }
+        else {
           computedStyle[TOP] = computedStyle[BOTTOM] = 'auto';
         }
-        if (left[1] !== AUTO) {
+        if(left[1] !== AUTO) {
           let n = calRelative(currentStyle, LEFT, left, parent, true);
           this.__offsetX(n);
           computedStyle[LEFT] = n;
           computedStyle[RIGHT] = 'auto';
-        } else if (right[1] !== AUTO) {
+        }
+        else if (right[1] !== AUTO) {
           let n = calRelative(currentStyle, RIGHT, right, parent, true);
           this.__offsetX(-n);
           computedStyle[RIGHT] = n;
           computedStyle[LEFT] = 'auto';
-        } else {
+        }
+        else {
           computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
         }
-      } else if (position !== 'absolute') {
+      }
+      else if (position !== 'absolute') {
         computedStyle[TOP] = computedStyle[BOTTOM] = computedStyle[LEFT] = computedStyle[RIGHT] = 'auto';
       }
-    // }
-    // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
-    let x = this.__sx = this.x + this.ox;
-    let y = this.__sy = this.y + this.oy;
-    if(!__config[NODE_IS_INLINE]) {
-      x = this.__sx1 = x + computedStyle[MARGIN_LEFT];
-      x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH];
-      x = this.__sx3 = x + computedStyle[PADDING_LEFT];
-      x = this.__sx4 = x + this.width;
-      x = this.__sx5 = x + computedStyle[PADDING_RIGHT];
-      this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH];
-      y = this.__sy1 = y + computedStyle[MARGIN_TOP];
-      y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH];
-      y = this.__sy3 = y + computedStyle[PADDING_TOP];
-      y = this.__sy4 = y + this.height;
-      y = this.__sy5 = y + computedStyle[PADDING_BOTTOM];
-      this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH];
-    }
-    computedStyle[WIDTH] = this.width;
-    computedStyle[HEIGHT] = this.height;
-    // flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
-    // if(!isVirtual) {
+      // 计算结果存入computedStyle和6个坐标，inline在其inlineSize特殊处理
+      let x = this.__sx = this.x + this.ox;
+      let y = this.__sy = this.y + this.oy;
+      if(!__config[NODE_IS_INLINE]) {
+        x = this.__sx1 = x + computedStyle[MARGIN_LEFT];
+        x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH];
+        x = this.__sx3 = x + computedStyle[PADDING_LEFT];
+        x = this.__sx4 = x + this.width;
+        x = this.__sx5 = x + computedStyle[PADDING_RIGHT];
+        this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH];
+        y = this.__sy1 = y + computedStyle[MARGIN_TOP];
+        y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH];
+        y = this.__sy3 = y + computedStyle[PADDING_TOP];
+        y = this.__sy4 = y + this.height;
+        y = this.__sy5 = y + computedStyle[PADDING_BOTTOM];
+        this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH];
+      }
+      computedStyle[WIDTH] = this.width;
+      computedStyle[HEIGHT] = this.height;
+      // flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
       this.__execAr();
     }
     return lineClampCount;

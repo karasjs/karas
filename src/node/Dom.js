@@ -3086,9 +3086,7 @@ class Dom extends Xom {
         [BOTTOM]: bottom,
         [WIDTH]: width,
         [HEIGHT]: height,
-        // [FLEX_DIRECTION]: flexDirection,
       } = currentStyle;
-      let display = computedStyle[DISPLAY];
       let x2, y2, w2, h2;
       let onlyRight;
       let onlyBottom;
@@ -3203,17 +3201,15 @@ class Dom extends Xom {
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
       let widthLimit = onlyRight ? x2 - x : clientWidth + x - x2;
-      // onlyBottom相同，正常情况是左上到右下的尺寸限制
-      let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
       // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
       if(w2 === undefined) {
-        w2 = widthLimit = item.__calAjustWidth(widthLimit, true);
+        w2 = item.__calAjustWidth(widthLimit, true);
       }
       item.__layout({
         x: x2,
         y: y2,
-        w: widthLimit,
-        h: heightLimit,
+        w: container.width,
+        h: container.height,
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
       });
@@ -3247,7 +3243,7 @@ class Dom extends Xom {
         }
       }
     });
-    this.__execAr();
+    // this.__execAr();
   }
 
   /**

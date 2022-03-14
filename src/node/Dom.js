@@ -1041,17 +1041,12 @@ class Dom extends Xom {
         fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
-    // 非固定尺寸的basis为auto时降级为content
-    // else if(isAuto) {
-    //   isContent = true;
-    // }
-    // 固定basis忽略min/max计算，包含auto降为main固定值的
-    if(fixedSize !== undefined) {
+    // 固定basis忽略min/max计算，包含auto降为main固定值的，仅限row
+    if(fixedSize !== undefined && isDirectionRow) {
       b = min = max = fixedSize;
       return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
     }
     let countMin = 0, countMax = 0;
-    let columnCrossCount = 0, columnCrossMax = 0;
     // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
     if(isDirectionRow) {
       // flex的item还是flex时
@@ -1064,24 +1059,20 @@ class Dom extends Xom {
             if(isRow) {
               min += min2;
               max += max2;
-              // columnCrossMax += columnCrossMax2;
             }
             else {
               min = Math.max(min, min2);
               max = Math.max(max, max2);
-              // columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
             }
           }
           else if(isDirectionRow) {
             if(isRow) {
               min += item.charWidth;
               max += item.textWidth;
-              // columnCrossMax += item.width;
             }
             else {
               min = Math.max(min, item.charWidth);
               max = Math.max(max, item.textWidth);
-              // columnCrossMax = Math.max(columnCrossMax, item.width);
             }
           }
         });
@@ -1093,34 +1084,24 @@ class Dom extends Xom {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [, min2, max2] = item.__calBasis2(isDirectionRow, { x, y, w, h, lineBoxManager });
             let display = item.computedStyle[DISPLAY];
-            // // 块级查看之前是否有行内元素，设置换行
-            // if((display === 'block' || display === 'flex') && lineBoxManager.isEnd) {
-            //   lineBoxManager.setNotEnd();
-            //   lineBoxManager.setNewLine();
-            // }
             // row看块级最大尺寸和连续行级最大尺寸的宽
             if(display === 'block' || display === 'flex') {
               min = Math.max(min, min2);
               max = Math.max(max, max2);
-              // columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
-              countMin = countMax = columnCrossCount = 0;
+              countMin = countMax = 0;
             }
             else {
               countMin += min2;
               countMax += max2;
-              // columnCrossCount += columnCrossMax2;
               min = Math.max(min, countMin);
               max = Math.max(max, countMax);
-              // columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
             }
           }
           else {
             countMin += item.charWidth;
             countMax += item.textWidth;
-            // columnCrossCount += item.width;
             min = Math.max(min, countMin);
             max = Math.max(max, countMax);
-            // columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
           }
         });
       }
@@ -1816,7 +1797,6 @@ class Dom extends Xom {
     let basisList = [];
     let maxList = [];
     let minList = [];
-    let columnCrossList = []; // column时特殊求每个子节点的宽度，布局时传入，不能按stretch拉满
     let orderChildren = genOrderChildren(flowChildren);
     orderChildren.forEach((item, i) => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1841,7 +1821,6 @@ class Dom extends Xom {
           basisList.push(tw);
           maxList.push(tw);
           minList.push(cw);
-          columnCrossList.push(item.width);
         }
         else {
           let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
@@ -1919,7 +1898,7 @@ class Dom extends Xom {
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
-        hypotheticalList.slice(offset, end), minList.slice(offset, end), columnCrossList.slice(offset, end));
+        hypotheticalList.slice(offset, end), minList.slice(offset, end));
       // 下一行/列更新坐标
       if(isDirectionRow) {
         clone.y = y1;
@@ -2101,7 +2080,7 @@ class Dom extends Xom {
                    fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    lineHeight, computedStyle, justifyContent, alignItems,
                    orderChildren, flexLine, textAlign,
-                   growList, shrinkList, basisList, hypotheticalList, minList, columnCrossList) {
+                   growList, shrinkList, basisList, hypotheticalList, minList) {
     let { x, y, w, h } = data;
     let hypotheticalSum = 0;
     hypotheticalList.forEach(item => {

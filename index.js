@@ -25050,22 +25050,16 @@
           } else if (main[1] === VMIN$8) {
             fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
-        } // 非固定尺寸的basis为auto时降级为content
-        // else if(isAuto) {
-        //   isContent = true;
-        // }
-        // 固定basis忽略min/max计算，包含auto降为main固定值的
+        } // 固定basis忽略min/max计算，包含auto降为main固定值的，仅限row
 
 
-        if (fixedSize !== undefined) {
+        if (fixedSize !== undefined && isDirectionRow) {
           b = min = max = fixedSize;
           return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
         }
 
         var countMin = 0,
-            countMax = 0;
-        var columnCrossCount = 0;
-   // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
+            countMax = 0; // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
 
         if (isDirectionRow) {
           // flex的item还是flex时
@@ -25086,18 +25080,18 @@
 
                 if (isRow) {
                   min += min2;
-                  max += max2; // columnCrossMax += columnCrossMax2;
+                  max += max2;
                 } else {
                   min = Math.max(min, min2);
-                  max = Math.max(max, max2); // columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
+                  max = Math.max(max, max2);
                 }
               } else if (isDirectionRow) {
                 if (isRow) {
                   min += item.charWidth;
-                  max += item.textWidth; // columnCrossMax += item.width;
+                  max += item.textWidth;
                 } else {
                   min = Math.max(min, item.charWidth);
-                  max = Math.max(max, item.textWidth); // columnCrossMax = Math.max(columnCrossMax, item.width);
+                  max = Math.max(max, item.textWidth);
                 }
               }
             });
@@ -25117,31 +25111,23 @@
                     min2 = _item$__calBasis4[1],
                     max2 = _item$__calBasis4[2];
 
-                var _display3 = item.computedStyle[DISPLAY$5]; // // 块级查看之前是否有行内元素，设置换行
-                // if((display === 'block' || display === 'flex') && lineBoxManager.isEnd) {
-                //   lineBoxManager.setNotEnd();
-                //   lineBoxManager.setNewLine();
-                // }
-                // row看块级最大尺寸和连续行级最大尺寸的宽
+                var _display3 = item.computedStyle[DISPLAY$5]; // row看块级最大尺寸和连续行级最大尺寸的宽
 
                 if (_display3 === 'block' || _display3 === 'flex') {
                   min = Math.max(min, min2);
-                  max = Math.max(max, max2); // columnCrossMax = Math.max(columnCrossMax, columnCrossMax2);
-
-                  countMin = countMax = columnCrossCount = 0;
+                  max = Math.max(max, max2);
+                  countMin = countMax = 0;
                 } else {
                   countMin += min2;
-                  countMax += max2; // columnCrossCount += columnCrossMax2;
-
+                  countMax += max2;
                   min = Math.max(min, countMin);
-                  max = Math.max(max, countMax); // columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
+                  max = Math.max(max, countMax);
                 }
               } else {
                 countMin += item.charWidth;
-                countMax += item.textWidth; // columnCrossCount += item.width;
-
+                countMax += item.textWidth;
                 min = Math.max(min, countMin);
-                max = Math.max(max, countMax); // columnCrossMax = Math.max(columnCrossMax, columnCrossCount);
+                max = Math.max(max, countMax);
               }
             });
           } // row降级为内容时basis等同于max
@@ -25893,8 +25879,6 @@
         var basisList = [];
         var maxList = [];
         var minList = [];
-        var columnCrossList = []; // column时特殊求每个子节点的宽度，布局时传入，不能按stretch拉满
-
         var orderChildren = genOrderChildren(flowChildren);
         orderChildren.forEach(function (item, i) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -25932,7 +25916,6 @@
               basisList.push(_tw);
               maxList.push(_tw);
               minList.push(cw);
-              columnCrossList.push(item.width);
             } else {
               var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
 
@@ -26021,7 +26004,7 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, isVirtual, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end), columnCrossList.slice(offset, end)),
+          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, isVirtual, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
               _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
               x1 = _this2$__layoutFlexLi2[0],
               y1 = _this2$__layoutFlexLi2[1],
@@ -26218,7 +26201,7 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isDirectionRow, isVirtual, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList, columnCrossList) {
+      value: function __layoutFlexLine(data, isDirectionRow, isVirtual, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
         var _this3 = this;
 
         var x = data.x,

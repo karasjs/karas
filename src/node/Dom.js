@@ -1456,7 +1456,6 @@ class Dom extends Xom {
     //   this.__ioSize(w, this.height);
     //   return;
     // }
-    console.log(this.tagName, fixedWidth, fixedHeight, w, h);
     let {
       [TEXT_ALIGN]: textAlign,
       [WHITE_SPACE]: whiteSpace,
@@ -1738,7 +1737,6 @@ class Dom extends Xom {
     }
     let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
-    // console.log(tw, th);
     this.__ioSize(tw, th);
     // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
     let spread = lineBoxManager.verticalAlign();
@@ -1792,7 +1790,7 @@ class Dom extends Xom {
   }
 
   // 弹性布局时的计算位置
-  __layoutFlex(data, isVirtual) {console.warn(this.tagName,isVirtual)
+  __layoutFlex(data, isVirtual) {
     let { flowChildren, currentStyle, computedStyle, __flexLine } = this;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
     // if(fixedWidth && isVirtual) {
@@ -1825,7 +1823,6 @@ class Dom extends Xom {
     let minList = [];
     let columnCrossList = []; // column时特殊求每个子节点的宽度，布局时传入，不能按stretch拉满
     let orderChildren = genOrderChildren(flowChildren);
-    // console.error(this.tagName, flexDirection, w, h, isVirtual);
     orderChildren.forEach((item, i) => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
@@ -2290,7 +2287,6 @@ class Dom extends Xom {
           }, false);
         }
         else {
-          // console.log(x,y,w,main);
           item.__layout({
             x,
             y,
@@ -3316,9 +3312,12 @@ class Dom extends Xom {
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
         let w = item.__calAjustWidth(widthLimit, false);
-        let display = item.computedStyle[DISPLAY];
-        // 块节点取之前inline累计以及当前尺寸的最大值
-        if(['block', 'flex'].indexOf(display) > -1) {
+        // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
+        let isBlock = false;
+        if(item instanceof Xom) {
+          isBlock = ['block', 'flex'].indexOf(item.computedStyle[DISPLAY]) > -1;
+        }
+        if(isBlock) {
           max = Math.max(count, max);
           max = Math.max(w, max);
         }

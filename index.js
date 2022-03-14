@@ -25511,7 +25511,6 @@
         // }
 
 
-        console.log(this.tagName, fixedWidth, fixedHeight, w, h);
         var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2],
             lineClamp = computedStyle[LINE_CLAMP$1],
@@ -25799,7 +25798,7 @@
         }
 
         var tw = this.__width = w;
-        var th = this.__height = fixedHeight ? h : y - data.y; // console.log(tw, th);
+        var th = this.__height = fixedHeight ? h : y - data.y;
 
         this.__ioSize(tw, th); // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
 
@@ -25869,7 +25868,6 @@
       value: function __layoutFlex(data, isVirtual) {
         var _this2 = this;
 
-        console.warn(this.tagName, isVirtual);
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -25911,8 +25909,7 @@
         var minList = [];
         var columnCrossList = []; // column时特殊求每个子节点的宽度，布局时传入，不能按stretch拉满
 
-        var orderChildren = genOrderChildren(flowChildren); // console.error(this.tagName, flexDirection, w, h, isVirtual);
-
+        var orderChildren = genOrderChildren(flowChildren);
         orderChildren.forEach(function (item, i) {
           if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _currentStyle4 = item.currentStyle,
@@ -26429,7 +26426,6 @@
 
               }, false);
             } else {
-              // console.log(x,y,w,main);
               item.__layout({
                 x: x,
                 y: y,
@@ -27525,11 +27521,16 @@
           for (var _i5 = 0, _len = flowChildren.length; _i5 < _len; _i5++) {
             var _item = flowChildren[_i5];
 
-            var _w = _item.__calAjustWidth(widthLimit, false);
+            var _w = _item.__calAjustWidth(widthLimit, false); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
 
-            var _display5 = _item.computedStyle[DISPLAY$5]; // 块节点取之前inline累计以及当前尺寸的最大值
 
-            if (['block', 'flex'].indexOf(_display5) > -1) {
+            var isBlock = false;
+
+            if (_item instanceof Xom$1) {
+              isBlock = ['block', 'flex'].indexOf(_item.computedStyle[DISPLAY$5]) > -1;
+            }
+
+            if (isBlock) {
               max = Math.max(_count, max);
               max = Math.max(_w, max);
             } else {

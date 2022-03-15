@@ -321,14 +321,17 @@ class Geom extends Xom {
   }
 
   __layoutBlock(data, isVirtual) {
-    let { fixedHeight, w, h } = this.__preLayout(data, false);
+    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data, false);
     this.__height = fixedHeight ? h : 0;
+    if(isVirtual) {
+      w = this.__width = fixedWidth ? w : 0;
+      this.__ioSize(w);
+      return;
+    }
     this.__width = w;
     this.__ioSize(w, this.height);
-    if(!isVirtual) {
-      this.__marginAuto(this.currentStyle, data);
-      this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
-    }
+    this.__marginAuto(this.currentStyle, data);
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
   __layoutFlex(data, isVirtual) {

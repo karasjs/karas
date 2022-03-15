@@ -1484,14 +1484,14 @@ class Dom extends Xom {
           if(!isVirtual && width[1] === AUTO
             && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
             // 对比需去除child元素本身的mbp
-            let wa = item.__calAdjustWidth(w);
-            let computedStyle = item.computedStyle;
-            wa += computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
-              + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
-              + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-            if(wa !== w) {
-              item.__resizeX(wa - w);
-            }
+            let wa = item.__adjustWidth(w);
+            // let computedStyle = item.computedStyle;
+            // wa += computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+            //   + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+            //   + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+            // if(wa !== w) {
+            //   item.__resizeX(wa - w);
+            // }
           }
         }
       }
@@ -2385,7 +2385,7 @@ class Dom extends Xom {
       let heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2;
       // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
       // if(w2 === undefined) {
-      //   w2 = item.__calAdjustWidth(widthLimit, container.width);
+      //   w2 = item.__adjustWidth(widthLimit, container.width);
       // }
       item.__layout({
         x: x2,
@@ -2396,15 +2396,21 @@ class Dom extends Xom {
         h2,
       }, false);
       if(w2 === undefined) {
-        let wa = item.__calAdjustWidth(container.width);
         // 对比需去除abs元素本身的mbp
         let computedStyle = item.computedStyle;
-        wa += computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+        widthLimit -= computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
           + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
           + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-        if(wa !== widthLimit) {
-          item.__resizeX(wa - widthLimit);
-        }
+        let wa = item.__adjustWidth(widthLimit);
+        // 对比需去除abs元素本身的mbp
+        // let computedStyle = item.computedStyle;
+        // wa += computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+        //   + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+        //   + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+        // console.log(wa, widthLimit);
+        // if(wa !== widthLimit) {
+        //   item.__resizeX(wa - widthLimit);
+        // }
       }
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
@@ -2445,10 +2451,9 @@ class Dom extends Xom {
    * 这里有点类似伪布局，但又没有布局那么重，在换行时需处理逻辑，换行可能导致超过widthLimit
    * 文字换行时即便<widthLimit，最终也会计算为=widthLimit
    * @param widthLimit
-   * @param containerWidth
    * @private
    */
-  __calAdjustWidth(widthLimit, containerWidth) {
+  __adjustWidth(widthLimit) {
     // computeReflow(this);
     let { flowChildren, currentStyle, computedStyle } = this;
     let {
@@ -2457,16 +2462,16 @@ class Dom extends Xom {
     let {
       [DISPLAY]: display,
       [FLEX_DIRECTION]: flexDirection,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_RIGHT]: marginRight,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_RIGHT]: paddingRight,
+      // [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      // [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      // [MARGIN_LEFT]: marginLeft,
+      // [MARGIN_RIGHT]: marginRight,
+      // [PADDING_LEFT]: paddingLeft,
+      // [PADDING_RIGHT]: paddingRight,
     } = computedStyle;
-    let mbp = marginLeft + marginRight
-      + paddingLeft + paddingRight
-      + borderLeftWidth + borderRightWidth;
+    // let mbp = marginLeft + marginRight
+    //   + paddingLeft + paddingRight
+    //   + borderLeftWidth + borderRightWidth;
     // flex根据方向获取尺寸，row取和，column取每项最大值
     if(display === 'flex') {
       if(width[1] !== AUTO) {
@@ -2476,7 +2481,7 @@ class Dom extends Xom {
       let isRow = ['column', 'columnReverse', 'column-reverse'].indexOf(flexDirection) === -1;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.outerWidth;
+        let w = item.__adjustWidth(widthLimit);
         if(isRow) {
           count += w;
         }
@@ -2489,6 +2494,9 @@ class Dom extends Xom {
         //   break;
         // }
       }
+      if(count < widthLimit) {
+        this.__resizeX(count - widthLimit);
+      }
       return count;
     }
     else if(display === 'block') {
@@ -2498,7 +2506,7 @@ class Dom extends Xom {
       let count = 0, max = 0;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.outerWidth;
+        let w = item.__adjustWidth(widthLimit);
         // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
         let isBlock = false;
         if(item instanceof Xom) {
@@ -2518,6 +2526,9 @@ class Dom extends Xom {
         //   break;
         // }
       }
+      if(max < widthLimit) {
+        this.__resizeX(max - widthLimit);
+      }
       return max;
     }
     else {
@@ -2526,7 +2537,7 @@ class Dom extends Xom {
           return this.outerWidth;
         }
       }
-      let count = 0, max = 0;
+      let count = 0;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
         let w = item.outerWidth;
@@ -2537,6 +2548,9 @@ class Dom extends Xom {
         //   break;
         // }
       }
+      // if(count < widthLimit) {
+      //   this.__resizeX(count - widthLimit);
+      // }
       return count;
     }
   }

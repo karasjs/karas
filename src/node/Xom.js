@@ -2784,7 +2784,7 @@ class Xom extends Node {
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
     this.__outerWidth += diff;
-    this.__layoutData.w += diff;
+    this.__layoutData && (this.__layoutData.w += diff);
     this.__sx4 += diff;
     this.__sx5 += diff;
     this.__sx6 += diff;

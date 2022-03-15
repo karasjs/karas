@@ -174,8 +174,8 @@ class Text extends Node {
     this.__textWidth = sum;
   }
 
-  __calAdjustWidth(widthLimit) {
-    return Math.min(widthLimit, this.textWidth);
+  __adjustWidth(widthLimit) {
+    return this.outerWidth;
   }
 
   /**

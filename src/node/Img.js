@@ -600,39 +600,38 @@ class Img extends Dom {
     return w;
   }
 
-  __calAdjustWidth(widthLimit, containerWidth) {
-    computeReflow(this);
-    let { currentStyle, computedStyle, __loadImg } = this;
-    let {
-      [WIDTH]: width,
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_RIGHT]: marginRight,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_RIGHT]: paddingRight,
-    } = currentStyle;
-    let {
-      [DISPLAY]: display,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-    } = computedStyle;
-    let mbp = this.__calMp(marginLeft, containerWidth, false)
-      + this.__calMp(marginRight, containerWidth, false)
-      + this.__calMp(paddingLeft, containerWidth, false)
-      + this.__calMp(paddingRight, containerWidth, false)
-      + borderLeftWidth + borderRightWidth;
-    let w = 0;
-    if(display !== 'inline') {
-      w = calAbsFixedSize(width, containerWidth, this.root);
-    }
-    if(width[1] === AUTO) {
-      if(__loadImg.source) {
-        w = __loadImg.width;
-      }
-      else if(__loadImg.error) {
-        w = 32;
-      }
-    }
-    return w + mbp;
+  __adjustWidth(widthLimit, containerWidth) {
+    return this.outerWidth;
+    // computeReflow(this);
+    // let { currentStyle, computedStyle, __loadImg } = this;
+    // let {
+    //   [WIDTH]: width,
+    // } = currentStyle;
+    // let {
+    //   [DISPLAY]: display,
+    //   [BORDER_LEFT_WIDTH]: borderLeftWidth,
+    //   [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    //   [MARGIN_LEFT]: marginLeft,
+    //   [MARGIN_RIGHT]: marginRight,
+    //   [PADDING_LEFT]: paddingLeft,
+    //   [PADDING_RIGHT]: paddingRight,
+    // } = computedStyle;
+    // let mbp = marginLeft + marginRight
+    //   + paddingLeft + paddingRight
+    //   + borderLeftWidth + borderRightWidth;
+    // let w = 0;
+    // if(display !== 'inline') {
+    //   return this.outerWidth;
+    // }
+    // if(width[1] === AUTO) {
+    //   if(__loadImg.source) {
+    //     w = __loadImg.width;
+    //   }
+    //   else if(__loadImg.error) {
+    //     w = 32;
+    //   }
+    // }
+    // return w + mbp;
   }
 
   __calBasis(isDirectionRow, data) {

@@ -14003,9 +14003,9 @@
         this.__textWidth = sum;
       }
     }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit) {
-        return Math.min(widthLimit, this.textWidth);
+      key: "__adjustWidth",
+      value: function __adjustWidth(widthLimit) {
+        return this.outerWidth;
       }
       /**
        * text在virtual时和普通一样，无需特殊处理
@@ -22793,7 +22793,7 @@
         this.__clientWidth += diff;
         this.__offsetWidth += diff;
         this.__outerWidth += diff;
-        this.__layoutData.w += diff;
+        this.__layoutData && (this.__layoutData.w += diff);
         this.__sx4 += diff;
         this.__sx5 += diff;
         this.__sx6 += diff;
@@ -25610,14 +25610,14 @@
 
               if (!isVirtual && width[1] === AUTO$6 && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
                 // 对比需去除child元素本身的mbp
-                var wa = item.__calAdjustWidth(w);
+                var wa = item.__adjustWidth(w); // let computedStyle = item.computedStyle;
+                // wa += computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+                //   + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+                //   + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+                // if(wa !== w) {
+                //   item.__resizeX(wa - w);
+                // }
 
-                var _computedStyle2 = item.computedStyle;
-                wa += _computedStyle2[MARGIN_LEFT$3] + _computedStyle2[MARGIN_RIGHT$3] + _computedStyle2[PADDING_LEFT$4] + _computedStyle2[PADDING_RIGHT$3] + _computedStyle2[BORDER_LEFT_WIDTH$5] + _computedStyle2[BORDER_RIGHT_WIDTH$4];
-
-                if (wa !== w) {
-                  item.__resizeX(wa - w);
-                }
               }
             }
           } else {
@@ -25767,7 +25767,7 @@
                 }
               } // 默认stretch
               else {
-                var _computedStyle3 = item.computedStyle,
+                var _computedStyle2 = item.computedStyle,
                     _item$currentStyle2 = item.currentStyle,
                     display = _item$currentStyle2[DISPLAY$5],
                     flexDirection = _item$currentStyle2[FLEX_DIRECTION$2],
@@ -25779,12 +25779,12 @@
                   }), false);
                 }
 
-                var _borderTopWidth = _computedStyle3[BORDER_TOP_WIDTH$3],
-                    _borderBottomWidth = _computedStyle3[BORDER_BOTTOM_WIDTH$3],
-                    _marginTop2 = _computedStyle3[MARGIN_TOP$1],
-                    _marginBottom2 = _computedStyle3[MARGIN_BOTTOM$1],
-                    _paddingTop = _computedStyle3[PADDING_TOP$2],
-                    _paddingBottom = _computedStyle3[PADDING_BOTTOM$2];
+                var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
+                    _borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
+                    _marginTop2 = _computedStyle2[MARGIN_TOP$1],
+                    _marginBottom2 = _computedStyle2[MARGIN_BOTTOM$1],
+                    _paddingTop = _computedStyle2[PADDING_TOP$2],
+                    _paddingBottom = _computedStyle2[PADDING_BOTTOM$2];
 
                 if (_height[1] === AUTO$6) {
                   var _old = item.height;
@@ -25818,19 +25818,19 @@
                 item.__offsetX(_diff9 * 0.5, true);
               }
             } else if (alignSelf === 'stretch') {
-              var _computedStyle4 = item.computedStyle,
+              var _computedStyle3 = item.computedStyle,
                   width = item.currentStyle[WIDTH$5];
-              var borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
-                  borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
-                  marginRight = _computedStyle4[MARGIN_RIGHT$3],
-                  marginLeft = _computedStyle4[MARGIN_LEFT$3],
-                  paddingRight = _computedStyle4[PADDING_RIGHT$3],
-                  paddingLeft = _computedStyle4[PADDING_LEFT$4];
+              var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$4],
+                  borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
+                  marginRight = _computedStyle3[MARGIN_RIGHT$3],
+                  marginLeft = _computedStyle3[MARGIN_LEFT$3],
+                  paddingRight = _computedStyle3[PADDING_RIGHT$3],
+                  paddingLeft = _computedStyle3[PADDING_LEFT$4];
 
               if (width[1] === AUTO$6) {
                 var _old2 = item.width;
 
-                var _v2 = item.__width = _computedStyle4[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                var _v2 = item.__width = _computedStyle3[WIDTH$5] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
                 var _d2 = _v2 - _old2;
 
@@ -25870,19 +25870,19 @@
                 }
               } // 默认stretch
               else {
-                var _computedStyle5 = item.computedStyle,
+                var _computedStyle4 = item.computedStyle,
                     _width = item.currentStyle[WIDTH$5];
-                var _borderRightWidth = _computedStyle5[BORDER_RIGHT_WIDTH$4],
-                    _borderLeftWidth = _computedStyle5[BORDER_LEFT_WIDTH$5],
-                    _marginRight = _computedStyle5[MARGIN_RIGHT$3],
-                    _marginLeft = _computedStyle5[MARGIN_LEFT$3],
-                    _paddingRight = _computedStyle5[PADDING_RIGHT$3],
-                    _paddingLeft = _computedStyle5[PADDING_LEFT$4];
+                var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
+                    _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
+                    _marginRight = _computedStyle4[MARGIN_RIGHT$3],
+                    _marginLeft = _computedStyle4[MARGIN_LEFT$3],
+                    _paddingRight = _computedStyle4[PADDING_RIGHT$3],
+                    _paddingLeft = _computedStyle4[PADDING_LEFT$4];
 
                 if (_width[1] === AUTO$6) {
                   var _old3 = item.width;
 
-                  var _v3 = item.__width = _computedStyle5[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
+                  var _v3 = item.__width = _computedStyle4[WIDTH$5] = maxCross - _marginLeft - _marginRight - _paddingLeft - _paddingRight - _borderRightWidth - _borderLeftWidth;
 
                   var _d3 = _v3 - _old3;
 
@@ -26566,7 +26566,7 @@
 
           var heightLimit = onlyBottom ? y2 - y : clientHeight + y - y2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
           // if(w2 === undefined) {
-          //   w2 = item.__calAdjustWidth(widthLimit, container.width);
+          //   w2 = item.__adjustWidth(widthLimit, container.width);
           // }
 
           item.__layout({
@@ -26580,15 +26580,20 @@
           }, false);
 
           if (w2 === undefined) {
-            var wa = item.__calAdjustWidth(container.width); // 对比需去除abs元素本身的mbp
+            // 对比需去除abs元素本身的mbp
+            var _computedStyle5 = item.computedStyle;
+            widthLimit -= _computedStyle5[MARGIN_LEFT$3] + _computedStyle5[MARGIN_RIGHT$3] + _computedStyle5[PADDING_LEFT$4] + _computedStyle5[PADDING_RIGHT$3] + _computedStyle5[BORDER_LEFT_WIDTH$5] + _computedStyle5[BORDER_RIGHT_WIDTH$4];
 
+            var wa = item.__adjustWidth(widthLimit); // 对比需去除abs元素本身的mbp
+            // let computedStyle = item.computedStyle;
+            // wa += computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+            //   + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+            //   + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+            // console.log(wa, widthLimit);
+            // if(wa !== widthLimit) {
+            //   item.__resizeX(wa - widthLimit);
+            // }
 
-            var _computedStyle6 = item.computedStyle;
-            wa += _computedStyle6[MARGIN_LEFT$3] + _computedStyle6[MARGIN_RIGHT$3] + _computedStyle6[PADDING_LEFT$4] + _computedStyle6[PADDING_RIGHT$3] + _computedStyle6[BORDER_LEFT_WIDTH$5] + _computedStyle6[BORDER_RIGHT_WIDTH$4];
-
-            if (wa !== widthLimit) {
-              item.__resizeX(wa - widthLimit);
-            }
           }
 
           if (onlyRight) {
@@ -26632,26 +26637,22 @@
        * 这里有点类似伪布局，但又没有布局那么重，在换行时需处理逻辑，换行可能导致超过widthLimit
        * 文字换行时即便<widthLimit，最终也会计算为=widthLimit
        * @param widthLimit
-       * @param containerWidth
        * @private
        */
 
     }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit, containerWidth) {
+      key: "__adjustWidth",
+      value: function __adjustWidth(widthLimit) {
         // computeReflow(this);
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var width = currentStyle[WIDTH$5];
         var display = computedStyle[DISPLAY$5],
-            flexDirection = computedStyle[FLEX_DIRECTION$2],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
-            marginLeft = computedStyle[MARGIN_LEFT$3],
-            marginRight = computedStyle[MARGIN_RIGHT$3],
-            paddingLeft = computedStyle[PADDING_LEFT$4],
-            paddingRight = computedStyle[PADDING_RIGHT$3];
+            flexDirection = computedStyle[FLEX_DIRECTION$2]; // let mbp = marginLeft + marginRight
+        //   + paddingLeft + paddingRight
+        //   + borderLeftWidth + borderRightWidth;
+        // flex根据方向获取尺寸，row取和，column取每项最大值
 
         if (display === 'flex') {
           if (width[1] !== AUTO$6) {
@@ -26663,7 +26664,8 @@
 
           for (var i = 0, len = flowChildren.length; i < len; i++) {
             var item = flowChildren[i];
-            var w = item.outerWidth;
+
+            var w = item.__adjustWidth(widthLimit);
 
             if (isRow) {
               count += w;
@@ -26677,6 +26679,10 @@
 
           }
 
+          if (count < widthLimit) {
+            this.__resizeX(count - widthLimit);
+          }
+
           return count;
         } else if (display === 'block') {
           if (width[1] !== AUTO$6) {
@@ -26688,7 +26694,9 @@
 
           for (var _i5 = 0, _len = flowChildren.length; _i5 < _len; _i5++) {
             var _item = flowChildren[_i5];
-            var _w = _item.outerWidth; // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
+
+            var _w = _item.__adjustWidth(widthLimit); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
+
 
             var isBlock = false;
 
@@ -26710,6 +26718,10 @@
 
           }
 
+          if (max < widthLimit) {
+            this.__resizeX(max - widthLimit);
+          }
+
           return max;
         } else {
           if (['inlineBlock', 'inline-block'].indexOf(display) > -1) {
@@ -26728,7 +26740,10 @@
             //   count = widthLimit;
             //   break;
             // }
-          }
+          } // if(count < widthLimit) {
+          //   this.__resizeX(count - widthLimit);
+          // }
+
 
           return _count2;
         }
@@ -27280,8 +27295,6 @@
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
   var isFunction$7 = util.isFunction;
-  var computeReflow$2 = css.computeReflow,
-      calAbsFixedSize$2 = css.calAbsFixedSize;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -27805,36 +27818,38 @@
         return w;
       }
     }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit, containerWidth) {
-        computeReflow$2(this);
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle,
-            __loadImg = this.__loadImg;
-        var width = currentStyle[WIDTH$6],
-            marginLeft = currentStyle[MARGIN_LEFT$4],
-            marginRight = currentStyle[MARGIN_RIGHT$4],
-            paddingLeft = currentStyle[PADDING_LEFT$5],
-            paddingRight = currentStyle[PADDING_RIGHT$4];
-        var display = computedStyle[DISPLAY$6],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5];
-        var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth;
-        var w = 0;
-
-        if (display !== 'inline') {
-          w = calAbsFixedSize$2(width, containerWidth, this.root);
-        }
-
-        if (width[1] === AUTO$7) {
-          if (__loadImg.source) {
-            w = __loadImg.width;
-          } else if (__loadImg.error) {
-            w = 32;
-          }
-        }
-
-        return w + mbp;
+      key: "__adjustWidth",
+      value: function __adjustWidth(widthLimit, containerWidth) {
+        return this.outerWidth; // computeReflow(this);
+        // let { currentStyle, computedStyle, __loadImg } = this;
+        // let {
+        //   [WIDTH]: width,
+        // } = currentStyle;
+        // let {
+        //   [DISPLAY]: display,
+        //   [BORDER_LEFT_WIDTH]: borderLeftWidth,
+        //   [BORDER_RIGHT_WIDTH]: borderRightWidth,
+        //   [MARGIN_LEFT]: marginLeft,
+        //   [MARGIN_RIGHT]: marginRight,
+        //   [PADDING_LEFT]: paddingLeft,
+        //   [PADDING_RIGHT]: paddingRight,
+        // } = computedStyle;
+        // let mbp = marginLeft + marginRight
+        //   + paddingLeft + paddingRight
+        //   + borderLeftWidth + borderRightWidth;
+        // let w = 0;
+        // if(display !== 'inline') {
+        //   return this.outerWidth;
+        // }
+        // if(width[1] === AUTO) {
+        //   if(__loadImg.source) {
+        //     w = __loadImg.width;
+        //   }
+        //   else if(__loadImg.error) {
+        //     w = 32;
+        //   }
+        // }
+        // return w + mbp;
       }
     }, {
       key: "__calBasis",
@@ -28242,8 +28257,6 @@
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$7 = painter.svgPolygon;
   var WEBGL$2 = mode.WEBGL;
-  var calAbsFixedSize$3 = css.calAbsFixedSize,
-      computeReflow$3 = css.computeReflow;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -28394,27 +28407,32 @@
         return w;
       }
     }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit, containerWidth) {
-        computeReflow$3(this);
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
-        var width = currentStyle[WIDTH$7],
-            marginLeft = currentStyle[MARGIN_LEFT$5],
-            marginRight = currentStyle[MARGIN_RIGHT$5],
-            paddingLeft = currentStyle[PADDING_LEFT$6],
-            paddingRight = currentStyle[PADDING_RIGHT$5];
-        var display = computedStyle[DISPLAY$7],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$7],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$6];
-        var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth;
-        var w = 0;
-
-        if (display !== 'inline') {
-          w = calAbsFixedSize$3(width, containerWidth, this.root);
-        }
-
-        return w + mbp;
+      key: "__adjustWidth",
+      value: function __adjustWidth(widthLimit, containerWidth) {
+        return this.outerWidth; // computeReflow(this);
+        // let { currentStyle, computedStyle } = this;
+        // let {
+        //   [WIDTH]: width,
+        //   [MARGIN_LEFT]: marginLeft,
+        //   [MARGIN_RIGHT]: marginRight,
+        //   [PADDING_LEFT]: paddingLeft,
+        //   [PADDING_RIGHT]: paddingRight,
+        // } = currentStyle;
+        // let {
+        //   [DISPLAY]: display,
+        //   [BORDER_LEFT_WIDTH]: borderLeftWidth,
+        //   [BORDER_RIGHT_WIDTH]: borderRightWidth,
+        // } = computedStyle;
+        // let mbp = this.__calMp(marginLeft, containerWidth, false)
+        //   + this.__calMp(marginRight, containerWidth, false)
+        //   + this.__calMp(paddingLeft, containerWidth, false)
+        //   + this.__calMp(paddingRight, containerWidth, false)
+        //   + borderLeftWidth + borderRightWidth;
+        // let w = 0;
+        // if(display !== 'inline') {
+        //   w = calAbsFixedSize(width, containerWidth, this.root);
+        // }
+        // return w + mbp;
       }
     }, {
       key: "__calBasis",

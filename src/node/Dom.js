@@ -2302,7 +2302,7 @@ class Dom extends Xom {
       // 优先级最高left+right，其次left+width，再次right+width，再次仅申明单个，最次全部auto
       if(fixedLeft && fixedRight) {
         x2 = x + computedStyle[LEFT];
-        w2 = x + clientWidth - computedStyle[RIGHT] - x2;
+        w2 = clientWidth - computedStyle[RIGHT] - computedStyle[LEFT];
       }
       else if(fixedLeft) {
         x2 = x + computedStyle[LEFT];
@@ -2335,7 +2335,7 @@ class Dom extends Xom {
       // top/bottom/height优先级同上
       if(fixedTop && fixedBottom) {
         y2 = y + computedStyle[TOP];
-        h2 = y + clientHeight - computedStyle[BOTTOM] - y2;
+        h2 = clientHeight - computedStyle[TOP] - computedStyle[BOTTOM];
       }
       else if(fixedTop) {
         y2 = y + computedStyle[TOP];
@@ -2376,7 +2376,7 @@ class Dom extends Xom {
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
-      let widthLimit = onlyRight ? x2 - data.x : data.w - data.x - x2;
+      let widthLimit = onlyRight ? x2 - x : clientWidth + x - x2;
       // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
       if(w2 === undefined) {
         w2 = item.__calAjustWidth(widthLimit, container.width, true);

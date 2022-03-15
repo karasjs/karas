@@ -634,7 +634,7 @@ class Img extends Dom {
         w = 32;
       }
     }
-    return Math.min(widthLimit, w + mbp);
+    return w + mbp;
   }
 
   __calBasis(isDirectionRow, data) {

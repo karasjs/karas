@@ -26470,7 +26470,7 @@
 
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle[LEFT$1];
-            w2 = x + clientWidth - computedStyle[RIGHT$1] - x2;
+            w2 = clientWidth - computedStyle[RIGHT$1] - computedStyle[LEFT$1];
           } else if (fixedLeft) {
             x2 = x + computedStyle[LEFT$1];
 
@@ -26503,7 +26503,7 @@
 
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle[TOP$3];
-            h2 = y + clientHeight - computedStyle[BOTTOM$3] - y2;
+            h2 = clientHeight - computedStyle[TOP$3] - computedStyle[BOTTOM$3];
           } else if (fixedTop) {
             y2 = y + computedStyle[TOP$3];
 
@@ -26546,7 +26546,7 @@
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 
 
-          var widthLimit = onlyRight ? x2 - data.x : data.w - data.x - x2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
+          var widthLimit = onlyRight ? x2 - x : clientWidth + x - x2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
 
           if (w2 === undefined) {
             w2 = item.__calAjustWidth(widthLimit, container.width, true);
@@ -27819,7 +27819,7 @@
           }
         }
 
-        return Math.min(widthLimit, w + mbp);
+        return w + mbp;
       }
     }, {
       key: "__calBasis",

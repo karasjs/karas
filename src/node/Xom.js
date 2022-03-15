@@ -446,6 +446,7 @@ class Xom extends Node {
       this.__x = data.x;
       this.__y = data.y;
       this.__layoutNone();
+      this.__hasComputeReflow = false;
       return;
     }
     // absolute特殊，在自己布局时已计算相对于容器的mbp

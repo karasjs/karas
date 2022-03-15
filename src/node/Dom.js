@@ -545,10 +545,12 @@ class Dom extends Xom {
    * 返回max为最大宽度，理想情况一排最大值，在abs时virtualMode状态参与计算，文本抵达边界才进行换行
    * 当为column方向时，特殊进行虚拟布局isVirtual，需要获取高度
    * @param isDirectionRow
+   * @param isAbs
+   * @param isColumn
    * @param data
    * @private
    */
-  __calBasis(isDirectionRow, data) {
+  __calBasis(isDirectionRow, isAbs, isColumn, data) {
     computeReflow(this);
     let b = 0;
     let min = 0;
@@ -634,7 +636,7 @@ class Dom extends Xom {
         flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [, min2, max2] = item.__calBasis(isDirectionRow, { x, y, w, h });
+            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h });
             if(isRow) {
               min += min2;
               max += max2;
@@ -661,7 +663,7 @@ class Dom extends Xom {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [, min2, max2] = item.__calBasis(isDirectionRow, { x, y, w, h, lineBoxManager });
+            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h, lineBoxManager });
             let display = item.computedStyle[DISPLAY];
             // row看块级最大尺寸和连续行级最大尺寸的宽
             if(display === 'block' || display === 'flex') {
@@ -694,8 +696,9 @@ class Dom extends Xom {
         y,
         w,
         h,
-      }, true, true);
+      }, isAbs, true);
       min = max = b = this.height; // column的child，max和b总相等
+      console.log(this.tagName, this.width)
     }
     // 直接item的mpb影响basis
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
@@ -799,7 +802,6 @@ class Dom extends Xom {
             }
             // abs统计宽度
             if(isAbs) {
-              maxW = Math.max(maxW, cw);
               cw = item.outerWidth;
               maxW = Math.max(maxW, cw);
             }
@@ -955,8 +957,11 @@ class Dom extends Xom {
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           if(isAbs) {
-            maxW = Math.max(maxW, cw);
             cw = item.width;
+            // 发生换行情况，最大宽度要特殊计算，可能撑满容器，比如abs下文字换行，仅算内容宽度可能会缺少
+            if(item.textWidth > w) {
+              cw = Math.max(cw, w);
+            }
             maxW = Math.max(maxW, cw);
           }
         }
@@ -1109,7 +1114,7 @@ class Dom extends Xom {
     orderChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
-        let [b, min, max] = item.__calBasis(isDirectionRow, { x, y, w, h });
+        let [b, min, max] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h });
         // abs虚拟布局计算时纵向也是看横向宽度
         if(isAbs) {
           if(isDirectionRow) {

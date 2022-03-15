@@ -556,8 +556,10 @@ class Xom extends Node {
       }
       computedStyle[WIDTH] = this.width;
       computedStyle[HEIGHT] = this.height;
-      // abs/flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
-      this.__execAr();
+      // abs特殊自己执行
+      if(position !== 'absolute') {
+        this.__execAr();
+      }
       this.__hasComputeReflow = false;
     }
     return lineClampCount;

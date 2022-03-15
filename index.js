@@ -20395,9 +20395,11 @@
           }
 
           computedStyle[WIDTH$4] = this.width;
-          computedStyle[HEIGHT$3] = this.height; // abs/flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
+          computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行
 
-          this.__execAr();
+          if (position !== 'absolute') {
+            this.__execAr();
+          }
 
           this.__hasComputeReflow = false;
         }
@@ -24557,13 +24559,15 @@
        * 返回max为最大宽度，理想情况一排最大值，在abs时virtualMode状态参与计算，文本抵达边界才进行换行
        * 当为column方向时，特殊进行虚拟布局isVirtual，需要获取高度
        * @param isDirectionRow
+       * @param isAbs
+       * @param isColumn
        * @param data
        * @private
        */
 
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, data) {
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data) {
         computeReflow$1(this);
         var b = 0;
         var min = 0;
@@ -24640,7 +24644,7 @@
             flowChildren = genOrderChildren(flowChildren);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-                var _item$__calBasis = item.__calBasis(isDirectionRow, {
+                var _item$__calBasis = item.__calBasis(isDirectionRow, isAbs, isColumn, {
                   x: x,
                   y: y,
                   w: w,
@@ -24672,7 +24676,7 @@
             var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
-                var _item$__calBasis3 = item.__calBasis(isDirectionRow, {
+                var _item$__calBasis3 = item.__calBasis(isDirectionRow, isAbs, isColumn, {
                   x: x,
                   y: y,
                   w: w,
@@ -24713,9 +24717,11 @@
             y: y,
             w: w,
             h: h
-          }, true, true);
+          }, isAbs, true);
 
           min = max = b = this.height; // column的child，max和b总相等
+
+          console.log(this.tagName, this.width);
         } // 直接item的mpb影响basis
 
 
@@ -24843,7 +24849,6 @@
 
 
                 if (isAbs) {
-                  maxW = Math.max(maxW, cw);
                   cw = item.outerWidth;
                   maxW = Math.max(maxW, cw);
                 }
@@ -25012,8 +25017,12 @@
               y = lineBoxManager.lastY;
 
               if (isAbs) {
-                maxW = Math.max(maxW, cw);
-                cw = item.width;
+                cw = item.width; // 发生换行情况，最大宽度要特殊计算，可能撑满容器，比如abs下文字换行，仅算内容宽度可能会缺少
+
+                if (item.textWidth > w) {
+                  cw = Math.max(cw, w);
+                }
+
                 maxW = Math.max(maxW, cw);
               }
             } else {
@@ -25200,7 +25209,7 @@
             var _currentStyle = item.currentStyle,
                 _computedStyle = item.computedStyle;
 
-            var _item$__calBasis5 = item.__calBasis(isDirectionRow, {
+            var _item$__calBasis5 = item.__calBasis(isDirectionRow, isAbs, isColumn, {
               x: x,
               y: y,
               w: w,

@@ -229,34 +229,31 @@ class Geom extends Xom {
   }
 
   __calAdjustWidth(widthLimit, containerWidth) {
-    return this.outerWidth;
-    // computeReflow(this);
-    // let { currentStyle, computedStyle } = this;
-    // let {
-    //   [WIDTH]: width,
-    //   [MARGIN_LEFT]: marginLeft,
-    //   [MARGIN_RIGHT]: marginRight,
-    //   [PADDING_LEFT]: paddingLeft,
-    //   [PADDING_RIGHT]: paddingRight,
-    // } = currentStyle;
-    // let {
-    //   [DISPLAY]: display,
-    //   [BORDER_LEFT_WIDTH]: borderLeftWidth,
-    //   [BORDER_RIGHT_WIDTH]: borderRightWidth,
-    // } = computedStyle;
-    // let mbp = this.__calMp(marginLeft, containerWidth, false)
-    //   + this.__calMp(marginRight, containerWidth, false)
-    //   + this.__calMp(paddingLeft, containerWidth, false)
-    //   + this.__calMp(paddingRight, containerWidth, false)
-    //   + borderLeftWidth + borderRightWidth;
-    // let w = 0;
-    // if(display !== 'inline') {
-    //   w = calAbsFixedSize(width, containerWidth, this.root);
-    // }
-    // return w + mbp;
+    computeReflow(this);
+    let { currentStyle, computedStyle } = this;
+    let {
+      [WIDTH]: width,
+      [MARGIN_LEFT]: marginLeft,
+      [MARGIN_RIGHT]: marginRight,
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_RIGHT]: paddingRight,
+    } = currentStyle;
+    let {
+      [DISPLAY]: display,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+    } = computedStyle;
+    let mbp = this.__calMp(marginLeft, containerWidth, false)
+      + this.__calMp(marginRight, containerWidth, false)
+      + this.__calMp(paddingLeft, containerWidth, false)
+      + this.__calMp(paddingRight, containerWidth, false)
+      + borderLeftWidth + borderRightWidth;
+    let w = 0;
+    if(display !== 'inline') {
+      w = calAbsFixedSize(width, containerWidth, this.root);
+    }
+    return w + mbp;
   }
-
-  __adjustWidth() {}
 
   __calBasis(isDirectionRow, data) {
     let b = 0;

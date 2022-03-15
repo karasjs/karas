@@ -228,10 +228,8 @@ class Geom extends Xom {
     return w;
   }
 
-  __calAjustWidth(widthLimit, containerWidth, isAbsRoot) {
-    if(!isAbsRoot) {
-      computeReflow(this);
-    }
+  __calAdjustWidth(widthLimit, containerWidth) {
+    computeReflow(this);
     let { currentStyle, computedStyle } = this;
     let {
       [WIDTH]: width,
@@ -254,7 +252,7 @@ class Geom extends Xom {
     if(display !== 'inline') {
       w = calAbsFixedSize(width, containerWidth, this.root);
     }
-    return Math.min(widthLimit, w + mbp);
+    return w + mbp;
   }
 
   __calBasis(isDirectionRow, data) {

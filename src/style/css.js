@@ -1164,10 +1164,14 @@ function computeMeasure(node, isRoot) {
 }
 
 /**
- * 每次布局前需要计算的reflow相关的computedStyle
+ * 每次布局前需要计算的reflow相关的computedStyle，每次布局只计算一次，布局完后清除缓存标
  * @param node 对象节点
  */
 function computeReflow(node) {
+  if(node.__hasComputeReflow) {
+    return;
+  }
+  node.__hasComputeReflow = true;
   let { currentStyle, computedStyle, domParent: parent, root } = node;
   let rem = root.computedStyle[FONT_SIZE];
   let isRoot = !parent;

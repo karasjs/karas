@@ -600,10 +600,8 @@ class Img extends Dom {
     return w;
   }
 
-  __calAjustWidth(widthLimit, containerWidth, isAbsRoot) {
-    if(!isAbsRoot) {
-      computeReflow(this);
-    }
+  __calAdjustWidth(widthLimit, containerWidth) {
+    computeReflow(this);
     let { currentStyle, computedStyle, __loadImg } = this;
     let {
       [WIDTH]: width,

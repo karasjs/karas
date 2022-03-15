@@ -261,6 +261,7 @@ class Xom extends Node {
     // this.__json domApi需要获取生成时的json引用，builder过程添加，如appendChild时json也需要跟着变更
     config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
+    this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
   }
 
   __structure(i, lv, j) {
@@ -442,7 +443,10 @@ class Xom extends Node {
       this.__layoutNone();
       return;
     }
-    this.__mp(currentStyle, computedStyle, w);
+    // absolute特殊，在自己布局时已计算相对于容器的mbp
+    if(position !== 'absolute') {
+      this.__mp(currentStyle, computedStyle, w);
+    }
     // inline的width/height无效，其它有效
     if(width[1] !== AUTO) {
       if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
@@ -549,6 +553,7 @@ class Xom extends Node {
       computedStyle[HEIGHT] = this.height;
       // flex列布局的不执行，防止未布局没有尺寸从而动画计算错误
       this.__execAr();
+      this.__hasComputeReflow = false;
     }
     return lineClampCount;
   }

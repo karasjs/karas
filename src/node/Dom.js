@@ -1102,7 +1102,7 @@ class Dom extends Xom {
             maxX += max;
           }
           else {
-            maxX = Math.max(maxX, max);
+            maxX = Math.max(maxX, item.outerWidth);
           }
           return;
         }

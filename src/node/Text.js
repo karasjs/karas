@@ -28,7 +28,7 @@ const {
     WIDTH,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
-    POSITION,
+    TEXT_ALIGN,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -174,8 +174,20 @@ class Text extends Node {
     this.__textWidth = sum;
   }
 
-  __adjustWidth(widthLimit) {
+  __calAdjustWidth() {
     return this.outerWidth;
+  }
+
+  __adjustWidth(wa, widthLimit) {
+    let w = this.outerWidth, ta = this.computedStyle[TEXT_ALIGN];
+    if(wa > w) {
+      if(ta === 'center') {
+        this.__offsetX((wa - widthLimit) * 0.5);
+      }
+      else {
+        this.__offsetX(wa - widthLimit);
+      }
+    }
   }
 
   /**

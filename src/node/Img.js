@@ -600,7 +600,7 @@ class Img extends Dom {
     return w;
   }
 
-  __adjustWidth(widthLimit, containerWidth) {
+  __calAdjustWidth(widthLimit, containerWidth) {
     return this.outerWidth;
     // computeReflow(this);
     // let { currentStyle, computedStyle, __loadImg } = this;
@@ -633,6 +633,8 @@ class Img extends Dom {
     // }
     // return w + mbp;
   }
+
+  __adjustWidth() {}
 
   __calBasis(isDirectionRow, data) {
     let b = 0;

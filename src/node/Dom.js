@@ -2376,7 +2376,7 @@ class Dom extends Xom {
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
-      let widthLimit = onlyRight ? x2 - x : clientWidth + x - x2;
+      let widthLimit = onlyRight ? x2 - data.x : data.w - data.x - x2;
       // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
       if(w2 === undefined) {
         w2 = item.__calAjustWidth(widthLimit, container.width, true);

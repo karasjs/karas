@@ -23865,7 +23865,7 @@
 
               if (height[1] === PERCENT$8) {
                 if (isContainer) {
-                  parent.__layoutAbs(parent, null, next);
+                  parent.__layoutAbs(parent, parent.__layoutData, next);
                 } else {
                   if (!container) {
                     container = parent;
@@ -26546,7 +26546,7 @@
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 
 
-          var widthLimit = onlyRight ? x2 - x : clientWidth + x - x2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
+          var widthLimit = onlyRight ? x2 - data.x : data.w - data.x - x2; // 未直接或间接定义尺寸，取特殊孩子宽度的最大值，同时不能超限
 
           if (w2 === undefined) {
             w2 = item.__calAjustWidth(widthLimit, container.width, true);
@@ -27283,6 +27283,14 @@
 
       if (!src) {
         loadImg.error = true;
+      } else {
+        var ca = inject.IMG[src];
+
+        if (ca && ca.state === inject.LOADED) {
+          loadImg.source = ca.source;
+          loadImg.width = ca.width;
+          loadImg.height = ca.height;
+        }
       }
 
       var config = _this.__config;
@@ -36001,7 +36009,7 @@
                 // 而这种情况下传cp或node都一样，所以最终统一传node
 
 
-                parent.__layoutAbs(container, null, node); // 优先判断dom变更
+                parent.__layoutAbs(container, parent.__layoutData, node); // 优先判断dom变更
 
 
                 if (addDom) {
@@ -36407,7 +36415,7 @@
 
                   if (_height2[1] === PERCENT$c) {
                     if (isContainer) {
-                      parent.__layoutAbs(parent, null, _item2);
+                      parent.__layoutAbs(parent, parent.__layoutData, _item2);
                     } // 不在容器内说明在上级，存入等结束后统一重新布局
                     else {
                       if (!container) {
@@ -36480,7 +36488,7 @@
           }); // merge过程中需要重新布局的abs
 
           inDirectAbsList.forEach(function (arr) {
-            arr[0].__layoutAbs(arr[1], null, arr[2]);
+            arr[0].__layoutAbs(arr[1], arr[0].__layoutData, arr[2]);
           }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了
           // 这里因为和update保持一致的顺序，因此一定是先根顺序且互不包含
 

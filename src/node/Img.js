@@ -68,6 +68,14 @@ class Img extends Dom {
     if(!src) {
       loadImg.error = true;
     }
+    else {
+      let ca = inject.IMG[src];
+      if(ca && ca.state === inject.LOADED) {
+        loadImg.source = ca.source;
+        loadImg.width = ca.width;
+        loadImg.height = ca.height;
+      }
+    }
     let config = this.__config;
     if(config[NODE_IS_MASK]) {
       let { style, currentStyle } = this;

@@ -407,16 +407,16 @@ class Xom extends Node {
       [WIDTH]: width,
       [POSITION]: position,
     } = currentStyle;
+    this.__layoutData = {
+      x: data.x,
+      y: data.y,
+      w: data.w,
+      h: data.h,
+      lx: data.lx,
+    };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn) {
       this.clearCache();
-      this.__layoutData = {
-        x: data.x,
-        y: data.y,
-        w: data.w,
-        h: data.h,
-        lx: data.lx,
-      };
       __config[NODE_REFRESH_LV] = REFLOW;
       __config[NODE_LIMIT_CACHE] = false;
       __config[NODE_IS_INLINE] = false;

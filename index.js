@@ -19279,7 +19279,7 @@
     var outer = [[x1 - n, y1 - n], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n]];
 
     if (color[3] > 0 && (sigma > 0 || spread > 0)) {
-      if (renderMode === mode.CANVAS | renderMode === mode.WEBGL) {
+      if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         ctx.save();
         ctx.beginPath(); // inset裁剪box外面
 
@@ -20227,17 +20227,17 @@
             __config = this.__config;
         var display = computedStyle[DISPLAY$2];
         var width = currentStyle[WIDTH$4],
-            position = currentStyle[POSITION$1]; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
+            position = currentStyle[POSITION$1];
+        this.__layoutData = {
+          x: data.x,
+          y: data.y,
+          w: data.w,
+          h: data.h,
+          lx: data.lx
+        }; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
 
         if (!isAbs && !isColumn) {
           this.clearCache();
-          this.__layoutData = {
-            x: data.x,
-            y: data.y,
-            w: data.w,
-            h: data.h,
-            lx: data.lx
-          };
           __config[NODE_REFRESH_LV] = REFLOW;
           __config[NODE_LIMIT_CACHE$1] = false;
           __config[NODE_IS_INLINE] = false;
@@ -24720,8 +24720,6 @@
           }, isAbs, true);
 
           min = max = b = this.height; // column的child，max和b总相等
-
-          console.log(this.tagName, this.width);
         } // 直接item的mpb影响basis
 
 
@@ -25358,7 +25356,7 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, isAbs, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
               _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
               x1 = _this2$__layoutFlexLi2[0],
               y1 = _this2$__layoutFlexLi2[1],
@@ -25516,7 +25514,7 @@
         } // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
 
 
-        if (!isAbs) {
+        if (!isAbs && !isColumn) {
           if (length > 1) {
             __flexLine.forEach(function (item, i) {
               var maxCross = maxCrossList[i];
@@ -25555,7 +25553,7 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isDirectionRow, isAbs, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
         var _this3 = this;
 
         var x = data.x,
@@ -25712,7 +25710,7 @@
                 h: h,
                 w3: main // w3假设固定宽度，忽略原始style中的设置
 
-              }, isAbs, false);
+              }, isAbs, isColumn);
             } else {
               item.__layout({
                 x: x,
@@ -25722,7 +25720,7 @@
                 h: main,
                 h3: main // 同w2
 
-              }, isAbs, true); // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
+              }, isAbs, isColumn); // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
 
 
               var _item$currentStyle = item.currentStyle,

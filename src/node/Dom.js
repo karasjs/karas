@@ -698,7 +698,6 @@ class Dom extends Xom {
         h,
       }, isAbs, true);
       min = max = b = this.height; // column的child，max和b总相等
-      console.log(this.tagName, this.width)
     }
     // 直接item的mpb影响basis
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
@@ -1231,7 +1230,7 @@ class Dom extends Xom {
     __flexLine.forEach(item => {
       let length = item.length;
       let end = offset + length;
-      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, containerSize,
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, containerSize,
         fixedWidth, fixedHeight, lineClamp, lineClampCount,
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
@@ -1380,7 +1379,7 @@ class Dom extends Xom {
       }
     }
     // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
-    if(!isAbs) {
+    if(!isAbs && !isColumn) {
       if(length > 1) {
         __flexLine.forEach((item, i) => {
           let maxCross = maxCrossList[i];
@@ -1414,7 +1413,7 @@ class Dom extends Xom {
    * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
    * 先收集basis和假设主尺寸
    */
-  __layoutFlexLine(data, isDirectionRow, isAbs, containerSize,
+  __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, containerSize,
                    fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    lineHeight, computedStyle, justifyContent, alignItems,
                    orderChildren, flexLine, textAlign,
@@ -1553,7 +1552,7 @@ class Dom extends Xom {
             w: main,
             h,
             w3: main, // w3假设固定宽度，忽略原始style中的设置
-          }, isAbs, false);
+          }, isAbs, isColumn);
         }
         else {
           item.__layout({
@@ -1563,7 +1562,7 @@ class Dom extends Xom {
             // w3,
             h: main,
             h3: main, // 同w2
-          }, isAbs, true);
+          }, isAbs, isColumn);
           // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
           let {
             [ALIGN_SELF]: alignSelf,

@@ -8490,7 +8490,7 @@
             if (_arr3.length === 4) {
               var deg = calUnit$1(_arr3[3]);
               compatibleTransform(ROTATE_3D, deg);
-              _arr3[0] = parseFloat(_arr3[0]);
+              _arr3[0] = parseFloat(_arr3[0].slice(1));
               _arr3[1] = parseFloat(_arr3[1]);
               _arr3[2] = parseFloat(_arr3[2]);
               _arr3[3] = deg;
@@ -8651,7 +8651,7 @@
       if (_arr10.length === 4) {
         var deg = calUnit$1(_arr10[3]);
         compatibleTransform(ROTATE_3D, deg);
-        _arr10[0] = parseFloat(_arr10[0]);
+        _arr10[0] = parseFloat(_arr10[0].slice(1));
         _arr10[1] = parseFloat(_arr10[1]);
         _arr10[2] = parseFloat(_arr10[2]);
         _arr10[3] = deg;
@@ -25753,7 +25753,7 @@
 
 
               if (!isAbs && !isColumn && width[1] === AUTO$6 && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-                var w3 = item.__calAdjustWidth();
+                var w3 = item.__calAdjustWidth(w);
 
                 if (w3 < w) {
                   item.__layout({
@@ -26793,7 +26793,7 @@
 
     }, {
       key: "__calAdjustWidth",
-      value: function __calAdjustWidth() {
+      value: function __calAdjustWidth(widthLimit) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
@@ -26819,7 +26819,7 @@
           for (var i = 0, len = flowChildren.length; i < len; i++) {
             var item = flowChildren[i];
 
-            var w = item.__calAdjustWidth();
+            var w = item.__calAdjustWidth(widthLimit);
 
             if (isRow) {
               count += w;
@@ -26840,7 +26840,7 @@
           for (var _i5 = 0, _len = flowChildren.length; _i5 < _len; _i5++) {
             var _item = flowChildren[_i5];
 
-            var _w = _item.__calAdjustWidth(); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
+            var _w = _item.__calAdjustWidth(widthLimit); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
 
 
             var isBlock = false;
@@ -26872,7 +26872,7 @@
           for (var _i6 = 0, _len2 = flowChildren.length; _i6 < _len2; _i6++) {
             var _item2 = flowChildren[_i6];
 
-            var _w2 = _item2.__calAdjustWidth();
+            var _w2 = _item2.__calAdjustWidth(widthLimit);
 
             _count2 += _w2;
           }

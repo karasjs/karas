@@ -1592,7 +1592,7 @@ class Dom extends Xom {
           // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
           if(!isAbs && !isColumn && width[1] === AUTO
             && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-            let w3 = item.__calAdjustWidth();
+            let w3 = item.__calAdjustWidth(w);
             if(w3 < w) {
               item.__layout({
                 x,
@@ -2560,7 +2560,7 @@ class Dom extends Xom {
    * flex的column完成后非stretch也要计算每个child的，防止撑满或者过小情况
    * @private
    */
-  __calAdjustWidth() {
+  __calAdjustWidth(widthLimit) {
     let { flowChildren, currentStyle, computedStyle } = this;
     let {
       [WIDTH]: width,
@@ -2587,7 +2587,7 @@ class Dom extends Xom {
       let isRow = ['column', 'columnReverse', 'column-reverse'].indexOf(flexDirection) === -1;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.__calAdjustWidth();
+        let w = item.__calAdjustWidth(widthLimit);
         if(isRow) {
           count += w;
         }
@@ -2604,7 +2604,7 @@ class Dom extends Xom {
       let count = 0, max = 0;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.__calAdjustWidth();
+        let w = item.__calAdjustWidth(widthLimit);
         // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
         let isBlock = false;
         if(item instanceof Xom) {
@@ -2631,7 +2631,7 @@ class Dom extends Xom {
       let count = 0;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.__calAdjustWidth();
+        let w = item.__calAdjustWidth(widthLimit);
         count += w;
       }
       return count + mbp;

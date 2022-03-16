@@ -443,7 +443,7 @@ function normalize(style, reset = []) {
           if(arr.length === 4) {
             let deg = calUnit(arr[3]);
             compatibleTransform(ROTATE_3D, deg);
-            arr[0] = parseFloat(arr[0]);
+            arr[0] = parseFloat(arr[0].slice(1));
             arr[1] = parseFloat(arr[1]);
             arr[2] = parseFloat(arr[2]);
             arr[3] = deg;
@@ -591,7 +591,7 @@ function normalize(style, reset = []) {
     if(arr.length === 4) {
       let deg = calUnit(arr[3]);
       compatibleTransform(ROTATE_3D, deg);
-      arr[0] = parseFloat(arr[0]);
+      arr[0] = parseFloat(arr[0].slice(1));
       arr[1] = parseFloat(arr[1]);
       arr[2] = parseFloat(arr[2]);
       arr[3] = deg;

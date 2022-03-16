@@ -20218,7 +20218,7 @@
 
     }, {
       key: "__layout",
-      value: function __layout(data, isAbs, isColumn) {
+      value: function __layout(data, isAbs, isColumn, genAr) {
         css.computeReflow(this);
         var w = data.w;
         var isDestroyed = this.isDestroyed,
@@ -20396,9 +20396,9 @@
           }
 
           computedStyle[WIDTH$4] = this.width;
-          computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行
+          computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
 
-          if (position !== 'absolute') {
+          if (genAr) {
             this.__execAr();
           }
 
@@ -24722,7 +24722,7 @@
             y: y,
             w: w,
             h: h
-          }, isAbs, true);
+          }, isAbs, true, true);
 
           min = max = b = this.height; // column的child，max和b总相等
         } // 直接item的mpb影响basis
@@ -24836,7 +24836,7 @@
                   // ib内部新生成会内部判断，这里不管统一传入
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
+                }, isAbs, isColumn, true); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
 
 
                 if (item.__isIbFull) {
@@ -24874,7 +24874,7 @@
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
                     lineClampCount: lineClampCount
-                  }, isAbs, isColumn); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
+                  }, isAbs, isColumn, true); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
 
                   (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
@@ -24895,7 +24895,7 @@
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
                     lineClampCount: lineClampCount
-                  }, isAbs, isColumn); // 重新开头的ib和上面开头处一样逻辑
+                  }, isAbs, isColumn, true); // 重新开头的ib和上面开头处一样逻辑
 
                   if (item.__isIbFull) {
                     x = data.x;
@@ -24944,7 +24944,7 @@
                 y: y,
                 w: w,
                 h: h
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
 
               var isNone = item.computedStyle[DISPLAY$5] === 'none'; // 自身无内容
 
@@ -25024,7 +25024,7 @@
                 lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
 
@@ -25052,7 +25052,7 @@
                   lineBoxManager: lineBoxManager,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, true);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
@@ -25070,7 +25070,7 @@
                   lineBoxManager: lineBoxManager,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, true);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
 
@@ -25264,7 +25264,7 @@
                 lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
 
               var hh = item.height;
               basisList.push(hh);
@@ -25727,8 +25727,21 @@
                 h: h,
                 w3: main // w3假设固定宽度，忽略原始style中的设置
 
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
             } else {
+              var _item$currentStyle = item.currentStyle,
+                  alignSelf = _item$currentStyle[ALIGN_SELF$1],
+                  width = _item$currentStyle[WIDTH$5];
+              var needGenAr; // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
+
+              if (!isAbs && !isColumn) {
+                if (width[1] !== AUTO$6 || alignSelf === 'stretch') {
+                  needGenAr = true;
+                } else if (alignSelf === 'auto' && alignItems === 'stretch') {
+                  needGenAr = true;
+                }
+              }
+
               item.__layout({
                 x: x,
                 y: y,
@@ -25736,15 +25749,11 @@
                 h: main,
                 h3: main // 同w2
 
-              }, isAbs, isColumn); // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
+              }, isAbs, isColumn, needGenAr); // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
 
-
-              var _item$currentStyle = item.currentStyle,
-                  alignSelf = _item$currentStyle[ALIGN_SELF$1],
-                  width = _item$currentStyle[WIDTH$5];
 
               if (!isAbs && !isColumn && width[1] === AUTO$6 && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-                var w3 = item.__calAdjustWidth(w, w);
+                var w3 = item.__calAdjustWidth();
 
                 if (w3 < w) {
                   item.__layout({
@@ -25755,7 +25764,7 @@
                     h: main,
                     h3: main // 同w2
 
-                  }, false, false);
+                  }, false, false, true);
                 }
               }
             }
@@ -25771,7 +25780,7 @@
               lineBoxManager: lineBoxManager,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount
-            }, isAbs, isDirectionRow);
+            }, isAbs, isDirectionRow, true);
           }
 
           if (isDirectionRow) {
@@ -25915,7 +25924,7 @@
                 if (isDirectionRow && display === 'flex' && flexDirection === 'column' && _height[1] === AUTO$6 && item.outerHeight < maxCross) {
                   item.__layout(Object.assign(item.__layoutData, {
                     h3: maxCross
-                  }), false);
+                  }), true);
                 }
 
                 var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
@@ -26167,7 +26176,7 @@
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
-              }, isAbs, isColumn); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
+              }, isAbs, isColumn, true); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
 
               if (item.__isIbFull) {
                 isInlineBlock2 && w[1] === AUTO$6 && (isIbFull = true);
@@ -26197,7 +26206,7 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
+                }, isAbs, isColumn, true); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                 (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
                 x = lineBoxManager.lastX;
@@ -26218,7 +26227,7 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn); // 重新开头的ib和上面开头处一样逻辑
+                }, isAbs, isColumn, true); // 重新开头的ib和上面开头处一样逻辑
 
                 if (item.__isIbFull) {
                   lineBoxManager.addItem(item);
@@ -26249,7 +26258,7 @@
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
@@ -26283,7 +26292,7 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, true);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
               } // 放不下处理之前的lineBox，并重新开头
@@ -26302,7 +26311,7 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, true);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行
 
@@ -26725,7 +26734,7 @@
               y: y2,
               w: widthLimit,
               h: heightLimit
-            }, true, false);
+            }, true, false, true);
 
             widthLimit = item.outerWidth;
           }
@@ -26738,7 +26747,7 @@
             w2: w2,
             // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
             h2: h2
-          }, false, false);
+          }, false, false, false);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);
@@ -26784,25 +26793,24 @@
 
     }, {
       key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit, containerWidth) {
-        computeReflow$1(this);
+      value: function __calAdjustWidth() {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-        var width = currentStyle[WIDTH$5],
-            marginLeft = currentStyle[MARGIN_LEFT$3],
-            marginRight = currentStyle[MARGIN_RIGHT$3],
-            paddingLeft = currentStyle[PADDING_LEFT$4],
-            paddingRight = currentStyle[PADDING_RIGHT$3];
+        var width = currentStyle[WIDTH$5];
         var display = computedStyle[DISPLAY$5],
+            marginLeft = computedStyle[MARGIN_LEFT$3],
+            marginRight = computedStyle[MARGIN_RIGHT$3],
+            paddingLeft = computedStyle[PADDING_LEFT$4],
+            paddingRight = computedStyle[PADDING_RIGHT$3],
             flexDirection = computedStyle[FLEX_DIRECTION$2],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4];
-        var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth; // flex根据方向获取尺寸，row取和，column取每项最大值
+        var mbp = marginLeft + marginRight + paddingLeft + paddingRight + borderLeftWidth + borderRightWidth; // flex根据方向获取尺寸，row取和，column取每项最大值
 
         if (display === 'flex') {
           if (width[1] !== AUTO$6) {
-            return calAbsFixedSize$1(width, containerWidth, this.root) + mbp;
+            return this.outerWidth;
           }
 
           var count = 0;
@@ -26811,7 +26819,7 @@
           for (var i = 0, len = flowChildren.length; i < len; i++) {
             var item = flowChildren[i];
 
-            var w = item.__calAdjustWidth(widthLimit, containerWidth);
+            var w = item.__calAdjustWidth();
 
             if (isRow) {
               count += w;
@@ -26823,7 +26831,7 @@
           return count + mbp;
         } else if (display === 'block') {
           if (width[1] !== AUTO$6) {
-            return calAbsFixedSize$1(width, containerWidth, this.root) + mbp;
+            return this.outerWidth;
           }
 
           var _count = 0,
@@ -26832,7 +26840,7 @@
           for (var _i5 = 0, _len = flowChildren.length; _i5 < _len; _i5++) {
             var _item = flowChildren[_i5];
 
-            var _w = _item.__calAdjustWidth(widthLimit, containerWidth); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
+            var _w = _item.__calAdjustWidth(); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
 
 
             var isBlock = false;
@@ -26855,7 +26863,7 @@
         else {
           if (['inlineBlock', 'inline-block'].indexOf(display) > -1) {
             if (width[1] !== AUTO$6) {
-              return calAbsFixedSize$1(width, containerWidth, this.root) + mbp;
+              return this.outerWidth;
             }
           }
 
@@ -26864,7 +26872,7 @@
           for (var _i6 = 0, _len2 = flowChildren.length; _i6 < _len2; _i6++) {
             var _item2 = flowChildren[_i6];
 
-            var _w2 = _item2.__calAdjustWidth(widthLimit, containerWidth);
+            var _w2 = _item2.__calAdjustWidth();
 
             _count2 += _w2;
           }
@@ -27389,13 +27397,9 @@
       BACKGROUND_COLOR$2 = _enums$STYLE_KEY$g.BACKGROUND_COLOR,
       BOX_SHADOW$3 = _enums$STYLE_KEY$g.BOX_SHADOW,
       MIX_BLEND_MODE$1 = _enums$STYLE_KEY$g.MIX_BLEND_MODE,
-      MARGIN_TOP$2 = _enums$STYLE_KEY$g.MARGIN_TOP,
       MARGIN_RIGHT$4 = _enums$STYLE_KEY$g.MARGIN_RIGHT,
-      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$g.MARGIN_BOTTOM,
       MARGIN_LEFT$4 = _enums$STYLE_KEY$g.MARGIN_LEFT,
-      PADDING_TOP$3 = _enums$STYLE_KEY$g.PADDING_TOP,
       PADDING_RIGHT$4 = _enums$STYLE_KEY$g.PADDING_RIGHT,
-      PADDING_BOTTOM$3 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
       PADDING_LEFT$5 = _enums$STYLE_KEY$g.PADDING_LEFT,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FLEX_BASIS$3 = _enums$STYLE_KEY$g.FLEX_BASIS,
@@ -27419,8 +27423,7 @@
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
   var isFunction$7 = util.isFunction;
-  var computeReflow$2 = css.computeReflow,
-      calAbsFixedSize$2 = css.calAbsFixedSize;
+  var computeReflow$2 = css.computeReflow;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -27945,35 +27948,8 @@
       }
     }, {
       key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit, containerWidth) {
-        computeReflow$2(this);
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle,
-            __loadImg = this.__loadImg;
-        var width = currentStyle[WIDTH$6],
-            marginLeft = currentStyle[MARGIN_LEFT$4],
-            marginRight = currentStyle[MARGIN_RIGHT$4],
-            paddingLeft = currentStyle[PADDING_LEFT$5],
-            paddingRight = currentStyle[PADDING_RIGHT$4];
-        var display = computedStyle[DISPLAY$6],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5];
-        var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth;
-        var w = 0;
-
-        if (display !== 'inline') {
-          w = calAbsFixedSize$2(width, containerWidth, this.root);
-        }
-
-        if (width[1] === AUTO$7) {
-          if (__loadImg.source) {
-            w = __loadImg.width;
-          } else if (__loadImg.error) {
-            w = 32;
-          }
-        }
-
-        return w + mbp;
+      value: function __calAdjustWidth() {
+        return this.outerWidth;
       }
     }, {
       key: "__calBasis",
@@ -28323,20 +28299,13 @@
   }();
 
   var _enums$STYLE_KEY$h = enums.STYLE_KEY,
-      DISPLAY$7 = _enums$STYLE_KEY$h.DISPLAY,
-      MARGIN_TOP$3 = _enums$STYLE_KEY$h.MARGIN_TOP,
       MARGIN_RIGHT$5 = _enums$STYLE_KEY$h.MARGIN_RIGHT,
-      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$h.MARGIN_BOTTOM,
       MARGIN_LEFT$5 = _enums$STYLE_KEY$h.MARGIN_LEFT,
-      PADDING_TOP$4 = _enums$STYLE_KEY$h.PADDING_TOP,
       PADDING_RIGHT$5 = _enums$STYLE_KEY$h.PADDING_RIGHT,
-      PADDING_BOTTOM$4 = _enums$STYLE_KEY$h.PADDING_BOTTOM,
       PADDING_LEFT$6 = _enums$STYLE_KEY$h.PADDING_LEFT,
       WIDTH$7 = _enums$STYLE_KEY$h.WIDTH,
       HEIGHT$7 = _enums$STYLE_KEY$h.HEIGHT,
-      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
       BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$h.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_BOTTOM_WIDTH,
       BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$h.BORDER_LEFT_WIDTH,
       FILL$1 = _enums$STYLE_KEY$h.FILL,
       STROKE$1 = _enums$STYLE_KEY$h.STROKE,
@@ -28370,8 +28339,7 @@
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$7 = painter.svgPolygon;
   var WEBGL$2 = mode.WEBGL;
-  var calAbsFixedSize$3 = css.calAbsFixedSize,
-      computeReflow$3 = css.computeReflow;
+  var computeReflow$3 = css.computeReflow;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -28523,26 +28491,8 @@
       }
     }, {
       key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit, containerWidth) {
-        computeReflow$3(this);
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
-        var width = currentStyle[WIDTH$7],
-            marginLeft = currentStyle[MARGIN_LEFT$5],
-            marginRight = currentStyle[MARGIN_RIGHT$5],
-            paddingLeft = currentStyle[PADDING_LEFT$6],
-            paddingRight = currentStyle[PADDING_RIGHT$5];
-        var display = computedStyle[DISPLAY$7],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$7],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$6];
-        var mbp = this.__calMp(marginLeft, containerWidth, false) + this.__calMp(marginRight, containerWidth, false) + this.__calMp(paddingLeft, containerWidth, false) + this.__calMp(paddingRight, containerWidth, false) + borderLeftWidth + borderRightWidth;
-        var w = 0;
-
-        if (display !== 'inline') {
-          w = calAbsFixedSize$3(width, containerWidth, this.root);
-        }
-
-        return w + mbp;
+      value: function __calAdjustWidth() {
+        return this.outerWidth;
       }
     }, {
       key: "__calBasis",
@@ -31017,7 +30967,7 @@
       OFFSCREEN_MASK2$1 = offscreen.OFFSCREEN_MASK2,
       applyOffscreen$1 = offscreen.applyOffscreen;
   var _enums$STYLE_KEY$i = enums.STYLE_KEY,
-      DISPLAY$8 = _enums$STYLE_KEY$i.DISPLAY,
+      DISPLAY$7 = _enums$STYLE_KEY$i.DISPLAY,
       OPACITY$5 = _enums$STYLE_KEY$i.OPACITY,
       VISIBILITY$5 = _enums$STYLE_KEY$i.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$i.FILTER,
@@ -31030,11 +30980,11 @@
       PERSPECTIVE_ORIGIN$4 = _enums$STYLE_KEY$i.PERSPECTIVE_ORIGIN,
       PADDING_LEFT$7 = _enums$STYLE_KEY$i.PADDING_LEFT,
       PADDING_RIGHT$6 = _enums$STYLE_KEY$i.PADDING_RIGHT,
-      PADDING_TOP$5 = _enums$STYLE_KEY$i.PADDING_TOP,
-      PADDING_BOTTOM$5 = _enums$STYLE_KEY$i.PADDING_BOTTOM,
-      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$i.BORDER_TOP_WIDTH,
+      PADDING_TOP$3 = _enums$STYLE_KEY$i.PADDING_TOP,
+      PADDING_BOTTOM$3 = _enums$STYLE_KEY$i.PADDING_BOTTOM,
+      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$i.BORDER_TOP_WIDTH,
       BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$i.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$i.BORDER_BOTTOM_WIDTH,
+      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$i.BORDER_BOTTOM_WIDTH,
       BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$i.BORDER_LEFT_WIDTH,
       MATRIX$4 = _enums$STYLE_KEY$i.MATRIX,
       _enums$NODE_KEY$8 = enums.NODE_KEY,
@@ -31161,7 +31111,7 @@
               __cacheMask = _node2$__config[NODE_CACHE_MASK$1],
               __cacheOverflow = _node2$__config[NODE_CACHE_OVERFLOW$1],
               _node2$__config$NODE_ = _node2$__config[NODE_COMPUTED_STYLE$3],
-              display = _node2$__config$NODE_[DISPLAY$8],
+              display = _node2$__config$NODE_[DISPLAY$7],
               visibility = _node2$__config$NODE_[VISIBILITY$5],
               transform = _node2$__config$NODE_[TRANSFORM$4],
               transformOrigin = _node2$__config$NODE_[TRANSFORM_ORIGIN$5],
@@ -31324,7 +31274,7 @@
             _computedStyle = __config[NODE_COMPUTED_STYLE$3],
             isMask = __config[NODE_IS_MASK$2]; // 跳过display:none元素和它的所有子节点和mask
 
-        if (_computedStyle[DISPLAY$8] === 'none') {
+        if (_computedStyle[DISPLAY$7] === 'none') {
           i += (_total3 || 0) + countMaskNum(__structs, i + (_total3 || 0) + 1, _hasMask || 0);
           continue;
         } // mask不占bbox，本身除外
@@ -31544,7 +31494,7 @@
 
           var transform = _computedStyle2[TRANSFORM$4],
               tfo = _computedStyle2[TRANSFORM_ORIGIN$5],
-              display = _computedStyle2[DISPLAY$8]; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
+              display = _computedStyle2[DISPLAY$7]; // 特殊渲染的matrix，局部根节点为原点考虑，当需要计算时再计算
 
           var m = void 0;
 
@@ -31593,7 +31543,7 @@
           } else {
             if (_refreshLevel >= REPAINT$2) {
               // 手动计算cacheStyle和根据border-box的坐标再渲染
-              _node2.__calCache(renderMode, ctxTotal, _config[NODE_DOM_PARENT$5], _config[NODE_CACHE_STYLE$1], _config[NODE_CURRENT_STYLE$5], _computedStyle2, _node2.clientWidth, _node2.clientHeight, _node2.offsetWidth, _node2.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$6], _computedStyle2[BORDER_RIGHT_WIDTH$7], _computedStyle2[BORDER_BOTTOM_WIDTH$6], _computedStyle2[BORDER_LEFT_WIDTH$8], _computedStyle2[PADDING_TOP$5], _computedStyle2[PADDING_RIGHT$6], _computedStyle2[PADDING_BOTTOM$5], _computedStyle2[PADDING_LEFT$7], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
+              _node2.__calCache(renderMode, ctxTotal, _config[NODE_DOM_PARENT$5], _config[NODE_CACHE_STYLE$1], _config[NODE_CURRENT_STYLE$5], _computedStyle2, _node2.clientWidth, _node2.clientHeight, _node2.offsetWidth, _node2.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$5], _computedStyle2[BORDER_RIGHT_WIDTH$7], _computedStyle2[BORDER_BOTTOM_WIDTH$5], _computedStyle2[BORDER_LEFT_WIDTH$8], _computedStyle2[PADDING_TOP$3], _computedStyle2[PADDING_RIGHT$6], _computedStyle2[PADDING_BOTTOM$3], _computedStyle2[PADDING_LEFT$7], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
             }
 
             var res = _node2.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL$1 : CHILD, dx, dy);
@@ -31822,7 +31772,7 @@
 
               lastLv = _lv3; // 计算临时的matrix
 
-              var _display = _computedStyle3[DISPLAY$8],
+              var _display = _computedStyle3[DISPLAY$7],
                   _transform = _computedStyle3[TRANSFORM$4],
                   _tfo = _computedStyle3[TRANSFORM_ORIGIN$5]; // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
@@ -31937,7 +31887,7 @@
 
                 if (_refreshLevel3 >= REPAINT$2) {
                   // 手动计算cacheStyle和根据border-box的坐标再渲染
-                  _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$6], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$6], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$5], _computedStyle3[PADDING_RIGHT$6], _computedStyle3[PADDING_BOTTOM$5], _computedStyle3[PADDING_LEFT$7], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
+                  _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$5], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$5], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$3], _computedStyle3[PADDING_RIGHT$6], _computedStyle3[PADDING_BOTTOM$3], _computedStyle3[PADDING_LEFT$7], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
                 }
 
                 var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
@@ -32053,7 +32003,7 @@
           computedStyle = __config[NODE_COMPUTED_STYLE$3],
           cacheStyle = __config[NODE_CACHE_STYLE$1]; // 跳过display:none元素和它的所有子节点和mask
 
-      if (computedStyle[DISPLAY$8] === 'none') {
+      if (computedStyle[DISPLAY$7] === 'none') {
         i += (_total8 || 0) + countMaskNum(__structs, i + (_total8 || 0) + 1, hasMask || 0);
         continue;
       } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树
@@ -32263,7 +32213,7 @@
             __cacheOverflow = _config3[NODE_CACHE_OVERFLOW$1],
             isMask = _config3[NODE_IS_MASK$2],
             _config3$NODE_COMPUTE = _config3[NODE_COMPUTED_STYLE$3],
-            display = _config3$NODE_COMPUTE[DISPLAY$8],
+            display = _config3$NODE_COMPUTE[DISPLAY$7],
             visibility = _config3$NODE_COMPUTE[VISIBILITY$5],
             transform = _config3$NODE_COMPUTE[TRANSFORM$4],
             transformOrigin = _config3$NODE_COMPUTE[TRANSFORM_ORIGIN$5],
@@ -32745,7 +32695,7 @@
             computedStyle = _config4[NODE_COMPUTED_STYLE$3],
             limitCache = _config4[NODE_LIMIT_CACHE$2]; // 跳过display:none元素和它的所有子节点和mask
 
-        if (computedStyle[DISPLAY$8] === 'none') {
+        if (computedStyle[DISPLAY$7] === 'none') {
           _i7 += (_total10 || 0) + countMaskNum(__structs, _i7 + (_total10 || 0) + 1, hasMask || 0);
           continue;
         }
@@ -33014,7 +32964,7 @@
           _refreshLevel4 = __config[NODE_REFRESH_LV$1],
           _defsCache = __config[NODE_DEFS_CACHE$6],
           computedStyle = __config[NODE_COMPUTED_STYLE$3];
-      var display = computedStyle[DISPLAY$8]; // 将随后的若干个mask节点范围存下来
+      var display = computedStyle[DISPLAY$7]; // 将随后的若干个mask节点范围存下来
 
       if (_hasMask4 && display !== 'none') {
         var _start = _i8 + (_total11 || 0) + 1;
@@ -33142,7 +33092,7 @@
 
         virtualDom = __config[NODE_VIRTUAL_DOM$2]; // 渲染后更新取值
 
-        display = computedStyle[DISPLAY$8];
+        display = computedStyle[DISPLAY$7];
 
         if (display === 'none') {
           _i8 += _total11 || 0;
@@ -33180,7 +33130,7 @@
         for (var j = _start2; j < _end2; j++) {
           var _node7 = __structs[j][STRUCT_NODE$1];
           var _node7$computedStyle = _node7.computedStyle,
-              _display2 = _node7$computedStyle[DISPLAY$8],
+              _display2 = _node7$computedStyle[DISPLAY$7],
               visibility = _node7$computedStyle[VISIBILITY$5],
               fill = _node7$computedStyle[FILL$2],
               _node7$virtualDom = _node7.virtualDom,
@@ -33366,7 +33316,7 @@
       var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           computedStyle = __config[NODE_COMPUTED_STYLE$3]; // 跳过display:none元素和它的所有子节点
 
-      if (computedStyle[DISPLAY$8] === 'none') {
+      if (computedStyle[DISPLAY$7] === 'none') {
         i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
 
         continue;
@@ -33701,7 +33651,7 @@
             __cacheOverflow = _config5[NODE_CACHE_OVERFLOW$1],
             _refreshLevel5 = _config5[NODE_REFRESH_LV$1],
             _config5$NODE_COMPUTE = _config5[NODE_COMPUTED_STYLE$3],
-            display = _config5$NODE_COMPUTE[DISPLAY$8],
+            display = _config5$NODE_COMPUTE[DISPLAY$7],
             visibility = _config5$NODE_COMPUTE[VISIBILITY$5],
             _mixBlendMode2 = _config5$NODE_COMPUTE[MIX_BLEND_MODE$3];
 
@@ -33876,12 +33826,12 @@
           computedStyle = __config[NODE_COMPUTED_STYLE$3];
 
       if (refreshLevel >= REPAINT$2) {
-        node.__calCache(renderMode, ctx, __config[NODE_DOM_PARENT$5], __config[NODE_CACHE_STYLE$1], __config[NODE_CURRENT_STYLE$5], computedStyle, node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight, computedStyle[BORDER_TOP_WIDTH$6], computedStyle[BORDER_RIGHT_WIDTH$7], computedStyle[BORDER_BOTTOM_WIDTH$6], computedStyle[BORDER_LEFT_WIDTH$8], computedStyle[PADDING_TOP$5], computedStyle[PADDING_RIGHT$6], computedStyle[PADDING_BOTTOM$5], computedStyle[PADDING_LEFT$7], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+        node.__calCache(renderMode, ctx, __config[NODE_DOM_PARENT$5], __config[NODE_CACHE_STYLE$1], __config[NODE_CURRENT_STYLE$5], computedStyle, node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight, computedStyle[BORDER_TOP_WIDTH$5], computedStyle[BORDER_RIGHT_WIDTH$7], computedStyle[BORDER_BOTTOM_WIDTH$5], computedStyle[BORDER_LEFT_WIDTH$8], computedStyle[PADDING_TOP$3], computedStyle[PADDING_RIGHT$6], computedStyle[PADDING_BOTTOM$3], computedStyle[PADDING_LEFT$7], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
       }
 
       if (cacheAsBitmap) {
         // 跳过display:none元素和它的所有子节点
-        if (computedStyle[DISPLAY$8] === 'none') {
+        if (computedStyle[DISPLAY$7] === 'none') {
           i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
           continue;
         }
@@ -33952,7 +33902,7 @@
             __cacheOverflow = _config6[NODE_CACHE_OVERFLOW$1],
             _refreshLevel6 = _config6[NODE_REFRESH_LV$1],
             _config6$NODE_COMPUTE = _config6[NODE_COMPUTED_STYLE$3],
-            display = _config6$NODE_COMPUTE[DISPLAY$8],
+            display = _config6$NODE_COMPUTE[DISPLAY$7],
             mixBlendMode = _config6$NODE_COMPUTE[MIX_BLEND_MODE$3],
             opacity = _config6$NODE_COMPUTE[OPACITY$5]; // 遮罩对象申请了个离屏，其第一个mask申请另外一个离屏mask2，开始聚集所有mask元素的绘制，
         // 这是一个十分特殊的逻辑，保存的index是最后一个节点的索引，OFFSCREEN_MASK2是最低优先级，
@@ -34457,21 +34407,21 @@
       BOTTOM$4 = _enums$STYLE_KEY$j.BOTTOM,
       LEFT$2 = _enums$STYLE_KEY$j.LEFT,
       POSITION$4 = _enums$STYLE_KEY$j.POSITION,
-      DISPLAY$9 = _enums$STYLE_KEY$j.DISPLAY,
+      DISPLAY$8 = _enums$STYLE_KEY$j.DISPLAY,
       VISIBILITY$6 = _enums$STYLE_KEY$j.VISIBILITY,
       COLOR$5 = _enums$STYLE_KEY$j.COLOR,
       WIDTH$8 = _enums$STYLE_KEY$j.WIDTH,
       HEIGHT$8 = _enums$STYLE_KEY$j.HEIGHT,
       Z_INDEX$4 = _enums$STYLE_KEY$j.Z_INDEX,
-      MARGIN_TOP$4 = _enums$STYLE_KEY$j.MARGIN_TOP,
+      MARGIN_TOP$2 = _enums$STYLE_KEY$j.MARGIN_TOP,
       MARGIN_LEFT$6 = _enums$STYLE_KEY$j.MARGIN_LEFT,
-      MARGIN_BOTTOM$4 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
-      PADDING_TOP$6 = _enums$STYLE_KEY$j.PADDING_TOP,
+      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$j.MARGIN_BOTTOM,
+      PADDING_TOP$4 = _enums$STYLE_KEY$j.PADDING_TOP,
       PADDING_LEFT$8 = _enums$STYLE_KEY$j.PADDING_LEFT,
-      PADDING_BOTTOM$6 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
-      BORDER_TOP_WIDTH$7 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
+      PADDING_BOTTOM$4 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
+      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
       BORDER_LEFT_WIDTH$9 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$7 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
       POINTER_EVENTS$2 = _enums$STYLE_KEY$j.POINTER_EVENTS,
       _enums$UPDATE_KEY$5 = enums.UPDATE_KEY,
       UPDATE_NODE$5 = _enums$UPDATE_KEY$5.UPDATE_NODE,
@@ -34620,7 +34570,7 @@
       var parent = node.domParent;
 
       if (parent) {
-        if (parent.currentStyle[DISPLAY$9] === 'flex' || parent.computedStyle[DISPLAY$9] === 'flex') {
+        if (parent.currentStyle[DISPLAY$8] === 'flex' || parent.computedStyle[DISPLAY$8] === 'flex') {
           return false;
         }
       }
@@ -34669,7 +34619,7 @@
 
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1) {
+    if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$8]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$8]) > -1) {
       do {
         target = target.domParent; // 父到root提前跳出
 
@@ -34687,7 +34637,7 @@
           setLAYOUT(target, reflowHash, component, addDom);
           return;
         }
-      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$9]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$9]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
+      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$8]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$8]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
 
 
       if (isFixedSize(target, true)) {
@@ -34713,7 +34663,7 @@
       } // flex相关，包含变化或不变化
 
 
-      if (parent.computedStyle[DISPLAY$9] === 'flex' || parent.currentStyle[DISPLAY$9] === 'flex') {
+      if (parent.computedStyle[DISPLAY$8] === 'flex' || parent.currentStyle[DISPLAY$8] === 'flex') {
         topFlex = parent;
       } // 遇到absolute跳出，如果absolute不变化普通处理，如果absolute发生变化，一定会存在于列表中，不用考虑
 
@@ -34769,9 +34719,9 @@
       var prev = node.prev,
           next = node.next;
 
-      if (prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$9]) > -1) {
+      if (prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$8]) > -1) {
         isSiblingBlock = false;
-      } else if (next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$9]) > -1) {
+      } else if (next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$8]) > -1) {
         isSiblingBlock = false;
       }
 
@@ -34884,7 +34834,7 @@
                   delete style[k];
                   continue;
                 }
-              } else if (k === DISPLAY$9) {
+              } else if (k === DISPLAY$8) {
                 hasDisplay = true;
               } // repaint细化等级，reflow在checkReflow()
 
@@ -34924,7 +34874,7 @@
     } // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
 
 
-    if (computedStyle[DISPLAY$9] === 'none' && !hasDisplay) {
+    if (computedStyle[DISPLAY$8] === 'none' && !hasDisplay) {
       return;
     } // 记录下来清除parent的zIndexChildren缓存
 
@@ -34986,8 +34936,8 @@
     if (hasDisplay && parent) {
       var _config2 = parent.__config;
 
-      if (_config2[NODE_CURRENT_STYLE$6][DISPLAY$9] === 'none' || _config2[NODE_COMPUTED_STYLE$4][DISPLAY$9] === 'none') {
-        computedStyle[DISPLAY$9] = 'none';
+      if (_config2[NODE_CURRENT_STYLE$6][DISPLAY$8] === 'none' || _config2[NODE_COMPUTED_STYLE$4][DISPLAY$8] === 'none') {
+        computedStyle[DISPLAY$8] = 'none';
         return;
       }
     } // reflow/repaint/measure相关的记录下来
@@ -35675,7 +35625,7 @@
               children = vd.children,
               zIndexChildren = vd.zIndexChildren,
               _vd$computedStyle = vd.computedStyle,
-              display = _vd$computedStyle[DISPLAY$9],
+              display = _vd$computedStyle[DISPLAY$8],
               pointerEvents = _vd$computedStyle[POINTER_EVENTS$2];
 
           if (!includeIgnore && display === 'none') {
@@ -35738,8 +35688,8 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle; // canvas/svg作为根节点一定是block或flex，不会是inline
 
-        if (['flex', 'block'].indexOf(currentStyle[DISPLAY$9]) === -1) {
-          computedStyle[DISPLAY$9] = currentStyle[DISPLAY$9] = 'block';
+        if (['flex', 'block'].indexOf(currentStyle[DISPLAY$8]) === -1) {
+          computedStyle[DISPLAY$8] = currentStyle[DISPLAY$8] = 'block';
         } // 同理position不能为absolute
 
 
@@ -36031,7 +35981,7 @@
             y: 0,
             w: width,
             h: height
-          }, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
+          }, false, false, true); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
 
 
           this.__layoutAbs(this, {
@@ -36086,11 +36036,11 @@
                 cts = node.currentStyle;
             var zIndex = cps[Z_INDEX$4],
                 position = cps[POSITION$4],
-                display = cps[DISPLAY$9];
+                display = cps[DISPLAY$8];
             var isLastAbs = position === 'absolute';
             var isNowAbs = cts[POSITION$4] === 'absolute';
             var isLastNone = display === 'none';
-            var isNowNone = cts[DISPLAY$9] === 'none'; // none不可见布局无效可以无视
+            var isNowNone = cts[DISPLAY$8] === 'none'; // none不可见布局无效可以无视
 
             if (isLastNone && isNowNone) {
               return;
@@ -36114,7 +36064,7 @@
             var hasFlowPrev;
 
             while (ref) {
-              if (ref instanceof Text || ref.computedStyle[POSITION$4] !== 'absolute' && ref.computedStyle[DISPLAY$9] !== 'none') {
+              if (ref instanceof Text || ref.computedStyle[POSITION$4] !== 'absolute' && ref.computedStyle[DISPLAY$8] !== 'none') {
                 y = ref.y + ref.outerHeight;
                 hasFlowPrev = true;
                 break;
@@ -36126,7 +36076,7 @@
 
             if (!removeDom) {
               if (!hasFlowPrev) {
-                y += computedStyle[MARGIN_TOP$4] + computedStyle[BORDER_TOP_WIDTH$7] + computedStyle[PADDING_TOP$6];
+                y += computedStyle[MARGIN_TOP$2] + computedStyle[BORDER_TOP_WIDTH$6] + computedStyle[PADDING_TOP$4];
               }
 
               x += computedStyle[MARGIN_LEFT$6] + computedStyle[BORDER_LEFT_WIDTH$9] + computedStyle[PADDING_LEFT$8];
@@ -36214,7 +36164,7 @@
                   y: y,
                   w: width,
                   h: h
-                }, false, false);
+                }, false, false, true);
 
                 y += node.outerHeight;
 
@@ -36299,7 +36249,7 @@
 
                   var cs = target.computedStyle;
 
-                  if (cs[POSITION$4] !== 'absolute' && cs[DISPLAY$9] !== 'none') {
+                  if (cs[POSITION$4] !== 'absolute' && cs[DISPLAY$8] !== 'none') {
                     target.__offsetY(_diff, true, REPAINT$3);
                   }
 
@@ -36388,8 +36338,8 @@
 
               var _cs = isXom && _item.currentStyle;
 
-              var isInline = isXom && _cs[DISPLAY$9] === 'inline';
-              var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$9]) > -1;
+              var isInline = isXom && _cs[DISPLAY$8] === 'inline';
+              var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$8]) > -1;
               lastChild = _item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
               if (!isXom || isInline || isInlineBlock) {
@@ -36409,18 +36359,18 @@
 
 
               if (isXom && !isInline) {
-                var isNone = isXom && _cs[DISPLAY$9] === 'none';
+                var isNone = isXom && _cs[DISPLAY$8] === 'none';
                 var isEmptyBlock = void 0;
 
                 if (!isNone && _item.flowChildren && _item.flowChildren.length === 0) {
                   var _item$computedStyle = _item.computedStyle,
-                      marginTop = _item$computedStyle[MARGIN_TOP$4],
-                      marginBottom = _item$computedStyle[MARGIN_BOTTOM$4],
-                      paddingTop = _item$computedStyle[PADDING_TOP$6],
-                      paddingBottom = _item$computedStyle[PADDING_BOTTOM$6],
+                      marginTop = _item$computedStyle[MARGIN_TOP$2],
+                      marginBottom = _item$computedStyle[MARGIN_BOTTOM$2],
+                      paddingTop = _item$computedStyle[PADDING_TOP$4],
+                      paddingBottom = _item$computedStyle[PADDING_BOTTOM$4],
                       _height = _item$computedStyle[HEIGHT$8],
-                      borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$7],
-                      borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$7]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+                      borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$6],
+                      borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$6]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
 
                   if (paddingTop <= 0 && paddingBottom <= 0 && _height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
                     mergeMarginBottomList.push(marginBottom);
@@ -36432,8 +36382,8 @@
 
                 if (!isNone && !isEmptyBlock) {
                   var _item$computedStyle2 = _item.computedStyle,
-                      _marginTop = _item$computedStyle2[MARGIN_TOP$4],
-                      _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$4]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
+                      _marginTop = _item$computedStyle2[MARGIN_TOP$2],
+                      _marginBottom = _item$computedStyle2[MARGIN_BOTTOM$2]; // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
                   // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
                   if (mergeMarginBottomList.length) {
@@ -36473,7 +36423,7 @@
             var isContainer = parent === root || parent.isShadowRoot || cs[POSITION$4] === 'absolute' || cs[POSITION$4] === 'relative';
 
             if (height[1] === AUTO$8 && lastChild) {
-              var oldH = parent.height + parent.computedStyle[PADDING_TOP$6];
+              var oldH = parent.height + parent.computedStyle[PADDING_TOP$4];
               var nowH = lastChild.y + lastChild.outerHeight - parent.y;
 
               var _diff5 = nowH - oldH; // 调整next以及非固定PX的abs，再递归向上

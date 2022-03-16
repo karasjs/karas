@@ -30,13 +30,9 @@ const {
     BACKGROUND_COLOR,
     BOX_SHADOW,
     MIX_BLEND_MODE,
-    MARGIN_TOP,
     MARGIN_RIGHT,
-    MARGIN_BOTTOM,
     MARGIN_LEFT,
-    PADDING_TOP,
     PADDING_RIGHT,
-    PADDING_BOTTOM,
     PADDING_LEFT,
     FONT_SIZE,
     FLEX_BASIS,
@@ -55,7 +51,7 @@ const {
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const { isFunction } = util;
-const { computeReflow, calAbsFixedSize } = css;
+const { computeReflow } = css;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -600,39 +596,8 @@ class Img extends Dom {
     return w;
   }
 
-  __calAdjustWidth(widthLimit, containerWidth) {
-    computeReflow(this);
-    let { currentStyle, computedStyle, __loadImg } = this;
-    let {
-      [WIDTH]: width,
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_RIGHT]: marginRight,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_RIGHT]: paddingRight,
-    } = currentStyle;
-    let {
-      [DISPLAY]: display,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-    } = computedStyle;
-    let mbp = this.__calMp(marginLeft, containerWidth, false)
-      + this.__calMp(marginRight, containerWidth, false)
-      + this.__calMp(paddingLeft, containerWidth, false)
-      + this.__calMp(paddingRight, containerWidth, false)
-      + borderLeftWidth + borderRightWidth;
-    let w = 0;
-    if(display !== 'inline') {
-      w = calAbsFixedSize(width, containerWidth, this.root);
-    }
-    if(width[1] === AUTO) {
-      if(__loadImg.source) {
-        w = __loadImg.width;
-      }
-      else if(__loadImg.error) {
-        w = 32;
-      }
-    }
-    return w + mbp;
+  __calAdjustWidth() {
+    return this.outerWidth;
   }
 
   __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {

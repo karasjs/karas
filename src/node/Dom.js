@@ -701,7 +701,7 @@ class Dom extends Xom {
         y,
         w,
         h,
-      }, isAbs, true);
+      }, isAbs, true, true);
       min = max = b = this.height; // column的child，max和b总相等
     }
     // 直接item的mpb影响basis
@@ -791,7 +791,7 @@ class Dom extends Xom {
               lineBoxManager, // ib内部新生成会内部判断，这里不管统一传入
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
             if(item.__isIbFull) {
               x = data.x;
@@ -827,7 +827,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
               // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
               (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
@@ -848,7 +848,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, true);
               // 重新开头的ib和上面开头处一样逻辑
               if(item.__isIbFull) {
                 x = data.x;
@@ -892,7 +892,7 @@ class Dom extends Xom {
             y,
             w,
             h,
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, true);
           let isNone = item.computedStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
@@ -963,7 +963,7 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, true);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           if(isAbs) {
@@ -989,7 +989,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -1008,7 +1008,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             if(isAbs) {
@@ -1156,7 +1156,7 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, true);
           let hh = item.height;
           basisList.push(hh);
           maxList.push(hh);
@@ -1565,24 +1565,34 @@ class Dom extends Xom {
             w: main,
             h,
             w3: main, // w3假设固定宽度，忽略原始style中的设置
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, true);
         }
         else {
+          let {
+            [ALIGN_SELF]: alignSelf,
+            [WIDTH]: width,
+          } = item.currentStyle;
+          let needGenAr;
+          // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
+          if(!isAbs && !isColumn) {
+            if(width[1] !== AUTO || alignSelf === 'stretch') {
+              needGenAr = true;
+            }
+            else if(alignSelf === 'auto' && alignItems === 'stretch') {
+              needGenAr = true;
+            }
+          }
           item.__layout({
             x,
             y,
             w,
             h: main,
             h3: main, // 同w2
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, needGenAr);
           // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
-          let {
-            [ALIGN_SELF]: alignSelf,
-            [WIDTH]: width,
-          } = item.currentStyle;
           if(!isAbs && !isColumn && width[1] === AUTO
             && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-            let w3 = item.__calAdjustWidth(w, w);
+            let w3 = item.__calAdjustWidth();
             if(w3 < w) {
               item.__layout({
                 x,
@@ -1591,7 +1601,7 @@ class Dom extends Xom {
                 w3,
                 h: main,
                 h3: main, // 同w2
-              }, false, false);
+              }, false, false, true);
             }
           }
         }
@@ -1607,7 +1617,7 @@ class Dom extends Xom {
           lineBoxManager,
           lineClamp,
           lineClampCount,
-        }, isAbs, isDirectionRow);
+        }, isAbs, isDirectionRow, true);
       }
       if(isDirectionRow) {
         x += item.outerWidth;
@@ -1747,7 +1757,7 @@ class Dom extends Xom {
             } } = item;
             // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
             if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }), false);
+              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }), true);
             }
             let {
               [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -1974,7 +1984,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, true);
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
             isInlineBlock2 && (w[1] === AUTO) && (isIbFull = true);
@@ -2006,7 +2016,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
             (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
@@ -2028,7 +2038,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             // 重新开头的ib和上面开头处一样逻辑
             if(item.__isIbFull) {
               lineBoxManager.addItem(item);
@@ -2061,7 +2071,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn);
+          }, isAbs, isColumn, true);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // ib情况发生折行，且非定宽
@@ -2092,7 +2102,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
@@ -2113,7 +2123,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn);
+            }, isAbs, isColumn, true);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
@@ -2502,7 +2512,7 @@ class Dom extends Xom {
           y: y2,
           w: widthLimit,
           h: heightLimit,
-        }, true, false);
+        }, true, false, true);
         widthLimit = item.outerWidth;
       }
       item.__layout({
@@ -2512,7 +2522,7 @@ class Dom extends Xom {
         h: heightLimit,
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
-      }, false, false);
+      }, false, false, false);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }
@@ -2550,37 +2560,34 @@ class Dom extends Xom {
    * flex的column完成后非stretch也要计算每个child的，防止撑满或者过小情况
    * @private
    */
-  __calAdjustWidth(widthLimit, containerWidth) {
-    computeReflow(this);
+  __calAdjustWidth() {
     let { flowChildren, currentStyle, computedStyle } = this;
     let {
       [WIDTH]: width,
+    } = currentStyle;
+    let {
+      [DISPLAY]: display,
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_RIGHT]: marginRight,
       [PADDING_LEFT]: paddingLeft,
       [PADDING_RIGHT]: paddingRight,
-    } = currentStyle;
-    let {
-      [DISPLAY]: display,
       [FLEX_DIRECTION]: flexDirection,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
     } = computedStyle;
-    let mbp = this.__calMp(marginLeft, containerWidth, false)
-      + this.__calMp(marginRight, containerWidth, false)
-      + this.__calMp(paddingLeft, containerWidth, false)
-      + this.__calMp(paddingRight, containerWidth, false)
+    let mbp = marginLeft + marginRight
+      + paddingLeft + paddingRight
       + borderLeftWidth + borderRightWidth;
     // flex根据方向获取尺寸，row取和，column取每项最大值
     if(display === 'flex') {
       if(width[1] !== AUTO) {
-        return calAbsFixedSize(width, containerWidth, this.root) + mbp;
+        return this.outerWidth;
       }
       let count = 0;
       let isRow = ['column', 'columnReverse', 'column-reverse'].indexOf(flexDirection) === -1;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.__calAdjustWidth(widthLimit, containerWidth);
+        let w = item.__calAdjustWidth();
         if(isRow) {
           count += w;
         }
@@ -2592,12 +2599,12 @@ class Dom extends Xom {
     }
     else if(display === 'block') {
       if(width[1] !== AUTO) {
-        return calAbsFixedSize(width, containerWidth, this.root) + mbp;
+        return this.outerWidth;
       }
       let count = 0, max = 0;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.__calAdjustWidth(widthLimit, containerWidth);
+        let w = item.__calAdjustWidth();
         // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
         let isBlock = false;
         if(item instanceof Xom) {
@@ -2618,13 +2625,13 @@ class Dom extends Xom {
     else {
       if(['inlineBlock', 'inline-block'].indexOf(display) > -1) {
         if(width[1] !== AUTO) {
-          return calAbsFixedSize(width, containerWidth, this.root) + mbp;
+          return this.outerWidth;
         }
       }
       let count = 0;
       for(let i = 0, len = flowChildren.length; i < len; i++) {
         let item = flowChildren[i];
-        let w = item.__calAdjustWidth(widthLimit, containerWidth);
+        let w = item.__calAdjustWidth();
         count += w;
       }
       return count + mbp;

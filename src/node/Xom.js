@@ -396,7 +396,7 @@ class Xom extends Node {
   }
 
   // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局
-  __layout(data, isAbs, isColumn) {
+  __layout(data, isAbs, isColumn, genAr) {
     css.computeReflow(this);
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __config } = this;
@@ -557,8 +557,8 @@ class Xom extends Node {
       }
       computedStyle[WIDTH] = this.width;
       computedStyle[HEIGHT] = this.height;
-      // abs特殊自己执行
-      if(position !== 'absolute') {
+      // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
+      if(genAr) {
         this.__execAr();
       }
       this.__hasComputeReflow = false;

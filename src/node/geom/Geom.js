@@ -13,20 +13,13 @@ import gradient from '../../math/gradient';
 
 const {
   STYLE_KEY: {
-    DISPLAY,
-    MARGIN_TOP,
     MARGIN_RIGHT,
-    MARGIN_BOTTOM,
     MARGIN_LEFT,
-    PADDING_TOP,
     PADDING_RIGHT,
-    PADDING_BOTTOM,
     PADDING_LEFT,
     WIDTH,
     HEIGHT,
-    BORDER_TOP_WIDTH,
     BORDER_RIGHT_WIDTH,
-    BORDER_BOTTOM_WIDTH,
     BORDER_LEFT_WIDTH,
     FILL,
     STROKE,
@@ -54,7 +47,7 @@ const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { WEBGL } = mode;
-const { calAbsFixedSize, computeReflow } = css;
+const { computeReflow } = css;
 
 const REGISTER = {};
 
@@ -228,31 +221,8 @@ class Geom extends Xom {
     return w;
   }
 
-  __calAdjustWidth(widthLimit, containerWidth) {
-    computeReflow(this);
-    let { currentStyle, computedStyle } = this;
-    let {
-      [WIDTH]: width,
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_RIGHT]: marginRight,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_RIGHT]: paddingRight,
-    } = currentStyle;
-    let {
-      [DISPLAY]: display,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-    } = computedStyle;
-    let mbp = this.__calMp(marginLeft, containerWidth, false)
-      + this.__calMp(marginRight, containerWidth, false)
-      + this.__calMp(paddingLeft, containerWidth, false)
-      + this.__calMp(paddingRight, containerWidth, false)
-      + borderLeftWidth + borderRightWidth;
-    let w = 0;
-    if(display !== 'inline') {
-      w = calAbsFixedSize(width, containerWidth, this.root);
-    }
-    return w + mbp;
+  __calAdjustWidth() {
+    return this.outerWidth;
   }
 
   __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {

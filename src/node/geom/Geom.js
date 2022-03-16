@@ -255,7 +255,7 @@ class Geom extends Xom {
     return w + mbp;
   }
 
-  __calBasis(isDirectionRow, isAbs, isColumn, data) {
+  __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
     computeReflow(this);
     let b = 0;
     let min = 0;
@@ -318,7 +318,7 @@ class Geom extends Xom {
       }
     }
     // 直接item的mpb影响basis
-    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
   __layoutBlock(data, isVirtual) {

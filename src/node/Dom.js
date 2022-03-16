@@ -548,9 +548,10 @@ class Dom extends Xom {
    * @param isAbs
    * @param isColumn
    * @param data
+   * @param isDirectChild
    * @private
    */
-  __calBasis(isDirectionRow, isAbs, isColumn, data) {
+  __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
     computeReflow(this);
     let b = 0;
     let min = 0;
@@ -635,7 +636,7 @@ class Dom extends Xom {
         flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h });
+            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h }, false);
             if(isRow) {
               min += min2;
               max += max2;
@@ -662,7 +663,7 @@ class Dom extends Xom {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h, lineBoxManager });
+            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h, lineBoxManager }, false);
             let display = item.computedStyle[DISPLAY];
             // row看块级最大尺寸和连续行级最大尺寸的宽
             if(display === 'block' || display === 'flex') {
@@ -704,7 +705,7 @@ class Dom extends Xom {
       min = max = b = this.height; // column的child，max和b总相等
     }
     // 直接item的mpb影响basis
-    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
   __layoutNone() {
@@ -1117,7 +1118,7 @@ class Dom extends Xom {
     orderChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
-        let [b, min, max] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h });
+        let [b, min, max] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h }, true);
         // abs虚拟布局计算时纵向也是看横向宽度
         if(isAbs) {
           if(isDirectionRow) {

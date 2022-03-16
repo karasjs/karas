@@ -24563,12 +24563,13 @@
        * @param isAbs
        * @param isColumn
        * @param data
+       * @param isDirectChild
        * @private
        */
 
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, isAbs, isColumn, data) {
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
         computeReflow$1(this);
         var b = 0;
         var min = 0;
@@ -24647,7 +24648,7 @@
                   y: y,
                   w: w,
                   h: h
-                }),
+                }, false),
                     _item$__calBasis2 = _slicedToArray(_item$__calBasis, 3),
                     min2 = _item$__calBasis2[1],
                     max2 = _item$__calBasis2[2];
@@ -24680,7 +24681,7 @@
                   w: w,
                   h: h,
                   lineBoxManager: lineBoxManager
-                }),
+                }, false),
                     _item$__calBasis4 = _slicedToArray(_item$__calBasis3, 3),
                     min2 = _item$__calBasis4[1],
                     max2 = _item$__calBasis4[2];
@@ -24727,7 +24728,7 @@
         } // 直接item的mpb影响basis
 
 
-        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
       }
     }, {
       key: "__layoutNone",
@@ -25216,7 +25217,7 @@
               y: y,
               w: w,
               h: h
-            }),
+            }, true),
                 _item$__calBasis6 = _slicedToArray(_item$__calBasis5, 3),
                 b = _item$__calBasis6[0],
                 min = _item$__calBasis6[1],
@@ -27957,7 +27958,7 @@
       }
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, isAbs, isColumn, data) {
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
         computeReflow$2(this);
         var b = 0;
         var min = 0;
@@ -28037,7 +28038,7 @@
         } // 直接item的mpb影响basis
 
 
-        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
       }
     }, {
       key: "__loadAndRefresh",
@@ -28526,7 +28527,7 @@
       }
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, isAbs, isColumn, data) {
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
         computeReflow$3(this);
         var b = 0;
         var min = 0;
@@ -28578,7 +28579,7 @@
         } // 直接item的mpb影响basis
 
 
-        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+        return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
       }
     }, {
       key: "__layoutBlock",

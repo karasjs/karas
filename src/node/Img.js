@@ -635,7 +635,7 @@ class Img extends Dom {
     return w + mbp;
   }
 
-  __calBasis(isDirectionRow, isAbs, isColumn, data) {
+  __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
     computeReflow(this);
     let b = 0;
     let min = 0;
@@ -647,18 +647,6 @@ class Img extends Dom {
       [FLEX_BASIS]: flexBasis,
       [WIDTH]: width,
       [HEIGHT]: height,
-      // [MARGIN_LEFT]: marginLeft,
-      // [MARGIN_TOP]: marginTop,
-      // [MARGIN_RIGHT]: marginRight,
-      // [MARGIN_BOTTOM]: marginBottom,
-      // [PADDING_LEFT]: paddingLeft,
-      // [PADDING_TOP]: paddingTop,
-      // [PADDING_RIGHT]: paddingRight,
-      // [PADDING_BOTTOM]: paddingBottom,
-      // [BORDER_TOP_WIDTH]: borderTopWidth,
-      // [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      // [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-      // [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     let cross = isDirectionRow ? height : width;
@@ -743,7 +731,7 @@ class Img extends Dom {
       }
     }
     // 直接item的mpb影响basis
-    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
   __loadAndRefresh(loadImg, root, ctx, placeholder, computedStyle, width, height, cb) {

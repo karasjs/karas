@@ -24596,46 +24596,41 @@
 
         if (isFixed) {
           if (flexBasis[1] === PX$8) {
-            fixedSize = flexBasis[0];
+            b = fixedSize = flexBasis[0];
           } else if (flexBasis[1] === PERCENT$9) {
-            fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+            b = fixedSize = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
           } else if (flexBasis[1] === REM$8) {
-            fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE$9];
+            b = fixedSize = flexBasis[0] * this.root.computedStyle[FONT_SIZE$9];
           } else if (flexBasis[1] === VW$8) {
-            fixedSize = flexBasis[0] * this.root.width * 0.01;
+            b = fixedSize = flexBasis[0] * this.root.width * 0.01;
           } else if (flexBasis[1] === VH$8) {
-            fixedSize = flexBasis[0] * this.root.height * 0.01;
+            b = fixedSize = flexBasis[0] * this.root.height * 0.01;
           } else if (flexBasis[1] === VMAX$8) {
-            fixedSize = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
+            b = fixedSize = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
           } else if (flexBasis[1] === VMIN$8) {
-            fixedSize = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
+            b = fixedSize = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
         } // 已声明主轴尺寸的，当basis是auto时为main值
         else if (isAuto && [PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(main[1]) > -1) {
           if (main[1] === PX$8) {
-            fixedSize = main[0];
+            b = fixedSize = main[0];
           } else if (main[1] === PERCENT$9) {
-            fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
+            b = fixedSize = main[0] * 0.01 * (isDirectionRow ? w : h);
           } else if (main[1] === REM$8) {
-            fixedSize = main[0] * this.root.computedStyle[FONT_SIZE$9];
+            b = fixedSize = main[0] * this.root.computedStyle[FONT_SIZE$9];
           } else if (main[1] === VW$8) {
-            fixedSize = main[0] * this.root.width * 0.01;
+            b = fixedSize = main[0] * this.root.width * 0.01;
           } else if (main[1] === VH$8) {
-            fixedSize = main[0] * this.root.height * 0.01;
+            b = fixedSize = main[0] * this.root.height * 0.01;
           } else if (main[1] === VMAX$8) {
-            fixedSize = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
+            b = fixedSize = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
           } else if (main[1] === VMIN$8) {
-            fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
+            b = fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
         } // 非固定尺寸的basis为auto时降级为content
         else if (isAuto) {
           isContent = true;
-        } // 固定basis忽略min/max计算，包含auto降为main固定值的，仅限row
-        // if(fixedSize !== undefined && isDirectionRow) {
-        //   b = min = max = fixedSize;
-        //   return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
-        // }
-
+        }
 
         var countMin = 0,
             countMax = 0; // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex

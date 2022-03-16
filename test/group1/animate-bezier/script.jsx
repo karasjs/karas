@@ -13,7 +13,7 @@ let animation = t.animate([
     fontSize: 100,
   }
 ], {
-  duration: 200,
+  duration: 400,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
@@ -22,7 +22,7 @@ animation.on(karas.Event.FRAME, () => {
   if(n === 0) {
     input.value = t.getComputedStyle().fontSize;
   }
-  else if(n === 1) {
+  else if(n === 2) {
     input.value += '/' + (t.getComputedStyle().fontSize > 50);
   }
   n++;

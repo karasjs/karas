@@ -24591,6 +24591,7 @@
 
         var isAuto = flexBasis[1] === AUTO$6;
         var isFixed = [PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(flexBasis[1]) > -1;
+        var isContent = !isAuto && !isFixed;
         var fixedSize; // flex的item固定basis计算
 
         if (isFixed) {
@@ -24610,8 +24611,7 @@
             fixedSize = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
         } // 已声明主轴尺寸的，当basis是auto时为main值
-        else if ([PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(main[1]) > -1 && isAuto) {
-          // isContent = false;
+        else if (isAuto && [PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(main[1]) > -1) {
           if (main[1] === PX$8) {
             fixedSize = main[0];
           } else if (main[1] === PERCENT$9) {
@@ -24627,13 +24627,15 @@
           } else if (main[1] === VMIN$8) {
             fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
           }
+        } // 非固定尺寸的basis为auto时降级为content
+        else if (isAuto) {
+          isContent = true;
         } // 固定basis忽略min/max计算，包含auto降为main固定值的，仅限row
+        // if(fixedSize !== undefined && isDirectionRow) {
+        //   b = min = max = fixedSize;
+        //   return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+        // }
 
-
-        if (fixedSize !== undefined && isDirectionRow) {
-          b = min = max = fixedSize;
-          return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
-        }
 
         var countMin = 0,
             countMax = 0; // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
@@ -24707,10 +24709,16 @@
                 max = Math.max(max, countMax);
               }
             });
+          }
+
+          if (fixedSize) {
+            max = Math.max(fixedSize, max);
           } // row降级为内容时basis等同于max
 
 
-          b = max;
+          if (isContent) {
+            b = max;
+          }
         } // column的flex时，每个child做一次虚拟布局，获取到每个child的高度和宽度
         else {
           this.__layout({

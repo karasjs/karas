@@ -572,6 +572,7 @@ class Dom extends Xom {
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
     let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
+    let isContent = !isAuto && !isFixed;
     let fixedSize;
     // flex的item固定basis计算
     if(isFixed) {
@@ -598,8 +599,7 @@ class Dom extends Xom {
       }
     }
     // 已声明主轴尺寸的，当basis是auto时为main值
-    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1) && isAuto) {
-      // isContent = false;
+    else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
       if(main[1] === PX) {
         fixedSize = main[0];
       }
@@ -622,11 +622,15 @@ class Dom extends Xom {
         fixedSize = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
-    // 固定basis忽略min/max计算，包含auto降为main固定值的，仅限row
-    if(fixedSize !== undefined && isDirectionRow) {
-      b = min = max = fixedSize;
-      return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+    // 非固定尺寸的basis为auto时降级为content
+    else if(isAuto) {
+      isContent = true;
     }
+    // 固定basis忽略min/max计算，包含auto降为main固定值的，仅限row
+    // if(fixedSize !== undefined && isDirectionRow) {
+    //   b = min = max = fixedSize;
+    //   return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], true);
+    // }
     let countMin = 0, countMax = 0;
     // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
     if(isDirectionRow) {
@@ -686,8 +690,13 @@ class Dom extends Xom {
           }
         });
       }
+      if(fixedSize) {
+        max = Math.max(fixedSize, max);
+      }
       // row降级为内容时basis等同于max
-      b = max;
+      if(isContent) {
+        b = max;
+      }
     }
     // column的flex时，每个child做一次虚拟布局，获取到每个child的高度和宽度
     else {

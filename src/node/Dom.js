@@ -701,7 +701,7 @@ class Dom extends Xom {
         y,
         w,
         h,
-      }, isAbs, true, true);
+      }, isAbs, true);
       min = max = b = this.height; // column的child，max和b总相等
     }
     // 直接item的mpb影响basis
@@ -791,7 +791,7 @@ class Dom extends Xom {
               lineBoxManager, // ib内部新生成会内部判断，这里不管统一传入
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
             if(item.__isIbFull) {
               x = data.x;
@@ -827,7 +827,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-              }, isAbs, isColumn, true);
+              }, isAbs, isColumn);
               // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
               (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
               x = lineBoxManager.lastX;
@@ -848,7 +848,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-              }, isAbs, isColumn, true);
+              }, isAbs, isColumn);
               // 重新开头的ib和上面开头处一样逻辑
               if(item.__isIbFull) {
                 x = data.x;
@@ -892,7 +892,7 @@ class Dom extends Xom {
             y,
             w,
             h,
-          }, isAbs, isColumn, true);
+          }, isAbs, isColumn);
           let isNone = item.computedStyle[DISPLAY] === 'none';
           // 自身无内容
           let isEmptyBlock;
@@ -963,7 +963,7 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn, true);
+          }, isAbs, isColumn);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           if(isAbs) {
@@ -989,7 +989,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
@@ -1008,7 +1008,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             if(isAbs) {
@@ -1156,7 +1156,7 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn, true);
+          }, isAbs, isColumn);
           let hh = item.height;
           basisList.push(hh);
           maxList.push(hh);
@@ -1565,45 +1565,73 @@ class Dom extends Xom {
             w: main,
             h,
             w3: main, // w3假设固定宽度，忽略原始style中的设置
-          }, isAbs, isColumn, true);
+          }, isAbs, isColumn);
         }
         else {
           let {
             [ALIGN_SELF]: alignSelf,
             [WIDTH]: width,
           } = item.currentStyle;
-          let needGenAr;
           // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
           if(!isAbs && !isColumn) {
+            let needGenAr;
             if(width[1] !== AUTO || alignSelf === 'stretch') {
               needGenAr = true;
             }
             else if(alignSelf === 'auto' && alignItems === 'stretch') {
               needGenAr = true;
             }
-          }
-          item.__layout({
-            x,
-            y,
-            w,
-            h: main,
-            h3: main, // 同w2
-          }, isAbs, isColumn, needGenAr);
-          // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
-          if(!isAbs && !isColumn && width[1] === AUTO
-            && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-            let w3 = item.__calAdjustWidth(w);
-            if(w3 < w) {
+            if(needGenAr) {
               item.__layout({
                 x,
                 y,
                 w,
-                w3,
                 h: main,
                 h3: main, // 同w2
-              }, false, false, true);
+              }, isAbs, isColumn);
+            }
+            else {
+              item.__layout({
+                x,
+                y,
+                w,
+                h: main,
+                h3: main, // 同w2
+              }, true, isColumn);
+              item.__layout({
+                x,
+                y,
+                w,
+                w3: item.outerWidth,
+                h: main,
+                h3: main, // 同w2
+              }, isAbs, isColumn);
             }
           }
+          else {
+            item.__layout({
+              x,
+              y,
+              w,
+              h: main,
+              h3: main, // 同w2
+            }, isAbs, isColumn);
+          }
+          // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
+          // if(!isAbs && !isColumn && width[1] === AUTO
+          //   && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
+          //   let w3 = item.__calAdjustWidth(w);
+          //   if(w3 < w) {
+          //     item.__layout({
+          //       x,
+          //       y,
+          //       w,
+          //       w3,
+          //       h: main,
+          //       h3: main, // 同w2
+          //     }, false, false, true);
+          //   }
+          // }
         }
       }
       else {
@@ -1617,7 +1645,7 @@ class Dom extends Xom {
           lineBoxManager,
           lineClamp,
           lineClampCount,
-        }, isAbs, isDirectionRow, true);
+        }, isAbs, isDirectionRow);
       }
       if(isDirectionRow) {
         x += item.outerWidth;
@@ -1757,7 +1785,7 @@ class Dom extends Xom {
             } } = item;
             // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
             if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
-              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }), true);
+              item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
             }
             let {
               [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -1984,7 +2012,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn, true);
+          }, isAbs, isColumn);
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
             isInlineBlock2 && (w[1] === AUTO) && (isIbFull = true);
@@ -2016,7 +2044,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
             (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
@@ -2038,7 +2066,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             // 重新开头的ib和上面开头处一样逻辑
             if(item.__isIbFull) {
               lineBoxManager.addItem(item);
@@ -2071,7 +2099,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-          }, isAbs, isColumn, true);
+          }, isAbs, isColumn);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // ib情况发生折行，且非定宽
@@ -2102,7 +2130,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // 这里ib放得下一定是要么没换行要么固定宽度，所以无需判断isIbFull
@@ -2123,7 +2151,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-            }, isAbs, isColumn, true);
+            }, isAbs, isColumn);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
@@ -2512,7 +2540,7 @@ class Dom extends Xom {
           y: y2,
           w: widthLimit,
           h: heightLimit,
-        }, true, false, true);
+        }, true, false);
         widthLimit = item.outerWidth;
       }
       item.__layout({
@@ -2522,7 +2550,7 @@ class Dom extends Xom {
         h: heightLimit,
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
-      }, false, false, false);
+      }, false, false);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }
@@ -2553,7 +2581,7 @@ class Dom extends Xom {
         }
       }
     });
-    this.__execAr();
+    // this.__execAr();
   }
 
   /**

@@ -558,9 +558,9 @@ class Xom extends Node {
       computedStyle[WIDTH] = this.width;
       computedStyle[HEIGHT] = this.height;
       // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
-      // if(position !== 'absolute') {
+      if(position !== 'absolute') {
         this.__execAr();
-      // }
+      }
       this.__hasComputeReflow = false;
     }
     return lineClampCount;

@@ -20397,10 +20397,10 @@
 
           computedStyle[WIDTH$4] = this.width;
           computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
-          // if(position !== 'absolute') {
 
-          this.__execAr(); // }
-
+          if (position !== 'absolute') {
+            this.__execAr();
+          }
 
           this.__hasComputeReflow = false;
         }
@@ -26811,7 +26811,9 @@
               sr.__layoutAbs(sr, data);
             }
           }
-        }); // this.__execAr();
+        });
+
+        this.__execAr();
       }
       /**
        * flex的column完成后非stretch也要计算每个child的，防止撑满或者过小情况

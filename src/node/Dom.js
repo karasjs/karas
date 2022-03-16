@@ -1564,7 +1564,6 @@ class Dom extends Xom {
             x,
             y,
             w,
-            // w3,
             h: main,
             h3: main, // 同w2
           }, isAbs, isColumn);
@@ -1573,11 +1572,18 @@ class Dom extends Xom {
             [ALIGN_SELF]: alignSelf,
             [WIDTH]: width,
           } = item.currentStyle;
-          if(!isAbs && width[1] === AUTO
+          if(!isAbs && !isColumn && width[1] === AUTO
             && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
-            let wa = item.__calAdjustWidth(w, w);
-            if(wa < w) {
-              item.__resizeX(wa - w);
+            let w3 = item.__calAdjustWidth(w, w);
+            if(w3 < w) {
+              item.__layout({
+                x,
+                y,
+                w,
+                w3,
+                h: main,
+                h3: main, // 同w2
+              }, false, false);
             }
           }
         }

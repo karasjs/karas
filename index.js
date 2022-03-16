@@ -25721,7 +25721,6 @@
                 x: x,
                 y: y,
                 w: w,
-                // w3,
                 h: main,
                 h3: main // 同w2
 
@@ -25732,11 +25731,19 @@
                   alignSelf = _item$currentStyle[ALIGN_SELF$1],
                   width = _item$currentStyle[WIDTH$5];
 
-              if (!isAbs && width[1] === AUTO$6 && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
-                var wa = item.__calAdjustWidth(w, w);
+              if (!isAbs && !isColumn && width[1] === AUTO$6 && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
+                var w3 = item.__calAdjustWidth(w, w);
 
-                if (wa < w) {
-                  item.__resizeX(wa - w);
+                if (w3 < w) {
+                  item.__layout({
+                    x: x,
+                    y: y,
+                    w: w,
+                    w3: w3,
+                    h: main,
+                    h3: main // 同w2
+
+                  }, false, false);
                 }
               }
             }

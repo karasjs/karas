@@ -1241,7 +1241,12 @@ class Dom extends Xom {
       __flexLine.forEach(line => {
         let count = 0;
         line.forEach(item => {
-          count += item.outerWidth;
+          if(isDirectionRow) {
+            count += item.outerWidth;
+          }
+          else {
+            count = Math.max(count, item.outerWidth);
+          }
           // 文字发生换行无论row/column一定放不下需占满容器尺寸
           if(item instanceof Text && item.textWidth > w) {
             maxW = Math.max(maxW, w);

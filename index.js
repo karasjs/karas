@@ -27957,7 +27957,8 @@
       }
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, data) {
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data) {
+        computeReflow$2(this);
         var b = 0;
         var min = 0;
         var max = 0;
@@ -28525,7 +28526,8 @@
       }
     }, {
       key: "__calBasis",
-      value: function __calBasis(isDirectionRow, data) {
+      value: function __calBasis(isDirectionRow, isAbs, isColumn, data) {
+        computeReflow$3(this);
         var b = 0;
         var min = 0;
         var max = 0;

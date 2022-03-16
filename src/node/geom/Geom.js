@@ -255,7 +255,8 @@ class Geom extends Xom {
     return w + mbp;
   }
 
-  __calBasis(isDirectionRow, data) {
+  __calBasis(isDirectionRow, isAbs, isColumn, data) {
+    computeReflow(this);
     let b = 0;
     let min = 0;
     let max = 0;

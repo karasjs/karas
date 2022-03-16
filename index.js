@@ -24854,6 +24854,10 @@
                 if (isAbs) {
                   cw = item.outerWidth;
                   maxW = Math.max(maxW, cw);
+
+                  if (item.__isIbFull) {
+                    maxW = Math.max(maxW, w);
+                  }
                 }
               } else {
                 // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
@@ -24906,6 +24910,11 @@
 
                   if (isAbs) {
                     maxW = Math.max(maxW, cw);
+
+                    if (item.__isIbFull) {
+                      maxW = Math.max(maxW, w);
+                    }
+
                     cw = 0;
                   }
                 }
@@ -25066,7 +25075,9 @@
                 y = lineBoxManager.lastY;
 
                 if (isAbs) {
-                  maxW = Math.max(maxW, item.width);
+                  maxW = Math.max(maxW, item.width); // 此处发生换行撑满
+
+                  maxW = Math.max(maxW, w);
                   cw = 0;
                 }
               }
@@ -25198,7 +25209,6 @@
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
-        var maxX = 0;
         var isDirectionRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1; // 计算伸缩基数
 
         var growList = [];
@@ -25221,18 +25231,7 @@
                 _item$__calBasis6 = _slicedToArray(_item$__calBasis5, 3),
                 b = _item$__calBasis6[0],
                 min = _item$__calBasis6[1],
-                max = _item$__calBasis6[2]; // abs虚拟布局计算时纵向也是看横向宽度
-
-
-            if (isAbs) {
-              if (isDirectionRow) {
-                maxX += max;
-              } else {
-                maxX = Math.max(maxX, item.outerWidth);
-              }
-
-              return;
-            }
+                max = _item$__calBasis6[2];
 
             var flexGrow = _currentStyle[FLEX_GROW$1],
                 flexShrink = _currentStyle[FLEX_SHRINK$1];
@@ -25245,16 +25244,6 @@
             minList.push(min);
           } // 文本
           else {
-            if (isAbs) {
-              if (isDirectionRow) {
-                maxX += item.textWidth;
-              } else {
-                maxX = Math.max(maxX, item.textWidth);
-              }
-
-              return;
-            }
-
             growList.push(0);
             shrinkList.push(1);
 
@@ -25283,16 +25272,7 @@
               minList.push(hh);
             }
           }
-        }); // abs时，只需关注宽度即可，无需真正布局
-
-        if (isAbs) {
-          var _tw2 = this.__width = Math.min(maxX, w);
-
-          this.__ioSize(_tw2);
-
-          return;
-        }
-
+        });
         var containerSize = isDirectionRow ? w : h;
         var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
         /**
@@ -25378,12 +25358,39 @@
           y = Math.max(y, y1);
           maxCrossList.push(maxCross);
           offset += length;
-        });
+        }); // abs预布局只计算宽度无需对齐
+
+
+        if (isAbs) {
+          var maxW = 0;
+
+          __flexLine.forEach(function (line) {
+            var count = 0;
+            line.forEach(function (item) {
+              count += item.outerWidth; // 文字发生换行无论row/column一定放不下需占满容器尺寸
+
+              if (item instanceof Text && item.textWidth > w) {
+                maxW = Math.max(maxW, w);
+              }
+            });
+            maxW = Math.max(maxW, count);
+          });
+
+          var _tw2 = this.__width = maxW;
+
+          this.__ioSize(_tw2);
+
+          return;
+        }
 
         var tw = this.__width = w;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__ioSize(tw, th); // flexDirection当有reverse时交换每line的主轴序
+        this.__ioSize(tw, th);
+
+        if (isColumn) {
+          return;
+        } // flexDirection当有reverse时交换每line的主轴序
 
 
         if (flexDirection === 'row-reverse' || flexDirection === 'rowReverse') {
@@ -25451,7 +25458,7 @@
 
         var per;
 
-        if (!isAbs && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
+        if (length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
           var diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x); // 有空余时才进行对齐
 
           if (diff > 0) {
@@ -25519,7 +25526,7 @@
         } // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
 
 
-        if (!isAbs && !isColumn) {
+        if (!isColumn) {
           if (length > 1) {
             __flexLine.forEach(function (item, i) {
               var maxCross = maxCrossList[i];

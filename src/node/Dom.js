@@ -808,6 +808,9 @@ class Dom extends Xom {
             if(isAbs) {
               cw = item.outerWidth;
               maxW = Math.max(maxW, cw);
+              if(item.__isIbFull) {
+                maxW = Math.max(maxW, w);
+              }
             }
           }
           else {
@@ -860,6 +863,9 @@ class Dom extends Xom {
               }
               if(isAbs) {
                 maxW = Math.max(maxW, cw);
+                if(item.__isIbFull) {
+                  maxW = Math.max(maxW, w);
+                }
                 cw = 0;
               }
             }
@@ -1007,6 +1013,8 @@ class Dom extends Xom {
             y = lineBoxManager.lastY;
             if(isAbs) {
               maxW = Math.max(maxW, item.width);
+              // 此处发生换行撑满
+              maxW = Math.max(maxW, w);
               cw = 0;
             }
           }
@@ -1106,7 +1114,6 @@ class Dom extends Xom {
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
-    let maxX = 0;
     let isDirectionRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1;
     // 计算伸缩基数
     let growList = [];
@@ -1119,16 +1126,6 @@ class Dom extends Xom {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         let [b, min, max] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h }, true);
-        // abs虚拟布局计算时纵向也是看横向宽度
-        if(isAbs) {
-          if(isDirectionRow) {
-            maxX += max;
-          }
-          else {
-            maxX = Math.max(maxX, item.outerWidth);
-          }
-          return;
-        }
         let { [FLEX_GROW]: flexGrow, [FLEX_SHRINK]: flexShrink } = currentStyle;
         computedStyle[FLEX_BASIS] = b;
         growList.push(flexGrow);
@@ -1140,15 +1137,6 @@ class Dom extends Xom {
       }
       // 文本
       else {
-        if(isAbs) {
-          if(isDirectionRow) {
-            maxX += item.textWidth;
-          }
-          else {
-            maxX = Math.max(maxX, item.textWidth);
-          }
-          return;
-        }
         growList.push(0);
         shrinkList.push(1);
         if(isDirectionRow) {
@@ -1176,12 +1164,6 @@ class Dom extends Xom {
         }
       }
     });
-    // abs时，只需关注宽度即可，无需真正布局
-    if(isAbs) {
-      let tw = this.__width = Math.min(maxX, w);
-      this.__ioSize(tw);
-      return;
-    }
     let containerSize = isDirectionRow ? w : h;
     let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
     /**
@@ -1253,9 +1235,30 @@ class Dom extends Xom {
       maxCrossList.push(maxCross);
       offset += length;
     });
+    // abs预布局只计算宽度无需对齐
+    if(isAbs) {
+      let maxW = 0;
+      __flexLine.forEach(line => {
+        let count = 0;
+        line.forEach(item => {
+          count += item.outerWidth;
+          // 文字发生换行无论row/column一定放不下需占满容器尺寸
+          if(item instanceof Text && item.textWidth > w) {
+            maxW = Math.max(maxW, w);
+          }
+        });
+        maxW = Math.max(maxW, count);
+      });
+      let tw = this.__width = maxW;
+      this.__ioSize(tw);
+      return;
+    }
     let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
+    if(isColumn) {
+      return;
+    }
     // flexDirection当有reverse时交换每line的主轴序
     if(flexDirection === 'row-reverse' || flexDirection === 'rowReverse') {
       __flexLine.forEach(line => {
@@ -1309,7 +1312,7 @@ class Dom extends Xom {
     // 侧轴对齐分flexLine做，要考虑整体的alignContent的stretch和每行的alignItems的stretch
     // 先做整体的，得出交叉轴空白再均分给每一行做单行的，整体的只有1行忽略
     let per;
-    if(!isAbs && length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
+    if(length > 1 && (fixedHeight && isDirectionRow || !isDirectionRow)) {
       let diff = isDirectionRow ? th - (y - data.y) : tw - (x - data.x);
       // 有空余时才进行对齐
       if(diff > 0) {
@@ -1384,7 +1387,7 @@ class Dom extends Xom {
       }
     }
     // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
-    if(!isAbs && !isColumn) {
+    if(!isColumn) {
       if(length > 1) {
         __flexLine.forEach((item, i) => {
           let maxCross = maxCrossList[i];

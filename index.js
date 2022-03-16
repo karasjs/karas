@@ -25731,7 +25731,7 @@
                   alignSelf = _item$currentStyle[ALIGN_SELF$1],
                   width = _item$currentStyle[WIDTH$5];
 
-              if (!isAbs && !isColumn && width[1] === AUTO$6 && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
+              if (!isAbs && !isColumn && width[1] === AUTO$6 && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
                 var w3 = item.__calAdjustWidth(w, w);
 
                 if (w3 < w) {

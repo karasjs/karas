@@ -1573,7 +1573,7 @@ class Dom extends Xom {
             [WIDTH]: width,
           } = item.currentStyle;
           if(!isAbs && !isColumn && width[1] === AUTO
-            && (alignSelf !== 'stretch' || alignSelf !== 'auto' || alignItems !== 'stretch')) {
+            && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
             let w3 = item.__calAdjustWidth(w, w);
             if(w3 < w) {
               item.__layout({

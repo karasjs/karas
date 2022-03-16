@@ -221,10 +221,6 @@ class Geom extends Xom {
     return w;
   }
 
-  __calAdjustWidth() {
-    return this.outerWidth;
-  }
-
   __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
     computeReflow(this);
     let b = 0;

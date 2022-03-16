@@ -173,11 +173,6 @@ class Text extends Node {
     this.__textWidth = sum;
   }
 
-  __calAdjustWidth(widthLimit) {
-    let w = Math.min(widthLimit, this.textWidth);
-    return Math.max(w, this.charWidth);
-  }
-
   /**
    * text在virtual时和普通一样，无需特殊处理
    * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和

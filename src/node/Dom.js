@@ -1617,21 +1617,6 @@ class Dom extends Xom {
               h3: main, // 同w2
             }, isAbs, isColumn);
           }
-          // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
-          // if(!isAbs && !isColumn && width[1] === AUTO
-          //   && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-          //   let w3 = item.__calAdjustWidth(w);
-          //   if(w3 < w) {
-          //     item.__layout({
-          //       x,
-          //       y,
-          //       w,
-          //       w3,
-          //       h: main,
-          //       h3: main, // 同w2
-          //     }, false, false, true);
-          //   }
-          // }
         }
       }
       else {
@@ -2582,88 +2567,6 @@ class Dom extends Xom {
       }
     });
     this.__execAr();
-  }
-
-  /**
-   * flex的column完成后非stretch也要计算每个child的，防止撑满或者过小情况
-   * @private
-   */
-  __calAdjustWidth(widthLimit) {
-    let { flowChildren, currentStyle, computedStyle } = this;
-    let {
-      [WIDTH]: width,
-    } = currentStyle;
-    let {
-      [DISPLAY]: display,
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_RIGHT]: marginRight,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_RIGHT]: paddingRight,
-      [FLEX_DIRECTION]: flexDirection,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-    } = computedStyle;
-    let mbp = marginLeft + marginRight
-      + paddingLeft + paddingRight
-      + borderLeftWidth + borderRightWidth;
-    // flex根据方向获取尺寸，row取和，column取每项最大值
-    if(display === 'flex') {
-      if(width[1] !== AUTO) {
-        return this.outerWidth;
-      }
-      let count = 0;
-      let isRow = ['column', 'columnReverse', 'column-reverse'].indexOf(flexDirection) === -1;
-      for(let i = 0, len = flowChildren.length; i < len; i++) {
-        let item = flowChildren[i];
-        let w = item.__calAdjustWidth(widthLimit);
-        if(isRow) {
-          count += w;
-        }
-        else {
-          count = Math.max(count, w);
-        }
-      }
-      return count + mbp;
-    }
-    else if(display === 'block') {
-      if(width[1] !== AUTO) {
-        return this.outerWidth;
-      }
-      let count = 0, max = 0;
-      for(let i = 0, len = flowChildren.length; i < len; i++) {
-        let item = flowChildren[i];
-        let w = item.__calAdjustWidth(widthLimit);
-        // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
-        let isBlock = false;
-        if(item instanceof Xom) {
-          isBlock = ['block', 'flex'].indexOf(item.computedStyle[DISPLAY]) > -1;
-        }
-        if(isBlock) {
-          max = Math.max(count, max);
-          max = Math.max(w, max);
-        }
-        else {
-          count += w;
-          max = Math.max(count, max);
-        }
-      }
-      return max + mbp;
-    }
-    // inlineBlock
-    else {
-      if(['inlineBlock', 'inline-block'].indexOf(display) > -1) {
-        if(width[1] !== AUTO) {
-          return this.outerWidth;
-        }
-      }
-      let count = 0;
-      for(let i = 0, len = flowChildren.length; i < len; i++) {
-        let item = flowChildren[i];
-        let w = item.__calAdjustWidth(widthLimit);
-        count += w;
-      }
-      return count + mbp;
-    }
   }
 
   /**

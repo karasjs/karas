@@ -14001,12 +14001,6 @@
 
         this.__textWidth = sum;
       }
-    }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit) {
-        var w = Math.min(widthLimit, this.textWidth);
-        return Math.max(w, this.charWidth);
-      }
       /**
        * text在virtual时和普通一样，无需特殊处理
        * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和
@@ -25780,22 +25774,7 @@
                   h3: main // 同w2
 
                 }, isAbs, isColumn);
-              } // 特殊的地方，column子元素的宽度限制为，非stretch时各自自适应，否则还是满宽
-              // if(!isAbs && !isColumn && width[1] === AUTO
-              //   && alignSelf !== 'stretch' && (alignSelf !== 'auto' || alignItems !== 'stretch')) {
-              //   let w3 = item.__calAdjustWidth(w);
-              //   if(w3 < w) {
-              //     item.__layout({
-              //       x,
-              //       y,
-              //       w,
-              //       w3,
-              //       h: main,
-              //       h3: main, // 同w2
-              //     }, false, false, true);
-              //   }
-              // }
-
+              }
             }
           } else {
             var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
@@ -26814,100 +26793,6 @@
         });
 
         this.__execAr();
-      }
-      /**
-       * flex的column完成后非stretch也要计算每个child的，防止撑满或者过小情况
-       * @private
-       */
-
-    }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth(widthLimit) {
-        var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
-        var width = currentStyle[WIDTH$5];
-        var display = computedStyle[DISPLAY$5],
-            marginLeft = computedStyle[MARGIN_LEFT$3],
-            marginRight = computedStyle[MARGIN_RIGHT$3],
-            paddingLeft = computedStyle[PADDING_LEFT$4],
-            paddingRight = computedStyle[PADDING_RIGHT$3],
-            flexDirection = computedStyle[FLEX_DIRECTION$2],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4];
-        var mbp = marginLeft + marginRight + paddingLeft + paddingRight + borderLeftWidth + borderRightWidth; // flex根据方向获取尺寸，row取和，column取每项最大值
-
-        if (display === 'flex') {
-          if (width[1] !== AUTO$6) {
-            return this.outerWidth;
-          }
-
-          var count = 0;
-          var isRow = ['column', 'columnReverse', 'column-reverse'].indexOf(flexDirection) === -1;
-
-          for (var i = 0, len = flowChildren.length; i < len; i++) {
-            var item = flowChildren[i];
-
-            var w = item.__calAdjustWidth(widthLimit);
-
-            if (isRow) {
-              count += w;
-            } else {
-              count = Math.max(count, w);
-            }
-          }
-
-          return count + mbp;
-        } else if (display === 'block') {
-          if (width[1] !== AUTO$6) {
-            return this.outerWidth;
-          }
-
-          var _count = 0,
-              max = 0;
-
-          for (var _i5 = 0, _len = flowChildren.length; _i5 < _len; _i5++) {
-            var _item = flowChildren[_i5];
-
-            var _w = _item.__calAdjustWidth(widthLimit); // 块节点取之前inline累计以及当前尺寸的最大值，注意text特殊判断
-
-
-            var isBlock = false;
-
-            if (_item instanceof Xom$1) {
-              isBlock = ['block', 'flex'].indexOf(_item.computedStyle[DISPLAY$5]) > -1;
-            }
-
-            if (isBlock) {
-              max = Math.max(_count, max);
-              max = Math.max(_w, max);
-            } else {
-              _count += _w;
-              max = Math.max(_count, max);
-            }
-          }
-
-          return max + mbp;
-        } // inlineBlock
-        else {
-          if (['inlineBlock', 'inline-block'].indexOf(display) > -1) {
-            if (width[1] !== AUTO$6) {
-              return this.outerWidth;
-            }
-          }
-
-          var _count2 = 0;
-
-          for (var _i6 = 0, _len2 = flowChildren.length; _i6 < _len2; _i6++) {
-            var _item2 = flowChildren[_i6];
-
-            var _w2 = _item2.__calAdjustWidth(widthLimit);
-
-            _count2 += _w2;
-          }
-
-          return _count2 + mbp;
-        }
       }
       /**
        * 布局前检查继承的样式以及统计字体测量信息
@@ -27976,11 +27861,6 @@
         return w;
       }
     }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth() {
-        return this.outerWidth;
-      }
-    }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
         computeReflow$2(this);
@@ -28517,11 +28397,6 @@
         }
 
         return w;
-      }
-    }, {
-      key: "__calAdjustWidth",
-      value: function __calAdjustWidth() {
-        return this.outerWidth;
       }
     }, {
       key: "__calBasis",

@@ -12,14 +12,14 @@
 * img
 
 # 支持属性
-* width `仅canvas/svg`
+* width `仅canvas/svg/webgl`
   * 0 默认
   * px
-* height `仅canvas/svg`
+* height `仅canvas/svg/webgl`
   * 0 默认
   * px
 * placeholder `仅img，图片加载失败时占位图`
-  * null 默认
+  * undefined 默认
   * string
 
 # 支持CSS

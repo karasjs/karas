@@ -255,7 +255,31 @@ karas.parse(json, {
   },
 });
 ```
-特别的，对于`loadAndParse`方法，json直接子属性新增`fonts`和`components`来通过`url`定义远程加载的字体和自定义组件。字体的`data`为字体信息。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。同时组件还有`reload`申明强制加载，即便是发现已经注册过的同名组件。
+对于`parse`的json内容，可以为包含根节点（canvas之类）也可以不包含由外部提供，`render`可以包含`parse`的json。json还可以包含`fonts`信息，指明自定义字体名字和信息，但是没有加载逻辑，它要求字体必须是预先加载好且添加到页面中的（document.fonts.add）。
+```tsx
+karas.render(
+  <canvas>
+    {
+      karas.parse(json)
+    }
+  </canvas>,
+);
+
+karas.parse({
+  tagName: 'canvas',
+  children: [],
+  fonts: [{
+    fontFamily: 'xxx',
+    data: {
+      "emSquare": 2000,
+      "ascent": 1200,
+      "descent": 800,
+      "lineGap": 60
+    }
+  }]
+});
+```
+特别的，对于`loadAndParse`方法，json直接子属性新增`fonts`和`components`来通过`url`定义远程加载的字体和自定义组件。字体的`data`为字体信息。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。同时组件还有`reload`申明强制加载，即便是发现已经注册过的同名组件。其中`fonts`多支持了`url`字段，可以加载并注册自定义字体。整体是个异步，只有全部成功后才会渲染。根节点也必须是canvas等，不能是div。
 ```tsx
 karas.loadAndParse(
   {

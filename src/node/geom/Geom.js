@@ -13,20 +13,13 @@ import gradient from '../../math/gradient';
 
 const {
   STYLE_KEY: {
-    DISPLAY,
-    MARGIN_TOP,
     MARGIN_RIGHT,
-    MARGIN_BOTTOM,
     MARGIN_LEFT,
-    PADDING_TOP,
     PADDING_RIGHT,
-    PADDING_BOTTOM,
     PADDING_LEFT,
     WIDTH,
     HEIGHT,
-    BORDER_TOP_WIDTH,
     BORDER_RIGHT_WIDTH,
-    BORDER_BOTTOM_WIDTH,
     BORDER_LEFT_WIDTH,
     FILL,
     STROKE,
@@ -54,6 +47,7 @@ const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { WEBGL } = mode;
+const { computeReflow } = css;
 
 const REGISTER = {};
 
@@ -227,34 +221,18 @@ class Geom extends Xom {
     return w;
   }
 
-  __calMinMax(isDirectionRow, data) {
-    css.computeReflow(this);
-    return this.__calBasis(isDirectionRow, data);
-  }
-
-  __calBasis(isDirectionRow, data) {
+  __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
+    computeReflow(this);
     let b = 0;
     let min = 0;
     let max = 0;
-    let { currentStyle } = this;
+    let { currentStyle, computedStyle } = this;
     let { w, h } = data;
     // 计算需考虑style的属性
     let {
       [FLEX_BASIS]: flexBasis,
       [WIDTH]: width,
       [HEIGHT]: height,
-      [MARGIN_LEFT]: marginLeft,
-      [MARGIN_TOP]: marginTop,
-      [MARGIN_RIGHT]: marginRight,
-      [MARGIN_BOTTOM]: marginBottom,
-      [PADDING_LEFT]: paddingLeft,
-      [PADDING_TOP]: paddingTop,
-      [PADDING_RIGHT]: paddingRight,
-      [PADDING_BOTTOM]: paddingBottom,
-      [BORDER_TOP_WIDTH]: borderTopWidth,
-      [BORDER_RIGHT_WIDTH]: borderRightWidth,
-      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
-      [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content，只区分固定和其它
@@ -305,62 +283,16 @@ class Geom extends Xom {
         b = max = min = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
       }
     }
-    // border也得计算在内
-    if(isDirectionRow) {
-      let mp = this.__calMp(marginLeft, w)
-        + this.__calMp(marginRight, w)
-        + this.__calMp(paddingLeft, w)
-        + this.__calMp(paddingRight, w);
-      let w2 = borderLeftWidth[0] + borderRightWidth[0] + mp;
-      b += w2;
-      max += w2;
-      min += w2;
-    }
-    else {
-      let mp = this.__calMp(marginTop, w)
-        + this.__calMp(marginBottom, w)
-        + this.__calMp(paddingTop, w)
-        + this.__calMp(paddingBottom, w);
-      let h2 = borderTopWidth[0] + borderBottomWidth[0] + mp;
-      b += h2;
-      max += h2;
-      min += h2;
-    }
-    let columnCrossMax = 0;
-    if(width[1] === PX) {
-      columnCrossMax = width[0];
-    }
-    else if(width[1] === PERCENT) {
-      columnCrossMax = width[0] * 0.01 * (isDirectionRow ? w : h);
-    }
-    else if(width[1] === REM) {
-      columnCrossMax = width[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(width[1] === VW) {
-      columnCrossMax = width[0] * this.root.width * 0.01;
-    }
-    else if(width[1] === VH) {
-      columnCrossMax = width[0] * this.root.height * 0.01;
-    }
-    else if(width[1] === VMAX) {
-      columnCrossMax = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(width[1] === VMIN) {
-      columnCrossMax = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    columnCrossMax += this.__calMp(marginLeft, w)
-      + this.__calMp(marginRight, w)
-      + this.__calMp(paddingLeft, w)
-      + this.__calMp(paddingRight, w)
-      + borderLeftWidth[0] + borderRightWidth[0];
-    return [[b, min, max], [columnCrossMax]];
+    // 直接item的mpb影响basis
+    return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
   __layoutBlock(data, isVirtual) {
-    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data);
+    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data, false);
     this.__height = fixedHeight ? h : 0;
     if(isVirtual) {
-      this.__width = fixedWidth ? w : 0;
+      w = this.__width = fixedWidth ? w : 0;
+      this.__ioSize(w);
       return;
     }
     this.__width = w;
@@ -369,13 +301,13 @@ class Geom extends Xom {
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
-  __layoutFlex(data) {
+  __layoutFlex(data, isVirtual) {
     // 无children所以等同于block
-    this.__layoutBlock(data);
+    this.__layoutBlock(data, isVirtual);
   }
 
-  __layoutInline(data) {
-    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
+  __layoutInline(data, isVirtual, isInline) {
+    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, isInline);
     // 元素的width不能超过父元素w
     let tw = this.__width = fixedWidth ? w : x - data.x;
     let th = this.__height = fixedHeight ? h : y - data.y;

@@ -28,7 +28,6 @@ const {
     WIDTH,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
-    POSITION,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -575,14 +574,6 @@ class Text extends Node {
     this.__sx = this.__sx1 = minX + this.ox;
     this.__sy = this.__sy1;
     this.__width = maxX - minX;
-  }
-
-  __calMaxAndMinWidth() {
-    let n = 0;
-    this.charWidthList.forEach(item => {
-      n = Math.max(n, item);
-    });
-    return { max: this.textWidth, min: n };
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {

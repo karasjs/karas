@@ -55,7 +55,7 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
             // 高度百分比需发生变化的重新布局，需要在容器内
             if(height[1] === PERCENT) {
               if(isContainer) {
-                parent.__layoutAbs(parent, null, next);
+                parent.__layoutAbs(parent, parent.__layoutData, next);
               }
               else {
                 if(!container) {

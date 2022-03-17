@@ -6,7 +6,7 @@ let o = karas.render(
           "tagName": "div",
           "props": {
             "style": {
-              "background": "rgba(255,255,255,1)",
+              "background": "rgba(255,0,0,1)",
               "display": "flex",
               "flexDirection": "row",
             },

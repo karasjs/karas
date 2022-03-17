@@ -3,7 +3,6 @@ import Text from './Text';
 import Xom from './Xom';
 import Component from './Component';
 import Defs from './Defs';
-import mode from '../refresh/mode';
 import Geom from './geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
@@ -17,6 +16,7 @@ import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from '../animate/frame';
 import Controller from '../animate/Controller';
+import mode from '../refresh/mode';
 import change from '../refresh/change';
 import level from '../refresh/level';
 import struct from '../refresh/struct';
@@ -1379,7 +1379,7 @@ class Root extends Dom {
         y: 0,
         w: width,
         h: height,
-      });
+      }, false, false);
       // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
       this.__layoutAbs(this, {
         x: 0,
@@ -1480,7 +1480,7 @@ class Root extends Dom {
             }
             // 由setState引发的要检查是cp自身还是更上层，如果cp被abs包含，那么node是cp的父亲，否则node是cp的sr
             // 而这种情况下传cp或node都一样，所以最终统一传node
-            parent.__layoutAbs(container, null, node);
+            parent.__layoutAbs(container, parent.__layoutData, node);
             // 优先判断dom变更
             if(addDom) {
               let arr = parent.__modifyStruct(root, diffI);
@@ -1527,7 +1527,7 @@ class Root extends Dom {
               y,
               w: width,
               h,
-            });
+            }, false, false);
             y += node.outerHeight;
             if(component) {
               container = node;
@@ -1815,7 +1815,7 @@ class Root extends Dom {
               // 高度百分比需发生变化的重新布局，需要在容器内
               if(height[1] === PERCENT) {
                 if(isContainer) {
-                  parent.__layoutAbs(parent, null, item);
+                  parent.__layoutAbs(parent, parent.__layoutData, item);
                 }
                 // 不在容器内说明在上级，存入等结束后统一重新布局
                 else {
@@ -1869,7 +1869,7 @@ class Root extends Dom {
       });
       // merge过程中需要重新布局的abs
       inDirectAbsList.forEach(arr => {
-        arr[0].__layoutAbs(arr[1], null, arr[2]);
+        arr[0].__layoutAbs(arr[1], arr[0].__layoutData, arr[2]);
       });
 
       // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了

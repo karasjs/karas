@@ -2566,6 +2566,7 @@ class Dom extends Xom {
         }
       }
     });
+    // 根节点自己特殊执行，不在layout统一
     this.__execAr();
   }
 

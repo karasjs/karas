@@ -20390,7 +20390,7 @@
           }
 
           computedStyle[WIDTH$4] = this.width;
-          computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
+          computedStyle[HEIGHT$3] = this.height; // abs为parse的根节点时特殊自己执行，前提是真布局
 
           if (position !== 'absolute') {
             this.__execAr();
@@ -26790,7 +26790,7 @@
               sr.__layoutAbs(sr, data);
             }
           }
-        });
+        }); // 根节点自己特殊执行，不在layout统一
 
         this.__execAr();
       }

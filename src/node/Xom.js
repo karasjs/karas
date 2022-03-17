@@ -557,7 +557,7 @@ class Xom extends Node {
       }
       computedStyle[WIDTH] = this.width;
       computedStyle[HEIGHT] = this.height;
-      // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
+      // abs为parse的根节点时特殊自己执行，前提是真布局
       if(position !== 'absolute') {
         this.__execAr();
       }

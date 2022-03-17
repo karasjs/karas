@@ -54,8 +54,9 @@ class Text extends Node {
     this.__content = util.isNil(content) ? '' : content.toString();
     this.__textBoxes = [];
     this.__charWidthList = [];
-    this.__charWidth = 0;
-    this.__textWidth = 0;
+    this.__charWidth = 0; // 最小字符宽度（单个）
+    this.__textWidth = 0; // 整体宽度
+    this.__bp = null; // block父节点
   }
 
   /**
@@ -218,14 +219,10 @@ class Text extends Node {
     let needReduce = !!padding;
     let lastChar;
     let ew = textCache.charWidth[this.__pKey][ELLIPSIS];
-    // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+    // block的overflow:hidden和textOverflow:clip/ellipsis一起才生效，inline要看最近非inline父元素
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
-      let p = bp.domParent;
-      if(p.computedStyle[DISPLAY] === 'flex') {
-        break;
-      }
-      bp = p;
+      bp = bp.domParent;
     }
     this.__bp = bp;
     let lineCount = 0;

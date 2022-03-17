@@ -262,6 +262,7 @@ class Xom extends Node {
     config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
+    this.__parentLineBox = null; // inline时指向
   }
 
   __structure(i, lv, j) {

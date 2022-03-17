@@ -13861,8 +13861,12 @@
       _this.__content = util.isNil(content) ? '' : content.toString();
       _this.__textBoxes = [];
       _this.__charWidthList = [];
-      _this.__charWidth = 0;
-      _this.__textWidth = 0;
+      _this.__charWidth = 0; // 最小字符宽度（单个）
+
+      _this.__textWidth = 0; // 整体宽度
+
+      _this.__bp = null; // block父节点
+
       return _this;
     }
     /**
@@ -14068,18 +14072,12 @@
         var padding = o$1.info[__ff].padding;
         var needReduce = !!padding;
         var lastChar;
-        var ew = textCache.charWidth[this.__pKey][ELLIPSIS]; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+        var ew = textCache.charWidth[this.__pKey][ELLIPSIS]; // block的overflow:hidden和textOverflow:clip/ellipsis一起才生效，inline要看最近非inline父元素
 
         var bp = this.domParent;
 
         while (bp.computedStyle[DISPLAY$1] === 'inline') {
-          var p = bp.domParent;
-
-          if (p.computedStyle[DISPLAY$1] === 'flex') {
-            break;
-          }
-
-          bp = p;
+          bp = bp.domParent;
         }
 
         this.__bp = bp;
@@ -14144,12 +14142,12 @@
 
               if (_char2 === lastChar && padding.hasOwnProperty(_char2) && padding[_char2]) {
                 var hasCache = void 0,
-                    _p = textCache.padding[__key] = textCache.padding[__key] || {};
+                    p = textCache.padding[__key] = textCache.padding[__key] || {};
 
                 if (textCache.padding.hasOwnProperty(__key)) {
-                  if (_p.hasOwnProperty(_char2)) {
+                  if (p.hasOwnProperty(_char2)) {
                     hasCache = true;
-                    count -= _p[_char2];
+                    count -= p[_char2];
                   }
                 }
 
@@ -14168,7 +14166,7 @@
                   }
 
                   count -= n;
-                  _p[_char2] = n;
+                  p[_char2] = n;
                 }
               }
 
@@ -20084,6 +20082,8 @@
 
       _this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
 
+      _this.__parentLineBox = null; // inline时指向
+
       return _this;
     }
 
@@ -20390,7 +20390,7 @@
           }
 
           computedStyle[WIDTH$4] = this.width;
-          computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
+          computedStyle[HEIGHT$3] = this.height; // abs为parse的根节点时特殊自己执行，前提是真布局
 
           if (position !== 'absolute') {
             this.__execAr();
@@ -26790,7 +26790,7 @@
               sr.__layoutAbs(sr, data);
             }
           }
-        });
+        }); // 根节点自己特殊执行，不在layout统一
 
         this.__execAr();
       }
@@ -36532,7 +36532,7 @@
 
           reflow.clearUniqueReflowId(reflowHash);
         }
-      } // 特殊覆盖方法，不需要super()计算自己，因为放在每次checkRoot()做过了
+      } // 特殊覆盖方法，不需要super()计算自己，因为无需第3个参数cb且自己是root
 
     }, {
       key: "__computeMeasure",

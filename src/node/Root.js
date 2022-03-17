@@ -1905,7 +1905,7 @@ class Root extends Dom {
     }
   }
 
-  // 特殊覆盖方法，不需要super()计算自己，因为放在每次checkRoot()做过了
+  // 特殊覆盖方法，不需要super()计算自己，因为无需第3个参数cb且自己是root
   __computeMeasure(renderMode, ctx) {
     css.computeMeasure(this, true);
     this.children.forEach(item => {

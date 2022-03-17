@@ -262,6 +262,7 @@ class Xom extends Node {
     config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!this.props.cacheAsBitmap;
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
+    this.__parentLineBox = null; // inline时指向
   }
 
   __structure(i, lv, j) {
@@ -557,7 +558,7 @@ class Xom extends Node {
       }
       computedStyle[WIDTH] = this.width;
       computedStyle[HEIGHT] = this.height;
-      // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
+      // abs为parse的根节点时特殊自己执行，前提是真布局
       if(position !== 'absolute') {
         this.__execAr();
       }

@@ -1,5 +1,5 @@
 let o = karas.render(
-  <canvas width="360" height="360" cache={true}>
+  <canvas width="360" height="360">
     {
       karas.parse(
         {

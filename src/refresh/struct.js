@@ -327,6 +327,11 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       } = __structs[i];
       // 排除Text
       if(node instanceof Text) {
+        let bbox = node.bbox;
+        if(!isE(parentMatrix)) {
+          bbox = transformBbox(bbox, parentMatrix, 0, 0);
+        }
+        mergeBbox(bboxTotal, bbox, 0, 0);
         continue;
       }
       let __config = node.__config;

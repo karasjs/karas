@@ -31166,6 +31166,13 @@
             _hasMask = _structs$i[STRUCT_HAS_MASK$1]; // 排除Text
 
         if (_node instanceof Text) {
+          var _bbox = _node.bbox;
+
+          if (!isE$3(parentMatrix)) {
+            _bbox = transformBbox$1(_bbox, parentMatrix, 0, 0);
+          }
+
+          mergeBbox(bboxTotal, _bbox, 0, 0);
           continue;
         }
 

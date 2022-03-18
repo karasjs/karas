@@ -1,5 +1,5 @@
 let o = karas.render(
-  <canvas width="360" height="360" cache={true}>
+  <canvas width="360" height="360">
     <div cacheAsBitmap={1} ref="div"
          style={{
            position: 'absolute',

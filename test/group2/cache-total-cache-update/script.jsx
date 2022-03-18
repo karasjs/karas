@@ -1,5 +1,5 @@
 let o = karas.render(
-  <canvas width="360" height="360" cache={true}>
+  <canvas width="360" height="360">
     <div cacheAsBitmap={1} style={{position:'absolute',background:'#F00'}} ref="div">
       <span style={{display:'inlineBlock'}} ref="span">123</span>
     </div>

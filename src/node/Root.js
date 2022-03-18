@@ -785,15 +785,19 @@ class Root extends Dom {
     this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
-      let css = window.getComputedStyle(dom, null);
+      let domCss = window.getComputedStyle(dom, null);
       if(!this.width) {
-        this.__width = parseFloat(css.getPropertyValue('width')) || 0;
+        this.__width = parseFloat(domCss.getPropertyValue('width')) || 0;
         dom.setAttribute('width', this.width);
       }
       if(!this.height) {
-        this.__height = parseFloat(css.getPropertyValue('height')) || 0;
+        this.__height = parseFloat(domCss.getPropertyValue('height')) || 0;
         dom.setAttribute('height', this.height);
       }
+    }
+    // 最终无宽高给出警告
+    if(!this.width || !this.height) {
+      inject.warn('Karas render target with a width or height of 0.')
     }
     let params = Object.assign({}, ca, this.props.contextAttributes);
     // 只有canvas有ctx，svg用真实dom

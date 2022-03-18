@@ -13855,8 +13855,12 @@ var Text = /*#__PURE__*/function (_Node) {
     _this.__content = util.isNil(content) ? '' : content.toString();
     _this.__textBoxes = [];
     _this.__charWidthList = [];
-    _this.__charWidth = 0;
-    _this.__textWidth = 0;
+    _this.__charWidth = 0; // 最小字符宽度（单个）
+
+    _this.__textWidth = 0; // 整体宽度
+
+    _this.__bp = null; // block父节点
+
     return _this;
   }
   /**
@@ -14062,18 +14066,12 @@ var Text = /*#__PURE__*/function (_Node) {
       var padding = o$1.info[__ff].padding;
       var needReduce = !!padding;
       var lastChar;
-      var ew = textCache.charWidth[this.__pKey][ELLIPSIS]; // block的overflow:hidden和textOverflow:clip/ellipsis才生效，inline要看最近非inline父元素
+      var ew = textCache.charWidth[this.__pKey][ELLIPSIS]; // block的overflow:hidden和textOverflow:clip/ellipsis一起才生效，inline要看最近非inline父元素
 
       var bp = this.domParent;
 
       while (bp.computedStyle[DISPLAY$1] === 'inline') {
-        var p = bp.domParent;
-
-        if (p.computedStyle[DISPLAY$1] === 'flex') {
-          break;
-        }
-
-        bp = p;
+        bp = bp.domParent;
       }
 
       this.__bp = bp;
@@ -14138,12 +14136,12 @@ var Text = /*#__PURE__*/function (_Node) {
 
             if (_char2 === lastChar && padding.hasOwnProperty(_char2) && padding[_char2]) {
               var hasCache = void 0,
-                  _p = textCache.padding[__key] = textCache.padding[__key] || {};
+                  p = textCache.padding[__key] = textCache.padding[__key] || {};
 
               if (textCache.padding.hasOwnProperty(__key)) {
-                if (_p.hasOwnProperty(_char2)) {
+                if (p.hasOwnProperty(_char2)) {
                   hasCache = true;
-                  count -= _p[_char2];
+                  count -= p[_char2];
                 }
               }
 
@@ -14162,7 +14160,7 @@ var Text = /*#__PURE__*/function (_Node) {
                 }
 
                 count -= n;
-                _p[_char2] = n;
+                p[_char2] = n;
               }
             }
 
@@ -20078,6 +20076,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
     _this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
 
+    _this.__parentLineBox = null; // inline时指向
+
     return _this;
   }
 
@@ -20384,7 +20384,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         }
 
         computedStyle[WIDTH$4] = this.width;
-        computedStyle[HEIGHT$3] = this.height; // abs特殊自己执行，column的child判断拉伸可能自己执行，前提都是真布局
+        computedStyle[HEIGHT$3] = this.height; // abs为parse的根节点时特殊自己执行，前提是真布局
 
         if (position !== 'absolute') {
           this.__execAr();
@@ -26784,7 +26784,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             sr.__layoutAbs(sr, data);
           }
         }
-      });
+      }); // 根节点自己特殊执行，不在layout统一
 
       this.__execAr();
     }
@@ -30623,7 +30623,11 @@ function applyOffscreen(ctx, list, width, height) {
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+      if (width && height) {
+        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      }
+
       ctx.draw && ctx.draw(true);
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
@@ -30637,7 +30641,11 @@ function applyOffscreen(ctx, list, width, height) {
       if (ctx.filter) {
         var apply = inject.getCacheCanvas(width, height, null, 'filter');
         apply.ctx.filter = painter.canvasFilter(filter);
-        apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         apply.ctx.filter = 'none';
         apply.draw();
         _target.ctx.globalAlpha = 1;
@@ -30646,7 +30654,9 @@ function applyOffscreen(ctx, list, width, height) {
 
         _target.ctx.clearRect(0, 0, width, height);
 
-        _target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+        if (width && height) {
+          _target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
 
         _target.draw();
 
@@ -30660,7 +30670,11 @@ function applyOffscreen(ctx, list, width, height) {
       ctx = _origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+      if (width && height) {
+        ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+      }
+
       ctx.draw && ctx.draw(true);
 
       _target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30682,7 +30696,11 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'source-out';
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         mask.draw();
         ctx.globalCompositeOperation = 'source-over';
         offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30692,7 +30710,11 @@ function applyOffscreen(ctx, list, width, height) {
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         ctx.draw && ctx.draw(true);
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
@@ -30705,7 +30727,11 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'destination-in';
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         ctx.globalCompositeOperation = 'source-over';
 
         _target2.draw();
@@ -30717,7 +30743,11 @@ function applyOffscreen(ctx, list, width, height) {
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         ctx.draw && ctx.draw(true);
 
         _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30737,7 +30767,11 @@ function applyOffscreen(ctx, list, width, height) {
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
+
+      if (width && height) {
+        ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
+      }
+
       ctx.globalCompositeOperation = 'source-over';
       ctx.draw && ctx.draw(true);
       _target3.ctx.globalAlpha = 1;
@@ -31160,6 +31194,13 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
           _hasMask = _structs$i[STRUCT_HAS_MASK$1]; // 排除Text
 
       if (_node instanceof Text) {
+        var _bbox = _node.bbox;
+
+        if (!isE$3(parentMatrix)) {
+          _bbox = transformBbox$1(_bbox, parentMatrix, 0, 0);
+        }
+
+        mergeBbox(bboxTotal, _bbox, 0, 0);
         continue;
       }
 
@@ -35180,17 +35221,22 @@ var Root = /*#__PURE__*/function (_Dom) {
       this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
       if (!this.width || !this.height) {
-        var _css = window.getComputedStyle(dom, null);
+        var domCss = window.getComputedStyle(dom, null);
 
         if (!this.width) {
-          this.__width = parseFloat(_css.getPropertyValue('width')) || 0;
+          this.__width = parseFloat(domCss.getPropertyValue('width')) || 0;
           dom.setAttribute('width', this.width);
         }
 
         if (!this.height) {
-          this.__height = parseFloat(_css.getPropertyValue('height')) || 0;
+          this.__height = parseFloat(domCss.getPropertyValue('height')) || 0;
           dom.setAttribute('height', this.height);
         }
+      } // 最终无宽高给出警告
+
+
+      if (!this.width || !this.height) {
+        inject.warn('Karas render target with a width or height of 0.');
       }
 
       var params = Object.assign({}, ca, this.props.contextAttributes); // 只有canvas有ctx，svg用真实dom
@@ -36526,7 +36572,7 @@ var Root = /*#__PURE__*/function (_Dom) {
 
         reflow.clearUniqueReflowId(reflowHash);
       }
-    } // 特殊覆盖方法，不需要super()计算自己，因为放在每次checkRoot()做过了
+    } // 特殊覆盖方法，不需要super()计算自己，因为无需第3个参数cb且自己是root
 
   }, {
     key: "__computeMeasure",
@@ -39897,7 +39943,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.70.1";
+var version = "0.70.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

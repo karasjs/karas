@@ -42,7 +42,9 @@ function applyOffscreen(ctx, list, width, height) {
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      if(width && height) {
+        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      }
       ctx.draw && ctx.draw(true);
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.clearRect(0, 0, width, height);
@@ -55,13 +57,17 @@ function applyOffscreen(ctx, list, width, height) {
       if(ctx.filter) {
         let apply = inject.getCacheCanvas(width, height, null, 'filter');
         apply.ctx.filter = painter.canvasFilter(filter);
-        apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+        if(width && height) {
+          apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
         apply.ctx.filter = 'none';
         apply.draw();
         target.ctx.globalAlpha = 1;
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
-        target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+        if(width && height) {
+          target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
         target.draw();
         apply.ctx.setTransform(1, 0, 0, 1, 0, 0);
         apply.ctx.clearRect(0, 0, width, height);
@@ -72,7 +78,9 @@ function applyOffscreen(ctx, list, width, height) {
       ctx = origin;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      if(width && height) {
+        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      }
       ctx.draw && ctx.draw(true);
       target.ctx.setTransform(1, 0, 0, 1, 0, 0);
       target.ctx.globalAlpha = 1;
@@ -88,7 +96,9 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'source-out';
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+        if(width && height) {
+          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
         mask.draw();
         ctx.globalCompositeOperation = 'source-over';
         offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -98,7 +108,9 @@ function applyOffscreen(ctx, list, width, height) {
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+        if(width && height) {
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
         ctx.draw && ctx.draw(true);
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
         mask.ctx.clearRect(0, 0, width, height);
@@ -112,7 +124,9 @@ function applyOffscreen(ctx, list, width, height) {
         ctx.globalCompositeOperation = 'destination-in';
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+        if(width && height) {
+          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
         ctx.globalCompositeOperation = 'source-over';
         target.draw();
         mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -122,7 +136,9 @@ function applyOffscreen(ctx, list, width, height) {
         ctx = offscreen.ctx;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+        if(width && height) {
+          ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
         ctx.draw && ctx.draw(true);
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
@@ -137,7 +153,9 @@ function applyOffscreen(ctx, list, width, height) {
       target.draw();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
-      ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      if(width && height) {
+        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+      }
       ctx.globalCompositeOperation = 'source-over';
       ctx.draw && ctx.draw(true);
       target.ctx.globalAlpha = 1;

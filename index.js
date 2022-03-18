@@ -30629,7 +30629,11 @@
         ctx = origin;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         ctx.draw && ctx.draw(true);
         target.ctx.setTransform(1, 0, 0, 1, 0, 0);
         target.ctx.clearRect(0, 0, width, height);
@@ -30643,7 +30647,11 @@
         if (ctx.filter) {
           var apply = inject.getCacheCanvas(width, height, null, 'filter');
           apply.ctx.filter = painter.canvasFilter(filter);
-          apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+          if (width && height) {
+            apply.ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+          }
+
           apply.ctx.filter = 'none';
           apply.draw();
           _target.ctx.globalAlpha = 1;
@@ -30652,7 +30660,9 @@
 
           _target.ctx.clearRect(0, 0, width, height);
 
-          _target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+          if (width && height) {
+            _target.ctx.drawImage(apply.canvas, 0, 0, width, height, 0, 0, width, height);
+          }
 
           _target.draw();
 
@@ -30666,7 +30676,11 @@
         ctx = _origin;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(_target.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         ctx.draw && ctx.draw(true);
 
         _target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30688,7 +30702,11 @@
           ctx.globalCompositeOperation = 'source-out';
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+
+          if (width && height) {
+            ctx.drawImage(offscreen.target.canvas, 0, 0, width, height, 0, 0, width, height);
+          }
+
           mask.draw();
           ctx.globalCompositeOperation = 'source-over';
           offscreen.target.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30698,7 +30716,11 @@
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+
+          if (width && height) {
+            ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+          }
+
           ctx.draw && ctx.draw(true);
           mask.ctx.setTransform(1, 0, 0, 1, 0, 0);
           mask.ctx.clearRect(0, 0, width, height);
@@ -30711,7 +30733,11 @@
           ctx.globalCompositeOperation = 'destination-in';
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+
+          if (width && height) {
+            ctx.drawImage(mask.canvas, 0, 0, width, height, 0, 0, width, height);
+          }
+
           ctx.globalCompositeOperation = 'source-over';
 
           _target2.draw();
@@ -30723,7 +30749,11 @@
           ctx = offscreen.ctx;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
+
+          if (width && height) {
+            ctx.drawImage(_target2.canvas, 0, 0, width, height, 0, 0, width, height);
+          }
+
           ctx.draw && ctx.draw(true);
 
           _target2.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -30743,7 +30773,11 @@
 
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
+
+        if (width && height) {
+          ctx.drawImage(_target3.canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+
         ctx.globalCompositeOperation = 'source-over';
         ctx.draw && ctx.draw(true);
         _target3.ctx.globalAlpha = 1;
@@ -35193,17 +35227,22 @@
         this.__defs = this.dom.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
-          var _css = window.getComputedStyle(dom, null);
+          var domCss = window.getComputedStyle(dom, null);
 
           if (!this.width) {
-            this.__width = parseFloat(_css.getPropertyValue('width')) || 0;
+            this.__width = parseFloat(domCss.getPropertyValue('width')) || 0;
             dom.setAttribute('width', this.width);
           }
 
           if (!this.height) {
-            this.__height = parseFloat(_css.getPropertyValue('height')) || 0;
+            this.__height = parseFloat(domCss.getPropertyValue('height')) || 0;
             dom.setAttribute('height', this.height);
           }
+        } // 最终无宽高给出警告
+
+
+        if (!this.width || !this.height) {
+          inject.warn('Karas render target with a width or height of 0.');
         }
 
         var params = Object.assign({}, ca, this.props.contextAttributes); // 只有canvas有ctx，svg用真实dom
@@ -39910,7 +39949,7 @@
     Cache: Cache
   };
 
-  var version = "0.70.1";
+  var version = "0.70.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

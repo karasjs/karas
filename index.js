@@ -24694,6 +24694,7 @@
     }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w, total) {
+        css.computeReflow(this);
         var flowChildren = this.flowChildren,
             _this$currentStyle = this.currentStyle,
             display = _this$currentStyle[DISPLAY$5],

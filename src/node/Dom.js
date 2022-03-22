@@ -312,6 +312,7 @@ class Dom extends Xom {
    * @private
    */
   __tryLayInline(w, total) {
+    css.computeReflow(this);
     let { flowChildren, currentStyle: {
       [DISPLAY]: display,
       [WIDTH]: width,

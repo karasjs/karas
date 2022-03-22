@@ -840,14 +840,14 @@ class Root extends Dom {
     // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
     if(isFirst) {
       this.__checkRoot(renderMode, width, height);
-      this.__computeMeasure(renderMode, ctx);
+      // this.__computeMeasure(renderMode, ctx);
     }
     // 非首次刷新如果没有更新则无需继续
     else if(!this.__checkUpdate(renderMode, ctx, width, height)) {
       return;
     }
     // 获取所有字体和大小测量，仅svg需要，canvas直接做
-    inject.measureText();
+    // inject.measureText();
     this.__checkReflow(width, height);
     if(renderMode === mode.CANVAS && !this.props.noRender) {
       this.__clear(ctx, renderMode);
@@ -1299,11 +1299,11 @@ class Root extends Dom {
         }
       }
       // 自顶向下查找inherit的，利用已有的方法+回调，当递归包含重复时标记防止重复
-      last.__computeMeasure(renderMode, ctx, function(target) {
-        if(target.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-          measureHash[target.__config[NODE_UNIQUE_UPDATE_ID]] = true;
-        }
-      });
+      // last.__computeMeasure(renderMode, ctx, function(target) {
+      //   if(target.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
+      //     measureHash[target.__config[NODE_UNIQUE_UPDATE_ID]] = true;
+      //   }
+      // });
     });
     // 做完清空留待下次刷新重来
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -1910,12 +1910,12 @@ class Root extends Dom {
   }
 
   // 特殊覆盖方法，不需要super()计算自己，因为无需第3个参数cb且自己是root
-  __computeMeasure(renderMode, ctx) {
-    css.computeMeasure(this, true);
-    this.children.forEach(item => {
-      item.__computeMeasure(renderMode, ctx);
-    });
-  }
+  // __computeMeasure(renderMode, ctx) {
+  //   css.computeMeasure(this, true);
+  //   this.children.forEach(item => {
+  //     item.__computeMeasure(renderMode, ctx);
+  //   });
+  // }
 
   // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
   // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作

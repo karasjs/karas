@@ -10,8 +10,8 @@ let o = {
       lgr: 0.03271484375, // line-gap ratio，67/2048，默认0
       // 个别字符误差，初次之外误差还有根据经验得的比例系数，https://github.com/karasjs/karas/issues/145
       padding: {
-        1: 1,
-        f: 0.9,
+        // 1: 1,
+        // f: 0.9,
       },
     },
     helvetica: {
@@ -61,7 +61,7 @@ let o = {
     },
   },
   support(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily);
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
   },
   register(name, info) {
     let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0, padding = {} } = info || {};
@@ -70,6 +70,15 @@ let o = {
       blr: ascent / emSquare,
       padding,
     };
+  },
+  hasRegister(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily);
+  },
+  hasChecked(fontFamily) {
+    return this.hasRegister(fontFamily) && this.info[fontFamily].hasOwnProperty('checked');
+  },
+  setChecked(fontFamily, res) {
+    return this.info[fontFamily].checked = res;
   },
   addPadding(name, padding) {
     Object.assign(this.info[name.toLowerCase()].padding, padding);

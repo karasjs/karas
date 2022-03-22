@@ -46,7 +46,7 @@ let o = {
     if(dom) {
       let { tagName } = json;
       if(['canvas', 'svg', 'webgl'].indexOf(tagName) === -1) {
-        throw new Error('Parse dom must be canvas/svg');
+        throw new Error('Parse dom must be canvas/svg/webgl');
       }
       // parse直接（非递归）的动画记录
       let ac = options.controller instanceof Controller ? options.controller : vd.animateController;
@@ -123,16 +123,16 @@ let o = {
       });
     }
     let a = list1.length, b = list2.length, c = list3.length;
-    if(a || b || c) {
-      let count = 0;
-      let cb = function() {
-        if(count === a + b + c) {
-          let res = o.parse(karas, json, dom, options);
-          if(options && util.isFunction(options.callback)) {
-            options.callback(res);
-          }
+    let count = 0;
+    let cb = function() {
+      if(count === a + b + c) {
+        let res = o.parse(karas, json, dom, options);
+        if(options && util.isFunction(options.callback)) {
+          options.callback(res);
         }
-      };
+      }
+    };
+    if(a || b || c) {
       karas.inject.loadFont(list1, function() {
         count += a;
         cb();
@@ -154,11 +154,7 @@ let o = {
       });
     }
     else {
-      let res = o.parse(karas, json, dom, options);
-      if(options && util.isFunction(options.callback)) {
-        options.callback(res);
-      }
-      return res;
+      cb();
     }
   },
   abbr,

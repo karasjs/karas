@@ -646,7 +646,7 @@ class Dom extends Xom {
               max = Math.max(max, max2);
             }
           }
-          else if(isDirectionRow) {
+          else {
             if(isRow) {
               min += item.charWidth;
               max += item.textWidth;
@@ -1969,13 +1969,21 @@ class Dom extends Xom {
     }
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;
+    // 不换行的话endSpace直接计入
+    if(whiteSpace === 'nowrap') {
+      endSpace += selfEndSpace;
+    }
     flowChildren.forEach((item, i) => {
+      // 不换行无需继续
+      if(whiteSpace === 'nowrap' && lineClampCount) {
+        return;
+      }
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
       let isRealInline = isXom && item.__isRealInline();
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
-      let isEnd = isInline && (i === length - 1);
+      let isEnd = isInline && (i === length - 1) && whiteSpace !== 'nowrap';
       if(isEnd) {
         endSpace += selfEndSpace;
       }
@@ -2578,13 +2586,13 @@ class Dom extends Xom {
    * @param cb
    * @private
    */
-  __computeMeasure(renderMode, ctx, cb) {
-    super.__computeMeasure(renderMode, ctx, cb);
-    // 即便自己不需要计算，但children还要继续递归检查
-    this.children.forEach(item => {
-      item.__computeMeasure(renderMode, ctx, cb);
-    });
-  }
+  // __computeMeasure(renderMode, ctx, cb) {
+  //   super.__computeMeasure(renderMode, ctx, cb);
+  //   // 即便自己不需要计算，但children还要继续递归检查
+  //   this.children.forEach(item => {
+  //     item.__computeMeasure(renderMode, ctx, cb);
+  //   });
+  // }
 
   render(renderMode, lv, ctx, cache, dx, dy) {
     let res = super.render(renderMode, lv, ctx, cache, dx, dy);

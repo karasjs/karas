@@ -14,10 +14,10 @@ import level from '../refresh/level';
 const {
   STYLE_KEY: {
     DISPLAY,
+    POSITION,
     LINE_HEIGHT,
     FONT_SIZE,
     FONT_FAMILY,
-    FONT_STYLE,
     FONT_WEIGHT,
     COLOR,
     VISIBILITY,
@@ -47,6 +47,110 @@ const {
 
 const ELLIPSIS = textCache.ELLIPSIS;
 const { AUTO, REM, VW, VH, VMAX, VMIN } = unit;
+const { CANVAS, SVG, WEBGL } = mode;
+
+/**
+ * 在给定宽度w的情况下，测量文字content多少个满足塞下，只支持水平书写，从start的索引开始，content长length
+ * 尽可能地少的次数调用canvas的measureText或svg的html节点的width，因为比较消耗性能
+ * 这就需要一种算法，不能逐字遍历看总长度是否超过，也不能单字宽度相加因为有文本整形某些字体多个字宽度不等于每个之和
+ * 简单的2分法实现简单，但是次数稍多，对于性能不是最佳，因为内容的slice裁剪和传递给canvas测量都随尺寸增加而加大
+ * 由于知道w和fontSize，因此能推测出平均值为fontSize/w，即字的个数，
+ * 进行测量后得出w2，和真实w对比，产生误差d，再看d和fontSize推测差距个数，如此反复
+ * 返回内容和end索引和长度，最少也要1个字符
+ * @param ctx
+ * @param renderMode
+ * @param start
+ * @param length
+ * @param content
+ * @param w
+ * @param perW
+ * @param fontFamily
+ * @param fontSize
+ * @param fontWeight
+ * @param letterSpacing
+ */
+function measureLineWidth(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing) {
+  if(start >= length) {
+    // 特殊情况不应该走进这里
+    return [0, 0];
+  }
+  // 特殊降级，有letterSpacing时，canvas无法完全兼容，只能采取单字测量的方式完成
+  if(letterSpacing && [CANVAS, WEBGL].indexOf(renderMode) > -1) {}
+  // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
+  let hypotheticalNum = Math.round(w / perW);
+  // 不能增长0个字符，至少也要1个
+  if(hypotheticalNum <= 0) {
+    hypotheticalNum = 1;
+  }
+  // 超过内容长度范围也不行
+  else if(hypotheticalNum > length - start) {
+    hypotheticalNum = length - start;
+  }
+  // 类似2分的一个循环
+  let i = start, j = length, rw = 0, newLine = false;
+  while(i < j) {
+    let mw, str = content.slice(start, start + hypotheticalNum);
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      mw = ctx.measureText(str).width;
+    }
+    else if(renderMode === SVG) {
+      mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
+    }
+    if(letterSpacing) {
+      mw += hypotheticalNum * letterSpacing;
+    }
+    // console.log(mw, '<', w, ';', i, j, hypotheticalNum);
+    if(mw === w) {
+      rw = w;
+      newLine = true;
+      break;
+    }
+    // 超出，设置右边界，并根据余量推测减少个数，精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
+    if(mw > w + (1e-10)) {
+      newLine = true;
+      // 限制至少1个
+      if(i === start) {
+        rw = mw;
+        break;
+      }
+      // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
+      if(i === j - 1 || i - start === hypotheticalNum - 1) {
+        hypotheticalNum = i - start;
+        break;
+      }
+      j = hypotheticalNum - 1;
+      let reduce = Math.round((mw - w) / perW);
+      if(reduce <= 0) {
+        reduce = 1;
+      }
+      hypotheticalNum -= reduce;
+      if(hypotheticalNum < i - start) {
+        hypotheticalNum = i - start;
+      }
+    }
+    // 还有空余，设置左边界，并根据余量推测增加的个数
+    else {
+      rw = mw;
+      if(hypotheticalNum === length - start) {
+        break;
+      }
+      i = hypotheticalNum + start;
+      let add = Math.round((w - mw) / perW);
+      if(add <= 0) {
+        add = 1;
+      }
+      hypotheticalNum += add;
+      if(hypotheticalNum > j - start) {
+        hypotheticalNum = j - start;
+      }
+    }
+  }
+  return [hypotheticalNum, rw, newLine];
+}
+
+function getFontKey(ff, fs, fw, ls) {
+  return ff + '_' + fs + '_' + fw + '_' + ls;
+}
 
 class Text extends Node {
   constructor(content) {
@@ -57,6 +161,7 @@ class Text extends Node {
     this.__charWidth = 0; // 最小字符宽度（单个）
     this.__textWidth = 0; // 整体宽度
     this.__bp = null; // block父节点
+    this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
   }
 
   /**
@@ -103,8 +208,8 @@ class Text extends Node {
     let pfw = parentComputedStyle[FONT_WEIGHT];
     let pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
     let parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-      if(renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      if(renderMode === WEBGL) {
         ctx = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__').ctx;
       }
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
@@ -113,7 +218,7 @@ class Text extends Node {
       }
       ctx.font = css.setFontStyle(computedStyle);
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       if(!parentCache.hasOwnProperty(ELLIPSIS)) {
         parentCache[ELLIPSIS] = 0;
         let wait = textCache.data[pKey] = textCache.data[pKey] || {
@@ -137,7 +242,7 @@ class Text extends Node {
         sum += mw;
         this.__charWidth = Math.max(this.charWidth, mw);
       }
-      else if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      else if(renderMode === CANVAS || renderMode === WEBGL) {
         mw = cache[char] = ctx.measureText(char).width;
         charWidthList.push(mw);
         sum += mw;
@@ -213,62 +318,83 @@ class Text extends Node {
       [WHITE_SPACE]: whiteSpace,
       [FONT_SIZE]: fontSize,
       [FONT_WEIGHT]: fontWeight,
+      [FONT_FAMILY]: fontFamily,
     } = computedStyle;
     // 特殊字体中特殊字符连续时需减少一定的padding量
-    let padding = font.info[__ff].padding;
-    let needReduce = !!padding;
+    // let padding = font.info[__ff].padding;
+    // let needReduce = !!padding;
     let lastChar;
-    let ew = textCache.charWidth[this.__pKey][ELLIPSIS];
+    // let ew = textCache.charWidth[this.__pKey][ELLIPSIS];
     // block的overflow:hidden和textOverflow:clip/ellipsis一起才生效，inline要看最近非inline父元素
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
       bp = bp.domParent;
     }
     this.__bp = bp;
+    css.getFontFamily(fontFamily); // 有检测过程必须执行
+    // 布局测量前置，根据renderMode不同提供不同的测量方法
+    let renderMode = root.renderMode;
+    let ctx;
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      ctx = renderMode === WEBGL
+        ? inject.getFontCanvas().ctx
+        : root.ctx;
+      ctx.font = css.setFontStyle(computedStyle);
+    }
+    // fontSize在中文是正好1个字宽度，英文不一定，等宽为2个，不等宽可能1~2个，特殊字符甚至>2个，取预估均值然后倒数得每个均宽0.8
+    let perW = (fontSize * 0.8) + letterSpacing;
     let lineCount = 0;
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
-      let isTextOverflow;
+      let isTextOverflow, textWidth = this.textWidth;
       let {
-        [DISPLAY]: display,
+        [POSITION]: position,
         [OVERFLOW]: overflow,
-        [WIDTH]: width,
         [TEXT_OVERFLOW]: textOverflow,
-      } = bp.currentStyle;
+      } = bp.computedStyle;
+      let widthC = bp.currentStyle[WIDTH];
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
       if(overflow === 'hidden') {
-        while(i < length) {
-          count += charWidthList[i] + letterSpacing;
-          if(count > w) {
-            // block/flex无需宽度，inline-block需要设置宽度才生效
-            if(display === 'block' || display === 'flex') {
-              isTextOverflow = true;
-            }
-            else if(width[1] !== AUTO) {
-              isTextOverflow = true;
-            }
-            break;
-          }
-          i++;
+        // abs自适应宽度时不裁剪
+        if(position === 'absolute' && widthC[1] === AUTO) {
+          isTextOverflow = false;
         }
-      }
-      else {
-        while(i < length) {
-          count += charWidthList[i++] + letterSpacing;
+        else {
+          isTextOverflow = textWidth > w + (1e-10) - beginSpace - endSpace;
         }
+        // while(i < length) {
+        //   count += charWidthList[i] + letterSpacing;
+        //   if(count > w) {
+        //     // block/flex无需宽度，inline-block需要设置宽度才生效
+        //     if(display === 'block' || display === 'flex') {
+        //       isTextOverflow = true;
+        //     }
+        //     else if(width[1] !== AUTO) {
+        //       isTextOverflow = true;
+        //     }
+        //     break;
+        //   }
+        //   i++;
+        // }
       }
+      // else {
+      //   while(i < length) {
+      //     count += charWidthList[i++] + letterSpacing;
+      //   }
+      // }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
-          lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
+        [y, maxW] = this.__lineBack2(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW,
+          lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+        lineCount++;
       }
-      // 默认clip跟随overflow:hidden，无需感知
+      // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
-        let textBox = new TextBox(this, textBoxes.length, x, y, count - beginSpace, lineHeight,
-          content, charWidthList);
+        let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
+          content);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox);
-        maxW = count - beginSpace;
+        maxW = textWidth;
         y += lineHeight;
       }
     }
@@ -276,6 +402,32 @@ class Text extends Node {
     // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
     else {
       while(i < length) {
+        let wl = i ? w : (w - beginSpace);
+        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
+        if(lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
+          // i<length-1说明不是最后一个，但当非首行且只有1个字符时进不来，所以要判断!i
+          [y, maxW] = this.__lineBack2(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
+            lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+          lineCount++;
+          break;
+        }
+        // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
+        if(i + num === length && endSpace && rw + endSpace > wl && num > 1) {
+          [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        }
+        maxW = Math.max(maxW, rw);
+        // 根据是否第一行分开处理行首空白
+        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
+        textBoxes.push(textBox);
+        lineBoxManager.addItem(textBox, newLine);
+        y += Math.max(lineHeight, lineBoxManager.lineHeight);
+        // 至少也要1个字符形成1行，哪怕是首行，因为是否放得下逻辑在dom中做过了
+        i += num;
+        lineCount++;
+      }
+      while(i < length) {
+        break;
         let cw = charWidthList[i] + letterSpacing;
         count += cw;
         // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
@@ -291,15 +443,15 @@ class Text extends Node {
             }
             if(!hasCache) {
               let n = 0;
-              if(root.renderMode === mode.CANVAS) {
+              if(root.renderMode === CANVAS) {
                 root.ctx.font = css.setFontStyle(computedStyle);
                 let w1 = root.ctx.measureText(char).width;
                 let w2 = root.ctx.measureText(char + char).width;
                 n = w1 * 2 - w2;
                 n *= padding[char];
               }
-              else if(root.renderMode === mode.SVG) {
-                n = inject.measureTextSync(__key, __ff, fontSize, fontWeight, char);
+              else if(root.renderMode === SVG) {
+                n = inject.measureTextSync(char, __ff, fontSize, fontWeight);
                 n *= padding[char];
               }
               count -= n;
@@ -399,7 +551,7 @@ class Text extends Node {
       }
       // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
       // 声明了lineClamp时特殊考虑，这里一定是最后一行，要对比行数不能超过，超过忽略掉这些文本
-      if(begin < length && (!lineClamp || lineCount + lineClampCount < lineClamp)) {
+      if(false && begin < length && (!lineClamp || lineCount + lineClampCount < lineClamp)) {
         let textBox;
         if(!lineCount) {
           let needBack;
@@ -457,6 +609,100 @@ class Text extends Node {
     this.__height = y - data.y;
     this.__baseline = css.getBaseline(computedStyle);
     return lineCount;
+  }
+
+  // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
+  __lineBack2(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager,
+              fontFamily, fontSize, fontWeight, letterSpacing) {
+    let ew, bp = this.__bp, computedStyle = bp.computedStyle;
+    // 临时测量ELLIPSIS的尺寸
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      ctx.save();
+      let font = css.setFontStyle(computedStyle);
+      if(ctx.font !== font) {
+        ctx.font = font;
+      }
+      ew = ctx.measureText(ELLIPSIS).width;
+      ctx.restore();
+    }
+    else {
+      ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
+    }
+    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+    // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+    if(rw + ew > wl) {
+      // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
+      if(wl >= ew) {
+        let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+        textBox.setDom(bp);
+        textBoxes.push(textBox);
+        lineBoxManager.addItem(textBox, true);
+        y += Math.max(lineHeight, lineBoxManager.lineHeight);
+        maxW = Math.max(maxW, rw + ew);
+        return [y, maxW];
+      }
+      // 否则向前回溯已有的tb，这在ELLIPSIS字体较大，但多行内字体较小时发生
+      let lineBox = lineBoxManager.lineBox;
+      if(lineBox && lineBox.size) {
+        let list = lineBox.list;
+        for(let j = list.length - 1; j >= 0; j--) {
+          let tb = list[j];
+          let { content, width, parent } = tb;
+          // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
+          if(!j || wl >= width + ew) {
+            let length = content.length;
+            let {
+              [LETTER_SPACING]: letterSpacing,
+              [FONT_SIZE]: fontSize,
+              [FONT_WEIGHT]: fontWeight,
+              [FONT_FAMILY]: fontFamily,
+            } = parent.computedStyle;
+            if(renderMode === CANVAS || renderMode === WEBGL) {
+              ctx.font = css.setFontStyle(computedStyle);
+            }
+            // 再进行查找，这里也会有至少一个字符不用担心
+            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            if(!j || num > 1) {
+              // 可能发生x回退，当tb的内容产生介绍时
+              if(num !== content.length) {
+                tb.__content = content.slice(0, num);
+                tb.__width = rw;
+                // 再对比，也许有零宽字符
+                if(width !== rw) {
+                  x -= width - rw;
+                }
+              }
+              let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+              textBox.setDom(bp);
+              textBoxes.push(textBox);
+              lineBoxManager.addItem(textBox, true);
+              y += Math.max(lineHeight, lineBoxManager.lineHeight);
+              maxW = Math.max(maxW, rw + ew);
+              return [y, maxW];
+            }
+          }
+          // 舍弃这个tb，x也要向前回退，这会发生在ELLIPSIS字体很大，里面内容字体很小时
+          let item = list.pop();
+          let tbs = item.parent.textBoxes;
+          let k = tbs.indexOf(item);
+          if(k > -1) {
+            tbs.splice(k, 1);
+          }
+          x -= width;
+        }
+      }
+    }
+    let textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num));
+    textBoxes.push(textBox);
+    lineBoxManager.addItem(textBox, false);
+    // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
+    textBox = new TextBox(this, textBoxes.length, x + rw, y, ew, lineHeight, ELLIPSIS);
+    textBox.setDom(bp);
+    textBoxes.push(textBox);
+    lineBoxManager.addItem(textBox, true);
+    y += Math.max(lineHeight, lineBoxManager.lineHeight);
+    maxW = Math.max(maxW, rw + ew);
+    return [y, maxW];
   }
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
@@ -575,7 +821,7 @@ class Text extends Node {
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
     let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
-    if(renderMode === mode.SVG) {
+    if(renderMode === SVG) {
       __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
         type: 'text',
         children: [],
@@ -585,9 +831,9 @@ class Text extends Node {
       || !textBoxes.length) {
       return;
     }
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
       // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
-      if(renderMode === mode.WEBGL) {
+      if(renderMode === WEBGL) {
         if(cache) {
           let { sx, sy, bbox } = this;
           let __cache = __config[NODE_CACHE];
@@ -647,43 +893,46 @@ class Text extends Node {
     textBoxes.forEach(item => {
       item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
     });
-    if(renderMode === mode.SVG) {
+    if(renderMode === SVG) {
       this.virtualDom.children = textBoxes.map(textBox => textBox.virtualDom);
     }
     // textOverflow的省略号font使用最近非inline的父节点
-    if(__ellipsis) {
-      let last = textBoxes[textBoxes.length - 1];
-      let { endX, endY } = last;
-      let computedStyle = __bp.computedStyle;
-      if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-        let font = css.setFontStyle(computedStyle);
-        if(ctx.font !== font) {
-          ctx.font = font;
-        }
-        let color = __bp.__cacheStyle[COLOR];
-        if(ctx.fillStyle !== color) {
-          ctx.fillStyle = color;
-        }
-        ctx.fillText(ELLIPSIS, endX, endY);
-      }
-      else if(renderMode === mode.SVG) {
-        let props = [
-          ['x', endX],
-          ['y', endY],
-          ['fill', __bp.__cacheStyle[COLOR]],
-          ['font-family', computedStyle[FONT_FAMILY]],
-          ['font-weight', computedStyle[FONT_WEIGHT]],
-          ['font-style', computedStyle[FONT_STYLE]],
-          ['font-size', computedStyle[FONT_SIZE] + 'px'],
-        ];
-        this.virtualDom.children.push({
-          type: 'item',
-          tagName: 'text',
-          props,
-          content: ELLIPSIS,
-        });
-      }
-    }
+    // if(__ellipsis) {
+    //   let last = textBoxes[textBoxes.length - 1];
+    //   let { endX, endY } = last;
+    //   let computedStyle = __bp.computedStyle;
+    //   if(renderMode === CANVAS || renderMode === WEBGL) {
+    //     let font = css.setFontStyle(computedStyle);
+    //     if(ctx.font !== font) {
+    //       ctx.font = font;
+    //     }
+    //     let { [COLOR]: color, [BACKGROUND_COLOR]: backgroundColor } = __bp.__cacheStyle;
+    //     if(ctx.fillStyle !== backgroundColor) {
+    //       ctx.fillStyle = backgroundColor;
+    //     }
+    //     if(ctx.fillStyle !== color) {
+    //       ctx.fillStyle = color;
+    //     }
+    //     ctx.fillText(ELLIPSIS, endX, endY);
+    //   }
+    //   else if(renderMode === SVG) {
+    //     let props = [
+    //       ['x', endX],
+    //       ['y', endY],
+    //       ['fill', __bp.__cacheStyle[COLOR]],
+    //       ['font-family', computedStyle[FONT_FAMILY]],
+    //       ['font-weight', computedStyle[FONT_WEIGHT]],
+    //       ['font-style', computedStyle[FONT_STYLE]],
+    //       ['font-size', computedStyle[FONT_SIZE] + 'px'],
+    //     ];
+    //     this.virtualDom.children.push({
+    //       type: 'item',
+    //       tagName: 'text',
+    //       props,
+    //       content: ELLIPSIS,
+    //     });
+    //   }
+    // }
   }
 
   __deepScan(cb) {
@@ -751,15 +1000,91 @@ class Text extends Node {
   }
 
   get charWidth() {
-    return this.__charWidth;
+    let { __widthHash, content, computedStyle, root: { ctx, renderMode } } = this;
+    let {
+      [FONT_FAMILY]: fontFamily,
+      [FONT_SIZE]: fontSize,
+      [FONT_WEIGHT]: fontWeight,
+      [LETTER_SPACING]: letterSpacing,
+    } = computedStyle;
+    let fontKey = getFontKey(fontFamily, fontSize, fontWeight, letterSpacing);
+    if(!__widthHash.hasOwnProperty(fontKey)) {
+      __widthHash[fontKey] = {};
+    }
+    let o = __widthHash[fontKey];
+    if(!o.hasOwnProperty('charWidth')) {
+      let max = 0;
+      if(renderMode === CANVAS || renderMode === WEBGL) {
+        if(renderMode === WEBGL) {
+          ctx = inject.getFontCanvas().ctx;
+        }
+        ctx.font = css.setFontStyle(computedStyle);
+        for(let i = 0, len = content.length; i < len; i++) {
+          max = Math.max(max, ctx.measureText(content.charAt([i])).width);
+        }
+      }
+      else if(renderMode === SVG) {
+        max = inject.measureTextListMax(content, fontFamily, fontSize, fontWeight);
+      }
+      o.charWidth = max + letterSpacing;
+    }
+    return o.charWidth;
   }
 
   get firstCharWidth() {
-    return this.charWidthList[0] || 0;
+    let { __widthHash, content, computedStyle, root: { ctx, renderMode } } = this;
+    let {
+      [FONT_FAMILY]: fontFamily,
+      [FONT_SIZE]: fontSize,
+      [FONT_WEIGHT]: fontWeight,
+      [LETTER_SPACING]: letterSpacing,
+    } = computedStyle;
+    let fontKey = getFontKey(fontFamily, fontSize, fontWeight, letterSpacing);
+    if(!__widthHash.hasOwnProperty(fontKey)) {
+      __widthHash[fontKey] = {};
+    }
+    let o = __widthHash[fontKey];
+    if(!o.hasOwnProperty('firstCharWidth')) {
+      if(renderMode === CANVAS || renderMode === WEBGL) {
+        if(renderMode === WEBGL) {
+          ctx = inject.getFontCanvas().ctx;
+        }
+        ctx.font = css.setFontStyle(computedStyle);
+        o.firstCharWidth = ctx.measureText(content.charAt(0)).width + letterSpacing;
+      }
+      else if(renderMode === SVG) {
+        o.firstCharWidth = inject.measureTextSync(content.charAt(0), fontFamily, fontSize, fontWeight) + letterSpacing;
+      }
+    }
+    return o.firstCharWidth;
   }
 
   get textWidth() {
-    return this.__textWidth;
+    let { __widthHash, content, computedStyle, root: { ctx, renderMode } } = this;
+    let {
+      [FONT_FAMILY]: fontFamily,
+      [FONT_SIZE]: fontSize,
+      [FONT_WEIGHT]: fontWeight,
+      [LETTER_SPACING]: letterSpacing,
+    } = computedStyle;
+    let fontKey = getFontKey(fontFamily, fontSize, fontWeight, letterSpacing);
+    if(!__widthHash.hasOwnProperty(fontKey)) {
+      __widthHash[fontKey] = {};
+    }
+    let o = __widthHash[fontKey];
+    if(!o.hasOwnProperty('textWidth')) {
+      if(renderMode === CANVAS || renderMode === WEBGL) {
+        if(renderMode === WEBGL) {
+          ctx = inject.getFontCanvas().ctx;
+        }
+        ctx.font = css.setFontStyle(computedStyle);
+        o.textWidth = ctx.measureText(content).width + letterSpacing * content.length;
+      }
+      else if(renderMode === SVG) {
+        o.textWidth = inject.measureTextSync(content, fontFamily, fontSize, fontWeight) + letterSpacing * content.length;
+      }
+    }
+    return o.textWidth;
   }
 
   get baseline() {

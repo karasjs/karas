@@ -77,6 +77,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
+  OVERFLOW,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -1176,6 +1177,43 @@ function computeReflow(node) {
   let rem = root.computedStyle[FONT_SIZE];
   let isRoot = !parent;
   let parentComputedStyle = parent && parent.computedStyle;
+  [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT].forEach(k => {
+    let v = currentStyle[k];
+    // ff特殊处理
+    if(k === FONT_FAMILY) {
+      if(v[1] === INHERIT) {
+        computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
+      }
+      else {
+        computedStyle[k] = getFontFamily(v[0]);
+      }
+    }
+    else if(v[1] === INHERIT) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
+    }
+    // 只有fontSize会有%
+    else if(v[1] === PERCENT) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
+    }
+    else if(v[1] === REM) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.computedStyle[FONT_SIZE] * v[0]);
+    }
+    else if(v[1] === VW) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.width * 0.01 * v[0]);
+    }
+    else if(v[1] === VH) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.height * 0.01 * v[0]);
+    }
+    else if(v[1] === VMAX) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(node.root.width, node.root.height) * 0.01 * v[0]);
+    }
+    else if(v[1] === VMIN) {
+      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(node.root.width, node.root.height) * 0.01 * v[0]);
+    }
+    else {
+      computedStyle[k] = v[0];
+    }
+  });
   [
     BORDER_TOP_WIDTH,
     BORDER_RIGHT_WIDTH,
@@ -1219,6 +1257,8 @@ function computeReflow(node) {
     ORDER,
     FLEX_WRAP,
     ALIGN_CONTENT,
+    OVERFLOW,
+    TEXT_OVERFLOW,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
@@ -1332,7 +1372,7 @@ function computeReflow(node) {
 
 function setFontStyle(style) {
   let fontSize = style[FONT_SIZE] || 0;
-  let fontFamily = style[FONT_FAMILY] || 'arial';
+  let fontFamily = style[FONT_FAMILY] || inject.defaultFontFamily || 'arial';
   if(/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
@@ -1341,11 +1381,22 @@ function setFontStyle(style) {
 }
 
 function getFontFamily(str) {
-  let ff = str.split(',');
-  let f = 'arial';
+  let ff = str.split(/\s*,\s*/);
+  let f = inject.defaultFontFamily;
   for(let i = 0, len = ff.length; i < len; i++) {
-    if(font.support(ff[i])) {
-      f = ff[i];
+    let fontFamily = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+    if(!font.hasRegister(fontFamily)) {
+      continue;
+    }
+    if(!font.hasChecked(fontFamily)) {
+      let res = inject.checkSupportFontFamily(fontFamily);
+      if(font.setChecked(fontFamily, res)) {
+        f = fontFamily;
+        break;
+      }
+    }
+    if(font.support(fontFamily)) {
+      f = fontFamily;
       break;
     }
   }
@@ -1355,13 +1406,13 @@ function getFontFamily(str) {
 function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
   let ff = getFontFamily(style[FONT_FAMILY]);
-  let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
-  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
+  let normal = fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
 function calNormalLineHeight(style) {
   let ff = getFontFamily(style[FONT_FAMILY]);
-  return style[FONT_SIZE] * (font.info[ff] || font.info.arial).lhr;
+  return style[FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {

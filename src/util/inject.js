@@ -89,6 +89,17 @@ const LOADING = 1;
 const LOADED = 2;
 const FONT = {};
 const COMPONENT = {};
+let div;
+
+function createDiv() {
+  div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = '99999px';
+  div.style.top = '-99999px';
+  div.style.visibility = 'hidden';
+  div.style.whiteSpace = 'nowrap';
+  document.body.appendChild(div);
+}
 
 let inject = {
   measureText() {
@@ -114,12 +125,9 @@ let inject = {
     if(!html) {
       return;
     }
-    let div = document.createElement('div');
-    div.style.position = 'absolute';
-    div.style.left = '99999px';
-    div.style.top = '-99999px';
-    div.style.visibility = 'hidden';
-    document.body.appendChild(div);
+    if(!div) {
+      createDiv();
+    }
     div.innerHTML = html;
     let cns = div.childNodes;
     let { charWidth } = textCache;
@@ -141,24 +149,37 @@ let inject = {
     list.forEach(text => text.__measureCb());
     textCache.list = [];
     textCache.data = {};
-    if(!debug.flag) {
-      document.body.removeChild(div);
-    }
   },
-  measureTextSync(key, ff, fs, fw, char) {
-    let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
-    let html = `<span style="${inline}">${char}</span><span style="${inline}">${char}${char}</span>`;
-    let div = document.createElement('div');
-    div.style.position = 'absolute';
-    div.style.left = '99999px';
-    div.style.top = '-99999px';
-    div.style.visibility = 'hidden';
-    document.body.appendChild(div);
-    div.innerHTML = html;
+  measureTextSync(str, ff, fs, fw) {
+    if(!div) {
+      createDiv();
+    }
+    div.style.fontFamily = ff;
+    div.style.fontSize = fs;
+    div.style.fontWeight = fw;
+    div.innerText = str;
+    return parseFloat(window.getComputedStyle(div, null).width);
+  },
+  measureTextListMax(str, ff, fs, fw) {
+    if(!div) {
+      createDiv();
+    }
+    div.style.fontFamily = ff;
+    div.style.fontSize = fs;
+    div.style.fontWeight = fw;
+    let s = '';
+    for(let i = 0, len = str.length; i < len; i++) {
+      s += '<span style="position:absolute">' + str.charAt(i).replace(/</, '&lt;').replace(' ', '&nbsp;') + '</span>';
+    }
+    div.innerHTML = s;
+    let max = 0;
     let cns = div.childNodes;
-    let w1 = parseFloat(window.getComputedStyle(cns[0], null).width);
-    let w2 = parseFloat(window.getComputedStyle(cns[1], null).width);
-    return w1 * 2 - w2;
+    for(let i = 0, len = cns.length; i < len; i++) {
+      let node = cns[i];
+      // clientWidth只返回ceil整数，精度必须用getComputedStyle
+      max = Math.max(max, parseFloat(window.getComputedStyle(node, null).width));
+    }
+    return max;
   },
   IMG,
   INIT,
@@ -333,10 +354,14 @@ let inject = {
       return o instanceof WebGLTexture;
     }
   },
+  defaultFontFamily: 'arial',
+  getFontCanvas() {
+    return inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
+  },
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();
     // 强制arial兜底
-    if(ff === 'arial' || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
+    if(ff === this.defaultFontFamily || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
       return true;
     }
     if(!font.info.hasOwnProperty(ff)) {
@@ -345,14 +370,14 @@ let inject = {
     if(font.info[ff].hasOwnProperty('checked')) {
       return font.info[ff].checked;
     }
-    let canvas = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
+    let canvas = inject.getFontCanvas();
     let context = canvas.ctx;
     context.textAlign = 'center';
     context.fillStyle = '#000';
     context.textBaseline = 'middle';
     if(!defaultFontFamilyData) {
       context.clearRect(0, 0, 16, 16);
-      context.font = '16px arial';
+      context.font = '16px ' + this.defaultFontFamily;
       context.fillText('a', 8, 8);
       canvas.draw();
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;

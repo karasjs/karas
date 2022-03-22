@@ -34,6 +34,16 @@ class TextBox {
     this.__virtualDom = {};
   }
 
+  setEllipsis(fontFamily, fontSize, fontWeight) {
+    this.__fontFamily = fontFamily;
+    this.__fontSize = fontSize;
+    this.__fontWeight = fontWeight;
+  }
+
+  setDom(dom) {
+    this.__dom = dom;
+  }
+
   /**
    * 渲染阶段被Text类调用，多行Text会有多个TextBox，内容被分拆开
    * @param renderMode
@@ -44,13 +54,17 @@ class TextBox {
    * @param dy
    */
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
-    let { content, x, y, parent, wList, width } = this;
+    let { content, x, y, parent, wList, width, dom } = this;
     let { ox, oy } = parent;
     y += css.getBaseline(computedStyle);
     x += ox + dx;
     y += oy + dy;
     this.__endX = x + width;
     this.__endY = y;
+    if(dom) {
+      cacheStyle = dom.cacheStyle;
+      computedStyle = dom.computedStyle;
+    }
     let {
       [LETTER_SPACING]: letterSpacing,
       [TEXT_STROKE_WIDTH]: textStrokeWidth,
@@ -58,6 +72,17 @@ class TextBox {
     } = computedStyle;
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if(dom) {
+        computedStyle = dom.computedStyle;
+        let font = css.setFontStyle(computedStyle);
+        if(ctx.font !== font) {
+          ctx.font = font;
+        }
+        let color = cacheStyle[COLOR];
+        if(ctx.fillStyle !== color) {
+          ctx.fillStyle = color;
+        }
+      }
       let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
       if(letterSpacing) {
         for(; i < length; i++) {
@@ -178,6 +203,10 @@ class TextBox {
 
   get isReplaced() {
     return false;
+  }
+
+  get dom() {
+    return this.__dom;
   }
 }
 

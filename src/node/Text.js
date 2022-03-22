@@ -305,10 +305,8 @@ class Text extends Node {
     }
     this.__ox = this.__oy = 0;
     // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
-    let begin = 0;
     let i = 0;
     let beginSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
-    let count = beginSpace;
     let length = content.length;
     let maxW = 0;
     let {
@@ -319,12 +317,6 @@ class Text extends Node {
       [FONT_WEIGHT]: fontWeight,
       [FONT_FAMILY]: fontFamily,
     } = computedStyle;
-    // 特殊字体中特殊字符连续时需减少一定的padding量
-    // let padding = font.info[__ff].padding;
-    // let needReduce = !!padding;
-    let lastChar;
-    // let ew = textCache.charWidth[this.__pKey][ELLIPSIS];
-    // block的overflow:hidden和textOverflow:clip/ellipsis一起才生效，inline要看最近非inline父元素
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
       bp = bp.domParent;
@@ -361,29 +353,10 @@ class Text extends Node {
         else {
           isTextOverflow = textWidth > w + (1e-10) - beginSpace - endSpace;
         }
-        // while(i < length) {
-        //   count += charWidthList[i] + letterSpacing;
-        //   if(count > w) {
-        //     // block/flex无需宽度，inline-block需要设置宽度才生效
-        //     if(display === 'block' || display === 'flex') {
-        //       isTextOverflow = true;
-        //     }
-        //     else if(width[1] !== AUTO) {
-        //       isTextOverflow = true;
-        //     }
-        //     break;
-        //   }
-        //   i++;
-        // }
       }
-      // else {
-      //   while(i < length) {
-      //     count += charWidthList[i++] + letterSpacing;
-      //   }
-      // }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [y, maxW] = this.__lineBack2(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW,
+        [y, maxW] = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW,
           lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
         lineCount++;
       }
@@ -406,7 +379,7 @@ class Text extends Node {
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
           // i<length-1说明不是最后一个，但当非首行且只有1个字符时进不来，所以要判断!i
-          [y, maxW] = this.__lineBack2(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
+          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
             lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
@@ -423,185 +396,13 @@ class Text extends Node {
         y += Math.max(lineHeight, lineBoxManager.lineHeight);
         // 至少也要1个字符形成1行，哪怕是首行，因为是否放得下逻辑在dom中做过了
         i += num;
-        lineCount++;
-      }
-      while(i < length) {
-        break;
-        let cw = charWidthList[i] + letterSpacing;
-        count += cw;
-        // 连续字符减少padding，除了连续还需判断char是否在padding的hash中
-        if(needReduce) {
-          let char = content[i];
-          if(char === lastChar && padding.hasOwnProperty(char) && padding[char]) {
-            let hasCache, p = textCache.padding[__key] = textCache.padding[__key] || {};
-            if(textCache.padding.hasOwnProperty(__key)) {
-              if(p.hasOwnProperty(char)) {
-                hasCache = true;
-                count -= p[char];
-              }
-            }
-            if(!hasCache) {
-              let n = 0;
-              if(root.renderMode === CANVAS) {
-                root.ctx.font = css.setFontStyle(computedStyle);
-                let w1 = root.ctx.measureText(char).width;
-                let w2 = root.ctx.measureText(char + char).width;
-                n = w1 * 2 - w2;
-                n *= padding[char];
-              }
-              else if(root.renderMode === SVG) {
-                n = inject.measureTextSync(char, __ff, fontSize, fontWeight);
-                n *= padding[char];
-              }
-              count -= n;
-              p[char] = n;
-            }
-          }
-          lastChar = char;
-        }
-        // 忽略零宽字符
-        if(cw === 0) {
-          i++;
-          continue;
-        }
-        // 换行都要判断i不是0的时候，第1个字符强制不换行
-        if(count === w) {
-          // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
-          if(lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i < length - 1) {
-            [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
-              lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
-            lineCount++;
-            break;
-          }
-          let textBox;
-          // 特殊情况，恰好最后一行最后一个排满，此时查看末尾mpb，要防止i为0的情况首个字符特殊不回退，无需看开头mpb
-          if(i === length - 1 && count > w - endSpace && i) {
-            count -= charWidthList[i--];
-          }
-          i++;
-          if(!lineCount) {
-            maxW = count - beginSpace;
-            textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight,
-              content.slice(begin, i), charWidthList.slice(begin, i));
-          }
-          else {
-            textBox = new TextBox(this, textBoxes.length, lx, y, count, lineHeight,
-              content.slice(begin, i), charWidthList.slice(begin, i));
-            maxW = Math.max(maxW, count);
-          }
-          // 必须先添加再设置y，当有diff的lineHeight时，第一个换行不影响，再换行时第2个换行即第3行会被第1行影响
-          textBoxes.push(textBox);
-          lineBoxManager.addItem(textBox, true);
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
-          begin = i;
-          count = 0;
+        if(newLine) {
           lineCount++;
-          lastChar = null; // 换行后连续字符reduce不生效重新计数
-        }
-        // 奇怪的精度问题，暂时不用相等判断，而是为原本w宽度加一点点冗余1e-10
-        else if(count > w + (1e-10)) {
-          // 多行文本截断，这里肯定需要回退
-          if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount,
-              lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager);
-            lineCount++;
-            break;
-          }
-          // 普通非多行文本阶段逻辑
-          let width;
-          // 宽度不足时无法跳出循环，至少也要塞个字符形成一行，无需判断第1行，因为是否放得下逻辑在dom中做过了，
-          // 如果第1行放不下，一定会另起一行，此时作为开头再放不下才会进这里，这个if只有0或1个字符的情况
-          if(i <= begin) {
-            width = count;
-          }
-          // 超过2个字符回退1个
-          else {
-            width = count - charWidthList[i--];
-          }
-          i++;
-          // 根据是否第一行分开处理行首空白
-          let textBox;
-          if(!lineCount) {
-            maxW = width - beginSpace;
-            textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight,
-              content.slice(begin, i), charWidthList.slice(begin, i));
-          }
-          else {
-            textBox = new TextBox(this, textBoxes.length, lx, y, width, lineHeight,
-              content.slice(begin, i), charWidthList.slice(begin, i));
-            maxW = Math.max(maxW, width);
-          }
-          // 必须先添加再设置y，同上
-          textBoxes.push(textBox);
-          lineBoxManager.addItem(textBox, true);
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
-          begin = i;
-          count = 0;
-          lineCount++;
-          lastChar = null;
-        }
-        else {
-          i++;
         }
       }
       // 换行后Text的x重设为lx
       if(lineCount) {
         this.__x = this.__sx1 = lx;
-      }
-      // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
-      // 声明了lineClamp时特殊考虑，这里一定是最后一行，要对比行数不能超过，超过忽略掉这些文本
-      if(false && begin < length && (!lineClamp || lineCount + lineClampCount < lineClamp)) {
-        let textBox;
-        if(!lineCount) {
-          let needBack;
-          // 防止开头第一个begin=0时回退，这在inline有padding且是第一个child时会发生
-          if(begin && count > w - endSpace) {
-            needBack = true;
-            count -= charWidthList[length - 1];
-          }
-          maxW = count - beginSpace;
-          textBox = new TextBox(this, textBoxes.length, x, y, maxW, lineHeight,
-            content.slice(begin, needBack ? length - 1 : length), charWidthList.slice(begin, needBack ? length - 1 : length));
-          textBoxes.push(textBox);
-          lineBoxManager.addItem(textBox);
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
-          if(needBack) {
-            let width = charWidthList[length - 1];
-            textBox = new TextBox(this, textBoxes.length, lx, y, width, lineHeight,
-              content.slice(length - 1), charWidthList.slice(length - 1));
-            maxW = Math.max(maxW, width);
-            textBoxes.push(textBox);
-            lineBoxManager.setNewLine();
-            lineBoxManager.addItem(textBox);
-            y += lineHeight;
-            lineCount++;
-          }
-        }
-        else {
-          let needBack;
-          // 防止begin在结尾时回退，必须要有个字符，这在最后一行1个字符排不下时会出现
-          if(count > w - endSpace && begin < length - 1) {
-            needBack = true;
-            count -= charWidthList[length - 1];
-          }
-          textBox = new TextBox(this, textBoxes.length, lx, y, count, lineHeight,
-            content.slice(begin, needBack ? length - 1 : length), charWidthList.slice(begin, needBack ? length - 1 : length));
-          maxW = Math.max(maxW, count);
-          textBoxes.push(textBox);
-          lineBoxManager.addItem(textBox);
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
-          if(needBack) {
-            let width = charWidthList[length - 1];
-            textBox = new TextBox(this, textBoxes.length, lx, y, width, lineHeight,
-              content.slice(length - 1), charWidthList.slice(length - 1));
-            maxW = Math.max(maxW, width);
-            textBoxes.push(textBox);
-            lineBoxManager.setNewLine();
-            lineBoxManager.addItem(textBox);
-            y += lineHeight;
-            lineCount++;
-          }
-        }
       }
     }
     this.__width = maxW;
@@ -611,7 +412,7 @@ class Text extends Node {
   }
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
-  __lineBack2(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager,
+  __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager,
               fontFamily, fontSize, fontWeight, letterSpacing) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
@@ -701,78 +502,6 @@ class Text extends Node {
     lineBoxManager.addItem(textBox, true);
     y += Math.max(lineHeight, lineBoxManager.lineHeight);
     maxW = Math.max(maxW, rw + ew);
-    return [y, maxW];
-  }
-
-  // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
-  __lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW,
-                  textBoxes, content, charWidthList, lineBoxManager) {
-    for(; i >= begin; i--) {
-      count -= charWidthList[i] + letterSpacing;
-      if(count + ew + endSpace <= w) {
-        // 至少1个字符不用回退，到0也没找到需要回退
-        if(i) {
-          maxW = count - (lineCount ? 0 : beginSpace);
-          let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
-            content.slice(begin, i), charWidthList.slice(begin, i));
-          textBoxes.push(textBox);
-          lineBoxManager.addItem(textBox, true);
-          y += Math.max(lineHeight, lineBoxManager.lineHeight);
-          this.__ellipsis = true;
-          break;
-        }
-      }
-    }
-    // 最后也没找到，看是否要查找前一个inline节点，还是本身是行首兜底首字母
-    if(i < 0) {
-      let lineBox = lineBoxManager.lineBox;
-      // lineBox为空是行首，至少放1个字符
-      if(!lineBox || !lineBox.size) {
-        maxW = count - (lineCount ? 0 : beginSpace);
-        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight,
-          content.charAt(begin), charWidthList.slice(begin, begin + 1));
-        textBoxes.push(textBox);
-        lineBoxManager.addItem(textBox, true);
-        y += Math.max(lineHeight, lineBoxManager.lineHeight);
-        this.__ellipsis = true;
-      }
-      // 向前查找inline节点，可能会有前面inline嵌套，因此直接用lineBox，不会出现inlineBlock，
-      // 这里和css不同，ib强制超限换行不会同行
-      else {
-        let list = lineBox.list;
-        outer:
-        for(let j = list.length - 1; j >= 0; j--) {
-          let tb = list[j];
-          let { content, wList, width } = tb;
-          // 整体减去可以说明可能在这个tb中，只要最后发现不是空文本节点就行，否则继续；第0个强制进入保证1字符
-          if(count - width + ew <= w || !j) {
-            // 找到可以跳出outer循环，找不到继续，注意第0个且1个字符判断
-            for(let k = wList.length - 1; k >= 0; k--) {
-              if(!k && !j || count + ew <= w) {
-                tb.__content = content;
-                tb.__width = width;
-                tb.parent.__ellipsis = true;
-                break outer;
-              }
-              else {
-                let w2 = wList[k];
-                tb.__endY -= w2;
-                width -= w2;
-                content = content.slice(0, k);
-                count -= w2;
-                wList.pop();
-              }
-            }
-          }
-          // 不够则看前一个tb并且删掉这个
-          else {
-            count -= width;
-          }
-          list.pop();
-          tb.parent.textBoxes.pop();
-        }
-      }
-    }
     return [y, maxW];
   }
 

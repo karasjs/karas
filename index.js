@@ -14268,8 +14268,10 @@
         }
 
         this.__ox = this.__oy = 0; // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
+
         var i = 0;
         var beginSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
+
         var length = content.length;
         var maxW = 0;
         var lineHeight = computedStyle[LINE_HEIGHT$1],
@@ -14277,9 +14279,7 @@
             whiteSpace = computedStyle[WHITE_SPACE$1],
             fontSize = computedStyle[FONT_SIZE$5],
             fontWeight = computedStyle[FONT_WEIGHT$2],
-            fontFamily = computedStyle[FONT_FAMILY$2]; // 特殊字体中特殊字符连续时需减少一定的padding量
-        // block的overflow:hidden和textOverflow:clip/ellipsis一起才生效，inline要看最近非inline父元素
-
+            fontFamily = computedStyle[FONT_FAMILY$2];
         var bp = this.domParent;
 
         while (bp.computedStyle[DISPLAY$1] === 'inline') {
@@ -14317,31 +14317,12 @@
               isTextOverflow = false;
             } else {
               isTextOverflow = textWidth > w + 1e-10 - beginSpace - endSpace;
-            } // while(i < length) {
-            //   count += charWidthList[i] + letterSpacing;
-            //   if(count > w) {
-            //     // block/flex无需宽度，inline-block需要设置宽度才生效
-            //     if(display === 'block' || display === 'flex') {
-            //       isTextOverflow = true;
-            //     }
-            //     else if(width[1] !== AUTO) {
-            //       isTextOverflow = true;
-            //     }
-            //     break;
-            //   }
-            //   i++;
-            // }
-
-          } // else {
-          //   while(i < length) {
-          //     count += charWidthList[i++] + letterSpacing;
-          //   }
-          // }
-          // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
+            }
+          } // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
 
 
           if (isTextOverflow && textOverflow === 'ellipsis') {
-            var _this$__lineBack = this.__lineBack2(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
             var _this$__lineBack2 = _slicedToArray(_this$__lineBack, 2);
 
@@ -14371,7 +14352,7 @@
 
             if (lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
               // i<length-1说明不是最后一个，但当非首行且只有1个字符时进不来，所以要判断!i
-              var _this$__lineBack3 = this.__lineBack2(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+              var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
               var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
 
@@ -14401,13 +14382,16 @@
             y += Math.max(lineHeight, lineBoxManager.lineHeight); // 至少也要1个字符形成1行，哪怕是首行，因为是否放得下逻辑在dom中做过了
 
             i += num;
-            lineCount++;
-          }
+
+            if (newLine) {
+              lineCount++;
+            }
+          } // 换行后Text的x重设为lx
 
 
           if (lineCount) {
             this.__x = this.__sx1 = lx;
-          } // 最后一行，只有一行未满时也进这里，需查看末尾mpb，排不下回退一个字符
+          }
         }
 
         this.__width = maxW;
@@ -14417,8 +14401,8 @@
       } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
 
     }, {
-      key: "__lineBack2",
-      value: function __lineBack2(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing) {
+      key: "__lineBack",
+      value: function __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing) {
         var ew,
             bp = this.__bp,
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
@@ -14447,12 +14431,12 @@
         if (rw + ew > wl) {
           // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
           if (wl >= ew) {
-            var _textBox5 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
-            _textBox5.setDom(bp);
+            _textBox2.setDom(bp);
 
-            textBoxes.push(_textBox5);
-            lineBoxManager.addItem(_textBox5, true);
+            textBoxes.push(_textBox2);
+            lineBoxManager.addItem(_textBox2, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
             maxW = Math.max(maxW, rw + ew);
             return [y, maxW];
@@ -14499,12 +14483,12 @@
                     }
                   }
 
-                  var _textBox6 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+                  var _textBox3 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
-                  _textBox6.setDom(bp);
+                  _textBox3.setDom(bp);
 
-                  textBoxes.push(_textBox6);
-                  lineBoxManager.addItem(_textBox6, true);
+                  textBoxes.push(_textBox3);
+                  lineBoxManager.addItem(_textBox3, true);
                   y += Math.max(lineHeight, lineBoxManager.lineHeight);
                   maxW = Math.max(maxW, _rw + ew);
                   return [y, maxW];
@@ -14535,81 +14519,6 @@
         lineBoxManager.addItem(textBox, true);
         y += Math.max(lineHeight, lineBoxManager.lineHeight);
         maxW = Math.max(maxW, rw + ew);
-        return [y, maxW];
-      } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
-
-    }, {
-      key: "__lineBack",
-      value: function __lineBack(count, w, beginSpace, endSpace, ew, letterSpacing, begin, i, length, lineCount, lineHeight, lx, x, y, maxW, textBoxes, content, charWidthList, lineBoxManager) {
-        for (; i >= begin; i--) {
-          count -= charWidthList[i] + letterSpacing;
-
-          if (count + ew + endSpace <= w) {
-            // 至少1个字符不用回退，到0也没找到需要回退
-            if (i) {
-              maxW = count - (lineCount ? 0 : beginSpace);
-              var textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight, content.slice(begin, i), charWidthList.slice(begin, i));
-              textBoxes.push(textBox);
-              lineBoxManager.addItem(textBox, true);
-              y += Math.max(lineHeight, lineBoxManager.lineHeight);
-              this.__ellipsis = true;
-              break;
-            }
-          }
-        } // 最后也没找到，看是否要查找前一个inline节点，还是本身是行首兜底首字母
-
-
-        if (i < 0) {
-          var lineBox = lineBoxManager.lineBox; // lineBox为空是行首，至少放1个字符
-
-          if (!lineBox || !lineBox.size) {
-            maxW = count - (lineCount ? 0 : beginSpace);
-
-            var _textBox7 = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, maxW, lineHeight, content.charAt(begin), charWidthList.slice(begin, begin + 1));
-
-            textBoxes.push(_textBox7);
-            lineBoxManager.addItem(_textBox7, true);
-            y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            this.__ellipsis = true;
-          } // 向前查找inline节点，可能会有前面inline嵌套，因此直接用lineBox，不会出现inlineBlock，
-          // 这里和css不同，ib强制超限换行不会同行
-          else {
-            var list = lineBox.list;
-
-            outer: for (var j = list.length - 1; j >= 0; j--) {
-              var tb = list[j];
-              var _content2 = tb.content,
-                  wList = tb.wList,
-                  width = tb.width; // 整体减去可以说明可能在这个tb中，只要最后发现不是空文本节点就行，否则继续；第0个强制进入保证1字符
-
-              if (count - width + ew <= w || !j) {
-                // 找到可以跳出outer循环，找不到继续，注意第0个且1个字符判断
-                for (var k = wList.length - 1; k >= 0; k--) {
-                  if (!k && !j || count + ew <= w) {
-                    tb.__content = _content2;
-                    tb.__width = width;
-                    tb.parent.__ellipsis = true;
-                    break outer;
-                  } else {
-                    var w2 = wList[k];
-                    tb.__endY -= w2;
-                    width -= w2;
-                    _content2 = _content2.slice(0, k);
-                    count -= w2;
-                    wList.pop();
-                  }
-                }
-              } // 不够则看前一个tb并且删掉这个
-              else {
-                count -= width;
-              }
-
-              list.pop();
-              tb.parent.textBoxes.pop();
-            }
-          }
-        }
-
         return [y, maxW];
       }
     }, {

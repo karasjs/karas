@@ -798,7 +798,7 @@ class Text extends Node {
   }
 
   __tryLayInline(w) {
-    return w - this.charWidthList[0];
+    return w - this.firstCharWidth;
   }
 
   __inlineSize() {

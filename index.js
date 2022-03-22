@@ -14679,7 +14679,7 @@
     }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w) {
-        return w - this.charWidthList[0];
+        return w - this.firstCharWidth;
       }
     }, {
       key: "__inlineSize",

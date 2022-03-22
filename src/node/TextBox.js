@@ -32,6 +32,7 @@ class TextBox {
     this.__content = content;
     this.__wList = wList;
     this.__virtualDom = {};
+    this.__parentLineBox = null;
   }
 
   setEllipsis(fontFamily, fontSize, fontWeight) {

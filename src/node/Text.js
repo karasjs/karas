@@ -99,7 +99,6 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     if(letterSpacing) {
       mw += hypotheticalNum * letterSpacing;
     }
-    // console.log(mw, '<', w, ';', i, j, hypotheticalNum);
     if(mw === w) {
       rw = w;
       newLine = true;
@@ -414,7 +413,7 @@ class Text extends Node {
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
         if(i + num === length && endSpace && rw + endSpace > wl && num > 1) {
-          [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         }
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白

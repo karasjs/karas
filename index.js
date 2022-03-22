@@ -9827,6 +9827,7 @@
       this.__content = content;
       this.__wList = wList;
       this.__virtualDom = {};
+      this.__parentLineBox = null;
     }
 
     _createClass(TextBox, [{
@@ -13992,8 +13993,7 @@
 
       if (letterSpacing) {
         mw += hypotheticalNum * letterSpacing;
-      } // console.log(mw, '<', w, ';', i, j, hypotheticalNum);
-
+      }
 
       if (mw === w) {
         rw = w;
@@ -14385,10 +14385,11 @@
             if (i + num === length && endSpace && rw + endSpace > wl && num > 1) {
               var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
 
-              var _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 2);
+              var _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 3);
 
               num = _measureLineWidth4[0];
               rw = _measureLineWidth4[1];
+              newLine = _measureLineWidth4[2];
             }
 
             maxW = Math.max(maxW, rw); // 根据是否第一行分开处理行首空白

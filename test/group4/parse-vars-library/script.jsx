@@ -65,5 +65,5 @@ let o = karas.parse({
 let t = o.children[0];
 t.animationList[0].on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
-  input.value = document.querySelector('svg').outerHTML;
+  input.value = document.querySelector('svg').innerHTML;
 });

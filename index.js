@@ -6598,8 +6598,7 @@
       VMIN$1 = o.VMIN,
       calUnit = o.calUnit;
   var d2r$1 = geom.d2r;
-  var canvasPolygon$2 = painter.canvasPolygon,
-      svgPolygon$2 = painter.svgPolygon;
+  var canvasPolygon$2 = painter.canvasPolygon;
   var FONT_SIZE$1 = enums.STYLE_KEY.FONT_SIZE,
       NODE_DEFS_CACHE = enums.NODE_KEY.NODE_DEFS_CACHE;
 
@@ -7335,44 +7334,6 @@
       ctx.drawImage(offscreen.canvas, x, y);
       ctx.restore();
       offscreen.ctx.clearRect(0, 0, w, h);
-    } else if (renderMode === mode.SVG) {
-      if (isInline) {
-        var v = {
-          tagName: 'symbol',
-          props: [],
-          children: []
-        };
-
-        xom.__config[NODE_DEFS_CACHE].push(v);
-
-        res.forEach(function (item) {
-          v.children.push({
-            type: 'item',
-            tagName: 'path',
-            props: [['d', svgPolygon$2(item[0])], ['fill', item[1]]]
-          });
-        });
-        return ctx.add(v);
-      } else {
-        var _v2 = {
-          tagName: 'clipPath',
-          children: [{
-            tagName: 'path',
-            props: [['d', svgPolygon$2(list)]]
-          }]
-        };
-
-        xom.__config[NODE_DEFS_CACHE].push(_v2);
-
-        var clip = ctx.add(_v2);
-        res.forEach(function (item) {
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [['d', svgPolygon$2(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
-          });
-        });
-      }
     }
   }
 
@@ -15967,7 +15928,7 @@
   var clone$2 = util.clone,
       joinArr$1 = util.joinArr;
   var canvasPolygon$3 = painter.canvasPolygon,
-      svgPolygon$3 = painter.svgPolygon;
+      svgPolygon$2 = painter.svgPolygon;
   var AUTO$2 = o.AUTO,
       PX$4 = o.PX,
       PERCENT$5 = o.PERCENT,
@@ -16044,7 +16005,7 @@
         ctx.restore();
       }
     } else if (renderMode === mode.SVG) {
-      var d = svgPolygon$3(list);
+      var d = svgPolygon$2(list);
 
       if (isInline) {
         var v = {
@@ -19588,7 +19549,7 @@
   var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
   var canvasPolygon$4 = painter.canvasPolygon,
-      svgPolygon$4 = painter.svgPolygon;
+      svgPolygon$3 = painter.svgPolygon;
 
   function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h) {
     var dx = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : 0;
@@ -19792,7 +19753,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$4(_cross2) + svgPolygon$4(box.slice(0).reverse())], ['fill', '#FFF']]
+                props: [['d', svgPolygon$3(_cross2) + svgPolygon$3(box.slice(0).reverse())], ['fill', '#FFF']]
               }]
             };
             var clip = ctx.add(v2);
@@ -19802,13 +19763,13 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$4(box)], ['fill', c], ['clip-path', 'url(#' + clip + ')']]
+              props: [['d', svgPolygon$3(box)], ['fill', c], ['clip-path', 'url(#' + clip + ')']]
             });
             v = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$4(_cross2)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$3(_cross2)], ['fill', '#FFF']]
               }]
             };
             clip = ctx.add(v);
@@ -19818,7 +19779,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$4([[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [x1 - n, _yb2], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, _yb2], [_xa2, _yb2], [_xa2, _ya2]])], ['fill', '#FFF'], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
+              props: [['d', svgPolygon$3([[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [x1 - n, _yb2], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, _yb2], [_xa2, _yb2], [_xa2, _ya2]])], ['fill', '#FFF'], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
             });
           } else {
             var _v = {
@@ -19838,7 +19799,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$4(box)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$3(box)], ['fill', '#FFF']]
               }]
             };
 
@@ -19849,7 +19810,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$4([[x1, y1], [x2, y1], [x2, y2], [x1 - n, y2], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y2], [x1, y2], [x1, y1]])], ['fill', '#FFF'], ['filter', 'url(#' + _filter + ')'], ['clip-path', 'url(#' + _clip + ')']]
+              props: [['d', svgPolygon$3([[x1, y1], [x2, y1], [x2, y2], [x1 - n, y2], [x1 - n, y2 + n], [x2 + n, y2 + n], [x2 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y2], [x1, y2], [x1, y1]])], ['fill', '#FFF'], ['filter', 'url(#' + _filter + ')'], ['clip-path', 'url(#' + _clip + ')']]
             });
           }
         } else {
@@ -19883,7 +19844,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$4(box) + svgPolygon$4(_blurBox.slice(0).reverse())], ['fill', '#FFF']]
+                props: [['d', svgPolygon$3(box) + svgPolygon$3(_blurBox.slice(0).reverse())], ['fill', '#FFF']]
               }]
             };
 
@@ -19894,13 +19855,13 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$4(_blurBox)], ['fill', c], ['clip-path', 'url(#' + _clip2 + ')']]
+              props: [['d', svgPolygon$3(_blurBox)], ['fill', c], ['clip-path', 'url(#' + _clip2 + ')']]
             });
             _v2 = {
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', (_cross3 ? svgPolygon$4([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$4(box) + svgPolygon$4(_blurBox) + svgPolygon$4(outer)], ['fill', '#FFF']]
+                props: [['d', (_cross3 ? svgPolygon$3([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$3(box) + svgPolygon$3(_blurBox) + svgPolygon$3(outer)], ['fill', '#FFF']]
               }]
             };
             _clip2 = ctx.add(_v2);
@@ -19910,7 +19871,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$4(_blurBox)], ['fill', '#FFF'], ['filter', 'url(#' + _filter2 + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
+              props: [['d', svgPolygon$3(_blurBox)], ['fill', '#FFF'], ['filter', 'url(#' + _filter2 + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
             });
           } else {
             var _v3 = {
@@ -19930,7 +19891,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$4(box) + svgPolygon$4(outer)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$3(box) + svgPolygon$3(outer)], ['fill', '#FFF']]
               }]
             };
 
@@ -19941,7 +19902,7 @@
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$4(box)], ['fill', '#FFF'], ['filter', 'url(#' + _filter3 + ')'], ['clip-path', 'url(#' + _clip3 + ')']]
+              props: [['d', svgPolygon$3(box)], ['fill', '#FFF'], ['filter', 'url(#' + _filter3 + ')'], ['clip-path', 'url(#' + _clip3 + ')']]
             });
           }
         }
@@ -20161,7 +20122,7 @@
     getInlineWidth: getInlineWidth
   };
 
-  var svgPolygon$5 = painter.svgPolygon;
+  var svgPolygon$4 = painter.svgPolygon;
   var CANVAS$2 = mode.CANVAS,
       SVG$1 = mode.SVG,
       WEBGL$2 = mode.WEBGL;
@@ -22116,7 +22077,7 @@
             offscreenOverflow.offsetHeight = offsetHeight;
             offscreenOverflow.list = borderList;
           } else if (renderMode === SVG$1) {
-            var d = svgPolygon$5(borderList) || "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1);
+            var d = svgPolygon$4(borderList) || "M".concat(x1, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1, "L").concat(x1 + offsetWidth, ",").concat(y1 + offsetHeight, "L").concat(x1, ",").concat(y1 + offsetHeight, ",L").concat(x1, ",").concat(y1);
             var v = {
               tagName: 'clipPath',
               props: [],
@@ -22779,82 +22740,6 @@
 
         if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
           return gd;
-        } else if (renderMode === SVG$1) {
-          var offset = 0.5;
-          var prev; // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
-
-          var list = [];
-
-          for (var i = 0, _len3 = stop.length; i < _len3 - 1; i++) {
-            var begin = stop[i][1] * 360;
-
-            var _end = stop[i + 1][1] * 360;
-
-            var diff = _end - begin;
-            var n = Math.ceil(diff);
-            var per = diff / n; // 计算每块的2个弧端点
-
-            var bc = stop[i][0];
-            var ec = stop[i + 1][0];
-            var dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
-            var pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
-
-            for (var j = 0; j < n; j++) {
-              var _geom$pointOnCircle = geom.pointOnCircle(cx, cy, r, begin + per * j + deg - offset),
-                  _geom$pointOnCircle2 = _slicedToArray(_geom$pointOnCircle, 2),
-                  x1 = _geom$pointOnCircle2[0],
-                  y1 = _geom$pointOnCircle2[1];
-
-              var _geom$pointOnCircle3 = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset),
-                  _geom$pointOnCircle4 = _slicedToArray(_geom$pointOnCircle3, 2),
-                  _x = _geom$pointOnCircle4[0],
-                  _y = _geom$pointOnCircle4[1];
-
-              list.push([x1, y1, _x, _y, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
-            }
-          } // 最后一段补自己末尾颜色特殊处理
-
-
-          var end = list[0].slice(0);
-
-          var _geom$pointOnCircle5 = geom.pointOnCircle(cx, cy, r, deg),
-              _geom$pointOnCircle6 = _slicedToArray(_geom$pointOnCircle5, 2),
-              x2 = _geom$pointOnCircle6[0],
-              y2 = _geom$pointOnCircle6[1];
-
-          end[2] = x2;
-          end[3] = y2;
-          var s = stop[stop.length - 1][0];
-          end[4] = s[0];
-          end[5] = s[1];
-          end[6] = s[2];
-          end[7] = s[3];
-          list.push(end);
-
-          for (var _i3 = 0, _len4 = list.length; _i3 < _len4; _i3++) {
-            var cur = list[_i3];
-
-            if (prev) {
-              var v = {
-                tagName: 'linearGradient',
-                props: [['x1', prev[0]], ['y1', prev[1]], ['x2', cur[2]], ['y2', cur[3]]],
-                children: [{
-                  tagName: 'stop',
-                  props: [['stop-color', int2rgba$2([prev[4], prev[5], prev[6], prev[7]])], ['offset', '0%']]
-                }, {
-                  tagName: 'stop',
-                  props: [['stop-color', int2rgba$2([cur[4], cur[5], cur[6], cur[7]])], ['offset', '100%']]
-                }]
-              };
-              var uuid = ctx.add(v);
-
-              this.__config[NODE_DEFS_CACHE$3].push(v);
-
-              res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], 'url(#' + uuid + ')']);
-            }
-
-            prev = cur;
-          }
         }
 
         return res;
@@ -27688,7 +27573,7 @@
       VMIN$9 = o.VMIN,
       RGBA$2 = o.RGBA;
   var canvasPolygon$5 = painter.canvasPolygon,
-      svgPolygon$6 = painter.svgPolygon;
+      svgPolygon$5 = painter.svgPolygon;
   var isFunction$7 = util.isFunction;
   var computeReflow$2 = css.computeReflow;
 
@@ -27987,7 +27872,7 @@
               virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
 
               if (!virtualDom.cache && list) {
-                var d = svgPolygon$6(list);
+                var d = svgPolygon$5(list);
                 var v = {
                   tagName: 'clipPath',
                   props: [],
@@ -28017,7 +27902,7 @@
             var props = [['xlink:href', loadImg.error ? placeholder : loadImg.src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
             if (list) {
-              var _d = svgPolygon$6(list);
+              var _d = svgPolygon$5(list);
 
               var _v = {
                 tagName: 'clipPath',
@@ -28599,7 +28484,7 @@
       isNil$8 = util.isNil,
       joinArr$3 = util.joinArr;
   var canvasPolygon$6 = painter.canvasPolygon,
-      svgPolygon$7 = painter.svgPolygon;
+      svgPolygon$6 = painter.svgPolygon;
   var WEBGL$3 = mode.WEBGL;
   var computeReflow$3 = css.computeReflow;
   var REGISTER$1 = {};
@@ -29210,10 +29095,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return d += svgPolygon$7(item);
+              return d += svgPolygon$6(item);
             });
           } else {
-            d = svgPolygon$7(list);
+            d = svgPolygon$6(list);
           }
 
           var props = [['d', d]]; // 2个都没有常出现在多fill/stroke时，也有可能特殊单个故意这样写的
@@ -29343,10 +29228,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return d += svgPolygon$7(item);
+              return d += svgPolygon$6(item);
             });
           } else {
-            d = svgPolygon$7(list);
+            d = svgPolygon$6(list);
           }
 
           var props = [['d', d]];
@@ -29421,7 +29306,7 @@
                 tagName: 'clipPath',
                 children: [{
                   tagName: 'path',
-                  props: [['d', svgPolygon$7(item)]]
+                  props: [['d', svgPolygon$6(item)]]
                 }]
               };
               var clip = ctx.add(v);
@@ -29432,7 +29317,7 @@
                 _this3.virtualDom.bb.push({
                   type: 'item',
                   tagName: 'path',
-                  props: [['d', svgPolygon$7(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                  props: [['d', svgPolygon$6(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
                 });
               });
             });
@@ -29441,7 +29326,7 @@
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$7(list)]]
+                props: [['d', svgPolygon$6(list)]]
               }]
             };
             var clip = ctx.add(v);
@@ -29452,7 +29337,7 @@
               _this3.virtualDom.bb.push({
                 type: 'item',
                 tagName: 'path',
-                props: [['d', svgPolygon$7(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                props: [['d', svgPolygon$6(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
               });
             });
           }

@@ -6143,7 +6143,7 @@
       }
 
       div.style.fontFamily = ff;
-      div.style.fontSize = fs;
+      div.style.fontSize = fs + 'px';
       div.style.fontWeight = fw;
       div.innerText = str;
       return parseFloat(window.getComputedStyle(div, null).width);
@@ -6154,7 +6154,7 @@
       }
 
       div.style.fontFamily = ff;
-      div.style.fontSize = fs;
+      div.style.fontSize = fs + 'px';
       div.style.fontWeight = fw;
       var s = '';
 

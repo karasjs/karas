@@ -155,7 +155,7 @@ let inject = {
       createDiv();
     }
     div.style.fontFamily = ff;
-    div.style.fontSize = fs;
+    div.style.fontSize = fs + 'px';
     div.style.fontWeight = fw;
     div.innerText = str;
     return parseFloat(window.getComputedStyle(div, null).width);
@@ -165,7 +165,7 @@ let inject = {
       createDiv();
     }
     div.style.fontFamily = ff;
-    div.style.fontSize = fs;
+    div.style.fontSize = fs + 'px';
     div.style.fontWeight = fw;
     let s = '';
     for(let i = 0, len = str.length; i < len; i++) {

@@ -105,13 +105,8 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
   }
   // 类似2分的一个循环
   while(i < j) {
-    let mw, str = content.slice(start, start + hypotheticalNum);
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      mw = ctx.measureText(str).width;
-    }
-    else if(renderMode === SVG) {
-      mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
-    }
+    let str = content.slice(start, start + hypotheticalNum);
+    let mw = measureWidth(ctx, renderMode, str);
     if(letterSpacing) {
       mw += hypotheticalNum * letterSpacing;
     }
@@ -161,6 +156,16 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     }
   }
   return [hypotheticalNum, rw, newLine];
+}
+
+function measureWidth(ctx, renderMode, str) {
+  if([CANVAS, WEBGL].indexOf(renderMode) > -1) {
+    return ctx.measureText(str).width;
+  }
+  else if(renderMode === SVG) {
+    return inject.measureText(str);
+  }
+  return 0;
 }
 
 function getFontKey(ff, fs, fw, ls) {
@@ -279,21 +284,8 @@ class Text extends Node {
         let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
-          // clip也要添加，ellipse则要回退
-          if(textOverflow === 'ellipsis') {
-            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
-              lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
-          }
-          else {
-            let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
-            textBoxes.push(textBox);
-            lineBoxManager.addItem(textBox, newLine);
-            y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            i += num;
-            if(newLine) {
-              lineCount++;
-            }
-          }
+          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
+            lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
         }

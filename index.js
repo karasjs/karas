@@ -4911,8 +4911,7 @@
           overflow = vd.overflow,
           filter = vd.filter,
           mixBlendMode = vd.mixBlendMode;
-      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') // + (filter ? (' filter="' + filter + '"') : '')
-      + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
+      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
     }
   }
 
@@ -13919,14 +13918,9 @@
 
 
     while (i < j) {
-      var _mw = void 0,
-          str = content.slice(start, start + hypotheticalNum);
+      var str = content.slice(start, start + hypotheticalNum);
 
-      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-        _mw = ctx.measureText(str).width;
-      } else if (renderMode === SVG) {
-        _mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
-      }
+      var _mw = measureWidth(ctx, renderMode, str);
 
       if (letterSpacing) {
         _mw += hypotheticalNum * letterSpacing;
@@ -13989,6 +13983,16 @@
     }
 
     return [hypotheticalNum, rw, newLine];
+  }
+
+  function measureWidth(ctx, renderMode, str) {
+    if ([CANVAS$1, WEBGL$1].indexOf(renderMode) > -1) {
+      return ctx.measureText(str).width;
+    } else if (renderMode === SVG) {
+      return inject.measureText(str);
+    }
+
+    return 0;
   }
 
   function getFontKey(ff, fs, fw, ls) {
@@ -14151,27 +14155,12 @@
 
 
             if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
-              // clip也要添加，ellipse则要回退
-              if (textOverflow === 'ellipsis') {
-                var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+              var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
-                var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
+              var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
 
-                y = _this$__lineBack4[0];
-                maxW = _this$__lineBack4[1];
-              } else {
-                var _textBox2 = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
-
-                textBoxes.push(_textBox2);
-                lineBoxManager.addItem(_textBox2, newLine);
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                i += num;
-
-                if (newLine) {
-                  lineCount++;
-                }
-              }
-
+              y = _this$__lineBack4[0];
+              maxW = _this$__lineBack4[1];
               lineCount++;
               break;
             } // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
@@ -14252,12 +14241,12 @@
         if (rw + ew > wl + 1e-10) {
           // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
           if (wl >= ew + 1e-10) {
-            var _textBox3 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
-            _textBox3.setDom(bp);
+            _textBox2.setDom(bp);
 
-            textBoxes.push(_textBox3);
-            lineBoxManager.addItem(_textBox3, true);
+            textBoxes.push(_textBox2);
+            lineBoxManager.addItem(_textBox2, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
             maxW = Math.max(maxW, rw + ew);
             return [y, maxW];
@@ -14321,12 +14310,12 @@
                     }
                   }
 
-                  var _textBox4 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+                  var _textBox3 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
-                  _textBox4.setDom(bp);
+                  _textBox3.setDom(bp);
 
-                  textBoxes.push(_textBox4);
-                  lineBoxManager.addItem(_textBox4, true);
+                  textBoxes.push(_textBox3);
+                  lineBoxManager.addItem(_textBox3, true);
                   y += Math.max(lineHeight, lineBoxManager.lineHeight);
                   maxW = Math.max(maxW, _rw + ew);
                   return [y, maxW];

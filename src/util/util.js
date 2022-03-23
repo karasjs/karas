@@ -120,7 +120,6 @@ function joinVd(vd) {
       + ' visibility="' + visibility + '"'
       + (mask ? (' mask="' + mask + '"') : '')
       + (overflow ? (' clip-path="' + overflow + '"') : '')
-      // + (filter ? (' filter="' + filter + '"') : '')
       + ((filter || mixBlendMode) ? ' style="' : '')
       + (filter ? ('filter:' + filter + ';') : '')
       + (mixBlendMode ? ('mix-blend-mode:' + mixBlendMode + ';') : '')

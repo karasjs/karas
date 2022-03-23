@@ -117,7 +117,7 @@ let inject = {
         for(let i = 0, len = s.length; i < len; i++) {
           let char = s.charAt(i);
           chars.push(char);
-          html += `<span style="${inline}">${char.replace(/</, '&lt;').replace(' ', '&nbsp;')}</span>`;
+          html += `<span style="${inline}">${char.replace('<', '&lt;').replace(' ', '&nbsp;')}</span>`;
         }
         data[key].s = '';
       }
@@ -156,8 +156,8 @@ let inject = {
     }
     div.style.fontFamily = ff;
     div.style.fontSize = fs + 'px';
-    div.style.fontWeight = fw;
-    div.innerText = str;
+    div.style.fontWeight = fw;console.log(str, str.length)
+    div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
     return parseFloat(window.getComputedStyle(div, null).width);
   },
   measureTextListMax(str, ff, fs, fw) {
@@ -169,7 +169,7 @@ let inject = {
     div.style.fontWeight = fw;
     let s = '';
     for(let i = 0, len = str.length; i < len; i++) {
-      s += '<span style="position:absolute">' + str.charAt(i).replace(/</, '&lt;').replace(' ', '&nbsp;') + '</span>';
+      s += '<span style="position:absolute">' + str.charAt(i).replace('<', '&lt;').replace(/[ \n]/, '&nbsp;') + '</span>';
     }
     div.innerHTML = s;
     let max = 0;

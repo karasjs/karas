@@ -39,7 +39,6 @@ const {
   },
   UPDATE_KEY: {
     UPDATE_NODE,
-    UPDATE_MEASURE,
     UPDATE_FOCUS,
     UPDATE_CONFIG,
   },
@@ -156,126 +155,10 @@ class Text extends Node {
     super();
     this.__content = util.isNil(content) ? '' : content.toString();
     this.__textBoxes = [];
-    this.__charWidthList = [];
     this.__charWidth = 0; // 最小字符宽度（单个）
     this.__textWidth = 0; // 整体宽度
     this.__bp = null; // block父节点
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
-  }
-
-  /**
-   * 预先计算每个字的宽度，在每次布局渲染前做
-   * @param renderMode
-   * @param ctx
-   * @private
-   */
-  __computeMeasure(renderMode, ctx) {
-    let { content, computedStyle, charWidthList } = this;
-    // 每次都要清空重新计算，计算会有缓存
-    charWidthList.splice(0);
-    let ffs = computedStyle[FONT_FAMILY].split(',');
-    let ff = 'arial';
-    for(let i = 0, len = ffs.length; i < len; i++) {
-      if(inject.checkSupportFontFamily(ffs[i])) {
-        ff = ffs[i];
-        break;
-      }
-    }
-    this.__ff = ff;
-    let fs = computedStyle[FONT_SIZE];
-    let fw = computedStyle[FONT_WEIGHT];
-    let key = this.__key = computedStyle[FONT_SIZE] + ',' + ff + ',' + fw;
-    let wait = textCache.data[key] = textCache.data[key] || {
-      ff,
-      fs,
-      fw,
-      hash: {},
-      s: '',
-    };
-    let cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
-    let sum = 0;
-    let needMeasure = false;
-    let parentComputedStyle = this.domParent.computedStyle;
-    let pff = 'arial';
-    for(let i = 0, pffs = parentComputedStyle[FONT_FAMILY].split(','), len = pffs.length; i < len; i++) {
-      if(inject.checkSupportFontFamily(pffs[i])) {
-        ff = ffs[i];
-        break;
-      }
-    }
-    let pfs = parentComputedStyle[FONT_SIZE];
-    let pfw = parentComputedStyle[FONT_WEIGHT];
-    let pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
-    let parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      if(renderMode === WEBGL) {
-        ctx = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__').ctx;
-      }
-      if(!parentCache.hasOwnProperty(ELLIPSIS)) {
-        ctx.font = css.setFontStyle(parentComputedStyle);
-        parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
-      }
-      ctx.font = css.setFontStyle(computedStyle);
-    }
-    else if(renderMode === SVG) {
-      if(!parentCache.hasOwnProperty(ELLIPSIS)) {
-        parentCache[ELLIPSIS] = 0;
-        let wait = textCache.data[pKey] = textCache.data[pKey] || {
-          ff: pff,
-          fs: pfs,
-          fw: pfw,
-          hash: {},
-          s: '',
-        };
-        wait.s += ELLIPSIS;
-        needMeasure = true;
-      }
-    }
-    // 逐字测量，canvas可瞬间得到信息，svg先预存统一进行
-    for(let i = 0, length = content.length; i < length; i++) {
-      let char = content.charAt(i);
-      let mw;
-      if(cache.hasOwnProperty(char)) {
-        mw = cache[char];
-        charWidthList.push(mw);
-        sum += mw;
-        this.__charWidth = Math.max(this.charWidth, mw);
-      }
-      else if(renderMode === CANVAS || renderMode === WEBGL) {
-        mw = cache[char] = ctx.measureText(char).width;
-        charWidthList.push(mw);
-        sum += mw;
-        this.__charWidth = Math.max(this.charWidth, mw);
-      }
-      else {
-        if(!wait.hash.hasOwnProperty(char)) {
-          wait.s += char;
-        }
-        wait.hash[char] = true;
-        // 先预存标识位-1，测量完后替换它
-        charWidthList.push(-1);
-        needMeasure = true;
-      }
-    }
-    this.__textWidth = sum;
-    if(needMeasure) {
-      textCache.list.push(this);
-    }
-  }
-
-  __measureCb() {
-    let { content, charWidthList } = this;
-    let key = this.__key;
-    let cache = textCache.charWidth[key];
-    let sum = 0;
-    for(let i = 0, len = charWidthList.length; i < len; i++) {
-      if(charWidthList[i] < 0) {
-        let mw = charWidthList[i] = cache[content.charAt(i)];
-        sum += mw;
-        this.__charWidth = Math.max(this.charWidth, mw);
-      }
-    }
-    this.__textWidth = sum;
   }
 
   /**
@@ -372,10 +255,11 @@ class Text extends Node {
     }
     // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
     // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
-    else {
+    else {console.error(content);
       while(i < length) {
         let wl = i ? w : (w - beginSpace);
         let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        console.log(num, rw, newLine)
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
           // i<length-1说明不是最后一个，但当非首行且只有1个字符时进不来，所以要判断!i
@@ -697,7 +581,6 @@ class Text extends Node {
         let res = {};
         let vd = self.domParent;
         res[UPDATE_NODE] = vd;
-        res[UPDATE_MEASURE] = true;
         res[UPDATE_FOCUS] = level.REFLOW;
         res[UPDATE_CONFIG] = vd.__config;
         let root = vd.root;
@@ -721,10 +604,6 @@ class Text extends Node {
 
   get textBoxes() {
     return this.__textBoxes;
-  }
-
-  get charWidthList() {
-    return this.__charWidthList;
   }
 
   get charWidth() {

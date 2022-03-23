@@ -1116,55 +1116,6 @@ function normalize(style, reset = []) {
 }
 
 /**
- * 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle
- * 影响文字测量的只有字体和大小和重量，需要提前处理
- * 继承相关的计算
- * @param node 对象节点
- * @param isRoot 是否是根节点，无继承需使用默认值
- */
-function computeMeasure(node, isRoot) {
-  let { currentStyle, computedStyle, domParent } = node;
-  let parentComputedStyle = !isRoot && domParent.computedStyle;
-  MEASURE_KEY_SET.forEach(k => {
-    let v = currentStyle[k];
-    // ff特殊处理
-    if(k === FONT_FAMILY) {
-      if(v[1] === INHERIT) {
-        computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
-      }
-      else {
-        computedStyle[k] = getFontFamily(v[0]);
-      }
-    }
-    else if(v[1] === INHERIT) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
-    }
-    // 只有fontSize会有%
-    else if(v[1] === PERCENT) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
-    }
-    else if(v[1] === REM) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.computedStyle[FONT_SIZE] * v[0]);
-    }
-    else if(v[1] === VW) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.width * 0.01 * v[0]);
-    }
-    else if(v[1] === VH) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.height * 0.01 * v[0]);
-    }
-    else if(v[1] === VMAX) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(node.root.width, node.root.height) * 0.01 * v[0]);
-    }
-    else if(v[1] === VMIN) {
-      computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(node.root.width, node.root.height) * 0.01 * v[0]);
-    }
-    else {
-      computedStyle[k] = v[0];
-    }
-  });
-}
-
-/**
  * 每次布局前需要计算的reflow相关的computedStyle，每次布局只计算一次，布局完后清除缓存标
  * @param node 对象节点
  */
@@ -1784,7 +1735,6 @@ function calAbsFixedSize(value, size, root) {
 
 export default {
   normalize,
-  computeMeasure,
   computeReflow,
   setFontStyle,
   getFontFamily,

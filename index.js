@@ -382,14 +382,13 @@
     UPDATE_NODE: 0,
     UPDATE_STYLE: 1,
     UPDATE_FOCUS: 2,
-    UPDATE_MEASURE: 3,
-    UPDATE_COMPONENT: 4,
-    UPDATE_OVERWRITE: 5,
-    UPDATE_KEYS: 6,
-    UPDATE_LIST: 7,
-    UPDATE_CONFIG: 8,
-    UPDATE_ADD_DOM: 9,
-    UPDATE_REMOVE_DOM: 10
+    UPDATE_COMPONENT: 3,
+    UPDATE_OVERWRITE: 4,
+    UPDATE_KEYS: 5,
+    UPDATE_LIST: 6,
+    UPDATE_CONFIG: 7,
+    UPDATE_ADD_DOM: 8,
+    UPDATE_REMOVE_DOM: 9
   }; // animation计算每帧使用
 
   var KEY_FRAME_KEY = {
@@ -6091,7 +6090,7 @@
             var _char = s.charAt(i);
 
             chars.push(_char);
-            html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;').replace(' ', '&nbsp;'), "</span>");
+            html += "<span style=\"".concat(inline, "\">").concat(_char.replace('<', '&lt;').replace(' ', '&nbsp;'), "</span>");
           }
 
           data[key].s = '';
@@ -6145,7 +6144,8 @@
       div.style.fontFamily = ff;
       div.style.fontSize = fs + 'px';
       div.style.fontWeight = fw;
-      div.innerText = str;
+      console.log(str, str.length);
+      div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
       return parseFloat(window.getComputedStyle(div, null).width);
     },
     measureTextListMax: function measureTextListMax(str, ff, fs, fw) {
@@ -6159,7 +6159,7 @@
       var s = '';
 
       for (var i = 0, len = str.length; i < len; i++) {
-        s += '<span style="position:absolute">' + str.charAt(i).replace(/</, '&lt;').replace(' ', '&nbsp;') + '</span>';
+        s += '<span style="position:absolute">' + str.charAt(i).replace('<', '&lt;').replace(/[ \n]/, '&nbsp;') + '</span>';
       }
 
       div.innerHTML = s;
@@ -7895,10 +7895,9 @@
     GRADIENT_TYPE: GRADIENT_TYPE
   };
 
-  var _REPAINT, _MEASURE;
+  var _REPAINT;
   var RESET_DOM = reset.DOM,
       RESET_GEOM = reset.GEOM;
-  var INHERIT$1 = o.INHERIT;
   var STYLE_KEY$2 = enums.STYLE_KEY;
   var GEOM$1 = {};
   var GEOM_KEY_SET$1 = [];
@@ -7906,13 +7905,11 @@
   var IGNORE = _defineProperty({}, STYLE_KEY$2.POINTER_EVENTS, true);
 
   var REPAINT = (_REPAINT = {}, _defineProperty(_REPAINT, STYLE_KEY$2.TRANSFORM, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.TRANSLATE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SKEW_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.SCALE_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.ROTATE_Z, true), _defineProperty(_REPAINT, STYLE_KEY$2.COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.FONT_STYLE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILL, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_DASHARRAY, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINECAP, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_LINEJOIN, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE_MITERLIMIT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_IMAGE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_X, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_POSITION_Y, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_REPEAT, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_SIZE, true), _defineProperty(_REPAINT, STYLE_KEY$2.STROKE, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_LEFT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_RIGHT_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_REPAINT, STYLE_KEY$2.VISIBILITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.OPACITY, true), _defineProperty(_REPAINT, STYLE_KEY$2.Z_INDEX, true), _defineProperty(_REPAINT, STYLE_KEY$2.FILTER, true), _defineProperty(_REPAINT, STYLE_KEY$2.BOX_SHADOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.OVERFLOW, true), _defineProperty(_REPAINT, STYLE_KEY$2.BACKGROUND_CLIP, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_WIDTH, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_COLOR, true), _defineProperty(_REPAINT, STYLE_KEY$2.TEXT_STROKE_OVER, true), _REPAINT);
-  var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$2.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$2.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$2.FONT_FAMILY, true), _MEASURE);
   var o$2 = {
     GEOM: GEOM$1,
     GEOM_KEY_SET: GEOM_KEY_SET$1,
     IGNORE: IGNORE,
     REPAINT: REPAINT,
-    MEASURE: MEASURE,
     addGeom: function addGeom(tagName, ks, cb) {
       if (Array.isArray(ks)) {
         ks.forEach(function (k) {
@@ -7935,9 +7932,6 @@
     },
     isRepaint: function isRepaint(k, tagName) {
       return REPAINT.hasOwnProperty(k) || o$2.isGeom(tagName, k);
-    },
-    isMeasure: function isMeasure(k) {
-      return MEASURE.hasOwnProperty(k);
     },
     isValid: function isValid(tagName, k) {
       if (!k) {
@@ -7964,39 +7958,6 @@
       return false;
     }
   };
-  var MEASURE_KEY_SET = o$2.MEASURE_KEY_SET = Object.keys(MEASURE).map(function (i) {
-    return parseInt(i);
-  });
-  var len = MEASURE_KEY_SET.length;
-
-  o$2.isMeasureInherit = function (target) {
-    if (target) {
-      for (var i = 0; i < len; i++) {
-        var k = MEASURE_KEY_SET[i];
-
-        if (target.hasOwnProperty(k) && target[k][1] === INHERIT$1) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
-
-  o$2.measureInheritList = function (target) {
-    var list = [];
-
-    for (var i = 0; i < len; i++) {
-      var k = MEASURE_KEY_SET[i];
-
-      if (target.hasOwnProperty(k) && target[k][1] === INHERIT$1) {
-        list.push(k);
-      }
-    }
-
-    return list;
-  };
-
   o$2.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
   o$2.addGeom('$circle', ['r']);
   o$2.addGeom('$ellipse', ['rx', 'ry']);
@@ -8081,7 +8042,7 @@
       PX$2 = o.PX,
       PERCENT$2 = o.PERCENT,
       NUMBER$1 = o.NUMBER,
-      INHERIT$2 = o.INHERIT,
+      INHERIT$1 = o.INHERIT,
       DEG$1 = o.DEG,
       RGBA = o.RGBA,
       STRING = o.STRING,
@@ -8094,8 +8055,7 @@
   var isNil$3 = util.isNil,
       rgba2int$2 = util.rgba2int,
       equalArr$1 = util.equalArr;
-  var MEASURE_KEY_SET$1 = o$2.MEASURE_KEY_SET,
-      isGeom = o$2.isGeom,
+  var isGeom = o$2.isGeom,
       GEOM$2 = o$2.GEOM,
       GEOM_KEY_SET$2 = o$2.GEOM_KEY_SET;
   var COLOR_HASH$1 = key.COLOR_HASH,
@@ -8752,7 +8712,7 @@
 
     if (temp !== undefined) {
       if (temp === 'inherit') {
-        res[COLOR] = [[], INHERIT$2];
+        res[COLOR] = [[], INHERIT$1];
       } else {
         res[COLOR] = [rgba2int$2(temp), RGBA];
       }
@@ -8762,7 +8722,7 @@
 
     if (temp !== undefined) {
       if (temp === 'inherit') {
-        res[TEXT_STROKE_COLOR] = [[], INHERIT$2];
+        res[TEXT_STROKE_COLOR] = [[], INHERIT$1];
       } else {
         res[TEXT_STROKE_COLOR] = [rgba2int$2(temp), RGBA];
       }
@@ -8772,13 +8732,13 @@
 
     if (temp !== undefined) {
       if (temp === 'inherit') {
-        res[FONT_SIZE$2] = [0, INHERIT$2];
+        res[FONT_SIZE$2] = [0, INHERIT$1];
       } else {
         var _v = calUnit$1(temp); // fontSize不能为负数，否则为继承
 
 
         if (_v < 0) {
-          res[FONT_SIZE$2] = [0, INHERIT$2];
+          res[FONT_SIZE$2] = [0, INHERIT$1];
         } else {
           if ([NUMBER$1, DEG$1].indexOf(_v[1]) > -1) {
             _v[1] = PX$2;
@@ -8793,13 +8753,13 @@
 
     if (temp !== undefined) {
       if (temp === 'inherit') {
-        res[TEXT_STROKE_WIDTH] = [0, INHERIT$2];
+        res[TEXT_STROKE_WIDTH] = [0, INHERIT$1];
       } else {
         var _v2 = calUnit$1(temp); // textStrokeWidth不能为负数，否则为继承
 
 
         if (_v2 < 0) {
-          res[TEXT_STROKE_WIDTH] = [0, INHERIT$2];
+          res[TEXT_STROKE_WIDTH] = [0, INHERIT$1];
         } else {
           if ([NUMBER$1, DEG$1, PERCENT$2].indexOf(_v2[1]) > -1) {
             _v2[1] = PX$2;
@@ -8814,7 +8774,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[TEXT_STROKE_OVER] = [0, INHERIT$2];
+        res[TEXT_STROKE_OVER] = [0, INHERIT$1];
       } else {
         var _v3 = temp.toString();
 
@@ -8836,7 +8796,7 @@
       } else if (temp === 'lighter') {
         res[FONT_WEIGHT] = [200, NUMBER$1];
       } else if (temp === 'inherit') {
-        res[FONT_WEIGHT] = [0, INHERIT$2];
+        res[FONT_WEIGHT] = [0, INHERIT$1];
       } else {
         res[FONT_WEIGHT] = [Math.max(0, parseInt(temp)) || 400, NUMBER$1];
       }
@@ -8846,7 +8806,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[FONT_STYLE] = [0, INHERIT$2];
+        res[FONT_STYLE] = [0, INHERIT$1];
       } else {
         res[FONT_STYLE] = [temp, STRING];
       }
@@ -8856,7 +8816,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[FONT_FAMILY] = [0, INHERIT$2];
+        res[FONT_FAMILY] = [0, INHERIT$1];
       } else {
         // 统一文字声明格式
         res[FONT_FAMILY] = [temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
@@ -8867,7 +8827,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[TEXT_ALIGN] = [0, INHERIT$2];
+        res[TEXT_ALIGN] = [0, INHERIT$1];
       } else {
         res[TEXT_ALIGN] = [temp, STRING];
       }
@@ -8877,7 +8837,7 @@
 
     if (temp !== undefined) {
       if (temp === 'inherit') {
-        res[LINE_HEIGHT] = [0, INHERIT$2];
+        res[LINE_HEIGHT] = [0, INHERIT$1];
       } else if (temp === 'normal') {
         res[LINE_HEIGHT] = [0, AUTO];
       } // lineHeight默认数字，想要px必须强制带单位
@@ -8904,7 +8864,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[LETTER_SPACING] = [0, INHERIT$2];
+        res[LETTER_SPACING] = [0, INHERIT$1];
       } else if (temp === 'normal') {
         res[LETTER_SPACING] = [0, PX$2];
       } else if (/^[-+]?[\d.]/.test(temp)) {
@@ -8924,7 +8884,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[WHITE_SPACE] = [0, INHERIT$2];
+        res[WHITE_SPACE] = [0, INHERIT$1];
       } else {
         res[WHITE_SPACE] = [temp, STRING];
       }
@@ -9103,7 +9063,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[VISIBILITY] = [0, INHERIT$2];
+        res[VISIBILITY] = [0, INHERIT$1];
       } else {
         res[VISIBILITY] = [temp, STRING];
       }
@@ -9113,7 +9073,7 @@
 
     if (temp !== undefined) {
       if (temp === null || temp === 'inherit') {
-        res[POINTER_EVENTS] = [0, INHERIT$2];
+        res[POINTER_EVENTS] = [0, INHERIT$1];
       } else {
         res[POINTER_EVENTS] = [temp, STRING];
       }
@@ -9194,49 +9154,6 @@
     return res;
   }
   /**
-   * 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle
-   * 影响文字测量的只有字体和大小和重量，需要提前处理
-   * 继承相关的计算
-   * @param node 对象节点
-   * @param isRoot 是否是根节点，无继承需使用默认值
-   */
-
-
-  function computeMeasure(node, isRoot) {
-    var currentStyle = node.currentStyle,
-        computedStyle = node.computedStyle,
-        domParent = node.domParent;
-    var parentComputedStyle = !isRoot && domParent.computedStyle;
-    MEASURE_KEY_SET$1.forEach(function (k) {
-      var v = currentStyle[k]; // ff特殊处理
-
-      if (k === FONT_FAMILY) {
-        if (v[1] === INHERIT$2) {
-          computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k]);
-        } else {
-          computedStyle[k] = getFontFamily(v[0]);
-        }
-      } else if (v[1] === INHERIT$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
-      } // 只有fontSize会有%
-      else if (v[1] === PERCENT$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k] * v[0] * 0.01;
-      } else if (v[1] === REM$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : node.root.computedStyle[FONT_SIZE$2] * v[0];
-      } else if (v[1] === VW$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : node.root.width * 0.01 * v[0];
-      } else if (v[1] === VH$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : node.root.height * 0.01 * v[0];
-      } else if (v[1] === VMAX$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : Math.max(node.root.width, node.root.height) * 0.01 * v[0];
-      } else if (v[1] === VMIN$2) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : Math.min(node.root.width, node.root.height) * 0.01 * v[0];
-      } else {
-        computedStyle[k] = v[0];
-      }
-    });
-  }
-  /**
    * 每次布局前需要计算的reflow相关的computedStyle，每次布局只计算一次，布局完后清除缓存标
    * @param node 对象节点
    */
@@ -9259,12 +9176,12 @@
       var v = currentStyle[k]; // ff特殊处理
 
       if (k === FONT_FAMILY) {
-        if (v[1] === INHERIT$2) {
+        if (v[1] === INHERIT$1) {
           computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k]);
         } else {
           computedStyle[k] = getFontFamily(v[0]);
         }
-      } else if (v[1] === INHERIT$2) {
+      } else if (v[1] === INHERIT$1) {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
       } // 只有fontSize会有%
       else if (v[1] === PERCENT$2) {
@@ -9315,7 +9232,7 @@
 
     var textAlign = currentStyle[TEXT_ALIGN];
 
-    if (textAlign[1] === INHERIT$2) {
+    if (textAlign[1] === INHERIT$1) {
       computedStyle[TEXT_ALIGN] = isRoot ? 'left' : parentComputedStyle[TEXT_ALIGN];
     } else {
       computedStyle[TEXT_ALIGN] = textAlign[0];
@@ -9324,7 +9241,7 @@
     var fontSize = computedStyle[FONT_SIZE$2];
     var lineHeight = currentStyle[LINE_HEIGHT]; // lineHeight继承很特殊，数字和normal不同于普通单位
 
-    if (lineHeight[1] === INHERIT$2) {
+    if (lineHeight[1] === INHERIT$1) {
       if (isRoot) {
         computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
       } else {
@@ -9334,7 +9251,7 @@
         while (p) {
           ph = p.currentStyle[LINE_HEIGHT];
 
-          if (ph[1] !== INHERIT$2) {
+          if (ph[1] !== INHERIT$1) {
             break;
           }
 
@@ -9342,7 +9259,7 @@
         } // 到root还是inherit或normal，或者中途遇到了normal，使用normal
 
 
-        if ([AUTO, INHERIT$2].indexOf(ph[1]) > -1) {
+        if ([AUTO, INHERIT$1].indexOf(ph[1]) > -1) {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
         } // 数字继承
         else if (ph[1] === NUMBER$1) {
@@ -9376,7 +9293,7 @@
 
     var letterSpacing = currentStyle[LETTER_SPACING];
 
-    if (letterSpacing[1] === INHERIT$2) {
+    if (letterSpacing[1] === INHERIT$1) {
       computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
     } else if (letterSpacing[1] === PERCENT$2) {
       computedStyle[LETTER_SPACING] = fontSize * 0.01 * letterSpacing[0];
@@ -9397,7 +9314,7 @@
 
     var whiteSpace = currentStyle[WHITE_SPACE];
 
-    if (whiteSpace[1] === INHERIT$2) {
+    if (whiteSpace[1] === INHERIT$1) {
       computedStyle[WHITE_SPACE] = isRoot ? 'normal' : parentComputedStyle[WHITE_SPACE];
     } else {
       computedStyle[WHITE_SPACE] = whiteSpace[0];
@@ -9784,7 +9701,6 @@
 
   var css = {
     normalize: normalize,
-    computeMeasure: computeMeasure,
     computeReflow: computeReflow,
     setFontStyle: setFontStyle,
     getFontFamily: getFontFamily,
@@ -13925,7 +13841,6 @@
       NODE_VIRTUAL_DOM = _enums$NODE_KEY$1.NODE_VIRTUAL_DOM,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
-      UPDATE_MEASURE = _enums$UPDATE_KEY.UPDATE_MEASURE,
       UPDATE_FOCUS = _enums$UPDATE_KEY.UPDATE_FOCUS,
       UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG;
   var ELLIPSIS = textCache.ELLIPSIS;
@@ -14071,7 +13986,6 @@
       _this = _super.call(this);
       _this.__content = util.isNil(content) ? '' : content.toString();
       _this.__textBoxes = [];
-      _this.__charWidthList = [];
       _this.__charWidth = 0; // 最小字符宽度（单个）
 
       _this.__textWidth = 0; // 整体宽度
@@ -14083,152 +13997,17 @@
       return _this;
     }
     /**
-     * 预先计算每个字的宽度，在每次布局渲染前做
-     * @param renderMode
-     * @param ctx
+     * text在virtual时和普通一样，无需特殊处理
+     * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和
+     * 即便宽度不足，每行还是强制渲染一个字符，换行依据lx开始，因为x可能是从中间开始的，非inline则两个相等
+     * 最后一个字符排版时要考虑末尾mpb，排不下的话回退删掉这个字符，如果最后一个字符另起开头，排不下也强制排，每行至少1个字符
+     * 在textOverflow时很特殊，多个inline同行，回退可能到前一个inline节点，这个通过x和lx判断是否行首，决定至少1个字符规则
+     * @param data
      * @private
      */
 
 
     _createClass(Text, [{
-      key: "__computeMeasure",
-      value: function __computeMeasure(renderMode, ctx) {
-        var content = this.content,
-            computedStyle = this.computedStyle,
-            charWidthList = this.charWidthList; // 每次都要清空重新计算，计算会有缓存
-
-        charWidthList.splice(0);
-        var ffs = computedStyle[FONT_FAMILY$2].split(',');
-        var ff = 'arial';
-
-        for (var i = 0, len = ffs.length; i < len; i++) {
-          if (inject.checkSupportFontFamily(ffs[i])) {
-            ff = ffs[i];
-            break;
-          }
-        }
-
-        this.__ff = ff;
-        var fs = computedStyle[FONT_SIZE$5];
-        var fw = computedStyle[FONT_WEIGHT$2];
-        var key = this.__key = computedStyle[FONT_SIZE$5] + ',' + ff + ',' + fw;
-        var wait = textCache.data[key] = textCache.data[key] || {
-          ff: ff,
-          fs: fs,
-          fw: fw,
-          hash: {},
-          s: ''
-        };
-        var cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
-        var sum = 0;
-        var needMeasure = false;
-        var parentComputedStyle = this.domParent.computedStyle;
-        var pff = 'arial';
-
-        for (var _i = 0, pffs = parentComputedStyle[FONT_FAMILY$2].split(','), _len = pffs.length; _i < _len; _i++) {
-          if (inject.checkSupportFontFamily(pffs[_i])) {
-            ff = ffs[_i];
-            break;
-          }
-        }
-
-        var pfs = parentComputedStyle[FONT_SIZE$5];
-        var pfw = parentComputedStyle[FONT_WEIGHT$2];
-        var pKey = this.__pKey = pfs + ',' + pff + ',' + pfw;
-        var parentCache = textCache.charWidth[pKey] = textCache.charWidth[pKey] || {};
-
-        if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          if (renderMode === WEBGL$1) {
-            ctx = inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__').ctx;
-          }
-
-          if (!parentCache.hasOwnProperty(ELLIPSIS)) {
-            ctx.font = css.setFontStyle(parentComputedStyle);
-            parentCache[ELLIPSIS] = ctx.measureText(ELLIPSIS).width;
-          }
-
-          ctx.font = css.setFontStyle(computedStyle);
-        } else if (renderMode === SVG) {
-          if (!parentCache.hasOwnProperty(ELLIPSIS)) {
-            parentCache[ELLIPSIS] = 0;
-
-            var _wait = textCache.data[pKey] = textCache.data[pKey] || {
-              ff: pff,
-              fs: pfs,
-              fw: pfw,
-              hash: {},
-              s: ''
-            };
-
-            _wait.s += ELLIPSIS;
-            needMeasure = true;
-          }
-        } // 逐字测量，canvas可瞬间得到信息，svg先预存统一进行
-
-
-        for (var _i2 = 0, length = content.length; _i2 < length; _i2++) {
-          var _char = content.charAt(_i2);
-
-          var mw = void 0;
-
-          if (cache.hasOwnProperty(_char)) {
-            mw = cache[_char];
-            charWidthList.push(mw);
-            sum += mw;
-            this.__charWidth = Math.max(this.charWidth, mw);
-          } else if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-            mw = cache[_char] = ctx.measureText(_char).width;
-            charWidthList.push(mw);
-            sum += mw;
-            this.__charWidth = Math.max(this.charWidth, mw);
-          } else {
-            if (!wait.hash.hasOwnProperty(_char)) {
-              wait.s += _char;
-            }
-
-            wait.hash[_char] = true; // 先预存标识位-1，测量完后替换它
-
-            charWidthList.push(-1);
-            needMeasure = true;
-          }
-        }
-
-        this.__textWidth = sum;
-
-        if (needMeasure) {
-          textCache.list.push(this);
-        }
-      }
-    }, {
-      key: "__measureCb",
-      value: function __measureCb() {
-        var content = this.content,
-            charWidthList = this.charWidthList;
-        var key = this.__key;
-        var cache = textCache.charWidth[key];
-        var sum = 0;
-
-        for (var i = 0, len = charWidthList.length; i < len; i++) {
-          if (charWidthList[i] < 0) {
-            var mw = charWidthList[i] = cache[content.charAt(i)];
-            sum += mw;
-            this.__charWidth = Math.max(this.charWidth, mw);
-          }
-        }
-
-        this.__textWidth = sum;
-      }
-      /**
-       * text在virtual时和普通一样，无需特殊处理
-       * endSpace由外界inline布局控制，末尾最后一行的空白mpb，包含递归情况，递归为多个嵌套末尾节点的空白mpb之和
-       * 即便宽度不足，每行还是强制渲染一个字符，换行依据lx开始，因为x可能是从中间开始的，非inline则两个相等
-       * 最后一个字符排版时要考虑末尾mpb，排不下的话回退删掉这个字符，如果最后一个字符另起开头，排不下也强制排，每行至少1个字符
-       * 在textOverflow时很特殊，多个inline同行，回退可能到前一个inline节点，这个通过x和lx判断是否行首，决定至少1个字符规则
-       * @param data
-       * @private
-       */
-
-    }, {
       key: "__layout",
       value: function __layout(data) {
         var __cache = this.__config[NODE_CACHE];
@@ -14340,6 +14119,8 @@
         } // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
         // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
         else {
+          console.error(content);
+
           while (i < length) {
             var wl = i ? w : w - beginSpace;
 
@@ -14347,8 +14128,9 @@
                 _measureLineWidth2 = _slicedToArray(_measureLineWidth, 3),
                 num = _measureLineWidth2[0],
                 rw = _measureLineWidth2[1],
-                newLine = _measureLineWidth2[2]; // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
+                newLine = _measureLineWidth2[2];
 
+            console.log(num, rw, newLine); // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
 
             if (lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
               // i<length-1说明不是最后一个，但当非首行且只有1个字符时进不来，所以要判断!i
@@ -14750,7 +14532,6 @@
             var res = {};
             var vd = self.domParent;
             res[UPDATE_NODE] = vd;
-            res[UPDATE_MEASURE] = true;
             res[UPDATE_FOCUS] = o$3.REFLOW;
             res[UPDATE_CONFIG] = vd.__config;
             var root = vd.root;
@@ -14776,11 +14557,6 @@
       key: "textBoxes",
       get: function get() {
         return this.__textBoxes;
-      }
-    }, {
-      key: "charWidthList",
-      get: function get() {
-        return this.__charWidthList;
       }
     }, {
       key: "charWidth",
@@ -16771,7 +16547,7 @@
   var AUTO$3 = o.AUTO,
       PX$5 = o.PX,
       PERCENT$6 = o.PERCENT,
-      INHERIT$3 = o.INHERIT,
+      INHERIT$2 = o.INHERIT,
       RGBA$1 = o.RGBA,
       STRING$2 = o.STRING,
       NUMBER$4 = o.NUMBER,
@@ -16868,7 +16644,7 @@
           var oh = target.outerHeight;
           var m = transform$1.calMatrix(v, ow, oh);
           style[k] = [[MATRIX$2, m]];
-        } else if (v[1] === INHERIT$3) {
+        } else if (v[1] === INHERIT$2) {
           if (k === COLOR$3 || k === TEXT_STROKE_COLOR$3) {
             style[k] = [util.rgba2int(computedStyle[k]), RGBA$1];
           } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
@@ -20156,7 +19932,7 @@
   var AUTO$4 = o.AUTO,
       PX$6 = o.PX,
       PERCENT$7 = o.PERCENT,
-      INHERIT$4 = o.INHERIT,
+      INHERIT$3 = o.INHERIT,
       NUMBER$5 = o.NUMBER,
       REM$7 = o.REM,
       VW$7 = o.VW,
@@ -21373,7 +21149,7 @@
 
         var parentComputedStyle = parent && parent.computedStyle;
 
-        if (currentStyle[FONT_STYLE$3][1] === INHERIT$4) {
+        if (currentStyle[FONT_STYLE$3][1] === INHERIT$3) {
           computedStyle[FONT_STYLE$3] = parent ? parentComputedStyle[FONT_STYLE$3] : 'normal';
         } else if (isNil$6(__cacheStyle[FONT_STYLE$3])) {
           computedStyle[FONT_STYLE$3] = currentStyle[FONT_STYLE$3][0];
@@ -21381,7 +21157,7 @@
 
         __cacheStyle[FONT_STYLE$3] = computedStyle[FONT_STYLE$3];
 
-        if (currentStyle[COLOR$4][1] === INHERIT$4) {
+        if (currentStyle[COLOR$4][1] === INHERIT$3) {
           computedStyle[COLOR$4] = parent ? parentComputedStyle[COLOR$4] : [0, 0, 0, 1];
           __cacheStyle[COLOR$4] = int2rgba$2(computedStyle[COLOR$4]);
         } else if (isNil$6(__cacheStyle[COLOR$4])) {
@@ -21389,7 +21165,7 @@
           __cacheStyle[COLOR$4] = int2rgba$2(computedStyle[COLOR$4]);
         }
 
-        if (currentStyle[TEXT_STROKE_COLOR$4][1] === INHERIT$4) {
+        if (currentStyle[TEXT_STROKE_COLOR$4][1] === INHERIT$3) {
           computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
           __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
@@ -21397,7 +21173,7 @@
           __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
         }
 
-        if (currentStyle[TEXT_STROKE_WIDTH$3][1] === INHERIT$4) {
+        if (currentStyle[TEXT_STROKE_WIDTH$3][1] === INHERIT$3) {
           computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : 0;
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_WIDTH$3])) {
@@ -21421,13 +21197,13 @@
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         }
 
-        if (currentStyle[TEXT_STROKE_OVER$3][1] === INHERIT$4) {
+        if (currentStyle[TEXT_STROKE_OVER$3][1] === INHERIT$3) {
           __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = parent ? parentComputedStyle[TEXT_STROKE_OVER$3] : 'none';
         } else {
           __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = currentStyle[TEXT_STROKE_OVER$3][0];
         }
 
-        if (currentStyle[VISIBILITY$2][1] === INHERIT$4) {
+        if (currentStyle[VISIBILITY$2][1] === INHERIT$3) {
           computedStyle[VISIBILITY$2] = parent ? parentComputedStyle[VISIBILITY$2] : 'visible';
         } else if (isNil$6(__cacheStyle[VISIBILITY$2])) {
           computedStyle[VISIBILITY$2] = currentStyle[VISIBILITY$2][0];
@@ -21435,7 +21211,7 @@
 
         __cacheStyle[VISIBILITY$2] = computedStyle[VISIBILITY$2];
 
-        if (currentStyle[POINTER_EVENTS$1][1] === INHERIT$4) {
+        if (currentStyle[POINTER_EVENTS$1][1] === INHERIT$3) {
           computedStyle[POINTER_EVENTS$1] = parent ? parentComputedStyle[POINTER_EVENTS$1] : 'auto';
         } else if (isNil$6(__cacheStyle[POINTER_EVENTS$1])) {
           computedStyle[POINTER_EVENTS$1] = currentStyle[POINTER_EVENTS$1][0];
@@ -22869,13 +22645,7 @@
         this.__frameAnimateList.splice(0).forEach(function (o) {
           frame.offFrame(o);
         });
-      } // __computeMeasure(renderMode, ctx, cb) {
-      //   css.computeMeasure(this);
-      //   if(isFunction(cb)) {
-      //     cb(this);
-      //   }
-      // }
-
+      }
     }, {
       key: "__deepScan",
       value: function __deepScan(cb, options) {
@@ -24189,7 +23959,6 @@
       UPDATE_FOCUS$2 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
       UPDATE_ADD_DOM = _enums$UPDATE_KEY$3.UPDATE_ADD_DOM,
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
-      UPDATE_MEASURE$1 = _enums$UPDATE_KEY$3.UPDATE_MEASURE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -27104,7 +26873,6 @@
                 res[UPDATE_NODE$3] = vd;
                 res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE$1] = true;
                 res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
@@ -27164,7 +26932,6 @@
                 res[UPDATE_NODE$3] = vd;
                 res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE$1] = true;
                 res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
@@ -27249,7 +27016,6 @@
                 res[UPDATE_NODE$3] = vd;
                 res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE$1] = true;
                 res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
@@ -27334,7 +27100,6 @@
                 res[UPDATE_NODE$3] = vd;
                 res[UPDATE_FOCUS$2] = o$3.REFLOW;
                 res[UPDATE_ADD_DOM] = true;
-                res[UPDATE_MEASURE$1] = true;
                 res[UPDATE_CONFIG$3] = vd.__config;
 
                 root.__addUpdate(vd, vd.__config, root, root.__config, res);
@@ -34522,7 +34287,6 @@
       UPDATE_KEYS$2 = _enums$UPDATE_KEY$5.UPDATE_KEYS,
       UPDATE_COMPONENT = _enums$UPDATE_KEY$5.UPDATE_COMPONENT,
       UPDATE_FOCUS$4 = _enums$UPDATE_KEY$5.UPDATE_FOCUS,
-      UPDATE_MEASURE$2 = _enums$UPDATE_KEY$5.UPDATE_MEASURE,
       UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$5.UPDATE_OVERWRITE,
       UPDATE_LIST = _enums$UPDATE_KEY$5.UPDATE_LIST,
       UPDATE_CONFIG$5 = _enums$UPDATE_KEY$5.UPDATE_CONFIG,
@@ -34559,7 +34323,7 @@
   var AUTO$8 = o.AUTO,
       PX$b = o.PX,
       PERCENT$c = o.PERCENT,
-      INHERIT$5 = o.INHERIT;
+      INHERIT$4 = o.INHERIT;
   var isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute,
       equalStyle$1 = css.equalStyle;
   var contain$3 = o$3.contain,
@@ -34572,8 +34336,7 @@
       REFLOW$2 = o$3.REFLOW,
       REBUILD = o$3.REBUILD;
   var isIgnore = o$2.isIgnore,
-      isGeom$2 = o$2.isGeom,
-      isMeasure = o$2.isMeasure;
+      isGeom$2 = o$2.isGeom;
   var ROOT_DOM_NAME = {
     canvas: 'canvas',
     svg: 'svg',
@@ -34832,13 +34595,12 @@
 
   var uniqueUpdateId = 0;
 
-  function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
+  function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList, zHash, zList) {
     var node = target[UPDATE_NODE$5],
         style = target[UPDATE_STYLE$2],
         overwrite = target[UPDATE_OVERWRITE$1],
         focus = target[UPDATE_FOCUS$4],
         component = target[UPDATE_COMPONENT],
-        measure = target[UPDATE_MEASURE$2],
         list = target[UPDATE_LIST],
         keys = target[UPDATE_KEYS$2],
         __config = target[UPDATE_CONFIG$5],
@@ -34897,7 +34659,6 @@
         domParent = __config[NODE_DOM_PARENT$6],
         isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
-    var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
     if (!component && style && keys) {
@@ -34932,12 +34693,7 @@
               } // repaint细化等级，reflow在checkReflow()
 
 
-              lv |= getLevel(k);
-
-              if (isMeasure(k)) {
-                hasMeasure = true;
-              } // repaint置空，如果reflow会重新生成空的
-
+              lv |= getLevel(k); // repaint置空，如果reflow会重新生成空的
 
               __cacheStyle[k] = undefined;
               currentStyle[k] = v;
@@ -34988,11 +34744,11 @@
         var _need = void 0; // text的style指向parent，因此text一定变更
 
 
-        if (hasVisibility && (_node instanceof Text || _currentStyle[VISIBILITY$6][1] === INHERIT$5)) {
+        if (hasVisibility && (_node instanceof Text || _currentStyle[VISIBILITY$6][1] === INHERIT$4)) {
           _need = true;
         }
 
-        if (hasColor && (_node instanceof Text || _currentStyle[COLOR$5][1] === INHERIT$5)) {
+        if (hasColor && (_node instanceof Text || _currentStyle[COLOR$5][1] === INHERIT$4)) {
           _need = true;
         }
 
@@ -35033,7 +34789,7 @@
         computedStyle[DISPLAY$8] = 'none';
         return;
       }
-    } // reflow/repaint/measure相关的记录下来
+    } // reflow/repaint相关的记录下来
 
 
     var isRp = !component && isRepaint(lv);
@@ -35061,11 +34817,7 @@
         component: component,
         addDom: addDom,
         removeDom: removeDom
-      }); // measure需要提前先处理
-
-      if (hasMeasure) {
-        measureList.push(node);
-      }
+      });
     } // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
 
 
@@ -35442,14 +35194,11 @@
         defs.clear(); // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
 
         if (isFirst) {
-          this.__checkRoot(renderMode, width, height); // this.__computeMeasure(renderMode, ctx);
-
+          this.__checkRoot(renderMode, width, height);
         } // 非首次刷新如果没有更新则无需继续
         else if (!this.__checkUpdate(renderMode, ctx, width, height)) {
           return;
-        } // 获取所有字体和大小测量，仅svg需要，canvas直接做
-        // inject.measureText();
-
+        }
 
         this.__checkReflow(width, height);
 
@@ -35680,7 +35429,6 @@
                     res[UPDATE_NODE$5] = sr;
                     res[UPDATE_STYLE$2] = sr.currentStyle;
                     res[UPDATE_FOCUS$4] = REFLOW$2;
-                    res[UPDATE_MEASURE$2] = true;
                     res[UPDATE_COMPONENT] = cp;
                     res[UPDATE_CONFIG$5] = sr.__config;
 
@@ -35828,10 +35576,6 @@
           if (updateHash) {
             if (o[UPDATE_FOCUS$4]) {
               updateHash[UPDATE_FOCUS$4] |= o[UPDATE_FOCUS$4];
-            }
-
-            if (o[UPDATE_MEASURE$2]) {
-              updateHash[UPDATE_MEASURE$2] = true;
             } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -35853,10 +35597,6 @@
 
           if (o[UPDATE_FOCUS$4]) {
             target[UPDATE_FOCUS$4] |= o[UPDATE_FOCUS$4];
-          }
-
-          if (o[UPDATE_MEASURE$2]) {
-            target[UPDATE_MEASURE$2] = true;
           } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -35880,7 +35620,6 @@
       key: "__checkUpdate",
       value: function __checkUpdate(renderMode, ctx, width, height) {
         var root = this;
-        var measureList = [];
         var reflowList = [];
         var cacheHash = {};
         var cacheList = [];
@@ -35894,7 +35633,7 @@
 
         if (updateRoot) {
           root.__updateRoot = null;
-          hasUpdate = parseUpdate(renderMode, root, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
+          hasUpdate = parseUpdate(renderMode, root, updateRoot, reflowList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
 
           if (hasUpdate) {
             root.__checkRoot(renderMode, width, height);
@@ -35905,7 +35644,7 @@
         var keys = Object.keys(updateHash);
 
         for (var i = 0, len = keys.length; i < len; i++) {
-          var t = parseUpdate(renderMode, root, updateHash[keys[i]], reflowList, measureList, cacheHash, cacheList, zHash, zList);
+          var t = parseUpdate(renderMode, root, updateHash[keys[i]], reflowList, cacheHash, cacheList, zHash, zList);
           hasUpdate = hasUpdate || t;
         } // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
 
@@ -35923,61 +35662,6 @@
 
             item.__updateStruct(root.__structs);
           }
-        });
-        /**
-         * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
-         * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
-         */
-
-        var measureHash = {};
-        measureList.forEach(function (node) {
-          var _node$__config = node.__config,
-              __uniqueUpdateId = _node$__config[NODE_UNIQUE_UPDATE_ID],
-              parent = _node$__config[NODE_DOM_PARENT$6]; // 在root下的component变更时root会进入，但其没有__uniqueUpdateId
-
-          if (node !== root) {
-            if (measureHash.hasOwnProperty(__uniqueUpdateId)) {
-              return;
-            }
-
-            measureHash[__uniqueUpdateId] = true;
-          }
-          // 另外dom标识表明有dom变更强制进入
-
-          var isInherit = node !== root && (updateHash[__uniqueUpdateId][UPDATE_ADD_DOM$1] || o$2.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$2])); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
-
-          if (isInherit) {
-            while (parent && parent !== root) {
-              var _parent = parent,
-                  _uniqueUpdateId = _parent.__config[NODE_UNIQUE_UPDATE_ID],
-                  currentStyle = _parent.currentStyle;
-
-              var _isInherit = void 0;
-
-              if (parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-                var style = updateHash[_uniqueUpdateId][UPDATE_STYLE$2];
-                measureHash[_uniqueUpdateId] = true;
-                var temp = o$2.measureInheritList(style);
-                _isInherit = !!temp.length;
-              } else {
-                _isInherit = o$2.isMeasureInherit(currentStyle);
-              } // 如果parent有inherit存入列表且继续向上，否则跳出循环
-
-
-              if (_isInherit) ; else {
-                break;
-              } // 考虑component下的继续往上继承
-
-
-              parent = parent.domParent;
-            }
-          } // 自顶向下查找inherit的，利用已有的方法+回调，当递归包含重复时标记防止重复
-          // last.__computeMeasure(renderMode, ctx, function(target) {
-          //   if(target.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-          //     measureHash[target.__config[NODE_UNIQUE_UPDATE_ID]] = true;
-          //   }
-          // });
-
         }); // 做完清空留待下次刷新重来
 
         for (var _i3 = 0, _len2 = keys.length; _i3 < _len2; _i3++) {
@@ -36719,14 +36403,7 @@
 
           reflow.clearUniqueReflowId(reflowHash);
         }
-      } // 特殊覆盖方法，不需要super()计算自己，因为无需第3个参数cb且自己是root
-      // __computeMeasure(renderMode, ctx) {
-      //   css.computeMeasure(this, true);
-      //   this.children.forEach(item => {
-      //     item.__computeMeasure(renderMode, ctx);
-      //   });
-      // }
-      // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
+      } // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
       // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
 
     }, {

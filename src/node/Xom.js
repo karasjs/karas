@@ -2667,13 +2667,6 @@ class Xom extends Node {
     });
   }
 
-  // __computeMeasure(renderMode, ctx, cb) {
-  //   css.computeMeasure(this);
-  //   if(isFunction(cb)) {
-  //     cb(this);
-  //   }
-  // }
-
   __deepScan(cb, options) {
     return cb(this, options);
   }

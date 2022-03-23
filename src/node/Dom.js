@@ -68,7 +68,6 @@ const {
     UPDATE_FOCUS,
     UPDATE_ADD_DOM,
     UPDATE_CONFIG,
-    UPDATE_MEASURE,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -2706,7 +2705,6 @@ class Dom extends Xom {
             res[UPDATE_NODE] = vd;
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_MEASURE] = true;
             res[UPDATE_CONFIG] = vd.__config;
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
@@ -2756,7 +2754,6 @@ class Dom extends Xom {
             res[UPDATE_NODE] = vd;
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_MEASURE] = true;
             res[UPDATE_CONFIG] = vd.__config;
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
@@ -2827,7 +2824,6 @@ class Dom extends Xom {
             res[UPDATE_NODE] = vd;
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_MEASURE] = true;
             res[UPDATE_CONFIG] = vd.__config;
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },
@@ -2898,7 +2894,6 @@ class Dom extends Xom {
             res[UPDATE_NODE] = vd;
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_MEASURE] = true;
             res[UPDATE_CONFIG] = vd.__config;
             root.__addUpdate(vd, vd.__config, root, root.__config, res);
           },

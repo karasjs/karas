@@ -1,9 +1,7 @@
 import reset from '../style/reset';
-import unit from '../style/unit';
 import enums from '../util/enums';
 
 const { DOM: RESET_DOM, GEOM: RESET_GEOM } = reset;
-const { INHERIT } = unit;
 const { STYLE_KEY } = enums;
 
 const GEOM = {};
@@ -54,18 +52,12 @@ const REPAINT = {
   [STYLE_KEY.TEXT_STROKE_COLOR]: true,
   [STYLE_KEY.TEXT_STROKE_OVER]: true,
 };
-const MEASURE = {
-  [STYLE_KEY.FONT_SIZE]: true,
-  [STYLE_KEY.FONT_WEIGHT]: true,
-  [STYLE_KEY.FONT_FAMILY]: true,
-};
 
 let o = {
   GEOM,
   GEOM_KEY_SET,
   IGNORE,
   REPAINT,
-  MEASURE,
   addGeom(tagName, ks, cb) {
     if(Array.isArray(ks)) {
       ks.forEach(k => {
@@ -89,9 +81,6 @@ let o = {
   isRepaint(k, tagName) {
     return REPAINT.hasOwnProperty(k) || o.isGeom(tagName, k);
   },
-  isMeasure(k) {
-    return MEASURE.hasOwnProperty(k);
-  },
   isValid(tagName, k) {
     if(!k) {
       return false;
@@ -111,30 +100,6 @@ let o = {
     }
     return false;
   },
-};
-
-let MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(MEASURE).map(i => parseInt(i));
-let len = MEASURE_KEY_SET.length;
-o.isMeasureInherit = function(target) {
-  if(target) {
-    for(let i = 0; i < len; i++) {
-      let k = MEASURE_KEY_SET[i];
-      if(target.hasOwnProperty(k) && target[k][1] === INHERIT) {
-        return true;
-      }
-    }
-  }
-  return false;
-};
-o.measureInheritList = function(target) {
-  let list = [];
-  for(let i = 0; i < len; i++) {
-    let k = MEASURE_KEY_SET[i];
-    if(target.hasOwnProperty(k) && target[k][1] === INHERIT) {
-      list.push(k);
-    }
-  }
-  return list;
 };
 
 o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);

@@ -586,7 +586,7 @@ class Text extends Node {
     this.__sy1 += diff;
   }
 
-  __tryLayInline(w) {console.log(w, this.firstCharWidth, this.content)
+  __tryLayInline(w) {
     return w - this.firstCharWidth;
   }
 

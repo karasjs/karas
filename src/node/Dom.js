@@ -1983,8 +1983,7 @@ class Dom extends Xom {
     let contentBoxList;
     if(isInline) {
       contentBoxList = this.__contentBoxList = [];
-      // lineBoxManager.pushContentBoxList(this);
-      // 移入第一个节点布局前初始化，防止lineClamp回溯时一个子节点未布局就添加
+      lineBoxManager.pushContentBoxList(this);
     }
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;
@@ -2018,7 +2017,7 @@ class Dom extends Xom {
           // 最后一个是text/inline时
           if(last instanceof TextBox) {
             let text = last.parent;
-            text.lineBack(lineBoxManager, lineBox, w);
+            // text.lineBack(lineBoxManager, lineBox, w);
           }
           // 最后一个是ib时
           else {
@@ -2036,10 +2035,6 @@ class Dom extends Xom {
       let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
       let isRealInline = isXom && isInline2 && item.__isRealInline();
-      // 第一个inline子节点进行初始化，避免lineClamp回溯去不掉
-      if(!i && isInline) {
-        lineBoxManager.pushContentBoxList(this);
-      }
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
       let isEnd = isInline && (i === length - 1) && whiteSpace !== 'nowrap';
       if(isEnd) {
@@ -2085,7 +2080,7 @@ class Dom extends Xom {
         }
         else {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x, w - (isEnd ? endSpace : 0));
+          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
           // 放得下继续
           if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({

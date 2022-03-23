@@ -14556,7 +14556,6 @@
     }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w) {
-        console.log(w, this.firstCharWidth, this.content);
         return w - this.firstCharWidth;
       }
     }, {
@@ -26305,8 +26304,8 @@
         var contentBoxList;
 
         if (isInline) {
-          contentBoxList = this.__contentBoxList = []; // lineBoxManager.pushContentBoxList(this);
-          // 移入第一个节点布局前初始化，防止lineClamp回溯时一个子节点未布局就添加
+          contentBoxList = this.__contentBoxList = [];
+          lineBoxManager.pushContentBoxList(this);
         }
 
         var isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
@@ -26346,8 +26345,7 @@
               var last = list[list.length - 1]; // 最后一个是text/inline时
 
               if (last instanceof TextBox) {
-                var text = last.parent;
-                text.lineBack(lineBoxManager, lineBox, w);
+                var text = last.parent; // text.lineBack(lineBoxManager, lineBox, w);
               }
             }
 
@@ -26365,12 +26363,7 @@
           var isInline2 = isXom && item.currentStyle[DISPLAY$5] === 'inline';
           var isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
 
-          var isRealInline = isXom && isInline2 && item.__isRealInline(); // 第一个inline子节点进行初始化，避免lineClamp回溯去不掉
-
-
-          if (!i && isInline) {
-            lineBoxManager.pushContentBoxList(_this4);
-          } // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
+          var isRealInline = isXom && isInline2 && item.__isRealInline(); // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
 
 
           var isEnd = isInline && i === length - 1 && whiteSpace !== 'nowrap';
@@ -26419,7 +26412,7 @@
               }
             } else {
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x, w - (isEnd ? endSpace : 0)); // 放得下继续
+              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
 
               if (fw >= -1e-10) {
                 lineClampCount = item.__layout({

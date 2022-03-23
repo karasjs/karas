@@ -14151,6 +14151,7 @@
 
 
             if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
+              // clip也要添加，ellipse则要回退
               if (textOverflow === 'ellipsis') {
                 var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
@@ -14158,6 +14159,17 @@
 
                 y = _this$__lineBack4[0];
                 maxW = _this$__lineBack4[1];
+              } else {
+                var _textBox2 = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
+
+                textBoxes.push(_textBox2);
+                lineBoxManager.addItem(_textBox2, newLine);
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                i += num;
+
+                if (newLine) {
+                  lineCount++;
+                }
               }
 
               lineCount++;
@@ -14240,12 +14252,12 @@
         if (rw + ew > wl + 1e-10) {
           // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
           if (wl >= ew + 1e-10) {
-            var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            var _textBox3 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
-            _textBox2.setDom(bp);
+            _textBox3.setDom(bp);
 
-            textBoxes.push(_textBox2);
-            lineBoxManager.addItem(_textBox2, true);
+            textBoxes.push(_textBox3);
+            lineBoxManager.addItem(_textBox3, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
             maxW = Math.max(maxW, rw + ew);
             return [y, maxW];
@@ -14309,12 +14321,12 @@
                     }
                   }
 
-                  var _textBox3 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+                  var _textBox4 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
-                  _textBox3.setDom(bp);
+                  _textBox4.setDom(bp);
 
-                  textBoxes.push(_textBox3);
-                  lineBoxManager.addItem(_textBox3, true);
+                  textBoxes.push(_textBox4);
+                  lineBoxManager.addItem(_textBox4, true);
                   y += Math.max(lineHeight, lineBoxManager.lineHeight);
                   maxW = Math.max(maxW, _rw + ew);
                   return [y, maxW];

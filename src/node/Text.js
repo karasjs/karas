@@ -279,9 +279,20 @@ class Text extends Node {
         let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
+          // clip也要添加，ellipse则要回退
           if(textOverflow === 'ellipsis') {
             [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
               lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+          }
+          else {
+            let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
+            textBoxes.push(textBox);
+            lineBoxManager.addItem(textBox, newLine);
+            y += Math.max(lineHeight, lineBoxManager.lineHeight);
+            i += num;
+            if(newLine) {
+              lineCount++;
+            }
           }
           lineCount++;
           break;

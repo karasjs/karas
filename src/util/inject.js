@@ -156,7 +156,7 @@ let inject = {
     }
     div.style.fontFamily = ff;
     div.style.fontSize = fs + 'px';
-    div.style.fontWeight = fw;console.log(str, str.length)
+    div.style.fontWeight = fw;
     div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
     return parseFloat(window.getComputedStyle(div, null).width);
   },

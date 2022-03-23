@@ -2718,9 +2718,15 @@ function renderCanvas(renderMode, ctx, root) {
         if(offscreenHash.hasOwnProperty(i)) {
           ctx = applyOffscreen(ctx, offscreenHash[i], width, height);
         }
-        // render后判断可见状态，此时computedStyle才有值
+        // render后判断可见状态，此时computedStyle才有值，none可以忽略渲染，但是可能会跳过offscreenHash预置的索引
         if(display === 'none') {
-          i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+          let add = (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
+          for(let j = i + 1; j <= i + add; j++) {
+            if(offscreenHash.hasOwnProperty(j)) {
+              ctx = applyOffscreen(ctx, offscreenHash[j], width, height);
+            }
+          }
+          i += add;
         }
       }
     }

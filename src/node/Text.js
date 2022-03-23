@@ -28,6 +28,12 @@ const {
     WIDTH,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
+    MARGIN_LEFT,
+    MARGIN_RIGHT,
+    PADDING_LEFT,
+    PADDING_RIGHT,
+    BORDER_LEFT_WIDTH,
+    BORDER_RIGHT_WIDTH,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -71,10 +77,22 @@ const { CANVAS, SVG, WEBGL } = mode;
 function measureLineWidth(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing) {
   if(start >= length) {
     // 特殊情况不应该走进这里
-    return [0, 0];
+    return [0, 0, false];
   }
+  let i = start, j = length, rw = 0, newLine = false;
   // 特殊降级，有letterSpacing时，canvas无法完全兼容，只能采取单字测量的方式完成
-  if(letterSpacing && [CANVAS, WEBGL].indexOf(renderMode) > -1) {}
+  if(letterSpacing && [CANVAS, WEBGL].indexOf(renderMode) > -1) {
+    let count = 0;
+    for(; i < length; i++) {
+      let mw = ctx.measureText(content.charAt(i)).width + letterSpacing;
+      if(i > start && count + mw > w + (1e-10)) {
+        newLine = true;
+        break;
+      }
+      count += mw;
+    }
+    return [i - start, count, newLine || count > w + (1e-10)];
+  }
   // 没有letterSpacing或者是svg模式可以完美获取TextMetrics
   let hypotheticalNum = Math.round(w / perW);
   // 不能增长0个字符，至少也要1个
@@ -86,7 +104,6 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     hypotheticalNum = length - start;
   }
   // 类似2分的一个循环
-  let i = start, j = length, rw = 0, newLine = false;
   while(i < j) {
     let mw, str = content.slice(start, start + hypotheticalNum);
     if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -158,6 +175,7 @@ class Text extends Node {
     this.__charWidth = 0; // 最小字符宽度（单个）
     this.__textWidth = 0; // 整体宽度
     this.__bp = null; // block父节点
+    this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
   }
 
@@ -178,7 +196,7 @@ class Text extends Node {
     let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
-    let { isDestroyed, content, computedStyle, textBoxes, charWidthList, root, __ff, __key } = this;
+    let { isDestroyed, content, computedStyle, textBoxes, root } = this;
     textBoxes.splice(0);
     let __config = this.__config;
     __config[NODE_LIMIT_CACHE] = false;
@@ -205,6 +223,7 @@ class Text extends Node {
       bp = bp.domParent;
     }
     this.__bp = bp;
+    let textOverflow = bp.computedStyle[TEXT_OVERFLOW];
     css.getFontFamily(fontFamily); // 有检测过程必须执行
     // 布局测量前置，根据renderMode不同提供不同的测量方法
     let renderMode = root.renderMode;
@@ -224,7 +243,6 @@ class Text extends Node {
       let {
         [POSITION]: position,
         [OVERFLOW]: overflow,
-        [TEXT_OVERFLOW]: textOverflow,
       } = bp.computedStyle;
       let widthC = bp.currentStyle[WIDTH];
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
@@ -255,16 +273,16 @@ class Text extends Node {
     }
     // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
     // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
-    else {console.error(content);
+    else {
       while(i < length) {
         let wl = i ? w : (w - beginSpace);
         let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
-        console.log(num, rw, newLine)
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
-        if(lineClamp && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
-          // i<length-1说明不是最后一个，但当非首行且只有1个字符时进不来，所以要判断!i
-          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
-            lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+        if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
+          if(textOverflow === 'ellipsis') {
+            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
+              lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+          }
           lineCount++;
           break;
         }
@@ -292,7 +310,12 @@ class Text extends Node {
     this.__width = maxW;
     this.__height = y - data.y;
     this.__baseline = css.getBaseline(computedStyle);
-    return lineCount;
+    return lineClampCount + lineCount;
+  }
+
+  __layoutNone() {
+    this.__width = this.__height = this.__baseline = 0;
+    this.__textBoxes.splice(0);
   }
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
@@ -314,9 +337,9 @@ class Text extends Node {
     }
     let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
-    if(rw + ew > wl) {
+    if(rw + ew > wl + (1e-10)) {
       // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
-      if(wl >= ew) {
+      if(wl >= ew + (1e-10)) {
         let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
         textBox.setDom(bp);
         textBoxes.push(textBox);
@@ -331,9 +354,20 @@ class Text extends Node {
         let list = lineBox.list;
         for(let j = list.length - 1; j >= 0; j--) {
           let tb = list[j];
-          let { content, width, parent } = tb;
+          // 可能是个inlineBlock，整个省略掉，除非是第一个不作ellipsis处理
+          if(!(tb instanceof TextBox)) {
+            if(!j) {
+              break;
+            }
+            let item = list.pop();
+            x -= item.outerWidth;
+            wl += item.outerWidth;
+            item.__layoutNone();
+            continue;
+          }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
-          if(!j || wl >= width + ew) {
+          let { content, width, parent } = tb;
+          if(!j || wl >= width + ew + (1e-10)) {
             let length = content.length;
             let {
               [LETTER_SPACING]: letterSpacing,
@@ -347,7 +381,7 @@ class Text extends Node {
             // 再进行查找，这里也会有至少一个字符不用担心
             let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
             if(!j || num > 1) {
-              // 可能发生x回退，当tb的内容产生介绍时
+              // 可能发生x回退，当tb的内容产生减少时
               if(num !== content.length) {
                 tb.__content = content.slice(0, num);
                 tb.__width = rw;
@@ -365,14 +399,31 @@ class Text extends Node {
               return [y, maxW];
             }
           }
-          // 舍弃这个tb，x也要向前回退，这会发生在ELLIPSIS字体很大，里面内容字体很小时
+          // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
+          wl += width;
+          x -= width;
           let tbs = item.parent.textBoxes;
           let k = tbs.indexOf(item);
           if(k > -1) {
             tbs.splice(k, 1);
           }
-          x -= width;
+          // 还得去掉dom，防止inline嵌套一直向上，同时得判断不能误删前面一个的dom
+          let dom = item.parent.parent;
+          let prev = list[list.length - 1];
+          if(prev instanceof TextBox) {
+            prev = prev.parent.parent;
+          }
+          while(dom !== bp && dom !== prev) {
+            let computedStyle = dom.computedStyle;
+            let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+              + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+              + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+            x -= mbp;
+            wl += mbp;
+            dom.__layoutNone();
+            dom = dom.domParent;
+          }
         }
       }
     }
@@ -387,6 +438,132 @@ class Text extends Node {
     y += Math.max(lineHeight, lineBoxManager.lineHeight);
     maxW = Math.max(maxW, rw + ew);
     return [y, maxW];
+  }
+
+  // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值
+  lineBack(lineBoxManager, lineBox, w) {
+    let ew, content = this.content, computedStyle = this.computedStyle,
+      bp = this.__bp, bComputedStyle = bp.computedStyle,
+      root = this.root, renderMode = root.renderMode;
+    let wl = w;
+    let list = lineBox.list;
+    let x = list[0].x, y = list[0].y;
+    list.forEach(item => {
+      x += item.outerWidth;
+      wl -= item.outerWidth;
+    });
+    let {
+      [LINE_HEIGHT]: lineHeight,
+      [LETTER_SPACING]: letterSpacing,
+      [FONT_SIZE]: fontSize,
+      [FONT_WEIGHT]: fontWeight,
+      [FONT_FAMILY]: fontFamily,
+    } = computedStyle;
+    let ctx;
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      ctx = renderMode === WEBGL
+        ? inject.getFontCanvas().ctx
+        : root.ctx;
+      ctx.font = css.setFontStyle(computedStyle);
+    }
+    // 临时测量ELLIPSIS的尺寸
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      ctx.save();
+      let font = css.setFontStyle(bComputedStyle);
+      if(ctx.font !== font) {
+        ctx.font = font;
+      }
+      ew = ctx.measureText(ELLIPSIS).width;
+      ctx.restore();
+    }
+    else {
+      ew = inject.measureTextSync(ELLIPSIS, bComputedStyle[FONT_FAMILY], bComputedStyle[FONT_SIZE], bComputedStyle[FONT_WEIGHT]);
+    }
+    let perW = (fontSize * 0.8) + letterSpacing;
+    let [num, rw] = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+    // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+    if(rw + ew > wl + (1e-10)) {
+      // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
+      if(wl >= ew + (1e-10)) {
+        return;
+      }// 否则向前回溯已有的tb，这在ELLIPSIS字体较大，但多行内字体较小时发生
+      // let lineBox = lineBoxManager.lineBox;
+      if(lineBox && lineBox.size) {
+        let list = lineBox.list;
+        for(let j = list.length - 1; j >= 0; j--) {
+          let tb = list[j];
+          // 可能是个inlineBlock，整个省略掉，除非是第一个不作ellipsis处理
+          if(!(tb instanceof TextBox)) {
+            if(!j) {
+              break;
+            }
+            let item = list.pop();
+            x -= item.outerWidth;
+            wl += item.outerWidth;
+            item.__layoutNone();
+            continue;
+          }
+          // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
+          let { content, width, parent } = tb;
+          if(!j || wl >= width + ew + (1e-10)) {
+            let length = content.length;
+            let {
+              [LETTER_SPACING]: letterSpacing,
+              [FONT_SIZE]: fontSize,
+              [FONT_WEIGHT]: fontWeight,
+              [FONT_FAMILY]: fontFamily,
+            } = parent.computedStyle;
+            if(renderMode === CANVAS || renderMode === WEBGL) {
+              ctx.font = css.setFontStyle(computedStyle);
+            }
+            // 再进行查找，这里也会有至少一个字符不用担心
+            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            if(!j || num > 1) {
+              // 可能发生x回退，当tb的内容产生减少时
+              if(num !== content.length) {
+                tb.__content = content.slice(0, num);
+                tb.__width = rw;
+                // 再对比，也许有零宽字符
+                if(width !== rw) {
+                  x -= width - rw;
+                }
+              }
+              let textBoxes = parent.textBoxes;
+              let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+              textBox.setDom(bp);
+              textBoxes.push(textBox);
+              lineBoxManager.addItem(textBox, true);
+              return;
+            }
+          }
+          // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
+          let item = list.pop();
+          wl += width;
+          x -= width;
+          let tbs = item.parent.textBoxes;
+          let k = tbs.indexOf(item);
+          if(k > -1) {
+            tbs.splice(k, 1);
+          }
+          // 还得去掉dom，防止inline嵌套一直向上，同时得判断不能误删前面一个的dom
+          let dom = item.parent.parent;
+          let prev = list[list.length - 1];
+          if(prev instanceof TextBox) {
+            prev = prev.parent.parent;
+          }
+          while(dom !== bp && dom !== prev) {
+            let computedStyle = dom.computedStyle;
+            let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+              + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+              + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+            x -= mbp;
+            wl += mbp;
+            dom.__layoutNone();
+            dom = dom.domParent;
+          }
+        }
+      }
+    }
   }
 
   __offsetX(diff, isLayout) {
@@ -409,7 +586,7 @@ class Text extends Node {
     this.__sy1 += diff;
   }
 
-  __tryLayInline(w) {
+  __tryLayInline(w) {console.log(w, this.firstCharWidth, this.content)
     return w - this.firstCharWidth;
   }
 

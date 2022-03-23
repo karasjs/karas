@@ -3,6 +3,7 @@ import Text from './Text';
 import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
+import TextBox from './TextBox';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
@@ -55,6 +56,7 @@ const {
     ALIGN_CONTENT,
     OVERFLOW,
     FONT_SIZE,
+    TEXT_OVERFLOW,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -80,6 +82,7 @@ const {
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { calAbsolute, isRelativeOrAbsolute, calAbsFixedSize, computeReflow } = css;
 const { extend, isNil, isFunction } = util;
+const { SVG } = mode;
 
 function genZIndexChildren(dom) {
   let normal = [];
@@ -759,6 +762,7 @@ class Dom extends Xom {
     // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
     let mergeMarginBottomList = [], mergeMarginTopList = [];
     let length = flowChildren.length;
+    let ignoreNextLine; // lineClamp超过后，后面的均忽略并置none，注意block内部行数统计是跨子block的
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
@@ -780,9 +784,23 @@ class Dom extends Xom {
         // 比如2个inline前面占一半后面比一半多但还是会从一半开始然后第2行换行继续，但ib放不下则重开一行
         // inline和ib能互相嵌套，形成的LineBox中则是TextBox和节点混合
         if(isInlineBlock || isInline) {
+          if(ignoreNextLine) {
+            item.__layoutNone();
+            return;
+          }
+          if(lineClamp && lineClampCount >= lineClamp) {
+            ignoreNextLine = true;
+            item.__layoutNone();
+            return;
+          }
+          // 不换行无需继续
+          if(whiteSpace === 'nowrap' && lineClampCount) {
+            item.__layoutNone();
+            return;
+          }
           // x开头，不用考虑是否放得下直接放
           if(x === data.x || isInline && whiteSpace === 'nowrap') {
-            item.__layout({
+            lineClampCount = item.__layout({
               x,
               y,
               w,
@@ -1965,7 +1983,8 @@ class Dom extends Xom {
     let contentBoxList;
     if(isInline) {
       contentBoxList = this.__contentBoxList = [];
-      lineBoxManager.pushContentBoxList(this);
+      // lineBoxManager.pushContentBoxList(this);
+      // 移入第一个节点布局前初始化，防止lineClamp回溯时一个子节点未布局就添加
     }
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;
@@ -1973,15 +1992,54 @@ class Dom extends Xom {
     if(whiteSpace === 'nowrap') {
       endSpace += selfEndSpace;
     }
+    let ignoreNextLine = this.__ignoreNextLine = false; // lineClamp超过后，后面的均忽略并置none
     flowChildren.forEach((item, i) => {
+      if(ignoreNextLine) {
+        item.__layoutNone();
+        return;
+      }
+      // 可能一进来就超了，发生在前一个inline节点恰好满足，新的tryLayInline肯定不足
+      if(lineClamp && lineClampCount >= lineClamp) {
+        item.__layoutNone();
+        ignoreNextLine = true;
+        let bp = this.domParent;
+        while(bp.computedStyle[DISPLAY] === 'inline') {
+          bp = bp.domParent;
+        }
+        let {
+          [TEXT_OVERFLOW]: textOverflow,
+        } = bp.computedStyle;
+        // 只clip不用处理，ellipsis才回溯处理，特别麻烦
+        if(textOverflow === 'ellipsis') {
+          let list = lineBoxManager.list;
+          let lineBox = list[list.length - 1];
+          list = lineBox.list;
+          let last = list[list.length - 1];
+          // 最后一个是text/inline时
+          if(last instanceof TextBox) {
+            let text = last.parent;
+            text.lineBack(lineBoxManager, lineBox, w);
+          }
+          // 最后一个是ib时
+          else {
+            //
+          }
+        }
+        return;
+      }
       // 不换行无需继续
       if(whiteSpace === 'nowrap' && lineClampCount) {
+        item.__layoutNone();
         return;
       }
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
       let isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
-      let isRealInline = isXom && item.__isRealInline();
+      let isRealInline = isXom && isInline2 && item.__isRealInline();
+      // 第一个inline子节点进行初始化，避免lineClamp回溯去不掉
+      if(!i && isInline) {
+        lineBoxManager.pushContentBoxList(this);
+      }
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
       let isEnd = isInline && (i === length - 1) && whiteSpace !== 'nowrap';
       if(isEnd) {
@@ -2006,6 +2064,10 @@ class Dom extends Xom {
             lineClamp,
             lineClampCount,
           }, isAbs, isColumn);
+          // 子inline超行反馈到父inline
+          if(isInline2 && item.__ignoreNextLine) {
+            ignoreNextLine = true;
+          }
           // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样
           if(item.__isIbFull) {
             isInlineBlock2 && (w[1] === AUTO) && (isIbFull = true);
@@ -2016,14 +2078,14 @@ class Dom extends Xom {
           }
           // inline和不折行的ib，其中ib需要手动存入当前lb中，以计算宽度
           else {
-            (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
+            (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item, false);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
           }
         }
         else {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
+          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x, w - (isEnd ? endSpace : 0));
           // 放得下继续
           if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
@@ -2038,6 +2100,9 @@ class Dom extends Xom {
               lineClamp,
               lineClampCount,
             }, isAbs, isColumn);
+            if(isInline2 && item.__ignoreNextLine) {
+              ignoreNextLine = true;
+            }
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
             (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item);
             x = lineBoxManager.lastX;
@@ -2060,6 +2125,9 @@ class Dom extends Xom {
               lineClamp,
               lineClampCount,
             }, isAbs, isColumn);
+            if(isInline2 && item.__ignoreNextLine) {
+              ignoreNextLine = true;
+            }
             // 重新开头的ib和上面开头处一样逻辑
             if(item.__isIbFull) {
               lineBoxManager.addItem(item);
@@ -2155,6 +2223,7 @@ class Dom extends Xom {
         }
       }
     });
+    this.__ignoreNextLine = ignoreNextLine;
     // 同block结尾，不过这里一定是lineBox结束，无需判断
     y = lineBoxManager.endY;
     // 标识ib情况同block一样占满行
@@ -2578,25 +2647,9 @@ class Dom extends Xom {
     this.__execAr();
   }
 
-  /**
-   * 布局前检查继承的样式以及统计字体测量信息
-   * 首次检查为整树遍历，后续检查是节点自发局部检查，不再进入
-   * @param renderMode
-   * @param ctx
-   * @param cb
-   * @private
-   */
-  // __computeMeasure(renderMode, ctx, cb) {
-  //   super.__computeMeasure(renderMode, ctx, cb);
-  //   // 即便自己不需要计算，但children还要继续递归检查
-  //   this.children.forEach(item => {
-  //     item.__computeMeasure(renderMode, ctx, cb);
-  //   });
-  // }
-
   render(renderMode, lv, ctx, cache, dx, dy) {
     let res = super.render(renderMode, lv, ctx, cache, dx, dy);
-    if(renderMode === mode.SVG) {
+    if(renderMode === SVG) {
       this.virtualDom.type = 'dom';
     }
     return res;

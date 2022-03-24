@@ -54,13 +54,14 @@ class TextBox {
    * @param dy
    */
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
-    let { content, x, y, parent, wList, width, dom } = this;
+    let { content, x, y, parent, width, dom } = this;
     let { ox, oy } = parent;
     y += css.getBaseline(computedStyle);
     x += ox + dx;
     y += oy + dy;
     this.__endX = x + width;
     this.__endY = y;
+    // ELLIPSIS使用block的样式
     if(dom) {
       cacheStyle = dom.cacheStyle;
       computedStyle = dom.computedStyle;
@@ -196,10 +197,6 @@ class TextBox {
 
   get parentLineBox() {
     return this.__parentLineBox;
-  }
-
-  get wList() {
-    return this.__wList;
   }
 
   get isReplaced() {

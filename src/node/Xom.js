@@ -615,7 +615,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, nowrap, lineBoxManager, endSpace = 0 } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager, endSpace = 0 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -741,7 +741,6 @@ class Xom extends Node {
       h,
       lx,
       lineBoxManager,
-      nowrap,
       endSpace,
       selfEndSpace,
     };
@@ -2672,7 +2671,11 @@ class Xom extends Node {
   }
 
   // isLayout为false时，为relative/margin/flex/vertical等
+  // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
   __offsetX(diff, isLayout, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetX(diff, isLayout);
     if(isLayout) {
       this.__layoutData.x += diff;
@@ -2690,9 +2693,12 @@ class Xom extends Node {
   }
 
   __offsetY(diff, isLayout, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetY(diff, isLayout);
     if(isLayout) {
-      this.__layoutData.y += diff;
+      this.__layoutData && (this.__layoutData.y += diff);
       this.clearCache();
     }
     if(lv !== undefined) {
@@ -2707,6 +2713,9 @@ class Xom extends Node {
   }
 
   __resizeX(diff, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     this.computedStyle.width = this.__width += diff;
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
@@ -2725,6 +2734,9 @@ class Xom extends Node {
   }
 
   __resizeY(diff, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     this.computedStyle.height = this.__height += diff;
     this.__clientHeight += diff;
     this.__offsetHeight += diff;

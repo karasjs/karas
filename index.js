@@ -9772,7 +9772,6 @@
             x = this.x,
             y = this.y,
             parent = this.parent,
-            wList = this.wList,
             width = this.width,
             dom = this.dom;
         var ox = parent.ox,
@@ -9781,7 +9780,7 @@
         x += ox + dx;
         y += oy + dy;
         this.__endX = x + width;
-        this.__endY = y;
+        this.__endY = y; // ELLIPSIS使用block的样式
 
         if (dom) {
           cacheStyle = dom.cacheStyle;
@@ -9938,11 +9937,6 @@
       key: "parentLineBox",
       get: function get() {
         return this.__parentLineBox;
-      }
-    }, {
-      key: "wList",
-      get: function get() {
-        return this.__wList;
       }
     }, {
       key: "isReplaced",
@@ -14143,6 +14137,10 @@
           while (i < length) {
             var wl = i ? w : w - beginSpace;
 
+            if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+              wl -= endSpace;
+            }
+
             var _measureLineWidth = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
                 _measureLineWidth2 = _slicedToArray(_measureLineWidth, 3),
                 num = _measureLineWidth2[0],
@@ -14150,7 +14148,7 @@
                 newLine = _measureLineWidth2[2]; // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
 
 
-            if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
+            if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
               var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
               var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
@@ -14159,17 +14157,6 @@
               maxW = _this$__lineBack4[1];
               lineCount++;
               break;
-            } // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
-
-
-            if (i + num === length && endSpace && rw + endSpace > wl && num > 1) {
-              var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
-
-              var _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 3);
-
-              num = _measureLineWidth4[0];
-              rw = _measureLineWidth4[1];
-              newLine = _measureLineWidth4[2];
             }
 
             maxW = Math.max(maxW, rw); // 根据是否第一行分开处理行首空白
@@ -14214,8 +14201,6 @@
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          ctx.save();
-
           var _font = css.setFontStyle(computedStyle);
 
           if (ctx.font !== _font) {
@@ -14223,35 +14208,27 @@
           }
 
           ew = ctx.measureText(ELLIPSIS).width;
-          ctx.restore();
         } else {
           ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY$2], computedStyle[FONT_SIZE$5], computedStyle[FONT_WEIGHT$2]);
         }
 
-        var _measureLineWidth5 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
-            _measureLineWidth6 = _slicedToArray(_measureLineWidth5, 2),
-            num = _measureLineWidth6[0],
-            rw = _measureLineWidth6[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+        var font = css.setFontStyle(this.computedStyle);
+
+        if (ctx.font !== font) {
+          ctx.font = font;
+        }
+
+        var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 2),
+            num = _measureLineWidth4[0],
+            rw = _measureLineWidth4[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
 
 
         if (rw + ew > wl + 1e-10) {
-          // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
-          if (wl >= ew + 1e-10) {
-            var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-
-            _textBox2.setDom(bp);
-
-            textBoxes.push(_textBox2);
-            lineBoxManager.addItem(_textBox2, true);
-            y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            maxW = Math.max(maxW, rw + ew);
-            return [y, maxW];
-          } // 否则向前回溯已有的tb，这在ELLIPSIS字体较大，但多行内字体较小时发生
-
-
+          // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
           var lineBox = lineBoxManager.lineBox;
 
-          if (lineBox && lineBox.size) {
+          if (!lineBoxManager.isNewLine && lineBox && lineBox.size) {
             var list = lineBox.list;
 
             for (var j = list.length - 1; j >= 0; j--) {
@@ -14286,36 +14263,31 @@
                     _fontFamily = _parent$computedStyle[FONT_FAMILY$2];
 
                 if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-                  ctx.font = css.setFontStyle(computedStyle);
+                  ctx.font = css.setFontStyle(parent.computedStyle);
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
-                    _measureLineWidth8 = _slicedToArray(_measureLineWidth7, 2),
-                    _num = _measureLineWidth8[0],
-                    _rw = _measureLineWidth8[1];
+                var _measureLineWidth5 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
+                    _measureLineWidth6 = _slicedToArray(_measureLineWidth5, 2),
+                    _num = _measureLineWidth6[0],
+                    _rw = _measureLineWidth6[1]; // 可能发生x回退，当tb的内容产生减少时
 
-                if (!j || _num > 1) {
-                  // 可能发生x回退，当tb的内容产生减少时
-                  if (_num !== _content.length) {
-                    tb.__content = _content.slice(0, _num);
-                    tb.__width = _rw; // 再对比，也许有零宽字符
 
-                    if (width !== _rw) {
-                      x -= width - _rw;
-                    }
-                  }
-
-                  var _textBox3 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-
-                  _textBox3.setDom(bp);
-
-                  textBoxes.push(_textBox3);
-                  lineBoxManager.addItem(_textBox3, true);
-                  y += Math.max(lineHeight, lineBoxManager.lineHeight);
-                  maxW = Math.max(maxW, _rw + ew);
-                  return [y, maxW];
+                if (_num !== _content.length) {
+                  tb.__content = _content.slice(0, _num);
+                  x -= width - _rw;
+                  tb.__width = _rw;
                 }
+
+                var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+
+                _textBox2.setDom(bp);
+
+                textBoxes.push(_textBox2);
+                lineBoxManager.addItem(_textBox2, true);
+                y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                maxW = Math.max(maxW, _rw + ew);
+                return [y, maxW];
               } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
 
 
@@ -14349,7 +14321,8 @@
               }
             }
           }
-        }
+        } // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
+
 
         var textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num));
         textBoxes.push(textBox);
@@ -14365,39 +14338,34 @@
       } // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值
 
     }, {
-      key: "lineBack",
-      value: function lineBack(lineBoxManager, lineBox, w) {
+      key: "backtrack",
+      value: function backtrack(bp, lineBoxManager, lineBox, wl) {
         var ew,
-            content = this.content,
             computedStyle = this.computedStyle,
-            bp = this.__bp,
             bComputedStyle = bp.computedStyle,
             root = this.root,
             renderMode = root.renderMode;
-        var wl = w;
-        var list = lineBox.list;
+        var list = lineBox.list; // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
+
+        var content = '';
         var x = list[0].x,
             y = list[0].y;
         list.forEach(function (item) {
+          if (item instanceof TextBox) {
+            content += item.content;
+          }
+
           x += item.outerWidth;
           wl -= item.outerWidth;
         });
-        var lineHeight = computedStyle[LINE_HEIGHT$1],
-            letterSpacing = computedStyle[LETTER_SPACING$2],
-            fontSize = computedStyle[FONT_SIZE$5],
-            fontWeight = computedStyle[FONT_WEIGHT$2],
-            fontFamily = computedStyle[FONT_FAMILY$2];
         var ctx;
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
           ctx = renderMode === WEBGL$1 ? inject.getFontCanvas().ctx : root.ctx;
-          ctx.font = css.setFontStyle(computedStyle);
         } // 临时测量ELLIPSIS的尺寸
 
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          ctx.save();
-
           var _font2 = css.setFontStyle(bComputedStyle);
 
           if (ctx.font !== _font2) {
@@ -14405,34 +14373,32 @@
           }
 
           ew = ctx.measureText(ELLIPSIS).width;
-          ctx.restore();
         } else {
           ew = inject.measureTextSync(ELLIPSIS, bComputedStyle[FONT_FAMILY$2], bComputedStyle[FONT_SIZE$5], bComputedStyle[FONT_WEIGHT$2]);
         }
 
+        var lineHeight = computedStyle[LINE_HEIGHT$1],
+            letterSpacing = computedStyle[LETTER_SPACING$2],
+            fontSize = computedStyle[FONT_SIZE$5],
+            fontWeight = computedStyle[FONT_WEIGHT$2],
+            fontFamily = computedStyle[FONT_FAMILY$2];
         var perW = fontSize * 0.8 + letterSpacing;
 
-        var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
-            _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
-            num = _measureLineWidth10[0],
-            rw = _measureLineWidth10[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+        var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            _measureLineWidth8 = _slicedToArray(_measureLineWidth7, 2),
+            num = _measureLineWidth8[0],
+            rw = _measureLineWidth8[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
 
 
         if (rw + ew > wl + 1e-10) {
-          // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
-          if (wl >= ew + 1e-10) {
-            return;
-          } // 否则向前回溯已有的tb，这在ELLIPSIS字体较大，但多行内字体较小时发生
-          // let lineBox = lineBoxManager.lineBox;
-
-
+          // 否则向前回溯已有的tb，必须至少有1个
           if (lineBox && lineBox.size) {
             var _list = lineBox.list;
 
             for (var j = _list.length - 1; j >= 0; j--) {
-              var tb = _list[j]; // 可能是个inlineBlock，整个省略掉，除非是第一个不作ellipsis处理
+              var _tb = _list[j]; // 可能是个inlineBlock，整个省略掉，除非是第一个不作ellipsis处理
 
-              if (!(tb instanceof TextBox)) {
+              if (!(_tb instanceof TextBox)) {
                 if (!j) {
                   break;
                 }
@@ -14448,46 +14414,48 @@
               } // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
 
 
-              var _content2 = tb.content,
-                  width = tb.width,
-                  parent = tb.parent;
+              var _content2 = _tb.content,
+                  width = _tb.width,
+                  parent = _tb.parent;
 
               if (!j || wl >= width + ew + 1e-10) {
                 var length = _content2.length;
                 var _parent$computedStyle2 = parent.computedStyle,
+                    _lineHeight = _parent$computedStyle2[LINE_HEIGHT$1],
                     _letterSpacing2 = _parent$computedStyle2[LETTER_SPACING$2],
                     _fontSize2 = _parent$computedStyle2[FONT_SIZE$5],
                     _fontWeight2 = _parent$computedStyle2[FONT_WEIGHT$2],
                     _fontFamily2 = _parent$computedStyle2[FONT_FAMILY$2];
 
+                var _perW = _fontSize2 * 0.8 + _letterSpacing2;
+
                 if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-                  ctx.font = css.setFontStyle(computedStyle);
+                  ctx.font = css.setFontStyle(parent.computedStyle);
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth11 = measureLineWidth(ctx, renderMode, 0, length, _content2, wl - ew, perW, _fontFamily2, _fontSize2, _fontWeight2, _letterSpacing2),
-                    _measureLineWidth12 = _slicedToArray(_measureLineWidth11, 2),
-                    _num2 = _measureLineWidth12[0],
-                    _rw2 = _measureLineWidth12[1];
+                var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, _content2, wl - ew, _perW, _fontFamily2, _fontSize2, _fontWeight2, _letterSpacing2),
+                    _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
+                    _num2 = _measureLineWidth10[0],
+                    _rw2 = _measureLineWidth10[1]; // 可能发生x回退，当tb的内容产生减少时
 
-                if (!j || _num2 > 1) {
-                  // 可能发生x回退，当tb的内容产生减少时
-                  if (_num2 !== _content2.length) {
-                    tb.__content = _content2.slice(0, _num2);
-                    tb.__width = _rw2; // 再对比，也许有零宽字符
 
-                    if (width !== _rw2) {
-                      x -= width - _rw2;
-                    }
-                  }
-
-                  var textBoxes = parent.textBoxes;
-                  var textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-                  textBox.setDom(bp);
-                  textBoxes.push(textBox);
-                  lineBoxManager.addItem(textBox, true);
-                  return;
+                if (_num2 !== _content2.length) {
+                  _tb.__content = _content2.slice(0, _num2);
+                  _tb.__width = _rw2;
+                  x -= width - _rw2;
                 }
+
+                var _textBoxes = parent.textBoxes;
+
+                var _textBox3 = new TextBox(parent, _textBoxes.length, x, y, ew, _lineHeight, ELLIPSIS);
+
+                _textBox3.setDom(bp);
+
+                _textBoxes.push(_textBox3);
+
+                lineBoxManager.addItem(_textBox3, true);
+                return;
               } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
 
 
@@ -14522,7 +14490,19 @@
               }
             }
           }
-        }
+        } // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
+
+
+        var tb = list[list.length - 1];
+        tb.__content = content.slice(0, num);
+        x -= tb.width - rw;
+        tb.__width = rw; // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
+
+        var textBoxes = this.textBoxes;
+        var textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+        textBox.setDom(bp);
+        textBoxes.push(textBox);
+        lineBoxManager.addItem(textBox, true);
       }
     }, {
       key: "__offsetX",
@@ -20658,7 +20638,6 @@
             w3 = data.w3,
             h3 = data.h3,
             lx = data.lx,
-            nowrap = data.nowrap,
             lineBoxManager = data.lineBoxManager,
             _data$endSpace = data.endSpace,
             endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace;
@@ -20802,7 +20781,6 @@
           h: h,
           lx: lx,
           lineBoxManager: lineBoxManager,
-          nowrap: nowrap,
           endSpace: endSpace,
           selfEndSpace: selfEndSpace
         };
@@ -22872,10 +22850,15 @@
       value: function __deepScan(cb, options) {
         return cb(this, options);
       } // isLayout为false时，为relative/margin/flex/vertical等
+      // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
 
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
+        if (this.computedStyle[DISPLAY$2] === 'none') {
+          return;
+        }
+
         _get(_getPrototypeOf(Xom.prototype), "__offsetX", this).call(this, diff, isLayout);
 
         if (isLayout) {
@@ -22897,10 +22880,14 @@
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
+        if (this.computedStyle[DISPLAY$2] === 'none') {
+          return;
+        }
+
         _get(_getPrototypeOf(Xom.prototype), "__offsetY", this).call(this, diff, isLayout);
 
         if (isLayout) {
-          this.__layoutData.y += diff;
+          this.__layoutData && (this.__layoutData.y += diff);
           this.clearCache();
         }
 
@@ -22918,6 +22905,10 @@
     }, {
       key: "__resizeX",
       value: function __resizeX(diff, lv) {
+        if (this.computedStyle[DISPLAY$2] === 'none') {
+          return;
+        }
+
         this.computedStyle.width = this.__width += diff;
         this.__clientWidth += diff;
         this.__offsetWidth += diff;
@@ -22940,6 +22931,10 @@
     }, {
       key: "__resizeY",
       value: function __resizeY(diff, lv) {
+        if (this.computedStyle[DISPLAY$2] === 'none') {
+          return;
+        }
+
         this.computedStyle.height = this.__height += diff;
         this.__clientHeight += diff;
         this.__offsetHeight += diff;
@@ -26243,7 +26238,6 @@
             h = _this$__preLayout3.h,
             lx = _this$__preLayout3.lx,
             lineBoxManager = _this$__preLayout3.lineBoxManager,
-            nowrap = _this$__preLayout3.nowrap,
             endSpace = _this$__preLayout3.endSpace,
             selfEndSpace = _this$__preLayout3.selfEndSpace; // abs虚拟布局需预知width，固定可提前返回
 
@@ -26322,33 +26316,6 @@
             item.__layoutNone();
 
             return;
-          } // 可能一进来就超了，发生在前一个inline节点恰好满足，新的tryLayInline肯定不足
-
-
-          if (lineClamp && lineClampCount >= lineClamp) {
-            item.__layoutNone();
-
-            ignoreNextLine = true;
-            var bp = _this4.domParent;
-
-            while (bp.computedStyle[DISPLAY$5] === 'inline') {
-              bp = bp.domParent;
-            }
-
-            var textOverflow = bp.computedStyle[TEXT_OVERFLOW$3]; // 只clip不用处理，ellipsis才回溯处理，特别麻烦
-
-            if (textOverflow === 'ellipsis') {
-              var list = lineBoxManager.list;
-              var lineBox = list[list.length - 1];
-              list = lineBox.list;
-              var last = list[list.length - 1]; // 最后一个是text/inline时
-
-              if (last instanceof TextBox) {
-                var text = last.parent; // text.lineBack(lineBoxManager, lineBox, w);
-              }
-            }
-
-            return;
           } // 不换行无需继续
 
 
@@ -26421,7 +26388,6 @@
                   w: w,
                   h: h,
                   lx: lx,
-                  nowrap: whiteSpace === 'nowrap',
                   lineBoxManager: lineBoxManager,
                   endSpace: endSpace,
                   lineClamp: lineClamp,
@@ -26441,7 +26407,32 @@
                 isInline2 && lineClampCount++;
                 x = lx;
                 y = lineBoxManager.endY;
-                lineBoxManager.setNewLine();
+                lineBoxManager.setNewLine(); // 可能超行了，无需继续，并且进行回溯
+
+                if (lineClamp && lineClampCount >= lineClamp) {
+                  item.__layoutNone();
+
+                  ignoreNextLine = true;
+                  var bp = _this4.domParent;
+
+                  while (bp.computedStyle[DISPLAY$5] === 'inline') {
+                    bp = bp.domParent;
+                  } // 回溯处理，特别麻烦
+
+
+                  var list = lineBoxManager.list;
+                  var lineBox = list[list.length - 1];
+                  list = lineBox.list;
+                  var last = list[list.length - 1]; // 最后一个是text/inline时
+
+                  if (last instanceof TextBox) {
+                    var text = last.parent;
+                    text.backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  }
+
+                  return;
+                }
+
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,
@@ -26497,18 +26488,7 @@
               }
             } else {
               // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-              // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
-              var focusNoWrap = !i && nowrap || whiteSpace === 'nowrap';
-
-              var _fw2 = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x - endSpace);
-
-              if (!focusNoWrap && _fw2 >= 0 && isEnd && endSpace && item.content.length === 1) {
-                var fw2 = _fw2 - endSpace;
-
-                if (fw2 < 0) {
-                  _fw2 = fw2;
-                }
-              } // 放得下继续
+              var _fw2 = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w + lx - x - endSpace); // 放得下继续
 
 
               if (_fw2 >= -1e-10) {
@@ -26530,7 +26510,33 @@
                 lineClampCount++;
                 x = lx;
                 y = lineBoxManager.endY;
-                lineBoxManager.setNewLine();
+                lineBoxManager.setNewLine(); // 可能超行了，无需继续，并且进行回溯
+
+                if (lineClamp && lineClampCount >= lineClamp) {
+                  item.__layoutNone();
+
+                  ignoreNextLine = true;
+                  var _bp = _this4.domParent;
+
+                  while (_bp.computedStyle[DISPLAY$5] === 'inline') {
+                    _bp = _bp.domParent;
+                  } // 回溯处理，特别麻烦
+
+
+                  var _list = lineBoxManager.list;
+                  var _lineBox = _list[_list.length - 1];
+                  _list = _lineBox.list;
+                  var _last = _list[_list.length - 1]; // 最后一个是text/inline时
+
+                  if (_last instanceof TextBox) {
+                    var _text = _last.parent;
+
+                    _text.backtrack(_bp, lineBoxManager, _lineBox, w - endSpace);
+                  }
+
+                  return;
+                }
+
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,

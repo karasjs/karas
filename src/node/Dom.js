@@ -1926,7 +1926,7 @@ class Dom extends Xom {
   __layoutInline(data, isAbs, isColumn, isInline) {
     let { flowChildren, currentStyle, computedStyle } = this;
     let { fixedWidth, fixedHeight, x, y, w, h, lx,
-      lineBoxManager, nowrap, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
+      lineBoxManager, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
     if(isAbs && fixedWidth) {
       this.__width = w;
@@ -1998,35 +1998,6 @@ class Dom extends Xom {
         item.__layoutNone();
         return;
       }
-      // 可能一进来就超了，发生在前一个inline节点恰好满足，新的tryLayInline肯定不足
-      if(lineClamp && lineClampCount >= lineClamp) {
-        item.__layoutNone();
-        ignoreNextLine = true;
-        let bp = this.domParent;
-        while(bp.computedStyle[DISPLAY] === 'inline') {
-          bp = bp.domParent;
-        }
-        let {
-          [TEXT_OVERFLOW]: textOverflow,
-        } = bp.computedStyle;
-        // 只clip不用处理，ellipsis才回溯处理，特别麻烦
-        if(textOverflow === 'ellipsis') {
-          let list = lineBoxManager.list;
-          let lineBox = list[list.length - 1];
-          list = lineBox.list;
-          let last = list[list.length - 1];
-          // 最后一个是text/inline时
-          if(last instanceof TextBox) {
-            let text = last.parent;
-            // text.lineBack(lineBoxManager, lineBox, w);
-          }
-          // 最后一个是ib时
-          else {
-            //
-          }
-        }
-        return;
-      }
       // 不换行无需继续
       if(whiteSpace === 'nowrap' && lineClampCount) {
         item.__layoutNone();
@@ -2091,7 +2062,6 @@ class Dom extends Xom {
               w,
               h,
               lx,
-              nowrap: whiteSpace === 'nowrap',
               lineBoxManager,
               endSpace,
               lineClamp,
@@ -2111,6 +2081,30 @@ class Dom extends Xom {
             x = lx;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
+            // 可能超行了，无需继续，并且进行回溯
+            if(lineClamp && lineClampCount >= lineClamp) {
+              item.__layoutNone();
+              ignoreNextLine = true;
+              let bp = this.domParent;
+              while(bp.computedStyle[DISPLAY] === 'inline') {
+                bp = bp.domParent;
+              }
+              // 回溯处理，特别麻烦
+              let list = lineBoxManager.list;
+              let lineBox = list[list.length - 1];
+              list = lineBox.list;
+              let last = list[list.length - 1];
+              // 最后一个是text/inline时
+              if(last instanceof TextBox) {
+                let text = last.parent;
+                text.backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              }
+              // 最后一个是ib时
+              else {
+                //
+              }
+              return;
+            }
             lineClampCount = item.__layout({
               x,
               y,
@@ -2167,15 +2161,7 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-          // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
-          let focusNoWrap = (!i && nowrap) || whiteSpace === 'nowrap';
-          let fw = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x - endSpace);
-          if(!focusNoWrap && fw >= 0 && isEnd && endSpace && item.content.length === 1) {
-            let fw2 = fw - endSpace;
-            if(fw2 < 0) {
-              fw = fw2;
-            }
-          }
+          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w + lx - x - endSpace);
           // 放得下继续
           if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
@@ -2199,6 +2185,30 @@ class Dom extends Xom {
             x = lx;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
+            // 可能超行了，无需继续，并且进行回溯
+            if(lineClamp && lineClampCount >= lineClamp) {
+              item.__layoutNone();
+              ignoreNextLine = true;
+              let bp = this.domParent;
+              while(bp.computedStyle[DISPLAY] === 'inline') {
+                bp = bp.domParent;
+              }
+              // 回溯处理，特别麻烦
+              let list = lineBoxManager.list;
+              let lineBox = list[list.length - 1];
+              list = lineBox.list;
+              let last = list[list.length - 1];
+              // 最后一个是text/inline时
+              if(last instanceof TextBox) {
+                let text = last.parent;
+                text.backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              }
+              // 最后一个是ib时
+              else {
+                //
+              }
+              return;
+            }
             lineClampCount = item.__layout({
               x,
               y,

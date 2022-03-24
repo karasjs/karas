@@ -276,17 +276,16 @@ class Text extends Node {
     else {
       while(i < length) {
         let wl = i ? w : (w - beginSpace);
+        if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
+          wl -= endSpace;
+        }
         let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
-        if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
+        if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
           [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
             lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
-        }
-        // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
-        if(i + num === length && endSpace && rw + endSpace > wl && num > 1) {
-          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         }
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白
@@ -322,33 +321,25 @@ class Text extends Node {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
     if(renderMode === CANVAS || renderMode === WEBGL) {
-      ctx.save();
       let font = css.setFontStyle(computedStyle);
       if(ctx.font !== font) {
         ctx.font = font;
       }
       ew = ctx.measureText(ELLIPSIS).width;
-      ctx.restore();
     }
     else {
       ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
     }
+    let font = css.setFontStyle(this.computedStyle);
+    if(ctx.font !== font) {
+      ctx.font = font;
+    }
     let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
     if(rw + ew > wl + (1e-10)) {
-      // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
-      if(wl >= ew + (1e-10)) {
-        let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-        textBox.setDom(bp);
-        textBoxes.push(textBox);
-        lineBoxManager.addItem(textBox, true);
-        y += Math.max(lineHeight, lineBoxManager.lineHeight);
-        maxW = Math.max(maxW, rw + ew);
-        return [y, maxW];
-      }
-      // 否则向前回溯已有的tb，这在ELLIPSIS字体较大，但多行内字体较小时发生
+      // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       let lineBox = lineBoxManager.lineBox;
-      if(lineBox && lineBox.size) {
+      if(!lineBoxManager.isNewLine && lineBox && lineBox.size) {
         let list = lineBox.list;
         for(let j = list.length - 1; j >= 0; j--) {
           let tb = list[j];
@@ -374,28 +365,23 @@ class Text extends Node {
               [FONT_FAMILY]: fontFamily,
             } = parent.computedStyle;
             if(renderMode === CANVAS || renderMode === WEBGL) {
-              ctx.font = css.setFontStyle(computedStyle);
+              ctx.font = css.setFontStyle(parent.computedStyle);
             }
             // 再进行查找，这里也会有至少一个字符不用担心
             let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
-            if(!j || num > 1) {
-              // 可能发生x回退，当tb的内容产生减少时
-              if(num !== content.length) {
-                tb.__content = content.slice(0, num);
-                tb.__width = rw;
-                // 再对比，也许有零宽字符
-                if(width !== rw) {
-                  x -= width - rw;
-                }
-              }
-              let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-              textBox.setDom(bp);
-              textBoxes.push(textBox);
-              lineBoxManager.addItem(textBox, true);
-              y += Math.max(lineHeight, lineBoxManager.lineHeight);
-              maxW = Math.max(maxW, rw + ew);
-              return [y, maxW];
+            // 可能发生x回退，当tb的内容产生减少时
+            if(num !== content.length) {
+              tb.__content = content.slice(0, num);
+              x -= width - rw;
+              tb.__width = rw;
             }
+            let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            textBox.setDom(bp);
+            textBoxes.push(textBox);
+            lineBoxManager.addItem(textBox, true);
+            y += Math.max(lineHeight, lineBoxManager.lineHeight);
+            maxW = Math.max(maxW, rw + ew);
+            return [y, maxW];
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
@@ -425,6 +411,7 @@ class Text extends Node {
         }
       }
     }
+    // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
     let textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num));
     textBoxes.push(textBox);
     lineBoxManager.addItem(textBox, false);
@@ -439,17 +426,37 @@ class Text extends Node {
   }
 
   // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值
-  lineBack(lineBoxManager, lineBox, w) {
-    let ew, content = this.content, computedStyle = this.computedStyle,
-      bp = this.__bp, bComputedStyle = bp.computedStyle,
-      root = this.root, renderMode = root.renderMode;
-    let wl = w;
+  backtrack(bp, lineBoxManager, lineBox, wl) {
+    let ew, computedStyle = this.computedStyle,
+      bComputedStyle = bp.computedStyle, root = this.root, renderMode = root.renderMode;
     let list = lineBox.list;
+    // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
+    let content = '';
     let x = list[0].x, y = list[0].y;
     list.forEach(item => {
+      if(item instanceof TextBox) {
+        content += item.content;
+      }
       x += item.outerWidth;
       wl -= item.outerWidth;
     });
+    let ctx;
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      ctx = renderMode === WEBGL
+        ? inject.getFontCanvas().ctx
+        : root.ctx;
+    }
+    // 临时测量ELLIPSIS的尺寸
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      let font = css.setFontStyle(bComputedStyle);
+      if(ctx.font !== font) {
+        ctx.font = font;
+      }
+      ew = ctx.measureText(ELLIPSIS).width;
+    }
+    else {
+      ew = inject.measureTextSync(ELLIPSIS, bComputedStyle[FONT_FAMILY], bComputedStyle[FONT_SIZE], bComputedStyle[FONT_WEIGHT]);
+    }
     let {
       [LINE_HEIGHT]: lineHeight,
       [LETTER_SPACING]: letterSpacing,
@@ -457,35 +464,11 @@ class Text extends Node {
       [FONT_WEIGHT]: fontWeight,
       [FONT_FAMILY]: fontFamily,
     } = computedStyle;
-    let ctx;
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      ctx = renderMode === WEBGL
-        ? inject.getFontCanvas().ctx
-        : root.ctx;
-      ctx.font = css.setFontStyle(computedStyle);
-    }
-    // 临时测量ELLIPSIS的尺寸
-    if(renderMode === CANVAS || renderMode === WEBGL) {
-      ctx.save();
-      let font = css.setFontStyle(bComputedStyle);
-      if(ctx.font !== font) {
-        ctx.font = font;
-      }
-      ew = ctx.measureText(ELLIPSIS).width;
-      ctx.restore();
-    }
-    else {
-      ew = inject.measureTextSync(ELLIPSIS, bComputedStyle[FONT_FAMILY], bComputedStyle[FONT_SIZE], bComputedStyle[FONT_WEIGHT]);
-    }
     let perW = (fontSize * 0.8) + letterSpacing;
     let [num, rw] = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
     if(rw + ew > wl + (1e-10)) {
-      // 不添加这个新的tb就可以放下的话直接放，因为不够的时候上面num肯定已经是1个字符了
-      if(wl >= ew + (1e-10)) {
-        return;
-      }// 否则向前回溯已有的tb，这在ELLIPSIS字体较大，但多行内字体较小时发生
-      // let lineBox = lineBoxManager.lineBox;
+      // 否则向前回溯已有的tb，必须至少有1个
       if(lineBox && lineBox.size) {
         let list = lineBox.list;
         for(let j = list.length - 1; j >= 0; j--) {
@@ -506,33 +489,30 @@ class Text extends Node {
           if(!j || wl >= width + ew + (1e-10)) {
             let length = content.length;
             let {
+              [LINE_HEIGHT]: lineHeight,
               [LETTER_SPACING]: letterSpacing,
               [FONT_SIZE]: fontSize,
               [FONT_WEIGHT]: fontWeight,
               [FONT_FAMILY]: fontFamily,
             } = parent.computedStyle;
+            let perW = (fontSize * 0.8) + letterSpacing;
             if(renderMode === CANVAS || renderMode === WEBGL) {
-              ctx.font = css.setFontStyle(computedStyle);
+              ctx.font = css.setFontStyle(parent.computedStyle);
             }
             // 再进行查找，这里也会有至少一个字符不用担心
             let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
-            if(!j || num > 1) {
-              // 可能发生x回退，当tb的内容产生减少时
-              if(num !== content.length) {
-                tb.__content = content.slice(0, num);
-                tb.__width = rw;
-                // 再对比，也许有零宽字符
-                if(width !== rw) {
-                  x -= width - rw;
-                }
-              }
-              let textBoxes = parent.textBoxes;
-              let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-              textBox.setDom(bp);
-              textBoxes.push(textBox);
-              lineBoxManager.addItem(textBox, true);
-              return;
+            // 可能发生x回退，当tb的内容产生减少时
+            if(num !== content.length) {
+              tb.__content = content.slice(0, num);
+              tb.__width = rw;
+              x -= width - rw;
             }
+            let textBoxes = parent.textBoxes;
+            let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            textBox.setDom(bp);
+            textBoxes.push(textBox);
+            lineBoxManager.addItem(textBox, true);
+            return;
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
@@ -562,6 +542,17 @@ class Text extends Node {
         }
       }
     }
+    // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
+    let tb = list[list.length - 1];
+    tb.__content = content.slice(0, num);
+    x -= tb.width - rw;
+    tb.__width = rw;
+    // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
+    let textBoxes = this.textBoxes;
+    let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+    textBox.setDom(bp);
+    textBoxes.push(textBox);
+    lineBoxManager.addItem(textBox, true);
   }
 
   __offsetX(diff, isLayout) {

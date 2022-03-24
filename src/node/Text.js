@@ -268,9 +268,9 @@ class Text extends Node {
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false);
         maxW = textWidth;
+        y += lineHeight;
         if(isTextOverflow) {
           lineCount++;
-          y += lineHeight;
         }
       }
     }
@@ -344,7 +344,6 @@ class Text extends Node {
     if(rw + ew > wl + (1e-10)) {
       // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       let lineBox = lineBoxManager.lineBox;
-      console.log(lineBoxManager.isNewLine, lineBox.size);
       if(!lineBoxManager.isNewLine && lineBox && lineBox.size) {
         let list = lineBox.list;
         for(let j = list.length - 1; j >= 0; j--) {
@@ -362,7 +361,6 @@ class Text extends Node {
           }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
           let { content, width, parent } = tb;
-          console.log(content, width, parent);
           if(!j || wl >= width + ew + (1e-10)) {
             let length = content.length;
             let {
@@ -382,7 +380,6 @@ class Text extends Node {
               x -= width - rw;
               tb.__width = rw;
             }
-            console.log(x);
             let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
             textBox.setDom(bp);
             textBoxes.push(textBox);
@@ -561,6 +558,7 @@ class Text extends Node {
     textBox.setDom(bp);
     textBoxes.push(textBox);
     lineBoxManager.addItem(textBox, true);
+    return true;
   }
 
   __offsetX(diff, isLayout) {

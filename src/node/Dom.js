@@ -56,7 +56,6 @@ const {
     ALIGN_CONTENT,
     OVERFLOW,
     FONT_SIZE,
-    TEXT_OVERFLOW,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -179,6 +178,19 @@ function genOrderChildren(flowChildren) {
     return a.__iIndex - b.__iIndex;
   });
   return normal;
+}
+
+/**
+ * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
+ */
+function backtrack(bp, lineBoxManager, lineBox, wl) {
+  let list = lineBox.list;
+  for(let i = list.length - 1; i >= 0; i--) {
+    let item = list[i];
+    console.log(i, item);
+    if(item instanceof TextBox) {}
+    else {}
+  }
 }
 
 class Dom extends Xom {
@@ -1993,7 +2005,7 @@ class Dom extends Xom {
     }
     let ignoreNextLine = this.__ignoreNextLine = false; // lineClamp超过后，后面的均忽略并置none
     let hasAddEndSpace; // lineClamp情况最后一行都加上，只加1次
-    flowChildren.forEach((item, i) => {console.error(i,item.tagName,item.content,lineClampCount)
+    flowChildren.forEach((item, i) => {
       if(ignoreNextLine) {
         item.__layoutNone();
         return;
@@ -2081,10 +2093,8 @@ class Dom extends Xom {
             x = lx;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
-            console.log(i,item.tagName,lineClamp,lineClampCount);
             // 可能超行了，无需继续，并且进行回溯
             if(lineClamp && lineClampCount >= lineClamp) {
-              console.log(item);
               item.__layoutNone();
               ignoreNextLine = true;
               let bp = this.domParent;
@@ -2094,17 +2104,18 @@ class Dom extends Xom {
               // 回溯处理，特别麻烦
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              list = lineBox.list;
-              let last = list[list.length - 1];
-              // 最后一个是text/inline时
-              if(last instanceof TextBox) {
-                let text = last.parent;
-                text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
-              }
-              // 最后一个是ib时
-              else {
-                last.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
-              }
+              backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              // list = lineBox.list;
+              // let last = list[list.length - 1];
+              // // 最后一个是text/inline时
+              // if(last instanceof TextBox) {
+              //   let text = last.parent;
+              //   text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              // }
+              // // 最后一个是ib时
+              // else {
+              //   backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              // }
               return;
             }
             lineClampCount = item.__layout({
@@ -2198,17 +2209,18 @@ class Dom extends Xom {
               // 回溯处理，特别麻烦
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              list = lineBox.list;
-              let last = list[list.length - 1];
+              backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              // list = lineBox.list;
+              // let last = list[list.length - 1];
               // 最后一个是text/inline时
-              if(last instanceof TextBox) {
-                let text = last.parent;
-                text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
-              }
-              // 最后一个是ib时
-              else {
-                last.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
-              }
+              // if(last instanceof TextBox) {
+              //   let text = last.parent;
+              //   text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              // }
+              // // 最后一个是ib时
+              // else {
+              //   backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              // }
               return;
             }
             lineClampCount = item.__layout({
@@ -2433,8 +2445,6 @@ class Dom extends Xom {
       this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
     }
   }
-
-  __backtrack(bp, lineBoxManager, lineBox, wl) {}
 
   /**
    * 只针对绝对定位children布局

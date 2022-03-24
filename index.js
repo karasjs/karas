@@ -14129,10 +14129,10 @@
             textBoxes.push(textBox);
             lineBoxManager.addItem(textBox, false);
             maxW = textWidth;
+            y += lineHeight;
 
             if (isTextOverflow) {
               lineCount++;
-              y += lineHeight;
             }
           }
         } // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
@@ -14233,7 +14233,6 @@
         if (rw + ew > wl + 1e-10) {
           // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
           var lineBox = lineBoxManager.lineBox;
-          console.log(lineBoxManager.isNewLine, lineBox.size);
 
           if (!lineBoxManager.isNewLine && lineBox && lineBox.size) {
             var list = lineBox.list;
@@ -14260,7 +14259,6 @@
               var _content = tb.content,
                   width = tb.width,
                   parent = tb.parent;
-              console.log(_content, width, parent);
 
               if (!j || wl >= width + ew + 1e-10) {
                 var _length = _content.length;
@@ -14286,8 +14284,6 @@
                   x -= width - _rw;
                   tb.__width = _rw;
                 }
-
-                console.log(x);
 
                 var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
@@ -14514,6 +14510,7 @@
         textBox.setDom(bp);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, true);
+        return true;
       }
     }, {
       key: "__offsetX",
@@ -24181,7 +24178,6 @@
       ALIGN_CONTENT$1 = _enums$STYLE_KEY$f.ALIGN_CONTENT,
       OVERFLOW$3 = _enums$STYLE_KEY$f.OVERFLOW,
       FONT_SIZE$9 = _enums$STYLE_KEY$f.FONT_SIZE,
-      TEXT_OVERFLOW$3 = _enums$STYLE_KEY$f.TEXT_OVERFLOW,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
       NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
@@ -24320,6 +24316,19 @@
       return a.__iIndex - b.__iIndex;
     });
     return normal;
+  }
+  /**
+   * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
+   */
+
+
+  function backtrack(bp, lineBoxManager, lineBox, wl) {
+    var list = lineBox.list;
+
+    for (var i = list.length - 1; i >= 0; i--) {
+      var item = list[i];
+      console.log(i, item);
+    }
   }
 
   var Dom$1 = /*#__PURE__*/function (_Xom) {
@@ -26329,8 +26338,6 @@
         var hasAddEndSpace; // lineClamp情况最后一行都加上，只加1次
 
         flowChildren.forEach(function (item, i) {
-          console.error(i, item.tagName, item.content, lineClampCount);
-
           if (ignoreNextLine) {
             item.__layoutNone();
 
@@ -26426,12 +26433,9 @@
                 lineClampCount++;
                 x = lx;
                 y = lineBoxManager.endY;
-                lineBoxManager.setNewLine();
-                console.log(i, item.tagName, lineClamp, lineClampCount); // 可能超行了，无需继续，并且进行回溯
+                lineBoxManager.setNewLine(); // 可能超行了，无需继续，并且进行回溯
 
                 if (lineClamp && lineClampCount >= lineClamp) {
-                  console.log(item);
-
                   item.__layoutNone();
 
                   ignoreNextLine = true;
@@ -26444,17 +26448,17 @@
 
                   var list = lineBoxManager.list;
                   var lineBox = list[list.length - 1];
-                  list = lineBox.list;
-                  var last = list[list.length - 1]; // 最后一个是text/inline时
-
-                  if (last instanceof TextBox) {
-                    var text = last.parent;
-
-                    text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
-                  } // 最后一个是ib时
-                  else {
-                    last.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
-                  }
+                  backtrack(bp, lineBoxManager, lineBox); // list = lineBox.list;
+                  // let last = list[list.length - 1];
+                  // // 最后一个是text/inline时
+                  // if(last instanceof TextBox) {
+                  //   let text = last.parent;
+                  //   text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  // }
+                  // // 最后一个是ib时
+                  // else {
+                  //   backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  // }
 
                   return;
                 }
@@ -26551,17 +26555,17 @@
 
                   var _list = lineBoxManager.list;
                   var _lineBox = _list[_list.length - 1];
-                  _list = _lineBox.list;
-                  var _last = _list[_list.length - 1]; // 最后一个是text/inline时
-
-                  if (_last instanceof TextBox) {
-                    var _text = _last.parent;
-
-                    _text.__backtrack(_bp, lineBoxManager, _lineBox, w - endSpace);
-                  } // 最后一个是ib时
-                  else {
-                    _last.__backtrack(_bp, lineBoxManager, _lineBox, w - endSpace);
-                  }
+                  backtrack(_bp, lineBoxManager, _lineBox); // list = lineBox.list;
+                  // let last = list[list.length - 1];
+                  // 最后一个是text/inline时
+                  // if(last instanceof TextBox) {
+                  //   let text = last.parent;
+                  //   text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  // }
+                  // // 最后一个是ib时
+                  // else {
+                  //   backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  // }
 
                   return;
                 }
@@ -26802,9 +26806,6 @@
           this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
         }
       }
-    }, {
-      key: "__backtrack",
-      value: function __backtrack(bp, lineBoxManager, lineBox, wl) {}
       /**
        * 只针对绝对定位children布局
        * @param container

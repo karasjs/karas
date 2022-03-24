@@ -1,5 +1,7 @@
 import Node from './Node';
 import Component from './Component';
+import inline from './inline';
+import Ellipsis from './Ellipsis';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -22,7 +24,6 @@ import Cache from '../refresh/Cache';
 import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
-import inline from './inline';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
@@ -400,7 +401,12 @@ class Xom extends Node {
   __layout(data, isAbs, isColumn) {
     css.computeReflow(this);
     let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle, __config } = this;
+    let { isDestroyed, currentStyle, computedStyle, __config, __ellipsis } = this;
+    // 虚拟省略号每次清除
+    if(__ellipsis) {
+      this.__ellipsis = null;
+    }
+    this.__parentLineBox = null;
     let {
       [DISPLAY]: display,
     } = computedStyle;
@@ -1958,6 +1964,9 @@ class Xom extends Node {
     if(isRealInline) {
       let contentBoxList = this.contentBoxList;
       let length = contentBoxList.length;
+      if(contentBoxList[length - 1] instanceof Ellipsis) {
+        length--;
+      }
       let hasBgi = backgroundImage.some(item => item);
       if(length) {
         let {
@@ -2003,11 +2012,8 @@ class Xom extends Node {
               let gd = this.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
               if(gd) {
                 if(gd.k === 'conic') {
-                  let uuid = gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
+                  gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
                     btlr, btrr, bbrr, bblr, true);
-                  if(renderMode === SVG && uuid) {
-                    svgBgSymbol.push(uuid);
-                  }
                 }
                 else {
                   let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null,
@@ -3032,6 +3038,10 @@ class Xom extends Node {
 
   set cacheAsBitmap(v) {
     this.__config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!v;
+  }
+
+  get parentLineBox() {
+    return this.__parentLineBox;
   }
 }
 

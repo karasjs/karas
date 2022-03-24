@@ -1,5 +1,6 @@
 import Node from './Node';
 import TextBox from './TextBox';
+import Ellipsis from './Ellipsis';
 import mode from '../refresh/mode';
 import css from '../style/css';
 import unit from '../style/unit';
@@ -255,7 +256,7 @@ class Text extends Node {
       }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [y, maxW] = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW,
+        [y] = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW,
           lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
         lineCount++;
       }
@@ -265,12 +266,13 @@ class Text extends Node {
           content);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false);
-        maxW = textWidth;
         y += lineHeight;
         if(isTextOverflow) {
           lineCount++;
         }
       }
+      // 和html一样，maxW此时在html是满格
+      maxW = textWidth;
     }
     // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
     // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
@@ -289,7 +291,7 @@ class Text extends Node {
           break;
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
-        if(i + num === length && endSpace && rw + endSpace > wl && num > 1) {
+        if(i + num === length && endSpace && rw + endSpace > wl + (1e-10) && num > 1) {
           [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         }
         maxW = Math.max(maxW, rw);
@@ -382,12 +384,14 @@ class Text extends Node {
               x -= width - rw;
               tb.__width = rw;
             }
-            let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-            textBox.setDom(bp);
-            textBoxes.push(textBox);
-            lineBoxManager.addItem(textBox, true);
+            let ep = new Ellipsis(x, y, ew, bp);
+            lineBoxManager.addItem(ep, true);
+            // let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            // textBox.setDom(bp);
+            // textBoxes.push(textBox);
+            // lineBoxManager.addItem(textBox, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            maxW = Math.max(maxW, rw + ew);console.log(maxW);
+            maxW = Math.max(maxW, rw + ew);
             return [y, maxW];
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
@@ -423,10 +427,12 @@ class Text extends Node {
     textBoxes.push(textBox);
     lineBoxManager.addItem(textBox, false);
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
-    textBox = new TextBox(this, textBoxes.length, x + rw, y, ew, lineHeight, ELLIPSIS);
-    textBox.setDom(bp);
-    textBoxes.push(textBox);
-    lineBoxManager.addItem(textBox, true);
+    let ep = new Ellipsis(x + rw, y, ew, bp);
+    lineBoxManager.addItem(ep, true);
+    // textBox = new TextBox(this, textBoxes.length, x + rw, y, ew, lineHeight, ELLIPSIS);
+    // textBox.setDom(bp);
+    // textBoxes.push(textBox);
+    // lineBoxManager.addItem(textBox, true);
     y += Math.max(lineHeight, lineBoxManager.lineHeight);
     maxW = Math.max(maxW, rw + ew);
     return [y, maxW];
@@ -514,11 +520,13 @@ class Text extends Node {
               tb.__width = rw;
               x -= width - rw;
             }
-            let textBoxes = parent.textBoxes;
-            let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-            textBox.setDom(bp);
-            textBoxes.push(textBox);
-            lineBoxManager.addItem(textBox, true);
+            let ep = new Ellipsis(x, y, ew, bp);
+            lineBoxManager.addItem(ep, true);
+            // let textBoxes = parent.textBoxes;
+            // let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+            // textBox.setDom(bp);
+            // textBoxes.push(textBox);
+            // lineBoxManager.addItem(textBox, true);
             return;
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
@@ -555,11 +563,13 @@ class Text extends Node {
     x -= tb.width - rw;
     tb.__width = rw;
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
-    let textBoxes = this.textBoxes;
-    let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-    textBox.setDom(bp);
-    textBoxes.push(textBox);
-    lineBoxManager.addItem(textBox, true);
+    let ep = new Ellipsis(x, y, ew, bp);
+    lineBoxManager.addItem(ep, true);
+    // let textBoxes = this.textBoxes;
+    // let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
+    // textBox.setDom(bp);
+    // textBoxes.push(textBox);
+    // lineBoxManager.addItem(textBox, true);
     return true;
   }
 
@@ -606,7 +616,7 @@ class Text extends Node {
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
-    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __ellipsis, __bp, __config } = this;
+    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __config } = this;
     if(renderMode === SVG) {
       __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
         type: 'text',

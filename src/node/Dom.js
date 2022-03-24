@@ -224,11 +224,18 @@ function backtrack(bp, lineBoxManager, lineBox, wl) {
       break;
     }
     // 无论删除一个ib还是textBox，放得下的话都可以暂停循环
-    if(wl + item.outerWidth >= ew) {
+    if(wl + item.outerWidth >= ew + (1e-10)) {
+      if(item instanceof TextBox) {
+        item.__backtrack(bp, lineBoxManager, lineBox, wl);
+      }
+      else {
+        item.__layoutNone();
+      }
+      x -= item.outerWidth;
+      wl += item.outerWidth;
       break;
     }
-    if(item instanceof TextBox) {}
-    else {}
+    // 放不下删除
   }
 }
 
@@ -259,6 +266,7 @@ class Dom extends Xom {
     this.__currentStyle = extend({}, this.__style);
     this.__children = children || [];
     this.__flexLine = []; // flex布局多行模式时存储行
+    this.__ellipsis = null; // 虚拟节点，有的话渲染
     let config = this.__config;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;
     config[NODE_STYLE] = this.__style;
@@ -2709,6 +2717,10 @@ class Dom extends Xom {
 
   render(renderMode, lv, ctx, cache, dx, dy) {
     let res = super.render(renderMode, lv, ctx, cache, dx, dy);
+    let ep = this.__ellipsis;
+    if(ep) {
+      ep.render(renderMode, lv, res.ctx, cache, dx, dy)
+    }
     if(renderMode === SVG) {
       this.virtualDom.type = 'dom';
     }
@@ -2725,6 +2737,9 @@ class Dom extends Xom {
         child.__destroy();
       }
     });
+    if(this.__ellipsis) {
+      this.__ellipsis.__destroy();
+    }
     super.__destroy();
   }
 
@@ -3091,10 +3106,6 @@ class Dom extends Xom {
       [PADDING_TOP]: paddingTop,
     } = this.computedStyle;
     return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseline;
-  }
-
-  get parentLineBox() {
-    return this.__parentLineBox;
   }
 }
 

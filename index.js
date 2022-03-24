@@ -9729,7 +9729,7 @@
    */
 
   var TextBox = /*#__PURE__*/function () {
-    function TextBox(parent, index, x, y, w, h, content, wList) {
+    function TextBox(parent, index, x, y, w, h, content) {
       _classCallCheck(this, TextBox);
 
       this.__parent = parent;
@@ -9739,7 +9739,6 @@
       this.__width = w;
       this.__height = h;
       this.__content = content;
-      this.__wList = wList;
       this.__virtualDom = {};
       this.__parentLineBox = null;
     }
@@ -9816,19 +9815,21 @@
 
           if (letterSpacing) {
             for (; i < length; i++) {
+              var c = content.charAt(i);
+
               if (overFill) {
-                ctx.fillText(content.charAt(i), x, y);
+                ctx.fillText(c, x, y);
               }
 
               if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
-                ctx.strokeText(content.charAt(i), x, y);
+                ctx.strokeText(c, x, y);
               }
 
               if (!overFill) {
-                ctx.fillText(content.charAt(i), x, y);
+                ctx.fillText(c, x, y);
               }
 
-              x += wList[i] + letterSpacing;
+              x += ctx.measureText(c).width + letterSpacing;
             }
           } else {
             if (overFill) {
@@ -26314,6 +26315,8 @@
 
         var ignoreNextLine = this.__ignoreNextLine = false; // lineClamp超过后，后面的均忽略并置none
 
+        var hasAddEndSpace; // lineClamp情况最后一行都加上，只加1次
+
         flowChildren.forEach(function (item, i) {
           if (ignoreNextLine) {
             item.__layoutNone();
@@ -26362,9 +26365,10 @@
           var isRealInline = isXom && isInline2 && item.__isRealInline(); // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
 
 
-          var isEnd = isInline && i === length - 1 && whiteSpace !== 'nowrap';
+          var isEnd = isInline && whiteSpace !== 'nowrap' && (i === length - 1 || lineClampCount === lineClamp - 1);
 
-          if (isEnd) {
+          if (isEnd && !hasAddEndSpace) {
+            hasAddEndSpace = true;
             endSpace += selfEndSpace;
           }
 
@@ -26408,7 +26412,7 @@
               }
             } else {
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0)); // 放得下继续
+              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx - endSpace, w - endSpace); // 放得下继续
 
               if (fw >= -1e-10) {
                 lineClampCount = item.__layout({
@@ -26496,7 +26500,7 @@
               // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
               var focusNoWrap = !i && nowrap || whiteSpace === 'nowrap';
 
-              var _fw2 = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x);
+              var _fw2 = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x - endSpace);
 
               if (!focusNoWrap && _fw2 >= 0 && isEnd && endSpace && item.content.length === 1) {
                 var fw2 = _fw2 - endSpace;

@@ -1992,6 +1992,7 @@ class Dom extends Xom {
       endSpace += selfEndSpace;
     }
     let ignoreNextLine = this.__ignoreNextLine = false; // lineClamp超过后，后面的均忽略并置none
+    let hasAddEndSpace; // lineClamp情况最后一行都加上，只加1次
     flowChildren.forEach((item, i) => {
       if(ignoreNextLine) {
         item.__layoutNone();
@@ -2036,8 +2037,9 @@ class Dom extends Xom {
       let isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
       let isRealInline = isXom && isInline2 && item.__isRealInline();
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb
-      let isEnd = isInline && (i === length - 1) && whiteSpace !== 'nowrap';
-      if(isEnd) {
+      let isEnd = isInline && whiteSpace !== 'nowrap' && (i === length - 1 || lineClampCount === lineClamp - 1) ;
+      if(isEnd && !hasAddEndSpace) {
+        hasAddEndSpace = true;
         endSpace += selfEndSpace;
       }
       if(isXom) {
@@ -2080,7 +2082,7 @@ class Dom extends Xom {
         }
         else {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx, w - (isEnd ? endSpace : 0));
+          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx - endSpace, w - endSpace);
           // 放得下继续
           if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({
@@ -2167,7 +2169,7 @@ class Dom extends Xom {
           // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
           // 第一个Text且父元素声明了nowrap也强制不换行，非第一个则看本身whiteSpace声明
           let focusNoWrap = (!i && nowrap) || whiteSpace === 'nowrap';
-          let fw = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x);
+          let fw = focusNoWrap ? 0 : item.__tryLayInline(w + lx - x - endSpace);
           if(!focusNoWrap && fw >= 0 && isEnd && endSpace && item.content.length === 1) {
             let fw2 = fw - endSpace;
             if(fw2 < 0) {

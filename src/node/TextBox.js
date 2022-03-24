@@ -22,7 +22,7 @@ const { STYLE_KEY: {
  * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
  */
 class TextBox {
-  constructor(parent, index, x, y, w, h, content, wList) {
+  constructor(parent, index, x, y, w, h, content) {
     this.__parent = parent;
     this.__index = index;
     this.__x = x;
@@ -30,7 +30,6 @@ class TextBox {
     this.__width = w;
     this.__height = h;
     this.__content = content;
-    this.__wList = wList;
     this.__virtualDom = {};
     this.__parentLineBox = null;
   }
@@ -87,16 +86,17 @@ class TextBox {
       let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
       if(letterSpacing) {
         for(; i < length; i++) {
+          let c = content.charAt(i);
           if(overFill) {
-            ctx.fillText(content.charAt(i), x, y);
+            ctx.fillText(c, x, y);
           }
           if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
-            ctx.strokeText(content.charAt(i), x, y);
+            ctx.strokeText(c, x, y);
           }
           if(!overFill) {
-            ctx.fillText(content.charAt(i), x, y);
+            ctx.fillText(c, x, y);
           }
-          x += wList[i] + letterSpacing;
+          x += ctx.measureText(c).width + letterSpacing;
         }
       }
       else {

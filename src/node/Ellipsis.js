@@ -2,7 +2,6 @@ import Node from './Node';
 import mode from '../refresh/mode';
 import css from '../style/css';
 import enums from '../util/enums';
-import util from "../util/util";
 
 const {
   STYLE_KEY: {
@@ -11,6 +10,9 @@ const {
     FONT_WEIGHT,
     FONT_STYLE,
     COLOR,
+  },
+  NODE_KEY: {
+    NODE_VIRTUAL_DOM,
   },
 } = enums;
 
@@ -63,11 +65,16 @@ class Ellipsis extends Node{
         ['font-style', computedStyle[FONT_STYLE]],
         ['font-size', computedStyle[FONT_SIZE] + 'px'],
       ];
-      let vd = this.__virtualDom = {
-        type: 'item',
-        tagName: 'text',
-        props,
-        content: CHAR,
+      let vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+        type: 'text',
+        children: [
+          {
+            type: 'item',
+            tagName: 'text',
+            props,
+            content: CHAR,
+          },
+        ],
       };
       parent.virtualDom.children.push(vd);
     }

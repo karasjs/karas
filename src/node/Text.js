@@ -386,10 +386,6 @@ class Text extends Node {
             }
             let ep = new Ellipsis(x, y, ew, bp);
             lineBoxManager.addItem(ep, true);
-            // let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-            // textBox.setDom(bp);
-            // textBoxes.push(textBox);
-            // lineBoxManager.addItem(textBox, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
             maxW = Math.max(maxW, rw + ew);
             return [y, maxW];
@@ -429,10 +425,6 @@ class Text extends Node {
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
     let ep = new Ellipsis(x + rw, y, ew, bp);
     lineBoxManager.addItem(ep, true);
-    // textBox = new TextBox(this, textBoxes.length, x + rw, y, ew, lineHeight, ELLIPSIS);
-    // textBox.setDom(bp);
-    // textBoxes.push(textBox);
-    // lineBoxManager.addItem(textBox, true);
     y += Math.max(lineHeight, lineBoxManager.lineHeight);
     maxW = Math.max(maxW, rw + ew);
     return [y, maxW];
@@ -522,11 +514,6 @@ class Text extends Node {
             }
             let ep = new Ellipsis(x, y, ew, bp);
             lineBoxManager.addItem(ep, true);
-            // let textBoxes = parent.textBoxes;
-            // let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-            // textBox.setDom(bp);
-            // textBoxes.push(textBox);
-            // lineBoxManager.addItem(textBox, true);
             return;
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
@@ -565,11 +552,6 @@ class Text extends Node {
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
     let ep = new Ellipsis(x, y, ew, bp);
     lineBoxManager.addItem(ep, true);
-    // let textBoxes = this.textBoxes;
-    // let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-    // textBox.setDom(bp);
-    // textBoxes.push(textBox);
-    // lineBoxManager.addItem(textBox, true);
     return true;
   }
 
@@ -692,43 +674,6 @@ class Text extends Node {
     if(renderMode === SVG) {
       this.virtualDom.children = textBoxes.map(textBox => textBox.virtualDom);
     }
-    // textOverflow的省略号font使用最近非inline的父节点
-    // if(__ellipsis) {
-    //   let last = textBoxes[textBoxes.length - 1];
-    //   let { endX, endY } = last;
-    //   let computedStyle = __bp.computedStyle;
-    //   if(renderMode === CANVAS || renderMode === WEBGL) {
-    //     let font = css.setFontStyle(computedStyle);
-    //     if(ctx.font !== font) {
-    //       ctx.font = font;
-    //     }
-    //     let { [COLOR]: color, [BACKGROUND_COLOR]: backgroundColor } = __bp.__cacheStyle;
-    //     if(ctx.fillStyle !== backgroundColor) {
-    //       ctx.fillStyle = backgroundColor;
-    //     }
-    //     if(ctx.fillStyle !== color) {
-    //       ctx.fillStyle = color;
-    //     }
-    //     ctx.fillText(ELLIPSIS, endX, endY);
-    //   }
-    //   else if(renderMode === SVG) {
-    //     let props = [
-    //       ['x', endX],
-    //       ['y', endY],
-    //       ['fill', __bp.__cacheStyle[COLOR]],
-    //       ['font-family', computedStyle[FONT_FAMILY]],
-    //       ['font-weight', computedStyle[FONT_WEIGHT]],
-    //       ['font-style', computedStyle[FONT_STYLE]],
-    //       ['font-size', computedStyle[FONT_SIZE] + 'px'],
-    //     ];
-    //     this.virtualDom.children.push({
-    //       type: 'item',
-    //       tagName: 'text',
-    //       props,
-    //       content: ELLIPSIS,
-    //     });
-    //   }
-    // }
   }
 
   __deepScan(cb) {

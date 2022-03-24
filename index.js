@@ -2396,612 +2396,13 @@
     svgFilter: canvasFilter
   };
 
-  // 类型为引用防止json仿造
-  var TYPE_VD = Symbol('Dom');
-  var TYPE_GM = Symbol('Geom');
-  var TYPE_CP = Symbol('Component');
-  var $$type = {
-    TYPE_VD: TYPE_VD,
-    TYPE_GM: TYPE_GM,
-    TYPE_CP: TYPE_CP
-  };
-
-  var toString = {}.toString;
-
-  function isType(type) {
-    return function (obj) {
-      return toString.call(obj) === '[object ' + type + ']';
-    };
-  }
-
-  var isObject = isType('Object');
-  var isString = isType('String');
-  var isFunction = isType('Function');
-  var isNumber = isType('Number');
-  var isBoolean = isType('Boolean');
-  var isDate = isType('Date');
-  var hasOwn = {}.hasOwnProperty;
-  var fnToString = hasOwn.toString;
-  var ObjectFunctionString = fnToString.call(Object);
-
-  function isNil(v) {
-    return v === undefined || v === null;
-  }
-
-  function _joinSourceArray(arr) {
-    var res = '';
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        res += _joinSourceArray(item);
-      } else {
-        res += stringify(item);
-      }
-    }
-
-    return res;
-  }
-
-  function stringify(s) {
-    if (isNil(s)) {
-      return '';
-    }
-
-    return s.toString();
-  }
-
-  function encodeHtml(s, prop) {
-    if (prop) {
-      return s.replace(/"/g, '&quot;');
-    }
-
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-  } // 根元素专用
-
-
-  function joinVirtualDom(vd) {
-    var s = '<defs>';
-    vd.defs.forEach(function (item) {
-      s += joinDef(item);
-    });
-    s += '</defs><g>';
-    vd.bb.forEach(function (item) {
-      s += joinVd(item);
-    });
-    s += '</g><g';
-
-    if (vd.conClip) {
-      s += ' clip-path="' + vd.conClip + '"';
-    }
-
-    s += '>';
-    (vd.children || []).forEach(function (item) {
-      if (item.isMask) {
-        return;
-      }
-
-      s += joinVd(item);
-    });
-    s += '</g>';
-    return s;
-  } // 普通元素
-
-
-  function joinVd(vd) {
-    if (vd.type === 'item' || vd.type === 'img') {
-      var s = '';
-      (vd.props || []).forEach(function (item) {
-        s += ' ' + item[0] + '="' + item[1] + '"';
-      });
-
-      if (vd.tagName === 'text') {
-        return '<text' + s + '>' + vd.content + '</text>';
-      }
-
-      return '<' + vd.tagName + s + '/>';
-    } else if (vd.type === 'text') {
-      var _s = ""; // text有许多lineBox
-
-      (vd.children || []).forEach(function (item) {
-        _s += joinVd(item);
-      });
-      return '<g>' + _s + '</g>';
-    } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g>';
-      vd.bb.forEach(function (item) {
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g><g';
-
-      if (vd.conClip) {
-        _s2 += ' clip-path="' + vd.conClip + '"';
-      }
-
-      _s2 += '>';
-      (vd.children || []).forEach(function (item) {
-        if (item.isMask) {
-          return;
-        }
-
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g>';
-      var opacity = vd.opacity,
-          transform = vd.transform,
-          visibility = vd.visibility,
-          mask = vd.mask,
-          overflow = vd.overflow,
-          filter = vd.filter,
-          mixBlendMode = vd.mixBlendMode;
-      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
-    }
-  }
-
-  function joinDef(def) {
-    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
-
-    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
-      s += ' gradientUnits="userSpaceOnUse"';
-    }
-
-    (def.props || []).forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '>';
-    (def.children || []).forEach(function (item) {
-      s += joinItem(item);
-    });
-    s += '</' + def.tagName + '>';
-    return s;
-  }
-
-  function joinItem(item) {
-    var s = '<' + item.tagName;
-    (item.props || []).forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '></' + item.tagName + '>';
-    return s;
-  }
-
-  function rgba2int(color) {
-    if (Array.isArray(color)) {
-      return color;
-    }
-
-    var res = [];
-
-    if (!color || color === 'transparent') {
-      res = [0, 0, 0, 0];
-    } else if (color.charAt(0) === '#') {
-      color = color.slice(1);
-
-      if (color.length === 3) {
-        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
-        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
-        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-        res[3] = 1;
-      } else if (color.length === 6) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4), 16));
-        res[3] = 1;
-      } else if (color.length === 8) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4, 6), 16));
-        res.push(parseInt(color.slice(6), 16) / 255);
-      } else {
-        res[0] = res[1] = res[2] = 0;
-        res[3] = 1;
-      }
-    } else {
-      var c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-
-      if (c) {
-        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-
-        if (!isNil(c[4])) {
-          res[3] = parseFloat(c[4]);
-        } else {
-          res[3] = 1;
-        }
-      } else {
-        res = [0, 0, 0, 0];
-      }
-    }
-
-    return res;
-  }
-
-  function int2rgba(color) {
-    if (Array.isArray(color)) {
-      if (color.length === 4) {
-        color = color.map(function (c, i) {
-          return i === 3 ? c : Math.floor(Math.max(0, c));
-        });
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        color = color.map(function (c) {
-          return Math.floor(c);
-        });
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return color || 'rgba(0,0,0,0)';
-  }
-
-  function int2invert(color) {
-    if (Array.isArray(color)) {
-      color = color.slice(0);
-      color[0] = 255 - color[0];
-      color[1] = 255 - color[1];
-      color[2] = 255 - color[2];
-
-      if (color.length === 4) {
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return 'rgba(0,0,0,0)';
-  }
-
-  function arr2hash(arr) {
-    var hash = {};
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        hash[item[0]] = item[1];
-      } else {
-        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-          var k = list[j];
-          hash[k] = item[k];
-        }
-      }
-    }
-
-    return hash;
-  }
-
-  function hash2arr(hash) {
-    if (Array.isArray(hash)) {
-      return hash;
-    }
-
-    var arr = [];
-
-    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-      var k = list[i];
-      arr.push([k, hash[k]]);
-    }
-
-    return arr;
-  }
-
-  function clone(obj) {
-    if (isNil(obj) || _typeof(obj) !== 'object') {
-      return obj;
-    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
-
-
-    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
-      return obj;
-    }
-
-    if (util.isDate(obj)) {
-      return new Date(obj);
-    }
-
-    if (!isPlainObject(obj) && !Array.isArray(obj)) {
-      return obj;
-    }
-
-    var n = Array.isArray(obj) ? [] : {};
-    Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
-    });
-    return n;
-  }
-  /**
-   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equalArr(a, b) {
-    if (!a || !b) {
-      return a === b;
-    }
-
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      var ai = a[i];
-      var bi = b[i];
-      var isArrayA = Array.isArray(ai);
-      var isArrayB = Array.isArray(bi);
-
-      if (isArrayA && isArrayB) {
-        if (!equalArr(ai, bi)) {
-          return false;
-        }
-      } else if (isArrayA || isArrayB) {
-        return false;
-      } else if (ai !== bi) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  /**
-   * 深度对比对象
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equal(a, b) {
-    if (a === b) {
-      return true;
-    }
-
-    if (isObject(a) && isObject(b)) {
-      var hash = {};
-
-      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
-        var k = arr[i];
-
-        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
-          return false;
-        }
-
-        hash[k] = true;
-      } // a没有b有则false
-
-
-      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
-        var _k = _arr[_i];
-
-        if (!hash.hasOwnProperty(_k)) {
-          return false;
-        }
-      }
-    } else if (isDate(a) && isDate(b)) {
-      return a.getTime() === b.getTime();
-    } else if (Array.isArray(a) && Array.isArray(b)) {
-      if (a.length !== b.length) {
-        return false;
-      }
-
-      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
-        if (!equal(a[_i2], b[_i2])) {
-          return false;
-        }
-      }
-    } else {
-      return a === b;
-    }
-
-    return true;
-  }
-
-  function extend(target, source, keys) {
-    if (source === null || _typeof(source) !== 'object') {
-      return target;
-    }
-
-    if (!keys) {
-      keys = Object.keys(source);
-    }
-
-    var i = 0;
-    var len = keys.length;
-
-    while (i < len) {
-      var k = keys[i];
-      target[k] = source[k];
-      i++;
-    }
-
-    return target;
-  }
-
-  function joinArr(arr, split) {
-    var s = arr.length ? arr[0] : '';
-
-    for (var i = 1, len = arr.length; i < len; i++) {
-      s += split + arr[i];
-    }
-
-    return s;
-  }
-
-  function extendAnimate(ovd, nvd) {
-    var list = nvd.__animationList = ovd.animationList.splice(0);
-    list.forEach(function (item) {
-      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
-
-
-      if (item.assigning || item.finished && item.__stayEnd()) {
-        item.assignCurrentStyle();
-      }
-    }); // 帧动画继承
-
-    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
-  }
-
-  function transformBbox(bbox, matrix) {
-    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
-    if (matrix && !mx.isE(matrix)) {
-      var _bbox = bbox,
-          _bbox2 = _slicedToArray(_bbox, 4),
-          x1 = _bbox2[0],
-          y1 = _bbox2[1],
-          x2 = _bbox2[2],
-          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
-
-
-      if (dx) {
-        x1 -= dx;
-        x2 += dx;
-      }
-
-      if (dy) {
-        y1 -= dy;
-        y2 += dy;
-      }
-
-      var list = [x2, y1, x1, y2, x2, y2];
-      var w;
-
-      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
-
-      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
-
-      x1 = _mx$calPoint2[0];
-      y1 = _mx$calPoint2[1];
-      w = _mx$calPoint2[3];
-
-      if (w && w !== 1) {
-        x1 /= w;
-        y1 /= w;
-      }
-
-      var xa = x1,
-          ya = y1,
-          xb = x1,
-          yb = y1;
-
-      for (var i = 0; i < 6; i += 2) {
-        var x = list[i],
-            y = list[i + 1];
-
-        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
-
-        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
-
-        x = _mx$calPoint4[0];
-        y = _mx$calPoint4[1];
-        w = _mx$calPoint4[3];
-
-        if (w && w !== 1) {
-          x /= w;
-          y /= w;
-        }
-
-        xa = Math.min(xa, x);
-        xb = Math.max(xb, x);
-        ya = Math.min(ya, y);
-        yb = Math.max(yb, y);
-      }
-
-      bbox = [xa, ya, xb, yb];
-    } else if (dx || dy) {
-      bbox = bbox.slice(0);
-      bbox[0] -= dx;
-      bbox[1] -= dy;
-      bbox[2] += dx;
-      bbox[3] += dy;
-    }
-
-    return bbox;
-  }
-
-  function isPlainObject(obj) {
-    if (!obj || toString.call(obj) !== '[object Object]') {
-      return false;
-    }
-
-    var proto = Object.getPrototypeOf(obj);
-
-    if (!proto) {
-      return true;
-    }
-
-    var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
-    return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
-  }
-
-  function assignMatrix(t, v) {
-    t[0] = v[0];
-    t[1] = v[1];
-    t[2] = v[2];
-    t[3] = v[3];
-    t[4] = v[4];
-    t[5] = v[5];
-    t[6] = v[6];
-    t[7] = v[7];
-    t[8] = v[8];
-    t[9] = v[9];
-    t[10] = v[10];
-    t[11] = v[11];
-    t[12] = v[12];
-    t[13] = v[13];
-    t[14] = v[14];
-    t[15] = v[15];
-    return t;
-  }
-
-  var util = {
-    isObject: isObject,
-    isString: isString,
-    isFunction: isFunction,
-    isNumber: isNumber,
-    isBoolean: isBoolean,
-    isDate: isDate,
-    isNil: isNil,
-    isPrimitive: function isPrimitive(v) {
-      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
-    },
-    // css中常用undefined/null表示auto本身
-    isAuto: function isAuto(v) {
-      return isNil(v) || v === 'auto';
-    },
-    isPlainObject: isPlainObject,
-    stringify: stringify,
-    joinSourceArray: function joinSourceArray(arr) {
-      return _joinSourceArray(arr);
-    },
-    encodeHtml: encodeHtml,
-    joinVirtualDom: joinVirtualDom,
-    joinVd: joinVd,
-    joinDef: joinDef,
-    rgba2int: rgba2int,
-    int2rgba: int2rgba,
-    int2invert: int2invert,
-    arr2hash: arr2hash,
-    hash2arr: hash2arr,
-    clone: clone,
-    equalArr: equalArr,
-    equal: equal,
-    extend: extend,
-    joinArr: joinArr,
-    extendAnimate: extendAnimate,
-    transformBbox: transformBbox,
-    assignMatrix: assignMatrix
-  };
-
   var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
       FONT_SIZE = _enums$STYLE_KEY$1.FONT_SIZE,
       FONT_FAMILY = _enums$STYLE_KEY$1.FONT_FAMILY,
       FONT_WEIGHT = _enums$STYLE_KEY$1.FONT_WEIGHT,
       FONT_STYLE = _enums$STYLE_KEY$1.FONT_STYLE,
-      COLOR = _enums$STYLE_KEY$1.COLOR;
+      COLOR = _enums$STYLE_KEY$1.COLOR,
+      NODE_VIRTUAL_DOM = enums.NODE_KEY.NODE_VIRTUAL_DOM;
   var CANVAS = mode.CANVAS,
       SVG = mode.SVG,
       WEBGL = mode.WEBGL;
@@ -3058,11 +2459,14 @@
           ctx.fillText(CHAR, x, y);
         } else if (renderMode === SVG) {
           var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY]], ['font-weight', computedStyle[FONT_WEIGHT]], ['font-style', computedStyle[FONT_STYLE]], ['font-size', computedStyle[FONT_SIZE] + 'px']];
-          var vd = this.__virtualDom = {
-            type: 'item',
-            tagName: 'text',
-            props: props,
-            content: CHAR
+          var vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+            type: 'text',
+            children: [{
+              type: 'item',
+              tagName: 'text',
+              props: props,
+              content: CHAR
+            }]
           };
           parent.virtualDom.children.push(vd);
         }
@@ -5457,6 +4861,606 @@
     calBorderRadius: calBorderRadius,
     calBorderRadiusInline: calBorderRadiusInline,
     renderBorder: renderBorder
+  };
+
+  // 类型为引用防止json仿造
+  var TYPE_VD = Symbol('Dom');
+  var TYPE_GM = Symbol('Geom');
+  var TYPE_CP = Symbol('Component');
+  var $$type = {
+    TYPE_VD: TYPE_VD,
+    TYPE_GM: TYPE_GM,
+    TYPE_CP: TYPE_CP
+  };
+
+  var toString = {}.toString;
+
+  function isType(type) {
+    return function (obj) {
+      return toString.call(obj) === '[object ' + type + ']';
+    };
+  }
+
+  var isObject = isType('Object');
+  var isString = isType('String');
+  var isFunction = isType('Function');
+  var isNumber = isType('Number');
+  var isBoolean = isType('Boolean');
+  var isDate = isType('Date');
+  var hasOwn = {}.hasOwnProperty;
+  var fnToString = hasOwn.toString;
+  var ObjectFunctionString = fnToString.call(Object);
+
+  function isNil(v) {
+    return v === undefined || v === null;
+  }
+
+  function _joinSourceArray(arr) {
+    var res = '';
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        res += _joinSourceArray(item);
+      } else {
+        res += stringify(item);
+      }
+    }
+
+    return res;
+  }
+
+  function stringify(s) {
+    if (isNil(s)) {
+      return '';
+    }
+
+    return s.toString();
+  }
+
+  function encodeHtml(s, prop) {
+    if (prop) {
+      return s.replace(/"/g, '&quot;');
+    }
+
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
+  } // 根元素专用
+
+
+  function joinVirtualDom(vd) {
+    var s = '<defs>';
+    vd.defs.forEach(function (item) {
+      s += joinDef(item);
+    });
+    s += '</defs><g>';
+    vd.bb.forEach(function (item) {
+      s += joinVd(item);
+    });
+    s += '</g><g';
+
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
+    }
+
+    s += '>';
+    (vd.children || []).forEach(function (item) {
+      if (item.isMask) {
+        return;
+      }
+
+      s += joinVd(item);
+    });
+    s += '</g>';
+    return s;
+  } // 普通元素
+
+
+  function joinVd(vd) {
+    if (vd.type === 'item' || vd.type === 'img') {
+      var s = '';
+      (vd.props || []).forEach(function (item) {
+        s += ' ' + item[0] + '="' + item[1] + '"';
+      });
+
+      if (vd.tagName === 'text') {
+        return '<text' + s + '>' + vd.content + '</text>';
+      }
+
+      return '<' + vd.tagName + s + '/>';
+    } else if (vd.type === 'text') {
+      var _s = ""; // text有许多lineBox
+
+      (vd.children || []).forEach(function (item) {
+        _s += joinVd(item);
+      });
+      return '<g>' + _s + '</g>';
+    } else if (vd.type === 'dom' || vd.type === 'geom') {
+      var _s2 = '<g>';
+      vd.bb.forEach(function (item) {
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g><g';
+
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
+      }
+
+      _s2 += '>';
+      (vd.children || []).forEach(function (item) {
+        if (item.isMask) {
+          return;
+        }
+
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g>';
+      var opacity = vd.opacity,
+          transform = vd.transform,
+          visibility = vd.visibility,
+          mask = vd.mask,
+          overflow = vd.overflow,
+          filter = vd.filter,
+          mixBlendMode = vd.mixBlendMode;
+      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
+    }
+  }
+
+  function joinDef(def) {
+    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
+
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
+      s += ' gradientUnits="userSpaceOnUse"';
+    }
+
+    (def.props || []).forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '>';
+    (def.children || []).forEach(function (item) {
+      s += joinItem(item);
+    });
+    s += '</' + def.tagName + '>';
+    return s;
+  }
+
+  function joinItem(item) {
+    var s = '<' + item.tagName;
+    (item.props || []).forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '></' + item.tagName + '>';
+    return s;
+  }
+
+  function rgba2int(color) {
+    if (Array.isArray(color)) {
+      return color;
+    }
+
+    var res = [];
+
+    if (!color || color === 'transparent') {
+      res = [0, 0, 0, 0];
+    } else if (color.charAt(0) === '#') {
+      color = color.slice(1);
+
+      if (color.length === 3) {
+        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
+        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
+        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+        res[3] = 1;
+      } else if (color.length === 6) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4), 16));
+        res[3] = 1;
+      } else if (color.length === 8) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4, 6), 16));
+        res.push(parseInt(color.slice(6), 16) / 255);
+      } else {
+        res[0] = res[1] = res[2] = 0;
+        res[3] = 1;
+      }
+    } else {
+      var c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+
+      if (c) {
+        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
+
+        if (!isNil(c[4])) {
+          res[3] = parseFloat(c[4]);
+        } else {
+          res[3] = 1;
+        }
+      } else {
+        res = [0, 0, 0, 0];
+      }
+    }
+
+    return res;
+  }
+
+  function int2rgba(color) {
+    if (Array.isArray(color)) {
+      if (color.length === 4) {
+        color = color.map(function (c, i) {
+          return i === 3 ? c : Math.floor(Math.max(0, c));
+        });
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        color = color.map(function (c) {
+          return Math.floor(c);
+        });
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return color || 'rgba(0,0,0,0)';
+  }
+
+  function int2invert(color) {
+    if (Array.isArray(color)) {
+      color = color.slice(0);
+      color[0] = 255 - color[0];
+      color[1] = 255 - color[1];
+      color[2] = 255 - color[2];
+
+      if (color.length === 4) {
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return 'rgba(0,0,0,0)';
+  }
+
+  function arr2hash(arr) {
+    var hash = {};
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        hash[item[0]] = item[1];
+      } else {
+        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+          var k = list[j];
+          hash[k] = item[k];
+        }
+      }
+    }
+
+    return hash;
+  }
+
+  function hash2arr(hash) {
+    if (Array.isArray(hash)) {
+      return hash;
+    }
+
+    var arr = [];
+
+    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+      var k = list[i];
+      arr.push([k, hash[k]]);
+    }
+
+    return arr;
+  }
+
+  function clone(obj) {
+    if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
+
+
+    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
+      return obj;
+    }
+
+    if (util.isDate(obj)) {
+      return new Date(obj);
+    }
+
+    if (!isPlainObject(obj) && !Array.isArray(obj)) {
+      return obj;
+    }
+
+    var n = Array.isArray(obj) ? [] : {};
+    Object.keys(obj).forEach(function (i) {
+      n[i] = clone(obj[i]);
+    });
+    return n;
+  }
+  /**
+   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equalArr(a, b) {
+    if (!a || !b) {
+      return a === b;
+    }
+
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      } else if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+  /**
+   * 深度对比对象
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equal(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (isObject(a) && isObject(b)) {
+      var hash = {};
+
+      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+        var k = arr[i];
+
+        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+          return false;
+        }
+
+        hash[k] = true;
+      } // a没有b有则false
+
+
+      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
+        var _k = _arr[_i];
+
+        if (!hash.hasOwnProperty(_k)) {
+          return false;
+        }
+      }
+    } else if (isDate(a) && isDate(b)) {
+      return a.getTime() === b.getTime();
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+        if (!equal(a[_i2], b[_i2])) {
+          return false;
+        }
+      }
+    } else {
+      return a === b;
+    }
+
+    return true;
+  }
+
+  function extend(target, source, keys) {
+    if (source === null || _typeof(source) !== 'object') {
+      return target;
+    }
+
+    if (!keys) {
+      keys = Object.keys(source);
+    }
+
+    var i = 0;
+    var len = keys.length;
+
+    while (i < len) {
+      var k = keys[i];
+      target[k] = source[k];
+      i++;
+    }
+
+    return target;
+  }
+
+  function joinArr(arr, split) {
+    var s = arr.length ? arr[0] : '';
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+      s += split + arr[i];
+    }
+
+    return s;
+  }
+
+  function extendAnimate(ovd, nvd) {
+    var list = nvd.__animationList = ovd.animationList.splice(0);
+    list.forEach(function (item) {
+      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
+
+
+      if (item.assigning || item.finished && item.__stayEnd()) {
+        item.assignCurrentStyle();
+      }
+    }); // 帧动画继承
+
+    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
+  }
+
+  function transformBbox(bbox, matrix) {
+    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+    if (matrix && !mx.isE(matrix)) {
+      var _bbox = bbox,
+          _bbox2 = _slicedToArray(_bbox, 4),
+          x1 = _bbox2[0],
+          y1 = _bbox2[1],
+          x2 = _bbox2[2],
+          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
+
+
+      if (dx) {
+        x1 -= dx;
+        x2 += dx;
+      }
+
+      if (dy) {
+        y1 -= dy;
+        y2 += dy;
+      }
+
+      var list = [x2, y1, x1, y2, x2, y2];
+      var w;
+
+      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
+
+      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
+
+      x1 = _mx$calPoint2[0];
+      y1 = _mx$calPoint2[1];
+      w = _mx$calPoint2[3];
+
+      if (w && w !== 1) {
+        x1 /= w;
+        y1 /= w;
+      }
+
+      var xa = x1,
+          ya = y1,
+          xb = x1,
+          yb = y1;
+
+      for (var i = 0; i < 6; i += 2) {
+        var x = list[i],
+            y = list[i + 1];
+
+        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
+
+        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
+
+        x = _mx$calPoint4[0];
+        y = _mx$calPoint4[1];
+        w = _mx$calPoint4[3];
+
+        if (w && w !== 1) {
+          x /= w;
+          y /= w;
+        }
+
+        xa = Math.min(xa, x);
+        xb = Math.max(xb, x);
+        ya = Math.min(ya, y);
+        yb = Math.max(yb, y);
+      }
+
+      bbox = [xa, ya, xb, yb];
+    } else if (dx || dy) {
+      bbox = bbox.slice(0);
+      bbox[0] -= dx;
+      bbox[1] -= dy;
+      bbox[2] += dx;
+      bbox[3] += dy;
+    }
+
+    return bbox;
+  }
+
+  function isPlainObject(obj) {
+    if (!obj || toString.call(obj) !== '[object Object]') {
+      return false;
+    }
+
+    var proto = Object.getPrototypeOf(obj);
+
+    if (!proto) {
+      return true;
+    }
+
+    var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
+    return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
+  }
+
+  function assignMatrix(t, v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+    return t;
+  }
+
+  var util = {
+    isObject: isObject,
+    isString: isString,
+    isFunction: isFunction,
+    isNumber: isNumber,
+    isBoolean: isBoolean,
+    isDate: isDate,
+    isNil: isNil,
+    isPrimitive: function isPrimitive(v) {
+      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+    },
+    // css中常用undefined/null表示auto本身
+    isAuto: function isAuto(v) {
+      return isNil(v) || v === 'auto';
+    },
+    isPlainObject: isPlainObject,
+    stringify: stringify,
+    joinSourceArray: function joinSourceArray(arr) {
+      return _joinSourceArray(arr);
+    },
+    encodeHtml: encodeHtml,
+    joinVirtualDom: joinVirtualDom,
+    joinVd: joinVd,
+    joinDef: joinDef,
+    rgba2int: rgba2int,
+    int2rgba: int2rgba,
+    int2invert: int2invert,
+    arr2hash: arr2hash,
+    hash2arr: hash2arr,
+    clone: clone,
+    equalArr: equalArr,
+    equal: equal,
+    extend: extend,
+    joinArr: joinArr,
+    extendAnimate: extendAnimate,
+    transformBbox: transformBbox,
+    assignMatrix: assignMatrix
   };
 
   var debug = {
@@ -13843,7 +13847,7 @@
       NODE_DOM_PARENT = _enums$NODE_KEY$1.NODE_DOM_PARENT,
       NODE_MATRIX_EVENT = _enums$NODE_KEY$1.NODE_MATRIX_EVENT,
       NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
-      NODE_VIRTUAL_DOM = _enums$NODE_KEY$1.NODE_VIRTUAL_DOM,
+      NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$1.NODE_VIRTUAL_DOM,
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_FOCUS = _enums$UPDATE_KEY.UPDATE_FOCUS,
@@ -14305,11 +14309,7 @@
 
                 var _ep = new Ellipsis(x, y, ew, bp);
 
-                lineBoxManager.addItem(_ep, true); // let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-                // textBox.setDom(bp);
-                // textBoxes.push(textBox);
-                // lineBoxManager.addItem(textBox, true);
-
+                lineBoxManager.addItem(_ep, true);
                 y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 maxW = Math.max(maxW, _rw + ew);
                 return [y, maxW];
@@ -14354,11 +14354,7 @@
         lineBoxManager.addItem(textBox, false); // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
 
         var ep = new Ellipsis(x + rw, y, ew, bp);
-        lineBoxManager.addItem(ep, true); // textBox = new TextBox(this, textBoxes.length, x + rw, y, ew, lineHeight, ELLIPSIS);
-        // textBox.setDom(bp);
-        // textBoxes.push(textBox);
-        // lineBoxManager.addItem(textBox, true);
-
+        lineBoxManager.addItem(ep, true);
         y += Math.max(lineHeight, lineBoxManager.lineHeight);
         maxW = Math.max(maxW, rw + ew);
         return [y, maxW];
@@ -14475,12 +14471,7 @@
 
                 var _ep2 = new Ellipsis(x, y, ew, bp);
 
-                lineBoxManager.addItem(_ep2, true); // let textBoxes = parent.textBoxes;
-                // let textBox = new TextBox(parent, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-                // textBox.setDom(bp);
-                // textBoxes.push(textBox);
-                // lineBoxManager.addItem(textBox, true);
-
+                lineBoxManager.addItem(_ep2, true);
                 return;
               } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
 
@@ -14525,12 +14516,7 @@
         tb.__width = rw; // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
 
         var ep = new Ellipsis(x, y, ew, bp);
-        lineBoxManager.addItem(ep, true); // let textBoxes = this.textBoxes;
-        // let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
-        // textBox.setDom(bp);
-        // textBoxes.push(textBox);
-        // lineBoxManager.addItem(textBox, true);
-
+        lineBoxManager.addItem(ep, true);
         return true;
       }
     }, {
@@ -14594,7 +14580,7 @@
             __config = this.__config;
 
         if (renderMode === SVG$1) {
-          __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+          __config[NODE_VIRTUAL_DOM$1] = this.__virtualDom = {
             type: 'text',
             children: []
           };
@@ -14676,44 +14662,7 @@
           this.virtualDom.children = textBoxes.map(function (textBox) {
             return textBox.virtualDom;
           });
-        } // textOverflow的省略号font使用最近非inline的父节点
-        // if(__ellipsis) {
-        //   let last = textBoxes[textBoxes.length - 1];
-        //   let { endX, endY } = last;
-        //   let computedStyle = __bp.computedStyle;
-        //   if(renderMode === CANVAS || renderMode === WEBGL) {
-        //     let font = css.setFontStyle(computedStyle);
-        //     if(ctx.font !== font) {
-        //       ctx.font = font;
-        //     }
-        //     let { [COLOR]: color, [BACKGROUND_COLOR]: backgroundColor } = __bp.__cacheStyle;
-        //     if(ctx.fillStyle !== backgroundColor) {
-        //       ctx.fillStyle = backgroundColor;
-        //     }
-        //     if(ctx.fillStyle !== color) {
-        //       ctx.fillStyle = color;
-        //     }
-        //     ctx.fillText(ELLIPSIS, endX, endY);
-        //   }
-        //   else if(renderMode === SVG) {
-        //     let props = [
-        //       ['x', endX],
-        //       ['y', endY],
-        //       ['fill', __bp.__cacheStyle[COLOR]],
-        //       ['font-family', computedStyle[FONT_FAMILY]],
-        //       ['font-weight', computedStyle[FONT_WEIGHT]],
-        //       ['font-style', computedStyle[FONT_STYLE]],
-        //       ['font-size', computedStyle[FONT_SIZE] + 'px'],
-        //     ];
-        //     this.virtualDom.children.push({
-        //       type: 'item',
-        //       tagName: 'text',
-        //       props,
-        //       content: ELLIPSIS,
-        //     });
-        //   }
-        // }
-
+        }
       }
     }, {
       key: "__deepScan",
@@ -20159,7 +20108,7 @@
       NODE_IS_INLINE = _enums$NODE_KEY$3.NODE_IS_INLINE,
       NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$3.NODE_PERSPECTIVE_MATRIX,
       NODE_IS_MASK = _enums$NODE_KEY$3.NODE_IS_MASK,
-      NODE_VIRTUAL_DOM$1 = _enums$NODE_KEY$3.NODE_VIRTUAL_DOM,
+      NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$3.NODE_VIRTUAL_DOM,
       NODE_CACHE_AS_BITMAP = _enums$NODE_KEY$3.NODE_CACHE_AS_BITMAP;
   var AUTO$4 = o.AUTO,
       PX$6 = o.PX,
@@ -21651,7 +21600,7 @@
         var virtualDom; // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
 
         if (renderMode === SVG$2) {
-          virtualDom = __config[NODE_VIRTUAL_DOM$1] = this.__virtualDom = {
+          virtualDom = __config[NODE_VIRTUAL_DOM$2] = this.__virtualDom = {
             bb: [],
             children: [],
             visibility: 'visible'
@@ -31283,7 +31232,7 @@
       NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_DOM_PARENT$5 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$8.NODE_PERSPECTIVE_MATRIX,
-      NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$8.NODE_VIRTUAL_DOM,
+      NODE_VIRTUAL_DOM$3 = _enums$NODE_KEY$8.NODE_VIRTUAL_DOM,
       NODE_CACHE_AS_BITMAP$1 = _enums$NODE_KEY$8.NODE_CACHE_AS_BITMAP,
       NODE_STRUCT$4 = _enums$NODE_KEY$8.NODE_STRUCT,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
@@ -33275,7 +33224,7 @@
         parentVd = vdList[lv - 1];
       } else if (lv > lastLv) {
         matrixList.push(lastConfig[NODE_MATRIX$3]);
-        var vd = lastConfig[NODE_VIRTUAL_DOM$2];
+        var vd = lastConfig[NODE_VIRTUAL_DOM$3];
         vdList.push(vd);
         parentVd = vd;
       }
@@ -33285,14 +33234,14 @@
 
       if (_refreshLevel4 < REPAINT$2 && !(_node6 instanceof Text)) {
         __config[NODE_REFRESH_LV$1] = NONE$2;
-        virtualDom = __config[NODE_VIRTUAL_DOM$2]; // total可以跳过所有孩子节点省略循环
+        virtualDom = __config[NODE_VIRTUAL_DOM$3]; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
           _i8 += _total11 || 0;
           virtualDom.cache = true;
         } else {
           __cacheTotal && (__cacheTotal.available = true);
-          virtualDom = __config[NODE_VIRTUAL_DOM$2] = _node6.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
+          virtualDom = __config[NODE_VIRTUAL_DOM$3] = _node6.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
 
           if (_node6 instanceof Dom$1 && !(_node6 instanceof Img$1)) {
             virtualDom.children = [];
@@ -33375,7 +33324,7 @@
 
         _node6.render(renderMode, _refreshLevel4, ctx, NA, 0, 0);
 
-        virtualDom = __config[NODE_VIRTUAL_DOM$2]; // 渲染后更新取值
+        virtualDom = __config[NODE_VIRTUAL_DOM$3]; // 渲染后更新取值
 
         display = computedStyle[DISPLAY$7];
 

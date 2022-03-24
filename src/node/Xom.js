@@ -486,18 +486,21 @@ class Xom extends Node {
         }
       }
     }
-    let lineClampCount = 0;
+    let lineClampCount = data.lineClampCount || 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {
+      data.lineClampCount = 0;
       this.__layoutFlex(data, isAbs, isColumn);
     }
     else if(display === 'inlineBlock' || display === 'inline-block') {
-      lineClampCount = this.__layoutInline(data, isAbs, isColumn);
+      data.lineClampCount = 0;
+      this.__layoutInline(data, isAbs, isColumn);
     }
     else if(display === 'inline') {
       lineClampCount = this.__layoutInline(data, isAbs, isColumn, true);
     }
     else {
+      data.lineClampCount = 0;
       this.__layoutBlock(data, isAbs, isColumn);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0

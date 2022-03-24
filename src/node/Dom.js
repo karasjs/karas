@@ -1993,7 +1993,7 @@ class Dom extends Xom {
     }
     let ignoreNextLine = this.__ignoreNextLine = false; // lineClamp超过后，后面的均忽略并置none
     let hasAddEndSpace; // lineClamp情况最后一行都加上，只加1次
-    flowChildren.forEach((item, i) => {
+    flowChildren.forEach((item, i) => {console.error(i,item.tagName,item.content,lineClampCount)
       if(ignoreNextLine) {
         item.__layoutNone();
         return;
@@ -2077,12 +2077,14 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineBox，并重新开头
           else {
-            isInline2 && lineClampCount++;
+            lineClampCount++;
             x = lx;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
+            console.log(i,item.tagName,lineClamp,lineClampCount);
             // 可能超行了，无需继续，并且进行回溯
             if(lineClamp && lineClampCount >= lineClamp) {
+              console.log(item);
               item.__layoutNone();
               ignoreNextLine = true;
               let bp = this.domParent;
@@ -2097,11 +2099,11 @@ class Dom extends Xom {
               // 最后一个是text/inline时
               if(last instanceof TextBox) {
                 let text = last.parent;
-                text.backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
               }
               // 最后一个是ib时
               else {
-                //
+                last.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
               }
               return;
             }
@@ -2201,11 +2203,11 @@ class Dom extends Xom {
               // 最后一个是text/inline时
               if(last instanceof TextBox) {
                 let text = last.parent;
-                text.backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
               }
               // 最后一个是ib时
               else {
-                //
+                last.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
               }
               return;
             }
@@ -2286,7 +2288,7 @@ class Dom extends Xom {
       });
     }
     // inlineBlock新开上下文，但父级block遇到要处理换行
-    return isInline ? lineClampCount : 0;
+    return lineClampCount;
   }
 
   /**
@@ -2431,6 +2433,8 @@ class Dom extends Xom {
       this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
     }
   }
+
+  __backtrack(bp, lineBoxManager, lineBox, wl) {}
 
   /**
    * 只针对绝对定位children布局

@@ -266,9 +266,12 @@ class Text extends Node {
         let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
           content);
         textBoxes.push(textBox);
-        lineBoxManager.addItem(textBox);
+        lineBoxManager.addItem(textBox, false);
         maxW = textWidth;
-        y += lineHeight;
+        if(isTextOverflow) {
+          lineCount++;
+          y += lineHeight;
+        }
       }
     }
     // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
@@ -330,15 +333,18 @@ class Text extends Node {
     else {
       ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
     }
-    let font = css.setFontStyle(this.computedStyle);
-    if(ctx.font !== font) {
-      ctx.font = font;
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      let font = css.setFontStyle(this.computedStyle);
+      if (ctx.font !== font) {
+        ctx.font = font;
+      }
     }
     let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
     if(rw + ew > wl + (1e-10)) {
       // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       let lineBox = lineBoxManager.lineBox;
+      console.log(lineBoxManager.isNewLine, lineBox.size);
       if(!lineBoxManager.isNewLine && lineBox && lineBox.size) {
         let list = lineBox.list;
         for(let j = list.length - 1; j >= 0; j--) {
@@ -356,6 +362,7 @@ class Text extends Node {
           }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
           let { content, width, parent } = tb;
+          console.log(content, width, parent);
           if(!j || wl >= width + ew + (1e-10)) {
             let length = content.length;
             let {
@@ -375,12 +382,13 @@ class Text extends Node {
               x -= width - rw;
               tb.__width = rw;
             }
+            console.log(x);
             let textBox = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
             textBox.setDom(bp);
             textBoxes.push(textBox);
             lineBoxManager.addItem(textBox, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
-            maxW = Math.max(maxW, rw + ew);
+            maxW = Math.max(maxW, rw + ew);console.log(maxW);
             return [y, maxW];
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
@@ -426,7 +434,7 @@ class Text extends Node {
   }
 
   // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值
-  backtrack(bp, lineBoxManager, lineBox, wl) {
+  __backtrack(bp, lineBoxManager, lineBox, wl) {
     let ew, computedStyle = this.computedStyle,
       bComputedStyle = bp.computedStyle, root = this.root, renderMode = root.renderMode;
     let list = lineBox.list;

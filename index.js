@@ -14127,9 +14127,13 @@
           else {
             var textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight, content);
             textBoxes.push(textBox);
-            lineBoxManager.addItem(textBox);
+            lineBoxManager.addItem(textBox, false);
             maxW = textWidth;
-            y += lineHeight;
+
+            if (isTextOverflow) {
+              lineCount++;
+              y += lineHeight;
+            }
           }
         } // 普通换行，注意x和lx的区别，可能相同（block起始处）可能不同（非起始处），第1行从x开始，第2行及以后都从lx开始
         // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
@@ -14212,10 +14216,12 @@
           ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY$2], computedStyle[FONT_SIZE$5], computedStyle[FONT_WEIGHT$2]);
         }
 
-        var font = css.setFontStyle(this.computedStyle);
+        if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
+          var _font2 = css.setFontStyle(this.computedStyle);
 
-        if (ctx.font !== font) {
-          ctx.font = font;
+          if (ctx.font !== _font2) {
+            ctx.font = _font2;
+          }
         }
 
         var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
@@ -14227,6 +14233,7 @@
         if (rw + ew > wl + 1e-10) {
           // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
           var lineBox = lineBoxManager.lineBox;
+          console.log(lineBoxManager.isNewLine, lineBox.size);
 
           if (!lineBoxManager.isNewLine && lineBox && lineBox.size) {
             var list = lineBox.list;
@@ -14253,6 +14260,7 @@
               var _content = tb.content,
                   width = tb.width,
                   parent = tb.parent;
+              console.log(_content, width, parent);
 
               if (!j || wl >= width + ew + 1e-10) {
                 var _length = _content.length;
@@ -14279,6 +14287,8 @@
                   tb.__width = _rw;
                 }
 
+                console.log(x);
+
                 var _textBox2 = new TextBox(this, textBoxes.length, x, y, ew, lineHeight, ELLIPSIS);
 
                 _textBox2.setDom(bp);
@@ -14287,6 +14297,7 @@
                 lineBoxManager.addItem(_textBox2, true);
                 y += Math.max(lineHeight, lineBoxManager.lineHeight);
                 maxW = Math.max(maxW, _rw + ew);
+                console.log(maxW);
                 return [y, maxW];
               } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
 
@@ -14338,8 +14349,8 @@
       } // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值
 
     }, {
-      key: "backtrack",
-      value: function backtrack(bp, lineBoxManager, lineBox, wl) {
+      key: "__backtrack",
+      value: function __backtrack(bp, lineBoxManager, lineBox, wl) {
         var ew,
             computedStyle = this.computedStyle,
             bComputedStyle = bp.computedStyle,
@@ -14366,10 +14377,10 @@
 
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          var _font2 = css.setFontStyle(bComputedStyle);
+          var _font3 = css.setFontStyle(bComputedStyle);
 
-          if (ctx.font !== _font2) {
-            ctx.font = _font2;
+          if (ctx.font !== _font3) {
+            ctx.font = _font3;
           }
 
           ew = ctx.measureText(ELLIPSIS).width;
@@ -14615,10 +14626,10 @@
             }
           }
 
-          var _font3 = css.setFontStyle(computedStyle);
+          var _font4 = css.setFontStyle(computedStyle);
 
-          if (ctx.font !== _font3) {
-            ctx.font = _font3;
+          if (ctx.font !== _font4) {
+            ctx.font = _font4;
           }
 
           var color = cacheStyle[COLOR$2];
@@ -20501,15 +20512,21 @@
           }
         }
 
-        var lineClampCount = 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
+        var lineClampCount = data.lineClampCount || 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
 
         if (display === 'flex') {
+          data.lineClampCount = 0;
+
           this.__layoutFlex(data, isAbs, isColumn);
         } else if (display === 'inlineBlock' || display === 'inline-block') {
-          lineClampCount = this.__layoutInline(data, isAbs, isColumn);
+          data.lineClampCount = 0;
+
+          this.__layoutInline(data, isAbs, isColumn);
         } else if (display === 'inline') {
           lineClampCount = this.__layoutInline(data, isAbs, isColumn, true);
         } else {
+          data.lineClampCount = 0;
+
           this.__layoutBlock(data, isAbs, isColumn);
         } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
 
@@ -26312,6 +26329,8 @@
         var hasAddEndSpace; // lineClamp情况最后一行都加上，只加1次
 
         flowChildren.forEach(function (item, i) {
+          console.error(i, item.tagName, item.content, lineClampCount);
+
           if (ignoreNextLine) {
             item.__layoutNone();
 
@@ -26404,12 +26423,15 @@
                 y = lineBoxManager.lastY;
               } // 放不下处理之前的lineBox，并重新开头
               else {
-                isInline2 && lineClampCount++;
+                lineClampCount++;
                 x = lx;
                 y = lineBoxManager.endY;
-                lineBoxManager.setNewLine(); // 可能超行了，无需继续，并且进行回溯
+                lineBoxManager.setNewLine();
+                console.log(i, item.tagName, lineClamp, lineClampCount); // 可能超行了，无需继续，并且进行回溯
 
                 if (lineClamp && lineClampCount >= lineClamp) {
+                  console.log(item);
+
                   item.__layoutNone();
 
                   ignoreNextLine = true;
@@ -26427,7 +26449,11 @@
 
                   if (last instanceof TextBox) {
                     var text = last.parent;
-                    text.backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+
+                    text.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  } // 最后一个是ib时
+                  else {
+                    last.__backtrack(bp, lineBoxManager, lineBox, w - endSpace);
                   }
 
                   return;
@@ -26531,7 +26557,10 @@
                   if (_last instanceof TextBox) {
                     var _text = _last.parent;
 
-                    _text.backtrack(_bp, lineBoxManager, _lineBox, w - endSpace);
+                    _text.__backtrack(_bp, lineBoxManager, _lineBox, w - endSpace);
+                  } // 最后一个是ib时
+                  else {
+                    _last.__backtrack(_bp, lineBoxManager, _lineBox, w - endSpace);
                   }
 
                   return;
@@ -26620,7 +26649,7 @@
         } // inlineBlock新开上下文，但父级block遇到要处理换行
 
 
-        return isInline ? lineClampCount : 0;
+        return lineClampCount;
       }
       /**
        * inline的尺寸计算非常特殊，并非一个矩形区域，而是由字体行高结合节点下多个LineBox中的内容决定，
@@ -26773,6 +26802,9 @@
           this.__outerHeight = this.__offsetHeight + marginTop + marginBottom;
         }
       }
+    }, {
+      key: "__backtrack",
+      value: function __backtrack(bp, lineBoxManager, lineBox, wl) {}
       /**
        * 只针对绝对定位children布局
        * @param container

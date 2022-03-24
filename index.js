@@ -13918,9 +13918,14 @@
 
 
     while (i < j) {
-      var str = content.slice(start, start + hypotheticalNum);
+      var _mw = void 0,
+          str = content.slice(start, start + hypotheticalNum);
 
-      var _mw = measureWidth(ctx, renderMode, str);
+      if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
+        _mw = ctx.measureText(str).width;
+      } else if (renderMode === SVG) {
+        _mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
+      }
 
       if (letterSpacing) {
         _mw += hypotheticalNum * letterSpacing;
@@ -13983,16 +13988,6 @@
     }
 
     return [hypotheticalNum, rw, newLine];
-  }
-
-  function measureWidth(ctx, renderMode, str) {
-    if ([CANVAS$1, WEBGL$1].indexOf(renderMode) > -1) {
-      return ctx.measureText(str).width;
-    } else if (renderMode === SVG) {
-      return inject.measureText(str);
-    }
-
-    return 0;
   }
 
   function getFontKey(ff, fs, fw, ls) {

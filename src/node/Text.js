@@ -105,8 +105,13 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
   }
   // 类似2分的一个循环
   while(i < j) {
-    let str = content.slice(start, start + hypotheticalNum);
-    let mw = measureWidth(ctx, renderMode, str);
+    let mw, str = content.slice(start, start + hypotheticalNum);
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      mw = ctx.measureText(str).width;
+    }
+    else if(renderMode === SVG) {
+      mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
+    }
     if(letterSpacing) {
       mw += hypotheticalNum * letterSpacing;
     }
@@ -156,16 +161,6 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     }
   }
   return [hypotheticalNum, rw, newLine];
-}
-
-function measureWidth(ctx, renderMode, str) {
-  if([CANVAS, WEBGL].indexOf(renderMode) > -1) {
-    return ctx.measureText(str).width;
-  }
-  else if(renderMode === SVG) {
-    return inject.measureText(str);
-  }
-  return 0;
 }
 
 function getFontKey(ff, fs, fw, ls) {

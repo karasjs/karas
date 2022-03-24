@@ -2,11 +2,9 @@ import Node from './Node';
 import TextBox from './TextBox';
 import mode from '../refresh/mode';
 import css from '../style/css';
-import font from '../style/font';
 import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
-import textCache from './textCache';
 import inject from '../util/inject';
 import Cache from '../refresh/Cache';
 import level from '../refresh/level';
@@ -48,9 +46,9 @@ const {
     UPDATE_FOCUS,
     UPDATE_CONFIG,
   },
+  ELLIPSIS,
 } = enums;
 
-const ELLIPSIS = textCache.ELLIPSIS;
 const { AUTO, REM, VW, VH, VMAX, VMIN } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
 
@@ -289,6 +287,10 @@ class Text extends Node {
             lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
+        }
+        // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
+        if(i + num === length && endSpace && rw + endSpace > wl && num > 1) {
+          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         }
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白

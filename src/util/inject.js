@@ -1,6 +1,5 @@
 import util from './util';
 import debug from './debug';
-import textCache from '../node/textCache';
 import font from '../style/font';
 import ca from '../gl/ca';
 import webgl from '../gl/webgl';
@@ -102,54 +101,6 @@ function createDiv() {
 }
 
 let inject = {
-  measureText() {
-    let { list, data } = textCache;
-    let html = '';
-    let keys = [];
-    let lengths = [];
-    let chars = [];
-    Object.keys(data).forEach(key => {
-      let { ff, fs, fw, s } = data[key];
-      if(s) {
-        keys.push(key);
-        lengths.push(s.length);
-        let inline = `position:absolute;font-family:${ff};font-size:${fs}px;font-weight:${fw}`;
-        for(let i = 0, len = s.length; i < len; i++) {
-          let char = s.charAt(i);
-          chars.push(char);
-          html += `<span style="${inline}">${char.replace('<', '&lt;').replace(' ', '&nbsp;')}</span>`;
-        }
-        data[key].s = '';
-      }
-    });
-    if(!html) {
-      return;
-    }
-    if(!div) {
-      createDiv();
-    }
-    div.innerHTML = html;
-    let cns = div.childNodes;
-    let { charWidth } = textCache;
-    let count = 0, index = 0, key;
-    for(let i = 0, len = cns.length; i < len; i++) {
-      let node = cns[i];
-      if(count === 0) {
-        key = keys[index];
-      }
-      if(++count === lengths[index]) {
-        index++;
-        count = 0;
-      }
-      let char = chars[i];
-      // clientWidth只返回ceil整数，精度必须用getComputedStyle
-      let css = window.getComputedStyle(node, null);
-      charWidth[key][char] = parseFloat(css.width);
-    }
-    list.forEach(text => text.__measureCb());
-    textCache.list = [];
-    textCache.data = {};
-  },
   measureTextSync(str, ff, fs, fw) {
     if(!div) {
       createDiv();

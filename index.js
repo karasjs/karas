@@ -501,7 +501,8 @@
     KEY_FRAME_KEY: KEY_FRAME_KEY,
     NODE_KEY: NODE_KEY,
     STRUCT_KEY: STRUCT_KEY,
-    ANIMATE_KEY: ANIMATE_KEY
+    ANIMATE_KEY: ANIMATE_KEY,
+    ELLIPSIS: '…'
   };
 
   var _enums$STRUCT_KEY = enums.STRUCT_KEY,
@@ -5376,18 +5377,6 @@
     flag: false
   };
 
-  var textCache = {
-    list: [],
-    // 每次渲染前的更新后，等待测量的文字对象列表
-    data: {},
-    // Text中存入的特殊等待测量的信息，字体+字号+粗细为key
-    charWidth: {},
-    // key的文字宽度hash
-    padding: {},
-    // key的文字宽度偏移，少量字体的少量文字有
-    ELLIPSIS: '…'
-  };
-
   var ca = {
     alpha: true,
     antialias: true,
@@ -6066,75 +6055,6 @@
   }
 
   var inject = {
-    measureText: function measureText() {
-      var list = textCache.list,
-          data = textCache.data;
-      var html = '';
-      var keys = [];
-      var lengths = [];
-      var chars = [];
-      Object.keys(data).forEach(function (key) {
-        var _data$key = data[key],
-            ff = _data$key.ff,
-            fs = _data$key.fs,
-            fw = _data$key.fw,
-            s = _data$key.s;
-
-        if (s) {
-          keys.push(key);
-          lengths.push(s.length);
-          var inline = "position:absolute;font-family:".concat(ff, ";font-size:").concat(fs, "px;font-weight:").concat(fw);
-
-          for (var i = 0, len = s.length; i < len; i++) {
-            var _char = s.charAt(i);
-
-            chars.push(_char);
-            html += "<span style=\"".concat(inline, "\">").concat(_char.replace('<', '&lt;').replace(' ', '&nbsp;'), "</span>");
-          }
-
-          data[key].s = '';
-        }
-      });
-
-      if (!html) {
-        return;
-      }
-
-      if (!div) {
-        createDiv();
-      }
-
-      div.innerHTML = html;
-      var cns = div.childNodes;
-      var charWidth = textCache.charWidth;
-      var count = 0,
-          index = 0,
-          key;
-
-      for (var i = 0, len = cns.length; i < len; i++) {
-        var node = cns[i];
-
-        if (count === 0) {
-          key = keys[index];
-        }
-
-        if (++count === lengths[index]) {
-          index++;
-          count = 0;
-        }
-
-        var _char2 = chars[i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
-
-        var css = window.getComputedStyle(node, null);
-        charWidth[key][_char2] = parseFloat(css.width);
-      }
-
-      list.forEach(function (text) {
-        return text.__measureCb();
-      });
-      textCache.list = [];
-      textCache.data = {};
-    },
     measureTextSync: function measureTextSync(str, ff, fs, fw) {
       if (!div) {
         createDiv();
@@ -13841,8 +13761,8 @@
       _enums$UPDATE_KEY = enums.UPDATE_KEY,
       UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
       UPDATE_FOCUS = _enums$UPDATE_KEY.UPDATE_FOCUS,
-      UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG;
-  var ELLIPSIS = textCache.ELLIPSIS;
+      UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG,
+      ELLIPSIS = enums.ELLIPSIS;
   var AUTO$1 = o.AUTO,
       REM$4 = o.REM,
       VW$4 = o.VW,
@@ -14161,6 +14081,17 @@
               maxW = _this$__lineBack4[1];
               lineCount++;
               break;
+            } // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
+
+
+            if (i + num === length && endSpace && rw + endSpace > wl && num > 1) {
+              var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+
+              var _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 3);
+
+              num = _measureLineWidth4[0];
+              rw = _measureLineWidth4[1];
+              newLine = _measureLineWidth4[2];
             }
 
             maxW = Math.max(maxW, rw); // 根据是否第一行分开处理行首空白
@@ -14205,10 +14136,10 @@
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          var _font = css.setFontStyle(computedStyle);
+          var font = css.setFontStyle(computedStyle);
 
-          if (ctx.font !== _font) {
-            ctx.font = _font;
+          if (ctx.font !== font) {
+            ctx.font = font;
           }
 
           ew = ctx.measureText(ELLIPSIS).width;
@@ -14217,17 +14148,17 @@
         }
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          var _font2 = css.setFontStyle(this.computedStyle);
+          var _font = css.setFontStyle(this.computedStyle);
 
-          if (ctx.font !== _font2) {
-            ctx.font = _font2;
+          if (ctx.font !== _font) {
+            ctx.font = _font;
           }
         }
 
-        var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
-            _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 2),
-            num = _measureLineWidth4[0],
-            rw = _measureLineWidth4[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+        var _measureLineWidth5 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            _measureLineWidth6 = _slicedToArray(_measureLineWidth5, 2),
+            num = _measureLineWidth6[0],
+            rw = _measureLineWidth6[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
 
 
         if (rw + ew > wl + 1e-10) {
@@ -14273,10 +14204,10 @@
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth5 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
-                    _measureLineWidth6 = _slicedToArray(_measureLineWidth5, 2),
-                    _num = _measureLineWidth6[0],
-                    _rw = _measureLineWidth6[1]; // 可能发生x回退，当tb的内容产生减少时
+                var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
+                    _measureLineWidth8 = _slicedToArray(_measureLineWidth7, 2),
+                    _num = _measureLineWidth8[0],
+                    _rw = _measureLineWidth8[1]; // 可能发生x回退，当tb的内容产生减少时
 
 
                 if (_num !== _content.length) {
@@ -14373,10 +14304,10 @@
 
 
         if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          var _font3 = css.setFontStyle(bComputedStyle);
+          var font = css.setFontStyle(bComputedStyle);
 
-          if (ctx.font !== _font3) {
-            ctx.font = _font3;
+          if (ctx.font !== font) {
+            ctx.font = font;
           }
 
           ew = ctx.measureText(ELLIPSIS).width;
@@ -14391,10 +14322,10 @@
             fontFamily = computedStyle[FONT_FAMILY$2];
         var perW = fontSize * 0.8 + letterSpacing;
 
-        var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
-            _measureLineWidth8 = _slicedToArray(_measureLineWidth7, 2),
-            num = _measureLineWidth8[0],
-            rw = _measureLineWidth8[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
+        var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
+            num = _measureLineWidth10[0],
+            rw = _measureLineWidth10[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
 
 
         if (rw + ew > wl + 1e-10) {
@@ -14441,10 +14372,10 @@
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, _content2, wl - ew, _perW, _fontFamily2, _fontSize2, _fontWeight2, _letterSpacing2),
-                    _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
-                    _num2 = _measureLineWidth10[0],
-                    _rw2 = _measureLineWidth10[1]; // 可能发生x回退，当tb的内容产生减少时
+                var _measureLineWidth11 = measureLineWidth(ctx, renderMode, 0, length, _content2, wl - ew, _perW, _fontFamily2, _fontSize2, _fontWeight2, _letterSpacing2),
+                    _measureLineWidth12 = _slicedToArray(_measureLineWidth11, 2),
+                    _num2 = _measureLineWidth12[0],
+                    _rw2 = _measureLineWidth12[1]; // 可能发生x回退，当tb的内容产生减少时
 
 
                 if (_num2 !== _content2.length) {
@@ -14623,10 +14554,10 @@
             }
           }
 
-          var _font4 = css.setFontStyle(computedStyle);
+          var font = css.setFontStyle(computedStyle);
 
-          if (ctx.font !== _font4) {
-            ctx.font = _font4;
+          if (ctx.font !== font) {
+            ctx.font = font;
           }
 
           var color = cacheStyle[COLOR$2];
@@ -24142,7 +24073,6 @@
   var _enums$STYLE_KEY$f = enums.STYLE_KEY,
       POSITION$4 = _enums$STYLE_KEY$f.POSITION,
       DISPLAY$5 = _enums$STYLE_KEY$f.DISPLAY,
-      FONT_WEIGHT$4 = _enums$STYLE_KEY$f.FONT_WEIGHT,
       MARGIN_LEFT$4 = _enums$STYLE_KEY$f.MARGIN_LEFT,
       MARGIN_TOP$1 = _enums$STYLE_KEY$f.MARGIN_TOP,
       MARGIN_RIGHT$4 = _enums$STYLE_KEY$f.MARGIN_RIGHT,
@@ -24178,6 +24108,8 @@
       ALIGN_CONTENT$1 = _enums$STYLE_KEY$f.ALIGN_CONTENT,
       OVERFLOW$3 = _enums$STYLE_KEY$f.OVERFLOW,
       FONT_SIZE$9 = _enums$STYLE_KEY$f.FONT_SIZE,
+      FONT_FAMILY$5 = _enums$STYLE_KEY$f.FONT_FAMILY,
+      FONT_WEIGHT$4 = _enums$STYLE_KEY$f.FONT_WEIGHT,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
       NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
@@ -24194,7 +24126,8 @@
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
       STRUCT_TOTAL = _enums$STRUCT_KEY$1.STRUCT_TOTAL,
       STRUCT_CHILD_INDEX$1 = _enums$STRUCT_KEY$1.STRUCT_CHILD_INDEX,
-      STRUCT_INDEX$1 = _enums$STRUCT_KEY$1.STRUCT_INDEX;
+      STRUCT_INDEX$1 = _enums$STRUCT_KEY$1.STRUCT_INDEX,
+      ELLIPSIS$1 = enums.ELLIPSIS;
   var AUTO$6 = o.AUTO,
       PX$8 = o.PX,
       PERCENT$9 = o.PERCENT,
@@ -24210,7 +24143,9 @@
   var extend$2 = util.extend,
       isNil$7 = util.isNil,
       isFunction$6 = util.isFunction;
-  var SVG$2 = mode.SVG;
+  var CANVAS$3 = mode.CANVAS,
+      SVG$2 = mode.SVG,
+      WEBGL$3 = mode.WEBGL;
 
   function genZIndexChildren(dom) {
     var normal = [];
@@ -24323,11 +24258,56 @@
 
 
   function backtrack(bp, lineBoxManager, lineBox, wl) {
-    var list = lineBox.list;
+    var ew,
+        computedStyle = bp.computedStyle,
+        root = bp.root,
+        renderMode = root.renderMode;
+    var list = lineBox.list; // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
+
+    var content = '';
+    var x = list[0].x,
+        y = list[0].y;
+    list.forEach(function (item) {
+      if (item instanceof TextBox) {
+        content += item.content;
+      }
+
+      x += item.outerWidth;
+      wl -= item.outerWidth;
+    });
+    var ctx;
+
+    if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
+      ctx = renderMode === WEBGL$3 ? inject.getFontCanvas().ctx : root.ctx;
+    } // 临时测量ELLIPSIS的尺寸
+
+
+    if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
+      var font = css.setFontStyle(computedStyle);
+
+      if (ctx.font !== font) {
+        ctx.font = font;
+      }
+
+      ew = ctx.measureText(ELLIPSIS$1).width;
+    } else {
+      ew = inject.measureTextSync(ELLIPSIS$1, computedStyle[FONT_FAMILY$5], computedStyle[FONT_SIZE$9], computedStyle[FONT_WEIGHT$4]);
+    }
+
+    console.log(ew, x, wl);
 
     for (var i = list.length - 1; i >= 0; i--) {
       var item = list[i];
-      console.log(i, item);
+      console.log(i, item.outerWidth); // 至少保留行首，根据ib还是textBox判断
+
+      if (i === 0) {
+        break;
+      } // 无论删除一个ib还是textBox，放得下的话都可以暂停循环
+
+
+      if (wl + item.outerWidth >= ew) {
+        break;
+      }
     }
   }
 
@@ -26448,7 +26428,7 @@
 
                   var list = lineBoxManager.list;
                   var lineBox = list[list.length - 1];
-                  backtrack(bp, lineBoxManager, lineBox); // list = lineBox.list;
+                  backtrack(bp, lineBoxManager, lineBox, w - endSpace); // list = lineBox.list;
                   // let last = list[list.length - 1];
                   // // 最后一个是text/inline时
                   // if(last instanceof TextBox) {
@@ -26555,7 +26535,7 @@
 
                   var _list = lineBoxManager.list;
                   var _lineBox = _list[_list.length - 1];
-                  backtrack(_bp, lineBoxManager, _lineBox); // list = lineBox.list;
+                  backtrack(_bp, lineBoxManager, _lineBox, w - endSpace); // list = lineBox.list;
                   // let last = list[list.length - 1];
                   // 最后一个是text/inline时
                   // if(last instanceof TextBox) {
@@ -28486,7 +28466,7 @@
       joinArr$3 = util.joinArr;
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
-  var WEBGL$3 = mode.WEBGL;
+  var WEBGL$4 = mode.WEBGL;
   var computeReflow$3 = css.computeReflow;
   var REGISTER$1 = {};
 
@@ -28799,7 +28779,7 @@
             if (Array.isArray(v)) {
               v.forEach(function (item) {
                 if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
-                  if (renderMode === WEBGL$3) {
+                  if (renderMode === WEBGL$4) {
                     var cache = _this2.__config[NODE_CACHE$3];
                     x3 += cache.dx;
                     x4 += cache.dx;

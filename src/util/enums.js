@@ -260,4 +260,5 @@ export default {
   NODE_KEY,
   STRUCT_KEY,
   ANIMATE_KEY,
+  ELLIPSIS: '…',
 };

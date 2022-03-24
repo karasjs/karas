@@ -20,7 +20,6 @@ const {
   STYLE_KEY: {
     POSITION,
     DISPLAY,
-    FONT_WEIGHT,
     MARGIN_LEFT,
     MARGIN_TOP,
     MARGIN_RIGHT,
@@ -56,6 +55,8 @@ const {
     ALIGN_CONTENT,
     OVERFLOW,
     FONT_SIZE,
+    FONT_FAMILY,
+    FONT_WEIGHT,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -77,11 +78,12 @@ const {
     STRUCT_CHILD_INDEX,
     STRUCT_INDEX,
   },
+  ELLIPSIS,
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { calAbsolute, isRelativeOrAbsolute, calAbsFixedSize, computeReflow } = css;
 const { extend, isNil, isFunction } = util;
-const { SVG } = mode;
+const { CANVAS, SVG, WEBGL } = mode;
 
 function genZIndexChildren(dom) {
   let normal = [];
@@ -184,10 +186,47 @@ function genOrderChildren(flowChildren) {
  * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
  */
 function backtrack(bp, lineBoxManager, lineBox, wl) {
+  let ew, computedStyle = bp.computedStyle, root = bp.root, renderMode = root.renderMode;
   let list = lineBox.list;
+  // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
+  let content = '';
+  let x = list[0].x, y = list[0].y;
+  list.forEach(item => {
+    if(item instanceof TextBox) {
+      content += item.content;
+    }
+    x += item.outerWidth;
+    wl -= item.outerWidth;
+  });
+  let ctx;
+  if(renderMode === CANVAS || renderMode === WEBGL) {
+    ctx = renderMode === WEBGL
+      ? inject.getFontCanvas().ctx
+      : root.ctx;
+  }
+  // 临时测量ELLIPSIS的尺寸
+  if(renderMode === CANVAS || renderMode === WEBGL) {
+    let font = css.setFontStyle(computedStyle);
+    if(ctx.font !== font) {
+      ctx.font = font;
+    }
+    ew = ctx.measureText(ELLIPSIS).width;
+  }
+  else {
+    ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
+  }
+  console.log(ew, x, wl);
   for(let i = list.length - 1; i >= 0; i--) {
     let item = list[i];
-    console.log(i, item);
+    console.log(i, item.outerWidth);
+    // 至少保留行首，根据ib还是textBox判断
+    if(i === 0) {
+      break;
+    }
+    // 无论删除一个ib还是textBox，放得下的话都可以暂停循环
+    if(wl + item.outerWidth >= ew) {
+      break;
+    }
     if(item instanceof TextBox) {}
     else {}
   }

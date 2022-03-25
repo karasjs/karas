@@ -82,12 +82,13 @@ class LineBox {
     if(isVerticalAlign) {
       this.list.forEach(item => {
         // 是text的第一个的box的话，text也需要偏移
-        if (item instanceof TextBox) {
+        if(item instanceof TextBox) {
           let text = item.parent;
-          if (text.textBoxes[0] === item) {
+          if(text.textBoxes[0] === item) {
             text.__offsetY(diff);
           }
-        } else {
+        }
+        else {
           item.__offsetY(diff);
         }
       });

@@ -57,6 +57,7 @@ const {
     FONT_SIZE,
     FONT_FAMILY,
     FONT_WEIGHT,
+    TEXT_OVERFLOW,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -570,6 +571,10 @@ class Dom extends Xom {
   // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout, lv);
+    let ep = this.__ellipsis;
+    if(ep) {
+      ep.__offsetX(diff, isLayout);
+    }
     // 记得偏移LineBox
     if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
       this.lineBoxManager.__offsetX(diff);
@@ -583,6 +588,10 @@ class Dom extends Xom {
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout, lv);
+    let ep = this.__ellipsis;
+    if(ep) {
+      ep.__offsetY(diff, isLayout);
+    }
     if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
       this.lineBoxManager.__offsetY(diff);
     }
@@ -808,6 +817,8 @@ class Dom extends Xom {
       [WHITE_SPACE]: whiteSpace,
       [LINE_CLAMP]: lineClamp,
       [LINE_HEIGHT]: lineHeight,
+      [OVERFLOW]: overflow,
+      [TEXT_OVERFLOW]: textOverflow,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
@@ -916,6 +927,16 @@ class Dom extends Xom {
               x = data.x;
               y = lineBoxManager.endY;
               lineBoxManager.setNewLine();
+              if(whiteSpace === 'nowrap' && lineClampCount && overflow === 'hidden') {
+                item.__layoutNone();
+                ignoreNextLine = true;
+                if(textOverflow === 'ellipsis') {
+                  let list = lineBoxManager.list;
+                  let lineBox = list[list.length - 1];
+                  backtrack(this, lineBoxManager, lineBox, w);
+                }
+                return;
+              }
               lineClampCount = item.__layout({
                 x,
                 y,
@@ -934,7 +955,7 @@ class Dom extends Xom {
               }
               // inline和不折行的ib，其中ib需要手动存入当前lb中
               else {
-                (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
+                (isInlineBlock || isReplaced) && lineBoxManager.addItem(item, false);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
               }
@@ -954,8 +975,9 @@ class Dom extends Xom {
         }
         // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
         else {
-          // 非开头，说明之前的text未换行，需要增加行数
-          if(x !== data.x && flowChildren[i - 1] instanceof Text) {
+          ignoreNextLine = false; // block出现的话隔断
+          // 非开头，说明之前的text/ib未换行，需要增加行数
+          if(x !== data.x) {
             lineClampCount++;
           }
           x = data.x;
@@ -1025,8 +1047,14 @@ class Dom extends Xom {
       }
       // 文字和inline类似
       else {
+        if(ignoreNextLine) {
+          item.__layoutNone();
+          return;
+        }
         // lineClamp作用域为block下的inline（同LineBox上下文）
         if(lineClamp && lineClampCount >= lineClamp) {
+          item.__layoutNone();
+          ignoreNextLine = true;
           return;
         }
         // x开头，不用考虑是否放得下直接放
@@ -1076,6 +1104,16 @@ class Dom extends Xom {
             x = data.x;
             y = lineBoxManager.endY;
             lineBoxManager.setNewLine();
+            if(whiteSpace === 'nowrap' && lineClampCount && overflow === 'hidden') {
+              item.__layoutNone();
+              ignoreNextLine = true;
+              if(textOverflow === 'ellipsis') {
+                let list = lineBoxManager.list;
+                let lineBox = list[list.length - 1];
+                backtrack(this, lineBoxManager, lineBox, w);
+              }
+              return;
+            }
             lineClampCount = item.__layout({
               x,
               y,
@@ -2112,7 +2150,7 @@ class Dom extends Xom {
         }
         else {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx - endSpace, w - endSpace);
+          let fw = (whiteSpace === 'nowrap') ? 0 : item.__tryLayInline(w - x + lx - endSpace, w);
           // 放得下继续
           if(fw >= (-1e-10)) {
             lineClampCount = item.__layout({

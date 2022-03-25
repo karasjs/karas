@@ -24164,6 +24164,7 @@
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FONT_FAMILY$6 = _enums$STYLE_KEY$g.FONT_FAMILY,
       FONT_WEIGHT$5 = _enums$STYLE_KEY$g.FONT_WEIGHT,
+      TEXT_OVERFLOW$3 = _enums$STYLE_KEY$g.TEXT_OVERFLOW,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
       NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
@@ -24712,7 +24713,13 @@
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
-        _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv); // 记得偏移LineBox
+        _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff, isLayout, lv);
+
+        var ep = this.__ellipsis;
+
+        if (ep) {
+          ep.__offsetX(diff, isLayout);
+        } // 记得偏移LineBox
 
 
         if (isLayout && !this.__config[NODE_IS_INLINE$1] && this.lineBoxManager) {
@@ -24729,6 +24736,12 @@
       key: "__offsetY",
       value: function __offsetY(diff, isLayout, lv) {
         _get(_getPrototypeOf(Dom.prototype), "__offsetY", this).call(this, diff, isLayout, lv);
+
+        var ep = this.__ellipsis;
+
+        if (ep) {
+          ep.__offsetY(diff, isLayout);
+        }
 
         if (isLayout && !this.__config[NODE_IS_INLINE$1] && this.lineBoxManager) {
           this.lineBoxManager.__offsetY(diff);
@@ -24949,6 +24962,8 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data, isAbs, isColumn) {
+        var _this2 = this;
+
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
@@ -24979,7 +24994,9 @@
         var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2],
             lineClamp = computedStyle[LINE_CLAMP$1],
-            lineHeight = computedStyle[LINE_HEIGHT$4]; // 只有>=1的正整数才有效
+            lineHeight = computedStyle[LINE_HEIGHT$4],
+            overflow = computedStyle[OVERFLOW$3],
+            textOverflow = computedStyle[TEXT_OVERFLOW$3]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
@@ -25101,6 +25118,21 @@
                   x = data.x;
                   y = lineBoxManager.endY;
                   lineBoxManager.setNewLine();
+
+                  if (whiteSpace === 'nowrap' && lineClampCount && overflow === 'hidden') {
+                    item.__layoutNone();
+
+                    ignoreNextLine = true;
+
+                    if (textOverflow === 'ellipsis') {
+                      var list = lineBoxManager.list;
+                      var lineBox = list[list.length - 1];
+                      backtrack(_this2, lineBoxManager, lineBox, w);
+                    }
+
+                    return;
+                  }
+
                   lineClampCount = item.__layout({
                     x: x,
                     y: y,
@@ -25118,7 +25150,7 @@
                     lineBoxManager.setNotEnd();
                   } // inline和不折行的ib，其中ib需要手动存入当前lb中
                   else {
-                    (isInlineBlock || isReplaced) && lineBoxManager.addItem(item);
+                    (isInlineBlock || isReplaced) && lineBoxManager.addItem(item, false);
                     x = lineBoxManager.lastX;
                     y = lineBoxManager.lastY;
                   }
@@ -25141,8 +25173,10 @@
               }
             } // block/flex先处理之前可能遗留的最后一行LineBox，然后递归时不传lineBoxManager，其内部生成新的
             else {
-              // 非开头，说明之前的text未换行，需要增加行数
-              if (x !== data.x && flowChildren[i - 1] instanceof Text) {
+              ignoreNextLine = false; // block出现的话隔断
+              // 非开头，说明之前的text/ib未换行，需要增加行数
+
+              if (x !== data.x) {
                 lineClampCount++;
               }
 
@@ -25223,8 +25257,17 @@
             }
           } // 文字和inline类似
           else {
-            // lineClamp作用域为block下的inline（同LineBox上下文）
+            if (ignoreNextLine) {
+              item.__layoutNone();
+
+              return;
+            } // lineClamp作用域为block下的inline（同LineBox上下文）
+
+
             if (lineClamp && lineClampCount >= lineClamp) {
+              item.__layoutNone();
+
+              ignoreNextLine = true;
               return;
             } // x开头，不用考虑是否放得下直接放
 
@@ -25276,6 +25319,21 @@
                 x = data.x;
                 y = lineBoxManager.endY;
                 lineBoxManager.setNewLine();
+
+                if (whiteSpace === 'nowrap' && lineClampCount && overflow === 'hidden') {
+                  item.__layoutNone();
+
+                  ignoreNextLine = true;
+
+                  if (textOverflow === 'ellipsis') {
+                    var _list = lineBoxManager.list;
+                    var _lineBox = _list[_list.length - 1];
+                    backtrack(_this2, lineBoxManager, _lineBox, w);
+                  }
+
+                  return;
+                }
+
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,
@@ -25379,7 +25437,7 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isAbs, isColumn) {
-        var _this2 = this;
+        var _this3 = this;
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
@@ -25556,11 +25614,11 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this2$__layoutFlexLi = _this2.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
-              _this2$__layoutFlexLi2 = _slicedToArray(_this2$__layoutFlexLi, 3),
-              x1 = _this2$__layoutFlexLi2[0],
-              y1 = _this2$__layoutFlexLi2[1],
-              maxCross = _this2$__layoutFlexLi2[2]; // 下一行/列更新坐标
+          var _this3$__layoutFlexLi = _this3.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+              _this3$__layoutFlexLi2 = _slicedToArray(_this3$__layoutFlexLi, 3),
+              x1 = _this3$__layoutFlexLi2[0],
+              y1 = _this3$__layoutFlexLi2[1],
+              maxCross = _this3$__layoutFlexLi2[2]; // 下一行/列更新坐标
 
 
           if (isDirectionRow) {
@@ -25755,7 +25813,7 @@
                 maxCross += per;
               }
 
-              _this2.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+              _this3.__crossAlign(item, alignItems, isDirectionRow, maxCross);
             });
           } else if (length) {
             var maxCross = maxCrossList[0];
@@ -25786,7 +25844,7 @@
     }, {
       key: "__layoutFlexLine",
       value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
-        var _this3 = this;
+        var _this4 = this;
 
         var x = data.x,
             y = data.y,
@@ -25998,7 +26056,7 @@
               }
             }
           } else {
-            var lineBoxManager = _this3.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+            var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
             lbmList.push(lineBoxManager);
 
             item.__layout({
@@ -26294,7 +26352,7 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data, isAbs, isColumn, isInline) {
-        var _this4 = this;
+        var _this5 = this;
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
@@ -26450,7 +26508,7 @@
               }
             } else {
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx - endSpace, w - endSpace); // 放得下继续
+              var fw = whiteSpace === 'nowrap' ? 0 : item.__tryLayInline(w - x + lx - endSpace, w); // 放得下继续
 
               if (fw >= -1e-10) {
                 lineClampCount = item.__layout({
@@ -26484,7 +26542,7 @@
                   item.__layoutNone();
 
                   ignoreNextLine = true;
-                  var bp = _this4.domParent;
+                  var bp = _this5.domParent;
 
                   while (bp.computedStyle[DISPLAY$5] === 'inline') {
                     bp = bp.domParent;
@@ -26591,16 +26649,16 @@
                   item.__layoutNone();
 
                   ignoreNextLine = true;
-                  var _bp = _this4.domParent;
+                  var _bp = _this5.domParent;
 
                   while (_bp.computedStyle[DISPLAY$5] === 'inline') {
                     _bp = _bp.domParent;
                   } // 回溯处理，特别麻烦
 
 
-                  var _list = lineBoxManager.list;
-                  var _lineBox = _list[_list.length - 1];
-                  backtrack(_bp, lineBoxManager, _lineBox, w - endSpace); // list = lineBox.list;
+                  var _list2 = lineBoxManager.list;
+                  var _lineBox2 = _list2[_list2.length - 1];
+                  backtrack(_bp, lineBoxManager, _lineBox2, w - endSpace); // list = lineBox.list;
                   // let last = list[list.length - 1];
                   // 最后一个是text/inline时
                   // if(last instanceof TextBox) {
@@ -26862,7 +26920,7 @@
     }, {
       key: "__layoutAbs",
       value: function __layoutAbs(container, data, target) {
-        var _this5 = this;
+        var _this6 = this;
 
         var x = container.sx,
             y = container.sy,
@@ -26934,28 +26992,28 @@
 
           if (left[1] !== AUTO$6) {
             fixedLeft = true;
-            computedStyle[LEFT$1] = calAbsolute$1(currentStyle, 'left', left, clientWidth, _this5.root);
+            computedStyle[LEFT$1] = calAbsolute$1(currentStyle, 'left', left, clientWidth, _this6.root);
           } else {
             computedStyle[LEFT$1] = 'auto';
           }
 
           if (right[1] !== AUTO$6) {
             fixedRight = true;
-            computedStyle[RIGHT$1] = calAbsolute$1(currentStyle, 'right', right, clientWidth, _this5.root);
+            computedStyle[RIGHT$1] = calAbsolute$1(currentStyle, 'right', right, clientWidth, _this6.root);
           } else {
             computedStyle[RIGHT$1] = 'auto';
           }
 
           if (top[1] !== AUTO$6) {
             fixedTop = true;
-            computedStyle[TOP$3] = calAbsolute$1(currentStyle, 'top', top, clientHeight, _this5.root);
+            computedStyle[TOP$3] = calAbsolute$1(currentStyle, 'top', top, clientHeight, _this6.root);
           } else {
             computedStyle[TOP$3] = 'auto';
           }
 
           if (bottom[1] !== AUTO$6) {
             fixedBottom = true;
-            computedStyle[BOTTOM$3] = calAbsolute$1(currentStyle, 'bottom', bottom, clientHeight, _this5.root);
+            computedStyle[BOTTOM$3] = calAbsolute$1(currentStyle, 'bottom', bottom, clientHeight, _this6.root);
           } else {
             computedStyle[BOTTOM$3] = 'auto';
           } // 优先级最高left+right，其次left+width，再次right+width，再次仅申明单个，最次全部auto
@@ -26968,11 +27026,11 @@
             x2 = x + computedStyle[LEFT$1];
 
             if (width[1] !== AUTO$6) {
-              w2 = calAbsFixedSize$1(width, clientWidth, _this5.root);
+              w2 = calAbsFixedSize$1(width, clientWidth, _this6.root);
             }
           } else if (fixedRight) {
             if (width[1] !== AUTO$6) {
-              w2 = calAbsFixedSize$1(width, clientWidth, _this5.root);
+              w2 = calAbsFixedSize$1(width, clientWidth, _this6.root);
             } else {
               onlyRight = true;
             }
@@ -26989,7 +27047,7 @@
             x2 = x + paddingLeft;
 
             if (width[1] !== AUTO$6) {
-              w2 = calAbsFixedSize$1(width, clientWidth, _this5.root);
+              w2 = calAbsFixedSize$1(width, clientWidth, _this6.root);
             }
           } // top/bottom/height优先级同上
 
@@ -27001,11 +27059,11 @@
             y2 = y + computedStyle[TOP$3];
 
             if (height[1] !== AUTO$6) {
-              h2 = calAbsFixedSize$1(height, clientHeight, _this5.root);
+              h2 = calAbsFixedSize$1(height, clientHeight, _this6.root);
             }
           } else if (fixedBottom) {
             if (height[1] !== AUTO$6) {
-              h2 = calAbsFixedSize$1(height, clientHeight, _this5.root);
+              h2 = calAbsFixedSize$1(height, clientHeight, _this6.root);
             } else {
               onlyBottom = true;
             }
@@ -27034,7 +27092,7 @@
             }
 
             if (height[1] !== AUTO$6) {
-              h2 = calAbsFixedSize$1(height, clientHeight, _this5.root);
+              h2 = calAbsFixedSize$1(height, clientHeight, _this6.root);
             }
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 

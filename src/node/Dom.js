@@ -1990,8 +1990,8 @@ class Dom extends Xom {
       let isRealInline = isInline2 && item.__isRealInline();
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb，注意只执行一次防止重复叠加
       let isEnd = isInline && !hasAddEndSpace
-        && (whiteSpace === 'nowrap'
-          || (lineClamp && i === length - 1 || lineClampCount === lineClamp - 1));
+        && (whiteSpace === 'nowrap' || (!isXom && i === length - 1)
+          || ((lineClamp && i === length - 1) || lineClampCount === lineClamp - 1));
       if(isEnd) {
         hasAddEndSpace = true;
         endSpace += selfEndSpace;

@@ -285,12 +285,12 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      computedStyle[a] = this.__mpSize(currentStyle[a], w);
-      computedStyle[b] = this.__mpSize(currentStyle[b], w);
+      computedStyle[a] = this.__calSize(currentStyle[a], w);
+      computedStyle[b] = this.__calSize(currentStyle[b], w);
     });
   }
 
-  __mpSize(mp, w) {
+  __calSize(mp, w) {
     if(mp[1] === PX) {
       return mp[0];
     }
@@ -407,6 +407,7 @@ class Xom extends Node {
       this.__ellipsis = null;
     }
     this.__parentLineBox = null;
+    this.__isIbFull = false;
     let {
       [DISPLAY]: display,
     } = computedStyle;
@@ -492,6 +493,7 @@ class Xom extends Node {
         }
       }
     }
+    // 只有inline会继承计算行数，其它都是原样返回
     let lineClampCount = data.lineClampCount || 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {

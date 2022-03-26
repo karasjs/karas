@@ -518,7 +518,7 @@ class Dom extends Xom {
     let fixedSize;
     // flex的item固定basis计算
     if(isFixed) {
-      b = this.__calSize(flexBasis, isDirectionRow ? w : h);
+      b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h);
     }
     // 已声明主轴尺寸的，当basis是auto时为main值
     else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {

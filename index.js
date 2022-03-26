@@ -24351,7 +24351,30 @@
       ew = inject.measureTextSync(ELLIPSIS$1, computedStyle[FONT_FAMILY$6], computedStyle[FONT_SIZE$a], computedStyle[FONT_WEIGHT$5]);
     }
 
-    return;
+    console.log(ew, x, wl);
+
+    for (var i = list.length - 1; i >= 0; i--) {
+      var item = list[i];
+      console.log(i, item.outerWidth); // 至少保留行首，根据ib还是textBox判断
+
+      if (i === 0) {
+        break;
+      } // 无论删除一个ib还是textBox，放得下的话都可以暂停循环
+
+
+      if (wl + item.outerWidth >= ew + 1e-10) {
+        if (item instanceof TextBox) {
+          item.__backtrack(bp, lineBoxManager, lineBox, wl);
+        } else {
+          item.__layoutNone();
+        }
+
+        x -= item.outerWidth;
+        wl += item.outerWidth;
+        break;
+      } // 放不下删除
+
+    }
   }
 
   var Dom$1 = /*#__PURE__*/function (_Xom) {
@@ -24685,7 +24708,7 @@
         var fixedSize; // flex的item固定basis计算
 
         if (isFixed) {
-          b = this.__calSize(flexBasis, isDirectionRow ? w : h);
+          b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h);
         } // 已声明主轴尺寸的，当basis是auto时为main值
         else if (isAuto && [PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(main[1]) > -1) {
           b = fixedSize = this.__calSize(main, isDirectionRow ? w : h);
@@ -24936,11 +24959,7 @@
 
 
                 if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
-                  ignoreNextWrap = true; // if(textOverflow === 'ellipsis') {
-                  //   let list = lineBoxManager.list;
-                  //   let lineBox = list[list.length - 1];
-                  //   backtrack(this, lineBoxManager, lineBox, w);
-                  // }
+                  ignoreNextWrap = true;
                 } else if (lineClamp && lineClampCount >= lineClamp) {
                   ignoreNextLine = true;
                 } // abs统计宽度，注意nowrap时累加

@@ -14256,13 +14256,13 @@
           }
         }
 
-        var _measureLineWidth5 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+        var _measureLineWidth5 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing),
             _measureLineWidth6 = _slicedToArray(_measureLineWidth5, 2),
             num = _measureLineWidth6[0],
             rw = _measureLineWidth6[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
 
 
-        if (rw + ew > wl + 1e-10) {
+        if (rw + ew > wl + 1e-10 - endSpace) {
           // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
           // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
           var lineBox = lineBoxManager.lineBox;
@@ -14293,9 +14293,10 @@
                   width = tb.width,
                   parent = tb.parent;
 
-              if (!j || wl >= width + ew + 1e-10) {
+              if (!j || wl >= width + ew + 1e-10 + endSpace) {
                 var _length = _content.length;
                 var _parent$computedStyle = parent.computedStyle,
+                    _lineHeight = _parent$computedStyle[LINE_HEIGHT$1],
                     _letterSpacing = _parent$computedStyle[LETTER_SPACING$2],
                     _fontSize = _parent$computedStyle[FONT_SIZE$6],
                     _fontWeight = _parent$computedStyle[FONT_WEIGHT$3],
@@ -14306,7 +14307,7 @@
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
+                var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew + width - endSpace, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
                     _measureLineWidth8 = _slicedToArray(_measureLineWidth7, 2),
                     _num = _measureLineWidth8[0],
                     _rw = _measureLineWidth8[1]; // 可能发生x回退，当tb的内容产生减少时
@@ -14316,12 +14317,15 @@
                   tb.__content = _content.slice(0, _num);
                   x -= width - _rw;
                   tb.__width = _rw;
-                }
+                } // 重新设置lineHeight和baseline，因为可能删除了东西
+
+
+                lineBox.__resetLb(computedStyle[LINE_HEIGHT$1], css.getBaseline(computedStyle));
 
                 var _ep = new Ellipsis(x + endSpace, y, ew, bp);
 
                 lineBoxManager.addItem(_ep, true);
-                y += Math.max(lineHeight, lineBoxManager.lineHeight);
+                y += Math.max(_lineHeight, lineBoxManager.lineHeight);
                 maxW = Math.max(maxW, _rw + ew);
                 return [y, maxW];
               } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
@@ -14414,7 +14418,7 @@
               width = tb.width,
               parent = tb.parent;
 
-          if (!j || wl >= width + ew + 1e-10) {
+          if (!j || wl >= width + ew + 1e-10 + endSpace) {
             var length = content.length;
             var _parent$computedStyle2 = parent.computedStyle,
                 letterSpacing = _parent$computedStyle2[LETTER_SPACING$2],
@@ -14428,7 +14432,7 @@
 
             var perW = fontSize * 0.8 + letterSpacing; // 再进行查找，这里也会有至少一个字符不用担心
 
-            var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing),
                 _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
                 num = _measureLineWidth10[0],
                 rw = _measureLineWidth10[1]; // 可能发生x回退，当tb的内容产生减少时
@@ -14437,7 +14441,10 @@
             if (num !== content.length) {
               tb.__content = content.slice(0, num);
               tb.__width = rw;
-            }
+            } // 重新设置lineHeight和baseline，因为可能删除了东西
+
+
+            lineBox.__resetLb(computedStyle[LINE_HEIGHT$1], css.getBaseline(computedStyle));
 
             var ep = new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp);
             lineBoxManager.addItem(ep, true);
@@ -23300,7 +23307,8 @@
       PADDING_LEFT$4 = _enums$STYLE_KEY$e.PADDING_LEFT,
       PADDING_RIGHT$3 = _enums$STYLE_KEY$e.PADDING_RIGHT,
       BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
-      MARGIN_RIGHT$3 = _enums$STYLE_KEY$e.MARGIN_RIGHT;
+      MARGIN_RIGHT$3 = _enums$STYLE_KEY$e.MARGIN_RIGHT,
+      LINE_HEIGHT$4 = _enums$STYLE_KEY$e.LINE_HEIGHT;
   /**
    * css中常见的概念，一行内容，里面可能有若干不同的内容，仅在布局阶段出现，不参与渲染逻辑
    * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inlineBlock等节点，而内容TextBox则属于Text
@@ -23412,6 +23420,28 @@
       value: function __setLB(l, b) {
         this.__lineHeight = Math.max(l, this.__lineHeight);
         this.__baseline = Math.max(b, this.__baseline);
+      }
+    }, {
+      key: "__resetLb",
+      value: function __resetLb(l, b) {
+        this.list.forEach(function (item) {
+          var dom = item;
+
+          if (item instanceof TextBox) {
+            dom = item.parent.parent;
+          }
+
+          var computedStyle = dom.computedStyle;
+
+          while (computedStyle[DISPLAY$3] === 'inline') {
+            l = Math.max(l, computedStyle[LINE_HEIGHT$4]);
+            b = Math.max(b, css.getBaseline(computedStyle));
+            dom = dom.domParent;
+            computedStyle = dom.computedStyle;
+          }
+        });
+        this.__lineHeight = l;
+        this.__baseline = b;
       }
     }, {
       key: "list",
@@ -23590,27 +23620,6 @@
           return lineBox;
         }
       }
-    }, {
-      key: "setLbOrGenLineBoxByInline",
-      value: function setLbOrGenLineBoxByInline(x, y, l, b) {
-        var lineHeight = Math.max(this.__lineHeight, l);
-        var baseline = Math.max(this.__baseline, b);
-        var lineBox;
-        var list = this.list;
-
-        if (this.__isNewLine) {
-          lineBox = new LineBox(x, y, lineHeight, baseline);
-          list.push(lineBox);
-          this.__isEnd = true;
-          this.__isNewLine = false;
-          return lineBox;
-        } else {
-          var length = list.length;
-          lineBox = list[length - 1];
-
-          lineBox.__setLB(l, b);
-        }
-      }
       /**
        * 外部设置为结尾，如一个LineBox后出现一个block，此时会被隔断，不再作为流的末尾
        */
@@ -23762,7 +23771,7 @@
         var length = this.list.length;
 
         if (length && !this.isNewLine) {
-          this.list[length - 1].__setLB(l, b);
+          this.list[length - 1].__setLB(l, b, false);
         }
       }
     }, {
@@ -24126,7 +24135,7 @@
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$g.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$g.Z_INDEX,
       WHITE_SPACE$2 = _enums$STYLE_KEY$g.WHITE_SPACE,
-      LINE_HEIGHT$4 = _enums$STYLE_KEY$g.LINE_HEIGHT,
+      LINE_HEIGHT$5 = _enums$STYLE_KEY$g.LINE_HEIGHT,
       LINE_CLAMP$1 = _enums$STYLE_KEY$g.LINE_CLAMP,
       ORDER$1 = _enums$STYLE_KEY$g.ORDER,
       FLEX_WRAP$1 = _enums$STYLE_KEY$g.FLEX_WRAP,
@@ -24667,7 +24676,7 @@
             flexBasis = currentStyle[FLEX_BASIS$2],
             width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5];
-        var lineHeight = computedStyle[LINE_HEIGHT$4],
+        var lineHeight = computedStyle[LINE_HEIGHT$5],
             display = computedStyle[DISPLAY$5];
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
@@ -24841,7 +24850,7 @@
         var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2],
             lineClamp = computedStyle[LINE_CLAMP$1],
-            lineHeight = computedStyle[LINE_HEIGHT$4],
+            lineHeight = computedStyle[LINE_HEIGHT$5],
             overflow = computedStyle[OVERFLOW$3],
             textOverflow = computedStyle[TEXT_OVERFLOW$3]; // 只有>=1的正整数才有效
 
@@ -25365,7 +25374,7 @@
             lineClamp = computedStyle[LINE_CLAMP$1],
             flexWrap = computedStyle[FLEX_WRAP$1],
             alignContent = computedStyle[ALIGN_CONTENT$1],
-            lineHeight = computedStyle[LINE_HEIGHT$4],
+            lineHeight = computedStyle[LINE_HEIGHT$5],
             textAlign = computedStyle[TEXT_ALIGN$2]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
@@ -26269,7 +26278,7 @@
         var textAlign = computedStyle[TEXT_ALIGN$2],
             whiteSpace = computedStyle[WHITE_SPACE$2],
             lineClamp = computedStyle[LINE_CLAMP$1],
-            lineHeight = computedStyle[LINE_HEIGHT$4],
+            lineHeight = computedStyle[LINE_HEIGHT$5],
             marginLeft = computedStyle[MARGIN_LEFT$4],
             marginRight = computedStyle[MARGIN_RIGHT$4],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
@@ -26662,7 +26671,7 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
-            lineHeight = computedStyle[LINE_HEIGHT$4]; // 可能因为Ellipsis回溯变成none
+            lineHeight = computedStyle[LINE_HEIGHT$5]; // 可能因为Ellipsis回溯变成none
 
         if (display === 'none') {
           return;

@@ -8,7 +8,6 @@ karas.render(
       <span style={{marginRight:11,background:'#f00',color:'#0F0'}}>11111abc<strong>x</strong><b>yz</b></span>
     </div>
 
-
     <div style={{margin:2,width:50,border:'1px solid #000',lineClamp:2,fontSize:24}}>
       <span style={{paddingRight:11,background:'#f00',fontSize:18,color:'#0F0'}}>11111abc<strong>x</strong><b>yz</b></span>
     </div>

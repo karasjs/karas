@@ -50,11 +50,11 @@ karas.render(
     </div>
 
     <div style={{position:'absolute',left:180,top:150,width:50,border:'1px solid #000',whiteSpace:'nowrap',fontSize:24,overflow:'hidden',textOverflow:'ellipsis'}}>
-      <span style={{background:'#f00',fontSize:18,color:'#0F0'}}>1111 <strong style={{fontSize:32}}>a</strong></span>
+      <span style={{background:'#f00',fontSize:18,color:'#0F0'}}>1111<strong style={{fontSize:32}}>a</strong></span>
     </div>
 
     <div style={{position:'absolute',left:180,top:200,width:50,border:'1px solid #000',whiteSpace:'nowrap',fontSize:24,overflow:'hidden',textOverflow:'ellipsis'}}>
-      <span style={{background:'#f00',fontSize:18,color:'#0F0'}}>1111 <strong style={{fontSize:32}}><b>b</b></strong></span>
+      <span style={{background:'#f00',fontSize:18,color:'#0F0'}}>1111<strong style={{fontSize:32}}><b>b</b></strong></span>
     </div>
   </canvas>,
   '#test'

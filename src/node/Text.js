@@ -349,9 +349,9 @@ class Text extends Node {
         ctx.font = font;
       }
     }
-    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
-    if(rw + ew > wl + (1e-10)) {
+    if(rw + ew > wl + (1e-10) - endSpace) {
       // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
       let lineBox = lineBoxManager.lineBox;
@@ -372,9 +372,10 @@ class Text extends Node {
           }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
           let { content, width, parent } = tb;
-          if(!j || wl >= width + ew + (1e-10)) {
+          if(!j || wl >= width + ew + (1e-10) + endSpace) {
             let length = content.length;
             let {
+              [LINE_HEIGHT]: lineHeight,
               [LETTER_SPACING]: letterSpacing,
               [FONT_SIZE]: fontSize,
               [FONT_WEIGHT]: fontWeight,
@@ -384,13 +385,15 @@ class Text extends Node {
               ctx.font = css.setFontStyle(parent.computedStyle);
             }
             // 再进行查找，这里也会有至少一个字符不用担心
-            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew + width - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
             // 可能发生x回退，当tb的内容产生减少时
             if(num !== content.length) {
               tb.__content = content.slice(0, num);
               x -= width - rw;
               tb.__width = rw;
             }
+            // 重新设置lineHeight和baseline，因为可能删除了东西
+            lineBox.__resetLb(computedStyle[LINE_HEIGHT], css.getBaseline(computedStyle));
             let ep = new Ellipsis(x + endSpace, y, ew, bp);
             lineBoxManager.addItem(ep, true);
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
@@ -464,7 +467,7 @@ class Text extends Node {
       }
       // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
       let { content, width, parent } = tb;
-      if(!j || wl >= width + ew + (1e-10)) {
+      if(!j || wl >= width + ew + (1e-10) + endSpace) {
         let length = content.length;
         let {
           [LETTER_SPACING]: letterSpacing,
@@ -477,12 +480,14 @@ class Text extends Node {
         }
         let perW = (fontSize * 0.8) + letterSpacing;
         // 再进行查找，这里也会有至少一个字符不用担心
-        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 可能发生x回退，当tb的内容产生减少时
         if(num !== content.length) {
           tb.__content = content.slice(0, num);
           tb.__width = rw;
         }
+        // 重新设置lineHeight和baseline，因为可能删除了东西
+        lineBox.__resetLb(computedStyle[LINE_HEIGHT], css.getBaseline(computedStyle));
         let ep = new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp);
         lineBoxManager.addItem(ep, true);
         return;

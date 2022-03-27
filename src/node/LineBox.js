@@ -1,5 +1,6 @@
-import enums from '../util/enums';
 import TextBox from './TextBox';
+import enums from '../util/enums';
+import css from '../style/css';
 
 const { STYLE_KEY: {
   DISPLAY,
@@ -9,6 +10,7 @@ const { STYLE_KEY: {
   PADDING_RIGHT,
   BORDER_RIGHT_WIDTH,
   MARGIN_RIGHT,
+  LINE_HEIGHT,
 } } = enums;
 
 /**
@@ -82,12 +84,13 @@ class LineBox {
     if(isVerticalAlign) {
       this.list.forEach(item => {
         // 是text的第一个的box的话，text也需要偏移
-        if (item instanceof TextBox) {
+        if(item instanceof TextBox) {
           let text = item.parent;
-          if (text.textBoxes[0] === item) {
+          if(text.textBoxes[0] === item) {
             text.__offsetY(diff);
           }
-        } else {
+        }
+        else {
           item.__offsetY(diff);
         }
       });
@@ -103,6 +106,24 @@ class LineBox {
   __setLB(l, b) {
     this.__lineHeight = Math.max(l, this.__lineHeight);
     this.__baseline = Math.max(b, this.__baseline);
+  }
+
+  __resetLb(l, b) {
+    this.list.forEach(item => {
+      let dom = item;
+      if(item instanceof TextBox) {
+        dom = item.parent.parent;
+      }
+      let computedStyle = dom.computedStyle;
+      while(computedStyle[DISPLAY] === 'inline') {
+        l = Math.max(l, computedStyle[LINE_HEIGHT]);
+        b = Math.max(b, css.getBaseline(computedStyle));
+        dom = dom.domParent;
+        computedStyle = dom.computedStyle;
+      }
+    });
+    this.__lineHeight = l;
+    this.__baseline = b;
   }
 
   get list() {

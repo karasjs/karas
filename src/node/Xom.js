@@ -1,5 +1,7 @@
 import Node from './Node';
 import Component from './Component';
+import inline from './inline';
+import Ellipsis from './Ellipsis';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -22,7 +24,6 @@ import Cache from '../refresh/Cache';
 import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
-import inline from './inline';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
@@ -284,12 +285,12 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      computedStyle[a] = this.__mpSize(currentStyle[a], w);
-      computedStyle[b] = this.__mpSize(currentStyle[b], w);
+      computedStyle[a] = this.__calSize(currentStyle[a], w);
+      computedStyle[b] = this.__calSize(currentStyle[b], w);
     });
   }
 
-  __mpSize(mp, w) {
+  __calSize(mp, w) {
     if(mp[1] === PX) {
       return mp[0];
     }
@@ -400,7 +401,13 @@ class Xom extends Node {
   __layout(data, isAbs, isColumn) {
     css.computeReflow(this);
     let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle, __config } = this;
+    let { isDestroyed, currentStyle, computedStyle, __config, __ellipsis } = this;
+    // 虚拟省略号每次清除
+    if(__ellipsis) {
+      this.__ellipsis = null;
+    }
+    this.__parentLineBox = null;
+    this.__isIbFull = false;
     let {
       [DISPLAY]: display,
     } = computedStyle;
@@ -486,18 +493,22 @@ class Xom extends Node {
         }
       }
     }
-    let lineClampCount = 0;
+    // 只有inline会继承计算行数，其它都是原样返回
+    let lineClampCount = data.lineClampCount || 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {
+      data.lineClampCount = 0;
       this.__layoutFlex(data, isAbs, isColumn);
     }
     else if(display === 'inlineBlock' || display === 'inline-block') {
-      lineClampCount = this.__layoutInline(data, isAbs, isColumn);
+      data.lineClampCount = 0;
+      this.__layoutInline(data, isAbs, isColumn);
     }
     else if(display === 'inline') {
       lineClampCount = this.__layoutInline(data, isAbs, isColumn, true);
     }
     else {
+      data.lineClampCount = 0;
       this.__layoutBlock(data, isAbs, isColumn);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
@@ -615,7 +626,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, nowrap, lineBoxManager, endSpace = 0 } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager, endSpace = 0 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -741,7 +752,6 @@ class Xom extends Node {
       h,
       lx,
       lineBoxManager,
-      nowrap,
       endSpace,
       selfEndSpace,
     };
@@ -1956,6 +1966,9 @@ class Xom extends Node {
     if(isRealInline) {
       let contentBoxList = this.contentBoxList;
       let length = contentBoxList.length;
+      if(contentBoxList[length - 1] instanceof Ellipsis) {
+        length--;
+      }
       let hasBgi = backgroundImage.some(item => item);
       if(length) {
         let {
@@ -2001,11 +2014,8 @@ class Xom extends Node {
               let gd = this.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
               if(gd) {
                 if(gd.k === 'conic') {
-                  let uuid = gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
+                  gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
                     btlr, btrr, bbrr, bblr, true);
-                  if(renderMode === SVG && uuid) {
-                    svgBgSymbol.push(uuid);
-                  }
                 }
                 else {
                   let uuid = bg.renderBgc(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null,
@@ -2486,81 +2496,6 @@ class Xom extends Node {
     if(renderMode === CANVAS || renderMode === WEBGL) {
       return gd;
     }
-    else if(renderMode === SVG) {
-      let offset = 0.5;
-      let prev;
-      // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
-      let list = [];
-      for(let i = 0, len = stop.length; i < len - 1; i++) {
-        let begin = stop[i][1] * 360;
-        let end = stop[i + 1][1] * 360;
-        let diff = end - begin;
-        let n = Math.ceil(diff);
-        let per = diff / n;
-        // 计算每块的2个弧端点
-        let bc = stop[i][0];
-        let ec = stop[i + 1][0];
-        let dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
-        let pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
-        for(let j = 0; j < n; j++) {
-          let [x1, y1] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg - offset);
-          let [x2, y2] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset);
-          list.push([
-            x1, y1,
-            x2, y2,
-            Math.round(bc[0] + pc[0] * j),
-            Math.round(bc[1] + pc[1] * j),
-            Math.round(bc[2] + pc[2] * j),
-            Math.round(bc[3] + pc[3] * j),
-          ]);
-        }
-      }
-      // 最后一段补自己末尾颜色特殊处理
-      let end = list[0].slice(0);
-      let [x2, y2] = geom.pointOnCircle(cx, cy, r, deg);
-      end[2] = x2;
-      end[3] = y2;
-      let s = stop[stop.length - 1][0];
-      end[4] = s[0];
-      end[5] = s[1];
-      end[6] = s[2];
-      end[7] = s[3];
-      list.push(end);
-      for(let i = 0, len = list.length; i < len; i++) {
-        let cur = list[i];
-        if(prev) {
-          let v = {
-            tagName: 'linearGradient',
-            props: [
-              ['x1', prev[0]],
-              ['y1', prev[1]],
-              ['x2', cur[2]],
-              ['y2', cur[3]],
-            ],
-            children: [
-              {
-                tagName: 'stop',
-                props: [
-                  ['stop-color', int2rgba([prev[4], prev[5], prev[6], prev[7]])],
-                  ['offset', '0%'],
-                ],
-              },
-              {
-                tagName: 'stop',
-                props: [
-                  ['stop-color', int2rgba([cur[4], cur[5], cur[6], cur[7]])],
-                  ['offset', '100%'],
-                ],
-              },
-            ],
-          };
-          let uuid = ctx.add(v);
-          this.__config[NODE_DEFS_CACHE].push(v);
-          res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], 'url(#' + uuid + ')']);
-        }
-        prev = cur;
-      }
-    }
     return res;
   }
 
@@ -2742,19 +2677,16 @@ class Xom extends Node {
     });
   }
 
-  __computeMeasure(renderMode, ctx, cb) {
-    css.computeMeasure(this);
-    if(isFunction(cb)) {
-      cb(this);
-    }
-  }
-
   __deepScan(cb, options) {
     return cb(this, options);
   }
 
   // isLayout为false时，为relative/margin/flex/vertical等
+  // 注意所有的offset/resize都要避免display:none的，比如合并margin导致block的孩子inline因clamp为none时没有layoutData
   __offsetX(diff, isLayout, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetX(diff, isLayout);
     if(isLayout) {
       this.__layoutData.x += diff;
@@ -2772,9 +2704,12 @@ class Xom extends Node {
   }
 
   __offsetY(diff, isLayout, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     super.__offsetY(diff, isLayout);
     if(isLayout) {
-      this.__layoutData.y += diff;
+      this.__layoutData && (this.__layoutData.y += diff);
       this.clearCache();
     }
     if(lv !== undefined) {
@@ -2789,6 +2724,9 @@ class Xom extends Node {
   }
 
   __resizeX(diff, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     this.computedStyle.width = this.__width += diff;
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
@@ -2807,6 +2745,9 @@ class Xom extends Node {
   }
 
   __resizeY(diff, lv) {
+    if(this.computedStyle[DISPLAY] === 'none') {
+      return;
+    }
     this.computedStyle.height = this.__height += diff;
     this.__clientHeight += diff;
     this.__offsetHeight += diff;
@@ -3065,6 +3006,10 @@ class Xom extends Node {
     return this.__currentStyle;
   }
 
+  get cacheStyle() {
+    return this.__cacheStyle;
+  }
+
   get isShadowRoot() {
     return !this.parent && this.host && this.host !== this.root;
   }
@@ -3095,6 +3040,10 @@ class Xom extends Node {
 
   set cacheAsBitmap(v) {
     this.__config[NODE_CACHE_AS_BITMAP] = this.__cacheAsBitmap = !!v;
+  }
+
+  get parentLineBox() {
+    return this.__parentLineBox;
   }
 }
 

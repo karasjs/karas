@@ -1,3 +1,4 @@
+import Ellipsis from './Ellipsis';
 import TextBox from './TextBox';
 import enums from '../util/enums';
 
@@ -129,6 +130,9 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseline, lineHe
 function getInlineWidth(xom, contentBoxList) {
   let sum = 0;
   let length = contentBoxList.length;
+  if(contentBoxList[length - 1] instanceof Ellipsis) {
+    length--;
+  }
   for(let i = 0; i < length; i++) {
     let contentBox = contentBoxList[i];
     sum += contentBox.width;

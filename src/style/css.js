@@ -77,6 +77,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
+  OVERFLOW,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -1115,16 +1116,19 @@ function normalize(style, reset = []) {
 }
 
 /**
- * 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle
- * 影响文字测量的只有字体和大小和重量，需要提前处理
- * 继承相关的计算
+ * 每次布局前需要计算的reflow相关的computedStyle，每次布局只计算一次，布局完后清除缓存标
  * @param node 对象节点
- * @param isRoot 是否是根节点，无继承需使用默认值
  */
-function computeMeasure(node, isRoot) {
-  let { currentStyle, computedStyle, domParent } = node;
-  let parentComputedStyle = !isRoot && domParent.computedStyle;
-  MEASURE_KEY_SET.forEach(k => {
+function computeReflow(node) {
+  if(node.__hasComputeReflow) {
+    return;
+  }
+  node.__hasComputeReflow = true;
+  let { currentStyle, computedStyle, domParent: parent, root } = node;
+  let rem = root.computedStyle[FONT_SIZE];
+  let isRoot = !parent;
+  let parentComputedStyle = parent && parent.computedStyle;
+  [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT].forEach(k => {
     let v = currentStyle[k];
     // ff特殊处理
     if(k === FONT_FAMILY) {
@@ -1161,21 +1165,6 @@ function computeMeasure(node, isRoot) {
       computedStyle[k] = v[0];
     }
   });
-}
-
-/**
- * 每次布局前需要计算的reflow相关的computedStyle，每次布局只计算一次，布局完后清除缓存标
- * @param node 对象节点
- */
-function computeReflow(node) {
-  if(node.__hasComputeReflow) {
-    return;
-  }
-  node.__hasComputeReflow = true;
-  let { currentStyle, computedStyle, domParent: parent, root } = node;
-  let rem = root.computedStyle[FONT_SIZE];
-  let isRoot = !parent;
-  let parentComputedStyle = parent && parent.computedStyle;
   [
     BORDER_TOP_WIDTH,
     BORDER_RIGHT_WIDTH,
@@ -1219,6 +1208,8 @@ function computeReflow(node) {
     ORDER,
     FLEX_WRAP,
     ALIGN_CONTENT,
+    OVERFLOW,
+    TEXT_OVERFLOW,
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
@@ -1332,7 +1323,7 @@ function computeReflow(node) {
 
 function setFontStyle(style) {
   let fontSize = style[FONT_SIZE] || 0;
-  let fontFamily = style[FONT_FAMILY] || 'arial';
+  let fontFamily = style[FONT_FAMILY] || inject.defaultFontFamily || 'arial';
   if(/\s/.test(fontFamily)) {
     fontFamily = '"' + fontFamily.replace(/"/g, '\\"') + '"';
   }
@@ -1341,11 +1332,22 @@ function setFontStyle(style) {
 }
 
 function getFontFamily(str) {
-  let ff = str.split(',');
-  let f = 'arial';
+  let ff = str.split(/\s*,\s*/);
+  let f = inject.defaultFontFamily;
   for(let i = 0, len = ff.length; i < len; i++) {
-    if(font.support(ff[i])) {
-      f = ff[i];
+    let fontFamily = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+    if(!font.hasRegister(fontFamily)) {
+      continue;
+    }
+    if(!font.hasChecked(fontFamily)) {
+      let res = inject.checkSupportFontFamily(fontFamily);
+      if(font.setChecked(fontFamily, res)) {
+        f = fontFamily;
+        break;
+      }
+    }
+    if(font.support(fontFamily)) {
+      f = fontFamily;
       break;
     }
   }
@@ -1355,13 +1357,13 @@ function getFontFamily(str) {
 function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
   let ff = getFontFamily(style[FONT_FAMILY]);
-  let normal = fontSize * (font.info[ff] || font.info.arial).lhr;
-  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info.arial).blr;
+  let normal = fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+  return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
 function calNormalLineHeight(style) {
   let ff = getFontFamily(style[FONT_FAMILY]);
-  return style[FONT_SIZE] * (font.info[ff] || font.info.arial).lhr;
+  return style[FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {
@@ -1733,7 +1735,6 @@ function calAbsFixedSize(value, size, root) {
 
 export default {
   normalize,
-  computeMeasure,
   computeReflow,
   setFontStyle,
   getFontFamily,

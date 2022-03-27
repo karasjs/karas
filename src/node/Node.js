@@ -31,6 +31,7 @@ class Node {
     this.__domParent = null;
     this.__root = null;
     this.__host = null;
+    this.__virtualDom = null;
   }
 
   __structure(i, lv, j) {

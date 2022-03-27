@@ -710,51 +710,6 @@ function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bb
     ctx.restore();
     offscreen.ctx.clearRect(0, 0, w, h);
   }
-  else if(renderMode === mode.SVG) {
-    if(isInline) {
-      let v = {
-        tagName: 'symbol',
-        props: [],
-        children: [],
-      };
-      xom.__config[NODE_DEFS_CACHE].push(v);
-      res.forEach(item => {
-        v.children.push({
-          type: 'item',
-          tagName: 'path',
-          props: [
-            ['d', svgPolygon(item[0])],
-            ['fill', item[1]],
-          ],
-        });
-      });
-      return ctx.add(v);
-    }
-    else {
-      let v = {
-        tagName: 'clipPath',
-        children: [{
-          tagName: 'path',
-          props: [
-            ['d', svgPolygon(list)],
-          ],
-        }],
-      };
-      xom.__config[NODE_DEFS_CACHE].push(v);
-      let clip = ctx.add(v);
-      res.forEach(item => {
-        xom.virtualDom.bb.push({
-          type: 'item',
-          tagName: 'path',
-          props: [
-            ['d', svgPolygon(item[0])],
-            ['fill', item[1]],
-            ['clip-path', 'url(#' + clip + ')'],
-          ],
-        });
-      });
-    }
-  }
 }
 
 export default {

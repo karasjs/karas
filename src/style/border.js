@@ -3,6 +3,7 @@ import mode from '../refresh/mode';
 import painter from '../util/painter';
 import enums from '../util/enums';
 import unit from './unit';
+import Ellipsis from '../node/Ellipsis';
 
 const { H } = geom;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
@@ -2827,7 +2828,10 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
   let first, last;
   if(contentBoxList.length) {
     first = contentBoxList[0];
-    last = contentBoxList[contentBoxList.length - 1]
+    last = contentBoxList[contentBoxList.length - 1];
+    if(last instanceof Ellipsis) {
+      last = contentBoxList[contentBoxList.length - 2];
+    }
   }
   // 先看first的左侧
   let w = first ? first.outerWidth : 0, h = first ? first.outerHeight : 0;

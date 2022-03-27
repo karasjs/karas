@@ -22,7 +22,7 @@ const { STYLE_KEY: {
  * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
  */
 class TextBox {
-  constructor(parent, index, x, y, w, h, content, wList) {
+  constructor(parent, index, x, y, w, h, content) {
     this.__parent = parent;
     this.__index = index;
     this.__x = x;
@@ -30,8 +30,18 @@ class TextBox {
     this.__width = w;
     this.__height = h;
     this.__content = content;
-    this.__wList = wList;
     this.__virtualDom = {};
+    this.__parentLineBox = null;
+  }
+
+  setEllipsis(fontFamily, fontSize, fontWeight) {
+    this.__fontFamily = fontFamily;
+    this.__fontSize = fontSize;
+    this.__fontWeight = fontWeight;
+  }
+
+  setDom(dom) {
+    this.__dom = dom;
   }
 
   /**
@@ -44,13 +54,18 @@ class TextBox {
    * @param dy
    */
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
-    let { content, x, y, parent, wList, width } = this;
+    let { content, x, y, parent, width, dom } = this;
     let { ox, oy } = parent;
     y += css.getBaseline(computedStyle);
     x += ox + dx;
     y += oy + dy;
     this.__endX = x + width;
     this.__endY = y;
+    // ELLIPSIS使用block的样式
+    if(dom) {
+      cacheStyle = dom.cacheStyle;
+      computedStyle = dom.computedStyle;
+    }
     let {
       [LETTER_SPACING]: letterSpacing,
       [TEXT_STROKE_WIDTH]: textStrokeWidth,
@@ -58,19 +73,31 @@ class TextBox {
     } = computedStyle;
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      if(dom) {
+        computedStyle = dom.computedStyle;
+        let font = css.setFontStyle(computedStyle);
+        if(ctx.font !== font) {
+          ctx.font = font;
+        }
+        let color = cacheStyle[COLOR];
+        if(ctx.fillStyle !== color) {
+          ctx.fillStyle = color;
+        }
+      }
       let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
       if(letterSpacing) {
         for(; i < length; i++) {
+          let c = content.charAt(i);
           if(overFill) {
-            ctx.fillText(content.charAt(i), x, y);
+            ctx.fillText(c, x, y);
           }
           if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
-            ctx.strokeText(content.charAt(i), x, y);
+            ctx.strokeText(c, x, y);
           }
           if(!overFill) {
-            ctx.fillText(content.charAt(i), x, y);
+            ctx.fillText(c, x, y);
           }
-          x += wList[i] + letterSpacing;
+          x += ctx.measureText(c).width + letterSpacing;
         }
       }
       else {
@@ -172,12 +199,12 @@ class TextBox {
     return this.__parentLineBox;
   }
 
-  get wList() {
-    return this.__wList;
-  }
-
   get isReplaced() {
     return false;
+  }
+
+  get dom() {
+    return this.__dom;
   }
 }
 

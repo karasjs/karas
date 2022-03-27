@@ -1,3 +1,5 @@
+import inject from '../util/inject';
+
 const DOM = {
   position: 'static',
   display: 'block',
@@ -122,7 +124,9 @@ Object.keys(GEOM).forEach(k => {
 });
 
 let INHERIT = {
-  fontFamily: 'arial',
+  get fontFamily() {
+    return inject.defaultFontFamily;
+  },
   fontSize: 16,
   fontWeight: 400,
   fontStyle: 'normal',

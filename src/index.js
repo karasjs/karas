@@ -42,7 +42,7 @@ let karas = {
   version,
   render(root, dom) {
     if(!(root instanceof Root)) {
-      throw new Error('Render dom must be canvas/svg');
+      throw new Error('Render dom must be canvas/svg/webgl');
     }
     if(dom) {
       root.appendTo(dom);

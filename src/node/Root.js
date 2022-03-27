@@ -63,7 +63,6 @@ const {
     UPDATE_KEYS,
     UPDATE_COMPONENT,
     UPDATE_FOCUS,
-    UPDATE_MEASURE,
     UPDATE_OVERWRITE,
     UPDATE_LIST,
     UPDATE_CONFIG,
@@ -107,7 +106,7 @@ const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT, INHERIT } = unit;
 const { isRelativeOrAbsolute, equalStyle } = css;
 const { contain, getLevel, isRepaint, NONE, FILTER, PERSPECTIVE, REPAINT, REFLOW, REBUILD } = level;
-const { isIgnore, isGeom, isMeasure } = change;
+const { isIgnore, isGeom } = change;
 
 const ROOT_DOM_NAME = {
   canvas: 'canvas',
@@ -335,14 +334,13 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
 }
 
 let uniqueUpdateId = 0;
-function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
+function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList, zHash, zList) {
   let {
     [UPDATE_NODE]: node,
     [UPDATE_STYLE]: style,
     [UPDATE_OVERWRITE]: overwrite,
     [UPDATE_FOCUS]: focus,
     [UPDATE_COMPONENT]: component,
-    [UPDATE_MEASURE]: measure,
     [UPDATE_LIST]: list,
     [UPDATE_KEYS]: keys,
     [UPDATE_CONFIG]: __config,
@@ -396,7 +394,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [NODE_IS_MASK]: isMask,
   } = __config;
   let lv = focus || NONE;
-  let hasMeasure = measure;
   let hasZ, hasVisibility, hasColor, hasDisplay;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
   if(!component && style && keys) {
@@ -433,9 +430,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
             }
             // repaint细化等级，reflow在checkReflow()
             lv |= getLevel(k);
-            if(isMeasure(k)) {
-              hasMeasure = true;
-            }
             // repaint置空，如果reflow会重新生成空的
             __cacheStyle[k] = undefined;
             currentStyle[k] = v;
@@ -516,7 +510,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       return;
     }
   }
-  // reflow/repaint/measure相关的记录下来
+  // reflow/repaint相关的记录下来
   let isRp = !component && isRepaint(lv);
   if(isRp) {
     // zIndex变化需清空svg缓存
@@ -542,10 +536,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       addDom,
       removeDom,
     });
-    // measure需要提前先处理
-    if(hasMeasure) {
-      measureList.push(node);
-    }
   }
   // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
   __config[NODE_REFRESH_LV] |= lv;
@@ -840,14 +830,11 @@ class Root extends Dom {
     // 首次递归测量整树的继承，后续更改各自更新机制做，防止每次整树遍历；root检查首次直接做，后续在checkUpdate()中插入
     if(isFirst) {
       this.__checkRoot(renderMode, width, height);
-      this.__computeMeasure(renderMode, ctx);
     }
     // 非首次刷新如果没有更新则无需继续
     else if(!this.__checkUpdate(renderMode, ctx, width, height)) {
       return;
     }
-    // 获取所有字体和大小测量，仅svg需要，canvas直接做
-    inject.measureText();
     this.__checkReflow(width, height);
     if(renderMode === mode.CANVAS && !this.props.noRender) {
       this.__clear(ctx, renderMode);
@@ -1034,7 +1021,6 @@ class Root extends Dom {
                 res[UPDATE_NODE] = sr;
                 res[UPDATE_STYLE] = sr.currentStyle;
                 res[UPDATE_FOCUS] = REFLOW;
-                res[UPDATE_MEASURE] = true;
                 res[UPDATE_COMPONENT] = cp;
                 res[UPDATE_CONFIG] = sr.__config;
                 this.__addUpdate(sr, sr.__config, root, root.__config, res);
@@ -1158,9 +1144,6 @@ class Root extends Dom {
         if(o[UPDATE_FOCUS]) {
           updateHash[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
         }
-        if(o[UPDATE_MEASURE]) {
-          updateHash[UPDATE_MEASURE] = true;
-        }
         // 后续存在新建list上，需增加遍历逻辑
         if(o[UPDATE_STYLE]) {
           let list = updateHash[UPDATE_LIST] = updateHash[UPDATE_LIST] || [];
@@ -1185,9 +1168,6 @@ class Root extends Dom {
       if(o[UPDATE_FOCUS]) {
         target[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
       }
-      if(o[UPDATE_MEASURE]) {
-        target[UPDATE_MEASURE] = true;
-      }
       // 后续存在新建list上，需增加遍历逻辑
       if(o[UPDATE_STYLE]) {
         let list = target[UPDATE_LIST] = target[UPDATE_LIST] || [];
@@ -1209,7 +1189,6 @@ class Root extends Dom {
    */
   __checkUpdate(renderMode, ctx, width, height) {
     let root = this;
-    let measureList = [];
     let reflowList = [];
     let cacheHash = {};
     let cacheList = [];
@@ -1224,7 +1203,7 @@ class Root extends Dom {
     if(updateRoot) {
       root.__updateRoot = null;
       hasUpdate = parseUpdate(renderMode, root, updateRoot,
-        reflowList, measureList, cacheHash, cacheList);
+        reflowList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式，或者发生resize()
       if(hasUpdate) {
         root.__checkRoot(renderMode, width, height);
@@ -1234,7 +1213,7 @@ class Root extends Dom {
     let keys = Object.keys(updateHash);
     for(let i = 0, len = keys.length; i < len; i++) {
       let t = parseUpdate(renderMode, root, updateHash[keys[i]],
-        reflowList, measureList, cacheHash, cacheList, zHash, zList);
+        reflowList, cacheHash, cacheList, zHash, zList);
       hasUpdate = hasUpdate || t;
     }
     // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
@@ -1250,60 +1229,6 @@ class Root extends Dom {
         delete item.__uniqueZId;
         item.__updateStruct(root.__structs);
       }
-    });
-    /**
-     * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
-     * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
-     */
-    let measureHash = {};
-    measureList.forEach(node => {
-      let { __config:{ [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId, [NODE_DOM_PARENT]: parent } } = node;
-      // 在root下的component变更时root会进入，但其没有__uniqueUpdateId
-      if(node !== root) {
-        if(measureHash.hasOwnProperty(__uniqueUpdateId)) {
-          return;
-        }
-        measureHash[__uniqueUpdateId] = true;
-      }
-      let last = node;
-      // 检查measure的属性是否是inherit，在root下的component变更时root会进入，但其没有__uniqueUpdateId
-      // 另外dom标识表明有dom变更强制进入
-      let isInherit = node !== root
-        && (updateHash[__uniqueUpdateId][UPDATE_ADD_DOM]
-        || change.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE]));
-      // 是inherit，需要向上查找，从顶部向下递归计算继承信息
-      if(isInherit) {
-        while(parent && parent !== root) {
-          let { __config: {
-            [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId,
-          }, currentStyle } = parent;
-          let isInherit;
-          if(parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-            let style = updateHash[__uniqueUpdateId][UPDATE_STYLE];
-            measureHash[__uniqueUpdateId] = true;
-            let temp = change.measureInheritList(style);
-            isInherit = !!temp.length;
-          }
-          else {
-            isInherit = change.isMeasureInherit(currentStyle);
-          }
-          // 如果parent有inherit存入列表且继续向上，否则跳出循环
-          if(isInherit) {
-            last = parent;
-          }
-          else {
-            break;
-          }
-          // 考虑component下的继续往上继承
-          parent = parent.domParent;
-        }
-      }
-      // 自顶向下查找inherit的，利用已有的方法+回调，当递归包含重复时标记防止重复
-      last.__computeMeasure(renderMode, ctx, function(target) {
-        if(target.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-          measureHash[target.__config[NODE_UNIQUE_UPDATE_ID]] = true;
-        }
-      });
     });
     // 做完清空留待下次刷新重来
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -1907,14 +1832,6 @@ class Root extends Dom {
       // 清除id
       reflow.clearUniqueReflowId(reflowHash);
     }
-  }
-
-  // 特殊覆盖方法，不需要super()计算自己，因为无需第3个参数cb且自己是root
-  __computeMeasure(renderMode, ctx) {
-    css.computeMeasure(this, true);
-    this.children.forEach(item => {
-      item.__computeMeasure(renderMode, ctx);
-    });
   }
 
   // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里

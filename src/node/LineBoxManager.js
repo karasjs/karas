@@ -52,25 +52,6 @@ class LineBoxManager {
     }
   }
 
-  setLbOrGenLineBoxByInline(x, y, l, b) {
-    let lineHeight = Math.max(this.__lineHeight, l);
-    let baseline = Math.max(this.__baseline, b);
-    let lineBox;
-    let list = this.list;
-    if(this.__isNewLine) {
-      lineBox = new LineBox(x, y, lineHeight, baseline);
-      list.push(lineBox);
-      this.__isEnd = true;
-      this.__isNewLine = false;
-      return lineBox;
-    }
-    else {
-      let length = list.length;
-      lineBox = list[length - 1];
-      lineBox.__setLB(l, b);
-    }
-  }
-
   /**
    * 外部设置为结尾，如一个LineBox后出现一个block，此时会被隔断，不再作为流的末尾
    */
@@ -196,7 +177,7 @@ class LineBoxManager {
   setLbByInlineIfNotNewLine(l, b) {
     let length = this.list.length;
     if(length && !this.isNewLine) {
-      this.list[length - 1].__setLB(l, b);
+      this.list[length - 1].__setLB(l, b, false);
     }
   }
 

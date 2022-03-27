@@ -48,6 +48,14 @@ karas.render(
       <strong style={{fontSize:32,display:'inlineBlock'}}>a</strong>
       <b style={{fontSize:32,display:'inlineBlock'}}>b</b>
     </div>
+
+    <div style={{position:'absolute',left:180,top:150,width:50,border:'1px solid #000',whiteSpace:'nowrap',fontSize:24,overflow:'hidden',textOverflow:'ellipsis'}}>
+      <span style={{background:'#f00',fontSize:18,color:'#0F0'}}>1111 <strong style={{fontSize:32}}>a</strong></span>
+    </div>
+
+    <div style={{position:'absolute',left:180,top:200,width:50,border:'1px solid #000',whiteSpace:'nowrap',fontSize:24,overflow:'hidden',textOverflow:'ellipsis'}}>
+      <span style={{background:'#f00',fontSize:18,color:'#0F0'}}>1111 <strong style={{fontSize:32}}><b>b</b></strong></span>
+    </div>
   </canvas>,
   '#test'
 );

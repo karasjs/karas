@@ -14018,8 +14018,6 @@
 
       _this.__bp = null; // block父节点
 
-      _this.__layoutData = null; // 缓存上次布局x/y/w/h数据
-
       _this.__widthHash = {}; // 存储当前字体样式key下的charWidth/textWidth
 
       return _this;
@@ -14126,7 +14124,7 @@
 
 
           if (isTextOverflow && textOverflow === 'ellipsis') {
-            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+            var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
             var _this$__lineBack2 = _slicedToArray(_this$__lineBack, 1);
 
@@ -14164,7 +14162,7 @@
 
 
             if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-              var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+              var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
               var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
 
@@ -14183,6 +14181,18 @@
               num = _measureLineWidth4[0];
               rw = _measureLineWidth4[1];
               newLine = _measureLineWidth4[2];
+
+              // 可能加上endSpace后超过了，还得再判断一次
+              if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
+                var _this$__lineBack5 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+
+                var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
+
+                y = _this$__lineBack6[0];
+                maxW = _this$__lineBack6[1];
+                lineCount++;
+                break;
+              }
             }
 
             maxW = Math.max(maxW, rw); // 根据是否第一行分开处理行首空白
@@ -14221,7 +14231,7 @@
 
     }, {
       key: "__lineBack",
-      value: function __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing) {
+      value: function __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing) {
         var ew,
             bp = this.__bp,
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
@@ -14254,6 +14264,7 @@
 
         if (rw + ew > wl + 1e-10) {
           // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
+          // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
           var lineBox = lineBoxManager.lineBox;
 
           if (!lineBoxManager.isNewLine && lineBox && lineBox.size) {
@@ -14307,7 +14318,7 @@
                   tb.__width = _rw;
                 }
 
-                var _ep = new Ellipsis(x, y, ew, bp);
+                var _ep = new Ellipsis(x + endSpace, y, ew, bp);
 
                 lineBoxManager.addItem(_ep, true);
                 y += Math.max(lineHeight, lineBoxManager.lineHeight);
@@ -14335,6 +14346,14 @@
               }
 
               while (dom !== bp && dom !== prev) {
+                var _contentBoxList = dom.contentBoxList || [];
+
+                var _i2 = _contentBoxList.indexOf(item);
+
+                if (_i2 > -1) {
+                  _contentBoxList.splice(_i2, 1);
+                }
+
                 var _computedStyle = dom.computedStyle;
                 var mbp = _computedStyle[MARGIN_LEFT] + _computedStyle[MARGIN_RIGHT] + _computedStyle[PADDING_LEFT$1] + _computedStyle[PADDING_RIGHT] + _computedStyle[BORDER_LEFT_WIDTH$2] + _computedStyle[BORDER_RIGHT_WIDTH$1];
                 x -= mbp;
@@ -14343,6 +14362,14 @@
                 dom.__layoutNone();
 
                 dom = dom.domParent;
+              }
+
+              var contentBoxList = prev.contentBoxList || [];
+
+              var _i = contentBoxList.indexOf(item);
+
+              if (_i > -1) {
+                contentBoxList.splice(_i, 1);
               }
             }
           }
@@ -14353,171 +14380,113 @@
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false); // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
 
-        var ep = new Ellipsis(x + rw, y, ew, bp);
+        var ep = new Ellipsis(x + rw + endSpace, y, ew, bp);
         lineBoxManager.addItem(ep, true);
         y += Math.max(lineHeight, lineBoxManager.lineHeight);
         maxW = Math.max(maxW, rw + ew);
         return [y, maxW];
-      } // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值
+      } // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
 
     }, {
       key: "__backtrack",
-      value: function __backtrack(bp, lineBoxManager, lineBox, wl) {
-        var ew,
-            computedStyle = this.computedStyle,
-            bComputedStyle = bp.computedStyle,
-            root = this.root,
-            renderMode = root.renderMode;
-        var list = lineBox.list; // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
+      value: function __backtrack(bp, lineBoxManager, lineBox, textBox, wl, endSpace, ew, computedStyle, ctx, renderMode) {
+        var list = lineBox.list;
 
-        var content = '';
-        var x = list[0].x,
-            y = list[0].y;
-        list.forEach(function (item) {
-          if (item instanceof TextBox) {
-            content += item.content;
-          }
+        for (var j = list.length - 1; j >= 0; j--) {
+          var tb = list[j]; // 可能是个inlineBlock，整个省略掉，除非是第一个不作ellipsis处理
 
-          x += item.outerWidth;
-          wl -= item.outerWidth;
-        });
-        var ctx;
-
-        if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-          ctx = renderMode === WEBGL$2 ? inject.getFontCanvas().ctx : root.ctx;
-        } // 临时测量ELLIPSIS的尺寸
-
-
-        if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-          var font = css.setFontStyle(bComputedStyle);
-
-          if (ctx.font !== font) {
-            ctx.font = font;
-          }
-
-          ew = ctx.measureText(ELLIPSIS).width;
-        } else {
-          ew = inject.measureTextSync(ELLIPSIS, bComputedStyle[FONT_FAMILY$3], bComputedStyle[FONT_SIZE$6], bComputedStyle[FONT_WEIGHT$3]);
-        }
-
-        var lineHeight = computedStyle[LINE_HEIGHT$1],
-            letterSpacing = computedStyle[LETTER_SPACING$2],
-            fontSize = computedStyle[FONT_SIZE$6],
-            fontWeight = computedStyle[FONT_WEIGHT$3],
-            fontFamily = computedStyle[FONT_FAMILY$3];
-        var perW = fontSize * 0.8 + letterSpacing;
-
-        var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, content.length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
-            _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
-            num = _measureLineWidth10[0],
-            rw = _measureLineWidth10[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
-
-
-        if (rw + ew > wl + 1e-10) {
-          // 否则向前回溯已有的tb，必须至少有1个
-          if (lineBox && lineBox.size) {
-            var _list = lineBox.list;
-
-            for (var j = _list.length - 1; j >= 0; j--) {
-              var _tb = _list[j]; // 可能是个inlineBlock，整个省略掉，除非是第一个不作ellipsis处理
-
-              if (!(_tb instanceof TextBox)) {
-                if (!j) {
-                  break;
-                }
-
-                var _item2 = _list.pop();
-
-                x -= _item2.outerWidth;
-                wl += _item2.outerWidth;
-
-                _item2.__layoutNone();
-
-                continue;
-              } // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
-
-
-              var _content2 = _tb.content,
-                  width = _tb.width,
-                  parent = _tb.parent;
-
-              if (!j || wl >= width + ew + 1e-10) {
-                var length = _content2.length;
-                var _parent$computedStyle2 = parent.computedStyle,
-                    _lineHeight = _parent$computedStyle2[LINE_HEIGHT$1],
-                    _letterSpacing2 = _parent$computedStyle2[LETTER_SPACING$2],
-                    _fontSize2 = _parent$computedStyle2[FONT_SIZE$6],
-                    _fontWeight2 = _parent$computedStyle2[FONT_WEIGHT$3],
-                    _fontFamily2 = _parent$computedStyle2[FONT_FAMILY$3];
-
-                var _perW = _fontSize2 * 0.8 + _letterSpacing2;
-
-                if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
-                  ctx.font = css.setFontStyle(parent.computedStyle);
-                } // 再进行查找，这里也会有至少一个字符不用担心
-
-
-                var _measureLineWidth11 = measureLineWidth(ctx, renderMode, 0, length, _content2, wl - ew, _perW, _fontFamily2, _fontSize2, _fontWeight2, _letterSpacing2),
-                    _measureLineWidth12 = _slicedToArray(_measureLineWidth11, 2),
-                    _num2 = _measureLineWidth12[0],
-                    _rw2 = _measureLineWidth12[1]; // 可能发生x回退，当tb的内容产生减少时
-
-
-                if (_num2 !== _content2.length) {
-                  _tb.__content = _content2.slice(0, _num2);
-                  _tb.__width = _rw2;
-                  x -= width - _rw2;
-                }
-
-                var _ep2 = new Ellipsis(x, y, ew, bp);
-
-                lineBoxManager.addItem(_ep2, true);
-                return;
-              } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
-
-
-              var item = _list.pop();
-
-              wl += width;
-              x -= width;
-              var tbs = item.parent.textBoxes;
-              var k = tbs.indexOf(item);
-
-              if (k > -1) {
-                tbs.splice(k, 1);
-              } // 还得去掉dom，防止inline嵌套一直向上，同时得判断不能误删前面一个的dom
-
-
-              var dom = item.parent.parent;
-              var prev = _list[_list.length - 1];
-
-              if (prev instanceof TextBox) {
-                prev = prev.parent.parent;
-              }
-
-              while (dom !== bp && dom !== prev) {
-                var _computedStyle2 = dom.computedStyle;
-                var mbp = _computedStyle2[MARGIN_LEFT] + _computedStyle2[MARGIN_RIGHT] + _computedStyle2[PADDING_LEFT$1] + _computedStyle2[PADDING_RIGHT] + _computedStyle2[BORDER_LEFT_WIDTH$2] + _computedStyle2[BORDER_RIGHT_WIDTH$1];
-                x -= mbp;
-                wl += mbp;
-
-                dom.__layoutNone();
-
-                dom = dom.domParent;
-              }
+          if (!(tb instanceof TextBox)) {
+            if (!j) {
+              break;
             }
+
+            var _item2 = list.pop();
+
+            wl += _item2.outerWidth;
+
+            _item2.__layoutNone();
+
+            continue;
+          } // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
+
+
+          var content = tb.content,
+              width = tb.width,
+              parent = tb.parent;
+
+          if (!j || wl >= width + ew + 1e-10) {
+            var length = content.length;
+            var _parent$computedStyle2 = parent.computedStyle,
+                letterSpacing = _parent$computedStyle2[LETTER_SPACING$2],
+                fontSize = _parent$computedStyle2[FONT_SIZE$6],
+                fontWeight = _parent$computedStyle2[FONT_WEIGHT$3],
+                fontFamily = _parent$computedStyle2[FONT_FAMILY$3];
+
+            if (renderMode === CANVAS$2 || renderMode === WEBGL$2) {
+              ctx.font = css.setFontStyle(parent.computedStyle);
+            }
+
+            var perW = fontSize * 0.8 + letterSpacing; // 再进行查找，这里也会有至少一个字符不用担心
+
+            var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+                _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
+                num = _measureLineWidth10[0],
+                rw = _measureLineWidth10[1]; // 可能发生x回退，当tb的内容产生减少时
+
+
+            if (num !== content.length) {
+              tb.__content = content.slice(0, num);
+              tb.__width = rw;
+            }
+
+            var ep = new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp);
+            lineBoxManager.addItem(ep, true);
+            return;
+          } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
+
+
+          var item = list.pop();
+          wl += width;
+          var tbs = item.parent.textBoxes;
+          var k = tbs.indexOf(item);
+
+          if (k > -1) {
+            tbs.splice(k, 1);
+          } // 还得去掉dom，防止inline嵌套一直向上，同时得判断不能误删前面一个的dom
+
+
+          var dom = item.parent.parent;
+          var prev = list[list.length - 1];
+
+          if (prev instanceof TextBox) {
+            prev = prev.parent.parent;
           }
-        } // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
 
+          while (dom !== bp && dom !== prev) {
+            var _contentBoxList2 = dom.contentBoxList || [];
 
-        var tb = list[list.length - 1];
-        tb.__content = content.slice(0, num);
-        x -= tb.width - rw;
-        tb.__width = rw; // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
+            var _i3 = _contentBoxList2.indexOf(item);
 
-        var ep = new Ellipsis(x, y, ew, bp);
-        lineBoxManager.addItem(ep, true);
-        return true;
+            if (_i3 > -1) {
+              _contentBoxList2.splice(_i3, 1);
+            }
+
+            var _computedStyle2 = dom.computedStyle;
+            var mbp = _computedStyle2[MARGIN_LEFT] + _computedStyle2[MARGIN_RIGHT] + _computedStyle2[PADDING_LEFT$1] + _computedStyle2[PADDING_RIGHT] + _computedStyle2[BORDER_LEFT_WIDTH$2] + _computedStyle2[BORDER_RIGHT_WIDTH$1];
+            wl += mbp;
+
+            dom.__layoutNone();
+
+            dom = dom.domParent;
+          }
+
+          var contentBoxList = prev.contentBoxList || [];
+          var i = contentBoxList.indexOf(item);
+
+          if (i > -1) {
+            contentBoxList.splice(i, 1);
+          }
+        }
       }
     }, {
       key: "__offsetX",
@@ -24202,7 +24171,7 @@
       isFunction$6 = util.isFunction;
   var CANVAS$4 = mode.CANVAS,
       SVG$3 = mode.SVG,
-      WEBGL$4 = mode.WEBGL;
+      WEBGL$4 = mode.WEBGL; // 渲染获取zIndex顺序
 
   function genZIndexChildren(dom) {
     var normal = [];
@@ -24314,22 +24283,14 @@
    */
 
 
-  function backtrack(bp, lineBoxManager, lineBox, wl) {
+  function backtrack(bp, lineBoxManager, lineBox, wl, endSpace) {
     var ew,
         computedStyle = bp.computedStyle,
         root = bp.root,
         renderMode = root.renderMode;
     var list = lineBox.list; // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
 
-    var content = '';
-    var x = list[0].x,
-        y = list[0].y;
     list.forEach(function (item) {
-      if (item instanceof TextBox) {
-        content += item.content;
-      }
-
-      x += item.outerWidth;
       wl -= item.outerWidth;
     });
     var ctx;
@@ -24351,29 +24312,37 @@
       ew = inject.measureTextSync(ELLIPSIS$1, computedStyle[FONT_FAMILY$6], computedStyle[FONT_SIZE$a], computedStyle[FONT_WEIGHT$5]);
     }
 
-    console.log(ew, x, wl);
-
     for (var i = list.length - 1; i >= 0; i--) {
-      var item = list[i];
-      console.log(i, item.outerWidth); // 至少保留行首，根据ib还是textBox判断
+      var item = list[i]; // 无论删除一个ib还是textBox，放得下的话都可以暂停循环，注意强制保留行首
 
-      if (i === 0) {
-        break;
-      } // 无论删除一个ib还是textBox，放得下的话都可以暂停循环
-
-
-      if (wl + item.outerWidth >= ew + 1e-10) {
+      if (!i || wl + item.outerWidth >= ew + 1e-10) {
         if (item instanceof TextBox) {
-          item.__backtrack(bp, lineBoxManager, lineBox, wl);
+          var text = item.parent;
+
+          text.__backtrack(bp, lineBoxManager, lineBox, item, wl, endSpace, ew, computedStyle, ctx, renderMode);
+        } else {
+          var ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
+          lineBoxManager.addItem(ep, true);
+        }
+
+        break;
+      } // 放不下删除
+      else {
+        if (item instanceof TextBox) {
+          var _text = item.parent;
+
+          var _i = _text.textBoxes.indexOf(item);
+
+          if (_i > -1) {
+            _text.textBoxes.splice(_i, 1);
+          }
         } else {
           item.__layoutNone();
         }
 
-        x -= item.outerWidth;
+        list.pop();
         wl += item.outerWidth;
-        break;
-      } // 放不下删除
-
+      }
     }
   }
 
@@ -24519,8 +24488,8 @@
 
         var needSort;
 
-        for (var _i = 0, len = source.length; _i < len; _i++) {
-          if (source[_i] !== arr[_i]) {
+        for (var _i2 = 0, len = source.length; _i2 < len; _i2++) {
+          if (source[_i2] !== arr[_i2]) {
             needSort = true;
             break;
           }
@@ -25028,7 +24997,7 @@
                     ignoreNextLine = true;
                     var list = lineBoxManager.list;
                     var lineBox = list[list.length - 1];
-                    backtrack(_this2, lineBoxManager, lineBox, w);
+                    backtrack(_this2, lineBoxManager, lineBox, w, 0);
                     return;
                   }
 
@@ -25248,7 +25217,7 @@
                   ignoreNextLine = true;
                   var _list = lineBoxManager.list;
                   var _lineBox = _list[_list.length - 1];
-                  backtrack(_this2, lineBoxManager, _lineBox, w);
+                  backtrack(_this2, lineBoxManager, _lineBox, w, 0);
                   return;
                 }
 
@@ -26011,23 +25980,23 @@
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
-            for (var _i2 = 0; _i2 < len; _i2++) {
-              var _child = orderChildren[_i2];
+            for (var _i3 = 0; _i3 < len; _i3++) {
+              var _child = orderChildren[_i3];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
-            for (var _i3 = 1; _i3 < len; _i3++) {
-              var _child2 = orderChildren[_i3];
-              isDirectionRow ? _child2.__offsetX(between * _i3, true) : _child2.__offsetY(between * _i3, true);
+            for (var _i4 = 1; _i4 < len; _i4++) {
+              var _child2 = orderChildren[_i4];
+              isDirectionRow ? _child2.__offsetX(between * _i4, true) : _child2.__offsetY(between * _i4, true);
             }
           } else if (justifyContent === 'spaceAround' || justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
-            for (var _i4 = 0; _i4 < len; _i4++) {
-              var _child3 = orderChildren[_i4];
-              isDirectionRow ? _child3.__offsetX(around * (_i4 + 1), true) : _child3.__offsetY(around * (_i4 + 1), true);
+            for (var _i5 = 0; _i5 < len; _i5++) {
+              var _child3 = orderChildren[_i5];
+              isDirectionRow ? _child3.__offsetX(around * (_i5 + 1), true) : _child3.__offsetY(around * (_i5 + 1), true);
             }
           }
         }
@@ -26470,7 +26439,7 @@
                   ignoreNextLine = true;
                   var list = lineBoxManager.list;
                   var lineBox = list[list.length - 1];
-                  backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+                  backtrack(bp, lineBoxManager, lineBox, w, endSpace);
                   return;
                 }
 
@@ -26570,7 +26539,7 @@
                   ignoreNextLine = true;
                   var _list2 = lineBoxManager.list;
                   var _lineBox2 = _list2[_list2.length - 1];
-                  backtrack(bp, lineBoxManager, _lineBox2, w - endSpace);
+                  backtrack(bp, lineBoxManager, _lineBox2, w, endSpace);
                   return;
                 }
 
@@ -26680,7 +26649,8 @@
             computedStyle = this.computedStyle,
             __ox = this.__ox,
             __oy = this.__oy;
-        var marginTop = computedStyle[MARGIN_TOP$1],
+        var display = computedStyle[DISPLAY$5],
+            marginTop = computedStyle[MARGIN_TOP$1],
             marginRight = computedStyle[MARGIN_RIGHT$4],
             marginBottom = computedStyle[MARGIN_BOTTOM$1],
             marginLeft = computedStyle[MARGIN_LEFT$4],
@@ -26692,7 +26662,12 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
-            lineHeight = computedStyle[LINE_HEIGHT$4]; // x/clientX/offsetX/outerX
+            lineHeight = computedStyle[LINE_HEIGHT$4]; // 可能因为Ellipsis回溯变成none
+
+        if (display === 'none') {
+          return;
+        } // x/clientX/offsetX/outerX
+
 
         var maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
         var length = contentBoxList.length;

@@ -4,6 +4,7 @@ import LineBoxManager from './LineBoxManager';
 import Component from './Component';
 import tag from './tag';
 import TextBox from './TextBox';
+import Ellipsis from './Ellipsis';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
@@ -15,7 +16,6 @@ import reflow from '../refresh/reflow';
 import builder from '../util/builder';
 import mode from '../refresh/mode';
 import level from '../refresh/level';
-import ellipsis from "./Ellipsis";
 
 const {
   STYLE_KEY: {
@@ -87,6 +87,7 @@ const { calAbsolute, isRelativeOrAbsolute, calAbsFixedSize, computeReflow } = cs
 const { extend, isNil, isFunction } = util;
 const { CANVAS, SVG, WEBGL } = mode;
 
+// 渲染获取zIndex顺序
 function genZIndexChildren(dom) {
   let normal = [];
   let hasMc;
@@ -187,17 +188,11 @@ function genOrderChildren(flowChildren) {
 /**
  * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
  */
-function backtrack(bp, lineBoxManager, lineBox, wl) {
+function backtrack(bp, lineBoxManager, lineBox, wl, endSpace) {
   let ew, computedStyle = bp.computedStyle, root = bp.root, renderMode = root.renderMode;
   let list = lineBox.list;
   // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
-  let content = '';
-  let x = list[0].x, y = list[0].y;
   list.forEach(item => {
-    if(item instanceof TextBox) {
-      content += item.content;
-    }
-    x += item.outerWidth;
     wl -= item.outerWidth;
   });
   let ctx;
@@ -217,27 +212,35 @@ function backtrack(bp, lineBoxManager, lineBox, wl) {
   else {
     ew = inject.measureTextSync(ELLIPSIS, computedStyle[FONT_FAMILY], computedStyle[FONT_SIZE], computedStyle[FONT_WEIGHT]);
   }
-  console.log(ew, x, wl);
   for(let i = list.length - 1; i >= 0; i--) {
     let item = list[i];
-    console.log(i, item.outerWidth);
-    // 至少保留行首，根据ib还是textBox判断
-    if(i === 0) {
+    // 无论删除一个ib还是textBox，放得下的话都可以暂停循环，注意强制保留行首
+    if(!i || wl + item.outerWidth >= ew + (1e-10)) {
+      if(item instanceof TextBox) {
+        let text = item.parent;
+        text.__backtrack(bp, lineBoxManager, lineBox, item, wl, endSpace, ew, computedStyle, ctx, renderMode);
+      }
+      else {
+        let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
+        lineBoxManager.addItem(ep, true);
+      }
       break;
     }
-    // 无论删除一个ib还是textBox，放得下的话都可以暂停循环
-    if(wl + item.outerWidth >= ew + (1e-10)) {
+    // 放不下删除
+    else {
       if(item instanceof TextBox) {
-        item.__backtrack(bp, lineBoxManager, lineBox, wl);
+        let text = item.parent;
+        let i = text.textBoxes.indexOf(item);
+        if(i > -1) {
+          text.textBoxes.splice(i, 1);
+        }
       }
       else {
         item.__layoutNone();
       }
-      x -= item.outerWidth;
+      list.pop();
       wl += item.outerWidth;
-      break;
     }
-    // 放不下删除
   }
 }
 
@@ -789,7 +792,7 @@ class Dom extends Xom {
                 ignoreNextLine = true;
                 let list = lineBoxManager.list;
                 let lineBox = list[list.length - 1];
-                backtrack(this, lineBoxManager, lineBox, w);
+                backtrack(this, lineBoxManager, lineBox, w, 0);
                 return;
               }
               lineClampCount = item.__layout({
@@ -992,7 +995,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(this, lineBoxManager, lineBox, w);
+              backtrack(this, lineBoxManager, lineBox, w, 0);
               return;
             }
             lineClampCount = item.__layout({
@@ -2077,7 +2080,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace);
               return;
             }
             lineClampCount = item.__layout({
@@ -2177,7 +2180,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w - endSpace);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace);
               return;
             }
             lineClampCount = item.__layout({
@@ -2275,6 +2278,7 @@ class Dom extends Xom {
   __inlineSize(tw, textAlign) {
     let { contentBoxList, computedStyle, __ox, __oy } = this;
     let {
+      [DISPLAY]: display,
       [MARGIN_TOP]: marginTop,
       [MARGIN_RIGHT]: marginRight,
       [MARGIN_BOTTOM]: marginBottom,
@@ -2289,6 +2293,10 @@ class Dom extends Xom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
       [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
+    // 可能因为Ellipsis回溯变成none
+    if(display === 'none') {
+      return;
+    }
     // x/clientX/offsetX/outerX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
     let length = contentBoxList.length;

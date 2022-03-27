@@ -41,6 +41,10 @@ karas.render(
     <div style={{position:'absolute',left:180,top:180,width:50,border:'1px solid #000',lineClamp:2,fontSize:24,}}>
       <span style={{paddingRight:11,background:'#f00',fontSize:18,color:'#0F0'}}>11111abcd<strong>x</strong></span>
     </div>
+
+    <div style={{position:'absolute',left:180,top:240,width:50,border:'1px solid #000',lineClamp:2,fontSize:24,}}>
+      <span style={{paddingRight:11,background:'#f00',fontSize:18,color:'#0F0'}}>11111ab<strong><b>cd</b></strong></span>
+    </div>
   </canvas>,
   '#test'
 );

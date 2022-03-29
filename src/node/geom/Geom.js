@@ -43,7 +43,7 @@ const {
     NODE_CACHE,
   }
 } = enums;
-const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
+const { PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA, GRADIENT } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { WEBGL } = mode;
@@ -378,7 +378,7 @@ class Geom extends Xom {
         let res = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
-            if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+            if(item[0] && item[1] === GRADIENT) {
               if(renderMode === WEBGL) {
                 let cache = this.__config[NODE_CACHE];
                 x3 += cache.dx;
@@ -386,10 +386,10 @@ class Geom extends Xom {
                 y3 += cache.dy;
                 y4 += cache.dy;
               }
-              res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
+              res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]));
             }
-            else if(item[3] > 0) {
-              res.push(int2rgba(item));
+            else if(item[1] === RGBA && item[0][3] > 0) {
+              res.push(int2rgba(item[0]));
             }
             else {
               res.push('none');

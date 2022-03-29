@@ -152,7 +152,7 @@ const {
     NODE_CACHE_AS_BITMAP,
   }
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, VMAX, VMIN, DEG } = unit;
+const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
 const { calRelative } = css;
 const { GEOM } = change;
@@ -1178,7 +1178,7 @@ class Xom extends Node {
           return null;
         }
         // 防止隐藏不加载背景图
-        if(util.isString(bgi)) {
+        if(bgi[1] === STRING) {
           let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
           let cache = inject.IMG[BACKGROUND_IMAGE];
           if(cache && cache.state === inject.LOADED) {
@@ -1220,7 +1220,7 @@ class Xom extends Node {
           }
           return true;
         }
-        else if(!isInline && bgi.k) {
+        else if(!isInline && bgi[0] && bgi[1] === GRADIENT) {
           // gradient在渲染时才生成
           return true;
         }
@@ -1374,21 +1374,41 @@ class Xom extends Node {
       computedStyle[FONT_STYLE] = currentStyle[FONT_STYLE][0];
     }
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
-    if(currentStyle[COLOR][1] === INHERIT) {
-      computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
-      __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+    let color = currentStyle[COLOR];
+    if(color[1] === INHERIT) {
+      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
+      if(color[1] === GRADIENT) {
+        __cacheStyle[COLOR] = true; // 渲染生成
+      }
+      else {
+        __cacheStyle[COLOR] = int2rgba(v);
+      }
     }
     else if(isNil(__cacheStyle[COLOR])) {
-      computedStyle[COLOR] = rgba2int(currentStyle[COLOR][0]);
-      __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+      if(color[1] === GRADIENT) {
+        __cacheStyle[COLOR] = true; // 渲染生成
+      }
+      else if(color[1] === RGBA) {
+        __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color[0]));
+      }
     }
-    if(currentStyle[TEXT_STROKE_COLOR][1] === INHERIT) {
-      computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
-      __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+    let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
+    if(textStrokeColor[1] === INHERIT) {
+      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      if(textStrokeColor[1] === GRADIENT) {
+        __cacheStyle[TEXT_STROKE_COLOR] = true;
+      }
+      else {
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(v);
+      }
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
-      computedStyle[TEXT_STROKE_COLOR] = rgba2int(currentStyle[TEXT_STROKE_COLOR][0]);
-      __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+      if(textStrokeColor[1] === GRADIENT) {
+        __cacheStyle[TEXT_STROKE_COLOR] = true;
+      }
+      else if(textStrokeColor[1] === RGBA) {
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor[0]));
+      }
     }
     if(currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
       computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : 0;
@@ -1715,9 +1735,9 @@ class Xom extends Node {
     }
     res.dx = dx;
     res.dy = dy;
-    // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+    // 计算好cacheStyle的内容，以及位图缓存指数，在canvas模式时已经提前算好
     let bx1, by1, bx2, by2;
-    if(cache && renderMode === CANVAS) {
+    if(renderMode === CANVAS) {
       bx1 = this.__bx1;
       bx2 = this.__bx2;
       by1 = this.__by1;
@@ -1999,9 +2019,9 @@ class Xom extends Node {
               return;
             }
             i = length - 1 - i;
-            if(util.isString(bgi)) {
+            if(bgi[1] === STRING) {
               let loadBgi = this.__loadBgi[i];
-              if(loadBgi.url === backgroundImage[i]) {
+              if(loadBgi.url === bgi[0]) {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx || ctx, loadBgi,
                   0, 0, iw, ih, btlr, btrr, bbrr, bblr,
                   currentStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
@@ -2010,8 +2030,8 @@ class Xom extends Node {
                 }
               }
             }
-            else if(bgi.k) {
-              let gd = this.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
+            else if(bgi[0] && bgi[1] === GRADIENT) {
+              let gd = this.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi[0], dx, dy);
               if(gd) {
                 if(gd.k === 'conic') {
                   gradient.renderConic(this, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight,
@@ -2246,16 +2266,16 @@ class Xom extends Node {
           return;
         }
         i = length - 1 - i;
-        if(util.isString(bgi)) {
+        if(bgi[1] === STRING) {
           let loadBgi = this.__loadBgi[i];
-          if(loadBgi.url === backgroundImage[i]) {
+          if(loadBgi.url === bgi[0]) {
             bg.renderImage(this, renderMode, ctx, loadBgi,
               bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
               currentStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
           }
         }
-        else if(bgi.k) {
-          let gd = this.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
+        else if(bgi[0] && bgi[1] === GRADIENT) {
+          let gd = this.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi[0], dx, dy);
           if(gd) {
             if(gd.k === 'conic') {
               gradient.renderConic(this, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1,

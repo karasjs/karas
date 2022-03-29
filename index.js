@@ -712,6 +712,8 @@
     VH: 11,
     VMAX: 12,
     VMIN: 13,
+    GRADIENT: 14,
+    // 特殊格式，color/fill/stroke用给ctx传值
 
     /**
      * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
@@ -758,12 +760,8 @@
         blr: 0.9052734375,
         // base-line ratio，1854/2048
         // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-        lgr: 0.03271484375,
-        // line-gap ratio，67/2048，默认0
-        // 个别字符误差，初次之外误差还有根据经验得的比例系数，https://github.com/karasjs/karas/issues/145
-        padding: {// 1: 1,
-          // f: 0.9,
-        }
+        lgr: 0.03271484375 // line-gap ratio，67/2048，默认0
+
       },
       helvetica: {
         lhr: 1.14990234375,
@@ -782,18 +780,8 @@
       tahoma: {
         lhr: 1.20703125,
         // (0+2049+423)/2048
-        blr: 1.00048828125,
-        // 2049/2048
-        padding: {
-          S: 1,
-          T: 1,
-          Z: 1,
-          c: 1,
-          f: 0.7,
-          i: 1,
-          l: 1,
-          t: 0.9
-        }
+        blr: 1.00048828125 // 2049/2048
+
       },
       georgia: {
         lhr: 1.13623046875,
@@ -810,19 +798,13 @@
       'pingfang sc': {
         lhr: 1.4,
         // (0+1060+340)/1000
-        blr: 1.06,
-        // 1060/1000
-        padding: {
-          f: 0.5
-        }
+        blr: 1.06 // 1060/1000
+
       },
       simsun: {
         lhr: 1.4,
         // (0+1060+340)/1000
-        blr: 1.06,
-        padding: {
-          f: 0.5
-        }
+        blr: 1.06
       }
     },
     support: function support(fontFamily) {
@@ -837,14 +819,11 @@
           _ref$descent = _ref.descent,
           descent = _ref$descent === void 0 ? 434 : _ref$descent,
           _ref$lineGap = _ref.lineGap,
-          lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap,
-          _ref$padding = _ref.padding,
-          padding = _ref$padding === void 0 ? {} : _ref$padding;
+          lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
 
       this.info[name.toLowerCase()] = {
         lhr: (ascent + descent + lineGap) / emSquare,
-        blr: ascent / emSquare,
-        padding: padding
+        blr: ascent / emSquare
       };
     },
     hasRegister: function hasRegister(fontFamily) {
@@ -6607,8 +6586,7 @@
       calUnit = o.calUnit;
   var d2r$1 = geom.d2r;
   var canvasPolygon$2 = painter.canvasPolygon;
-  var FONT_SIZE$2 = enums.STYLE_KEY.FONT_SIZE,
-      NODE_DEFS_CACHE = enums.NODE_KEY.NODE_DEFS_CACHE;
+  var FONT_SIZE$2 = enums.STYLE_KEY.FONT_SIZE;
 
   function getLinearDeg(v) {
     var deg = 180;
@@ -7859,7 +7837,8 @@
   };
 
   var STYLE_KEY$1 = enums.STYLE_KEY;
-  var KEY_COLOR = [[STYLE_KEY$1.BACKGROUND_COLOR], [STYLE_KEY$1.BORDER_BOTTOM_COLOR], [STYLE_KEY$1.BORDER_LEFT_COLOR], [STYLE_KEY$1.BORDER_RIGHT_COLOR], [STYLE_KEY$1.BORDER_TOP_COLOR], [STYLE_KEY$1.COLOR], [STYLE_KEY$1.TEXT_STROKE_COLOR]];
+  var KEY_COLOR = [[STYLE_KEY$1.BACKGROUND_COLOR], [STYLE_KEY$1.BORDER_BOTTOM_COLOR], [STYLE_KEY$1.BORDER_LEFT_COLOR], [STYLE_KEY$1.BORDER_RIGHT_COLOR], [STYLE_KEY$1.BORDER_TOP_COLOR], [STYLE_KEY$1.COLOR], // 这2个特殊，新增GRADIENT渐变色
+  [STYLE_KEY$1.TEXT_STROKE_COLOR]];
   var KEY_LENGTH = [[STYLE_KEY$1.FONT_SIZE], [STYLE_KEY$1.BORDER_BOTTOM_WIDTH], [STYLE_KEY$1.BORDER_LEFT_WIDTH], [STYLE_KEY$1.BORDER_RIGHT_WIDTH], [STYLE_KEY$1.BORDER_TOP_WIDTH], [STYLE_KEY$1.LEFT], [STYLE_KEY$1.TOP], [STYLE_KEY$1.RIGHT], [STYLE_KEY$1.BOTTOM], [STYLE_KEY$1.FLEX_BASIS], [STYLE_KEY$1.WIDTH], [STYLE_KEY$1.HEIGHT], [STYLE_KEY$1.LINE_HEIGHT], [STYLE_KEY$1.MARGIN_BOTTOM], [STYLE_KEY$1.MARGIN_LEFT], [STYLE_KEY$1.MARGIN_TOP], [STYLE_KEY$1.MARGIN_RIGHT], [STYLE_KEY$1.PADDING_TOP], [STYLE_KEY$1.PADDING_RIGHT], [STYLE_KEY$1.PADDING_BOTTOM], [STYLE_KEY$1.PADDING_LEFT], [STYLE_KEY$1.STROKE_WIDTH], [STYLE_KEY$1.STROKE_MITERLIMIT], [STYLE_KEY$1.LETTER_SPACING], [STYLE_KEY$1.PERSPECTIVE], [STYLE_KEY$1.TEXT_STROKE_WIDTH]];
   var KEY_GRADIENT = [[STYLE_KEY$1.BACKGROUND_IMAGE], [STYLE_KEY$1.FILL], [STYLE_KEY$1.STROKE]];
   var KEY_RADIUS = [[STYLE_KEY$1.BORDER_TOP_LEFT_RADIUS], [STYLE_KEY$1.BORDER_TOP_RIGHT_RADIUS], [STYLE_KEY$1.BORDER_BOTTOM_RIGHT_RADIUS], [STYLE_KEY$1.BORDER_BOTTOM_LEFT_RADIUS]];
@@ -8059,6 +8038,7 @@
       VH$2 = o.VH,
       VMAX$2 = o.VMAX,
       VMIN$2 = o.VMIN,
+      GRADIENT = o.GRADIENT,
       calUnit$1 = o.calUnit;
   var isNil$3 = util.isNil,
       rgba2int$2 = util.rgba2int,
@@ -8245,20 +8225,20 @@
           }
 
           if (reg.gradient.test(item)) {
-            return gradient$1.parseGradient(item);
+            return [gradient$1.parseGradient(item), GRADIENT];
           }
 
           if (reg.img.test(item)) {
-            return reg.img.exec(item)[2];
+            return [reg.img.exec(item)[2], STRING];
           }
 
           return null;
         });
       } // 区分是渐变色还是图
       else if (reg.gradient.test(temp)) {
-        res[BACKGROUND_IMAGE] = [gradient$1.parseGradient(temp)];
+        res[BACKGROUND_IMAGE] = [[gradient$1.parseGradient(temp), GRADIENT]];
       } else if (reg.img.test(temp)) {
-        res[BACKGROUND_IMAGE] = [reg.img.exec(temp)[2]];
+        res[BACKGROUND_IMAGE] = [[reg.img.exec(temp)[2], STRING]];
       } else {
         res[BACKGROUND_IMAGE] = [null];
       }
@@ -8721,6 +8701,8 @@
     if (temp !== undefined) {
       if (temp === 'inherit') {
         res[COLOR$1] = [[], INHERIT$1];
+      } else if (reg.gradient.test(temp)) {
+        res[COLOR$1] = [gradient$1.parseGradient(temp), GRADIENT];
       } else {
         res[COLOR$1] = [rgba2int$2(temp), RGBA];
       }
@@ -8731,6 +8713,8 @@
     if (temp !== undefined) {
       if (temp === 'inherit') {
         res[TEXT_STROKE_COLOR] = [[], INHERIT$1];
+      } else if (reg.gradient.test(temp)) {
+        res[TEXT_STROKE_COLOR] = [gradient$1.parseGradient(temp), GRADIENT];
       } else {
         res[TEXT_STROKE_COLOR] = [rgba2int$2(temp), RGBA];
       }
@@ -8910,25 +8894,25 @@
 
     if (temp !== undefined) {
       if (!temp) {
-        res[FILL] = ['none'];
+        res[FILL] = [['none', STRING]];
       } else if (Array.isArray(temp)) {
         if (temp.length) {
           res[FILL] = temp.map(function (item) {
             if (!item) {
-              return 'none';
+              return ['none', STRING];
             } else if (reg.gradient.test(item)) {
-              return gradient$1.parseGradient(item);
+              return [gradient$1.parseGradient(item), GRADIENT];
             } else {
-              return rgba2int$2(item);
+              return [rgba2int$2(item), RGBA];
             }
           });
         } else {
-          res[FILL] = ['none'];
+          res[FILL] = [['none', STRING]];
         }
       } else if (reg.gradient.test(temp)) {
-        res[FILL] = [gradient$1.parseGradient(temp)];
+        res[FILL] = [[gradient$1.parseGradient(temp), GRADIENT]];
       } else {
-        res[FILL] = [rgba2int$2(temp)];
+        res[FILL] = [[rgba2int$2(temp), RGBA]];
       }
     }
 
@@ -8936,25 +8920,25 @@
 
     if (temp !== undefined) {
       if (!temp) {
-        res[STROKE] = ['none'];
+        res[STROKE] = [['none', STRING]];
       } else if (Array.isArray(temp)) {
         if (temp.length) {
           res[STROKE] = temp.map(function (item) {
             if (!item) {
-              return 'none';
+              return ['none', STRING];
             } else if (reg.gradient.test(item)) {
-              return gradient$1.parseGradient(item);
+              return [gradient$1.parseGradient(item), GRADIENT];
             } else {
-              return rgba2int$2(item);
+              return [gradient$1.parseGradient(item), GRADIENT];
             }
           });
         } else {
-          res[STROKE] = ['none'];
+          res[STROKE] = [['none', STRING]];
         }
       } else if (reg.gradient.test(temp)) {
-        res[STROKE] = [gradient$1.parseGradient(temp)];
+        res[STROKE] = [[gradient$1.parseGradient(temp), GRADIENT]];
       } else {
-        res[STROKE] = [rgba2int$2(temp)];
+        res[STROKE] = [[rgba2int$2(temp), RGBA]];
       }
     }
 
@@ -9528,11 +9512,23 @@
 
     if (k === BOX_SHADOW) {
       return equalArr$1(a, b);
+    } // color等是rgba颜色时
+
+
+    if (k === COLOR$1 || k === TEXT_STROKE_COLOR) {
+      if (a[1] !== b[1]) {
+        return false;
+      }
+
+      if (a[1] === RGBA) {
+        return equalArr$1(a[0], b[0]);
+      }
     }
 
     if (COLOR_HASH$1.hasOwnProperty(k)) {
       return a[1] === b[1] && equalArr$1(a[0], b[0]);
-    }
+    } // color/fill等是gradient时
+
 
     if (GRADIENT_HASH$1.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE$1.hasOwnProperty(a.k)) {
       var av = a.v;
@@ -9581,7 +9577,7 @@
 
   var VALUE = (_VALUE = {}, _defineProperty(_VALUE, POSITION, true), _defineProperty(_VALUE, DISPLAY, true), _defineProperty(_VALUE, STYLE_KEY$3.BACKGROUND_REPEAT, true), _defineProperty(_VALUE, FLEX_DIRECTION, true), _defineProperty(_VALUE, FLEX_GROW, true), _defineProperty(_VALUE, FLEX_SHRINK, true), _defineProperty(_VALUE, FLEX_WRAP, true), _defineProperty(_VALUE, JUSTIFY_CONTENT, true), _defineProperty(_VALUE, ALIGN_ITEMS, true), _defineProperty(_VALUE, ALIGN_SELF, true), _defineProperty(_VALUE, STYLE_KEY$3.OVERFLOW, true), _defineProperty(_VALUE, STYLE_KEY$3.MIX_BLEND_MODE, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINECAP, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_LINEJOIN, true), _defineProperty(_VALUE, STYLE_KEY$3.STROKE_MITERLIMIT, true), _defineProperty(_VALUE, STYLE_KEY$3.FILL_RULE, true), _defineProperty(_VALUE, OPACITY, true), _defineProperty(_VALUE, Z_INDEX, true), _defineProperty(_VALUE, BACKGROUND_CLIP, true), _defineProperty(_VALUE, TEXT_OVERFLOW, true), _defineProperty(_VALUE, LINE_CLAMP, true), _VALUE); // 仅1维数组
 
-  var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, COLOR$1, true), _defineProperty(_ARRAY_, TEXT_STROKE_COLOR, true), _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_); // 仅2维数组且只有2个值
+  var ARRAY_0 = (_ARRAY_ = {}, _defineProperty(_ARRAY_, BACKGROUND_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_TOP_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_RIGHT_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_BOTTOM_COLOR, true), _defineProperty(_ARRAY_, STYLE_KEY$3.BORDER_LEFT_COLOR, true), _ARRAY_); // 仅2维数组且只有2个值
 
   var ARRAY_0_1 = (_ARRAY_0_ = {}, _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS, true), _defineProperty(_ARRAY_0_, STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS, true), _defineProperty(_ARRAY_0_, TRANSFORM_ORIGIN$1, true), _defineProperty(_ARRAY_0_, PERSPECTIVE_ORIGIN, true), _ARRAY_0_);
 
@@ -9604,22 +9600,23 @@
 
       if (k === BACKGROUND_IMAGE) {
         res[k] = v.map(function (item) {
-          // 可能为null
-          if (item && item.k) {
-            return util.clone(item);
+          if (item[1] === GRADIENT) {
+            return [util.clone(item[0]), item[1]];
           } else {
             return item;
           }
         });
       } else if (k === FILL || k === STROKE) {
         res[k] = v.map(function (item) {
-          // 渐变
-          // 可能非法为空
-          if (item && item.k) {
-            return util.clone(item);
+          // 渐变可能非法为空
+          if (item[1] === GRADIENT) {
+            return [util.clone(item[0]), item[1]];
           } // 颜色
+          else if (item[1] === RGBA) {
+            return [item[0].slice(0), item[1]];
+          } // none
           else {
-            return item.slice(0);
+            return item;
           }
         });
       } else if (k === TRANSFORM || k === FILTER) {
@@ -9647,6 +9644,14 @@
           res[k] = v.map(function (item) {
             return item.slice(0);
           });
+        }
+      } else if (k === COLOR$1 || k === TEXT_STROKE_COLOR) {
+        if (v) {
+          if (v[1] === GRADIENT) {
+            res[k] = [util.clone(v[0]), v[1]];
+          } else if (v[1] === RGBA) {
+            res[k] = [v[0].slice(0), v[1]];
+          }
         }
       } // position等直接值类型赋值
       else if (VALUE.hasOwnProperty(k)) {
@@ -15940,7 +15945,7 @@
       BACKGROUND_POSITION_X$1 = _enums$STYLE_KEY$b.BACKGROUND_POSITION_X,
       BACKGROUND_POSITION_Y$1 = _enums$STYLE_KEY$b.BACKGROUND_POSITION_Y,
       FONT_SIZE$7 = _enums$STYLE_KEY$b.FONT_SIZE,
-      NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
+      NODE_DEFS_CACHE = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$2 = util.clone,
       joinArr$1 = util.joinArr;
   var canvasPolygon$3 = painter.canvasPolygon,
@@ -16034,7 +16039,7 @@
           }]
         };
 
-        xom.__config[NODE_DEFS_CACHE$1].push(v);
+        xom.__config[NODE_DEFS_CACHE].push(v);
 
         return ctx.add(v);
       } else {
@@ -16348,7 +16353,7 @@
           };
           var id = ctx.add(v);
 
-          __config[NODE_DEFS_CACHE$1].push(v);
+          __config[NODE_DEFS_CACHE].push(v);
 
           props.push(['clip-path', 'url(#' + id + ')']);
         }
@@ -16364,7 +16369,7 @@
             }]
           };
 
-          xom.__config[NODE_DEFS_CACHE$1].push(_v);
+          xom.__config[NODE_DEFS_CACHE].push(_v);
 
           repeat.forEach(function (item) {
             var copy = clone$2(props);
@@ -16886,12 +16891,12 @@
       VH$6 = o.VH,
       VMAX$6 = o.VMAX,
       VMIN$6 = o.VMIN,
+      GRADIENT$1 = o.GRADIENT,
       calUnit$2 = o.calUnit;
   var isNil$5 = util.isNil,
       isFunction$4 = util.isFunction,
       isNumber$1 = util.isNumber,
       isObject$1 = util.isObject,
-      isString$1 = util.isString,
       clone$3 = util.clone,
       equalArr$2 = util.equalArr;
   var linear = easing.linear;
@@ -17432,151 +17437,28 @@
         var _pi3 = p[_i4],
             _ni3 = n[_i4];
 
-        if (!_pi3 || !_ni3 || isString$1(_pi3) || isString$1(_ni3)) {
+        if (!_pi3 || !_ni3 || _pi3[1] !== _ni3[1]) {
           res[1].push(null);
           continue;
         }
 
-        if (_pi3.k !== _ni3.k) {
-          res[1].push(null);
-          continue;
-        }
-
+        var isGradient = _pi3[1] === GRADIENT$1;
+        _pi3 = _pi3[0];
+        _ni3 = _ni3[0];
         var _temp = []; // 渐变
 
-        if (_pi3.k === 'linear' || _pi3.k === 'radial' || _pi3.k === 'conic') {
-          var pv = _pi3.v;
-          var nv = _ni3.v;
-          _temp[0] = [];
-          var clientWidth = target.clientWidth;
-          var eq = equalArr$2(pv, nv);
+        if (isGradient) {
+          var r = calDiffGradient(_pi3, _ni3, target);
 
-          for (var _i5 = 0, _len = Math.min(pv.length, nv.length); _i5 < _len; _i5++) {
-            var _a = pv[_i5];
-            var _b = nv[_i5];
-            var t = [];
-            t.push([_b[0][0] - _a[0][0], _b[0][1] - _a[0][1], _b[0][2] - _a[0][2], _b[0][3] - _a[0][3]]);
-
-            if (_a[1] && _b[1]) {
-              if (_a[1][1] === _b[1][1]) {
-                t.push(_b[1][0] - _a[1][0]);
-              } else {
-                var _v8 = calByUnit(_a[1], _b[1], clientWidth, target.root);
-
-                t.push(_v8 || 0);
-              }
-            }
-
-            _temp[0].push(t);
-          } // 线性渐变有角度差值变化
-
-
-          if (_pi3.k === 'linear') {
-            var isArrP = Array.isArray(_pi3.d);
-            var isArrN = Array.isArray(_ni3.d);
-
-            if (isArrN !== isArrP) {
-              res[1].push(null);
-              continue;
-            }
-
-            if (isArrP) {
-              var _v9 = [_ni3.d[0] - _pi3.d[0], _ni3.d[1] - _pi3.d[1], _ni3.d[2] - _pi3.d[2], _ni3.d[3] - _pi3.d[3]];
-
-              if (eq && equalArr$2(_v9, [0, 0, 0, 0])) {
-                res[1].push(null);
-                continue;
-              }
-
-              _temp[1] = _v9;
-            } else {
-              var _v10 = _ni3.d - _pi3.d;
-
-              if (eq && _v10 === 0) {
-                res[1].push(null);
-                continue;
-              }
-
-              _temp[1] = _v10;
-            }
-          } // 径向渐变的位置
-          else if (_pi3.k === 'radial') {
-            var _isArrP = Array.isArray(_pi3.z);
-
-            var _isArrN = Array.isArray(_ni3.z);
-
-            if (_isArrN !== _isArrP) {
-              res[1].push(null);
-              continue;
-            }
-
-            if (_isArrP) {
-              _temp[2] = [];
-
-              for (var _i6 = 0; _i6 < 5; _i6++) {
-                var pz = _pi3.z[_i6]; // 半径比例省略为1
-
-                if (pz === undefined) {
-                  pz = 1;
-                }
-
-                var nz = _ni3.z[_i6];
-
-                if (nz === undefined) {
-                  nz = 1;
-                }
-
-                _temp[2].push(nz - pz);
-              }
-
-              if (eq && equalArr$2(res[4], [0, 0, 0, 0, 0])) {
-                res[1].push(null);
-              }
-            } else {
-              _temp[2] = [];
-
-              for (var _i7 = 0; _i7 < 2; _i7++) {
-                var _pp = _pi3.p[_i7];
-                var np = _ni3.p[_i7];
-
-                if (_pp[1] === np[1]) {
-                  _temp[2].push(np[0] - _pp[0]);
-                } else {
-                  var _v11 = calByUnit(_pp, np, target[_i7 ? 'clientWidth' : 'clientHeight'], target.root);
-
-                  _temp[2].push(_v11 || 0);
-                }
-              }
-
-              if (eq && equalArr$2(res[3], [0, 0])) {
-                res[1].push(null);
-              }
-            }
-          } else if (_pi3.k === 'conic') {
-            _temp[1].push(n.d - p.d);
-
-            _temp[2] = [];
-
-            for (var _i8 = 0; _i8 < 2; _i8++) {
-              var _pp2 = p.p[_i8];
-              var _np = n.p[_i8];
-
-              if (_pp2[1] === _np[1]) {
-                _temp[2].push(_np[0] - _pp2[0]);
-              } else {
-                var _v12 = calByUnit(_pp2, _np, target[_i8 ? 'clientWidth' : 'clientHeight'], target.root);
-
-                _temp[2].push(_v12 || 0);
-              }
-            }
-
-            if (eq && res[2] !== 0 && equalArr$2(res[3], [0, 0])) {
-              res[1].push(null);
-            }
+          if (!r) {
+            res[1].push(null);
+            continue;
           }
+
+          _temp = r;
         } // 纯色
         else {
-          if (equalArr$2(n, _pi3)) {
+          if (equalArr$2(_ni3, _pi3)) {
             res[1].push(null);
           }
 
@@ -17586,14 +17468,32 @@
         res[1].push(_temp);
       }
     } else if (COLOR_HASH$2.hasOwnProperty(k)) {
+      if (n[1] !== p[1]) {
+        return;
+      } // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
+
+
+      var _isGradient = n[1] === GRADIENT$1;
+
       n = n[0];
       p = p[0];
 
-      if (equalArr$2(n, p) || n[3] === 0 && p[3] === 0) {
-        return;
-      }
+      if (_isGradient) {
+        var _r = calDiffGradient(p, n, target);
 
-      res[1] = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
+        if (!_r) {
+          return;
+        }
+
+        res[1] = _r;
+      } else {
+        // 透明变化无视
+        if (equalArr$2(n, p) || n[3] === 0 && p[3] === 0) {
+          return;
+        }
+
+        res[1] = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
+      }
     } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
       // x/y都相等无需
       if (n[0][0] === p[0][0] && n[0][1] === p[0][1] && n[1][0] === p[1][0] && n[1][1] === p[1][1]) {
@@ -17602,13 +17502,13 @@
 
       res[1] = [];
 
-      for (var _i9 = 0; _i9 < 2; _i9++) {
-        if (n[_i9][1] === p[_i9][1]) {
-          res[1].push(n[_i9][0] - p[_i9][0]);
+      for (var _i5 = 0; _i5 < 2; _i5++) {
+        if (n[_i5][1] === p[_i5][1]) {
+          res[1].push(n[_i5][0] - p[_i5][0]);
         } else {
-          var _v13 = calByUnit(p[_i9], n[_i9], target[_i9 ? 'outerHeight' : 'outerWidth'], target.root);
+          var _v8 = calByUnit(p[_i5], n[_i5], target[_i5 ? 'outerHeight' : 'outerWidth'], target.root);
 
-          res[1].push(_v13 || 0);
+          res[1].push(_v8 || 0);
         }
       }
     } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
@@ -17656,8 +17556,8 @@
         if (target.isMulti) {
           var arr = [];
 
-          for (var _i10 = 0, _len2 = Math.min(p.length, n.length); _i10 < _len2; _i10++) {
-            arr.push(fn(p[_i10], n[_i10]));
+          for (var _i6 = 0, _len = Math.min(p.length, n.length); _i6 < _len; _i6++) {
+            arr.push(fn(p[_i6], n[_i6]));
           }
 
           return arr;
@@ -17673,18 +17573,18 @@
 
           res[1] = [];
 
-          for (var _i11 = 0, _len3 = Math.min(p.length, n.length); _i11 < _len3; _i11++) {
-            var _pv3 = p[_i11];
-            var _nv3 = n[_i11];
+          for (var _i7 = 0, _len2 = Math.min(p.length, n.length); _i7 < _len2; _i7++) {
+            var pv = p[_i7];
+            var nv = n[_i7];
 
-            if (isNil$5(_pv3) || !_pv3.length || isNil$5(_nv3) || !_nv3.length) {
+            if (isNil$5(pv) || !pv.length || isNil$5(nv) || !nv.length) {
               res[1].push(null);
             } else {
               var v2 = [];
 
-              for (var _j3 = 0, len2 = Math.min(_pv3.length, _nv3.length); _j3 < len2; _j3++) {
-                var pv2 = _pv3[_j3];
-                var nv2 = _nv3[_j3];
+              for (var _j3 = 0, len2 = Math.min(pv.length, nv.length); _j3 < len2; _j3++) {
+                var pv2 = pv[_j3];
+                var nv2 = nv[_j3];
 
                 if (isNil$5(pv2) || isNil$5(nv2)) {
                   v2.push(null);
@@ -17716,14 +17616,14 @@
 
           res[1] = [];
 
-          for (var _i12 = 0, _len4 = Math.min(p.length, n.length); _i12 < _len4; _i12++) {
-            var _pv4 = p[_i12];
-            var _nv4 = n[_i12];
+          for (var _i8 = 0, _len3 = Math.min(p.length, n.length); _i8 < _len3; _i8++) {
+            var _pv3 = p[_i8];
+            var _nv3 = n[_i8];
 
-            if (isNil$5(_pv4) || !_pv4.length || isNil$5(_nv4) || !_nv4.length) {
+            if (isNil$5(_pv3) || !_pv3.length || isNil$5(_nv3) || !_nv3.length) {
               res[1].push(null);
             } else {
-              res[1].push([_nv4[0] - _pv4[0], _nv4[1] - _pv4[1]]);
+              res[1].push([_nv3[0] - _pv3[0], _nv3[1] - _pv3[1]]);
             }
           }
         } else {
@@ -17731,20 +17631,20 @@
             return;
           }
 
-          var _v14 = [];
+          var _v9 = [];
 
-          for (var _i13 = 0, _len5 = Math.min(p.length, n.length); _i13 < _len5; _i13++) {
-            var _pv5 = p[_i13];
-            var _nv5 = n[_i13];
+          for (var _i9 = 0, _len4 = Math.min(p.length, n.length); _i9 < _len4; _i9++) {
+            var _pv4 = p[_i9];
+            var _nv4 = n[_i9];
 
-            if (isNil$5(_pv5) || isNil$5(_nv5)) {
-              _v14.push(0);
+            if (isNil$5(_pv4) || isNil$5(_nv4)) {
+              _v9.push(0);
             }
 
-            _v14.push(_nv5 - _pv5);
+            _v9.push(_nv4 - _pv4);
           }
 
-          res[1] = _v14;
+          res[1] = _v9;
         }
       } // 非multi特殊处理这几类数组类型数据
       else if (k === 'points' || k === 'controls') {
@@ -17754,27 +17654,27 @@
 
         res[1] = [];
 
-        for (var _i14 = 0, _len6 = Math.min(p.length, n.length); _i14 < _len6; _i14++) {
-          var _pv6 = p[_i14];
-          var _nv6 = n[_i14];
+        for (var _i10 = 0, _len5 = Math.min(p.length, n.length); _i10 < _len5; _i10++) {
+          var _pv5 = p[_i10];
+          var _nv5 = n[_i10];
 
-          if (isNil$5(_pv6) || !_pv6.length || isNil$5(_nv6) || !_nv6.length) {
+          if (isNil$5(_pv5) || !_pv5.length || isNil$5(_nv5) || !_nv5.length) {
             res[1].push(null);
           } else {
-            var _v15 = [];
+            var _v10 = [];
 
-            for (var _j4 = 0, _len7 = Math.max(_pv6.length, _nv6.length); _j4 < _len7; _j4++) {
-              var _pv7 = _pv6[_j4];
-              var _nv7 = _nv6[_j4]; // control由4点变2点
+            for (var _j4 = 0, _len6 = Math.max(_pv5.length, _nv5.length); _j4 < _len6; _j4++) {
+              var _pv6 = _pv5[_j4];
+              var _nv6 = _nv5[_j4]; // control由4点变2点
 
-              if (isNil$5(_pv7) || isNil$5(_nv7)) {
-                _v15.push(0);
+              if (isNil$5(_pv6) || isNil$5(_nv6)) {
+                _v10.push(0);
               } else {
-                _v15.push(_nv7 - _pv7);
+                _v10.push(_nv6 - _pv6);
               }
             }
 
-            res[1].push(_v15);
+            res[1].push(_v10);
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
@@ -17841,6 +17741,136 @@
     }
 
     return res;
+  } // 渐变的差异计算
+
+
+  function calDiffGradient(p, n, target) {
+    if (p.k !== n.k || !GRADIENT_TYPE$2.hasOwnProperty(p.k)) {
+      return;
+    }
+
+    var pv = p.v;
+    var nv = n.v;
+    var temp = [[]];
+    var eq = equalArr$2(pv, nv); // 渐变值部分是通用的
+
+    for (var i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
+      var a = pv[i];
+      var b = nv[i];
+      var t = [];
+      t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
+
+      if (a[1] && b[1]) {
+        if (a[1][1] === b[1][1]) {
+          t.push(b[1][0] - a[1][0]);
+        } else {
+          var v = calByUnit(a[1], b[1], target.clientWidth, target.root);
+          t.push(v || 0);
+        }
+      }
+
+      temp[0].push(t);
+    }
+
+    if (p.k === 'linear') {
+      var isArrP = Array.isArray(p.d);
+      var isArrN = Array.isArray(n.d);
+
+      if (isArrN !== isArrP) {
+        return;
+      }
+
+      if (isArrP) {
+        var _v11 = [n.d[0] - p.d[0], n.d[1] - p.d[1], n.d[2] - p.d[2], n.d[3] - p.d[3]];
+
+        if (eq && equalArr$2(_v11, [0, 0, 0, 0])) {
+          return;
+        }
+
+        temp[1] = _v11;
+      } else {
+        var _v12 = n.d - p.d; // 颜色角度都没变化
+
+
+        if (eq && _v12 === 0) {
+          return;
+        }
+
+        temp[1] = _v12;
+      }
+    } else if (p.k === 'radial') {
+      var _isArrP = Array.isArray(p.z);
+
+      var _isArrN = Array.isArray(n.z);
+
+      if (_isArrN !== _isArrP) {
+        return;
+      }
+
+      temp[2] = []; // sketch中a点到b点特殊格式表达，z是数组忽略p和s
+
+      if (_isArrP) {
+        // 距离中心外形全等
+        if (eq && equalArr$2(p.z, n.z)) {
+          return;
+        }
+
+        for (var _i11 = 0; _i11 < 5; _i11++) {
+          var pz = p.z[_i11]; // 半径比例省略为1
+
+          if (pz === undefined) {
+            pz = 1;
+          }
+
+          var nz = n.z[_i11];
+
+          if (nz === undefined) {
+            nz = 1;
+          }
+
+          temp[2].push(nz - pz);
+        }
+      } else {
+        if (eq && p.z === n.z && p.s === n.s && equalArr$2(p.p, n.p)) {
+          return;
+        }
+
+        for (var _i12 = 0; _i12 < 2; _i12++) {
+          var pp = p.p[_i12];
+          var np = n.p[_i12];
+
+          if (pp[1] === np[1]) {
+            temp[2].push(np[0] - pp[0]);
+          } else {
+            var _v13 = calByUnit(pp, np, target[_i12 ? 'clientWidth' : 'clientHeight'], target.root);
+
+            temp[2].push(_v13 || 0);
+          }
+        }
+      }
+    } else if (p.k === 'conic') {
+      if (eq && p.d === n.d && equalArr$2(p.p, n.p)) {
+        return;
+      }
+
+      temp[1] = n.d - p.d;
+      temp[2] = [];
+
+      for (var _i13 = 0; _i13 < 2; _i13++) {
+        var _pp = p.p[_i13];
+        var _np = n.p[_i13];
+
+        if (_pp[1] === _np[1]) {
+          temp[2].push(_np[0] - _pp[0]);
+        } else {
+          var _v14 = calByUnit(_pp, _np, target[_i13 ? 'clientWidth' : 'clientHeight'], target.root);
+
+          temp[2].push(_v14 || 0);
+        }
+      }
+    }
+
+    return temp;
   } // 计算两帧之间不相同的变化，存入transition，相同的忽略
 
 
@@ -17936,8 +17966,8 @@
           st = style[k] = [[MATRIX$2, mx.identity()]];
         }
 
-        for (var _i15 = 0; _i15 < 16; _i15++) {
-          st[0][1][_i15] += v[_i15] * percent;
+        for (var _i14 = 0; _i14 < 16; _i14++) {
+          st[0][1][_i14] += v[_i14] * percent;
         }
       } // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
       else if (k === TRANSLATE_PATH$1) {
@@ -17989,8 +18019,8 @@
           }
         });
       } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
-        for (var _i16 = 0; _i16 < 2; _i16++) {
-          st[_i16][0] += v[_i16] * percent;
+        for (var _i15 = 0; _i15 < 2; _i15++) {
+          st[_i15][0] += v[_i15] * percent;
         }
       } else if (k === TRANSFORM_ORIGIN$3 || k === PERSPECTIVE_ORIGIN$2) {
         if (v[0] !== 0) {
@@ -18001,15 +18031,15 @@
           st[1][0] += v[1] * percent;
         }
       } else if (k === BOX_SHADOW$1) {
-        for (var _i17 = 0, _len8 = Math.min(st.length, v.length); _i17 < _len8; _i17++) {
+        for (var _i16 = 0, _len7 = Math.min(st.length, v.length); _i16 < _len7; _i16++) {
           // x/y/blur/spread
           for (var j = 0; j < 4; j++) {
-            st[_i17][j] += v[_i17][j] * percent;
+            st[_i16][j] += v[_i16][j] * percent;
           } // rgba
 
 
           for (var _j5 = 0; _j5 < 4; _j5++) {
-            st[_i17][4][_j5] += v[_i17][4][_j5] * percent;
+            st[_i16][4][_j5] += v[_i16][4][_j5] * percent;
           }
         }
       } else if (k === BACKGROUND_SIZE$1) {
@@ -18033,16 +18063,18 @@
             return;
           }
 
-          var _v16 = _slicedToArray(v2, 4),
-              c = _v16[0],
-              d = _v16[1],
-              p = _v16[2],
-              z = _v16[3];
+          if (st2[1] === GRADIENT$1 && GRADIENT_TYPE$2.hasOwnProperty(st2[0].k)) {
+            st2 = st2[0];
 
-          if (GRADIENT_TYPE$2.hasOwnProperty(st2.k)) {
-            for (var _i18 = 0, _len9 = Math.min(st2.v.length, c.length); _i18 < _len9; _i18++) {
-              var a = st2.v[_i18];
-              var b = c[_i18];
+            var _v15 = _slicedToArray(v2, 4),
+                c = _v15[0],
+                d = _v15[1],
+                p = _v15[2],
+                z = _v15[3];
+
+            for (var _i17 = 0, _len8 = Math.min(st2.v.length, c.length); _i17 < _len8; _i17++) {
+              var a = st2.v[_i17];
+              var b = c[_i17];
               a[0][0] += b[0][0] * percent;
               a[0][1] += b[0][1] * percent;
               a[0][2] += b[0][2] * percent;
@@ -18082,10 +18114,12 @@
             }
           } // fill纯色
           else {
-            st2[0] += c[0] * percent;
-            st2[1] += c[1] * percent;
-            st2[2] += c[2] * percent;
-            st2[3] += c[3] * percent;
+            st2 = st2[0];
+            var _c = v2[0];
+            st2[0] += _c[0] * percent;
+            st2[1] += _c[1] * percent;
+            st2[2] += _c[2] * percent;
+            st2[3] += _c[3] * percent;
           }
         });
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
@@ -18111,9 +18145,9 @@
           }
         } else if (target.isMulti) {
           if (k === 'points' || k === 'controls') {
-            for (var _i19 = 0, _len10 = Math.min(_st.length, v.length); _i19 < _len10; _i19++) {
-              var o = _st[_i19];
-              var n = v[_i19];
+            for (var _i18 = 0, _len9 = Math.min(_st.length, v.length); _i18 < _len9; _i18++) {
+              var o = _st[_i18];
+              var n = v[_i18];
 
               if (!isNil$5(o) && !isNil$5(n)) {
                 for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
@@ -18135,12 +18169,12 @@
               var st2 = _st[i];
 
               if (!isNil$5(item) && !isNil$5(st2)) {
-                for (var _i20 = 0, _len11 = Math.min(st2.length, item.length); _i20 < _len11; _i20++) {
-                  var _o = st2[_i20];
-                  var _n2 = item[_i20];
+                for (var _i19 = 0, _len10 = Math.min(st2.length, item.length); _i19 < _len10; _i19++) {
+                  var _o = st2[_i19];
+                  var _n2 = item[_i19];
 
                   if (!isNil$5(_o) && !isNil$5(_n2)) {
-                    st2[_i20] += _n2 * percent;
+                    st2[_i19] += _n2 * percent;
                   }
                 }
               }
@@ -18154,12 +18188,12 @@
           }
         } else {
           if (k === 'points' || k === 'controls') {
-            for (var _i21 = 0, _len12 = Math.min(_st.length, v.length); _i21 < _len12; _i21++) {
-              var _o2 = _st[_i21];
-              var _n3 = v[_i21];
+            for (var _i20 = 0, _len11 = Math.min(_st.length, v.length); _i20 < _len11; _i20++) {
+              var _o2 = _st[_i20];
+              var _n3 = v[_i20];
 
               if (!isNil$5(_o2) && !isNil$5(_n3)) {
-                for (var _j7 = 0, _len13 = Math.min(_o2.length, _n3.length); _j7 < _len13; _j7++) {
+                for (var _j7 = 0, _len12 = Math.min(_o2.length, _n3.length); _j7 < _len12; _j7++) {
                   if (!isNil$5(_o2[_j7]) && !isNil$5(_n3[_j7])) {
                     _o2[_j7] += _n3[_j7] * percent;
                   }
@@ -18400,8 +18434,8 @@
         var offset = -1;
         var tagName = target.tagName;
 
-        var _loop2 = function _loop2(_i22, _len14) {
-          var current = list[_i22];
+        var _loop2 = function _loop2(_i21, _len13) {
+          var current = list[_i21];
 
           if (current.hasOwnProperty('offset')) {
             current.offset = parseFloat(current.offset) || 0;
@@ -18409,19 +18443,19 @@
             current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-              list.splice(_i22, 1);
-              _i22--;
-              _len14--;
-              i = _i22;
-              len = _len14;
+              list.splice(_i21, 1);
+              _i21--;
+              _len13--;
+              i = _i21;
+              len = _len13;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
-              list.splice(_i22, 1);
-              _i22--;
-              _len14--;
-              i = _i22;
-              len = _len14;
+              list.splice(_i21, 1);
+              _i21--;
+              _len13--;
+              i = _i21;
+              len = _len13;
               return "continue";
             }
           } // 缩写处理
@@ -18438,8 +18472,8 @@
               delete current[k];
             }
           });
-          i = _i22;
-          len = _len14;
+          i = _i21;
+          len = _len13;
         };
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -18492,14 +18526,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i23 = 1, _len15 = list.length; _i23 < _len15; _i23++) {
-          var start = list[_i23]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i22 = 1, _len14 = list.length; _i22 < _len14; _i22++) {
+          var start = list[_i22]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i23 + 1;
+            var j = _i22 + 1;
 
-            for (; j < _len15; j++) {
+            for (; j < _len14; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -18507,16 +18541,16 @@
               }
             }
 
-            var num = j - _i23 + 1;
-            start = list[_i23 - 1];
+            var num = j - _i22 + 1;
+            start = list[_i22 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i23; k < j; k++) {
+            for (var k = _i22; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i23);
+              item.offset = start.offset + per * (k + 1 - _i22);
             }
 
-            _i23 = j;
+            _i22 = j;
           }
         }
 
@@ -18544,8 +18578,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i24 = 1; _i24 < length; _i24++) {
-          var next = frames[_i24];
+        for (var _i23 = 1; _i23 < length; _i23++) {
+          var next = frames[_i23];
           prev = calFrame(prev, next, keys, target, tagName);
         } // 反向存储帧的倒排结果
 
@@ -18556,8 +18590,8 @@
         });
         prev = framesR[0];
 
-        for (var _i25 = 1; _i25 < length; _i25++) {
-          var _next = framesR[_i25];
+        for (var _i24 = 1; _i24 < length; _i24++) {
+          var _next = framesR[_i24];
           prev = calFrame(prev, _next, keys, target, tagName);
         }
 
@@ -19562,7 +19596,7 @@
     return Animation;
   }(Event);
 
-  var NODE_DEFS_CACHE$2 = enums.NODE_KEY.NODE_DEFS_CACHE;
+  var NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var int2rgba$1 = util.int2rgba;
   var canvasPolygon$4 = painter.canvasPolygon,
       svgPolygon$3 = painter.svgPolygon;
@@ -19762,7 +19796,7 @@
               }]
             };
 
-            xom.__config[NODE_DEFS_CACHE$2].push(v);
+            xom.__config[NODE_DEFS_CACHE$1].push(v);
 
             var filter = ctx.add(v);
             var v2 = {
@@ -19774,7 +19808,7 @@
             };
             var clip = ctx.add(v2);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(v2);
+            xom.__config[NODE_DEFS_CACHE$1].push(v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -19790,7 +19824,7 @@
             };
             clip = ctx.add(v);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(v);
+            xom.__config[NODE_DEFS_CACHE$1].push(v);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -19809,7 +19843,7 @@
 
             var _filter = ctx.add(_v);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v);
 
             _v = {
               tagName: 'clipPath',
@@ -19821,7 +19855,7 @@
 
             var _clip = ctx.add(_v);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -19854,7 +19888,7 @@
 
             var _filter2 = ctx.add(_v2);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v2);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v2);
 
             _v2 = {
               tagName: 'clipPath',
@@ -19866,7 +19900,7 @@
 
             var _clip2 = ctx.add(_v2);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v2);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -19882,7 +19916,7 @@
             };
             _clip2 = ctx.add(_v2);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v2);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v2);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -19901,7 +19935,7 @@
 
             var _filter3 = ctx.add(_v3);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v3);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v3);
 
             _v3 = {
               tagName: 'clipPath',
@@ -19913,7 +19947,7 @@
 
             var _clip3 = ctx.add(_v3);
 
-            xom.__config[NODE_DEFS_CACHE$2].push(_v3);
+            xom.__config[NODE_DEFS_CACHE$1].push(_v3);
 
             xom.virtualDom.bb.push({
               type: 'item',
@@ -20079,7 +20113,7 @@
       NODE_CACHE_MASK = _enums$NODE_KEY$3.NODE_CACHE_MASK,
       NODE_CACHE_OVERFLOW = _enums$NODE_KEY$3.NODE_CACHE_OVERFLOW,
       NODE_IS_DESTROYED$1 = _enums$NODE_KEY$3.NODE_IS_DESTROYED,
-      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$3.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$2 = _enums$NODE_KEY$3.NODE_DEFS_CACHE,
       NODE_DOM_PARENT$2 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
       NODE_IS_INLINE = _enums$NODE_KEY$3.NODE_IS_INLINE,
       NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$3.NODE_PERSPECTIVE_MATRIX,
@@ -20091,12 +20125,15 @@
       PERCENT$7 = o.PERCENT,
       INHERIT$3 = o.INHERIT,
       NUMBER$5 = o.NUMBER,
+      RGBA$2 = o.RGBA,
+      STRING$3 = o.STRING,
       REM$7 = o.REM,
       VW$7 = o.VW,
       VH$7 = o.VH,
       VMAX$7 = o.VMAX,
       VMIN$7 = o.VMIN,
-      DEG$2 = o.DEG;
+      DEG$2 = o.DEG,
+      GRADIENT$2 = o.GRADIENT;
   var int2rgba$2 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
       joinArr$2 = util.joinArr,
@@ -20218,7 +20255,7 @@
       config[NODE_STYLE$1] = _this.__style;
       config[NODE_MATRIX$1] = [];
       config[NODE_MATRIX_EVENT$2] = [];
-      config[NODE_DEFS_CACHE$3] = _this.__cacheDefs;
+      config[NODE_DEFS_CACHE$2] = _this.__cacheDefs;
       config[NODE_IS_MASK] = isMask;
       _this.__frameAnimateList = [];
       _this.__contentBoxList = []; // inline存储内容用
@@ -21145,7 +21182,7 @@
             } // 防止隐藏不加载背景图
 
 
-            if (util.isString(bgi)) {
+            if (bgi[1] === STRING$3) {
               var loadBgi = _this4.__loadBgi[i] = _this4.__loadBgi[i] || {};
               var cache = inject.IMG[BACKGROUND_IMAGE$1];
 
@@ -21188,7 +21225,7 @@
               }
 
               return true;
-            } else if (!isInline && bgi.k) {
+            } else if (!isInline && bgi[0] && bgi[1] === GRADIENT$2) {
               // gradient在渲染时才生成
               return true;
             }
@@ -21326,44 +21363,63 @@
         }
 
         __cacheStyle[FONT_STYLE$4] = computedStyle[FONT_STYLE$4];
+        var color = currentStyle[COLOR$5];
 
-        if (currentStyle[COLOR$5][1] === INHERIT$3) {
-          computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
-          __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5]);
+        if (color[1] === INHERIT$3) {
+          var v = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
+
+          if (color[1] === GRADIENT$2) {
+            __cacheStyle[COLOR$5] = true; // 渲染生成
+          } else {
+            __cacheStyle[COLOR$5] = int2rgba$2(v);
+          }
         } else if (isNil$6(__cacheStyle[COLOR$5])) {
-          computedStyle[COLOR$5] = rgba2int$3(currentStyle[COLOR$5][0]);
-          __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5]);
+          if (color[1] === GRADIENT$2) {
+            __cacheStyle[COLOR$5] = true; // 渲染生成
+          } else if (color[1] === RGBA$2) {
+            __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5] = rgba2int$3(color[0]));
+          }
         }
 
-        if (currentStyle[TEXT_STROKE_COLOR$4][1] === INHERIT$3) {
-          computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
-          __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
+        var textStrokeColor = currentStyle[TEXT_STROKE_COLOR$4];
+
+        if (textStrokeColor[1] === INHERIT$3) {
+          var _v3 = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
+
+          if (textStrokeColor[1] === GRADIENT$2) {
+            __cacheStyle[TEXT_STROKE_COLOR$4] = true;
+          } else {
+            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(_v3);
+          }
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
-          computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(currentStyle[TEXT_STROKE_COLOR$4][0]);
-          __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
+          if (textStrokeColor[1] === GRADIENT$2) {
+            __cacheStyle[TEXT_STROKE_COLOR$4] = true;
+          } else if (textStrokeColor[1] === RGBA$2) {
+            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(textStrokeColor[0]));
+          }
         }
 
         if (currentStyle[TEXT_STROKE_WIDTH$3][1] === INHERIT$3) {
           computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : 0;
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_WIDTH$3])) {
-          var v = currentStyle[TEXT_STROKE_WIDTH$3];
+          var _v4 = currentStyle[TEXT_STROKE_WIDTH$3];
 
-          if (v[1] === REM$7) {
-            v = v[0] * this.root.computedStyle[FONT_SIZE$9];
-          } else if (v[1] === VW$7) {
-            v = v[0] * this.root.width * 0.01;
-          } else if (v[1] === VH$7) {
-            v = v[0] * this.root.height * 0.01;
-          } else if (v[1] === VMAX$7) {
-            v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          } else if (v[1] === VMIN$7) {
-            v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          if (_v4[1] === REM$7) {
+            _v4 = _v4[0] * this.root.computedStyle[FONT_SIZE$9];
+          } else if (_v4[1] === VW$7) {
+            _v4 = _v4[0] * this.root.width * 0.01;
+          } else if (_v4[1] === VH$7) {
+            _v4 = _v4[0] * this.root.height * 0.01;
+          } else if (_v4[1] === VMAX$7) {
+            _v4 = _v4[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          } else if (_v4[1] === VMIN$7) {
+            _v4 = _v4[0] * Math.min(this.root.width, this.root.height) * 0.01;
           } else {
-            v = v[0];
+            _v4 = _v4[0];
           }
 
-          computedStyle[TEXT_STROKE_WIDTH$3] = v;
+          computedStyle[TEXT_STROKE_WIDTH$3] = _v4;
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         }
 
@@ -21716,11 +21772,11 @@
         }
 
         res.dx = dx;
-        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数，在canvas模式时已经提前算好
 
         var bx1, by1, bx2, by2;
 
-        if (cache && renderMode === CANVAS$3) {
+        if (renderMode === CANVAS$3) {
           bx1 = this.__bx1;
           bx2 = this.__bx2;
           by1 = this.__by1;
@@ -21944,7 +22000,7 @@
             };
             var id = ctx.add(v);
 
-            __config[NODE_DEFS_CACHE$3].push(v);
+            __config[NODE_DEFS_CACHE$2].push(v);
 
             virtualDom.overflow = 'url(#' + id + ')';
           }
@@ -22033,18 +22089,18 @@
 
                   i = _length - 1 - i;
 
-                  if (util.isString(bgi)) {
+                  if (bgi[1] === STRING$3) {
                     var loadBgi = _this6.__loadBgi[i];
 
-                    if (loadBgi.url === backgroundImage[i]) {
+                    if (loadBgi.url === bgi[0]) {
                       var uuid = bg.renderImage(_this6, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
 
                       if (renderMode === SVG$2 && uuid) {
                         svgBgSymbol.push(uuid);
                       }
                     }
-                  } else if (bgi.k) {
-                    var gd = _this6.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
+                  } else if (bgi[0] && bgi[1] === GRADIENT$2) {
+                    var gd = _this6.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi[0], dx, dy);
 
                     if (gd) {
                       if (gd.k === 'conic') {
@@ -22109,7 +22165,7 @@
                     else if (renderMode === SVG$2 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v3 = {
+                          var _v5 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -22117,9 +22173,9 @@
                               props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v3);
+                          var clip = ctx.add(_v5);
 
-                          __config[NODE_DEFS_CACHE$3].push(_v3);
+                          __config[NODE_DEFS_CACHE$2].push(_v5);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -22210,7 +22266,7 @@
                     else if (renderMode === SVG$2 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v4 = {
+                          var _v6 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -22218,9 +22274,9 @@
                               props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v4);
+                          var clip = ctx.add(_v6);
 
-                          __config[NODE_DEFS_CACHE$3].push(_v4);
+                          __config[NODE_DEFS_CACHE$2].push(_v6);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -22308,14 +22364,14 @@
 
             i = _length2 - 1 - i;
 
-            if (util.isString(bgi)) {
+            if (bgi[1] === STRING$3) {
               var loadBgi = _this6.__loadBgi[i];
 
-              if (loadBgi.url === backgroundImage[i]) {
+              if (loadBgi.url === bgi[0]) {
                 bg.renderImage(_this6, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, currentStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
               }
-            } else if (bgi.k) {
-              var gd = _this6.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
+            } else if (bgi[0] && bgi[1] === GRADIENT$2) {
+              var gd = _this6.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi[0], dx, dy);
 
               if (gd) {
                 if (gd.k === 'conic') {
@@ -22533,7 +22589,7 @@
           };
           var uuid = ctx.add(v);
 
-          this.__config[NODE_DEFS_CACHE$3].push(v);
+          this.__config[NODE_DEFS_CACHE$2].push(v);
 
           return 'url(#' + uuid + ')';
         }
@@ -22569,7 +22625,7 @@
 
           var uuid = ctx.add(v);
 
-          this.__config[NODE_DEFS_CACHE$3].push(v);
+          this.__config[NODE_DEFS_CACHE$2].push(v);
 
           return 'url(#' + uuid + ')';
         }
@@ -27558,7 +27614,7 @@
       UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
       _enums$NODE_KEY$5 = enums.NODE_KEY,
       NODE_CACHE$2 = _enums$NODE_KEY$5.NODE_CACHE,
-      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$5.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$3 = _enums$NODE_KEY$5.NODE_DEFS_CACHE,
       NODE_IS_MASK$1 = _enums$NODE_KEY$5.NODE_IS_MASK;
   var AUTO$7 = o.AUTO,
       PX$9 = o.PX,
@@ -27568,7 +27624,7 @@
       VH$9 = o.VH,
       VMAX$9 = o.VMAX,
       VMIN$9 = o.VMIN,
-      RGBA$2 = o.RGBA;
+      RGBA$3 = o.RGBA;
   var canvasPolygon$5 = painter.canvasPolygon,
       svgPolygon$5 = painter.svgPolygon;
   var isFunction$7 = util.isFunction;
@@ -27610,7 +27666,7 @@
             currentStyle = _assertThisInitialize.currentStyle;
 
         style[BACKGROUND_IMAGE$2] = currentStyle[BACKGROUND_IMAGE$2] = [null];
-        style[BACKGROUND_COLOR$2] = currentStyle[BACKGROUND_COLOR$2] = [[0, 0, 0, 0], RGBA$2];
+        style[BACKGROUND_COLOR$2] = currentStyle[BACKGROUND_COLOR$2] = [[0, 0, 0, 0], RGBA$3];
         style[BORDER_TOP_WIDTH$4] = currentStyle[BORDER_TOP_WIDTH$4] = [0, PX$9];
         style[BORDER_RIGHT_WIDTH$6] = currentStyle[BORDER_RIGHT_WIDTH$6] = [0, PX$9];
         style[BORDER_LEFT_WIDTH$7] = currentStyle[BORDER_LEFT_WIDTH$7] = [0, PX$9];
@@ -27881,7 +27937,7 @@
                 };
                 var id = ctx.add(v);
 
-                __config[NODE_DEFS_CACHE$4].push(v);
+                __config[NODE_DEFS_CACHE$3].push(v);
 
                 virtualDom.conClip = 'url(#' + id + ')';
               }
@@ -27913,7 +27969,7 @@
 
               var _id = ctx.add(_v);
 
-              __config[NODE_DEFS_CACHE$4].push(_v);
+              __config[NODE_DEFS_CACHE$3].push(_v);
 
               virtualDom.conClip = 'url(#' + _id + ')';
               delete virtualDom.cache;
@@ -28468,7 +28524,7 @@
       NODE_CURRENT_PROPS = _enums$NODE_KEY$6.NODE_CURRENT_PROPS,
       NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$6.NODE_CURRENT_STYLE,
       NODE_STYLE$3 = _enums$NODE_KEY$6.NODE_STYLE,
-      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
       NODE_CACHE$3 = _enums$NODE_KEY$6.NODE_CACHE;
   var PX$a = o.PX,
       PERCENT$b = o.PERCENT,
@@ -28476,7 +28532,9 @@
       VW$a = o.VW,
       VH$a = o.VH,
       VMAX$a = o.VMAX,
-      VMIN$a = o.VMIN;
+      VMIN$a = o.VMIN,
+      RGBA$4 = o.RGBA,
+      GRADIENT$3 = o.GRADIENT;
   var int2rgba$3 = util.int2rgba,
       isNil$8 = util.isNil,
       joinArr$3 = util.joinArr;
@@ -28794,7 +28852,7 @@
 
             if (Array.isArray(v)) {
               v.forEach(function (item) {
-                if (item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+                if (item[0] && item[1] === GRADIENT$3) {
                   if (renderMode === WEBGL$5) {
                     var cache = _this2.__config[NODE_CACHE$3];
                     x3 += cache.dx;
@@ -28803,9 +28861,9 @@
                     y4 += cache.dy;
                   }
 
-                  _res.push(_this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
-                } else if (item[3] > 0) {
-                  _res.push(int2rgba$3(item));
+                  _res.push(_this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]));
+                } else if (item[1] === RGBA$4 && item[0][3] > 0) {
+                  _res.push(int2rgba$3(item[0]));
                 } else {
                   _res.push('none');
                 }
@@ -29308,7 +29366,7 @@
               };
               var clip = ctx.add(v);
 
-              _this3.__config[NODE_DEFS_CACHE$5].push(v);
+              _this3.__config[NODE_DEFS_CACHE$4].push(v);
 
               color.forEach(function (item) {
                 _this3.virtualDom.bb.push({
@@ -29328,7 +29386,7 @@
             };
             var clip = ctx.add(v);
 
-            this.__config[NODE_DEFS_CACHE$5].push(v);
+            this.__config[NODE_DEFS_CACHE$4].push(v);
 
             color.forEach(function (item) {
               _this3.virtualDom.bb.push({
@@ -31174,7 +31232,7 @@
       NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$8.NODE_LIMIT_CACHE,
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
-      NODE_DEFS_CACHE$6 = _enums$NODE_KEY$8.NODE_DEFS_CACHE,
+      NODE_DEFS_CACHE$5 = _enums$NODE_KEY$8.NODE_DEFS_CACHE,
       NODE_IS_MASK$2 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_DOM_PARENT$5 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$8.NODE_PERSPECTIVE_MATRIX,
@@ -33092,7 +33150,7 @@
             hasMask = _structs$i4[STRUCT_HAS_MASK$1];
         var _node$__config = node.__config,
             refreshLevel = _node$__config[NODE_REFRESH_LV$1],
-            defsCache = _node$__config[NODE_DEFS_CACHE$6]; // 只要涉及到matrix和opacity就影响mask
+            defsCache = _node$__config[NODE_DEFS_CACHE$5]; // 只要涉及到matrix和opacity就影响mask
 
         var hasEffectMask = hasMask && (refreshLevel >= REPAINT$2 || contain$2(refreshLevel, TRANSFORM_ALL$1 | OP));
 
@@ -33142,7 +33200,7 @@
       var __config = _node6.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           _refreshLevel4 = __config[NODE_REFRESH_LV$1],
-          _defsCache = __config[NODE_DEFS_CACHE$6],
+          _defsCache = __config[NODE_DEFS_CACHE$5],
           computedStyle = __config[NODE_COMPUTED_STYLE$3];
       var display = computedStyle[DISPLAY$7]; // 将随后的若干个mask节点范围存下来
 
@@ -33266,7 +33324,7 @@
         virtualDom.lv = _refreshLevel4;
       } else {
         // >=REPAINT会调用render，重新生成defsCache，text没有这个东西
-        __config[NODE_DEFS_CACHE$6] && __config[NODE_DEFS_CACHE$6].splice(0);
+        __config[NODE_DEFS_CACHE$5] && __config[NODE_DEFS_CACHE$5].splice(0);
 
         _node6.render(renderMode, _refreshLevel4, ctx, NA, 0, 0);
 

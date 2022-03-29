@@ -14,13 +14,10 @@ import inject from '../util/inject';
 const { rgba2int, isNil } = util;
 const { PX, PERCENT, DEG, NUMBER, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
 const { d2r } = geom;
-const { canvasPolygon, svgPolygon } = painter;
+const { canvasPolygon } = painter;
 const {
   STYLE_KEY: {
     FONT_SIZE,
-  },
-  NODE_KEY: {
-    NODE_DEFS_CACHE,
   },
 } = enums;
 

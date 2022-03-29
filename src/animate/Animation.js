@@ -107,7 +107,7 @@ const {
     I_TIME_STAMP,
   },
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
+const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, isString, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
@@ -659,134 +659,26 @@ function calDiff(prev, next, k, target, tagName) {
     let length = Math.min(p.length, n.length);
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
-      if(!pi || !ni || isString(pi) || isString(ni)) {
+      if(!pi || !ni || pi[1] !== ni[1]) {
         res[1].push(null);
         continue;
       }
-      if(pi.k !== ni.k) {
-        res[1].push(null);
-        continue;
-      }
+      let isGradient = pi[1] === GRADIENT;
+      pi = pi[0];
+      ni = ni[0];
       let temp = [];
       // 渐变
-      if(pi.k === 'linear' || pi.k === 'radial' || pi.k === 'conic') {
-        let pv = pi.v;
-        let nv = ni.v;
-        temp[0] = [];
-        let { clientWidth } = target;
-        let eq = equalArr(pv, nv);
-        for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
-          let a = pv[i];
-          let b = nv[i];
-          let t = [];
-          t.push([
-            b[0][0] - a[0][0],
-            b[0][1] - a[0][1],
-            b[0][2] - a[0][2],
-            b[0][3] - a[0][3],
-          ]);
-          if(a[1] && b[1]) {
-            if(a[1][1] === b[1][1]) {
-              t.push(b[1][0] - a[1][0]);
-            }
-            else {
-              let v = calByUnit(a[1], b[1], clientWidth, target.root);
-              t.push(v || 0);
-            }
-          }
-          temp[0].push(t);
+      if(isGradient) {
+        let r = calDiffGradient(pi, ni, target);
+        if(!r) {
+          res[1].push(null);
+          continue;
         }
-        // 线性渐变有角度差值变化
-        if(pi.k === 'linear') {
-          let isArrP = Array.isArray(pi.d);
-          let isArrN = Array.isArray(ni.d);
-          if(isArrN !== isArrP) {
-            res[1].push(null);
-            continue;
-          }
-          if(isArrP) {
-            let v = [ni.d[0] - pi.d[0], ni.d[1] - pi.d[1], ni.d[2] - pi.d[2], ni.d[3] - pi.d[3]];
-            if(eq && equalArr(v, [0, 0, 0, 0])) {
-              res[1].push(null);
-              continue;
-            }
-            temp[1] = v;
-          }
-          else {
-            let v = ni.d - pi.d;
-            if(eq && v === 0) {
-              res[1].push(null);
-              continue;
-            }
-            temp[1] = v;
-          }
-        }
-        // 径向渐变的位置
-        else if(pi.k === 'radial') {
-          let isArrP = Array.isArray(pi.z);
-          let isArrN = Array.isArray(ni.z);
-          if(isArrN !== isArrP) {
-            res[1].push(null);
-            continue;
-          }
-          if(isArrP) {
-            temp[2] = [];
-            for(let i = 0; i < 5; i++) {
-              let pz = pi.z[i];
-              // 半径比例省略为1
-              if(pz === undefined) {
-                pz = 1;
-              }
-              let nz = ni.z[i];
-              if(nz === undefined) {
-                nz = 1;
-              }
-              temp[2].push(nz - pz);
-            }
-            if(eq && equalArr(res[4], [0, 0, 0, 0, 0])) {
-              res[1].push(null);
-            }
-          }
-          else {
-            temp[2] = [];
-            for(let i = 0; i < 2; i++) {
-              let pp = pi.p[i];
-              let np = ni.p[i];
-              if(pp[1] === np[1]) {
-                temp[2].push(np[0] - pp[0]);
-              }
-              else {
-                let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
-                temp[2].push(v || 0);
-              }
-            }
-            if(eq && equalArr(res[3], [0, 0])) {
-              res[1].push(null);
-            }
-          }
-        }
-        else if(pi.k === 'conic') {
-          temp[1].push(n.d - p.d);
-          temp[2] = [];
-          for(let i = 0; i < 2; i++) {
-            let pp = p.p[i];
-            let np = n.p[i];
-            if(pp[1] === np[1]) {
-              temp[2].push(np[0] - pp[0]);
-            }
-            else {
-              let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
-              temp[2].push(v || 0);
-            }
-          }
-          if(eq && res[2] !== 0 && equalArr(res[3], [0, 0])) {
-            res[1].push(null);
-          }
-        }
+        temp = r;
       }
       // 纯色
       else {
-        if(equalArr(n, pi)) {
+        if(equalArr(ni, pi)) {
           res[1].push(null);
         }
         temp[0] = [
@@ -800,17 +692,32 @@ function calDiff(prev, next, k, target, tagName) {
     }
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
-    n = n[0];
-    p = p[0];
-    if(equalArr(n, p) || n[3] === 0 && p[3] === 0) {
+    if(n[1] !== p[1]) {
       return;
     }
-    res[1] = [
-      n[0] - p[0],
-      n[1] - p[1],
-      n[2] - p[2],
-      n[3] - p[3]
-    ];
+    // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
+    let isGradient = n[1] === GRADIENT;
+    n = n[0];
+    p = p[0];
+    if(isGradient) {
+      let r = calDiffGradient(p, n, target);
+      if(!r) {
+        return;
+      }
+      res[1] = r;
+    }
+    else {
+      // 透明变化无视
+      if(equalArr(n, p) || n[3] === 0 && p[3] === 0) {
+        return;
+      }
+      res[1] = [
+        n[0] - p[0],
+        n[1] - p[1],
+        n[2] - p[2],
+        n[3] - p[3]
+      ];
+    }
   }
   else if(RADIUS_HASH.hasOwnProperty(k)) {
     // x/y都相等无需
@@ -1063,6 +970,123 @@ function calDiff(prev, next, k, target, tagName) {
   return res;
 }
 
+// 渐变的差异计算
+function calDiffGradient(p, n, target) {
+  if(p.k !== n.k || !GRADIENT_TYPE.hasOwnProperty(p.k)) {
+    return;
+  }
+  let pv = p.v;
+  let nv = n.v;
+  let temp = [[]];
+  let eq = equalArr(pv, nv);
+  // 渐变值部分是通用的
+  for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
+    let a = pv[i];
+    let b = nv[i];
+    let t = [];
+    t.push([
+      b[0][0] - a[0][0],
+      b[0][1] - a[0][1],
+      b[0][2] - a[0][2],
+      b[0][3] - a[0][3],
+    ]);
+    if(a[1] && b[1]) {
+      if(a[1][1] === b[1][1]) {
+        t.push(b[1][0] - a[1][0]);
+      }
+      else {
+        let v = calByUnit(a[1], b[1], target.clientWidth, target.root);
+        t.push(v || 0);
+      }
+    }
+    temp[0].push(t);
+  }
+  if(p.k === 'linear') {
+    let isArrP = Array.isArray(p.d);
+    let isArrN = Array.isArray(n.d);
+    if(isArrN !== isArrP) {
+      return;
+    }
+    if(isArrP) {
+      let v = [n.d[0] - p.d[0], n.d[1] - p.d[1], n.d[2] - p.d[2], n.d[3] - p.d[3]];
+      if(eq && equalArr(v, [0, 0, 0, 0])) {
+        return;
+      }
+      temp[1] = v;
+    }
+    else {
+      let v = n.d - p.d;
+      // 颜色角度都没变化
+      if(eq && v === 0) {
+        return;
+      }
+      temp[1] = v;
+    }
+  }
+  else if(p.k === 'radial') {
+    let isArrP = Array.isArray(p.z);
+    let isArrN = Array.isArray(n.z);
+    if(isArrN !== isArrP) {
+      return;
+    }
+    temp[2] = [];
+    // sketch中a点到b点特殊格式表达，z是数组忽略p和s
+    if(isArrP) {
+      // 距离中心外形全等
+      if(eq && equalArr(p.z, n.z)) {
+        return;
+      }
+      for(let i = 0; i < 5; i++) {
+        let pz = p.z[i];
+        // 半径比例省略为1
+        if(pz === undefined) {
+          pz = 1;
+        }
+        let nz = n.z[i];
+        if(nz === undefined) {
+          nz = 1;
+        }
+        temp[2].push(nz - pz);
+      }
+    }
+    else {
+      if(eq && p.z === n.z && p.s === n.s && equalArr(p.p, n.p)) {
+        return;
+      }
+      for(let i = 0; i < 2; i++) {
+        let pp = p.p[i];
+        let np = n.p[i];
+        if(pp[1] === np[1]) {
+          temp[2].push(np[0] - pp[0]);
+        }
+        else {
+          let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
+          temp[2].push(v || 0);
+        }
+      }
+    }
+  }
+  else if(p.k === 'conic') {
+    if(eq && p.d === n.d && equalArr(p.p, n.p)) {
+      return;
+    }
+    temp[1]= n.d - p.d;
+    temp[2] = [];
+    for(let i = 0; i < 2; i++) {
+      let pp = p.p[i];
+      let np = n.p[i];
+      if(pp[1] === np[1]) {
+        temp[2].push(np[0] - pp[0]);
+      }
+      else {
+        let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
+        temp[2].push(v || 0);
+      }
+    }
+  }
+  return temp;
+}
+
 // 计算两帧之间不相同的变化，存入transition，相同的忽略
 function calFrame(prev, next, keys, target, tagName) {
   keys.forEach(k => {
@@ -1270,8 +1294,9 @@ function calIntermediateStyle(frame, keys, percent, target) {
         if(!v2) {
           return;
         }
-        let [c, d, p, z] = v2;
-        if(GRADIENT_TYPE.hasOwnProperty(st2.k)) {
+        if(st2[1] === GRADIENT && GRADIENT_TYPE.hasOwnProperty(st2[0].k)) {
+          st2 = st2[0];
+          let [c, d, p, z] = v2;
           for(let i = 0, len = Math.min(st2.v.length, c.length); i < len; i++) {
             let a = st2.v[i];
             let b = c[i];
@@ -1315,6 +1340,8 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
         // fill纯色
         else {
+          st2 = st2[0];
+          let c = v2[0];
           st2[0] += c[0] * percent;
           st2[1] += c[1] * percent;
           st2[2] += c[2] * percent;

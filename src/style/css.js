@@ -79,9 +79,9 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_OVER,
   OVERFLOW,
 } } = enums;
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, calUnit } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;
-const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
+const { isGeom, GEOM, GEOM_KEY_SET } = change;
 
 const {
   COLOR_HASH,
@@ -247,20 +247,20 @@ function normalize(style, reset = []) {
           return null;
         }
         if(reg.gradient.test(item)) {
-          return gradient.parseGradient(item);
+          return [gradient.parseGradient(item), GRADIENT];
         }
         if(reg.img.test(item)) {
-          return reg.img.exec(item)[2];
+          return [reg.img.exec(item)[2], STRING];
         }
         return null;
       });
     }
     // 区分是渐变色还是图
     else if(reg.gradient.test(temp)) {
-      res[BACKGROUND_IMAGE] = [gradient.parseGradient(temp)];
+      res[BACKGROUND_IMAGE] = [[gradient.parseGradient(temp), GRADIENT]];
     }
     else if(reg.img.test(temp)) {
-      res[BACKGROUND_IMAGE] = [reg.img.exec(temp)[2]];
+      res[BACKGROUND_IMAGE] = [[reg.img.exec(temp)[2], STRING]];
     }
     else {
       res[BACKGROUND_IMAGE] = [null];
@@ -697,6 +697,9 @@ function normalize(style, reset = []) {
     if(temp === 'inherit') {
       res[COLOR] = [[], INHERIT];
     }
+    else if(reg.gradient.test(temp)) {
+      res[COLOR] = [gradient.parseGradient(temp), GRADIENT];
+    }
     else {
       res[COLOR] = [rgba2int(temp), RGBA];
     }
@@ -705,6 +708,9 @@ function normalize(style, reset = []) {
   if(temp !== undefined) {
     if(temp === 'inherit') {
       res[TEXT_STROKE_COLOR] = [[], INHERIT];
+    }
+    else if(reg.gradient.test(temp)) {
+      res[TEXT_STROKE_COLOR] = [gradient.parseGradient(temp), GRADIENT];
     }
     else {
       res[TEXT_STROKE_COLOR] = [rgba2int(temp), RGBA];
@@ -871,61 +877,61 @@ function normalize(style, reset = []) {
   temp = style.fill;
   if(temp !== undefined) {
     if(!temp) {
-      res[FILL] = ['none'];
+      res[FILL] = [['none', STRING]];
     }
     else if(Array.isArray(temp)) {
       if(temp.length) {
         res[FILL] = temp.map(item => {
           if(!item) {
-            return 'none';
+            return ['none', STRING];
           }
           else if(reg.gradient.test(item)) {
-            return gradient.parseGradient(item);
+            return [gradient.parseGradient(item), GRADIENT];
           }
           else {
-            return rgba2int(item);
+            return [rgba2int(item), RGBA];
           }
         });
       }
       else {
-        res[FILL] = ['none'];
+        res[FILL] = [['none', STRING]];
       }
     }
     else if(reg.gradient.test(temp)) {
-      res[FILL] = [gradient.parseGradient(temp)];
+      res[FILL] = [[gradient.parseGradient(temp), GRADIENT]];
     }
     else {
-      res[FILL] = [rgba2int(temp)];
+      res[FILL] = [[rgba2int(temp), RGBA]];
     }
   }
   temp = style.stroke;
   if(temp !== undefined) {
     if(!temp) {
-      res[STROKE] = ['none'];
+      res[STROKE] = [['none', STRING]];
     }
     else if(Array.isArray(temp)) {
       if(temp.length) {
         res[STROKE] = temp.map(item => {
           if(!item) {
-            return 'none';
+            return ['none', STRING];
           }
           else if(reg.gradient.test(item)) {
-            return gradient.parseGradient(item);
+            return [gradient.parseGradient(item), GRADIENT];
           }
           else {
-            return rgba2int(item);
+            return [gradient.parseGradient(item), GRADIENT];
           }
         });
       }
       else {
-        res[STROKE] = ['none'];
+        res[STROKE] = [['none', STRING]];
       }
     }
     else if(reg.gradient.test(temp)) {
-      res[STROKE] = [gradient.parseGradient(temp)];
+      res[STROKE] = [[gradient.parseGradient(temp), GRADIENT]];
     }
     else {
-      res[STROKE] = [rgba2int(temp)];
+      res[STROKE] = [[rgba2int(temp), RGBA]];
     }
   }
   temp = style.strokeWidth;
@@ -1519,9 +1525,20 @@ function equalStyle(k, a, b, target) {
   if(k === BOX_SHADOW) {
     return equalArr(a, b);
   }
+  // color等是rgba颜色时
+  if(k === COLOR || k === TEXT_STROKE_COLOR) {
+    if(a[1] !== b[1]) {
+      return false;
+    }
+    if(a[1] === RGBA) {
+      return equalArr(a[0], b[0]);
+    }
+    else {}
+  }
   if(COLOR_HASH.hasOwnProperty(k)) {
     return a[1] === b[1] && equalArr(a[0], b[0]);
   }
+  // color/fill等是gradient时
   if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
     let av = a.v;
     let bv = b.v;
@@ -1584,8 +1601,6 @@ const VALUE = {
 };
 // 仅1维数组
 const ARRAY_0 = {
-  [COLOR]: true,
-  [TEXT_STROKE_COLOR]: true,
   [BACKGROUND_COLOR]: true,
   [STYLE_KEY.BORDER_TOP_COLOR]: true,
   [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
@@ -1617,9 +1632,8 @@ function cloneStyle(style, keys) {
     // 渐变特殊处理
     if(k === BACKGROUND_IMAGE) {
       res[k] = v.map(item => {
-        // 可能为null
-        if(item && item.k) {
-          return util.clone(item);
+        if(item[1] === GRADIENT) {
+          return [util.clone(item[0]), item[1]];
         }
         else {
           return item;
@@ -1628,14 +1642,17 @@ function cloneStyle(style, keys) {
     }
     else if(k === FILL || k === STROKE) {
       res[k] = v.map(item => {
-        // 渐变
-        // 可能非法为空
-        if(item && item.k) {
-          return util.clone(item);
+        // 渐变可能非法为空
+        if(item[1] === GRADIENT) {
+          return [util.clone(item[0]), item[1]];
         }
         // 颜色
+        else if(item[1] === RGBA) {
+          return [item[0].slice(0), item[1]];
+        }
+        // none
         else {
-          return item.slice(0);
+          return item;
         }
       });
     }
@@ -1662,6 +1679,16 @@ function cloneStyle(style, keys) {
     else if(k === TRANSLATE_PATH) {
       if(v) {
         res[k] = v.map(item => item.slice(0));
+      }
+    }
+    else if(k === COLOR || k === TEXT_STROKE_COLOR) {
+      if(v) {
+        if(v[1] === GRADIENT) {
+          res[k] = [util.clone(v[0]), v[1]];
+        }
+        else if(v[1] === RGBA) {
+          res[k] = [v[0].slice(0), v[1]];
+        }
       }
     }
     // position等直接值类型赋值

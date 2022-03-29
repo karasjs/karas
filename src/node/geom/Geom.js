@@ -374,8 +374,8 @@ class Geom extends Xom {
     [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
-        computedStyle[k] = v;
-        let res = [];
+        let cs = computedStyle[k] = [];
+        let res = __cacheStyle[k] = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
             if(item[0] && item[1] === GRADIENT) {
@@ -386,17 +386,21 @@ class Geom extends Xom {
                 y3 += cache.dy;
                 y4 += cache.dy;
               }
-              res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]));
+              let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]);
+              cs.push(item[0]);
+              res.push(t);
             }
             else if(item[1] === RGBA && item[0][3] > 0) {
-              res.push(int2rgba(item[0]));
+              let t =  int2rgba(item[0]);
+              cs.push(t);
+              res.push(t);
             }
             else {
+              cs.push('none');
               res.push('none');
             }
           });
         }
-        __cacheStyle[k] = res;
       }
     });
     return res;

@@ -28891,8 +28891,9 @@
         [STROKE$1, FILL$1].forEach(function (k) {
           if (isNil$8(__cacheStyle[k])) {
             var v = currentStyle[k];
-            computedStyle[k] = v;
-            var _res = [];
+            var cs = computedStyle[k] = [];
+
+            var _res = __cacheStyle[k] = [];
 
             if (Array.isArray(v)) {
               v.forEach(function (item) {
@@ -28905,16 +28906,24 @@
                     y4 += cache.dy;
                   }
 
-                  _res.push(_this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]));
+                  var t = _this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]);
+
+                  cs.push(item[0]);
+
+                  _res.push(t);
                 } else if (item[1] === RGBA$4 && item[0][3] > 0) {
-                  _res.push(int2rgba$3(item[0]));
+                  var _t = int2rgba$3(item[0]);
+
+                  cs.push(_t);
+
+                  _res.push(_t);
                 } else {
+                  cs.push('none');
+
                   _res.push('none');
                 }
               });
             }
-
-            __cacheStyle[k] = _res;
           }
         });
         return res;

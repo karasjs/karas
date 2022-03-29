@@ -9651,6 +9651,9 @@
             res[k] = [util.clone(v[0]), v[1]];
           } else if (v[1] === RGBA) {
             res[k] = [v[0].slice(0), v[1]];
+          } // inherit
+          else {
+            res[k] = v.slice(0);
           }
         }
       } // position等直接值类型赋值

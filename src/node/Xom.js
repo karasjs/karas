@@ -1380,7 +1380,7 @@ class Xom extends Node {
     }
     else if(isNil(__cacheStyle[COLOR])) {
       if(color[1] === GRADIENT) {
-        __cacheStyle[COLOR] = computedStyle[COLOR] = color;
+        __cacheStyle[COLOR] = computedStyle[COLOR] = color[0];
       }
       else if(color[1] === RGBA) {
         __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color[0]));
@@ -1392,7 +1392,7 @@ class Xom extends Node {
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
       if(textStrokeColor[1] === GRADIENT) {
-        __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = textStrokeColor;
+        __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = textStrokeColor[0];
       }
       else if(textStrokeColor[1] === RGBA) {
         __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor[0]));

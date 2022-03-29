@@ -628,6 +628,11 @@ class Text extends Node {
         ctx.font = font;
       }
       let color = cacheStyle[COLOR];
+      // 渐变
+      if(color.k) {
+        let dom = this.parent;
+        color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+      }
       if(ctx.fillStyle !== color) {
         ctx.fillStyle = color;
       }
@@ -635,9 +640,14 @@ class Text extends Node {
       if(ctx.lineWidth !== strokeWidth) {
         ctx.lineWidth = strokeWidth;
       }
-      let strokeColor = cacheStyle[TEXT_STROKE_COLOR];
-      if(ctx.strokeStyle !== strokeColor) {
-        ctx.strokeStyle = strokeColor;
+      let textStrokeColor = cacheStyle[TEXT_STROKE_COLOR];
+      // 渐变
+      if(textStrokeColor.k) {
+        let dom = this.parent;
+        textStrokeColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
+      }
+      if(ctx.strokeStyle !== textStrokeColor) {
+        ctx.strokeStyle = textStrokeColor;
       }
     }
     // 可能为空，整个是个ellipsis

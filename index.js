@@ -9813,6 +9813,7 @@
             length = content.length;
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+          // ellipsis会强行设置
           if (dom) {
             computedStyle = dom.computedStyle;
             var font = css.setFontStyle(computedStyle);
@@ -9821,10 +9822,26 @@
               ctx.font = font;
             }
 
-            var color = cacheStyle[COLOR$2];
+            var color = cacheStyle[COLOR$2]; // 渐变
+
+            if (color.k) {
+              color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+            }
 
             if (ctx.fillStyle !== color) {
               ctx.fillStyle = color;
+            }
+
+            textStrokeWidth = computedStyle[TEXT_STROKE_WIDTH$1];
+            textStrokeColor = computedStyle[TEXT_STROKE_COLOR$1];
+            var sColor = cacheStyle[TEXT_STROKE_COLOR$1]; // 渐变
+
+            if (textStrokeColor.k) {
+              sColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
+            }
+
+            if (ctx.strokeStyle !== sColor) {
+              ctx.strokeStyle = sColor;
             }
           }
 
@@ -9838,7 +9855,7 @@
                 ctx.fillText(c, x, y);
               }
 
-              if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
+              if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
                 ctx.strokeText(c, x, y);
               }
 
@@ -9853,7 +9870,7 @@
               ctx.fillText(content, x, y);
             }
 
-            if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
+            if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
               ctx.strokeText(content, x, y);
             }
 
@@ -9862,10 +9879,24 @@
             }
           }
         } else if (renderMode === mode.SVG) {
-          var props = [['x', x], ['y', y], ['fill', cacheStyle[COLOR$2]], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$2]], ['font-size', computedStyle[FONT_SIZE$4] + 'px']]; // svg无法定义stroke的over
+          var _color = cacheStyle[COLOR$2];
 
-          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
-            props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR$1]]);
+          if (_color.k) {
+            var _dom = this.parent.parent;
+            _color = _dom.__gradient(renderMode, ctx, _dom.__bx1, _dom.__by1, _dom.__bx2, _dom.__by2, _color, dx, dy).v;
+          }
+
+          var props = [['x', x], ['y', y], ['fill', _color], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$2]], ['font-size', computedStyle[FONT_SIZE$4] + 'px']]; // svg无法定义stroke的over
+
+          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+            var _textStrokeColor = cacheStyle[TEXT_STROKE_COLOR$1]; // 渐变
+
+            if (_textStrokeColor.k) {
+              var _dom2 = this.parent.parent;
+              _textStrokeColor = _dom2.__gradient(renderMode, ctx, _dom2.__bx1, _dom2.__by1, _dom2.__bx2, _dom2.__by2, _textStrokeColor, dx, dy).v;
+            }
+
+            props.push(['stroke', _textStrokeColor]);
             props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH$1]]);
           }
 
@@ -14618,7 +14649,12 @@
             ctx.font = font;
           }
 
-          var color = cacheStyle[COLOR$3];
+          var color = cacheStyle[COLOR$3]; // 渐变
+
+          if (color.k) {
+            var dom = this.parent;
+            color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+          }
 
           if (ctx.fillStyle !== color) {
             ctx.fillStyle = color;
@@ -14630,10 +14666,15 @@
             ctx.lineWidth = strokeWidth;
           }
 
-          var strokeColor = cacheStyle[TEXT_STROKE_COLOR$2];
+          var textStrokeColor = cacheStyle[TEXT_STROKE_COLOR$2]; // 渐变
 
-          if (ctx.strokeStyle !== strokeColor) {
-            ctx.strokeStyle = strokeColor;
+          if (textStrokeColor.k) {
+            var _dom = this.parent;
+            textStrokeColor = _dom.__gradient(renderMode, ctx, _dom.__bx1, _dom.__by1, _dom.__bx2, _dom.__by2, textStrokeColor, dx, dy).v;
+          }
+
+          if (ctx.strokeStyle !== textStrokeColor) {
+            ctx.strokeStyle = textStrokeColor;
           }
         } // 可能为空，整个是个ellipsis
 
@@ -21372,7 +21413,7 @@
           __cacheStyle[COLOR$5] = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
         } else if (isNil$6(__cacheStyle[COLOR$5])) {
           if (color[1] === GRADIENT$2) {
-            __cacheStyle[COLOR$5] = computedStyle[COLOR$5] = color;
+            __cacheStyle[COLOR$5] = computedStyle[COLOR$5] = color[0];
           } else if (color[1] === RGBA$2) {
             __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5] = rgba2int$3(color[0]));
           }
@@ -21384,7 +21425,7 @@
           __cacheStyle[TEXT_STROKE_COLOR$4] = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
           if (textStrokeColor[1] === GRADIENT$2) {
-            __cacheStyle[TEXT_STROKE_COLOR$4] = computedStyle[TEXT_STROKE_COLOR$4] = textStrokeColor;
+            __cacheStyle[TEXT_STROKE_COLOR$4] = computedStyle[TEXT_STROKE_COLOR$4] = textStrokeColor[0];
           } else if (textStrokeColor[1] === RGBA$2) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(textStrokeColor[0]));
           }

@@ -1187,13 +1187,13 @@ class Xom extends Node {
             loadBgi.width = cache.width;
             loadBgi.height = cache.height;
           }
-          else if(loadBgi.url !== bgi) {
+          else if(loadBgi.url !== bgi[0]) {
             // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-            loadBgi.url = bgi;
+            loadBgi.url = bgi[0];
             loadBgi.source = null;
             let node = this;
             let root = node.root;
-            inject.measureImg(bgi, data => {
+            inject.measureImg(bgi[0], data => {
               // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
               if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
                 loadBgi.source = data.source;

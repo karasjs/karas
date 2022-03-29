@@ -1376,18 +1376,11 @@ class Xom extends Node {
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
     let color = currentStyle[COLOR];
     if(color[1] === INHERIT) {
-      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
-      if(color[1] === GRADIENT) {
-        __cacheStyle[COLOR] = true; // 渲染生成
-      }
-      else {
-        __cacheStyle[COLOR] = int2rgba(v);
-      }
+      __cacheStyle[COLOR] = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
     }
     else if(isNil(__cacheStyle[COLOR])) {
       if(color[1] === GRADIENT) {
-        __cacheStyle[COLOR] = true;
-        computedStyle[COLOR] = color; // 渲染生成
+        __cacheStyle[COLOR] = computedStyle[COLOR] = color;
       }
       else if(color[1] === RGBA) {
         __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color[0]));
@@ -1395,18 +1388,11 @@ class Xom extends Node {
     }
     let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
     if(textStrokeColor[1] === INHERIT) {
-      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
-      if(textStrokeColor[1] === GRADIENT) {
-        __cacheStyle[TEXT_STROKE_COLOR] = true;
-      }
-      else {
-        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(v);
-      }
+      __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
       if(textStrokeColor[1] === GRADIENT) {
-        __cacheStyle[TEXT_STROKE_COLOR] = true;
-        computedStyle[TEXT_STROKE_COLOR] = textStrokeColor;
+        __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = textStrokeColor;
       }
       else if(textStrokeColor[1] === RGBA) {
         __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor[0]));

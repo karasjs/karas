@@ -28541,11 +28541,9 @@
 
                   _res.push(t);
                 } else if (item[1] === RGBA$4 && item[0][3] > 0) {
-                  var _t = int2rgba$3(item[0]);
+                  cs.push(item[0]);
 
-                  cs.push(_t);
-
-                  _res.push(_t);
+                  _res.push(int2rgba$3(item[0]));
                 } else {
                   cs.push('none');
 

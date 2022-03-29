@@ -197,9 +197,8 @@ class Geom extends Xom {
               res.push(t);
             }
             else if(item[1] === RGBA && item[0][3] > 0) {
-              let t =  int2rgba(item[0]);
-              cs.push(t);
-              res.push(t);
+              cs.push(item[0]);
+              res.push(int2rgba(item[0]));
             }
             else {
               cs.push('none');

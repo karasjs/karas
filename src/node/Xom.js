@@ -1386,7 +1386,8 @@ class Xom extends Node {
     }
     else if(isNil(__cacheStyle[COLOR])) {
       if(color[1] === GRADIENT) {
-        __cacheStyle[COLOR] = true; // 渲染生成
+        __cacheStyle[COLOR] = true;
+        computedStyle[COLOR] = color; // 渲染生成
       }
       else if(color[1] === RGBA) {
         __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color[0]));
@@ -1405,6 +1406,7 @@ class Xom extends Node {
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
       if(textStrokeColor[1] === GRADIENT) {
         __cacheStyle[TEXT_STROKE_COLOR] = true;
+        computedStyle[TEXT_STROKE_COLOR] = textStrokeColor;
       }
       else if(textStrokeColor[1] === RGBA) {
         __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor[0]));

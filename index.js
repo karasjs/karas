@@ -21378,7 +21378,8 @@
           }
         } else if (isNil$6(__cacheStyle[COLOR$5])) {
           if (color[1] === GRADIENT$2) {
-            __cacheStyle[COLOR$5] = true; // 渲染生成
+            __cacheStyle[COLOR$5] = true;
+            computedStyle[COLOR$5] = color; // 渲染生成
           } else if (color[1] === RGBA$2) {
             __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5] = rgba2int$3(color[0]));
           }
@@ -21397,6 +21398,7 @@
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
           if (textStrokeColor[1] === GRADIENT$2) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = true;
+            computedStyle[TEXT_STROKE_COLOR$4] = textStrokeColor;
           } else if (textStrokeColor[1] === RGBA$2) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(textStrokeColor[0]));
           }

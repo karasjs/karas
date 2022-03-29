@@ -8928,7 +8928,7 @@
             } else if (reg.gradient.test(item)) {
               return [gradient$1.parseGradient(item), GRADIENT];
             } else {
-              return [gradient$1.parseGradient(item), GRADIENT];
+              return [rgba2int$2(temp), RGBA];
             }
           });
         } else {

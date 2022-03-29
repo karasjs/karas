@@ -385,7 +385,7 @@ class Xom extends Node {
     ].forEach(k => {
       // border-width不支持百分比
       let item = currentStyle[k];
-      computedStyle[k] = this.__calSize(item[0], 0, false);
+      computedStyle[k] = this.__calSize(item, 0, false);
     });
     [
       POSITION,

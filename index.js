@@ -20213,7 +20213,7 @@
         [BORDER_TOP_WIDTH$2, BORDER_RIGHT_WIDTH$3, BORDER_BOTTOM_WIDTH$2, BORDER_LEFT_WIDTH$4].forEach(function (k) {
           // border-width不支持百分比
           var item = currentStyle[k];
-          computedStyle[k] = _this3.__calSize(item[0], 0, false);
+          computedStyle[k] = _this3.__calSize(item, 0, false);
         });
         [POSITION$2, DISPLAY$2, FLEX_DIRECTION$2, JUSTIFY_CONTENT$1, ALIGN_ITEMS$1, ALIGN_SELF$1, FLEX_GROW$1, FLEX_SHRINK$1, LINE_CLAMP$1, ORDER$1, FLEX_WRAP$1, ALIGN_CONTENT$1, OVERFLOW$2, TEXT_OVERFLOW$2].forEach(function (k) {
           computedStyle[k] = currentStyle[k];

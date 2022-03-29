@@ -51,7 +51,6 @@ const {
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const { isFunction } = util;
-const { computeReflow } = css;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -418,29 +417,12 @@ class Img extends Dom {
       [MARGIN_RIGHT]: marginRight,
       [PADDING_LEFT]: paddingLeft,
       [PADDING_RIGHT]: paddingRight,
+    }, computedStyle: {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
     } } = this;
-    if(width[1] === PX) {
-      w -= width[0];
-    }
-    else if(width[1] === PERCENT) {
-      w -= total * width[0] * 0.01;
-    }
-    else if(width[1] === REM) {
-      w -= width[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(width[1] === VW) {
-      w -= width[0] * this.root.width * 0.01;
-    }
-    else if(width[1] === VH) {
-      w -= width[0] * this.root.height * 0.01;
-    }
-    else if(width[1] === VMAX) {
-      w -= width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(width[1] === VMIN) {
-      w -= width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    if(width[1] !== AUTO) {
+      w -= this.__calSize(width, total, true);
     }
     else {
       let loadImg = this.__loadImg;
@@ -473,131 +455,17 @@ class Img extends Dom {
       }
     }
     // 减去水平mbp
-    if(marginLeft[1] === PX) {
-      w -= marginLeft[0];
-    }
-    else if(marginLeft[1] === PERCENT) {
-      w -= marginLeft[0] * total * 0.01;
-    }
-    else if(marginLeft[1] === REM) {
-      w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(marginLeft[1] === VW) {
-      w -= marginLeft[0] * this.root.width * 0.01;
-    }
-    else if(marginLeft[1] === VH) {
-      w -= marginLeft[0] * this.root.height * 0.01;
-    }
-    else if(marginLeft[1] === VMAX) {
-      w -= marginLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(marginLeft[1] === VMIN) {
-      w -= marginLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(paddingLeft[1] === PX) {
-      w -= paddingLeft[0];
-    }
-    else if(paddingLeft[1] === PERCENT) {
-      w -= paddingLeft[0] * total * 0.01;
-    }
-    else if(paddingLeft[1] === REM) {
-      w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(paddingLeft[1] === VW) {
-      w -= paddingLeft[0] * this.root.width * 0.01;
-    }
-    else if(paddingLeft[1] === VH) {
-      w -= paddingLeft[0] * this.root.height * 0.01;
-    }
-    else if(paddingLeft[1] === VMAX) {
-      w -= paddingLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(paddingLeft[1] === VMIN) {
-      w -= paddingLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(borderLeftWidth[1] === PX) {
-      w -= borderLeftWidth[0];
-    }
-    else if(borderLeftWidth[1] === REM) {
-      w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(borderLeftWidth[1] === VW) {
-      w -= borderLeftWidth[0] * this.root.width * 0.01;
-    }
-    else if(borderLeftWidth[1] === VH) {
-      w -= borderLeftWidth[0] * this.root.height * 0.01;
-    }
-    else if(borderLeftWidth[1] === VMAX) {
-      w -= borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(borderLeftWidth[1] === VMIN) {
-      w -= borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(marginRight[1] === PX) {
-      w -= marginRight[0];
-    }
-    else if(marginRight[1] === PERCENT) {
-      w -= marginRight[0] * total * 0.01;
-    }
-    else if(marginRight[1] === REM) {
-      w -= marginRight[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(marginRight[1] === VW) {
-      w -= marginRight[0] * this.root.width * 0.01;
-    }
-    else if(marginRight[1] === VH) {
-      w -= marginRight[0] * this.root.height * 0.01;
-    }
-    else if(marginRight[1] === VMAX) {
-      w -= marginRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(marginRight[1] === VMIN) {
-      w -= marginRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(paddingRight[1] === PX) {
-      w -= paddingRight[0];
-    }
-    else if(paddingRight[1] === PERCENT) {
-      w -= paddingRight[0] * total * 0.01;
-    }
-    else if(paddingRight[1] === REM) {
-      w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(paddingRight[1] === VW) {
-      w -= paddingRight[0] * this.root.width * 0.01;
-    }
-    else if(paddingRight[1] === VH) {
-      w -= paddingRight[0] * this.root.height * 0.01;
-    }
-    else if(paddingRight[1] === VMAX) {
-      w -= paddingRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(paddingRight[1] === VMIN) {
-      w -= paddingRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(borderRightWidth[1] === PX) {
-      w -= borderRightWidth[0];
-    }
-    else if(borderRightWidth[1] === REM) {
-      w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(borderRightWidth[1] === VW) {
-      w -= borderRightWidth[0] * this.root.width * 0.01;
-    }
-    else if(borderRightWidth[1] === VH) {
-      w -= borderRightWidth[0] * this.root.height * 0.01;
-    }
-    else if(borderRightWidth[1] === VMAX) {
-      w -= borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(borderRightWidth[1] === VMIN) {
-      w -= borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
+    w -= this.__calSize(marginRight, total, true);
+    w -= this.__calSize(paddingRight, total, true);
+    w -= borderRightWidth;
+    w -= this.__calSize(marginLeft, total, true);
+    w -= this.__calSize(paddingLeft, total, true);
+    w -= borderLeftWidth;
     return w;
   }
 
   __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
-    computeReflow(this);
+    this.__computeReflow();
     let b = 0;
     let min = 0;
     let max = 0;
@@ -614,76 +482,16 @@ class Img extends Dom {
     // basis3种情况：auto、固定、content，只区分固定和其它
     let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
     if(isFixed) {
-      if(flexBasis[1] === PX) {
-        b = max = min = flexBasis[0];
-      }
-      else if(flexBasis[1] === PERCENT) {
-        b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
-      }
-      else if(flexBasis[1] === REM) {
-        b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(flexBasis[1] === VW) {
-        b = max = min = flexBasis[0] * this.root.width * 0.01;
-      }
-      else if(flexBasis[1] === VH) {
-        b = max = min = flexBasis[0] * this.root.height * 0.01;
-      }
-      else if(flexBasis[1] === VMAX) {
-        b = max = min = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(flexBasis[1] === VMIN) {
-        b = max = min = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
+      b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
     else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
-      if(main[1] === PX) {
-        b = max = min = main[0];
-      }
-      else if(main[1] === PERCENT) {
-        b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
-      }
-      else if(main[1] === REM) {
-        b = max = min = main[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(main[1] === VW) {
-        b = max = min = main[0] * this.root.width * 0.01;
-      }
-      else if(main[1] === VH) {
-        b = max = min = main[0] * this.root.height * 0.01;
-      }
-      else if(main[1] === VMAX) {
-        b = max = min = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(main[1] === VMIN) {
-        b = max = min = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
+      b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // auto和content固定尺寸比例计算
     else if(__loadImg.source || __loadImg.error) {
       let res = this.__preLayout(data);
       if(cross[1] !== AUTO) {
-        if(cross[1] === PX) {
-          cross = cross[0];
-        }
-        else if(cross[1] === PERCENT) {
-          cross = cross[0] * 0.01 * (isDirectionRow ? h : w);
-        }
-        else if(cross[1] === REM) {
-          cross = cross[0] * this.root.computedStyle[FONT_SIZE];
-        }
-        else if(cross[1] === VW) {
-          cross = cross[0] * this.root.width * 0.01;
-        }
-        else if(cross[1] === VH) {
-          cross = cross[0] * this.root.height * 0.01;
-        }
-        else if(cross[1] === VMAX) {
-          cross = cross[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        }
-        else if(cross[1] === VMIN) {
-          cross = cross[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
+        cross = this.__calSize(cross, isDirectionRow ? h : w, true);
         let ratio = res.w / res.h;
         b = max = min = isDirectionRow ? cross * ratio : cross / ratio;
       }

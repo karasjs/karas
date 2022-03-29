@@ -21410,7 +21410,13 @@
         var color = currentStyle[COLOR$5];
 
         if (color[1] === INHERIT$3) {
-          __cacheStyle[COLOR$5] = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
+          var v = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
+
+          if (v.k) {
+            __cacheStyle[COLOR$5] = v;
+          } else {
+            __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5]);
+          }
         } else if (isNil$6(__cacheStyle[COLOR$5])) {
           if (color[1] === GRADIENT$2) {
             __cacheStyle[COLOR$5] = computedStyle[COLOR$5] = color[0];
@@ -21422,7 +21428,13 @@
         var textStrokeColor = currentStyle[TEXT_STROKE_COLOR$4];
 
         if (textStrokeColor[1] === INHERIT$3) {
-          __cacheStyle[TEXT_STROKE_COLOR$4] = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
+          var _v3 = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
+
+          if (_v3.k) {
+            __cacheStyle[TEXT_STROKE_COLOR$4] = _v3;
+          } else {
+            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
+          }
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
           if (textStrokeColor[1] === GRADIENT$2) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = computedStyle[TEXT_STROKE_COLOR$4] = textStrokeColor[0];
@@ -21435,23 +21447,23 @@
           computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : 0;
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_WIDTH$3])) {
-          var v = currentStyle[TEXT_STROKE_WIDTH$3];
+          var _v4 = currentStyle[TEXT_STROKE_WIDTH$3];
 
-          if (v[1] === REM$7) {
-            v = v[0] * this.root.computedStyle[FONT_SIZE$9];
-          } else if (v[1] === VW$7) {
-            v = v[0] * this.root.width * 0.01;
-          } else if (v[1] === VH$7) {
-            v = v[0] * this.root.height * 0.01;
-          } else if (v[1] === VMAX$7) {
-            v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          } else if (v[1] === VMIN$7) {
-            v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
+          if (_v4[1] === REM$7) {
+            _v4 = _v4[0] * this.root.computedStyle[FONT_SIZE$9];
+          } else if (_v4[1] === VW$7) {
+            _v4 = _v4[0] * this.root.width * 0.01;
+          } else if (_v4[1] === VH$7) {
+            _v4 = _v4[0] * this.root.height * 0.01;
+          } else if (_v4[1] === VMAX$7) {
+            _v4 = _v4[0] * Math.max(this.root.width, this.root.height) * 0.01;
+          } else if (_v4[1] === VMIN$7) {
+            _v4 = _v4[0] * Math.min(this.root.width, this.root.height) * 0.01;
           } else {
-            v = v[0];
+            _v4 = _v4[0];
           }
 
-          computedStyle[TEXT_STROKE_WIDTH$3] = v;
+          computedStyle[TEXT_STROKE_WIDTH$3] = _v4;
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         }
 
@@ -22197,7 +22209,7 @@
                     else if (renderMode === SVG$2 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v3 = {
+                          var _v5 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -22205,9 +22217,9 @@
                               props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v3);
+                          var clip = ctx.add(_v5);
 
-                          __config[NODE_DEFS_CACHE$2].push(_v3);
+                          __config[NODE_DEFS_CACHE$2].push(_v5);
 
                           virtualDom.bb.push({
                             type: 'item',
@@ -22298,7 +22310,7 @@
                     else if (renderMode === SVG$2 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
                         if (symbol) {
-                          var _v4 = {
+                          var _v6 = {
                             tagName: 'clipPath',
                             props: [],
                             children: [{
@@ -22306,9 +22318,9 @@
                               props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
                             }]
                           };
-                          var clip = ctx.add(_v4);
+                          var clip = ctx.add(_v6);
 
-                          __config[NODE_DEFS_CACHE$2].push(_v4);
+                          __config[NODE_DEFS_CACHE$2].push(_v6);
 
                           virtualDom.bb.push({
                             type: 'item',

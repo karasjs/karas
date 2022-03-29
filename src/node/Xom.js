@@ -1376,7 +1376,13 @@ class Xom extends Node {
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
     let color = currentStyle[COLOR];
     if(color[1] === INHERIT) {
-      __cacheStyle[COLOR] = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
+      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
+      if(v.k) {
+        __cacheStyle[COLOR] = v;
+      }
+      else {
+        __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+      }
     }
     else if(isNil(__cacheStyle[COLOR])) {
       if(color[1] === GRADIENT) {
@@ -1388,7 +1394,13 @@ class Xom extends Node {
     }
     let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
     if(textStrokeColor[1] === INHERIT) {
-      __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      if(v.k) {
+        __cacheStyle[TEXT_STROKE_COLOR] = v;
+      }
+      else {
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+      }
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
       if(textStrokeColor[1] === GRADIENT) {

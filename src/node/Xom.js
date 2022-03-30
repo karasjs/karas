@@ -1257,13 +1257,18 @@ class Xom extends Node {
     if(isNil(__cacheStyle[BACKGROUND_SIZE])) {
       __cacheStyle[BACKGROUND_SIZE] = true;
       computedStyle[BACKGROUND_SIZE] = (currentStyle[BACKGROUND_SIZE] || []).map(item => {
-        if(item[1] === AUTO) {
-          return -1;
+        if(Array.isArray(item)) {
+          // 每项是x/y2个
+          return item.map((item2, i) => {
+            if(item2[1] === AUTO) {
+              return -1;
+            }
+            else if(item2[1] === STRING) {
+              return item2[0] === 'contain' ? -2 : -3;
+            }
+            return this.__calSize(item2, i ? (by2 - by1) : (bx2 - bx1), true);
+          });
         }
-        else if(item[1] === STRING) {
-          return item[0] === 'contain' ? -2 : -3;
-        }
-        return this.__calSize(item, bx2 - bx1, by2 - by1, true);
       });
     }
     if(isNil(__cacheStyle[BACKGROUND_IMAGE])) {

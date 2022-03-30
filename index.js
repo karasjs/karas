@@ -20983,13 +20983,18 @@
         if (isNil$6(__cacheStyle[BACKGROUND_SIZE$2])) {
           __cacheStyle[BACKGROUND_SIZE$2] = true;
           computedStyle[BACKGROUND_SIZE$2] = (currentStyle[BACKGROUND_SIZE$2] || []).map(function (item) {
-            if (item[1] === AUTO$3) {
-              return -1;
-            } else if (item[1] === STRING$2) {
-              return item[0] === 'contain' ? -2 : -3;
-            }
+            if (Array.isArray(item)) {
+              // 每项是x/y2个
+              return item.map(function (item2, i) {
+                if (item2[1] === AUTO$3) {
+                  return -1;
+                } else if (item2[1] === STRING$2) {
+                  return item2[0] === 'contain' ? -2 : -3;
+                }
 
-            return _this5.__calSize(item, bx2 - bx1, by2 - by1, true);
+                return _this5.__calSize(item2, i ? by2 - by1 : bx2 - bx1, true);
+              });
+            }
           });
         }
 

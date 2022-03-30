@@ -1867,6 +1867,9 @@ class Xom extends Node {
       let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
       res.ctx = ctx = c.ctx;
     }
+    // webgl的偏移
+    res.dx = dx;
+    res.dy = dy;
     // 渲染样式
     let {
       [BACKGROUND_COLOR]: backgroundColor,

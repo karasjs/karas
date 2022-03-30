@@ -21646,8 +21646,11 @@
         else if (renderMode === WEBGL$3) {
           var c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
           res.ctx = ctx = c.ctx;
-        } // 渲染样式
+        } // webgl的偏移
 
+
+        res.dx = dx;
+        res.dy = dy; // 渲染样式
 
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],

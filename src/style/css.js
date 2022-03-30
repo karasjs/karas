@@ -919,7 +919,7 @@ function normalize(style, reset = []) {
             return [gradient.parseGradient(item), GRADIENT];
           }
           else {
-            return [rgba2int(temp), RGBA];
+            return [rgba2int(item), RGBA];
           }
         });
       }

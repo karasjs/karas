@@ -20179,7 +20179,6 @@
             computedStyle = this.computedStyle,
             parent = this.domParent,
             root = this.root;
-        var rem = root.computedStyle[FONT_SIZE$9];
         var isRoot = !parent;
         var parentComputedStyle = parent && parent.computedStyle;
         [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5].forEach(function (k) {
@@ -20264,6 +20263,8 @@
               computedStyle[LINE_HEIGHT$3] = parentComputedStyle[LINE_HEIGHT$3];
             }
           }
+        } else if (lineHeight[1] === NUMBER$5) {
+          computedStyle[LINE_HEIGHT$3] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight$1(computedStyle);
         } // 防止为0
         else {
           var v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);

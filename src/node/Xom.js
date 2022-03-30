@@ -337,7 +337,6 @@ class Xom extends Node {
     this.__hasComputeReflow = true;
 
     let { currentStyle, computedStyle, domParent: parent, root } = this;
-    let rem = root.computedStyle[FONT_SIZE];
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.computedStyle;
     [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT].forEach(k => {
@@ -448,6 +447,9 @@ class Xom extends Node {
           computedStyle[LINE_HEIGHT] = parentComputedStyle[LINE_HEIGHT];
         }
       }
+    }
+    else if(lineHeight[1] === NUMBER) {
+      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
     }
     // 防止为0
     else {

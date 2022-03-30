@@ -358,19 +358,19 @@ class Xom extends Node {
         computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
       }
       else if(v[1] === REM) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.computedStyle[FONT_SIZE] * v[0]);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v[0]);
       }
       else if(v[1] === VW) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.width * 0.01 * v[0]);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.width * 0.01 * v[0]);
       }
       else if(v[1] === VH) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (node.root.height * 0.01 * v[0]);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.height * 0.01 * v[0]);
       }
       else if(v[1] === VMAX) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(node.root.width, node.root.height) * 0.01 * v[0]);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(this.root.width, this.root.height) * 0.01 * v[0]);
       }
       else if(v[1] === VMIN) {
-        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(node.root.width, node.root.height) * 0.01 * v[0]);
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(this.root.width, this.root.height) * 0.01 * v[0]);
       }
       else {
         computedStyle[k] = v[0];

@@ -20196,15 +20196,15 @@
           else if (v[1] === PERCENT$7) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k] * v[0] * 0.01;
           } else if (v[1] === REM$7) {
-            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : node.root.computedStyle[FONT_SIZE$9] * v[0];
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : _this3.root.computedStyle[FONT_SIZE$9] * v[0];
           } else if (v[1] === VW$7) {
-            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : node.root.width * 0.01 * v[0];
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : _this3.root.width * 0.01 * v[0];
           } else if (v[1] === VH$7) {
-            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : node.root.height * 0.01 * v[0];
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : _this3.root.height * 0.01 * v[0];
           } else if (v[1] === VMAX$7) {
-            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : Math.max(node.root.width, node.root.height) * 0.01 * v[0];
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : Math.max(_this3.root.width, _this3.root.height) * 0.01 * v[0];
           } else if (v[1] === VMIN$7) {
-            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : Math.min(node.root.width, node.root.height) * 0.01 * v[0];
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : Math.min(_this3.root.width, _this3.root.height) * 0.01 * v[0];
           } else {
             computedStyle[k] = v[0];
           }
@@ -21148,8 +21148,8 @@
                 // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
                 loadBgi.url = bgi[0];
                 loadBgi.source = null;
-                var _node = _this5;
-                var root = _node.root;
+                var node = _this5;
+                var root = node.root;
                 inject.measureImg(bgi[0], function (data) {
                   // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
                   if (data.success && data.url === loadBgi.url && !_this5.isDestroyed) {
@@ -21161,11 +21161,11 @@
                       __before: function __before() {
                         __cacheStyle[BACKGROUND_IMAGE$1] = undefined;
                         var res = {};
-                        res[UPDATE_NODE$2] = _node;
+                        res[UPDATE_NODE$2] = node;
                         res[UPDATE_FOCUS$1] = REPAINT$1;
-                        res[UPDATE_CONFIG$2] = _node.__config;
+                        res[UPDATE_CONFIG$2] = node.__config;
 
-                        root.__addUpdate(_node, _node.__config, root, root.__config, res);
+                        root.__addUpdate(node, node.__config, root, root.__config, res);
                       }
                     });
                   }

@@ -110,7 +110,7 @@ class Ellipse extends Geom {
       let {
         isMulti, __cacheProps,
         __sx3: originX, __sy3: originY, width, height,
-        currentStyle: {
+        computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
           [BOX_SHADOW]: boxShadow,
           [FILTER]: filter,

@@ -37009,10 +37009,10 @@
             __cacheProps = this.__cacheProps,
             originX = this.__sx3,
             originY = this.__sy3,
-            _this$currentStyle = this.currentStyle,
-            strokeWidth = _this$currentStyle[STROKE_WIDTH$2],
-            boxShadow = _this$currentStyle[BOX_SHADOW$4],
-            filter = _this$currentStyle[FILTER$7];
+            _this$computedStyle = this.computedStyle,
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
+            boxShadow = _this$computedStyle[BOX_SHADOW$4],
+            filter = _this$computedStyle[FILTER$7];
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
             y1 = __cacheProps.y1,
@@ -37651,10 +37651,10 @@
               __cacheProps = this.__cacheProps,
               originX = this.__sx3,
               originY = this.__sy3,
-              _this$currentStyle = this.currentStyle,
-              strokeWidth = _this$currentStyle[STROKE_WIDTH$3],
-              boxShadow = _this$currentStyle[BOX_SHADOW$5],
-              filter = _this$currentStyle[FILTER$8];
+              _this$computedStyle = this.computedStyle,
+              strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
+              boxShadow = _this$computedStyle[BOX_SHADOW$5],
+              filter = _this$computedStyle[FILTER$8];
           this.buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
@@ -38283,10 +38283,10 @@
               originY = this.__sy3,
               width = this.width,
               height = this.height,
-              _this$currentStyle = this.currentStyle,
-              strokeWidth = _this$currentStyle[STROKE_WIDTH$4],
-              boxShadow = _this$currentStyle[BOX_SHADOW$6],
-              filter = _this$currentStyle[FILTER$9];
+              _this$computedStyle = this.computedStyle,
+              strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
+              boxShadow = _this$computedStyle[BOX_SHADOW$6],
+              filter = _this$computedStyle[FILTER$9];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -38845,10 +38845,10 @@
               originY = this.__sy3,
               width = this.width,
               height = this.height,
-              _this$currentStyle = this.currentStyle,
-              strokeWidth = _this$currentStyle[STROKE_WIDTH$7],
-              boxShadow = _this$currentStyle[BOX_SHADOW$9],
-              filter = _this$currentStyle[FILTER$c];
+              _this$computedStyle = this.computedStyle,
+              strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
+              boxShadow = _this$computedStyle[BOX_SHADOW$9],
+              filter = _this$computedStyle[FILTER$c];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);

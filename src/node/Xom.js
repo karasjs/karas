@@ -1242,6 +1242,9 @@ class Xom extends Node {
         [BACKGROUND_POSITION_X]: bgX,
       } = currentStyle;
       computedStyle[BACKGROUND_POSITION_X] = (bgX || []).map(item => {
+        if(item[1] === PERCENT) {
+          return item[0] + '%';
+        }
         return this.__calSize(item, bx2 - bx1, true);
       });
     }
@@ -1251,6 +1254,9 @@ class Xom extends Node {
         [BACKGROUND_POSITION_Y]: bgY,
       } = currentStyle;
       computedStyle[BACKGROUND_POSITION_Y] = (bgY || []).map(item => {
+        if(item[1] === PERCENT) {
+          return item[0] + '%';
+        }
         return this.__calSize(item, by2 - by1, true);
       });
     }

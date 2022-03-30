@@ -201,8 +201,16 @@ function renderImage(xom, renderMode, ctx, loadBgi,
     else if(h === -1) {
       h = w * height / width;
     }
-    let bgX = bx1 + (computedStyle[BACKGROUND_POSITION_X][i] || 0);
-    let bgY = by1 + (computedStyle[BACKGROUND_POSITION_Y][i] || 0);
+    let bgX = computedStyle[BACKGROUND_POSITION_X][i] || 0;
+    if(/%/.test(bgX)) {
+      bgX = (bgW - w) * parseFloat(bgX) * 0.01;
+    }
+    bgX += bx1;
+    let bgY = computedStyle[BACKGROUND_POSITION_Y][i] || 0;
+    if(/%/.test(bgY)) {
+      bgY = (bgH - h) * parseFloat(bgY) * 0.01;
+    }
+    bgY += by1;
     // 超出尺寸模拟mask截取
     let needMask = bgX < bx1 || bgY < by1 || (bgX + w) > (bx1 + bgW) || (bgY + h) > (by1 + bgH);
     // 计算因为repeat，需要向4个方向扩展渲染几个数量图片

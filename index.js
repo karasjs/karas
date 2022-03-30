@@ -15939,8 +15939,20 @@
         h = w * height / width;
       }
 
-      var bgX = bx1 + (computedStyle[BACKGROUND_POSITION_X$1][i] || 0);
-      var bgY = by1 + (computedStyle[BACKGROUND_POSITION_Y$1][i] || 0); // 超出尺寸模拟mask截取
+      var bgX = computedStyle[BACKGROUND_POSITION_X$1][i] || 0;
+
+      if (/%/.test(bgX)) {
+        bgX = (bgW - w) * parseFloat(bgX) * 0.01;
+      }
+
+      bgX += bx1;
+      var bgY = computedStyle[BACKGROUND_POSITION_Y$1][i] || 0;
+
+      if (/%/.test(bgY)) {
+        bgY = (bgH - h) * parseFloat(bgY) * 0.01;
+      }
+
+      bgY += by1; // 超出尺寸模拟mask截取
 
       var needMask = bgX < bx1 || bgY < by1 || bgX + w > bx1 + bgW || bgY + h > by1 + bgH; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
@@ -20968,6 +20980,10 @@
           __cacheStyle[BACKGROUND_POSITION_X$3] = true;
           var bgX = currentStyle[BACKGROUND_POSITION_X$3];
           computedStyle[BACKGROUND_POSITION_X$3] = (bgX || []).map(function (item) {
+            if (item[1] === PERCENT$6) {
+              return item[0] + '%';
+            }
+
             return _this5.__calSize(item, bx2 - bx1, true);
           });
         }
@@ -20976,6 +20992,10 @@
           __cacheStyle[BACKGROUND_POSITION_Y$3] = true;
           var bgY = currentStyle[BACKGROUND_POSITION_Y$3];
           computedStyle[BACKGROUND_POSITION_Y$3] = (bgY || []).map(function (item) {
+            if (item[1] === PERCENT$6) {
+              return item[0] + '%';
+            }
+
             return _this5.__calSize(item, by2 - by1, true);
           });
         }

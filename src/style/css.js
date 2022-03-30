@@ -1049,7 +1049,12 @@ function normalize(style, reset = []) {
             }
             res.push(v);
           }
-          res.push(rgba2int(boxShadow[5]));
+          if(boxShadow[5]) {
+            res.push(rgba2int(boxShadow[5]));
+          }
+          else {
+            res.push([0, 0, 0, 1]);
+          }
           res.push(boxShadow[6] || 'outset');
           bs.push(res);
         }

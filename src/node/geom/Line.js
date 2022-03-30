@@ -380,7 +380,7 @@ class Line extends Geom {
 
   get bbox() {
     let {
-      isMulti, __cacheProps, root,
+      isMulti, __cacheProps,
       __sx3: originX, __sy3: originY,
       currentStyle: {
         [STROKE_WIDTH]: strokeWidth,
@@ -393,24 +393,7 @@ class Line extends Geom {
     let bbox = super.bbox;
     let half = 0;
     strokeWidth.forEach(item => {
-      if(item[1] === REM) {
-        half = Math.max(item[0] * root.computedStyle[FONT_SIZE], half);
-      }
-      else if(item[1] === VW) {
-        half = Math.max(item[0] * root.width * 0.01, half);
-      }
-      else if(item[1] === VH) {
-        half = Math.max(item[0] * root.height * 0.01, half);
-      }
-      else if(item[1] === VMAX) {
-        half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
-      }
-      else if(item[1] === VMIN) {
-        half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
-      }
-      else {
-        half = Math.max(item[0], half);
-      }
+      half = Math.max(half, item);
     });
     let [x1s, y1s, x2s, y2s] = this.__spreadBbox(boxShadow, filter);
     x1s -= half;

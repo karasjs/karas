@@ -127,9 +127,8 @@ class Rect extends Geom {
   get bbox() {
     if(!this.__bbox) {
       let {
-        root,
         __sx3: originX, __sy3: originY, width, height,
-        currentStyle: {
+        computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
           [BOX_SHADOW]: boxShadow,
           [FILTER]: filter,
@@ -139,24 +138,7 @@ class Rect extends Geom {
       let bbox = super.bbox;
       let half = 0;
       strokeWidth.forEach(item => {
-        if(item[1] === REM) {
-          half = Math.max(item[0] * root.computedStyle[FONT_SIZE], half);
-        }
-        else if(item[1] === VW) {
-          half = Math.max(item[0] * root.width * 0.01, half);
-        }
-        else if(item[1] === VH) {
-          half = Math.max(item[0] * root.height * 0.01, half);
-        }
-        else if(item[1] === VMAX) {
-          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
-        }
-        else if(item[1] === VMIN) {
-          half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
-        }
-        else {
-          half = Math.max(item[0], half);
-        }
+        half = Math.max(half, item);
       });
       let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
       x1 -= half;

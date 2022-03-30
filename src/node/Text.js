@@ -831,26 +831,9 @@ class Text extends Node {
   }
 
   get bbox() {
-    let { __sx1: sx, __sy1: sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
-    let half = 0;
-    if(textStrokeWidth[1] === REM) {
-      half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE], half);
-    }
-    else if(textStrokeWidth[1] === VW) {
-      half = Math.max(textStrokeWidth[0] * root.width, half);
-    }
-    else if(textStrokeWidth[1] === VH) {
-      half = Math.max(textStrokeWidth[0] * root.height, half);
-    }
-    else if(textStrokeWidth[1] === VMAX) {
-      half = Math.max(textStrokeWidth[0] * Math.max(root.width, root.height) * 0.01, half);
-    }
-    else if(textStrokeWidth[1] === VMIN) {
-      half = Math.max(textStrokeWidth[0] * Math.min(root.width, root.height) * 0.01, half);
-    }
-    else {
-      half = Math.max(textStrokeWidth[0], half);
-    }
+    let { __sx1: sx, __sy1: sy, width, height,
+      computedStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
+    let half = textStrokeWidth;
     return [sx - half, sy - half, sx + width + half, sy + height + half];
   }
 

@@ -1870,9 +1870,9 @@ class Xom extends Node {
     }
     res.dx = dx;
     res.dy = dy;
-    // 计算好cacheStyle的内容，以及位图缓存指数，在canvas模式时已经提前算好
+    // 计算好cacheStyle的内容，以及位图缓存指数，在cache且canvas模式时已经提前算好
     let bx1, by1, bx2, by2;
-    if(renderMode === CANVAS) {
+    if(cache && renderMode === CANVAS) {
       bx1 = this.__bx1;
       bx2 = this.__bx2;
       by1 = this.__by1;

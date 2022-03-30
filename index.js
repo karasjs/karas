@@ -21725,11 +21725,11 @@
         }
 
         res.dx = dx;
-        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数，在canvas模式时已经提前算好
+        res.dy = dy; // 计算好cacheStyle的内容，以及位图缓存指数，在cache且canvas模式时已经提前算好
 
         var bx1, by1, bx2, by2;
 
-        if (renderMode === CANVAS$3) {
+        if (cache && renderMode === CANVAS$3) {
           bx1 = this.__bx1;
           bx2 = this.__bx2;
           by1 = this.__by1;

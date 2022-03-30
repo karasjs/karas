@@ -73,6 +73,7 @@ class TextBox {
     } = computedStyle;
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+      // ellipsis会强行设置
       if(dom) {
         computedStyle = dom.computedStyle;
         let font = css.setFontStyle(computedStyle);
@@ -80,8 +81,22 @@ class TextBox {
           ctx.font = font;
         }
         let color = cacheStyle[COLOR];
+        // 渐变
+        if(color.k) {
+          color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+        }
         if(ctx.fillStyle !== color) {
           ctx.fillStyle = color;
+        }
+        textStrokeWidth = computedStyle[TEXT_STROKE_WIDTH];
+        textStrokeColor = computedStyle[TEXT_STROKE_COLOR];
+        let sColor = cacheStyle[TEXT_STROKE_COLOR];
+        // 渐变
+        if(textStrokeColor.k) {
+          sColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
+        }
+        if(ctx.strokeStyle !== sColor) {
+          ctx.strokeStyle = sColor;
         }
       }
       let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
@@ -91,7 +106,7 @@ class TextBox {
           if(overFill) {
             ctx.fillText(c, x, y);
           }
-          if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
+          if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
             ctx.strokeText(c, x, y);
           }
           if(!overFill) {
@@ -104,7 +119,7 @@ class TextBox {
         if(overFill) {
           ctx.fillText(content, x, y);
         }
-        if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
+        if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
           ctx.strokeText(content, x, y);
         }
         if(!overFill) {
@@ -113,18 +128,29 @@ class TextBox {
       }
     }
     else if(renderMode === mode.SVG) {
+      let color = cacheStyle[COLOR];
+      if(color.k) {
+        let dom = this.parent.parent;
+        color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+      }
       let props = [
         ['x', x],
         ['y', y],
-        ['fill', cacheStyle[COLOR]],
+        ['fill', color],
         ['font-family', computedStyle[FONT_FAMILY]],
         ['font-weight', computedStyle[FONT_WEIGHT]],
         ['font-style', computedStyle[FONT_STYLE]],
         ['font-size', computedStyle[FONT_SIZE] + 'px'],
       ];
       // svg无法定义stroke的over
-      if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3)) {
-        props.push(['stroke', cacheStyle[TEXT_STROKE_COLOR]]);
+      if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+        let textStrokeColor = cacheStyle[TEXT_STROKE_COLOR];
+        // 渐变
+        if(textStrokeColor.k) {
+          let dom = this.parent.parent;
+          textStrokeColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
+        }
+        props.push(['stroke', textStrokeColor]);
         props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH]]);
       }
       if(letterSpacing) {

@@ -13,6 +13,7 @@ let o = {
   VH: 11,
   VMAX: 12,
   VMIN: 13,
+  GRADIENT: 14, // 特殊格式，color/fill/stroke用给ctx传值
   /**
    * 通用的格式化计算数值单位的方法，百分比/像素/REM/VW/auto和纯数字
    * @param v value

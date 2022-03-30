@@ -24,6 +24,7 @@ import Cache from '../refresh/Cache';
 import font from '../style/font';
 import bs from '../style/bs';
 import mbm from '../style/mbm';
+import reset from '../style/reset';
 
 const { svgPolygon } = painter;
 const { CANVAS, SVG, WEBGL } = mode;
@@ -111,6 +112,20 @@ const {
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
     TEXT_STROKE_OVER,
+    FONT_WEIGHT,
+    FLEX_DIRECTION,
+    JUSTIFY_CONTENT,
+    ALIGN_ITEMS,
+    ALIGN_SELF,
+    FLEX_GROW,
+    FLEX_SHRINK,
+    LINE_CLAMP,
+    ORDER,
+    FLEX_WRAP,
+    ALIGN_CONTENT,
+    TEXT_ALIGN,
+    LETTER_SPACING,
+    WHITE_SPACE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -152,9 +167,9 @@ const {
     NODE_CACHE_AS_BITMAP,
   }
 } = enums;
-const { AUTO, PX, PERCENT, INHERIT, NUMBER, REM, VW, VH, VMAX, VMIN, DEG } = unit;
+const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
-const { calRelative } = css;
+const { calRelative, getFontFamily, calNormalLineHeight } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
 const { point2d } = mx;
@@ -285,16 +300,16 @@ class Xom extends Node {
     ].forEach(k => {
       let a = STYLE_KEY[style2Upper('margin' + k)];
       let b = STYLE_KEY[style2Upper('padding' + k)];
-      computedStyle[a] = this.__calSize(currentStyle[a], w);
-      computedStyle[b] = this.__calSize(currentStyle[b], w);
+      computedStyle[a] = this.__calSize(currentStyle[a], w, true);
+      computedStyle[b] = this.__calSize(currentStyle[b], w, true);
     });
   }
 
-  __calSize(mp, w) {
+  __calSize(mp, w, includePercent) {
     if(mp[1] === PX) {
       return mp[0];
     }
-    else if(mp[1] === PERCENT) {
+    else if(mp[1] === PERCENT && includePercent) {
       return mp[0] * w * 0.01;
     }
     else if(mp[1] === REM) {
@@ -315,6 +330,149 @@ class Xom extends Node {
     return 0;
   }
 
+  __computeReflow() {
+    if(this.__hasComputeReflow) {
+      return;
+    }
+    this.__hasComputeReflow = true;
+
+    let { currentStyle, computedStyle, domParent: parent, root } = this;
+    let isRoot = !parent;
+    let parentComputedStyle = parent && parent.computedStyle;
+    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT].forEach(k => {
+      let v = currentStyle[k];
+      // ff特殊处理
+      if(k === FONT_FAMILY) {
+        if(v[1] === INHERIT) {
+          computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
+        }
+        else {
+          computedStyle[k] = getFontFamily(v[0]);
+        }
+      }
+      else if(v[1] === INHERIT) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
+      }
+      // 只有fontSize会有%
+      else if(v[1] === PERCENT) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (parentComputedStyle[k] * v[0] * 0.01);
+      }
+      else if(v[1] === REM) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.computedStyle[FONT_SIZE] * v[0]);
+      }
+      else if(v[1] === VW) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.width * 0.01 * v[0]);
+      }
+      else if(v[1] === VH) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (this.root.height * 0.01 * v[0]);
+      }
+      else if(v[1] === VMAX) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.max(this.root.width, this.root.height) * 0.01 * v[0]);
+      }
+      else if(v[1] === VMIN) {
+        computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : (Math.min(this.root.width, this.root.height) * 0.01 * v[0]);
+      }
+      else {
+        computedStyle[k] = v[0];
+      }
+    });
+    [
+      BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH,
+      BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH,
+    ].forEach(k => {
+      // border-width不支持百分比
+      let item = currentStyle[k];
+      computedStyle[k] = this.__calSize(item, 0, false);
+    });
+    [
+      POSITION,
+      DISPLAY,
+      FLEX_DIRECTION,
+      JUSTIFY_CONTENT,
+      ALIGN_ITEMS,
+      ALIGN_SELF,
+      FLEX_GROW,
+      FLEX_SHRINK,
+      LINE_CLAMP,
+      ORDER,
+      FLEX_WRAP,
+      ALIGN_CONTENT,
+      OVERFLOW,
+      TEXT_OVERFLOW,
+    ].forEach(k => {
+      computedStyle[k] = currentStyle[k];
+    });
+    // 匿名块对象
+    if(computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
+      if(['block', 'flex'].indexOf(computedStyle[DISPLAY]) === -1) {
+        computedStyle[DISPLAY] = 'block';
+      }
+    }
+    let textAlign = currentStyle[TEXT_ALIGN];
+    if(textAlign[1] === INHERIT) {
+      computedStyle[TEXT_ALIGN] = isRoot ? 'left' : parentComputedStyle[TEXT_ALIGN];
+    }
+    else {
+      computedStyle[TEXT_ALIGN] = textAlign[0];
+    }
+    let fontSize = computedStyle[FONT_SIZE];
+    let lineHeight = currentStyle[LINE_HEIGHT];
+    // lineHeight继承很特殊，数字和normal不同于普通单位
+    if(lineHeight[1] === INHERIT) {
+      if(isRoot) {
+        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+      }
+      else {
+        let p = parent;
+        let ph;
+        while(p) {
+          ph = p.currentStyle[LINE_HEIGHT];
+          if(ph[1] !== INHERIT) {
+            break;
+          }
+          p = p.domParent;
+        }
+        // 到root还是inherit或normal，或者中途遇到了normal，使用normal
+        if([AUTO, INHERIT].indexOf(ph[1]) > -1) {
+          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+        }
+        // 数字继承
+        else if(ph[1] === NUMBER) {
+          computedStyle[LINE_HEIGHT] = Math.max(ph[0], 0) * fontSize;
+        }
+        // 单位继承
+        else {
+          computedStyle[LINE_HEIGHT] = parentComputedStyle[LINE_HEIGHT];
+        }
+      }
+    }
+    else if(lineHeight[1] === NUMBER) {
+      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
+    }
+    // 防止为0
+    else {
+      let v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);
+      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle);
+    }
+    let letterSpacing = currentStyle[LETTER_SPACING];
+    if(letterSpacing[1] === INHERIT) {
+      computedStyle[LETTER_SPACING] = isRoot ? 0 : parentComputedStyle[LETTER_SPACING];
+    }
+    else {
+      computedStyle[LETTER_SPACING] = this.__calSize(letterSpacing, fontSize, true);
+    }
+    //whiteSpace
+    let whiteSpace = currentStyle[WHITE_SPACE];
+    if(whiteSpace[1] === INHERIT) {
+      computedStyle[WHITE_SPACE] = isRoot ? 'normal' : parentComputedStyle[WHITE_SPACE];
+    }
+    else {
+      computedStyle[WHITE_SPACE] = whiteSpace[0];
+    }
+  }
+
   // dom常用的几种尺寸赋值
   __ioSize(w, h) {
     let computedStyle = this.computedStyle;
@@ -329,35 +487,6 @@ class Xom extends Node {
       this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
       this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
     }
-  }
-
-  // 换算margin/padding为px单位，onlyFixedValue只考虑绝对值，不考虑百分比等
-  __calMp(v, w, onlyFixedValue) {
-    let n = 0;
-    if(v[1] === PX) {
-      n += v[0];
-    }
-    else if(v[1] === PERCENT && !onlyFixedValue) {
-      v[0] *= w * 0.01;
-      v[1] = PX;
-      n += v[0];
-    }
-    else if(v[1] === REM) {
-      n += v[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(v[1] === VW) {
-      n += v[0] * this.root.width * 0.01;
-    }
-    else if(v[1] === VH) {
-      n += v[0] * this.root.height * 0.01;
-    }
-    else if(v[1] === VMAX) {
-      n += v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(v[1] === VMIN) {
-      n += v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    return n;
   }
 
   // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
@@ -378,19 +507,19 @@ class Xom extends Node {
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
-    let mbp = this.__calMp(marginLeft, w, !isDirectItem)
-      + this.__calMp(marginRight, w, !isDirectItem)
-      + this.__calMp(paddingLeft, w, !isDirectItem)
-      + this.__calMp(paddingRight, w, !isDirectItem)
+    let mbp = this.__calSize(marginLeft, w, isDirectItem)
+      + this.__calSize(marginRight, w, isDirectItem)
+      + this.__calSize(paddingLeft, w, isDirectItem)
+      + this.__calSize(paddingRight, w, isDirectItem)
       + borderLeftWidth + borderRightWidth;
     if(isDirectionRow) {
       res = res.map(item => item + mbp);
     }
     else {
-      let mbp = this.__calMp(marginTop, w, !isDirectItem)
-        + this.__calMp(marginBottom, w, !isDirectItem)
-        + this.__calMp(paddingTop, w, !isDirectItem)
-        + this.__calMp(paddingBottom, w, !isDirectItem)
+      let mbp = this.__calSize(marginTop, w, isDirectItem)
+        + this.__calSize(marginBottom, w, isDirectItem)
+        + this.__calSize(paddingTop, w, isDirectItem)
+        + this.__calSize(paddingBottom, w, isDirectItem)
         + borderTopWidth + borderBottomWidth;
       res = res.map(item => item + mbp);
     }
@@ -399,7 +528,7 @@ class Xom extends Node {
 
   // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局
   __layout(data, isAbs, isColumn) {
-    css.computeReflow(this);
+    this.__computeReflow();
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __config, __ellipsis } = this;
     // 虚拟省略号每次清除
@@ -1172,13 +1301,19 @@ class Xom extends Node {
       });
     }
     if(isNil(__cacheStyle[BACKGROUND_IMAGE])) {
-      let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE].slice(0);
+      let bgI = currentStyle[BACKGROUND_IMAGE];
+      computedStyle[BACKGROUND_IMAGE] = bgI.map(item => {
+        if(item) {
+          return item[0];
+        }
+        return null;
+      });
       __cacheStyle[BACKGROUND_IMAGE] = bgI.map((bgi, i) => {
         if(!bgi) {
           return null;
         }
         // 防止隐藏不加载背景图
-        if(util.isString(bgi)) {
+        if(bgi[1] === STRING) {
           let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
           let cache = inject.IMG[BACKGROUND_IMAGE];
           if(cache && cache.state === inject.LOADED) {
@@ -1187,13 +1322,13 @@ class Xom extends Node {
             loadBgi.width = cache.width;
             loadBgi.height = cache.height;
           }
-          else if(loadBgi.url !== bgi) {
+          else if(loadBgi.url !== bgi[0]) {
             // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-            loadBgi.url = bgi;
+            loadBgi.url = bgi[0];
             loadBgi.source = null;
             let node = this;
             let root = node.root;
-            inject.measureImg(bgi, data => {
+            inject.measureImg(bgi[0], data => {
               // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
               if(data.success && data.url === loadBgi.url && !this.isDestroyed) {
                 loadBgi.source = data.source;
@@ -1220,7 +1355,7 @@ class Xom extends Node {
           }
           return true;
         }
-        else if(!isInline && bgi.k) {
+        else if(!isInline && bgi[0] && bgi[1] === GRADIENT) {
           // gradient在渲染时才生成
           return true;
         }
@@ -1374,21 +1509,41 @@ class Xom extends Node {
       computedStyle[FONT_STYLE] = currentStyle[FONT_STYLE][0];
     }
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
-    if(currentStyle[COLOR][1] === INHERIT) {
-      computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
-      __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+    let color = currentStyle[COLOR];
+    if(color[1] === INHERIT) {
+      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
+      if(v.k) {
+        __cacheStyle[COLOR] = v;
+      }
+      else {
+        __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+      }
     }
     else if(isNil(__cacheStyle[COLOR])) {
-      computedStyle[COLOR] = rgba2int(currentStyle[COLOR][0]);
-      __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR]);
+      if(color[1] === GRADIENT) {
+        __cacheStyle[COLOR] = computedStyle[COLOR] = color[0];
+      }
+      else if(color[1] === RGBA) {
+        __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color[0]));
+      }
     }
-    if(currentStyle[TEXT_STROKE_COLOR][1] === INHERIT) {
-      computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
-      __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+    let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
+    if(textStrokeColor[1] === INHERIT) {
+      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      if(v.k) {
+        __cacheStyle[TEXT_STROKE_COLOR] = v;
+      }
+      else {
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+      }
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_COLOR])) {
-      computedStyle[TEXT_STROKE_COLOR] = rgba2int(currentStyle[TEXT_STROKE_COLOR][0]);
-      __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR]);
+      if(textStrokeColor[1] === GRADIENT) {
+        __cacheStyle[TEXT_STROKE_COLOR] = computedStyle[TEXT_STROKE_COLOR] = textStrokeColor[0];
+      }
+      else if(textStrokeColor[1] === RGBA) {
+        __cacheStyle[TEXT_STROKE_COLOR] = int2rgba(computedStyle[TEXT_STROKE_COLOR] = rgba2int(textStrokeColor[0]));
+      }
     }
     if(currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
       computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : 0;
@@ -1715,7 +1870,7 @@ class Xom extends Node {
     }
     res.dx = dx;
     res.dy = dy;
-    // 计算好cacheStyle的内容，以及位图缓存指数，在cache模式时已经提前算好
+    // 计算好cacheStyle的内容，以及位图缓存指数，在cache且canvas模式时已经提前算好
     let bx1, by1, bx2, by2;
     if(cache && renderMode === CANVAS) {
       bx1 = this.__bx1;
@@ -2001,7 +2156,7 @@ class Xom extends Node {
             i = length - 1 - i;
             if(util.isString(bgi)) {
               let loadBgi = this.__loadBgi[i];
-              if(loadBgi.url === backgroundImage[i]) {
+              if(loadBgi.url === bgi) {
                 let uuid = bg.renderImage(this, renderMode, offscreen && offscreen.ctx || ctx, loadBgi,
                   0, 0, iw, ih, btlr, btrr, bbrr, bblr,
                   currentStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
@@ -2248,7 +2403,7 @@ class Xom extends Node {
         i = length - 1 - i;
         if(util.isString(bgi)) {
           let loadBgi = this.__loadBgi[i];
-          if(loadBgi.url === backgroundImage[i]) {
+          if(loadBgi.url === bgi) {
             bg.renderImage(this, renderMode, ctx, loadBgi,
               bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
               currentStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);

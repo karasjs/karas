@@ -83,7 +83,7 @@ const {
   ELLIPSIS,
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
-const { calAbsolute, isRelativeOrAbsolute, calAbsFixedSize, computeReflow } = css;
+const { isRelativeOrAbsolute } = css;
 const { extend, isNil, isFunction } = util;
 const { CANVAS, SVG, WEBGL } = mode;
 
@@ -378,7 +378,7 @@ class Dom extends Xom {
    * @private
    */
   __tryLayInline(w, total) {
-    css.computeReflow(this);
+    this.__computeReflow();
     let { flowChildren, currentStyle: {
       [DISPLAY]: display,
       [WIDTH]: width,
@@ -408,7 +408,7 @@ class Dom extends Xom {
     // inlineBlock尝试所有孩子在一行上
     else {
       if(width[1] !== AUTO) {
-        w -= this.__calSize(width, total);
+        w -= this.__calSize(width, total, true);
       }
       else {
         for(let i = 0; i < flowChildren.length; i++) {
@@ -430,13 +430,13 @@ class Dom extends Xom {
         }
       }
       // ib要减去末尾mpb
-      w -= this.__calSize(marginRight, total);
-      w -= this.__calSize(paddingRight, total);
+      w -= this.__calSize(marginRight, total, true);
+      w -= this.__calSize(paddingRight, total, true);
       w -= borderRightWidth;
     }
     // 还要减去开头的mpb
-    w -= this.__calSize(marginLeft, total);
-    w -= this.__calSize(paddingLeft, total);
+    w -= this.__calSize(marginLeft, total, true);
+    w -= this.__calSize(paddingLeft, total, true);
     w -= borderLeftWidth;
     return w;
   }
@@ -496,7 +496,7 @@ class Dom extends Xom {
    * @private
    */
   __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
-    computeReflow(this);
+    this.__computeReflow();
     let b = 0;
     let min = 0;
     let max = 0;
@@ -521,11 +521,11 @@ class Dom extends Xom {
     let fixedSize;
     // flex的item固定basis计算
     if(isFixed) {
-      b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h);
+      b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
     // 已声明主轴尺寸的，当basis是auto时为main值
     else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
-      b = fixedSize = this.__calSize(main, isDirectionRow ? w : h);
+      b = fixedSize = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // 非固定尺寸的basis为auto时降级为content
     else if(isAuto) {
@@ -2457,7 +2457,7 @@ class Dom extends Xom {
         return;
       }
       // 先根据容器宽度计算margin/padding，匿名块对象特殊处理，此时没有computedStyle
-      computeReflow(item);
+      item.__computeReflow();
       item.__mp(currentStyle, computedStyle, clientWidth);
       let {
         [LEFT]: left,
@@ -2477,28 +2477,28 @@ class Dom extends Xom {
       // 判断何种方式的定位，比如左+宽度，左+右之类
       if(left[1] !== AUTO) {
         fixedLeft = true;
-        computedStyle[LEFT] = calAbsolute(currentStyle, 'left', left, clientWidth, this.root);
+        computedStyle[LEFT] = this.__calSize(left, clientWidth, true);
       }
       else {
         computedStyle[LEFT] = 'auto';
       }
       if(right[1] !== AUTO) {
         fixedRight = true;
-        computedStyle[RIGHT] = calAbsolute(currentStyle, 'right', right, clientWidth, this.root);
+        computedStyle[RIGHT] = this.__calSize(right, clientWidth, true);
       }
       else {
         computedStyle[RIGHT] = 'auto';
       }
       if(top[1] !== AUTO) {
         fixedTop = true;
-        computedStyle[TOP] = calAbsolute(currentStyle, 'top', top, clientHeight, this.root);
+        computedStyle[TOP] = this.__calSize(top, clientHeight, true);
       }
       else {
         computedStyle[TOP] = 'auto';
       }
       if(bottom[1] !== AUTO) {
         fixedBottom = true;
-        computedStyle[BOTTOM] = calAbsolute(currentStyle, 'bottom', bottom, clientHeight, this.root);
+        computedStyle[BOTTOM] = this.__calSize(bottom, clientHeight, true);
       }
       else {
         computedStyle[BOTTOM] = 'auto';
@@ -2511,12 +2511,12 @@ class Dom extends Xom {
       else if(fixedLeft) {
         x2 = x + computedStyle[LEFT];
         if(width[1] !== AUTO) {
-          w2 = calAbsFixedSize(width, clientWidth, this.root);
+          w2 = this.__calSize(width, clientWidth, true);
         }
       }
       else if(fixedRight) {
         if(width[1] !== AUTO) {
-          w2 = calAbsFixedSize(width, clientWidth, this.root);
+          w2 = this.__calSize(width, clientWidth, true);
         }
         else {
           onlyRight = true;
@@ -2533,7 +2533,7 @@ class Dom extends Xom {
       else {
         x2 = x + paddingLeft;
         if(width[1] !== AUTO) {
-          w2 = calAbsFixedSize(width, clientWidth, this.root);
+          w2 = this.__calSize(width, clientWidth, true);
         }
       }
       // top/bottom/height优先级同上
@@ -2544,12 +2544,12 @@ class Dom extends Xom {
       else if(fixedTop) {
         y2 = y + computedStyle[TOP];
         if(height[1] !== AUTO) {
-          h2 = calAbsFixedSize(height, clientHeight, this.root);
+          h2 = this.__calSize(height, clientHeight, true);
         }
       }
       else if(fixedBottom) {
         if(height[1] !== AUTO) {
-          h2 = calAbsFixedSize(height, clientHeight, this.root);
+          h2 = this.__calSize(height, clientHeight, true);
         }
         else {
           onlyBottom = true;
@@ -2576,7 +2576,7 @@ class Dom extends Xom {
           prev = prev.prev;
         }
         if(height[1] !== AUTO) {
-          h2 = calAbsFixedSize(height, clientHeight, this.root);
+          h2 = this.__calSize(height, clientHeight, true);
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界

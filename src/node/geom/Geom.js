@@ -43,11 +43,10 @@ const {
     NODE_CACHE,
   }
 } = enums;
-const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
+const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA, GRADIENT } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
 const { WEBGL } = mode;
-const { computeReflow } = css;
 
 const REGISTER = {};
 
@@ -66,6 +65,7 @@ class Geom extends Xom {
   }
 
   __tryLayInline(w, total) {
+    this.__computeReflow();
     // 无children，直接以style的width为宽度，不定义则为0
     let { currentStyle: {
       [WIDTH]: width,
@@ -73,156 +73,25 @@ class Geom extends Xom {
       [MARGIN_RIGHT]: marginRight,
       [PADDING_LEFT]: paddingLeft,
       [PADDING_RIGHT]: paddingRight,
+    }, computedStyle: {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
     } } = this;
-    if(width[1] === PX) {
-      w -= width[0];
-    }
-    else if(width[1] === PERCENT) {
-      w -= total * width[0] * 0.01;
-    }
-    else if(width[1] === REM) {
-      w -= width[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(width[1] === VW) {
-      w -= width[0] * this.root.width * 0.01;
-    }
-    else if(width[1] === VH) {
-      w -= width[0] * this.root.height * 0.01;
-    }
-    else if(width[1] === VMAX) {
-      w -= width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(width[1] === VMIN) {
-      w -= width[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    if(width[1] !== AUTO) {
+      w -= this.__calSize(width, total, true);
     }
     // 减去水平mbp
-    if(marginLeft[1] === PX) {
-      w -= marginLeft[0];
-    }
-    else if(marginLeft[1] === PERCENT) {
-      w -= marginLeft[0] * total * 0.01;
-    }
-    else if(marginLeft[1] === REM) {
-      w -= marginLeft[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(marginLeft[1] === VW) {
-      w -= marginLeft[0] * this.root.width * 0.01;
-    }
-    else if(marginLeft[1] === VH) {
-      w -= marginLeft[0] * this.root.height * 0.01;
-    }
-    else if(marginLeft[1] === VMAX) {
-      w -= marginLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(marginLeft[1] === VMIN) {
-      w -= marginLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(paddingLeft[1] === PX) {
-      w -= paddingLeft[0];
-    }
-    else if(paddingLeft[1] === PERCENT) {
-      w -= paddingLeft[0] * total * 0.01;
-    }
-    else if(paddingLeft[1] === REM) {
-      w -= paddingLeft[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(paddingLeft[1] === VW) {
-      w -= paddingLeft[0] * this.root.width * 0.01;
-    }
-    else if(paddingLeft[1] === VH) {
-      w -= paddingLeft[0] * this.root.height * 0.01;
-    }
-    else if(paddingLeft[1] === VMAX) {
-      w -= paddingLeft[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(paddingLeft[1] === VMIN) {
-      w -= paddingLeft[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(borderLeftWidth[1] === PX) {
-      w -= borderLeftWidth[0];
-    }
-    else if(borderLeftWidth[1] === REM) {
-      w -= borderLeftWidth[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(borderLeftWidth[1] === VW) {
-      w -= borderLeftWidth[0] * this.root.width * 0.01;
-    }
-    else if(borderLeftWidth[1] === VH) {
-      w -= borderLeftWidth[0] * this.root.height * 0.01;
-    }
-    else if(borderLeftWidth[1] === VMAX) {
-      w -= borderLeftWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(borderLeftWidth[1] === VMIN) {
-      w -= borderLeftWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(marginRight[1] === PX) {
-      w -= marginRight[0];
-    }
-    else if(marginRight[1] === PERCENT) {
-      w -= marginRight[0] * total * 0.01;
-    }
-    else if(marginRight[1] === REM) {
-      w -= marginRight[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(marginRight[1] === VW) {
-      w -= marginRight[0] * this.root.width * 0.01;
-    }
-    else if(marginRight[1] === VH) {
-      w -= marginRight[0] * this.root.height * 0.01;
-    }
-    else if(marginRight[1] === VMAX) {
-      w -= marginRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(marginRight[1] === VMIN) {
-      w -= marginRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(paddingRight[1] === PX) {
-      w -= paddingRight[0];
-    }
-    else if(paddingRight[1] === PERCENT) {
-      w -= paddingRight[0] * total * 0.01;
-    }
-    else if(paddingRight[1] === REM) {
-      w -= paddingRight[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(paddingRight[1] === VW) {
-      w -= paddingRight[0] * this.root.width * 0.01;
-    }
-    else if(paddingRight[1] === VH) {
-      w -= paddingRight[0] * this.root.height * 0.01;
-    }
-    else if(paddingRight[1] === VMAX) {
-      w -= paddingRight[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(paddingRight[1] === VMIN) {
-      w -= paddingRight[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
-    if(borderRightWidth[1] === PX) {
-      w -= borderRightWidth[0];
-    }
-    else if(borderRightWidth[1] === REM) {
-      w -= borderRightWidth[0] * this.root.computedStyle[FONT_SIZE];
-    }
-    else if(borderRightWidth[1] === VW) {
-      w -= borderRightWidth[0] * this.root.width * 0.01;
-    }
-    else if(borderRightWidth[1] === VH) {
-      w -= borderRightWidth[0] * this.root.height * 0.01;
-    }
-    else if(borderRightWidth[1] === VMAX) {
-      w -= borderRightWidth[0] * Math.max(this.root.width, this.root.height) * 0.01;
-    }
-    else if(borderRightWidth[1] === VMIN) {
-      w -= borderRightWidth[0] * Math.min(this.root.width, this.root.height) * 0.01;
-    }
+    w -= this.__calSize(marginRight, total, true);
+    w -= this.__calSize(paddingRight, total, true);
+    w -= borderRightWidth;
+    w -= this.__calSize(marginLeft, total, true);
+    w -= this.__calSize(paddingLeft, total, true);
+    w -= borderLeftWidth;
     return w;
   }
 
   __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
-    computeReflow(this);
+    this.__computeReflow();
     let b = 0;
     let min = 0;
     let max = 0;
@@ -238,50 +107,10 @@ class Geom extends Xom {
     // basis3种情况：auto、固定、content，只区分固定和其它
     let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
     if(isFixed) {
-      if(flexBasis[1] === PX) {
-        b = max = min = flexBasis[0];
-      }
-      else if(flexBasis[1] === PERCENT) {
-        b = max = min = flexBasis[0] * 0.01 * (isDirectionRow ? w : h);
-      }
-      else if(flexBasis[1] === REM) {
-        b = max = min = flexBasis[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(flexBasis[1] === VW) {
-        b = max = min = flexBasis[0] * this.root.width * 0.01;
-      }
-      else if(flexBasis[1] === VH) {
-        b = max = min = flexBasis[0] * this.root.height * 0.01;
-      }
-      else if(flexBasis[1] === VMAX) {
-        b = max = min = flexBasis[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(flexBasis[1] === VMIN) {
-        b = max = min = flexBasis[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
+      b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
     else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
-      if(main[1] === PX) {
-        b = max = min = main[0];
-      }
-      else if(main[1] === PERCENT) {
-        b = max = min = main[0] * 0.01 * (isDirectionRow ? w : h);
-      }
-      else if(main[1] === REM) {
-        b = max = min = main[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(main[1] === VW) {
-        b = max = min = main[0] * this.root.width * 0.01;
-      }
-      else if(main[1] === VH) {
-        b = max = min = main[0] * this.root.height * 0.01;
-      }
-      else if(main[1] === VMAX) {
-        b = max = min = main[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(main[1] === VMIN) {
-        b = max = min = main[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
+      b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // 直接item的mpb影响basis
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
@@ -330,30 +159,7 @@ class Geom extends Xom {
       let strokeWidth = currentStyle[STROKE_WIDTH] || [];
       let w = this.width;
       computedStyle[STROKE_WIDTH] = strokeWidth.map(item => {
-        if(item[1] === PX) {
-          return item[0];
-        }
-        else if(item[1] === PERCENT) {
-          return item[0] * w * 0.01;
-        }
-        else if(item[1] === REM) {
-          return item[0] * this.root.computedStyle[FONT_SIZE];
-        }
-        else if(item[1] === VW) {
-          return item[0] * this.root.width * 0.01;
-        }
-        else if(item[1] === VH) {
-          return item[0] * this.root.height * 0.01;
-        }
-        else if(item[1] === VMAX) {
-          return item[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        }
-        else if(item[1] === VMIN) {
-          return item[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
-        else {
-          return 0;
-        }
+        return this.__calSize(item, w, true);
       });
     }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
@@ -374,11 +180,11 @@ class Geom extends Xom {
     [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
-        computedStyle[k] = v;
-        let res = [];
+        let cs = computedStyle[k] = [];
+        let res = __cacheStyle[k] = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
-            if(item && (item.k === 'linear' || item.k === 'radial' || item.k === 'conic')) {
+            if(item[0] && item[1] === GRADIENT) {
               if(renderMode === WEBGL) {
                 let cache = this.__config[NODE_CACHE];
                 x3 += cache.dx;
@@ -386,17 +192,20 @@ class Geom extends Xom {
                 y3 += cache.dy;
                 y4 += cache.dy;
               }
-              res.push(this.__gradient(renderMode, ctx, x3, y3, x4, y4, item));
+              let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]);
+              cs.push(item[0]);
+              res.push(t);
             }
-            else if(item[3] > 0) {
-              res.push(int2rgba(item));
+            else if(item[1] === RGBA && item[0][3] > 0) {
+              cs.push(item[0]);
+              res.push(int2rgba(item[0]));
             }
             else {
+              cs.push('none');
               res.push('none');
             }
           });
         }
-        __cacheStyle[k] = res;
       }
     });
     return res;

@@ -134,6 +134,31 @@
   * 100/200...
 * color
   * inherit 默认，根元素为#000
+  * * \#rgb/rgb/rgba
+  * linearGradient
+    * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
+  * radialGradient
+    * 扩展支持radialGradient(cx cy ax ay tx ty ratio, color-stop)格式，其中c为开始圆心，a为长轴或半径，t为结束圆心默认同c，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+* textStrokeColor
+  * inherit 默认，根元素为#000
+  * * \#rgb/rgb/rgba
+  * linearGradient
+    * 扩展支持linearGradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
+  * radialGradient
+    * 扩展支持radialGradient(cx cy ax ay tx ty ratio, color-stop)格式，其中c为开始圆心，a为长轴或半径，t为结束圆心默认同c，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+* textStrokeWidth
+  * inherit 默认，根元素为0
+  * px
+  * %
+  * rem
+  * vw
+  * vh
+  * vmax
+  * vmin
+* textStrokeOver
+  * inherit 默认，根元素为none
+  * none
+  * fill
 * lineHeight
   * normal 默认
   * px

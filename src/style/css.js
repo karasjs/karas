@@ -2,7 +2,6 @@ import unit from './unit';
 import font from './font';
 import gradient from './gradient';
 import reg from './reg';
-import reset from './reset';
 import abbr from './abbr';
 import enums from '../util/enums';
 import util from '../util/util';
@@ -10,7 +9,7 @@ import inject from '../util/inject';
 import key from '../animate/key';
 import change from '../refresh/change';
 
-const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
+const { STYLE_KEY, style2Upper, STYLE_KEY: {
   POSITION,
   WIDTH,
   HEIGHT,
@@ -52,10 +51,6 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   STROKE,
   STROKE_WIDTH,
   STROKE_DASHARRAY,
-  BORDER_TOP_WIDTH,
-  BORDER_RIGHT_WIDTH,
-  BORDER_BOTTOM_WIDTH,
-  BORDER_LEFT_WIDTH,
   DISPLAY,
   FLEX_DIRECTION,
   FLEX_GROW,
@@ -72,12 +67,10 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   LINE_CLAMP,
   ORDER,
   FLEX_WRAP,
-  ALIGN_CONTENT,
   TRANSLATE_PATH,
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
-  OVERFLOW,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, rgba2int, equalArr } = util;

@@ -7331,159 +7331,6 @@
     renderConic: renderConic
   };
 
-  var DOM = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'inherit',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'inherit',
-    backgroundImage: null,
-    backgroundColor: 'transparent',
-    backgroundSize: 'auto',
-    backgroundRepeat: 'repeat',
-    backgroundPositionX: 0,
-    backgroundPositionY: 0,
-    backgroundClip: 'borderBox',
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: 'transparent',
-    borderTopStyle: 'none',
-    borderRightStyle: 'none',
-    borderBottomStyle: 'none',
-    borderLeftStyle: 'none',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    order: 0,
-    justifyContent: 'flexStart',
-    alignItems: 'stretch',
-    alignSelf: 'auto',
-    alignContent: 'stretch',
-    textAlign: 'inherit',
-    letterSpacing: 'inherit',
-    transformOrigin: 'center',
-    visibility: 'inherit',
-    opacity: 1,
-    zIndex: 0,
-    transform: null,
-    translateX: 0,
-    translateY: 0,
-    translateZ: 0,
-    scaleX: 1,
-    scaleY: 1,
-    scaleZ: 1,
-    skewX: 0,
-    skewY: 0,
-    rotateX: 0,
-    rotateY: 0,
-    rotateZ: 0,
-    rotate3d: '0, 0, 0, 0',
-    perspective: 0,
-    perspectiveOrigin: 'center',
-    filter: null,
-    boxShadow: null,
-    pointerEvents: 'inherit',
-    overflow: 'visible',
-    mixBlendMode: 'normal',
-    whiteSpace: 'inherit',
-    textOverflow: 'clip',
-    lineClamp: 0,
-    textStrokeWidth: 'inherit',
-    textStrokeColor: 'inherit',
-    textStrokeOver: 'inherit'
-  };
-  var GEOM = {
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: '',
-    strokeLinecap: 'butt',
-    strokeLinejoin: 'miter',
-    strokeMiterlimit: 4,
-    fillRule: 'nonzero'
-  };
-  var DOM_ENTRY_SET = [];
-  var DOM_KEY_SET = [];
-  Object.keys(DOM).forEach(function (k) {
-    DOM_KEY_SET.push(k);
-    var v = DOM[k];
-    DOM_ENTRY_SET.push({
-      k: k,
-      v: v
-    });
-  });
-  var GEOM_ENTRY_SET = [];
-  var GEOM_KEY_SET = [];
-  Object.keys(GEOM).forEach(function (k) {
-    GEOM_KEY_SET.push(k);
-    var v = GEOM[k];
-    GEOM_ENTRY_SET.push({
-      k: k,
-      v: v
-    });
-  });
-  var INHERIT = {
-    get fontFamily() {
-      return inject.defaultFontFamily;
-    },
-
-    fontSize: 16,
-    fontWeight: 400,
-    fontStyle: 'normal',
-    color: '#000',
-    textAlign: 'left',
-    visibility: 'visible',
-    pointerEvents: 'auto',
-    textStrokeColor: '#000',
-    textStrokeWidth: 1,
-    textStrokeOver: 'none'
-  };
-  var INHERIT_KEY_SET = [];
-  Object.keys(INHERIT).forEach(function (k) {
-    INHERIT_KEY_SET.push(k);
-  });
-  var reset = {
-    DOM: DOM,
-    GEOM: GEOM,
-    isValid: function isValid(i) {
-      return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
-    },
-    DOM_KEY_SET: DOM_KEY_SET,
-    GEOM_KEY_SET: GEOM_KEY_SET,
-    DOM_ENTRY_SET: DOM_ENTRY_SET,
-    GEOM_ENTRY_SET: GEOM_ENTRY_SET,
-    INHERIT: INHERIT,
-    INHERIT_KEY_SET: INHERIT_KEY_SET
-  };
-
   var isNil$2 = util.isNil;
 
   function parseFlex(style, grow, shrink, basis) {
@@ -7882,6 +7729,159 @@
     GRADIENT_TYPE: GRADIENT_TYPE
   };
 
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'inherit',
+    backgroundImage: null,
+    backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
+    backgroundClip: 'borderBox',
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+    borderTopStyle: 'none',
+    borderRightStyle: 'none',
+    borderBottomStyle: 'none',
+    borderLeftStyle: 'none',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    order: 0,
+    justifyContent: 'flexStart',
+    alignItems: 'stretch',
+    alignSelf: 'auto',
+    alignContent: 'stretch',
+    textAlign: 'inherit',
+    letterSpacing: 'inherit',
+    transformOrigin: 'center',
+    visibility: 'inherit',
+    opacity: 1,
+    zIndex: 0,
+    transform: null,
+    translateX: 0,
+    translateY: 0,
+    translateZ: 0,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateX: 0,
+    rotateY: 0,
+    rotateZ: 0,
+    rotate3d: '0, 0, 0, 0',
+    perspective: 0,
+    perspectiveOrigin: 'center',
+    filter: null,
+    boxShadow: null,
+    pointerEvents: 'inherit',
+    overflow: 'visible',
+    mixBlendMode: 'normal',
+    whiteSpace: 'inherit',
+    textOverflow: 'clip',
+    lineClamp: 0,
+    textStrokeWidth: 'inherit',
+    textStrokeColor: 'inherit',
+    textStrokeOver: 'inherit'
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: '',
+    strokeLinecap: 'butt',
+    strokeLinejoin: 'miter',
+    strokeMiterlimit: 4,
+    fillRule: 'nonzero'
+  };
+  var DOM_ENTRY_SET = [];
+  var DOM_KEY_SET = [];
+  Object.keys(DOM).forEach(function (k) {
+    DOM_KEY_SET.push(k);
+    var v = DOM[k];
+    DOM_ENTRY_SET.push({
+      k: k,
+      v: v
+    });
+  });
+  var GEOM_ENTRY_SET = [];
+  var GEOM_KEY_SET = [];
+  Object.keys(GEOM).forEach(function (k) {
+    GEOM_KEY_SET.push(k);
+    var v = GEOM[k];
+    GEOM_ENTRY_SET.push({
+      k: k,
+      v: v
+    });
+  });
+  var INHERIT = {
+    get fontFamily() {
+      return inject.defaultFontFamily;
+    },
+
+    fontSize: 16,
+    fontWeight: 400,
+    fontStyle: 'normal',
+    color: '#000',
+    textAlign: 'left',
+    visibility: 'visible',
+    pointerEvents: 'auto',
+    textStrokeColor: '#000',
+    textStrokeWidth: 1,
+    textStrokeOver: 'none'
+  };
+  var INHERIT_KEY_SET = [];
+  Object.keys(INHERIT).forEach(function (k) {
+    INHERIT_KEY_SET.push(k);
+  });
+  var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    isValid: function isValid(i) {
+      return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
+    },
+    DOM_KEY_SET: DOM_KEY_SET,
+    GEOM_KEY_SET: GEOM_KEY_SET,
+    DOM_ENTRY_SET: DOM_ENTRY_SET,
+    GEOM_ENTRY_SET: GEOM_ENTRY_SET,
+    INHERIT: INHERIT,
+    INHERIT_KEY_SET: INHERIT_KEY_SET
+  };
+
   var _REPAINT;
   var RESET_DOM = reset.DOM,
       RESET_GEOM = reset.GEOM;
@@ -7998,10 +7998,6 @@
       STROKE = _enums$STYLE_KEY$3.STROKE,
       STROKE_WIDTH = _enums$STYLE_KEY$3.STROKE_WIDTH,
       STROKE_DASHARRAY = _enums$STYLE_KEY$3.STROKE_DASHARRAY,
-      BORDER_TOP_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$3.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$3.BORDER_LEFT_WIDTH,
       DISPLAY = _enums$STYLE_KEY$3.DISPLAY,
       FLEX_DIRECTION = _enums$STYLE_KEY$3.FLEX_DIRECTION,
       FLEX_GROW = _enums$STYLE_KEY$3.FLEX_GROW,
@@ -8018,12 +8014,10 @@
       LINE_CLAMP = _enums$STYLE_KEY$3.LINE_CLAMP,
       ORDER = _enums$STYLE_KEY$3.ORDER,
       FLEX_WRAP = _enums$STYLE_KEY$3.FLEX_WRAP,
-      ALIGN_CONTENT = _enums$STYLE_KEY$3.ALIGN_CONTENT,
       TRANSLATE_PATH = _enums$STYLE_KEY$3.TRANSLATE_PATH,
       TEXT_STROKE_COLOR = _enums$STYLE_KEY$3.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH = _enums$STYLE_KEY$3.TEXT_STROKE_WIDTH,
-      TEXT_STROKE_OVER = _enums$STYLE_KEY$3.TEXT_STROKE_OVER,
-      OVERFLOW = _enums$STYLE_KEY$3.OVERFLOW;
+      TEXT_STROKE_OVER = _enums$STYLE_KEY$3.TEXT_STROKE_OVER;
   var AUTO = o.AUTO,
       PX$2 = o.PX,
       PERCENT$2 = o.PERCENT,
@@ -13656,7 +13650,7 @@
       COLOR$3 = _enums$STYLE_KEY$8.COLOR,
       VISIBILITY$1 = _enums$STYLE_KEY$8.VISIBILITY,
       LETTER_SPACING$2 = _enums$STYLE_KEY$8.LETTER_SPACING,
-      OVERFLOW$1 = _enums$STYLE_KEY$8.OVERFLOW,
+      OVERFLOW = _enums$STYLE_KEY$8.OVERFLOW,
       WHITE_SPACE$1 = _enums$STYLE_KEY$8.WHITE_SPACE,
       TEXT_OVERFLOW$1 = _enums$STYLE_KEY$8.TEXT_OVERFLOW,
       WIDTH$2 = _enums$STYLE_KEY$8.WIDTH,
@@ -13666,8 +13660,8 @@
       MARGIN_RIGHT = _enums$STYLE_KEY$8.MARGIN_RIGHT,
       PADDING_LEFT$1 = _enums$STYLE_KEY$8.PADDING_LEFT,
       PADDING_RIGHT = _enums$STYLE_KEY$8.PADDING_RIGHT,
-      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$8.BORDER_LEFT_WIDTH,
-      BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$8.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$8.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$8.BORDER_RIGHT_WIDTH,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
       NODE_LIMIT_CACHE = _enums$NODE_KEY$1.NODE_LIMIT_CACHE,
@@ -13937,7 +13931,7 @@
               textWidth = this.textWidth;
           var _bp$computedStyle = bp.computedStyle,
               position = _bp$computedStyle[POSITION$1],
-              overflow = _bp$computedStyle[OVERFLOW$1];
+              overflow = _bp$computedStyle[OVERFLOW];
           var widthC = bp.currentStyle[WIDTH$2]; // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
 
           if (overflow === 'hidden') {
@@ -14186,7 +14180,7 @@
                 }
 
                 var _computedStyle = dom.computedStyle;
-                var mbp = _computedStyle[MARGIN_LEFT] + _computedStyle[MARGIN_RIGHT] + _computedStyle[PADDING_LEFT$1] + _computedStyle[PADDING_RIGHT] + _computedStyle[BORDER_LEFT_WIDTH$2] + _computedStyle[BORDER_RIGHT_WIDTH$1];
+                var mbp = _computedStyle[MARGIN_LEFT] + _computedStyle[MARGIN_RIGHT] + _computedStyle[PADDING_LEFT$1] + _computedStyle[PADDING_RIGHT] + _computedStyle[BORDER_LEFT_WIDTH$1] + _computedStyle[BORDER_RIGHT_WIDTH];
                 x -= mbp;
                 wl += mbp;
 
@@ -14306,7 +14300,7 @@
             }
 
             var _computedStyle2 = dom.computedStyle;
-            var mbp = _computedStyle2[MARGIN_LEFT] + _computedStyle2[MARGIN_RIGHT] + _computedStyle2[PADDING_LEFT$1] + _computedStyle2[PADDING_RIGHT] + _computedStyle2[BORDER_LEFT_WIDTH$2] + _computedStyle2[BORDER_RIGHT_WIDTH$1];
+            var mbp = _computedStyle2[MARGIN_LEFT] + _computedStyle2[MARGIN_RIGHT] + _computedStyle2[PADDING_LEFT$1] + _computedStyle2[PADDING_RIGHT] + _computedStyle2[BORDER_LEFT_WIDTH$1] + _computedStyle2[BORDER_RIGHT_WIDTH];
             wl += mbp;
 
             dom.__layoutNone();
@@ -15579,8 +15573,8 @@
       MARGIN_RIGHT$1 = _enums$STYLE_KEY$9.MARGIN_RIGHT,
       PADDING_LEFT$2 = _enums$STYLE_KEY$9.PADDING_LEFT,
       PADDING_RIGHT$1 = _enums$STYLE_KEY$9.PADDING_RIGHT,
-      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$9.BORDER_LEFT_WIDTH,
-      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$9.BORDER_RIGHT_WIDTH;
+      BORDER_LEFT_WIDTH$2 = _enums$STYLE_KEY$9.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH$1 = _enums$STYLE_KEY$9.BORDER_RIGHT_WIDTH;
   /**
    * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
    * @param xom
@@ -15634,7 +15628,7 @@
         var _dom$computedStyle = dom.computedStyle,
             marginLeft = _dom$computedStyle[MARGIN_LEFT$1],
             _paddingLeft = _dom$computedStyle[PADDING_LEFT$2],
-            _borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$3];
+            _borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$2];
         x1 -= marginLeft + _paddingLeft + _borderLeftWidth;
       }
 
@@ -15666,7 +15660,7 @@
         var _dom$computedStyle2 = dom.computedStyle,
             marginRight = _dom$computedStyle2[MARGIN_RIGHT$1],
             _paddingRight = _dom$computedStyle2[PADDING_RIGHT$1],
-            _borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$2];
+            _borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$1];
         x2 += marginRight + _paddingRight + _borderRightWidth;
       }
 
@@ -15727,7 +15721,7 @@
           var _dom$computedStyle3 = dom.computedStyle,
               marginLeft = _dom$computedStyle3[MARGIN_LEFT$1],
               paddingLeft = _dom$computedStyle3[PADDING_LEFT$2],
-              borderLeftWidth = _dom$computedStyle3[BORDER_LEFT_WIDTH$3];
+              borderLeftWidth = _dom$computedStyle3[BORDER_LEFT_WIDTH$2];
           sum += marginLeft + paddingLeft + borderLeftWidth;
         }
 
@@ -15735,7 +15729,7 @@
           var _dom$computedStyle4 = dom.computedStyle,
               marginRight = _dom$computedStyle4[MARGIN_RIGHT$1],
               paddingRight = _dom$computedStyle4[PADDING_RIGHT$1],
-              borderRightWidth = _dom$computedStyle4[BORDER_RIGHT_WIDTH$2];
+              borderRightWidth = _dom$computedStyle4[BORDER_RIGHT_WIDTH$1];
           sum += marginRight + paddingRight + borderRightWidth;
         }
 
@@ -19852,10 +19846,10 @@
       MARGIN_TOP = _enums$STYLE_KEY$d.MARGIN_TOP,
       MARGIN_BOTTOM = _enums$STYLE_KEY$d.MARGIN_BOTTOM,
       MARGIN_RIGHT$2 = _enums$STYLE_KEY$d.MARGIN_RIGHT,
-      BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
-      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$d.BORDER_LEFT_WIDTH,
+      BORDER_TOP_WIDTH$1 = _enums$STYLE_KEY$d.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$1 = _enums$STYLE_KEY$d.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$d.BORDER_RIGHT_WIDTH,
       TOP$1 = _enums$STYLE_KEY$d.TOP,
       RIGHT = _enums$STYLE_KEY$d.RIGHT,
       BOTTOM$1 = _enums$STYLE_KEY$d.BOTTOM,
@@ -19895,7 +19889,7 @@
       BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$d.BORDER_BOTTOM_STYLE,
       BORDER_LEFT_STYLE = _enums$STYLE_KEY$d.BORDER_LEFT_STYLE,
       FILTER$3 = _enums$STYLE_KEY$d.FILTER,
-      OVERFLOW$2 = _enums$STYLE_KEY$d.OVERFLOW,
+      OVERFLOW$1 = _enums$STYLE_KEY$d.OVERFLOW,
       MIX_BLEND_MODE = _enums$STYLE_KEY$d.MIX_BLEND_MODE,
       TEXT_OVERFLOW$2 = _enums$STYLE_KEY$d.TEXT_OVERFLOW,
       BORDER_TOP_COLOR = _enums$STYLE_KEY$d.BORDER_TOP_COLOR,
@@ -19927,7 +19921,7 @@
       LINE_CLAMP$1 = _enums$STYLE_KEY$d.LINE_CLAMP,
       ORDER$1 = _enums$STYLE_KEY$d.ORDER,
       FLEX_WRAP$1 = _enums$STYLE_KEY$d.FLEX_WRAP,
-      ALIGN_CONTENT$1 = _enums$STYLE_KEY$d.ALIGN_CONTENT,
+      ALIGN_CONTENT = _enums$STYLE_KEY$d.ALIGN_CONTENT,
       TEXT_ALIGN$2 = _enums$STYLE_KEY$d.TEXT_ALIGN,
       LETTER_SPACING$3 = _enums$STYLE_KEY$d.LETTER_SPACING,
       WHITE_SPACE$2 = _enums$STYLE_KEY$d.WHITE_SPACE,
@@ -20209,12 +20203,12 @@
             computedStyle[k] = v[0];
           }
         });
-        [BORDER_TOP_WIDTH$2, BORDER_RIGHT_WIDTH$3, BORDER_BOTTOM_WIDTH$2, BORDER_LEFT_WIDTH$4].forEach(function (k) {
+        [BORDER_TOP_WIDTH$1, BORDER_RIGHT_WIDTH$2, BORDER_BOTTOM_WIDTH$1, BORDER_LEFT_WIDTH$3].forEach(function (k) {
           // border-width不支持百分比
           var item = currentStyle[k];
           computedStyle[k] = _this3.__calSize(item, 0, false);
         });
-        [POSITION$2, DISPLAY$2, FLEX_DIRECTION$2, JUSTIFY_CONTENT$1, ALIGN_ITEMS$1, ALIGN_SELF$1, FLEX_GROW$1, FLEX_SHRINK$1, LINE_CLAMP$1, ORDER$1, FLEX_WRAP$1, ALIGN_CONTENT$1, OVERFLOW$2, TEXT_OVERFLOW$2].forEach(function (k) {
+        [POSITION$2, DISPLAY$2, FLEX_DIRECTION$2, JUSTIFY_CONTENT$1, ALIGN_ITEMS$1, ALIGN_SELF$1, FLEX_GROW$1, FLEX_SHRINK$1, LINE_CLAMP$1, ORDER$1, FLEX_WRAP$1, ALIGN_CONTENT, OVERFLOW$1, TEXT_OVERFLOW$2].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
         }); // 匿名块对象
 
@@ -20296,13 +20290,13 @@
 
         if (!isNil$6(w)) {
           this.__clientWidth = w += computedStyle[PADDING_LEFT$3] + computedStyle[PADDING_RIGHT$2];
-          this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$4] + computedStyle[BORDER_RIGHT_WIDTH$3];
+          this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$3] + computedStyle[BORDER_RIGHT_WIDTH$2];
           this.__outerWidth = w + computedStyle[MARGIN_LEFT$2] + computedStyle[MARGIN_RIGHT$2];
         }
 
         if (!isNil$6(h)) {
           this.__clientHeight = h += computedStyle[PADDING_TOP$1] + computedStyle[PADDING_BOTTOM$1];
-          this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$2] + computedStyle[BORDER_BOTTOM_WIDTH$2];
+          this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$1] + computedStyle[BORDER_BOTTOM_WIDTH$1];
           this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
         }
       } // 为basis的b/min/max添加mpb，只有当b未显示指定等于w/content时才加，同时返回mpb值
@@ -20318,10 +20312,10 @@
             paddingTop = currentStyle[PADDING_TOP$1],
             paddingRight = currentStyle[PADDING_RIGHT$2],
             paddingBottom = currentStyle[PADDING_BOTTOM$1];
-        var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$3],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$4];
+        var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3];
         var mbp = this.__calSize(marginLeft, w, isDirectItem) + this.__calSize(marginRight, w, isDirectItem) + this.__calSize(paddingLeft, w, isDirectItem) + this.__calSize(paddingRight, w, isDirectItem) + borderLeftWidth + borderRightWidth;
 
         if (isDirectionRow) {
@@ -20521,17 +20515,17 @@
 
           if (!__config[NODE_IS_INLINE]) {
             x = this.__sx1 = x + computedStyle[MARGIN_LEFT$2];
-            x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH$4];
+            x = this.__sx2 = x + computedStyle[BORDER_LEFT_WIDTH$3];
             x = this.__sx3 = x + computedStyle[PADDING_LEFT$3];
             x = this.__sx4 = x + this.width;
             x = this.__sx5 = x + computedStyle[PADDING_RIGHT$2];
-            this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH$3];
+            this.__sx6 = x + computedStyle[BORDER_RIGHT_WIDTH$2];
             y = this.__sy1 = y + computedStyle[MARGIN_TOP];
-            y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH$2];
+            y = this.__sy2 = y + computedStyle[BORDER_TOP_WIDTH$1];
             y = this.__sy3 = y + computedStyle[PADDING_TOP$1];
             y = this.__sy4 = y + this.height;
             y = this.__sy5 = y + computedStyle[PADDING_BOTTOM$1];
-            this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH$2];
+            this.__sy6 = y + computedStyle[BORDER_BOTTOM_WIDTH$1];
           }
 
           computedStyle[WIDTH$4] = this.width;
@@ -20577,7 +20571,7 @@
       value: function __layoutNone() {
         var computedStyle = this.computedStyle;
         computedStyle[DISPLAY$2] = 'none';
-        computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$2] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$2] = computedStyle[BORDER_TOP_WIDTH$2] = computedStyle[BORDER_RIGHT_WIDTH$3] = computedStyle[BORDER_BOTTOM_WIDTH$2] = computedStyle[BORDER_LEFT_WIDTH$4] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$2] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$3] = computedStyle[WIDTH$4] = computedStyle[HEIGHT$3] = this.__width = this.__height = 0;
+        computedStyle[MARGIN_TOP] = computedStyle[MARGIN_RIGHT$2] = computedStyle[MARGIN_BOTTOM] = computedStyle[MARGIN_LEFT$2] = computedStyle[BORDER_TOP_WIDTH$1] = computedStyle[BORDER_RIGHT_WIDTH$2] = computedStyle[BORDER_BOTTOM_WIDTH$1] = computedStyle[BORDER_LEFT_WIDTH$3] = computedStyle[PADDING_TOP$1] = computedStyle[PADDING_RIGHT$2] = computedStyle[PADDING_BOTTOM$1] = computedStyle[PADDING_LEFT$3] = computedStyle[WIDTH$4] = computedStyle[HEIGHT$3] = this.__width = this.__height = 0;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -20601,10 +20595,10 @@
             computedStyle = this.computedStyle;
         var width = currentStyle[WIDTH$4],
             height = currentStyle[HEIGHT$3];
-        var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$3],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$4],
+        var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
             marginTop = computedStyle[MARGIN_TOP],
             marginRight = computedStyle[MARGIN_RIGHT$2],
             marginBottom = computedStyle[MARGIN_BOTTOM],
@@ -21035,7 +21029,7 @@
         } // 这些直接赋值的不需要再算缓存
 
 
-        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$2, MIX_BLEND_MODE, TEXT_OVERFLOW$2, BACKGROUND_CLIP$2].forEach(function (k) {
+        [OPACITY$3, Z_INDEX$2, BORDER_TOP_STYLE, BORDER_RIGHT_STYLE, BORDER_BOTTOM_STYLE, BORDER_LEFT_STYLE, BACKGROUND_REPEAT, OVERFLOW$1, MIX_BLEND_MODE, TEXT_OVERFLOW$2, BACKGROUND_CLIP$2].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
         });
 
@@ -21624,10 +21618,10 @@
             paddingRight = computedStyle[PADDING_RIGHT$2],
             paddingBottom = computedStyle[PADDING_BOTTOM$1],
             paddingLeft = computedStyle[PADDING_LEFT$3],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$4],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$3],
-            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2];
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$3],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
+            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$1],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$1];
         var isRealInline = __config[NODE_IS_INLINE]; // 考虑mpb的6个坐标，inline比较特殊单独计算
 
         var x1 = this.__sx1;
@@ -21766,7 +21760,7 @@
             filter = computedStyle[FILTER$3],
             backgroundSize = computedStyle[BACKGROUND_SIZE$2],
             boxShadow = computedStyle[BOX_SHADOW$2],
-            overflow = computedStyle[OVERFLOW$2],
+            overflow = computedStyle[OVERFLOW$1],
             mixBlendMode = computedStyle[MIX_BLEND_MODE],
             backgroundClip = computedStyle[BACKGROUND_CLIP$2]; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
 
@@ -23312,10 +23306,10 @@
   var _enums$STYLE_KEY$e = enums.STYLE_KEY,
       DISPLAY$3 = _enums$STYLE_KEY$e.DISPLAY,
       MARGIN_LEFT$3 = _enums$STYLE_KEY$e.MARGIN_LEFT,
-      BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
+      BORDER_LEFT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_LEFT_WIDTH,
       PADDING_LEFT$4 = _enums$STYLE_KEY$e.PADDING_LEFT,
       PADDING_RIGHT$3 = _enums$STYLE_KEY$e.PADDING_RIGHT,
-      BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
+      BORDER_RIGHT_WIDTH$3 = _enums$STYLE_KEY$e.BORDER_RIGHT_WIDTH,
       MARGIN_RIGHT$3 = _enums$STYLE_KEY$e.MARGIN_RIGHT,
       LINE_HEIGHT$4 = _enums$STYLE_KEY$e.LINE_HEIGHT;
   /**
@@ -23494,7 +23488,7 @@
             var _dom$computedStyle = dom.computedStyle,
                 display = _dom$computedStyle[DISPLAY$3],
                 marginLeft = _dom$computedStyle[MARGIN_LEFT$3],
-                borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$5],
+                borderLeftWidth = _dom$computedStyle[BORDER_LEFT_WIDTH$4],
                 paddingLeft = _dom$computedStyle[PADDING_LEFT$4];
 
             if (display !== 'inline') {
@@ -23516,7 +23510,7 @@
             var _dom$computedStyle2 = dom.computedStyle,
                 _display = _dom$computedStyle2[DISPLAY$3],
                 marginRight = _dom$computedStyle2[MARGIN_RIGHT$3],
-                borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$4],
+                borderRightWidth = _dom$computedStyle2[BORDER_RIGHT_WIDTH$3],
                 paddingRight = _dom$computedStyle2[PADDING_RIGHT$3];
 
             if (_display !== 'inline') {
@@ -24124,10 +24118,10 @@
       PADDING_BOTTOM$2 = _enums$STYLE_KEY$g.PADDING_BOTTOM,
       PADDING_RIGHT$4 = _enums$STYLE_KEY$g.PADDING_RIGHT,
       PADDING_TOP$2 = _enums$STYLE_KEY$g.PADDING_TOP,
-      BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
-      BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
-      BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
+      BORDER_TOP_WIDTH$2 = _enums$STYLE_KEY$g.BORDER_TOP_WIDTH,
+      BORDER_BOTTOM_WIDTH$2 = _enums$STYLE_KEY$g.BORDER_BOTTOM_WIDTH,
+      BORDER_RIGHT_WIDTH$4 = _enums$STYLE_KEY$g.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$5 = _enums$STYLE_KEY$g.BORDER_LEFT_WIDTH,
       TOP$3 = _enums$STYLE_KEY$g.TOP,
       RIGHT$1 = _enums$STYLE_KEY$g.RIGHT,
       BOTTOM$3 = _enums$STYLE_KEY$g.BOTTOM,
@@ -24148,8 +24142,8 @@
       LINE_CLAMP$2 = _enums$STYLE_KEY$g.LINE_CLAMP,
       ORDER$2 = _enums$STYLE_KEY$g.ORDER,
       FLEX_WRAP$2 = _enums$STYLE_KEY$g.FLEX_WRAP,
-      ALIGN_CONTENT$2 = _enums$STYLE_KEY$g.ALIGN_CONTENT,
-      OVERFLOW$3 = _enums$STYLE_KEY$g.OVERFLOW,
+      ALIGN_CONTENT$1 = _enums$STYLE_KEY$g.ALIGN_CONTENT,
+      OVERFLOW$2 = _enums$STYLE_KEY$g.OVERFLOW,
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FONT_FAMILY$6 = _enums$STYLE_KEY$g.FONT_FAMILY,
       FONT_WEIGHT$6 = _enums$STYLE_KEY$g.FONT_WEIGHT,
@@ -24545,8 +24539,8 @@
             paddingLeft = _this$currentStyle[PADDING_LEFT$5],
             paddingRight = _this$currentStyle[PADDING_RIGHT$4],
             _this$computedStyle = this.computedStyle,
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$6],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$5]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
+            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$5],
+            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$4]; // inline没w/h，并且尝试孩子第一个能放下即可，如果是文字就是第一个字符
 
         if (display === 'inline') {
           if (flowChildren.length) {
@@ -24859,7 +24853,7 @@
             whiteSpace = computedStyle[WHITE_SPACE$3],
             lineClamp = computedStyle[LINE_CLAMP$2],
             lineHeight = computedStyle[LINE_HEIGHT$5],
-            overflow = computedStyle[OVERFLOW$3],
+            overflow = computedStyle[OVERFLOW$2],
             textOverflow = computedStyle[TEXT_OVERFLOW$3]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
@@ -25095,8 +25089,8 @@
                     paddingTop = _item$computedStyle[PADDING_TOP$2],
                     paddingBottom = _item$computedStyle[PADDING_BOTTOM$2],
                     height = _item$computedStyle[HEIGHT$5],
-                    borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$3],
-                    borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$3]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+                    borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$2],
+                    borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$2]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
 
                 if (paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
                   mergeMarginBottomList.push(marginBottom);
@@ -25381,7 +25375,7 @@
             alignItems = computedStyle[ALIGN_ITEMS$2],
             lineClamp = computedStyle[LINE_CLAMP$2],
             flexWrap = computedStyle[FLEX_WRAP$2],
-            alignContent = computedStyle[ALIGN_CONTENT$2],
+            alignContent = computedStyle[ALIGN_CONTENT$1],
             lineHeight = computedStyle[LINE_HEIGHT$5],
             textAlign = computedStyle[TEXT_ALIGN$3]; // 只有>=1的正整数才有效
 
@@ -26060,8 +26054,8 @@
             } else if (alignSelf === 'stretch') {
               var computedStyle = item.computedStyle,
                   height = item.currentStyle[HEIGHT$5];
-              var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-                  borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
+              var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
+                  borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
                   marginTop = computedStyle[MARGIN_TOP$1],
                   marginBottom = computedStyle[MARGIN_BOTTOM$1],
                   paddingTop = computedStyle[PADDING_TOP$2],
@@ -26119,8 +26113,8 @@
                   }));
                 }
 
-                var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$3],
-                    _borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$3],
+                var _borderTopWidth = _computedStyle2[BORDER_TOP_WIDTH$2],
+                    _borderBottomWidth = _computedStyle2[BORDER_BOTTOM_WIDTH$2],
                     _marginTop2 = _computedStyle2[MARGIN_TOP$1],
                     _marginBottom2 = _computedStyle2[MARGIN_BOTTOM$1],
                     _paddingTop = _computedStyle2[PADDING_TOP$2],
@@ -26160,8 +26154,8 @@
             } else if (alignSelf === 'stretch') {
               var _computedStyle3 = item.computedStyle,
                   width = item.currentStyle[WIDTH$5];
-              var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$5],
-                  borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$6],
+              var borderRightWidth = _computedStyle3[BORDER_RIGHT_WIDTH$4],
+                  borderLeftWidth = _computedStyle3[BORDER_LEFT_WIDTH$5],
                   marginRight = _computedStyle3[MARGIN_RIGHT$4],
                   marginLeft = _computedStyle3[MARGIN_LEFT$4],
                   paddingRight = _computedStyle3[PADDING_RIGHT$4],
@@ -26212,8 +26206,8 @@
               else {
                 var _computedStyle4 = item.computedStyle,
                     _width = item.currentStyle[WIDTH$5];
-                var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$5],
-                    _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$6],
+                var _borderRightWidth = _computedStyle4[BORDER_RIGHT_WIDTH$4],
+                    _borderLeftWidth = _computedStyle4[BORDER_LEFT_WIDTH$5],
                     _marginRight = _computedStyle4[MARGIN_RIGHT$4],
                     _marginLeft = _computedStyle4[MARGIN_LEFT$4],
                     _paddingRight = _computedStyle4[PADDING_RIGHT$4],
@@ -26289,8 +26283,8 @@
             lineHeight = computedStyle[LINE_HEIGHT$5],
             marginLeft = computedStyle[MARGIN_LEFT$4],
             marginRight = computedStyle[MARGIN_RIGHT$4],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             paddingLeft = computedStyle[PADDING_LEFT$5],
             paddingRight = computedStyle[PADDING_RIGHT$4];
         var lineClampCount = data.lineClampCount || 0;
@@ -26339,7 +26333,7 @@
         }
 
         var _bp$computedStyle = bp.computedStyle,
-            overflow = _bp$computedStyle[OVERFLOW$3],
+            overflow = _bp$computedStyle[OVERFLOW$2],
             textOverflow = _bp$computedStyle[TEXT_OVERFLOW$3];
         var isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
 
@@ -26602,7 +26596,7 @@
           if (!flowChildren.length) {
             var _marginLeft2 = computedStyle[MARGIN_LEFT$4],
                 _paddingLeft2 = computedStyle[PADDING_LEFT$5],
-                _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$6];
+                _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$5];
             lineBoxManager.addX(_marginLeft2 + _paddingLeft2 + _borderLeftWidth2);
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
 
@@ -26675,10 +26669,10 @@
             paddingRight = computedStyle[PADDING_RIGHT$4],
             paddingBottom = computedStyle[PADDING_BOTTOM$2],
             paddingLeft = computedStyle[PADDING_LEFT$5],
-            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$5],
-            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
+            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
+            borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             lineHeight = computedStyle[LINE_HEIGHT$5]; // 可能因为Ellipsis回溯变成none
 
         if (display === 'none') {
@@ -26827,8 +26821,8 @@
             children = this.children,
             absChildren = this.absChildren;
         var display = computedStyle[DISPLAY$5],
-            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
-            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$6],
+            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
+            borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             marginTop = computedStyle[MARGIN_TOP$1],
             marginLeft = computedStyle[MARGIN_LEFT$4],
             paddingLeft = computedStyle[PADDING_LEFT$5],
@@ -26937,8 +26931,8 @@
             x2 -= computedStyle[MARGIN_RIGHT$4];
             x2 -= computedStyle[PADDING_LEFT$5];
             x2 -= computedStyle[PADDING_RIGHT$4];
-            x2 -= computedStyle[BORDER_LEFT_WIDTH$6];
-            x2 -= computedStyle[BORDER_RIGHT_WIDTH$5];
+            x2 -= computedStyle[BORDER_LEFT_WIDTH$5];
+            x2 -= computedStyle[BORDER_RIGHT_WIDTH$4];
           } else {
             x2 = x + paddingLeft;
 
@@ -26970,8 +26964,8 @@
             y2 -= computedStyle[MARGIN_BOTTOM$1];
             y2 -= computedStyle[PADDING_TOP$2];
             y2 -= computedStyle[PADDING_BOTTOM$2];
-            y2 -= computedStyle[BORDER_TOP_WIDTH$3];
-            y2 -= computedStyle[BORDER_BOTTOM_WIDTH$3];
+            y2 -= computedStyle[BORDER_TOP_WIDTH$2];
+            y2 -= computedStyle[BORDER_BOTTOM_WIDTH$2];
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
             y2 = y + paddingTop;
@@ -27115,7 +27109,7 @@
         // overflow:hidden时还需要判断是否超出范围外，如果是则无效
 
 
-        if (computedStyle[OVERFLOW$3] === 'hidden' && !this.willResponseEvent(e, true)) {
+        if (computedStyle[OVERFLOW$2] === 'hidden' && !this.willResponseEvent(e, true)) {
           return;
         } // 找到对应的callback
 
@@ -27515,7 +27509,7 @@
 
         var _this$computedStyle2 = this.computedStyle,
             marginTop = _this$computedStyle2[MARGIN_TOP$1],
-            borderTopWidth = _this$computedStyle2[BORDER_TOP_WIDTH$3],
+            borderTopWidth = _this$computedStyle2[BORDER_TOP_WIDTH$2],
             paddingTop = _this$computedStyle2[PADDING_TOP$2];
         return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseline;
       }
@@ -27528,7 +27522,7 @@
 
         var _this$computedStyle3 = this.computedStyle,
             marginTop = _this$computedStyle3[MARGIN_TOP$1],
-            borderTopWidth = _this$computedStyle3[BORDER_TOP_WIDTH$3],
+            borderTopWidth = _this$computedStyle3[BORDER_TOP_WIDTH$2],
             paddingTop = _this$computedStyle3[PADDING_TOP$2];
         return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseline;
       }
@@ -27541,10 +27535,10 @@
       WIDTH$6 = _enums$STYLE_KEY$h.WIDTH,
       HEIGHT$6 = _enums$STYLE_KEY$h.HEIGHT,
       DISPLAY$6 = _enums$STYLE_KEY$h.DISPLAY,
-      BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$h.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$h.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$h.BORDER_BOTTOM_WIDTH,
+      BORDER_TOP_WIDTH$3 = _enums$STYLE_KEY$h.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$5 = _enums$STYLE_KEY$h.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$6 = _enums$STYLE_KEY$h.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$3 = _enums$STYLE_KEY$h.BORDER_BOTTOM_WIDTH,
       BORDER_TOP_LEFT_RADIUS$2 = _enums$STYLE_KEY$h.BORDER_TOP_LEFT_RADIUS,
       BORDER_TOP_RIGHT_RADIUS$2 = _enums$STYLE_KEY$h.BORDER_TOP_RIGHT_RADIUS,
       BORDER_BOTTOM_RIGHT_RADIUS$2 = _enums$STYLE_KEY$h.BORDER_BOTTOM_RIGHT_RADIUS,
@@ -27618,10 +27612,10 @@
 
         style[BACKGROUND_IMAGE$2] = currentStyle[BACKGROUND_IMAGE$2] = [null];
         style[BACKGROUND_COLOR$2] = currentStyle[BACKGROUND_COLOR$2] = [[0, 0, 0, 0], RGBA$3];
-        style[BORDER_TOP_WIDTH$4] = currentStyle[BORDER_TOP_WIDTH$4] = [0, PX$9];
-        style[BORDER_RIGHT_WIDTH$6] = currentStyle[BORDER_RIGHT_WIDTH$6] = [0, PX$9];
-        style[BORDER_LEFT_WIDTH$7] = currentStyle[BORDER_LEFT_WIDTH$7] = [0, PX$9];
-        style[BORDER_BOTTOM_WIDTH$4] = currentStyle[BORDER_BOTTOM_WIDTH$4] = [0, PX$9];
+        style[BORDER_TOP_WIDTH$3] = currentStyle[BORDER_TOP_WIDTH$3] = [0, PX$9];
+        style[BORDER_RIGHT_WIDTH$5] = currentStyle[BORDER_RIGHT_WIDTH$5] = [0, PX$9];
+        style[BORDER_LEFT_WIDTH$6] = currentStyle[BORDER_LEFT_WIDTH$6] = [0, PX$9];
+        style[BORDER_BOTTOM_WIDTH$3] = currentStyle[BORDER_BOTTOM_WIDTH$3] = [0, PX$9];
         style[BOX_SHADOW$3] = currentStyle[BOX_SHADOW$3] = null;
         style[MIX_BLEND_MODE$1] = currentStyle[MIX_BLEND_MODE$1] = 'normal';
       }
@@ -27967,8 +27961,8 @@
             paddingLeft = _this$currentStyle[PADDING_LEFT$6],
             paddingRight = _this$currentStyle[PADDING_RIGHT$5],
             _this$computedStyle2 = this.computedStyle,
-            borderLeftWidth = _this$computedStyle2[BORDER_LEFT_WIDTH$7],
-            borderRightWidth = _this$computedStyle2[BORDER_RIGHT_WIDTH$6];
+            borderLeftWidth = _this$computedStyle2[BORDER_LEFT_WIDTH$6],
+            borderRightWidth = _this$computedStyle2[BORDER_RIGHT_WIDTH$5];
 
         if (width[1] !== AUTO$7) {
           w -= this.__calSize(width, total, true);
@@ -28317,8 +28311,8 @@
       PADDING_LEFT$7 = _enums$STYLE_KEY$i.PADDING_LEFT,
       WIDTH$7 = _enums$STYLE_KEY$i.WIDTH,
       HEIGHT$7 = _enums$STYLE_KEY$i.HEIGHT,
-      BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$i.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$i.BORDER_LEFT_WIDTH,
+      BORDER_RIGHT_WIDTH$6 = _enums$STYLE_KEY$i.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$7 = _enums$STYLE_KEY$i.BORDER_LEFT_WIDTH,
       FILL$1 = _enums$STYLE_KEY$i.FILL,
       STROKE$1 = _enums$STYLE_KEY$i.STROKE,
       STROKE_MITERLIMIT = _enums$STYLE_KEY$i.STROKE_MITERLIMIT,
@@ -28392,8 +28386,8 @@
             paddingLeft = _this$currentStyle[PADDING_LEFT$7],
             paddingRight = _this$currentStyle[PADDING_RIGHT$6],
             _this$computedStyle = this.computedStyle,
-            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$8],
-            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$7];
+            borderLeftWidth = _this$computedStyle[BORDER_LEFT_WIDTH$7],
+            borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$6];
 
         if (width[1] !== AUTO$8) {
           w -= this.__calSize(width, total, true);
@@ -30883,7 +30877,7 @@
       OPACITY$5 = _enums$STYLE_KEY$j.OPACITY,
       VISIBILITY$5 = _enums$STYLE_KEY$j.VISIBILITY,
       FILTER$5 = _enums$STYLE_KEY$j.FILTER,
-      OVERFLOW$4 = _enums$STYLE_KEY$j.OVERFLOW,
+      OVERFLOW$3 = _enums$STYLE_KEY$j.OVERFLOW,
       MIX_BLEND_MODE$3 = _enums$STYLE_KEY$j.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$j.FILL,
       TRANSFORM$4 = _enums$STYLE_KEY$j.TRANSFORM,
@@ -30894,10 +30888,10 @@
       PADDING_RIGHT$7 = _enums$STYLE_KEY$j.PADDING_RIGHT,
       PADDING_TOP$3 = _enums$STYLE_KEY$j.PADDING_TOP,
       PADDING_BOTTOM$3 = _enums$STYLE_KEY$j.PADDING_BOTTOM,
-      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH$9 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
+      BORDER_TOP_WIDTH$4 = _enums$STYLE_KEY$j.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH$7 = _enums$STYLE_KEY$j.BORDER_RIGHT_WIDTH,
+      BORDER_BOTTOM_WIDTH$4 = _enums$STYLE_KEY$j.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH$8 = _enums$STYLE_KEY$j.BORDER_LEFT_WIDTH,
       MATRIX$4 = _enums$STYLE_KEY$j.MATRIX,
       _enums$NODE_KEY$8 = enums.NODE_KEY,
       NODE_CACHE$4 = _enums$NODE_KEY$8.NODE_CACHE,
@@ -31462,7 +31456,7 @@
           } else {
             if (_refreshLevel >= REPAINT$2) {
               // 手动计算cacheStyle和根据border-box的坐标再渲染
-              _node2.__calCache(renderMode, ctxTotal, _config[NODE_DOM_PARENT$5], _config[NODE_CACHE_STYLE$1], _config[NODE_CURRENT_STYLE$5], _computedStyle2, _node2.clientWidth, _node2.clientHeight, _node2.offsetWidth, _node2.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$5], _computedStyle2[BORDER_RIGHT_WIDTH$8], _computedStyle2[BORDER_BOTTOM_WIDTH$5], _computedStyle2[BORDER_LEFT_WIDTH$9], _computedStyle2[PADDING_TOP$3], _computedStyle2[PADDING_RIGHT$7], _computedStyle2[PADDING_BOTTOM$3], _computedStyle2[PADDING_LEFT$8], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
+              _node2.__calCache(renderMode, ctxTotal, _config[NODE_DOM_PARENT$5], _config[NODE_CACHE_STYLE$1], _config[NODE_CURRENT_STYLE$5], _computedStyle2, _node2.clientWidth, _node2.clientHeight, _node2.offsetWidth, _node2.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$4], _computedStyle2[BORDER_RIGHT_WIDTH$7], _computedStyle2[BORDER_BOTTOM_WIDTH$4], _computedStyle2[BORDER_LEFT_WIDTH$8], _computedStyle2[PADDING_TOP$3], _computedStyle2[PADDING_RIGHT$7], _computedStyle2[PADDING_BOTTOM$3], _computedStyle2[PADDING_LEFT$8], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
             }
 
             var res = _node2.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL$1 : CHILD, dx, dy);
@@ -31560,7 +31554,7 @@
 
 
     if (cacheTotal && cacheTotal.available) {
-      var overflow = computedStyle[OVERFLOW$4],
+      var overflow = computedStyle[OVERFLOW$3],
           filter = computedStyle[FILTER$5];
       var _target3 = cacheTotal;
 
@@ -31806,7 +31800,7 @@
 
                 if (_refreshLevel3 >= REPAINT$2) {
                   // 手动计算cacheStyle和根据border-box的坐标再渲染
-                  _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$5], _computedStyle3[BORDER_RIGHT_WIDTH$8], _computedStyle3[BORDER_BOTTOM_WIDTH$5], _computedStyle3[BORDER_LEFT_WIDTH$9], _computedStyle3[PADDING_TOP$3], _computedStyle3[PADDING_RIGHT$7], _computedStyle3[PADDING_BOTTOM$3], _computedStyle3[PADDING_LEFT$8], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
+                  _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$4], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$4], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$3], _computedStyle3[PADDING_RIGHT$7], _computedStyle3[PADDING_BOTTOM$3], _computedStyle3[PADDING_LEFT$8], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
                 }
 
                 var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
@@ -33357,7 +33351,7 @@
 
       var limitCache = __config[NODE_LIMIT_CACHE$2],
           cacheAsBitmap = __config[NODE_CACHE_AS_BITMAP$1];
-      var overflow = computedStyle[OVERFLOW$4],
+      var overflow = computedStyle[OVERFLOW$3],
           filter = computedStyle[FILTER$5],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3],
           transform = computedStyle[TRANSFORM$4];
@@ -33745,7 +33739,7 @@
           computedStyle = __config[NODE_COMPUTED_STYLE$3];
 
       if (refreshLevel >= REPAINT$2) {
-        node.__calCache(renderMode, ctx, __config[NODE_DOM_PARENT$5], __config[NODE_CACHE_STYLE$1], __config[NODE_CURRENT_STYLE$5], computedStyle, node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight, computedStyle[BORDER_TOP_WIDTH$5], computedStyle[BORDER_RIGHT_WIDTH$8], computedStyle[BORDER_BOTTOM_WIDTH$5], computedStyle[BORDER_LEFT_WIDTH$9], computedStyle[PADDING_TOP$3], computedStyle[PADDING_RIGHT$7], computedStyle[PADDING_BOTTOM$3], computedStyle[PADDING_LEFT$8], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+        node.__calCache(renderMode, ctx, __config[NODE_DOM_PARENT$5], __config[NODE_CACHE_STYLE$1], __config[NODE_CURRENT_STYLE$5], computedStyle, node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight, computedStyle[BORDER_TOP_WIDTH$4], computedStyle[BORDER_RIGHT_WIDTH$7], computedStyle[BORDER_BOTTOM_WIDTH$4], computedStyle[BORDER_LEFT_WIDTH$8], computedStyle[PADDING_TOP$3], computedStyle[PADDING_RIGHT$7], computedStyle[PADDING_BOTTOM$3], computedStyle[PADDING_LEFT$8], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
       }
 
       if (cacheAsBitmap) {
@@ -34346,9 +34340,9 @@
       PADDING_TOP$4 = _enums$STYLE_KEY$k.PADDING_TOP,
       PADDING_LEFT$9 = _enums$STYLE_KEY$k.PADDING_LEFT,
       PADDING_BOTTOM$4 = _enums$STYLE_KEY$k.PADDING_BOTTOM,
-      BORDER_TOP_WIDTH$6 = _enums$STYLE_KEY$k.BORDER_TOP_WIDTH,
-      BORDER_LEFT_WIDTH$a = _enums$STYLE_KEY$k.BORDER_LEFT_WIDTH,
-      BORDER_BOTTOM_WIDTH$6 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
+      BORDER_TOP_WIDTH$5 = _enums$STYLE_KEY$k.BORDER_TOP_WIDTH,
+      BORDER_LEFT_WIDTH$9 = _enums$STYLE_KEY$k.BORDER_LEFT_WIDTH,
+      BORDER_BOTTOM_WIDTH$5 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
       POINTER_EVENTS$2 = _enums$STYLE_KEY$k.POINTER_EVENTS,
       _enums$UPDATE_KEY$5 = enums.UPDATE_KEY,
       UPDATE_NODE$5 = _enums$UPDATE_KEY$5.UPDATE_NODE,
@@ -35920,10 +35914,10 @@
 
             if (!removeDom) {
               if (!hasFlowPrev) {
-                y += computedStyle[MARGIN_TOP$2] + computedStyle[BORDER_TOP_WIDTH$6] + computedStyle[PADDING_TOP$4];
+                y += computedStyle[MARGIN_TOP$2] + computedStyle[BORDER_TOP_WIDTH$5] + computedStyle[PADDING_TOP$4];
               }
 
-              x += computedStyle[MARGIN_LEFT$7] + computedStyle[BORDER_LEFT_WIDTH$a] + computedStyle[PADDING_LEFT$9];
+              x += computedStyle[MARGIN_LEFT$7] + computedStyle[BORDER_LEFT_WIDTH$9] + computedStyle[PADDING_LEFT$9];
             } // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
 
@@ -36213,8 +36207,8 @@
                       paddingTop = _item$computedStyle[PADDING_TOP$4],
                       paddingBottom = _item$computedStyle[PADDING_BOTTOM$4],
                       _height = _item$computedStyle[HEIGHT$8],
-                      borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$6],
-                      borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$6]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
+                      borderTopWidth = _item$computedStyle[BORDER_TOP_WIDTH$5],
+                      borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$5]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
 
                   if (paddingTop <= 0 && paddingBottom <= 0 && _height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
                     mergeMarginBottomList.push(marginBottom);

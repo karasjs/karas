@@ -169,7 +169,7 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
-const { calRelative, getFontFamily, calNormalLineHeight } = css;
+const { calRelative, getFontFamily, calNormalLineHeight, spreadBboxByFilter } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
 const { point2d } = mx;
@@ -2874,6 +2874,7 @@ class Xom extends Node {
     this.clearCache();
   }
 
+  // 一个节点的borderBox根据boxShadow和filter进行扩展后的结果
   __spreadBbox(boxShadow, filter) {
     let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     let xl = [], yt = [], xr = [], yb = [];
@@ -2892,28 +2893,12 @@ class Xom extends Node {
         }
       });
     }
-    // TODO: filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
-    if(Array.isArray(filter)) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        let sigma = v[0];
-        if(k === 'blur' && sigma > 0) {
-          let d = blur.kernelSize(sigma);
-          let spread = blur.outerSizeByD(d);
-          if(spread) {
-            xl.push(-spread);
-            xr.push(spread);
-            yt.push(-spread);
-            yb.push(spread);
-          }
-        }
-      });
-    }
     xl.forEach(n => x1 = Math.min(x1, n));
     xr.forEach(n => x2 = Math.max(x2, n));
     yt.forEach(n => y1 = Math.min(y1, n));
     yb.forEach(n => y2 = Math.max(y2, n));
-    return [x1, y1, x2, y2];
+    // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+    return spreadBboxByFilter(x1, y1, x2, y2, filter);
   }
 
   __releaseWhenEmpty(__cache) {

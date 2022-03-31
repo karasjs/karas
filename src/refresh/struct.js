@@ -12,6 +12,7 @@ import util from '../util/util';
 import inject from '../util/inject';
 import tf from '../style/transform';
 import mbm from '../style/mbm';
+import css from '../style/css';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';
@@ -44,6 +45,7 @@ const {
   OFFSCREEN_MASK2,
   applyOffscreen,
 } = offscreen;
+const { spreadBboxByFilter } = css;
 
 const {
   STYLE_KEY: {
@@ -230,6 +232,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         }
         // 可能Xom没有内容
         if(bbox) {
+          bbox = spreadBboxByFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
           bbox[0] -= sx1;
           bbox[1] -= sy1;
           bbox[2] -= sx1;
@@ -304,6 +307,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
     [NODE_CURRENT_STYLE]: currentStyle,
     [NODE_COMPUTED_STYLE]: computedStyle,
   } = config;
+  let filter = computedStyle[FILTER];
   let needGen;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!cacheTotal || !cacheTotal.available) {
@@ -439,6 +443,10 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       }
       else {
         bbox = node.bbox;
+      }
+      // 局部根节点的filter会作用于所有子节点，需再计算一次
+      if(i !== index) {
+        bbox = spreadBboxByFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
       }
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
       bbox = transformBbox(bbox, matrix, 0, 0);

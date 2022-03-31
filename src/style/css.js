@@ -8,6 +8,7 @@ import util from '../util/util';
 import inject from '../util/inject';
 import key from '../animate/key';
 import change from '../refresh/change';
+import blur from '../math/blur';
 
 const { STYLE_KEY, style2Upper, STYLE_KEY: {
   POSITION,
@@ -1551,6 +1552,45 @@ function cloneStyle(style, keys) {
   return res;
 }
 
+function spreadBboxByFilter(x1, y1, x2, y2, filter) {
+  // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+  if(Array.isArray(filter)) {
+    filter.forEach(item => {
+      let [k, v] = item;
+      if(k === 'blur' && v > 0) {
+        let d = blur.kernelSize(v);
+        let spread = blur.outerSizeByD(d);
+        if(spread) {
+          x1 -= spread;
+          y1 -= spread;
+          x2 += spread;
+          y2 += spread;
+        }
+      }
+      else if(k === 'dropShadow') {
+        let d = blur.kernelSize(v[3]);
+        let spread = blur.outerSizeByD(d);
+        // x/y/blur，3个一起影响，要考虑正负号，spread一定为非负
+        if(v[0] || v[1] || spread) {
+          if(v[0] <= 0 || v[0] > 0 && v[0] < spread) {
+            x1 += v[0] - spread;
+          }
+          if(v[1] <= 0 || v[1] > 0 && v[1] < spread) {
+            y1 += v[1] - spread;
+          }
+          if(v[0] < 0 && -v[0] < spread || v[0] >= 0) {
+            x2 += v[0] + spread;
+          }
+          if(v[1] < 0 && -v[1] < spread || v[1] >= 0) {
+            y2 += v[1] + spread;
+          }
+        }
+      }
+    });
+  }
+  return [x1, y1, x2, y2];
+}
+
 export default {
   normalize,
   setFontStyle,
@@ -1561,4 +1601,5 @@ export default {
   isRelativeOrAbsolute,
   cloneStyle,
   calNormalLineHeight,
+  spreadBboxByFilter,
 };

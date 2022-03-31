@@ -7986,6 +7986,86 @@
   o$2.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
   o$2.addGeom('$polygon', ['points', 'controls', 'start', 'end', 'booleanOperations']);
 
+  /**
+   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+   * 根据模糊参数sigma求卷积核尺寸
+   * @param sigma
+   * @returns {number}
+   */
+  function kernelSize(sigma) {
+    if (sigma <= 0) {
+      return 0;
+    }
+
+    var d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+
+    if (d < 2) {
+      d = 2;
+    }
+
+    if (d % 2 === 0) {
+      d++;
+    }
+
+    return d;
+  }
+  /**
+   * 根据sigma求模糊扩展尺寸，卷积核求得后为d，再求半径/2，然后因为算法要执行3次，所以*3
+   * 比如本来d为5，半径2.5算上自身像素点则各方向扩展2，*3则扩展6
+   * @param sigma
+   * @returns {number}
+   */
+
+
+  function outerSize(sigma) {
+    var d = kernelSize(sigma);
+    return outerSizeByD(d);
+  }
+
+  function outerSizeByD(d) {
+    return Math.floor(d * 0.5) * 3;
+  }
+  /**
+   * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
+   * @param sigma
+   * @param d
+   */
+
+
+  function gaussianWeight(sigma, d) {
+    var list = [];
+    var len = Math.floor(d * 0.5);
+    var total = 0;
+
+    for (var i = len; i >= 0; i--) {
+      var n = Math.pow(Math.E, -Math.pow(i, 2) / (2 * Math.pow(sigma, 2))) / (sigma * Math.sqrt(2 * Math.PI));
+      list.push(n);
+      total += n;
+    }
+
+    for (var _i = 1; _i <= len; _i++) {
+      var _n = Math.pow(Math.E, -Math.pow(_i, 2) / (2 * Math.pow(sigma, 2))) / (sigma * Math.sqrt(2 * Math.PI));
+
+      list.push(_n);
+      total += _n;
+    }
+
+    if (total !== 1) {
+      for (var _i2 = 0; _i2 < d; _i2++) {
+        list[_i2] /= total;
+      }
+    }
+
+    return list;
+  }
+
+  var blur = {
+    kernelSize: kernelSize,
+    outerSize: outerSize,
+    outerSizeByD: outerSizeByD,
+    gaussianWeight: gaussianWeight
+  };
+
   var _VALUE, _ARRAY_, _ARRAY_0_;
   var STYLE_KEY$3 = enums.STYLE_KEY,
       style2Upper$1 = enums.style2Upper,
@@ -9591,6 +9671,54 @@
     return res;
   }
 
+  function spreadBboxByFilter(x1, y1, x2, y2, filter) {
+    // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+    if (Array.isArray(filter)) {
+      filter.forEach(function (item) {
+        var _item2 = _slicedToArray(item, 2),
+            k = _item2[0],
+            v = _item2[1];
+
+        if (k === 'blur' && v > 0) {
+          var d = blur.kernelSize(v);
+          var spread = blur.outerSizeByD(d);
+
+          if (spread) {
+            x1 -= spread;
+            y1 -= spread;
+            x2 += spread;
+            y2 += spread;
+          }
+        } else if (k === 'dropShadow') {
+          var _d = blur.kernelSize(v[3]);
+
+          var _spread = blur.outerSizeByD(_d); // x/y/blur，3个一起影响，要考虑正负号，spread一定为非负
+
+
+          if (v[0] || v[1] || _spread) {
+            if (v[0] <= 0 || v[0] > 0 && v[0] < _spread) {
+              x1 += v[0] - _spread;
+            }
+
+            if (v[1] <= 0 || v[1] > 0 && v[1] < _spread) {
+              y1 += v[1] - _spread;
+            }
+
+            if (v[0] < 0 && -v[0] < _spread || v[0] >= 0) {
+              x2 += v[0] + _spread;
+            }
+
+            if (v[1] < 0 && -v[1] < _spread || v[1] >= 0) {
+              y2 += v[1] + _spread;
+            }
+          }
+        }
+      });
+    }
+
+    return [x1, y1, x2, y2];
+  }
+
   var css = {
     normalize: normalize,
     setFontStyle: setFontStyle,
@@ -9600,7 +9728,8 @@
     equalStyle: equalStyle,
     isRelativeOrAbsolute: isRelativeOrAbsolute,
     cloneStyle: cloneStyle,
-    calNormalLineHeight: calNormalLineHeight
+    calNormalLineHeight: calNormalLineHeight,
+    spreadBboxByFilter: spreadBboxByFilter
   };
 
   var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
@@ -13094,86 +13223,6 @@
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
     isPerspectiveMatrix: isPerspectiveMatrix
-  };
-
-  /**
-   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
-   * 根据模糊参数sigma求卷积核尺寸
-   * @param sigma
-   * @returns {number}
-   */
-  function kernelSize(sigma) {
-    if (sigma <= 0) {
-      return 0;
-    }
-
-    var d = Math.floor(sigma * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
-
-    if (d < 2) {
-      d = 2;
-    }
-
-    if (d % 2 === 0) {
-      d++;
-    }
-
-    return d;
-  }
-  /**
-   * 根据sigma求模糊扩展尺寸，卷积核求得后为d，再求半径/2，然后因为算法要执行3次，所以*3
-   * 比如本来d为5，半径2.5算上自身像素点则各方向扩展2，*3则扩展6
-   * @param sigma
-   * @returns {number}
-   */
-
-
-  function outerSize(sigma) {
-    var d = kernelSize(sigma);
-    return outerSizeByD(d);
-  }
-
-  function outerSizeByD(d) {
-    return Math.floor(d * 0.5) * 3;
-  }
-  /**
-   * 一维高斯正态分布，根据标准差和卷积核尺寸返回一维权重数组
-   * @param sigma
-   * @param d
-   */
-
-
-  function gaussianWeight(sigma, d) {
-    var list = [];
-    var len = Math.floor(d * 0.5);
-    var total = 0;
-
-    for (var i = len; i >= 0; i--) {
-      var n = Math.pow(Math.E, -Math.pow(i, 2) / (2 * Math.pow(sigma, 2))) / (sigma * Math.sqrt(2 * Math.PI));
-      list.push(n);
-      total += n;
-    }
-
-    for (var _i = 1; _i <= len; _i++) {
-      var _n = Math.pow(Math.E, -Math.pow(_i, 2) / (2 * Math.pow(sigma, 2))) / (sigma * Math.sqrt(2 * Math.PI));
-
-      list.push(_n);
-      total += _n;
-    }
-
-    if (total !== 1) {
-      for (var _i2 = 0; _i2 < d; _i2++) {
-        list[_i2] /= total;
-      }
-    }
-
-    return list;
-  }
-
-  var blur = {
-    kernelSize: kernelSize,
-    outerSize: outerSize,
-    outerSizeByD: outerSizeByD,
-    gaussianWeight: gaussianWeight
   };
 
   var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
@@ -20006,7 +20055,8 @@
       isFunction$5 = util.isFunction;
   var calRelative$1 = css.calRelative,
       getFontFamily$1 = css.getFontFamily,
-      calNormalLineHeight$1 = css.calNormalLineHeight;
+      calNormalLineHeight$1 = css.calNormalLineHeight,
+      spreadBboxByFilter$1 = css.spreadBboxByFilter;
   var GEOM$4 = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
       isValidMbm$1 = mbm.isValidMbm;
@@ -22903,7 +22953,8 @@
         }
 
         this.clearCache();
-      }
+      } // 一个节点的borderBox根据boxShadow和filter进行扩展后的结果
+
     }, {
       key: "__spreadBbox",
       value: function __spreadBbox(boxShadow, filter) {
@@ -22938,29 +22989,6 @@
               yb.push(y + d);
             }
           });
-        } // TODO: filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
-
-
-        if (Array.isArray(filter)) {
-          filter.forEach(function (item) {
-            var _item3 = _slicedToArray(item, 2),
-                k = _item3[0],
-                v = _item3[1];
-
-            var sigma = v[0];
-
-            if (k === 'blur' && sigma > 0) {
-              var d = blur.kernelSize(sigma);
-              var spread = blur.outerSizeByD(d);
-
-              if (spread) {
-                xl.push(-spread);
-                xr.push(spread);
-                yt.push(-spread);
-                yb.push(spread);
-              }
-            }
-          });
         }
 
         xl.forEach(function (n) {
@@ -22974,8 +23002,9 @@
         });
         yb.forEach(function (n) {
           return y2 = Math.max(y2, n);
-        });
-        return [x1, y1, x2, y2];
+        }); // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+
+        return spreadBboxByFilter$1(x1, y1, x2, y2, filter);
       }
     }, {
       key: "__releaseWhenEmpty",
@@ -30855,6 +30884,7 @@
       OFFSCREEN_BLEND$1 = offscreen.OFFSCREEN_BLEND,
       OFFSCREEN_MASK2$1 = offscreen.OFFSCREEN_MASK2,
       applyOffscreen$1 = offscreen.applyOffscreen;
+  var spreadBboxByFilter$2 = css.spreadBboxByFilter;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
       DISPLAY$7 = _enums$STYLE_KEY$j.DISPLAY,
       OPACITY$5 = _enums$STYLE_KEY$j.OPACITY,
@@ -31049,6 +31079,7 @@
 
 
           if (bbox) {
+            bbox = spreadBboxByFilter$2(bbox[0], bbox[1], bbox[2], bbox[3], filter);
             bbox[0] -= sx1;
             bbox[1] -= sy1;
             bbox[2] -= sx1;
@@ -31127,6 +31158,7 @@
         cacheOverflow = config[NODE_CACHE_OVERFLOW$1],
         currentStyle = config[NODE_CURRENT_STYLE$5],
         computedStyle = config[NODE_COMPUTED_STYLE$3];
+    var filter = computedStyle[FILTER$5];
     var needGen; // 先绘制形成基础的total，有可能已经存在无变化，就可省略
 
     if (!cacheTotal || !cacheTotal.available) {
@@ -31275,6 +31307,11 @@
           bbox = target.bbox;
         } else {
           bbox = _node.bbox;
+        } // 局部根节点的filter会作用于所有子节点，需再计算一次
+
+
+        if (i !== index) {
+          bbox = spreadBboxByFilter$2(bbox[0], bbox[1], bbox[2], bbox[3], filter);
         } // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
 
 
@@ -31538,7 +31575,7 @@
 
     if (cacheTotal && cacheTotal.available) {
       var overflow = computedStyle[OVERFLOW$3],
-          filter = computedStyle[FILTER$5];
+          _filter = computedStyle[FILTER$5];
       var _target3 = cacheTotal;
 
       if (overflow === 'hidden') {
@@ -31550,9 +31587,9 @@
         _target3 = config[NODE_CACHE_OVERFLOW$1] || _target3;
       }
 
-      if (filter && filter.length) {
+      if (_filter && _filter.length) {
         if (!cacheFilter || !cacheFilter.available || needGen) {
-          config[NODE_CACHE_FILTER$1] = genFilter(node, _target3, filter);
+          config[NODE_CACHE_FILTER$1] = genFilter(node, _target3, _filter);
           needGen = true;
         }
 
@@ -33292,14 +33329,14 @@
         if (contain$2(refreshLevel, FT)) {
           node.__bbox = null;
 
-          var _filter = node.__calFilter(currentStyle, computedStyle); // 防重
+          var _filter2 = node.__calFilter(currentStyle, computedStyle); // 防重
 
 
           if (hasRecordAsMask) {
-            hasRecordAsMask[7] = _filter;
+            hasRecordAsMask[7] = _filter2;
           } else {
             // 强制存hasMask，因为filter改变影响mask
-            hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, _filter];
+            hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, _filter2];
             mergeList.push(hasRecordAsMask);
           }
         }

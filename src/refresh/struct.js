@@ -1240,7 +1240,7 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
         [mockCache, width, height, bbox] = res;
       }
     }
-    else if(k === 'hue-rotate') {
+    else if(k === 'hueRotate') {
       let rotation = geom.d2r(v % 360);
       let cosR = Math.cos(rotation);
       let sinR = Math.sin(rotation);

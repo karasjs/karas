@@ -972,37 +972,77 @@ function normalize(style, reset = []) {
   }
   temp = style.filter;
   if(temp !== undefined) {
-    let match = (temp || '').toString().match(/\b[\w-]+\s*\(\s*[-+]?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
     let f = null;
-    if(match) {
-      f = [];
-      match.forEach(item => {
-        let m2 = /([\w-]+)\s*\(\s*([-+]?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
-        if(m2) {
-          let k = m2[1].toLowerCase(), v = calUnit(m2[2]);
-          if(k === 'blur') {
-            if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
-              return;
+    // 先替换掉rgba为#RGBA格式，然后按逗号分割
+    let arr = (replaceRgba2Hex(temp) || '').split(',');
+    if(arr) {
+      arr.forEach(item => {
+        let match = /([\w-]+)\s*\((\s*.+\s*)\)/i.exec(item);
+        if(match) {
+          let k = match[1].toLowerCase(), v = match[2];
+          if(k === 'drop-shadow' || k === 'dropshadow') {
+            let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
+            if(coords) {
+              f = f || [];
+              let res = [];
+              // v,h,blur,spread，其中v和h是必须，其余没有为0
+              for(let i = 1; i <= 4; i++) {
+                let item2 = coords[i];
+                if(item2) {
+                  let v = calUnit(item2);
+                  if([NUMBER, DEG].indexOf(v[1]) > -1) {
+                    v[1] = PX;
+                  }
+                  // x/y可以负，blur和spread不行
+                  if(i > 2 && v[0] < 0) {
+                    v = 0;
+                  }
+                  res.push(v);
+                }
+                else {
+                  res.push([0, 1]);
+                }
+              }
+              let color = /#[a-f\d]{3,8}/i.exec(item);
+              if(color) {
+                res.push(rgba2int(color[0]));
+              }
+              else {
+                res.push([0, 0, 0, 1]);
+              }
+              f.push(['dropShadow', res]);
             }
-            if(v[1] === NUMBER) {
-              v[1] = PX;
-            }
-            f.push([k, v]);
           }
-          else if(k === 'hue-rotate') {
-            if([NUMBER, DEG].indexOf(v[1]) === -1) {
-              return;
+          else {
+            let m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(v);
+            if(m2) {
+              f = f || [];
+              let v = calUnit(m2[0]);
+              if(k === 'blur') {
+                if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
+                  return;
+                }
+                if(v[1] === NUMBER) {
+                  v[1] = PX;
+                }
+                f.push([k, v]);
+              }
+              else if(k === 'hue-rotate' || k === 'huerotate') {
+                if([NUMBER, DEG].indexOf(v[1]) === -1) {
+                  return;
+                }
+                v[1] = DEG;
+                f.push(['hueRotate', v]);
+              }
+              else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
+                if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
+                  return;
+                }
+                v[0] = Math.max(v[0], 0);
+                v[1] = PERCENT;
+                f.push([k, v]);
+              }
             }
-            v[1] = DEG;
-            f.push([k, v]);
-          }
-          else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-            if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
-              return;
-            }
-            v[0] = Math.max(v[0], 0);
-            v[1] = PERCENT;
-            f.push([k, v]);
           }
         }
       });

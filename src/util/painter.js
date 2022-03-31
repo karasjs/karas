@@ -113,7 +113,7 @@ function canvasFilter(filter) {
     if(k === 'blur') {
       s += `blur(${v}px)`;
     }
-    else if(k === 'hue-rotate') {
+    else if(k === 'hueRotate') {
       s += `hue-rotate(${v}deg)`;
     }
     else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {

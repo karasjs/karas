@@ -2357,7 +2357,7 @@
 
       if (k === 'blur') {
         s += "blur(".concat(v, "px)");
-      } else if (k === 'hue-rotate') {
+      } else if (k === 'hueRotate') {
         s += "hue-rotate(".concat(v, "deg)");
       } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
         s += "".concat(k, "(").concat(v, "%)");
@@ -9026,45 +9026,91 @@
     temp = style.filter;
 
     if (temp !== undefined) {
-      var _match3 = (temp || '').toString().match(/\b[\w-]+\s*\(\s*[-+]?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
+      var f = null; // 先替换掉rgba为#RGBA格式，然后按逗号分割
 
-      var f = null;
+      var _arr11 = (replaceRgba2Hex$1(temp) || '').split(',');
 
-      if (_match3) {
-        f = [];
+      if (_arr11) {
+        _arr11.forEach(function (item) {
+          var match = /([\w-]+)\s*\((\s*.+\s*)\)/i.exec(item);
 
-        _match3.forEach(function (item) {
-          var m2 = /([\w-]+)\s*\(\s*([-+]?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
+          if (match) {
+            var k = match[1].toLowerCase(),
+                _v6 = match[2];
 
-          if (m2) {
-            var k = m2[1].toLowerCase(),
-                _v6 = calUnit$1(m2[2]);
+            if (k === 'drop-shadow' || k === 'dropshadow') {
+              var coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
 
-            if (k === 'blur') {
-              if (_v6[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v6[1]) > -1) {
-                return;
+              if (coords) {
+                f = f || [];
+                var _res = []; // v,h,blur,spread，其中v和h是必须，其余没有为0
+
+                for (var i = 1; i <= 4; i++) {
+                  var item2 = coords[i];
+
+                  if (item2) {
+                    var _v7 = calUnit$1(item2);
+
+                    if ([NUMBER$1, DEG$1].indexOf(_v7[1]) > -1) {
+                      _v7[1] = PX$2;
+                    } // x/y可以负，blur和spread不行
+
+
+                    if (i > 2 && _v7[0] < 0) {
+                      _v7 = 0;
+                    }
+
+                    _res.push(_v7);
+                  } else {
+                    _res.push([0, 1]);
+                  }
+                }
+
+                var color = /#[a-f\d]{3,8}/i.exec(item);
+
+                if (color) {
+                  _res.push(rgba2int$2(color[0]));
+                } else {
+                  _res.push([0, 0, 0, 1]);
+                }
+
+                f.push(['dropShadow', _res]);
               }
+            } else {
+              var m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(_v6);
 
-              if (_v6[1] === NUMBER$1) {
-                _v6[1] = PX$2;
+              if (m2) {
+                f = f || [];
+
+                var _v8 = calUnit$1(m2[0]);
+
+                if (k === 'blur') {
+                  if (_v8[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v8[1]) > -1) {
+                    return;
+                  }
+
+                  if (_v8[1] === NUMBER$1) {
+                    _v8[1] = PX$2;
+                  }
+
+                  f.push([k, _v8]);
+                } else if (k === 'hue-rotate' || k === 'huerotate') {
+                  if ([NUMBER$1, DEG$1].indexOf(_v8[1]) === -1) {
+                    return;
+                  }
+
+                  _v8[1] = DEG$1;
+                  f.push(['hueRotate', _v8]);
+                } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
+                  if ([NUMBER$1, PERCENT$2].indexOf(_v8[1]) === -1) {
+                    return;
+                  }
+
+                  _v8[0] = Math.max(_v8[0], 0);
+                  _v8[1] = PERCENT$2;
+                  f.push([k, _v8]);
+                }
               }
-
-              f.push([k, _v6]);
-            } else if (k === 'hue-rotate') {
-              if ([NUMBER$1, DEG$1].indexOf(_v6[1]) === -1) {
-                return;
-              }
-
-              _v6[1] = DEG$1;
-              f.push([k, _v6]);
-            } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-              if ([NUMBER$1, PERCENT$2].indexOf(_v6[1]) === -1) {
-                return;
-              }
-
-              _v6[0] = Math.max(_v6[0], 0);
-              _v6[1] = PERCENT$2;
-              f.push([k, _v6]);
             }
           }
         });
@@ -9098,48 +9144,48 @@
     if (temp !== undefined) {
       var bs = null; // 先替换掉rgba为#RGBA格式，然后按逗号分割
 
-      var _arr11 = (replaceRgba2Hex$1(temp) || '').split(',');
+      var _arr12 = (replaceRgba2Hex$1(temp) || '').split(',');
 
-      if (_arr11) {
-        _arr11.forEach(function (item) {
+      if (_arr12) {
+        _arr12.forEach(function (item) {
           var coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
 
           if (coords) {
             bs = bs || [];
-            var _res = []; // v,h,blur,spread，其中v和h是必须，其余没有为0
+            var _res2 = []; // v,h,blur,spread，其中v和h是必须，其余没有为0
 
             for (var i = 1; i <= 4; i++) {
               var item2 = coords[i];
 
               if (item2) {
-                var _v7 = calUnit$1(item2);
+                var _v9 = calUnit$1(item2);
 
-                if ([NUMBER$1, DEG$1].indexOf(_v7[1]) > -1) {
-                  _v7[1] = PX$2;
+                if ([NUMBER$1, DEG$1].indexOf(_v9[1]) > -1) {
+                  _v9[1] = PX$2;
                 } // x/y可以负，blur和spread不行
 
 
-                if (i > 2 && _v7[0] < 0) {
-                  _v7 = 0;
+                if (i > 2 && _v9[0] < 0) {
+                  _v9 = 0;
                 }
 
-                _res.push(_v7);
+                _res2.push(_v9);
               } else {
-                _res.push([0, 1]);
+                _res2.push([0, 1]);
               }
             }
 
             var color = /#[a-f\d]{3,8}/i.exec(item);
 
             if (color) {
-              _res.push(rgba2int$2(color[0]));
+              _res2.push(rgba2int$2(color[0]));
             } else {
-              _res.push([0, 0, 0, 1]);
+              _res2.push([0, 0, 0, 1]);
             }
 
-            _res.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
+            _res2.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
 
-            bs.push(_res);
+            bs.push(_res2);
           }
         });
       }
@@ -9168,8 +9214,8 @@
 
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        var _v8 = style[k];
-        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v8) ? _v8 : [_v8];
+        var _v10 = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v10) ? _v10 : [_v10];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -17042,7 +17088,7 @@
             v[k] = [v2, pHash[k][1]];
             hasChange = true;
           }
-        } else if (k === 'hue-rotate') {
+        } else if (k === 'hueRotate') {
           var nv = isNil$5(nHash[k]) ? 0 : nHash[k][0];
           var pv = isNil$5(pHash[k]) ? 0 : pHash[k][0];
 
@@ -17805,7 +17851,7 @@
             hash[k][0] += v[k][0] * percent;
           } else {
             // 2个关键帧中有1个未声明，需新建样式存入
-            if (k === 'blur' || k === 'hue-rotate' || k === 'grayscale') {
+            if (k === 'blur' || k === 'hueRotate' || k === 'grayscale') {
               var n = v[k].slice(0);
               n[0] *= percent;
               st.push([k, n]);
@@ -32203,7 +32249,7 @@
           height = _res2[2];
           bbox = _res2[3];
         }
-      } else if (k === 'hue-rotate') {
+      } else if (k === 'hueRotate') {
         var rotation = geom.d2r(v % 360);
         var cosR = Math.cos(rotation);
         var sinR = Math.sin(rotation);

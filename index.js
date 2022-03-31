@@ -28486,7 +28486,14 @@
             return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
           }
 
-          return item;
+          return int2rgba$3(item);
+        });
+        stroke = stroke.map(function (item) {
+          if (item.k) {
+            return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+          }
+
+          return int2rgba$3(item);
         });
         return {
           cx: cx,

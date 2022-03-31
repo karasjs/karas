@@ -5416,7 +5416,7 @@
       var res = '#' + prefixHex(parseInt($1).toString(16)) + prefixHex(parseInt($2).toString(16)) + prefixHex(parseInt($3).toString(16));
 
       if ($4) {
-        res += prefixHex(Math.floor(parseFloat($4) * 256).toString(16));
+        res += prefixHex(Math.floor(parseFloat($4) * 255).toString(16));
       }
 
       return res;

@@ -973,8 +973,8 @@ function normalize(style, reset = []) {
   temp = style.filter;
   if(temp !== undefined) {
     let f = null;
-    // 先替换掉rgba为#RGBA格式，然后按逗号分割
-    let arr = (replaceRgba2Hex(temp) || '').split(',');
+    // 先替换掉rgba为#RGBA格式，然后分割
+    let arr = (replaceRgba2Hex(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
     if(arr) {
       arr.forEach(item => {
         let match = /([\w-]+)\s*\((\s*.+\s*)\)/i.exec(item);

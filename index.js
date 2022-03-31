@@ -9031,9 +9031,9 @@
     temp = style.filter;
 
     if (temp !== undefined) {
-      var f = null; // 先替换掉rgba为#RGBA格式，然后按逗号分割
+      var f = null; // 先替换掉rgba为#RGBA格式，然后分割
 
-      var _arr11 = (replaceRgba2Hex$1(temp) || '').split(',');
+      var _arr11 = (replaceRgba2Hex$1(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
 
       if (_arr11) {
         _arr11.forEach(function (item) {
@@ -22938,7 +22938,8 @@
               yb.push(y + d);
             }
           });
-        }
+        } // TODO: filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+
 
         if (Array.isArray(filter)) {
           filter.forEach(function (item) {
@@ -23160,7 +23161,7 @@
       key: "outerHeight",
       get: function get() {
         return this.__outerHeight || 0;
-      } // 不考虑margin的范围，>=REPAINT渲染或个别有影响的渲染改变（如blur）清空缓存
+      } // 相对自身原点，不考虑margin的范围，>=REPAINT渲染或个别有影响的渲染改变（如blur）清空缓存
 
     }, {
       key: "bbox",
@@ -32237,6 +32238,8 @@
           height = _res2[2];
           bbox = _res2[3];
         }
+      } else if (k === 'dropShadow') {
+        console.log(v);
       } else if (k === 'hueRotate') {
         var rotation = geom.d2r(v % 360);
         var cosR = Math.cos(rotation);

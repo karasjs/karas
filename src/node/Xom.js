@@ -2892,6 +2892,7 @@ class Xom extends Node {
         }
       });
     }
+    // TODO: filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
     if(Array.isArray(filter)) {
       filter.forEach(item => {
         let [k, v] = item;
@@ -3067,7 +3068,7 @@ class Xom extends Node {
     return this.__outerHeight || 0;
   }
 
-  // 不考虑margin的范围，>=REPAINT渲染或个别有影响的渲染改变（如blur）清空缓存
+  // 相对自身原点，不考虑margin的范围，>=REPAINT渲染或个别有影响的渲染改变（如blur）清空缓存
   get bbox() {
     if(!this.__bbox) {
       let {

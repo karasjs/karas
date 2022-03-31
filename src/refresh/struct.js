@@ -1240,6 +1240,10 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
         [mockCache, width, height, bbox] = res;
       }
     }
+    else if(k === 'dropShadow') {
+      console.log(v);
+      genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+    }
     else if(k === 'hueRotate') {
       let rotation = geom.d2r(v % 360);
       let cosR = Math.cos(rotation);
@@ -1658,6 +1662,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
   texCache.releaseLockChannel(n, maskCache.page);
   return maskCache;
 }
+
+function genDropShadowWebgl(gl, texCache, cache) {}
 
 /**
  * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，

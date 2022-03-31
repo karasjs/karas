@@ -605,9 +605,13 @@ function getLinear(v, d, ox, oy, cx, cy, w, h, root, dx = 0, dy = 0) {
   };
 }
 
-function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
+function getRadial(v, shape, size, position, x1, y1, x2, y2, root, dx = 0, dy = 0) {
   let w = x2 - x1;
   let h = y2 - y1;
+  x1 += dx;
+  y1 += dy;
+  x2 += dx;
+  y2 += dy;
   let [cx, cy, r, xl, yl, tx, ty, d] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2, root);
   // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
   let matrix, scx = 1, scy = 1;

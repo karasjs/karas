@@ -7192,8 +7192,14 @@
   }
 
   function getRadial(v, shape, size, position, x1, y1, x2, y2, root) {
+    var dx = arguments.length > 9 && arguments[9] !== undefined ? arguments[9] : 0;
+    var dy = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : 0;
     var w = x2 - x1;
     var h = y2 - y1;
+    x1 += dx;
+    y1 += dy;
+    x2 += dx;
+    y2 += dy;
 
     var _calRadialRadius = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2, root),
         _calRadialRadius2 = _slicedToArray(_calRadialRadius, 8),
@@ -28256,7 +28262,6 @@
       joinArr$3 = util.joinArr;
   var canvasPolygon$6 = painter.canvasPolygon,
       svgPolygon$6 = painter.svgPolygon;
-  var WEBGL$5 = mode.WEBGL;
   var REGISTER$1 = {};
 
   var Geom$1 = /*#__PURE__*/function (_Xom) {
@@ -28421,7 +28426,7 @@
           computedStyle[k] = currentStyle[k];
         }); // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
 
-        [STROKE$1, FILL$1].forEach(function (k) {
+        [FILL$1, STROKE$1].forEach(function (k) {
           if (isNil$8(__cacheStyle[k])) {
             var v = currentStyle[k];
             var cs = computedStyle[k] = [];
@@ -28430,21 +28435,12 @@
 
             if (Array.isArray(v)) {
               v.forEach(function (item) {
-                if (item[0] && item[1] === GRADIENT$3) {
-                  if (renderMode === WEBGL$5) {
-                    var cache = _this2.__config[NODE_CACHE$3];
-                    x3 += cache.dx;
-                    x4 += cache.dx;
-                    y3 += cache.dy;
-                    y4 += cache.dy;
-                  }
-
-                  var t = _this2.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]);
-
+                if (item && item[1] === GRADIENT$3) {
+                  // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
                   cs.push(item[0]);
 
-                  _res.push(t);
-                } else if (item[1] === RGBA$4 && item[0][3] > 0) {
+                  _res.push(true);
+                } else if (item && item[1] === RGBA$4 && item[0][3] > 0) {
                   cs.push(item[0]);
 
                   _res.push(int2rgba$3(item[0]));
@@ -28467,22 +28463,31 @@
       }
     }, {
       key: "__preSet",
-      value: function __preSet(res) {
+      value: function __preSet(renderMode, res) {
+        var _this3 = this;
+
         var width = this.width,
             height = this.height,
             __cacheStyle = this.__cacheStyle,
             computedStyle = this.computedStyle;
         var cx = res.sx3 + width * 0.5;
         var cy = res.sy3 + height * 0.5;
-        var fill = __cacheStyle[FILL$1],
-            stroke = __cacheStyle[STROKE$1],
-            strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
-        var strokeWidth = computedStyle[STROKE_WIDTH$1],
+        var strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
+        var fill = computedStyle[FILL$1],
+            stroke = computedStyle[STROKE$1],
+            strokeWidth = computedStyle[STROKE_WIDTH$1],
             strokeLinecap = computedStyle[STROKE_LINECAP],
             strokeLinejoin = computedStyle[STROKE_LINEJOIN],
             strokeMiterlimit = computedStyle[STROKE_MITERLIMIT],
             strokeDasharray = computedStyle[STROKE_DASHARRAY$1],
             fillRule = computedStyle[FILL_RULE];
+        fill = fill.map(function (item) {
+          if (item.k) {
+            return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+          }
+
+          return item;
+        });
         return {
           cx: cx,
           cy: cy,
@@ -28570,7 +28575,7 @@
         } // data在无cache时没有提前设置
 
 
-        var preData = this.__preSet(res);
+        var preData = this.__preSet(renderMode, res);
 
         return Object.assign(res, preData);
       }
@@ -28893,7 +28898,7 @@
     }, {
       key: "__conicGradient",
       value: function __conicGradient(renderMode, ctx, list, isMulti, res) {
-        var _this3 = this;
+        var _this4 = this;
 
         var fill = res.fill,
             bbox = res.bbox,
@@ -28950,10 +28955,10 @@
               };
               var clip = ctx.add(v);
 
-              _this3.__config[NODE_DEFS_CACHE$4].push(v);
+              _this4.__config[NODE_DEFS_CACHE$4].push(v);
 
               color.forEach(function (item) {
-                _this3.virtualDom.bb.push({
+                _this4.virtualDom.bb.push({
                   type: 'item',
                   tagName: 'path',
                   props: [['d', svgPolygon$6(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
@@ -28973,7 +28978,7 @@
             this.__config[NODE_DEFS_CACHE$4].push(v);
 
             color.forEach(function (item) {
-              _this3.virtualDom.bb.push({
+              _this4.virtualDom.bb.push({
                 type: 'item',
                 tagName: 'path',
                 props: [['d', svgPolygon$6(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]

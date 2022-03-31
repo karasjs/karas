@@ -177,26 +177,19 @@ class Geom extends Xom {
       computedStyle[k] = currentStyle[k];
     });
     // stroke/fll移至render里处理，因为cache涉及渐变坐标偏移
-    [STROKE, FILL].forEach(k => {
+    [FILL, STROKE].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
         let cs = computedStyle[k] = [];
         let res = __cacheStyle[k] = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
-            if(item[0] && item[1] === GRADIENT) {
-              if(renderMode === WEBGL) {
-                let cache = this.__config[NODE_CACHE];
-                x3 += cache.dx;
-                x4 += cache.dx;
-                y3 += cache.dy;
-                y4 += cache.dy;
-              }
-              let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0]);
+            if(item && item[1] === GRADIENT) {
+              // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
               cs.push(item[0]);
-              res.push(t);
+              res.push(true);
             }
-            else if(item[1] === RGBA && item[0][3] > 0) {
+            else if(item && item[1] === RGBA && item[0][3] > 0) {
               cs.push(item[0]);
               res.push(int2rgba(item[0]));
             }
@@ -216,16 +209,16 @@ class Geom extends Xom {
     return computedStyle[VISIBILITY] !== 'hidden';
   }
 
-  __preSet(res) {
+  __preSet(renderMode, res) {
     let { width, height, __cacheStyle, computedStyle } = this;
     let cx = res.sx3 + width * 0.5;
     let cy = res.sy3 + height * 0.5;
     let {
-      [FILL]: fill,
-      [STROKE]: stroke,
       [STROKE_DASHARRAY_STR]: strokeDasharrayStr,
     } = __cacheStyle;
     let {
+      [FILL]: fill,
+      [STROKE]: stroke,
       [STROKE_WIDTH]: strokeWidth,
       [STROKE_LINECAP]: strokeLinecap,
       [STROKE_LINEJOIN]: strokeLinejoin,
@@ -233,6 +226,12 @@ class Geom extends Xom {
       [STROKE_DASHARRAY]: strokeDasharray,
       [FILL_RULE]: fillRule,
     } = computedStyle;
+    fill = fill.map(item => {
+      if(item.k) {
+        return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
+      }
+      return item;
+    });
     return {
       cx,
       cy,
@@ -321,7 +320,7 @@ class Geom extends Xom {
       return res;
     }
     // data在无cache时没有提前设置
-    let preData = this.__preSet(res);
+    let preData = this.__preSet(renderMode, res);
     return Object.assign(res, preData);
   }
 

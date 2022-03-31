@@ -226,13 +226,13 @@ class Geom extends Xom {
       [STROKE_DASHARRAY]: strokeDasharray,
       [FILL_RULE]: fillRule,
     } = computedStyle;
-    fill = fill.map(item => {
+    stroke = stroke.map(item => {
       if(item.k) {
         return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
       }
       return int2rgba(item);
     });
-    stroke = stroke.map(item => {
+    fill = fill.map(item => {
       if(item.k) {
         return this.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
       }

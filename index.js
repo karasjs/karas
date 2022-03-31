@@ -28481,14 +28481,14 @@
             strokeMiterlimit = computedStyle[STROKE_MITERLIMIT],
             strokeDasharray = computedStyle[STROKE_DASHARRAY$1],
             fillRule = computedStyle[FILL_RULE];
-        fill = fill.map(function (item) {
+        stroke = stroke.map(function (item) {
           if (item.k) {
             return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
           }
 
           return int2rgba$3(item);
         });
-        stroke = stroke.map(function (item) {
+        fill = fill.map(function (item) {
           if (item.k) {
             return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
           }

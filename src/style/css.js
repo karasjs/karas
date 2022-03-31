@@ -1056,7 +1056,7 @@ function normalize(style, reset = []) {
               res.push([0, 1]);
             }
           }
-          let color = /#[a-f\d]{6,8}/.exec(item);
+          let color = /#[a-f\d]{3,8}/i.exec(item);
           if(color) {
             res.push(rgba2int(color[0]));
           }

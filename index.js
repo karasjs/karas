@@ -9129,7 +9129,7 @@
               }
             }
 
-            var color = /#[a-f\d]{6,8}/.exec(item);
+            var color = /#[a-f\d]{3,8}/i.exec(item);
 
             if (color) {
               _res.push(rgba2int$2(color[0]));

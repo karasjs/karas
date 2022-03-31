@@ -261,14 +261,11 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
  * @param height
  * @param cx
  * @param cy
- * @param spread
- * @param d
- * @param sigma
  */
-function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy, spread, d, sigma) {
+function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy) {
   // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-  let [x1, y2] = convertCoords2Gl([spread, height - spread], cx, cy);
-  let [x2, y1] = convertCoords2Gl([width - spread, spread], cx, cy);
+  let [x1, y2] = convertCoords2Gl([0, height], cx, cy);
+  let [x2, y1] = convertCoords2Gl([width, 0], cx, cy);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);

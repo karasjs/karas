@@ -1568,7 +1568,7 @@ function spreadBboxByFilter(x1, y1, x2, y2, filter) {
         }
       }
       else if(k === 'dropShadow') {
-        let d = blur.kernelSize(v[3]);
+        let d = blur.kernelSize(v[2]);
         let spread = blur.outerSizeByD(d);
         // x/y/blur，3个一起影响，要考虑正负号，spread一定为非负
         if(v[0] || v[1] || spread) {

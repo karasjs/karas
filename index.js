@@ -5826,20 +5826,17 @@
    * @param height
    * @param cx
    * @param cy
-   * @param spread
-   * @param d
-   * @param sigma
    */
 
 
-  function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy, spread, d, sigma) {
+  function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy) {
     // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-    var _convertCoords2Gl9 = convertCoords2Gl([spread, height - spread], cx, cy),
+    var _convertCoords2Gl9 = convertCoords2Gl([0, height], cx, cy),
         _convertCoords2Gl10 = _slicedToArray(_convertCoords2Gl9, 2),
         x1 = _convertCoords2Gl10[0],
         y2 = _convertCoords2Gl10[1];
 
-    var _convertCoords2Gl11 = convertCoords2Gl([width - spread, spread], cx, cy),
+    var _convertCoords2Gl11 = convertCoords2Gl([width, 0], cx, cy),
         _convertCoords2Gl12 = _slicedToArray(_convertCoords2Gl11, 2),
         x2 = _convertCoords2Gl12[0],
         y1 = _convertCoords2Gl12[1]; // 顶点buffer
@@ -9690,7 +9687,7 @@
             y2 += spread;
           }
         } else if (k === 'dropShadow') {
-          var _d = blur.kernelSize(v[3]);
+          var _d = blur.kernelSize(v[2]);
 
           var _spread = blur.outerSizeByD(_d); // x/y/blur，3个一起影响，要考虑正负号，spread一定为非负
 
@@ -32276,7 +32273,7 @@
           bbox = _res2[3];
         }
       } else if (k === 'dropShadow') {
-        console.log(v);
+        genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
       } else if (k === 'hueRotate') {
         var rotation = geom.d2r(v % 360);
         var cosR = Math.cos(rotation);
@@ -32415,9 +32412,7 @@
       d -= 2;
     }
 
-    var spread = blur.outerSizeByD(d);
-    width += spread * 2;
-    height += spread * 2; // 防止超限，webgl最大纹理尺寸限制
+    var spread = blur.outerSizeByD(d); // 防止超限，webgl最大纹理尺寸限制
 
     var limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 
@@ -32425,11 +32420,6 @@
       return;
     }
 
-    bbox = bbox.slice(0);
-    bbox[0] -= spread;
-    bbox[1] -= spread;
-    bbox[2] += spread;
-    bbox[3] += spread;
     var cx = width * 0.5,
         cy = height * 0.5;
     var weights = blur.gaussianWeight(sigma, d);
@@ -32475,7 +32465,7 @@
       texCache.lockChannel(j);
     }
 
-    texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy, spread, d, sigma); // 销毁这个临时program
+    texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy); // 销毁这个临时program
 
     gl.deleteShader(program.vertexShader);
     gl.deleteShader(program.fragmentShader);
@@ -32756,6 +32746,21 @@
     var maskCache = new MockCache(gl, texture2, sx1, sy1, width, height, bbox);
     texCache.releaseLockChannel(n, maskCache.page);
     return maskCache;
+  }
+
+  function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
+    console.log(v, bbox);
+    var d = blur.kernelSize(v[2]);
+    var max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
+
+    while (d > max) {
+      d -= 2;
+    }
+
+    var spread = blur.outerSizeByD(d);
+    width += spread * 2;
+    height += spread * 2;
+    console.log(width, height, d, spread);
   }
   /**
    * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，

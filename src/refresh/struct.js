@@ -1249,7 +1249,6 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
       }
     }
     else if(k === 'dropShadow') {
-      console.log(v);
       genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
     }
     else if(k === 'hueRotate') {
@@ -1376,18 +1375,11 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
     d -= 2;
   }
   let spread = blur.outerSizeByD(d);
-  width += spread * 2;
-  height += spread * 2;
   // 防止超限，webgl最大纹理尺寸限制
   let limit = gl.getParameter(gl.MAX_TEXTURE_SIZE);
   if(width > limit || height > limit) {
     return;
   }
-  bbox = bbox.slice(0);
-  bbox[0] -= spread;
-  bbox[1] -= spread;
-  bbox[2] += spread;
-  bbox[3] += spread;
   let cx = width * 0.5, cy = height * 0.5;
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
@@ -1421,7 +1413,7 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
     texCache.lockChannel(j);
   }
   texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j,
-    width, height, cx, cy, spread, d, sigma);
+    width, height, cx, cy);
   // 销毁这个临时program
   gl.deleteShader(program.vertexShader);
   gl.deleteShader(program.fragmentShader);
@@ -1671,7 +1663,18 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
   return maskCache;
 }
 
-function genDropShadowWebgl(gl, texCache, cache) {}
+function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
+  console.log(v, bbox);
+  let d = blur.kernelSize(v[2]);
+  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
+  while(d > max) {
+    d -= 2;
+  }
+  let spread = blur.outerSizeByD(d);
+  width += spread * 2;
+  height += spread * 2;
+  console.log(width,height,d,spread)
+}
 
 /**
  * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，

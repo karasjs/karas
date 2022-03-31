@@ -2233,6 +2233,630 @@
     getConicGradientImage: getConicGradientImage
   };
 
+  // 类型为引用防止json仿造
+  var TYPE_VD = Symbol('Dom');
+  var TYPE_GM = Symbol('Geom');
+  var TYPE_CP = Symbol('Component');
+  var $$type = {
+    TYPE_VD: TYPE_VD,
+    TYPE_GM: TYPE_GM,
+    TYPE_CP: TYPE_CP
+  };
+
+  var toString = {}.toString;
+
+  function isType(type) {
+    return function (obj) {
+      return toString.call(obj) === '[object ' + type + ']';
+    };
+  }
+
+  var isObject = isType('Object');
+  var isString = isType('String');
+  var isFunction = isType('Function');
+  var isNumber = isType('Number');
+  var isBoolean = isType('Boolean');
+  var isDate = isType('Date');
+  var hasOwn = {}.hasOwnProperty;
+  var fnToString = hasOwn.toString;
+  var ObjectFunctionString = fnToString.call(Object);
+
+  function isNil(v) {
+    return v === undefined || v === null;
+  }
+
+  function _joinSourceArray(arr) {
+    var res = '';
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        res += _joinSourceArray(item);
+      } else {
+        res += stringify(item);
+      }
+    }
+
+    return res;
+  }
+
+  function stringify(s) {
+    if (isNil(s)) {
+      return '';
+    }
+
+    return s.toString();
+  }
+
+  function encodeHtml(s, prop) {
+    if (prop) {
+      return s.replace(/"/g, '&quot;');
+    }
+
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
+  } // 根元素专用
+
+
+  function joinVirtualDom(vd) {
+    var s = '<defs>';
+    vd.defs.forEach(function (item) {
+      s += joinDef(item);
+    });
+    s += '</defs><g>';
+    vd.bb.forEach(function (item) {
+      s += joinVd(item);
+    });
+    s += '</g><g';
+
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
+    }
+
+    s += '>';
+    (vd.children || []).forEach(function (item) {
+      if (item.isMask) {
+        return;
+      }
+
+      s += joinVd(item);
+    });
+    s += '</g>';
+    return s;
+  } // 普通元素
+
+
+  function joinVd(vd) {
+    if (vd.type === 'item' || vd.type === 'img') {
+      var s = '';
+      (vd.props || []).forEach(function (item) {
+        s += ' ' + item[0] + '="' + item[1] + '"';
+      });
+
+      if (vd.tagName === 'text') {
+        return '<text' + s + '>' + vd.content + '</text>';
+      }
+
+      return '<' + vd.tagName + s + '/>';
+    } else if (vd.type === 'text') {
+      var _s = ""; // text有许多lineBox
+
+      (vd.children || []).forEach(function (item) {
+        _s += joinVd(item);
+      });
+      return '<g>' + _s + '</g>';
+    } else if (vd.type === 'dom' || vd.type === 'geom') {
+      var _s2 = '<g>';
+      vd.bb.forEach(function (item) {
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g><g';
+
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
+      }
+
+      _s2 += '>';
+      (vd.children || []).forEach(function (item) {
+        if (item.isMask) {
+          return;
+        }
+
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g>';
+      var opacity = vd.opacity,
+          transform = vd.transform,
+          visibility = vd.visibility,
+          mask = vd.mask,
+          overflow = vd.overflow,
+          filter = vd.filter,
+          mixBlendMode = vd.mixBlendMode;
+      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
+    }
+  }
+
+  function joinDef(def) {
+    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
+
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
+      s += ' gradientUnits="userSpaceOnUse"';
+    }
+
+    (def.props || []).forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '>';
+    (def.children || []).forEach(function (item) {
+      s += joinItem(item);
+    });
+    s += '</' + def.tagName + '>';
+    return s;
+  }
+
+  function joinItem(item) {
+    var s = '<' + item.tagName;
+    (item.props || []).forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '></' + item.tagName + '>';
+    return s;
+  }
+
+  function rgba2int(color) {
+    if (Array.isArray(color)) {
+      return color;
+    }
+
+    var res = [];
+
+    if (!color || color === 'transparent') {
+      res = [0, 0, 0, 0];
+    } else if (color.charAt(0) === '#') {
+      color = color.slice(1);
+
+      if (color.length === 3) {
+        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
+        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
+        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+        res[3] = 1;
+      } else if (color.length === 6) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4), 16));
+        res[3] = 1;
+      } else if (color.length === 8) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4, 6), 16));
+        res.push(parseInt(color.slice(6), 16) / 255);
+      } else {
+        res[0] = res[1] = res[2] = 0;
+        res[3] = 1;
+      }
+    } else {
+      var c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+
+      if (c) {
+        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
+
+        if (!isNil(c[4])) {
+          res[3] = parseFloat(c[4]);
+        } else {
+          res[3] = 1;
+        }
+      } else {
+        res = [0, 0, 0, 0];
+      }
+    }
+
+    return res;
+  }
+
+  function int2rgba(color) {
+    if (Array.isArray(color)) {
+      if (color.length === 4) {
+        color = color.map(function (c, i) {
+          return i === 3 ? c : Math.floor(Math.max(0, c));
+        });
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        color = color.map(function (c) {
+          return Math.floor(c);
+        });
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return color || 'rgba(0,0,0,0)';
+  }
+
+  function int2invert(color) {
+    if (Array.isArray(color)) {
+      color = color.slice(0);
+      color[0] = 255 - color[0];
+      color[1] = 255 - color[1];
+      color[2] = 255 - color[2];
+
+      if (color.length === 4) {
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return 'rgba(0,0,0,0)';
+  }
+
+  function arr2hash(arr) {
+    var hash = {};
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        hash[item[0]] = item[1];
+      } else {
+        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+          var k = list[j];
+          hash[k] = item[k];
+        }
+      }
+    }
+
+    return hash;
+  }
+
+  function hash2arr(hash) {
+    if (Array.isArray(hash)) {
+      return hash;
+    }
+
+    var arr = [];
+
+    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+      var k = list[i];
+      arr.push([k, hash[k]]);
+    }
+
+    return arr;
+  }
+
+  function clone(obj) {
+    if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
+
+
+    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
+      return obj;
+    }
+
+    if (util.isDate(obj)) {
+      return new Date(obj);
+    }
+
+    if (!isPlainObject(obj) && !Array.isArray(obj)) {
+      return obj;
+    }
+
+    var n = Array.isArray(obj) ? [] : {};
+    Object.keys(obj).forEach(function (i) {
+      n[i] = clone(obj[i]);
+    });
+    return n;
+  }
+  /**
+   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equalArr(a, b) {
+    if (!a || !b) {
+      return a === b;
+    }
+
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      } else if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+  /**
+   * 深度对比对象
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equal(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (isObject(a) && isObject(b)) {
+      var hash = {};
+
+      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+        var k = arr[i];
+
+        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+          return false;
+        }
+
+        hash[k] = true;
+      } // a没有b有则false
+
+
+      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
+        var _k = _arr[_i];
+
+        if (!hash.hasOwnProperty(_k)) {
+          return false;
+        }
+      }
+    } else if (isDate(a) && isDate(b)) {
+      return a.getTime() === b.getTime();
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+        if (!equal(a[_i2], b[_i2])) {
+          return false;
+        }
+      }
+    } else {
+      return a === b;
+    }
+
+    return true;
+  }
+
+  function extend(target, source, keys) {
+    if (source === null || _typeof(source) !== 'object') {
+      return target;
+    }
+
+    if (!keys) {
+      keys = Object.keys(source);
+    }
+
+    var i = 0;
+    var len = keys.length;
+
+    while (i < len) {
+      var k = keys[i];
+      target[k] = source[k];
+      i++;
+    }
+
+    return target;
+  }
+
+  function joinArr(arr, split) {
+    var s = arr.length ? arr[0] : '';
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+      s += split + arr[i];
+    }
+
+    return s;
+  }
+
+  function extendAnimate(ovd, nvd) {
+    var list = nvd.__animationList = ovd.animationList.splice(0);
+    list.forEach(function (item) {
+      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
+
+
+      if (item.assigning || item.finished && item.__stayEnd()) {
+        item.assignCurrentStyle();
+      }
+    }); // 帧动画继承
+
+    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
+  }
+
+  function transformBbox(bbox, matrix) {
+    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+    if (matrix && !mx.isE(matrix)) {
+      var _bbox = bbox,
+          _bbox2 = _slicedToArray(_bbox, 4),
+          x1 = _bbox2[0],
+          y1 = _bbox2[1],
+          x2 = _bbox2[2],
+          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
+
+
+      if (dx) {
+        x1 -= dx;
+        x2 += dx;
+      }
+
+      if (dy) {
+        y1 -= dy;
+        y2 += dy;
+      }
+
+      var list = [x2, y1, x1, y2, x2, y2];
+      var w;
+
+      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
+
+      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
+
+      x1 = _mx$calPoint2[0];
+      y1 = _mx$calPoint2[1];
+      w = _mx$calPoint2[3];
+
+      if (w && w !== 1) {
+        x1 /= w;
+        y1 /= w;
+      }
+
+      var xa = x1,
+          ya = y1,
+          xb = x1,
+          yb = y1;
+
+      for (var i = 0; i < 6; i += 2) {
+        var x = list[i],
+            y = list[i + 1];
+
+        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
+
+        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
+
+        x = _mx$calPoint4[0];
+        y = _mx$calPoint4[1];
+        w = _mx$calPoint4[3];
+
+        if (w && w !== 1) {
+          x /= w;
+          y /= w;
+        }
+
+        xa = Math.min(xa, x);
+        xb = Math.max(xb, x);
+        ya = Math.min(ya, y);
+        yb = Math.max(yb, y);
+      }
+
+      bbox = [xa, ya, xb, yb];
+    } else if (dx || dy) {
+      bbox = bbox.slice(0);
+      bbox[0] -= dx;
+      bbox[1] -= dy;
+      bbox[2] += dx;
+      bbox[3] += dy;
+    }
+
+    return bbox;
+  }
+
+  function isPlainObject(obj) {
+    if (!obj || toString.call(obj) !== '[object Object]') {
+      return false;
+    }
+
+    var proto = Object.getPrototypeOf(obj);
+
+    if (!proto) {
+      return true;
+    }
+
+    var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
+    return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
+  }
+
+  function assignMatrix(t, v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+    return t;
+  }
+
+  function prefixHex(s) {
+    if (s.length === 1) {
+      return '0' + s;
+    }
+
+    return s;
+  }
+
+  function replaceRgba2Hex(s) {
+    return (s || '').replace(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/ig, function ($0, $1, $2, $3, $4) {
+      var res = '#' + prefixHex(parseInt($1).toString(16)) + prefixHex(parseInt($2).toString(16)) + prefixHex(parseInt($3).toString(16));
+
+      if ($4) {
+        res += prefixHex(Math.floor(parseFloat($4) * 255).toString(16));
+      }
+
+      return res;
+    });
+  }
+
+  var util = {
+    isObject: isObject,
+    isString: isString,
+    isFunction: isFunction,
+    isNumber: isNumber,
+    isBoolean: isBoolean,
+    isDate: isDate,
+    isNil: isNil,
+    isPrimitive: function isPrimitive(v) {
+      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+    },
+    // css中常用undefined/null表示auto本身
+    isAuto: function isAuto(v) {
+      return isNil(v) || v === 'auto';
+    },
+    isPlainObject: isPlainObject,
+    stringify: stringify,
+    joinSourceArray: function joinSourceArray(arr) {
+      return _joinSourceArray(arr);
+    },
+    encodeHtml: encodeHtml,
+    joinVirtualDom: joinVirtualDom,
+    joinVd: joinVd,
+    joinDef: joinDef,
+    rgba2int: rgba2int,
+    int2rgba: int2rgba,
+    int2invert: int2invert,
+    arr2hash: arr2hash,
+    hash2arr: hash2arr,
+    clone: clone,
+    equalArr: equalArr,
+    equal: equal,
+    extend: extend,
+    joinArr: joinArr,
+    extendAnimate: extendAnimate,
+    transformBbox: transformBbox,
+    assignMatrix: assignMatrix,
+    prefixHex: prefixHex,
+    replaceRgba2Hex: replaceRgba2Hex
+  };
+
+  var int2rgba$1 = util.int2rgba;
+
   function canvasPolygon(ctx, list) {
     var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
     var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
@@ -2357,6 +2981,9 @@
 
       if (k === 'blur') {
         s += "blur(".concat(v, "px)");
+      } else if (k === 'dropShadow') {
+        // 浏览器暂未支持spread，去掉v[3]
+        s += "drop-shadow(".concat(v[0], "px ").concat(v[1], "px ").concat(v[2], "px ").concat(int2rgba$1(v[4]), ")");
       } else if (k === 'hueRotate') {
         s += "hue-rotate(".concat(v, "deg)");
       } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
@@ -4840,628 +5467,6 @@
     calBorderRadius: calBorderRadius,
     calBorderRadiusInline: calBorderRadiusInline,
     renderBorder: renderBorder
-  };
-
-  // 类型为引用防止json仿造
-  var TYPE_VD = Symbol('Dom');
-  var TYPE_GM = Symbol('Geom');
-  var TYPE_CP = Symbol('Component');
-  var $$type = {
-    TYPE_VD: TYPE_VD,
-    TYPE_GM: TYPE_GM,
-    TYPE_CP: TYPE_CP
-  };
-
-  var toString = {}.toString;
-
-  function isType(type) {
-    return function (obj) {
-      return toString.call(obj) === '[object ' + type + ']';
-    };
-  }
-
-  var isObject = isType('Object');
-  var isString = isType('String');
-  var isFunction = isType('Function');
-  var isNumber = isType('Number');
-  var isBoolean = isType('Boolean');
-  var isDate = isType('Date');
-  var hasOwn = {}.hasOwnProperty;
-  var fnToString = hasOwn.toString;
-  var ObjectFunctionString = fnToString.call(Object);
-
-  function isNil(v) {
-    return v === undefined || v === null;
-  }
-
-  function _joinSourceArray(arr) {
-    var res = '';
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        res += _joinSourceArray(item);
-      } else {
-        res += stringify(item);
-      }
-    }
-
-    return res;
-  }
-
-  function stringify(s) {
-    if (isNil(s)) {
-      return '';
-    }
-
-    return s.toString();
-  }
-
-  function encodeHtml(s, prop) {
-    if (prop) {
-      return s.replace(/"/g, '&quot;');
-    }
-
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-  } // 根元素专用
-
-
-  function joinVirtualDom(vd) {
-    var s = '<defs>';
-    vd.defs.forEach(function (item) {
-      s += joinDef(item);
-    });
-    s += '</defs><g>';
-    vd.bb.forEach(function (item) {
-      s += joinVd(item);
-    });
-    s += '</g><g';
-
-    if (vd.conClip) {
-      s += ' clip-path="' + vd.conClip + '"';
-    }
-
-    s += '>';
-    (vd.children || []).forEach(function (item) {
-      if (item.isMask) {
-        return;
-      }
-
-      s += joinVd(item);
-    });
-    s += '</g>';
-    return s;
-  } // 普通元素
-
-
-  function joinVd(vd) {
-    if (vd.type === 'item' || vd.type === 'img') {
-      var s = '';
-      (vd.props || []).forEach(function (item) {
-        s += ' ' + item[0] + '="' + item[1] + '"';
-      });
-
-      if (vd.tagName === 'text') {
-        return '<text' + s + '>' + vd.content + '</text>';
-      }
-
-      return '<' + vd.tagName + s + '/>';
-    } else if (vd.type === 'text') {
-      var _s = ""; // text有许多lineBox
-
-      (vd.children || []).forEach(function (item) {
-        _s += joinVd(item);
-      });
-      return '<g>' + _s + '</g>';
-    } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g>';
-      vd.bb.forEach(function (item) {
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g><g';
-
-      if (vd.conClip) {
-        _s2 += ' clip-path="' + vd.conClip + '"';
-      }
-
-      _s2 += '>';
-      (vd.children || []).forEach(function (item) {
-        if (item.isMask) {
-          return;
-        }
-
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g>';
-      var opacity = vd.opacity,
-          transform = vd.transform,
-          visibility = vd.visibility,
-          mask = vd.mask,
-          overflow = vd.overflow,
-          filter = vd.filter,
-          mixBlendMode = vd.mixBlendMode;
-      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
-    }
-  }
-
-  function joinDef(def) {
-    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
-
-    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
-      s += ' gradientUnits="userSpaceOnUse"';
-    }
-
-    (def.props || []).forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '>';
-    (def.children || []).forEach(function (item) {
-      s += joinItem(item);
-    });
-    s += '</' + def.tagName + '>';
-    return s;
-  }
-
-  function joinItem(item) {
-    var s = '<' + item.tagName;
-    (item.props || []).forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '></' + item.tagName + '>';
-    return s;
-  }
-
-  function rgba2int(color) {
-    if (Array.isArray(color)) {
-      return color;
-    }
-
-    var res = [];
-
-    if (!color || color === 'transparent') {
-      res = [0, 0, 0, 0];
-    } else if (color.charAt(0) === '#') {
-      color = color.slice(1);
-
-      if (color.length === 3) {
-        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
-        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
-        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-        res[3] = 1;
-      } else if (color.length === 6) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4), 16));
-        res[3] = 1;
-      } else if (color.length === 8) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4, 6), 16));
-        res.push(parseInt(color.slice(6), 16) / 255);
-      } else {
-        res[0] = res[1] = res[2] = 0;
-        res[3] = 1;
-      }
-    } else {
-      var c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-
-      if (c) {
-        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-
-        if (!isNil(c[4])) {
-          res[3] = parseFloat(c[4]);
-        } else {
-          res[3] = 1;
-        }
-      } else {
-        res = [0, 0, 0, 0];
-      }
-    }
-
-    return res;
-  }
-
-  function int2rgba(color) {
-    if (Array.isArray(color)) {
-      if (color.length === 4) {
-        color = color.map(function (c, i) {
-          return i === 3 ? c : Math.floor(Math.max(0, c));
-        });
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        color = color.map(function (c) {
-          return Math.floor(c);
-        });
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return color || 'rgba(0,0,0,0)';
-  }
-
-  function int2invert(color) {
-    if (Array.isArray(color)) {
-      color = color.slice(0);
-      color[0] = 255 - color[0];
-      color[1] = 255 - color[1];
-      color[2] = 255 - color[2];
-
-      if (color.length === 4) {
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return 'rgba(0,0,0,0)';
-  }
-
-  function arr2hash(arr) {
-    var hash = {};
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        hash[item[0]] = item[1];
-      } else {
-        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-          var k = list[j];
-          hash[k] = item[k];
-        }
-      }
-    }
-
-    return hash;
-  }
-
-  function hash2arr(hash) {
-    if (Array.isArray(hash)) {
-      return hash;
-    }
-
-    var arr = [];
-
-    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-      var k = list[i];
-      arr.push([k, hash[k]]);
-    }
-
-    return arr;
-  }
-
-  function clone(obj) {
-    if (isNil(obj) || _typeof(obj) !== 'object') {
-      return obj;
-    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
-
-
-    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
-      return obj;
-    }
-
-    if (util.isDate(obj)) {
-      return new Date(obj);
-    }
-
-    if (!isPlainObject(obj) && !Array.isArray(obj)) {
-      return obj;
-    }
-
-    var n = Array.isArray(obj) ? [] : {};
-    Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
-    });
-    return n;
-  }
-  /**
-   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equalArr(a, b) {
-    if (!a || !b) {
-      return a === b;
-    }
-
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      var ai = a[i];
-      var bi = b[i];
-      var isArrayA = Array.isArray(ai);
-      var isArrayB = Array.isArray(bi);
-
-      if (isArrayA && isArrayB) {
-        if (!equalArr(ai, bi)) {
-          return false;
-        }
-      } else if (isArrayA || isArrayB) {
-        return false;
-      } else if (ai !== bi) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  /**
-   * 深度对比对象
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equal(a, b) {
-    if (a === b) {
-      return true;
-    }
-
-    if (isObject(a) && isObject(b)) {
-      var hash = {};
-
-      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
-        var k = arr[i];
-
-        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
-          return false;
-        }
-
-        hash[k] = true;
-      } // a没有b有则false
-
-
-      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
-        var _k = _arr[_i];
-
-        if (!hash.hasOwnProperty(_k)) {
-          return false;
-        }
-      }
-    } else if (isDate(a) && isDate(b)) {
-      return a.getTime() === b.getTime();
-    } else if (Array.isArray(a) && Array.isArray(b)) {
-      if (a.length !== b.length) {
-        return false;
-      }
-
-      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
-        if (!equal(a[_i2], b[_i2])) {
-          return false;
-        }
-      }
-    } else {
-      return a === b;
-    }
-
-    return true;
-  }
-
-  function extend(target, source, keys) {
-    if (source === null || _typeof(source) !== 'object') {
-      return target;
-    }
-
-    if (!keys) {
-      keys = Object.keys(source);
-    }
-
-    var i = 0;
-    var len = keys.length;
-
-    while (i < len) {
-      var k = keys[i];
-      target[k] = source[k];
-      i++;
-    }
-
-    return target;
-  }
-
-  function joinArr(arr, split) {
-    var s = arr.length ? arr[0] : '';
-
-    for (var i = 1, len = arr.length; i < len; i++) {
-      s += split + arr[i];
-    }
-
-    return s;
-  }
-
-  function extendAnimate(ovd, nvd) {
-    var list = nvd.__animationList = ovd.animationList.splice(0);
-    list.forEach(function (item) {
-      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
-
-
-      if (item.assigning || item.finished && item.__stayEnd()) {
-        item.assignCurrentStyle();
-      }
-    }); // 帧动画继承
-
-    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
-  }
-
-  function transformBbox(bbox, matrix) {
-    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
-    if (matrix && !mx.isE(matrix)) {
-      var _bbox = bbox,
-          _bbox2 = _slicedToArray(_bbox, 4),
-          x1 = _bbox2[0],
-          y1 = _bbox2[1],
-          x2 = _bbox2[2],
-          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
-
-
-      if (dx) {
-        x1 -= dx;
-        x2 += dx;
-      }
-
-      if (dy) {
-        y1 -= dy;
-        y2 += dy;
-      }
-
-      var list = [x2, y1, x1, y2, x2, y2];
-      var w;
-
-      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
-
-      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
-
-      x1 = _mx$calPoint2[0];
-      y1 = _mx$calPoint2[1];
-      w = _mx$calPoint2[3];
-
-      if (w && w !== 1) {
-        x1 /= w;
-        y1 /= w;
-      }
-
-      var xa = x1,
-          ya = y1,
-          xb = x1,
-          yb = y1;
-
-      for (var i = 0; i < 6; i += 2) {
-        var x = list[i],
-            y = list[i + 1];
-
-        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
-
-        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
-
-        x = _mx$calPoint4[0];
-        y = _mx$calPoint4[1];
-        w = _mx$calPoint4[3];
-
-        if (w && w !== 1) {
-          x /= w;
-          y /= w;
-        }
-
-        xa = Math.min(xa, x);
-        xb = Math.max(xb, x);
-        ya = Math.min(ya, y);
-        yb = Math.max(yb, y);
-      }
-
-      bbox = [xa, ya, xb, yb];
-    } else if (dx || dy) {
-      bbox = bbox.slice(0);
-      bbox[0] -= dx;
-      bbox[1] -= dy;
-      bbox[2] += dx;
-      bbox[3] += dy;
-    }
-
-    return bbox;
-  }
-
-  function isPlainObject(obj) {
-    if (!obj || toString.call(obj) !== '[object Object]') {
-      return false;
-    }
-
-    var proto = Object.getPrototypeOf(obj);
-
-    if (!proto) {
-      return true;
-    }
-
-    var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
-    return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
-  }
-
-  function assignMatrix(t, v) {
-    t[0] = v[0];
-    t[1] = v[1];
-    t[2] = v[2];
-    t[3] = v[3];
-    t[4] = v[4];
-    t[5] = v[5];
-    t[6] = v[6];
-    t[7] = v[7];
-    t[8] = v[8];
-    t[9] = v[9];
-    t[10] = v[10];
-    t[11] = v[11];
-    t[12] = v[12];
-    t[13] = v[13];
-    t[14] = v[14];
-    t[15] = v[15];
-    return t;
-  }
-
-  function prefixHex(s) {
-    if (s.length === 1) {
-      return '0' + s;
-    }
-
-    return s;
-  }
-
-  function replaceRgba2Hex(s) {
-    return (s || '').replace(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/ig, function ($0, $1, $2, $3, $4) {
-      var res = '#' + prefixHex(parseInt($1).toString(16)) + prefixHex(parseInt($2).toString(16)) + prefixHex(parseInt($3).toString(16));
-
-      if ($4) {
-        res += prefixHex(Math.floor(parseFloat($4) * 255).toString(16));
-      }
-
-      return res;
-    });
-  }
-
-  var util = {
-    isObject: isObject,
-    isString: isString,
-    isFunction: isFunction,
-    isNumber: isNumber,
-    isBoolean: isBoolean,
-    isDate: isDate,
-    isNil: isNil,
-    isPrimitive: function isPrimitive(v) {
-      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
-    },
-    // css中常用undefined/null表示auto本身
-    isAuto: function isAuto(v) {
-      return isNil(v) || v === 'auto';
-    },
-    isPlainObject: isPlainObject,
-    stringify: stringify,
-    joinSourceArray: function joinSourceArray(arr) {
-      return _joinSourceArray(arr);
-    },
-    encodeHtml: encodeHtml,
-    joinVirtualDom: joinVirtualDom,
-    joinVd: joinVd,
-    joinDef: joinDef,
-    rgba2int: rgba2int,
-    int2rgba: int2rgba,
-    int2invert: int2invert,
-    arr2hash: arr2hash,
-    hash2arr: hash2arr,
-    clone: clone,
-    equalArr: equalArr,
-    equal: equal,
-    extend: extend,
-    joinArr: joinArr,
-    extendAnimate: extendAnimate,
-    transformBbox: transformBbox,
-    assignMatrix: assignMatrix,
-    prefixHex: prefixHex,
-    replaceRgba2Hex: replaceRgba2Hex
   };
 
   var debug = {
@@ -19443,7 +19448,7 @@
   }(Event);
 
   var NODE_DEFS_CACHE$1 = enums.NODE_KEY.NODE_DEFS_CACHE;
-  var int2rgba$1 = util.int2rgba;
+  var int2rgba$2 = util.int2rgba;
   var canvasPolygon$4 = painter.canvasPolygon,
       svgPolygon$3 = painter.svgPolygon;
 
@@ -19463,7 +19468,7 @@
         color = _data[4],
         inset = _data[5];
 
-    var c = int2rgba$1(color);
+    var c = int2rgba$2(color);
     var n = Math.abs(sigma) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2; // box本身坐标顺时针
 
     var box = [[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]]; // 算上各种偏移/扩散的最外层坐标，且逆时针
@@ -19994,7 +19999,7 @@
       VMIN$5 = o.VMIN,
       DEG$2 = o.DEG,
       GRADIENT$2 = o.GRADIENT;
-  var int2rgba$2 = util.int2rgba,
+  var int2rgba$3 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
       joinArr$2 = util.joinArr,
       isNil$6 = util.isNil,
@@ -21174,34 +21179,14 @@
                 return item2;
               }
 
-              var v = item2[0];
-
-              if (item2[1] === PERCENT$6) {
-                if (i % 2 === 0) {
-                  v *= 0.01 * (bx2 - bx1);
-                } else {
-                  v *= 0.01 * (by2 - by1);
-                }
-              } else if (item2[1] === REM$5) {
-                v = v * _this5.root.computedStyle[FONT_SIZE$9];
-              } else if (item2[1] === VW$5) {
-                v = v * _this5.root.width * 0.01;
-              } else if (item2[1] === VH$5) {
-                v = v * _this5.root.height * 0.01;
-              } else if (item2[1] === VMAX$5) {
-                v = v * Math.max(_this5.root.width, _this5.root.height) * 0.01;
-              } else if (item2[1] === VMIN$5) {
-                v = v * Math.min(_this5.root.width, _this5.root.height) * 0.01;
-              }
-
-              return v;
+              return _this5.__calSize(item2, i === 0 ? bx2 - bx1 : by2 - by1, true);
             });
           });
         }
 
         [BACKGROUND_COLOR$1, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {
           if (isNil$6(__cacheStyle[k])) {
-            __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k][0]);
+            __cacheStyle[k] = int2rgba$3(computedStyle[k] = currentStyle[k][0]);
           }
         }); // 圆角边计算
 
@@ -21305,13 +21290,13 @@
           if (v.k) {
             __cacheStyle[COLOR$5] = v;
           } else {
-            __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5]);
+            __cacheStyle[COLOR$5] = int2rgba$3(computedStyle[COLOR$5]);
           }
         } else if (isNil$6(__cacheStyle[COLOR$5])) {
           if (color[1] === GRADIENT$2) {
             __cacheStyle[COLOR$5] = computedStyle[COLOR$5] = color[0];
           } else if (color[1] === RGBA$2) {
-            __cacheStyle[COLOR$5] = int2rgba$2(computedStyle[COLOR$5] = rgba2int$3(color[0]));
+            __cacheStyle[COLOR$5] = int2rgba$3(computedStyle[COLOR$5] = rgba2int$3(color[0]));
           }
         }
 
@@ -21323,13 +21308,13 @@
           if (_v3.k) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = _v3;
           } else {
-            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4]);
+            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$3(computedStyle[TEXT_STROKE_COLOR$4]);
           }
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_COLOR$4])) {
           if (textStrokeColor[1] === GRADIENT$2) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = computedStyle[TEXT_STROKE_COLOR$4] = textStrokeColor[0];
           } else if (textStrokeColor[1] === RGBA$2) {
-            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$2(computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(textStrokeColor[0]));
+            __cacheStyle[TEXT_STROKE_COLOR$4] = int2rgba$3(computedStyle[TEXT_STROKE_COLOR$4] = rgba2int$3(textStrokeColor[0]));
           }
         }
 
@@ -21438,24 +21423,27 @@
         return computedStyle[FILTER$3] = (currentStyle[FILTER$3] || []).map(function (item) {
           var _item = _slicedToArray(item, 2),
               k = _item[0],
-              v = _item[1]; // 部分%单位的滤镜强制使用数字
+              v = _item[1];
 
+          if (k === 'dropShadow') {
+            var v2 = v.map(function (item2, i) {
+              if (i > 3) {
+                return item2;
+              }
 
-          if (v[1] === PX$5 || v[1] === DEG$2 || v[1] === PERCENT$6 || v[1] === NUMBER$5) {
-            v = v[0];
-          } else if (v[1] === REM$5) {
-            v = v[0] * _this6.root.computedStyle[FONT_SIZE$9];
-          } else if (v[1] === VW$5) {
-            v = v[0] * _this6.root.width * 0.01;
-          } else if (v[1] === VH$5) {
-            v = v[0] * _this6.root.height * 0.01;
-          } else if (v[1] === VMAX$5) {
-            v = v[0] * Math.max(_this6.root.width, _this6.root.height) * 0.01;
-          } else if (v[1] === VMIN$5) {
-            v = v[0] * Math.min(_this6.root.width, _this6.root.height) * 0.01;
+              return _this6.__calSize(item2, i === 0 ? _this6.__bx2 - _this6.__bx1 : _this6.__by2 - _this6.__by1, true);
+            });
+            return [k, v2];
+          } else {
+            // 部分%单位的滤镜强制使用数字
+            if (v[1] === DEG$2 || v[1] === PERCENT$6 || v[1] === NUMBER$5) {
+              v = v[0];
+            } else {
+              v = _this6.__calSize(v, _this6.root.width, false);
+            }
+
+            return [k, v];
           }
-
-          return [k, v];
         });
       }
     }, {
@@ -22511,7 +22499,7 @@
         if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
           var lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach(function (item) {
-            lg.addColorStop(item[1], int2rgba$2(item[0]));
+            lg.addColorStop(item[1], int2rgba$3(item[0]));
           });
           return lg;
         } else if (renderMode === SVG$2) {
@@ -22521,7 +22509,7 @@
             children: gd.stop.map(function (item) {
               return {
                 tagName: 'stop',
-                props: [['stop-color', int2rgba$2(item[0])], ['offset', item[1] * 100 + '%']]
+                props: [['stop-color', int2rgba$3(item[0])], ['offset', item[1] * 100 + '%']]
               };
             })
           };
@@ -22538,7 +22526,7 @@
         if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
           var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.tx, gd.ty, gd.r);
           gd.stop.forEach(function (item) {
-            rg.addColorStop(item[1], int2rgba$2(item[0]));
+            rg.addColorStop(item[1], int2rgba$3(item[0]));
           });
           return rg;
         } else if (renderMode === SVG$2) {
@@ -22548,7 +22536,7 @@
             children: gd.stop.map(function (item) {
               return {
                 tagName: 'stop',
-                props: [['stop-color', int2rgba$2(item[0])], ['offset', item[1] * 100 + '%']]
+                props: [['stop-color', int2rgba$3(item[0])], ['offset', item[1] * 100 + '%']]
               };
             })
           };
@@ -28330,7 +28318,7 @@
       VMIN$8 = o.VMIN,
       RGBA$4 = o.RGBA,
       GRADIENT$3 = o.GRADIENT;
-  var int2rgba$3 = util.int2rgba,
+  var int2rgba$4 = util.int2rgba,
       isNil$8 = util.isNil,
       joinArr$3 = util.joinArr;
   var canvasPolygon$6 = painter.canvasPolygon,
@@ -28516,7 +28504,7 @@
                 } else if (item && item[1] === RGBA$4 && item[0][3] > 0) {
                   cs.push(item[0]);
 
-                  _res.push(int2rgba$3(item[0]));
+                  _res.push(int2rgba$4(item[0]));
                 } else {
                   cs.push('none');
 
@@ -28559,14 +28547,14 @@
             return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
           }
 
-          return int2rgba$3(item);
+          return int2rgba$4(item);
         });
         fill = fill.map(function (item) {
           if (item.k) {
             return _this3.__gradient(renderMode, res.ctx, res.x3, res.y3, res.x4, res.y4, item, res.dx, res.dy);
           }
 
-          return int2rgba$3(item);
+          return int2rgba$4(item);
         });
         return {
           cx: cx,

@@ -1345,31 +1345,7 @@ class Xom extends Node {
           if(i > 3) {
             return item2;
           }
-          let v = item2[0];
-          if(item2[1] === PERCENT) {
-            if(i % 2 === 0) {
-              v *= 0.01 * (bx2 - bx1);
-            }
-            else {
-              v *= 0.01 * (by2 - by1);
-            }
-          }
-          else if(item2[1] === REM) {
-            v = v * this.root.computedStyle[FONT_SIZE];
-          }
-          else if(item2[1] === VW) {
-            v = v * this.root.width * 0.01;
-          }
-          else if(item2[1] === VH) {
-            v = v * this.root.height * 0.01;
-          }
-          else if(item2[1] === VMAX) {
-            v = v * Math.max(this.root.width, this.root.height) * 0.01;
-          }
-          else if(item2[1] === VMIN) {
-            v = v * Math.min(this.root.width, this.root.height) * 0.01;
-          }
-          return v;
+          return this.__calSize(item2, i === 0 ? (bx2 - bx1) : (by2 - by1), true);
         });
       });
     }
@@ -1623,26 +1599,25 @@ class Xom extends Node {
   __calFilter(currentStyle, computedStyle) {
     return computedStyle[FILTER] = (currentStyle[FILTER] || []).map(item => {
       let [k, v] = item;
-      // 部分%单位的滤镜强制使用数字
-      if(v[1] === PX || v[1] === DEG || v[1] === PERCENT  || v[1] === NUMBER) {
-        v = v[0];
+      if(k === 'dropShadow') {
+        let v2 = v.map((item2, i) => {
+          if(i > 3) {
+            return item2;
+          }
+          return this.__calSize(item2, i === 0 ? (this.__bx2 - this.__bx1) : (this.__by2 - this.__by1), true);
+        });
+        return [k, v2];
       }
-      else if(v[1] === REM) {
-        v = v[0] * this.root.computedStyle[FONT_SIZE];
+      else {
+        // 部分%单位的滤镜强制使用数字
+        if(v[1] === DEG || v[1] === PERCENT || v[1] === NUMBER) {
+          v = v[0];
+        }
+        else {
+          v = this.__calSize(v, this.root.width, false);
+        }
+        return [k, v];
       }
-      else if(v[1] === VW) {
-        v = v[0] * this.root.width * 0.01;
-      }
-      else if(v[1] === VH) {
-        v = v[0] * this.root.height * 0.01;
-      }
-      else if(v[1] === VMAX) {
-        v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(v[1] === VMIN) {
-        v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-      return [k, v];
     });
   }
 

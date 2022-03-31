@@ -73,7 +73,7 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_OVER,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
-const { isNil, rgba2int, equalArr } = util;
+const { isNil, rgba2int, equalArr, replaceRgba2Hex } = util;
 const { isGeom, GEOM, GEOM_KEY_SET } = change;
 
 const {
@@ -1030,32 +1030,40 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
-    if(match) {
-      match.forEach(item => {
-        let boxShadow = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
-        if(boxShadow) {
+    // 先替换掉rgba为#RGBA格式，然后按逗号分割
+    let arr = (replaceRgba2Hex(temp) || '').split(',');
+    if(arr) {
+      arr.forEach(item => {
+        let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
+        if(coords) {
           bs = bs || [];
           let res = [];
-          // v,h,blur,spread,color,inset
-          for(let i = 0; i < 4; i++) {
-            let v = calUnit(boxShadow[i + 1]);
-            if([NUMBER, DEG].indexOf(v[1]) > -1) {
-              v[1] = PX;
+          // v,h,blur,spread，其中v和h是必须，其余没有为0
+          for(let i = 1; i <= 4; i++) {
+            let item2 = coords[i];
+            if(item2) {
+              let v = calUnit(item2);
+              if([NUMBER, DEG].indexOf(v[1]) > -1) {
+                v[1] = PX;
+              }
+              // x/y可以负，blur和spread不行
+              if(i > 2 && v[0] < 0) {
+                v = 0;
+              }
+              res.push(v);
             }
-            // x/y可以负，blur和spread不行
-            if(i > 1 && v[0] < 0) {
-              v = 0;
+            else {
+              res.push([0, 1]);
             }
-            res.push(v);
           }
-          if(boxShadow[5]) {
-            res.push(rgba2int(boxShadow[5]));
+          let color = /#[a-f\d]{6,8}/.exec(item);
+          if(color) {
+            res.push(rgba2int(color[0]));
           }
           else {
             res.push([0, 0, 0, 1]);
           }
-          res.push(boxShadow[6] || 'outset');
+          res.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
           bs.push(res);
         }
       });

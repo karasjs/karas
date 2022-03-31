@@ -5403,6 +5403,26 @@
     return t;
   }
 
+  function prefixHex(s) {
+    if (s.length === 1) {
+      return '0' + s;
+    }
+
+    return s;
+  }
+
+  function replaceRgba2Hex(s) {
+    return (s || '').replace(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/ig, function ($0, $1, $2, $3, $4) {
+      var res = '#' + prefixHex(parseInt($1).toString(16)) + prefixHex(parseInt($2).toString(16)) + prefixHex(parseInt($3).toString(16));
+
+      if ($4) {
+        res += prefixHex(Math.floor(parseFloat($4) * 256).toString(16));
+      }
+
+      return res;
+    });
+  }
+
   var util = {
     isObject: isObject,
     isString: isString,
@@ -5439,7 +5459,9 @@
     joinArr: joinArr,
     extendAnimate: extendAnimate,
     transformBbox: transformBbox,
-    assignMatrix: assignMatrix
+    assignMatrix: assignMatrix,
+    prefixHex: prefixHex,
+    replaceRgba2Hex: replaceRgba2Hex
   };
 
   var debug = {
@@ -8041,7 +8063,8 @@
       calUnit$1 = o.calUnit;
   var isNil$3 = util.isNil,
       rgba2int$2 = util.rgba2int,
-      equalArr$1 = util.equalArr;
+      equalArr$1 = util.equalArr,
+      replaceRgba2Hex$1 = util.replaceRgba2Hex;
   var isGeom = o$2.isGeom,
       GEOM$2 = o$2.GEOM,
       GEOM_KEY_SET$2 = o$2.GEOM_KEY_SET;
@@ -9073,40 +9096,48 @@
     temp = style.boxShadow;
 
     if (temp !== undefined) {
-      var bs = null;
+      var bs = null; // 先替换掉rgba为#RGBA格式，然后按逗号分割
 
-      var _match4 = (temp || '').match(/([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+      var _arr11 = (replaceRgba2Hex$1(temp) || '').split(',');
 
-      if (_match4) {
-        _match4.forEach(function (item) {
-          var boxShadow = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+      if (_arr11) {
+        _arr11.forEach(function (item) {
+          var coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
 
-          if (boxShadow) {
+          if (coords) {
             bs = bs || [];
-            var _res = []; // v,h,blur,spread,color,inset
+            var _res = []; // v,h,blur,spread，其中v和h是必须，其余没有为0
 
-            for (var i = 0; i < 4; i++) {
-              var _v7 = calUnit$1(boxShadow[i + 1]);
+            for (var i = 1; i <= 4; i++) {
+              var item2 = coords[i];
 
-              if ([NUMBER$1, DEG$1].indexOf(_v7[1]) > -1) {
-                _v7[1] = PX$2;
-              } // x/y可以负，blur和spread不行
+              if (item2) {
+                var _v7 = calUnit$1(item2);
+
+                if ([NUMBER$1, DEG$1].indexOf(_v7[1]) > -1) {
+                  _v7[1] = PX$2;
+                } // x/y可以负，blur和spread不行
 
 
-              if (i > 1 && _v7[0] < 0) {
-                _v7 = 0;
+                if (i > 2 && _v7[0] < 0) {
+                  _v7 = 0;
+                }
+
+                _res.push(_v7);
+              } else {
+                _res.push([0, 1]);
               }
-
-              _res.push(_v7);
             }
 
-            if (boxShadow[5]) {
-              _res.push(rgba2int$2(boxShadow[5]));
+            var color = /#[a-f\d]{6,8}/.exec(item);
+
+            if (color) {
+              _res.push(rgba2int$2(color[0]));
             } else {
               _res.push([0, 0, 0, 1]);
             }
 
-            _res.push(boxShadow[6] || 'outset');
+            _res.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
 
             bs.push(_res);
           }
@@ -22494,11 +22525,7 @@
     }, {
       key: "__getCg",
       value: function __getCg(renderMode, ctx, gd) {
-        var cx = gd.cx,
-            cy = gd.cy,
-            r = gd.r,
-            deg = gd.deg,
-            stop = gd.stop;
+        var stop = gd.stop;
         var len = stop.length - 1;
 
         if (stop[len][1] < 1) {

@@ -485,6 +485,26 @@ function assignMatrix(t, v) {
   return t;
 }
 
+function prefixHex(s) {
+  if(s.length === 1) {
+    return '0' + s;
+  }
+  return s;
+}
+
+function replaceRgba2Hex(s) {
+  return (s || '').replace(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/ig, function($0, $1, $2, $3, $4) {
+    let res = '#'
+      + prefixHex(parseInt($1).toString(16))
+      + prefixHex(parseInt($2).toString(16))
+      + prefixHex(parseInt($3).toString(16));
+    if($4) {
+      res += prefixHex(Math.floor(parseFloat($4) * 256).toString(16));
+    }
+    return res;
+  });
+}
+
 let util = {
   isObject,
   isString,
@@ -522,6 +542,8 @@ let util = {
   extendAnimate,
   transformBbox,
   assignMatrix,
+  prefixHex,
+  replaceRgba2Hex,
 };
 
 export default util;

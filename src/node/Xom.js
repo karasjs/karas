@@ -2617,7 +2617,7 @@ class Xom extends Node {
   }
 
   __getCg(renderMode, ctx, gd) {
-    let { cx, cy, r, deg, stop } = gd;
+    let { stop } = gd;
     let len = stop.length - 1;
     if(stop[len][1] < 1) {
       stop.push([stop[len][0].slice(0), 1]);

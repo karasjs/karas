@@ -6,8 +6,8 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .pause(300)
-      .assert.value('input', 'hue-rotate,0/hue-rotate,30')
+      .pause(250)
+      .assert.value('input', 'hueRotate,0/hueRotate,30')
       .end();
   }
 };

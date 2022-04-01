@@ -159,7 +159,6 @@ class Line extends Geom {
         if(isNaN(v)) {
           v = 1;
         }
-        v = v;
         this.__end = this.__x1.map(() => v);
       }
     }
@@ -409,20 +408,20 @@ class Line extends Geom {
         bbox[1] = Math.min(bbox[1], ya - half);
         bbox[1] = Math.min(bbox[1], yb - half);
         bbox[2] = Math.max(bbox[2], xa + half);
-        bbox[2] = Math.max(bbox[2], xb + x2s);
+        bbox[2] = Math.max(bbox[2], xb + half);
         bbox[3] = Math.max(bbox[3], ya + half);
-        bbox[3] = Math.max(bbox[3], yb + y2s);
+        bbox[3] = Math.max(bbox[3], yb + half);
       }
       else if(isNil(ca) || ca.length < 2) {
         let bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
         bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
         bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
-        bbox[1] = Math.min(bbox[1], bezierBox[1] - y1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[3] - y1s);
-        bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
-        bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[3] + y2s);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - half);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + half);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
       }
       else if(isNil(cb) || cb.length < 2) {
         let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);

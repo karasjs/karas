@@ -36752,7 +36752,6 @@
             _v = 1;
           }
 
-          _v = _v;
           _this.__end = _this.__x1.map(function () {
             return _v;
           });
@@ -37106,19 +37105,19 @@
             bbox[1] = Math.min(bbox[1], ya - half);
             bbox[1] = Math.min(bbox[1], yb - half);
             bbox[2] = Math.max(bbox[2], xa + half);
-            bbox[2] = Math.max(bbox[2], xb + x2s);
+            bbox[2] = Math.max(bbox[2], xb + half);
             bbox[3] = Math.max(bbox[3], ya + half);
-            bbox[3] = Math.max(bbox[3], yb + y2s);
+            bbox[3] = Math.max(bbox[3], yb + half);
           } else if (isNil$a(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
             bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
             bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
-            bbox[1] = Math.min(bbox[1], bezierBox[1] - y1s);
-            bbox[1] = Math.min(bbox[1], bezierBox[3] - y1s);
-            bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
-            bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
-            bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
-            bbox[3] = Math.max(bbox[3], bezierBox[3] + y2s);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
+            bbox[1] = Math.min(bbox[1], bezierBox[3] - half);
+            bbox[2] = Math.max(bbox[2], bezierBox[0] + half);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
+            bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
           } else if (isNil$a(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
@@ -38847,10 +38846,10 @@
             half = Math.max(half, item);
           });
           half = Math.ceil(half * 0.5) + 1;
-          var xa = cx - r - half;
-          var xb = cx + r - half;
-          var ya = cy - r + half;
-          var yb = cy + r + half;
+          var xa = cx - rx - half;
+          var xb = cx + rx - half;
+          var ya = cy - ry + half;
+          var yb = cy + ry + half;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);

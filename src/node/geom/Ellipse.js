@@ -132,10 +132,10 @@ class Ellipse extends Geom {
         half = Math.max(half, item);
       });
       half = Math.ceil(half * 0.5) + 1;
-      let xa = cx - r - half;
-      let xb = cx + r - half;
-      let ya = cy - r + half;
-      let yb = cy + r + half;
+      let xa = cx - rx - half;
+      let xb = cx + rx - half;
+      let ya = cy - ry + half;
+      let yb = cy + ry + half;
       bbox[0] = Math.min(bbox[0], xa);
       bbox[1] = Math.min(bbox[1], ya);
       bbox[2] = Math.max(bbox[2], xb);

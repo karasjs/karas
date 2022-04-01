@@ -536,6 +536,8 @@
       this.__root = null;
       this.__host = null;
       this.__virtualDom = null;
+      this.__bbox = null;
+      this.__filterBbox = null;
     }
 
     _createClass(Node, [{
@@ -5817,26 +5819,28 @@
    * @param gl
    * @param program
    * @param frameBuffer
-   * @param texCache
    * @param tex1 初次绘制目标纹理
    * @param tex2 初次绘制源纹理
    * @param i 初次绘制目标纹理单元
    * @param j 初次绘制源纹理单元
    * @param width
    * @param height
+   * @param spread
+   * @param widthNew
+   * @param heightNew
    * @param cx
    * @param cy
    */
 
 
-  function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy) {
+  function drawBlur(gl, program, frameBuffer, tex1, tex2, i, j, width, height, spread, widthNew, heightNew, cx, cy) {
     // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-    var _convertCoords2Gl9 = convertCoords2Gl([0, height], cx, cy),
+    var _convertCoords2Gl9 = convertCoords2Gl([spread, height + spread, 0, 1], cx, cy, false),
         _convertCoords2Gl10 = _slicedToArray(_convertCoords2Gl9, 2),
         x1 = _convertCoords2Gl10[0],
         y2 = _convertCoords2Gl10[1];
 
-    var _convertCoords2Gl11 = convertCoords2Gl([width, 0], cx, cy),
+    var _convertCoords2Gl11 = convertCoords2Gl([width + spread, spread, 0, 1], cx, cy, false),
         _convertCoords2Gl12 = _slicedToArray(_convertCoords2Gl11, 2),
         x2 = _convertCoords2Gl12[0],
         y1 = _convertCoords2Gl12[1]; // 顶点buffer
@@ -5872,15 +5876,15 @@
      * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
      */
 
-    var max = 100 / Math.max(width, height);
-    var ratio = width / height;
+    var max = 100 / Math.max(widthNew, heightNew);
+    var ratio = widthNew / heightNew;
     var recycle = []; // 3次过程中新生成的中间纹理需要回收
 
     for (var k = 0; k < 3; k++) {
-      var tex3 = createTexture(gl, null, j, width, height);
+      var tex3 = createTexture(gl, null, j, widthNew, heightNew);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
 
-      if (width >= height) {
+      if (widthNew >= heightNew) {
         gl.uniform2f(u_direction, max, 0);
       } else {
         gl.uniform2f(u_direction, max * ratio, 0);
@@ -5889,10 +5893,10 @@
       gl.uniform1i(u_texture, i);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       recycle.push(tex1);
-      var tex4 = createTexture(gl, null, i, width, height);
+      var tex4 = createTexture(gl, null, i, widthNew, heightNew);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex4, 0);
 
-      if (width >= height) {
+      if (widthNew >= heightNew) {
         gl.uniform2f(u_direction, 0, max * ratio);
       } else {
         gl.uniform2f(u_direction, 0, max);
@@ -9668,13 +9672,58 @@
     return res;
   }
 
-  function spreadBboxByFilter(x1, y1, x2, y2, filter) {
-    // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+  function spreadBoxShadow(bbox, boxShadow) {
+    var _bbox = _slicedToArray(bbox, 4),
+        x1 = _bbox[0],
+        y1 = _bbox[1],
+        x2 = _bbox[2],
+        y2 = _bbox[3];
+
+    if (Array.isArray(boxShadow)) {
+      var xl = 0,
+          yt = 0,
+          xr = 0,
+          yb = 0;
+      boxShadow.forEach(function (item) {
+        var _item2 = _slicedToArray(item, 6),
+            x = _item2[0],
+            y = _item2[1],
+            sigma = _item2[2],
+            spread = _item2[3],
+            color = _item2[4],
+            inset = _item2[5];
+
+        if (inset !== 'inset' && color[3] > 0) {
+          var d = blur.outerSize(sigma);
+          d += spread;
+          xl = Math.min(xl, x - d);
+          yt = Math.min(yt, x - d);
+          xr = Math.max(xr, x + d);
+          yb = Math.max(yb, y + d);
+        }
+      });
+      x1 += xl;
+      y1 += yt;
+      x2 += xr;
+      y2 += yb;
+    }
+
+    return [x1, y1, x2, y2];
+  }
+
+  function spreadFilter(bbox, filter) {
+    var _bbox2 = _slicedToArray(bbox, 4),
+        x1 = _bbox2[0],
+        y1 = _bbox2[1],
+        x2 = _bbox2[2],
+        y2 = _bbox2[3]; // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+
+
     if (Array.isArray(filter)) {
       filter.forEach(function (item) {
-        var _item2 = _slicedToArray(item, 2),
-            k = _item2[0],
-            v = _item2[1];
+        var _item3 = _slicedToArray(item, 2),
+            k = _item3[0],
+            v = _item3[1];
 
         if (k === 'blur' && v > 0) {
           var d = blur.kernelSize(v);
@@ -9726,7 +9775,8 @@
     isRelativeOrAbsolute: isRelativeOrAbsolute,
     cloneStyle: cloneStyle,
     calNormalLineHeight: calNormalLineHeight,
-    spreadBboxByFilter: spreadBboxByFilter
+    spreadBoxShadow: spreadBoxShadow,
+    spreadFilter: spreadFilter
   };
 
   var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
@@ -13224,26 +13274,30 @@
 
   var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$6.TRANSFORM_ORIGIN,
-      TRANSFORM$1 = _enums$STYLE_KEY$6.TRANSFORM; // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
+      TRANSFORM$1 = _enums$STYLE_KEY$6.TRANSFORM;
+  var spreadFilter$1 = css.spreadFilter; // 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用，可能尺寸会发生变化
 
-  function genSingle(cache, message) {
+  function genSingle(cache, message, bboxNew) {
     var size = cache.size,
         sx1 = cache.sx1,
         sy1 = cache.sy1,
-        width = cache.width,
-        height = cache.height,
         bbox = cache.bbox;
+    bboxNew = bboxNew || bbox;
+    var width = bboxNew[2] - bboxNew[0];
+    var height = bboxNew[3] - bboxNew[1];
+    var dx = bboxNew[0] - bbox[0];
+    var dy = bboxNew[1] - bbox[1];
     var offscreen = inject.getCacheCanvas(width, height, null, message);
     offscreen.x = 0;
     offscreen.y = 0;
-    offscreen.bbox = bbox;
+    offscreen.bbox = bboxNew;
     offscreen.size = size;
     offscreen.sx1 = sx1;
     offscreen.sy1 = sy1;
-    offscreen.dx = cache.dx;
-    offscreen.dy = cache.dy;
-    offscreen.dbx = cache.dbx;
-    offscreen.dby = cache.dby;
+    offscreen.dx = cache.dx - dx;
+    offscreen.dy = cache.dy - dy;
+    offscreen.dbx = cache.dbx - dx;
+    offscreen.dby = cache.dby - dy;
     offscreen.width = width;
     offscreen.height = height;
     return offscreen;
@@ -13298,7 +13352,7 @@
         this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
 
         this.dy = this.y - bbox[1];
-        this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
+        this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
 
         this.dby = sy1 - bbox[1];
         this.update();
@@ -13353,7 +13407,10 @@
             pos = res.pos;
 
         this.__init(w, h, bbox, page, pos, x1, y1);
-      } // 是否功能可用，生成离屏canvas及尺寸超限
+      }
+    }, {
+      key: "resetBbox",
+      value: function resetBbox(bbox) {} // 是否功能可用，生成离屏canvas及尺寸超限
 
     }, {
       key: "enabled",
@@ -13451,16 +13508,6 @@
     }, {
       key: "genFilter",
       value: function genFilter(cache, filter) {
-        var d = 0;
-        filter.forEach(function (item) {
-          var _item = _slicedToArray(item, 2),
-              k = _item[0],
-              v = _item[1];
-
-          if (k === 'blur') {
-            d = blur.outerSize(v);
-          }
-        });
         var x = cache.x,
             y = cache.y,
             size = cache.size,
@@ -13470,26 +13517,25 @@
             width = cache.width,
             height = cache.height,
             bbox = cache.bbox;
-        bbox = bbox.slice(0);
-        bbox[0] -= d;
-        bbox[1] -= d;
-        bbox[2] += d;
-        bbox[3] += d;
+        var oldX1 = bbox[0];
+        bbox = spreadFilter$1(bbox, filter);
+        var d = oldX1 - bbox[0];
         var offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
         offscreen.ctx.filter = painter.canvasFilter(filter);
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
         offscreen.draw();
-        offscreen.bbox = bbox;
+        offscreen.bbox = [bbox[0] - d, bbox[1] - d, bbox[2] + d, bbox[3] + d]; // 单独的离屏
+
         offscreen.x = 0;
         offscreen.y = 0;
         offscreen.size = size;
-        offscreen.sx1 = sx1 - d;
-        offscreen.sy1 = sy1 - d;
-        offscreen.dx = cache.dx;
-        offscreen.dy = cache.dy;
-        offscreen.dbx = cache.dbx;
-        offscreen.dby = cache.dby;
+        offscreen.sx1 = sx1;
+        offscreen.sy1 = sy1;
+        offscreen.dx = cache.dx + d;
+        offscreen.dy = cache.dy + d;
+        offscreen.dbx = cache.dbx + d;
+        offscreen.dby = cache.dby + d;
         offscreen.width = width + d * 2;
         offscreen.height = height + d * 2;
         return offscreen;
@@ -13538,15 +13584,16 @@
       key: "genOverflow",
       value: function genOverflow(target, node) {
         var bbox = target.bbox;
-        var sx = node.sx,
-            sy = node.sy,
-            outerWidth = node.outerWidth,
-            outerHeight = node.outerHeight;
-        var xe = sx + outerWidth;
-        var ye = sy + outerHeight;
+        var __sx1 = node.__sx1,
+            __sy1 = node.__sy1,
+            clientWidth = node.clientWidth,
+            clientHeight = node.clientHeight;
+        var xe = __sx1 + clientWidth;
+        var ye = __sy1 + clientHeight;
 
-        if (bbox[0] < sx || bbox[1] < sy || bbox[2] > xe || bbox[3] > ye) {
-          var cacheOverflow = genSingle(target, 'overflow');
+        if (bbox[0] < __sx1 || bbox[1] < __sy1 || bbox[2] > xe || bbox[3] > ye) {
+          var bboxNew = [__sx1, __sy1, xe, ye];
+          var cacheOverflow = genSingle(target, 'overflow', bboxNew);
           var ctx = cacheOverflow.ctx;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
@@ -13555,50 +13602,11 @@
           ctx.globalCompositeOperation = 'destination-in';
           ctx.fillStyle = '#FFF';
           ctx.beginPath();
-          ctx.rect(sx - bbox[0], sy - bbox[1], outerWidth, outerHeight);
+          ctx.rect(0, 0, clientWidth, clientHeight);
           ctx.fill();
           ctx.closePath();
           ctx.globalCompositeOperation = 'source-over';
           return cacheOverflow;
-        }
-      }
-      /**
-       * bbox变化时直接用老的cache内容重设bbox
-       * @param cache
-       * @param bbox
-       */
-
-    }, {
-      key: "updateCache",
-      value: function updateCache(cache, bbox) {
-        var old = cache.bbox;
-
-        if (!util.equalArr(bbox, old)) {
-          var dx = old[0] - bbox[0];
-          var dy = old[1] - bbox[1];
-          var newCache = Cache.getInstance(bbox);
-
-          if (newCache && newCache.enabled) {
-            var ox = cache.x,
-                oy = cache.y,
-                canvas = cache.canvas,
-                width = cache.width,
-                height = cache.height;
-            var nx = newCache.x,
-                ny = newCache.y;
-            newCache.sx1 = cache.sx1;
-            newCache.sy1 = cache.sy1;
-            newCache.dx = cache.dx + dx;
-            newCache.dy = cache.dy + dy;
-            newCache.dbx = cache.dbx + dx;
-            newCache.dby = cache.dby + dy;
-            newCache.ctx.drawImage(canvas, ox, oy, width, height, dx + nx, dy + ny, width, height);
-            newCache.__available = true;
-            cache.release();
-            return newCache;
-          }
-        } else {
-          return cache;
         }
       }
     }, {
@@ -13800,6 +13808,7 @@
       PADDING_RIGHT = _enums$STYLE_KEY$8.PADDING_RIGHT,
       BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$8.BORDER_LEFT_WIDTH,
       BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$8.BORDER_RIGHT_WIDTH,
+      FILTER$2 = _enums$STYLE_KEY$8.FILTER,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
       NODE_LIMIT_CACHE = _enums$NODE_KEY$1.NODE_LIMIT_CACHE,
@@ -14514,6 +14523,12 @@
             type: 'text',
             children: []
           };
+        } // >=REPAINT清空bbox
+
+
+        if (lv >= o$3.REPAINT) {
+          this.__bbox = null;
+          this.__filterBbox = null;
         }
 
         if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || computedStyle[VISIBILITY$1] === 'hidden' || !textBoxes.length) {
@@ -14827,9 +14842,21 @@
             sy = this.__sy1,
             width = this.width,
             height = this.height,
-            textStrokeWidth = this.computedStyle[TEXT_STROKE_WIDTH$2];
+            textStrokeWidth = this.computedStyle[TEXT_STROKE_WIDTH$2]; // TODO: 文字描边暂时不清楚最大值是多少，影响不确定，先按描边宽算，因为会出现>>0.5宽的情况
+
         var half = textStrokeWidth;
         return [sx - half, sy - half, sx + width + half, sy + height + half];
+      }
+    }, {
+      key: "filterBbox",
+      get: function get() {
+        if (!this.__filterBbox) {
+          var bbox = this.bbox;
+          var filter = this.computedStyle[FILTER$2];
+          this.__filterBbox = css.spreadFilter(bbox, filter);
+        }
+
+        return this.__filterBbox;
       }
     }, {
       key: "isShadowRoot",
@@ -16688,7 +16715,7 @@
   easing['ease-in-out'] = easing.easeInOut;
 
   var _enums$STYLE_KEY$c = enums.STYLE_KEY,
-      FILTER$2 = _enums$STYLE_KEY$c.FILTER,
+      FILTER$3 = _enums$STYLE_KEY$c.FILTER,
       TRANSFORM_ORIGIN$3 = _enums$STYLE_KEY$c.TRANSFORM_ORIGIN,
       PERSPECTIVE_ORIGIN$2 = _enums$STYLE_KEY$c.PERSPECTIVE_ORIGIN,
       BACKGROUND_CLIP$1 = _enums$STYLE_KEY$c.BACKGROUND_CLIP,
@@ -17103,7 +17130,7 @@
       }
 
       res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
-    } else if (k === FILTER$2) {
+    } else if (k === FILTER$3) {
       // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
       var pHash = {},
           nHash = {},
@@ -17886,7 +17913,7 @@
         if (v) {
           st[0] += v * percent;
         }
-      } else if (k === FILTER$2) {
+      } else if (k === FILTER$3) {
         // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
         if (!st) {
           st = style[k] = [];
@@ -19959,7 +19986,7 @@
       BORDER_RIGHT_STYLE = _enums$STYLE_KEY$d.BORDER_RIGHT_STYLE,
       BORDER_BOTTOM_STYLE = _enums$STYLE_KEY$d.BORDER_BOTTOM_STYLE,
       BORDER_LEFT_STYLE = _enums$STYLE_KEY$d.BORDER_LEFT_STYLE,
-      FILTER$3 = _enums$STYLE_KEY$d.FILTER,
+      FILTER$4 = _enums$STYLE_KEY$d.FILTER,
       OVERFLOW$1 = _enums$STYLE_KEY$d.OVERFLOW,
       MIX_BLEND_MODE = _enums$STYLE_KEY$d.MIX_BLEND_MODE,
       TEXT_OVERFLOW$2 = _enums$STYLE_KEY$d.TEXT_OVERFLOW,
@@ -20053,7 +20080,8 @@
   var calRelative$1 = css.calRelative,
       getFontFamily$1 = css.getFontFamily,
       calNormalLineHeight$1 = css.calNormalLineHeight,
-      spreadBboxByFilter$1 = css.spreadBboxByFilter;
+      spreadBoxShadow$1 = css.spreadBoxShadow,
+      spreadFilter$2 = css.spreadFilter;
   var GEOM$4 = o$2.GEOM;
   var mbmName$1 = mbm.mbmName,
       isValidMbm$1 = mbm.isValidMbm;
@@ -21105,8 +21133,8 @@
           computedStyle[k] = currentStyle[k];
         });
 
-        if (isNil$6(__cacheStyle[FILTER$3])) {
-          __cacheStyle[FILTER$3] = true;
+        if (isNil$6(__cacheStyle[FILTER$4])) {
+          __cacheStyle[FILTER$4] = true;
 
           this.__calFilter(currentStyle, computedStyle);
         }
@@ -21467,7 +21495,7 @@
       value: function __calFilter(currentStyle, computedStyle) {
         var _this6 = this;
 
-        return computedStyle[FILTER$3] = (currentStyle[FILTER$3] || []).map(function (item) {
+        return computedStyle[FILTER$4] = (currentStyle[FILTER$4] || []).map(function (item) {
           var _item = _slicedToArray(item, 2),
               k = _item[0],
               v = _item[1];
@@ -21591,6 +21619,7 @@
 
         if (lv >= REPAINT$1) {
           this.__bbox = null;
+          this.__filterBbox = null;
         }
 
         if (isDestroyed) {
@@ -21783,7 +21812,7 @@
             backgroundRepeat = computedStyle[BACKGROUND_REPEAT],
             backgroundImage = computedStyle[BACKGROUND_IMAGE$1],
             opacity = computedStyle[OPACITY$3],
-            filter = computedStyle[FILTER$3],
+            filter = computedStyle[FILTER$4],
             backgroundSize = computedStyle[BACKGROUND_SIZE$2],
             boxShadow = computedStyle[BOX_SHADOW$2],
             overflow = computedStyle[OVERFLOW$1],
@@ -22950,58 +22979,6 @@
         }
 
         this.clearCache();
-      } // 一个节点的borderBox根据boxShadow和filter进行扩展后的结果
-
-    }, {
-      key: "__spreadBbox",
-      value: function __spreadBbox(boxShadow, filter) {
-        var x1 = 0,
-            y1 = 0,
-            x2 = 0,
-            y2 = 0;
-        var xl = [],
-            yt = [],
-            xr = [],
-            yb = [];
-
-        if (Array.isArray(boxShadow)) {
-          boxShadow.forEach(function (item) {
-            var _item2 = _slicedToArray(item, 6),
-                x = _item2[0],
-                y = _item2[1],
-                sigma = _item2[2],
-                spread = _item2[3],
-                color = _item2[4],
-                inset = _item2[5];
-
-            x1 = x2 = x;
-            y1 = y2 = y;
-
-            if (inset !== 'inset' && color[3] > 0) {
-              var d = blur.outerSize(sigma);
-              d += spread;
-              xl.push(x - d);
-              xr.push(x + d);
-              yt.push(y - d);
-              yb.push(y + d);
-            }
-          });
-        }
-
-        xl.forEach(function (n) {
-          return x1 = Math.min(x1, n);
-        });
-        xr.forEach(function (n) {
-          return x2 = Math.max(x2, n);
-        });
-        yt.forEach(function (n) {
-          return y1 = Math.min(y1, n);
-        });
-        yb.forEach(function (n) {
-          return y2 = Math.max(y2, n);
-        }); // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
-
-        return spreadBboxByFilter$1(x1, y1, x2, y2, filter);
       }
     }, {
       key: "__releaseWhenEmpty",
@@ -23197,21 +23174,22 @@
               __sy1 = this.__sy1,
               offsetWidth = this.offsetWidth,
               offsetHeight = this.offsetHeight,
-              _this$computedStyle = this.computedStyle,
-              boxShadow = _this$computedStyle[BOX_SHADOW$2],
-              filter = _this$computedStyle[FILTER$3];
-
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-              x1 = _this$__spreadBbox2[0],
-              y1 = _this$__spreadBbox2[1],
-              x2 = _this$__spreadBbox2[2],
-              y2 = _this$__spreadBbox2[3];
-
-          this.__bbox = [__sx1 + x1, __sy1 + y1, __sx1 + offsetWidth + x2, __sy1 + offsetHeight + y2];
+              boxShadow = this.computedStyle[BOX_SHADOW$2];
+          this.__bbox = spreadBoxShadow$1([__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight], boxShadow);
         }
 
         return this.__bbox;
+      }
+    }, {
+      key: "filterBbox",
+      get: function get() {
+        if (!this.__filterBbox) {
+          var bbox = this.bbox;
+          var filter = this.computedStyle[FILTER$4];
+          this.__filterBbox = spreadFilter$2(bbox, filter);
+        }
+
+        return this.__filterBbox;
       }
     }, {
       key: "listener",
@@ -29675,7 +29653,7 @@
       NONE$1 = o$3.NONE,
       TRANSFORM_ALL = o$3.TRANSFORM_ALL,
       OPACITY$4 = o$3.OPACITY,
-      FILTER$4 = o$3.FILTER,
+      FILTER$5 = o$3.FILTER,
       MIX_BLEND_MODE$2 = o$3.MIX_BLEND_MODE;
 
   function diff$1(elem, ovd, nvd) {
@@ -29917,7 +29895,7 @@
       }
     }
 
-    if (contain$1(lv, FILTER$4) || contain$1(lv, MIX_BLEND_MODE$2)) {
+    if (contain$1(lv, FILTER$5) || contain$1(lv, MIX_BLEND_MODE$2)) {
       var s = (filter ? "filter:".concat(filter, ";") : '') + (mixBlendMode ? "mix-blend-mode:".concat(mixBlendMode, ";") : '');
 
       if (s) {
@@ -30622,7 +30600,7 @@
             filter = offscreen.filter; // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
 
         if (ctx.filter) {
-          var apply = inject.getCacheCanvas(width, height, null, 'filter');
+          var apply = inject.getCacheCanvas(width, height, null, 'filter2');
           apply.ctx.filter = painter.canvasFilter(filter);
 
           if (width && height) {
@@ -30881,12 +30859,11 @@
       OFFSCREEN_BLEND$1 = offscreen.OFFSCREEN_BLEND,
       OFFSCREEN_MASK2$1 = offscreen.OFFSCREEN_MASK2,
       applyOffscreen$1 = offscreen.applyOffscreen;
-  var spreadBboxByFilter$2 = css.spreadBboxByFilter;
   var _enums$STYLE_KEY$j = enums.STYLE_KEY,
       DISPLAY$7 = _enums$STYLE_KEY$j.DISPLAY,
       OPACITY$5 = _enums$STYLE_KEY$j.OPACITY,
       VISIBILITY$5 = _enums$STYLE_KEY$j.VISIBILITY,
-      FILTER$5 = _enums$STYLE_KEY$j.FILTER,
+      FILTER$6 = _enums$STYLE_KEY$j.FILTER,
       OVERFLOW$3 = _enums$STYLE_KEY$j.OVERFLOW,
       MIX_BLEND_MODE$3 = _enums$STYLE_KEY$j.MIX_BLEND_MODE,
       FILL$2 = _enums$STYLE_KEY$j.FILL,
@@ -30965,18 +30942,19 @@
         __config = node.__config;
     var cache = __config[NODE_CACHE$4],
         _config$NODE_COMPUTE = __config[NODE_COMPUTED_STYLE$3],
-        filter = _config$NODE_COMPUTE[FILTER$5],
+        filter = _config$NODE_COMPUTE[FILTER$6],
         perspective = _config$NODE_COMPUTE[PERSPECTIVE$4],
         perspectiveOrigin = _config$NODE_COMPUTE[PERSPECTIVE_ORIGIN$4]; // 先将局部根节点的bbox算好，可能没内容是空
 
     var bboxTotal;
 
     if (cache && cache.available) {
-      bboxTotal = cache.bbox.slice(0);
+      bboxTotal = cache.bbox;
     } else {
-      bboxTotal = node.bbox.slice(0);
-    } // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
+      bboxTotal = node.filterBbox;
+    }
 
+    bboxTotal = bboxTotal.slice(0); // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
 
     var pm;
 
@@ -31061,26 +31039,26 @@
           var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
 
           if (target) {
-            bbox = target.bbox.slice(0);
+            bbox = target.bbox;
             dx = target.dbx;
             dy = target.dby;
             _i += _total2 || 0;
             hasTotal = true;
           } else if (__cache && __cache.available) {
-            bbox = __cache.bbox.slice(0);
+            bbox = __cache.bbox;
             dx = __cache.dbx;
             dy = __cache.dby;
           } else {
-            bbox = node2.bbox.slice(0);
+            bbox = node2.filterBbox;
           } // 可能Xom没有内容
 
 
           if (bbox) {
-            bbox = spreadBboxByFilter$2(bbox[0], bbox[1], bbox[2], bbox[3], filter);
-            bbox[0] -= sx1;
-            bbox[1] -= sy1;
-            bbox[2] -= sx1;
-            bbox[3] -= sy1;
+            // bbox = spreadFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
+            // bbox[0] -= sx1;
+            // bbox[1] -= sy1;
+            // bbox[2] -= sx1;
+            // bbox[3] -= sy1;
             var matrix = matrixHash[parentIndex]; // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
             if (transform && !isE$3(transform)) {
@@ -31155,7 +31133,6 @@
         cacheOverflow = config[NODE_CACHE_OVERFLOW$1],
         currentStyle = config[NODE_CURRENT_STYLE$5],
         computedStyle = config[NODE_COMPUTED_STYLE$3];
-    var filter = computedStyle[FILTER$5];
     var needGen; // 先绘制形成基础的total，有可能已经存在无变化，就可省略
 
     if (!cacheTotal || !cacheTotal.available) {
@@ -31180,7 +31157,7 @@
             _hasMask = _structs$i[STRUCT_HAS_MASK$1]; // 排除Text
 
         if (_node instanceof Text) {
-          var _bbox = _node.bbox;
+          var _bbox = _node.filterBbox;
 
           if (!isE$3(parentMatrix)) {
             _bbox = transformBbox$1(_bbox, parentMatrix, 0, 0);
@@ -31259,6 +31236,7 @@
 
           if (contain$2(refreshLevel, FT)) {
             _node.__bbox = null;
+            _node.__filterBbox = null;
 
             _node.__calFilter(_currentStyle, _computedStyle);
           }
@@ -31274,6 +31252,7 @@
          */
         else {
           _node.__bbox = null;
+          _node.__filterBbox = null;
 
           if (i === index) {
             _node.__calFilter(_currentStyle, _computedStyle);
@@ -31297,18 +31276,13 @@
         __config[NODE_OPACITY$2] = parentOpacity * opacity;
         var bbox = void 0; // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
 
-        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+        var target = i > index && getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]); // 局部根节点的total不需要考虑filter，子节点要
 
         if (target) {
           i += (_total3 || 0) + countMaskNum(__structs, i + (_total3 || 0) + 1, _hasMask || 0);
           bbox = target.bbox;
         } else {
-          bbox = _node.bbox;
-        } // 局部根节点的filter会作用于所有子节点，需再计算一次
-
-
-        if (i !== index) {
-          bbox = spreadBboxByFilter$2(bbox[0], bbox[1], bbox[2], bbox[3], filter);
+          bbox = i === index ? _node.bbox : _node.filterBbox;
         } // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
 
 
@@ -31572,21 +31546,22 @@
 
     if (cacheTotal && cacheTotal.available) {
       var overflow = computedStyle[OVERFLOW$3],
-          _filter = computedStyle[FILTER$5];
+          filter = computedStyle[FILTER$6];
       var _target3 = cacheTotal;
 
       if (overflow === 'hidden') {
         if (!cacheOverflow || !cacheOverflow.available || needGen) {
-          config[NODE_CACHE_OVERFLOW$1] = genOverflow(node, _target3);
+          config[NODE_CACHE_OVERFLOW$1] = Cache.genOverflow(_target3, node);
           needGen = true;
         }
 
         _target3 = config[NODE_CACHE_OVERFLOW$1] || _target3;
       }
 
-      if (_filter && _filter.length) {
+      if (filter && filter.length) {
+        // 新生成单独的filter离屏，老的已经release()过了
         if (!cacheFilter || !cacheFilter.available || needGen) {
-          config[NODE_CACHE_FILTER$1] = genFilter(node, _target3, _filter);
+          config[NODE_CACHE_FILTER$1] = Cache.genFilter(_target3, filter);
           needGen = true;
         }
 
@@ -31599,7 +31574,7 @@
          * 当mask节点有cache时内部直接调用绘制了cache位图
          * 当mask没有缓存可用时进这里的普通渲染逻辑
          */
-        config[NODE_CACHE_MASK$1] = genMask(node, _target3, function (item, cacheMask, inverse) {
+        config[NODE_CACHE_MASK$1] = Cache.genMask(_target3, node, function (item, cacheMask, inverse) {
           // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
           var maskStartHash = {};
           var offscreenHash = {};
@@ -31750,6 +31725,7 @@
 
                   if (contain$2(_refreshLevel3, FT)) {
                     _node3.__bbox = null;
+                    _node3.__filterBbox = null;
 
                     _node3.__calFilter(_currentStyle2, _computedStyle3);
                   }
@@ -31761,6 +31737,7 @@
                   }
                 } else {
                   _node3.__bbox = null;
+                  _node3.__filterBbox = null;
 
                   if (_i3 === index) {
                     _node3.__calFilter(_currentStyle2, _computedStyle3);
@@ -31888,25 +31865,6 @@
         });
       }
     }
-  }
-
-  function genFilter(node, cache, v) {
-    return Cache.genFilter(cache, v);
-  }
-
-  function genMask(node, cache, cb) {
-    return Cache.genMask(cache, node, cb);
-  }
-
-  function genOverflow(node, cache) {
-    var sbox = node.bbox;
-    var bbox = cache.bbox; // 没超过无需生成
-
-    if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
-      return;
-    }
-
-    return Cache.genOverflow(cache, node);
   }
 
   function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
@@ -32273,7 +32231,7 @@
           bbox = _res2[3];
         }
       } else if (k === 'dropShadow') {
-        genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+        genDropShadowWebgl(gl, texCache, mockCache, v);
       } else if (k === 'hueRotate') {
         var rotation = geom.d2r(v % 360);
         var cosR = Math.cos(rotation);
@@ -32420,8 +32378,15 @@
       return;
     }
 
-    var cx = width * 0.5,
-        cy = height * 0.5;
+    var bboxNew = bbox.slice(0);
+    bboxNew[0] -= spread;
+    bboxNew[1] -= spread;
+    bboxNew[2] += spread;
+    bboxNew[3] += spread;
+    var widthNew = width + spread * 2;
+    var heightNew = height + spread * 2;
+    var cx = widthNew * 0.5,
+        cy = heightNew * 0.5;
     var weights = blur.gaussianWeight(sigma, d);
     var vert = '';
     var frag = '';
@@ -32448,7 +32413,7 @@
     var program = webgl.initShaders(gl, vert, frag);
     gl.useProgram(program);
 
-    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, width, height),
+    var _genFrameBufferWithTe5 = genFrameBufferWithTexture(gl, texCache, widthNew, heightNew),
         _genFrameBufferWithTe6 = _slicedToArray(_genFrameBufferWithTe5, 3),
         i = _genFrameBufferWithTe6[0],
         frameBuffer = _genFrameBufferWithTe6[1],
@@ -32465,7 +32430,7 @@
       texCache.lockChannel(j);
     }
 
-    texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j, width, height, cx, cy); // 销毁这个临时program
+    texture = webgl.drawBlur(gl, program, frameBuffer, texture, cache.page.texture, i, j, width, height, spread, widthNew, heightNew, cx, cy); // 销毁这个临时program
 
     gl.deleteShader(program.vertexShader);
     gl.deleteShader(program.fragmentShader);
@@ -32473,9 +32438,9 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
     texCache.releaseLockChannel(j);
-    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox);
+    var mockCache = new MockCache(gl, texture, sx1, sy1, widthNew, heightNew, bboxNew);
     texCache.releaseLockChannel(i, mockCache.page);
-    return [mockCache, width, height, bbox];
+    return [mockCache, widthNew, heightNew, bboxNew];
   }
 
   function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bbox) {
@@ -32511,17 +32476,21 @@
   }
 
   function genOverflowWebgl(gl, texCache, node, cache, W, H) {
-    var sbox = node.bbox.slice(0);
-    var bbox = cache.bbox; // 没超过无需生成
+    var bbox = cache.bbox;
+    var __sx1 = node.__sx1,
+        __sy1 = node.__sy1,
+        clientWidth = node.clientWidth,
+        clientHeight = node.clientHeight;
+    var xe = __sx1 + clientWidth;
+    var ye = __sy1 + clientHeight; // 没超过无需生成
 
-    if (bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
+    if (bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= xe && ye) {
       return;
     }
 
-    var width = sbox[2] - sbox[0],
-        height = sbox[3] - sbox[1]; // 生成最终纹理，尺寸为被遮罩节点大小
+    var bboxNew = [__sx1, __sy1, xe, ye]; // 生成最终纹理，尺寸为被遮罩节点大小
 
-    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, width, height),
+    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, clientWidth, clientHeight),
         _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
         i = _genFrameBufferWithTe10[0],
         frameBuffer = _genFrameBufferWithTe10[1],
@@ -32540,7 +32509,7 @@
 
 
     gl.useProgram(gl.programOverflow);
-    webgl.drawOverflow(gl, j, sbox[0] - bbox[0], sbox[1] - bbox[1], width, height, cache.width, cache.height);
+    webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], clientWidth, clientHeight, cache.width, cache.height);
     texCache.releaseLockChannel(j); // 切回
 
     gl.useProgram(gl.program);
@@ -32548,7 +32517,7 @@
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
 
-    var overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, width, height, sbox);
+    var overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, clientWidth, clientHeight, bboxNew);
     texCache.releaseLockChannel(i, overflowCache.page);
     return overflowCache;
   }
@@ -32749,7 +32718,6 @@
   }
 
   function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
-    console.log(v, bbox);
     var d = blur.kernelSize(v[2]);
     var max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
 
@@ -32758,9 +32726,6 @@
     }
 
     var spread = blur.outerSizeByD(d);
-    width += spread * 2;
-    height += spread * 2;
-    console.log(width, height, d, spread);
   }
   /**
    * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，
@@ -33273,16 +33238,6 @@
 
       if (refreshLevel < REPAINT$2) {
         __config[NODE_REFRESH_LV$1] = NONE$2;
-
-        if (hasMask) {
-          var cacheMask = __config[NODE_CACHE_MASK$1];
-
-          if (!cacheMask || !cacheMask.available) {
-            hasRecordAsMask = [i, lv, total, node, __config, null, hasMask];
-            mergeList.push(hasRecordAsMask);
-          }
-        }
-
         var currentStyle = __config[NODE_CURRENT_STYLE$5],
             __cacheStyle = __config[NODE_CACHE_STYLE$1],
             matrixEvent = __config[NODE_MATRIX_EVENT$4];
@@ -33299,15 +33254,6 @@
           assignMatrix$1(__config[NODE_MATRIX$3], matrix);
         } else {
           matrix = __config[NODE_MATRIX$3];
-        } // node本身有或者父有perspective都认为需要生成3d渲染上下文
-
-
-        if (transform$1.isPerspectiveMatrix(matrix) || parentPm) {
-          if (hasRecordAsMask) {
-            hasRecordAsMask[9] = true;
-          } else {
-            hasRecordAsMask = [i, lv, total, node, __config, null, null, null, null, true];
-          }
         } // 先左乘perspective的矩阵，再左乘父级的总矩阵
 
 
@@ -33333,17 +33279,9 @@
 
         if (contain$2(refreshLevel, FT)) {
           node.__bbox = null;
+          node.__filterBbox = null;
 
-          var _filter2 = node.__calFilter(currentStyle, computedStyle); // 防重
-
-
-          if (hasRecordAsMask) {
-            hasRecordAsMask[7] = _filter2;
-          } else {
-            // 强制存hasMask，因为filter改变影响mask
-            hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, _filter2];
-            mergeList.push(hasRecordAsMask);
-          }
+          node.__calFilter(currentStyle, computedStyle);
         }
 
         if (contain$2(refreshLevel, MBM)) {
@@ -33353,7 +33291,6 @@
 
         if (__cacheTotal && __cacheTotal.available) {
           i += total || 0;
-          continue;
         }
       }
       /**
@@ -33379,7 +33316,7 @@
       var limitCache = __config[NODE_LIMIT_CACHE$2],
           cacheAsBitmap = __config[NODE_CACHE_AS_BITMAP$1];
       var overflow = computedStyle[OVERFLOW$3],
-          filter = computedStyle[FILTER$5],
+          filter = computedStyle[FILTER$6],
           mixBlendMode = computedStyle[MIX_BLEND_MODE$3],
           transform = computedStyle[TRANSFORM$4];
       var validMbm = isValidMbm$2(mixBlendMode); // 3d渲染上下文
@@ -33489,9 +33426,11 @@
               needGen = true;
 
               if (!limitCache) {
-                __config[NODE_CACHE_FILTER$1] = target;
+                __config[NODE_CACHE_OVERFLOW$1] = target;
               }
             }
+          } else {
+            target = __cacheOverflow;
           }
         }
 
@@ -33507,6 +33446,8 @@
                 __config[NODE_CACHE_FILTER$1] = target;
               }
             }
+          } else {
+            target = __cacheFilter;
           }
         }
 
@@ -34420,7 +34361,7 @@
       getLevel = o$3.getLevel,
       isRepaint = o$3.isRepaint,
       NONE$3 = o$3.NONE,
-      FILTER$6 = o$3.FILTER,
+      FILTER$7 = o$3.FILTER,
       PERSPECTIVE$5 = o$3.PERSPECTIVE,
       REPAINT$3 = o$3.REPAINT,
       REFLOW$2 = o$3.REFLOW,
@@ -34944,7 +34885,7 @@
     } // 特殊的filter清除cache
 
 
-    if ((need || contain$3(lv, FILTER$6)) && __config[NODE_CACHE_FILTER$2]) {
+    if ((need || contain$3(lv, FILTER$7)) && __config[NODE_CACHE_FILTER$2]) {
       __config[NODE_CACHE_FILTER$2].release();
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
@@ -36579,11 +36520,7 @@
     return Root;
   }(Dom$1);
 
-  var _enums$STYLE_KEY$l = enums.STYLE_KEY,
-      STROKE_WIDTH$2 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-      BOX_SHADOW$4 = _enums$STYLE_KEY$l.BOX_SHADOW,
-      FONT_SIZE$d = _enums$STYLE_KEY$l.FONT_SIZE,
-      FILTER$7 = _enums$STYLE_KEY$l.FILTER;
+  var STROKE_WIDTH$2 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$a = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
@@ -37130,10 +37067,7 @@
             __cacheProps = this.__cacheProps,
             originX = this.__sx3,
             originY = this.__sy3,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
-            boxShadow = _this$computedStyle[BOX_SHADOW$4],
-            filter = _this$computedStyle[FILTER$7];
+            strokeWidth = this.computedStyle[STROKE_WIDTH$2];
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
             y1 = __cacheProps.y1,
@@ -37148,18 +37082,7 @@
         strokeWidth.forEach(function (item) {
           half = Math.max(half, item);
         });
-
-        var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-            _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-            x1s = _this$__spreadBbox2[0],
-            y1s = _this$__spreadBbox2[1],
-            x2s = _this$__spreadBbox2[2],
-            y2s = _this$__spreadBbox2[3];
-
-        x1s -= half;
-        y1s -= half;
-        x2s += half;
-        y2s += half;
+        half = Math.ceil(half * 0.5) + 1;
 
         if (!isMulti) {
           x1 = [x1];
@@ -37178,20 +37101,20 @@
           var cb = controlB[i];
 
           if ((isNil$a(ca) || ca.length < 2) && (isNil$a(cb) || cb.length < 2)) {
-            bbox[0] = Math.min(bbox[0], xa + x1s);
-            bbox[0] = Math.min(bbox[0], xb + x1s);
-            bbox[1] = Math.min(bbox[1], ya + y1s);
-            bbox[1] = Math.min(bbox[1], yb + y1s);
-            bbox[2] = Math.max(bbox[2], xa + x2s);
+            bbox[0] = Math.min(bbox[0], xa - half);
+            bbox[0] = Math.min(bbox[0], xb - half);
+            bbox[1] = Math.min(bbox[1], ya - half);
+            bbox[1] = Math.min(bbox[1], yb - half);
+            bbox[2] = Math.max(bbox[2], xa + half);
             bbox[2] = Math.max(bbox[2], xb + x2s);
-            bbox[3] = Math.max(bbox[3], ya + y2s);
+            bbox[3] = Math.max(bbox[3], ya + half);
             bbox[3] = Math.max(bbox[3], yb + y2s);
           } else if (isNil$a(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] + x1s);
-            bbox[0] = Math.min(bbox[0], bezierBox[2] + x1s);
-            bbox[1] = Math.min(bbox[1], bezierBox[1] + y1s);
-            bbox[1] = Math.min(bbox[1], bezierBox[3] + y1s);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+            bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] - y1s);
+            bbox[1] = Math.min(bbox[1], bezierBox[3] - y1s);
             bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
             bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
             bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
@@ -37199,25 +37122,25 @@
           } else if (isNil$a(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox[0] + x1s);
-            bbox[0] = Math.min(bbox[0], _bezierBox[2] + x1s);
-            bbox[1] = Math.min(bbox[1], _bezierBox[1] + y1s);
-            bbox[1] = Math.min(bbox[1], _bezierBox[3] + y1s);
-            bbox[2] = Math.max(bbox[2], _bezierBox[0] + x2s);
-            bbox[2] = Math.max(bbox[2], _bezierBox[2] + x2s);
-            bbox[3] = Math.max(bbox[3], _bezierBox[1] + y2s);
-            bbox[3] = Math.max(bbox[3], _bezierBox[3] + y2s);
+            bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
+            bbox[0] = Math.min(bbox[0], _bezierBox[2] - half);
+            bbox[1] = Math.min(bbox[1], _bezierBox[1] - half);
+            bbox[1] = Math.min(bbox[1], _bezierBox[3] - half);
+            bbox[2] = Math.max(bbox[2], _bezierBox[0] + half);
+            bbox[2] = Math.max(bbox[2], _bezierBox[2] + half);
+            bbox[3] = Math.max(bbox[3], _bezierBox[1] + half);
+            bbox[3] = Math.max(bbox[3], _bezierBox[3] + half);
           } else {
             var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox2[0] + x1s);
-            bbox[0] = Math.min(bbox[0], _bezierBox2[2] + x1s);
-            bbox[1] = Math.min(bbox[1], _bezierBox2[1] + y1s);
-            bbox[1] = Math.min(bbox[1], _bezierBox2[3] + y1s);
-            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + x2s);
-            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + x2s);
-            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + y2s);
-            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + y2s);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - half);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[2] - half);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[1] - half);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[3] - half);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + half);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + half);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + half);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + half);
           }
         });
         return bbox;
@@ -37227,11 +37150,7 @@
     return Line;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$m = enums.STYLE_KEY,
-      STROKE_WIDTH$3 = _enums$STYLE_KEY$m.STROKE_WIDTH,
-      BOX_SHADOW$5 = _enums$STYLE_KEY$m.BOX_SHADOW,
-      FONT_SIZE$e = _enums$STYLE_KEY$m.FONT_SIZE,
-      FILTER$8 = _enums$STYLE_KEY$m.FILTER;
+  var STROKE_WIDTH$3 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$b = util.isNil;
 
   function concatPointAndControl(point, control) {
@@ -37772,10 +37691,7 @@
               __cacheProps = this.__cacheProps,
               originX = this.__sx3,
               originY = this.__sy3,
-              _this$computedStyle = this.computedStyle,
-              strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
-              boxShadow = _this$computedStyle[BOX_SHADOW$5],
-              filter = _this$computedStyle[FILTER$8];
+              strokeWidth = this.computedStyle[STROKE_WIDTH$3];
           this.buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
@@ -37784,18 +37700,7 @@
           strokeWidth.forEach(function (item) {
             half = Math.max(half, item);
           });
-
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-              x1 = _this$__spreadBbox2[0],
-              y1 = _this$__spreadBbox2[1],
-              x2 = _this$__spreadBbox2[2],
-              y2 = _this$__spreadBbox2[3];
-
-          x1 -= half;
-          y1 -= half;
-          x2 += half;
-          y2 += half;
+          half = Math.ceil(half * 0.5) + 1;
           var points = __cacheProps.points,
               controls = __cacheProps.controls;
 
@@ -37824,22 +37729,22 @@
 
               if (c && c.length === 4) {
                 var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-                bbox[0] = Math.min(bbox[0], bezierBox[0] + x1);
-                bbox[1] = Math.min(bbox[1], bezierBox[1] + y1);
-                bbox[2] = Math.max(bbox[2], bezierBox[2] + x2);
-                bbox[3] = Math.max(bbox[3], bezierBox[3] + y2);
+                bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+                bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
+                bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
+                bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
               } else if (c && c.length === 2) {
                 var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
 
-                bbox[0] = Math.min(bbox[0], _bezierBox[0] + x1);
-                bbox[1] = Math.min(bbox[1], _bezierBox[1] + y1);
-                bbox[2] = Math.max(bbox[2], _bezierBox[2] + x2);
-                bbox[3] = Math.max(bbox[3], _bezierBox[3] + y2);
+                bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
+                bbox[1] = Math.min(bbox[1], _bezierBox[1] - half);
+                bbox[2] = Math.max(bbox[2], _bezierBox[2] + half);
+                bbox[3] = Math.max(bbox[3], _bezierBox[3] + half);
               } else {
-                bbox[0] = Math.min(bbox[0], xa + x1);
-                bbox[1] = Math.min(bbox[1], ya + y1);
-                bbox[2] = Math.max(bbox[2], xa + x2);
-                bbox[3] = Math.max(bbox[3], ya + y2);
+                bbox[0] = Math.min(bbox[0], xa - half);
+                bbox[1] = Math.min(bbox[1], ya - half);
+                bbox[2] = Math.max(bbox[2], xa + half);
+                bbox[3] = Math.max(bbox[3], ya + half);
               }
 
               xa = xb;
@@ -38015,11 +37920,9 @@
     return Polygon;
   }(Polyline);
 
-  var _enums$STYLE_KEY$n = enums.STYLE_KEY,
-      STROKE_WIDTH$4 = _enums$STYLE_KEY$n.STROKE_WIDTH,
-      BOX_SHADOW$6 = _enums$STYLE_KEY$n.BOX_SHADOW,
-      FONT_SIZE$f = _enums$STYLE_KEY$n.FONT_SIZE,
-      FILTER$9 = _enums$STYLE_KEY$n.FILTER;
+  var _enums$STYLE_KEY$l = enums.STYLE_KEY,
+      STROKE_WIDTH$4 = _enums$STYLE_KEY$l.STROKE_WIDTH,
+      BOX_SHADOW$4 = _enums$STYLE_KEY$l.BOX_SHADOW;
   var isNil$c = util.isNil;
   var sectorPoints$1 = geom.sectorPoints;
 
@@ -38406,8 +38309,7 @@
               height = this.height,
               _this$computedStyle = this.computedStyle,
               strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
-              boxShadow = _this$computedStyle[BOX_SHADOW$6],
-              filter = _this$computedStyle[FILTER$9];
+              boxShadow = _this$computedStyle[BOX_SHADOW$4];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -38431,22 +38333,11 @@
           strokeWidth.forEach(function (item) {
             half = Math.max(half, item);
           });
-
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-              x1 = _this$__spreadBbox2[0],
-              y1 = _this$__spreadBbox2[1],
-              x2 = _this$__spreadBbox2[2],
-              y2 = _this$__spreadBbox2[3];
-
-          x1 -= half;
-          y1 -= half;
-          x2 += half;
-          y2 += half;
-          var xa = cx - r + x1;
-          var xb = cx + r + x2;
-          var ya = cy - r + y1;
-          var yb = cy + r + y2;
+          half = Math.ceil(half * 0.5) + 1;
+          var xa = cx - r - half;
+          var xb = cx + r - half;
+          var ya = cy - r + half;
+          var yb = cy + r + half;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);
@@ -38461,11 +38352,7 @@
     return Sector;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$o = enums.STYLE_KEY,
-      STROKE_WIDTH$5 = _enums$STYLE_KEY$o.STROKE_WIDTH,
-      BOX_SHADOW$7 = _enums$STYLE_KEY$o.BOX_SHADOW,
-      FONT_SIZE$g = _enums$STYLE_KEY$o.FONT_SIZE,
-      FILTER$a = _enums$STYLE_KEY$o.FILTER;
+  var STROKE_WIDTH$5 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$d = util.isNil;
 
   function genVertex(x, y, width, height) {
@@ -38617,10 +38504,7 @@
               originY = this.__sy3,
               width = this.width,
               height = this.height,
-              _this$computedStyle = this.computedStyle,
-              strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
-              boxShadow = _this$computedStyle[BOX_SHADOW$7],
-              filter = _this$computedStyle[FILTER$a];
+              strokeWidth = this.computedStyle[STROKE_WIDTH$5];
           this.buildCache(originX, originY);
 
           var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
@@ -38629,22 +38513,11 @@
           strokeWidth.forEach(function (item) {
             half = Math.max(half, item);
           });
-
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-              x1 = _this$__spreadBbox2[0],
-              y1 = _this$__spreadBbox2[1],
-              x2 = _this$__spreadBbox2[2],
-              y2 = _this$__spreadBbox2[3];
-
-          x1 -= half;
-          y1 -= half;
-          x2 += half;
-          y2 += half;
-          bbox[0] = Math.min(bbox[0], originX + x1);
-          bbox[1] = Math.min(bbox[1], originY + y1);
-          bbox[2] = Math.max(bbox[2], originX + width + x2);
-          bbox[3] = Math.max(bbox[3], originY + height + y2);
+          half = Math.ceil(half * 0.5) + 1;
+          bbox[0] = Math.min(bbox[0], originX - half);
+          bbox[1] = Math.min(bbox[1], originY - half);
+          bbox[2] = Math.max(bbox[2], originX + width + half);
+          bbox[3] = Math.max(bbox[3], originY + height + half);
           this.__bbox = bbox;
         }
 
@@ -38655,11 +38528,7 @@
     return Rect;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$p = enums.STYLE_KEY,
-      STROKE_WIDTH$6 = _enums$STYLE_KEY$p.STROKE_WIDTH,
-      BOX_SHADOW$8 = _enums$STYLE_KEY$p.BOX_SHADOW,
-      FONT_SIZE$h = _enums$STYLE_KEY$p.FONT_SIZE,
-      FILTER$b = _enums$STYLE_KEY$p.FILTER;
+  var STROKE_WIDTH$6 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$e = util.isNil;
 
   function getR$2(v) {
@@ -38758,10 +38627,7 @@
               originY = this.__sy3,
               width = this.width,
               height = this.height,
-              _this$computedStyle = this.computedStyle,
-              strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
-              boxShadow = _this$computedStyle[BOX_SHADOW$8],
-              filter = _this$computedStyle[FILTER$b];
+              strokeWidth = this.computedStyle[STROKE_WIDTH$6];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -38785,22 +38651,11 @@
           strokeWidth.forEach(function (item) {
             half = Math.max(half, item);
           });
-
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-              x1 = _this$__spreadBbox2[0],
-              y1 = _this$__spreadBbox2[1],
-              x2 = _this$__spreadBbox2[2],
-              y2 = _this$__spreadBbox2[3];
-
-          x1 -= half;
-          y1 -= half;
-          x2 += half;
-          y2 += half;
-          var xa = cx - r + x1;
-          var xb = cx + r + x2;
-          var ya = cy - r + y1;
-          var yb = cy + r + y2;
+          half = Math.ceil(half * 0.5) + 1;
+          var xa = cx - r - half;
+          var ya = cy - r - half;
+          var xb = cx + r + half;
+          var yb = cy + r + half;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);
@@ -38815,11 +38670,7 @@
     return Circle;
   }(Geom$1);
 
-  var _enums$STYLE_KEY$q = enums.STYLE_KEY,
-      STROKE_WIDTH$7 = _enums$STYLE_KEY$q.STROKE_WIDTH,
-      BOX_SHADOW$9 = _enums$STYLE_KEY$q.BOX_SHADOW,
-      FONT_SIZE$i = _enums$STYLE_KEY$q.FONT_SIZE,
-      FILTER$c = _enums$STYLE_KEY$q.FILTER;
+  var STROKE_WIDTH$7 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$f = util.isNil;
 
   function getR$3(v) {
@@ -38966,10 +38817,7 @@
               originY = this.__sy3,
               width = this.width,
               height = this.height,
-              _this$computedStyle = this.computedStyle,
-              strokeWidth = _this$computedStyle[STROKE_WIDTH$7],
-              boxShadow = _this$computedStyle[BOX_SHADOW$9],
-              filter = _this$computedStyle[FILTER$c];
+              strokeWidth = this.computedStyle[STROKE_WIDTH$7];
           var cx = originX + width * 0.5;
           var cy = originY + height * 0.5;
           this.buildCache(cx, cy);
@@ -38998,22 +38846,11 @@
           strokeWidth.forEach(function (item) {
             half = Math.max(half, item);
           });
-
-          var _this$__spreadBbox = this.__spreadBbox(boxShadow, filter),
-              _this$__spreadBbox2 = _slicedToArray(_this$__spreadBbox, 4),
-              x1 = _this$__spreadBbox2[0],
-              y1 = _this$__spreadBbox2[1],
-              x2 = _this$__spreadBbox2[2],
-              y2 = _this$__spreadBbox2[3];
-
-          x1 -= half;
-          y1 -= half;
-          x2 += half;
-          y2 += half;
-          var xa = cx - rx + x1;
-          var xb = cx + rx + x2;
-          var ya = cy - ry + y1;
-          var yb = cy + ry + y2;
+          half = Math.ceil(half * 0.5) + 1;
+          var xa = cx - r - half;
+          var xb = cx + r - half;
+          var ya = cy - r + half;
+          var yb = cy + r + half;
           bbox[0] = Math.min(bbox[0], xa);
           bbox[1] = Math.min(bbox[1], ya);
           bbox[2] = Math.max(bbox[2], xb);

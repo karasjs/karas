@@ -2,16 +2,11 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
-import unit from '../../style/unit';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
-  BOX_SHADOW,
-  FONT_SIZE,
-  FILTER,
 } } = enums;
 const { isNil } = util;
-const { REM, VW, VH, VMAX, VMIN } = unit;
 
 function getR(v) {
   v = parseFloat(v);
@@ -78,8 +73,6 @@ class Circle extends Geom {
         __sx3: originX, __sy3: originY, width, height,
         computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
-          [BOX_SHADOW]: boxShadow,
-          [FILTER]: filter,
         }
       } = this;
       let cx = originX + width * 0.5;
@@ -101,15 +94,11 @@ class Circle extends Geom {
       strokeWidth.forEach(item => {
         half = Math.max(half, item);
       });
-      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
-      x1 -= half;
-      y1 -= half;
-      x2 += half;
-      y2 += half;
-      let xa = cx - r + x1;
-      let xb = cx + r + x2;
-      let ya = cy - r + y1;
-      let yb = cy + r + y2;
+      half = Math.ceil(half * 0.5) + 1;
+      let xa = cx - r - half;
+      let ya = cy - r - half;
+      let xb = cx + r + half;
+      let yb = cy + r + half;
       bbox[0] = Math.min(bbox[0], xa);
       bbox[1] = Math.min(bbox[1], ya);
       bbox[2] = Math.max(bbox[2], xb);

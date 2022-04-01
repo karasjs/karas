@@ -55,7 +55,7 @@ function applyOffscreen(ctx, list, width, height) {
       let { target, ctx: origin, filter } = offscreen;
       // 申请一个新的离屏，应用blur并绘制，如没有则降级，默认ctx.filter为'none'
       if(ctx.filter) {
-        let apply = inject.getCacheCanvas(width, height, null, 'filter');
+        let apply = inject.getCacheCanvas(width, height, null, 'filter2');
         apply.ctx.filter = painter.canvasFilter(filter);
         if(width && height) {
           apply.ctx.drawImage(target.canvas, 0, 0, width, height, 0, 0, width, height);

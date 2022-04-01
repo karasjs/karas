@@ -45,7 +45,7 @@ const {
   OFFSCREEN_MASK2,
   applyOffscreen,
 } = offscreen;
-const { spreadBboxByFilter } = css;
+const { spreadFilter } = css;
 
 const {
   STYLE_KEY: {
@@ -140,11 +140,12 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
   if(cache && cache.available) {
-    bboxTotal = cache.bbox.slice(0);
+    bboxTotal = cache.bbox;
   }
   else {
-    bboxTotal = node.bbox.slice(0);
+    bboxTotal = node.filterBbox;
   }
+  bboxTotal = bboxTotal.slice(0);
   // 局部根节点如有perspective，则计算pm，这里不会出现嵌套，因为每个出现都会生成局部根节点
   let pm;
   if(perspective) {
@@ -216,27 +217,27 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         let bbox, dx = 0, dy = 0, hasTotal;
         let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
         if(target) {
-          bbox = target.bbox.slice(0);
+          bbox = target.bbox;
           dx = target.dbx;
           dy = target.dby;
           i += total || 0;
           hasTotal = true;
         }
         else if(__cache && __cache.available) {
-          bbox = __cache.bbox.slice(0);
+          bbox = __cache.bbox;
           dx = __cache.dbx;
           dy = __cache.dby;
         }
         else {
-          bbox = node2.bbox.slice(0);
+          bbox = node2.filterBbox;
         }
         // 可能Xom没有内容
         if(bbox) {
-          bbox = spreadBboxByFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
-          bbox[0] -= sx1;
-          bbox[1] -= sy1;
-          bbox[2] -= sx1;
-          bbox[3] -= sy1;
+          // bbox = spreadFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
+          // bbox[0] -= sx1;
+          // bbox[1] -= sy1;
+          // bbox[2] -= sx1;
+          // bbox[3] -= sy1;
           let matrix = matrixHash[parentIndex];
           // 父级matrix初始化E为null，自身不为E时才运算，可以加速
           if(transform && !isE(transform)) {
@@ -307,7 +308,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
     [NODE_CURRENT_STYLE]: currentStyle,
     [NODE_COMPUTED_STYLE]: computedStyle,
   } = config;
-  let filter = computedStyle[FILTER];
   let needGen;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!cacheTotal || !cacheTotal.available) {
@@ -331,7 +331,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       } = __structs[i];
       // 排除Text
       if(node instanceof Text) {
-        let bbox = node.bbox;
+        let bbox = node.filterBbox;
         if(!isE(parentMatrix)) {
           bbox = transformBbox(bbox, parentMatrix, 0, 0);
         }
@@ -404,6 +404,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
         opacity = computedStyle[OPACITY];
         if(contain(refreshLevel, FT)) {
           node.__bbox = null;
+          node.__filterBbox = null;
           node.__calFilter(currentStyle, computedStyle);
         }
         matrix = __config[NODE_MATRIX];
@@ -416,6 +417,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
        */
       else {
         node.__bbox = null;
+        node.__filterBbox = null;
         if(i === index) {
           node.__calFilter(currentStyle, computedStyle);
         }
@@ -436,17 +438,14 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       __config[NODE_OPACITY] = parentOpacity * opacity;
       let bbox;
       // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
-      let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+      let target = i > index && getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+      // 局部根节点的total不需要考虑filter，子节点要
       if(target) {
         i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
         bbox = target.bbox;
       }
       else {
-        bbox = node.bbox;
-      }
-      // 局部根节点的filter会作用于所有子节点，需再计算一次
-      if(i !== index) {
-        bbox = spreadBboxByFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
+        bbox = i === index ? node.bbox : node.filterBbox;
       }
       // 老的不变，新的会各自重新生成，根据matrixEvent合并bboxTotal
       bbox = transformBbox(bbox, matrix, 0, 0);
@@ -673,14 +672,15 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
     let target = cacheTotal;
     if(overflow === 'hidden') {
       if(!cacheOverflow || !cacheOverflow.available || needGen) {
-        config[NODE_CACHE_OVERFLOW] = genOverflow(node, target);
+        config[NODE_CACHE_OVERFLOW] = Cache.genOverflow(target, node);
         needGen = true;
       }
       target = config[NODE_CACHE_OVERFLOW] || target;
     }
     if(filter && filter.length) {
+      // 新生成单独的filter离屏，老的已经release()过了
       if(!cacheFilter || !cacheFilter.available || needGen) {
-        config[NODE_CACHE_FILTER] = genFilter(node, target, filter);
+        config[NODE_CACHE_FILTER] = Cache.genFilter(target, filter);
         needGen = true;
       }
       target = config[NODE_CACHE_FILTER] || target;
@@ -691,7 +691,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
        * 当mask节点有cache时内部直接调用绘制了cache位图
        * 当mask没有缓存可用时进这里的普通渲染逻辑
        */
-      config[NODE_CACHE_MASK] = genMask(node, target, function(item, cacheMask, inverse) {
+      config[NODE_CACHE_MASK] = Cache.genMask(target, node, function(item, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         let maskStartHash = {};
         let offscreenHash = {};
@@ -819,6 +819,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
                 opacity = computedStyle[OPACITY];
                 if(contain(refreshLevel, FT)) {
                   node.__bbox = null;
+                  node.__filterBbox = null;
                   node.__calFilter(currentStyle, computedStyle);
                 }
                 matrix = __config[NODE_MATRIX];
@@ -828,6 +829,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
               }
               else {
                 node.__bbox = null;
+                node.__filterBbox = null;
                 if(i === index) {
                   node.__calFilter(currentStyle, computedStyle);
                 }
@@ -934,24 +936,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       });
     }
   }
-}
-
-function genFilter(node, cache, v) {
-  return Cache.genFilter(cache, v);
-}
-
-function genMask(node, cache, cb) {
-  return Cache.genMask(cache, node, cb);
-}
-
-function genOverflow(node, cache) {
-  let sbox = node.bbox;
-  let bbox = cache.bbox;
-  // 没超过无需生成
-  if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
-    return;
-  }
-  return Cache.genOverflow(cache, node);
 }
 
 function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
@@ -1380,7 +1364,16 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   if(width > limit || height > limit) {
     return;
   }
-  let cx = width * 0.5, cy = height * 0.5;
+  let bboxNew = bbox.slice(0);
+  bboxNew[0] -= spread;
+  bboxNew[1] -= spread;
+  bboxNew[2] += spread;
+  bboxNew[3] += spread;
+  let widthNew = width + spread * 2;
+  let heightNew = height + spread * 2;
+  let widthPercent = width / widthNew;
+  let heightPercent = height / heightNew;
+  let cx = widthNew * 0.5, cy = heightNew * 0.5;
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
   let frag = '';
@@ -1401,7 +1394,7 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   frag = fragmentBlur.replace('[3]', '[' + d + ']').replace(/}$/, frag + '}');
   let program = webgl.initShaders(gl, vert, frag);
   gl.useProgram(program);
-  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, widthNew, heightNew);
   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
   let j = texCache.findExistTexChannel(cache.page);
   if(j === -1) {
@@ -1412,8 +1405,8 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   else {
     texCache.lockChannel(j);
   }
-  texture = webgl.drawBlur(gl, program, frameBuffer, texCache, texture, cache.page.texture, i, j,
-    width, height, cx, cy);
+  texture = webgl.drawBlur(gl, program, frameBuffer, texture, cache.page.texture, i, j,
+    width, height, spread, widthNew, heightNew, cx, cy);
   // 销毁这个临时program
   gl.deleteShader(program.vertexShader);
   gl.deleteShader(program.fragmentShader);
@@ -1421,9 +1414,9 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
   texCache.releaseLockChannel(j);
-  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox);
+  let mockCache = new MockCache(gl, texture, sx1, sy1, widthNew, heightNew, bboxNew);
   texCache.releaseLockChannel(i, mockCache.page);
-  return [mockCache, width, height, bbox];
+  return [mockCache, widthNew, heightNew, bboxNew];
 }
 
 function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bbox) {
@@ -1453,15 +1446,17 @@ function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bb
 }
 
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
-  let sbox = node.bbox.slice(0);
   let bbox = cache.bbox;
+  let { __sx1, __sy1, clientWidth, clientHeight } = node;
+  let xe = __sx1 + clientWidth;
+  let ye = __sy1 + clientHeight;
   // 没超过无需生成
-  if(bbox[0] >= sbox[0] && bbox[1] >= sbox[1] && bbox[2] <= sbox[2] && bbox[3] <= sbox[3]) {
+  if(bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= xe && ye) {
     return;
   }
-  let width = sbox[2] - sbox[0], height = sbox[3] - sbox[1];
+  let bboxNew = [__sx1, __sy1, xe, ye];
   // 生成最终纹理，尺寸为被遮罩节点大小
-  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, clientWidth, clientHeight);
   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
   let j = texCache.findExistTexChannel(cache.page);
   if(j === -1) {
@@ -1474,7 +1469,7 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   }
   // 绘制，根据坐标裁剪使用原本纹理的一部分
   gl.useProgram(gl.programOverflow);
-  webgl.drawOverflow(gl, j, sbox[0] - bbox[0], sbox[1] - bbox[1], width, height, cache.width, cache.height);
+  webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], clientWidth, clientHeight, cache.width, cache.height);
   texCache.releaseLockChannel(j);
   // 切回
   gl.useProgram(gl.program);
@@ -1482,7 +1477,7 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   // 同total一样生成一个mockCache
-  let overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, width, height, sbox);
+  let overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, clientWidth, clientHeight, bboxNew);
   texCache.releaseLockChannel(i, overflowCache.page);
   return overflowCache;
 }
@@ -1664,7 +1659,6 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
 }
 
 function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
-  console.log(v, bbox);
   let d = blur.kernelSize(v[2]);
   let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
   while(d > max) {
@@ -1673,7 +1667,6 @@ function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbo
   let spread = blur.outerSizeByD(d);
   width += spread * 2;
   height += spread * 2;
-  console.log(width,height,d,spread)
 }
 
 /**
@@ -2137,13 +2130,6 @@ function renderWebgl(renderMode, gl, root) {
      */
     if(refreshLevel < REPAINT) {
       __config[NODE_REFRESH_LV] = NONE;
-      if(hasMask) {
-        let cacheMask = __config[NODE_CACHE_MASK];
-        if(!cacheMask || !cacheMask.available) {
-          hasRecordAsMask = [i, lv, total, node, __config, null, hasMask];
-          mergeList.push(hasRecordAsMask);
-        }
-      }
       let {
         [NODE_CURRENT_STYLE]: currentStyle,
         [NODE_CACHE_STYLE]: __cacheStyle,
@@ -2160,15 +2146,6 @@ function renderWebgl(renderMode, gl, root) {
       }
       else {
         matrix = __config[NODE_MATRIX];
-      }
-      // node本身有或者父有perspective都认为需要生成3d渲染上下文
-      if(tf.isPerspectiveMatrix(matrix) || parentPm) {
-        if(hasRecordAsMask) {
-          hasRecordAsMask[9] = true;
-        }
-        else {
-          hasRecordAsMask = [i, lv, total, node, __config, null, null, null, null, true];
-        }
       }
       // 先左乘perspective的矩阵，再左乘父级的总矩阵
       if(parentPm) {
@@ -2190,16 +2167,8 @@ function renderWebgl(renderMode, gl, root) {
       // filter会改变bbox范围
       if(contain(refreshLevel, FT)) {
         node.__bbox = null;
-        let filter = node.__calFilter(currentStyle, computedStyle);
-        // 防重
-        if(hasRecordAsMask) {
-          hasRecordAsMask[7] = filter;
-        }
-        else {
-          // 强制存hasMask，因为filter改变影响mask
-          hasRecordAsMask = [i, lv, total, node, __config, null, hasMask, filter];
-          mergeList.push(hasRecordAsMask);
-        }
+        node.__filterBbox = null;
+        node.__calFilter(currentStyle, computedStyle);
       }
       if(contain(refreshLevel, MBM)) {
         computedStyle[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE];
@@ -2207,7 +2176,6 @@ function renderWebgl(renderMode, gl, root) {
       // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
-        continue;
       }
     }
     /**
@@ -2315,9 +2283,12 @@ function renderWebgl(renderMode, gl, root) {
             target = temp;
             needGen = true;
             if(!limitCache) {
-              __config[NODE_CACHE_FILTER] = target;
+              __config[NODE_CACHE_OVERFLOW] = target;
             }
           }
+        }
+        else {
+          target = __cacheOverflow;
         }
       }
       if(filter.length) {
@@ -2330,6 +2301,9 @@ function renderWebgl(renderMode, gl, root) {
               __config[NODE_CACHE_FILTER] = target;
             }
           }
+        }
+        else {
+          target = __cacheFilter;
         }
       }
       if(hasMask && (!__cacheMask || !__cacheMask.available || needGen)) {

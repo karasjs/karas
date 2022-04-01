@@ -169,7 +169,7 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
-const { calRelative, getFontFamily, calNormalLineHeight, spreadBboxByFilter } = css;
+const { calRelative, getFontFamily, calNormalLineHeight, spreadBoxShadow, spreadFilter } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
 const { point2d } = mx;
@@ -1700,6 +1700,7 @@ class Xom extends Node {
     // >=REPAINT清空bbox
     if(lv >= REPAINT) {
       this.__bbox = null;
+      this.__filterBbox = null;
     }
     if(isDestroyed) {
       return { isDestroyed, break: true };
@@ -2874,33 +2875,6 @@ class Xom extends Node {
     this.clearCache();
   }
 
-  // 一个节点的borderBox根据boxShadow和filter进行扩展后的结果
-  __spreadBbox(boxShadow, filter) {
-    let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-    let xl = [], yt = [], xr = [], yb = [];
-    if(Array.isArray(boxShadow)) {
-      boxShadow.forEach(item => {
-        let [x, y, sigma, spread, color, inset] = item;
-        x1 = x2 = x;
-        y1 = y2 = y;
-        if(inset !== 'inset' && color[3] > 0) {
-          let d = blur.outerSize(sigma);
-          d += spread;
-          xl.push(x - d);
-          xr.push(x + d);
-          yt.push(y - d);
-          yb.push(y + d);
-        }
-      });
-    }
-    xl.forEach(n => x1 = Math.min(x1, n));
-    xr.forEach(n => x2 = Math.max(x2, n));
-    yt.forEach(n => y1 = Math.min(y1, n));
-    yb.forEach(n => y2 = Math.max(y2, n));
-    // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
-    return spreadBboxByFilter(x1, y1, x2, y2, filter);
-  }
-
   __releaseWhenEmpty(__cache) {
     if(__cache && __cache.available) {
       __cache.release();
@@ -3060,13 +3034,20 @@ class Xom extends Node {
         __sx1, __sy1, offsetWidth, offsetHeight,
         computedStyle: {
           [BOX_SHADOW]: boxShadow,
-          [FILTER]: filter,
         },
       } = this;
-      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
-      this.__bbox = [__sx1 + x1, __sy1 + y1, __sx1 + offsetWidth + x2, __sy1 + offsetHeight + y2];
+      this.__bbox = spreadBoxShadow([__sx1, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight], boxShadow);
     }
     return this.__bbox;
+  }
+
+  get filterBbox() {
+    if(!this.__filterBbox) {
+      let bbox = this.bbox;
+      let filter = this.computedStyle[FILTER];
+      this.__filterBbox = spreadFilter(bbox, filter);
+    }
+    return this.__filterBbox;
   }
 
   get listener() {

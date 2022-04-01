@@ -1552,7 +1552,31 @@ function cloneStyle(style, keys) {
   return res;
 }
 
-function spreadBboxByFilter(x1, y1, x2, y2, filter) {
+function spreadBoxShadow(bbox, boxShadow) {
+  let [x1, y1, x2, y2] = bbox;
+  if(Array.isArray(boxShadow)) {
+    let xl = 0, yt = 0, xr = 0, yb = 0;
+    boxShadow.forEach(item => {
+      let [x, y, sigma, spread, color, inset] = item;
+      if(inset !== 'inset' && color[3] > 0) {
+        let d = blur.outerSize(sigma);
+        d += spread;
+        xl = Math.min(xl, x - d);
+        yt = Math.min(yt, x - d);
+        xr = Math.max(xr, x + d);
+        yb = Math.max(yb, y + d);
+      }
+    });
+    x1 += xl;
+    y1 += yt;
+    x2 += xr;
+    y2 += yb;
+  }
+  return [x1, y1, x2, y2];
+}
+
+function spreadFilter(bbox, filter) {
+  let [x1, y1, x2, y2] = bbox;
   // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
   if(Array.isArray(filter)) {
     filter.forEach(item => {
@@ -1601,5 +1625,6 @@ export default {
   isRelativeOrAbsolute,
   cloneStyle,
   calNormalLineHeight,
-  spreadBboxByFilter,
+  spreadBoxShadow,
+  spreadFilter,
 };

@@ -252,20 +252,22 @@ function drawTextureCache(gl, list, hash, cx, cy, revertY) {
  * @param gl
  * @param program
  * @param frameBuffer
- * @param texCache
  * @param tex1 初次绘制目标纹理
  * @param tex2 初次绘制源纹理
  * @param i 初次绘制目标纹理单元
  * @param j 初次绘制源纹理单元
  * @param width
  * @param height
+ * @param spread
+ * @param widthNew
+ * @param heightNew
  * @param cx
  * @param cy
  */
-function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, height, cx, cy) {
+function drawBlur(gl, program, frameBuffer, tex1, tex2, i, j, width, height, spread, widthNew, heightNew, cx, cy) {
   // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-  let [x1, y2] = convertCoords2Gl([0, height], cx, cy);
-  let [x2, y1] = convertCoords2Gl([width, 0], cx, cy);
+  let [x1, y2] = convertCoords2Gl([spread, height + spread, 0, 1], cx, cy, false);
+  let [x2, y1] = convertCoords2Gl([width + spread, spread, 0, 1], cx, cy, false);
   // 顶点buffer
   let pointBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
@@ -301,6 +303,7 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
   let u_texture = gl.getUniformLocation(program, 'u_texture');
   gl.uniform1i(u_texture, j);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
+
   // fbo绑定切换纹理对象和单元索引，同时注意不能向源纹理绘制，因为源是cacheTotal，需要重新生成一个，y方向再来一次
   gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -317,13 +320,13 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
    * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
    * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
    */
-  let max = 100 / Math.max(width, height);
-  let ratio = width / height;
+  let max = 100 / Math.max(widthNew, heightNew);
+  let ratio = widthNew / heightNew;
   let recycle = []; // 3次过程中新生成的中间纹理需要回收
   for(let k = 0; k < 3; k++) {
-    let tex3 = createTexture(gl, null, j, width, height);
+    let tex3 = createTexture(gl, null, j, widthNew, heightNew);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
-    if(width >= height) {
+    if(widthNew >= heightNew) {
       gl.uniform2f(u_direction, max, 0);
     }
     else {
@@ -332,9 +335,9 @@ function drawBlur(gl, program, frameBuffer, texCache, tex1, tex2, i, j, width, h
     gl.uniform1i(u_texture, i);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     recycle.push(tex1);
-    let tex4 = createTexture(gl, null, i, width, height);
+    let tex4 = createTexture(gl, null, i, widthNew, heightNew);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex4, 0);
-    if(width >= height) {
+    if(widthNew >= heightNew) {
       gl.uniform2f(u_direction, 0, max * ratio);
     }
     else {

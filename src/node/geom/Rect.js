@@ -1,17 +1,12 @@
 import Geom from './Geom';
-import util from "../../util/util";
+import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
-import unit from '../../style/unit';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
-  BOX_SHADOW,
-  FONT_SIZE,
-  FILTER,
 } } = enums;
 const { isNil } = util;
-const { REM, VW, VH, VMAX, VMIN } = unit;
 
 function genVertex(x, y, width, height, rx = 0, ry = 0) {
   if(rx === 0 || ry === 0) {
@@ -130,8 +125,6 @@ class Rect extends Geom {
         __sx3: originX, __sy3: originY, width, height,
         computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
-          [BOX_SHADOW]: boxShadow,
-          [FILTER]: filter,
         }
       } = this;
       this.buildCache(originX, originY);
@@ -140,15 +133,11 @@ class Rect extends Geom {
       strokeWidth.forEach(item => {
         half = Math.max(half, item);
       });
-      let [x1, y1, x2, y2] = this.__spreadBbox(boxShadow, filter);
-      x1 -= half;
-      y1 -= half;
-      x2 += half;
-      y2 += half;
-      bbox[0] = Math.min(bbox[0], originX + x1);
-      bbox[1] = Math.min(bbox[1], originY + y1);
-      bbox[2] = Math.max(bbox[2], originX + width + x2);
-      bbox[3] = Math.max(bbox[3], originY + height + y2);
+      half = Math.ceil(half * 0.5) + 1;
+      bbox[0] = Math.min(bbox[0], originX - half);
+      bbox[1] = Math.min(bbox[1], originY - half);
+      bbox[2] = Math.max(bbox[2], originX + width + half);
+      bbox[3] = Math.max(bbox[3], originY + height + half);
       this.__bbox = bbox;
     }
     return this.__bbox;

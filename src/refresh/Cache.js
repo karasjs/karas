@@ -244,7 +244,7 @@ class Cache {
     let inverse = tf.calMatrixByOrigin(transform, tfo);
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {
-      cb(item, cacheMask, inverse);
+      cb(item, target, cacheMask, inverse);
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;

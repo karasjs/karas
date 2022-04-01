@@ -13566,7 +13566,7 @@
         var inverse = transform$1.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
 
         list.forEach(function (item) {
-          cb(item, cacheMask, inverse);
+          cb(item, target, cacheMask, inverse);
         });
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
@@ -13654,6 +13654,7 @@
           ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         }
 
+        console.log(x, y, width, height, ox, oy);
         ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
       }
     }, {
@@ -31574,7 +31575,7 @@
          * 当mask节点有cache时内部直接调用绘制了cache位图
          * 当mask没有缓存可用时进这里的普通渲染逻辑
          */
-        config[NODE_CACHE_MASK$1] = Cache.genMask(_target3, node, function (item, cacheMask, inverse) {
+        config[NODE_CACHE_MASK$1] = Cache.genMask(_target3, node, function (item, cache, cacheMask, inverse) {
           // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
           var maskStartHash = {};
           var offscreenHash = {};
@@ -31585,6 +31586,10 @@
               tx = cacheMask.x,
               ty = cacheMask.y,
               ctx = cacheMask.ctx;
+          dx -= cache.dx;
+          dy -= cache.dy;
+          dbx -= cache.dbx;
+          dby -= cache.dby;
           var _item$__config$NODE_S = item.__config[NODE_STRUCT$4],
               index = _item$__config$NODE_S[STRUCT_INDEX$2],
               total = _item$__config$NODE_S[STRUCT_TOTAL$1],
@@ -31796,6 +31801,8 @@
                   // 手动计算cacheStyle和根据border-box的坐标再渲染
                   _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$4], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$4], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$3], _computedStyle3[PADDING_RIGHT$7], _computedStyle3[PADDING_BOTTOM$3], _computedStyle3[PADDING_LEFT$8], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
                 }
+
+                console.log(_node3.tagName, dx, dy);
 
                 var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
 

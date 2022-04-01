@@ -691,11 +691,15 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
        * 当mask节点有cache时内部直接调用绘制了cache位图
        * 当mask没有缓存可用时进这里的普通渲染逻辑
        */
-      config[NODE_CACHE_MASK] = Cache.genMask(target, node, function(item, cacheMask, inverse) {
+      config[NODE_CACHE_MASK] = Cache.genMask(target, node, function(item, cache, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         let maskStartHash = {};
         let offscreenHash = {};
         let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
+        dx -= cache.dx;
+        dy -= cache.dy;
+        dbx -= cache.dbx;
+        dby -= cache.dby;
         let {
           [STRUCT_INDEX]:index,
           [STRUCT_TOTAL]: total,

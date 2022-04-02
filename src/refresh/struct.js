@@ -45,7 +45,6 @@ const {
   OFFSCREEN_MASK2,
   applyOffscreen,
 } = offscreen;
-const { spreadFilter } = css;
 
 const {
   STYLE_KEY: {
@@ -1236,7 +1235,10 @@ function genFilterWebgl(gl, texCache, node, cache, filter, W, H) {
       }
     }
     else if(k === 'dropShadow') {
-      genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      let res = genDropShadowWebgl(gl, texCache, mockCache, v, width, height, sx1, sy1, bbox);
+      if(res) {
+        [mockCache, width, height, bbox] = res;
+      }
     }
     else if(k === 'hueRotate') {
       let rotation = geom.d2r(v % 360);
@@ -1374,8 +1376,6 @@ function genBlurWebgl(gl, texCache, cache, sigma, width, height, sx1, sy1, bbox)
   bboxNew[3] += spread;
   let widthNew = width + spread * 2;
   let heightNew = height + spread * 2;
-  let widthPercent = width / widthNew;
-  let heightPercent = height / heightNew;
   let cx = widthNew * 0.5, cy = heightNew * 0.5;
   let weights = blur.gaussianWeight(sigma, d);
   let vert = '';
@@ -1661,15 +1661,52 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
   return maskCache;
 }
 
+/**
+ * webgl的dropShadow只生成阴影部分，模糊复用blur，然后进行拼合
+ * @param gl
+ * @param texCache
+ * @param cache
+ * @param v
+ * @param width
+ * @param height
+ * @param sx1
+ * @param sy1
+ * @param bbox
+ * @returns {*[]}
+ */
 function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
-  let d = blur.kernelSize(v[2]);
-  let max = Math.max(15, gl.getParameter(gl.MAX_VARYING_VECTORS));
-  while(d > max) {
-    d -= 2;
+  // console.log(bbox,v);
+  // let d = blur.kernelSize(v[2]);
+  // let spread = blur.outerSizeByD(d);
+  // console.log(d,spread);
+  // let bboxNew = bbox.slice(0);
+  // bboxNew[0] -= spread;
+  // bboxNew[1] -= spread;
+  // bboxNew[2] += spread;
+  // bboxNew[3] += spread;
+  // console.log(bboxNew);
+  // 先根据x/y/color生成单色阴影
+  let [x, y, blur, , color] = v;
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
+  // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
+  let j = texCache.findExistTexChannel(cache.page);
+  if(j === -1) {
+    // 直接绑定，因为一定是个mockCache
+    j = texCache.lockOneChannel();
+    webgl.bindTexture(gl, cache.page.texture, j);
   }
-  let spread = blur.outerSizeByD(d);
-  width += spread * 2;
-  height += spread * 2;
+  else {
+    texCache.lockChannel(j);
+  }
+  gl.useProgram(gl.programDs);
+  texture = webgl.drawDropShadow(gl, gl.programDs, frameBuffer, texture, cache.page.texture, i, j, width, height, color);
+  // 切回
+  gl.useProgram(gl.program);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteFramebuffer(frameBuffer);
+  let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
+  texCache.releaseLockChannel(i, mockCache.page);
+  // return [mockCache, width, height, bbox];
 }
 
 /**

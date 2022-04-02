@@ -207,12 +207,7 @@ class Cache {
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';
     offscreen.draw();
-    offscreen.bbox = [
-      bbox[0] - d,
-      bbox[1] - d,
-      bbox[2] + d,
-      bbox[3] + d,
-    ];
+    offscreen.bbox = bbox;
     // 单独的离屏
     offscreen.x = 0;
     offscreen.y = 0;
@@ -244,7 +239,7 @@ class Cache {
     let inverse = tf.calMatrixByOrigin(transform, tfo);
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {
-      cb(item, target, cacheMask, inverse);
+      cb(item, cacheMask, inverse);
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;

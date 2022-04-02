@@ -13525,7 +13525,7 @@
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
         offscreen.draw();
-        offscreen.bbox = [bbox[0] - d, bbox[1] - d, bbox[2] + d, bbox[3] + d]; // 单独的离屏
+        offscreen.bbox = bbox; // 单独的离屏
 
         offscreen.x = 0;
         offscreen.y = 0;
@@ -13566,7 +13566,7 @@
         var inverse = transform$1.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
 
         list.forEach(function (item) {
-          cb(item, target, cacheMask, inverse);
+          cb(item, cacheMask, inverse);
         });
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
@@ -13654,7 +13654,6 @@
           ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         }
 
-        console.log(x, y, width, height, ox, oy);
         ctx.drawImage(canvas, x, y, width, height, ox, oy, width, height);
       }
     }, {
@@ -31027,39 +31026,34 @@
           }
 
           parentIndexHash[_i] = parentIndex;
-          opacityHash[_i] = opacityHash[parentIndex] * opacity; // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算
-
-          if (node2 instanceof Text) {
-            continue;
-          }
-
+          opacityHash[_i] = opacityHash[parentIndex] * opacity;
           var bbox = void 0,
               dx = 0,
               dy = 0,
-              hasTotal = void 0;
-          var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+              hasTotal = void 0; // text不能用filter
 
-          if (target) {
-            bbox = target.bbox;
-            dx = target.dbx;
-            dy = target.dby;
-            _i += _total2 || 0;
-            hasTotal = true;
-          } else if (__cache && __cache.available) {
-            bbox = __cache.bbox;
-            dx = __cache.dbx;
-            dy = __cache.dby;
+          if (node2 instanceof Text) {
+            bbox = node2.bbox;
           } else {
-            bbox = node2.filterBbox;
+            var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+
+            if (target) {
+              bbox = target.bbox;
+              dx = target.dbx;
+              dy = target.dby;
+              _i += _total2 || 0;
+              hasTotal = true;
+            } else if (__cache && __cache.available) {
+              bbox = __cache.bbox;
+              dx = __cache.dbx;
+              dy = __cache.dby;
+            } else {
+              bbox = node2.filterBbox;
+            }
           } // 可能Xom没有内容
 
 
           if (bbox) {
-            // bbox = spreadFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
-            // bbox[0] -= sx1;
-            // bbox[1] -= sy1;
-            // bbox[2] -= sx1;
-            // bbox[3] -= sy1;
             var matrix = matrixHash[parentIndex]; // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
             if (transform && !isE$3(transform)) {
@@ -31158,7 +31152,7 @@
             _hasMask = _structs$i[STRUCT_HAS_MASK$1]; // 排除Text
 
         if (_node instanceof Text) {
-          var _bbox = _node.filterBbox;
+          var _bbox = _node.bbox; // 文字节点不能算filter
 
           if (!isE$3(parentMatrix)) {
             _bbox = transformBbox$1(_bbox, parentMatrix, 0, 0);
@@ -31575,7 +31569,7 @@
          * 当mask节点有cache时内部直接调用绘制了cache位图
          * 当mask没有缓存可用时进这里的普通渲染逻辑
          */
-        config[NODE_CACHE_MASK$1] = Cache.genMask(_target3, node, function (item, cache, cacheMask, inverse) {
+        config[NODE_CACHE_MASK$1] = Cache.genMask(_target3, node, function (item, cacheMask, inverse) {
           // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
           var maskStartHash = {};
           var offscreenHash = {};
@@ -31586,10 +31580,6 @@
               tx = cacheMask.x,
               ty = cacheMask.y,
               ctx = cacheMask.ctx;
-          dx -= cache.dx;
-          dy -= cache.dy;
-          dbx -= cache.dbx;
-          dby -= cache.dby;
           var _item$__config$NODE_S = item.__config[NODE_STRUCT$4],
               index = _item$__config$NODE_S[STRUCT_INDEX$2],
               total = _item$__config$NODE_S[STRUCT_TOTAL$1],
@@ -31802,9 +31792,7 @@
                   _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$4], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$4], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$3], _computedStyle3[PADDING_RIGHT$7], _computedStyle3[PADDING_BOTTOM$3], _computedStyle3[PADDING_LEFT$8], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
                 }
 
-                console.log(_node3.tagName, dx, dy);
-
-                var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
+                var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dbx, dby);
 
                 _config2[NODE_REFRESH_LV$1] = REPAINT$2;
 

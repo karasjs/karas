@@ -210,34 +210,31 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         }
         parentIndexHash[i] = parentIndex;
         opacityHash[i] = opacityHash[parentIndex] * opacity;
-        // 防止text的情况，其一定属于某个node，其bbox被计算过，text不应该计算
-        if(node2 instanceof Text) {
-          continue;
-        }
         let bbox, dx = 0, dy = 0, hasTotal;
-        let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
-        if(target) {
-          bbox = target.bbox;
-          dx = target.dbx;
-          dy = target.dby;
-          i += total || 0;
-          hasTotal = true;
-        }
-        else if(__cache && __cache.available) {
-          bbox = __cache.bbox;
-          dx = __cache.dbx;
-          dy = __cache.dby;
+        // text不能用filter
+        if(node2 instanceof Text) {
+          bbox = node2.bbox;
         }
         else {
-          bbox = node2.filterBbox;
+          let target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+          if(target) {
+            bbox = target.bbox;
+            dx = target.dbx;
+            dy = target.dby;
+            i += total || 0;
+            hasTotal = true;
+          }
+          else if(__cache && __cache.available) {
+            bbox = __cache.bbox;
+            dx = __cache.dbx;
+            dy = __cache.dby;
+          }
+          else {
+            bbox = node2.filterBbox;
+          }
         }
         // 可能Xom没有内容
         if(bbox) {
-          // bbox = spreadFilter(bbox[0], bbox[1], bbox[2], bbox[3], filter);
-          // bbox[0] -= sx1;
-          // bbox[1] -= sy1;
-          // bbox[2] -= sx1;
-          // bbox[3] -= sy1;
           let matrix = matrixHash[parentIndex];
           // 父级matrix初始化E为null，自身不为E时才运算，可以加速
           if(transform && !isE(transform)) {
@@ -331,7 +328,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
       } = __structs[i];
       // 排除Text
       if(node instanceof Text) {
-        let bbox = node.filterBbox;
+        let bbox = node.bbox; // 文字节点不能算filter
         if(!isE(parentMatrix)) {
           bbox = transformBbox(bbox, parentMatrix, 0, 0);
         }
@@ -691,15 +688,11 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
        * 当mask节点有cache时内部直接调用绘制了cache位图
        * 当mask没有缓存可用时进这里的普通渲染逻辑
        */
-      config[NODE_CACHE_MASK] = Cache.genMask(target, node, function(item, cache, cacheMask, inverse) {
+      config[NODE_CACHE_MASK] = Cache.genMask(target, node, function(item, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         let maskStartHash = {};
         let offscreenHash = {};
         let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
-        dx -= cache.dx;
-        dy -= cache.dy;
-        dbx -= cache.dbx;
-        dby -= cache.dby;
         let {
           [STRUCT_INDEX]:index,
           [STRUCT_TOTAL]: total,
@@ -894,7 +887,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
                   node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6,
                   node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
               }
-              let res = node.render(renderMode, refreshLevel, ctx, CHILD, dx, dy);
+              let res = node.render(renderMode, refreshLevel, ctx, CHILD, dbx, dby);
               __config[NODE_REFRESH_LV] = REPAINT;
               let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
               // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反

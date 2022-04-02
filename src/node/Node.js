@@ -32,6 +32,8 @@ class Node {
     this.__root = null;
     this.__host = null;
     this.__virtualDom = null;
+    this.__bbox = null;
+    this.__filterBbox = null;
   }
 
   __structure(i, lv, j) {

@@ -1,3 +1,7 @@
+import util from './util';
+
+const { int2rgba } = util;
+
 function canvasPolygon(ctx, list, dx = 0, dy = 0) {
   if(!list || !list.length) {
     return;
@@ -113,7 +117,11 @@ function canvasFilter(filter) {
     if(k === 'blur') {
       s += `blur(${v}px)`;
     }
-    else if(k === 'hue-rotate') {
+    else if(k === 'dropShadow') {
+      // 浏览器暂未支持spread，去掉v[3]
+      s += `drop-shadow(${v[0]}px ${v[1]}px ${v[2]}px ${int2rgba(v[4])})`;
+    }
+    else if(k === 'hueRotate') {
       s += `hue-rotate(${v}deg)`;
     }
     else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {

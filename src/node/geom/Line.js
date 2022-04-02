@@ -4,16 +4,11 @@ import painter from '../../util/painter';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import geom from '../../math/geom';
-import unit from '../../style/unit';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
-  BOX_SHADOW,
-  FONT_SIZE,
-  FILTER,
 } } = enums;
 const { isNil } = util;
-const { REM, VW, VH, VMAX, VMIN } = unit;
 
 function reBuild(target, origin, base, isMulti) {
   if(isMulti) {
@@ -164,7 +159,6 @@ class Line extends Geom {
         if(isNaN(v)) {
           v = 1;
         }
-        v = v;
         this.__end = this.__x1.map(() => v);
       }
     }
@@ -380,12 +374,10 @@ class Line extends Geom {
 
   get bbox() {
     let {
-      isMulti, __cacheProps, root,
+      isMulti, __cacheProps,
       __sx3: originX, __sy3: originY,
-      currentStyle: {
+      computedStyle: {
         [STROKE_WIDTH]: strokeWidth,
-        [BOX_SHADOW]: boxShadow,
-        [FILTER]: filter,
       },
     } = this;
     this.buildCache(originX, originY);
@@ -393,30 +385,9 @@ class Line extends Geom {
     let bbox = super.bbox;
     let half = 0;
     strokeWidth.forEach(item => {
-      if(item[1] === REM) {
-        half = Math.max(item[0] * root.computedStyle[FONT_SIZE], half);
-      }
-      else if(item[1] === VW) {
-        half = Math.max(item[0] * root.width * 0.01, half);
-      }
-      else if(item[1] === VH) {
-        half = Math.max(item[0] * root.height * 0.01, half);
-      }
-      else if(item[1] === VMAX) {
-        half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
-      }
-      else if(item[1] === VMIN) {
-        half = Math.max(item[0] * Math.max(root.width, root.height) * 0.01, half);
-      }
-      else {
-        half = Math.max(item[0], half);
-      }
+      half = Math.max(half, item);
     });
-    let [x1s, y1s, x2s, y2s] = this.__spreadBbox(boxShadow, filter);
-    x1s -= half;
-    y1s -= half;
-    x2s += half;
-    y2s += half;
+    half = Math.ceil(half * 0.5) + 1;
     if(!isMulti) {
       x1 = [x1];
       x2 = [x2];
@@ -432,47 +403,47 @@ class Line extends Geom {
       let ca = controlA[i];
       let cb = controlB[i];
       if((isNil(ca) || ca.length < 2) && (isNil(cb) || cb.length < 2)) {
-        bbox[0] = Math.min(bbox[0], xa + x1s);
-        bbox[0] = Math.min(bbox[0], xb + x1s);
-        bbox[1] = Math.min(bbox[1], ya + y1s);
-        bbox[1] = Math.min(bbox[1], yb + y1s);
-        bbox[2] = Math.max(bbox[2], xa + x2s);
-        bbox[2] = Math.max(bbox[2], xb + x2s);
-        bbox[3] = Math.max(bbox[3], ya + y2s);
-        bbox[3] = Math.max(bbox[3], yb + y2s);
+        bbox[0] = Math.min(bbox[0], xa - half);
+        bbox[0] = Math.min(bbox[0], xb - half);
+        bbox[1] = Math.min(bbox[1], ya - half);
+        bbox[1] = Math.min(bbox[1], yb - half);
+        bbox[2] = Math.max(bbox[2], xa + half);
+        bbox[2] = Math.max(bbox[2], xb + half);
+        bbox[3] = Math.max(bbox[3], ya + half);
+        bbox[3] = Math.max(bbox[3], yb + half);
       }
       else if(isNil(ca) || ca.length < 2) {
         let bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-        bbox[0] = Math.min(bbox[0], bezierBox[0] + x1s);
-        bbox[0] = Math.min(bbox[0], bezierBox[2] + x1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[1] + y1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[3] + y1s);
-        bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
-        bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[3] + y2s);
+        bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+        bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - half);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + half);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
       }
       else if(isNil(cb) || cb.length < 2) {
         let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
-        bbox[0] = Math.min(bbox[0], bezierBox[0] + x1s);
-        bbox[0] = Math.min(bbox[0], bezierBox[2] + x1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[1] + y1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[3] + y1s);
-        bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
-        bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[3] + y2s);
+        bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+        bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - half);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + half);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
       }
       else {
         let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
-        bbox[0] = Math.min(bbox[0], bezierBox[0] + x1s);
-        bbox[0] = Math.min(bbox[0], bezierBox[2] + x1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[1] + y1s);
-        bbox[1] = Math.min(bbox[1], bezierBox[3] + y1s);
-        bbox[2] = Math.max(bbox[2], bezierBox[0] + x2s);
-        bbox[2] = Math.max(bbox[2], bezierBox[2] + x2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[1] + y2s);
-        bbox[3] = Math.max(bbox[3], bezierBox[3] + y2s);
+        bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+        bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - half);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + half);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
       }
     });
     return bbox;

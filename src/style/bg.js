@@ -4,7 +4,6 @@ import mx from '../math/matrix';
 import mode from '../refresh/mode';
 import painter from '../util/painter';
 import util from '../util/util';
-import unit from './unit';
 import enums from '../util/enums';
 import image from './image';
 
@@ -20,7 +19,6 @@ const {
 } = enums;
 const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
-const { AUTO, PX, PERCENT, STRING, REM, VW, VH, VMAX, VMIN } = unit;
 
 function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bbrr, bblr,
                    method = 'fill', isInline = false, dx = 0, dy = 0) {
@@ -117,70 +115,9 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
   }
 }
 
-function calBackgroundSize(value, w, h, root) {
-  let res = [];
-  value.forEach((item, i) => {
-    if(item[1] === PX) {
-      res.push(item[0]);
-    }
-    else if(item[1] === PERCENT) {
-      res.push(item[0] * (i ? h : w) * 0.01);
-    }
-    else if(item[1] === REM) {
-      res.push(item[0] * root.computedStyle[FONT_SIZE]);
-    }
-    else if(item[1] === VW) {
-      res.push(item[0] * root.width * 0.01);
-    }
-    else if(item[1] === VH) {
-      res.push(item[0] * root.height * 0.01);
-    }
-    else if(item[1] === VMAX) {
-      res.push(item[0] * Math.max(root.width, root.height) * 0.01);
-    }
-    else if(item[1] === VMIN) {
-      res.push(item[0] * Math.min(root.width, root.height) * 0.01);
-    }
-    else if(item[1] === AUTO) {
-      res.push(-1);
-    }
-    else if(item[1] === STRING) {
-      res.push(item[0] === 'contain' ? -2 : -3);
-    }
-  });
-  return res;
-}
-
-function calBackgroundPosition(position, container, size, root) {
-  if(Array.isArray(position)) {
-    if(position[1] === PX) {
-      return position[0];
-    }
-    else if(position[1] === PERCENT) {
-      return (container - size) * position[0] * 0.01;
-    }
-    else if(position[1] === REM) {
-      return position[0] * root.computedStyle[FONT_SIZE];
-    }
-    else if(position[1] === VW) {
-      return position[0] * root.width * 0.01;
-    }
-    else if(position[1] === VH) {
-      return position[0] * root.height * 0.01;
-    }
-    else if(position[1] === VMAX) {
-      return position[0] * Math.max(root.width, root.height) * 0.01;
-    }
-    else if(position[1] === VMIN) {
-      return position[0] * Math.min(root.width, root.height) * 0.01;
-    }
-  }
-  return 0;
-}
-
 function renderImage(xom, renderMode, ctx, loadBgi,
                      bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-                     currentStyle, i, backgroundSize, backgroundRepeat, __config, isInline,
+                     computedStyle, i, backgroundSize, backgroundRepeat, __config, isInline,
                      dx = 0, dy = 0) {
   let source = loadBgi.source;
   // 无source不绘制，可能错误或加载中
@@ -264,8 +201,16 @@ function renderImage(xom, renderMode, ctx, loadBgi,
     else if(h === -1) {
       h = w * height / width;
     }
-    let bgX = bx1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X][i], bgW, w, xom.root);
-    let bgY = by1 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y][i], bgH, h, xom.root);
+    let bgX = computedStyle[BACKGROUND_POSITION_X][i] || 0;
+    if(/%/.test(bgX)) {
+      bgX = (bgW - w) * parseFloat(bgX) * 0.01;
+    }
+    bgX += bx1;
+    let bgY = computedStyle[BACKGROUND_POSITION_Y][i] || 0;
+    if(/%/.test(bgY)) {
+      bgY = (bgH - h) * parseFloat(bgY) * 0.01;
+    }
+    bgY += by1;
     // 超出尺寸模拟mask截取
     let needMask = bgX < bx1 || bgY < by1 || (bgX + w) > (bx1 + bgW) || (bgY + h) > (by1 + bgH);
     // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
@@ -481,5 +426,4 @@ function renderImage(xom, renderMode, ctx, loadBgi,
 export default {
   renderBgc,
   renderImage,
-  calBackgroundSize,
 };

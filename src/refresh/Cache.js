@@ -5,8 +5,8 @@ import enums from '../util/enums';
 import painter from '../util/painter';
 import debug from '../util/debug';
 import tf from '../style/transform';
+import css from '../style/css';
 import mx from '../math/matrix';
-import blur from '../math/blur';
 
 const {
   STYLE_KEY: {
@@ -14,21 +14,27 @@ const {
     TRANSFORM,
   },
 } = enums;
+const { spreadFilter } = css;
 
-// 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用
-function genSingle(cache, message) {
-  let { size, sx1, sy1, width, height, bbox } = cache;
+// 根据一个共享cache的信息，生成一个独立的离屏canvas，一般是filter,mask用，可能尺寸会发生变化
+function genSingle(cache, message, bboxNew) {
+  let { size, sx1, sy1, bbox } = cache;
+  bboxNew = bboxNew || bbox;
+  let width = bboxNew[2] - bboxNew[0];
+  let height = bboxNew[3] - bboxNew[1];
+  let dx = bboxNew[0] - bbox[0];
+  let dy = bboxNew[1] - bbox[1];
   let offscreen = inject.getCacheCanvas(width, height, null, message);
   offscreen.x = 0;
   offscreen.y = 0;
-  offscreen.bbox = bbox;
+  offscreen.bbox = bboxNew;
   offscreen.size = size;
   offscreen.sx1 = sx1;
   offscreen.sy1 = sy1;
-  offscreen.dx = cache.dx;
-  offscreen.dy = cache.dy;
-  offscreen.dbx = cache.dbx;
-  offscreen.dby = cache.dby;
+  offscreen.dx = -bboxNew[0];
+  offscreen.dy = -bboxNew[1];
+  offscreen.dbx = cache.dbx - dx;
+  offscreen.dby = cache.dby - dy;
   offscreen.width = width;
   offscreen.height = height;
   return offscreen;
@@ -67,7 +73,7 @@ class Cache {
     let bbox = this.bbox;
     this.dx = this.x - bbox[0]; // cache坐标和box原点的差值
     this.dy = this.y - bbox[1];
-    this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
+    this.dbx = sx1 - bbox[0]; // 原始sx1/sy1和box原点的差值
     this.dby = sy1 - bbox[1];
     this.update();
   }
@@ -113,6 +119,8 @@ class Cache {
     let { page, pos } = res;
     this.__init(w, h, bbox, page, pos, x1, y1);
   }
+
+  resetBbox(bbox) {}
 
   // 是否功能可用，生成离屏canvas及尺寸超限
   get enabled() {
@@ -190,34 +198,26 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genFilter(cache, filter) {
-    let d = 0;
-    filter.forEach(item => {
-      let [k, v] = item;
-      if(k === 'blur') {
-        d = blur.outerSize(v);
-      }
-    });
     let { x, y, size, canvas, sx1, sy1, width, height, bbox } = cache;
-    bbox = bbox.slice(0);
-    bbox[0] -= d;
-    bbox[1] -= d;
-    bbox[2] += d;
-    bbox[3] += d;
+    let oldX1 = bbox[0];
+    bbox = spreadFilter(bbox, filter);
+    let d = oldX1 - bbox[0];
     let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
     offscreen.ctx.filter = painter.canvasFilter(filter);
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';
     offscreen.draw();
     offscreen.bbox = bbox;
+    // 单独的离屏，其dx/dy要重算
     offscreen.x = 0;
     offscreen.y = 0;
     offscreen.size = size;
-    offscreen.sx1 = sx1 - d;
-    offscreen.sy1 = sy1 - d;
-    offscreen.dx = cache.dx;
-    offscreen.dy = cache.dy;
-    offscreen.dbx = cache.dbx;
-    offscreen.dby = cache.dby;
+    offscreen.sx1 = sx1;
+    offscreen.sy1 = sy1;
+    offscreen.dx = -bbox[0];
+    offscreen.dy = -bbox[1];
+    offscreen.dbx = cache.dbx + d;
+    offscreen.dby = cache.dby + d;
     offscreen.width = width + d * 2;
     offscreen.height = height + d * 2;
     return offscreen;
@@ -255,11 +255,12 @@ class Cache {
    */
   static genOverflow(target, node) {
     let { bbox } = target;
-    let { sx, sy, outerWidth, outerHeight } = node;
-    let xe = sx + outerWidth;
-    let ye = sy + outerHeight;
-    if(bbox[0] < sx || bbox[1] < sy || bbox[2] > xe || bbox[3] > ye) {
-      let cacheOverflow = genSingle(target, 'overflow');
+    let { __sx1, __sy1, clientWidth, clientHeight } = node;
+    let xe = __sx1 + clientWidth;
+    let ye = __sy1 + clientHeight;
+    if(bbox[0] < __sx1 || bbox[1] < __sy1 || bbox[2] > xe || bbox[3] > ye) {
+      let bboxNew = [__sx1, __sy1, xe, ye];
+      let cacheOverflow = genSingle(target, 'overflow', bboxNew);
       let ctx = cacheOverflow.ctx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 1;
@@ -268,42 +269,11 @@ class Cache {
       ctx.globalCompositeOperation = 'destination-in';
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
-      ctx.rect(sx - bbox[0], sy - bbox[1], outerWidth, outerHeight);
+      ctx.rect(0, 0, clientWidth, clientHeight);
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';
       return cacheOverflow;
-    }
-  }
-
-  /**
-   * bbox变化时直接用老的cache内容重设bbox
-   * @param cache
-   * @param bbox
-   */
-  static updateCache(cache, bbox) {
-    let old = cache.bbox;
-    if(!util.equalArr(bbox, old)) {
-      let dx = old[0] - bbox[0];
-      let dy = old[1] - bbox[1];
-      let newCache = Cache.getInstance(bbox);
-      if(newCache && newCache.enabled) {
-        let { x: ox, y: oy, canvas, width, height } = cache;
-        let { x: nx, y: ny } = newCache;
-        newCache.sx1 = cache.sx1;
-        newCache.sy1 = cache.sy1;
-        newCache.dx = cache.dx + dx;
-        newCache.dy = cache.dy + dy;
-        newCache.dbx = cache.dbx + dx;
-        newCache.dby = cache.dby + dy;
-        newCache.ctx.drawImage(canvas, ox, oy, width, height, dx + nx, dy + ny, width, height);
-        newCache.__available = true;
-        cache.release();
-        return newCache;
-      }
-    }
-    else {
-      return cache;
     }
   }
 

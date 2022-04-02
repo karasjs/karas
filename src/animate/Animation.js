@@ -497,7 +497,7 @@ function calDiff(prev, next, k, target, tagName) {
           hasChange = true;
         }
       }
-      else if(k === 'hue-rotate') {
+      else if(k === 'hueRotate') {
         let nv = isNil(nHash[k]) ? 0 : nHash[k][0];
         let pv = isNil(pHash[k]) ? 0 : pHash[k][0];
         if(pv !== nv) {
@@ -1234,7 +1234,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
         else {
           // 2个关键帧中有1个未声明，需新建样式存入
-          if(k === 'blur' || k === 'hue-rotate' || k === 'grayscale') {
+          if(k === 'blur' || k === 'hueRotate' || k === 'grayscale') {
             let n = v[k].slice(0);
             n[0] *= percent;
             st.push([k, n]);

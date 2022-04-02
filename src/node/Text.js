@@ -33,6 +33,7 @@ const {
     PADDING_RIGHT,
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
+    FILTER,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -50,7 +51,7 @@ const {
   ELLIPSIS,
 } = enums;
 
-const { AUTO, REM, VW, VH, VMAX, VMIN } = unit;
+const { AUTO } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
 
 /**
@@ -578,6 +579,11 @@ class Text extends Node {
         children: [],
       };
     }
+    // >=REPAINT清空bbox
+    if(lv >= level.REPAINT) {
+      this.__bbox = null;
+      this.__filterBbox = null;
+    }
     if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
       return;
@@ -831,27 +837,23 @@ class Text extends Node {
   }
 
   get bbox() {
-    let { __sx1: sx, __sy1: sy, width, height, root, currentStyle: { [TEXT_STROKE_WIDTH]: textStrokeWidth } } = this;
-    let half = 0;
-    if(textStrokeWidth[1] === REM) {
-      half = Math.max(textStrokeWidth[0] * root.computedStyle[FONT_SIZE], half);
-    }
-    else if(textStrokeWidth[1] === VW) {
-      half = Math.max(textStrokeWidth[0] * root.width, half);
-    }
-    else if(textStrokeWidth[1] === VH) {
-      half = Math.max(textStrokeWidth[0] * root.height, half);
-    }
-    else if(textStrokeWidth[1] === VMAX) {
-      half = Math.max(textStrokeWidth[0] * Math.max(root.width, root.height) * 0.01, half);
-    }
-    else if(textStrokeWidth[1] === VMIN) {
-      half = Math.max(textStrokeWidth[0] * Math.min(root.width, root.height) * 0.01, half);
-    }
-    else {
-      half = Math.max(textStrokeWidth[0], half);
-    }
+    let { __sx1: sx, __sy1: sy, width, height,
+      computedStyle: {
+        [TEXT_STROKE_WIDTH]: textStrokeWidth,
+      },
+    } = this;
+    // TODO: 文字描边暂时不清楚最大值是多少，影响不确定，先按描边宽算，因为会出现>>0.5宽的情况
+    let half = textStrokeWidth;
     return [sx - half, sy - half, sx + width + half, sy + height + half];
+  }
+
+  get filterBbox() {
+    if(!this.__filterBbox) {
+      let bbox = this.bbox;
+      let filter = this.computedStyle[FILTER];
+      this.__filterBbox = css.spreadFilter(bbox, filter);
+    }
+    return this.__filterBbox;
   }
 
   get isShadowRoot() {

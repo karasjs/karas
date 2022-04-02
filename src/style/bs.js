@@ -37,7 +37,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
     [x2 + n, y1 - n],
     [x1 - n, y1 - n],
   ];
-  if(color[3] > 0 && (sigma > 0 || spread > 0)) {
+  if(color[3] > 0) {
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       ctx.save();
       ctx.beginPath();

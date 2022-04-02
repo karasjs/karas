@@ -8,6 +8,7 @@ import util from '../util/util';
 import inject from '../util/inject';
 import key from '../animate/key';
 import change from '../refresh/change';
+import blur from '../math/blur';
 
 const { STYLE_KEY, style2Upper, STYLE_KEY: {
   POSITION,
@@ -73,7 +74,7 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_OVER,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
-const { isNil, rgba2int, equalArr } = util;
+const { isNil, rgba2int, equalArr, replaceRgba2Hex } = util;
 const { isGeom, GEOM, GEOM_KEY_SET } = change;
 
 const {
@@ -972,37 +973,77 @@ function normalize(style, reset = []) {
   }
   temp = style.filter;
   if(temp !== undefined) {
-    let match = (temp || '').toString().match(/\b[\w-]+\s*\(\s*[-+]?[\d.]+\s*[pxremvwhdg%]*\s*\)\s*/ig);
     let f = null;
-    if(match) {
-      f = [];
-      match.forEach(item => {
-        let m2 = /([\w-]+)\s*\(\s*([-+]?[\d.]+\s*[pxremvwhdg%]*)\s*\)\s*/i.exec(item);
-        if(m2) {
-          let k = m2[1].toLowerCase(), v = calUnit(m2[2]);
-          if(k === 'blur') {
-            if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
-              return;
+    // 先替换掉rgba为#RGBA格式，然后分割
+    let arr = (replaceRgba2Hex(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
+    if(arr) {
+      arr.forEach(item => {
+        let match = /([\w-]+)\s*\((\s*.+\s*)\)/i.exec(item);
+        if(match) {
+          let k = match[1].toLowerCase(), v = match[2];
+          if(k === 'drop-shadow' || k === 'dropshadow') {
+            let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
+            if(coords) {
+              f = f || [];
+              let res = [];
+              // v,h,blur,spread，其中v和h是必须，其余没有为0
+              for(let i = 1; i <= 4; i++) {
+                let item2 = coords[i];
+                if(item2) {
+                  let v = calUnit(item2);
+                  if([NUMBER, DEG].indexOf(v[1]) > -1) {
+                    v[1] = PX;
+                  }
+                  // x/y可以负，blur和spread不行
+                  if(i > 2 && v[0] < 0) {
+                    v = 0;
+                  }
+                  res.push(v);
+                }
+                else {
+                  res.push([0, 1]);
+                }
+              }
+              let color = /#[a-f\d]{3,8}/i.exec(item);
+              if(color) {
+                res.push(rgba2int(color[0]));
+              }
+              else {
+                res.push([0, 0, 0, 1]);
+              }
+              f.push(['dropShadow', res]);
             }
-            if(v[1] === NUMBER) {
-              v[1] = PX;
-            }
-            f.push([k, v]);
           }
-          else if(k === 'hue-rotate') {
-            if([NUMBER, DEG].indexOf(v[1]) === -1) {
-              return;
+          else {
+            let m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(v);
+            if(m2) {
+              f = f || [];
+              let v = calUnit(m2[0]);
+              if(k === 'blur') {
+                if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
+                  return;
+                }
+                if(v[1] === NUMBER) {
+                  v[1] = PX;
+                }
+                f.push([k, v]);
+              }
+              else if(k === 'hue-rotate' || k === 'huerotate') {
+                if([NUMBER, DEG].indexOf(v[1]) === -1) {
+                  return;
+                }
+                v[1] = DEG;
+                f.push(['hueRotate', v]);
+              }
+              else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
+                if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
+                  return;
+                }
+                v[0] = Math.max(v[0], 0);
+                v[1] = PERCENT;
+                f.push([k, v]);
+              }
             }
-            v[1] = DEG;
-            f.push([k, v]);
-          }
-          else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-            if([NUMBER, PERCENT].indexOf(v[1]) === -1) {
-              return;
-            }
-            v[0] = Math.max(v[0], 0);
-            v[1] = PERCENT;
-            f.push([k, v]);
           }
         }
       });
@@ -1030,27 +1071,40 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
-    if(match) {
-      match.forEach(item => {
-        let boxShadow = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
-        if(boxShadow) {
+    // 先替换掉rgba为#RGBA格式，然后按逗号分割
+    let arr = (replaceRgba2Hex(temp) || '').split(',');
+    if(arr) {
+      arr.forEach(item => {
+        let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
+        if(coords) {
           bs = bs || [];
           let res = [];
-          // v,h,blur,spread,color,inset
-          for(let i = 0; i < 4; i++) {
-            let v = calUnit(boxShadow[i + 1]);
-            if([NUMBER, DEG].indexOf(v[1]) > -1) {
-              v[1] = PX;
+          // v,h,blur,spread，其中v和h是必须，其余没有为0
+          for(let i = 1; i <= 4; i++) {
+            let item2 = coords[i];
+            if(item2) {
+              let v = calUnit(item2);
+              if([NUMBER, DEG].indexOf(v[1]) > -1) {
+                v[1] = PX;
+              }
+              // x/y可以负，blur和spread不行
+              if(i > 2 && v[0] < 0) {
+                v = 0;
+              }
+              res.push(v);
             }
-            // x/y可以负，blur和spread不行
-            if(i > 1 && v[0] < 0) {
-              v = 0;
+            else {
+              res.push([0, 1]);
             }
-            res.push(v);
           }
-          res.push(rgba2int(boxShadow[5]));
-          res.push(boxShadow[6] || 'outset');
+          let color = /#[a-f\d]{3,8}/i.exec(item);
+          if(color) {
+            res.push(rgba2int(color[0]));
+          }
+          else {
+            res.push([0, 0, 0, 1]);
+          }
+          res.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
           bs.push(res);
         }
       });
@@ -1498,6 +1552,69 @@ function cloneStyle(style, keys) {
   return res;
 }
 
+function spreadBoxShadow(bbox, boxShadow) {
+  let [x1, y1, x2, y2] = bbox;
+  if(Array.isArray(boxShadow)) {
+    let xl = 0, yt = 0, xr = 0, yb = 0;
+    boxShadow.forEach(item => {
+      let [x, y, sigma, spread, color, inset] = item;
+      if(inset !== 'inset' && color[3] > 0) {
+        let d = blur.outerSize(sigma);
+        d += spread;
+        xl = Math.min(xl, x - d);
+        yt = Math.min(yt, x - d);
+        xr = Math.max(xr, x + d);
+        yb = Math.max(yb, y + d);
+      }
+    });
+    x1 += xl;
+    y1 += yt;
+    x2 += xr;
+    y2 += yb;
+  }
+  return [x1, y1, x2, y2];
+}
+
+function spreadFilter(bbox, filter) {
+  let [x1, y1, x2, y2] = bbox;
+  // filter对整体有影响，且filter子项可以先后多次重复出现，上面计算完后，依次处理
+  if(Array.isArray(filter)) {
+    filter.forEach(item => {
+      let [k, v] = item;
+      if(k === 'blur' && v > 0) {
+        let d = blur.kernelSize(v);
+        let spread = blur.outerSizeByD(d);
+        if(spread) {
+          x1 -= spread;
+          y1 -= spread;
+          x2 += spread;
+          y2 += spread;
+        }
+      }
+      else if(k === 'dropShadow') {
+        let d = blur.kernelSize(v[2]);
+        let spread = blur.outerSizeByD(d);
+        // x/y/blur，3个一起影响，要考虑正负号，spread一定为非负
+        if(v[0] || v[1] || spread) {
+          if(v[0] <= 0 || v[0] > 0 && v[0] < spread) {
+            x1 += v[0] - spread;
+          }
+          if(v[1] <= 0 || v[1] > 0 && v[1] < spread) {
+            y1 += v[1] - spread;
+          }
+          if(v[0] < 0 && -v[0] < spread || v[0] >= 0) {
+            x2 += v[0] + spread;
+          }
+          if(v[1] < 0 && -v[1] < spread || v[1] >= 0) {
+            y2 += v[1] + spread;
+          }
+        }
+      }
+    });
+  }
+  return [x1, y1, x2, y2];
+}
+
 export default {
   normalize,
   setFontStyle,
@@ -1508,4 +1625,6 @@ export default {
   isRelativeOrAbsolute,
   cloneStyle,
   calNormalLineHeight,
+  spreadBoxShadow,
+  spreadFilter,
 };

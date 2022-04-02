@@ -32232,13 +32232,7 @@
           bbox = _res2[3];
         }
       } else if (k === 'dropShadow') {
-        genDropShadowWebgl(gl, texCache, mockCache, v);
-      } else if (k === 'hueRotate') {
-        var rotation = geom.d2r(v % 360);
-        var cosR = Math.cos(rotation);
-        var sinR = Math.sin(rotation);
-
-        var _res3 = genColorMatrixWebgl(gl, texCache, mockCache, [0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0, 0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0, 0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+        var _res3 = genDropShadowWebgl(gl, texCache, mockCache, v);
 
         if (_res3) {
           var _res4 = _slicedToArray(_res3, 4);
@@ -32248,10 +32242,12 @@
           height = _res4[2];
           bbox = _res4[3];
         }
-      } else if (k === 'saturate' && v !== 100) {
-        var amount = v * 0.01;
+      } else if (k === 'hueRotate') {
+        var rotation = geom.d2r(v % 360);
+        var cosR = Math.cos(rotation);
+        var sinR = Math.sin(rotation);
 
-        var _res5 = genColorMatrixWebgl(gl, texCache, mockCache, [0.213 + 0.787 * amount, 0.715 - 0.715 * amount, 0.072 - 0.072 * amount, 0, 0, 0.213 - 0.213 * amount, 0.715 + 0.285 * amount, 0.072 - 0.072 * amount, 0, 0, 0.213 - 0.213 * amount, 0.715 - 0.715 * amount, 0.072 + 0.928 * amount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+        var _res5 = genColorMatrixWebgl(gl, texCache, mockCache, [0.213 + cosR * 0.787 - sinR * 0.213, 0.715 - cosR * 0.715 - sinR * 0.715, 0.072 - cosR * 0.072 + sinR * 0.928, 0, 0, 0.213 - cosR * 0.213 + sinR * 0.143, 0.715 + cosR * 0.285 + sinR * 0.140, 0.072 - cosR * 0.072 - sinR * 0.283, 0, 0, 0.213 - cosR * 0.213 - sinR * 0.787, 0.715 - cosR * 0.715 + sinR * 0.715, 0.072 + cosR * 0.928 + sinR * 0.072, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
 
         if (_res5) {
           var _res6 = _slicedToArray(_res5, 4);
@@ -32261,10 +32257,10 @@
           height = _res6[2];
           bbox = _res6[3];
         }
-      } else if (k === 'brightness' && v !== 100) {
-        var b = v * 0.01;
+      } else if (k === 'saturate' && v !== 100) {
+        var amount = v * 0.01;
 
-        var _res7 = genColorMatrixWebgl(gl, texCache, mockCache, [b, 0, 0, 0, 0, 0, b, 0, 0, 0, 0, 0, b, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+        var _res7 = genColorMatrixWebgl(gl, texCache, mockCache, [0.213 + 0.787 * amount, 0.715 - 0.715 * amount, 0.072 - 0.072 * amount, 0, 0, 0.213 - 0.213 * amount, 0.715 + 0.285 * amount, 0.072 - 0.072 * amount, 0, 0, 0.213 - 0.213 * amount, 0.715 - 0.715 * amount, 0.072 + 0.928 * amount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
 
         if (_res7) {
           var _res8 = _slicedToArray(_res7, 4);
@@ -32273,6 +32269,19 @@
           width = _res8[1];
           height = _res8[2];
           bbox = _res8[3];
+        }
+      } else if (k === 'brightness' && v !== 100) {
+        var b = v * 0.01;
+
+        var _res9 = genColorMatrixWebgl(gl, texCache, mockCache, [b, 0, 0, 0, 0, 0, b, 0, 0, 0, 0, 0, b, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+
+        if (_res9) {
+          var _res10 = _slicedToArray(_res9, 4);
+
+          mockCache = _res10[0];
+          width = _res10[1];
+          height = _res10[2];
+          bbox = _res10[3];
         }
       } else if (k === 'grayscale' && v > 0) {
         v = Math.min(v, 100);
@@ -32284,22 +32293,7 @@
           oneMinusAmount = 1;
         }
 
-        var _res9 = genColorMatrixWebgl(gl, texCache, mockCache, [0.2126 + 0.7874 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0, 0.2126 - 0.2126 * oneMinusAmount, 0.7152 + 0.2848 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0, 0.2126 - 0.2126 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 + 0.9278 * oneMinusAmount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
-
-        if (_res9) {
-          var _res10 = _slicedToArray(_res9, 4);
-
-          mockCache = _res10[0];
-          width = _res10[1];
-          height = _res10[2];
-          bbox = _res10[3];
-        }
-      } else if (k === 'contrast' && v !== 100) {
-        var _amount = v * 0.01;
-
-        var o = -0.5 * _amount + 0.5;
-
-        var _res11 = genColorMatrixWebgl(gl, texCache, mockCache, [_amount, 0, 0, 0, o, 0, _amount, 0, 0, o, 0, 0, _amount, 0, o, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+        var _res11 = genColorMatrixWebgl(gl, texCache, mockCache, [0.2126 + 0.7874 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0, 0.2126 - 0.2126 * oneMinusAmount, 0.7152 + 0.2848 * oneMinusAmount, 0.0722 - 0.0722 * oneMinusAmount, 0, 0, 0.2126 - 0.2126 * oneMinusAmount, 0.7152 - 0.7152 * oneMinusAmount, 0.0722 + 0.9278 * oneMinusAmount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
 
         if (_res11) {
           var _res12 = _slicedToArray(_res11, 4);
@@ -32308,6 +32302,21 @@
           width = _res12[1];
           height = _res12[2];
           bbox = _res12[3];
+        }
+      } else if (k === 'contrast' && v !== 100) {
+        var _amount = v * 0.01;
+
+        var o = -0.5 * _amount + 0.5;
+
+        var _res13 = genColorMatrixWebgl(gl, texCache, mockCache, [_amount, 0, 0, 0, o, 0, _amount, 0, 0, o, 0, 0, _amount, 0, o, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+
+        if (_res13) {
+          var _res14 = _slicedToArray(_res13, 4);
+
+          mockCache = _res14[0];
+          width = _res14[1];
+          height = _res14[2];
+          bbox = _res14[3];
         }
       } else if (k === 'sepia' && v > 0) {
         v = Math.min(v, 100);
@@ -32320,24 +32329,7 @@
           _oneMinusAmount = 1;
         }
 
-        var _res13 = genColorMatrixWebgl(gl, texCache, mockCache, [0.393 + 0.607 * _oneMinusAmount, 0.769 - 0.769 * _oneMinusAmount, 0.189 - 0.189 * _oneMinusAmount, 0, 0, 0.349 - 0.349 * _oneMinusAmount, 0.686 + 0.314 * _oneMinusAmount, 0.168 - 0.168 * _oneMinusAmount, 0, 0, 0.272 - 0.272 * _oneMinusAmount, 0.534 - 0.534 * _oneMinusAmount, 0.131 + 0.869 * _oneMinusAmount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
-
-        if (_res13) {
-          var _res14 = _slicedToArray(_res13, 4);
-
-          mockCache = _res14[0];
-          width = _res14[1];
-          height = _res14[2];
-          bbox = _res14[3];
-        }
-      } else if (k === 'invert' && v > 0) {
-        v = Math.min(v, 100);
-
-        var _o = v * 0.01;
-
-        var _amount2 = 1 - 2 * _o;
-
-        var _res15 = genColorMatrixWebgl(gl, texCache, mockCache, [_amount2, 0, 0, 0, _o, 0, _amount2, 0, 0, _o, 0, 0, _amount2, 0, _o, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+        var _res15 = genColorMatrixWebgl(gl, texCache, mockCache, [0.393 + 0.607 * _oneMinusAmount, 0.769 - 0.769 * _oneMinusAmount, 0.189 - 0.189 * _oneMinusAmount, 0, 0, 0.349 - 0.349 * _oneMinusAmount, 0.686 + 0.314 * _oneMinusAmount, 0.168 - 0.168 * _oneMinusAmount, 0, 0, 0.272 - 0.272 * _oneMinusAmount, 0.534 - 0.534 * _oneMinusAmount, 0.131 + 0.869 * _oneMinusAmount, 0, 0, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
 
         if (_res15) {
           var _res16 = _slicedToArray(_res15, 4);
@@ -32346,6 +32338,23 @@
           width = _res16[1];
           height = _res16[2];
           bbox = _res16[3];
+        }
+      } else if (k === 'invert' && v > 0) {
+        v = Math.min(v, 100);
+
+        var _o = v * 0.01;
+
+        var _amount2 = 1 - 2 * _o;
+
+        var _res17 = genColorMatrixWebgl(gl, texCache, mockCache, [_amount2, 0, 0, 0, _o, 0, _amount2, 0, 0, _o, 0, 0, _amount2, 0, _o, 0, 0, 0, 1, 0], width, height, sx1, sy1, bbox);
+
+        if (_res17) {
+          var _res18 = _slicedToArray(_res17, 4);
+
+          mockCache = _res18[0];
+          width = _res18[1];
+          height = _res18[2];
+          bbox = _res18[3];
         }
       }
     }); // 切换回主程序
@@ -32727,6 +32736,7 @@
     }
 
     var spread = blur.outerSizeByD(d);
+    return [];
   }
   /**
    * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，
@@ -33404,14 +33414,14 @@
           var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, hasMbm, width, height),
               _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
               limit = _genTotalWebgl2[0],
-              _res17 = _genTotalWebgl2[1];
+              _res19 = _genTotalWebgl2[1];
 
-          __cacheTotal = _res17;
+          __cacheTotal = _res19;
           needGen = true;
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
-            __config[NODE_CACHE_TOTAL$1] = _res17;
+            __config[NODE_CACHE_TOTAL$1] = _res19;
           }
         } // 即使超限，也有total结果
 

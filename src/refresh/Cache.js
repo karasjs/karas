@@ -31,8 +31,8 @@ function genSingle(cache, message, bboxNew) {
   offscreen.size = size;
   offscreen.sx1 = sx1;
   offscreen.sy1 = sy1;
-  offscreen.dx = cache.dx - dx;
-  offscreen.dy = cache.dy - dy;
+  offscreen.dx = -bboxNew[0];
+  offscreen.dy = -bboxNew[1];
   offscreen.dbx = cache.dbx - dx;
   offscreen.dby = cache.dby - dy;
   offscreen.width = width;
@@ -208,14 +208,14 @@ class Cache {
     offscreen.ctx.filter = 'none';
     offscreen.draw();
     offscreen.bbox = bbox;
-    // 单独的离屏
+    // 单独的离屏，其dx/dy要重算
     offscreen.x = 0;
     offscreen.y = 0;
     offscreen.size = size;
     offscreen.sx1 = sx1;
     offscreen.sy1 = sy1;
-    offscreen.dx = cache.dx + d;
-    offscreen.dy = cache.dy + d;
+    offscreen.dx = -bbox[0];
+    offscreen.dy = -bbox[1];
     offscreen.dbx = cache.dbx + d;
     offscreen.dby = cache.dby + d;
     offscreen.width = width + d * 2;

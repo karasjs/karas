@@ -13294,8 +13294,8 @@
     offscreen.size = size;
     offscreen.sx1 = sx1;
     offscreen.sy1 = sy1;
-    offscreen.dx = cache.dx - dx;
-    offscreen.dy = cache.dy - dy;
+    offscreen.dx = -bboxNew[0];
+    offscreen.dy = -bboxNew[1];
     offscreen.dbx = cache.dbx - dx;
     offscreen.dby = cache.dby - dy;
     offscreen.width = width;
@@ -13525,15 +13525,15 @@
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
         offscreen.draw();
-        offscreen.bbox = bbox; // 单独的离屏
+        offscreen.bbox = bbox; // 单独的离屏，其dx/dy要重算
 
         offscreen.x = 0;
         offscreen.y = 0;
         offscreen.size = size;
         offscreen.sx1 = sx1;
         offscreen.sy1 = sy1;
-        offscreen.dx = cache.dx + d;
-        offscreen.dy = cache.dy + d;
+        offscreen.dx = -bbox[0];
+        offscreen.dy = -bbox[1];
         offscreen.dbx = cache.dbx + d;
         offscreen.dby = cache.dby + d;
         offscreen.width = width + d * 2;
@@ -31792,7 +31792,7 @@
                   _node3.__calCache(renderMode, ctx, _config2[NODE_DOM_PARENT$5], _config2[NODE_CACHE_STYLE$1], _config2[NODE_CURRENT_STYLE$5], _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$4], _computedStyle3[BORDER_RIGHT_WIDTH$7], _computedStyle3[BORDER_BOTTOM_WIDTH$4], _computedStyle3[BORDER_LEFT_WIDTH$8], _computedStyle3[PADDING_TOP$3], _computedStyle3[PADDING_RIGHT$7], _computedStyle3[PADDING_BOTTOM$3], _computedStyle3[PADDING_LEFT$8], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
                 }
 
-                var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dbx, dby);
+                var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
 
                 _config2[NODE_REFRESH_LV$1] = REPAINT$2;
 

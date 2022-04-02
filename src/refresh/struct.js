@@ -235,6 +235,12 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         }
         // 可能Xom没有内容
         if(bbox) {
+          bbox = bbox.slice(0);
+          // 相对于根节点偏移
+          bbox[0] -= sx1;
+          bbox[1] -= sy1;
+          bbox[2] -= sx1;
+          bbox[3] -= sy1;
           let matrix = matrixHash[parentIndex];
           // 父级matrix初始化E为null，自身不为E时才运算，可以加速
           if(transform && !isE(transform)) {

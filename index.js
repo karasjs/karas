@@ -31054,6 +31054,12 @@
 
 
           if (bbox) {
+            bbox = bbox.slice(0); // 相对于根节点偏移
+
+            bbox[0] -= sx1;
+            bbox[1] -= sy1;
+            bbox[2] -= sx1;
+            bbox[3] -= sy1;
             var matrix = matrixHash[parentIndex]; // 父级matrix初始化E为null，自身不为E时才运算，可以加速
 
             if (transform && !isE$3(transform)) {

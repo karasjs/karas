@@ -13551,7 +13551,9 @@
         var oldX1 = bbox[0];
         bbox = spreadFilter$1(bbox, filter);
         var d = oldX1 - bbox[0];
-        var offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
+        var widthNew = bbox[2] - bbox[0];
+        var heightNew = bbox[3] - bbox[1];
+        var offscreen = inject.getCacheCanvas(widthNew, heightNew, null, 'filter');
         offscreen.ctx.filter = painter.canvasFilter(filter);
         offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
         offscreen.ctx.filter = 'none';
@@ -13567,8 +13569,8 @@
         offscreen.dy = -bbox[1];
         offscreen.dbx = cache.dbx + d;
         offscreen.dby = cache.dby + d;
-        offscreen.width = width + d * 2;
-        offscreen.height = height + d * 2;
+        offscreen.width = widthNew;
+        offscreen.height = heightNew;
         return offscreen;
       }
     }, {

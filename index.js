@@ -30821,13 +30821,19 @@
       this.bbox = bbox;
       this.available = true;
       this.__page = new MockPage(texture, width, height);
-      this.dx = -bbox[0];
-      this.dy = -bbox[1];
-      this.dbx = sx1 - bbox[0];
-      this.dby = sy1 - bbox[1];
+      this.reOffset();
     }
 
     _createClass(MockCache, [{
+      key: "reOffset",
+      value: function reOffset() {
+        var bbox = this.bbox;
+        this.dx = -bbox[0];
+        this.dy = -bbox[1];
+        this.dbx = this.sx1 - bbox[0];
+        this.dby = this.sy1 - bbox[1];
+      }
+    }, {
       key: "release",
       value: function release() {
         this.available = false;
@@ -32773,17 +32779,9 @@
 
 
   function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
-    // console.log(bbox,v);
-    // let d = blur.kernelSize(v[2]);
-    // let spread = blur.outerSizeByD(d);
-    // console.log(d,spread);
-    // let bboxNew = bbox.slice(0);
-    // bboxNew[0] -= spread;
-    // bboxNew[1] -= spread;
-    // bboxNew[2] += spread;
-    // bboxNew[3] += spread;
-    // console.log(bboxNew);
-    // 先根据x/y/color生成单色阴影
+    // 先清空之前所有绘制遗留
+    texCache.refresh(gl, width * 0.5, height * 0.5); // 先根据x/y/color生成单色阴影
+
     var _v = _slicedToArray(v, 5),
         x = _v[0],
         y = _v[1],
@@ -32808,13 +32806,69 @@
     }
 
     gl.useProgram(gl.programDs);
-    texture = webgl.drawDropShadow(gl, gl.programDs, frameBuffer, texture, cache.page.texture, i, j, width, height, color); // 切回
+    texture = webgl.drawDropShadow(gl, gl.programDs, frameBuffer, texture, cache.page.texture, i, j, width, height, color); // 部分清除
 
-    gl.useProgram(gl.program);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.deleteFramebuffer(frameBuffer);
-    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-    texCache.releaseLockChannel(i, mockCache.page); // return [mockCache, width, height, bbox];
+    var bboxOld = bbox;
+    var mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0)); // 复用blur先生成模糊的阴影
+
+    var res = genBlurWebgl(gl, texCache, mockCache, blur, width, height, sx1, sy1, bbox);
+    texCache.releaseLockChannel(j); // 不管后续成功如何，都先释放阴影的lock
+
+    gl.useProgram(gl.program);
+
+    if (res) {
+      gl.deleteTexture(texture); // 有模糊的阴影后删除之前无模糊的临时阴影
+
+      var _res19 = _slicedToArray(res, 4);
+
+      mockCache = _res19[0];
+      width = _res19[1];
+      height = _res19[2];
+      bbox = _res19[3];
+
+      // 根据dropShadow的x/y偏移重置模糊阴影的相关数据
+      if (x || y) {
+        bbox[0] += x;
+        bbox[1] += y;
+        bbox[2] += x;
+        bbox[3] += y; // 把模糊阴影当做一张普通的图片
+
+        mockCache.sx1 = bbox[0];
+        mockCache.sy1 = bbox[1];
+        mockCache.reOffset();
+      }
+
+      var bboxMerge = bboxOld.slice(0);
+      mergeBbox(bboxMerge, bbox, 0, 0); // 合并原本cache和blur的纹理为最终对象，i是最初的cache，j是
+
+      width = bboxMerge[2] - bboxMerge[0];
+      height = bboxMerge[3] - bboxMerge[1];
+      var cx = width * 0.5,
+          cy = height * 0.5;
+      var dx = -bboxMerge[0],
+          dy = -bboxMerge[1];
+
+      var _genFrameBufferWithTe17 = genFrameBufferWithTexture(gl, texCache, width, height),
+          _genFrameBufferWithTe18 = _slicedToArray(_genFrameBufferWithTe17, 3),
+          k = _genFrameBufferWithTe18[0],
+          _frameBuffer = _genFrameBufferWithTe18[1],
+          texture2 = _genFrameBufferWithTe18[2]; // 以merge的bbox的左上角为原点，每个cache要换算一下
+
+
+      texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
+      texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, dx, dy, false);
+      texCache.refresh(gl, cx, cy, false); // 回收
+
+      texCache.releaseLockChannel(i);
+      texCache.releaseLockChannel(k);
+      gl.deleteFramebuffer(_frameBuffer); // 同total一样生成一个mockCache，数据和本身一样
+
+      var mockCache2 = new MockCache(gl, texture2, sx1, sy1, width, height, bboxMerge);
+      texCache.releaseLockChannel(k, mockCache.page);
+      return [mockCache2, width, height, bboxMerge];
+    }
   }
   /**
    * 生成blendMode混合fbo纹理结果，原本是所有元素向一个fbo记A进行绘制，当出现mbm时，进入到这里，
@@ -32871,11 +32925,11 @@
     var program = webgl.initShaders(gl, vertexMbm, frag);
     gl.useProgram(program); // 生成新的fbo，将混合结果绘入
 
-    var _genFrameBufferWithTe17 = genFrameBufferWithTexture(gl, texCache, W, H),
-        _genFrameBufferWithTe18 = _slicedToArray(_genFrameBufferWithTe17, 3),
-        n = _genFrameBufferWithTe18[0],
-        frameBuffer = _genFrameBufferWithTe18[1],
-        texture = _genFrameBufferWithTe18[2];
+    var _genFrameBufferWithTe19 = genFrameBufferWithTexture(gl, texCache, W, H),
+        _genFrameBufferWithTe20 = _slicedToArray(_genFrameBufferWithTe19, 3),
+        n = _genFrameBufferWithTe20[0],
+        frameBuffer = _genFrameBufferWithTe20[1],
+        texture = _genFrameBufferWithTe20[2];
 
     webgl.drawMbm(gl, program, i, j, W, H); // 切换回主程序并销毁这个临时program
 
@@ -33492,14 +33546,14 @@
           var _genTotalWebgl = genTotalWebgl(gl, texCache, node, __config, i, total || 0, __structs, __cache, limitCache, hasMbm, width, height),
               _genTotalWebgl2 = _slicedToArray(_genTotalWebgl, 2),
               limit = _genTotalWebgl2[0],
-              _res19 = _genTotalWebgl2[1];
+              _res20 = _genTotalWebgl2[1];
 
-          __cacheTotal = _res19;
+          __cacheTotal = _res20;
           needGen = true;
           limitCache = limit; // 返回的limit包含各种情况超限，一旦超限，只能生成临时cacheTotal不能保存
 
           if (!limitCache) {
-            __config[NODE_CACHE_TOTAL$1] = _res19;
+            __config[NODE_CACHE_TOTAL$1] = _res20;
           }
         } // 即使超限，也有total结果
 
@@ -33565,13 +33619,13 @@
     var n, frameBuffer, texture;
 
     if (hasMbm) {
-      var _genFrameBufferWithTe19 = genFrameBufferWithTexture(gl, texCache, width, height);
+      var _genFrameBufferWithTe21 = genFrameBufferWithTexture(gl, texCache, width, height);
 
-      var _genFrameBufferWithTe20 = _slicedToArray(_genFrameBufferWithTe19, 3);
+      var _genFrameBufferWithTe22 = _slicedToArray(_genFrameBufferWithTe21, 3);
 
-      n = _genFrameBufferWithTe20[0];
-      frameBuffer = _genFrameBufferWithTe20[1];
-      texture = _genFrameBufferWithTe20[2];
+      n = _genFrameBufferWithTe22[0];
+      frameBuffer = _genFrameBufferWithTe22[1];
+      texture = _genFrameBufferWithTe22[2];
     }
 
     for (var _i10 = 0, _len9 = __structs.length; _i10 < _len9; _i10++) {
@@ -33641,11 +33695,11 @@
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe21 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe22 = _slicedToArray(_genFrameBufferWithTe21, 3),
-                n2 = _genFrameBufferWithTe22[0],
-                frameBuffer2 = _genFrameBufferWithTe22[1],
-                texture2 = _genFrameBufferWithTe22[2];
+            var _genFrameBufferWithTe23 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe24 = _slicedToArray(_genFrameBufferWithTe23, 3),
+                n2 = _genFrameBufferWithTe24[0],
+                frameBuffer2 = _genFrameBufferWithTe24[1],
+                texture2 = _genFrameBufferWithTe24[2];
 
             texCache.addTexAndDrawWhenLimit(gl, target, _opacity4, _matrixEvent2, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
@@ -33672,11 +33726,11 @@
           if (hasMbm && isValidMbm$2(_mixBlendMode2)) {
             texCache.refresh(gl, cx, cy, true);
 
-            var _genFrameBufferWithTe23 = genFrameBufferWithTexture(gl, texCache, width, height),
-                _genFrameBufferWithTe24 = _slicedToArray(_genFrameBufferWithTe23, 3),
-                _n2 = _genFrameBufferWithTe24[0],
-                _frameBuffer = _genFrameBufferWithTe24[1],
-                _texture3 = _genFrameBufferWithTe24[2];
+            var _genFrameBufferWithTe25 = genFrameBufferWithTexture(gl, texCache, width, height),
+                _genFrameBufferWithTe26 = _slicedToArray(_genFrameBufferWithTe25, 3),
+                _n2 = _genFrameBufferWithTe26[0],
+                _frameBuffer2 = _genFrameBufferWithTe26[1],
+                _texture3 = _genFrameBufferWithTe26[2];
 
             texCache.addTexAndDrawWhenLimit(gl, _target6, _opacity4, _matrixEvent2, cx, cy, 0, 0, true);
             texCache.refresh(gl, cx, cy, true); // 合成结果作为当前frameBuffer，以及纹理和单元，等于替代了当前画布作为绘制对象
@@ -33688,7 +33742,7 @@
             n = _genMbmWebgl6[0];
             frameBuffer = _genMbmWebgl6[1];
             texture = _genMbmWebgl6[2];
-            gl.deleteFramebuffer(_frameBuffer);
+            gl.deleteFramebuffer(_frameBuffer2);
             gl.deleteTexture(_texture3);
           } else {
             texCache.addTexAndDrawWhenLimit(gl, _target6, _opacity4, _matrixEvent2, cx, cy, 0, 0, true);

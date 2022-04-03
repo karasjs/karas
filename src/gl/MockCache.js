@@ -16,10 +16,15 @@ class MockCache {
     this.bbox = bbox;
     this.available = true;
     this.__page = new MockPage(texture, width, height);
+    this.reOffset();
+  }
+
+  reOffset() {
+    let bbox = this.bbox;
     this.dx = -bbox[0];
     this.dy = -bbox[1];
-    this.dbx = sx1 - bbox[0];
-    this.dby = sy1 - bbox[1];
+    this.dbx = this.sx1 - bbox[0];
+    this.dby = this.sy1 - bbox[1];
   }
 
   release() {

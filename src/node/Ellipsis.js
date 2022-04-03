@@ -20,7 +20,7 @@ const { CANVAS, SVG, WEBGL } = mode;
 
 const CHAR = '…';
 
-class Ellipsis extends Node{
+class Ellipsis extends Node {
   constructor(x, y, width, parent) {
     super();
     this.__x = this.__sx1 = x;

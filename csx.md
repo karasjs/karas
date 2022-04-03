@@ -291,6 +291,8 @@
   * grayscale
   * contrast
   * sepia
+  * invert
+  * drop-shadow
 * pointerEvents
   * inherit 默认
   * none

@@ -444,6 +444,112 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2, root) {
   return [cx, cy, r, xl, yl, tx, ty, d];
 }
 
+function parseGradient(s) {
+  let gradient = reg.gradient.exec(s);
+  if(gradient) {
+    let o = {
+      k: gradient[1],
+    };
+    if(o.k === 'linear') {
+      let deg = /([-+]?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      if(deg) {
+        o.d = getLinearDeg(deg[0].toLowerCase());
+      }
+      // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
+      else {
+        let points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)/.exec(gradient[2]);
+        if(points) {
+          o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+        }
+        else {
+          o.d = 180;
+        }
+      }
+    }
+    else if(o.k === 'radial') {
+      o.s = gradient[2].indexOf('circle') > -1 ? 'circle' : 'ellipse';
+      let size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
+      if(size) {
+        o.z = size[0].toLowerCase();
+      }
+      // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
+      else {
+        let points = /([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s+([-+]?[\d.]+))?(?:\s+([-+]?[\d.]+))?(?:\s+([-+]?[\d.]+))?/.exec(gradient[2]);
+        if(points) {
+          o.z = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+          let i5 = !isNil(points[5]), i6 = !isNil(points[6]), i7 = !isNil(points[7]);
+          // 重载，567是偏移x/y和ratio，都可省略即不偏移和半径1，只有5是ratio，只有56是x/y
+          if(i5 && i6 && i7) {
+            o.z.push(parseFloat(points[5]));
+            o.z.push(parseFloat(points[6]));
+            o.z.push(parseFloat(points[7]));
+          }
+          else if(i5 && i6) {
+            o.z.push(parseFloat(points[5]));
+            o.z.push(parseFloat(points[6]));
+            o.z.push(1);
+          }
+          else if(i5) {
+            o.z.push(o.z[0]);
+            o.z.push(o.z[1]);
+            o.z.push(parseFloat(points[5]));
+          }
+          else {
+            o.z.push(o.z[0]);
+            o.z.push(o.z[1])
+            o.z.push(1);
+          }
+        }
+        else {
+          o.z = 'farthest-corner';
+        }
+      }
+      let position = /at\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      if(position) {
+        let x = getRadialPosition(position[1]);
+        let y = position[2] ? getRadialPosition(position[2]) : x;
+        o.p = [x, y];
+      }
+      else {
+        o.p = [[50, PERCENT], [50, PERCENT]];
+      }
+    }
+    else if(o.k === 'conic') {
+      let deg = /([-+]?[\d.]+deg)/i.exec(gradient[2]);
+      if(deg) {
+        o.d = parseFloat(deg[0]) % 360;
+      }
+      else {
+        o.d = 0;
+      }
+      let position = /at\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center))(?:\s+((?:[-+]?[\d.]+[pxremvwhina%]*)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      if(position) {
+        let x = getRadialPosition(position[1]);
+        let y = position[2] ? getRadialPosition(position[2]) : x;
+        o.p = [x, y];
+      }
+      else {
+        o.p = [[50, PERCENT], [50, PERCENT]];
+      }
+    }
+    let v = gradient[2].match(/(([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?)|(transparent)/ig) || [];
+    o.v = v.map(item => {
+      let color = /(?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\))|(?:transparent)/i.exec(item);
+      let arr = [rgba2int(color[0])];
+      let percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
+      if(percent) {
+        let v = calUnit(percent[0]);
+        if([NUMBER, DEG].indexOf(v[1]) > -1) {
+          v[1] = PX;
+        }
+        arr[1] = v;
+      }
+      return arr;
+    });
+    return o;
+  }
+}
+
 function getLinear(v, d, ox, oy, cx, cy, w, h, root, dx = 0, dy = 0) {
   ox += dx;
   oy += dy;
@@ -608,6 +714,7 @@ function renderConic(xom, renderMode, ctx, res, x, y, w, h, btlr, btrr, bbrr, bb
 }
 
 export default {
+  parseGradient,
   getLinear,
   getRadial,
   getConic,

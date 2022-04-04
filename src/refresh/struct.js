@@ -1675,16 +1675,8 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
  * @returns {*[]}
  */
 function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbox) {
-  // console.log(bbox,v);
-  // let d = blur.kernelSize(v[2]);
-  // let spread = blur.outerSizeByD(d);
-  // console.log(d,spread);
-  // let bboxNew = bbox.slice(0);
-  // bboxNew[0] -= spread;
-  // bboxNew[1] -= spread;
-  // bboxNew[2] += spread;
-  // bboxNew[3] += spread;
-  // console.log(bboxNew);
+  // 先清空之前所有绘制遗留
+  texCache.refresh(gl, width * 0.5, height * 0.5);
   // 先根据x/y/color生成单色阴影
   let [x, y, blur, , color] = v;
   let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, width, height);
@@ -1700,13 +1692,50 @@ function genDropShadowWebgl(gl, texCache, cache, v, width, height, sx1, sy1, bbo
   }
   gl.useProgram(gl.programDs);
   texture = webgl.drawDropShadow(gl, gl.programDs, frameBuffer, texture, cache.page.texture, i, j, width, height, color);
-  // 切回
-  gl.useProgram(gl.program);
+  // 部分清除
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteFramebuffer(frameBuffer);
+  let bboxOld = bbox;
   let mockCache = new MockCache(gl, texture, sx1, sy1, width, height, bbox.slice(0));
-  texCache.releaseLockChannel(i, mockCache.page);
-  // return [mockCache, width, height, bbox];
+  // 复用blur先生成模糊的阴影
+  let res = genBlurWebgl(gl, texCache, mockCache, blur, width, height, sx1, sy1, bbox);
+  texCache.releaseLockChannel(j); // 不管后续成功如何，都先释放阴影的lock
+  gl.useProgram(gl.program);
+  if(res) {
+    gl.deleteTexture(texture); // 有模糊的阴影后删除之前无模糊的临时阴影
+    [mockCache, width, height, bbox] = res;
+    // 根据dropShadow的x/y偏移重置模糊阴影的相关数据
+    if(x || y) {
+      bbox[0] += x;
+      bbox[1] += y;
+      bbox[2] += x;
+      bbox[3] += y;
+      // 把模糊阴影当做一张普通的图片
+      mockCache.sx1 = bbox[0];
+      mockCache.sy1 = bbox[1];
+      mockCache.reOffset();
+    }
+    let bboxMerge = bboxOld.slice(0);
+    mergeBbox(bboxMerge, bbox, 0, 0);
+    // 合并原本cache和blur的纹理为最终对象，i是最初的cache，j是
+    width = bboxMerge[2] - bboxMerge[0];
+    height = bboxMerge[3] - bboxMerge[1];
+    let cx = width * 0.5, cy = height * 0.5;
+    let dx = -bboxMerge[0], dy = -bboxMerge[1];
+    let [k, frameBuffer, texture2] = genFrameBufferWithTexture(gl, texCache, width, height);
+    // 以merge的bbox的左上角为原点，每个cache要换算一下
+    texCache.addTexAndDrawWhenLimit(gl, cache, 1, null, cx, cy, dx, dy, false);
+    texCache.addTexAndDrawWhenLimit(gl, mockCache, 1, null, cx, cy, dx, dy, false);
+    texCache.refresh(gl, cx, cy, false);
+    // 回收
+    texCache.releaseLockChannel(i);
+    texCache.releaseLockChannel(k);
+    gl.deleteFramebuffer(frameBuffer);
+    // 同total一样生成一个mockCache，数据和本身一样
+    let mockCache2 = new MockCache(gl, texture2, sx1, sy1, width, height, bboxMerge);
+    texCache.releaseLockChannel(k, mockCache.page);
+    return [mockCache2, width, height, bboxMerge];
+  }
 }
 
 /**

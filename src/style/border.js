@@ -3,7 +3,6 @@ import mode from '../refresh/mode';
 import painter from '../util/painter';
 import enums from '../util/enums';
 import unit from './unit';
-import Ellipsis from '../node/Ellipsis';
 
 const { H } = geom;
 const { PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
@@ -2829,7 +2828,8 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
   if(contentBoxList.length) {
     first = contentBoxList[0];
     last = contentBoxList[contentBoxList.length - 1];
-    if(last instanceof Ellipsis) {
+    // 不用instanceof防止循环依赖
+    if(last.isEllipsis) {
       last = contentBoxList[contentBoxList.length - 2];
     }
   }

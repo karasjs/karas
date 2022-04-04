@@ -202,7 +202,9 @@ class Cache {
     let oldX1 = bbox[0];
     bbox = spreadFilter(bbox, filter);
     let d = oldX1 - bbox[0];
-    let offscreen = inject.getCacheCanvas(width + d * 2, height + d * 2, null, 'filter');
+    let widthNew = bbox[2] - bbox[0];
+    let heightNew = bbox[3] - bbox[1];
+    let offscreen = inject.getCacheCanvas(widthNew, heightNew, null, 'filter');
     offscreen.ctx.filter = painter.canvasFilter(filter);
     offscreen.ctx.drawImage(canvas, x, y, width, height, d, d, width, height);
     offscreen.ctx.filter = 'none';
@@ -218,8 +220,8 @@ class Cache {
     offscreen.dy = -bbox[1];
     offscreen.dbx = cache.dbx + d;
     offscreen.dby = cache.dby + d;
-    offscreen.width = width + d * 2;
-    offscreen.height = height + d * 2;
+    offscreen.width = widthNew;
+    offscreen.height = heightNew;
     return offscreen;
   }
 

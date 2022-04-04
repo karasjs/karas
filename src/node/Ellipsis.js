@@ -30,6 +30,7 @@ class Ellipsis extends Node{
     parent.__ellipsis = this;
     this.__parentLineBox = null;
     this.__baseline = css.getBaseline(parent.computedStyle);
+    this.isEllipsis = true;
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {

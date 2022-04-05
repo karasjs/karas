@@ -1837,10 +1837,6 @@ class Animation extends Event {
   }
 
   __before(diff) {
-    // 偶现变化时间为0，直接忽略
-    if(diff === 0) {
-      return;
-    }
     let __config = this.__config;
     __config[I_TIME_STAMP] = frame.__now;
     let target = __config[I_TARGET];

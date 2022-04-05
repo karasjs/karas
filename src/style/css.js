@@ -1020,12 +1020,13 @@ function normalize(style, reset = []) {
               f = f || [];
               let v = calUnit(m2[0]);
               if(k === 'blur') {
-                if(v[0] < 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
+                if([DEG, PERCENT].indexOf(v[1]) > -1) {
                   return;
                 }
                 if(v[1] === NUMBER) {
                   v[1] = PX;
                 }
+                v[0] = Math.max(v[0], 0);
                 f.push([k, v]);
               }
               else if(k === 'hue-rotate' || k === 'huerotate') {

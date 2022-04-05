@@ -9117,7 +9117,7 @@
                 var _v8 = calUnit$1(m2[0]);
 
                 if (k === 'blur') {
-                  if (_v8[0] < 0 || [DEG$1, PERCENT$2].indexOf(_v8[1]) > -1) {
+                  if ([DEG$1, PERCENT$2].indexOf(_v8[1]) > -1) {
                     return;
                   }
 
@@ -9125,6 +9125,7 @@
                     _v8[1] = PX$2;
                   }
 
+                  _v8[0] = Math.max(_v8[0], 0);
                   f.push([k, _v8]);
                 } else if (k === 'hue-rotate' || k === 'huerotate') {
                   if ([NUMBER$1, DEG$1].indexOf(_v8[1]) === -1) {
@@ -18655,11 +18656,6 @@
     }, {
       key: "__before",
       value: function __before(diff) {
-        // 偶现变化时间为0，直接忽略
-        if (diff === 0) {
-          return;
-        }
-
         var __config = this.__config;
         __config[I_TIME_STAMP] = frame.__now;
         var target = __config[I_TARGET];

@@ -465,65 +465,50 @@ function calDiff(prev, next, k, target, tagName) {
     res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
   }
   else if(k === FILTER) {
-    // filter很特殊，里面有多个滤镜，忽视顺序按hash计算，为空视为默认值，如blur默认0，brightness默认1
-    let pHash = {}, nHash = {}, keyHash = {};
-    if(p) {
-      p.forEach(item => {
-        keyHash[item[0]] = true;
-        pHash[item[0]] = item[1];
-      });
-    }
-    if(n) {
-      n.forEach(item => {
-        keyHash[item[0]] = true;
-        nHash[item[0]] = item[1];
-      })
-    }
-    let v = {}, hasChange;
-    // 只有blur支持px/rem/vw/vh/vmax/vmin，其余都是特殊固定单位
-    Object.keys(keyHash).forEach(k => {
-      if(k === 'blur') {
-        if(!pHash[k]) {
-          v[k] = nHash[k].slice(0);
-          hasChange = true;
+    // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
+    let len = Math.max(p.length, n.length);
+    let v = [];
+    for(let i = 0; i < len; i++) {
+      let pv = p[i], nv = n[i];
+      // 空或key不等都无变化
+      if(isNil(pv) || isNil(nv) || pv[0] !== nv[0]) {
+        v.push(null);
+      }
+      else {
+        let k = pv[0];
+        if(k === 'blur') {
+          if(pv[1][1] === nv[1][1]) {
+            v.push(nv[1][0] - pv[1][0]);
+          }
+          else {
+            let v2 = calByUnit(pv[1], nv[1], 0, target.root);
+            v.push(v2);
+          }
         }
-        else if(!nHash[k]) {
-          v[k] = [-pHash[k][0], pHash[k][1]];
-          hasChange = true;
+        else if(k === 'hueRotate' || k === 'saturate' || k === 'brightness' || k === 'contrast'
+          || k === 'sepia' || k === 'invert' || k === 'grayscale') {
+          v.push(nv[1][0] - pv[1][0]);
         }
-        else {
-          let v2 = calByUnit(pHash[k], nHash[k], 0, target.root);
-          v[k] = [v2, pHash[k][1]];
-          hasChange = true;
+        else if(k === 'dropShadow') {
+          let v2 = [];
+          for(let i = 0; i < 4; i++) {
+            let a = pv[1][i], b = nv[1][i];
+            if(a[1] === b[1]) {
+              v2.push(b[0] - a[0]);
+            }
+            else {
+              v2.push(calByUnit(a, b, i === 1 ? taraget.clientHeight: target.clientWidth, target.root));
+            }
+          }
+          v2.push([
+            nv[1][4][0] - pv[1][4][0],
+            nv[1][4][1] - pv[1][4][1],
+            nv[1][4][2] - pv[1][4][2],
+            nv[1][4][3] - pv[1][4][3],
+          ])
+          v.push(v2);
         }
       }
-      else if(k === 'hueRotate') {
-        let nv = isNil(nHash[k]) ? 0 : nHash[k][0];
-        let pv = isNil(pHash[k]) ? 0 : pHash[k][0];
-        if(pv !== nv) {
-          v[k] = [nv - pv, PERCENT];
-          hasChange = true;
-        }
-      }
-      else if(k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-        let nv = isNil(nHash[k]) ? 100 : nHash[k][0];
-        let pv = isNil(pHash[k]) ? 100 : pHash[k][0];
-        if(pv !== nv) {
-          v[k] = [nv - pv, PERCENT];
-          hasChange = true;
-        }
-      }
-      else if(k === 'grayscale') {
-        let nv = isNil(nHash[k]) ? 0 : nHash[k][0];
-        let pv = isNil(pHash[k]) ? 0 : pHash[k][0];
-        if(pv !== nv) {
-          v[k] = [nv - pv, PERCENT];
-          hasChange = true;
-        }
-      }
-    });
-    if(!hasChange) {
-      return;
     }
     res[1] = v;
   }
@@ -1223,30 +1208,28 @@ function calIntermediateStyle(frame, keys, percent, target) {
       if(!st) {
         st = style[k] = [];
       }
-      // 将已有的样式按key存入引用来操作
-      let hash = {};
-      st.forEach(item => {
-        hash[item[0]] = item[1];
-      });
-      Object.keys(v).forEach(k => {
-        if(hash.hasOwnProperty(k)) {
-          hash[k][0] += v[k][0] * percent;
-        }
-        else {
-          // 2个关键帧中有1个未声明，需新建样式存入
-          if(k === 'blur' || k === 'hueRotate' || k === 'grayscale') {
-            let n = v[k].slice(0);
-            n[0] *= percent;
-            st.push([k, n]);
+      for(let i = 0, len = v.length; i < len; i++) {
+        let item = v[i];
+        if(item) {
+          let k2 = st[i][0], v2 = st[i][1];
+          // 只有dropShadow是多个数组，存放x/y/blur/spread/color
+          if(k2 === 'dropShadow') {
+            v2[0][0] += item[0] * percent;
+            v2[1][0] += item[1] * percent;
+            v2[2][0] += item[2] * percent;
+            v2[3][0] += item[3] * percent;
+            let c1 = v2[4], c2 = item[4];
+            c1[0] += c2[0] * percent;
+            c1[1] += c2[1] * percent;
+            c1[2] += c2[2] * percent;
+            c1[3] += c2[3] * percent;
           }
-          // 默认值是1而非0
-          else if(k === 'saturate' || k === 'brightness' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-            let n = v[k].slice(0);
-            n[0] = 100 + n[0] * percent;
-            st.push([k, n]);
+          // 其它都是带单位单值
+          else {
+            v2[0] += item * percent;
           }
         }
-      });
+      }
     }
     else if(RADIUS_HASH.hasOwnProperty(k)) {
       for(let i = 0; i < 2; i++) {

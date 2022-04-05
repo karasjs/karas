@@ -8,7 +8,6 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import bg from '../style/bg';
-import blur from '../math/blur';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -305,27 +304,27 @@ class Xom extends Node {
     });
   }
 
-  __calSize(mp, w, includePercent) {
-    if(mp[1] === PX) {
-      return mp[0];
+  __calSize(v, w, includePercent) {
+    if(v[1] === PX) {
+      return v[0];
     }
-    else if(mp[1] === PERCENT && includePercent) {
-      return mp[0] * w * 0.01;
+    else if(v[1] === PERCENT && includePercent) {
+      return v[0] * w * 0.01;
     }
-    else if(mp[1] === REM) {
-      return mp[0] * this.root.computedStyle[FONT_SIZE];
+    else if(v[1] === REM) {
+      return v[0] * this.root.computedStyle[FONT_SIZE];
     }
-    else if(mp[1] === VW) {
-      return mp[0] * this.root.width * 0.01;
+    else if(v[1] === VW) {
+      return v[0] * this.root.width * 0.01;
     }
-    else if(mp[1] === VH) {
-      return mp[0] * this.root.height * 0.01;
+    else if(v[1] === VH) {
+      return v[0] * this.root.height * 0.01;
     }
-    else if(mp[1] === VMAX) {
-      return mp[0] * Math.max(this.root.width, this.root.height) * 0.01;
+    else if(v[1] === VMAX) {
+      return v[0] * Math.max(this.root.width, this.root.height) * 0.01;
     }
-    else if(mp[1] === VMIN) {
-      return mp[0] * Math.min(this.root.width, this.root.height) * 0.01;
+    else if(v[1] === VMIN) {
+      return v[0] * Math.min(this.root.width, this.root.height) * 0.01;
     }
     return 0;
   }

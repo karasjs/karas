@@ -1469,12 +1469,29 @@ function cloneStyle(style, keys) {
         }
       });
     }
-    else if(k === TRANSFORM || k === FILTER) {
+    else if(k === TRANSFORM) {
       if(v) {
         let n = v.slice(0);
         for(let i = 0, len = n.length; i < len; i++) {
           n[i] = n[i].slice(0);
           n[i][1] = n[i][1].slice(0);
+        }
+        res[k] = n;
+      }
+    }
+    else if(k === FILTER) {
+      if(v) {
+        let n = v.slice(0);
+        for(let i = 0, len = n.length; i < len; i++) {
+          n[i] = n[i].slice(0);
+          let k = n[i][0];
+          n[i][1] = n[i][1].slice(0);
+          if(k === 'dropShadow') {
+            let temp = n[i][1];
+            temp.forEach((item, j) => {
+              temp[j] = temp[j].slice(0);
+            });
+          }
         }
         res[k] = n;
       }

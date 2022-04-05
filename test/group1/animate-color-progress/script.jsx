@@ -19,11 +19,14 @@ let n = 0;
 let last;
 let res = true;
 animation.on(karas.Event.FRAME, () => {
-  let now = t.getComputedStyle().color;
-  if(now === last) {
-    res = false;
+  if(++n > 1) {
+    n = 0;
+    let now = t.getComputedStyle().color;
+    if(now === last) {
+      res = false;
+    }
+    last = now;
   }
-  last = now;
 });
 animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');

@@ -466,10 +466,10 @@ function calDiff(prev, next, k, target, tagName) {
   }
   else if(k === FILTER) {
     // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
-    let len = Math.max(p.length, n.length);
+    let len = Math.max(p ? p.length : 0, n ? n.length : 0);
     let v = [];
     for(let i = 0; i < len; i++) {
-      let pv = p[i], nv = n[i];
+      let pv = p ? p[i] : null, nv = n ? n[i] : null;
       // 空或key不等都无变化
       if(isNil(pv) || isNil(nv) || pv[0] !== nv[0]) {
         v.push(null);
@@ -1837,6 +1837,10 @@ class Animation extends Event {
   }
 
   __before(diff) {
+    // 偶现变化时间为0，直接忽略
+    if(diff === 0) {
+      return;
+    }
     let __config = this.__config;
     __config[I_TIME_STAMP] = frame.__now;
     let target = __config[I_TARGET];

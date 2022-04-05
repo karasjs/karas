@@ -9117,7 +9117,7 @@
                 var _v8 = calUnit$1(m2[0]);
 
                 if (k === 'blur') {
-                  if (_v8[0] <= 0 || [DEG$1, PERCENT$2].indexOf(_v8[1]) > -1) {
+                  if (_v8[0] < 0 || [DEG$1, PERCENT$2].indexOf(_v8[1]) > -1) {
                     return;
                   }
 
@@ -17187,12 +17187,12 @@
       res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
     } else if (k === FILTER$3) {
       // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
-      var len = Math.max(p.length, n.length);
+      var len = Math.max(p ? p.length : 0, n ? n.length : 0);
       var v = [];
 
       for (var i = 0; i < len; i++) {
-        var pv = p[i],
-            nv = n[i]; // 空或key不等都无变化
+        var pv = p ? p[i] : null,
+            nv = n ? n[i] : null; // 空或key不等都无变化
 
         if (isNil$5(pv) || isNil$5(nv) || pv[0] !== nv[0]) {
           v.push(null);
@@ -18655,6 +18655,11 @@
     }, {
       key: "__before",
       value: function __before(diff) {
+        // 偶现变化时间为0，直接忽略
+        if (diff === 0) {
+          return;
+        }
+
         var __config = this.__config;
         __config[I_TIME_STAMP] = frame.__now;
         var target = __config[I_TARGET];

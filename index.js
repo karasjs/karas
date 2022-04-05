@@ -18678,7 +18678,6 @@
             currentTime = _calDiffTime2[0],
             d = _calDiffTime2[1];
 
-        console.log(currentTime, d, diff);
         diff = d; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
         if (!__config[I_FIRST_ENTER] && fps < 60) {
@@ -18700,8 +18699,10 @@
 
             var _current = _currentFrame[FRAME_STYLE];
             genBeforeRefresh(_current, __config[I_KEYS], __config, root, target);
-          } // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
+          }
 
+          __config[I_BEGIN] = false; // 默认是true，delay置false防触发
+          // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
 
           __config[I_OUT_BEGIN_DELAY] = true;
           __config[I_IS_DELAY] = true;
@@ -18712,7 +18713,6 @@
         currentTime -= delay;
 
         if (__config[I_OUT_BEGIN_DELAY]) {
-          console.warn('a', currentTime, __config[I_OUT_BEGIN_DELAY]);
           __config[I_OUT_BEGIN_DELAY] = false;
           __config[I_BEGIN] = true;
         } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮

@@ -1873,6 +1873,7 @@ class Animation extends Event {
         let current = currentFrame[FRAME_STYLE];
         genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
       }
+      __config[I_BEGIN] = false; // 默认是true，delay置false防触发
       // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
       __config[I_OUT_BEGIN_DELAY] = true;
       __config[I_IS_DELAY] = true;

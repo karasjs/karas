@@ -18295,7 +18295,7 @@
       var config = _this.__config = [false, // assigning
       false, // inFps
       false, // isDelay
-      false, // begin
+      true, // begin
       false, // end
       false, // finished
       false, // nextBegin
@@ -18678,6 +18678,7 @@
             currentTime = _calDiffTime2[0],
             d = _calDiffTime2[1];
 
+        console.log(currentTime, d, diff);
         diff = d; // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
         if (!__config[I_FIRST_ENTER] && fps < 60) {
@@ -18710,7 +18711,8 @@
 
         currentTime -= delay;
 
-        if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
+        if (__config[I_OUT_BEGIN_DELAY]) {
+          console.warn('a', currentTime, __config[I_OUT_BEGIN_DELAY]);
           __config[I_OUT_BEGIN_DELAY] = false;
           __config[I_BEGIN] = true;
         } // 超过duration非尾轮需处理回到开头，触发新一轮动画事件，这里可能时间间隔非常大直接跳过几轮

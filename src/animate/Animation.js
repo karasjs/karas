@@ -1530,7 +1530,7 @@ class Animation extends Event {
       false, // assigning
       false, // inFps
       false, // isDelay
-      false, // begin
+      true, // begin
       false, // end
       false, // finished
       false, // nextBegin
@@ -1880,7 +1880,7 @@ class Animation extends Event {
     }
     // 减去delay，计算在哪一帧
     currentTime -= delay;
-    if(currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
+    if(__config[I_OUT_BEGIN_DELAY]) {
       __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;
     }

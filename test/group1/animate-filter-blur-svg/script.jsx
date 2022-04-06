@@ -7,6 +7,7 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
+    filter: 'blur(0)',
   },
   {
     filter: 'blur(5)',

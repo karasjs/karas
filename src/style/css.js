@@ -1020,12 +1020,13 @@ function normalize(style, reset = []) {
               f = f || [];
               let v = calUnit(m2[0]);
               if(k === 'blur') {
-                if(v[0] <= 0 || [DEG, PERCENT].indexOf(v[1]) > -1) {
+                if([DEG, PERCENT].indexOf(v[1]) > -1) {
                   return;
                 }
                 if(v[1] === NUMBER) {
                   v[1] = PX;
                 }
+                v[0] = Math.max(v[0], 0);
                 f.push([k, v]);
               }
               else if(k === 'hue-rotate' || k === 'huerotate') {
@@ -1469,12 +1470,29 @@ function cloneStyle(style, keys) {
         }
       });
     }
-    else if(k === TRANSFORM || k === FILTER) {
+    else if(k === TRANSFORM) {
       if(v) {
         let n = v.slice(0);
         for(let i = 0, len = n.length; i < len; i++) {
           n[i] = n[i].slice(0);
           n[i][1] = n[i][1].slice(0);
+        }
+        res[k] = n;
+      }
+    }
+    else if(k === FILTER) {
+      if(v) {
+        let n = v.slice(0);
+        for(let i = 0, len = n.length; i < len; i++) {
+          n[i] = n[i].slice(0);
+          let k = n[i][0];
+          n[i][1] = n[i][1].slice(0);
+          if(k === 'dropShadow') {
+            let temp = n[i][1];
+            temp.forEach((item, j) => {
+              temp[j] = temp[j].slice(0);
+            });
+          }
         }
         res[k] = n;
       }

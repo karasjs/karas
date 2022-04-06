@@ -23,7 +23,7 @@ animation.on('frame', () => {
   if(n === 1) {
     input.value = t.getComputedStyle().filter;
   }
-  else if(n === 2) {
+  else if(n === 3) {
     input.value += '/' + (t.getComputedStyle().filter[0][1] < 100);
   }
 });

@@ -125,6 +125,7 @@ const {
     TEXT_ALIGN,
     LETTER_SPACING,
     WHITE_SPACE,
+    WRITING_MODE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -335,10 +336,10 @@ class Xom extends Node {
     }
     this.__hasComputeReflow = true;
 
-    let { currentStyle, computedStyle, domParent: parent, root } = this;
+    let { currentStyle, computedStyle, domParent: parent } = this;
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.computedStyle;
-    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT].forEach(k => {
+    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {
@@ -403,6 +404,10 @@ class Xom extends Node {
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
     });
+    // writingMode特殊判断inline
+    if(computedStyle[WRITING_MODE] !== parentComputedStyle[WRITING_MODE] && computedStyle[DISPLAY] === 'inline') {
+      computedStyle[DISPLAY] = 'inlineBlock';
+    }
     // 匿名块对象
     if(computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
       if(['block', 'flex'].indexOf(computedStyle[DISPLAY]) === -1) {
@@ -538,10 +543,10 @@ class Xom extends Node {
     this.__isIbFull = false;
     let {
       [DISPLAY]: display,
+      [POSITION]: position,
     } = computedStyle;
     let {
       [WIDTH]: width,
-      [POSITION]: position,
     } = currentStyle;
     this.__layoutData = {
       x: data.x,

@@ -331,23 +331,24 @@
     TEXT_STROKE_WIDTH: 84,
     TEXT_STROKE_COLOR: 85,
     TEXT_STROKE_OVER: 86,
+    WRITING_MODE: 87,
     // GEOM
-    FILL: 87,
-    STROKE: 88,
-    STROKE_WIDTH: 89,
-    STROKE_DASHARRAY: 90,
-    STROKE_DASHARRAY_STR: 91,
-    STROKE_LINECAP: 92,
-    STROKE_LINEJOIN: 93,
-    STROKE_MITERLIMIT: 94,
-    FILL_RULE: 95,
+    FILL: 88,
+    STROKE: 89,
+    STROKE_WIDTH: 90,
+    STROKE_DASHARRAY: 91,
+    STROKE_DASHARRAY_STR: 92,
+    STROKE_LINECAP: 93,
+    STROKE_LINEJOIN: 94,
+    STROKE_MITERLIMIT: 95,
+    FILL_RULE: 96,
     // 无此样式，仅cache或特殊情况需要
-    MATRIX: 96,
-    BORDER_TOP: 97,
-    BORDER_RIGHT: 98,
-    BORDER_BOTTOM: 99,
-    BORDER_LEFT: 100,
-    TRANSLATE_PATH: 101
+    MATRIX: 97,
+    BORDER_TOP: 98,
+    BORDER_RIGHT: 99,
+    BORDER_BOTTOM: 100,
+    BORDER_LEFT: 101,
+    TRANSLATE_PATH: 102
   };
   var STYLE2LOWER_MAP = {};
 
@@ -844,11 +845,14 @@
   o$1.info['宋体'] = o$1.info.simsun;
   o$1.info['pingfang'] = o$1.info['pingfang sc'];
 
-  var reg = {
-    position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
-    // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
-    gradient: /\b(\w+)-?gradient\((.+)\)/i,
-    img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
+  // 类型为引用防止json仿造
+  var TYPE_VD = Symbol('Dom');
+  var TYPE_GM = Symbol('Geom');
+  var TYPE_CP = Symbol('Component');
+  var $$type = {
+    TYPE_VD: TYPE_VD,
+    TYPE_GM: TYPE_GM,
+    TYPE_CP: TYPE_CP
   };
 
   // 生成4*4单位矩阵
@@ -1059,6 +1063,1959 @@
     m2m6: m2m6
   };
 
+  var toString = {}.toString;
+
+  function isType(type) {
+    return function (obj) {
+      return toString.call(obj) === '[object ' + type + ']';
+    };
+  }
+
+  var isObject = isType('Object');
+  var isString = isType('String');
+  var isFunction = isType('Function');
+  var isNumber = isType('Number');
+  var isBoolean = isType('Boolean');
+  var isDate = isType('Date');
+  var hasOwn = {}.hasOwnProperty;
+  var fnToString = hasOwn.toString;
+  var ObjectFunctionString = fnToString.call(Object);
+
+  function isNil(v) {
+    return v === undefined || v === null;
+  }
+
+  function _joinSourceArray(arr) {
+    var res = '';
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        res += _joinSourceArray(item);
+      } else {
+        res += stringify(item);
+      }
+    }
+
+    return res;
+  }
+
+  function stringify(s) {
+    if (isNil(s)) {
+      return '';
+    }
+
+    return s.toString();
+  }
+
+  function encodeHtml(s, prop) {
+    if (prop) {
+      return s.replace(/"/g, '&quot;');
+    }
+
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
+  } // 根元素专用
+
+
+  function joinVirtualDom(vd) {
+    var s = '<defs>';
+    vd.defs.forEach(function (item) {
+      s += joinDef(item);
+    });
+    s += '</defs><g>';
+    vd.bb.forEach(function (item) {
+      s += joinVd(item);
+    });
+    s += '</g><g';
+
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
+    }
+
+    s += '>';
+    (vd.children || []).forEach(function (item) {
+      if (item.isMask) {
+        return;
+      }
+
+      s += joinVd(item);
+    });
+    s += '</g>';
+    return s;
+  } // 普通元素
+
+
+  function joinVd(vd) {
+    if (vd.type === 'item' || vd.type === 'img') {
+      var s = '';
+      (vd.props || []).forEach(function (item) {
+        s += ' ' + item[0] + '="' + item[1] + '"';
+      });
+
+      if (vd.tagName === 'text') {
+        return '<text' + s + '>' + vd.content + '</text>';
+      }
+
+      return '<' + vd.tagName + s + '/>';
+    } else if (vd.type === 'text') {
+      var _s = ""; // text有许多lineBox
+
+      (vd.children || []).forEach(function (item) {
+        _s += joinVd(item);
+      });
+      return '<g>' + _s + '</g>';
+    } else if (vd.type === 'dom' || vd.type === 'geom') {
+      var _s2 = '<g>';
+      vd.bb.forEach(function (item) {
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g><g';
+
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
+      }
+
+      _s2 += '>';
+      (vd.children || []).forEach(function (item) {
+        if (item.isMask) {
+          return;
+        }
+
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g>';
+      var opacity = vd.opacity,
+          transform = vd.transform,
+          visibility = vd.visibility,
+          mask = vd.mask,
+          overflow = vd.overflow,
+          filter = vd.filter,
+          mixBlendMode = vd.mixBlendMode;
+      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
+    }
+  }
+
+  function joinDef(def) {
+    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
+
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
+      s += ' gradientUnits="userSpaceOnUse"';
+    }
+
+    (def.props || []).forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '>';
+    (def.children || []).forEach(function (item) {
+      s += joinItem(item);
+    });
+    s += '</' + def.tagName + '>';
+    return s;
+  }
+
+  function joinItem(item) {
+    var s = '<' + item.tagName;
+    (item.props || []).forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '></' + item.tagName + '>';
+    return s;
+  }
+
+  function rgba2int(color) {
+    if (Array.isArray(color)) {
+      return color;
+    }
+
+    var res = [];
+
+    if (!color || color === 'transparent') {
+      res = [0, 0, 0, 0];
+    } else if (color.charAt(0) === '#') {
+      color = color.slice(1);
+
+      if (color.length === 3) {
+        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
+        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
+        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+        res[3] = 1;
+      } else if (color.length === 6) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4), 16));
+        res[3] = 1;
+      } else if (color.length === 8) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4, 6), 16));
+        res.push(parseInt(color.slice(6), 16) / 255);
+      } else {
+        res[0] = res[1] = res[2] = 0;
+        res[3] = 1;
+      }
+    } else {
+      var c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+
+      if (c) {
+        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
+
+        if (!isNil(c[4])) {
+          res[3] = parseFloat(c[4]);
+        } else {
+          res[3] = 1;
+        }
+      } else {
+        res = [0, 0, 0, 0];
+      }
+    }
+
+    return res;
+  }
+
+  function int2rgba(color) {
+    if (Array.isArray(color)) {
+      if (color.length === 4) {
+        color = color.map(function (c, i) {
+          return i === 3 ? c : Math.floor(Math.max(0, c));
+        });
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        color = color.map(function (c) {
+          return Math.floor(c);
+        });
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return color || 'rgba(0,0,0,0)';
+  }
+
+  function int2invert(color) {
+    if (Array.isArray(color)) {
+      color = color.slice(0);
+      color[0] = 255 - color[0];
+      color[1] = 255 - color[1];
+      color[2] = 255 - color[2];
+
+      if (color.length === 4) {
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return 'rgba(0,0,0,0)';
+  }
+
+  function arr2hash(arr) {
+    var hash = {};
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        hash[item[0]] = item[1];
+      } else {
+        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+          var k = list[j];
+          hash[k] = item[k];
+        }
+      }
+    }
+
+    return hash;
+  }
+
+  function hash2arr(hash) {
+    if (Array.isArray(hash)) {
+      return hash;
+    }
+
+    var arr = [];
+
+    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+      var k = list[i];
+      arr.push([k, hash[k]]);
+    }
+
+    return arr;
+  }
+
+  function clone(obj) {
+    if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
+
+
+    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
+      return obj;
+    }
+
+    if (util.isDate(obj)) {
+      return new Date(obj);
+    }
+
+    if (!isPlainObject(obj) && !Array.isArray(obj)) {
+      return obj;
+    }
+
+    var n = Array.isArray(obj) ? [] : {};
+    Object.keys(obj).forEach(function (i) {
+      n[i] = clone(obj[i]);
+    });
+    return n;
+  }
+  /**
+   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equalArr(a, b) {
+    if (!a || !b) {
+      return a === b;
+    }
+
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      } else if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+  /**
+   * 深度对比对象
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equal(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (isObject(a) && isObject(b)) {
+      var hash = {};
+
+      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+        var k = arr[i];
+
+        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+          return false;
+        }
+
+        hash[k] = true;
+      } // a没有b有则false
+
+
+      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
+        var _k = _arr[_i];
+
+        if (!hash.hasOwnProperty(_k)) {
+          return false;
+        }
+      }
+    } else if (isDate(a) && isDate(b)) {
+      return a.getTime() === b.getTime();
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+        if (!equal(a[_i2], b[_i2])) {
+          return false;
+        }
+      }
+    } else {
+      return a === b;
+    }
+
+    return true;
+  }
+
+  function extend(target, source, keys) {
+    if (source === null || _typeof(source) !== 'object') {
+      return target;
+    }
+
+    if (!keys) {
+      keys = Object.keys(source);
+    }
+
+    var i = 0;
+    var len = keys.length;
+
+    while (i < len) {
+      var k = keys[i];
+      target[k] = source[k];
+      i++;
+    }
+
+    return target;
+  }
+
+  function joinArr(arr, split) {
+    var s = arr.length ? arr[0] : '';
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+      s += split + arr[i];
+    }
+
+    return s;
+  }
+
+  function extendAnimate(ovd, nvd) {
+    var list = nvd.__animationList = ovd.animationList.splice(0);
+    list.forEach(function (item) {
+      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
+
+
+      if (item.assigning || item.finished && item.__stayEnd()) {
+        item.assignCurrentStyle();
+      }
+    }); // 帧动画继承
+
+    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
+  }
+
+  function transformBbox(bbox, matrix) {
+    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+    if (matrix && !mx.isE(matrix)) {
+      var _bbox = bbox,
+          _bbox2 = _slicedToArray(_bbox, 4),
+          x1 = _bbox2[0],
+          y1 = _bbox2[1],
+          x2 = _bbox2[2],
+          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
+
+
+      if (dx) {
+        x1 -= dx;
+        x2 += dx;
+      }
+
+      if (dy) {
+        y1 -= dy;
+        y2 += dy;
+      }
+
+      var list = [x2, y1, x1, y2, x2, y2];
+      var w;
+
+      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
+
+      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
+
+      x1 = _mx$calPoint2[0];
+      y1 = _mx$calPoint2[1];
+      w = _mx$calPoint2[3];
+
+      if (w && w !== 1) {
+        x1 /= w;
+        y1 /= w;
+      }
+
+      var xa = x1,
+          ya = y1,
+          xb = x1,
+          yb = y1;
+
+      for (var i = 0; i < 6; i += 2) {
+        var x = list[i],
+            y = list[i + 1];
+
+        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
+
+        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
+
+        x = _mx$calPoint4[0];
+        y = _mx$calPoint4[1];
+        w = _mx$calPoint4[3];
+
+        if (w && w !== 1) {
+          x /= w;
+          y /= w;
+        }
+
+        xa = Math.min(xa, x);
+        xb = Math.max(xb, x);
+        ya = Math.min(ya, y);
+        yb = Math.max(yb, y);
+      }
+
+      bbox = [xa, ya, xb, yb];
+    } else if (dx || dy) {
+      bbox = bbox.slice(0);
+      bbox[0] -= dx;
+      bbox[1] -= dy;
+      bbox[2] += dx;
+      bbox[3] += dy;
+    }
+
+    return bbox;
+  }
+
+  function isPlainObject(obj) {
+    if (!obj || toString.call(obj) !== '[object Object]') {
+      return false;
+    }
+
+    var proto = Object.getPrototypeOf(obj);
+
+    if (!proto) {
+      return true;
+    }
+
+    var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
+    return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
+  }
+
+  function assignMatrix(t, v) {
+    t[0] = v[0];
+    t[1] = v[1];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
+    t[6] = v[6];
+    t[7] = v[7];
+    t[8] = v[8];
+    t[9] = v[9];
+    t[10] = v[10];
+    t[11] = v[11];
+    t[12] = v[12];
+    t[13] = v[13];
+    t[14] = v[14];
+    t[15] = v[15];
+    return t;
+  }
+
+  function prefixHex(s) {
+    if (s.length === 1) {
+      return '0' + s;
+    }
+
+    return s;
+  }
+
+  function replaceRgba2Hex(s) {
+    return (s || '').replace(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/ig, function ($0, $1, $2, $3, $4) {
+      var res = '#' + prefixHex(parseInt($1).toString(16)) + prefixHex(parseInt($2).toString(16)) + prefixHex(parseInt($3).toString(16));
+
+      if ($4) {
+        res += prefixHex(Math.floor(parseFloat($4) * 255).toString(16));
+      }
+
+      return res;
+    });
+  }
+
+  var util = {
+    isObject: isObject,
+    isString: isString,
+    isFunction: isFunction,
+    isNumber: isNumber,
+    isBoolean: isBoolean,
+    isDate: isDate,
+    isNil: isNil,
+    isPrimitive: function isPrimitive(v) {
+      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+    },
+    // css中常用undefined/null表示auto本身
+    isAuto: function isAuto(v) {
+      return isNil(v) || v === 'auto';
+    },
+    isPlainObject: isPlainObject,
+    stringify: stringify,
+    joinSourceArray: function joinSourceArray(arr) {
+      return _joinSourceArray(arr);
+    },
+    encodeHtml: encodeHtml,
+    joinVirtualDom: joinVirtualDom,
+    joinVd: joinVd,
+    joinDef: joinDef,
+    rgba2int: rgba2int,
+    int2rgba: int2rgba,
+    int2invert: int2invert,
+    arr2hash: arr2hash,
+    hash2arr: hash2arr,
+    clone: clone,
+    equalArr: equalArr,
+    equal: equal,
+    extend: extend,
+    joinArr: joinArr,
+    extendAnimate: extendAnimate,
+    transformBbox: transformBbox,
+    assignMatrix: assignMatrix,
+    prefixHex: prefixHex,
+    replaceRgba2Hex: replaceRgba2Hex
+  };
+
+  var debug = {
+    flag: false
+  };
+
+  var ca = {
+    alpha: true,
+    antialias: true,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: true // depth: true,
+    // stencil: true,
+
+  };
+
+  var calPoint$1 = mx.calPoint;
+  /**
+   * 初始化 shader
+   * @param gl GL context
+   * @param vshader vertex shader (string)
+   * @param fshader fragment shader (string)
+   * @return program, if the program object was created and successfully made current
+   */
+
+  function initShaders(gl, vshader, fshader) {
+    var program = createProgram(gl, vshader, fshader);
+
+    if (!program) {
+      throw new Error('Failed to create program');
+    } // 要开启透明度，用以绘制透明的图形
+
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    return program;
+  }
+  /**
+   * Create the linked program object
+   * @param gl GL context
+   * @param vshader a vertex shader program (string)
+   * @param fshader a fragment shader program (string)
+   * @return created program object, or null if the creation has failed
+   */
+
+
+  function createProgram(gl, vshader, fshader) {
+    // Create shader object
+    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+
+    if (!vertexShader || !fragmentShader) {
+      return null;
+    } // Create a program object
+
+
+    var program = gl.createProgram();
+
+    if (!program) {
+      return null;
+    }
+
+    program.vertexShader = vertexShader;
+    program.fragmentShader = fragmentShader; // Attach the shader objects
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader); // Link the program object
+
+    gl.linkProgram(program); // Check the result of linking
+
+    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+
+    if (!linked) {
+      var error = gl.getProgramInfoLog(program);
+      gl.deleteProgram(program);
+      gl.deleteShader(fragmentShader);
+      gl.deleteShader(vertexShader);
+      throw new Error('Failed to link program: ' + error);
+    }
+
+    return program;
+  }
+  /**
+   * Create a shader object
+   * @param gl GL context
+   * @param type the type of the shader object to be created
+   * @param source shader program (string)
+   * @return created shader object, or null if the creation has failed.
+   */
+
+
+  function loadShader(gl, type, source) {
+    // Create shader object
+    var shader = gl.createShader(type);
+
+    if (shader == null) {
+      throw new Error('unable to create shader');
+    } // Set the shader program
+
+
+    gl.shaderSource(shader, source); // Compile the shader
+
+    gl.compileShader(shader); // Check the result of compilation
+
+    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+
+    if (!compiled) {
+      var error = gl.getShaderInfoLog(shader);
+      gl.deleteShader(shader);
+      throw new Error('Failed to compile shader: ' + error);
+    }
+
+    return shader;
+  }
+
+  function convertCoords2Gl(_ref, cx, cy, revertY) {
+    var _ref2 = _slicedToArray(_ref, 4),
+        x = _ref2[0],
+        y = _ref2[1],
+        z = _ref2[2],
+        w = _ref2[3];
+
+    if (z === undefined) {
+      z = 0;
+    }
+
+    if (w === undefined) {
+      w = 1;
+    }
+
+    if (w && w !== 1) {
+      x /= w;
+      y /= w;
+      z /= w;
+    }
+
+    if (x === cx) {
+      x = 0;
+    } else {
+      x = (x - cx) / cx;
+    }
+
+    if (y === cy) {
+      y = 0;
+    } else {
+      y = (y - cy) / cy;
+
+      if (revertY) {
+        y = -y;
+      }
+    }
+
+    return [x * w, y * w, z * w, w];
+  }
+
+  function createTexture(gl, tex, n, width, height) {
+    var texture = gl.createTexture();
+    bindTexture(gl, texture, n); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
+
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // 传入高宽时是绑定fbo，且tex一定为null
+
+    if (width && height) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+    } // 普通将canvas对象作为纹理
+    else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+    }
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    return texture;
+  }
+
+  function bindTexture(gl, texture, n) {
+    gl.activeTexture(gl['TEXTURE' + n]);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+  }
+  /**
+   * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
+   * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
+   * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
+   * @param gl
+   * @param list
+   * @param hash
+   * @param cx
+   * @param cy
+   * @param revertY
+   */
+
+
+  function drawTextureCache(gl, list, hash, cx, cy, revertY) {
+    var vtPoint = [],
+        vtTex = [],
+        vtOpacity = [];
+    var lastChannel; // 上一个dom的单元号
+
+    var record = [0]; // [num, channel]每一批的数量和单元号记录
+
+    var stack = [record]; // 所有批的数据记录集合
+
+    list.forEach(function (item, i) {
+      var _item = _slicedToArray(item, 5),
+          cache = _item[0],
+          opacity = _item[1],
+          matrix = _item[2],
+          dx = _item[3],
+          dy = _item[4];
+
+      if (i) {
+        var channel = hash[cache.page.uuid]; // 和上一个单元号不同时，生成新的批次记录
+
+        if (lastChannel !== channel) {
+          lastChannel = channel;
+          record = [0, lastChannel];
+          stack.push(record);
+        }
+      } else {
+        lastChannel = hash[cache.page.uuid];
+        record[1] = lastChannel;
+      }
+
+      var x = cache.x,
+          y = cache.y,
+          width = cache.width,
+          height = cache.height,
+          page = cache.page,
+          bbox = cache.bbox; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
+
+      var bx = bbox[0],
+          by = bbox[1];
+      var xa = bx + (dx || 0),
+          ya = by + height + (dy || 0);
+      var xb = bx + width + (dx || 0),
+          yb = by + (dy || 0);
+
+      var _calPoint = calPoint$1([xa, ya], matrix),
+          _calPoint2 = _slicedToArray(_calPoint, 4),
+          x1 = _calPoint2[0],
+          y1 = _calPoint2[1],
+          w1 = _calPoint2[3];
+
+      var _calPoint3 = calPoint$1([xb, ya], matrix),
+          _calPoint4 = _slicedToArray(_calPoint3, 4),
+          x2 = _calPoint4[0],
+          y2 = _calPoint4[1],
+          w2 = _calPoint4[3];
+
+      var _calPoint5 = calPoint$1([xb, yb], matrix),
+          _calPoint6 = _slicedToArray(_calPoint5, 4),
+          x3 = _calPoint6[0],
+          y3 = _calPoint6[1],
+          w3 = _calPoint6[3];
+
+      var _calPoint7 = calPoint$1([xa, yb], matrix),
+          _calPoint8 = _slicedToArray(_calPoint7, 4),
+          x4 = _calPoint8[0],
+          y4 = _calPoint8[1],
+          w4 = _calPoint8[3];
+
+      var _convertCoords2Gl = convertCoords2Gl([x1, y1, 0, w1], cx, cy, revertY);
+
+      var _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2);
+
+      x1 = _convertCoords2Gl2[0];
+      y1 = _convertCoords2Gl2[1];
+
+      var _convertCoords2Gl3 = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
+
+      var _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2);
+
+      x2 = _convertCoords2Gl4[0];
+      y2 = _convertCoords2Gl4[1];
+
+      var _convertCoords2Gl5 = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
+
+      var _convertCoords2Gl6 = _slicedToArray(_convertCoords2Gl5, 2);
+
+      x3 = _convertCoords2Gl6[0];
+      y3 = _convertCoords2Gl6[1];
+
+      var _convertCoords2Gl7 = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
+
+      var _convertCoords2Gl8 = _slicedToArray(_convertCoords2Gl7, 2);
+
+      x4 = _convertCoords2Gl8[0];
+      y4 = _convertCoords2Gl8[1];
+      vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
+      var tx1 = x / page.width,
+          ty1 = (y + height) / page.height;
+      var tx2 = (x + width) / page.width,
+          ty2 = y / page.height;
+      vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
+      vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
+      record[0]++;
+    }); // 顶点buffer
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(gl.program, 'a_position');
+    gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
+
+    var opacityBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
+    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
+    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_opacity); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
+    var count = 0; // 循环按批次渲染
+
+    stack.forEach(function (record) {
+      var _record = _slicedToArray(record, 2),
+          num = _record[0],
+          channel = _record[1];
+
+      gl.uniform1i(u_texture, channel);
+      num *= 6;
+      gl.drawArrays(gl.TRIANGLES, count, num);
+      count += num;
+    });
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.deleteBuffer(opacityBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    gl.disableVertexAttribArray(a_opacity);
+  }
+  /**
+   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
+   * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核扩大3倍性能慢
+   * x/y方向分开执行，加速性能，计算次数由d*d变为d+d，d为卷积核大小
+   * spread由d和sigma计算得出，d由sigma计算得出，sigma即css的blur()参数
+   * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
+   * i和j为total和filter的纹理单元，3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
+   * 由total变为filter时cache会各方向上扩展spread的大小到width/height
+   * 因此第一次绘制时坐标非1，后面则固定1
+   * @param gl
+   * @param program
+   * @param frameBuffer
+   * @param tex1 初次绘制目标纹理
+   * @param tex2 初次绘制源纹理
+   * @param i 初次绘制目标纹理单元
+   * @param j 初次绘制源纹理单元
+   * @param width
+   * @param height
+   * @param spread
+   * @param widthNew
+   * @param heightNew
+   * @param cx
+   * @param cy
+   */
+
+
+  function drawBlur(gl, program, frameBuffer, tex1, tex2, i, j, width, height, spread, widthNew, heightNew, cx, cy) {
+    // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
+    var _convertCoords2Gl9 = convertCoords2Gl([spread, height + spread, 0, 1], cx, cy, false),
+        _convertCoords2Gl10 = _slicedToArray(_convertCoords2Gl9, 2),
+        x1 = _convertCoords2Gl10[0],
+        y2 = _convertCoords2Gl10[1];
+
+    var _convertCoords2Gl11 = convertCoords2Gl([width + spread, spread, 0, 1], cx, cy, false),
+        _convertCoords2Gl12 = _slicedToArray(_convertCoords2Gl11, 2),
+        x2 = _convertCoords2Gl12[0],
+        y1 = _convertCoords2Gl12[1]; // 顶点buffer
+
+
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // direction全0，即无模糊，此时只是进行扩展尺寸操作，还没到模糊所以传0
+
+    var u_direction = gl.getUniformLocation(program, 'u_direction');
+    gl.uniform2f(u_direction, 0, 0); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(program, 'u_texture');
+    gl.uniform1i(u_texture, j);
+    gl.drawArrays(gl.TRIANGLES, 0, 6); // fbo绑定切换纹理对象和单元索引，同时注意不能向源纹理绘制，因为源是cacheTotal，需要重新生成一个，y方向再来一次
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    /**
+     * 反复执行共3次，坐标等均不变，只是切换fbo绑定对象和纹理单元
+     * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
+     * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
+     * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
+     */
+
+    var max = 100 / Math.max(widthNew, heightNew);
+    var ratio = widthNew / heightNew;
+    var recycle = []; // 3次过程中新生成的中间纹理需要回收
+
+    for (var k = 0; k < 3; k++) {
+      var tex3 = createTexture(gl, null, j, widthNew, heightNew);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
+
+      if (widthNew >= heightNew) {
+        gl.uniform2f(u_direction, max, 0);
+      } else {
+        gl.uniform2f(u_direction, max * ratio, 0);
+      }
+
+      gl.uniform1i(u_texture, i);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      recycle.push(tex1);
+      var tex4 = createTexture(gl, null, i, widthNew, heightNew);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex4, 0);
+
+      if (widthNew >= heightNew) {
+        gl.uniform2f(u_direction, 0, max * ratio);
+      } else {
+        gl.uniform2f(u_direction, 0, max);
+      }
+
+      gl.uniform1i(u_texture, j);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      tex1 = tex4;
+      recycle.push(tex3);
+    } // 回收
+
+
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    recycle.forEach(function (item) {
+      return gl.deleteTexture(item);
+    });
+    return tex1;
+  }
+
+  function drawCm(gl, program, i, m) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(program, 'u_texture');
+    gl.uniform1i(u_texture, i); // matrix
+
+    var u_m = gl.getUniformLocation(program, 'u_m');
+    gl.uniform1fv(u_m, new Float32Array(m));
+    gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
+
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+  }
+  /**
+   * 根据total/filter生成overflow
+   * @param gl
+   * @param i 输入纹理单元
+   * @param dx 二者偏移值
+   * @param dy
+   * @param width 最终大小
+   * @param height
+   * @param w 输入纹理大小
+   * @param h
+   */
+
+
+  function drawOverflow(gl, i, dx, dy, width, height, w, h) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(gl.programOverflow, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer，原本大小width/height，使用其中的w/h
+
+    var x1 = dx / w,
+        y1 = dy / h,
+        x2 = (width + dx) / w,
+        y2 = (height + dy) / h;
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(gl.programOverflow, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(gl.programOverflow, 'u_texture');
+    gl.uniform1i(u_texture, i);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+  }
+
+  function drawMask(gl, i, j, program) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture1 = gl.getUniformLocation(program, 'u_texture1');
+    gl.uniform1i(u_texture1, j);
+    var u_texture2 = gl.getUniformLocation(program, 'u_texture2');
+    gl.uniform1i(u_texture2, i);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+  }
+
+  function drawMbm(gl, program, i, j, W, H) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture1 = gl.getUniformLocation(program, 'u_texture1');
+    gl.uniform1i(u_texture1, i);
+    var u_texture2 = gl.getUniformLocation(program, 'u_texture2');
+    gl.uniform1i(u_texture2, j);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+  }
+
+  function drawDropShadow(gl, program, frameBuffer, tex1, tex2, i, j, width, height, color) {
+    // 顶点buffer
+    var pointBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    var a_position = gl.getAttribLocation(program, 'a_position');
+    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_position); // 纹理buffer
+
+    var texBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
+    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
+
+    var u_texture = gl.getUniformLocation(program, 'u_texture');
+    gl.uniform1i(u_texture, j); // color
+
+    var u_color = gl.getUniformLocation(program, 'u_color');
+    gl.uniform1fv(u_color, new Float32Array([color[0] / 255, color[1] / 255, color[2] / 255, color[3]]));
+    gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
+
+    gl.deleteBuffer(pointBuffer);
+    gl.deleteBuffer(texBuffer);
+    gl.disableVertexAttribArray(a_position);
+    gl.disableVertexAttribArray(a_texCoords);
+    return tex1;
+  }
+
+  var webgl = {
+    initShaders: initShaders,
+    createTexture: createTexture,
+    bindTexture: bindTexture,
+    drawTextureCache: drawTextureCache,
+    drawBlur: drawBlur,
+    drawOverflow: drawOverflow,
+    drawMask: drawMask,
+    drawMbm: drawMbm,
+    drawCm: drawCm,
+    drawDropShadow: drawDropShadow
+  };
+
+  var SPF = 1000 / 60;
+  var CANVAS = {};
+  var WEBGL = {};
+  var CANVAS_LIST = [];
+  var WEBGL_LIST = [];
+  var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
+  var defaultFontFamilyData;
+
+  function cache(key, width, height, hash, message) {
+    var o;
+
+    if (!key) {
+      var target = hash === CANVAS ? CANVAS_LIST : WEBGL_LIST;
+
+      if (target.length) {
+        o = target.pop();
+      } else {
+        o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+      }
+    } else if (!hash[key]) {
+      o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+    } else {
+      o = hash[key];
+    }
+
+    o.width = width;
+    o.height = height;
+
+    if (debug.flag) {
+      o.style.width = width + 'px';
+      o.style.height = height + 'px';
+      o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
+
+      if (key) {
+        o.setAttribute('key', key);
+      }
+
+      if (message) {
+        o.setAttribute('message', message);
+      }
+
+      document.body.appendChild(o);
+    }
+
+    var ctx;
+
+    if (hash === CANVAS) {
+      ctx = o.getContext('2d');
+    } else {
+      ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
+    }
+
+    return {
+      canvas: o,
+      ctx: ctx,
+      draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
+      },
+      enabled: true,
+      available: true,
+      release: function release() {
+        if (!key && this.available) {
+          if (hash === CANVAS) {
+            CANVAS_LIST.push(this.canvas);
+          } else {
+            WEBGL_LIST.push(this.canvas);
+          }
+        }
+
+        this.available = false;
+      }
+    };
+  }
+
+  function cacheCanvas(key, width, height, message) {
+    return cache(key, width, height, CANVAS, message);
+  }
+
+  function cacheWebgl(key, width, height, message) {
+    return cache(key, width, height, WEBGL, message);
+  }
+
+  var IMG = {};
+  var INIT = 0;
+  var LOADING = 1;
+  var LOADED = 2;
+  var FONT = {};
+  var COMPONENT = {};
+  var div;
+
+  function createDiv() {
+    div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = '99999px';
+    div.style.top = '-99999px';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'nowrap';
+    document.body.appendChild(div);
+  }
+
+  var inject = {
+    measureTextSync: function measureTextSync(str, ff, fs, fw) {
+      if (!div) {
+        createDiv();
+      }
+
+      div.style.fontFamily = ff;
+      div.style.fontSize = fs + 'px';
+      div.style.fontWeight = fw;
+      div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
+      return parseFloat(window.getComputedStyle(div, null).width);
+    },
+    measureTextListMax: function measureTextListMax(str, ff, fs, fw) {
+      if (!div) {
+        createDiv();
+      }
+
+      div.style.fontFamily = ff;
+      div.style.fontSize = fs + 'px';
+      div.style.fontWeight = fw;
+      var s = '';
+
+      for (var i = 0, len = str.length; i < len; i++) {
+        s += '<span style="position:absolute">' + str.charAt(i).replace('<', '&lt;').replace(/[ \n]/, '&nbsp;') + '</span>';
+      }
+
+      div.innerHTML = s;
+      var max = 0;
+      var cns = div.childNodes;
+
+      for (var _i = 0, _len = cns.length; _i < _len; _i++) {
+        var node = cns[_i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
+
+        max = Math.max(max, parseFloat(window.getComputedStyle(node, null).width));
+      }
+
+      return max;
+    },
+    IMG: IMG,
+    INIT: INIT,
+    LOADED: LOADED,
+    LOADING: LOADING,
+    measureImg: function measureImg(url, cb) {
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.measureImg(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Measure img invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      var cache = IMG[url] = IMG[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+        var img = new Image();
+
+        img.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.width = img.width;
+          cache.height = img.height;
+          cache.source = img;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
+
+        img.onerror = function (e) {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
+
+        if (url.substr(0, 5) !== 'data:') {
+          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+
+          if (host) {
+            if (typeof location === 'undefined' || location.hostname !== host[1]) {
+              img.crossOrigin = 'anonymous';
+            }
+          }
+        }
+
+        img.src = url;
+
+        if (debug.flag && typeof document !== 'undefined') {
+          document.body.appendChild(img);
+        }
+      }
+    },
+    warn: function warn(s) {
+      console.warn(s);
+    },
+    error: function error(s) {
+      console.error(s);
+    },
+    requestAnimationFrame: function (_requestAnimationFrame) {
+      function requestAnimationFrame(_x) {
+        return _requestAnimationFrame.apply(this, arguments);
+      }
+
+      requestAnimationFrame.toString = function () {
+        return _requestAnimationFrame.toString();
+      };
+
+      return requestAnimationFrame;
+    }(function (cb) {
+      if (!cb) {
+        return;
+      }
+
+      var res;
+
+      if (typeof requestAnimationFrame !== 'undefined') {
+        inject.requestAnimationFrame = requestAnimationFrame.bind(window);
+        res = requestAnimationFrame(cb);
+      } else {
+        res = setTimeout(cb, SPF);
+
+        inject.requestAnimationFrame = function (cb) {
+          return setTimeout(cb, SPF);
+        };
+      }
+
+      return res;
+    }),
+    cancelAnimationFrame: function (_cancelAnimationFrame) {
+      function cancelAnimationFrame(_x2) {
+        return _cancelAnimationFrame.apply(this, arguments);
+      }
+
+      cancelAnimationFrame.toString = function () {
+        return _cancelAnimationFrame.toString();
+      };
+
+      return cancelAnimationFrame;
+    }(function (id) {
+      var res;
+
+      if (typeof cancelAnimationFrame !== 'undefined') {
+        inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
+        res = cancelAnimationFrame(id);
+      } else {
+        res = clearTimeout(id);
+
+        inject.cancelAnimationFrame = function (id) {
+          return clearTimeout(id);
+        };
+      }
+
+      return res;
+    }),
+    now: function now() {
+      if (typeof performance !== 'undefined') {
+        inject.now = function () {
+          return Math.floor(performance.now());
+        };
+
+        return Math.floor(performance.now());
+      }
+
+      inject.now = Date.now.bind(Date);
+      return Date.now();
+    },
+    hasCacheCanvas: function hasCacheCanvas(key) {
+      return key && CANVAS.hasOwnProperty(key);
+    },
+    getCacheCanvas: function getCacheCanvas(width, height, key, message) {
+      return cacheCanvas(key, width, height, message);
+    },
+    releaseCacheCanvas: function releaseCacheCanvas(o) {
+      CANVAS_LIST.push(o);
+    },
+    delCacheCanvas: function delCacheCanvas(key) {
+      key && delete CANVAS[key];
+    },
+    hasCacheWebgl: function hasCacheWebgl(key) {
+      return key && WEBGL.hasOwnProperty(key);
+    },
+    getCacheWebgl: function getCacheWebgl(width, height, key, message) {
+      return cacheWebgl(key, width, height, message);
+    },
+    releaseCacheWebgl: function releaseCacheWebgl(o) {
+      WEBGL_LIST.push(o);
+    },
+    delCacheWebgl: function delCacheWebgl(key) {
+      key && delete WEBGL[key];
+    },
+    isDom: function isDom(o) {
+      if (o) {
+        if (util.isString(o)) {
+          return true;
+        }
+
+        if (typeof window !== 'undefined' && window.Element && o instanceof window.Element) {
+          return true;
+        }
+
+        if (typeof window !== 'undefined' && window.OffscreenCanvas && o instanceof window.OffscreenCanvas) {
+          return true;
+        } // worker
+
+
+        if (typeof self !== 'undefined' && self.OffscreenCanvas && o instanceof self.OffscreenCanvas) {
+          return true;
+        }
+
+        if (util.isFunction(o.getElementsByTagName)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    isWebGLTexture: function isWebGLTexture(o) {
+      if (o && typeof WebGLTexture !== 'undefined') {
+        return o instanceof WebGLTexture;
+      }
+    },
+    defaultFontFamily: 'arial',
+    getFontCanvas: function getFontCanvas() {
+      return inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
+    },
+    checkSupportFontFamily: function checkSupportFontFamily(ff) {
+      ff = ff.toLowerCase(); // 强制arial兜底
+
+      if (ff === this.defaultFontFamily || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
+        return true;
+      }
+
+      if (!o$1.info.hasOwnProperty(ff)) {
+        return false;
+      }
+
+      if (o$1.info[ff].hasOwnProperty('checked')) {
+        return o$1.info[ff].checked;
+      }
+
+      var canvas = inject.getFontCanvas();
+      var context = canvas.ctx;
+      context.textAlign = 'center';
+      context.fillStyle = '#000';
+      context.textBaseline = 'middle';
+
+      if (!defaultFontFamilyData) {
+        context.clearRect(0, 0, 16, 16);
+        context.font = '16px ' + this.defaultFontFamily;
+        context.fillText('a', 8, 8);
+        canvas.draw();
+        defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
+      }
+
+      context.clearRect(0, 0, 16, 16);
+      context.font = '16px ' + ff;
+      context.fillText('a', 8, 8);
+      canvas.draw();
+      var data = context.getImageData(0, 0, 16, 16).data;
+
+      for (var i = 0, len = data.length; i < len; i++) {
+        if (defaultFontFamilyData[i] !== data[i]) {
+          return o$1.info[ff].checked = true;
+        }
+      }
+
+      return o$1.info[ff].checked = false;
+    },
+    loadFont: function loadFont(fontFamily, url, cb) {
+      if (util.isFunction(url)) {
+        cb = url;
+        url = fontFamily;
+      }
+
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.loadFont(item.fontFamily, item.url, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Load font invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      if (!fontFamily) {
+        fontFamily = url;
+      }
+
+      var cache = FONT[url] = FONT[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+
+        if (!/url\(/.test(url)) {
+          url = "url(".concat(url, ")");
+        }
+
+        var f = new FontFace(fontFamily, url);
+        f.load().then(function () {
+          document.fonts.add(f);
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        })["catch"](function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        });
+      }
+    },
+    loadComponent: function loadComponent(url, cb) {
+      if (Array.isArray(url)) {
+        if (!url.length) {
+          return cb();
+        }
+
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.loadComponent(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      } else if (!url || !util.isString(url)) {
+        inject.error('Load component invalid: ' + url);
+        cb && cb({
+          state: LOADED,
+          success: false,
+          url: url
+        });
+        return;
+      }
+
+      var cache = COMPONENT[url] = COMPONENT[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb && cb(cache);
+      } else if (cache.state === LOADING) {
+        cb && cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cb && cache.task.push(cb);
+        var script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+
+        script.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+        };
+
+        script.onerror = function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+          document.head.removeChild(script);
+        };
+
+        document.head.appendChild(script);
+      }
+    }
+  };
+
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'inherit',
+    backgroundImage: null,
+    backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
+    backgroundClip: 'borderBox',
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+    borderTopStyle: 'none',
+    borderRightStyle: 'none',
+    borderBottomStyle: 'none',
+    borderLeftStyle: 'none',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    order: 0,
+    justifyContent: 'flexStart',
+    alignItems: 'stretch',
+    alignSelf: 'auto',
+    alignContent: 'stretch',
+    textAlign: 'inherit',
+    letterSpacing: 'inherit',
+    transformOrigin: 'center',
+    visibility: 'inherit',
+    opacity: 1,
+    zIndex: 0,
+    transform: null,
+    translateX: 0,
+    translateY: 0,
+    translateZ: 0,
+    scaleX: 1,
+    scaleY: 1,
+    scaleZ: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateX: 0,
+    rotateY: 0,
+    rotateZ: 0,
+    rotate3d: '0, 0, 0, 0',
+    perspective: 0,
+    perspectiveOrigin: 'center',
+    filter: null,
+    boxShadow: null,
+    pointerEvents: 'inherit',
+    overflow: 'visible',
+    mixBlendMode: 'normal',
+    whiteSpace: 'inherit',
+    textOverflow: 'clip',
+    lineClamp: 0,
+    textStrokeWidth: 'inherit',
+    textStrokeColor: 'inherit',
+    textStrokeOver: 'inherit',
+    writingMode: 'inherit'
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: '',
+    strokeLinecap: 'butt',
+    strokeLinejoin: 'miter',
+    strokeMiterlimit: 4,
+    fillRule: 'nonzero'
+  };
+  var DOM_ENTRY_SET = [];
+  var DOM_KEY_SET = [];
+  Object.keys(DOM).forEach(function (k) {
+    DOM_KEY_SET.push(k);
+    var v = DOM[k];
+    DOM_ENTRY_SET.push({
+      k: k,
+      v: v
+    });
+  });
+  var GEOM_ENTRY_SET = [];
+  var GEOM_KEY_SET = [];
+  Object.keys(GEOM).forEach(function (k) {
+    GEOM_KEY_SET.push(k);
+    var v = GEOM[k];
+    GEOM_ENTRY_SET.push({
+      k: k,
+      v: v
+    });
+  });
+  var INHERIT = {
+    get fontFamily() {
+      return inject.defaultFontFamily;
+    },
+
+    fontSize: 16,
+    fontWeight: 400,
+    fontStyle: 'normal',
+    color: '#000',
+    textAlign: 'left',
+    visibility: 'visible',
+    pointerEvents: 'auto',
+    textStrokeColor: '#000',
+    textStrokeWidth: 1,
+    textStrokeOver: 'none',
+    writingMode: 'horizontalTb'
+  };
+  var INHERIT_KEY_SET = [];
+  Object.keys(INHERIT).forEach(function (k) {
+    INHERIT_KEY_SET.push(k);
+  }); // 默认值放第一个
+
+  var VALID_STRING_VALUE = {
+    position: ['static', 'relative', 'absolute'],
+    display: ['block', 'inlineBlock', 'inline', 'flex'],
+    flexDirection: ['row', 'column', 'rowReverse', 'columnReverse'],
+    flexWrap: ['wrap', 'wrapReverse', 'noWrap'],
+    justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+    alignItems: ['stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
+    alignSelf: ['auto', 'stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
+    overflow: ['visible', 'hidden'],
+    mixBlendMode: ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'colorDodge', 'colorBurn', 'hardLight', 'softLight', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'],
+    borderTopStyle: ['solid', 'dashed', 'dotted'],
+    borderRightStyle: ['solid', 'dashed', 'dotted'],
+    borderBottomStyle: ['solid', 'dashed', 'dotted'],
+    borderLeftStyle: ['solid', 'dashed', 'dotted'],
+    backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
+    textOverflow: ['clip', 'ellipsis']
+  };
+  var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    isValid: function isValid(i) {
+      return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
+    },
+    DOM_KEY_SET: DOM_KEY_SET,
+    GEOM_KEY_SET: GEOM_KEY_SET,
+    DOM_ENTRY_SET: DOM_ENTRY_SET,
+    GEOM_ENTRY_SET: GEOM_ENTRY_SET,
+    INHERIT: INHERIT,
+    INHERIT_KEY_SET: INHERIT_KEY_SET,
+    VALID_STRING_VALUE: VALID_STRING_VALUE
+  };
+
+  var reg = {
+    position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
+    // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    gradient: /\b(\w+)-?gradient\((.+)\)/i,
+    img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
+  };
+
   // 向量点乘积
   function dotProduct(x1, y1, x2, y2) {
     return x1 * x2 + y1 * y2;
@@ -1076,7 +3033,7 @@
 
   var H = 4 * (Math.sqrt(2) - 1) / 3;
   var crossProduct$1 = vector.crossProduct;
-  var calPoint$1 = mx.calPoint,
+  var calPoint$2 = mx.calPoint,
       isE$1 = mx.isE;
   var _enums$STYLE_KEY = enums.STYLE_KEY,
       WIDTH = _enums$STYLE_KEY.WIDTH,
@@ -1151,7 +3108,7 @@
     if (matrix && !isE$1(matrix)) {
       var w1, w2, w3, w4;
 
-      var _calPoint = calPoint$1([x1, y1], matrix);
+      var _calPoint = calPoint$2([x1, y1], matrix);
 
       var _calPoint2 = _slicedToArray(_calPoint, 4);
 
@@ -1159,7 +3116,7 @@
       y1 = _calPoint2[1];
       w1 = _calPoint2[3];
 
-      var _calPoint3 = calPoint$1([x2, y2], matrix);
+      var _calPoint3 = calPoint$2([x2, y2], matrix);
 
       var _calPoint4 = _slicedToArray(_calPoint3, 4);
 
@@ -1167,7 +3124,7 @@
       y2 = _calPoint4[1];
       w2 = _calPoint4[3];
 
-      var _calPoint5 = calPoint$1([x3, y3], matrix);
+      var _calPoint5 = calPoint$2([x3, y3], matrix);
 
       var _calPoint6 = _slicedToArray(_calPoint5, 4);
 
@@ -1175,7 +3132,7 @@
       y3 = _calPoint6[1];
       w3 = _calPoint6[3];
 
-      var _calPoint7 = calPoint$1([x4, y4], matrix);
+      var _calPoint7 = calPoint$2([x4, y4], matrix);
 
       var _calPoint8 = _slicedToArray(_calPoint7, 4);
 
@@ -1529,7 +3486,7 @@
         ox = _computedStyle$TRANSF2[0],
         oy = _computedStyle$TRANSF2[1];
 
-    var _calPoint9 = calPoint$1([px * width - ox, py * height - oy], matrix);
+    var _calPoint9 = calPoint$2([px * width - ox, py * height - oy], matrix);
 
     var _calPoint10 = _slicedToArray(_calPoint9, 2);
 
@@ -2233,628 +4190,6 @@
 
   var gradient = {
     getConicGradientImage: getConicGradientImage
-  };
-
-  // 类型为引用防止json仿造
-  var TYPE_VD = Symbol('Dom');
-  var TYPE_GM = Symbol('Geom');
-  var TYPE_CP = Symbol('Component');
-  var $$type = {
-    TYPE_VD: TYPE_VD,
-    TYPE_GM: TYPE_GM,
-    TYPE_CP: TYPE_CP
-  };
-
-  var toString = {}.toString;
-
-  function isType(type) {
-    return function (obj) {
-      return toString.call(obj) === '[object ' + type + ']';
-    };
-  }
-
-  var isObject = isType('Object');
-  var isString = isType('String');
-  var isFunction = isType('Function');
-  var isNumber = isType('Number');
-  var isBoolean = isType('Boolean');
-  var isDate = isType('Date');
-  var hasOwn = {}.hasOwnProperty;
-  var fnToString = hasOwn.toString;
-  var ObjectFunctionString = fnToString.call(Object);
-
-  function isNil(v) {
-    return v === undefined || v === null;
-  }
-
-  function _joinSourceArray(arr) {
-    var res = '';
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        res += _joinSourceArray(item);
-      } else {
-        res += stringify(item);
-      }
-    }
-
-    return res;
-  }
-
-  function stringify(s) {
-    if (isNil(s)) {
-      return '';
-    }
-
-    return s.toString();
-  }
-
-  function encodeHtml(s, prop) {
-    if (prop) {
-      return s.replace(/"/g, '&quot;');
-    }
-
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-  } // 根元素专用
-
-
-  function joinVirtualDom(vd) {
-    var s = '<defs>';
-    vd.defs.forEach(function (item) {
-      s += joinDef(item);
-    });
-    s += '</defs><g>';
-    vd.bb.forEach(function (item) {
-      s += joinVd(item);
-    });
-    s += '</g><g';
-
-    if (vd.conClip) {
-      s += ' clip-path="' + vd.conClip + '"';
-    }
-
-    s += '>';
-    (vd.children || []).forEach(function (item) {
-      if (item.isMask) {
-        return;
-      }
-
-      s += joinVd(item);
-    });
-    s += '</g>';
-    return s;
-  } // 普通元素
-
-
-  function joinVd(vd) {
-    if (vd.type === 'item' || vd.type === 'img') {
-      var s = '';
-      (vd.props || []).forEach(function (item) {
-        s += ' ' + item[0] + '="' + item[1] + '"';
-      });
-
-      if (vd.tagName === 'text') {
-        return '<text' + s + '>' + vd.content + '</text>';
-      }
-
-      return '<' + vd.tagName + s + '/>';
-    } else if (vd.type === 'text') {
-      var _s = ""; // text有许多lineBox
-
-      (vd.children || []).forEach(function (item) {
-        _s += joinVd(item);
-      });
-      return '<g>' + _s + '</g>';
-    } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g>';
-      vd.bb.forEach(function (item) {
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g><g';
-
-      if (vd.conClip) {
-        _s2 += ' clip-path="' + vd.conClip + '"';
-      }
-
-      _s2 += '>';
-      (vd.children || []).forEach(function (item) {
-        if (item.isMask) {
-          return;
-        }
-
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g>';
-      var opacity = vd.opacity,
-          transform = vd.transform,
-          visibility = vd.visibility,
-          mask = vd.mask,
-          overflow = vd.overflow,
-          filter = vd.filter,
-          mixBlendMode = vd.mixBlendMode;
-      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + ' visibility="' + visibility + '"' + (mask ? ' mask="' + mask + '"' : '') + (overflow ? ' clip-path="' + overflow + '"' : '') + (filter || mixBlendMode ? ' style="' : '') + (filter ? 'filter:' + filter + ';' : '') + (mixBlendMode ? 'mix-blend-mode:' + mixBlendMode + ';' : '') + (filter || mixBlendMode ? '"' : '') + '>' + _s2 + '</g>';
-    }
-  }
-
-  function joinDef(def) {
-    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
-
-    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
-      s += ' gradientUnits="userSpaceOnUse"';
-    }
-
-    (def.props || []).forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '>';
-    (def.children || []).forEach(function (item) {
-      s += joinItem(item);
-    });
-    s += '</' + def.tagName + '>';
-    return s;
-  }
-
-  function joinItem(item) {
-    var s = '<' + item.tagName;
-    (item.props || []).forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '></' + item.tagName + '>';
-    return s;
-  }
-
-  function rgba2int(color) {
-    if (Array.isArray(color)) {
-      return color;
-    }
-
-    var res = [];
-
-    if (!color || color === 'transparent') {
-      res = [0, 0, 0, 0];
-    } else if (color.charAt(0) === '#') {
-      color = color.slice(1);
-
-      if (color.length === 3) {
-        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
-        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
-        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-        res[3] = 1;
-      } else if (color.length === 6) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4), 16));
-        res[3] = 1;
-      } else if (color.length === 8) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4, 6), 16));
-        res.push(parseInt(color.slice(6), 16) / 255);
-      } else {
-        res[0] = res[1] = res[2] = 0;
-        res[3] = 1;
-      }
-    } else {
-      var c = color.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-
-      if (c) {
-        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-
-        if (!isNil(c[4])) {
-          res[3] = parseFloat(c[4]);
-        } else {
-          res[3] = 1;
-        }
-      } else {
-        res = [0, 0, 0, 0];
-      }
-    }
-
-    return res;
-  }
-
-  function int2rgba(color) {
-    if (Array.isArray(color)) {
-      if (color.length === 4) {
-        color = color.map(function (c, i) {
-          return i === 3 ? c : Math.floor(Math.max(0, c));
-        });
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        color = color.map(function (c) {
-          return Math.floor(c);
-        });
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return color || 'rgba(0,0,0,0)';
-  }
-
-  function int2invert(color) {
-    if (Array.isArray(color)) {
-      color = color.slice(0);
-      color[0] = 255 - color[0];
-      color[1] = 255 - color[1];
-      color[2] = 255 - color[2];
-
-      if (color.length === 4) {
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return 'rgba(0,0,0,0)';
-  }
-
-  function arr2hash(arr) {
-    var hash = {};
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        hash[item[0]] = item[1];
-      } else {
-        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-          var k = list[j];
-          hash[k] = item[k];
-        }
-      }
-    }
-
-    return hash;
-  }
-
-  function hash2arr(hash) {
-    if (Array.isArray(hash)) {
-      return hash;
-    }
-
-    var arr = [];
-
-    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-      var k = list[i];
-      arr.push([k, hash[k]]);
-    }
-
-    return arr;
-  }
-
-  function clone(obj) {
-    if (isNil(obj) || _typeof(obj) !== 'object') {
-      return obj;
-    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
-
-
-    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
-      return obj;
-    }
-
-    if (util.isDate(obj)) {
-      return new Date(obj);
-    }
-
-    if (!isPlainObject(obj) && !Array.isArray(obj)) {
-      return obj;
-    }
-
-    var n = Array.isArray(obj) ? [] : {};
-    Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
-    });
-    return n;
-  }
-  /**
-   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equalArr(a, b) {
-    if (!a || !b) {
-      return a === b;
-    }
-
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      var ai = a[i];
-      var bi = b[i];
-      var isArrayA = Array.isArray(ai);
-      var isArrayB = Array.isArray(bi);
-
-      if (isArrayA && isArrayB) {
-        if (!equalArr(ai, bi)) {
-          return false;
-        }
-      } else if (isArrayA || isArrayB) {
-        return false;
-      } else if (ai !== bi) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  /**
-   * 深度对比对象
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equal(a, b) {
-    if (a === b) {
-      return true;
-    }
-
-    if (isObject(a) && isObject(b)) {
-      var hash = {};
-
-      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
-        var k = arr[i];
-
-        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
-          return false;
-        }
-
-        hash[k] = true;
-      } // a没有b有则false
-
-
-      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
-        var _k = _arr[_i];
-
-        if (!hash.hasOwnProperty(_k)) {
-          return false;
-        }
-      }
-    } else if (isDate(a) && isDate(b)) {
-      return a.getTime() === b.getTime();
-    } else if (Array.isArray(a) && Array.isArray(b)) {
-      if (a.length !== b.length) {
-        return false;
-      }
-
-      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
-        if (!equal(a[_i2], b[_i2])) {
-          return false;
-        }
-      }
-    } else {
-      return a === b;
-    }
-
-    return true;
-  }
-
-  function extend(target, source, keys) {
-    if (source === null || _typeof(source) !== 'object') {
-      return target;
-    }
-
-    if (!keys) {
-      keys = Object.keys(source);
-    }
-
-    var i = 0;
-    var len = keys.length;
-
-    while (i < len) {
-      var k = keys[i];
-      target[k] = source[k];
-      i++;
-    }
-
-    return target;
-  }
-
-  function joinArr(arr, split) {
-    var s = arr.length ? arr[0] : '';
-
-    for (var i = 1, len = arr.length; i < len; i++) {
-      s += split + arr[i];
-    }
-
-    return s;
-  }
-
-  function extendAnimate(ovd, nvd) {
-    var list = nvd.__animationList = ovd.animationList.splice(0);
-    list.forEach(function (item) {
-      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
-
-
-      if (item.assigning || item.finished && item.__stayEnd()) {
-        item.assignCurrentStyle();
-      }
-    }); // 帧动画继承
-
-    nvd.__frameAnimateList = ovd.__frameAnimateList.splice(0);
-  }
-
-  function transformBbox(bbox, matrix) {
-    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
-    if (matrix && !mx.isE(matrix)) {
-      var _bbox = bbox,
-          _bbox2 = _slicedToArray(_bbox, 4),
-          x1 = _bbox2[0],
-          y1 = _bbox2[1],
-          x2 = _bbox2[2],
-          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
-
-
-      if (dx) {
-        x1 -= dx;
-        x2 += dx;
-      }
-
-      if (dy) {
-        y1 -= dy;
-        y2 += dy;
-      }
-
-      var list = [x2, y1, x1, y2, x2, y2];
-      var w;
-
-      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
-
-      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 4);
-
-      x1 = _mx$calPoint2[0];
-      y1 = _mx$calPoint2[1];
-      w = _mx$calPoint2[3];
-
-      if (w && w !== 1) {
-        x1 /= w;
-        y1 /= w;
-      }
-
-      var xa = x1,
-          ya = y1,
-          xb = x1,
-          yb = y1;
-
-      for (var i = 0; i < 6; i += 2) {
-        var x = list[i],
-            y = list[i + 1];
-
-        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
-
-        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 4);
-
-        x = _mx$calPoint4[0];
-        y = _mx$calPoint4[1];
-        w = _mx$calPoint4[3];
-
-        if (w && w !== 1) {
-          x /= w;
-          y /= w;
-        }
-
-        xa = Math.min(xa, x);
-        xb = Math.max(xb, x);
-        ya = Math.min(ya, y);
-        yb = Math.max(yb, y);
-      }
-
-      bbox = [xa, ya, xb, yb];
-    } else if (dx || dy) {
-      bbox = bbox.slice(0);
-      bbox[0] -= dx;
-      bbox[1] -= dy;
-      bbox[2] += dx;
-      bbox[3] += dy;
-    }
-
-    return bbox;
-  }
-
-  function isPlainObject(obj) {
-    if (!obj || toString.call(obj) !== '[object Object]') {
-      return false;
-    }
-
-    var proto = Object.getPrototypeOf(obj);
-
-    if (!proto) {
-      return true;
-    }
-
-    var Ctor = hasOwn.call(proto, 'constructor') && proto.constructor;
-    return typeof Ctor === 'function' && fnToString.call(Ctor) === ObjectFunctionString;
-  }
-
-  function assignMatrix(t, v) {
-    t[0] = v[0];
-    t[1] = v[1];
-    t[2] = v[2];
-    t[3] = v[3];
-    t[4] = v[4];
-    t[5] = v[5];
-    t[6] = v[6];
-    t[7] = v[7];
-    t[8] = v[8];
-    t[9] = v[9];
-    t[10] = v[10];
-    t[11] = v[11];
-    t[12] = v[12];
-    t[13] = v[13];
-    t[14] = v[14];
-    t[15] = v[15];
-    return t;
-  }
-
-  function prefixHex(s) {
-    if (s.length === 1) {
-      return '0' + s;
-    }
-
-    return s;
-  }
-
-  function replaceRgba2Hex(s) {
-    return (s || '').replace(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/ig, function ($0, $1, $2, $3, $4) {
-      var res = '#' + prefixHex(parseInt($1).toString(16)) + prefixHex(parseInt($2).toString(16)) + prefixHex(parseInt($3).toString(16));
-
-      if ($4) {
-        res += prefixHex(Math.floor(parseFloat($4) * 255).toString(16));
-      }
-
-      return res;
-    });
-  }
-
-  var util = {
-    isObject: isObject,
-    isString: isString,
-    isFunction: isFunction,
-    isNumber: isNumber,
-    isBoolean: isBoolean,
-    isDate: isDate,
-    isNil: isNil,
-    isPrimitive: function isPrimitive(v) {
-      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
-    },
-    // css中常用undefined/null表示auto本身
-    isAuto: function isAuto(v) {
-      return isNil(v) || v === 'auto';
-    },
-    isPlainObject: isPlainObject,
-    stringify: stringify,
-    joinSourceArray: function joinSourceArray(arr) {
-      return _joinSourceArray(arr);
-    },
-    encodeHtml: encodeHtml,
-    joinVirtualDom: joinVirtualDom,
-    joinVd: joinVd,
-    joinDef: joinDef,
-    rgba2int: rgba2int,
-    int2rgba: int2rgba,
-    int2invert: int2invert,
-    arr2hash: arr2hash,
-    hash2arr: hash2arr,
-    clone: clone,
-    equalArr: equalArr,
-    equal: equal,
-    extend: extend,
-    joinArr: joinArr,
-    extendAnimate: extendAnimate,
-    transformBbox: transformBbox,
-    assignMatrix: assignMatrix,
-    prefixHex: prefixHex,
-    replaceRgba2Hex: replaceRgba2Hex
   };
 
   var int2rgba$1 = util.int2rgba;
@@ -5386,1166 +6721,6 @@
     renderBorder: renderBorder
   };
 
-  var debug = {
-    flag: false
-  };
-
-  var ca = {
-    alpha: true,
-    antialias: true,
-    premultipliedAlpha: true,
-    preserveDrawingBuffer: true // depth: true,
-    // stencil: true,
-
-  };
-
-  var calPoint$2 = mx.calPoint;
-  /**
-   * 初始化 shader
-   * @param gl GL context
-   * @param vshader vertex shader (string)
-   * @param fshader fragment shader (string)
-   * @return program, if the program object was created and successfully made current
-   */
-
-  function initShaders(gl, vshader, fshader) {
-    var program = createProgram(gl, vshader, fshader);
-
-    if (!program) {
-      throw new Error('Failed to create program');
-    } // 要开启透明度，用以绘制透明的图形
-
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    return program;
-  }
-  /**
-   * Create the linked program object
-   * @param gl GL context
-   * @param vshader a vertex shader program (string)
-   * @param fshader a fragment shader program (string)
-   * @return created program object, or null if the creation has failed
-   */
-
-
-  function createProgram(gl, vshader, fshader) {
-    // Create shader object
-    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
-    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-
-    if (!vertexShader || !fragmentShader) {
-      return null;
-    } // Create a program object
-
-
-    var program = gl.createProgram();
-
-    if (!program) {
-      return null;
-    }
-
-    program.vertexShader = vertexShader;
-    program.fragmentShader = fragmentShader; // Attach the shader objects
-
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader); // Link the program object
-
-    gl.linkProgram(program); // Check the result of linking
-
-    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-
-    if (!linked) {
-      var error = gl.getProgramInfoLog(program);
-      gl.deleteProgram(program);
-      gl.deleteShader(fragmentShader);
-      gl.deleteShader(vertexShader);
-      throw new Error('Failed to link program: ' + error);
-    }
-
-    return program;
-  }
-  /**
-   * Create a shader object
-   * @param gl GL context
-   * @param type the type of the shader object to be created
-   * @param source shader program (string)
-   * @return created shader object, or null if the creation has failed.
-   */
-
-
-  function loadShader(gl, type, source) {
-    // Create shader object
-    var shader = gl.createShader(type);
-
-    if (shader == null) {
-      throw new Error('unable to create shader');
-    } // Set the shader program
-
-
-    gl.shaderSource(shader, source); // Compile the shader
-
-    gl.compileShader(shader); // Check the result of compilation
-
-    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-    if (!compiled) {
-      var error = gl.getShaderInfoLog(shader);
-      gl.deleteShader(shader);
-      throw new Error('Failed to compile shader: ' + error);
-    }
-
-    return shader;
-  }
-
-  function convertCoords2Gl(_ref, cx, cy, revertY) {
-    var _ref2 = _slicedToArray(_ref, 4),
-        x = _ref2[0],
-        y = _ref2[1],
-        z = _ref2[2],
-        w = _ref2[3];
-
-    if (z === undefined) {
-      z = 0;
-    }
-
-    if (w === undefined) {
-      w = 1;
-    }
-
-    if (w && w !== 1) {
-      x /= w;
-      y /= w;
-      z /= w;
-    }
-
-    if (x === cx) {
-      x = 0;
-    } else {
-      x = (x - cx) / cx;
-    }
-
-    if (y === cy) {
-      y = 0;
-    } else {
-      y = (y - cy) / cy;
-
-      if (revertY) {
-        y = -y;
-      }
-    }
-
-    return [x * w, y * w, z * w, w];
-  }
-
-  function createTexture(gl, tex, n, width, height) {
-    var texture = gl.createTexture();
-    bindTexture(gl, texture, n); // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
-
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // 传入高宽时是绑定fbo，且tex一定为null
-
-    if (width && height) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    } // 普通将canvas对象作为纹理
-    else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
-    }
-
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    return texture;
-  }
-
-  function bindTexture(gl, texture, n) {
-    gl.activeTexture(gl['TEXTURE' + n]);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-  }
-  /**
-   * texCache集满纹理上传占用最多可用纹理单元后，进行批量顺序绘制
-   * 将所有dom的矩形顶点（经过transform变换后的）、贴图坐标、透明度存入3个buffer中，
-   * 然后相同纹理单元的形成一批，设置uniform的纹理单元号进行绘制，如此循环
-   * @param gl
-   * @param list
-   * @param hash
-   * @param cx
-   * @param cy
-   * @param revertY
-   */
-
-
-  function drawTextureCache(gl, list, hash, cx, cy, revertY) {
-    var vtPoint = [],
-        vtTex = [],
-        vtOpacity = [];
-    var lastChannel; // 上一个dom的单元号
-
-    var record = [0]; // [num, channel]每一批的数量和单元号记录
-
-    var stack = [record]; // 所有批的数据记录集合
-
-    list.forEach(function (item, i) {
-      var _item = _slicedToArray(item, 5),
-          cache = _item[0],
-          opacity = _item[1],
-          matrix = _item[2],
-          dx = _item[3],
-          dy = _item[4];
-
-      if (i) {
-        var channel = hash[cache.page.uuid]; // 和上一个单元号不同时，生成新的批次记录
-
-        if (lastChannel !== channel) {
-          lastChannel = channel;
-          record = [0, lastChannel];
-          stack.push(record);
-        }
-      } else {
-        lastChannel = hash[cache.page.uuid];
-        record[1] = lastChannel;
-      }
-
-      var x = cache.x,
-          y = cache.y,
-          width = cache.width,
-          height = cache.height,
-          page = cache.page,
-          bbox = cache.bbox; // 计算顶点坐标和纹理坐标，转换[0,1]对应关系
-
-      var bx = bbox[0],
-          by = bbox[1];
-      var xa = bx + (dx || 0),
-          ya = by + height + (dy || 0);
-      var xb = bx + width + (dx || 0),
-          yb = by + (dy || 0);
-
-      var _calPoint = calPoint$2([xa, ya], matrix),
-          _calPoint2 = _slicedToArray(_calPoint, 4),
-          x1 = _calPoint2[0],
-          y1 = _calPoint2[1],
-          w1 = _calPoint2[3];
-
-      var _calPoint3 = calPoint$2([xb, ya], matrix),
-          _calPoint4 = _slicedToArray(_calPoint3, 4),
-          x2 = _calPoint4[0],
-          y2 = _calPoint4[1],
-          w2 = _calPoint4[3];
-
-      var _calPoint5 = calPoint$2([xb, yb], matrix),
-          _calPoint6 = _slicedToArray(_calPoint5, 4),
-          x3 = _calPoint6[0],
-          y3 = _calPoint6[1],
-          w3 = _calPoint6[3];
-
-      var _calPoint7 = calPoint$2([xa, yb], matrix),
-          _calPoint8 = _slicedToArray(_calPoint7, 4),
-          x4 = _calPoint8[0],
-          y4 = _calPoint8[1],
-          w4 = _calPoint8[3];
-
-      var _convertCoords2Gl = convertCoords2Gl([x1, y1, 0, w1], cx, cy, revertY);
-
-      var _convertCoords2Gl2 = _slicedToArray(_convertCoords2Gl, 2);
-
-      x1 = _convertCoords2Gl2[0];
-      y1 = _convertCoords2Gl2[1];
-
-      var _convertCoords2Gl3 = convertCoords2Gl([x2, y2, 0, w2], cx, cy, revertY);
-
-      var _convertCoords2Gl4 = _slicedToArray(_convertCoords2Gl3, 2);
-
-      x2 = _convertCoords2Gl4[0];
-      y2 = _convertCoords2Gl4[1];
-
-      var _convertCoords2Gl5 = convertCoords2Gl([x3, y3, 0, w3], cx, cy, revertY);
-
-      var _convertCoords2Gl6 = _slicedToArray(_convertCoords2Gl5, 2);
-
-      x3 = _convertCoords2Gl6[0];
-      y3 = _convertCoords2Gl6[1];
-
-      var _convertCoords2Gl7 = convertCoords2Gl([x4, y4, 0, w4], cx, cy, revertY);
-
-      var _convertCoords2Gl8 = _slicedToArray(_convertCoords2Gl7, 2);
-
-      x4 = _convertCoords2Gl8[0];
-      y4 = _convertCoords2Gl8[1];
-      vtPoint.push(x1, y1, 0, w1, x4, y4, 0, w4, x2, y2, 0, w2, x4, y4, 0, w4, x2, y2, 0, w2, x3, y3, 0, w3);
-      var tx1 = x / page.width,
-          ty1 = (y + height) / page.height;
-      var tx2 = (x + width) / page.width,
-          ty2 = y / page.height;
-      vtTex.push(tx1, ty1, tx1, ty2, tx2, ty1, tx1, ty2, tx2, ty1, tx2, ty2);
-      vtOpacity.push(opacity, opacity, opacity, opacity, opacity, opacity);
-      record[0]++;
-    }); // 顶点buffer
-
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtPoint), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(gl.program, 'a_position');
-    gl.vertexAttribPointer(a_position, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtTex), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(gl.program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // opacity buffer
-
-    var opacityBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vtOpacity), gl.STATIC_DRAW);
-    var a_opacity = gl.getAttribLocation(gl.program, 'a_opacity');
-    gl.vertexAttribPointer(a_opacity, 1, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_opacity); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(gl.program, 'u_texture');
-    var count = 0; // 循环按批次渲染
-
-    stack.forEach(function (record) {
-      var _record = _slicedToArray(record, 2),
-          num = _record[0],
-          channel = _record[1];
-
-      gl.uniform1i(u_texture, channel);
-      num *= 6;
-      gl.drawArrays(gl.TRIANGLES, count, num);
-      count += num;
-    });
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.deleteBuffer(opacityBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-    gl.disableVertexAttribArray(a_opacity);
-  }
-  /**
-   * https://www.w3.org/TR/2018/WD-filter-effects-1-20181218/#feGaussianBlurElement
-   * 根据cacheTotal生成cacheFilter，按照css规范的优化方法执行3次，避免卷积核扩大3倍性能慢
-   * x/y方向分开执行，加速性能，计算次数由d*d变为d+d，d为卷积核大小
-   * spread由d和sigma计算得出，d由sigma计算得出，sigma即css的blur()参数
-   * 规范的优化方法对d的值分奇偶优化，这里再次简化，d一定是奇数，即卷积核大小
-   * i和j为total和filter的纹理单元，3次执行（x/y合起来算1次）需互换单元，来回执行源和结果
-   * 由total变为filter时cache会各方向上扩展spread的大小到width/height
-   * 因此第一次绘制时坐标非1，后面则固定1
-   * @param gl
-   * @param program
-   * @param frameBuffer
-   * @param tex1 初次绘制目标纹理
-   * @param tex2 初次绘制源纹理
-   * @param i 初次绘制目标纹理单元
-   * @param j 初次绘制源纹理单元
-   * @param width
-   * @param height
-   * @param spread
-   * @param widthNew
-   * @param heightNew
-   * @param cx
-   * @param cy
-   */
-
-
-  function drawBlur(gl, program, frameBuffer, tex1, tex2, i, j, width, height, spread, widthNew, heightNew, cx, cy) {
-    // 第一次将total绘制到blur上，此时尺寸存在spread差值，因此不加模糊防止坐标计算问题，仅作为扩展纹理尺寸
-    var _convertCoords2Gl9 = convertCoords2Gl([spread, height + spread, 0, 1], cx, cy, false),
-        _convertCoords2Gl10 = _slicedToArray(_convertCoords2Gl9, 2),
-        x1 = _convertCoords2Gl10[0],
-        y2 = _convertCoords2Gl10[1];
-
-    var _convertCoords2Gl11 = convertCoords2Gl([width + spread, spread, 0, 1], cx, cy, false),
-        _convertCoords2Gl12 = _slicedToArray(_convertCoords2Gl11, 2),
-        x2 = _convertCoords2Gl12[0],
-        y1 = _convertCoords2Gl12[1]; // 顶点buffer
-
-
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // direction全0，即无模糊，此时只是进行扩展尺寸操作，还没到模糊所以传0
-
-    var u_direction = gl.getUniformLocation(program, 'u_direction');
-    gl.uniform2f(u_direction, 0, 0); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(program, 'u_texture');
-    gl.uniform1i(u_texture, j);
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // fbo绑定切换纹理对象和单元索引，同时注意不能向源纹理绘制，因为源是cacheTotal，需要重新生成一个，y方向再来一次
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    /**
-     * 反复执行共3次，坐标等均不变，只是切换fbo绑定对象和纹理单元
-     * 注意max和ratio的设置，当是100尺寸的正方形时，传给direction的始终为1
-     * 当正方形<100时，direction相应地要扩大相对于100的倍数，反之则缩小，如此为了取相邻点坐标时是+-1
-     * 当非正方形时，长轴一端为基准值不变，短的要二次扩大比例倍数
-     */
-
-    var max = 100 / Math.max(widthNew, heightNew);
-    var ratio = widthNew / heightNew;
-    var recycle = []; // 3次过程中新生成的中间纹理需要回收
-
-    for (var k = 0; k < 3; k++) {
-      var tex3 = createTexture(gl, null, j, widthNew, heightNew);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex3, 0);
-
-      if (widthNew >= heightNew) {
-        gl.uniform2f(u_direction, max, 0);
-      } else {
-        gl.uniform2f(u_direction, max * ratio, 0);
-      }
-
-      gl.uniform1i(u_texture, i);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-      recycle.push(tex1);
-      var tex4 = createTexture(gl, null, i, widthNew, heightNew);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex4, 0);
-
-      if (widthNew >= heightNew) {
-        gl.uniform2f(u_direction, 0, max * ratio);
-      } else {
-        gl.uniform2f(u_direction, 0, max);
-      }
-
-      gl.uniform1i(u_texture, j);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-      tex1 = tex4;
-      recycle.push(tex3);
-    } // 回收
-
-
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-    recycle.forEach(function (item) {
-      return gl.deleteTexture(item);
-    });
-    return tex1;
-  }
-
-  function drawCm(gl, program, i, m) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(program, 'u_texture');
-    gl.uniform1i(u_texture, i); // matrix
-
-    var u_m = gl.getUniformLocation(program, 'u_m');
-    gl.uniform1fv(u_m, new Float32Array(m));
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
-
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-  }
-  /**
-   * 根据total/filter生成overflow
-   * @param gl
-   * @param i 输入纹理单元
-   * @param dx 二者偏移值
-   * @param dy
-   * @param width 最终大小
-   * @param height
-   * @param w 输入纹理大小
-   * @param h
-   */
-
-
-  function drawOverflow(gl, i, dx, dy, width, height, w, h) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(gl.programOverflow, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer，原本大小width/height，使用其中的w/h
-
-    var x1 = dx / w,
-        y1 = dy / h,
-        x2 = (width + dx) / w,
-        y2 = (height + dy) / h;
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x1, y2, x2, y1, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(gl.programOverflow, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(gl.programOverflow, 'u_texture');
-    gl.uniform1i(u_texture, i);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.deleteBuffer(pointBuffer);
-  }
-
-  function drawMask(gl, i, j, program) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture1 = gl.getUniformLocation(program, 'u_texture1');
-    gl.uniform1i(u_texture1, j);
-    var u_texture2 = gl.getUniformLocation(program, 'u_texture2');
-    gl.uniform1i(u_texture2, i);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-  }
-
-  function drawMbm(gl, program, i, j, W, H) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture1 = gl.getUniformLocation(program, 'u_texture1');
-    gl.uniform1i(u_texture1, i);
-    var u_texture2 = gl.getUniformLocation(program, 'u_texture2');
-    gl.uniform1i(u_texture2, j);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-  }
-
-  function drawDropShadow(gl, program, frameBuffer, tex1, tex2, i, j, width, height, color) {
-    // 顶点buffer
-    var pointBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var a_position = gl.getAttribLocation(program, 'a_position');
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_position); // 纹理buffer
-
-    var texBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
-    var a_texCoords = gl.getAttribLocation(program, 'a_texCoords');
-    gl.vertexAttribPointer(a_texCoords, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(a_texCoords); // 纹理单元
-
-    var u_texture = gl.getUniformLocation(program, 'u_texture');
-    gl.uniform1i(u_texture, j); // color
-
-    var u_color = gl.getUniformLocation(program, 'u_color');
-    gl.uniform1fv(u_color, new Float32Array([color[0] / 255, color[1] / 255, color[2] / 255, color[3]]));
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // 回收
-
-    gl.deleteBuffer(pointBuffer);
-    gl.deleteBuffer(texBuffer);
-    gl.disableVertexAttribArray(a_position);
-    gl.disableVertexAttribArray(a_texCoords);
-    return tex1;
-  }
-
-  var webgl = {
-    initShaders: initShaders,
-    createTexture: createTexture,
-    bindTexture: bindTexture,
-    drawTextureCache: drawTextureCache,
-    drawBlur: drawBlur,
-    drawOverflow: drawOverflow,
-    drawMask: drawMask,
-    drawMbm: drawMbm,
-    drawCm: drawCm,
-    drawDropShadow: drawDropShadow
-  };
-
-  var SPF = 1000 / 60;
-  var CANVAS = {};
-  var WEBGL = {};
-  var CANVAS_LIST = [];
-  var WEBGL_LIST = [];
-  var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
-  var defaultFontFamilyData;
-
-  function cache(key, width, height, hash, message) {
-    var o;
-
-    if (!key) {
-      var target = hash === CANVAS ? CANVAS_LIST : WEBGL_LIST;
-
-      if (target.length) {
-        o = target.pop();
-      } else {
-        o = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
-      }
-    } else if (!hash[key]) {
-      o = hash[key] = !debug.flag && SUPPORT_OFFSCREEN_CANVAS ? new OffscreenCanvas(width, height) : document.createElement('canvas');
-    } else {
-      o = hash[key];
-    }
-
-    o.width = width;
-    o.height = height;
-
-    if (debug.flag) {
-      o.style.width = width + 'px';
-      o.style.height = height + 'px';
-      o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
-
-      if (key) {
-        o.setAttribute('key', key);
-      }
-
-      if (message) {
-        o.setAttribute('message', message);
-      }
-
-      document.body.appendChild(o);
-    }
-
-    var ctx;
-
-    if (hash === CANVAS) {
-      ctx = o.getContext('2d');
-    } else {
-      ctx = o.getContext('webgl', ca) || o.getContext('experimental-webgl', ca);
-    }
-
-    return {
-      canvas: o,
-      ctx: ctx,
-      draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
-      },
-      enabled: true,
-      available: true,
-      release: function release() {
-        if (!key && this.available) {
-          if (hash === CANVAS) {
-            CANVAS_LIST.push(this.canvas);
-          } else {
-            WEBGL_LIST.push(this.canvas);
-          }
-        }
-
-        this.available = false;
-      }
-    };
-  }
-
-  function cacheCanvas(key, width, height, message) {
-    return cache(key, width, height, CANVAS, message);
-  }
-
-  function cacheWebgl(key, width, height, message) {
-    return cache(key, width, height, WEBGL, message);
-  }
-
-  var IMG = {};
-  var INIT = 0;
-  var LOADING = 1;
-  var LOADED = 2;
-  var FONT = {};
-  var COMPONENT = {};
-  var div;
-
-  function createDiv() {
-    div = document.createElement('div');
-    div.style.position = 'absolute';
-    div.style.left = '99999px';
-    div.style.top = '-99999px';
-    div.style.visibility = 'hidden';
-    div.style.whiteSpace = 'nowrap';
-    document.body.appendChild(div);
-  }
-
-  var inject = {
-    measureTextSync: function measureTextSync(str, ff, fs, fw) {
-      if (!div) {
-        createDiv();
-      }
-
-      div.style.fontFamily = ff;
-      div.style.fontSize = fs + 'px';
-      div.style.fontWeight = fw;
-      div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
-      return parseFloat(window.getComputedStyle(div, null).width);
-    },
-    measureTextListMax: function measureTextListMax(str, ff, fs, fw) {
-      if (!div) {
-        createDiv();
-      }
-
-      div.style.fontFamily = ff;
-      div.style.fontSize = fs + 'px';
-      div.style.fontWeight = fw;
-      var s = '';
-
-      for (var i = 0, len = str.length; i < len; i++) {
-        s += '<span style="position:absolute">' + str.charAt(i).replace('<', '&lt;').replace(/[ \n]/, '&nbsp;') + '</span>';
-      }
-
-      div.innerHTML = s;
-      var max = 0;
-      var cns = div.childNodes;
-
-      for (var _i = 0, _len = cns.length; _i < _len; _i++) {
-        var node = cns[_i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
-
-        max = Math.max(max, parseFloat(window.getComputedStyle(node, null).width));
-      }
-
-      return max;
-    },
-    IMG: IMG,
-    INIT: INIT,
-    LOADED: LOADED,
-    LOADING: LOADING,
-    measureImg: function measureImg(url, cb) {
-      if (Array.isArray(url)) {
-        if (!url.length) {
-          return cb();
-        }
-
-        var count = 0;
-        var len = url.length;
-        var list = [];
-        url.forEach(function (item, i) {
-          inject.measureImg(item, function (cache) {
-            list[i] = cache;
-
-            if (++count === len) {
-              cb(list);
-            }
-          });
-        });
-        return;
-      } else if (!url || !util.isString(url)) {
-        inject.error('Measure img invalid: ' + url);
-        cb && cb({
-          state: LOADED,
-          success: false,
-          url: url
-        });
-        return;
-      }
-
-      var cache = IMG[url] = IMG[url] || {
-        state: INIT,
-        task: []
-      };
-
-      if (cache.state === LOADED) {
-        cb && cb(cache);
-      } else if (cache.state === LOADING) {
-        cb && cache.task.push(cb);
-      } else {
-        cache.state = LOADING;
-        cb && cache.task.push(cb);
-        var img = new Image();
-
-        img.onload = function () {
-          cache.state = LOADED;
-          cache.success = true;
-          cache.width = img.width;
-          cache.height = img.height;
-          cache.source = img;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        };
-
-        img.onerror = function (e) {
-          cache.state = LOADED;
-          cache.success = false;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        };
-
-        if (url.substr(0, 5) !== 'data:') {
-          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
-
-          if (host) {
-            if (typeof location === 'undefined' || location.hostname !== host[1]) {
-              img.crossOrigin = 'anonymous';
-            }
-          }
-        }
-
-        img.src = url;
-
-        if (debug.flag && typeof document !== 'undefined') {
-          document.body.appendChild(img);
-        }
-      }
-    },
-    warn: function warn(s) {
-      console.warn(s);
-    },
-    error: function error(s) {
-      console.error(s);
-    },
-    requestAnimationFrame: function (_requestAnimationFrame) {
-      function requestAnimationFrame(_x) {
-        return _requestAnimationFrame.apply(this, arguments);
-      }
-
-      requestAnimationFrame.toString = function () {
-        return _requestAnimationFrame.toString();
-      };
-
-      return requestAnimationFrame;
-    }(function (cb) {
-      if (!cb) {
-        return;
-      }
-
-      var res;
-
-      if (typeof requestAnimationFrame !== 'undefined') {
-        inject.requestAnimationFrame = requestAnimationFrame.bind(window);
-        res = requestAnimationFrame(cb);
-      } else {
-        res = setTimeout(cb, SPF);
-
-        inject.requestAnimationFrame = function (cb) {
-          return setTimeout(cb, SPF);
-        };
-      }
-
-      return res;
-    }),
-    cancelAnimationFrame: function (_cancelAnimationFrame) {
-      function cancelAnimationFrame(_x2) {
-        return _cancelAnimationFrame.apply(this, arguments);
-      }
-
-      cancelAnimationFrame.toString = function () {
-        return _cancelAnimationFrame.toString();
-      };
-
-      return cancelAnimationFrame;
-    }(function (id) {
-      var res;
-
-      if (typeof cancelAnimationFrame !== 'undefined') {
-        inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
-        res = cancelAnimationFrame(id);
-      } else {
-        res = clearTimeout(id);
-
-        inject.cancelAnimationFrame = function (id) {
-          return clearTimeout(id);
-        };
-      }
-
-      return res;
-    }),
-    now: function now() {
-      if (typeof performance !== 'undefined') {
-        inject.now = function () {
-          return Math.floor(performance.now());
-        };
-
-        return Math.floor(performance.now());
-      }
-
-      inject.now = Date.now.bind(Date);
-      return Date.now();
-    },
-    hasCacheCanvas: function hasCacheCanvas(key) {
-      return key && CANVAS.hasOwnProperty(key);
-    },
-    getCacheCanvas: function getCacheCanvas(width, height, key, message) {
-      return cacheCanvas(key, width, height, message);
-    },
-    releaseCacheCanvas: function releaseCacheCanvas(o) {
-      CANVAS_LIST.push(o);
-    },
-    delCacheCanvas: function delCacheCanvas(key) {
-      key && delete CANVAS[key];
-    },
-    hasCacheWebgl: function hasCacheWebgl(key) {
-      return key && WEBGL.hasOwnProperty(key);
-    },
-    getCacheWebgl: function getCacheWebgl(width, height, key, message) {
-      return cacheWebgl(key, width, height, message);
-    },
-    releaseCacheWebgl: function releaseCacheWebgl(o) {
-      WEBGL_LIST.push(o);
-    },
-    delCacheWebgl: function delCacheWebgl(key) {
-      key && delete WEBGL[key];
-    },
-    isDom: function isDom(o) {
-      if (o) {
-        if (util.isString(o)) {
-          return true;
-        }
-
-        if (typeof window !== 'undefined' && window.Element && o instanceof window.Element) {
-          return true;
-        }
-
-        if (typeof window !== 'undefined' && window.OffscreenCanvas && o instanceof window.OffscreenCanvas) {
-          return true;
-        } // worker
-
-
-        if (typeof self !== 'undefined' && self.OffscreenCanvas && o instanceof self.OffscreenCanvas) {
-          return true;
-        }
-
-        if (util.isFunction(o.getElementsByTagName)) {
-          return true;
-        }
-      }
-
-      return false;
-    },
-    isWebGLTexture: function isWebGLTexture(o) {
-      if (o && typeof WebGLTexture !== 'undefined') {
-        return o instanceof WebGLTexture;
-      }
-    },
-    defaultFontFamily: 'arial',
-    getFontCanvas: function getFontCanvas() {
-      return inject.getCacheCanvas(16, 16, '__$$CHECK_SUPPORT_FONT_FAMILY$$__');
-    },
-    checkSupportFontFamily: function checkSupportFontFamily(ff) {
-      ff = ff.toLowerCase(); // 强制arial兜底
-
-      if (ff === this.defaultFontFamily || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
-        return true;
-      }
-
-      if (!o$1.info.hasOwnProperty(ff)) {
-        return false;
-      }
-
-      if (o$1.info[ff].hasOwnProperty('checked')) {
-        return o$1.info[ff].checked;
-      }
-
-      var canvas = inject.getFontCanvas();
-      var context = canvas.ctx;
-      context.textAlign = 'center';
-      context.fillStyle = '#000';
-      context.textBaseline = 'middle';
-
-      if (!defaultFontFamilyData) {
-        context.clearRect(0, 0, 16, 16);
-        context.font = '16px ' + this.defaultFontFamily;
-        context.fillText('a', 8, 8);
-        canvas.draw();
-        defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
-      }
-
-      context.clearRect(0, 0, 16, 16);
-      context.font = '16px ' + ff;
-      context.fillText('a', 8, 8);
-      canvas.draw();
-      var data = context.getImageData(0, 0, 16, 16).data;
-
-      for (var i = 0, len = data.length; i < len; i++) {
-        if (defaultFontFamilyData[i] !== data[i]) {
-          return o$1.info[ff].checked = true;
-        }
-      }
-
-      return o$1.info[ff].checked = false;
-    },
-    loadFont: function loadFont(fontFamily, url, cb) {
-      if (util.isFunction(url)) {
-        cb = url;
-        url = fontFamily;
-      }
-
-      if (Array.isArray(url)) {
-        if (!url.length) {
-          return cb();
-        }
-
-        var count = 0;
-        var len = url.length;
-        var list = [];
-        url.forEach(function (item, i) {
-          inject.loadFont(item.fontFamily, item.url, function (cache) {
-            list[i] = cache;
-
-            if (++count === len) {
-              cb(list);
-            }
-          });
-        });
-        return;
-      } else if (!url || !util.isString(url)) {
-        inject.error('Load font invalid: ' + url);
-        cb && cb({
-          state: LOADED,
-          success: false,
-          url: url
-        });
-        return;
-      }
-
-      if (!fontFamily) {
-        fontFamily = url;
-      }
-
-      var cache = FONT[url] = FONT[url] || {
-        state: INIT,
-        task: []
-      };
-
-      if (cache.state === LOADED) {
-        cb && cb(cache);
-      } else if (cache.state === LOADING) {
-        cb && cache.task.push(cb);
-      } else {
-        cache.state = LOADING;
-        cb && cache.task.push(cb);
-
-        if (!/url\(/.test(url)) {
-          url = "url(".concat(url, ")");
-        }
-
-        var f = new FontFace(fontFamily, url);
-        f.load().then(function () {
-          document.fonts.add(f);
-          cache.state = LOADED;
-          cache.success = true;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        })["catch"](function () {
-          cache.state = LOADED;
-          cache.success = false;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        });
-      }
-    },
-    loadComponent: function loadComponent(url, cb) {
-      if (Array.isArray(url)) {
-        if (!url.length) {
-          return cb();
-        }
-
-        var count = 0;
-        var len = url.length;
-        var list = [];
-        url.forEach(function (item, i) {
-          inject.loadComponent(item, function (cache) {
-            list[i] = cache;
-
-            if (++count === len) {
-              cb(list);
-            }
-          });
-        });
-        return;
-      } else if (!url || !util.isString(url)) {
-        inject.error('Load component invalid: ' + url);
-        cb && cb({
-          state: LOADED,
-          success: false,
-          url: url
-        });
-        return;
-      }
-
-      var cache = COMPONENT[url] = COMPONENT[url] || {
-        state: INIT,
-        task: []
-      };
-
-      if (cache.state === LOADED) {
-        cb && cb(cache);
-      } else if (cache.state === LOADING) {
-        cb && cache.task.push(cb);
-      } else {
-        cache.state = LOADING;
-        cb && cache.task.push(cb);
-        var script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-
-        script.onload = function () {
-          cache.state = LOADED;
-          cache.success = true;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-          document.head.removeChild(script);
-        };
-
-        script.onerror = function () {
-          cache.state = LOADED;
-          cache.success = false;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-          document.head.removeChild(script);
-        };
-
-        document.head.appendChild(script);
-      }
-    }
-  };
-
   var rgba2int$1 = util.rgba2int,
       isNil$1 = util.isNil;
   var PX$1 = o.PX,
@@ -7709,159 +7884,6 @@
     GRADIENT_TYPE: GRADIENT_TYPE
   };
 
-  var DOM = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'inherit',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'inherit',
-    backgroundImage: null,
-    backgroundColor: 'transparent',
-    backgroundSize: 'auto',
-    backgroundRepeat: 'repeat',
-    backgroundPositionX: 0,
-    backgroundPositionY: 0,
-    backgroundClip: 'borderBox',
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: 'transparent',
-    borderTopStyle: 'none',
-    borderRightStyle: 'none',
-    borderBottomStyle: 'none',
-    borderLeftStyle: 'none',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    order: 0,
-    justifyContent: 'flexStart',
-    alignItems: 'stretch',
-    alignSelf: 'auto',
-    alignContent: 'stretch',
-    textAlign: 'inherit',
-    letterSpacing: 'inherit',
-    transformOrigin: 'center',
-    visibility: 'inherit',
-    opacity: 1,
-    zIndex: 0,
-    transform: null,
-    translateX: 0,
-    translateY: 0,
-    translateZ: 0,
-    scaleX: 1,
-    scaleY: 1,
-    scaleZ: 1,
-    skewX: 0,
-    skewY: 0,
-    rotateX: 0,
-    rotateY: 0,
-    rotateZ: 0,
-    rotate3d: '0, 0, 0, 0',
-    perspective: 0,
-    perspectiveOrigin: 'center',
-    filter: null,
-    boxShadow: null,
-    pointerEvents: 'inherit',
-    overflow: 'visible',
-    mixBlendMode: 'normal',
-    whiteSpace: 'inherit',
-    textOverflow: 'clip',
-    lineClamp: 0,
-    textStrokeWidth: 'inherit',
-    textStrokeColor: 'inherit',
-    textStrokeOver: 'inherit'
-  };
-  var GEOM = {
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: '',
-    strokeLinecap: 'butt',
-    strokeLinejoin: 'miter',
-    strokeMiterlimit: 4,
-    fillRule: 'nonzero'
-  };
-  var DOM_ENTRY_SET = [];
-  var DOM_KEY_SET = [];
-  Object.keys(DOM).forEach(function (k) {
-    DOM_KEY_SET.push(k);
-    var v = DOM[k];
-    DOM_ENTRY_SET.push({
-      k: k,
-      v: v
-    });
-  });
-  var GEOM_ENTRY_SET = [];
-  var GEOM_KEY_SET = [];
-  Object.keys(GEOM).forEach(function (k) {
-    GEOM_KEY_SET.push(k);
-    var v = GEOM[k];
-    GEOM_ENTRY_SET.push({
-      k: k,
-      v: v
-    });
-  });
-  var INHERIT = {
-    get fontFamily() {
-      return inject.defaultFontFamily;
-    },
-
-    fontSize: 16,
-    fontWeight: 400,
-    fontStyle: 'normal',
-    color: '#000',
-    textAlign: 'left',
-    visibility: 'visible',
-    pointerEvents: 'auto',
-    textStrokeColor: '#000',
-    textStrokeWidth: 1,
-    textStrokeOver: 'none'
-  };
-  var INHERIT_KEY_SET = [];
-  Object.keys(INHERIT).forEach(function (k) {
-    INHERIT_KEY_SET.push(k);
-  });
-  var reset = {
-    DOM: DOM,
-    GEOM: GEOM,
-    isValid: function isValid(i) {
-      return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
-    },
-    DOM_KEY_SET: DOM_KEY_SET,
-    GEOM_KEY_SET: GEOM_KEY_SET,
-    DOM_ENTRY_SET: DOM_ENTRY_SET,
-    GEOM_ENTRY_SET: GEOM_ENTRY_SET,
-    INHERIT: INHERIT,
-    INHERIT_KEY_SET: INHERIT_KEY_SET
-  };
-
   var _REPAINT;
   var RESET_DOM = reset.DOM,
       RESET_GEOM = reset.GEOM;
@@ -8077,7 +8099,8 @@
       TRANSLATE_PATH = _enums$STYLE_KEY$2.TRANSLATE_PATH,
       TEXT_STROKE_COLOR = _enums$STYLE_KEY$2.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH = _enums$STYLE_KEY$2.TEXT_STROKE_WIDTH,
-      TEXT_STROKE_OVER = _enums$STYLE_KEY$2.TEXT_STROKE_OVER;
+      TEXT_STROKE_OVER = _enums$STYLE_KEY$2.TEXT_STROKE_OVER,
+      WRITING_MODE = _enums$STYLE_KEY$2.WRITING_MODE;
   var AUTO = o.AUTO,
       PX$2 = o.PX,
       PERCENT$2 = o.PERCENT,
@@ -8100,6 +8123,7 @@
   var isGeom = o$2.isGeom,
       GEOM$2 = o$2.GEOM,
       GEOM_KEY_SET$2 = o$2.GEOM_KEY_SET;
+  var VALID_STRING_VALUE$1 = reset.VALID_STRING_VALUE;
   var COLOR_HASH$1 = key.COLOR_HASH,
       LENGTH_HASH$1 = key.LENGTH_HASH,
       RADIUS_HASH$1 = key.RADIUS_HASH,
@@ -8138,16 +8162,37 @@
       }
     }
   }
+
+  function convertStringValue(k, v) {
+    if (isNil$3(v)) {
+      v = v.toString();
+    } else {
+      v = '';
+    }
+
+    v = v.toLowerCase().replace(/-(a-z)/i, function ($0, $1) {
+      return $1.toUpperCase();
+    });
+    var list = VALID_STRING_VALUE$1[k];
+    var i = list.indexOf(v);
+
+    if (i > -1) {
+      return list[i];
+    } // 兜底默认
+
+
+    return list[0];
+  }
   /**
-   * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
+   * 将传入的手写style标准化，并且用resetList默认值覆盖其中为空的
    * @param style 手写的style样式
-   * @param reset 默认样式，可选
+   * @param resetList 默认样式，可选
    * @returns Object 标准化的枚举数组结构样式
    */
 
 
   function normalize(style) {
-    var reset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+    var resetList = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
     if (!util.isObject(style)) {
       return {};
@@ -8258,7 +8303,7 @@
       }
     }); // 默认reset，根据传入不同，当style为空时覆盖
 
-    reset.forEach(function (item) {
+    resetList.forEach(function (item) {
       var k = item.k,
           v = item.v;
 
@@ -8362,8 +8407,8 @@
 
         if (match) {
           if (match.length === 1) {
-            if (match[0] === 'contain' || match[0] === 'cover') {
-              match[1] = match[0];
+            if (match[0].toLowerCase() === 'contain' || match[0].toLowerCase() === 'cover') {
+              match[1] = match[0].toLowerCase();
             } else {
               match[1] = 'auto';
             }
@@ -8372,7 +8417,7 @@
           var v = [];
 
           for (var i = 0; i < 2; i++) {
-            var _item = match[i];
+            var _item = match[i].toLowerCase();
 
             if (/^[-+]?[\d.]/.test(_item)) {
               var n = calUnit$1(_item);
@@ -8730,7 +8775,7 @@
     temp = style.flexBasis;
 
     if (temp !== undefined) {
-      if (temp === 'content') {
+      if (/content/i.test(temp)) {
         res[FLEX_BASIS] = [temp, STRING];
       } else if (/^[\d.]/.test(temp)) {
         var v = res[FLEX_BASIS] = calUnit$1(temp);
@@ -8753,7 +8798,7 @@
     temp = style.color;
 
     if (temp !== undefined) {
-      if (temp === 'inherit') {
+      if (/inherit/i.test(temp)) {
         res[COLOR] = [[], INHERIT$1];
       } else if (reg.gradient.test(temp)) {
         res[COLOR] = [gradient$1.parseGradient(temp), GRADIENT];
@@ -8765,7 +8810,7 @@
     temp = style.textStrokeColor;
 
     if (temp !== undefined) {
-      if (temp === 'inherit') {
+      if (/inherit/i.test(temp)) {
         res[TEXT_STROKE_COLOR] = [[], INHERIT$1];
       } else if (reg.gradient.test(temp)) {
         res[TEXT_STROKE_COLOR] = [gradient$1.parseGradient(temp), GRADIENT];
@@ -8777,7 +8822,7 @@
     temp = style.fontSize;
 
     if (temp !== undefined) {
-      if (temp === 'inherit') {
+      if (/inherit/i.test(temp)) {
         res[FONT_SIZE$2] = [0, INHERIT$1];
       } else {
         var _v = calUnit$1(temp); // fontSize不能为负数，否则为继承
@@ -8798,7 +8843,7 @@
     temp = style.textStrokeWidth;
 
     if (temp !== undefined) {
-      if (temp === 'inherit') {
+      if (/inherit/i.test(temp)) {
         res[TEXT_STROKE_WIDTH] = [0, INHERIT$1];
       } else {
         var _v2 = calUnit$1(temp); // textStrokeWidth不能为负数，否则为继承
@@ -8819,13 +8864,13 @@
     temp = style.textStrokeOver;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[TEXT_STROKE_OVER] = [0, INHERIT$1];
       } else {
-        var _v3 = temp.toString();
+        var _v3 = reset.INHERIT.textStrokeOver;
 
-        if (_v3 !== 'none' && _v3 !== 'fill') {
-          _v3 = 'none';
+        if (/fill/i.test(temp)) {
+          _v3 = 'fill';
         }
 
         res[TEXT_STROKE_OVER] = [_v3, STRING];
@@ -8835,13 +8880,13 @@
     temp = style.fontWeight;
 
     if (temp !== undefined) {
-      if (temp === 'bold') {
+      if (/bold/i.test(temp)) {
         res[FONT_WEIGHT] = [700, NUMBER$1];
-      } else if (temp === 'normal') {
+      } else if (/normal/i.test(temp)) {
         res[FONT_WEIGHT] = [400, NUMBER$1];
-      } else if (temp === 'lighter') {
+      } else if (/lighter/i.test(temp)) {
         res[FONT_WEIGHT] = [200, NUMBER$1];
-      } else if (temp === 'inherit') {
+      } else if (/inherit/i.test(temp)) {
         res[FONT_WEIGHT] = [0, INHERIT$1];
       } else {
         res[FONT_WEIGHT] = [Math.max(0, parseInt(temp)) || 400, NUMBER$1];
@@ -8851,17 +8896,25 @@
     temp = style.fontStyle;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[FONT_STYLE] = [0, INHERIT$1];
       } else {
-        res[FONT_STYLE] = [temp, STRING];
+        var _v4 = reset.INHERIT.fontStyle;
+
+        if (/italic/i.test(temp)) {
+          _v4 = 'italic';
+        } else if (/oblique/i.test(temp)) {
+          _v4 = 'oblique';
+        }
+
+        res[FONT_STYLE] = [_v4, STRING];
       }
     }
 
     temp = style.fontFamily;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[FONT_FAMILY] = [0, INHERIT$1];
       } else {
         // 统一文字声明格式
@@ -8869,32 +8922,58 @@
       }
     }
 
+    temp = style.writingMode;
+
+    if (temp !== undefined) {
+      if (temp === null || /inherit/i.test(temp)) {
+        res[WRITING_MODE] = [0, INHERIT$1];
+      } else {
+        var _v5 = reset.INHERIT.writingMode;
+
+        if (/vertical-?rl/i.test(temp)) {
+          _v5 = 'verticalRl';
+        } else if (/vertical-?lr/i.test(temp)) {
+          _v5 = 'verticalLr';
+        }
+
+        res[WRITING_MODE] = [_v5, STRING];
+      }
+    }
+
     temp = style.textAlign;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[TEXT_ALIGN] = [0, INHERIT$1];
       } else {
-        res[TEXT_ALIGN] = [temp, STRING];
+        var _v6 = 'left';
+
+        if (/center/i.test(temp)) {
+          _v6 = 'center';
+        } else if (/right/i.test(temp)) {
+          _v6 = 'right';
+        }
+
+        res[TEXT_ALIGN] = [_v6, STRING];
       }
     }
 
     temp = style.lineHeight;
 
     if (temp !== undefined) {
-      if (temp === 'inherit') {
+      if (/inherit/i.test(temp)) {
         res[LINE_HEIGHT] = [0, INHERIT$1];
-      } else if (temp === 'normal') {
+      } else if (/normal/i.test(temp)) {
         res[LINE_HEIGHT] = [0, AUTO];
       } // lineHeight默认数字，想要px必须强制带单位
       else if (/^[\d.]+/i.test(temp)) {
-        var _v4 = calUnit$1(temp);
+        var _v7 = calUnit$1(temp);
 
-        if ([DEG$1].indexOf(_v4[1]) > -1) {
-          _v4[1] = NUMBER$1;
+        if ([DEG$1].indexOf(_v7[1]) > -1) {
+          _v7[1] = NUMBER$1;
         }
 
-        res[LINE_HEIGHT] = _v4;
+        res[LINE_HEIGHT] = _v7;
       } else {
         var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
@@ -8909,18 +8988,18 @@
     temp = style.letterSpacing;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[LETTER_SPACING] = [0, INHERIT$1];
-      } else if (temp === 'normal') {
+      } else if (/normal/i.test(temp)) {
         res[LETTER_SPACING] = [0, PX$2];
       } else if (/^[-+]?[\d.]/.test(temp)) {
-        var _v5 = calUnit$1(temp);
+        var _v8 = calUnit$1(temp);
 
-        if ([NUMBER$1, DEG$1].indexOf(_v5[1]) > -1) {
-          _v5[1] = PX$2;
+        if ([NUMBER$1, DEG$1].indexOf(_v8[1]) > -1) {
+          _v8[1] = PX$2;
         }
 
-        res[LETTER_SPACING] = _v5;
+        res[LETTER_SPACING] = _v8;
       } else {
         res[LETTER_SPACING] = [parseFloat(temp) || 0, PX$2];
       }
@@ -8929,7 +9008,7 @@
     temp = style.whiteSpace;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[WHITE_SPACE] = [0, INHERIT$1];
       } else {
         res[WHITE_SPACE] = [temp, STRING];
@@ -9068,7 +9147,7 @@
 
           if (match) {
             var k = match[1].toLowerCase(),
-                _v6 = match[2];
+                _v9 = match[2];
 
             if (k === 'drop-shadow' || k === 'dropshadow') {
               var coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
@@ -9081,18 +9160,18 @@
                   var item2 = coords[i];
 
                   if (item2) {
-                    var _v7 = calUnit$1(item2);
+                    var _v10 = calUnit$1(item2);
 
-                    if ([NUMBER$1, DEG$1].indexOf(_v7[1]) > -1) {
-                      _v7[1] = PX$2;
+                    if ([NUMBER$1, DEG$1].indexOf(_v10[1]) > -1) {
+                      _v10[1] = PX$2;
                     } // x/y可以负，blur和spread不行
 
 
-                    if (i > 2 && _v7[0] < 0) {
-                      _v7 = 0;
+                    if (i > 2 && _v10[0] < 0) {
+                      _v10 = 0;
                     }
 
-                    _res.push(_v7);
+                    _res.push(_v10);
                   } else {
                     _res.push([0, 1]);
                   }
@@ -9109,39 +9188,39 @@
                 f.push(['dropShadow', _res]);
               }
             } else {
-              var m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(_v6);
+              var m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(_v9);
 
               if (m2) {
                 f = f || [];
 
-                var _v8 = calUnit$1(m2[0]);
+                var _v11 = calUnit$1(m2[0]);
 
                 if (k === 'blur') {
-                  if ([DEG$1, PERCENT$2].indexOf(_v8[1]) > -1) {
+                  if ([DEG$1, PERCENT$2].indexOf(_v11[1]) > -1) {
                     return;
                   }
 
-                  if (_v8[1] === NUMBER$1) {
-                    _v8[1] = PX$2;
+                  if (_v11[1] === NUMBER$1) {
+                    _v11[1] = PX$2;
                   }
 
-                  _v8[0] = Math.max(_v8[0], 0);
-                  f.push([k, _v8]);
+                  _v11[0] = Math.max(_v11[0], 0);
+                  f.push([k, _v11]);
                 } else if (k === 'hue-rotate' || k === 'huerotate') {
-                  if ([NUMBER$1, DEG$1].indexOf(_v8[1]) === -1) {
+                  if ([NUMBER$1, DEG$1].indexOf(_v11[1]) === -1) {
                     return;
                   }
 
-                  _v8[1] = DEG$1;
-                  f.push(['hueRotate', _v8]);
+                  _v11[1] = DEG$1;
+                  f.push(['hueRotate', _v11]);
                 } else if (k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
-                  if ([NUMBER$1, PERCENT$2].indexOf(_v8[1]) === -1) {
+                  if ([NUMBER$1, PERCENT$2].indexOf(_v11[1]) === -1) {
                     return;
                   }
 
-                  _v8[0] = Math.max(_v8[0], 0);
-                  _v8[1] = PERCENT$2;
-                  f.push([k, _v8]);
+                  _v11[0] = Math.max(_v11[0], 0);
+                  _v11[1] = PERCENT$2;
+                  f.push([k, _v11]);
                 }
               }
             }
@@ -9155,20 +9234,32 @@
     temp = style.visibility;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[VISIBILITY] = [0, INHERIT$1];
       } else {
-        res[VISIBILITY] = [temp, STRING];
+        var _v12 = reset.INHERIT.visibility;
+
+        if (/hidden/i.test(temp)) {
+          _v12 = 'hidden';
+        }
+
+        res[VISIBILITY] = [_v12, STRING];
       }
     }
 
     temp = style.pointerEvents;
 
     if (temp !== undefined) {
-      if (temp === null || temp === 'inherit') {
+      if (temp === null || /inherit/i.test(temp)) {
         res[POINTER_EVENTS] = [0, INHERIT$1];
       } else {
-        res[POINTER_EVENTS] = [temp, STRING];
+        var _v13 = reset.INHERIT.pointerEvents;
+
+        if (/none/i.test(temp)) {
+          _v13 = 'none';
+        }
+
+        res[POINTER_EVENTS] = [_v13, STRING];
       }
     }
 
@@ -9191,18 +9282,18 @@
               var item2 = coords[i];
 
               if (item2) {
-                var _v9 = calUnit$1(item2);
+                var _v14 = calUnit$1(item2);
 
-                if ([NUMBER$1, DEG$1].indexOf(_v9[1]) > -1) {
-                  _v9[1] = PX$2;
+                if ([NUMBER$1, DEG$1].indexOf(_v14[1]) > -1) {
+                  _v14[1] = PX$2;
                 } // x/y可以负，blur和spread不行
 
 
-                if (i > 2 && _v9[0] < 0) {
-                  _v9 = 0;
+                if (i > 2 && _v14[0] < 0) {
+                  _v14 = 0;
                 }
 
-                _res2.push(_v9);
+                _res2.push(_v14);
               } else {
                 _res2.push([0, 1]);
               }
@@ -9216,7 +9307,7 @@
               _res2.push([0, 0, 0, 1]);
             }
 
-            _res2.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
+            _res2.push(/inset/i.test(item) ? 'inset' : 'outset');
 
             bs.push(_res2);
           }
@@ -9229,7 +9320,7 @@
 
     ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        res[STYLE_KEY$3[style2Upper$1(k)]] = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = convertStringValue(style[k]);
       }
     }); // 直接赋值的number类型
 
@@ -9247,8 +9338,8 @@
 
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        var _v10 = style[k];
-        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v10) ? _v10 : [_v10];
+        var _v15 = style[k];
+        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v15) ? _v15 : [_v15];
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -13865,6 +13956,7 @@
       BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$8.BORDER_LEFT_WIDTH,
       BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$8.BORDER_RIGHT_WIDTH,
       FILTER$2 = _enums$STYLE_KEY$8.FILTER,
+      WRITING_MODE$1 = _enums$STYLE_KEY$8.WRITING_MODE,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
       NODE_LIMIT_CACHE = _enums$NODE_KEY$1.NODE_LIMIT_CACHE,
@@ -14100,7 +14192,9 @@
             whiteSpace = computedStyle[WHITE_SPACE$1],
             fontSize = computedStyle[FONT_SIZE$6],
             fontWeight = computedStyle[FONT_WEIGHT$3],
-            fontFamily = computedStyle[FONT_FAMILY$3];
+            fontFamily = computedStyle[FONT_FAMILY$3],
+            writingMode = computedStyle[WRITING_MODE$1]; // 基于最近block父节点的样式
+
         var bp = this.domParent;
 
         while (bp.computedStyle[DISPLAY$1] === 'inline') {
@@ -19928,10 +20022,10 @@
     overlay: true,
     darken: true,
     lighten: true,
-    'color-dodge': true,
-    'color-burn': true,
-    'hard-light': true,
-    'soft-light': true,
+    colorDodge: true,
+    colorBurn: true,
+    hardLight: true,
+    softLight: true,
     difference: true,
     exclusion: true,
     hue: true,
@@ -20057,6 +20151,7 @@
       TEXT_ALIGN$2 = _enums$STYLE_KEY$d.TEXT_ALIGN,
       LETTER_SPACING$3 = _enums$STYLE_KEY$d.LETTER_SPACING,
       WHITE_SPACE$2 = _enums$STYLE_KEY$d.WHITE_SPACE,
+      WRITING_MODE$2 = _enums$STYLE_KEY$d.WRITING_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -20305,11 +20400,10 @@
         this.__hasComputeReflow = true;
         var currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
-            parent = this.domParent,
-            root = this.root;
+            parent = this.domParent;
         var isRoot = !parent;
         var parentComputedStyle = parent && parent.computedStyle;
-        [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5].forEach(function (k) {
+        [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5, WRITING_MODE$2].forEach(function (k) {
           var v = currentStyle[k]; // ff特殊处理
 
           if (k === FONT_FAMILY$5) {
@@ -20344,7 +20438,12 @@
         });
         [POSITION$2, DISPLAY$2, FLEX_DIRECTION$2, JUSTIFY_CONTENT$1, ALIGN_ITEMS$1, ALIGN_SELF$1, FLEX_GROW$1, FLEX_SHRINK$1, LINE_CLAMP$1, ORDER$1, FLEX_WRAP$1, ALIGN_CONTENT, OVERFLOW$1, TEXT_OVERFLOW$2].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
-        }); // 匿名块对象
+        }); // writingMode特殊判断inline
+
+        if (computedStyle[WRITING_MODE$2] !== parentComputedStyle[WRITING_MODE$2] && computedStyle[DISPLAY$2] === 'inline') {
+          computedStyle[DISPLAY$2] = 'inlineBlock';
+        } // 匿名块对象
+
 
         if (computedStyle[POSITION$2] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY$2] === 'flex') {
           if (['block', 'flex'].indexOf(computedStyle[DISPLAY$2]) === -1) {
@@ -20485,9 +20584,9 @@
 
         this.__parentLineBox = null;
         this.__isIbFull = false;
-        var display = computedStyle[DISPLAY$2];
-        var width = currentStyle[WIDTH$4],
-            position = currentStyle[POSITION$2];
+        var display = computedStyle[DISPLAY$2],
+            position = computedStyle[POSITION$2];
+        var width = currentStyle[WIDTH$4];
         this.__layoutData = {
           x: data.x,
           y: data.y,
@@ -24162,7 +24261,7 @@
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FONT_FAMILY$6 = _enums$STYLE_KEY$g.FONT_FAMILY,
       FONT_WEIGHT$6 = _enums$STYLE_KEY$g.FONT_WEIGHT,
-      TEXT_OVERFLOW$3 = _enums$STYLE_KEY$g.TEXT_OVERFLOW,
+      WRITING_MODE$3 = _enums$STYLE_KEY$g.WRITING_MODE,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
       NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
@@ -24869,7 +24968,7 @@
             lineClamp = computedStyle[LINE_CLAMP$2],
             lineHeight = computedStyle[LINE_HEIGHT$5],
             overflow = computedStyle[OVERFLOW$2],
-            textOverflow = computedStyle[TEXT_OVERFLOW$3]; // 只有>=1的正整数才有效
+            writingMode = computedStyle[WRITING_MODE$3]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
@@ -25392,7 +25491,8 @@
             flexWrap = computedStyle[FLEX_WRAP$2],
             alignContent = computedStyle[ALIGN_CONTENT$1],
             lineHeight = computedStyle[LINE_HEIGHT$5],
-            textAlign = computedStyle[TEXT_ALIGN$3]; // 只有>=1的正整数才有效
+            textAlign = computedStyle[TEXT_ALIGN$3],
+            writingMode = computedStyle[WRITING_MODE$3]; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
@@ -26301,7 +26401,8 @@
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             paddingLeft = computedStyle[PADDING_LEFT$5],
-            paddingRight = computedStyle[PADDING_RIGHT$4];
+            paddingRight = computedStyle[PADDING_RIGHT$4],
+            writingMode = computedStyle[WRITING_MODE$3];
         var lineClampCount = data.lineClampCount || 0;
 
         if (isInline && !this.__isRealInline()) {
@@ -26333,10 +26434,8 @@
         } // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
 
 
-        var contentBoxList;
-
         if (isInline) {
-          contentBoxList = this.__contentBoxList = [];
+          this.contentBoxList.splice(0);
           lineBoxManager.pushContentBoxList(this);
         } // ib的bp是自己，inline是最近的非inline
 
@@ -26347,9 +26446,7 @@
           bp = bp.domParent;
         }
 
-        var _bp$computedStyle = bp.computedStyle,
-            overflow = _bp$computedStyle[OVERFLOW$2],
-            textOverflow = _bp$computedStyle[TEXT_OVERFLOW$3];
+        var overflow = bp.computedStyle[OVERFLOW$2];
         var isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
 
         var length = flowChildren.length;

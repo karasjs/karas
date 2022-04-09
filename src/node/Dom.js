@@ -58,7 +58,7 @@ const {
     FONT_SIZE,
     FONT_FAMILY,
     FONT_WEIGHT,
-    TEXT_OVERFLOW,
+    WRITING_MODE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -651,7 +651,7 @@ class Dom extends Xom {
       [LINE_CLAMP]: lineClamp,
       [LINE_HEIGHT]: lineHeight,
       [OVERFLOW]: overflow,
-      [TEXT_OVERFLOW]: textOverflow,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
@@ -1110,6 +1110,7 @@ class Dom extends Xom {
       [ALIGN_CONTENT]: alignContent,
       [LINE_HEIGHT]: lineHeight,
       [TEXT_ALIGN]: textAlign,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
@@ -1929,6 +1930,7 @@ class Dom extends Xom {
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [PADDING_LEFT]: paddingLeft,
       [PADDING_RIGHT]: paddingRight,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     let lineClampCount = data.lineClampCount || 0;
     if(isInline && !this.__isRealInline()) {
@@ -1962,9 +1964,8 @@ class Dom extends Xom {
       endSpace = selfEndSpace = lineClampCount = 0;
     }
     // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
-    let contentBoxList;
     if(isInline) {
-      contentBoxList = this.__contentBoxList = [];
+      this.contentBoxList.splice(0);
       lineBoxManager.pushContentBoxList(this);
     }
     // ib的bp是自己，inline是最近的非inline
@@ -1974,7 +1975,6 @@ class Dom extends Xom {
     }
     let {
       [OVERFLOW]: overflow,
-      [TEXT_OVERFLOW]: textOverflow,
     } = bp.computedStyle;
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;

@@ -1,5 +1,6 @@
 import unit from './unit';
 import font from './font';
+import reset from './reset';
 import gradient from './gradient';
 import reg from './reg';
 import abbr from './abbr';
@@ -72,10 +73,12 @@ const { STYLE_KEY, style2Upper, STYLE_KEY: {
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
+  WRITING_MODE,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, rgba2int, equalArr, replaceRgba2Hex } = util;
 const { isGeom, GEOM, GEOM_KEY_SET } = change;
+const { VALID_STRING_VALUE } = reset;
 
 const {
   COLOR_HASH,
@@ -122,13 +125,32 @@ function compatibleTransform(k, arr) {
   }
 }
 
+function convertStringValue(k, v) {
+  if(isNil(v)) {
+    v = v.toString();
+  }
+  else {
+    v = '';
+  }
+  v = v.toLowerCase().replace(/-(a-z)/i, function($0, $1) {
+    return $1.toUpperCase();
+  });
+  let list = VALID_STRING_VALUE[k];
+  let i = list.indexOf(v);
+  if(i > -1) {
+    return list[i];
+  }
+  // 兜底默认
+  return list[0];
+}
+
 /**
- * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
+ * 将传入的手写style标准化，并且用resetList默认值覆盖其中为空的
  * @param style 手写的style样式
- * @param reset 默认样式，可选
+ * @param resetList 默认样式，可选
  * @returns Object 标准化的枚举数组结构样式
  */
-function normalize(style, reset = []) {
+function normalize(style, resetList = []) {
   if(!util.isObject(style)) {
     return {};
   }
@@ -223,7 +245,7 @@ function normalize(style, reset = []) {
     }
   });
   // 默认reset，根据传入不同，当style为空时覆盖
-  reset.forEach(item => {
+  resetList.forEach(item => {
     let { k, v } = item;
     if(isNil(style[k])) {
       style[k] = v;
@@ -320,8 +342,8 @@ function normalize(style, reset = []) {
       let match = item.toString().match(/\b(?:([-+]?[\d.]+[pxremvwhina%]*)|(contain|cover|auto))/ig);
       if(match) {
         if(match.length === 1) {
-          if(match[0] === 'contain' || match[0] === 'cover') {
-            match[1] = match[0];
+          if(match[0].toLowerCase() === 'contain' || match[0].toLowerCase() === 'cover') {
+            match[1] = match[0].toLowerCase();
           }
           else {
             match[1] = 'auto';
@@ -329,7 +351,7 @@ function normalize(style, reset = []) {
         }
         let v = [];
         for(let i = 0; i < 2; i++) {
-          let item = match[i];
+          let item = match[i].toLowerCase();
           if(/^[-+]?[\d.]/.test(item)) {
             let n = calUnit(item);
             if([NUMBER, DEG].indexOf(n[1]) > -1) {
@@ -667,7 +689,7 @@ function normalize(style, reset = []) {
   });
   temp = style.flexBasis;
   if(temp !== undefined) {
-    if(temp === 'content') {
+    if(/content/i.test(temp)) {
       res[FLEX_BASIS] = [temp, STRING];
     }
     else if(/^[\d.]/.test(temp)) {
@@ -688,7 +710,7 @@ function normalize(style, reset = []) {
   }
   temp = style.color;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(/inherit/i.test(temp)) {
       res[COLOR] = [[], INHERIT];
     }
     else if(reg.gradient.test(temp)) {
@@ -700,7 +722,7 @@ function normalize(style, reset = []) {
   }
   temp = style.textStrokeColor;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(/inherit/i.test(temp)) {
       res[TEXT_STROKE_COLOR] = [[], INHERIT];
     }
     else if(reg.gradient.test(temp)) {
@@ -712,7 +734,7 @@ function normalize(style, reset = []) {
   }
   temp = style.fontSize;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(/inherit/i.test(temp)) {
       res[FONT_SIZE] = [0, INHERIT];
     }
     else {
@@ -731,7 +753,7 @@ function normalize(style, reset = []) {
   }
   temp = style.textStrokeWidth;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(/inherit/i.test(temp)) {
       res[TEXT_STROKE_WIDTH] = [0, INHERIT];
     }
     else {
@@ -750,29 +772,29 @@ function normalize(style, reset = []) {
   }
   temp = style.textStrokeOver;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[TEXT_STROKE_OVER] = [0, INHERIT];
     }
     else {
-      let v = temp.toString();
-      if(v !== 'none' && v !== 'fill') {
-        v = 'none';
+      let v = reset.INHERIT.textStrokeOver;
+      if(/fill/i.test(temp)) {
+        v = 'fill';
       }
       res[TEXT_STROKE_OVER] = [v, STRING];
     }
   }
   temp = style.fontWeight;
   if(temp !== undefined) {
-    if(temp === 'bold') {
+    if(/bold/i.test(temp)) {
       res[FONT_WEIGHT] = [700, NUMBER];
     }
-    else if(temp === 'normal') {
+    else if(/normal/i.test(temp)) {
       res[FONT_WEIGHT] = [400, NUMBER];
     }
-    else if(temp === 'lighter') {
+    else if(/lighter/i.test(temp)) {
       res[FONT_WEIGHT] = [200, NUMBER];
     }
-    else if(temp === 'inherit') {
+    else if(/inherit/i.test(temp)) {
       res[FONT_WEIGHT] = [0, INHERIT];
     }
     else {
@@ -781,16 +803,23 @@ function normalize(style, reset = []) {
   }
   temp = style.fontStyle;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[FONT_STYLE] = [0, INHERIT];
     }
     else {
-      res[FONT_STYLE] = [temp, STRING];
+      let v = reset.INHERIT.fontStyle;
+      if(/italic/i.test(temp)) {
+        v = 'italic';
+      }
+      else if(/oblique/i.test(temp)) {
+        v = 'oblique';
+      }
+      res[FONT_STYLE] = [v, STRING];
     }
   }
   temp = style.fontFamily;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[FONT_FAMILY] = [0, INHERIT];
     }
     else {
@@ -798,21 +827,44 @@ function normalize(style, reset = []) {
       res[FONT_FAMILY] = [temp.toString().toLowerCase().replace(/['"]/, '').replace(/\s*,\s*/g, ','), STRING];
     }
   }
+  temp = style.writingMode;
+  if(temp !== undefined) {
+    if(temp === null || /inherit/i.test(temp)) {
+      res[WRITING_MODE] = [0, INHERIT];
+    }
+    else {
+      let v = reset.INHERIT.writingMode;
+      if(/vertical-?rl/i.test(temp)) {
+        v = 'verticalRl';
+      }
+      else if(/vertical-?lr/i.test(temp)) {
+        v = 'verticalLr';
+      }
+      res[WRITING_MODE] = [v, STRING];
+    }
+  }
   temp = style.textAlign;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[TEXT_ALIGN] = [0, INHERIT];
     }
     else {
-      res[TEXT_ALIGN] = [temp, STRING];
+      let v = 'left';
+      if(/center/i.test(temp)) {
+        v = 'center';
+      }
+      else if(/right/i.test(temp)) {
+        v = 'right';
+      }
+      res[TEXT_ALIGN] = [v, STRING];
     }
   }
   temp = style.lineHeight;
   if(temp !== undefined) {
-    if(temp === 'inherit') {
+    if(/inherit/i.test(temp)) {
       res[LINE_HEIGHT] = [0, INHERIT];
     }
-    else if(temp === 'normal') {
+    else if(/normal/i.test(temp)) {
       res[LINE_HEIGHT] = [0, AUTO];
     }
     // lineHeight默认数字，想要px必须强制带单位
@@ -836,10 +888,10 @@ function normalize(style, reset = []) {
   }
   temp = style.letterSpacing;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[LETTER_SPACING] = [0, INHERIT];
     }
-    else if(temp === 'normal') {
+    else if(/normal/i.test(temp)) {
       res[LETTER_SPACING] = [0, PX];
     }
     else if(/^[-+]?[\d.]/.test(temp)) {
@@ -855,7 +907,7 @@ function normalize(style, reset = []) {
   }
   temp = style.whiteSpace;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[WHITE_SPACE] = [0, INHERIT];
     }
     else {
@@ -1053,20 +1105,28 @@ function normalize(style, reset = []) {
   }
   temp = style.visibility;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[VISIBILITY] = [0, INHERIT];
     }
     else {
-      res[VISIBILITY] = [temp, STRING];
+      let v = reset.INHERIT.visibility;
+      if(/hidden/i.test(temp)) {
+        v = 'hidden';
+      }
+      res[VISIBILITY] = [v, STRING];
     }
   }
   temp = style.pointerEvents;
   if(temp !== undefined) {
-    if(temp === null || temp === 'inherit') {
+    if(temp === null || /inherit/i.test(temp)) {
       res[POINTER_EVENTS] = [0, INHERIT];
     }
     else {
-      res[POINTER_EVENTS] = [temp, STRING];
+      let v = reset.INHERIT.pointerEvents;
+      if(/none/i.test(temp)) {
+        v = 'none';
+      }
+      res[POINTER_EVENTS] = [v, STRING];
     }
   }
   temp = style.boxShadow;
@@ -1105,7 +1165,7 @@ function normalize(style, reset = []) {
           else {
             res.push([0, 0, 0, 1]);
           }
-          res.push(item.indexOf('inset') > -1 ? 'inset' : 'outset');
+          res.push(/inset/i.test(item) ? 'inset' : 'outset');
           bs.push(res);
         }
       });
@@ -1132,7 +1192,7 @@ function normalize(style, reset = []) {
     'textOverflow',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
-      res[STYLE_KEY[style2Upper(k)]] = style[k];
+      res[STYLE_KEY[style2Upper(k)]] = convertStringValue(style[k]);
     }
   });
   // 直接赋值的number类型

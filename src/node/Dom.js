@@ -1644,7 +1644,7 @@ class Dom extends Xom {
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
     // 主轴对齐方式
-    if(!isAbs && diff > 0) {
+    if(!isAbs && !isColumn && diff > 0) {
       let len = orderChildren.length;
       if(justifyContent === 'flexEnd') {
         for(let i = 0; i < len; i++) {
@@ -1667,6 +1667,13 @@ class Dom extends Xom {
         }
       }
       else if(justifyContent === 'spaceAround') {
+        let around = diff * 0.5 / len;
+        for(let i = 0; i < len; i++) {
+          let child = orderChildren[i];
+          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+        }
+      }
+      else if(justifyContent === 'spaceEvenly') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = orderChildren[i];
@@ -1681,7 +1688,7 @@ class Dom extends Xom {
       x += maxCross;
     }
     // flex的直接text对齐比较特殊
-    if(!isAbs && ['center', 'right'].indexOf(textAlign) > -1) {
+    if(!isAbs && !isColumn && ['center', 'right'].indexOf(textAlign) > -1) {
       lbmList.forEach(item => {
         item.horizonAlign(item.width, textAlign);
       })

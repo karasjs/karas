@@ -129,9 +129,14 @@ function camel(v) {
   if(isNil(v)) {
     v = '';
   }
-  return v.toString().toLowerCase().replace(/-(a-z)/i, function($0, $1) {
-    return $1.toUpperCase();
-  });
+  v = v.toString();
+  //有-才转换，否则可能是写好的驼峰
+  if(v.indexOf('-') > -1) {
+    return v.toString().toLowerCase().replace(/-(a-z)/i, function($0, $1) {
+      return $1.toUpperCase();
+    });
+  }
+  return v;
 }
 
 function convertStringValue(k, v) {

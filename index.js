@@ -8169,9 +8169,15 @@
       v = '';
     }
 
-    return v.toString().toLowerCase().replace(/-(a-z)/i, function ($0, $1) {
-      return $1.toUpperCase();
-    });
+    v = v.toString(); //有-才转换，否则可能是写好的驼峰
+
+    if (v.indexOf('-') > -1) {
+      return v.toString().toLowerCase().replace(/-(a-z)/i, function ($0, $1) {
+        return $1.toUpperCase();
+      });
+    }
+
+    return v;
   }
 
   function convertStringValue(k, v) {
@@ -26110,7 +26116,7 @@
 
         var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式
 
-        if (!isAbs && diff > 0) {
+        if (!isAbs && !isColumn && diff > 0) {
           var len = orderChildren.length;
 
           if (justifyContent === 'flexEnd') {
@@ -26133,11 +26139,18 @@
               isDirectionRow ? _child2.__offsetX(between * _i4, true) : _child2.__offsetY(between * _i4, true);
             }
           } else if (justifyContent === 'spaceAround') {
-            var around = diff / (len + 1);
+            var around = diff * 0.5 / len;
 
             for (var _i5 = 0; _i5 < len; _i5++) {
               var _child3 = orderChildren[_i5];
-              isDirectionRow ? _child3.__offsetX(around * (_i5 + 1), true) : _child3.__offsetY(around * (_i5 + 1), true);
+              isDirectionRow ? _child3.__offsetX(around * (_i5 * 2 + 1), true) : _child3.__offsetY(around * (_i5 * 2 + 1), true);
+            }
+          } else if (justifyContent === 'spaceEvenly') {
+            var _around = diff / (len + 1);
+
+            for (var _i6 = 0; _i6 < len; _i6++) {
+              var _child4 = orderChildren[_i6];
+              isDirectionRow ? _child4.__offsetX(_around * (_i6 + 1), true) : _child4.__offsetY(_around * (_i6 + 1), true);
             }
           }
         }
@@ -26149,7 +26162,7 @@
         } // flex的直接text对齐比较特殊
 
 
-        if (!isAbs && ['center', 'right'].indexOf(textAlign) > -1) {
+        if (!isAbs && !isColumn && ['center', 'right'].indexOf(textAlign) > -1) {
           lbmList.forEach(function (item) {
             item.horizonAlign(item.width, textAlign);
           });

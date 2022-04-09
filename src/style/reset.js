@@ -151,7 +151,7 @@ const VALID_STRING_VALUE = {
   position: ['static', 'relative', 'absolute'],
   display: ['block', 'inlineBlock', 'inline', 'flex', 'none'],
   flexDirection: ['row', 'column', 'rowReverse', 'columnReverse'],
-  flexWrap: ['wrap', 'wrapReverse', 'noWrap'],
+  flexWrap: ['wrap', 'wrapReverse', 'nowrap'],
   justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround', 'spaceEvenly'],
   alignItems: ['stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
   alignSelf: ['auto', 'stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],

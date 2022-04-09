@@ -149,7 +149,7 @@ Object.keys(INHERIT).forEach(k => {
 // 默认值放第一个
 const VALID_STRING_VALUE = {
   position: ['static', 'relative', 'absolute'],
-  display: ['block', 'inlineBlock', 'inline', 'flex'],
+  display: ['block', 'inlineBlock', 'inline', 'flex', 'none'],
   flexDirection: ['row', 'column', 'rowReverse', 'columnReverse'],
   flexWrap: ['wrap', 'wrapReverse', 'noWrap'],
   justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround', 'spaceEvenly'],

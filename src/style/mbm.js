@@ -25,7 +25,7 @@ function mbmName(v) {
 }
 
 function isValidMbm(v) {
-  return MBM_HASH.hasOwnProperty(mbmName(v));
+  return MBM_HASH.hasOwnProperty(v);
 }
 
 export default {

@@ -252,6 +252,7 @@ class Dom extends Xom {
       flex: true,
       block: true,
       inline: true,
+      'inline-block': true,
       inlineBlock: true,
       none: true,
     }.hasOwnProperty(style.display)) {

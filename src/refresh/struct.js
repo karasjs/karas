@@ -12,7 +12,6 @@ import util from '../util/util';
 import inject from '../util/inject';
 import tf from '../style/transform';
 import mbm from '../style/mbm';
-import css from '../style/css';
 import enums from '../util/enums';
 import webgl from '../gl/webgl';
 import MockCache from '../gl/MockCache';

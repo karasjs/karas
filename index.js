@@ -20065,7 +20065,7 @@
   }
 
   function isValidMbm(v) {
-    return MBM_HASH.hasOwnProperty(mbmName(v));
+    return MBM_HASH.hasOwnProperty(v);
   }
 
   var mbm = {
@@ -24339,6 +24339,7 @@
         flex: true,
         block: true,
         inline: true,
+        'inline-block': true,
         inlineBlock: true,
         none: true
       }.hasOwnProperty(style.display)) {

@@ -405,7 +405,7 @@ class Xom extends Node {
       computedStyle[k] = currentStyle[k];
     });
     // writingMode特殊判断inline
-    if(computedStyle[WRITING_MODE] !== parentComputedStyle[WRITING_MODE] && computedStyle[DISPLAY] === 'inline') {
+    if(parentComputedStyle && computedStyle[WRITING_MODE] !== parentComputedStyle[WRITING_MODE] && computedStyle[DISPLAY] === 'inline') {
       computedStyle[DISPLAY] = 'inlineBlock';
     }
     // 匿名块对象
@@ -633,7 +633,7 @@ class Xom extends Node {
       data.lineClampCount = 0;
       this.__layoutFlex(data, isAbs, isColumn);
     }
-    else if(display === 'inlineBlock' || display === 'inline-block') {
+    else if(display === 'inlineBlock') {
       data.lineClampCount = 0;
       this.__layoutInline(data, isAbs, isColumn);
     }
@@ -1204,13 +1204,13 @@ class Xom extends Node {
     let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
     let backgroundClip = computedStyle[BACKGROUND_CLIP] = currentStyle[BACKGROUND_CLIP];
     // 默认border-box
-    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+    if(backgroundClip === 'paddingBox') {
       bx1 = x2;
       by1 = y2;
       bx2 = x5;
       by2 = y5;
     }
-    else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
+    else if(backgroundClip === 'contentBox') {
       bx1 = x3;
       by1 = y3;
       bx2 = x4;
@@ -1985,7 +1985,7 @@ class Xom extends Node {
     let btrr = borderTopRightRadius.slice(0);
     let bbrr = borderBottomRightRadius.slice(0);
     let bblr = borderBottomLeftRadius.slice(0);
-    if(backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
+    if(backgroundClip === 'paddingBox') {
       btlr[0] -= borderLeftWidth;
       btlr[1] -= borderTopWidth;
       btrr[0] -= borderRightWidth;
@@ -1995,7 +1995,7 @@ class Xom extends Node {
       bblr[0] -= borderLeftWidth;
       bblr[1] -= borderBottomWidth;
     }
-    else if(backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
+    else if(backgroundClip === 'contentBox') {
       btlr[0] -= borderLeftWidth + paddingLeft;
       btlr[1] -= borderTopWidth + paddingTop;
       btrr[0] -= borderRightWidth + paddingRight;

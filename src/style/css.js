@@ -125,16 +125,17 @@ function compatibleTransform(k, arr) {
   }
 }
 
-function convertStringValue(k, v) {
+function camel(v) {
   if(isNil(v)) {
-    v = v.toString();
-  }
-  else {
     v = '';
   }
-  v = v.toLowerCase().replace(/-(a-z)/i, function($0, $1) {
+  return v.toString().toLowerCase().replace(/-(a-z)/i, function($0, $1) {
     return $1.toUpperCase();
   });
+}
+
+function convertStringValue(k, v) {
+  v = camel(v);
   let list = VALID_STRING_VALUE[k];
   let i = list.indexOf(v);
   if(i > -1) {
@@ -1192,7 +1193,7 @@ function normalize(style, resetList = []) {
     'textOverflow',
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
-      res[STYLE_KEY[style2Upper(k)]] = convertStringValue(style[k]);
+      res[STYLE_KEY[style2Upper(k)]] = convertStringValue(k, style[k]);
     }
   });
   // 直接赋值的number类型
@@ -1218,7 +1219,17 @@ function normalize(style, resetList = []) {
   ].forEach(k => {
     if(style.hasOwnProperty(k)) {
       let v = style[k];
-      res[STYLE_KEY[style2Upper(k)]] = Array.isArray(v) ? v : [v];
+      if(!Array.isArray(v)) {
+        v = [v];
+      }
+      if(k === 'backgroundRepeat') {
+        v.forEach((item, i) => {
+          if(item) {
+            v[i] = camel(item);
+          }
+        });
+      }
+      res[STYLE_KEY[style2Upper(k)]] = v;
     }
   });
   GEOM_KEY_SET.forEach(k => {

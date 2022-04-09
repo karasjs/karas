@@ -41,11 +41,11 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseline, lineHe
                       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
   // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
   let eyt = 0, eyb = 0;
-  if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+  if(backgroundClip === 'paddingBox') {
     eyt = paddingTop;
     eyb = paddingBottom;
   }
-  else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+  else if(backgroundClip !== 'contentBox') {
     eyt = paddingTop + borderTopWidth;
     eyb = paddingBottom + borderBottomWidth;
   }
@@ -71,10 +71,10 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseline, lineHe
   }
   let bx1 = x1;
   if(isStart) {
-    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+    if(backgroundClip === 'paddingBox') {
       x1 -= paddingLeft;
     }
-    else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+    else if(backgroundClip !== 'contentBox') {
       x1 -= paddingLeft + borderLeftWidth;
     }
     bx1 -= paddingLeft + borderLeftWidth;
@@ -99,10 +99,10 @@ function getInlineBox(xom, contentBoxList, start, end, lineBox, baseline, lineHe
   }
   let bx2 = x2;
   if(isEnd) {
-    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+    if(backgroundClip === 'paddingBox') {
       x2 += paddingRight;
     }
-    else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+    else if(backgroundClip !== 'contentBox') {
       x2 += paddingRight + borderRightWidth;
     }
     bx2 += paddingRight + borderRightWidth;

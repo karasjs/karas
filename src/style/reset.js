@@ -152,7 +152,7 @@ const VALID_STRING_VALUE = {
   display: ['block', 'inlineBlock', 'inline', 'flex'],
   flexDirection: ['row', 'column', 'rowReverse', 'columnReverse'],
   flexWrap: ['wrap', 'wrapReverse', 'noWrap'],
-  justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+  justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround', 'spaceEvenly'],
   alignItems: ['stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
   alignSelf: ['auto', 'stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
   overflow: ['visible', 'hidden'],
@@ -165,6 +165,7 @@ const VALID_STRING_VALUE = {
   borderLeftStyle: ['solid', 'dashed', 'dotted'],
   backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
   textOverflow: ['clip', 'ellipsis'],
+  alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
 }
 
 export default {

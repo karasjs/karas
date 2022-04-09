@@ -2982,7 +2982,7 @@
     display: ['block', 'inlineBlock', 'inline', 'flex'],
     flexDirection: ['row', 'column', 'rowReverse', 'columnReverse'],
     flexWrap: ['wrap', 'wrapReverse', 'noWrap'],
-    justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+    justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround', 'spaceEvenly'],
     alignItems: ['stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
     alignSelf: ['auto', 'stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
     overflow: ['visible', 'hidden'],
@@ -2992,7 +2992,8 @@
     borderBottomStyle: ['solid', 'dashed', 'dotted'],
     borderLeftStyle: ['solid', 'dashed', 'dotted'],
     backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
-    textOverflow: ['clip', 'ellipsis']
+    textOverflow: ['clip', 'ellipsis'],
+    alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround']
   };
   var reset = {
     DOM: DOM,
@@ -8163,16 +8164,18 @@
     }
   }
 
-  function convertStringValue(k, v) {
+  function camel(v) {
     if (isNil$3(v)) {
-      v = v.toString();
-    } else {
       v = '';
     }
 
-    v = v.toLowerCase().replace(/-(a-z)/i, function ($0, $1) {
+    return v.toString().toLowerCase().replace(/-(a-z)/i, function ($0, $1) {
       return $1.toUpperCase();
     });
+  }
+
+  function convertStringValue(k, v) {
+    v = camel(v);
     var list = VALID_STRING_VALUE$1[k];
     var i = list.indexOf(v);
 
@@ -9320,7 +9323,7 @@
 
     ['position', 'display', 'flexDirection', 'flexWrap', 'justifyContent', 'alignItems', 'alignSelf', 'alignContent', 'overflow', 'mixBlendMode', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundClip', 'textOverflow'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
-        res[STYLE_KEY$3[style2Upper$1(k)]] = convertStringValue(style[k]);
+        res[STYLE_KEY$3[style2Upper$1(k)]] = convertStringValue(k, style[k]);
       }
     }); // 直接赋值的number类型
 
@@ -9339,7 +9342,20 @@
     ['backgroundRepeat', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
       if (style.hasOwnProperty(k)) {
         var _v15 = style[k];
-        res[STYLE_KEY$3[style2Upper$1(k)]] = Array.isArray(_v15) ? _v15 : [_v15];
+
+        if (!Array.isArray(_v15)) {
+          _v15 = [_v15];
+        }
+
+        if (k === 'backgroundRepeat') {
+          _v15.forEach(function (item, i) {
+            if (item) {
+              _v15[i] = camel(item);
+            }
+          });
+        }
+
+        res[STYLE_KEY$3[style2Upper$1(k)]] = _v15;
       }
     });
     GEOM_KEY_SET$2.forEach(function (k) {
@@ -15898,10 +15914,10 @@
     var eyt = 0,
         eyb = 0;
 
-    if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+    if (backgroundClip === 'paddingBox') {
       eyt = paddingTop;
       eyb = paddingBottom;
-    } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+    } else if (backgroundClip !== 'contentBox') {
       eyt = paddingTop + borderTopWidth;
       eyb = paddingBottom + borderBottomWidth;
     } // 同y的border伸展范围，其影响border渲染
@@ -15932,9 +15948,9 @@
     var bx1 = x1;
 
     if (isStart) {
-      if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+      if (backgroundClip === 'paddingBox') {
         x1 -= paddingLeft;
-      } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+      } else if (backgroundClip !== 'contentBox') {
         x1 -= paddingLeft + borderLeftWidth;
       }
 
@@ -15964,9 +15980,9 @@
     var bx2 = x2;
 
     if (isEnd) {
-      if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+      if (backgroundClip === 'paddingBox') {
         x2 += paddingRight;
-      } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
+      } else if (backgroundClip !== 'contentBox') {
         x2 += paddingRight + borderRightWidth;
       }
 
@@ -16272,7 +16288,7 @@
       var ynt = 0;
       var ynb = 0; // repeat-x
 
-      if (['repeat-x', 'repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+      if (['repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
         var diff = bgX - bx1;
 
         if (diff > 0) {
@@ -16287,7 +16303,7 @@
       } // repeat-y
 
 
-      if (['repeat-y', 'repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+      if (['repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
         var _diff = bgY - by1;
 
         if (_diff > 0) {
@@ -20440,7 +20456,7 @@
           computedStyle[k] = currentStyle[k];
         }); // writingMode特殊判断inline
 
-        if (computedStyle[WRITING_MODE$2] !== parentComputedStyle[WRITING_MODE$2] && computedStyle[DISPLAY$2] === 'inline') {
+        if (parentComputedStyle && computedStyle[WRITING_MODE$2] !== parentComputedStyle[WRITING_MODE$2] && computedStyle[DISPLAY$2] === 'inline') {
           computedStyle[DISPLAY$2] = 'inlineBlock';
         } // 匿名块对象
 
@@ -20682,7 +20698,7 @@
           data.lineClampCount = 0;
 
           this.__layoutFlex(data, isAbs, isColumn);
-        } else if (display === 'inlineBlock' || display === 'inline-block') {
+        } else if (display === 'inlineBlock') {
           data.lineClampCount = 0;
 
           this.__layoutInline(data, isAbs, isColumn);
@@ -21243,12 +21259,12 @@
             by2 = y6;
         var backgroundClip = computedStyle[BACKGROUND_CLIP$2] = currentStyle[BACKGROUND_CLIP$2]; // 默认border-box
 
-        if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+        if (backgroundClip === 'paddingBox') {
           bx1 = x2;
           by1 = y2;
           bx2 = x5;
           by2 = y5;
-        } else if (backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
+        } else if (backgroundClip === 'contentBox') {
           bx1 = x3;
           by1 = y3;
           bx2 = x4;
@@ -22080,7 +22096,7 @@
         var bbrr = borderBottomRightRadius.slice(0);
         var bblr = borderBottomLeftRadius.slice(0);
 
-        if (backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
+        if (backgroundClip === 'paddingBox') {
           btlr[0] -= borderLeftWidth;
           btlr[1] -= borderTopWidth;
           btrr[0] -= borderRightWidth;
@@ -22089,7 +22105,7 @@
           bbrr[1] -= borderBottomWidth;
           bblr[0] -= borderLeftWidth;
           bblr[1] -= borderBottomWidth;
-        } else if (backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
+        } else if (backgroundClip === 'contentBox') {
           btlr[0] -= borderLeftWidth + paddingLeft;
           btlr[1] -= borderTopWidth + paddingTop;
           btrr[0] -= borderRightWidth + paddingRight;
@@ -24489,7 +24505,6 @@
         block: true,
         inline: true,
         inlineBlock: true,
-        'inline-block': true,
         none: true
       }.hasOwnProperty(style.display)) {
         if (tag.INLINE.hasOwnProperty(_this.tagName)) {
@@ -24817,7 +24832,7 @@
         if (isDirectionRow) {
           // flex的item还是flex时
           if (display === 'flex') {
-            var isRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1;
+            var isRow = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
             flowChildren = genOrderChildren(flowChildren);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -24991,7 +25006,7 @@
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
           var isInline = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
+          var isInlineBlock = isXom && item.currentStyle[DISPLAY$5] === 'inlineBlock';
 
           var isRealInline = isInline && item.__isRealInline();
 
@@ -25496,7 +25511,7 @@
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
-        var isDirectionRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1; // 计算伸缩基数
+        var isDirectionRow = ['column', 'columnReverse'].indexOf(flexDirection) === -1; // 计算伸缩基数
 
         var growList = [];
         var shrinkList = [];
@@ -25561,7 +25576,7 @@
           }
         });
         var containerSize = isDirectionRow ? w : h;
-        var isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
+        var isMultiLine = ['wrap', 'wrapReverse'].indexOf(flexWrap) > -1;
         /**
          * 判断是否需要分行，根据假设主尺寸来统计尺寸和计算，假设主尺寸是clamp(min_main_size, flex_base_size, max_main_size)
          * 当多行时，由于每行一定有最小限制，所以每行一般情况都不是shrink状态，
@@ -25685,7 +25700,7 @@
         } // flexDirection当有reverse时交换每line的主轴序
 
 
-        if (flexDirection === 'row-reverse' || flexDirection === 'rowReverse') {
+        if (flexDirection === 'rowReverse') {
           __flexLine.forEach(function (line) {
             line.forEach(function (item) {
               // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
@@ -25696,7 +25711,7 @@
               }
             });
           });
-        } else if (flexDirection === 'column-reverse' || flexDirection === 'columnReverse') {
+        } else if (flexDirection === 'columnReverse') {
           __flexLine.forEach(function (line) {
             line.forEach(function (item) {
               // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
@@ -25712,7 +25727,7 @@
 
         var length = __flexLine.length;
 
-        if (['wrapReverse', 'wrap-reverse'].indexOf(flexWrap) > -1 && length > 1) {
+        if (flexWrap === 'wrapReverse' && length > 1) {
           var crossSum = 0,
               crossSumList = [];
           maxCrossList.forEach(function (item) {
@@ -25764,7 +25779,7 @@
                   item.__offsetX(_per, true);
                 }
               });
-            } else if (alignContent === 'flex-start' || alignContent === 'flexStart') ; else if (alignContent === 'flex-end' || alignContent === 'flexEnd') {
+            } else if (alignContent === 'flexStart') ; else if (alignContent === 'flexEnd') {
               orderChildren.forEach(function (item) {
                 if (isDirectionRow) {
                   item.__offsetY(diff, true);
@@ -25772,7 +25787,7 @@
                   item.__offsetX(diff, true);
                 }
               });
-            } else if (alignContent === 'space-between' || alignContent === 'spaceBetween') {
+            } else if (alignContent === 'spaceBetween') {
               var between = diff / (length - 1); // 除了第1行其它进行偏移
 
               __flexLine.forEach(function (item, i) {
@@ -25786,7 +25801,7 @@
                   });
                 }
               });
-            } else if (alignContent === 'space-around' || alignContent === 'spaceAround') {
+            } else if (alignContent === 'spaceAround') {
               var around = diff / (length + 1);
 
               __flexLine.forEach(function (item, i) {
@@ -26098,7 +26113,7 @@
         if (!isAbs && diff > 0) {
           var len = orderChildren.length;
 
-          if (justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
+          if (justifyContent === 'flexEnd') {
             for (var i = 0; i < len; i++) {
               var child = orderChildren[i];
               isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
@@ -26110,14 +26125,14 @@
               var _child = orderChildren[_i3];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
-          } else if (justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
+          } else if (justifyContent === 'spaceBetween') {
             var between = diff / (len - 1);
 
             for (var _i4 = 1; _i4 < len; _i4++) {
               var _child2 = orderChildren[_i4];
               isDirectionRow ? _child2.__offsetX(between * _i4, true) : _child2.__offsetY(between * _i4, true);
             }
-          } else if (justifyContent === 'spaceAround' || justifyContent === 'space-around') {
+          } else if (justifyContent === 'spaceAround') {
             var around = diff / (len + 1);
 
             for (var _i5 = 0; _i5 < len; _i5++) {
@@ -26154,7 +26169,7 @@
           var alignSelf = item.currentStyle[ALIGN_SELF$2];
 
           if (isDirectionRow) {
-            if (alignSelf === 'flexStart' || alignSelf === 'flex-start') ; else if (alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+            if (alignSelf === 'flexStart') ; else if (alignSelf === 'flexEnd') {
               var diff = maxCross - item.outerHeight;
 
               if (diff !== 0) {
@@ -26196,13 +26211,13 @@
               }
             } // 默认auto，取alignItems
             else {
-              if (alignItems === 'flexStart' || alignSelf === 'flex-start') ; else if (alignItems === 'center') {
+              if (alignItems === 'flexStart') ; else if (alignItems === 'center') {
                 var _diff5 = maxCross - item.outerHeight;
 
                 if (_diff5 !== 0) {
                   item.__offsetY(_diff5 * 0.5, true);
                 }
-              } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
+              } else if (alignItems === 'flexEnd') {
                 var _diff6 = maxCross - item.outerHeight;
 
                 if (_diff6 !== 0) {
@@ -26254,7 +26269,7 @@
             }
           } // column
           else {
-            if (alignSelf === 'flexStart' || alignSelf === 'flex-start') ; else if (alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+            if (alignSelf === 'flexStart') ; else if (alignSelf === 'flexEnd') {
               var _diff8 = maxCross - item.outerWidth;
 
               if (_diff8 !== 0) {
@@ -26299,13 +26314,13 @@
               }
             } // 默认auto，取alignItems
             else {
-              if (alignItems === 'flexStart' || alignSelf === 'flex-start') ; else if (alignItems === 'center') {
+              if (alignItems === 'flexStart') ; else if (alignItems === 'center') {
                 var _diff11 = maxCross - item.outerWidth;
 
                 if (_diff11 !== 0) {
                   item.__offsetX(_diff11 * 0.5, true);
                 }
-              } else if (alignItems === 'flexEnd' || alignItems === 'flex-end') {
+              } else if (alignItems === 'flexEnd') {
                 var _diff12 = maxCross - item.outerWidth;
 
                 if (_diff12 !== 0) {
@@ -26466,7 +26481,7 @@
 
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
           var isInline2 = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY$5]) > -1;
+          var isInlineBlock2 = isXom && item.currentStyle[DISPLAY$5] === 'inlineBlock';
 
           var isRealInline = isInline2 && item.__isRealInline(); // 最后一个元素会产生最后一行，叠加父元素的尾部mpb，注意只执行一次防止重复叠加
 
@@ -34753,7 +34768,7 @@
 
     var target = node; // inline新老都影响，节点变为最近的父非inline
 
-    if (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$8]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$8]) > -1) {
+    if (['inline', 'inlineBlock'].indexOf(target.currentStyle[DISPLAY$8]) > -1 || ['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY$8]) > -1) {
       do {
         target = target.domParent; // 父到root提前跳出
 
@@ -34771,7 +34786,7 @@
           setLAYOUT(target, reflowHash, component, addDom);
           return;
         }
-      } while (target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY$8]) > -1 || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY$8]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
+      } while (target && (['inline', 'inlineBlock'].indexOf(target.currentStyle[DISPLAY$8]) > -1 || ['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY$8]) > -1)); // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
 
 
       if (isFixedSize(target, true)) {
@@ -34853,9 +34868,9 @@
       var prev = node.prev,
           next = node.next;
 
-      if (prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$8]) > -1) {
+      if (prev && ['inline', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY$8]) > -1) {
         isSiblingBlock = false;
-      } else if (next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$8]) > -1) {
+      } else if (next && ['inline', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY$8]) > -1) {
         isSiblingBlock = false;
       }
 
@@ -36393,7 +36408,7 @@
               var _cs = isXom && _item.currentStyle;
 
               var isInline = isXom && _cs[DISPLAY$8] === 'inline';
-              var isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(_cs[DISPLAY$8]) > -1;
+              var isInlineBlock = isXom && _cs[DISPLAY$8] === 'inlineBlock';
               lastChild = _item; // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
 
               if (!isXom || isInline || isInlineBlock) {

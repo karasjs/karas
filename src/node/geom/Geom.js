@@ -31,7 +31,6 @@ const {
     STROKE_DASHARRAY_STR,
     FILL_RULE,
     VISIBILITY,
-    FONT_SIZE,
     FLEX_BASIS,
   },
   NODE_KEY: {
@@ -40,13 +39,11 @@ const {
     NODE_CURRENT_STYLE,
     NODE_STYLE,
     NODE_DEFS_CACHE,
-    NODE_CACHE,
   }
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA, GRADIENT } = unit;
 const { int2rgba, isNil, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
-const { WEBGL } = mode;
 
 const REGISTER = {};
 

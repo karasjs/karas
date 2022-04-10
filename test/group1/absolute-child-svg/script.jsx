@@ -1,6 +1,6 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <div style={{position:'absolute',display:'none'}} ref="div">
+    <div style={{position:'absolute'}} ref="div">
       <span ref="b">
         <$rect ref="$rect"/>
       </span>

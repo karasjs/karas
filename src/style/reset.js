@@ -88,6 +88,7 @@ const DOM = {
   textStrokeWidth: 'inherit',
   textStrokeColor: 'inherit',
   textStrokeOver: 'inherit',
+  writingMode: 'inherit',
 };
 
 const GEOM = {
@@ -101,8 +102,8 @@ const GEOM = {
   fillRule: 'nonzero',
 };
 
-let DOM_ENTRY_SET = [];
-let DOM_KEY_SET = [];
+const DOM_ENTRY_SET = [];
+const DOM_KEY_SET = [];
 Object.keys(DOM).forEach(k => {
   DOM_KEY_SET.push(k);
   let v = DOM[k];
@@ -112,8 +113,8 @@ Object.keys(DOM).forEach(k => {
   });
 });
 
-let GEOM_ENTRY_SET = [];
-let GEOM_KEY_SET = [];
+const GEOM_ENTRY_SET = [];
+const GEOM_KEY_SET = [];
 Object.keys(GEOM).forEach(k => {
   GEOM_KEY_SET.push(k);
   let v = GEOM[k];
@@ -123,7 +124,7 @@ Object.keys(GEOM).forEach(k => {
   });
 });
 
-let INHERIT = {
+const INHERIT = {
   get fontFamily() {
     return inject.defaultFontFamily;
   },
@@ -137,12 +138,35 @@ let INHERIT = {
   textStrokeColor: '#000',
   textStrokeWidth: 1,
   textStrokeOver: 'none',
+  writingMode: 'horizontalTb',
 };
 
-let INHERIT_KEY_SET = [];
+const INHERIT_KEY_SET = [];
 Object.keys(INHERIT).forEach(k => {
   INHERIT_KEY_SET.push(k);
 });
+
+// 默认值放第一个
+const VALID_STRING_VALUE = {
+  position: ['static', 'relative', 'absolute'],
+  display: ['block', 'inlineBlock', 'inline', 'flex', 'none'],
+  flexDirection: ['row', 'column', 'rowReverse', 'columnReverse'],
+  flexWrap: ['wrap', 'wrapReverse', 'nowrap'],
+  justifyContent: ['flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround', 'spaceEvenly'],
+  alignItems: ['stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
+  alignSelf: ['auto', 'stretch', 'flexStart', 'center', 'flexEnd', 'baseline'],
+  overflow: ['visible', 'hidden'],
+  mixBlendMode: ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
+    'colorDodge', 'colorBurn', 'hardLight', 'softLight', 'difference', 'exclusion',
+    'hue', 'saturation', 'color', 'luminosity'],
+  borderTopStyle: ['solid', 'dashed', 'dotted'],
+  borderRightStyle: ['solid', 'dashed', 'dotted'],
+  borderBottomStyle: ['solid', 'dashed', 'dotted'],
+  borderLeftStyle: ['solid', 'dashed', 'dotted'],
+  backgroundClip: ['borderBox', 'paddingBox', 'contentBox'],
+  textOverflow: ['clip', 'ellipsis'],
+  alignContent: ['stretch', 'flexStart', 'center', 'flexEnd', 'spaceBetween', 'spaceAround'],
+}
 
 export default {
   DOM,
@@ -156,4 +180,5 @@ export default {
   GEOM_ENTRY_SET,
   INHERIT,
   INHERIT_KEY_SET,
+  VALID_STRING_VALUE,
 };

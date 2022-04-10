@@ -231,8 +231,8 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
   }
   let target = node;
   // inline新老都影响，节点变为最近的父非inline
-  if(['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY]) > -1
-    || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY]) > -1) {
+  if(['inline', 'inlineBlock'].indexOf(target.currentStyle[DISPLAY]) > -1
+    || ['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY]) > -1) {
     do {
       target = target.domParent;
       // 父到root提前跳出
@@ -249,8 +249,8 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
         return;
       }
     }
-    while(target && (['inline', 'inlineBlock', 'inline-block'].indexOf(target.currentStyle[DISPLAY]) > -1
-      || ['inline', 'inlineBlock', 'inline-block'].indexOf(target.computedStyle[DISPLAY]) > -1));
+    while(target && (['inline', 'inlineBlock'].indexOf(target.currentStyle[DISPLAY]) > -1
+      || ['inline', 'inlineBlock'].indexOf(target.computedStyle[DISPLAY]) > -1));
     // target已不是inline，父固定宽高跳出直接父进行LAYOUT即可，不影响上下文，但不能是flex孩子，此时固定尺寸无用
     if(isFixedSize(target, true)) {
       setLAYOUT(target, reflowHash, component, addDom);
@@ -319,10 +319,10 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
     // 前后必须都是block，否则还是视为父布局
     let isSiblingBlock = true;
     let { prev, next } = node;
-    if(prev && ['inline', 'inline-block', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY]) > -1) {
+    if(prev && ['inline', 'inlineBlock'].indexOf(prev.currentStyle[DISPLAY]) > -1) {
       isSiblingBlock = false;
     }
-    else if(next && ['inline', 'inline-block', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY]) > -1) {
+    else if(next && ['inline', 'inlineBlock'].indexOf(next.currentStyle[DISPLAY]) > -1) {
       isSiblingBlock = false;
     }
     if(!isSiblingBlock) {
@@ -1604,7 +1604,7 @@ class Root extends Dom {
           // 开始变更的节点，至少不是第0个
           let cs = isXom && item.currentStyle;
           let isInline = isXom && cs[DISPLAY] === 'inline';
-          let isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(cs[DISPLAY]) > -1;
+          let isInlineBlock = isXom && cs[DISPLAY] === 'inlineBlock';
           lastChild = item;
           // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
           if((!isXom || isInline || isInlineBlock)) {

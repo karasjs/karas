@@ -219,7 +219,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
     let ynt = 0;
     let ynb = 0;
     // repeat-x
-    if(['repeat-x', 'repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+    if(['repeatX', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
       let diff = bgX - bx1;
       if(diff > 0) {
         xnl = Math.ceil(diff / w);
@@ -230,7 +230,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
       }
     }
     // repeat-y
-    if(['repeat-y', 'repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
+    if(['repeatY', 'repeat'].indexOf(backgroundRepeat[i]) > -1) {
       let diff = bgY - by1;
       if(diff > 0) {
         ynt = Math.ceil(diff / h);

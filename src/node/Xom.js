@@ -125,6 +125,7 @@ const {
     TEXT_ALIGN,
     LETTER_SPACING,
     WHITE_SPACE,
+    WRITING_MODE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -191,7 +192,7 @@ function getFirstEmptyInlineWidth(xom) {
   for(let i = 0; i < length; i++) {
     let child = flowChildren[i];
     if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-      if(child.flowChildren.length) {
+      if(child.flowChildren && child.flowChildren.length) {
         n += getFirstEmptyInlineWidth(child);
         break;
       }
@@ -213,7 +214,7 @@ function getLastEmptyInlineWidth(xom) {
   for(let i = length - 1; i >= 0; i--) {
     let child = flowChildren[i];
     if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-      if(child.flowChildren.length) {
+      if(child.flowChildren && child.flowChildren.length) {
         n += getLastEmptyInlineWidth(child);
         break;
       }
@@ -335,10 +336,10 @@ class Xom extends Node {
     }
     this.__hasComputeReflow = true;
 
-    let { currentStyle, computedStyle, domParent: parent, root } = this;
+    let { currentStyle, computedStyle, domParent: parent } = this;
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.computedStyle;
-    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT].forEach(k => {
+    [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {
@@ -403,6 +404,10 @@ class Xom extends Node {
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
     });
+    // writingMode特殊判断inline
+    if(parentComputedStyle && computedStyle[WRITING_MODE] !== parentComputedStyle[WRITING_MODE] && computedStyle[DISPLAY] === 'inline') {
+      computedStyle[DISPLAY] = 'inlineBlock';
+    }
     // 匿名块对象
     if(computedStyle[POSITION] === 'absolute' || parentComputedStyle && parentComputedStyle[DISPLAY] === 'flex') {
       if(['block', 'flex'].indexOf(computedStyle[DISPLAY]) === -1) {
@@ -538,10 +543,10 @@ class Xom extends Node {
     this.__isIbFull = false;
     let {
       [DISPLAY]: display,
+      [POSITION]: position,
     } = computedStyle;
     let {
       [WIDTH]: width,
-      [POSITION]: position,
     } = currentStyle;
     this.__layoutData = {
       x: data.x,
@@ -596,29 +601,7 @@ class Xom extends Node {
         width[1] = AUTO;
       }
       else {
-        switch(width[1]) {
-          case PX:
-            w = width[0];
-            break;
-          case PERCENT:
-            w *= width[0] * 0.01;
-            break;
-          case REM:
-            w = width[0] * this.root.computedStyle[FONT_SIZE];
-            break;
-          case VW:
-            w = width[0] * this.root.width * 0.01;
-            break;
-          case VH:
-            w = width[0] * this.root.height * 0.01;
-            break;
-          case VMAX:
-            w = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-            break;
-          case VMIN:
-            w = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-            break;
-        }
+        w = this.__calSize(width, w, true);
       }
     }
     // 只有inline会继承计算行数，其它都是原样返回
@@ -628,7 +611,7 @@ class Xom extends Node {
       data.lineClampCount = 0;
       this.__layoutFlex(data, isAbs, isColumn);
     }
-    else if(display === 'inlineBlock' || display === 'inline-block') {
+    else if(display === 'inlineBlock') {
       data.lineClampCount = 0;
       this.__layoutInline(data, isAbs, isColumn);
     }
@@ -791,29 +774,7 @@ class Xom extends Node {
     }
     else if(width[1] !== AUTO) {
       fixedWidth = true;
-      switch(width[1]) {
-        case PX:
-          w = width[0];
-          break;
-        case PERCENT:
-          w *= width[0] * 0.01;
-          break;
-        case REM:
-          w = width[0] * this.root.computedStyle[FONT_SIZE];
-          break;
-        case VW:
-          w = width[0] * this.root.width * 0.01;
-          break;
-        case VH:
-          w = width[0] * this.root.height * 0.01;
-          break;
-        case VMAX:
-          w = width[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          break;
-        case VMIN:
-          w = width[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          break;
-      }
+      w = this.__calSize(width, w, true);
     }
     if(h2 !== undefined) {
       fixedHeight = true;
@@ -825,29 +786,7 @@ class Xom extends Node {
     }
     else if(height[1] !== AUTO) {
       fixedHeight = true;
-      switch(height[1]) {
-        case PX:
-          h = height[0];
-          break;
-        case PERCENT:
-          h *= height[0] * 0.01;
-          break;
-        case REM:
-          h = height[0] * this.root.computedStyle[FONT_SIZE];
-          break;
-        case VW:
-          h = height[0] * this.root.width * 0.01;
-          break;
-        case VH:
-          h = height[0] * this.root.height * 0.01;
-          break;
-        case VMAX:
-          h = height[0] * Math.max(this.root.width, this.root.height) * 0.01;
-          break;
-        case VMIN:
-          h = height[0] * Math.min(this.root.width, this.root.height) * 0.01;
-          break;
-      }
+      h = this.__calSize(height, h, true);
     }
     // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响
     x += borderLeftWidth + marginLeft + paddingLeft;
@@ -917,26 +856,8 @@ class Xom extends Node {
         if(isNil(v)) {
           v = 0;
         }
-        else if(v[1] === PERCENT) {
-          v = v[0] * this.offsetWidth * 0.01;
-        }
-        else if(v[1] === REM) {
-          v = v[0] * this.root.computedStyle[FONT_SIZE];
-        }
-        else if(v[1] === VW) {
-          v = v[0] * this.root.width * 0.01;
-        }
-        else if(v[1] === VH) {
-          v = v[0] * this.root.height * 0.01;
-        }
-        else if(v[1] === VMAX) {
-          v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        }
-        else if(v[1] === VMIN) {
-          v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
         else {
-          v = v[0];
+          v = this.__calSize(v, this.offsetWidth, true);
         }
         x = v - (computedStyle[TRANSLATE_X] || 0);
         computedStyle[TRANSLATE_X] = v;
@@ -948,26 +869,8 @@ class Xom extends Node {
         if(isNil(v)) {
           v = 0;
         }
-        else if(v[1] === PERCENT) {
-          v = v[0] * this.offsetHeight * 0.01;
-        }
-        else if(v[1] === REM) {
-          v = v[0] * this.root.computedStyle[FONT_SIZE];
-        }
-        else if(v[1] === VW) {
-          v = v[0] * this.root.width * 0.01;
-        }
-        else if(v[1] === VH) {
-          v = v[0] * this.root.height * 0.01;
-        }
-        else if(v[1] === VMAX) {
-          v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        }
-        else if(v[1] === VMIN) {
-          v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
         else {
-          v = v[0];
+          v = this.__calSize(v, this.offsetHeight, true);
         }
         y = v - (computedStyle[TRANSLATE_Y] || 0);
         computedStyle[TRANSLATE_Y] = v;
@@ -979,26 +882,8 @@ class Xom extends Node {
         if(isNil(v)) {
           v = 0;
         }
-        else if(v[1] === PERCENT) {
-          v = v[0] * this.offsetWidth * 0.01;
-        }
-        else if(v[1] === REM) {
-          v = v[0] * this.root.computedStyle[FONT_SIZE];
-        }
-        else if(v[1] === VW) {
-          v = v[0] * this.root.width * 0.01;
-        }
-        else if(v[1] === VH) {
-          v = v[0] * this.root.height * 0.01;
-        }
-        else if(v[1] === VMAX) {
-          v = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-        }
-        else if(v[1] === VMIN) {
-          v = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-        }
         else {
-          v = v[0];
+          v = this.__calSize(v, this.offsetWidth, true);
         }
         z = v - (computedStyle[TRANSLATE_Z] || 0);
         computedStyle[TRANSLATE_Z] = v;
@@ -1089,54 +974,8 @@ class Xom extends Node {
             if(v[0] === 1 && isScale || !isScale && v[0] === 0) {
               return;
             }
-            if(v[1] === PERCENT) {
-              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-                computedStyle[k] = v[0] * offsetWidth * 0.01;
-              }
-              else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * offsetHeight * 0.01;
-              }
-            }
-            else if(v[1] === REM) {
-              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-                computedStyle[k] = v[0] * this.root.computedStyle[FONT_SIZE];
-              }
-              else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * this.root.computedStyle[FONT_SIZE];
-              }
-            }
-            else if(v[1] === VW) {
-              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-                computedStyle[k] = v[0] * this.root.width * 0.01;
-              }
-              else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * this.root.width * 0.01;
-              }
-            }
-            else if(v[1] === VH) {
-              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-                computedStyle[k] = v[0] * this.root.height * 0.01;
-              }
-              else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * this.root.height * 0.01;
-              }
-            }
-            else if(v[1] === VMAX) {
-              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-                computedStyle[k] = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-              }
-              else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-              }
-            }
-            else if(v[1] === VMIN) {
-              if(k === TRANSLATE_X || k === TRANSLATE_Z) {
-                computedStyle[k] = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-              }
-              else if(k === TRANSLATE_Y) {
-                computedStyle[k] = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-              }
-            }
+            let p = k === TRANSLATE_X || k === TRANSLATE_Z ? offsetWidth : offsetHeight;
+            computedStyle[k] = this.__calSize(v, p, true);
             temp.push([k, v]);
           });
           if(temp.length) {
@@ -1199,13 +1038,13 @@ class Xom extends Node {
     let bx1 = x1, by1 = y1, bx2 = x6, by2 = y6;
     let backgroundClip = computedStyle[BACKGROUND_CLIP] = currentStyle[BACKGROUND_CLIP];
     // 默认border-box
-    if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
+    if(backgroundClip === 'paddingBox') {
       bx1 = x2;
       by1 = y2;
       bx2 = x5;
       by2 = y5;
     }
-    else if(backgroundClip === 'contentBox' || backgroundClip === 'content-box') {
+    else if(backgroundClip === 'contentBox') {
       bx1 = x3;
       by1 = y3;
       bx2 = x4;
@@ -1557,25 +1396,7 @@ class Xom extends Node {
       __cacheStyle[PERSPECTIVE] = true;
       rebuild = true;
       let v = currentStyle[PERSPECTIVE];
-      let ppt = 0;
-      if(v[1] === REM) {
-        ppt = v[0] * this.root.computedStyle[FONT_SIZE];
-      }
-      else if(v[1] === VW) {
-        ppt = v[0] * this.root.width * 0.01;
-      }
-      else if(v[1] === VH) {
-        ppt = v[0] * this.root.height * 0.01;
-      }
-      else if(v[1] === VMAX) {
-        ppt = v[0] * Math.max(this.root.width, this.root.height) * 0.01;
-      }
-      else if(v[1] === VMIN) {
-        ppt = v[0] * Math.min(this.root.width, this.root.height) * 0.01;
-      }
-      else {
-        ppt = v[0];
-      }
+      let ppt = this.__calSize(v, this.clientWidth, true);
       computedStyle[PERSPECTIVE] = ppt;
     }
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
@@ -1980,7 +1801,7 @@ class Xom extends Node {
     let btrr = borderTopRightRadius.slice(0);
     let bbrr = borderBottomRightRadius.slice(0);
     let bblr = borderBottomLeftRadius.slice(0);
-    if(backgroundClip === 'padding-box' || backgroundClip === 'paddingBox') {
+    if(backgroundClip === 'paddingBox') {
       btlr[0] -= borderLeftWidth;
       btlr[1] -= borderTopWidth;
       btrr[0] -= borderRightWidth;
@@ -1990,7 +1811,7 @@ class Xom extends Node {
       bblr[0] -= borderLeftWidth;
       bblr[1] -= borderBottomWidth;
     }
-    else if(backgroundClip === 'content-box' || backgroundClip === 'contentBox') {
+    else if(backgroundClip === 'contentBox') {
       btlr[0] -= borderLeftWidth + paddingLeft;
       btlr[1] -= borderTopWidth + paddingTop;
       btrr[0] -= borderRightWidth + paddingRight;

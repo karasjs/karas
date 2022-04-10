@@ -58,7 +58,7 @@ const {
     FONT_SIZE,
     FONT_FAMILY,
     FONT_WEIGHT,
-    TEXT_OVERFLOW,
+    WRITING_MODE,
   },
   NODE_KEY: {
     NODE_CURRENT_STYLE,
@@ -252,8 +252,8 @@ class Dom extends Xom {
       flex: true,
       block: true,
       inline: true,
-      inlineBlock: true,
       'inline-block': true,
+      inlineBlock: true,
       none: true,
     }.hasOwnProperty(style.display)) {
       if(tag.INLINE.hasOwnProperty(this.tagName)) {
@@ -536,7 +536,7 @@ class Dom extends Xom {
     if(isDirectionRow) {
       // flex的item还是flex时
       if(display === 'flex') {
-        let isRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1;
+        let isRow = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
         flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -651,7 +651,7 @@ class Dom extends Xom {
       [LINE_CLAMP]: lineClamp,
       [LINE_HEIGHT]: lineHeight,
       [OVERFLOW]: overflow,
-      [TEXT_OVERFLOW]: textOverflow,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
@@ -671,7 +671,7 @@ class Dom extends Xom {
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
+      let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
       let isRealInline = isInline && item.__isRealInline();
       let lastLineClampCount = lineClampCount;
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
@@ -1110,11 +1110,12 @@ class Dom extends Xom {
       [ALIGN_CONTENT]: alignContent,
       [LINE_HEIGHT]: lineHeight,
       [TEXT_ALIGN]: textAlign,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
-    let isDirectionRow = ['column', 'column-reverse', 'columnReverse'].indexOf(flexDirection) === -1;
+    let isDirectionRow = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
     // 计算伸缩基数
     let growList = [];
     let shrinkList = [];
@@ -1165,7 +1166,7 @@ class Dom extends Xom {
       }
     });
     let containerSize = isDirectionRow ? w : h;
-    let isMultiLine = flexWrap === 'wrap' || ['wrap-reverse', 'wrapReverse'].indexOf(flexWrap) > -1;
+    let isMultiLine = ['wrap', 'wrapReverse'].indexOf(flexWrap) > -1;
     /**
      * 判断是否需要分行，根据假设主尺寸来统计尺寸和计算，假设主尺寸是clamp(min_main_size, flex_base_size, max_main_size)
      * 当多行时，由于每行一定有最小限制，所以每行一般情况都不是shrink状态，
@@ -1265,7 +1266,7 @@ class Dom extends Xom {
       return;
     }
     // flexDirection当有reverse时交换每line的主轴序
-    if(flexDirection === 'row-reverse' || flexDirection === 'rowReverse') {
+    if(flexDirection === 'rowReverse') {
       __flexLine.forEach(line => {
         line.forEach(item => {
           // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
@@ -1276,7 +1277,7 @@ class Dom extends Xom {
         });
       });
     }
-    else if(flexDirection === 'column-reverse' || flexDirection === 'columnReverse') {
+    else if(flexDirection === 'columnReverse') {
       __flexLine.forEach(line => {
         line.forEach(item => {
           // 一个矩形内的子矩形进行镜像移动，用外w减去内w再减去开头空白的2倍即可
@@ -1289,7 +1290,7 @@ class Dom extends Xom {
     }
     // wrap-reverse且多轴线时交换轴线序，需要2行及以上才行
     let length = __flexLine.length;
-    if(['wrapReverse', 'wrap-reverse'].indexOf(flexWrap) > -1 && length > 1) {
+    if(flexWrap === 'wrapReverse' && length > 1) {
       let crossSum = 0, crossSumList = [];
       maxCrossList.forEach(item => {
         crossSumList.push(crossSum);
@@ -1332,8 +1333,8 @@ class Dom extends Xom {
             }
           });
         }
-        else if(alignContent === 'flex-start' || alignContent === 'flexStart') {}
-        else if(alignContent === 'flex-end' || alignContent === 'flexEnd') {
+        else if(alignContent === 'flexStart') {}
+        else if(alignContent === 'flexEnd') {
           orderChildren.forEach(item => {
             if(isDirectionRow) {
               item.__offsetY(diff, true);
@@ -1343,7 +1344,7 @@ class Dom extends Xom {
             }
           });
         }
-        else if(alignContent === 'space-between' || alignContent === 'spaceBetween') {
+        else if(alignContent === 'spaceBetween') {
           let between = diff / (length - 1);
           // 除了第1行其它进行偏移
           __flexLine.forEach((item, i) => {
@@ -1359,7 +1360,7 @@ class Dom extends Xom {
             }
           });
         }
-        else if(alignContent === 'space-around' || alignContent === 'spaceAround') {
+        else if(alignContent === 'spaceAround') {
           let around = diff / (length + 1);
           __flexLine.forEach((item, i) => {
             item.forEach(item => {
@@ -1644,9 +1645,9 @@ class Dom extends Xom {
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
     // 主轴对齐方式
-    if(!isAbs && diff > 0) {
+    if(!isAbs && !isColumn && diff > 0) {
       let len = orderChildren.length;
-      if(justifyContent === 'flexEnd' || justifyContent === 'flex-end') {
+      if(justifyContent === 'flexEnd') {
         for(let i = 0; i < len; i++) {
           let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
@@ -1659,14 +1660,21 @@ class Dom extends Xom {
           isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
         }
       }
-      else if(justifyContent === 'spaceBetween' || justifyContent === 'space-between') {
+      else if(justifyContent === 'spaceBetween') {
         let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
           let child = orderChildren[i];
           isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
         }
       }
-      else if(justifyContent === 'spaceAround' || justifyContent === 'space-around') {
+      else if(justifyContent === 'spaceAround') {
+        let around = diff * 0.5 / len;
+        for(let i = 0; i < len; i++) {
+          let child = orderChildren[i];
+          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+        }
+      }
+      else if(justifyContent === 'spaceEvenly') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = orderChildren[i];
@@ -1681,7 +1689,7 @@ class Dom extends Xom {
       x += maxCross;
     }
     // flex的直接text对齐比较特殊
-    if(!isAbs && ['center', 'right'].indexOf(textAlign) > -1) {
+    if(!isAbs && !isColumn && ['center', 'right'].indexOf(textAlign) > -1) {
       lbmList.forEach(item => {
         item.horizonAlign(item.width, textAlign);
       })
@@ -1698,8 +1706,8 @@ class Dom extends Xom {
     line.forEach(item => {
       let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
       if(isDirectionRow) {
-        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-        else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+        if(alignSelf === 'flexStart') {}
+        else if(alignSelf === 'flexEnd') {
           let diff = maxCross - item.outerHeight;
           if(diff !== 0) {
             item.__offsetY(diff, true);
@@ -1742,14 +1750,14 @@ class Dom extends Xom {
         }
         // 默认auto，取alignItems
         else {
-          if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
+          if(alignItems === 'flexStart') {}
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
               item.__offsetY(diff * 0.5, true);
             }
           }
-          else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+          else if(alignItems === 'flexEnd') {
             let diff = maxCross - item.outerHeight;
             if(diff !== 0) {
               item.__offsetY(diff, true);
@@ -1797,8 +1805,8 @@ class Dom extends Xom {
       }
       // column
       else {
-        if(alignSelf === 'flexStart' || alignSelf === 'flex-start') {}
-        else if(alignSelf === 'flexEnd' || alignSelf === 'flex-end') {
+        if(alignSelf === 'flexStart') {}
+        else if(alignSelf === 'flexEnd') {
           let diff = maxCross - item.outerWidth;
           if(diff !== 0) {
             item.__offsetX(diff, true);
@@ -1841,14 +1849,14 @@ class Dom extends Xom {
         }
         // 默认auto，取alignItems
         else {
-          if(alignItems === 'flexStart' || alignSelf === 'flex-start') {}
+          if(alignItems === 'flexStart') {}
           else if(alignItems === 'center') {
             let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
               item.__offsetX(diff * 0.5, true);
             }
           }
-          else if(alignItems === 'flexEnd' || alignItems === 'flex-end') {
+          else if(alignItems === 'flexEnd') {
             let diff = maxCross - item.outerWidth;
             if(diff !== 0) {
               item.__offsetX(diff, true);
@@ -1929,6 +1937,7 @@ class Dom extends Xom {
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [PADDING_LEFT]: paddingLeft,
       [PADDING_RIGHT]: paddingRight,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     let lineClampCount = data.lineClampCount || 0;
     if(isInline && !this.__isRealInline()) {
@@ -1962,9 +1971,8 @@ class Dom extends Xom {
       endSpace = selfEndSpace = lineClampCount = 0;
     }
     // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
-    let contentBoxList;
     if(isInline) {
-      contentBoxList = this.__contentBoxList = [];
+      this.contentBoxList.splice(0);
       lineBoxManager.pushContentBoxList(this);
     }
     // ib的bp是自己，inline是最近的非inline
@@ -1974,7 +1982,6 @@ class Dom extends Xom {
     }
     let {
       [OVERFLOW]: overflow,
-      [TEXT_OVERFLOW]: textOverflow,
     } = bp.computedStyle;
     let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;
@@ -1989,7 +1996,7 @@ class Dom extends Xom {
       }
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
       let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock2 = isXom && ['inlineBlock', 'inline-block'].indexOf(item.currentStyle[DISPLAY]) > -1;
+      let isInlineBlock2 = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
       let isRealInline = isInline2 && item.__isRealInline();
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb，注意只执行一次防止重复叠加
       let isEnd = isInline && !hasAddEndSpace

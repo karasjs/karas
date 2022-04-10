@@ -4,10 +4,10 @@ const MBM_HASH = {
   overlay: true,
   darken: true,
   lighten: true,
-  'color-dodge': true,
-  'color-burn': true,
-  'hard-light': true,
-  'soft-light': true,
+  colorDodge: true,
+  colorBurn: true,
+  hardLight: true,
+  softLight: true,
   difference: true,
   exclusion: true,
   hue: true,
@@ -25,7 +25,7 @@ function mbmName(v) {
 }
 
 function isValidMbm(v) {
-  return MBM_HASH.hasOwnProperty(mbmName(v));
+  return MBM_HASH.hasOwnProperty(v);
 }
 
 export default {

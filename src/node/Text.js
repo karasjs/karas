@@ -34,6 +34,7 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
     FILTER,
+    WRITING_MODE,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -216,7 +217,9 @@ class Text extends Node {
       [FONT_SIZE]: fontSize,
       [FONT_WEIGHT]: fontWeight,
       [FONT_FAMILY]: fontFamily,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
+    // 基于最近block父节点的样式
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
       bp = bp.domParent;

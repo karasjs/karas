@@ -1,7 +1,10 @@
 import mode from '../refresh/mode';
 import css from '../style/css';
+import transform from '../style/transform';
 import enums from '../util/enums';
 import util from '../util/util';
+import unit from '../style/unit';
+import mx from '../math/matrix';
 
 const { STYLE_KEY: {
   COLOR,
@@ -13,7 +16,9 @@ const { STYLE_KEY: {
   TEXT_STROKE_COLOR,
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
+  ROTATE_Z,
 } } = enums;
+const { DEG } = unit;
 
 /**
  * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
@@ -22,26 +27,23 @@ const { STYLE_KEY: {
  * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
  */
 class TextBox {
-  constructor(parent, index, x, y, w, h, content) {
+  constructor(parent, index, x, y, w, h, content, isVertical = false) {
     this.__parent = parent;
     this.__index = index;
     this.__x = x;
     this.__y = y;
-    this.__width = w;
-    this.__height = h;
+    if(isVertical) {
+      this.__width = h;
+      this.__height = w;
+    }
+    else {
+      this.__width = w;
+      this.__height = h;
+    }
     this.__content = content;
     this.__virtualDom = {};
     this.__parentLineBox = null;
-  }
-
-  setEllipsis(fontFamily, fontSize, fontWeight) {
-    this.__fontFamily = fontFamily;
-    this.__fontSize = fontSize;
-    this.__fontWeight = fontWeight;
-  }
-
-  setDom(dom) {
-    this.__dom = dom;
+    this.__isVertical = isVertical;
   }
 
   /**
@@ -54,51 +56,38 @@ class TextBox {
    * @param dy
    */
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
-    let { content, x, y, parent, width, dom } = this;
+    let { content, x, y, parent, width, isVertical } = this;
     let { ox, oy } = parent;
-    y += css.getBaseline(computedStyle);
+    let dom = parent.parent;
+    let b = css.getBaseline(computedStyle);
+    // 垂直文本x/y互换，渲染时使用rotate模拟，
+    // 因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
+    // 所以原本左上角转换变成lineHeight（现在的w）减去b
+    if(isVertical) {
+      x += width - b;
+    }
+    else {
+      y += b;
+    }
     x += ox + dx;
     y += oy + dy;
     this.__endX = x + width;
     this.__endY = y;
-    // ELLIPSIS使用block的样式
-    if(dom) {
-      cacheStyle = dom.cacheStyle;
-      computedStyle = dom.computedStyle;
-    }
     let {
       [LETTER_SPACING]: letterSpacing,
       [TEXT_STROKE_WIDTH]: textStrokeWidth,
       [TEXT_STROKE_COLOR]: textStrokeColor,
     } = computedStyle;
+    let m;
+    if(isVertical) {
+      let list = [
+        [ROTATE_Z, [90, DEG]],
+      ];
+      let tfo = [x, y];
+      m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+    }
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-      // ellipsis会强行设置
-      if(dom) {
-        computedStyle = dom.computedStyle;
-        let font = css.setFontStyle(computedStyle);
-        if(ctx.font !== font) {
-          ctx.font = font;
-        }
-        let color = cacheStyle[COLOR];
-        // 渐变
-        if(color.k) {
-          color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
-        }
-        if(ctx.fillStyle !== color) {
-          ctx.fillStyle = color;
-        }
-        textStrokeWidth = computedStyle[TEXT_STROKE_WIDTH];
-        textStrokeColor = computedStyle[TEXT_STROKE_COLOR];
-        let sColor = cacheStyle[TEXT_STROKE_COLOR];
-        // 渐变
-        if(textStrokeColor.k) {
-          sColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
-        }
-        if(ctx.strokeStyle !== sColor) {
-          ctx.strokeStyle = sColor;
-        }
-      }
       let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
       if(letterSpacing) {
         for(; i < length; i++) {
@@ -116,21 +105,27 @@ class TextBox {
         }
       }
       else {
-        if(overFill) {
+        if(isVertical) {
+          m = mx.multiply(dom.matrixEvent, m);
+          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           ctx.fillText(content, x, y);
         }
-        if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-          ctx.strokeText(content, x, y);
-        }
-        if(!overFill) {
-          ctx.fillText(content, x, y);
+        else {
+          if(overFill) {
+            ctx.fillText(content, x, y);
+          }
+          if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+            ctx.strokeText(content, x, y);
+          }
+          if(!overFill) {
+            ctx.fillText(content, x, y);
+          }
         }
       }
     }
     else if(renderMode === mode.SVG) {
       let color = cacheStyle[COLOR];
       if(color.k) {
-        let dom = this.parent.parent;
         color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
       }
       let props = [
@@ -147,7 +142,6 @@ class TextBox {
         let textStrokeColor = cacheStyle[TEXT_STROKE_COLOR];
         // 渐变
         if(textStrokeColor.k) {
-          let dom = this.parent.parent;
           textStrokeColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
         }
         props.push(['stroke', textStrokeColor]);
@@ -229,8 +223,8 @@ class TextBox {
     return false;
   }
 
-  get dom() {
-    return this.__dom;
+  get isVertical() {
+    return this.__isVertical;
   }
 }
 

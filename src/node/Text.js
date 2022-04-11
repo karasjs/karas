@@ -193,7 +193,7 @@ class Text extends Node {
     if(__cache) {
       __cache.release();
     }
-    let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
+    let { x, y, w, h, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, textBoxes, root } = this;
@@ -219,6 +219,8 @@ class Text extends Node {
       [FONT_FAMILY]: fontFamily,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
+    let size = isVertical ? h : w;
     // 基于最近block父节点的样式
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
@@ -281,24 +283,24 @@ class Text extends Node {
     // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
     else {
       while(i < length) {
-        let wl = i ? w : (w - beginSpace);
+        let limit = i ? size : (size - beginSpace);
         if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-          wl -= endSpace;
+          limit -= endSpace;
         }
-        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
+          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW,
             endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
-        if(i + num === length && endSpace && rw + endSpace > wl + (1e-10) && num > 1) {
-          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        if(i + num === length && endSpace && rw + endSpace > limit + (1e-10) && num > 1) {
+          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
           // 可能加上endSpace后超过了，还得再判断一次
           if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
+            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW,
               endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
             lineCount++;
             break;
@@ -306,7 +308,7 @@ class Text extends Node {
         }
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白
-        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
+        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num), isVertical);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, newLine);
         y += Math.max(lineHeight, lineBoxManager.lineHeight);
@@ -333,7 +335,7 @@ class Text extends Node {
   }
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
-  __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
+  __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
               fontFamily, fontSize, fontWeight, letterSpacing) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
@@ -353,9 +355,9 @@ class Text extends Node {
         ctx.font = font;
       }
     }
-    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, limit - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
-    if(rw + ew > wl + (1e-10) - endSpace) {
+    if(rw + ew > limit + (1e-10) - endSpace) {
       // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
       let lineBox = lineBoxManager.lineBox;
@@ -370,13 +372,13 @@ class Text extends Node {
             }
             let item = list.pop();
             x -= item.outerWidth;
-            wl += item.outerWidth;
+            limit += item.outerWidth;
             item.__layoutNone();
             continue;
           }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
           let { content, width, parent } = tb;
-          if(!j || wl >= width + ew + (1e-10) + endSpace) {
+          if(!j || limit >= width + ew + (1e-10) + endSpace) {
             let length = content.length;
             let {
               [LINE_HEIGHT]: lineHeight,
@@ -389,7 +391,7 @@ class Text extends Node {
               ctx.font = css.setFontStyle(parent.computedStyle);
             }
             // 再进行查找，这里也会有至少一个字符不用担心
-            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew + width - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew + width - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
             // 可能发生x回退，当tb的内容产生减少时
             if(num !== content.length) {
               tb.__content = content.slice(0, num);
@@ -406,7 +408,7 @@ class Text extends Node {
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
-          wl += width;
+          limit += width;
           x -= width;
           let tbs = item.parent.textBoxes;
           let k = tbs.indexOf(item);
@@ -430,7 +432,7 @@ class Text extends Node {
               + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
               + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
             x -= mbp;
-            wl += mbp;
+            limit += mbp;
             dom.__layoutNone();
             dom = dom.domParent;
           }
@@ -455,7 +457,7 @@ class Text extends Node {
   }
 
   // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
-  __backtrack(bp, lineBoxManager, lineBox, textBox, wl, endSpace, ew, computedStyle, ctx, renderMode) {
+  __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode) {
     let list = lineBox.list;
     for(let j = list.length - 1; j >= 0; j--) {
       let tb = list[j];
@@ -465,13 +467,13 @@ class Text extends Node {
           break;
         }
         let item = list.pop();
-        wl += item.outerWidth;
+        limit += item.outerWidth;
         item.__layoutNone();
         continue;
       }
       // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
       let { content, width, parent } = tb;
-      if(!j || wl >= width + ew + (1e-10) + endSpace) {
+      if(!j || limit >= width + ew + (1e-10) + endSpace) {
         let length = content.length;
         let {
           [LETTER_SPACING]: letterSpacing,
@@ -484,7 +486,7 @@ class Text extends Node {
         }
         let perW = (fontSize * 0.8) + letterSpacing;
         // 再进行查找，这里也会有至少一个字符不用担心
-        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 可能发生x回退，当tb的内容产生减少时
         if(num !== content.length) {
           tb.__content = content.slice(0, num);
@@ -498,7 +500,7 @@ class Text extends Node {
       }
       // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
       let item = list.pop();
-      wl += width;
+      limit += width;
       let tbs = item.parent.textBoxes;
       let k = tbs.indexOf(item);
       if(k > -1) {
@@ -520,7 +522,7 @@ class Text extends Node {
         let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
           + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
           + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-        wl += mbp;
+        limit += mbp;
         dom.__layoutNone();
         dom = dom.domParent;
       }

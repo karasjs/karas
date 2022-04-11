@@ -3012,9 +3012,10 @@
 
   var reg = {
     position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
-    // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     gradient: /\b(\w+)-?gradient\((.+)\)/i,
-    img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
+    img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
+    han: /(?:[\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u3005\u3007\u3021-\u3029\u3038-\u303B\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFA6D\uFA70-\uFAD9]|\uD81B[\uDFE2\uDFE3\uDFF0\uDFF1]|[\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879\uD880-\uD883][\uDC00-\uDFFF]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF38\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A])/,
+    punctuation: /(?:[!-#%-\*,-\/:;\?@\[-\]_\{\}\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061D-\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u09FD\u0A76\u0AF0\u0C77\u0C84\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1B7D\u1B7E\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2308-\u230B\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E4F\u2E52-\u2E5D\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]|\uD800[\uDD00-\uDD02\uDF9F\uDFD0]|\uD801\uDD6F|\uD802[\uDC57\uDD1F\uDD3F\uDE50-\uDE58\uDE7F\uDEF0-\uDEF6\uDF39-\uDF3F\uDF99-\uDF9C]|\uD803[\uDEAD\uDF55-\uDF59\uDF86-\uDF89]|\uD804[\uDC47-\uDC4D\uDCBB\uDCBC\uDCBE-\uDCC1\uDD40-\uDD43\uDD74\uDD75\uDDC5-\uDDC8\uDDCD\uDDDB\uDDDD-\uDDDF\uDE38-\uDE3D\uDEA9]|\uD805[\uDC4B-\uDC4F\uDC5A\uDC5B\uDC5D\uDCC6\uDDC1-\uDDD7\uDE41-\uDE43\uDE60-\uDE6C\uDEB9\uDF3C-\uDF3E]|\uD806[\uDC3B\uDD44-\uDD46\uDDE2\uDE3F-\uDE46\uDE9A-\uDE9C\uDE9E-\uDEA2]|\uD807[\uDC41-\uDC45\uDC70\uDC71\uDEF7\uDEF8\uDFFF]|\uD809[\uDC70-\uDC74]|\uD80B[\uDFF1\uDFF2]|\uD81A[\uDE6E\uDE6F\uDEF5\uDF37-\uDF3B\uDF44]|\uD81B[\uDE97-\uDE9A\uDFE2]|\uD82F\uDC9F|\uD836[\uDE87-\uDE8B]|\uD83A[\uDD5E\uDD5F])/
   };
 
   // 向量点乘积
@@ -9860,582 +9861,6 @@
     spreadFilter: spreadFilter
   };
 
-  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
-      COLOR$1 = _enums$STYLE_KEY$3.COLOR,
-      FONT_WEIGHT$1 = _enums$STYLE_KEY$3.FONT_WEIGHT,
-      FONT_FAMILY$1 = _enums$STYLE_KEY$3.FONT_FAMILY,
-      FONT_SIZE$3 = _enums$STYLE_KEY$3.FONT_SIZE,
-      FONT_STYLE$1 = _enums$STYLE_KEY$3.FONT_STYLE,
-      LETTER_SPACING$1 = _enums$STYLE_KEY$3.LETTER_SPACING,
-      TEXT_STROKE_COLOR$1 = _enums$STYLE_KEY$3.TEXT_STROKE_COLOR,
-      TEXT_STROKE_WIDTH$1 = _enums$STYLE_KEY$3.TEXT_STROKE_WIDTH,
-      TEXT_STROKE_OVER$1 = _enums$STYLE_KEY$3.TEXT_STROKE_OVER;
-  /**
-   * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
-   * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
-   * 另外本类还会被LineBoxManager添加到LineBox里，LineBox为一行中的inline/文本组合，之间需要进行垂直对齐
-   * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
-   */
-
-  var TextBox = /*#__PURE__*/function () {
-    function TextBox(parent, index, x, y, w, h, content) {
-      _classCallCheck(this, TextBox);
-
-      this.__parent = parent;
-      this.__index = index;
-      this.__x = x;
-      this.__y = y;
-      this.__width = w;
-      this.__height = h;
-      this.__content = content;
-      this.__virtualDom = {};
-      this.__parentLineBox = null;
-    }
-
-    _createClass(TextBox, [{
-      key: "setEllipsis",
-      value: function setEllipsis(fontFamily, fontSize, fontWeight) {
-        this.__fontFamily = fontFamily;
-        this.__fontSize = fontSize;
-        this.__fontWeight = fontWeight;
-      }
-    }, {
-      key: "setDom",
-      value: function setDom(dom) {
-        this.__dom = dom;
-      }
-      /**
-       * 渲染阶段被Text类调用，多行Text会有多个TextBox，内容被分拆开
-       * @param renderMode
-       * @param ctx
-       * @param computedStyle
-       * @param cacheStyle Text父节点Dom的缓存样式，相比computedStyle可以直接用，比如color被缓存为style字符串
-       * @param dx
-       * @param dy
-       */
-
-    }, {
-      key: "render",
-      value: function render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
-        var content = this.content,
-            x = this.x,
-            y = this.y,
-            parent = this.parent,
-            width = this.width,
-            dom = this.dom;
-        var ox = parent.ox,
-            oy = parent.oy;
-        y += css.getBaseline(computedStyle);
-        x += ox + dx;
-        y += oy + dy;
-        this.__endX = x + width;
-        this.__endY = y; // ELLIPSIS使用block的样式
-
-        if (dom) {
-          cacheStyle = dom.cacheStyle;
-          computedStyle = dom.computedStyle;
-        }
-
-        var _computedStyle = computedStyle,
-            letterSpacing = _computedStyle[LETTER_SPACING$1],
-            textStrokeWidth = _computedStyle[TEXT_STROKE_WIDTH$1],
-            textStrokeColor = _computedStyle[TEXT_STROKE_COLOR$1];
-        var i = 0,
-            length = content.length;
-
-        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
-          // ellipsis会强行设置
-          if (dom) {
-            computedStyle = dom.computedStyle;
-            var font = css.setFontStyle(computedStyle);
-
-            if (ctx.font !== font) {
-              ctx.font = font;
-            }
-
-            var color = cacheStyle[COLOR$1]; // 渐变
-
-            if (color.k) {
-              color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
-            }
-
-            if (ctx.fillStyle !== color) {
-              ctx.fillStyle = color;
-            }
-
-            textStrokeWidth = computedStyle[TEXT_STROKE_WIDTH$1];
-            textStrokeColor = computedStyle[TEXT_STROKE_COLOR$1];
-            var sColor = cacheStyle[TEXT_STROKE_COLOR$1]; // 渐变
-
-            if (textStrokeColor.k) {
-              sColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, textStrokeColor, dx, dy).v;
-            }
-
-            if (ctx.strokeStyle !== sColor) {
-              ctx.strokeStyle = sColor;
-            }
-          }
-
-          var overFill = computedStyle[TEXT_STROKE_OVER$1] === 'fill';
-
-          if (letterSpacing) {
-            for (; i < length; i++) {
-              var c = content.charAt(i);
-
-              if (overFill) {
-                ctx.fillText(c, x, y);
-              }
-
-              if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(c, x, y);
-              }
-
-              if (!overFill) {
-                ctx.fillText(c, x, y);
-              }
-
-              x += ctx.measureText(c).width + letterSpacing;
-            }
-          } else {
-            if (overFill) {
-              ctx.fillText(content, x, y);
-            }
-
-            if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-              ctx.strokeText(content, x, y);
-            }
-
-            if (!overFill) {
-              ctx.fillText(content, x, y);
-            }
-          }
-        } else if (renderMode === mode.SVG) {
-          var _color = cacheStyle[COLOR$1];
-
-          if (_color.k) {
-            var _dom = this.parent.parent;
-            _color = _dom.__gradient(renderMode, ctx, _dom.__bx1, _dom.__by1, _dom.__bx2, _dom.__by2, _color, dx, dy).v;
-          }
-
-          var props = [['x', x], ['y', y], ['fill', _color], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$3] + 'px']]; // svg无法定义stroke的over
-
-          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-            var _textStrokeColor = cacheStyle[TEXT_STROKE_COLOR$1]; // 渐变
-
-            if (_textStrokeColor.k) {
-              var _dom2 = this.parent.parent;
-              _textStrokeColor = _dom2.__gradient(renderMode, ctx, _dom2.__bx1, _dom2.__by1, _dom2.__bx2, _dom2.__by2, _textStrokeColor, dx, dy).v;
-            }
-
-            props.push(['stroke', _textStrokeColor]);
-            props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH$1]]);
-          }
-
-          if (letterSpacing) {
-            props.push(['letter-spacing', letterSpacing]);
-          }
-
-          this.__virtualDom = {
-            type: 'item',
-            tagName: 'text',
-            props: props,
-            content: util.encodeHtml(content)
-          };
-        }
-      }
-    }, {
-      key: "__offsetX",
-      value: function __offsetX(diff) {
-        this.__x += diff;
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff) {
-        this.__y += diff;
-      }
-    }, {
-      key: "x",
-      get: function get() {
-        return this.__x;
-      }
-    }, {
-      key: "y",
-      get: function get() {
-        return this.__y;
-      }
-    }, {
-      key: "endX",
-      get: function get() {
-        return this.__endX;
-      }
-    }, {
-      key: "endY",
-      get: function get() {
-        return this.__endY;
-      }
-    }, {
-      key: "width",
-      get: function get() {
-        return this.__width;
-      }
-    }, {
-      key: "outerWidth",
-      get: function get() {
-        return this.__width;
-      }
-    }, {
-      key: "height",
-      get: function get() {
-        return this.__height;
-      }
-    }, {
-      key: "outerHeight",
-      get: function get() {
-        return this.__height;
-      }
-    }, {
-      key: "content",
-      get: function get() {
-        return this.__content;
-      }
-    }, {
-      key: "baseline",
-      get: function get() {
-        return this.parent.baseline;
-      }
-    }, {
-      key: "virtualDom",
-      get: function get() {
-        return this.__virtualDom;
-      }
-    }, {
-      key: "parent",
-      get: function get() {
-        return this.__parent;
-      }
-    }, {
-      key: "parentLineBox",
-      get: function get() {
-        return this.__parentLineBox;
-      }
-    }, {
-      key: "isReplaced",
-      get: function get() {
-        return false;
-      }
-    }, {
-      key: "dom",
-      get: function get() {
-        return this.__dom;
-      }
-    }]);
-
-    return TextBox;
-  }();
-
-  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
-      FONT_SIZE$4 = _enums$STYLE_KEY$4.FONT_SIZE,
-      FONT_FAMILY$2 = _enums$STYLE_KEY$4.FONT_FAMILY,
-      FONT_WEIGHT$2 = _enums$STYLE_KEY$4.FONT_WEIGHT,
-      FONT_STYLE$2 = _enums$STYLE_KEY$4.FONT_STYLE,
-      COLOR$2 = _enums$STYLE_KEY$4.COLOR,
-      NODE_VIRTUAL_DOM = enums.NODE_KEY.NODE_VIRTUAL_DOM;
-  var CANVAS$1 = mode.CANVAS,
-      SVG = mode.SVG,
-      WEBGL$1 = mode.WEBGL;
-  var CHAR = '…';
-
-  var Ellipsis = /*#__PURE__*/function (_Node) {
-    _inherits(Ellipsis, _Node);
-
-    var _super = _createSuper(Ellipsis);
-
-    function Ellipsis(x, y, width, parent) {
-      var _this;
-
-      _classCallCheck(this, Ellipsis);
-
-      _this = _super.call(this);
-      _this.__x = _this.__sx1 = x;
-      _this.__y = _this.__sy1 = y;
-      _this.__width = width;
-      _this.__parent = _this.__domParent = parent;
-      parent.__ellipsis = _assertThisInitialized(_this);
-      _this.__parentLineBox = null;
-      _this.__baseline = css.getBaseline(parent.computedStyle);
-      _this.isEllipsis = true;
-      return _this;
-    }
-
-    _createClass(Ellipsis, [{
-      key: "render",
-      value: function render(renderMode, lv, ctx, cache) {
-        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
-        var x = this.x,
-            y = this.y,
-            parent = this.parent;
-        var ox = parent.ox,
-            oy = parent.oy,
-            computedStyle = parent.computedStyle,
-            color = parent.cacheStyle[COLOR$2];
-        y += css.getBaseline(computedStyle);
-        x += ox + dx;
-        y += oy + dy;
-
-        if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
-          var font = css.setFontStyle(computedStyle);
-
-          if (ctx.font !== font) {
-            ctx.font = font;
-          }
-
-          if (ctx.fillStyle !== color) {
-            ctx.fillStyle = color;
-          }
-
-          ctx.fillText(CHAR, x, y);
-        } else if (renderMode === SVG) {
-          var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$2]], ['font-size', computedStyle[FONT_SIZE$4] + 'px']];
-          var vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
-            type: 'text',
-            children: [{
-              type: 'item',
-              tagName: 'text',
-              props: props,
-              content: CHAR
-            }]
-          };
-          parent.virtualDom.children.push(vd);
-        }
-      }
-    }, {
-      key: "parentLineBox",
-      get: function get() {
-        return this.__parentLineBox;
-      }
-    }]);
-
-    return Ellipsis;
-  }(Node);
-
-  var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
-  var NUMBER$2 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1, 1];
-  var MAX = SIZE[SIZE.length - 1];
-  var HASH_CANVAS = {};
-  var uuid = 0;
-
-  var Page = /*#__PURE__*/function () {
-    function Page(size, number) {
-      _classCallCheck(this, Page);
-
-      this.__size = size;
-      this.__number = number;
-      this.__free = this.__total = number * number;
-      size *= number;
-      this.__width = size;
-      this.__height = size;
-      var offscreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
-
-      if (offscreen) {
-        this.__offscreen = offscreen;
-      } // 1/0标识n*n个单元格是否空闲可用，一维数组表示
-
-
-      this.__grid = [];
-
-      for (var i = 0; i < this.__total; i++) {
-        this.__grid.push(1);
-      }
-
-      this.__uuid = uuid++; // webgl贴图缓存使用，一旦更新则标识记录，绑定某号纹理单元查看变化才更新贴图
-
-      this.__update = false;
-      this.time = 0;
-    }
-
-    _createClass(Page, [{
-      key: "add",
-      value: function add() {
-        var number = this.number,
-            grid = this.grid;
-
-        for (var i = 0; i < number; i++) {
-          for (var j = 0; j < number; j++) {
-            var index = i * number + j;
-
-            if (grid[index]) {
-              grid[index] = 0;
-              this.__free--;
-              return index;
-            }
-          }
-        } // 理论不可能进入，除非bug
-
-
-        throw new Error('Can not find free page');
-      }
-    }, {
-      key: "del",
-      value: function del(pos) {
-        if (!this.grid[pos]) {
-          this.grid[pos] = 1;
-          this.__free++;
-        }
-      }
-    }, {
-      key: "getCoords",
-      value: function getCoords(pos) {
-        var size = this.size,
-            number = this.number;
-        var x = pos % number;
-        var y = Math.floor(pos / number);
-        return [x * size, y * size];
-      }
-    }, {
-      key: "uuid",
-      get: function get() {
-        return this.__uuid;
-      }
-    }, {
-      key: "size",
-      get: function get() {
-        return this.__size;
-      }
-    }, {
-      key: "width",
-      get: function get() {
-        return this.__width;
-      }
-    }, {
-      key: "height",
-      get: function get() {
-        return this.__height;
-      }
-    }, {
-      key: "number",
-      get: function get() {
-        return this.__number;
-      }
-    }, {
-      key: "total",
-      get: function get() {
-        return this.__total;
-      }
-    }, {
-      key: "free",
-      get: function get() {
-        return this.__free;
-      }
-    }, {
-      key: "grid",
-      get: function get() {
-        return this.__grid;
-      }
-    }, {
-      key: "offscreen",
-      get: function get() {
-        return this.__offscreen;
-      }
-    }, {
-      key: "canvas",
-      get: function get() {
-        return this.offscreen.canvas;
-      }
-    }, {
-      key: "ctx",
-      get: function get() {
-        return this.offscreen.ctx;
-      }
-    }, {
-      key: "update",
-      get: function get() {
-        return this.__update;
-      },
-      set: function set(v) {
-        this.__update = v;
-      }
-    }], [{
-      key: "getInstance",
-      value: function getInstance(size) {
-        if (size > MAX) {
-          return;
-        }
-
-        var s = SIZE[0];
-        var n = NUMBER$2[0]; // 使用刚好满足的尺寸
-
-        for (var i = 0, len = SIZE.length; i < len; i++) {
-          s = SIZE[i];
-          n = NUMBER$2[i];
-
-          if (SIZE[i] >= size) {
-            break;
-          }
-        }
-
-        var list = HASH_CANVAS[s] = HASH_CANVAS[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页
-
-        var page;
-
-        for (var _i = 0, _len = list.length; _i < _len; _i++) {
-          var item = list[_i];
-
-          if (item.free) {
-            page = item;
-            break;
-          }
-        }
-
-        if (!page) {
-          page = new Page(s, n);
-
-          if (!page.offscreen) {
-            inject.error('Can not create off-screen for page');
-            return;
-          }
-
-          list.push(page);
-        }
-
-        var pos = page.add();
-        return {
-          page: page,
-          pos: pos
-        };
-      }
-    }, {
-      key: "CONFIG",
-      get: function get() {
-        return {
-          SIZE: SIZE,
-          NUMBER: NUMBER$2
-        };
-      },
-      set: function set(v) {
-        if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
-          return;
-        }
-
-        SIZE = v.SIZE;
-        NUMBER$2 = v.NUMBER;
-        MAX = SIZE[SIZE.length - 1];
-      }
-    }, {
-      key: "MAX",
-      get: function get() {
-        return MAX;
-      }
-    }, {
-      key: "genUuid",
-      value: function genUuid() {
-        return uuid++;
-      }
-    }]);
-
-    return Page;
-  }();
-
   function calDeg(x1, y1, x2, y2) {
     var dx = x2 - x1;
     var dy = y2 - y1;
@@ -13126,24 +12551,23 @@
     }
   };
 
-  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
-      TRANSLATE_X$1 = _enums$STYLE_KEY$5.TRANSLATE_X,
-      TRANSLATE_Y$1 = _enums$STYLE_KEY$5.TRANSLATE_Y,
-      TRANSLATE_Z$1 = _enums$STYLE_KEY$5.TRANSLATE_Z,
-      SCALE_X$1 = _enums$STYLE_KEY$5.SCALE_X,
-      SCALE_Y$1 = _enums$STYLE_KEY$5.SCALE_Y,
-      SCALE_Z$1 = _enums$STYLE_KEY$5.SCALE_Z,
-      SKEW_X$1 = _enums$STYLE_KEY$5.SKEW_X,
-      SKEW_Y$1 = _enums$STYLE_KEY$5.SKEW_Y,
-      ROTATE_X$1 = _enums$STYLE_KEY$5.ROTATE_X,
-      ROTATE_Y$1 = _enums$STYLE_KEY$5.ROTATE_Y,
-      ROTATE_Z$1 = _enums$STYLE_KEY$5.ROTATE_Z,
-      ROTATE_3D$1 = _enums$STYLE_KEY$5.ROTATE_3D,
-      PERSPECTIVE$1 = _enums$STYLE_KEY$5.PERSPECTIVE,
-      MATRIX$1 = _enums$STYLE_KEY$5.MATRIX,
-      FONT_SIZE$5 = _enums$STYLE_KEY$5.FONT_SIZE;
-  var PX$3 = o.PX,
-      PERCENT$3 = o.PERCENT,
+  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
+      TRANSLATE_X$1 = _enums$STYLE_KEY$3.TRANSLATE_X,
+      TRANSLATE_Y$1 = _enums$STYLE_KEY$3.TRANSLATE_Y,
+      TRANSLATE_Z$1 = _enums$STYLE_KEY$3.TRANSLATE_Z,
+      SCALE_X$1 = _enums$STYLE_KEY$3.SCALE_X,
+      SCALE_Y$1 = _enums$STYLE_KEY$3.SCALE_Y,
+      SCALE_Z$1 = _enums$STYLE_KEY$3.SCALE_Z,
+      SKEW_X$1 = _enums$STYLE_KEY$3.SKEW_X,
+      SKEW_Y$1 = _enums$STYLE_KEY$3.SKEW_Y,
+      ROTATE_X$1 = _enums$STYLE_KEY$3.ROTATE_X,
+      ROTATE_Y$1 = _enums$STYLE_KEY$3.ROTATE_Y,
+      ROTATE_Z$1 = _enums$STYLE_KEY$3.ROTATE_Z,
+      ROTATE_3D$1 = _enums$STYLE_KEY$3.ROTATE_3D,
+      PERSPECTIVE$1 = _enums$STYLE_KEY$3.PERSPECTIVE,
+      MATRIX$1 = _enums$STYLE_KEY$3.MATRIX,
+      FONT_SIZE$3 = _enums$STYLE_KEY$3.FONT_SIZE;
+  var PERCENT$3 = o.PERCENT,
       REM$3 = o.REM,
       VW$3 = o.VW,
       VH$3 = o.VH,
@@ -13326,7 +12750,7 @@
       if (v[1] === PERCENT$3) {
         return v[0] * ow * 0.01;
       } else if (v[1] === REM$3) {
-        return v[0] * root.computedStyle[FONT_SIZE$5];
+        return v[0] * root.computedStyle[FONT_SIZE$3];
       } else if (v[1] === VW$3) {
         return v[0] * root.width * 0.01;
       } else if (v[1] === VH$3) {
@@ -13340,7 +12764,7 @@
       if (v[1] === PERCENT$3) {
         return v[0] * oh * 0.01;
       } else if (v[1] === REM$3) {
-        return v[0] * root.computedStyle[FONT_SIZE$5];
+        return v[0] * root.computedStyle[FONT_SIZE$3];
       } else if (v[1] === VW$3) {
         return v[0] * root.width * 0.01;
       } else if (v[1] === VH$3) {
@@ -13369,29 +12793,34 @@
       res.push([k, normalizeSingle(k, v, ow, oh, root)]);
     });
     return res;
-  }
+  } // function calOrigin(transformOrigin, w, h, root) {
+  //   let tfo = [];
+  //   transformOrigin.forEach((item, i) => {
+  //     if(item[1] === PX) {
+  //       tfo.push(item[0]);
+  //     }
+  //     else if(item[1] === PERCENT) {
+  //       tfo.push(item[0] * (i ? h : w) * 0.01);
+  //     }
+  //     else if(item[1] === REM) {
+  //       tfo.push(item[0] * root.computedStyle[FONT_SIZE]);
+  //     }
+  //     else if(item[1] === VW) {
+  //       tfo.push(item[0] * root.width * 0.01);
+  //     }
+  //     else if(item[1] === VH) {
+  //       tfo.push(item[0] * root.height * 0.01);
+  //     }
+  //     else if(item[1] === VMAX) {
+  //       tfo.push(item[0] * Math.max(root.width, root.height) * 0.01);
+  //     }
+  //     else if(item[1] === VMIN) {
+  //       tfo.push(item[0] * Math.min(root.width, root.height) * 0.01);
+  //     }
+  //   });
+  //   return tfo;
+  // }
 
-  function calOrigin(transformOrigin, w, h, root) {
-    var tfo = [];
-    transformOrigin.forEach(function (item, i) {
-      if (item[1] === PX$3) {
-        tfo.push(item[0]);
-      } else if (item[1] === PERCENT$3) {
-        tfo.push(item[0] * (i ? h : w) * 0.01);
-      } else if (item[1] === REM$3) {
-        tfo.push(item[0] * root.computedStyle[FONT_SIZE$5]);
-      } else if (item[1] === VW$3) {
-        tfo.push(item[0] * root.width * 0.01);
-      } else if (item[1] === VH$3) {
-        tfo.push(item[0] * root.height * 0.01);
-      } else if (item[1] === VMAX$3) {
-        tfo.push(item[0] * Math.max(root.width, root.height) * 0.01);
-      } else if (item[1] === VMIN$3) {
-        tfo.push(item[0] * Math.min(root.width, root.height) * 0.01);
-      }
-    });
-    return tfo;
-  }
 
   function calMatrixByPerspective(m, pm) {
     if (!isE$2(pm)) {
@@ -13431,13 +12860,572 @@
 
   var transform$1 = {
     calMatrix: calMatrix,
-    calOrigin: calOrigin,
+    // calOrigin,
     calMatrixByPerspective: calMatrixByPerspective,
     calPerspectiveMatrix: calPerspectiveMatrix,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
     isPerspectiveMatrix: isPerspectiveMatrix
   };
+
+  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
+      COLOR$1 = _enums$STYLE_KEY$4.COLOR,
+      FONT_WEIGHT$1 = _enums$STYLE_KEY$4.FONT_WEIGHT,
+      FONT_FAMILY$1 = _enums$STYLE_KEY$4.FONT_FAMILY,
+      FONT_SIZE$4 = _enums$STYLE_KEY$4.FONT_SIZE,
+      FONT_STYLE$1 = _enums$STYLE_KEY$4.FONT_STYLE,
+      LETTER_SPACING$1 = _enums$STYLE_KEY$4.LETTER_SPACING,
+      TEXT_STROKE_COLOR$1 = _enums$STYLE_KEY$4.TEXT_STROKE_COLOR,
+      TEXT_STROKE_WIDTH$1 = _enums$STYLE_KEY$4.TEXT_STROKE_WIDTH,
+      TEXT_STROKE_OVER$1 = _enums$STYLE_KEY$4.TEXT_STROKE_OVER,
+      ROTATE_Z$2 = _enums$STYLE_KEY$4.ROTATE_Z;
+  var DEG$2 = o.DEG;
+  /**
+   * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
+   * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
+   * 另外本类还会被LineBoxManager添加到LineBox里，LineBox为一行中的inline/文本组合，之间需要进行垂直对齐
+   * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
+   */
+
+  var TextBox = /*#__PURE__*/function () {
+    function TextBox(parent, index, x, y, w, h, content) {
+      var isVertical = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : false;
+
+      _classCallCheck(this, TextBox);
+
+      this.__parent = parent;
+      this.__index = index;
+      this.__x = x;
+      this.__y = y;
+
+      if (isVertical) {
+        this.__width = h;
+        this.__height = w;
+      } else {
+        this.__width = w;
+        this.__height = h;
+      }
+
+      this.__content = content;
+      this.__virtualDom = {};
+      this.__parentLineBox = null;
+      this.__isVertical = isVertical;
+    }
+    /**
+     * 渲染阶段被Text类调用，多行Text会有多个TextBox，内容被分拆开
+     * @param renderMode
+     * @param ctx
+     * @param computedStyle
+     * @param cacheStyle Text父节点Dom的缓存样式，相比computedStyle可以直接用，比如color被缓存为style字符串
+     * @param dx
+     * @param dy
+     */
+
+
+    _createClass(TextBox, [{
+      key: "render",
+      value: function render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
+        var content = this.content,
+            x = this.x,
+            y = this.y,
+            parent = this.parent,
+            width = this.width,
+            isVertical = this.isVertical;
+        var ox = parent.ox,
+            oy = parent.oy;
+        var dom = parent.parent;
+        var b = css.getBaseline(computedStyle); // 垂直文本x/y互换，渲染时使用rotate模拟，
+        // 因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
+        // 所以原本左上角转换变成lineHeight（现在的w）减去b
+
+        if (isVertical) {
+          x += width - b;
+        } else {
+          y += b;
+        }
+
+        x += ox + dx;
+        y += oy + dy;
+        this.__endX = x + width;
+        this.__endY = y;
+        var letterSpacing = computedStyle[LETTER_SPACING$1],
+            textStrokeWidth = computedStyle[TEXT_STROKE_WIDTH$1],
+            textStrokeColor = computedStyle[TEXT_STROKE_COLOR$1];
+        var m;
+
+        if (isVertical) {
+          var list = [[ROTATE_Z$2, [90, DEG$2]]];
+          var tfo = [x, y];
+          m = transform$1.calMatrixWithOrigin(list, tfo, 0, 0);
+        }
+
+        var i = 0,
+            length = content.length;
+
+        if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+          var overFill = computedStyle[TEXT_STROKE_OVER$1] === 'fill';
+
+          if (letterSpacing) {
+            for (; i < length; i++) {
+              var c = content.charAt(i);
+
+              if (overFill) {
+                ctx.fillText(c, x, y);
+              }
+
+              if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(c, x, y);
+              }
+
+              if (!overFill) {
+                ctx.fillText(c, x, y);
+              }
+
+              x += ctx.measureText(c).width + letterSpacing;
+            }
+          } else {
+            if (isVertical) {
+              m = mx.multiply(dom.matrixEvent, m);
+              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              ctx.fillText(content, x, y);
+            } else {
+              if (overFill) {
+                ctx.fillText(content, x, y);
+              }
+
+              if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(content, x, y);
+              }
+
+              if (!overFill) {
+                ctx.fillText(content, x, y);
+              }
+            }
+          }
+        } else if (renderMode === mode.SVG) {
+          var color = cacheStyle[COLOR$1];
+
+          if (color.k) {
+            color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+          }
+
+          var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$4] + 'px']]; // svg无法定义stroke的over
+
+          if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+            var _textStrokeColor = cacheStyle[TEXT_STROKE_COLOR$1]; // 渐变
+
+            if (_textStrokeColor.k) {
+              _textStrokeColor = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, _textStrokeColor, dx, dy).v;
+            }
+
+            props.push(['stroke', _textStrokeColor]);
+            props.push(['stroke-width', computedStyle[TEXT_STROKE_WIDTH$1]]);
+          }
+
+          if (letterSpacing) {
+            props.push(['letter-spacing', letterSpacing]);
+          }
+
+          this.__virtualDom = {
+            type: 'item',
+            tagName: 'text',
+            props: props,
+            content: util.encodeHtml(content)
+          };
+        }
+      }
+    }, {
+      key: "__offsetX",
+      value: function __offsetX(diff) {
+        this.__x += diff;
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.__y += diff;
+      }
+    }, {
+      key: "x",
+      get: function get() {
+        return this.__x;
+      }
+    }, {
+      key: "y",
+      get: function get() {
+        return this.__y;
+      }
+    }, {
+      key: "endX",
+      get: function get() {
+        return this.__endX;
+      }
+    }, {
+      key: "endY",
+      get: function get() {
+        return this.__endY;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "outerWidth",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "outerHeight",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "content",
+      get: function get() {
+        return this.__content;
+      }
+    }, {
+      key: "baseline",
+      get: function get() {
+        return this.parent.baseline;
+      }
+    }, {
+      key: "virtualDom",
+      get: function get() {
+        return this.__virtualDom;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
+      }
+    }, {
+      key: "parentLineBox",
+      get: function get() {
+        return this.__parentLineBox;
+      }
+    }, {
+      key: "isReplaced",
+      get: function get() {
+        return false;
+      }
+    }, {
+      key: "isVertical",
+      get: function get() {
+        return this.__isVertical;
+      }
+    }]);
+
+    return TextBox;
+  }();
+
+  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
+      FONT_SIZE$5 = _enums$STYLE_KEY$5.FONT_SIZE,
+      FONT_FAMILY$2 = _enums$STYLE_KEY$5.FONT_FAMILY,
+      FONT_WEIGHT$2 = _enums$STYLE_KEY$5.FONT_WEIGHT,
+      FONT_STYLE$2 = _enums$STYLE_KEY$5.FONT_STYLE,
+      COLOR$2 = _enums$STYLE_KEY$5.COLOR,
+      NODE_VIRTUAL_DOM = enums.NODE_KEY.NODE_VIRTUAL_DOM;
+  var CANVAS$1 = mode.CANVAS,
+      SVG = mode.SVG,
+      WEBGL$1 = mode.WEBGL;
+  var CHAR = '…';
+
+  var Ellipsis = /*#__PURE__*/function (_Node) {
+    _inherits(Ellipsis, _Node);
+
+    var _super = _createSuper(Ellipsis);
+
+    function Ellipsis(x, y, width, parent) {
+      var _this;
+
+      _classCallCheck(this, Ellipsis);
+
+      _this = _super.call(this);
+      _this.__x = _this.__sx1 = x;
+      _this.__y = _this.__sy1 = y;
+      _this.__width = width;
+      _this.__parent = _this.__domParent = parent;
+      parent.__ellipsis = _assertThisInitialized(_this);
+      _this.__parentLineBox = null;
+      _this.__baseline = css.getBaseline(parent.computedStyle);
+      _this.isEllipsis = true;
+      return _this;
+    }
+
+    _createClass(Ellipsis, [{
+      key: "render",
+      value: function render(renderMode, lv, ctx, cache) {
+        var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+        var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+        var x = this.x,
+            y = this.y,
+            parent = this.parent;
+        var ox = parent.ox,
+            oy = parent.oy,
+            computedStyle = parent.computedStyle,
+            color = parent.cacheStyle[COLOR$2];
+        y += css.getBaseline(computedStyle);
+        x += ox + dx;
+        y += oy + dy;
+
+        if (renderMode === CANVAS$1 || renderMode === WEBGL$1) {
+          var font = css.setFontStyle(computedStyle);
+
+          if (ctx.font !== font) {
+            ctx.font = font;
+          }
+
+          if (ctx.fillStyle !== color) {
+            ctx.fillStyle = color;
+          }
+
+          ctx.fillText(CHAR, x, y);
+        } else if (renderMode === SVG) {
+          var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$2]], ['font-size', computedStyle[FONT_SIZE$5] + 'px']];
+          var vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+            type: 'text',
+            children: [{
+              type: 'item',
+              tagName: 'text',
+              props: props,
+              content: CHAR
+            }]
+          };
+          parent.virtualDom.children.push(vd);
+        }
+      }
+    }, {
+      key: "parentLineBox",
+      get: function get() {
+        return this.__parentLineBox;
+      }
+    }]);
+
+    return Ellipsis;
+  }(Node);
+
+  var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192];
+  var NUMBER$2 = [128, 64, 32, 16, 8, 4, 2, 1, 1, 1, 1];
+  var MAX = SIZE[SIZE.length - 1];
+  var HASH_CANVAS = {};
+  var uuid = 0;
+
+  var Page = /*#__PURE__*/function () {
+    function Page(size, number) {
+      _classCallCheck(this, Page);
+
+      this.__size = size;
+      this.__number = number;
+      this.__free = this.__total = number * number;
+      size *= number;
+      this.__width = size;
+      this.__height = size;
+      var offscreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
+
+      if (offscreen) {
+        this.__offscreen = offscreen;
+      } // 1/0标识n*n个单元格是否空闲可用，一维数组表示
+
+
+      this.__grid = [];
+
+      for (var i = 0; i < this.__total; i++) {
+        this.__grid.push(1);
+      }
+
+      this.__uuid = uuid++; // webgl贴图缓存使用，一旦更新则标识记录，绑定某号纹理单元查看变化才更新贴图
+
+      this.__update = false;
+      this.time = 0;
+    }
+
+    _createClass(Page, [{
+      key: "add",
+      value: function add() {
+        var number = this.number,
+            grid = this.grid;
+
+        for (var i = 0; i < number; i++) {
+          for (var j = 0; j < number; j++) {
+            var index = i * number + j;
+
+            if (grid[index]) {
+              grid[index] = 0;
+              this.__free--;
+              return index;
+            }
+          }
+        } // 理论不可能进入，除非bug
+
+
+        throw new Error('Can not find free page');
+      }
+    }, {
+      key: "del",
+      value: function del(pos) {
+        if (!this.grid[pos]) {
+          this.grid[pos] = 1;
+          this.__free++;
+        }
+      }
+    }, {
+      key: "getCoords",
+      value: function getCoords(pos) {
+        var size = this.size,
+            number = this.number;
+        var x = pos % number;
+        var y = Math.floor(pos / number);
+        return [x * size, y * size];
+      }
+    }, {
+      key: "uuid",
+      get: function get() {
+        return this.__uuid;
+      }
+    }, {
+      key: "size",
+      get: function get() {
+        return this.__size;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "number",
+      get: function get() {
+        return this.__number;
+      }
+    }, {
+      key: "total",
+      get: function get() {
+        return this.__total;
+      }
+    }, {
+      key: "free",
+      get: function get() {
+        return this.__free;
+      }
+    }, {
+      key: "grid",
+      get: function get() {
+        return this.__grid;
+      }
+    }, {
+      key: "offscreen",
+      get: function get() {
+        return this.__offscreen;
+      }
+    }, {
+      key: "canvas",
+      get: function get() {
+        return this.offscreen.canvas;
+      }
+    }, {
+      key: "ctx",
+      get: function get() {
+        return this.offscreen.ctx;
+      }
+    }, {
+      key: "update",
+      get: function get() {
+        return this.__update;
+      },
+      set: function set(v) {
+        this.__update = v;
+      }
+    }], [{
+      key: "getInstance",
+      value: function getInstance(size) {
+        if (size > MAX) {
+          return;
+        }
+
+        var s = SIZE[0];
+        var n = NUMBER$2[0]; // 使用刚好满足的尺寸
+
+        for (var i = 0, len = SIZE.length; i < len; i++) {
+          s = SIZE[i];
+          n = NUMBER$2[i];
+
+          if (SIZE[i] >= size) {
+            break;
+          }
+        }
+
+        var list = HASH_CANVAS[s] = HASH_CANVAS[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页
+
+        var page;
+
+        for (var _i = 0, _len = list.length; _i < _len; _i++) {
+          var item = list[_i];
+
+          if (item.free) {
+            page = item;
+            break;
+          }
+        }
+
+        if (!page) {
+          page = new Page(s, n);
+
+          if (!page.offscreen) {
+            inject.error('Can not create off-screen for page');
+            return;
+          }
+
+          list.push(page);
+        }
+
+        var pos = page.add();
+        return {
+          page: page,
+          pos: pos
+        };
+      }
+    }, {
+      key: "CONFIG",
+      get: function get() {
+        return {
+          SIZE: SIZE,
+          NUMBER: NUMBER$2
+        };
+      },
+      set: function set(v) {
+        if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
+          return;
+        }
+
+        SIZE = v.SIZE;
+        NUMBER$2 = v.NUMBER;
+        MAX = SIZE[SIZE.length - 1];
+      }
+    }, {
+      key: "MAX",
+      get: function get() {
+        return MAX;
+      }
+    }, {
+      key: "genUuid",
+      value: function genUuid() {
+        return uuid++;
+      }
+    }]);
+
+    return Page;
+  }();
 
   var _enums$STYLE_KEY$6 = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$6.TRANSFORM_ORIGIN,
@@ -14178,6 +14166,7 @@
         var x = data.x,
             y = data.y,
             w = data.w,
+            h = data.h,
             _data$lx = data.lx,
             lx = _data$lx === void 0 ? x : _data$lx,
             lineBoxManager = data.lineBoxManager,
@@ -14215,7 +14204,9 @@
             fontSize = computedStyle[FONT_SIZE$6],
             fontWeight = computedStyle[FONT_WEIGHT$3],
             fontFamily = computedStyle[FONT_FAMILY$3],
-            writingMode = computedStyle[WRITING_MODE$1]; // 基于最近block父节点的样式
+            writingMode = computedStyle[WRITING_MODE$1];
+        var isVertical = writingMode.indexOf('vertical') === 0;
+        var size = isVertical ? h : w; // 基于最近block父节点的样式
 
         var bp = this.domParent;
 
@@ -14283,13 +14274,13 @@
         // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
         else {
           while (i < length) {
-            var wl = i ? w : w - beginSpace;
+            var limit = i ? size : size - beginSpace;
 
             if (lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-              wl -= endSpace;
+              limit -= endSpace;
             }
 
-            var _measureLineWidth = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            var _measureLineWidth = measureLineWidth(ctx, renderMode, i, length, content, limit, perW, fontFamily, fontSize, fontWeight, letterSpacing),
                 _measureLineWidth2 = _slicedToArray(_measureLineWidth, 3),
                 num = _measureLineWidth2[0],
                 rw = _measureLineWidth2[1],
@@ -14297,7 +14288,7 @@
 
 
             if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-              var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+              var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
               var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
 
@@ -14308,8 +14299,8 @@
             } // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
 
 
-            if (i + num === length && endSpace && rw + endSpace > wl + 1e-10 && num > 1) {
-              var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            if (i + num === length && endSpace && rw + endSpace > limit + 1e-10 && num > 1) {
+              var _measureLineWidth3 = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
 
               var _measureLineWidth4 = _slicedToArray(_measureLineWidth3, 3);
 
@@ -14319,7 +14310,7 @@
 
               // 可能加上endSpace后超过了，还得再判断一次
               if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-                var _this$__lineBack5 = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+                var _this$__lineBack5 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
 
                 var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
 
@@ -14332,7 +14323,7 @@
 
             maxW = Math.max(maxW, rw); // 根据是否第一行分开处理行首空白
 
-            var _textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
+            var _textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num), isVertical);
 
             textBoxes.push(_textBox);
             lineBoxManager.addItem(_textBox, newLine);
@@ -14366,7 +14357,7 @@
 
     }, {
       key: "__lineBack",
-      value: function __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing) {
+      value: function __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing) {
         var ew,
             bp = this.__bp,
             computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
@@ -14391,13 +14382,13 @@
           }
         }
 
-        var _measureLineWidth5 = measureLineWidth(ctx, renderMode, i, length, content, wl - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+        var _measureLineWidth5 = measureLineWidth(ctx, renderMode, i, length, content, limit - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing),
             _measureLineWidth6 = _slicedToArray(_measureLineWidth5, 2),
             num = _measureLineWidth6[0],
             rw = _measureLineWidth6[1]; // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
 
 
-        if (rw + ew > wl + 1e-10 - endSpace) {
+        if (rw + ew > limit + 1e-10 - endSpace) {
           // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
           // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
           var lineBox = lineBoxManager.lineBox;
@@ -14416,7 +14407,7 @@
                 var _item = list.pop();
 
                 x -= _item.outerWidth;
-                wl += _item.outerWidth;
+                limit += _item.outerWidth;
 
                 _item.__layoutNone();
 
@@ -14428,7 +14419,7 @@
                   width = tb.width,
                   parent = tb.parent;
 
-              if (!j || wl >= width + ew + 1e-10 + endSpace) {
+              if (!j || limit >= width + ew + 1e-10 + endSpace) {
                 var _length = _content.length;
                 var _parent$computedStyle = parent.computedStyle,
                     _lineHeight = _parent$computedStyle[LINE_HEIGHT$1],
@@ -14442,7 +14433,7 @@
                 } // 再进行查找，这里也会有至少一个字符不用担心
 
 
-                var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, _length, _content, wl - ew + width - endSpace, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
+                var _measureLineWidth7 = measureLineWidth(ctx, renderMode, 0, _length, _content, limit - ew + width - endSpace, perW, _fontFamily, _fontSize, _fontWeight, _letterSpacing),
                     _measureLineWidth8 = _slicedToArray(_measureLineWidth7, 2),
                     _num = _measureLineWidth8[0],
                     _rw = _measureLineWidth8[1]; // 可能发生x回退，当tb的内容产生减少时
@@ -14467,7 +14458,7 @@
 
 
               var item = list.pop();
-              wl += width;
+              limit += width;
               x -= width;
               var tbs = item.parent.textBoxes;
               var k = tbs.indexOf(item);
@@ -14496,7 +14487,7 @@
                 var _computedStyle = dom.computedStyle;
                 var mbp = _computedStyle[MARGIN_LEFT] + _computedStyle[MARGIN_RIGHT] + _computedStyle[PADDING_LEFT$1] + _computedStyle[PADDING_RIGHT] + _computedStyle[BORDER_LEFT_WIDTH$1] + _computedStyle[BORDER_RIGHT_WIDTH];
                 x -= mbp;
-                wl += mbp;
+                limit += mbp;
 
                 dom.__layoutNone();
 
@@ -14528,7 +14519,7 @@
 
     }, {
       key: "__backtrack",
-      value: function __backtrack(bp, lineBoxManager, lineBox, textBox, wl, endSpace, ew, computedStyle, ctx, renderMode) {
+      value: function __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode) {
         var list = lineBox.list;
 
         for (var j = list.length - 1; j >= 0; j--) {
@@ -14541,7 +14532,7 @@
 
             var _item2 = list.pop();
 
-            wl += _item2.outerWidth;
+            limit += _item2.outerWidth;
 
             _item2.__layoutNone();
 
@@ -14553,7 +14544,7 @@
               width = tb.width,
               parent = tb.parent;
 
-          if (!j || wl >= width + ew + 1e-10 + endSpace) {
+          if (!j || limit >= width + ew + 1e-10 + endSpace) {
             var length = content.length;
             var _parent$computedStyle2 = parent.computedStyle,
                 letterSpacing = _parent$computedStyle2[LETTER_SPACING$2],
@@ -14567,7 +14558,7 @@
 
             var perW = fontSize * 0.8 + letterSpacing; // 再进行查找，这里也会有至少一个字符不用担心
 
-            var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing),
+            var _measureLineWidth9 = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing),
                 _measureLineWidth10 = _slicedToArray(_measureLineWidth9, 2),
                 num = _measureLineWidth10[0],
                 rw = _measureLineWidth10[1]; // 可能发生x回退，当tb的内容产生减少时
@@ -14588,7 +14579,7 @@
 
 
           var item = list.pop();
-          wl += width;
+          limit += width;
           var tbs = item.parent.textBoxes;
           var k = tbs.indexOf(item);
 
@@ -14615,7 +14606,7 @@
 
             var _computedStyle2 = dom.computedStyle;
             var mbp = _computedStyle2[MARGIN_LEFT] + _computedStyle2[MARGIN_RIGHT] + _computedStyle2[PADDING_LEFT$1] + _computedStyle2[PADDING_RIGHT] + _computedStyle2[BORDER_LEFT_WIDTH$1] + _computedStyle2[BORDER_RIGHT_WIDTH];
-            wl += mbp;
+            limit += mbp;
 
             dom.__layoutNone();
 
@@ -16064,8 +16055,7 @@
   var _enums$STYLE_KEY$a = enums.STYLE_KEY,
       SCALE_X$2 = _enums$STYLE_KEY$a.SCALE_X,
       SCALE_Y$2 = _enums$STYLE_KEY$a.SCALE_Y;
-  var PERCENT$4 = o.PERCENT,
-      NUMBER$3 = o.NUMBER;
+  var NUMBER$3 = o.NUMBER;
 
   function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
     if (imgWidth === targetWidth && imgHeight === targetHeight) {
@@ -16073,7 +16063,7 @@
     }
 
     var list = [[SCALE_X$2, [targetWidth / imgWidth, NUMBER$3]], [SCALE_Y$2, [targetHeight / imgHeight, NUMBER$3]]];
-    var tfo = transform$1.calOrigin([[0, PERCENT$4], [0, PERCENT$4]], w, h);
+    var tfo = [x, y];
     tfo[0] += x;
     tfo[1] += y;
     return transform$1.calMatrixWithOrigin(list, tfo, w, h);
@@ -16976,8 +16966,8 @@
       I_OUT_BEGIN_DELAY = _enums$ANIMATE_KEY.I_OUT_BEGIN_DELAY,
       I_TIME_STAMP = _enums$ANIMATE_KEY.I_TIME_STAMP;
   var AUTO$2 = o.AUTO,
-      PX$4 = o.PX,
-      PERCENT$5 = o.PERCENT,
+      PX$3 = o.PX,
+      PERCENT$4 = o.PERCENT,
       INHERIT$2 = o.INHERIT,
       RGBA$1 = o.RGBA,
       STRING$1 = o.STRING,
@@ -17079,7 +17069,7 @@
           if (k === COLOR$4 || k === TEXT_STROKE_COLOR$3) {
             style[k] = [util.rgba2int(computedStyle[k]), RGBA$1];
           } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
-            style[k] = [computedStyle[k], PX$4];
+            style[k] = [computedStyle[k], PX$3];
           } else if (k === FONT_WEIGHT$4) {
             style[k] = [computedStyle[k], NUMBER$4];
           } else if (k === FONT_STYLE$3 || k === FONT_FAMILY$4 || k === TEXT_ALIGN$1 || k === TEXT_STROKE_OVER$2) {
@@ -17151,8 +17141,8 @@
   }
 
   function calByUnit(p, n, container, root) {
-    if (p[1] === PX$4) {
-      if (n[1] === PERCENT$5) {
+    if (p[1] === PX$3) {
+      if (n[1] === PERCENT$4) {
         return n[0] * 0.01 * container - p[0];
       } else if (n[1] === REM$4) {
         return n[0] * root.computedStyle[FONT_SIZE$8] - p[0];
@@ -17165,8 +17155,8 @@
       } else if (n[1] === VMIN$4) {
         return n[0] * Math.min(root.width, root.height) * 0.01 - p[0];
       }
-    } else if (p[1] === PERCENT$5) {
-      if (n[1] === PX$4) {
+    } else if (p[1] === PERCENT$4) {
+      if (n[1] === PX$3) {
         return n[0] * 100 / container - p[0];
       } else if (n[1] === REM$4) {
         return n[0] * root.computedStyle[FONT_SIZE$8] * 100 / container - p[0];
@@ -17180,9 +17170,9 @@
         return n[0] * Math.min(root.width, root.height) / container - p[0];
       }
     } else if (p[1] === REM$4) {
-      if (n[1] === PX$4) {
+      if (n[1] === PX$3) {
         return n[0] / root.computedStyle[FONT_SIZE$8] - p[0];
-      } else if (n[1] === PERCENT$5) {
+      } else if (n[1] === PERCENT$4) {
         return n[0] * 0.01 * container / root.computedStyle[FONT_SIZE$8] - p[0];
       } else if (n[1] === VW$4) {
         return n[0] * root.width * 0.01 / root.computedStyle[FONT_SIZE$8] - p[0];
@@ -17194,11 +17184,11 @@
         return n[0] * Math.min(root.width, root.height) * 0.01 / root.computedStyle[FONT_SIZE$8] - p[0];
       }
     } else if (p[1] === VW$4) {
-      if (n[1] === PX$4) {
+      if (n[1] === PX$3) {
         return n[0] * 100 / root.width - p[0];
       } else if (n[1] === REM$4) {
         return n[0] * 100 * root.computedStyle[FONT_SIZE$8] / root.width - p[0];
-      } else if (n[1] === PERCENT$5) {
+      } else if (n[1] === PERCENT$4) {
         return n[0] * container / root.width - p[0];
       } else if (n[1] === VH$4) {
         return n[0] * root.height / root.width - p[0];
@@ -17208,13 +17198,13 @@
         return n[0] * Math.min(root.width, root.height) / root.width - p[0];
       }
     } else if (p[1] === VH$4) {
-      if (n[1] === PX$4) {
+      if (n[1] === PX$3) {
         return n[0] * 100 / root.height - p[0];
       } else if (n[1] === REM$4) {
         return n[0] * 100 * root.computedStyle[FONT_SIZE$8] / root.height - p[0];
       } else if (n[1] === VW$4) {
         return n[0] * root.width / root.height - p[0];
-      } else if (n[1] === PERCENT$5) {
+      } else if (n[1] === PERCENT$4) {
         return n[0] * container / root.height - p[0];
       } else if (n[1] === VMAX$4) {
         return n[0] * Math.max(root.width, root.height) / root.height - p[0];
@@ -17222,11 +17212,11 @@
         return n[0] * Math.min(root.width, root.height) / root.height - p[0];
       }
     } else if (p[1] === VMAX$4) {
-      if (n[1] === PX$4) {
+      if (n[1] === PX$3) {
         return n[0] * 100 / Math.max(root.width, root.height) - p[0];
       } else if (n[1] === REM$4) {
         return n[0] * 100 * root.computedStyle[FONT_SIZE$8] / Math.max(root.width, root.height) - p[0];
-      } else if (n[1] === PERCENT$5) {
+      } else if (n[1] === PERCENT$4) {
         return n[0] * container / Math.max(root.width, root.height) - p[0];
       } else if (n[1] === VW$4) {
         return n[0] * root.width / Math.max(root.width, root.height) - p[0];
@@ -17236,11 +17226,11 @@
         return n[0] * Math.min(root.width, root.height) / Math.max(root.width, root.height) - p[0];
       }
     } else if (p[1] === VMIN$4) {
-      if (n[1] === PX$4) {
+      if (n[1] === PX$3) {
         return n[0] * 100 / Math.min(root.width, root.height) - p[0];
       } else if (n[1] === REM$4) {
         return n[0] * 100 * root.computedStyle[FONT_SIZE$8] / Math.min(root.width, root.height) - p[0];
-      } else if (n[1] === PERCENT$5) {
+      } else if (n[1] === PERCENT$4) {
         return n[0] * container / Math.min(root.width, root.height) - p[0];
       } else if (n[1] === VW$4) {
         return n[0] * root.width / Math.min(root.width, root.height) - p[0];
@@ -17786,24 +17776,24 @@
             v = _item[0],
             u = _item[1];
 
-        if (u === PERCENT$5) {
+        if (u === PERCENT$4) {
           if (i % 2 === 0) {
-            return [(parseFloat(v) || 0) * 0.01 * target[k1], PX$4];
+            return [(parseFloat(v) || 0) * 0.01 * target[k1], PX$3];
           } else {
-            return [(parseFloat(v) || 0) * 0.01 * target[_k4], PX$4];
+            return [(parseFloat(v) || 0) * 0.01 * target[_k4], PX$3];
           }
         } else if (u === REM$4) {
-          return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE$8] * 100, PX$4];
+          return [(parseFloat(v) || 0) * root.computedStyle[FONT_SIZE$8] * 100, PX$3];
         } else if (u === VW$4) {
-          return [(parseFloat(v) || 0) * 0.01 * root.width, PX$4];
+          return [(parseFloat(v) || 0) * 0.01 * root.width, PX$3];
         } else if (u === VH$4) {
-          return [(parseFloat(v) || 0) * 0.01 * root.height, PX$4];
+          return [(parseFloat(v) || 0) * 0.01 * root.height, PX$3];
         } else if (u === VMAX$4) {
-          return [(parseFloat(v) || 0) * 0.01 * Math.max(root.width, root.height), PX$4];
+          return [(parseFloat(v) || 0) * 0.01 * Math.max(root.width, root.height), PX$3];
         } else if (u === VMIN$4) {
-          return [(parseFloat(v) || 0) * 0.01 * Math.min(root.width, root.height), PX$4];
+          return [(parseFloat(v) || 0) * 0.01 * Math.min(root.width, root.height), PX$3];
         } else {
-          return [parseFloat(v) || 0, PX$4];
+          return [parseFloat(v) || 0, PX$3];
         }
       });
     } // display等不能有增量过程的
@@ -18045,11 +18035,11 @@
         var t = 1 - percent;
 
         if (v.length === 8) {
-          style[TRANSLATE_X$3] = [v[0][0] * t * t * t + 3 * v[2][0] * percent * t * t + 3 * v[4][0] * percent * percent * t + v[6][0] * percent * percent * percent, PX$4];
-          style[TRANSLATE_Y$3] = [v[1][0] * t * t * t + 3 * v[3][0] * percent * t * t + 3 * v[5][0] * percent * percent * t + v[7][0] * percent * percent * percent, PX$4];
+          style[TRANSLATE_X$3] = [v[0][0] * t * t * t + 3 * v[2][0] * percent * t * t + 3 * v[4][0] * percent * percent * t + v[6][0] * percent * percent * percent, PX$3];
+          style[TRANSLATE_Y$3] = [v[1][0] * t * t * t + 3 * v[3][0] * percent * t * t + 3 * v[5][0] * percent * percent * t + v[7][0] * percent * percent * percent, PX$3];
         } else if (v.length === 6) {
-          style[TRANSLATE_X$3] = [v[0][0] * t * t + 2 * v[2][0] * percent * t + v[4][0] * percent * percent, PX$4];
-          style[TRANSLATE_Y$3] = [v[1][0] * t * t + 3 * v[3][0] * percent * t + v[5][0] * percent * percent, PX$4];
+          style[TRANSLATE_X$3] = [v[0][0] * t * t + 2 * v[2][0] * percent * t + v[4][0] * percent * percent, PX$3];
+          style[TRANSLATE_Y$3] = [v[1][0] * t * t + 3 * v[3][0] * percent * t + v[5][0] * percent * percent, PX$3];
         }
       } else if (k === ROTATE_3D$2) {
         st[0] += v[0] * percent;
@@ -20116,7 +20106,7 @@
       SCALE_Z$2 = _enums$STYLE_KEY$d.SCALE_Z,
       ROTATE_X$2 = _enums$STYLE_KEY$d.ROTATE_X,
       ROTATE_Y$2 = _enums$STYLE_KEY$d.ROTATE_Y,
-      ROTATE_Z$2 = _enums$STYLE_KEY$d.ROTATE_Z,
+      ROTATE_Z$3 = _enums$STYLE_KEY$d.ROTATE_Z,
       SKEW_X$2 = _enums$STYLE_KEY$d.SKEW_X,
       SKEW_Y$2 = _enums$STYLE_KEY$d.SKEW_Y,
       PERSPECTIVE$3 = _enums$STYLE_KEY$d.PERSPECTIVE,
@@ -20210,8 +20200,8 @@
       NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$3.NODE_VIRTUAL_DOM,
       NODE_CACHE_AS_BITMAP = _enums$NODE_KEY$3.NODE_CACHE_AS_BITMAP;
   var AUTO$3 = o.AUTO,
-      PX$5 = o.PX,
-      PERCENT$6 = o.PERCENT,
+      PX$4 = o.PX,
+      PERCENT$5 = o.PERCENT,
       INHERIT$3 = o.INHERIT,
       NUMBER$5 = o.NUMBER,
       RGBA$2 = o.RGBA,
@@ -20221,7 +20211,7 @@
       VH$5 = o.VH,
       VMAX$5 = o.VMAX,
       VMIN$5 = o.VMIN,
-      DEG$2 = o.DEG,
+      DEG$3 = o.DEG,
       GRADIENT$2 = o.GRADIENT;
   var int2rgba$3 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
@@ -20392,9 +20382,9 @@
     }, {
       key: "__calSize",
       value: function __calSize(v, w, includePercent) {
-        if (v[1] === PX$5) {
+        if (v[1] === PX$4) {
           return v[0];
-        } else if (v[1] === PERCENT$6 && includePercent) {
+        } else if (v[1] === PERCENT$5 && includePercent) {
           return v[0] * w * 0.01;
         } else if (v[1] === REM$5) {
           return v[0] * this.root.computedStyle[FONT_SIZE$9];
@@ -20437,7 +20427,7 @@
           } else if (v[1] === INHERIT$3) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
           } // 只有fontSize会有%
-          else if (v[1] === PERCENT$6) {
+          else if (v[1] === PERCENT$5) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k] * v[0] * 0.01;
           } else if (v[1] === REM$5) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : _this3.root.computedStyle[FONT_SIZE$9] * v[0];
@@ -20995,11 +20985,13 @@
           if (__cacheStyle[TRANSFORM_ORIGIN$4] === undefined) {
             __cacheStyle[TRANSFORM_ORIGIN$4] = true;
             matrixCache = null;
-            computedStyle[TRANSFORM_ORIGIN$4] = transform$1.calOrigin(currentStyle[TRANSFORM_ORIGIN$4], offsetWidth, offsetHeight, this.root);
+            computedStyle[TRANSFORM_ORIGIN$4] = currentStyle[TRANSFORM_ORIGIN$4].map(function (item, i) {
+              return _this4.__calSize(item, i ? offsetHeight : offsetWidth, true);
+            }); // computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight, this.root);
           }
 
-          if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$4] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$2] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
-            __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$4] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$2] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
+          if (__cacheStyle[TRANSFORM$3] === undefined || __cacheStyle[TRANSLATE_X$4] === undefined || __cacheStyle[TRANSLATE_Y$4] === undefined || __cacheStyle[TRANSLATE_Z$4] === undefined || __cacheStyle[ROTATE_X$2] === undefined || __cacheStyle[ROTATE_Y$2] === undefined || __cacheStyle[ROTATE_Z$3] === undefined || __cacheStyle[ROTATE_3D$3] === undefined || __cacheStyle[SCALE_X$3] === undefined || __cacheStyle[SCALE_Y$3] === undefined || __cacheStyle[SCALE_Z$2] === undefined || __cacheStyle[SKEW_X$2] === undefined || __cacheStyle[SKEW_Y$2] === undefined) {
+            __cacheStyle[TRANSFORM$3] = __cacheStyle[TRANSLATE_X$4] = __cacheStyle[TRANSLATE_Y$4] = __cacheStyle[TRANSLATE_Z$4] = __cacheStyle[ROTATE_X$2] = __cacheStyle[ROTATE_Y$2] = __cacheStyle[ROTATE_Z$3] = __cacheStyle[SCALE_X$3] = __cacheStyle[SCALE_Y$3] = __cacheStyle[SCALE_Z$2] = __cacheStyle[SKEW_X$2] = __cacheStyle[SKEW_Y$2] = true;
             matrixCache = null;
             var matrix; // transform相对于自身
 
@@ -21008,7 +21000,7 @@
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               var temp = [];
-              [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$2, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+              [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$3, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                 // 删除之前遗留的
                 delete computedStyle[k];
                 var v = currentStyle[k];
@@ -21140,7 +21132,7 @@
           __cacheStyle[BACKGROUND_POSITION_X$3] = true;
           var bgX = currentStyle[BACKGROUND_POSITION_X$3];
           computedStyle[BACKGROUND_POSITION_X$3] = (bgX || []).map(function (item) {
-            if (item[1] === PERCENT$6) {
+            if (item[1] === PERCENT$5) {
               return item[0] + '%';
             }
 
@@ -21152,7 +21144,7 @@
           __cacheStyle[BACKGROUND_POSITION_Y$3] = true;
           var bgY = currentStyle[BACKGROUND_POSITION_Y$3];
           computedStyle[BACKGROUND_POSITION_Y$3] = (bgY || []).map(function (item) {
-            if (item[1] === PERCENT$6) {
+            if (item[1] === PERCENT$5) {
               return item[0] + '%';
             }
 
@@ -21444,6 +21436,8 @@
     }, {
       key: "__calPerspective",
       value: function __calPerspective(__cacheStyle, currentStyle, computedStyle, __config, sx1, sy1) {
+        var _this6 = this;
+
         var rebuild;
 
         if (isNil$6(__cacheStyle[PERSPECTIVE$3])) {
@@ -21459,7 +21453,9 @@
         if (isNil$6(__cacheStyle[PERSPECTIVE_ORIGIN$3])) {
           __cacheStyle[PERSPECTIVE_ORIGIN$3] = true;
           rebuild = true;
-          computedStyle[PERSPECTIVE_ORIGIN$3] = transform$1.calOrigin(currentStyle[PERSPECTIVE_ORIGIN$3], this.offsetWidth, this.offsetHeight, this.root);
+          computedStyle[PERSPECTIVE_ORIGIN$3] = currentStyle[PERSPECTIVE_ORIGIN$3].map(function (item, i) {
+            return _this6.__calSize(item, i ? _this6.offsetHeight : _this6.offsetWidth, true);
+          }); // computedStyle[PERSPECTIVE_ORIGIN] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN], this.offsetWidth, this.offsetHeight, this.root);
         }
 
         if (rebuild) {
@@ -21477,7 +21473,7 @@
     }, {
       key: "__calFilter",
       value: function __calFilter(currentStyle, computedStyle) {
-        var _this6 = this;
+        var _this7 = this;
 
         return computedStyle[FILTER$4] = (currentStyle[FILTER$4] || []).map(function (item) {
           var _item = _slicedToArray(item, 2),
@@ -21490,15 +21486,15 @@
                 return item2;
               }
 
-              return _this6.__calSize(item2, i === 0 ? _this6.__bx2 - _this6.__bx1 : _this6.__by2 - _this6.__by1, true);
+              return _this7.__calSize(item2, i === 0 ? _this7.__bx2 - _this7.__bx1 : _this7.__by2 - _this7.__by1, true);
             });
             return [k, v2];
           } else {
             // 部分%单位的滤镜强制使用数字
-            if (v[1] === DEG$2 || v[1] === PERCENT$6 || v[1] === NUMBER$5) {
+            if (v[1] === DEG$3 || v[1] === PERCENT$5 || v[1] === NUMBER$5) {
               v = v[0];
             } else {
-              v = _this6.__calSize(v, _this6.root.width, false);
+              v = _this7.__calSize(v, _this7.root.width, false);
             }
 
             return [k, v];
@@ -21587,7 +21583,7 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, cache) {
-        var _this7 = this;
+        var _this8 = this;
 
         var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
         var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
@@ -22052,7 +22048,7 @@
                   svgBgSymbol = []; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
               if (hasBgi) {
-                iw = inline.getInlineWidth(_this7, contentBoxList);
+                iw = inline.getInlineWidth(_this8, contentBoxList);
                 ih = lineHeight;
 
                 if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
@@ -22076,23 +22072,23 @@
                   i = _length - 1 - i;
 
                   if (util.isString(bgi)) {
-                    var loadBgi = _this7.__loadBgi[i];
+                    var loadBgi = _this8.__loadBgi[i];
 
                     if (loadBgi.url === bgi) {
-                      var uuid = bg.renderImage(_this7, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
+                      var uuid = bg.renderImage(_this8, renderMode, offscreen && offscreen.ctx || ctx, loadBgi, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, __config, true, dx, dy);
 
                       if (renderMode === SVG$2 && uuid) {
                         svgBgSymbol.push(uuid);
                       }
                     }
                   } else if (bgi.k) {
-                    var gd = _this7.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
+                    var gd = _this8.__gradient(renderMode, ctx, 0, 0, iw, ih, bgi, dx, dy);
 
                     if (gd) {
                       if (gd.k === 'conic') {
-                        gradient$1.renderConic(_this7, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
+                        gradient$1.renderConic(_this8, renderMode, offscreen && offscreen.ctx || ctx, gd.v, 0, 0, iw, lineHeight, btlr, btrr, bbrr, bblr, true);
                       } else {
-                        var _uuid = bg.renderBgc(_this7, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
+                        var _uuid = bg.renderBgc(_this8, renderMode, offscreen && offscreen.ctx || ctx, gd.v, null, 0, 0, iw, ih, btlr, btrr, bbrr, bblr, 'fill', true);
 
                         if (renderMode === SVG$2 && _uuid) {
                           svgBgSymbol.push(_uuid);
@@ -22121,7 +22117,7 @@
                 if (contentBox.parentLineBox !== lastLineBox) {
                   (function () {
                     // 上一行
-                    var _inline$getInlineBox = inline.getInlineBox(_this7, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                    var _inline$getInlineBox = inline.getInlineBox(_this8, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                         _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
                         ix1 = _inline$getInlineBox2[0],
                         iy1 = _inline$getInlineBox2[1],
@@ -22134,13 +22130,13 @@
 
 
                     if (isFirst) {
-                      var n = getFirstEmptyInlineWidth(_this7);
+                      var n = getFirstEmptyInlineWidth(_this8);
                       ix1 -= n;
                       bx1 -= n;
                     }
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this7, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
+                      bg.renderBgc(_this8, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -22176,7 +22172,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this7, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
+                        bs.renderBoxShadow(_this8, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
                       });
                     }
 
@@ -22184,7 +22180,7 @@
                       var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
                       var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                       var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], [0, 0]);
-                      border.renderBorder(_this7, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
                     }
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
@@ -22194,7 +22190,7 @@
 
                       var _list = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg7, _deg8, bx1, bx1 + borderLeftWidth, bx2, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], [0, 0]);
 
-                      border.renderBorder(_this7, renderMode, ctx, _list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
                     }
 
                     if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -22204,7 +22200,7 @@
 
                       var _list2 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg9, _deg10, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
 
-                      border.renderBorder(_this7, renderMode, ctx, _list2, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list2, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
                     }
 
                     isFirst = false;
@@ -22216,7 +22212,7 @@
 
                 if (i === length - 1) {
                   (function () {
-                    var _inline$getInlineBox3 = inline.getInlineBox(_this7, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                    var _inline$getInlineBox3 = inline.getInlineBox(_this8, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                         _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
                         ix1 = _inline$getInlineBox4[0],
                         iy1 = _inline$getInlineBox4[1],
@@ -22229,19 +22225,19 @@
 
 
                     if (isFirst) {
-                      var _n4 = getFirstEmptyInlineWidth(_this7);
+                      var _n4 = getFirstEmptyInlineWidth(_this8);
 
                       ix1 -= _n4;
                       bx1 -= _n4;
                     } // 要算上末尾空白inline，可能有多个和递归嵌套
 
 
-                    var n = getLastEmptyInlineWidth(_this7);
+                    var n = getLastEmptyInlineWidth(_this8);
                     ix2 += n;
                     bx2 += n;
 
                     if (backgroundColor[3] > 0) {
-                      bg.renderBgc(_this7, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', false, dx, dy);
+                      bg.renderBgc(_this8, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', false, dx, dy);
                     }
 
                     var w = ix2 - ix1; // canvas的bg位图裁剪
@@ -22275,7 +22271,7 @@
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
-                        bs.renderBoxShadow(_this7, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
+                        bs.renderBoxShadow(_this8, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
                       });
                     }
 
@@ -22283,7 +22279,7 @@
                       var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
                       var deg2 = Math.atan(borderTopWidth / borderRightWidth);
                       var list = border.calPoints(borderTopWidth, computedStyle[BORDER_TOP_STYLE], deg1, deg2, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 0, isFirst ? btlr : [0, 0], btrr);
-                      border.renderBorder(_this7, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, list, __cacheStyle[BORDER_TOP_COLOR], dx, dy);
                     }
 
                     if (borderRightWidth > 0 && borderRightColor[3] > 0) {
@@ -22293,7 +22289,7 @@
 
                       var _list3 = border.calPoints(borderRightWidth, computedStyle[BORDER_RIGHT_STYLE], _deg11, _deg12, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 1, btlr, btrr);
 
-                      border.renderBorder(_this7, renderMode, ctx, _list3, __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list3, __cacheStyle[BORDER_RIGHT_COLOR], dx, dy);
                     }
 
                     if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
@@ -22303,7 +22299,7 @@
 
                       var _list4 = border.calPoints(borderBottomWidth, computedStyle[BORDER_BOTTOM_STYLE], _deg13, _deg14, bx1, bx1, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 2, isFirst ? btlr : [0, 0], btrr);
 
-                      border.renderBorder(_this7, renderMode, ctx, _list4, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list4, __cacheStyle[BORDER_BOTTOM_COLOR], dx, dy);
                     }
 
                     if (isFirst && borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -22313,7 +22309,7 @@
 
                       var _list5 = border.calPoints(borderLeftWidth, computedStyle[BORDER_LEFT_STYLE], _deg15, _deg16, bx1, bx1 + borderLeftWidth, bx2 - borderRightWidth, bx2, by1, by1 + borderTopWidth, by2 - borderBottomWidth, by2, 3, btlr, btrr);
 
-                      border.renderBorder(_this7, renderMode, ctx, _list5, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
+                      border.renderBorder(_this8, renderMode, ctx, _list5, __cacheStyle[BORDER_LEFT_COLOR], dx, dy);
                     }
                   })();
                 }
@@ -22351,19 +22347,19 @@
             i = _length2 - 1 - i;
 
             if (util.isString(bgi)) {
-              var loadBgi = _this7.__loadBgi[i];
+              var loadBgi = _this8.__loadBgi[i];
 
               if (loadBgi.url === bgi) {
-                bg.renderImage(_this7, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
+                bg.renderImage(_this8, renderMode, ctx, loadBgi, bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr, computedStyle, i, backgroundSize, backgroundRepeat, __config, false, dx, dy);
               }
             } else if (bgi.k) {
-              var gd = _this7.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
+              var gd = _this8.__gradient(renderMode, ctx, bx1, by1, bx2, by2, bgi, dx, dy);
 
               if (gd) {
                 if (gd.k === 'conic') {
-                  gradient$1.renderConic(_this7, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
+                  gradient$1.renderConic(_this8, renderMode, ctx, gd.v, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr);
                 } else {
-                  bg.renderBgc(_this7, renderMode, ctx, gd.v, borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
+                  bg.renderBgc(_this8, renderMode, ctx, gd.v, borderList, bx1, by1, bx2 - bx1, by2 - by1, btlr, btrr, bbrr, bblr, 'fill', false, dx, dy);
                 }
               }
             }
@@ -22373,7 +22369,7 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            bs.renderBoxShadow(_this7, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1, dx, dy);
+            bs.renderBoxShadow(_this8, renderMode, ctx, item, x1, y1, x6, y6, x6 - x1, y6 - y1, dx, dy);
           });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -23894,8 +23890,8 @@
       POSITION$3 = _enums$STYLE_KEY$f.POSITION,
       HEIGHT$4 = _enums$STYLE_KEY$f.HEIGHT;
   var AUTO$4 = o.AUTO,
-      PX$6 = o.PX,
-      PERCENT$7 = o.PERCENT;
+      PX$5 = o.PX,
+      PERCENT$6 = o.PERCENT;
   var REFLOW$1 = o$3.REFLOW;
 
   function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
@@ -23931,18 +23927,18 @@
                   height = _next$currentStyle[HEIGHT$4];
 
               if (top[1] === AUTO$4) {
-                if (bottom[1] === AUTO$4 || bottom[1] === PX$6) {
+                if (bottom[1] === AUTO$4 || bottom[1] === PX$5) {
                   next.__offsetY(dy, true, REFLOW$1);
 
                   next.clearCache();
-                } else if (bottom[1] === PERCENT$7) {
+                } else if (bottom[1] === PERCENT$6) {
                   var v = (1 - bottom[0] * 0.01) * dy;
 
                   next.__offsetY(v, true, REFLOW$1);
 
                   next.clearCache();
                 }
-              } else if (top[1] === PERCENT$7) {
+              } else if (top[1] === PERCENT$6) {
                 var _v = top[0] * 0.01 * dy;
 
                 next.__offsetY(_v, true, REFLOW$1);
@@ -23951,7 +23947,7 @@
               } // 高度百分比需发生变化的重新布局，需要在容器内
 
 
-              if (height[1] === PERCENT$7) {
+              if (height[1] === PERCENT$6) {
                 if (isContainer) {
                   parent.__layoutAbs(parent, parent.__layoutData, next);
                 } else {
@@ -24132,8 +24128,8 @@
       STRUCT_INDEX$1 = _enums$STRUCT_KEY$1.STRUCT_INDEX,
       ELLIPSIS$1 = enums.ELLIPSIS;
   var AUTO$5 = o.AUTO,
-      PX$7 = o.PX,
-      PERCENT$8 = o.PERCENT,
+      PX$6 = o.PX,
+      PERCENT$7 = o.PERCENT,
       REM$6 = o.REM,
       VW$6 = o.VW,
       VH$6 = o.VH,
@@ -24648,14 +24644,14 @@
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
         var isAuto = flexBasis[1] === AUTO$5;
-        var isFixed = [PX$7, PERCENT$8, REM$6, VW$6, VH$6, VMAX$6, VMIN$6].indexOf(flexBasis[1]) > -1;
+        var isFixed = [PX$6, PERCENT$7, REM$6, VW$6, VH$6, VMAX$6, VMIN$6].indexOf(flexBasis[1]) > -1;
         var isContent = !isAuto && !isFixed;
         var fixedSize; // flex的item固定basis计算
 
         if (isFixed) {
           b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
         } // 已声明主轴尺寸的，当basis是auto时为main值
-        else if (isAuto && [PX$7, PERCENT$8, REM$6, VW$6, VH$6, VMAX$6, VMIN$6].indexOf(main[1]) > -1) {
+        else if (isAuto && [PX$6, PERCENT$7, REM$6, VW$6, VH$6, VMAX$6, VMIN$6].indexOf(main[1]) > -1) {
           b = fixedSize = this.__calSize(main, isDirectionRow ? w : h, true);
         } // 非固定尺寸的basis为auto时降级为content
         else if (isAuto) {
@@ -27533,8 +27529,8 @@
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$5.NODE_DEFS_CACHE,
       NODE_IS_MASK$1 = _enums$NODE_KEY$5.NODE_IS_MASK;
   var AUTO$6 = o.AUTO,
-      PX$8 = o.PX,
-      PERCENT$9 = o.PERCENT,
+      PX$7 = o.PX,
+      PERCENT$8 = o.PERCENT,
       REM$7 = o.REM,
       VW$7 = o.VW,
       VH$7 = o.VH,
@@ -27582,10 +27578,10 @@
 
         style[BACKGROUND_IMAGE$2] = currentStyle[BACKGROUND_IMAGE$2] = [null];
         style[BACKGROUND_COLOR$2] = currentStyle[BACKGROUND_COLOR$2] = [[0, 0, 0, 0], RGBA$3];
-        style[BORDER_TOP_WIDTH$3] = currentStyle[BORDER_TOP_WIDTH$3] = [0, PX$8];
-        style[BORDER_RIGHT_WIDTH$5] = currentStyle[BORDER_RIGHT_WIDTH$5] = [0, PX$8];
-        style[BORDER_LEFT_WIDTH$6] = currentStyle[BORDER_LEFT_WIDTH$6] = [0, PX$8];
-        style[BORDER_BOTTOM_WIDTH$3] = currentStyle[BORDER_BOTTOM_WIDTH$3] = [0, PX$8];
+        style[BORDER_TOP_WIDTH$3] = currentStyle[BORDER_TOP_WIDTH$3] = [0, PX$7];
+        style[BORDER_RIGHT_WIDTH$5] = currentStyle[BORDER_RIGHT_WIDTH$5] = [0, PX$7];
+        style[BORDER_LEFT_WIDTH$6] = currentStyle[BORDER_LEFT_WIDTH$6] = [0, PX$7];
+        style[BORDER_BOTTOM_WIDTH$3] = currentStyle[BORDER_BOTTOM_WIDTH$3] = [0, PX$7];
         style[BOX_SHADOW$3] = currentStyle[BOX_SHADOW$3] = null;
         style[MIX_BLEND_MODE$1] = currentStyle[MIX_BLEND_MODE$1] = 'normal';
       }
@@ -27940,9 +27936,9 @@
           var loadImg = this.__loadImg; // 加载成功计算缩放后的宽度
 
           if (loadImg.source) {
-            if (height[1] === PX$8) {
+            if (height[1] === PX$7) {
               w -= loadImg.width * height[0] / loadImg.height;
-            } else if (height[1] === PERCENT$9) {
+            } else if (height[1] === PERCENT$8) {
               w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
             } else if (height[1] === REM$7) {
               w -= loadImg.width * height[0] * this.root.computedStyle[FONT_SIZE$b] / loadImg.height;
@@ -27989,11 +27985,11 @@
         var main = isDirectionRow ? width : height;
         var cross = isDirectionRow ? height : width; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        var isFixed = [PX$8, PERCENT$9, REM$7, VW$7, VH$7, VMAX$7, VMIN$7].indexOf(flexBasis[1]) > -1;
+        var isFixed = [PX$7, PERCENT$8, REM$7, VW$7, VH$7, VMAX$7, VMIN$7].indexOf(flexBasis[1]) > -1;
 
         if (isFixed) {
           b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
-        } else if ([PX$8, PERCENT$9, REM$7, VW$7, VH$7, VMAX$7, VMIN$7].indexOf(main[1]) > -1) {
+        } else if ([PX$7, PERCENT$8, REM$7, VW$7, VH$7, VMAX$7, VMIN$7].indexOf(main[1]) > -1) {
           b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
         } // auto和content固定尺寸比例计算
         else if (__loadImg.source || __loadImg.error) {
@@ -28301,8 +28297,8 @@
       NODE_STYLE$3 = _enums$NODE_KEY$6.NODE_STYLE,
       NODE_DEFS_CACHE$4 = _enums$NODE_KEY$6.NODE_DEFS_CACHE;
   var AUTO$7 = o.AUTO,
-      PX$9 = o.PX,
-      PERCENT$a = o.PERCENT,
+      PX$8 = o.PX,
+      PERCENT$9 = o.PERCENT,
       REM$8 = o.REM,
       VW$8 = o.VW,
       VH$8 = o.VH,
@@ -28387,11 +28383,11 @@
             height = currentStyle[HEIGHT$7];
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content，只区分固定和其它
 
-        var isFixed = [PX$9, PERCENT$a, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(flexBasis[1]) > -1;
+        var isFixed = [PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(flexBasis[1]) > -1;
 
         if (isFixed) {
           b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
-        } else if ([PX$9, PERCENT$a, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(main[1]) > -1) {
+        } else if ([PX$8, PERCENT$9, REM$8, VW$8, VH$8, VMAX$8, VMIN$8].indexOf(main[1]) > -1) {
           b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
         } // 直接item的mpb影响basis
 
@@ -34455,8 +34451,8 @@
       isObject$2 = util.isObject,
       isFunction$9 = util.isFunction;
   var AUTO$8 = o.AUTO,
-      PX$a = o.PX,
-      PERCENT$b = o.PERCENT,
+      PX$9 = o.PX,
+      PERCENT$a = o.PERCENT,
       INHERIT$4 = o.INHERIT;
   var isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute,
       equalStyle$1 = css.equalStyle;
@@ -35677,8 +35673,8 @@
         } // 根节点满宽高
 
 
-        currentStyle[WIDTH$8] = [width, PX$a];
-        currentStyle[HEIGHT$8] = [height, PX$a];
+        currentStyle[WIDTH$8] = [width, PX$9];
+        currentStyle[HEIGHT$8] = [height, PX$9];
         computedStyle[WIDTH$8] = width;
         computedStyle[HEIGHT$8] = height; // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
 
@@ -36381,14 +36377,14 @@
 
                         prev = prev.prev;
                       }
-                    } else if (bottom[1] === PX$a) {
+                    } else if (bottom[1] === PX$9) {
                       _item2.__offsetY(_diff5, true, REPAINT$3);
-                    } else if (bottom[1] === PERCENT$b) {
+                    } else if (bottom[1] === PERCENT$a) {
                       var v = (1 - bottom[0] * 0.01) * _diff5;
 
                       _item2.__offsetY(v, true, REPAINT$3);
                     }
-                  } else if (top[1] === PERCENT$b) {
+                  } else if (top[1] === PERCENT$a) {
                     if (isContainer) {
                       var _v = top[0] * 0.01 * _diff5;
 
@@ -36413,7 +36409,7 @@
                         }
                       }
 
-                      if (container.currentStyle[HEIGHT$8][1] !== PX$a) {
+                      if (container.currentStyle[HEIGHT$8][1] !== PX$9) {
                         var _v2 = top[0] * 0.01 * _diff5;
 
                         _item2.__offsetY(_v2, true, REPAINT$3);
@@ -36422,7 +36418,7 @@
                   } // 高度百分比需发生变化的重新布局，需要在容器内
 
 
-                  if (_height2[1] === PERCENT$b) {
+                  if (_height2[1] === PERCENT$a) {
                     if (isContainer) {
                       parent.__layoutAbs(parent, parent.__layoutData, _item2);
                     } // 不在容器内说明在上级，存入等结束后统一重新布局

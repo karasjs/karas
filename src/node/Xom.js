@@ -903,7 +903,10 @@ class Xom extends Node {
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
         matrixCache = null;
-        computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight, this.root);
+        computedStyle[TRANSFORM_ORIGIN] = currentStyle[TRANSFORM_ORIGIN].map((item, i) => {
+          return this.__calSize(item, i ? offsetHeight : offsetWidth, true);
+        });
+        // computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight, this.root);
       }
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
@@ -1402,7 +1405,10 @@ class Xom extends Node {
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
       __cacheStyle[PERSPECTIVE_ORIGIN] = true;
       rebuild = true;
-      computedStyle[PERSPECTIVE_ORIGIN] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN], this.offsetWidth, this.offsetHeight, this.root);
+      computedStyle[PERSPECTIVE_ORIGIN] = currentStyle[PERSPECTIVE_ORIGIN].map((item, i) => {
+        return this.__calSize(item, i ? this.offsetHeight : this.offsetWidth, true);
+      });
+      // computedStyle[PERSPECTIVE_ORIGIN] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN], this.offsetWidth, this.offsetHeight, this.root);
     }
     if(rebuild) {
       if(sx1 === undefined) {

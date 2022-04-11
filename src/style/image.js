@@ -14,8 +14,6 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
     [SCALE_Y, [targetHeight / imgHeight, NUMBER]],
   ];
   let tfo = [x, y];
-  tfo[0] += x;
-  tfo[1] += y;
   return transform.calMatrixWithOrigin(list, tfo, w, h);
 }
 

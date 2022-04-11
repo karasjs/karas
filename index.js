@@ -16064,8 +16064,6 @@
 
     var list = [[SCALE_X$2, [targetWidth / imgWidth, NUMBER$3]], [SCALE_Y$2, [targetHeight / imgHeight, NUMBER$3]]];
     var tfo = [x, y];
-    tfo[0] += x;
-    tfo[1] += y;
     return transform$1.calMatrixWithOrigin(list, tfo, w, h);
   }
 

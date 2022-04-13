@@ -105,6 +105,7 @@
   * flexEnd
   * spaceBetween
   * spaceAround
+  * spaceEvenly
   * center
 * alignItems
   * stretch 默认

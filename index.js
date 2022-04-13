@@ -24749,7 +24749,7 @@
             height = currentStyle[HEIGHT$5];
         var lineHeight = computedStyle[LINE_HEIGHT$5],
             display = computedStyle[DISPLAY$5],
-            wringMode = computedStyle[WRITING_MODE$3];
+            writingMode = computedStyle[WRITING_MODE$3];
         var isVertical = writingMode.indexOf('vertical') === 0;
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 

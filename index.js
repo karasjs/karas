@@ -16002,9 +16002,11 @@
 
 
     if (isVertical) {
-      by1 = y1 - paddingTop - borderTopWidth;
+      by1 = y1;
 
       if (isStart) {
+        by1 -= paddingTop + borderTopWidth;
+
         if (backgroundClip === 'paddingBox') {
           y1 -= paddingTop;
         } else if (backgroundClip === 'borderBox') {
@@ -16016,9 +16018,11 @@
       bx2 = lineBox.x + diff + lineHeight + pbEnd;
       y2 = end.y + end.outerHeight;
     } else {
-      bx1 = x1 - paddingLeft - borderLeftWidth;
+      bx1 = x1;
 
       if (isStart) {
+        bx1 -= paddingLeft + borderLeftWidth;
+
         if (backgroundClip === 'paddingBox') {
           x1 -= paddingLeft;
         } else if (backgroundClip === 'borderBox') {
@@ -16057,9 +16061,11 @@
     }
 
     if (isVertical) {
-      by2 = y2 + paddingBottom + borderBottomWidth;
+      by2 = y2;
 
       if (isEnd) {
+        by2 += paddingBottom + borderBottomWidth;
+
         if (backgroundClip === 'paddingBox') {
           y2 += paddingBottom;
         } else if (backgroundClip === 'borderBox') {
@@ -16067,9 +16073,11 @@
         }
       }
     } else {
-      bx2 = x2 + paddingRight + borderRightWidth;
+      bx2 = x2;
 
       if (isEnd) {
+        bx2 += paddingRight + borderRightWidth;
+
         if (backgroundClip === 'paddingBox') {
           x2 += paddingRight;
         } else if (backgroundClip === 'borderBox') {
@@ -16087,7 +16095,6 @@
     y2 += xom.oy;
     by1 += xom.oy;
     by2 += xom.oy;
-    console.log(x1, y1, x2, y2, bx1, by1, bx2, by2);
     return [x1, y1, x2, y2, bx1, by1, bx2, by2];
   }
   /**

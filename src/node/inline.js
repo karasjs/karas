@@ -100,8 +100,9 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   }
   // 第一个需考虑容器本身的padding/border
   if(isVertical) {
-    by1 = y1 - paddingTop - borderTopWidth;
+    by1 = y1;
     if(isStart) {
+      by1 -= paddingTop + borderTopWidth;
       if(backgroundClip === 'paddingBox') {
         y1 -= paddingTop;
       }
@@ -114,8 +115,9 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     y2 = end.y + end.outerHeight;
   }
   else {
-    bx1 = x1 - paddingLeft - borderLeftWidth;
+    bx1 = x1;
     if(isStart) {
+      bx1 -= paddingLeft + borderLeftWidth;
       if(backgroundClip === 'paddingBox') {
         x1 -= paddingLeft;
       }
@@ -153,8 +155,9 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     dom = dom.domParent;
   }
   if(isVertical) {
-    by2 = y2 + paddingBottom + borderBottomWidth;
+    by2 = y2;
     if(isEnd) {
+      by2 += paddingBottom + borderBottomWidth;
       if(backgroundClip === 'paddingBox') {
         y2 += paddingBottom;
       }
@@ -164,8 +167,9 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     }
   }
   else {
-    bx2 = x2 + paddingRight + borderRightWidth;
+    bx2 = x2;
     if(isEnd) {
+      bx2 += paddingRight + borderRightWidth;
       if(backgroundClip === 'paddingBox') {
         x2 += paddingRight;
       }
@@ -182,7 +186,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   y1 += xom.oy;
   y2 += xom.oy;
   by1 += xom.oy;
-  by2 += xom.oy;console.log(x1, y1, x2, y2, bx1, by1, bx2, by2)
+  by2 += xom.oy;
   return [x1, y1, x2, y2, bx1, by1, bx2, by2];
 }
 

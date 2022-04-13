@@ -512,7 +512,9 @@ class Dom extends Xom {
     let {
       [LINE_HEIGHT]: lineHeight,
       [DISPLAY]: display,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
@@ -564,7 +566,7 @@ class Dom extends Xom {
       }
       // flex的item是block/inline时，inline也会变成block统一对待
       else {
-        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h, lineBoxManager }, false);
@@ -653,16 +655,18 @@ class Dom extends Xom {
       [OVERFLOW]: overflow,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
-    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxW = 0;
     let cw = 0;
     let lx = x; // 行首，考虑了mbp
+    let ly = y;
     // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
     let mergeMarginBottomList = [], mergeMarginTopList = [];
     let length = flowChildren.length;
@@ -702,6 +706,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager, // ib内部新生成会内部判断，这里不管统一传入
               lineClamp,
               lineClampCount,
@@ -755,6 +760,7 @@ class Dom extends Xom {
                 w,
                 h,
                 lx,
+                ly,
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
@@ -801,6 +807,7 @@ class Dom extends Xom {
                 w,
                 h,
                 lx,
+                ly,
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
@@ -922,6 +929,7 @@ class Dom extends Xom {
             w,
             h,
             lx,
+            ly,
             lineBoxManager,
             lineClamp,
             lineClampCount,
@@ -961,6 +969,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager,
               lineClamp,
               lineClampCount,
@@ -1004,6 +1013,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager,
               lineClamp,
               lineClampCount,
@@ -1915,7 +1925,7 @@ class Dom extends Xom {
    */
   __layoutInline(data, isAbs, isColumn, isInline) {
     let { flowChildren, currentStyle, computedStyle } = this;
-    let { fixedWidth, fixedHeight, x, y, w, h, lx,
+    let { fixedWidth, fixedHeight, x, y, w, h, lx, ly,
       lineBoxManager, endSpace, selfEndSpace } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
     if(isAbs && fixedWidth) {
@@ -1939,6 +1949,7 @@ class Dom extends Xom {
       [PADDING_RIGHT]: paddingRight,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     let lineClampCount = data.lineClampCount || 0;
     if(isInline && !this.__isRealInline()) {
       isInline = false;
@@ -1966,7 +1977,7 @@ class Dom extends Xom {
       lineClamp = data.lineClamp || 0;
     }
     else {
-      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
       lx = x;
       endSpace = selfEndSpace = lineClampCount = 0;
     }
@@ -2014,13 +2025,14 @@ class Dom extends Xom {
           inject.warn('Inline can not contain block/flex');
         }
         // x开头或者nowrap单行，不用考虑是否放得下直接放，因为有beginSpace所以要多判断i为0
-        if(x === lx || !i || whiteSpace === 'nowrap') {
+        if((isVertical && y === ly) || (!isVertical && x === lx) || !i || whiteSpace === 'nowrap') {
           lineClampCount = item.__layout({
             x,
             y,
             w,
             h,
             lx,
+            ly,
             lineBoxManager,
             endSpace,
             lineClamp,
@@ -2062,6 +2074,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager,
               endSpace,
               lineClamp,
@@ -2096,6 +2109,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager,
               endSpace,
               lineClamp,
@@ -2126,13 +2140,14 @@ class Dom extends Xom {
       else {
         let n = lineBoxManager.size;
         // i为0时强制不换行
-        if(x === lx || !i || whiteSpace === 'nowrap') {
+        if((isVertical && y === ly) || (!isVertical && x === lx) || !i || whiteSpace === 'nowrap') {
           lineClampCount = item.__layout({
             x,
             y,
             w,
             h,
             lx,
+            ly,
             lineBoxManager,
             endSpace,
             lineClamp,
@@ -2163,6 +2178,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager,
               endSpace,
               lineClamp,
@@ -2196,6 +2212,7 @@ class Dom extends Xom {
               w,
               h,
               lx,
+              ly,
               lineBoxManager,
               endSpace,
               lineClamp,

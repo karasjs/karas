@@ -737,7 +737,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager, endSpace = 0 } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -758,7 +758,9 @@ class Xom extends Node {
       [PADDING_RIGHT]: paddingRight,
       [PADDING_BOTTOM]: paddingBottom,
       [PADDING_LEFT]: paddingLeft,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
@@ -788,18 +790,31 @@ class Xom extends Node {
       fixedHeight = true;
       h = this.__calSize(height, h, true);
     }
-    // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响
-    x += borderLeftWidth + marginLeft + paddingLeft;
-    data.x = x;
+    // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
     if(!isInline) {
+      x += borderLeftWidth + marginLeft + paddingLeft;
       y += borderTopWidth + marginTop + paddingTop;
     }
+    else {
+      if(isVertical) {
+        y += borderTopWidth + marginTop + paddingTop;
+      }
+      else {
+        x += borderLeftWidth + marginLeft + paddingLeft;
+      }
+    }
+    data.x = x;
     data.y = y;
     // inline的w/h很特殊，需不考虑inline自身水平的mpb以便换行，因为mpb只在首尾行生效，所以首尾需特殊处理中间忽略
     // 当嵌套inline时更加复杂，假如inline有尾部mpb，最后一行需考虑，如果此inline是父的最后一个且父有mpb需叠加
     let selfEndSpace = 0;
     if(isInline) {
-      selfEndSpace = paddingRight + borderRightWidth + marginRight;
+      if(isVertical) {
+        selfEndSpace = paddingBottom + borderBottomWidth + marginBottom;
+      }
+      else {
+        selfEndSpace = paddingRight + borderRightWidth + marginRight;
+      }
     }
     // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
     if(!isInline) {
@@ -818,6 +833,7 @@ class Xom extends Node {
       w,
       h,
       lx,
+      ly,
       lineBoxManager,
       endSpace,
       selfEndSpace,
@@ -906,7 +922,6 @@ class Xom extends Node {
         computedStyle[TRANSFORM_ORIGIN] = currentStyle[TRANSFORM_ORIGIN].map((item, i) => {
           return this.__calSize(item, i ? offsetHeight : offsetWidth, true);
         });
-        // computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight, this.root);
       }
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
@@ -1408,7 +1423,6 @@ class Xom extends Node {
       computedStyle[PERSPECTIVE_ORIGIN] = currentStyle[PERSPECTIVE_ORIGIN].map((item, i) => {
         return this.__calSize(item, i ? this.offsetHeight : this.offsetWidth, true);
       });
-      // computedStyle[PERSPECTIVE_ORIGIN] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN], this.offsetWidth, this.offsetHeight, this.root);
     }
     if(rebuild) {
       if(sx1 === undefined) {
@@ -1693,6 +1707,7 @@ class Xom extends Node {
       [OVERFLOW]: overflow,
       [MIX_BLEND_MODE]: mixBlendMode,
       [BACKGROUND_CLIP]: backgroundClip,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
     // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
     if(cache && renderMode === CANVAS) {
@@ -1969,6 +1984,7 @@ class Xom extends Node {
         let baseline = css.getBaseline(computedStyle);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
         let diffL = fontSize * (font.info[ff].lgr || 0);
+        let isVertical = writingMode.indexOf('vertical') === 0;
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
@@ -1978,7 +1994,7 @@ class Xom extends Node {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
             // 上一行
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isVertical, contentBoxList,
               lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
@@ -2065,7 +2081,7 @@ class Xom extends Node {
           }
           // 最后一个特殊判断
           if(i === length - 1) {
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isVertical, contentBoxList,
               lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);

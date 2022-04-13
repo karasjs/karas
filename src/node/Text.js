@@ -193,7 +193,7 @@ class Text extends Node {
     if(__cache) {
       __cache.release();
     }
-    let { x, y, w, h, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
+    let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, textBoxes, root } = this;
@@ -207,7 +207,6 @@ class Text extends Node {
     this.__ox = this.__oy = 0;
     // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
     let i = 0;
-    let beginSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
     let length = content.length;
     let maxW = 0;
     let {
@@ -221,6 +220,7 @@ class Text extends Node {
     } = computedStyle;
     let isVertical = writingMode.indexOf('vertical') === 0;
     let size = isVertical ? h : w;
+    let beginSpace = isVertical ? (y - ly) : (x - lx); // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
     // 基于最近block父节点的样式
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
@@ -287,31 +287,44 @@ class Text extends Node {
         if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
           limit -= endSpace;
         }
-        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit, perW,
+          fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW,
-            endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
+            lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
+            fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
         if(i + num === length && endSpace && rw + endSpace > limit + (1e-10) && num > 1) {
-          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW,
+            fontFamily, fontSize, fontWeight, letterSpacing);
           // 可能加上endSpace后超过了，还得再判断一次
           if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW,
-              endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
+              lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
+              fontFamily, fontSize, fontWeight, letterSpacing);
             lineCount++;
             break;
           }
         }
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白
-        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num), isVertical);
+        let textBox = new TextBox(this, textBoxes.length,
+          lineCount && !isVertical ? lx : x,
+          lineCount && isVertical ? ly : y,
+          rw, lineHeight, content.slice(i, i + num), isVertical);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, newLine);
-        y += Math.max(lineHeight, lineBoxManager.lineHeight);
+        // 竖排横排换行不一样
+        if(isVertical) {
+          x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
+        }
+        else {
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+        }
         // 至少也要1个字符形成1行，哪怕是首行，因为是否放得下逻辑在dom中做过了
         i += num;
         if(newLine) {

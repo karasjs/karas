@@ -243,34 +243,6 @@ function normalize(transform, ow, oh, root) {
   return res;
 }
 
-// function calOrigin(transformOrigin, w, h, root) {
-//   let tfo = [];
-//   transformOrigin.forEach((item, i) => {
-//     if(item[1] === PX) {
-//       tfo.push(item[0]);
-//     }
-//     else if(item[1] === PERCENT) {
-//       tfo.push(item[0] * (i ? h : w) * 0.01);
-//     }
-//     else if(item[1] === REM) {
-//       tfo.push(item[0] * root.computedStyle[FONT_SIZE]);
-//     }
-//     else if(item[1] === VW) {
-//       tfo.push(item[0] * root.width * 0.01);
-//     }
-//     else if(item[1] === VH) {
-//       tfo.push(item[0] * root.height * 0.01);
-//     }
-//     else if(item[1] === VMAX) {
-//       tfo.push(item[0] * Math.max(root.width, root.height) * 0.01);
-//     }
-//     else if(item[1] === VMIN) {
-//       tfo.push(item[0] * Math.min(root.width, root.height) * 0.01);
-//     }
-//   });
-//   return tfo;
-// }
-
 function calMatrixByPerspective(m, pm) {
   if(!isE(pm)) {
     m = multiply(pm, m);
@@ -302,7 +274,6 @@ function isPerspectiveMatrix(m) {
 
 export default {
   calMatrix,
-  // calOrigin,
   calMatrixByPerspective,
   calPerspectiveMatrix,
   calMatrixByOrigin,

@@ -248,6 +248,14 @@ class LineBoxManager {
     return 0;
   }
 
+  get verticalLineHeight() {
+    let list = this.list;
+    if(list.length) {
+      return list[list.length - 1].verticalLineHeight;
+    }
+    return 0;
+  }
+
   get lineBox() {
     let list = this.list;
     if(list.length) {

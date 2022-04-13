@@ -4,6 +4,7 @@ import transform from '../style/transform';
 import enums from '../util/enums';
 import util from '../util/util';
 import unit from '../style/unit';
+import reg from '../style/reg';
 import mx from '../math/matrix';
 
 const { STYLE_KEY: {
@@ -19,6 +20,10 @@ const { STYLE_KEY: {
   ROTATE_Z,
 } } = enums;
 const { DEG } = unit;
+
+function isCjk(c) {
+  return reg.han.test(c) && !reg.punctuation.test(c);
+}
 
 /**
  * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
@@ -63,10 +68,7 @@ class TextBox {
     // 垂直文本x/y互换，渲染时使用rotate模拟，
     // 因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
     // 所以原本左上角转换变成lineHeight（现在的w）减去b
-    if(isVertical) {
-      x += width - b;
-    }
-    else {
+    if(!isVertical) {
       y += b;
     }
     x += ox + dx;
@@ -77,14 +79,13 @@ class TextBox {
       [LETTER_SPACING]: letterSpacing,
       [TEXT_STROKE_WIDTH]: textStrokeWidth,
       [TEXT_STROKE_COLOR]: textStrokeColor,
+      [FONT_SIZE]: fontSize,
     } = computedStyle;
-    let m;
+    let me = dom.matrixEvent, list;
     if(isVertical) {
-      let list = [
+      list = [
         [ROTATE_Z, [90, DEG]],
       ];
-      let tfo = [x, y];
-      m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
     }
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -106,9 +107,51 @@ class TextBox {
       }
       else {
         if(isVertical) {
-          m = mx.multiply(dom.matrixEvent, m);
-          ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-          ctx.fillText(content, x, y);
+          let cjk = isCjk(content.charAt(0)), last = 0, count = 0, len = content.length;
+          for(let i = 1; i < len; i++) {
+            let nowCjk = isCjk(content.charAt(i));
+            // 不相等时cjk发生变化，输出之前的内容，记录当下的所有
+            if(nowCjk !== cjk) {
+              if(cjk) {
+                ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
+                ctx.fillText(content.slice(last, i), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+                count += fontSize;
+              }
+              else {
+                let tfo = [x + (width - b), y + count];
+                let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+                m = mx.multiply(me, m);
+                ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+                let s = content.slice(last, i);
+                ctx.fillText(s, x + (width - b), y + count);
+                count += ctx.measureText(s).width;
+              }
+              last = i;
+              cjk = !cjk;
+            }
+            // cjk单字符输出
+            else if(nowCjk) {
+              ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
+              ctx.fillText(content.slice(last, i), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+              count += fontSize;
+              last = i;
+            }
+          }
+          if(last < len) {
+            // 最后的cjk只可能是一个字符
+            if(cjk) {
+              ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
+              ctx.fillText(content.slice(last, len), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+            }
+            else {
+              let tfo = [x + (width - b), y + count];
+              let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+              m = mx.multiply(me, m);
+              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              let s = content.slice(last, len);
+              ctx.fillText(s, x + (width - b), y + count);
+            }
+          }
         }
         else {
           if(overFill) {

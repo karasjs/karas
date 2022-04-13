@@ -216,6 +216,15 @@ class LineBox {
     });
     return lineHeight;
   }
+
+  get verticalLineHeight() {
+    let lineHeight = this.__lineHeight;
+    // 只有TextBox和InlineBlock或replaced
+    this.list.forEach(item => {
+      lineHeight = Math.max(lineHeight, item.outerWidth);
+    });
+    return lineHeight;
+  }
 }
 
 export default LineBox;

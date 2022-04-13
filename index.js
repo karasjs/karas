@@ -16002,20 +16002,28 @@
 
 
     if (isVertical) {
-      by1 = y1 - pbStart;
+      by1 = y1 - paddingTop - borderTopWidth;
 
       if (isStart) {
-        y1 -= bcStart;
+        if (backgroundClip === 'paddingBox') {
+          y1 -= paddingTop;
+        } else if (backgroundClip === 'borderBox') {
+          y1 -= paddingTop + borderTopWidth;
+        }
       }
 
       x2 = lineBox.x + diff + lineHeight + bcEnd;
       bx2 = lineBox.x + diff + lineHeight + pbEnd;
       y2 = end.y + end.outerHeight;
     } else {
-      bx1 = x1 - pbStart;
+      bx1 = x1 - paddingLeft - borderLeftWidth;
 
       if (isStart) {
-        x1 -= bcStart;
+        if (backgroundClip === 'paddingBox') {
+          x1 -= paddingLeft;
+        } else if (backgroundClip === 'borderBox') {
+          x1 -= paddingLeft + borderLeftWidth;
+        }
       }
 
       x2 = end.x + end.outerWidth;
@@ -16049,16 +16057,24 @@
     }
 
     if (isVertical) {
-      by2 = y2 + pbEnd;
+      by2 = y2 + paddingBottom + borderBottomWidth;
 
       if (isEnd) {
-        y2 += bcEnd;
+        if (backgroundClip === 'paddingBox') {
+          y2 += paddingBottom;
+        } else if (backgroundClip === 'borderBox') {
+          y2 += paddingBottom + borderBottomWidth;
+        }
       }
     } else {
-      bx2 = x2 + pbEnd;
+      bx2 = x2 + paddingRight + borderRightWidth;
 
       if (isEnd) {
-        x2 += bcEnd;
+        if (backgroundClip === 'paddingBox') {
+          x2 += paddingRight;
+        } else if (backgroundClip === 'borderBox') {
+          x2 += paddingRight + borderRightWidth;
+        }
       }
     } // 要考虑xom的ox/oy值
 
@@ -16071,6 +16087,7 @@
     y2 += xom.oy;
     by1 += xom.oy;
     by2 += xom.oy;
+    console.log(x1, y1, x2, y2, bx1, by1, bx2, by2);
     return [x1, y1, x2, y2, bx1, by1, bx2, by2];
   }
   /**

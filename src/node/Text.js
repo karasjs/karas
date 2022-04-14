@@ -125,7 +125,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     if(mw > w + (1e-10)) {
       newLine = true;
       // 限制至少1个
-      if(j === start) {
+      if(i === start) {
         rw = mw;
         break;
       }

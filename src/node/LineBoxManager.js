@@ -6,10 +6,10 @@ import LineBox from './LineBox';
  * 同时LineBox可能连续也可能不连续，不连续的是中间有block之类的隔离开来
  */
 class LineBoxManager {
-  constructor(x, y, lineHeight, baseline) {
+  constructor(x, y, lineHeight, baseline, isVertical) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
-    this.__maxX = x;
+    this.__max = isVertical ? y : x;
     this.__domList = [];
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
@@ -17,7 +17,8 @@ class LineBoxManager {
     this.__lineHeight = lineHeight;
     this.__baseline = baseline;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
-    this.__spreadYList = []; // verticalAlign时每个区域增加的y高度
+    this.__spreadList = []; // verticalAlign时每个区域增加的y高度
+    this.__isVertical = isVertical;
   }
 
   /**
@@ -75,8 +76,9 @@ class LineBoxManager {
    * @param nextNewLine 是否设置newLine，标明下次添加新生成LineBox
    * @returns {LineBox}
    */
-  addItem(o, nextNewLine) {
-    let lineBox;
+  addItem(o, nextNewLine) { // TODO: nextNewLine可能不需要
+    let lineBox, isVertical = this.isVertical;
+    // 新行新的lineBox，否则复用最后一个
     if(this.__isNewLine) {
       this.__isNewLine = false;
       lineBox = this.genLineBox(o.x, o.y);
@@ -98,10 +100,16 @@ class LineBoxManager {
       this.__lastY = o.y + o.outerHeight;
     }
     else {
-      this.__lastX = o.x + o.outerWidth;
-      this.__lastY = o.y;
+      if(isVertical) {
+        this.__lastX = o.x;
+        this.__lastY = o.y + o.outerHeight;
+      }
+      else {
+        this.__lastX = o.x + o.outerWidth;
+        this.__lastY = o.y;
+      }
     }
-    this.__maxX = Math.max(this.__maxX, o.x + o.outerWidth);
+    this.__max = Math.max(this.__max, isVertical ? (o.y + o.outerHeight) : (o.x + o.outerWidth));
     return lineBox;
   }
 
@@ -125,16 +133,21 @@ class LineBoxManager {
    * next行也需要y偏移
    * @returns {number}
    */
-  verticalAlign() {
-    let syl = this.__spreadYList;
-    syl.splice(0);
+  verticalAlign(isVertical) {
+    let spreadList = this.__spreadList;
+    spreadList.splice(0);
     let spread = 0;
     this.list.forEach(lineBox => {
       if(spread) {
-        lineBox.__offsetY(spread, true);
+        if(isVertical) {
+          lineBox.__offsetX(spread, true);
+        }
+        else {
+          lineBox.__offsetY(spread, true);
+        }
       }
-      spread += lineBox.verticalAlign();
-      syl.push(spread);
+      spread += lineBox.verticalAlign(isVertical);
+      spreadList.push(spread);
     });
     return spread;
   }
@@ -191,6 +204,15 @@ class LineBoxManager {
 
   get lastY() {
     return this.__lastY;
+  }
+
+  get endX() {
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      return list[length - 1].endX;
+    }
+    return this.__x;
   }
 
   get endY() {
@@ -275,8 +297,16 @@ class LineBoxManager {
     return w;
   }
 
-  get spreadYList() {
-    return this.__spreadYList;
+  get spreadList() {
+    return this.__spreadList;
+  }
+
+  get isVertical() {
+    return this.__isVertical;
+  }
+
+  get max() {
+    return this.__max;
   }
 }
 

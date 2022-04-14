@@ -38,10 +38,10 @@ class LineBox {
     item.__parentLineBox = this;
   }
 
-  verticalAlign() {
+  verticalAlign(isVertical) {
     let baseline = this.baseline;
     let lineHeight = this.lineHeight;
-    let increasedHeight = lineHeight;
+    let increase = lineHeight;
     let hasReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
@@ -52,11 +52,16 @@ class LineBox {
         let n = item.baseline;
         if(n !== baseline) {
           let d = baseline - n;
-          item.__offsetY(d);
+          if(isVertical) {
+            item.__offsetX(d);
+          }
+          else {
+            item.__offsetY(d);
+          }
           // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
           // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
           if(d > 0) {
-            increasedHeight = Math.max(increasedHeight, item.height + d);
+            increase = Math.max(increase, (isVertical ? item.width : item.height) + d);
           }
         }
       });
@@ -68,14 +73,29 @@ class LineBox {
       diff = this.__lineHeight - this.__baseline;
     }
     // 增加过的高度比最大还大时需要调整
-    if(increasedHeight > lineHeight) {
-      diff = Math.max(increasedHeight - lineHeight);
+    if(increase > lineHeight) {
+      diff = Math.max(increase - lineHeight);
     }
     return diff;
   }
 
-  __offsetX(diff) {
+  __offsetX(diff, isVerticalAlign) {
     this.__x += diff;
+    // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
+    if(isVerticalAlign) {
+      this.list.forEach(item => {
+        // 是text的第一个的box的话，text也需要偏移
+        if(item instanceof TextBox) {
+          let text = item.parent;
+          if(text.textBoxes[0] === item) {
+            text.__offsetX(diff);
+          }
+        }
+        else {
+          item.__offsetX(diff);
+        }
+      });
+    }
   }
 
   __offsetY(diff, isVerticalAlign) {
@@ -140,6 +160,10 @@ class LineBox {
 
   get y() {
     return this.__y;
+  }
+
+  get endX() {
+    return this.x + this.width;
   }
 
   get endY() {

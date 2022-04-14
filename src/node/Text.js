@@ -193,7 +193,7 @@ class Text extends Node {
     if(__cache) {
       __cache.release();
     }
-    let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
+    let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isVertical = false } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, textBoxes, root } = this;
@@ -216,9 +216,7 @@ class Text extends Node {
       [FONT_SIZE]: fontSize,
       [FONT_WEIGHT]: fontWeight,
       [FONT_FAMILY]: fontFamily,
-      [WRITING_MODE]: writingMode,
     } = computedStyle;
-    let isVertical = writingMode.indexOf('vertical') === 0;
     let size = isVertical ? h : w;
     let beginSpace = isVertical ? (y - ly) : (x - lx); // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
     // 基于最近block父节点的样式
@@ -571,22 +569,30 @@ class Text extends Node {
     return w - this.firstCharWidth;
   }
 
-  __inlineSize() {
-    let minX, maxX;
+  __inlineSize(isVertical) {
+    let min, max;
     this.textBoxes.forEach((item, i) => {
       if(i) {
-        minX = Math.min(minX, item.x);
-        maxX = Math.max(maxX, item.x + item.width);
+        min = Math.min(min, isVertical ? item.y : item.x);
+        max = Math.max(max, i(sVertical ? item.y : item.x) + item.width);
       }
       else {
-        minX = item.x;
-        maxX = item.x + item.width;
+        min = isVertical ? item.y : item.x;
+        max = (isVertical ? item.y : item.x) + item.width;
       }
     });
-    this.__x = minX;
-    this.__sx = this.__sx1 = minX + this.ox;
-    this.__sy = this.__sy1;
-    this.__width = maxX - minX;
+    if(isVertical) {
+      this.__y = min;
+      this.__sy = this.__sy1 = min + this.oy;
+      this.__sx = this.__sx1;
+      this.height = max - min;
+    }
+    else {
+      this.__x = min;
+      this.__sx = this.__sx1 = min + this.ox;
+      this.__sy = this.__sy1;
+      this.__width = max - min;
+    }
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {

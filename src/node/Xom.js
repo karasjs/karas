@@ -841,19 +841,33 @@ class Xom extends Node {
   }
 
   // 处理margin:xx auto居中对齐或右对齐
-  __marginAuto(style, data) {
+  __marginAuto(style, data, isVertical) {
     let {
       [POSITION]: position,
       [DISPLAY]: display,
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_BOTTOM]: marginBottom,
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_RIGHT]: marginRight,
       [WIDTH]: width,
+      [HEIGHT]: height,
     } = style;
-    if(position !== 'absolute' && (display === 'block' || display === 'flex')
-      && (width[1] !== AUTO || this.isReplaced) && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
-      let ow = this.outerWidth;
-      if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5, true);
+    if(position !== 'absolute' && (display === 'block' || display === 'flex')) {
+      if(isVertical) {
+        if((height[1] !== AUTO || this.isReplaced) && marginTop[1] === AUTO && marginBottom[1] === AUTO) {
+          let oh = this.outerHeight;
+          if(oh < data.h) {
+            this.__offsetY((data.h - oh) * 0.5, true);
+          }
+        }
+      }
+      else {
+        if((width[1] !== AUTO || this.isReplaced) && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
+          let ow = this.outerWidth;
+          if(ow < data.w) {
+            this.__offsetX((data.w - ow) * 0.5, true);
+          }
+        }
       }
     }
   }

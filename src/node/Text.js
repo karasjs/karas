@@ -574,7 +574,7 @@ class Text extends Node {
     this.textBoxes.forEach((item, i) => {
       if(i) {
         min = Math.min(min, isVertical ? item.y : item.x);
-        max = Math.max(max, i(sVertical ? item.y : item.x) + item.width);
+        max = Math.max(max, (isVertical ? item.y : item.x) + item.width);
       }
       else {
         min = isVertical ? item.y : item.x;

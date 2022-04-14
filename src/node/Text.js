@@ -121,11 +121,12 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
       newLine = true;
       break;
     }
-    // 超出，设置右边界，并根据余量推测减少个数，精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
+    // 超出，设置右边界，并根据余量推测减少个数，
+    // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
     if(mw > w + (1e-10)) {
       newLine = true;
       // 限制至少1个
-      if(i === start) {
+      if(i === start && hypotheticalNum === 1) {
         rw = mw;
         break;
       }

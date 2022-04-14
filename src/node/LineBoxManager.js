@@ -121,19 +121,19 @@ class LineBoxManager {
           diff *= 0.5;
         }
         if(isVertical) {
-          lineBox.__offsetY(diff);
+          lineBox.__offsetY(diff, true);
         }
         else {
-          lineBox.__offsetX(diff);
+          lineBox.__offsetX(diff, true);
         }
-        lineBox.list.forEach(item => {
-          if(isVertical) {
-            item.__offsetY(diff, true);
-          }
-          else {
-            item.__offsetX(diff, true);
-          }
-        });
+        // lineBox.list.forEach(item => {
+        //   if(isVertical) {
+        //     item.__offsetY(diff, true);
+        //   }
+        //   else {
+        //     item.__offsetX(diff, true);
+        //   }
+        // });
       }
     });
   }

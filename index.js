@@ -14085,13 +14085,14 @@
         rw = w;
         newLine = true;
         break;
-      } // 超出，设置右边界，并根据余量推测减少个数，精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
+      } // 超出，设置右边界，并根据余量推测减少个数，
+      // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
 
 
       if (_mw > w + 1e-10) {
         newLine = true; // 限制至少1个
 
-        if (i === start) {
+        if (i === start && hypotheticalNum === 1) {
           rw = _mw;
           break;
         } // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
@@ -23487,41 +23488,23 @@
       }
     }, {
       key: "__offsetX",
-      value: function __offsetX(diff, isVerticalAlign) {
-        this.__x += diff; // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
+      value: function __offsetX(diff, isAlign) {
+        this.__x += diff; // vertical-align或水平情况特殊对齐，可能替换元素img和text导致偏移
 
-        if (isVerticalAlign) {
+        if (isAlign) {
           this.list.forEach(function (item) {
-            // 是text的第一个的box的话，text也需要偏移，非第一个防止重复多次
-            if (item instanceof TextBox) {
-              var text = item.parent;
-
-              if (text.textBoxes[0] === item) {
-                text.__offsetX(diff, true);
-              }
-            } else {
-              item.__offsetX(diff, true);
-            }
+            item.__offsetX(diff, true);
           });
         }
       }
     }, {
       key: "__offsetY",
-      value: function __offsetY(diff, isVerticalAlign) {
-        this.__y += diff; // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
+      value: function __offsetY(diff, isAlign) {
+        this.__y += diff; // vertical-align情况或水平特殊对齐，可能替换元素img和textBox导致偏移
 
-        if (isVerticalAlign) {
+        if (isAlign) {
           this.list.forEach(function (item) {
-            // 是text的第一个的box的话，text也需要偏移，非第一个防止重复多次
-            if (item instanceof TextBox) {
-              var text = item.parent;
-
-              if (text.textBoxes[0] === item) {
-                text.__offsetY(diff, true);
-              }
-            } else {
-              item.__offsetY(diff, true);
-            }
+            item.__offsetY(diff, true);
           });
         }
       }
@@ -23834,18 +23817,18 @@
             }
 
             if (isVertical) {
-              lineBox.__offsetY(diff);
+              lineBox.__offsetY(diff, true);
             } else {
-              lineBox.__offsetX(diff);
-            }
+              lineBox.__offsetX(diff, true);
+            } // lineBox.list.forEach(item => {
+            //   if(isVertical) {
+            //     item.__offsetY(diff, true);
+            //   }
+            //   else {
+            //     item.__offsetX(diff, true);
+            //   }
+            // });
 
-            lineBox.list.forEach(function (item) {
-              if (isVertical) {
-                item.__offsetY(diff, true);
-              } else {
-                item.__offsetX(diff, true);
-              }
-            });
           }
         });
       }

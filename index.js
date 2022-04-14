@@ -25555,46 +25555,48 @@
         var tw = this.__width = fixedWidth || !isAbs && !isVertical ? w : isVertical ? x - data.x : maxSize;
         var th = this.__height = fixedHeight || !isAbs && isVertical ? h : isVertical ? maxSize : y - data.y;
 
-        this.__ioSize(tw, th); // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
+        this.__ioSize(tw, th); // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
 
 
-        var spread = lineBoxManager.verticalAlign(isVertical);
+        if (!isAbs) {
+          var spread = lineBoxManager.verticalAlign(isVertical);
 
-        if (spread) {
-          if (!fixedHeight) {
-            this.__resizeY(spread);
-          }
-          /**
-           * parent以及parent的next无需处理，因为深度遍历后面还会进行，
-           * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
-           * 同时由于block和inline区域可能不连续，每个增加的y不一样，
-           * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
-           */
-
-
-          var count = 0,
-              spreadList = lineBoxManager.spreadList;
-          var isLastBlock = false;
-          flowChildren.forEach(function (item) {
-            var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-            var isBlock = isXom && item.computedStyle[DISPLAY$5] === 'block';
-
-            if (isBlock) {
-              isLastBlock = true;
-
-              if (isVertical) {
-                item.__offsetX(spreadList[count], true);
-              } else {
-                item.__offsetY(spreadList[count], true);
-              }
-            } else {
-              if (isLastBlock) {
-                count++;
-              }
-
-              isLastBlock = false;
+          if (spread) {
+            if (!fixedHeight) {
+              this.__resizeY(spread);
             }
-          });
+            /**
+             * parent以及parent的next无需处理，因为深度遍历后面还会进行，
+             * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
+             * 同时由于block和inline区域可能不连续，每个增加的y不一样，
+             * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
+             */
+
+
+            var count = 0,
+                spreadList = lineBoxManager.spreadList;
+            var isLastBlock = false;
+            flowChildren.forEach(function (item) {
+              var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
+              var isBlock = isXom && item.computedStyle[DISPLAY$5] === 'block';
+
+              if (isBlock) {
+                isLastBlock = true;
+
+                if (isVertical) {
+                  item.__offsetX(spreadList[count], true);
+                } else {
+                  item.__offsetY(spreadList[count], true);
+                }
+              } else {
+                if (isLastBlock) {
+                  count++;
+                }
+
+                isLastBlock = false;
+              }
+            });
+          }
         } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
@@ -25667,7 +25669,8 @@
             alignContent = computedStyle[ALIGN_CONTENT$1],
             lineHeight = computedStyle[LINE_HEIGHT$5],
             textAlign = computedStyle[TEXT_ALIGN$3],
-            writingMode = computedStyle[WRITING_MODE$3]; // 只有>=1的正整数才有效
+            writingMode = computedStyle[WRITING_MODE$3];
+        var isVertical = writingMode.indexOf('vertical') === 0; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
@@ -25707,16 +25710,10 @@
           } // 文本
           else {
             growList.push(0);
-            shrinkList.push(1);
+            shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都假布局，其它取文本最大最小宽度即可
 
-            if (isDirectionRow) {
-              var cw = item.charWidth;
-              var _tw = item.textWidth;
-              basisList.push(_tw);
-              maxList.push(_tw);
-              minList.push(cw);
-            } else {
-              var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+            if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
+              var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
 
               item.__layout({
                 x: x,
@@ -25725,13 +25722,20 @@
                 h: h,
                 lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
-                lineClampCount: lineClampCount
+                lineClampCount: lineClampCount,
+                isVertical: isVertical
               }, isAbs, isColumn);
 
-              var hh = item.height;
-              basisList.push(hh);
-              maxList.push(hh);
-              minList.push(hh);
+              var n = isVertical ? item.width : item.height;
+              basisList.push(n);
+              maxList.push(n);
+              minList.push(n);
+            } else {
+              var cw = item.charWidth;
+              var _tw = item.textWidth;
+              basisList.push(_tw);
+              maxList.push(_tw);
+              minList.push(cw);
             }
           }
         });
@@ -25803,7 +25807,7 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this3$__layoutFlexLi = _this3.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+          var _this3$__layoutFlexLi = _this3.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
               _this3$__layoutFlexLi2 = _slicedToArray(_this3$__layoutFlexLi, 3),
               x1 = _this3$__layoutFlexLi2[0],
               y1 = _this3$__layoutFlexLi2[1],
@@ -26032,7 +26036,7 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
         var _this4 = this;
 
         var x = data.x,
@@ -26244,7 +26248,8 @@
                 }, isAbs, isColumn);
               }
             }
-          } else {
+          } // 文字
+          else {
             var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
             lbmList.push(lineBoxManager);
 
@@ -26255,7 +26260,8 @@
               h: isDirectionRow ? h : main,
               lineBoxManager: lineBoxManager,
               lineClamp: lineClamp,
-              lineClampCount: lineClampCount
+              lineClampCount: lineClampCount,
+              isVertical: isVertical
             }, isAbs, isDirectionRow);
           }
 

@@ -1147,39 +1147,41 @@ class Dom extends Xom {
     let tw = this.__width = (fixedWidth || !isAbs && !isVertical) ? w : (isVertical ? (x - data.x) : maxSize);
     let th = this.__height = (fixedHeight || !isAbs && isVertical) ? h : (isVertical ? maxSize : (y - data.y));
     this.__ioSize(tw, th);
-    // 不管是否虚拟，都需要垂直对齐，因为img这种占位元素会影响lineBox高度
-    let spread = lineBoxManager.verticalAlign(isVertical);
-    if(spread) {
-      if(!fixedHeight) {
-        this.__resizeY(spread);
-      }
-      /**
-       * parent以及parent的next无需处理，因为深度遍历后面还会进行，
-       * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
-       * 同时由于block和inline区域可能不连续，每个增加的y不一样，
-       * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
-       */
-      let count = 0, spreadList = lineBoxManager.spreadList;
-      let isLastBlock = false;
-      flowChildren.forEach(item => {
-        let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
-        let isBlock = isXom && item.computedStyle[DISPLAY] === 'block';
-        if(isBlock) {
-          isLastBlock = true;
-          if(isVertical) {
-            item.__offsetX(spreadList[count], true);
+    // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
+    if(!isAbs) {
+      let spread = lineBoxManager.verticalAlign(isVertical);
+      if(spread) {
+        if(!fixedHeight) {
+          this.__resizeY(spread);
+        }
+        /**
+         * parent以及parent的next无需处理，因为深度遍历后面还会进行，
+         * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
+         * 同时由于block和inline区域可能不连续，每个增加的y不一样，
+         * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
+         */
+        let count = 0, spreadList = lineBoxManager.spreadList;
+        let isLastBlock = false;
+        flowChildren.forEach(item => {
+          let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
+          let isBlock = isXom && item.computedStyle[DISPLAY] === 'block';
+          if(isBlock) {
+            isLastBlock = true;
+            if(isVertical) {
+              item.__offsetX(spreadList[count], true);
+            }
+            else {
+              item.__offsetY(spreadList[count], true);
+            }
           }
           else {
-            item.__offsetY(spreadList[count], true);
+            if(isLastBlock) {
+              count++;
+            }
+            isLastBlock = false;
           }
-        }
-        else {
-          if(isLastBlock) {
-            count++;
-          }
-          isLastBlock = false;
-        }
-      });
+        });
+      }
     }
     // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isAbs && !isColumn) {
@@ -1231,6 +1233,7 @@ class Dom extends Xom {
       [TEXT_ALIGN]: textAlign,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     // 只有>=1的正整数才有效
     lineClamp = lineClamp || 0;
     let lineClampCount = 0;
@@ -1259,15 +1262,9 @@ class Dom extends Xom {
       else {
         growList.push(0);
         shrinkList.push(1);
-        if(isDirectionRow) {
-          let cw = item.charWidth;
-          let tw = item.textWidth;
-          basisList.push(tw);
-          maxList.push(tw);
-          minList.push(cw);
-        }
-        else {
-          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+        // 水平flex垂直文字和垂直flex水平文字都假布局，其它取文本最大最小宽度即可
+        if(isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
           item.__layout({
             x,
             y,
@@ -1276,11 +1273,19 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
+            isVertical,
           }, isAbs, isColumn);
-          let hh = item.height;
-          basisList.push(hh);
-          maxList.push(hh);
-          minList.push(hh);
+          let n = isVertical ? item.width: item.height;
+          basisList.push(n);
+          maxList.push(n);
+          minList.push(n);
+        }
+        else {
+          let cw = item.charWidth;
+          let tw = item.textWidth;
+          basisList.push(tw);
+          maxList.push(tw);
+          minList.push(cw);
         }
       }
     });
@@ -1337,8 +1342,8 @@ class Dom extends Xom {
     __flexLine.forEach(item => {
       let length = item.length;
       let end = offset + length;
-      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, containerSize,
-        fixedWidth, fixedHeight, lineClamp, lineClampCount,
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isVertical,
+        containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount,
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
@@ -1546,8 +1551,8 @@ class Dom extends Xom {
    * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
    * 先收集basis和假设主尺寸
    */
-  __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, containerSize,
-                   fixedWidth, fixedHeight, lineClamp, lineClampCount,
+  __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isVertical,
+                   containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    lineHeight, computedStyle, justifyContent, alignItems,
                    orderChildren, flexLine, textAlign,
                    growList, shrinkList, basisList, hypotheticalList, minList) {
@@ -1739,6 +1744,7 @@ class Dom extends Xom {
           }
         }
       }
+      // 文字
       else {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
         lbmList.push(lineBoxManager);
@@ -1750,6 +1756,7 @@ class Dom extends Xom {
           lineBoxManager,
           lineClamp,
           lineClampCount,
+          isVertical,
         }, isAbs, isDirectionRow);
       }
       if(isDirectionRow) {

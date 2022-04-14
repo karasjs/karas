@@ -126,14 +126,6 @@ class LineBoxManager {
         else {
           lineBox.__offsetX(diff, true);
         }
-        // lineBox.list.forEach(item => {
-        //   if(isVertical) {
-        //     item.__offsetY(diff, true);
-        //   }
-        //   else {
-        //     item.__offsetX(diff, true);
-        //   }
-        // });
       }
     });
   }
@@ -164,6 +156,10 @@ class LineBoxManager {
 
   addX(n) {
     this.__lastX += n;
+  }
+
+  addY(n) {
+    this.__lastY += n;
   }
 
   /**

@@ -23820,15 +23820,7 @@
               lineBox.__offsetY(diff, true);
             } else {
               lineBox.__offsetX(diff, true);
-            } // lineBox.list.forEach(item => {
-            //   if(isVertical) {
-            //     item.__offsetY(diff, true);
-            //   }
-            //   else {
-            //     item.__offsetX(diff, true);
-            //   }
-            // });
-
+            }
           }
         });
       }
@@ -23862,6 +23854,11 @@
       key: "addX",
       value: function addX(n) {
         this.__lastX += n;
+      }
+    }, {
+      key: "addY",
+      value: function addY(n) {
+        this.__lastY += n;
       }
       /**
        * inline递归过程中布局调用，不断出入栈dom对象，获取当前行状态下有哪些dom还在
@@ -25079,7 +25076,11 @@
               var diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
 
               if (diff) {
-                y += diff;
+                if (isVertical) {
+                  x += diff;
+                } else {
+                  y += diff;
+                }
               }
             }
 
@@ -26242,7 +26243,7 @@
             }
           } // 文字
           else {
-            var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle));
+            var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
             lbmList.push(lineBoxManager);
 
             item.__layout({
@@ -26577,10 +26578,16 @@
             whiteSpace = computedStyle[WHITE_SPACE$3],
             lineClamp = computedStyle[LINE_CLAMP$2],
             lineHeight = computedStyle[LINE_HEIGHT$5],
+            marginTop = computedStyle[MARGIN_TOP$2],
+            marginBottom = computedStyle[MARGIN_BOTTOM$2],
             marginLeft = computedStyle[MARGIN_LEFT$4],
             marginRight = computedStyle[MARGIN_RIGHT$4],
+            borderTopWidth = computedStyle[BORDER_TOP_WIDTH$3],
+            borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$3],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
+            paddingTop = computedStyle[PADDING_TOP$3],
+            paddingBottom = computedStyle[PADDING_BOTTOM$3],
             paddingLeft = computedStyle[PADDING_LEFT$5],
             paddingRight = computedStyle[PADDING_RIGHT$4],
             writingMode = computedStyle[WRITING_MODE$3];
@@ -26598,7 +26605,7 @@
           this.__lineBoxManager = lineBoxManager;
           var baseline = css.getBaseline(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
 
-          if (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth) {
+          if (isVertical && (marginTop || marginBottom || paddingTop || paddingBottom || borderTopWidth || borderBottomWidth) || !isVertical && (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth)) {
             if (lineBoxManager.isNewLine) {
               lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseline);
             } else {
@@ -26612,6 +26619,7 @@
         } else {
           lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
           lx = x;
+          ly = y;
           endSpace = selfEndSpace = lineClampCount = 0;
         } // 存LineBox里的内容列表专用，布局过程中由lineBoxManager存入，递归情况每个inline节点都保存contentBox
 
@@ -26689,10 +26697,22 @@
               }
 
               if (item.__isIbFull && whiteSpace !== 'nowrap') {
-                w[1] === AUTO$5 && (isIbFull = true);
+                if (isVertical && h[1] === AUTO$5) {
+                  isIbFull = true;
+                } else if (!isVertical && w[1] === AUTO$5) {
+                  isIbFull = true;
+                }
+
                 lineBoxManager.addItem(item, true);
-                x = lx;
-                y += item.outerHeight;
+
+                if (isVertical) {
+                  x += item.outerWidth;
+                  y = ly;
+                } else {
+                  x = lx;
+                  y += item.outerHeight;
+                }
+
                 lineBoxManager.setNotEnd();
               } // inline和不折行的ib，其中ib需要手动存入当前lb中，以计算宽度
               else {
@@ -26701,17 +26721,17 @@
                 y = lineBoxManager.lastY;
               }
 
-              if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
+              if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isVertical && y - ly > h + 1e-10 || !isVertical && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
                 ignoreNextWrap = true;
               } else if (lineClamp && lineClampCount >= lineClamp) {
                 ignoreNextLine = true;
               }
             } else {
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-              var fw = item.__tryLayInline(w - x + lx - endSpace, w); // 放得下继续
+              var free = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x, isVertical ? h : w, isVertical); // 放得下继续
 
 
-              if (fw >= -1e-10) {
+              if (free >= -1e-10) {
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,
@@ -26723,21 +26743,27 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn);
-
-                if (lineClamp && lineClampCount >= lineClamp) {
-                  ignoreNextLine = true;
-                } // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
-
+                }, isAbs, isColumn); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                 (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item, false);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
+
+                if (lineClamp && lineClampCount >= lineClamp) {
+                  ignoreNextLine = true;
+                }
               } // 放不下处理之前的lineBox，并重新开头
               else {
                 lineClampCount++;
-                x = lx;
-                y = lineBoxManager.endY;
+
+                if (isVertical) {
+                  x = lineBoxManager.endX;
+                  y = ly;
+                } else {
+                  x = lx;
+                  y = lineBoxManager.endY;
+                }
+
                 lineBoxManager.setNewLine(); // 可能超行了，无需继续，并且进行回溯
 
                 if (lineClamp && lineClampCount >= lineClamp) {
@@ -26765,8 +26791,15 @@
 
                 if (item.__isIbFull) {
                   lineBoxManager.addItem(item, true);
-                  x = lx;
-                  y += item.outerHeight;
+
+                  if (isVertical) {
+                    x += item.outerWidth;
+                    y = ly;
+                  } else {
+                    x = lx;
+                    y += item.outerHeight;
+                  }
+
                   lineBoxManager.setNotEnd();
                   lineClampCount++;
                 } // inline和不折行的ib，其中ib需要手动存入当前lb中
@@ -26807,17 +26840,17 @@
                 isIbFull = true;
               }
 
-              if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
+              if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isVertical && y - ly > h + 1e-10 || !isVertical && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
                 ignoreNextWrap = true;
               } else if (lineClamp && lineClampCount >= lineClamp) {
                 ignoreNextLine = true;
               }
             } else {
               // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-              var _fw = item.__tryLayInline(w + lx - x - endSpace); // 放得下继续
+              var _free2 = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x, isVertical ? h : w, isVertical); // 放得下继续
 
 
-              if (_fw >= -1e-10) {
+              if (_free2 >= -1e-10) {
                 lineClampCount = item.__layout({
                   x: x,
                   y: y,
@@ -26841,8 +26874,15 @@
               } // 放不下处理之前的lineBox，并重新开头
               else {
                 lineClampCount++;
-                x = lx;
-                y = lineBoxManager.endY;
+
+                if (isVertical) {
+                  x = lineBoxManager.endX;
+                  y = ly;
+                } else {
+                  x = lx;
+                  y = lineBoxManager.endY;
+                }
+
                 lineBoxManager.setNewLine(); // 可能超行了，无需继续，并且进行回溯
 
                 if (lineClamp && lineClampCount >= lineClamp) {
@@ -26883,7 +26923,12 @@
           }
         }); // 同block结尾，不过这里一定是lineBox结束，无需判断
 
-        y = lineBoxManager.endY; // 标识ib情况同block一样占满行
+        if (isVertical) {
+          x = lineBoxManager.endX;
+        } else {
+          y = lineBoxManager.endY;
+        } // 标识ib情况同block一样占满行
+
 
         this.__isIbFull = isIbFull; // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸，inline没有固定尺寸概念
 
@@ -26892,28 +26937,42 @@
         if (isInline) {
           // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
           if (selfEndSpace) {
-            lineBoxManager.addX(selfEndSpace);
+            if (isVertical) {
+              lineBoxManager.addY(selfEndSpace);
+            } else {
+              lineBoxManager.addX(selfEndSpace);
+            }
           } // 如果没有内容，空白还要加上开头即左侧mpb
 
 
           if (!flowChildren.length) {
-            var _marginLeft3 = computedStyle[MARGIN_LEFT$4],
+            var _marginTop3 = computedStyle[MARGIN_TOP$2],
+                _marginLeft3 = computedStyle[MARGIN_LEFT$4],
+                _paddingTop2 = computedStyle[PADDING_TOP$3],
                 _paddingLeft2 = computedStyle[PADDING_LEFT$5],
+                _borderTopWidth2 = computedStyle[BORDER_TOP_WIDTH$3],
                 _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$5];
-            lineBoxManager.addX(_marginLeft3 + _paddingLeft2 + _borderLeftWidth2);
+
+            if (isVertical) {
+              lineBoxManager.addY(_marginTop3 + _paddingTop2 + _borderTopWidth2);
+            } else {
+              lineBoxManager.addX(_marginLeft3 + _paddingLeft2 + _borderLeftWidth2);
+            }
           } // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
 
 
           lineBoxManager.popContentBoxList(); // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，
-
-          if (isAbs) {
-            this.__inlineSize();
-          }
         } else {
-          // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用maxW
-          var maxW = lineBoxManager.max - (isVertical ? data.y : data.x);
-          tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, maxW) : maxW;
-          th = this.__height = fixedHeight ? h : y - data.y;
+          // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用max
+          var max = lineBoxManager.max - (isVertical ? data.y : data.x);
+
+          if (isVertical) {
+            tw = this.__width = fixedWidth ? w : x - data.x;
+            th = this.__height = fixedHeight ? h : isIbFull ? Math.max(h, max) : max;
+          } else {
+            tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, max) : max;
+            th = this.__height = fixedHeight ? h : y - data.y;
+          }
 
           this.__ioSize(tw, th);
         } // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
@@ -26923,7 +26982,7 @@
           lineBoxManager.verticalAlign();
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
+            lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
 
             flowChildren.forEach(function (item) {
               if (item instanceof Component$1) {
@@ -26931,14 +26990,14 @@
               }
 
               if (item instanceof Text) {
-                item.__inlineSize();
+                item.__inlineSize(isVertical);
               }
             });
           } // block的所有inline计算size
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(tw, textAlign);
+            item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
           });
         } // inlineBlock新开上下文，但父级block遇到要处理换行
 

@@ -1262,7 +1262,7 @@ class Dom extends Xom {
       else {
         growList.push(0);
         shrinkList.push(1);
-        // 水平flex垂直文字和垂直flex水平文字都假布局，其它取文本最大最小宽度即可
+        // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
         if(isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
           let lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
           item.__layout({
@@ -1280,6 +1280,7 @@ class Dom extends Xom {
           maxList.push(n);
           minList.push(n);
         }
+        // 水平flex水平文本和垂直flex垂直文本
         else {
           let cw = item.charWidth;
           let tw = item.textWidth;
@@ -1383,8 +1384,8 @@ class Dom extends Xom {
       this.__ioSize(tw);
       return;
     }
-    let tw = this.__width = w;
-    let th = this.__height = fixedHeight ? h : y - data.y;
+    let tw = this.__width = isVertical ? (x - data.x) : w;
+    let th = this.__height = (isVertical || fixedHeight) ? h : (y - data.y);
     this.__ioSize(tw, th);
     if(isColumn) {
       return;
@@ -1539,7 +1540,7 @@ class Dom extends Xom {
         }
         this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
       }
-      this.__marginAuto(currentStyle, data);
+      this.__marginAuto(currentStyle, data, isVertical);
     }
   }
 
@@ -1817,7 +1818,7 @@ class Dom extends Xom {
     // flex的直接text对齐比较特殊
     if(!isAbs && !isColumn && ['center', 'right'].indexOf(textAlign) > -1) {
       lbmList.forEach(item => {
-        item.horizonAlign(item.width, textAlign);
+        item.horizonAlign(isVertical? item.height : item.width, textAlign, isVertical);
       })
     }
     return [x, y, maxCross];

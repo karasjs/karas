@@ -113,17 +113,27 @@ class LineBoxManager {
     return lineBox;
   }
 
-  horizonAlign(w, textAlign) {
+  horizonAlign(size, textAlign, isVertical) {
     this.list.forEach(lineBox => {
-      let diff = w - lineBox.width;
+      let diff = size - (isVertical ? lineBox.height : lineBox.width);
       if(diff > 0) {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
-        lineBox.__offsetX(diff);
-        lineBox.list.forEach(item => {
-          item.__offsetX(diff, true);
-        });
+        if(isVertical) {
+          lineBox.__offsetY(diff, true);
+        }
+        else {
+          lineBox.__offsetX(diff, true);
+        }
+        // lineBox.list.forEach(item => {
+        //   if(isVertical) {
+        //     item.__offsetY(diff, true);
+        //   }
+        //   else {
+        //     item.__offsetX(diff, true);
+        //   }
+        // });
       }
     });
   }

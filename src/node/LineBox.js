@@ -84,7 +84,7 @@ class LineBox {
     // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
     if(isVerticalAlign) {
       this.list.forEach(item => {
-        // 是text的第一个的box的话，text也需要偏移
+        // 是text的第一个的box的话，text也需要偏移，非第一个防止重复多次
         if(item instanceof TextBox) {
           let text = item.parent;
           if(text.textBoxes[0] === item) {
@@ -103,7 +103,7 @@ class LineBox {
     // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
     if(isVerticalAlign) {
       this.list.forEach(item => {
-        // 是text的第一个的box的话，text也需要偏移
+        // 是text的第一个的box的话，text也需要偏移，非第一个防止重复多次
         if(item instanceof TextBox) {
           let text = item.parent;
           if(text.textBoxes[0] === item) {

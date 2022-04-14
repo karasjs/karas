@@ -23492,7 +23492,7 @@
 
         if (isVerticalAlign) {
           this.list.forEach(function (item) {
-            // 是text的第一个的box的话，text也需要偏移
+            // 是text的第一个的box的话，text也需要偏移，非第一个防止重复多次
             if (item instanceof TextBox) {
               var text = item.parent;
 
@@ -23512,7 +23512,7 @@
 
         if (isVerticalAlign) {
           this.list.forEach(function (item) {
-            // 是text的第一个的box的话，text也需要偏移
+            // 是text的第一个的box的话，text也需要偏移，非第一个防止重复多次
             if (item instanceof TextBox) {
               var text = item.parent;
 
@@ -23824,20 +23824,28 @@
       }
     }, {
       key: "horizonAlign",
-      value: function horizonAlign(w, textAlign) {
+      value: function horizonAlign(size, textAlign, isVertical) {
         this.list.forEach(function (lineBox) {
-          var diff = w - lineBox.width;
+          var diff = size - (isVertical ? lineBox.height : lineBox.width);
 
           if (diff > 0) {
             if (textAlign === 'center') {
               diff *= 0.5;
             }
 
-            lineBox.__offsetX(diff);
+            if (isVertical) {
+              lineBox.__offsetY(diff, true);
+            } else {
+              lineBox.__offsetX(diff, true);
+            } // lineBox.list.forEach(item => {
+            //   if(isVertical) {
+            //     item.__offsetY(diff, true);
+            //   }
+            //   else {
+            //     item.__offsetX(diff, true);
+            //   }
+            // });
 
-            lineBox.list.forEach(function (item) {
-              item.__offsetX(diff, true);
-            });
           }
         });
       }
@@ -25710,7 +25718,7 @@
           } // 文本
           else {
             growList.push(0);
-            shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都假布局，其它取文本最大最小宽度即可
+            shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
 
             if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
               var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
@@ -25730,7 +25738,8 @@
               basisList.push(n);
               maxList.push(n);
               minList.push(n);
-            } else {
+            } // 水平flex水平文本和垂直flex垂直文本
+            else {
               var cw = item.charWidth;
               var _tw = item.textWidth;
               basisList.push(_tw);
@@ -25854,8 +25863,8 @@
           return;
         }
 
-        var tw = this.__width = w;
-        var th = this.__height = fixedHeight ? h : y - data.y;
+        var tw = this.__width = isVertical ? x - data.x : w;
+        var th = this.__height = isVertical || fixedHeight ? h : y - data.y;
 
         this.__ioSize(tw, th);
 
@@ -26022,7 +26031,7 @@
             this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
           }
 
-          this.__marginAuto(currentStyle, data);
+          this.__marginAuto(currentStyle, data, isVertical);
         }
       }
       /**
@@ -26324,7 +26333,7 @@
 
         if (!isAbs && !isColumn && ['center', 'right'].indexOf(textAlign) > -1) {
           lbmList.forEach(function (item) {
-            item.horizonAlign(item.width, textAlign);
+            item.horizonAlign(isVertical ? item.height : item.width, textAlign, isVertical);
           });
         }
 

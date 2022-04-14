@@ -14079,7 +14079,7 @@
       if (_mw > w + 1e-10) {
         newLine = true; // 限制至少1个
 
-        if (i === start) {
+        if (i === start && hypotheticalNum === 1) {
           rw = _mw;
           break;
         } // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果

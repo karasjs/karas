@@ -14091,7 +14091,7 @@
       if (_mw > w + 1e-10) {
         newLine = true; // 限制至少1个
 
-        if (i === start) {
+        if (j === start) {
           rw = _mw;
           break;
         } // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
@@ -14681,8 +14681,8 @@
       }
     }, {
       key: "__tryLayInline",
-      value: function __tryLayInline(w) {
-        return w - this.firstCharWidth;
+      value: function __tryLayInline(total) {
+        return total - this.firstCharWidth;
       }
     }, {
       key: "__inlineSize",
@@ -23457,9 +23457,9 @@
               var d = baseline - n;
 
               if (isVertical) {
-                item.__offsetX(d);
+                item.__offsetX(d, true);
               } else {
-                item.__offsetY(d);
+                item.__offsetY(d, true);
               } // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
               // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
@@ -23497,10 +23497,10 @@
               var text = item.parent;
 
               if (text.textBoxes[0] === item) {
-                text.__offsetX(diff);
+                text.__offsetX(diff, true);
               }
             } else {
-              item.__offsetX(diff);
+              item.__offsetX(diff, true);
             }
           });
         }
@@ -23517,10 +23517,10 @@
               var text = item.parent;
 
               if (text.textBoxes[0] === item) {
-                text.__offsetY(diff);
+                text.__offsetY(diff, true);
               }
             } else {
-              item.__offsetY(diff);
+              item.__offsetY(diff, true);
             }
           });
         }
@@ -23834,18 +23834,18 @@
             }
 
             if (isVertical) {
-              lineBox.__offsetY(diff, true);
+              lineBox.__offsetY(diff);
             } else {
-              lineBox.__offsetX(diff, true);
-            } // lineBox.list.forEach(item => {
-            //   if(isVertical) {
-            //     item.__offsetY(diff, true);
-            //   }
-            //   else {
-            //     item.__offsetX(diff, true);
-            //   }
-            // });
+              lineBox.__offsetX(diff);
+            }
 
+            lineBox.list.forEach(function (item) {
+              if (isVertical) {
+                item.__offsetY(diff, true);
+              } else {
+                item.__offsetX(diff, true);
+              }
+            });
           }
         });
       }
@@ -25610,7 +25610,7 @@
 
         if (!isAbs && !isColumn) {
           if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(tw, textAlign); // 直接text需计算size
+            lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
 
             flowChildren.forEach(function (item) {
               if (item instanceof Component$1) {

@@ -53,10 +53,10 @@ class LineBox {
         if(n !== baseline) {
           let d = baseline - n;
           if(isVertical) {
-            item.__offsetX(d);
+            item.__offsetX(d, true);
           }
           else {
-            item.__offsetY(d);
+            item.__offsetY(d, true);
           }
           // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
           // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
@@ -88,11 +88,11 @@ class LineBox {
         if(item instanceof TextBox) {
           let text = item.parent;
           if(text.textBoxes[0] === item) {
-            text.__offsetX(diff);
+            text.__offsetX(diff, true);
           }
         }
         else {
-          item.__offsetX(diff);
+          item.__offsetX(diff, true);
         }
       });
     }
@@ -107,11 +107,11 @@ class LineBox {
         if(item instanceof TextBox) {
           let text = item.parent;
           if(text.textBoxes[0] === item) {
-            text.__offsetY(diff);
+            text.__offsetY(diff, true);
           }
         }
         else {
-          item.__offsetY(diff);
+          item.__offsetY(diff, true);
         }
       });
     }

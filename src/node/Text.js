@@ -125,7 +125,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     if(mw > w + (1e-10)) {
       newLine = true;
       // 限制至少1个
-      if(i === start) {
+      if(j === start) {
         rw = mw;
         break;
       }
@@ -565,8 +565,8 @@ class Text extends Node {
     this.__sy1 += diff;
   }
 
-  __tryLayInline(w) {
-    return w - this.firstCharWidth;
+  __tryLayInline(total) {
+    return total - this.firstCharWidth;
   }
 
   __inlineSize(isVertical) {

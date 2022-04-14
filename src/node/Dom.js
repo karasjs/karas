@@ -1186,7 +1186,7 @@ class Dom extends Xom {
     // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
     if(!isAbs && !isColumn) {
       if(['center', 'right'].indexOf(textAlign) > -1) {
-        lineBoxManager.horizonAlign(tw, textAlign);
+        lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
         // 直接text需计算size
         flowChildren.forEach(item => {
           if(item instanceof Component) {

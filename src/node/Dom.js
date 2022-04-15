@@ -534,6 +534,7 @@ class Dom extends Xom {
     let {
       [LINE_HEIGHT]: lineHeight,
       [DISPLAY]: display,
+      [LINE_CLAMP]: lineClamp,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
     let isVertical = writingMode.indexOf('vertical') === 0;
@@ -556,6 +557,7 @@ class Dom extends Xom {
       isContent = true;
     }
     let countMin = 0, countMax = 0;
+    lineClamp = lineClamp || 0;
     // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
     if(isDirectionRow) {
       // flex的item还是flex时
@@ -574,7 +576,22 @@ class Dom extends Xom {
               max = Math.max(max, max2);
             }
           }
+          // text除了flex还需要分辨垂直排版
           else {
+            if(isVertical) {
+              let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+              item.__layout({
+                x,
+                y,
+                w,
+                h,
+                lineBoxManager,
+                lineClamp,
+                isVertical,
+              }, isAbs, isColumn);
+              min += item.width;
+              max += item.width;
+            }
             if(isRow) {
               min += item.charWidth;
               max += item.textWidth;
@@ -588,7 +605,6 @@ class Dom extends Xom {
       }
       // flex的item是block/inline时，inline也会变成block统一对待
       else {
-        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h, lineBoxManager }, false);

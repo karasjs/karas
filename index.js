@@ -13990,7 +13990,6 @@
       BORDER_LEFT_WIDTH$1 = _enums$STYLE_KEY$8.BORDER_LEFT_WIDTH,
       BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$8.BORDER_RIGHT_WIDTH,
       FILTER$2 = _enums$STYLE_KEY$8.FILTER,
-      WRITING_MODE$1 = _enums$STYLE_KEY$8.WRITING_MODE,
       _enums$NODE_KEY$1 = enums.NODE_KEY,
       NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
       NODE_LIMIT_CACHE = _enums$NODE_KEY$1.NODE_LIMIT_CACHE,
@@ -14092,7 +14091,7 @@
       if (_mw > w + 1e-10) {
         newLine = true; // 限制至少1个
 
-        if (i === start && hypotheticalNum === 1) {
+        if (hypotheticalNum === 1) {
           rw = _mw;
           break;
         } // 注意特殊判断i和j就差1个可直接得出结果，因为现在超了而-1不超肯定是-1的结果
@@ -14285,10 +14284,15 @@
             lineCount++;
           } // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
           else {
-            var textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight, content);
+            var textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight, content, isVertical);
             textBoxes.push(textBox);
             lineBoxManager.addItem(textBox, false);
-            y += lineHeight;
+
+            if (isVertical) {
+              x += lineHeight;
+            } else {
+              y += lineHeight;
+            }
 
             if (isTextOverflow) {
               lineCount++;
@@ -14371,12 +14375,22 @@
 
 
           if (lineCount) {
-            this.__x = this.__sx1 = lx;
+            if (isVertical) {
+              this.__y = this.__sy1 = ly;
+            } else {
+              this.__x = this.__sx1 = lx;
+            }
           }
         }
 
-        this.__width = maxW;
-        this.__height = y - data.y;
+        if (isVertical) {
+          this.__width = x - data.x;
+          this.__height = maxW;
+        } else {
+          this.__width = maxW;
+          this.__height = y - data.y;
+        }
+
         this.__baseline = css.getBaseline(computedStyle);
         return lineClampCount + lineCount;
       }
@@ -20268,7 +20282,7 @@
       TEXT_ALIGN$2 = _enums$STYLE_KEY$d.TEXT_ALIGN,
       LETTER_SPACING$3 = _enums$STYLE_KEY$d.LETTER_SPACING,
       WHITE_SPACE$2 = _enums$STYLE_KEY$d.WHITE_SPACE,
-      WRITING_MODE$2 = _enums$STYLE_KEY$d.WRITING_MODE,
+      WRITING_MODE$1 = _enums$STYLE_KEY$d.WRITING_MODE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
@@ -20520,7 +20534,7 @@
             parent = this.domParent;
         var isRoot = !parent;
         var parentComputedStyle = parent && parent.computedStyle;
-        [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5, WRITING_MODE$2].forEach(function (k) {
+        [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5, WRITING_MODE$1].forEach(function (k) {
           var v = currentStyle[k]; // ff特殊处理
 
           if (k === FONT_FAMILY$5) {
@@ -20557,7 +20571,7 @@
           computedStyle[k] = currentStyle[k];
         }); // writingMode特殊判断inline
 
-        if (parentComputedStyle && computedStyle[WRITING_MODE$2] !== parentComputedStyle[WRITING_MODE$2] && computedStyle[DISPLAY$2] === 'inline') {
+        if (parentComputedStyle && computedStyle[WRITING_MODE$1] !== parentComputedStyle[WRITING_MODE$1] && computedStyle[DISPLAY$2] === 'inline') {
           computedStyle[DISPLAY$2] = 'inlineBlock';
         } // 匿名块对象
 
@@ -20707,7 +20721,7 @@
         this.__layoutData = {
           x: data.x,
           y: data.y,
-          w: data.w,
+          w: w,
           h: data.h,
           lx: data.lx
         }; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
@@ -20753,16 +20767,16 @@
         if (position !== 'absolute') {
           this.__mp(currentStyle, computedStyle, w);
         } // inline的width/height无效，其它有效
-
-
-        if (width[1] !== AUTO$3) {
-          if (this.__isRealInline() && computedStyle[DISPLAY$2] === 'inline') {
-            width[0] = 0;
-            width[1] = AUTO$3;
-          } else {
-            w = this.__calSize(width, w, true);
-          }
-        } // 只有inline会继承计算行数，其它都是原样返回
+        // if(width[1] !== AUTO) {
+        //   if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
+        //     width[0] = 0;
+        //     width[1] = AUTO;
+        //   }
+        //   else {
+        //     w = this.__calSize(width, w, true);
+        //   }
+        // }
+        // 只有inline会继承计算行数，其它都是原样返回
 
 
         var lineClampCount = data.lineClampCount || 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
@@ -20930,7 +20944,7 @@
             paddingRight = computedStyle[PADDING_RIGHT$2],
             paddingBottom = computedStyle[PADDING_BOTTOM$2],
             paddingLeft = computedStyle[PADDING_LEFT$3],
-            writingMode = computedStyle[WRITING_MODE$2];
+            writingMode = computedStyle[WRITING_MODE$1];
         var isVertical = writingMode.indexOf('vertical') === 0; // 除了auto外都是固定宽高度
 
         var fixedWidth;
@@ -21931,7 +21945,7 @@
             overflow = computedStyle[OVERFLOW$1],
             mixBlendMode = computedStyle[MIX_BLEND_MODE],
             backgroundClip = computedStyle[BACKGROUND_CLIP$2],
-            writingMode = computedStyle[WRITING_MODE$2]; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
+            writingMode = computedStyle[WRITING_MODE$1]; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
 
         if (cache && renderMode === CANVAS$3) {
           opacity = __config[NODE_OPACITY$1];
@@ -24310,7 +24324,7 @@
       FONT_SIZE$a = _enums$STYLE_KEY$g.FONT_SIZE,
       FONT_FAMILY$6 = _enums$STYLE_KEY$g.FONT_FAMILY,
       FONT_WEIGHT$6 = _enums$STYLE_KEY$g.FONT_WEIGHT,
-      WRITING_MODE$3 = _enums$STYLE_KEY$g.WRITING_MODE,
+      WRITING_MODE$2 = _enums$STYLE_KEY$g.WRITING_MODE,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
       NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
@@ -24845,6 +24859,8 @@
     }, {
       key: "__calBasis",
       value: function __calBasis(isDirectionRow, isAbs, isColumn, data, isDirectChild) {
+        var _this2 = this;
+
         this.__computeReflow();
 
         var b = 0;
@@ -24864,7 +24880,8 @@
             height = currentStyle[HEIGHT$5];
         var lineHeight = computedStyle[LINE_HEIGHT$5],
             display = computedStyle[DISPLAY$5],
-            writingMode = computedStyle[WRITING_MODE$3];
+            lineClamp = computedStyle[LINE_CLAMP$2],
+            writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0;
         var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
@@ -24884,7 +24901,8 @@
         }
 
         var countMin = 0,
-            countMax = 0; // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
+            countMax = 0;
+        lineClamp = lineClamp || 0; // row的flex时，child只需计算宽度的basis/min/max，递归下去也是如此，即便包含递归的flex
 
         if (isDirectionRow) {
           // flex的item还是flex时
@@ -24910,7 +24928,25 @@
                   min = Math.max(min, min2);
                   max = Math.max(max, max2);
                 }
-              } else {
+              } // text除了flex还需要分辨垂直排版
+              else {
+                if (isVertical) {
+                  var _lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+
+                  item.__layout({
+                    x: x,
+                    y: y,
+                    w: w,
+                    h: h,
+                    lineBoxManager: _lineBoxManager,
+                    lineClamp: lineClamp,
+                    isVertical: isVertical
+                  }, isAbs, isColumn);
+
+                  min += item.width;
+                  max += item.width;
+                }
+
                 if (isRow) {
                   min += item.charWidth;
                   max += item.textWidth;
@@ -24922,7 +24958,6 @@
             });
           } // flex的item是block/inline时，inline也会变成block统一对待
           else {
-            var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
                 var _item$__calBasis3 = item.__calBasis(isDirectionRow, isAbs, isColumn, {
@@ -25006,7 +25041,7 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data, isAbs, isColumn) {
-        var _this2 = this;
+        var _this3 = this;
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
@@ -25040,7 +25075,7 @@
             lineClamp = computedStyle[LINE_CLAMP$2],
             lineHeight = computedStyle[LINE_HEIGHT$5],
             overflow = computedStyle[OVERFLOW$2],
-            writingMode = computedStyle[WRITING_MODE$3];
+            writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
@@ -25216,7 +25251,7 @@
                     ignoreNextLine = true;
                     var list = lineBoxManager.list;
                     var lineBox = list[list.length - 1];
-                    backtrack(_this2, lineBoxManager, lineBox, isVertical ? h : w, 0);
+                    backtrack(_this3, lineBoxManager, lineBox, isVertical ? h : w, 0);
                     return;
                   }
 
@@ -25499,7 +25534,7 @@
                   ignoreNextLine = true;
                   var _list = lineBoxManager.list;
                   var _lineBox = _list[_list.length - 1];
-                  backtrack(_this2, lineBoxManager, _lineBox, isVertical ? h : w, 0);
+                  backtrack(_this3, lineBoxManager, _lineBox, isVertical ? h : w, 0);
                   return;
                 }
 
@@ -25619,7 +25654,7 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isAbs, isColumn) {
-        var _this3 = this;
+        var _this4 = this;
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
@@ -25661,7 +25696,7 @@
             alignContent = computedStyle[ALIGN_CONTENT$1],
             lineHeight = computedStyle[LINE_HEIGHT$5],
             textAlign = computedStyle[TEXT_ALIGN$3],
-            writingMode = computedStyle[WRITING_MODE$3];
+            writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
@@ -25705,14 +25740,14 @@
             shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
 
             if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
-              var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+              var _lineBoxManager2 = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
 
               item.__layout({
                 x: x,
                 y: y,
                 w: w,
                 h: h,
-                lineBoxManager: lineBoxManager,
+                lineBoxManager: _lineBoxManager2,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
                 isVertical: isVertical
@@ -25800,11 +25835,11 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this3$__layoutFlexLi = _this3.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
-              _this3$__layoutFlexLi2 = _slicedToArray(_this3$__layoutFlexLi, 3),
-              x1 = _this3$__layoutFlexLi2[0],
-              y1 = _this3$__layoutFlexLi2[1],
-              maxCross = _this3$__layoutFlexLi2[2]; // 下一行/列更新坐标
+          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+              _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 3),
+              x1 = _this4$__layoutFlexLi2[0],
+              y1 = _this4$__layoutFlexLi2[1],
+              maxCross = _this4$__layoutFlexLi2[2]; // 下一行/列更新坐标
 
 
           if (isDirectionRow) {
@@ -25999,7 +26034,7 @@
                 maxCross += per;
               }
 
-              _this3.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+              _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
             });
           } else if (length) {
             var maxCross = maxCrossList[0];
@@ -26030,7 +26065,7 @@
     }, {
       key: "__layoutFlexLine",
       value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
-        var _this4 = this;
+        var _this5 = this;
 
         var x = data.x,
             y = data.y,
@@ -26243,15 +26278,16 @@
             }
           } // 文字
           else {
-            var lineBoxManager = _this4.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
-            lbmList.push(lineBoxManager);
+            var _lineBoxManager3 = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+
+            lbmList.push(_lineBoxManager3);
 
             item.__layout({
               x: x,
               y: y,
               w: isDirectionRow ? main : w,
               h: isDirectionRow ? h : main,
-              lineBoxManager: lineBoxManager,
+              lineBoxManager: _lineBoxManager3,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
               isVertical: isVertical
@@ -26590,7 +26626,7 @@
             paddingBottom = computedStyle[PADDING_BOTTOM$3],
             paddingLeft = computedStyle[PADDING_LEFT$5],
             paddingRight = computedStyle[PADDING_RIGHT$4],
-            writingMode = computedStyle[WRITING_MODE$3];
+            writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0;
         var lineClampCount = data.lineClampCount || 0;
 
@@ -27193,7 +27229,7 @@
     }, {
       key: "__layoutAbs",
       value: function __layoutAbs(container, data, target) {
-        var _this5 = this;
+        var _this6 = this;
 
         var x = container.sx,
             y = container.sy,
@@ -27265,28 +27301,28 @@
 
           if (left[1] !== AUTO$5) {
             fixedLeft = true;
-            computedStyle[LEFT$1] = _this5.__calSize(left, clientWidth, true);
+            computedStyle[LEFT$1] = _this6.__calSize(left, clientWidth, true);
           } else {
             computedStyle[LEFT$1] = 'auto';
           }
 
           if (right[1] !== AUTO$5) {
             fixedRight = true;
-            computedStyle[RIGHT$1] = _this5.__calSize(right, clientWidth, true);
+            computedStyle[RIGHT$1] = _this6.__calSize(right, clientWidth, true);
           } else {
             computedStyle[RIGHT$1] = 'auto';
           }
 
           if (top[1] !== AUTO$5) {
             fixedTop = true;
-            computedStyle[TOP$3] = _this5.__calSize(top, clientHeight, true);
+            computedStyle[TOP$3] = _this6.__calSize(top, clientHeight, true);
           } else {
             computedStyle[TOP$3] = 'auto';
           }
 
           if (bottom[1] !== AUTO$5) {
             fixedBottom = true;
-            computedStyle[BOTTOM$3] = _this5.__calSize(bottom, clientHeight, true);
+            computedStyle[BOTTOM$3] = _this6.__calSize(bottom, clientHeight, true);
           } else {
             computedStyle[BOTTOM$3] = 'auto';
           } // 优先级最高left+right，其次left+width，再次right+width，再次仅申明单个，最次全部auto
@@ -27299,11 +27335,11 @@
             x2 = x + computedStyle[LEFT$1];
 
             if (width[1] !== AUTO$5) {
-              w2 = _this5.__calSize(width, clientWidth, true);
+              w2 = _this6.__calSize(width, clientWidth, true);
             }
           } else if (fixedRight) {
             if (width[1] !== AUTO$5) {
-              w2 = _this5.__calSize(width, clientWidth, true);
+              w2 = _this6.__calSize(width, clientWidth, true);
             } else {
               onlyRight = true;
             }
@@ -27320,7 +27356,7 @@
             x2 = x + paddingLeft;
 
             if (width[1] !== AUTO$5) {
-              w2 = _this5.__calSize(width, clientWidth, true);
+              w2 = _this6.__calSize(width, clientWidth, true);
             }
           } // top/bottom/height优先级同上
 
@@ -27332,11 +27368,11 @@
             y2 = y + computedStyle[TOP$3];
 
             if (height[1] !== AUTO$5) {
-              h2 = _this5.__calSize(height, clientHeight, true);
+              h2 = _this6.__calSize(height, clientHeight, true);
             }
           } else if (fixedBottom) {
             if (height[1] !== AUTO$5) {
-              h2 = _this5.__calSize(height, clientHeight, true);
+              h2 = _this6.__calSize(height, clientHeight, true);
             } else {
               onlyBottom = true;
             }
@@ -27365,7 +27401,7 @@
             }
 
             if (height[1] !== AUTO$5) {
-              h2 = _this5.__calSize(height, clientHeight, true);
+              h2 = _this6.__calSize(height, clientHeight, true);
             }
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 

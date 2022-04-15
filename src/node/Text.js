@@ -34,7 +34,6 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
     FILTER,
-    WRITING_MODE,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -126,7 +125,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     if(mw > w + (1e-10)) {
       newLine = true;
       // 限制至少1个
-      if(i === start && hypotheticalNum === 1) {
+      if(hypotheticalNum === 1) {
         rw = mw;
         break;
       }
@@ -267,10 +266,15 @@ class Text extends Node {
       // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
         let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
-          content);
+          content, isVertical);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false);
-        y += lineHeight;
+        if(isVertical) {
+          x += lineHeight;
+        }
+        else {
+          y += lineHeight;
+        }
         if(isTextOverflow) {
           lineCount++;
         }
@@ -332,11 +336,22 @@ class Text extends Node {
       }
       // 换行后Text的x重设为lx
       if(lineCount) {
-        this.__x = this.__sx1 = lx;
+        if(isVertical) {
+          this.__y = this.__sy1 = ly;
+        }
+        else {
+          this.__x = this.__sx1 = lx;
+        }
       }
     }
-    this.__width = maxW;
-    this.__height = y - data.y;
+    if(isVertical) {
+      this.__width = x - data.x;
+      this.__height = maxW;
+    }
+    else {
+      this.__width = maxW;
+      this.__height = y - data.y;
+    }
     this.__baseline = css.getBaseline(computedStyle);
     return lineClampCount + lineCount;
   }

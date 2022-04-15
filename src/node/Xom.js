@@ -594,16 +594,6 @@ class Xom extends Node {
     if(position !== 'absolute') {
       this.__mp(currentStyle, computedStyle, w);
     }
-    // inline的width/height无效，其它有效
-    // if(width[1] !== AUTO) {
-    //   if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
-    //     width[0] = 0;
-    //     width[1] = AUTO;
-    //   }
-    //   else {
-    //     w = this.__calSize(width, w, true);
-    //   }
-    // }
     // 只有inline会继承计算行数，其它都是原样返回
     let lineClampCount = data.lineClampCount || 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸

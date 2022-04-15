@@ -607,7 +607,7 @@ class Dom extends Xom {
       else {
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h, lineBoxManager }, false);
+            let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h }, false);
             let display = item.computedStyle[DISPLAY];
             // row看块级最大尺寸和连续行级最大尺寸的宽
             if(display === 'block' || display === 'flex') {

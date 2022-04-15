@@ -20766,17 +20766,7 @@
 
         if (position !== 'absolute') {
           this.__mp(currentStyle, computedStyle, w);
-        } // inline的width/height无效，其它有效
-        // if(width[1] !== AUTO) {
-        //   if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
-        //     width[0] = 0;
-        //     width[1] = AUTO;
-        //   }
-        //   else {
-        //     w = this.__calSize(width, w, true);
-        //   }
-        // }
-        // 只有inline会继承计算行数，其它都是原样返回
+        } // 只有inline会继承计算行数，其它都是原样返回
 
 
         var lineClampCount = data.lineClampCount || 0; // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
@@ -24931,14 +24921,14 @@
               } // text除了flex还需要分辨垂直排版
               else {
                 if (isVertical) {
-                  var _lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+                  var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
 
                   item.__layout({
                     x: x,
                     y: y,
                     w: w,
                     h: h,
-                    lineBoxManager: _lineBoxManager,
+                    lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
                     isVertical: isVertical
                   }, isAbs, isColumn);
@@ -24964,8 +24954,7 @@
                   x: x,
                   y: y,
                   w: w,
-                  h: h,
-                  lineBoxManager: lineBoxManager
+                  h: h
                 }, false),
                     _item$__calBasis4 = _slicedToArray(_item$__calBasis3, 3),
                     min2 = _item$__calBasis4[1],
@@ -25740,14 +25729,14 @@
             shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
 
             if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
-              var _lineBoxManager2 = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+              var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
 
               item.__layout({
                 x: x,
                 y: y,
                 w: w,
                 h: h,
-                lineBoxManager: _lineBoxManager2,
+                lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
                 isVertical: isVertical
@@ -26278,16 +26267,15 @@
             }
           } // 文字
           else {
-            var _lineBoxManager3 = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
-
-            lbmList.push(_lineBoxManager3);
+            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+            lbmList.push(lineBoxManager);
 
             item.__layout({
               x: x,
               y: y,
               w: isDirectionRow ? main : w,
               h: isDirectionRow ? h : main,
-              lineBoxManager: _lineBoxManager3,
+              lineBoxManager: lineBoxManager,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
               isVertical: isVertical

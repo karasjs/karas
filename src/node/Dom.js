@@ -2435,9 +2435,9 @@ class Dom extends Xom {
       }
       // 结束出栈contentBox，递归情况结束子inline获取contentBox，父inline继续
       lineBoxManager.popContentBoxList();
-      // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，
+      // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，这里无视textAlign默认left
       if(isAbs) {
-        // this.__inlineSize();
+        this.__inlineSize(0, 'left', isVertical);
       }
     }
     else {
@@ -2511,7 +2511,7 @@ class Dom extends Xom {
     }
     // x/clientX/offsetX/outerX
     let maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
-    let length = contentBoxList.length;
+    let length = contentBoxList.length;console.log(length);
     if(length) {
       // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行
       contentBoxList.forEach((item, i) => {
@@ -2586,7 +2586,7 @@ class Dom extends Xom {
       if(['center', 'right'].indexOf(textAlign) > -1) {
         this.children.forEach(item => {
           if(item instanceof Text) {
-            item.__inlineSize();
+            item.__inlineSize(isVertical);
           }
         });
       }
@@ -2599,7 +2599,7 @@ class Dom extends Xom {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
-        if(diff) {
+        if(diff > 0) {
           if(isVertical) {
             this.__offsetY(diff, true);
           }

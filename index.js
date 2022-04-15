@@ -25445,7 +25445,7 @@
               }
             } else {
               // 非开头先尝试是否放得下
-              var _free = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x, isVertical ? h : w, isVertical); // 放得下继续
+              var _free = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x); // 放得下继续
 
 
               if (_free >= -1e-10) {
@@ -26728,7 +26728,7 @@
               }
             } else {
               // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-              var free = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x, isVertical ? h : w, isVertical); // 放得下继续
+              var free = item.__tryLayInline(isVertical ? h + ly - y - endSpace : w + lx - x - endSpace, isVertical ? h : w, isVertical); // 放得下继续
 
 
               if (free >= -1e-10) {
@@ -26847,7 +26847,7 @@
               }
             } else {
               // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-              var _free2 = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x, isVertical ? h : w, isVertical); // 放得下继续
+              var _free2 = item.__tryLayInline(isVertical ? h + ly - y - endSpace : w + lx - x - endSpace); // 放得下继续
 
 
               if (_free2 >= -1e-10) {
@@ -27048,7 +27048,6 @@
 
         var maxX, maxY, minX, minY, maxCX, maxCY, minCX, minCY, maxFX, maxFY, minFX, minFY, maxOX, maxOY, minOX, minOY;
         var length = contentBoxList.length;
-        console.log(length);
 
         if (length) {
           // 遍历contentBox，里面存的是LineBox内容，根据父LineBox引用判断是否换行

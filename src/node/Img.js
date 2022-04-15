@@ -97,7 +97,7 @@ class Img extends Dom {
    * @private
    */
   __preLayout(data, isInline) {
-    let res = super.__preLayout(data, isInline);
+    let res = super.__preLayout(data, false);
     let loadImg = this.__loadImg;
     // 可能已提前加载好了，或有缓存，为减少刷新直接使用
     if(!loadImg.error) {

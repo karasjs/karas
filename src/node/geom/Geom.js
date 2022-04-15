@@ -133,8 +133,7 @@ class Geom extends Xom {
   }
 
   __layoutInline(data, isVirtual, isInline) {
-    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, isInline);
-    // 元素的width不能超过父元素w
+    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
     let tw = this.__width = fixedWidth ? w : x - data.x;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);

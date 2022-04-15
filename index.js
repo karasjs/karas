@@ -28045,7 +28045,7 @@
     _createClass(Img, [{
       key: "__preLayout",
       value: function __preLayout(data, isInline) {
-        var res = _get(_getPrototypeOf(Img.prototype), "__preLayout", this).call(this, data, isInline);
+        var res = _get(_getPrototypeOf(Img.prototype), "__preLayout", this).call(this, data, false);
 
         var loadImg = this.__loadImg; // 可能已提前加载好了，或有缓存，为减少刷新直接使用
 
@@ -28871,14 +28871,13 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data, isVirtual, isInline) {
-        var _this$__preLayout2 = this.__preLayout(data, isInline),
+        var _this$__preLayout2 = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout2.fixedWidth,
             fixedHeight = _this$__preLayout2.fixedHeight,
             x = _this$__preLayout2.x,
             y = _this$__preLayout2.y,
             w = _this$__preLayout2.w,
-            h = _this$__preLayout2.h; // 元素的width不能超过父元素w
-
+            h = _this$__preLayout2.h;
 
         var tw = this.__width = fixedWidth ? w : x - data.x;
         var th = this.__height = fixedHeight ? h : y - data.y;

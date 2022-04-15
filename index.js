@@ -1159,7 +1159,7 @@
 
       return '<' + vd.tagName + s + '/>';
     } else if (vd.type === 'text') {
-      var _s = ""; // text有许多lineBox
+      var _s = ''; // text有许多lineBox
 
       (vd.children || []).forEach(function (item) {
         _s += joinVd(item);
@@ -12929,9 +12929,13 @@
             fontSize = computedStyle[FONT_SIZE$4];
         var me = dom.matrixEvent,
             list;
+        var dev1 = 0,
+            dev2 = 0;
 
         if (isVertical) {
           list = [[ROTATE_Z$2, [90, DEG$2]]];
+          dev1 = (width - b) * 0.4;
+          dev2 = (width - b) * 0.2;
         }
 
         var i = 0,
@@ -12944,23 +12948,62 @@
             for (; i < length; i++) {
               var c = content.charAt(i);
 
-              if (overFill) {
-                ctx.fillText(c, x, y);
-              }
+              if (isVertical) {
+                var cjk = isCjk(c);
 
-              if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(c, x, y);
-              }
+                if (cjk) {
+                  ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
 
-              if (!overFill) {
-                ctx.fillText(c, x, y);
-              }
+                  if (overFill) {
+                    ctx.fillText(c, x + dev1, y - dev2);
+                  }
 
-              x += ctx.measureText(c).width + letterSpacing;
+                  if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                    ctx.strokeText(c, x + dev1, y - dev2);
+                  }
+
+                  if (!overFill) {
+                    ctx.fillText(c, x + dev1, y - dev2);
+                  }
+                } else {
+                  var tfo = [x + (width - b), y];
+                  var m = transform$1.calMatrixWithOrigin(list, tfo, 0, 0);
+                  m = mx.multiply(me, m);
+                  ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+
+                  if (overFill) {
+                    ctx.fillText(c, x + (width - b), y);
+                  }
+
+                  if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                    ctx.strokeText(c, x + (width - b), y);
+                  }
+
+                  if (!overFill) {
+                    ctx.fillText(c, x + (width - b), y);
+                  }
+                }
+
+                y += ctx.measureText(c).width + letterSpacing;
+              } else {
+                if (overFill) {
+                  ctx.fillText(c, x, y);
+                }
+
+                if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                  ctx.strokeText(c, x, y);
+                }
+
+                if (!overFill) {
+                  ctx.fillText(c, x, y);
+                }
+
+                x += ctx.measureText(c).width + letterSpacing;
+              }
             }
           } else {
             if (isVertical) {
-              var cjk = isCjk(content.charAt(0)),
+              var _cjk = isCjk(content.charAt(0)),
                   last = 0,
                   count = 0,
                   len = content.length;
@@ -12968,48 +13011,111 @@
               for (var _i = 1; _i < len; _i++) {
                 var nowCjk = isCjk(content.charAt(_i)); // 不相等时cjk发生变化，输出之前的内容，记录当下的所有
 
-                if (nowCjk !== cjk) {
-                  if (cjk) {
+                if (nowCjk !== _cjk) {
+                  if (_cjk) {
                     ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
-                    ctx.fillText(content.slice(last, _i), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+                    var s = content.slice(last, _i);
+
+                    if (overFill) {
+                      ctx.fillText(s, x + dev1, y + count + b - dev2);
+                    }
+
+                    if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                      ctx.strokeText(s, x + dev1, y + count + b - dev2);
+                    }
+
+                    if (!overFill) {
+                      ctx.fillText(s, x + dev1, y + count + b - dev2);
+                    }
+
                     count += fontSize;
                   } else {
-                    var tfo = [x + (width - b), y + count];
-                    var m = transform$1.calMatrixWithOrigin(list, tfo, 0, 0);
-                    m = mx.multiply(me, m);
-                    ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-                    var s = content.slice(last, _i);
-                    ctx.fillText(s, x + (width - b), y + count);
-                    count += ctx.measureText(s).width;
+                    var _tfo = [x + (width - b), y + count];
+
+                    var _m = transform$1.calMatrixWithOrigin(list, _tfo, 0, 0);
+
+                    _m = mx.multiply(me, _m);
+                    ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
+
+                    var _s = content.slice(last, _i);
+
+                    if (overFill) {
+                      ctx.fillText(_s, x + (width - b), y + count);
+                    }
+
+                    if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                      ctx.strokeText(_s, x + (width - b), y + count);
+                    }
+
+                    if (!overFill) {
+                      ctx.fillText(_s, x + (width - b), y + count);
+                    }
+
+                    count += ctx.measureText(_s).width;
                   }
 
                   last = _i;
-                  cjk = !cjk;
+                  _cjk = !_cjk;
                 } // cjk单字符输出
                 else if (nowCjk) {
                   ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
-                  ctx.fillText(content.slice(last, _i), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+
+                  var _s2 = content.slice(last, _i);
+
+                  if (overFill) {
+                    ctx.fillText(_s2, x + dev1, y + count + b - dev2);
+                  }
+
+                  if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                    ctx.strokeText(_s2, x + dev1, y + count + b - dev2);
+                  }
+
+                  if (!overFill) {
+                    ctx.fillText(_s2, x + dev1, y + count + b - dev2);
+                  }
+
                   count += fontSize;
                   last = _i;
                 }
               }
 
               if (last < len) {
-                // 最后的cjk只可能是一个字符
-                if (cjk) {
+                var _s3 = content.slice(last, len); // 最后的cjk只可能是一个字符
+
+
+                if (_cjk) {
                   ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
-                  ctx.fillText(content.slice(last, len), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+
+                  if (overFill) {
+                    ctx.fillText(_s3, x + dev1, y + count + b - dev2);
+                  }
+
+                  if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                    ctx.strokeText(_s3, x + dev1, y + count + b - dev2);
+                  }
+
+                  if (!overFill) {
+                    ctx.fillText(_s3, x + dev1, y + count + b - dev2);
+                  }
                 } else {
-                  var _tfo = [x + (width - b), y + count];
+                  var _tfo2 = [x + (width - b), y + count];
 
-                  var _m = transform$1.calMatrixWithOrigin(list, _tfo, 0, 0);
+                  var _m2 = transform$1.calMatrixWithOrigin(list, _tfo2, 0, 0);
 
-                  _m = mx.multiply(me, _m);
-                  ctx.setTransform(_m[0], _m[1], _m[4], _m[5], _m[12], _m[13]);
+                  _m2 = mx.multiply(me, _m2);
+                  ctx.setTransform(_m2[0], _m2[1], _m2[4], _m2[5], _m2[12], _m2[13]);
 
-                  var _s = content.slice(last, len);
+                  if (overFill) {
+                    ctx.fillText(_s3, x + (width - b), y + count);
+                  }
 
-                  ctx.fillText(_s, x + (width - b), y + count);
+                  if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                    ctx.strokeText(_s3, x + (width - b), y + count);
+                  }
+
+                  if (!overFill) {
+                    ctx.fillText(_s3, x + (width - b), y + count);
+                  }
                 }
               }
             } else {
@@ -13033,6 +13139,10 @@
             color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
           }
 
+          if (isVertical) {
+            x += fontSize * 0.5 + dev1;
+          }
+
           var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$4] + 'px']]; // svg无法定义stroke的over
 
           if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
@@ -13048,6 +13158,10 @@
 
           if (letterSpacing) {
             props.push(['letter-spacing', letterSpacing]);
+          }
+
+          if (isVertical) {
+            props.push(['writing-mode', 'vertical-lr']);
           }
 
           this.__virtualDom = {
@@ -25035,6 +25149,13 @@
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
+        var textAlign = computedStyle[TEXT_ALIGN$3],
+            whiteSpace = computedStyle[WHITE_SPACE$3],
+            lineClamp = computedStyle[LINE_CLAMP$2],
+            lineHeight = computedStyle[LINE_HEIGHT$5],
+            overflow = computedStyle[OVERFLOW$2],
+            writingMode = computedStyle[WRITING_MODE$2];
+        var isVertical = writingMode.indexOf('vertical') === 0;
 
         var _this$__preLayout = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout.fixedWidth,
@@ -25045,10 +25166,16 @@
             h = _this$__preLayout.h; // abs虚拟布局需预知width，固定可提前返回
 
 
-        if (isAbs && fixedWidth) {
-          this.__width = w;
+        if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
+          if (isVertical) {
+            this.__height = h;
 
-          this.__ioSize(w);
+            this.__ioSize(undefined, h);
+          } else {
+            this.__width = w;
+
+            this.__ioSize(w);
+          }
 
           return;
         }
@@ -25057,15 +25184,8 @@
           this.__height = h;
 
           this.__ioSize(undefined, h);
-        }
+        } // 只有>=1的正整数才有效
 
-        var textAlign = computedStyle[TEXT_ALIGN$3],
-            whiteSpace = computedStyle[WHITE_SPACE$3],
-            lineClamp = computedStyle[LINE_CLAMP$2],
-            lineHeight = computedStyle[LINE_HEIGHT$5],
-            overflow = computedStyle[OVERFLOW$2],
-            writingMode = computedStyle[WRITING_MODE$2];
-        var isVertical = writingMode.indexOf('vertical') === 0; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
@@ -25649,6 +25769,16 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             __flexLine = this.__flexLine;
+        var flexDirection = computedStyle[FLEX_DIRECTION$3],
+            justifyContent = computedStyle[JUSTIFY_CONTENT$2],
+            alignItems = computedStyle[ALIGN_ITEMS$2],
+            lineClamp = computedStyle[LINE_CLAMP$2],
+            flexWrap = computedStyle[FLEX_WRAP$2],
+            alignContent = computedStyle[ALIGN_CONTENT$1],
+            lineHeight = computedStyle[LINE_HEIGHT$5],
+            textAlign = computedStyle[TEXT_ALIGN$3],
+            writingMode = computedStyle[WRITING_MODE$2];
+        var isVertical = writingMode.indexOf('vertical') === 0;
 
         var _this$__preLayout2 = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout2.fixedWidth,
@@ -25658,10 +25788,16 @@
             w = _this$__preLayout2.w,
             h = _this$__preLayout2.h;
 
-        if (isAbs && fixedWidth) {
-          this.__width = w;
+        if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
+          if (isVertical) {
+            this.__height = h;
 
-          this.__ioSize(w);
+            this.__ioSize(undefined, h);
+          } else {
+            this.__width = w;
+
+            this.__ioSize(w);
+          }
 
           return;
         }
@@ -25675,18 +25811,8 @@
         } // 每次布局情况多行内容
 
 
-        __flexLine.splice(0);
+        __flexLine.splice(0); // 只有>=1的正整数才有效
 
-        var flexDirection = computedStyle[FLEX_DIRECTION$3],
-            justifyContent = computedStyle[JUSTIFY_CONTENT$2],
-            alignItems = computedStyle[ALIGN_ITEMS$2],
-            lineClamp = computedStyle[LINE_CLAMP$2],
-            flexWrap = computedStyle[FLEX_WRAP$2],
-            alignContent = computedStyle[ALIGN_CONTENT$1],
-            lineHeight = computedStyle[LINE_HEIGHT$5],
-            textAlign = computedStyle[TEXT_ALIGN$3],
-            writingMode = computedStyle[WRITING_MODE$2];
-        var isVertical = writingMode.indexOf('vertical') === 0; // 只有>=1的正整数才有效
 
         lineClamp = lineClamp || 0;
         var lineClampCount = 0;
@@ -25845,28 +25971,42 @@
 
 
         if (isAbs) {
-          var maxW = 0;
+          var max = 0;
 
           __flexLine.forEach(function (line) {
             var count = 0;
             line.forEach(function (item) {
               if (isDirectionRow) {
-                count += item.outerWidth;
+                count += isVertical ? item.outerHeight : item.outerWidth;
               } else {
-                count = Math.max(count, item.outerWidth);
+                count = Math.max(count, isVertical ? item.outerHeight : item.outerWidth);
               } // 文字发生换行无论row/column一定放不下需占满容器尺寸
 
 
-              if (item instanceof Text && item.textWidth > w) {
-                maxW = Math.max(maxW, w);
+              if (item instanceof Text) {
+                if (isVertical) {
+                  if (item.textWidth > h) {
+                    max = Math.max(max, h);
+                  }
+                } else {
+                  if (item.textWidth > w) {
+                    max = Math.max(max, w);
+                  }
+                }
               }
             });
-            maxW = Math.max(maxW, count);
+            max = Math.max(max, count);
           });
 
-          var _tw2 = this.__width = maxW;
+          if (isVertical) {
+            var _th = this.__height = max;
 
-          this.__ioSize(_tw2);
+            this.__ioSize(undefined, _th);
+          } else {
+            var _tw2 = this.__width = max;
+
+            this.__ioSize(_tw2);
+          }
 
           return;
         }
@@ -26574,30 +26714,6 @@
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-
-        var _this$__preLayout3 = this.__preLayout(data, isInline),
-            fixedWidth = _this$__preLayout3.fixedWidth,
-            fixedHeight = _this$__preLayout3.fixedHeight,
-            x = _this$__preLayout3.x,
-            y = _this$__preLayout3.y,
-            w = _this$__preLayout3.w,
-            h = _this$__preLayout3.h,
-            lx = _this$__preLayout3.lx,
-            ly = _this$__preLayout3.ly,
-            lineBoxManager = _this$__preLayout3.lineBoxManager,
-            endSpace = _this$__preLayout3.endSpace,
-            selfEndSpace = _this$__preLayout3.selfEndSpace; // abs虚拟布局需预知width，固定可提前返回
-
-
-        if (isAbs && fixedWidth) {
-          this.__width = w;
-
-          this.__ioSize(w);
-
-          return;
-        }
-
-        var width = currentStyle[WIDTH$5];
         var textAlign = computedStyle[TEXT_ALIGN$3],
             whiteSpace = computedStyle[WHITE_SPACE$3],
             lineClamp = computedStyle[LINE_CLAMP$2],
@@ -26616,6 +26732,36 @@
             paddingRight = computedStyle[PADDING_RIGHT$4],
             writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0;
+
+        var _this$__preLayout3 = this.__preLayout(data, isInline),
+            fixedWidth = _this$__preLayout3.fixedWidth,
+            fixedHeight = _this$__preLayout3.fixedHeight,
+            x = _this$__preLayout3.x,
+            y = _this$__preLayout3.y,
+            w = _this$__preLayout3.w,
+            h = _this$__preLayout3.h,
+            lx = _this$__preLayout3.lx,
+            ly = _this$__preLayout3.ly,
+            lineBoxManager = _this$__preLayout3.lineBoxManager,
+            endSpace = _this$__preLayout3.endSpace,
+            selfEndSpace = _this$__preLayout3.selfEndSpace; // abs虚拟布局需预知width，固定可提前返回
+
+
+        if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
+          if (isVertical) {
+            this.__height = h;
+
+            this.__ioSize(undefined, h);
+          } else {
+            this.__width = w;
+
+            this.__ioSize(w);
+          }
+
+          return;
+        }
+
+        var width = currentStyle[WIDTH$5];
         var lineClampCount = data.lineClampCount || 0;
 
         if (isInline && !this.__isRealInline()) {

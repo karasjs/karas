@@ -82,10 +82,13 @@ class TextBox {
       [FONT_SIZE]: fontSize,
     } = computedStyle;
     let me = dom.matrixEvent, list;
+    let dev1 = 0, dev2 = 0;
     if(isVertical) {
       list = [
         [ROTATE_Z, [90, DEG]],
       ];
+      dev1 = (width - b) * 0.4;
+      dev2 = (width - b) * 0.2;
     }
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -93,16 +96,49 @@ class TextBox {
       if(letterSpacing) {
         for(; i < length; i++) {
           let c = content.charAt(i);
-          if(overFill) {
-            ctx.fillText(c, x, y);
+          if(isVertical) {
+            let cjk = isCjk(c);
+            if(cjk) {
+              ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
+              if(overFill) {
+                ctx.fillText(c, x + dev1, y - dev2);
+              }
+              if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(c, x + dev1, y - dev2);
+              }
+              if(!overFill) {
+                ctx.fillText(c, x + dev1, y - dev2);
+              }
+            }
+            else {
+              let tfo = [x + (width - b), y];
+              let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+              m = mx.multiply(me, m);
+              ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+              if(overFill) {
+                ctx.fillText(c, x + (width - b), y);
+              }
+              if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(c, x + (width - b), y);
+              }
+              if(!overFill) {
+                ctx.fillText(c, x + (width - b), y);
+              }
+            }
+            y += ctx.measureText(c).width + letterSpacing;
           }
-          if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-            ctx.strokeText(c, x, y);
+          else {
+            if(overFill) {
+              ctx.fillText(c, x, y);
+            }
+            if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+              ctx.strokeText(c, x, y);
+            }
+            if(!overFill) {
+              ctx.fillText(c, x, y);
+            }
+            x += ctx.measureText(c).width + letterSpacing;
           }
-          if(!overFill) {
-            ctx.fillText(c, x, y);
-          }
-          x += ctx.measureText(c).width + letterSpacing;
         }
       }
       else {
@@ -114,7 +150,16 @@ class TextBox {
             if(nowCjk !== cjk) {
               if(cjk) {
                 ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
-                ctx.fillText(content.slice(last, i), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+                let s = content.slice(last, i);
+                if(overFill) {
+                  ctx.fillText(s, x + dev1, y + count + b - dev2);
+                }
+                if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                  ctx.strokeText(s, x + dev1, y + count + b - dev2);
+                }
+                if(!overFill) {
+                  ctx.fillText(s, x + dev1, y + count + b - dev2);
+                }
                 count += fontSize;
               }
               else {
@@ -123,7 +168,15 @@ class TextBox {
                 m = mx.multiply(me, m);
                 ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
                 let s = content.slice(last, i);
-                ctx.fillText(s, x + (width - b), y + count);
+                if(overFill) {
+                  ctx.fillText(s, x + (width - b), y + count);
+                }
+                if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                  ctx.strokeText(s, x + (width - b), y + count);
+                }
+                if(!overFill) {
+                  ctx.fillText(s, x + (width - b), y + count);
+                }
                 count += ctx.measureText(s).width;
               }
               last = i;
@@ -132,24 +185,49 @@ class TextBox {
             // cjk单字符输出
             else if(nowCjk) {
               ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
-              ctx.fillText(content.slice(last, i), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+              let s = content.slice(last, i);
+              if(overFill) {
+                ctx.fillText(s, x + dev1, y + count + b - dev2);
+              }
+              if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(s, x + dev1, y + count + b - dev2);
+              }
+              if(!overFill) {
+                ctx.fillText(s, x + dev1, y + count + b - dev2);
+              }
               count += fontSize;
               last = i;
             }
           }
           if(last < len) {
+            let s = content.slice(last, len);
             // 最后的cjk只可能是一个字符
             if(cjk) {
               ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
-              ctx.fillText(content.slice(last, len), x + (width - b) * 0.4, y + count + b - (width - b) * 0.2);
+              if(overFill) {
+                ctx.fillText(s, x + dev1, y + count + b - dev2);
+              }
+              if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(s, x + dev1, y + count + b - dev2);
+              }
+              if(!overFill) {
+                ctx.fillText(s, x + dev1, y + count + b - dev2);
+              }
             }
             else {
               let tfo = [x + (width - b), y + count];
               let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
               m = mx.multiply(me, m);
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
-              let s = content.slice(last, len);
-              ctx.fillText(s, x + (width - b), y + count);
+              if(overFill) {
+                ctx.fillText(s, x + (width - b), y + count);
+              }
+              if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
+                ctx.strokeText(s, x + (width - b), y + count);
+              }
+              if(!overFill) {
+                ctx.fillText(s, x + (width - b), y + count);
+              }
             }
           }
         }
@@ -170,6 +248,9 @@ class TextBox {
       let color = cacheStyle[COLOR];
       if(color.k) {
         color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
+      }
+      if(isVertical) {
+        x += fontSize * 0.5 + dev1;
       }
       let props = [
         ['x', x],
@@ -192,6 +273,9 @@ class TextBox {
       }
       if(letterSpacing) {
         props.push(['letter-spacing', letterSpacing]);
+      }
+      if(isVertical) {
+        props.push(['writing-mode', 'vertical-lr']);
       }
       this.__virtualDom = {
         type: 'item',

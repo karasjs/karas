@@ -89,7 +89,7 @@ function joinVd(vd) {
     return '<' + vd.tagName + s + '/>';
   }
   else if(vd.type === 'text') {
-    let s = ``;
+    let s = '';
     // text有许多lineBox
     (vd.children || []).forEach(item => {
       s += joinVd(item);

@@ -1779,7 +1779,7 @@ class Dom extends Xom {
           lineClamp,
           lineClampCount,
           isVertical,
-        }, isAbs, isDirectionRow);
+        }, isAbs, isColumn);
       }
       if(isDirectionRow) {
         x += item.outerWidth;

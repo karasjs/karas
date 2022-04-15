@@ -764,7 +764,7 @@ class Xom extends Node {
       fixedWidth = true;
       w = w3;
     }
-    else if(width[1] !== AUTO) {
+    else if(width[1] !== AUTO && !isInline) {
       fixedWidth = true;
       w = this.__calSize(width, w, true);
     }
@@ -776,7 +776,7 @@ class Xom extends Node {
       fixedHeight = true;
       h = h3;
     }
-    else if(height[1] !== AUTO) {
+    else if(height[1] !== AUTO && !isInline) {
       fixedHeight = true;
       h = this.__calSize(height, h, true);
     }

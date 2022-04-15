@@ -20947,7 +20947,7 @@
         else if (w3 !== undefined) {
           fixedWidth = true;
           w = w3;
-        } else if (width[1] !== AUTO$3) {
+        } else if (width[1] !== AUTO$3 && !isInline) {
           fixedWidth = true;
           w = this.__calSize(width, w, true);
         }
@@ -20958,7 +20958,7 @@
         } else if (h3 !== undefined) {
           fixedHeight = true;
           h = h3;
-        } else if (height[1] !== AUTO$3) {
+        } else if (height[1] !== AUTO$3 && !isInline) {
           fixedHeight = true;
           h = this.__calSize(height, h, true);
         } // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
@@ -26279,7 +26279,7 @@
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
               isVertical: isVertical
-            }, isAbs, isDirectionRow);
+            }, isAbs, isColumn);
           }
 
           if (isDirectionRow) {

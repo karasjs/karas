@@ -200,8 +200,8 @@ class Text extends Node {
     textBoxes.splice(0);
     let __config = this.__config;
     __config[NODE_LIMIT_CACHE] = false;
-    // 空内容w/h都为0可以提前跳出
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content) {
+    // 空内容w/h都为0可以提前跳出，lineClamp超出一般不会进这，但有特例flex文本垂直预计算时，所以也要跳出
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
       return lineClampCount;
     }
     this.__ox = this.__oy = 0;

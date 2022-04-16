@@ -14332,9 +14332,9 @@
             root = this.root;
         textBoxes.splice(0);
         var __config = this.__config;
-        __config[NODE_LIMIT_CACHE] = false; // 空内容w/h都为0可以提前跳出
+        __config[NODE_LIMIT_CACHE] = false; // 空内容w/h都为0可以提前跳出，lineClamp超出一般不会进这，但有特例flex文本垂直预计算时，所以也要跳出
 
-        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || !content) {
+        if (isDestroyed || computedStyle[DISPLAY$1] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
           return lineClampCount;
         }
 
@@ -20836,7 +20836,6 @@
         this.__isIbFull = false;
         var display = computedStyle[DISPLAY$2],
             position = computedStyle[POSITION$2];
-        var width = currentStyle[WIDTH$4];
         this.__layoutData = {
           x: data.x,
           y: data.y,
@@ -25016,7 +25015,7 @@
         if (isDirectionRow) {
           // flex的item还是flex时
           if (display === 'flex') {
-            var isRow = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
+            var isC = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
             flowChildren = genOrderChildren(flowChildren);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -25030,7 +25029,7 @@
                     min2 = _item$__calBasis2[1],
                     max2 = _item$__calBasis2[2];
 
-                if (isRow) {
+                if (isC) {
                   min += min2;
                   max += max2;
                 } else {
@@ -25056,7 +25055,7 @@
                   max += item.width;
                 }
 
-                if (isRow) {
+                if (isC) {
                   min += item.charWidth;
                   max += item.textWidth;
                 } else {
@@ -25065,7 +25064,7 @@
                 }
               }
             });
-          } // flex的item是block/inline时，inline也会变成block统一对待
+          } else if (isVertical) ; // flex的item是block/inline时，inline也会变成block统一对待，递归下去会有inline出现，但row的水平size为无穷不会换行可以忽略
           else {
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -25942,6 +25941,7 @@
           __flexLine.push(line);
         }
 
+        console.log(basisList, minList, maxList, hypotheticalList);
         var offset = 0,
             clone = {
           x: x,

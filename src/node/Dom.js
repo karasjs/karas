@@ -562,12 +562,12 @@ class Dom extends Xom {
     if(isDirectionRow) {
       // flex的item还是flex时
       if(display === 'flex') {
-        let isRow = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
+        let isC = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
         flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h }, false);
-            if(isRow) {
+            if(isC) {
               min += min2;
               max += max2;
             }
@@ -592,7 +592,7 @@ class Dom extends Xom {
               min += item.width;
               max += item.width;
             }
-            if(isRow) {
+            if(isC) {
               min += item.charWidth;
               max += item.textWidth;
             }
@@ -603,7 +603,11 @@ class Dom extends Xom {
           }
         });
       }
-      // flex的item是block/inline时，inline也会变成block统一对待
+      else if(isVertical) {
+        if(display === 'inline') {}
+        else {}
+      }
+      // flex的item是block/inline时，inline也会变成block统一对待，递归下去会有inline出现，但row的水平size为无穷不会换行可以忽略
       else {
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1370,7 +1374,7 @@ class Dom extends Xom {
     });
     if(line.length) {
       __flexLine.push(line);
-    }
+    }console.log(basisList,minList,maxList, hypotheticalList)
     let offset = 0, clone = { x, y, w, h };
     let maxCrossList = [];
     __flexLine.forEach(item => {

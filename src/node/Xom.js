@@ -545,9 +545,6 @@ class Xom extends Node {
       [DISPLAY]: display,
       [POSITION]: position,
     } = computedStyle;
-    let {
-      [WIDTH]: width,
-    } = currentStyle;
     this.__layoutData = {
       x: data.x,
       y: data.y,

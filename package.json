@@ -23,7 +23,6 @@
     "url": "git://github.com/karasjs/karas.git"
   },
   "dependencies": {
-    "canvaskit-wasm": "^0.33.0"
   },
   "devDependencies": {
     "@babel/core": "^7.8.7",

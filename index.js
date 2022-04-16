@@ -10188,7 +10188,7 @@
   };
 
   /**
-   * martinez v0.7.1
+   * martinez v0.7.3
    * Martinez polygon clipping algorithm, does boolean operation on polygons (multipolygons, polygons with holes etc): intersection, union, difference, xor
    *
    * @author Alex Milevski <info@w8r.name>
@@ -12013,7 +12013,7 @@
         if (next) {
           if (possibleIntersection(event, next.key, eventQueue) === 2) {
             computeFields(event, prevEvent, operation);
-            computeFields(event, next.key, operation);
+            computeFields(next.key, event, operation);
           }
         }
 
@@ -12144,7 +12144,9 @@
         newPos++;
       }
 
-      p1 = resultEvents[newPos].point;
+      if (newPos < length) {
+        p1 = resultEvents[newPos].point;
+      }
     }
 
     newPos = pos - 1;
@@ -12223,7 +12225,10 @@
 
       var markAsProcessed = function markAsProcessed(pos) {
         processed[pos] = true;
-        resultEvents[pos].outputContourId = contourId;
+
+        if (pos < resultEvents.length && resultEvents[pos]) {
+          resultEvents[pos].outputContourId = contourId;
+        }
       };
 
       var pos = i;
@@ -12239,7 +12244,7 @@
         contour.points.push(resultEvents[pos].point);
         pos = nextPos(pos, resultEvents, processed, origPos);
 
-        if (pos == origPos) {
+        if (pos == origPos || pos >= resultEvents.length || !resultEvents[pos]) {
           break;
         }
       }

@@ -530,8 +530,8 @@ class Xom extends Node {
     return res;
   }
 
-  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局
-  __layout(data, isAbs, isColumn) {
+  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
+  __layout(data, isAbs, isColumn, isRow) {
     this.__computeReflow();
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __config, __ellipsis } = this;
@@ -553,7 +553,7 @@ class Xom extends Node {
       lx: data.lx,
     };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
-    if(!isAbs && !isColumn) {
+    if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
       __config[NODE_REFRESH_LV] = REFLOW;
       __config[NODE_LIMIT_CACHE] = false;
@@ -596,21 +596,21 @@ class Xom extends Node {
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {
       data.lineClampCount = 0;
-      this.__layoutFlex(data, isAbs, isColumn);
+      this.__layoutFlex(data, isAbs, isColumn, isRow);
     }
     else if(display === 'inlineBlock') {
       data.lineClampCount = 0;
-      this.__layoutInline(data, isAbs, isColumn);
+      this.__layoutInline(data, isAbs, isColumn, isRow);
     }
     else if(display === 'inline') {
-      lineClampCount = this.__layoutInline(data, isAbs, isColumn, true);
+      lineClampCount = this.__layoutInline(data, isAbs, isColumn, isRow, true);
     }
     else {
       data.lineClampCount = 0;
-      this.__layoutBlock(data, isAbs, isColumn);
+      this.__layoutBlock(data, isAbs, isColumn, isRow);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-    if(!isAbs && !isColumn) {
+    if(!isAbs && !isColumn && !isRow) {
       if(position === 'relative') {
         let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = currentStyle;
         let {parent} = this;

@@ -20814,11 +20814,11 @@
         }
 
         return res;
-      } // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局
+      } // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
 
     }, {
       key: "__layout",
-      value: function __layout(data, isAbs, isColumn) {
+      value: function __layout(data, isAbs, isColumn, isRow) {
         this.__computeReflow();
 
         var w = data.w;
@@ -20844,7 +20844,7 @@
           lx: data.lx
         }; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
 
-        if (!isAbs && !isColumn) {
+        if (!isAbs && !isColumn && !isRow) {
           this.clearCache();
           __config[NODE_REFRESH_LV] = REFLOW;
           __config[NODE_LIMIT_CACHE$1] = false;
@@ -20892,21 +20892,21 @@
         if (display === 'flex') {
           data.lineClampCount = 0;
 
-          this.__layoutFlex(data, isAbs, isColumn);
+          this.__layoutFlex(data, isAbs, isColumn, isRow);
         } else if (display === 'inlineBlock') {
           data.lineClampCount = 0;
 
-          this.__layoutInline(data, isAbs, isColumn);
+          this.__layoutInline(data, isAbs, isColumn, isRow);
         } else if (display === 'inline') {
-          lineClampCount = this.__layoutInline(data, isAbs, isColumn, true);
+          lineClampCount = this.__layoutInline(data, isAbs, isColumn, isRow, true);
         } else {
           data.lineClampCount = 0;
 
-          this.__layoutBlock(data, isAbs, isColumn);
+          this.__layoutBlock(data, isAbs, isColumn, isRow);
         } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
 
 
-        if (!isAbs && !isColumn) {
+        if (!isAbs && !isColumn && !isRow) {
           if (position === 'relative') {
             var top = currentStyle[TOP$1],
                 right = currentStyle[RIGHT],
@@ -24459,7 +24459,8 @@
       VH$6 = o.VH,
       VMAX$6 = o.VMAX,
       VMIN$6 = o.VMIN;
-  var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
+  var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute,
+      getBaseline$1 = css.getBaseline;
   var extend$2 = util.extend,
       isNil$7 = util.isNil,
       isFunction$6 = util.isFunction;
@@ -25039,7 +25040,7 @@
               } // text除了flex还需要分辨垂直排版
               else {
                 if (isVertical) {
-                  var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+                  var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
 
                   item.__layout({
                     x: x,
@@ -25049,7 +25050,7 @@
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
                     isVertical: isVertical
-                  }, isAbs, isColumn);
+                  });
 
                   min += item.width;
                   max += item.width;
@@ -25064,15 +25065,38 @@
                 }
               }
             });
-          } else if (isVertical) ; // flex的item是block/inline时，inline也会变成block统一对待，递归下去会有inline出现，但row的水平size为无穷不会换行可以忽略
+          } // 特殊的flex水平布局但书写垂直，遇到后直接假布局获取宽度，因为水平尺寸视为无限但垂直不是，
+          // 这里一定是第一个垂直排版不会递归下去，因为flex的child匿名block，水平的垂直书写inline匿名ib
+          else if (isVertical) {
+            var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+
+            this.__layout({
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+              lineBoxManager: lineBoxManager,
+              lineClamp: lineClamp,
+              isVertical: isVertical
+            }, isAbs, false, true);
+
+            min = max = b = this.width;
+          } // flex的item是block/inline时，inline也会变成block统一对待，递归下去会有inline出现，但row的水平size为无穷不会换行可以忽略
           else {
+            var _lineBoxManager = data.lineBoxManager;
+
+            if (display !== 'inline') {
+              _lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+            }
+
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
                 var _item$__calBasis3 = item.__calBasis(isDirectionRow, isAbs, isColumn, {
                   x: x,
                   y: y,
                   w: w,
-                  h: h
+                  h: h,
+                  lineBoxManager: _lineBoxManager
                 }, false),
                     _item$__calBasis4 = _slicedToArray(_item$__calBasis3, 3),
                     min2 = _item$__calBasis4[1],
@@ -25114,7 +25138,7 @@
             y: y,
             w: w,
             h: h
-          }, isAbs, true);
+          }, isAbs, true, false);
 
           min = max = b = this.height; // column的child，max和b总相等
         } // 直接item的mpb影响basis
@@ -25142,12 +25166,13 @@
        * @param data
        * @param isAbs abs无尺寸时提前虚拟布局计算尺寸
        * @param isColumn flex列无尺寸时提前虚拟布局计算尺寸
+       * @param isRow flex行布局时出现writingMode垂直排版计算尺寸
        * @private
        */
 
     }, {
       key: "__layoutBlock",
-      value: function __layoutBlock(data, isAbs, isColumn) {
+      value: function __layoutBlock(data, isAbs, isColumn, isRow) {
         var _this3 = this;
 
         var flowChildren = this.flowChildren,
@@ -25188,6 +25213,16 @@
           this.__height = h;
 
           this.__ioSize(undefined, h);
+
+          return;
+        }
+
+        if (isRow && fixedWidth) {
+          this.__width = w;
+
+          this.__ioSize(w);
+
+          return;
         } // 只有>=1的正整数才有效
 
 
@@ -25195,7 +25230,7 @@
         var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
         // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
 
-        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
         var maxSize = 0;
         var countSize = 0;
@@ -25260,7 +25295,7 @@
                   // ib内部新生成会内部判断，这里不管统一传入
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样，注意nowrap排除
+                }, isAbs, isColumn, isRow); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样，注意nowrap排除
 
                 if (item.__isIbFull) {
                   lineClampCount++;
@@ -25322,7 +25357,7 @@
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
                     lineClampCount: lineClampCount
-                  }, isAbs, isColumn); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
+                  }, isAbs, isColumn, isRow); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                   (isInlineBlock || !isRealInline) && lineBoxManager.addItem(item, false);
                   x = lineBoxManager.lastX;
@@ -25378,7 +25413,7 @@
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
                     lineClampCount: lineClampCount
-                  }, isAbs, isColumn); // 重新开头的ib和上面开头处一样逻辑
+                  }, isAbs, isColumn, isRow); // 重新开头的ib和上面开头处一样逻辑
 
                   if (item.__isIbFull) {
                     lineBoxManager.addItem(item, false);
@@ -25449,7 +25484,7 @@
                 y: y,
                 w: w,
                 h: h
-              }, isAbs, isColumn); // 自身无内容
+              }, isAbs, isColumn, isRow); // 自身无内容
 
 
               var isNone = item.currentStyle[DISPLAY$5] === 'none';
@@ -25567,7 +25602,7 @@
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
                 isVertical: isVertical
-              }, isAbs, isColumn);
+              });
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY; // 和inline很像，只是没有ib
 
@@ -25608,7 +25643,7 @@
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount,
                   isVertical: isVertical
-                }, isAbs, isColumn);
+                });
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
 
@@ -25662,7 +25697,7 @@
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount,
                   isVertical: isVertical
-                }, isAbs, isColumn);
+                });
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
 
@@ -25740,7 +25775,7 @@
         } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
-        if (!isAbs && !isColumn) {
+        if (!isAbs && !isColumn && !isRow) {
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
 
@@ -25766,7 +25801,7 @@
 
     }, {
       key: "__layoutFlex",
-      value: function __layoutFlex(data, isAbs, isColumn) {
+      value: function __layoutFlex(data, isAbs, isColumn, isRow) {
         var _this4 = this;
 
         var flowChildren = this.flowChildren,
@@ -25807,11 +25842,19 @@
         }
 
         if (isColumn && fixedHeight) {
-          if (isColumn && fixedHeight) {
-            this.__height = h;
+          this.__height = h;
 
-            this.__ioSize(undefined, h);
-          }
+          this.__ioSize(undefined, h);
+
+          return;
+        }
+
+        if (isRow && fixedWidth) {
+          this.__width = w;
+
+          this.__ioSize(w);
+
+          return;
         } // 每次布局情况多行内容
 
 
@@ -25859,7 +25902,7 @@
             shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
 
             if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
-              var lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+              var lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
 
               item.__layout({
                 x: x,
@@ -25870,7 +25913,7 @@
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
                 isVertical: isVertical
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, isRow);
 
               var n = isVertical ? item.width : item.height;
               basisList.push(n);
@@ -25941,7 +25984,6 @@
           __flexLine.push(line);
         }
 
-        console.log(basisList, minList, maxList, hypotheticalList);
         var offset = 0,
             clone = {
           x: x,
@@ -25955,7 +25997,7 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
               _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 3),
               x1 = _this4$__layoutFlexLi2[0],
               y1 = _this4$__layoutFlexLi2[1],
@@ -26021,7 +26063,7 @@
 
         this.__ioSize(tw, th);
 
-        if (isColumn) {
+        if (isColumn || isRow) {
           return;
         } // flexDirection当有reverse时交换每line的主轴序
 
@@ -26159,7 +26201,7 @@
         } // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
 
 
-        if (!isColumn) {
+        if (!isColumn && !isRow) {
           if (length > 1) {
             __flexLine.forEach(function (item, i) {
               var maxCross = maxCrossList[i];
@@ -26198,7 +26240,7 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
         var _this5 = this;
 
         var x = data.x,
@@ -26355,13 +26397,13 @@
                 h: h,
                 w3: main // w3假设固定宽度，忽略原始style中的设置
 
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, isRow);
             } else {
               var _item$currentStyle = item.currentStyle,
                   alignSelf = _item$currentStyle[ALIGN_SELF$2],
                   width = _item$currentStyle[WIDTH$5]; // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
 
-              if (!isAbs && !isColumn) {
+              if (!isAbs && !isColumn && !isRow) {
                 var needGenAr;
 
                 if (width[1] !== AUTO$5 || alignSelf === 'stretch') {
@@ -26378,7 +26420,7 @@
                     h: main,
                     h3: main // 同w2
 
-                  }, isAbs, isColumn);
+                  }, isAbs, isColumn, isRow);
                 } else {
                   item.__layout({
                     x: x,
@@ -26387,7 +26429,7 @@
                     h: main,
                     h3: main // 同w2
 
-                  }, true, isColumn);
+                  }, true, isColumn, isRow);
 
                   item.__layout({
                     x: x,
@@ -26397,7 +26439,7 @@
                     h: main,
                     h3: main // 同w2
 
-                  }, isAbs, isColumn);
+                  }, isAbs, isColumn, isRow);
                 }
               } else {
                 item.__layout({
@@ -26407,12 +26449,12 @@
                   h: main,
                   h3: main // 同w2
 
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, isRow);
               }
             }
           } // 文字
           else {
-            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
             lbmList.push(lineBoxManager);
 
             item.__layout({
@@ -26424,7 +26466,7 @@
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
               isVertical: isVertical
-            }, isAbs, isColumn);
+            });
           }
 
           if (isDirectionRow) {
@@ -26438,7 +26480,7 @@
 
         var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式
 
-        if (!isAbs && !isColumn && diff > 0) {
+        if (!isAbs && !isColumn && !isRow && diff > 0) {
           var len = orderChildren.length;
 
           if (justifyContent === 'flexEnd') {
@@ -26484,7 +26526,7 @@
         } // flex的直接text对齐比较特殊
 
 
-        if (!isAbs && !isColumn && ['center', 'right'].indexOf(textAlign) > -1) {
+        if (!isAbs && !isColumn && !isRow && ['center', 'right'].indexOf(textAlign) > -1) {
           lbmList.forEach(function (item) {
             item.horizonAlign(isVertical ? item.height : item.width, textAlign, isVertical);
           });
@@ -26709,13 +26751,14 @@
        * @param data
        * @param isAbs
        * @param isColumn
+       * @param isRow
        * @param isInline
        * @private
        */
 
     }, {
       key: "__layoutInline",
-      value: function __layoutInline(data, isAbs, isColumn, isInline) {
+      value: function __layoutInline(data, isAbs, isColumn, isRow, isInline) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
@@ -26737,6 +26780,7 @@
             paddingRight = computedStyle[PADDING_RIGHT$4],
             writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0;
+        var lineClampCount = data.lineClampCount || 0;
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),
             fixedWidth = _this$__preLayout3.fixedWidth,
@@ -26763,14 +26807,32 @@
             this.__ioSize(w);
           }
 
-          return;
+          return lineClampCount;
         }
 
         var width = currentStyle[WIDTH$5];
-        var lineClampCount = data.lineClampCount || 0;
 
         if (isInline && !this.__isRealInline()) {
           isInline = false;
+        } // inline-block假布局提前结束
+
+
+        if (!isInline) {
+          if (isColumn && fixedHeight) {
+            this.__height = h;
+
+            this.__ioSize(undefined, h);
+
+            return lineClampCount;
+          }
+
+          if (isRow && fixedWidth) {
+            this.__width = w;
+
+            this.__ioSize(w);
+
+            return lineClampCount;
+          }
         } // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
         // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
 
@@ -26778,7 +26840,7 @@
         if (isInline) {
           this.__config[NODE_IS_INLINE$1] = true;
           this.__lineBoxManager = lineBoxManager;
-          var baseline = css.getBaseline(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+          var baseline = getBaseline$1(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
 
           if (isVertical && (marginTop || marginBottom || paddingTop || paddingBottom || borderTopWidth || borderBottomWidth) || !isVertical && (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth)) {
             if (lineBoxManager.isNewLine) {
@@ -26792,7 +26854,7 @@
 
           lineClamp = data.lineClamp || 0;
         } else {
-          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, css.getBaseline(computedStyle), isVertical);
+          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
           lx = x;
           ly = y;
           endSpace = selfEndSpace = lineClampCount = 0;
@@ -26865,7 +26927,7 @@
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount
-              }, isAbs, isColumn); // 同block布局
+              }, isAbs, isColumn, isRow); // 同block布局
 
               if (item.__isIbFull) {
                 lineClampCount++;
@@ -26918,7 +26980,7 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
+                }, isAbs, isColumn, isRow); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                 (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item, false);
                 x = lineBoxManager.lastX;
@@ -26962,7 +27024,7 @@
                   endSpace: endSpace,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount
-                }, isAbs, isColumn); // 重新开头的ib和上面开头处一样逻辑
+                }, isAbs, isColumn, isRow); // 重新开头的ib和上面开头处一样逻辑
 
                 if (item.__isIbFull) {
                   lineBoxManager.addItem(item, true);
@@ -27007,7 +27069,7 @@
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
                 isVertical: isVertical
-              }, isAbs, isColumn);
+              }, isAbs, isColumn, isRow);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
 
@@ -27038,7 +27100,7 @@
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount,
                   isVertical: isVertical
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, isRow);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY;
 
@@ -27082,7 +27144,7 @@
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount,
                   isVertical: isVertical
-                }, isAbs, isColumn);
+                }, isAbs, isColumn, isRow);
                 x = lineBoxManager.lastX;
                 y = lineBoxManager.lastY; // ib情况发生折行
 
@@ -27158,7 +27220,7 @@
 
 
         if (!isAbs && !isInline) {
-          lineBoxManager.verticalAlign();
+          lineBoxManager.verticalAlign(isVertical);
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size

@@ -562,12 +562,12 @@ class Dom extends Xom {
     if(isDirectionRow) {
       // flex的item还是flex时
       if(display === 'flex') {
-        let isC = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
+        let isR = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
         flowChildren = genOrderChildren(flowChildren);
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             let [, min2, max2] = item.__calBasis(isDirectionRow, isAbs, isColumn, { x, y, w, h }, false);
-            if(isC) {
+            if(isR) {
               min += min2;
               max += max2;
             }
@@ -592,7 +592,7 @@ class Dom extends Xom {
               min += item.width;
               max += item.width;
             }
-            if(isC) {
+            if(isR) {
               min += item.charWidth;
               max += item.textWidth;
             }

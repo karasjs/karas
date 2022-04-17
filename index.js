@@ -16101,9 +16101,19 @@
       bcStart = pbStart;
       bcEnd = pbEnd;
     } // inline的baseline和lineBox的差值，不同lh时造成的偏移，一般为多个textBox时比较小的那个发生
+    // 垂直排版不能简单算baseline差值，因为原点坐标系不一样
 
 
-    var diff = lineBox.baseline - baseline;
+    var diff;
+
+    if (isVertical) {
+      var n1 = lineBox.verticalLineHeight - lineBox.baseline;
+      var n2 = start.width - start.baseline;
+      diff = n1 - n2;
+    } else {
+      diff = lineBox.baseline - baseline;
+    }
+
     var x1, y1, x2, y2, bx1, by1, bx2, by2; // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
     // 垂直排版则互换x/y逻辑
 
@@ -23564,7 +23574,7 @@
       key: "verticalAlign",
       value: function verticalAlign(isVertical) {
         var baseline = this.baseline;
-        var lineHeight = this.lineHeight;
+        var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight;
         var hasReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
@@ -23572,23 +23582,36 @@
           this.list.forEach(function (item) {
             if (item.isReplaced) {
               hasReplaced = true;
-            }
-
-            var n = item.baseline;
-
-            if (n !== baseline) {
-              var d = baseline - n;
-
-              if (isVertical) {
-                item.__offsetX(d, true);
-              } else {
-                item.__offsetY(d, true);
-              } // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
-              // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
+            } // 垂直排版麻烦点，不能简单算baseline差值，因为原点坐标系不一样
 
 
-              if (d > 0) {
-                increase = Math.max(increase, (isVertical ? item.width : item.height) + d);
+            if (isVertical) {
+              var n1 = lineHeight - baseline;
+              var n2 = item.width - item.baseline; // console.log(n1,n2);
+
+              if (n1 !== n2) {
+                var d = n1 - n2;
+
+                item.__offsetX(d, true); // 同下方
+
+
+                if (d > 0) {
+                  increase = Math.max(increase, item.width + d);
+                }
+              }
+            } else {
+              var n = item.baseline;
+
+              if (n !== baseline) {
+                var _d = baseline - n;
+
+                item.__offsetY(_d, true); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+                // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
+
+
+                if (_d > 0) {
+                  increase = Math.max(increase, item.height + _d);
+                }
               }
             }
           });
@@ -25016,7 +25039,7 @@
         if (isDirectionRow) {
           // flex的item还是flex时
           if (display === 'flex') {
-            var isC = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
+            var isR = ['column', 'columnReverse'].indexOf(flexDirection) === -1;
             flowChildren = genOrderChildren(flowChildren);
             flowChildren.forEach(function (item) {
               if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
@@ -25030,7 +25053,7 @@
                     min2 = _item$__calBasis2[1],
                     max2 = _item$__calBasis2[2];
 
-                if (isC) {
+                if (isR) {
                   min += min2;
                   max += max2;
                 } else {
@@ -25056,7 +25079,7 @@
                   max += item.width;
                 }
 
-                if (isC) {
+                if (isR) {
                   min += item.charWidth;
                   max += item.textWidth;
                 } else {

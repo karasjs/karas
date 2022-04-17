@@ -40,7 +40,7 @@ class LineBox {
 
   verticalAlign(isVertical) {
     let baseline = this.baseline;
-    let lineHeight = this.lineHeight;
+    let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
     let increase = lineHeight;
     let hasReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
@@ -49,19 +49,30 @@ class LineBox {
         if(item.isReplaced) {
           hasReplaced = true;
         }
-        let n = item.baseline;
-        if(n !== baseline) {
-          let d = baseline - n;
-          if(isVertical) {
+        // 垂直排版麻烦点，不能简单算baseline差值，因为原点坐标系不一样
+        if(isVertical) {
+          let n1 = lineHeight - baseline;
+          let n2 = item.width - item.baseline;
+          // console.log(n1,n2);
+          if(n1 !== n2) {
+            let d = n1 - n2;
             item.__offsetX(d, true);
+            // 同下方
+            if(d > 0) {
+              increase = Math.max(increase, item.width + d);
+            }
           }
-          else {
+        }
+        else {
+          let n = item.baseline;
+          if(n !== baseline) {
+            let d = baseline - n;
             item.__offsetY(d, true);
-          }
-          // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
-          // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
-          if(d > 0) {
-            increase = Math.max(increase, (isVertical ? item.width : item.height) + d);
+            // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+            // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
+            if(d > 0) {
+              increase = Math.max(increase, item.height + d);
+            }
           }
         }
       });

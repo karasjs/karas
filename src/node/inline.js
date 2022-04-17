@@ -60,7 +60,16 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     bcEnd = pbEnd;
   }
   // inline的baseline和lineBox的差值，不同lh时造成的偏移，一般为多个textBox时比较小的那个发生
-  let diff = lineBox.baseline - baseline;
+  // 垂直排版不能简单算baseline差值，因为原点坐标系不一样
+  let diff;
+  if(isVertical) {
+    let n1 = lineBox.verticalLineHeight - lineBox.baseline;
+    let n2 = start.width - start.baseline;
+    diff = n1 - n2;
+  }
+  else {
+    diff = lineBox.baseline - baseline;
+  }
   let x1, y1, x2, y2, bx1, by1, bx2, by2;
   // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
   // 垂直排版则互换x/y逻辑

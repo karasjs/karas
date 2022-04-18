@@ -76,7 +76,7 @@ class LineBoxManager {
    * @param nextNewLine 是否设置newLine，标明下次添加新生成LineBox
    * @returns {LineBox}
    */
-  addItem(o, nextNewLine) { // TODO: nextNewLine可能不需要
+  addItem(o, nextNewLine) {
     let lineBox, isVertical = this.isVertical;
     // 新行新的lineBox，否则复用最后一个
     if(this.__isNewLine) {

@@ -23917,7 +23917,6 @@
     }, {
       key: "addItem",
       value: function addItem(o, nextNewLine) {
-        // TODO: nextNewLine可能不需要
         var lineBox,
             isVertical = this.isVertical; // 新行新的lineBox，否则复用最后一个
 
@@ -24128,9 +24127,8 @@
 
           for (var i = 0; i < length - 1; i++) {
             n += list[i].height;
-          }
+          } // 需考虑因为verticalAlign造成的lineBox偏移offset值，修正计算正确的baseline
 
-          console.log(list[length - 1].bOffset); // 需考虑因为verticalAlign造成的lineBox偏移offset值，修正计算正确的baseline
 
           return n + list[length - 1].baseline + list[length - 1].bOffset;
         }

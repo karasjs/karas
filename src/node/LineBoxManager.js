@@ -141,6 +141,7 @@ class LineBoxManager {
     let spread = 0;
     this.list.forEach(lineBox => {
       if(spread) {
+        lineBox.__bOffset = spread; // 对齐造成的误差需记录给baseline修正
         if(isVertical) {
           lineBox.__offsetX(spread, true);
         }
@@ -255,7 +256,7 @@ class LineBoxManager {
         n += list[i].height;
       }
       // 需考虑因为verticalAlign造成的lineBox偏移offset值，修正计算正确的baseline
-      return n + list[length - 1].baseline + list[length - 1].offset;
+      return n + list[length - 1].baseline + list[length - 1].bOffset;
     }
     return 0;
   }

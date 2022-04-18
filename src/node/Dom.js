@@ -3366,6 +3366,18 @@ class Dom extends Xom {
     } = this.computedStyle;
     return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.firstBaseline;
   }
+
+  get verticalBaseline() {
+    if(!this.lineBoxManager || !this.lineBoxManager.size) {
+      return this.offsetHeight;
+    }
+    let {
+      [MARGIN_LEFT]: marginLeft,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [PADDING_LEFT]: paddingLeft,
+    } = this.computedStyle;
+    return marginLeft + borderLeftWidth + paddingLeft + this.lineBoxManager.verticalBaseline;
+  }
 }
 
 export default Dom;

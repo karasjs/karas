@@ -26,7 +26,7 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   genLineBox(x, y) {
-    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline);
+    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline, this.isVertical);
     this.list.push(lineBox);
     this.__isEnd = true;
     return lineBox;
@@ -45,7 +45,7 @@ class LineBoxManager {
     let lineHeight = Math.max(this.__lineHeight, l);
     let baseline = Math.max(this.__baseline, b);
     if(this.__isNewLine) {
-      let lineBox = new LineBox(x, y, lineHeight, baseline);
+      let lineBox = new LineBox(x, y, lineHeight, baseline, this.isVertical);
       this.list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
@@ -269,6 +269,8 @@ class LineBoxManager {
     }
     return 0;
   }
+
+  get verticalBaseline() {}
 
   get lineHeight() {
     let list = this.list;

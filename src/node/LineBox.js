@@ -4,12 +4,18 @@ import css from '../style/css';
 
 const { STYLE_KEY: {
   DISPLAY,
+  MARGIN_TOP,
+  MARGIN_BOTTOM,
   MARGIN_LEFT,
+  MARGIN_RIGHT,
+  BORDER_TOP_WIDTH,
+  BORDER_BOTTOM_WIDTH,
   BORDER_LEFT_WIDTH,
+  BORDER_RIGHT_WIDTH,
+  PADDING_TOP,
+  PADDING_BOTTOM,
   PADDING_LEFT,
   PADDING_RIGHT,
-  BORDER_RIGHT_WIDTH,
-  MARGIN_RIGHT,
   LINE_HEIGHT,
 } } = enums;
 
@@ -25,12 +31,13 @@ const { STYLE_KEY: {
  * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseline，inlineBlock等节点按最后一行baseline
  */
 class LineBox {
-  constructor(x, y, lineHeight, baseline) {
+  constructor(x, y, lineHeight, baseline, isVertical) {
     this.__list = [];
     this.__x = x;
     this.__y = y;
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
     this.__baseline = baseline;
+    this.__isVertical = isVertical;
     this.__bOffset = 0;
   }
 
@@ -166,6 +173,9 @@ class LineBox {
   }
 
   get width() {
+    if(this.isVertical) {
+      return this.verticalLineHeight;
+    }
     let list = this.list;
     let length = list.length;
     if(length) {
@@ -215,7 +225,55 @@ class LineBox {
   }
 
   get height() {
-    return this.lineHeight;
+    if(!this.isVertical) {
+      return this.lineHeight;
+    }
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      let first = list[0];
+      let last = list[length - 1];
+      let y1 = first.y;
+      let dom = first instanceof TextBox ? first.parent.domParent : first.domParent;
+      // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
+      while(true) {
+        let list = dom.contentBoxList;
+        let {
+          [DISPLAY]: display,
+          [MARGIN_TOP]: marginTop,
+          [BORDER_TOP_WIDTH]: borderTopWidth,
+          [PADDING_TOP]: paddingTop,
+        } = dom.computedStyle;
+        if(display !== 'inline') {
+          break;
+        }
+        if(first === list[0]) {
+          y1 -= marginTop + borderTopWidth + paddingTop;
+        }
+        dom = dom.domParent;
+      }
+      let y2 = last.y + last.outerHeight;
+      dom = last instanceof TextBox ? last.parent.domParent : last.domParent;
+      // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
+      while(true) {
+        let list = dom.contentBoxList;
+        let {
+          [DISPLAY]: display,
+          [MARGIN_BOTTOM]: marginBottom,
+          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+          [PADDING_BOTTOM]: paddingBottom,
+        } = dom.computedStyle;
+        if(display !== 'inline') {
+          break;
+        }
+        if(first === list[list.length - 1]) {
+          y2 += marginBottom + borderBottomWidth + paddingBottom;
+        }
+        dom = dom.domParent;
+      }
+      return y2 - y1;
+    }
+    return 0;
   }
 
   get bOffset() {
@@ -247,6 +305,10 @@ class LineBox {
       lineHeight = Math.max(lineHeight, item.outerWidth);
     });
     return lineHeight;
+  }
+
+  get isVertical() {
+    return this.__isVertical;
   }
 }
 

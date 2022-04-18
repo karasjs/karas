@@ -10,6 +10,10 @@ let o = karas.render(
       <strong>hello</strong>
       <span style={{fontSize:40}}>hello</span>
     </div>
+    <div style={{border:'1px solid #000'}}>
+      <span style={{fontSize:40,lineHeight:2,background:'#F00'}}>A</span>
+      <span style={{fontSize:20,lineHeight:4,background:'#0FF'}}>B</span>
+    </div>
   </svg>,
   '#test'
 );

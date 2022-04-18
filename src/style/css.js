@@ -1278,6 +1278,12 @@ function getFontFamily(str) {
   return f;
 }
 
+/**
+ * https://zhuanlan.zhihu.com/p/25808995
+ * 根据字形信息计算baseline的正确值，差值上下均分
+ * @param style
+ * @returns {number}
+ */
 function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
   let ff = getFontFamily(style[FONT_FAMILY]);

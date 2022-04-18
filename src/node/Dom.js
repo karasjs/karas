@@ -1215,14 +1215,18 @@ class Dom extends Xom {
          * parent以及parent的next无需处理，因为深度遍历后面还会进行，
          * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
          * 同时由于block和inline区域可能不连续，每个增加的y不一样，
-         * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
+         * 需要按照每个不同区域来判断，区域是按索引次序依次增大的，
+         * 只有在inline出现过后才开始生效，inline之前的block忽略
          */
         let count = 0, spreadList = lineBoxManager.spreadList;
-        let isLastBlock = false;
+        let isLastBlock = false, hasStart = false;
         flowChildren.forEach(item => {
           let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
-          let isBlock = isXom && item.computedStyle[DISPLAY] === 'block';
+          let isBlock = isXom && ['block', 'flex'].indexOf(item.computedStyle[DISPLAY]) > -1;
           if(isBlock) {
+            if(!hasStart) {
+              return;
+            }
             isLastBlock = true;
             if(isVertical) {
               item.__offsetX(spreadList[count], true);
@@ -1232,6 +1236,7 @@ class Dom extends Xom {
             }
           }
           else {
+            hasStart = true;
             if(isLastBlock) {
               count++;
             }

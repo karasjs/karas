@@ -58,7 +58,7 @@ class LineBox {
             let d = n1 - n2;
             item.__offsetX(d, true);
             // 同下方
-            increase = Math.max(increase, item.height + d);
+            increase = Math.max(increase, item.width + d);
           }
         }
         else {
@@ -73,13 +73,20 @@ class LineBox {
         }
       });
     }
-    // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题
+    // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
+    // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题
     if(hasIbOrReplaced) {
       diff = this.__lineHeight - this.__baseline;
     }
     // 增加过的高度比最大还大时需要调整
     if(increase > lineHeight) {
       diff = Math.max(increase - lineHeight);
+    }
+    // 垂直排版由于方向原因，不能像水平那样直接扩展y，需向右移动diff，造成左侧扩展的表象
+    if(isVertical && diff > 0) {
+      this.list.forEach(item => {
+        item.__offsetX(diff, true);
+      });
     }
     return diff;
   }

@@ -23591,7 +23591,7 @@
                 item.__offsetX(d, true); // 同下方
 
 
-                increase = Math.max(increase, item.height + d);
+                increase = Math.max(increase, item.width + d);
               }
             } else {
               var n = item.baseline;
@@ -23607,7 +23607,8 @@
               }
             }
           });
-        } // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题
+        } // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
+        // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题
 
 
         if (hasIbOrReplaced) {
@@ -23617,6 +23618,13 @@
 
         if (increase > lineHeight) {
           diff = Math.max(increase - lineHeight);
+        } // 垂直排版由于方向原因，不能像水平那样直接扩展y，需向右移动diff，造成左侧扩展的表象
+
+
+        if (isVertical && diff > 0) {
+          this.list.forEach(function (item) {
+            item.__offsetX(diff, true);
+          });
         }
 
         return diff;
@@ -25760,18 +25768,24 @@
              * parent以及parent的next无需处理，因为深度遍历后面还会进行，
              * 但自己的block需处理，因为对齐只处理了inline元素，忽略了block，
              * 同时由于block和inline区域可能不连续，每个增加的y不一样，
-             * 需要按照每个不同区域来判断，区域是按索引次序依次增大的
+             * 需要按照每个不同区域来判断，区域是按索引次序依次增大的，
+             * 只有在inline出现过后才开始生效，inline之前的block忽略
              */
 
 
             var count = 0,
                 spreadList = lineBoxManager.spreadList;
-            var isLastBlock = false;
+            var isLastBlock = false,
+                hasStart = false;
             flowChildren.forEach(function (item) {
               var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-              var isBlock = isXom && item.computedStyle[DISPLAY$5] === 'block';
+              var isBlock = isXom && ['block', 'flex'].indexOf(item.computedStyle[DISPLAY$5]) > -1;
 
               if (isBlock) {
+                if (!hasStart) {
+                  return;
+                }
+
                 isLastBlock = true;
 
                 if (isVertical) {
@@ -25780,6 +25794,8 @@
                   item.__offsetY(spreadList[count], true);
                 }
               } else {
+                hasStart = true;
+
                 if (isLastBlock) {
                   count++;
                 }

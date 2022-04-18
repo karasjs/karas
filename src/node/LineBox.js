@@ -42,25 +42,23 @@ class LineBox {
     let baseline = this.baseline;
     let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
     let increase = lineHeight;
-    let hasReplaced;
+    let diff = 0;
+    let hasIbOrReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
       this.list.forEach(item => {
-        if(item.isReplaced) {
-          hasReplaced = true;
+        if(!(item instanceof TextBox)) {
+          hasIbOrReplaced = true;
         }
         // 垂直排版麻烦点，不能简单算baseline差值，因为原点坐标系不一样
         if(isVertical) {
           let n1 = lineHeight - baseline;
           let n2 = item.width - item.baseline;
-          // console.log(n1,n2);
           if(n1 !== n2) {
             let d = n1 - n2;
             item.__offsetX(d, true);
             // 同下方
-            if(d > 0) {
-              increase = Math.max(increase, item.width + d);
-            }
+            increase = Math.max(increase, item.height + d);
           }
         }
         else {
@@ -70,17 +68,13 @@ class LineBox {
             item.__offsetY(d, true);
             // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
             // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
-            if(d > 0) {
-              increase = Math.max(increase, item.height + d);
-            }
+            increase = Math.max(increase, item.height + d);
           }
         }
       });
     }
-    let diff = 0;
-    // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
-    // 因为此时img要参与这一行和baseline的对齐扩充
-    if(hasReplaced) {
+    // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题
+    if(hasIbOrReplaced) {
       diff = this.__lineHeight - this.__baseline;
     }
     // 增加过的高度比最大还大时需要调整

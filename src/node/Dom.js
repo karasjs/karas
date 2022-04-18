@@ -1204,7 +1204,11 @@ class Dom extends Xom {
     if(!isAbs) {
       let spread = lineBoxManager.verticalAlign(isVertical);
       if(spread) {
-        if(!fixedHeight) {
+        if(isVertical && !fixedWidth) {
+          this.__resizeX(spread);
+          // this.__offsetX(spread);
+        }
+        else if(!isVertical && !fixedHeight) {
           this.__resizeY(spread);
         }
         /**

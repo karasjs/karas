@@ -346,10 +346,6 @@ class TextBox {
     return this.__parentLineBox;
   }
 
-  get isReplaced() {
-    return false;
-  }
-
   get isVertical() {
     return this.__isVertical;
   }

@@ -13253,11 +13253,6 @@
         return this.__parentLineBox;
       }
     }, {
-      key: "isReplaced",
-      get: function get() {
-        return false;
-      }
-    }, {
       key: "isVertical",
       get: function get() {
         return this.__isVertical;
@@ -23576,18 +23571,19 @@
         var baseline = this.baseline;
         var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight;
-        var hasReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
+        var diff = 0;
+        var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
         if (this.list.length) {
           this.list.forEach(function (item) {
-            if (item.isReplaced) {
-              hasReplaced = true;
+            if (!(item instanceof TextBox)) {
+              hasIbOrReplaced = true;
             } // 垂直排版麻烦点，不能简单算baseline差值，因为原点坐标系不一样
 
 
             if (isVertical) {
               var n1 = lineHeight - baseline;
-              var n2 = item.width - item.baseline; // console.log(n1,n2);
+              var n2 = item.width - item.baseline;
 
               if (n1 !== n2) {
                 var d = n1 - n2;
@@ -23595,9 +23591,7 @@
                 item.__offsetX(d, true); // 同下方
 
 
-                if (d > 0) {
-                  increase = Math.max(increase, item.width + d);
-                }
+                increase = Math.max(increase, item.height + d);
               }
             } else {
               var n = item.baseline;
@@ -23609,18 +23603,14 @@
                 // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
 
-                if (_d > 0) {
-                  increase = Math.max(increase, item.height + _d);
-                }
+                increase = Math.max(increase, item.height + _d);
               }
             }
           });
-        }
+        } // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题
 
-        var diff = 0; // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
-        // 因为此时img要参与这一行和baseline的对齐扩充
 
-        if (hasReplaced) {
+        if (hasIbOrReplaced) {
           diff = this.__lineHeight - this.__baseline;
         } // 增加过的高度比最大还大时需要调整
 
@@ -25760,7 +25750,10 @@
           var spread = lineBoxManager.verticalAlign(isVertical);
 
           if (spread) {
-            if (!fixedHeight) {
+            if (isVertical && !fixedWidth) {
+              this.__resizeX(spread); // this.__offsetX(spread);
+
+            } else if (!isVertical && !fixedHeight) {
               this.__resizeY(spread);
             }
             /**

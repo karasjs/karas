@@ -31,6 +31,7 @@ class LineBox {
     this.__y = y;
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
     this.__baseline = baseline;
+    this.__offset = 0;
   }
 
   add(item) {
@@ -63,6 +64,7 @@ class LineBox {
         }
         else {
           let n = item.baseline;
+          console.log(baseline, n, baseline - n);
           if(n !== baseline) {
             let d = baseline - n;
             item.__offsetY(d, true);
@@ -95,6 +97,7 @@ class LineBox {
     this.__x += diff;
     // vertical-align或水平情况特殊对齐，可能替换元素img和text导致偏移
     if(isAlign) {
+      this.__offset += diff; // offset记录了因为对齐造成的lineBox挪动偏移值，在对齐时修正
       this.list.forEach(item => {
         item.__offsetX(diff, true);
       });
@@ -105,6 +108,7 @@ class LineBox {
     this.__y += diff;
     // vertical-align情况或水平特殊对齐，可能替换元素img和textBox导致偏移
     if(isAlign) {
+      this.__offset += diff;
       this.list.forEach(item => {
         item.__offsetY(diff, true);
       });
@@ -215,6 +219,10 @@ class LineBox {
 
   get height() {
     return this.lineHeight;
+  }
+
+  get offset() {
+    return this.__offset;
   }
 
   get baseline() {

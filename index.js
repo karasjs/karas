@@ -23557,6 +23557,7 @@
       this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
       this.__baseline = baseline;
+      this.__offset = 0;
     }
 
     _createClass(LineBox, [{
@@ -23595,6 +23596,7 @@
               }
             } else {
               var n = item.baseline;
+              console.log(baseline, n, baseline - n);
 
               if (n !== baseline) {
                 var _d = baseline - n;
@@ -23635,6 +23637,8 @@
         this.__x += diff; // vertical-align或水平情况特殊对齐，可能替换元素img和text导致偏移
 
         if (isAlign) {
+          this.__offset += diff; // offset记录了因为对齐造成的lineBox挪动偏移值，在对齐时修正
+
           this.list.forEach(function (item) {
             item.__offsetX(diff, true);
           });
@@ -23646,6 +23650,7 @@
         this.__y += diff; // vertical-align情况或水平特殊对齐，可能替换元素img和textBox导致偏移
 
         if (isAlign) {
+          this.__offset += diff;
           this.list.forEach(function (item) {
             item.__offsetY(diff, true);
           });
@@ -23778,6 +23783,11 @@
       key: "height",
       get: function get() {
         return this.lineHeight;
+      }
+    }, {
+      key: "offset",
+      get: function get() {
+        return this.__offset;
       }
     }, {
       key: "baseline",
@@ -24120,9 +24130,10 @@
 
           for (var i = 0; i < length - 1; i++) {
             n += list[i].height;
-          }
+          } // 需考虑因为verticalAlign造成的lineBox偏移offset值，修正计算正确的baseline
 
-          return n + list[length - 1].baseline;
+
+          return n + list[length - 1].baseline + list[length - 1].offset;
         }
 
         return 0;
@@ -25803,31 +25814,31 @@
                 isLastBlock = false;
               }
             });
-          }
-        } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+          } // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
 
 
-        if (!isAbs && !isColumn && !isRow) {
-          if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
+          if (!isColumn && !isRow) {
+            if (['center', 'right'].indexOf(textAlign) > -1) {
+              lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
 
-            flowChildren.forEach(function (item) {
-              if (item instanceof Component$1) {
-                item = item.shadowRoot;
-              }
+              flowChildren.forEach(function (item) {
+                if (item instanceof Component$1) {
+                  item = item.shadowRoot;
+                }
 
-              if (item instanceof Text) {
-                item.__inlineSize(isVertical);
-              }
+                if (item instanceof Text) {
+                  item.__inlineSize(isVertical);
+                }
+              });
+            } // 所有inline计算size
+
+
+            lineBoxManager.domList.forEach(function (item) {
+              item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
             });
-          } // 所有inline计算size
 
-
-          lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
-          });
-
-          this.__marginAuto(currentStyle, data, isVertical);
+            this.__marginAuto(currentStyle, data, isVertical);
+          }
         }
       } // 弹性布局时的计算位置
 
@@ -27252,26 +27263,37 @@
 
 
         if (!isAbs && !isInline) {
-          lineBoxManager.verticalAlign(isVertical);
+          var spread = lineBoxManager.verticalAlign(isVertical);
 
-          if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
+          if (spread) {
+            if (isVertical && !fixedWidth) {
+              this.__resizeX(spread); // this.__offsetX(spread);
 
-            flowChildren.forEach(function (item) {
-              if (item instanceof Component$1) {
-                item = item.shadowRoot;
-              }
+            } else if (!isVertical && !fixedHeight) {
+              this.__resizeY(spread);
+            }
+          }
 
-              if (item instanceof Text) {
-                item.__inlineSize(isVertical);
-              }
+          if (!isColumn && !isRow) {
+            if (['center', 'right'].indexOf(textAlign) > -1) {
+              lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
+
+              flowChildren.forEach(function (item) {
+                if (item instanceof Component$1) {
+                  item = item.shadowRoot;
+                }
+
+                if (item instanceof Text) {
+                  item.__inlineSize(isVertical);
+                }
+              });
+            } // block的所有inline计算size
+
+
+            lineBoxManager.domList.forEach(function (item) {
+              item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
             });
-          } // block的所有inline计算size
-
-
-          lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
-          });
+          }
         } // inlineBlock新开上下文，但父级block遇到要处理换行
 
 

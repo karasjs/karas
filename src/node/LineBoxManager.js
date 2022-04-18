@@ -254,7 +254,8 @@ class LineBoxManager {
       for(let i = 0; i < length - 1; i++) {
         n += list[i].height;
       }
-      return n + list[length - 1].baseline;
+      // 需考虑因为verticalAlign造成的lineBox偏移offset值，修正计算正确的baseline
+      return n + list[length - 1].baseline + list[length - 1].offset;
     }
     return 0;
   }

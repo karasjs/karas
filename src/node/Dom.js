@@ -1244,26 +1244,26 @@ class Dom extends Xom {
           }
         });
       }
-    }
-    // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
-    if(!isAbs && !isColumn && !isRow) {
-      if(['center', 'right'].indexOf(textAlign) > -1) {
-        lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
-        // 直接text需计算size
-        flowChildren.forEach(item => {
-          if(item instanceof Component) {
-            item = item.shadowRoot;
-          }
-          if(item instanceof Text) {
-            item.__inlineSize(isVertical);
-          }
+      // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
+      if(!isColumn && !isRow) {
+        if(['center', 'right'].indexOf(textAlign) > -1) {
+          lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
+          // 直接text需计算size
+          flowChildren.forEach(item => {
+            if(item instanceof Component) {
+              item = item.shadowRoot;
+            }
+            if(item instanceof Text) {
+              item.__inlineSize(isVertical);
+            }
+          });
+        }
+        // 所有inline计算size
+        lineBoxManager.domList.forEach(item => {
+          item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
         });
+        this.__marginAuto(currentStyle, data, isVertical);
       }
-      // 所有inline计算size
-      lineBoxManager.domList.forEach(item => {
-        item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
-      });
-      this.__marginAuto(currentStyle, data, isVertical);
     }
   }
 
@@ -2557,23 +2557,34 @@ class Dom extends Xom {
     }
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
     if(!isAbs && !isInline) {
-      lineBoxManager.verticalAlign(isVertical);
-      if(['center', 'right'].indexOf(textAlign) > -1) {
-        lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
-        // 直接text需计算size
-        flowChildren.forEach(item => {
-          if(item instanceof Component) {
-            item = item.shadowRoot;
-          }
-          if(item instanceof Text) {
-            item.__inlineSize(isVertical);
-          }
+      let spread = lineBoxManager.verticalAlign(isVertical);
+      if(spread) {
+        if(isVertical && !fixedWidth) {
+          this.__resizeX(spread);
+          // this.__offsetX(spread);
+        }
+        else if(!isVertical && !fixedHeight) {
+          this.__resizeY(spread);
+        }
+      }
+      if(!isColumn && !isRow) {
+        if(['center', 'right'].indexOf(textAlign) > -1) {
+          lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
+          // 直接text需计算size
+          flowChildren.forEach(item => {
+            if(item instanceof Component) {
+              item = item.shadowRoot;
+            }
+            if(item instanceof Text) {
+              item.__inlineSize(isVertical);
+            }
+          });
+        }
+        // block的所有inline计算size
+        lineBoxManager.domList.forEach(item => {
+          item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
         });
       }
-      // block的所有inline计算size
-      lineBoxManager.domList.forEach(item => {
-        item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
-      });
     }
     // inlineBlock新开上下文，但父级block遇到要处理换行
     return lineClampCount;

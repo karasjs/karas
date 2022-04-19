@@ -47,10 +47,9 @@ class LineBox {
   }
 
   verticalAlign(isVertical) {
-    let baseline = this.baseline;
+    let baseline = isVertical ? this.verticalBaseline : this.baseline;
     let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
     let increase = lineHeight;
-    let diff = 0;
     let hasIbOrReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
@@ -58,15 +57,14 @@ class LineBox {
         if(!(item instanceof TextBox)) {
           hasIbOrReplaced = true;
         }
-        // 垂直排版麻烦点，不能简单算baseline差值，因为原点坐标系不一样
+        // 垂直排版计算不太一样，因为原点坐标系不一样
         if(isVertical) {
-          let n1 = lineHeight - baseline;
-          let n2 = item.width - item.baseline;
-          if(n1 !== n2) {
-            let d = n1 - n2;
+          let n = item.verticalBaseline;
+          if(n !== baseline) {
+            let d = baseline - n;
             item.__offsetX(d, true);
             // 同下方
-            increase = Math.max(increase, item.width + d);
+            increase = Math.max(increase, lineHeight + d);
           }
         }
         else {
@@ -74,27 +72,27 @@ class LineBox {
           if(n !== baseline) {
             let d = baseline - n;
             item.__offsetY(d, true);
-            // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+            // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度调整值
             // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
             increase = Math.max(increase, item.height + d);
           }
         }
       });
     }
-    // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
-    // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题
+    let diff = 0;
+    // 特殊情况，只有ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
+    // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
     if(hasIbOrReplaced) {
-      diff = this.__lineHeight - this.__baseline;
+      if(isVertical) {
+        diff = this.__baseline;
+      }
+      else {
+        diff = Math.max(0, this.__lineHeight - this.__baseline);
+      }
     }
     // 增加过的高度比最大还大时需要调整
     if(increase > lineHeight) {
-      diff = Math.max(increase - lineHeight);
-    }
-    // 垂直排版由于方向原因，不能像水平那样直接扩展y，需向右移动diff，造成左侧扩展的表象
-    if(isVertical && diff > 0) {
-      this.list.forEach(item => {
-        item.__offsetX(diff, true);
-      });
+      diff = Math.max(diff, increase - lineHeight);
     }
     return diff;
   }
@@ -285,6 +283,15 @@ class LineBox {
     // 只有TextBox和InlineBlock或replaced
     this.list.forEach(item => {
       baseline = Math.max(baseline, item.baseline);
+    });
+    return baseline;
+  }
+
+  get verticalBaseline() {
+    let baseline = this.__baseline;
+    // 只有TextBox和InlineBlock或replaced
+    this.list.forEach(item => {
+      baseline = Math.max(baseline, item.verticalBaseline);
     });
     return baseline;
   }

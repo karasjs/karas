@@ -529,6 +529,7 @@
       this.__width = 0;
       this.__height = 0;
       this.__baseline = 0;
+      this.__verticalBaseline = 0;
       this.__config = {};
       this.__prev = null;
       this.__next = null;
@@ -673,6 +674,11 @@
       key: "baseline",
       get: function get() {
         return this.__baseline;
+      }
+    }, {
+      key: "verticalBaseline",
+      get: function get() {
+        return this.__verticalBaseline;
       }
     }, {
       key: "virtualDom",
@@ -13264,6 +13270,11 @@
         return this.parent.baseline;
       }
     }, {
+      key: "verticalBaseline",
+      get: function get() {
+        return this.parent.verticalBaseline;
+      }
+    }, {
       key: "virtualDom",
       get: function get() {
         return this.__virtualDom;
@@ -14526,18 +14537,19 @@
         if (isVertical) {
           this.__width = x - data.x;
           this.__height = maxW;
+          this.__verticalBaseline = css.getVerticalBaseline(computedStyle);
         } else {
           this.__width = maxW;
           this.__height = y - data.y;
+          this.__baseline = css.getBaseline(computedStyle);
         }
 
-        this.__baseline = css.getBaseline(computedStyle);
         return lineClampCount + lineCount;
       }
     }, {
       key: "__layoutNone",
       value: function __layoutNone() {
-        this.__width = this.__height = this.__baseline = 0;
+        this.__width = this.__height = this.__baseline = this.__verticalBaseline = 0;
 
         this.__textBoxes.splice(0);
       } // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
@@ -15162,11 +15174,6 @@
         }
 
         return o.textWidth;
-      }
-    }, {
-      key: "baseline",
-      get: function get() {
-        return this.__baseline;
       }
     }, {
       key: "root",
@@ -23602,38 +23609,36 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign(isVertical) {
-        var baseline = this.baseline;
+        var baseline = isVertical ? this.verticalBaseline : this.baseline;
         var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight;
-        var diff = 0;
         var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
         if (this.list.length) {
           this.list.forEach(function (item) {
             if (!(item instanceof TextBox)) {
               hasIbOrReplaced = true;
-            } // 垂直排版麻烦点，不能简单算baseline差值，因为原点坐标系不一样
+            } // 垂直排版计算不太一样，因为原点坐标系不一样
 
 
             if (isVertical) {
-              var n1 = lineHeight - baseline;
-              var n2 = item.width - item.baseline;
+              var n = item.verticalBaseline;
 
-              if (n1 !== n2) {
-                var d = n1 - n2;
+              if (n !== baseline) {
+                var d = baseline - n;
 
                 item.__offsetX(d, true); // 同下方
 
 
-                increase = Math.max(increase, item.width + d);
+                increase = Math.max(increase, lineHeight + d);
               }
             } else {
-              var n = item.baseline;
+              var _n = item.baseline;
 
-              if (n !== baseline) {
-                var _d = baseline - n;
+              if (_n !== baseline) {
+                var _d = baseline - _n;
 
-                item.__offsetY(_d, true); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
+                item.__offsetY(_d, true); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度调整值
                 // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
 
@@ -23641,24 +23646,22 @@
               }
             }
           });
-        } // 特殊情况，ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
-        // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题
+        }
 
+        var diff = 0; // 特殊情况，只有ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
+        // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
 
         if (hasIbOrReplaced) {
-          diff = this.__lineHeight - this.__baseline;
+          if (isVertical) {
+            diff = this.__baseline;
+          } else {
+            diff = Math.max(0, this.__lineHeight - this.__baseline);
+          }
         } // 增加过的高度比最大还大时需要调整
 
 
         if (increase > lineHeight) {
-          diff = Math.max(increase - lineHeight);
-        } // 垂直排版由于方向原因，不能像水平那样直接扩展y，需向右移动diff，造成左侧扩展的表象
-
-
-        if (isVertical && diff > 0) {
-          this.list.forEach(function (item) {
-            item.__offsetX(diff, true);
-          });
+          diff = Math.max(diff, increase - lineHeight);
         }
 
         return diff;
@@ -23886,6 +23889,16 @@
 
         this.list.forEach(function (item) {
           baseline = Math.max(baseline, item.baseline);
+        });
+        return baseline;
+      }
+    }, {
+      key: "verticalBaseline",
+      get: function get() {
+        var baseline = this.__baseline; // 只有TextBox和InlineBlock或replaced
+
+        this.list.forEach(function (item) {
+          baseline = Math.max(baseline, item.verticalBaseline);
         });
         return baseline;
       }
@@ -24248,7 +24261,16 @@
       }
     }, {
       key: "verticalBaseline",
-      get: function get() {}
+      get: function get() {
+        var list = this.list;
+        var length = list.length;
+
+        if (length) {
+          return list[0].baseline + list[0].bOffset;
+        }
+
+        return 0;
+      }
     }, {
       key: "lineHeight",
       get: function get() {
@@ -24591,7 +24613,8 @@
       VMAX$6 = o.VMAX,
       VMIN$6 = o.VMIN;
   var isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute,
-      getBaseline$1 = css.getBaseline;
+      getBaseline$1 = css.getBaseline,
+      getVerticalBaseline$1 = css.getVerticalBaseline;
   var extend$2 = util.extend,
       isNil$7 = util.isNil,
       isFunction$6 = util.isFunction;
@@ -25171,7 +25194,7 @@
               } // text除了flex还需要分辨垂直排版
               else {
                 if (isVertical) {
-                  var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+                  var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
 
                   item.__layout({
                     x: x,
@@ -25199,7 +25222,7 @@
           } // 特殊的flex水平布局但书写垂直，遇到后直接假布局获取宽度，因为水平尺寸视为无限但垂直不是，
           // 这里一定是第一个垂直排版不会递归下去，因为flex的child匿名block，水平的垂直书写inline匿名ib
           else if (isVertical) {
-            var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+            var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
 
             this.__layout({
               x: x,
@@ -25217,7 +25240,7 @@
             var _lineBoxManager = data.lineBoxManager;
 
             if (display !== 'inline') {
-              _lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+              _lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
             }
 
             flowChildren.forEach(function (item) {
@@ -25361,7 +25384,7 @@
         var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
         // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
 
-        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+        var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
         var maxSize = 0;
         var countSize = 0;
@@ -26044,7 +26067,7 @@
             shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
 
             if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
-              var lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+              var lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
 
               item.__layout({
                 x: x,
@@ -26596,7 +26619,7 @@
             }
           } // 文字
           else {
-            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+            var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
             lbmList.push(lineBoxManager);
 
             item.__layout({
@@ -26996,7 +27019,7 @@
 
           lineClamp = data.lineClamp || 0;
         } else {
-          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline$1(computedStyle), isVertical);
+          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
           lx = x;
           ly = y;
           endSpace = selfEndSpace = lineClampCount = 0;
@@ -28303,7 +28326,7 @@
       key: "verticalBaseline",
       get: function get() {
         if (!this.lineBoxManager || !this.lineBoxManager.size) {
-          return this.offsetHeight;
+          return 0;
         }
 
         var _this$computedStyle4 = this.computedStyle,

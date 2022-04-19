@@ -24,6 +24,7 @@ class Node {
     this.__width = 0;
     this.__height = 0;
     this.__baseline = 0;
+    this.__verticalBaseline = 0;
     this.__config = {};
     this.__prev = null;
     this.__next = null;
@@ -147,6 +148,10 @@ class Node {
 
   get baseline() {
     return this.__baseline;
+  }
+
+  get verticalBaseline() {
+    return this.__verticalBaseline;
   }
 
   get virtualDom() {

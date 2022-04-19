@@ -346,6 +346,10 @@ class TextBox {
     return this.parent.baseline;
   }
 
+  get verticalBaseline() {
+    return this.parent.verticalBaseline;
+  }
+
   get virtualDom() {
     return this.__virtualDom;
   }

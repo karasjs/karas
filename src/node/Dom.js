@@ -83,7 +83,7 @@ const {
   ELLIPSIS,
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
-const { isRelativeOrAbsolute, getBaseline } = css;
+const { isRelativeOrAbsolute, getBaseline, getVerticalBaseline } = css;
 const { extend, isNil, isFunction } = util;
 const { CANVAS, SVG, WEBGL } = mode;
 
@@ -579,7 +579,8 @@ class Dom extends Xom {
           // text除了flex还需要分辨垂直排版
           else {
             if(isVertical) {
-              let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+              let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
+                isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
               item.__layout({
                 x,
                 y,
@@ -606,7 +607,8 @@ class Dom extends Xom {
       // 特殊的flex水平布局但书写垂直，遇到后直接假布局获取宽度，因为水平尺寸视为无限但垂直不是，
       // 这里一定是第一个垂直排版不会递归下去，因为flex的child匿名block，水平的垂直书写inline匿名ib
       else if(isVertical) {
-        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
+          isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
         this.__layout({
           x,
           y,
@@ -622,7 +624,8 @@ class Dom extends Xom {
       else {
         let lineBoxManager = data.lineBoxManager;
         if(display !== 'inline') {
-          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+          lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
+            isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
         }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -731,7 +734,8 @@ class Dom extends Xom {
     let lineClampCount = 0;
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
-    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+    let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
+      isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxSize = 0;
     let countSize = 0;
@@ -1336,7 +1340,8 @@ class Dom extends Xom {
         shrinkList.push(1);
         // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
         if(isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
-          let lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+          let lineBoxManager = new LineBoxManager(x, y, lineHeight,
+            isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
           item.__layout({
             x,
             y,
@@ -1834,7 +1839,8 @@ class Dom extends Xom {
       }
       // 文字
       else {
-        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+        let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
+          isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
         lbmList.push(lineBoxManager);
         item.__layout({
           x,
@@ -2208,7 +2214,8 @@ class Dom extends Xom {
       lineClamp = data.lineClamp || 0;
     }
     else {
-      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, getBaseline(computedStyle), isVertical);
+      lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
+        isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
       lx = x;
       ly = y;
       endSpace = selfEndSpace = lineClampCount = 0;
@@ -3369,7 +3376,7 @@ class Dom extends Xom {
 
   get verticalBaseline() {
     if(!this.lineBoxManager || !this.lineBoxManager.size) {
-      return this.offsetHeight;
+      return 0;
     }
     let {
       [MARGIN_LEFT]: marginLeft,

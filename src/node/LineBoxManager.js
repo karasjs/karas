@@ -270,7 +270,14 @@ class LineBoxManager {
     return 0;
   }
 
-  get verticalBaseline() {}
+  get verticalBaseline() {
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      return list[0].baseline + list[0].bOffset;
+    }
+    return 0;
+  }
 
   get lineHeight() {
     let list = this.list;

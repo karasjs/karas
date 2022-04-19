@@ -347,17 +347,18 @@ class Text extends Node {
     if(isVertical) {
       this.__width = x - data.x;
       this.__height = maxW;
+      this.__verticalBaseline = css.getVerticalBaseline(computedStyle);
     }
     else {
       this.__width = maxW;
       this.__height = y - data.y;
+      this.__baseline = css.getBaseline(computedStyle);
     }
-    this.__baseline = css.getBaseline(computedStyle);
     return lineClampCount + lineCount;
   }
 
   __layoutNone() {
-    this.__width = this.__height = this.__baseline = 0;
+    this.__width = this.__height = this.__baseline = this.__verticalBaseline = 0;
     this.__textBoxes.splice(0);
   }
 
@@ -850,10 +851,6 @@ class Text extends Node {
       }
     }
     return o.textWidth;
-  }
-
-  get baseline() {
-    return this.__baseline;
   }
 
   get root() {

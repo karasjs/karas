@@ -1287,12 +1287,17 @@ function getFontFamily(str) {
 function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
   let ff = getFontFamily(style[FONT_FAMILY]);
-  let normal = fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+  let normal = calNormalLineHeight(style, ff);
   return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
-function calNormalLineHeight(style) {
-  let ff = getFontFamily(style[FONT_FAMILY]);
+// 垂直排版的baseline和水平类似，只是原点坐标系不同，删除加本身高度变为加gap高度
+function getVerticalBaseline(style) {
+  return style[LINE_HEIGHT] - getBaseline(style);
+}
+
+function calNormalLineHeight(style, ff) {
+  ff = ff || getFontFamily(style[FONT_FAMILY]);
   return style[FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
 }
 
@@ -1720,6 +1725,7 @@ export default {
   setFontStyle,
   getFontFamily,
   getBaseline,
+  getVerticalBaseline,
   calRelative,
   equalStyle,
   isRelativeOrAbsolute,

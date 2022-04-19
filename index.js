@@ -9423,12 +9423,17 @@
   function getBaseline(style) {
     var fontSize = style[FONT_SIZE$2];
     var ff = getFontFamily(style[FONT_FAMILY]);
-    var normal = fontSize * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).lhr;
+    var normal = calNormalLineHeight(style, ff);
     return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).blr;
+  } // 垂直排版的baseline和水平类似，只是原点坐标系不同，删除加本身高度变为加gap高度
+
+
+  function getVerticalBaseline(style) {
+    return style[LINE_HEIGHT] - getBaseline(style);
   }
 
-  function calNormalLineHeight(style) {
-    var ff = getFontFamily(style[FONT_FAMILY]);
+  function calNormalLineHeight(style, ff) {
+    ff = ff || getFontFamily(style[FONT_FAMILY]);
     return style[FONT_SIZE$2] * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).lhr;
   }
 
@@ -9859,6 +9864,7 @@
     setFontStyle: setFontStyle,
     getFontFamily: getFontFamily,
     getBaseline: getBaseline,
+    getVerticalBaseline: getVerticalBaseline,
     calRelative: calRelative,
     equalStyle: equalStyle,
     isRelativeOrAbsolute: isRelativeOrAbsolute,
@@ -12862,7 +12868,8 @@
       TEXT_STROKE_COLOR$1 = _enums$STYLE_KEY$4.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$1 = _enums$STYLE_KEY$4.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$1 = _enums$STYLE_KEY$4.TEXT_STROKE_OVER,
-      ROTATE_Z$2 = _enums$STYLE_KEY$4.ROTATE_Z;
+      ROTATE_Z$2 = _enums$STYLE_KEY$4.ROTATE_Z,
+      LINE_HEIGHT$1 = _enums$STYLE_KEY$4.LINE_HEIGHT;
   var DEG$2 = o.DEG;
 
   function isCjk(c) {
@@ -12919,26 +12926,37 @@
             y = this.y,
             parent = this.parent,
             width = this.width,
+            height = this.height,
             isVertical = this.isVertical;
         var ox = parent.ox,
             oy = parent.oy;
         var dom = parent.parent;
-        var b = css.getBaseline(computedStyle); // 垂直文本x/y互换，渲染时使用rotate模拟，
-        // 因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
-        // 所以原本左上角转换变成lineHeight（现在的w）减去b
+        var b = css.getBaseline(computedStyle);
+        var bv = css.getVerticalBaseline(computedStyle); // 垂直文本x/y互换，渲染时使用rotate模拟，因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
+        // 它等同于lineHeight（现在的w）减去b
 
-        if (!isVertical) {
+        if (isVertical) {
+          x += bv;
+        } else {
           y += b;
         }
 
         x += ox + dx;
         y += oy + dy;
-        this.__endX = x + width;
-        this.__endY = y;
+
+        if (isVertical) {
+          this.__endX = x;
+          this.__endY = y + height;
+        } else {
+          this.__endX = x + width;
+          this.__endY = y;
+        }
+
         var letterSpacing = computedStyle[LETTER_SPACING$1],
             textStrokeWidth = computedStyle[TEXT_STROKE_WIDTH$1],
             textStrokeColor = computedStyle[TEXT_STROKE_COLOR$1],
-            fontSize = computedStyle[FONT_SIZE$4];
+            fontSize = computedStyle[FONT_SIZE$4],
+            lineHeight = computedStyle[LINE_HEIGHT$1];
         var me = dom.matrixEvent,
             list;
         var dev1 = 0,
@@ -12946,8 +12964,8 @@
 
         if (isVertical) {
           list = [[ROTATE_Z$2, [90, DEG$2]]];
-          dev1 = (width - b) * 0.4;
-          dev2 = (width - b) * 0.2;
+          dev1 = bv * 0.6;
+          dev2 = bv * 0.2;
         }
 
         var i = 0,
@@ -12967,32 +12985,32 @@
                   ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
 
                   if (overFill) {
-                    ctx.fillText(c, x + dev1, y - dev2);
+                    ctx.fillText(c, x - dev1, y - dev2);
                   }
 
                   if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                    ctx.strokeText(c, x + dev1, y - dev2);
+                    ctx.strokeText(c, x - dev1, y - dev2);
                   }
 
                   if (!overFill) {
-                    ctx.fillText(c, x + dev1, y - dev2);
+                    ctx.fillText(c, x - dev1, y - dev2);
                   }
                 } else {
-                  var tfo = [x + (width - b), y];
+                  var tfo = [x, y];
                   var m = transform$1.calMatrixWithOrigin(list, tfo, 0, 0);
                   m = mx.multiply(me, m);
                   ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
 
                   if (overFill) {
-                    ctx.fillText(c, x + (width - b), y);
+                    ctx.fillText(c, x, y);
                   }
 
                   if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                    ctx.strokeText(c, x + (width - b), y);
+                    ctx.strokeText(c, x, y);
                   }
 
                   if (!overFill) {
-                    ctx.fillText(c, x + (width - b), y);
+                    ctx.fillText(c, x, y);
                   }
                 }
 
@@ -13029,20 +13047,20 @@
                     var s = content.slice(last, _i);
 
                     if (overFill) {
-                      ctx.fillText(s, x + dev1, y + count + b - dev2);
+                      ctx.fillText(s, x - dev1, y + count + b - dev2);
                     }
 
                     if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                      ctx.strokeText(s, x + dev1, y + count + b - dev2);
+                      ctx.strokeText(s, x - dev1, y + count + b - dev2);
                     }
 
                     if (!overFill) {
-                      ctx.fillText(s, x + dev1, y + count + b - dev2);
+                      ctx.fillText(s, x - dev1, y + count + b - dev2);
                     }
 
                     count += fontSize;
                   } else {
-                    var _tfo = [x + (width - b), y + count];
+                    var _tfo = [x, y + count];
 
                     var _m = transform$1.calMatrixWithOrigin(list, _tfo, 0, 0);
 
@@ -13052,15 +13070,15 @@
                     var _s = content.slice(last, _i);
 
                     if (overFill) {
-                      ctx.fillText(_s, x + (width - b), y + count);
+                      ctx.fillText(_s, x, y + count);
                     }
 
                     if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                      ctx.strokeText(_s, x + (width - b), y + count);
+                      ctx.strokeText(_s, x, y + count);
                     }
 
                     if (!overFill) {
-                      ctx.fillText(_s, x + (width - b), y + count);
+                      ctx.fillText(_s, x, y + count);
                     }
 
                     count += ctx.measureText(_s).width;
@@ -13075,15 +13093,15 @@
                   var _s2 = content.slice(last, _i);
 
                   if (overFill) {
-                    ctx.fillText(_s2, x + dev1, y + count + b - dev2);
+                    ctx.fillText(_s2, x - dev1, y + count + b - dev2);
                   }
 
                   if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                    ctx.strokeText(_s2, x + dev1, y + count + b - dev2);
+                    ctx.strokeText(_s2, x - dev1, y + count + b - dev2);
                   }
 
                   if (!overFill) {
-                    ctx.fillText(_s2, x + dev1, y + count + b - dev2);
+                    ctx.fillText(_s2, x - dev1, y + count + b - dev2);
                   }
 
                   count += fontSize;
@@ -13099,18 +13117,18 @@
                   ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
 
                   if (overFill) {
-                    ctx.fillText(_s3, x + dev1, y + count + b - dev2);
+                    ctx.fillText(_s3, x - dev1, y + count + b - dev2);
                   }
 
                   if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                    ctx.strokeText(_s3, x + dev1, y + count + b - dev2);
+                    ctx.strokeText(_s3, x - dev1, y + count + b - dev2);
                   }
 
                   if (!overFill) {
-                    ctx.fillText(_s3, x + dev1, y + count + b - dev2);
+                    ctx.fillText(_s3, x - dev1, y + count + b - dev2);
                   }
                 } else {
-                  var _tfo2 = [x + (width - b), y + count];
+                  var _tfo2 = [x, y + count];
 
                   var _m2 = transform$1.calMatrixWithOrigin(list, _tfo2, 0, 0);
 
@@ -13118,15 +13136,15 @@
                   ctx.setTransform(_m2[0], _m2[1], _m2[4], _m2[5], _m2[12], _m2[13]);
 
                   if (overFill) {
-                    ctx.fillText(_s3, x + (width - b), y + count);
+                    ctx.fillText(_s3, x, y + count);
                   }
 
                   if (textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                    ctx.strokeText(_s3, x + (width - b), y + count);
+                    ctx.strokeText(_s3, x, y + count);
                   }
 
                   if (!overFill) {
-                    ctx.fillText(_s3, x + (width - b), y + count);
+                    ctx.fillText(_s3, x, y + count);
                   }
                 }
               }
@@ -13149,10 +13167,11 @@
 
           if (color.k) {
             color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
-          }
+          } // 垂直的svg以中线为基线，需偏移baseline和中线的差值
+
 
           if (isVertical) {
-            x += fontSize * 0.5 + dev1;
+            x += lineHeight * 0.5 - bv;
           }
 
           var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$4] + 'px']]; // svg无法定义stroke的over
@@ -14091,7 +14110,7 @@
   var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
       DISPLAY$1 = _enums$STYLE_KEY$8.DISPLAY,
       POSITION$1 = _enums$STYLE_KEY$8.POSITION,
-      LINE_HEIGHT$1 = _enums$STYLE_KEY$8.LINE_HEIGHT,
+      LINE_HEIGHT$2 = _enums$STYLE_KEY$8.LINE_HEIGHT,
       FONT_SIZE$6 = _enums$STYLE_KEY$8.FONT_SIZE,
       FONT_FAMILY$3 = _enums$STYLE_KEY$8.FONT_FAMILY,
       FONT_WEIGHT$3 = _enums$STYLE_KEY$8.FONT_WEIGHT,
@@ -14345,7 +14364,7 @@
         var i = 0;
         var length = content.length;
         var maxW = 0;
-        var lineHeight = computedStyle[LINE_HEIGHT$1],
+        var lineHeight = computedStyle[LINE_HEIGHT$2],
             letterSpacing = computedStyle[LETTER_SPACING$2],
             whiteSpace = computedStyle[WHITE_SPACE$1],
             fontSize = computedStyle[FONT_SIZE$6],
@@ -14590,7 +14609,7 @@
               if (!j || limit >= width + ew + 1e-10 + endSpace) {
                 var _length = _content.length;
                 var _parent$computedStyle = parent.computedStyle,
-                    _lineHeight = _parent$computedStyle[LINE_HEIGHT$1],
+                    _lineHeight = _parent$computedStyle[LINE_HEIGHT$2],
                     _letterSpacing = _parent$computedStyle[LETTER_SPACING$2],
                     _fontSize = _parent$computedStyle[FONT_SIZE$6],
                     _fontWeight = _parent$computedStyle[FONT_WEIGHT$3],
@@ -14614,7 +14633,7 @@
                 } // 重新设置lineHeight和baseline，因为可能删除了东西
 
 
-                lineBox.__resetLb(computedStyle[LINE_HEIGHT$1], css.getBaseline(computedStyle));
+                lineBox.__resetLb(computedStyle[LINE_HEIGHT$2], css.getBaseline(computedStyle));
 
                 var _ep = new Ellipsis(x + endSpace, y, ew, bp);
 
@@ -14738,7 +14757,7 @@
             } // 重新设置lineHeight和baseline，因为可能删除了东西
 
 
-            lineBox.__resetLb(computedStyle[LINE_HEIGHT$1], css.getBaseline(computedStyle));
+            lineBox.__resetLb(computedStyle[LINE_HEIGHT$2], css.getBaseline(computedStyle));
 
             var ep = new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp);
             lineBoxManager.addItem(ep, true);
@@ -17145,7 +17164,7 @@
       HEIGHT$2 = _enums$STYLE_KEY$c.HEIGHT,
       TOP = _enums$STYLE_KEY$c.TOP,
       BOTTOM = _enums$STYLE_KEY$c.BOTTOM,
-      LINE_HEIGHT$2 = _enums$STYLE_KEY$c.LINE_HEIGHT,
+      LINE_HEIGHT$3 = _enums$STYLE_KEY$c.LINE_HEIGHT,
       OPACITY$2 = _enums$STYLE_KEY$c.OPACITY,
       Z_INDEX$1 = _enums$STYLE_KEY$c.Z_INDEX,
       TRANSFORM$2 = _enums$STYLE_KEY$c.TRANSFORM,
@@ -17835,7 +17854,7 @@
       if (p[1] === n[1]) {
         diff = n[0] - p[0];
       } // lineHeight奇怪的单位变化，%相对于fontSize
-      else if (k === LINE_HEIGHT$2) {
+      else if (k === LINE_HEIGHT$3) {
         diff = calByUnit(p, n, computedStyle[FONT_SIZE$8], target.root);
       } // fontSize的%相对于parent的
       else if (k === FONT_SIZE$8) {
@@ -20395,7 +20414,7 @@
       BACKGROUND_CLIP$2 = _enums$STYLE_KEY$d.BACKGROUND_CLIP,
       FONT_SIZE$9 = _enums$STYLE_KEY$d.FONT_SIZE,
       FONT_FAMILY$5 = _enums$STYLE_KEY$d.FONT_FAMILY,
-      LINE_HEIGHT$3 = _enums$STYLE_KEY$d.LINE_HEIGHT,
+      LINE_HEIGHT$4 = _enums$STYLE_KEY$d.LINE_HEIGHT,
       TEXT_STROKE_COLOR$4 = _enums$STYLE_KEY$d.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH$3 = _enums$STYLE_KEY$d.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER$3 = _enums$STYLE_KEY$d.TEXT_STROKE_OVER,
@@ -20722,17 +20741,17 @@
         }
 
         var fontSize = computedStyle[FONT_SIZE$9];
-        var lineHeight = currentStyle[LINE_HEIGHT$3]; // lineHeight继承很特殊，数字和normal不同于普通单位
+        var lineHeight = currentStyle[LINE_HEIGHT$4]; // lineHeight继承很特殊，数字和normal不同于普通单位
 
         if (lineHeight[1] === INHERIT$3) {
           if (isRoot) {
-            computedStyle[LINE_HEIGHT$3] = calNormalLineHeight$1(computedStyle);
+            computedStyle[LINE_HEIGHT$4] = calNormalLineHeight$1(computedStyle, null);
           } else {
             var p = parent;
             var ph;
 
             while (p) {
-              ph = p.currentStyle[LINE_HEIGHT$3];
+              ph = p.currentStyle[LINE_HEIGHT$4];
 
               if (ph[1] !== INHERIT$3) {
                 break;
@@ -20743,21 +20762,21 @@
 
 
             if ([AUTO$3, INHERIT$3].indexOf(ph[1]) > -1) {
-              computedStyle[LINE_HEIGHT$3] = calNormalLineHeight$1(computedStyle);
+              computedStyle[LINE_HEIGHT$4] = calNormalLineHeight$1(computedStyle, null);
             } // 数字继承
             else if (ph[1] === NUMBER$5) {
-              computedStyle[LINE_HEIGHT$3] = Math.max(ph[0], 0) * fontSize;
+              computedStyle[LINE_HEIGHT$4] = Math.max(ph[0], 0) * fontSize;
             } // 单位继承
             else {
-              computedStyle[LINE_HEIGHT$3] = parentComputedStyle[LINE_HEIGHT$3];
+              computedStyle[LINE_HEIGHT$4] = parentComputedStyle[LINE_HEIGHT$4];
             }
           }
         } else if (lineHeight[1] === NUMBER$5) {
-          computedStyle[LINE_HEIGHT$3] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight$1(computedStyle);
+          computedStyle[LINE_HEIGHT$4] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight$1(computedStyle, null);
         } // 防止为0
         else {
           var v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);
-          computedStyle[LINE_HEIGHT$3] = v || calNormalLineHeight$1(computedStyle);
+          computedStyle[LINE_HEIGHT$4] = v || calNormalLineHeight$1(computedStyle, null);
         }
 
         var letterSpacing = currentStyle[LETTER_SPACING$3];
@@ -22309,7 +22328,7 @@
             var _ret = function () {
               var fontSize = computedStyle[FONT_SIZE$9],
                   fontFamily = computedStyle[FONT_FAMILY$5],
-                  lineHeight = computedStyle[LINE_HEIGHT$3];
+                  lineHeight = computedStyle[LINE_HEIGHT$4];
               var iw = 0,
                   ih = 0;
               var offscreen,
@@ -23547,7 +23566,7 @@
       PADDING_BOTTOM$3 = _enums$STYLE_KEY$e.PADDING_BOTTOM,
       PADDING_LEFT$4 = _enums$STYLE_KEY$e.PADDING_LEFT,
       PADDING_RIGHT$3 = _enums$STYLE_KEY$e.PADDING_RIGHT,
-      LINE_HEIGHT$4 = _enums$STYLE_KEY$e.LINE_HEIGHT;
+      LINE_HEIGHT$5 = _enums$STYLE_KEY$e.LINE_HEIGHT;
   /**
    * css中常见的概念，一行内容，里面可能有若干不同的内容，仅在布局阶段出现，不参与渲染逻辑
    * 本类是个抽象逻辑概念，会包含Text的内容TextBox和inlineBlock等节点，而内容TextBox则属于Text
@@ -23692,7 +23711,7 @@
           var computedStyle = dom.computedStyle;
 
           while (computedStyle[DISPLAY$3] === 'inline') {
-            l = Math.max(l, computedStyle[LINE_HEIGHT$4]);
+            l = Math.max(l, computedStyle[LINE_HEIGHT$5]);
             b = Math.max(b, css.getBaseline(computedStyle));
             dom = dom.domParent;
             computedStyle = dom.computedStyle;
@@ -24535,7 +24554,7 @@
       JUSTIFY_CONTENT$2 = _enums$STYLE_KEY$g.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$g.Z_INDEX,
       WHITE_SPACE$3 = _enums$STYLE_KEY$g.WHITE_SPACE,
-      LINE_HEIGHT$5 = _enums$STYLE_KEY$g.LINE_HEIGHT,
+      LINE_HEIGHT$6 = _enums$STYLE_KEY$g.LINE_HEIGHT,
       LINE_CLAMP$2 = _enums$STYLE_KEY$g.LINE_CLAMP,
       ORDER$2 = _enums$STYLE_KEY$g.ORDER,
       FLEX_WRAP$2 = _enums$STYLE_KEY$g.FLEX_WRAP,
@@ -25099,7 +25118,7 @@
             flexBasis = currentStyle[FLEX_BASIS$2],
             width = currentStyle[WIDTH$5],
             height = currentStyle[HEIGHT$5];
-        var lineHeight = computedStyle[LINE_HEIGHT$5],
+        var lineHeight = computedStyle[LINE_HEIGHT$6],
             display = computedStyle[DISPLAY$5],
             lineClamp = computedStyle[LINE_CLAMP$2],
             writingMode = computedStyle[WRITING_MODE$2];
@@ -25293,7 +25312,7 @@
         var textAlign = computedStyle[TEXT_ALIGN$3],
             whiteSpace = computedStyle[WHITE_SPACE$3],
             lineClamp = computedStyle[LINE_CLAMP$2],
-            lineHeight = computedStyle[LINE_HEIGHT$5],
+            lineHeight = computedStyle[LINE_HEIGHT$6],
             overflow = computedStyle[OVERFLOW$2],
             writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0;
@@ -25937,7 +25956,7 @@
             lineClamp = computedStyle[LINE_CLAMP$2],
             flexWrap = computedStyle[FLEX_WRAP$2],
             alignContent = computedStyle[ALIGN_CONTENT$1],
-            lineHeight = computedStyle[LINE_HEIGHT$5],
+            lineHeight = computedStyle[LINE_HEIGHT$6],
             textAlign = computedStyle[TEXT_ALIGN$3],
             writingMode = computedStyle[WRITING_MODE$2];
         var isVertical = writingMode.indexOf('vertical') === 0;
@@ -26888,7 +26907,7 @@
         var textAlign = computedStyle[TEXT_ALIGN$3],
             whiteSpace = computedStyle[WHITE_SPACE$3],
             lineClamp = computedStyle[LINE_CLAMP$2],
-            lineHeight = computedStyle[LINE_HEIGHT$5],
+            lineHeight = computedStyle[LINE_HEIGHT$6],
             marginTop = computedStyle[MARGIN_TOP$3],
             marginBottom = computedStyle[MARGIN_BOTTOM$3],
             marginLeft = computedStyle[MARGIN_LEFT$4],
@@ -27410,7 +27429,7 @@
             borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$4],
             borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$4],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$5],
-            lineHeight = computedStyle[LINE_HEIGHT$5]; // 可能因为Ellipsis回溯变成none
+            lineHeight = computedStyle[LINE_HEIGHT$6]; // 可能因为Ellipsis回溯变成none
 
         if (display === 'none') {
           return;

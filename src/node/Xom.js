@@ -426,7 +426,7 @@ class Xom extends Node {
     // lineHeight继承很特殊，数字和normal不同于普通单位
     if(lineHeight[1] === INHERIT) {
       if(isRoot) {
-        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle, null);
       }
       else {
         let p = parent;
@@ -440,7 +440,7 @@ class Xom extends Node {
         }
         // 到root还是inherit或normal，或者中途遇到了normal，使用normal
         if([AUTO, INHERIT].indexOf(ph[1]) > -1) {
-          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle, null);
         }
         // 数字继承
         else if(ph[1] === NUMBER) {
@@ -453,12 +453,12 @@ class Xom extends Node {
       }
     }
     else if(lineHeight[1] === NUMBER) {
-      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
+      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle, null);
     }
     // 防止为0
     else {
       let v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);
-      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle);
+      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle, null);
     }
     let letterSpacing = currentStyle[LETTER_SPACING];
     if(letterSpacing[1] === INHERIT) {

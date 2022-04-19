@@ -18,6 +18,7 @@ const { STYLE_KEY: {
   TEXT_STROKE_WIDTH,
   TEXT_STROKE_OVER,
   ROTATE_Z,
+  LINE_HEIGHT,
 } } = enums;
 const { DEG } = unit;
 
@@ -61,25 +62,35 @@ class TextBox {
    * @param dy
    */
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
-    let { content, x, y, parent, width, isVertical } = this;
+    let { content, x, y, parent, width, height, isVertical } = this;
     let { ox, oy } = parent;
     let dom = parent.parent;
     let b = css.getBaseline(computedStyle);
-    // 垂直文本x/y互换，渲染时使用rotate模拟，
-    // 因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
-    // 所以原本左上角转换变成lineHeight（现在的w）减去b
-    if(!isVertical) {
+    let bv = css.getVerticalBaseline(computedStyle);
+    // 垂直文本x/y互换，渲染时使用rotate模拟，因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
+    // 它等同于lineHeight（现在的w）减去b
+    if(isVertical) {
+      x += bv;
+    }
+    else {
       y += b;
     }
     x += ox + dx;
     y += oy + dy;
-    this.__endX = x + width;
-    this.__endY = y;
+    if(isVertical) {
+      this.__endX = x;
+      this.__endY = y + height;
+    }
+    else {
+      this.__endX = x + width;
+      this.__endY = y;
+    }
     let {
       [LETTER_SPACING]: letterSpacing,
       [TEXT_STROKE_WIDTH]: textStrokeWidth,
       [TEXT_STROKE_COLOR]: textStrokeColor,
       [FONT_SIZE]: fontSize,
+      [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
     let me = dom.matrixEvent, list;
     let dev1 = 0, dev2 = 0;
@@ -87,8 +98,8 @@ class TextBox {
       list = [
         [ROTATE_Z, [90, DEG]],
       ];
-      dev1 = (width - b) * 0.4;
-      dev2 = (width - b) * 0.2;
+      dev1 = bv * 0.6;
+      dev2 = bv * 0.2;
     }
     let i = 0, length = content.length;
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
@@ -101,28 +112,28 @@ class TextBox {
             if(cjk) {
               ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
               if(overFill) {
-                ctx.fillText(c, x + dev1, y - dev2);
+                ctx.fillText(c, x - dev1, y - dev2);
               }
               if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(c, x + dev1, y - dev2);
+                ctx.strokeText(c, x - dev1, y - dev2);
               }
               if(!overFill) {
-                ctx.fillText(c, x + dev1, y - dev2);
+                ctx.fillText(c, x - dev1, y - dev2);
               }
             }
             else {
-              let tfo = [x + (width - b), y];
+              let tfo = [x, y];
               let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
               m = mx.multiply(me, m);
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               if(overFill) {
-                ctx.fillText(c, x + (width - b), y);
+                ctx.fillText(c, x, y);
               }
               if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(c, x + (width - b), y);
+                ctx.strokeText(c, x, y);
               }
               if(!overFill) {
-                ctx.fillText(c, x + (width - b), y);
+                ctx.fillText(c, x, y);
               }
             }
             y += ctx.measureText(c).width + letterSpacing;
@@ -152,30 +163,30 @@ class TextBox {
                 ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
                 let s = content.slice(last, i);
                 if(overFill) {
-                  ctx.fillText(s, x + dev1, y + count + b - dev2);
+                  ctx.fillText(s, x - dev1, y + count + b - dev2);
                 }
                 if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                  ctx.strokeText(s, x + dev1, y + count + b - dev2);
+                  ctx.strokeText(s, x - dev1, y + count + b - dev2);
                 }
                 if(!overFill) {
-                  ctx.fillText(s, x + dev1, y + count + b - dev2);
+                  ctx.fillText(s, x - dev1, y + count + b - dev2);
                 }
                 count += fontSize;
               }
               else {
-                let tfo = [x + (width - b), y + count];
+                let tfo = [x, y + count];
                 let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
                 m = mx.multiply(me, m);
                 ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
                 let s = content.slice(last, i);
                 if(overFill) {
-                  ctx.fillText(s, x + (width - b), y + count);
+                  ctx.fillText(s, x, y + count);
                 }
                 if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                  ctx.strokeText(s, x + (width - b), y + count);
+                  ctx.strokeText(s, x, y + count);
                 }
                 if(!overFill) {
-                  ctx.fillText(s, x + (width - b), y + count);
+                  ctx.fillText(s, x, y + count);
                 }
                 count += ctx.measureText(s).width;
               }
@@ -187,13 +198,13 @@ class TextBox {
               ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
               let s = content.slice(last, i);
               if(overFill) {
-                ctx.fillText(s, x + dev1, y + count + b - dev2);
+                ctx.fillText(s, x - dev1, y + count + b - dev2);
               }
               if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(s, x + dev1, y + count + b - dev2);
+                ctx.strokeText(s, x - dev1, y + count + b - dev2);
               }
               if(!overFill) {
-                ctx.fillText(s, x + dev1, y + count + b - dev2);
+                ctx.fillText(s, x - dev1, y + count + b - dev2);
               }
               count += fontSize;
               last = i;
@@ -205,28 +216,28 @@ class TextBox {
             if(cjk) {
               ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
               if(overFill) {
-                ctx.fillText(s, x + dev1, y + count + b - dev2);
+                ctx.fillText(s, x - dev1, y + count + b - dev2);
               }
               if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(s, x + dev1, y + count + b - dev2);
+                ctx.strokeText(s, x - dev1, y + count + b - dev2);
               }
               if(!overFill) {
-                ctx.fillText(s, x + dev1, y + count + b - dev2);
+                ctx.fillText(s, x - dev1, y + count + b - dev2);
               }
             }
             else {
-              let tfo = [x + (width - b), y + count];
+              let tfo = [x, y + count];
               let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
               m = mx.multiply(me, m);
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
               if(overFill) {
-                ctx.fillText(s, x + (width - b), y + count);
+                ctx.fillText(s, x, y + count);
               }
               if(textStrokeWidth && (textStrokeColor[3] > 0 || textStrokeColor.length === 3 || textStrokeColor.k)) {
-                ctx.strokeText(s, x + (width - b), y + count);
+                ctx.strokeText(s, x, y + count);
               }
               if(!overFill) {
-                ctx.fillText(s, x + (width - b), y + count);
+                ctx.fillText(s, x, y + count);
               }
             }
           }
@@ -249,8 +260,9 @@ class TextBox {
       if(color.k) {
         color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;
       }
+      // 垂直的svg以中线为基线，需偏移baseline和中线的差值
       if(isVertical) {
-        x += fontSize * 0.5 + dev1;
+        x += lineHeight * 0.5 - bv;
       }
       let props = [
         ['x', x],

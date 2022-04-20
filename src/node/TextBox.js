@@ -326,11 +326,19 @@ class TextBox {
     return this.__width;
   }
 
+  get offsetWidth() {
+    return this.__width;
+  }
+
   get outerWidth() {
     return this.__width;
   }
 
   get height() {
+    return this.__height;
+  }
+
+  get offsetHeight() {
     return this.__height;
   }
 

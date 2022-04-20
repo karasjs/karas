@@ -13245,12 +13245,22 @@
         return this.__width;
       }
     }, {
+      key: "offsetWidth",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
       key: "outerWidth",
       get: function get() {
         return this.__width;
       }
     }, {
       key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "offsetHeight",
       get: function get() {
         return this.__height;
       }

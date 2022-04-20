@@ -114,14 +114,18 @@ class Geom extends Xom {
   }
 
   __layoutBlock(data, isAbs, isColumn, isRow) {
-    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data, false);
-    w = fixedWidth ? w : 0;
-    h = fixedHeight ? h : 0;
-    this.__ioSize(w, h);
+    let { fixedWidth, fixedHeight, w, h, isParentVertical, isVertical } = this.__preLayout(data, false);
+    let tw = 0, th = 0;
+    if(fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+      tw = w;
+    }
+    if(fixedHeight || !isAbs && isParentVertical && isVertical) {
+      th = h;
+    }
+    this.__ioSize(tw, th);
     if(isAbs || isColumn || isRow) {
       return;
     }
-    this.__ioSize(w, h);
     this.__marginAuto(this.currentStyle, data);
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
@@ -133,8 +137,8 @@ class Geom extends Xom {
 
   __layoutInline(data, isAbs, isInline) {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
-    let tw = fixedWidth ? w : x - data.x;
-    let th = fixedHeight ? h : y - data.y;
+    let tw = fixedWidth ? w : 0;
+    let th = fixedHeight ? h : 0;
     this.__ioSize(tw, th);
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }

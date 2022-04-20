@@ -29268,18 +29268,26 @@
             fixedWidth = _this$__preLayout.fixedWidth,
             fixedHeight = _this$__preLayout.fixedHeight,
             w = _this$__preLayout.w,
-            h = _this$__preLayout.h;
+            h = _this$__preLayout.h,
+            isParentVertical = _this$__preLayout.isParentVertical,
+            isVertical = _this$__preLayout.isVertical;
 
-        w = fixedWidth ? w : 0;
-        h = fixedHeight ? h : 0;
+        var tw = 0,
+            th = 0;
 
-        this.__ioSize(w, h);
+        if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+          tw = w;
+        }
+
+        if (fixedHeight || !isAbs && isParentVertical && isVertical) {
+          th = h;
+        }
+
+        this.__ioSize(tw, th);
 
         if (isAbs || isColumn || isRow) {
           return;
         }
-
-        this.__ioSize(w, h);
 
         this.__marginAuto(this.currentStyle, data);
 
@@ -29302,8 +29310,8 @@
             w = _this$__preLayout2.w,
             h = _this$__preLayout2.h;
 
-        var tw = fixedWidth ? w : x - data.x;
-        var th = fixedHeight ? h : y - data.y;
+        var tw = fixedWidth ? w : 0;
+        var th = fixedHeight ? h : 0;
 
         this.__ioSize(tw, th);
 

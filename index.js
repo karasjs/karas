@@ -22400,9 +22400,9 @@
               } // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
 
 
-              var ff = css.getFontFamily(fontFamily); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
+              var ff = css.getFontFamily(fontFamily); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
-              var diffL = fontSize * (o$1.info[ff].lgr || 0);
+              var leading = fontSize * (o$1.info[ff].lgr || 0) * 0.5;
               var isVertical = writingMode.indexOf('vertical') === 0;
               var baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
@@ -22418,7 +22418,7 @@
                 if (contentBox.parentLineBox !== lastLineBox) {
                   (function () {
                     // 上一行
-                    var _inline$getInlineBox = inline.getInlineBox(_this8, isVertical, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                    var _inline$getInlineBox = inline.getInlineBox(_this8, isVertical, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                         _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
                         ix1 = _inline$getInlineBox2[0],
                         iy1 = _inline$getInlineBox2[1],
@@ -22513,7 +22513,7 @@
 
                 if (i === length - 1) {
                   (function () {
-                    var _inline$getInlineBox3 = inline.getInlineBox(_this8, isVertical, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                    var _inline$getInlineBox3 = inline.getInlineBox(_this8, isVertical, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                         _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
                         ix1 = _inline$getInlineBox4[0],
                         iy1 = _inline$getInlineBox4[1],

@@ -21496,10 +21496,10 @@
 
             if (bgi[1] === STRING$2) {
               var loadBgi = _this5.__loadBgi[i] = _this5.__loadBgi[i] || {};
-              var cache = inject.IMG[BACKGROUND_IMAGE$1];
+              var cache = inject.IMG[bgi[0]];
 
               if (cache && cache.state === inject.LOADED) {
-                loadBgi.url = BACKGROUND_IMAGE$1;
+                loadBgi.url = bgi[0];
                 loadBgi.source = cache.source;
                 loadBgi.width = cache.width;
                 loadBgi.height = cache.height;

@@ -1155,9 +1155,9 @@ class Xom extends Node {
         // 防止隐藏不加载背景图
         if(bgi[1] === STRING) {
           let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
-          let cache = inject.IMG[BACKGROUND_IMAGE];
+          let cache = inject.IMG[bgi[0]];
           if(cache && cache.state === inject.LOADED) {
-            loadBgi.url = BACKGROUND_IMAGE;
+            loadBgi.url = bgi[0];
             loadBgi.source = cache.source;
             loadBgi.width = cache.width;
             loadBgi.height = cache.height;

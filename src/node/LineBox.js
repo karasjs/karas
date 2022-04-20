@@ -64,7 +64,7 @@ class LineBox {
             let d = baseline - n;
             item.__offsetX(d, true);
             // 同下方
-            increase = Math.max(increase, lineHeight + d);
+            increase = Math.max(increase, item.width + d);
           }
         }
         else {

@@ -23636,7 +23636,7 @@
                 item.__offsetX(d, true); // 同下方
 
 
-                increase = Math.max(increase, lineHeight + d);
+                increase = Math.max(increase, item.width + d);
               }
             } else {
               var _n = item.baseline;

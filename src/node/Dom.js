@@ -735,7 +735,7 @@ class Dom extends Xom {
     let maxSize = 0;
     let countSize = 0;
     let lx = x; // 行首，考虑了mbp
-    let ly = y;
+    let ly = y;console.warn(this.tagName)
     // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
     let mergeMarginEndList = [], mergeMarginStartList = [];
     let length = flowChildren.length;
@@ -1189,7 +1189,7 @@ class Dom extends Xom {
           }
         }
       }
-    });
+    });console.log(lineBoxManager.isEnd, isVertical, lineBoxManager.endY);
     // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
     // 当以block换行时，新行是true，否则是false即结尾
     if(lineBoxManager.isEnd) {
@@ -1221,6 +1221,7 @@ class Dom extends Xom {
       th = y - data.y;
     }
     this.__ioSize(tw, th);
+    console.warn(this.tagName, th, y, data.y);
     // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
     if(!isAbs) {
       let spread = lineBoxManager.verticalAlign(isVertical);

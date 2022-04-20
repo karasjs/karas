@@ -16100,7 +16100,7 @@
    * @param lineBox
    * @param baseline
    * @param lineHeight
-   * @param diffL
+   * @param leading
    * @param isStart
    * @param isEnd
    * @param backgroundClip
@@ -16115,7 +16115,7 @@
    * @returns {(*|number)[]}
    */
 
-  function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, baseline, lineHeight, diffL, isStart, isEnd, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
+  function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, baseline, lineHeight, leading, isStart, isEnd, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
     // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
     var bcStart = 0,
         bcEnd = 0;
@@ -16144,9 +16144,9 @@
     // 垂直排版则互换x/y逻辑
 
     if (isVertical) {
-      x1 = lineBox.x + diff - bcStart + diffL;
+      x1 = lineBox.x + diff - bcStart + leading;
       y1 = start.y;
-      bx1 = lineBox.x + diff - pbStart + diffL;
+      bx1 = lineBox.x + diff - pbStart + leading;
     } else {
       x1 = start.x;
       y1 = lineBox.y + diff - bcStart;
@@ -16209,8 +16209,8 @@
       }
 
       x2 = end.x + end.outerWidth;
-      y2 = lineBox.y + diff + lineHeight + bcEnd - diffL;
-      by2 = lineBox.y + diff + lineHeight + pbEnd - diffL;
+      y2 = lineBox.y + diff + lineHeight + bcEnd - leading;
+      by2 = lineBox.y + diff + lineHeight + pbEnd - leading;
     } // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
 
 
@@ -23618,7 +23618,8 @@
         var baseline = isVertical ? this.verticalBaseline : this.baseline;
         var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight;
-        var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
+        var hasIbOrReplaced; // console.log(baseline, lineHeight);
+        // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
         if (this.list.length) {
           this.list.forEach(function (item) {
@@ -25389,7 +25390,8 @@
         var countSize = 0;
         var lx = x; // 行首，考虑了mbp
 
-        var ly = y; // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
+        var ly = y;
+        console.warn(this.tagName); // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
 
         var mergeMarginEndList = [],
             mergeMarginStartList = [];
@@ -25873,7 +25875,8 @@
               }
             }
           }
-        }); // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
+        });
+        console.log(lineBoxManager.isEnd, isVertical, lineBoxManager.endY); // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
         // 当以block换行时，新行是true，否则是false即结尾
 
         if (lineBoxManager.isEnd) {
@@ -25903,8 +25906,9 @@
           th = y - data.y;
         }
 
-        this.__ioSize(tw, th); // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
+        this.__ioSize(tw, th);
 
+        console.warn(this.tagName, th, y, data.y); // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
 
         if (!isAbs) {
           var spread = lineBoxManager.verticalAlign(isVertical);

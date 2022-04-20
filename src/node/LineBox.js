@@ -51,6 +51,7 @@ class LineBox {
     let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
     let increase = lineHeight;
     let hasIbOrReplaced;
+    // console.log(baseline, lineHeight);
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
       this.list.forEach(item => {

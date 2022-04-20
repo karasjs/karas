@@ -29,7 +29,7 @@ const {
  * @param lineBox
  * @param baseline
  * @param lineHeight
- * @param diffL
+ * @param leading
  * @param isStart
  * @param isEnd
  * @param backgroundClip
@@ -44,7 +44,7 @@ const {
  * @returns {(*|number)[]}
  */
 function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, baseline,
-                      lineHeight, diffL, isStart, isEnd, backgroundClip,
+                      lineHeight, leading, isStart, isEnd, backgroundClip,
                       paddingTop, paddingRight, paddingBottom, paddingLeft,
                       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
   // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
@@ -72,9 +72,9 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
   // 垂直排版则互换x/y逻辑
   if(isVertical) {
-    x1 = lineBox.x + diff - bcStart + diffL;
+    x1 = lineBox.x + diff - bcStart + leading;
     y1 = start.y;
-    bx1 = lineBox.x + diff - pbStart + diffL;
+    bx1 = lineBox.x + diff - pbStart + leading;
   }
   else {
     x1 = start.x;
@@ -133,8 +133,8 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
       }
     }
     x2 = end.x + end.outerWidth;
-    y2 = lineBox.y + diff + lineHeight + bcEnd - diffL;
-    by2 = lineBox.y + diff + lineHeight + pbEnd - diffL;
+    y2 = lineBox.y + diff + lineHeight + bcEnd - leading;
+    by2 = lineBox.y + diff + lineHeight + pbEnd - leading;
   }
   // TextBox的parent是Text，再是Dom，这里一定是inline，无嵌套就是xom本身，有则包含若干层最上层还是xom
   dom = end instanceof TextBox ? end.parent.domParent : end.domParent;

@@ -23618,8 +23618,7 @@
         var baseline = isVertical ? this.verticalBaseline : this.baseline;
         var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight;
-        var hasIbOrReplaced; // console.log(baseline, lineHeight);
-        // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
+        var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
         if (this.list.length) {
           this.list.forEach(function (item) {
@@ -23637,7 +23636,7 @@
                 item.__offsetX(d, true); // 同下方
 
 
-                increase = Math.max(increase, item.width + d);
+                increase = Math.max(increase, item.offsetWidth + d);
               }
             } else {
               var _n = item.baseline;
@@ -23649,7 +23648,7 @@
                 // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
 
-                increase = Math.max(increase, item.height + _d);
+                increase = Math.max(increase, item.offsetHeight + _d);
               }
             }
           });
@@ -25390,8 +25389,7 @@
         var countSize = 0;
         var lx = x; // 行首，考虑了mbp
 
-        var ly = y;
-        console.warn(this.tagName); // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
+        var ly = y; // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
 
         var mergeMarginEndList = [],
             mergeMarginStartList = [];
@@ -25402,8 +25400,14 @@
 
         flowChildren.forEach(function (item, i) {
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-          var isInline = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock = isXom && item.currentStyle[DISPLAY$5] === 'inlineBlock';
+
+          if (isXom) {
+            item.__computeReflow(); // writing-mode可能会造成inline改变为ib
+
+          }
+
+          var isInline = isXom && item.computedStyle[DISPLAY$5] === 'inline';
+          var isInlineBlock = isXom && item.computedStyle[DISPLAY$5] === 'inlineBlock';
 
           var isRealInline = isInline && item.__isRealInline();
 
@@ -25875,8 +25879,7 @@
               }
             }
           }
-        });
-        console.log(lineBoxManager.isEnd, isVertical, lineBoxManager.endY); // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
+        }); // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
         // 当以block换行时，新行是true，否则是false即结尾
 
         if (lineBoxManager.isEnd) {
@@ -25906,9 +25909,8 @@
           th = y - data.y;
         }
 
-        this.__ioSize(tw, th);
+        this.__ioSize(tw, th); // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
 
-        console.warn(this.tagName, th, y, data.y); // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
 
         if (!isAbs) {
           var spread = lineBoxManager.verticalAlign(isVertical);
@@ -27082,8 +27084,14 @@
           }
 
           var isXom = item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1;
-          var isInline2 = isXom && item.currentStyle[DISPLAY$5] === 'inline';
-          var isInlineBlock2 = isXom && item.currentStyle[DISPLAY$5] === 'inlineBlock';
+
+          if (isXom) {
+            item.__computeReflow(); // writing-mode可能会造成inline改变为ib
+
+          }
+
+          var isInline2 = isXom && item.computedStyle[DISPLAY$5] === 'inline';
+          var isInlineBlock2 = isXom && item.computedStyle[DISPLAY$5] === 'inlineBlock';
 
           var isRealInline = isInline2 && item.__isRealInline(); // 最后一个元素会产生最后一行，叠加父元素的尾部mpb，注意只执行一次防止重复叠加
 
@@ -28327,14 +28335,16 @@
     }, {
       key: "baseline",
       get: function get() {
-        if (!this.lineBoxManager || !this.lineBoxManager.size) {
-          return this.offsetHeight;
-        }
-
         var _this$computedStyle2 = this.computedStyle,
             marginTop = _this$computedStyle2[MARGIN_TOP$3],
             borderTopWidth = _this$computedStyle2[BORDER_TOP_WIDTH$4],
-            paddingTop = _this$computedStyle2[PADDING_TOP$4];
+            paddingTop = _this$computedStyle2[PADDING_TOP$4],
+            writingMode = _this$computedStyle2[WRITING_MODE$2];
+
+        if (!this.lineBoxManager || !this.lineBoxManager.size || writingMode.indexOf('vertical') === 0) {
+          return this.offsetHeight;
+        }
+
         return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseline;
       }
     }, {
@@ -28360,7 +28370,13 @@
         var _this$computedStyle4 = this.computedStyle,
             marginLeft = _this$computedStyle4[MARGIN_LEFT$4],
             borderLeftWidth = _this$computedStyle4[BORDER_LEFT_WIDTH$5],
-            paddingLeft = _this$computedStyle4[PADDING_LEFT$5];
+            paddingLeft = _this$computedStyle4[PADDING_LEFT$5],
+            writingMode = _this$computedStyle4[WRITING_MODE$2];
+
+        if (!this.lineBoxManager || !this.lineBoxManager.size || writingMode.indexOf('vertical') === -1) {
+          return 0;
+        }
+
         return marginLeft + borderLeftWidth + paddingLeft + this.lineBoxManager.verticalBaseline;
       }
     }]);

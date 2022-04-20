@@ -51,7 +51,6 @@ class LineBox {
     let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
     let increase = lineHeight;
     let hasIbOrReplaced;
-    // console.log(baseline, lineHeight);
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
       this.list.forEach(item => {
@@ -65,7 +64,7 @@ class LineBox {
             let d = baseline - n;
             item.__offsetX(d, true);
             // 同下方
-            increase = Math.max(increase, item.width + d);
+            increase = Math.max(increase, item.offsetWidth + d);
           }
         }
         else {
@@ -75,7 +74,7 @@ class LineBox {
             item.__offsetY(d, true);
             // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度调整值
             // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
-            increase = Math.max(increase, item.height + d);
+            increase = Math.max(increase, item.offsetHeight + d);
           }
         }
       });

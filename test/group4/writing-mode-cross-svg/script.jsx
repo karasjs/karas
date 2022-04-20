@@ -5,6 +5,10 @@ let o = karas.render(
       fontSize:32,writingMode:'verticalLr'}}>
       {'a'}
     </div>
+    <div style={{margin:10,background:'#00f'}}>
+      <span style={{background:'#f00'}}>aaa</span>
+      <strong style={{background:'#0ff',writingMode:'vertical-lr'}}>bbb</strong>
+    </div>
   </svg>,
   '#test'
 );

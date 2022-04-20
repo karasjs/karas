@@ -735,7 +735,7 @@ class Dom extends Xom {
     let maxSize = 0;
     let countSize = 0;
     let lx = x; // 行首，考虑了mbp
-    let ly = y;console.warn(this.tagName)
+    let ly = y;
     // 连续block（flex相同，下面都是）的上下margin合并值记录，合并时从列表中取
     let mergeMarginEndList = [], mergeMarginStartList = [];
     let length = flowChildren.length;
@@ -743,8 +743,11 @@ class Dom extends Xom {
     let ignoreNextWrap; // whiteSpace单行超过后，后面的均忽略并置none，注意这也是跨block的会被隔断重计
     flowChildren.forEach((item, i) => {
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
-      let isInline = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      if(isXom) {
+        item.__computeReflow(); // writing-mode可能会造成inline改变为ib
+      }
+      let isInline = isXom && item.computedStyle[DISPLAY] === 'inline';
+      let isInlineBlock = isXom && item.computedStyle[DISPLAY] === 'inlineBlock';
       let isRealInline = isInline && item.__isRealInline();
       let lastLineClampCount = lineClampCount;
       // 每次循环开始前，这次不是block的话，看之前遗留待合并margin，并重置
@@ -1189,7 +1192,7 @@ class Dom extends Xom {
           }
         }
       }
-    });console.log(lineBoxManager.isEnd, isVertical, lineBoxManager.endY);
+    });
     // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
     // 当以block换行时，新行是true，否则是false即结尾
     if(lineBoxManager.isEnd) {
@@ -1221,7 +1224,6 @@ class Dom extends Xom {
       th = y - data.y;
     }
     this.__ioSize(tw, th);
-    console.warn(this.tagName, th, y, data.y);
     // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
     if(!isAbs) {
       let spread = lineBoxManager.verticalAlign(isVertical);
@@ -2271,8 +2273,11 @@ class Dom extends Xom {
         return;
       }
       let isXom = item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom;
-      let isInline2 = isXom && item.currentStyle[DISPLAY] === 'inline';
-      let isInlineBlock2 = isXom && item.currentStyle[DISPLAY] === 'inlineBlock';
+      if(isXom) {
+        item.__computeReflow(); // writing-mode可能会造成inline改变为ib
+      }
+      let isInline2 = isXom && item.computedStyle[DISPLAY] === 'inline';
+      let isInlineBlock2 = isXom && item.computedStyle[DISPLAY] === 'inlineBlock';
       let isRealInline = isInline2 && item.__isRealInline();
       // 最后一个元素会产生最后一行，叠加父元素的尾部mpb，注意只执行一次防止重复叠加
       let isEnd = isInline && !hasAddEndSpace
@@ -3379,14 +3384,16 @@ class Dom extends Xom {
   }
 
   get baseline() {
-    if(!this.lineBoxManager || !this.lineBoxManager.size) {
-      return this.offsetHeight;
-    }
     let {
       [MARGIN_TOP]: marginTop,
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [PADDING_TOP]: paddingTop,
+      [WRITING_MODE]: writingMode,
     } = this.computedStyle;
+    if(!this.lineBoxManager || !this.lineBoxManager.size
+      || writingMode.indexOf('vertical') === 0) {
+      return this.offsetHeight;
+    }
     return marginTop + borderTopWidth + paddingTop + this.lineBoxManager.baseline;
   }
 
@@ -3410,7 +3417,12 @@ class Dom extends Xom {
       [MARGIN_LEFT]: marginLeft,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
       [PADDING_LEFT]: paddingLeft,
+      [WRITING_MODE]: writingMode,
     } = this.computedStyle;
+    if(!this.lineBoxManager || !this.lineBoxManager.size
+      || writingMode.indexOf('vertical') === -1) {
+      return 0;
+    }
     return marginLeft + borderLeftWidth + paddingLeft + this.lineBoxManager.verticalBaseline;
   }
 }

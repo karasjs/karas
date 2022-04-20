@@ -58,6 +58,7 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH,
     POINTER_EVENTS,
+    WRITING_MODE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -1305,12 +1306,14 @@ class Root extends Dom {
     // 有root提前跳出
     if(hasRoot) {
       reflow.clearUniqueReflowId(reflowHash);
+      let isVertical = this.currentStyle[WRITING_MODE].indexOf('vertical') === 0;
       // 布局分为两步，普通流和定位流，互相递归
       this.__layout({
         x: 0,
         y: 0,
         w: width,
         h: height,
+        isVertical,
       }, false, false);
       // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
       this.__layoutAbs(this, {
@@ -1318,6 +1321,7 @@ class Root extends Dom {
         y: 0,
         w: width,
         h: height,
+        isVertical,
       });
       this.__structs = this.__structure(0, 0);
       return true;

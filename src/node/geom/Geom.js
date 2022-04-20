@@ -113,29 +113,28 @@ class Geom extends Xom {
     return this.__addMBP(isDirectionRow, w, currentStyle, computedStyle, [b, min, max], isDirectChild);
   }
 
-  __layoutBlock(data, isVirtual) {
+  __layoutBlock(data, isAbs, isColumn, isRow) {
     let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data, false);
-    this.__height = fixedHeight ? h : 0;
-    if(isVirtual) {
-      w = this.__width = fixedWidth ? w : 0;
-      this.__ioSize(w);
+    w = fixedWidth ? w : 0;
+    h = fixedHeight ? h : 0;
+    this.__ioSize(w, h);
+    if(isAbs || isColumn || isRow) {
       return;
     }
-    this.__width = w;
-    this.__ioSize(w, this.height);
+    this.__ioSize(w, h);
     this.__marginAuto(this.currentStyle, data);
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
-  __layoutFlex(data, isVirtual) {
+  __layoutFlex(data, isAbs, isColumn, isRow) {
     // 无children所以等同于block
-    this.__layoutBlock(data, isVirtual);
+    this.__layoutBlock(data, isAbs, isColumn, isRow);
   }
 
-  __layoutInline(data, isVirtual, isInline) {
+  __layoutInline(data, isAbs, isInline) {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
-    let tw = this.__width = fixedWidth ? w : x - data.x;
-    let th = this.__height = fixedHeight ? h : y - data.y;
+    let tw = fixedWidth ? w : x - data.x;
+    let th = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
     this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }

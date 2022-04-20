@@ -482,11 +482,13 @@ class Xom extends Node {
     let computedStyle = this.computedStyle;
     // 可能不传，在虚拟布局时用不到
     if(!isNil(w)) {
+      this.__width = computedStyle[WIDTH] = w;
       this.__clientWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
       this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
       this.__outerWidth = w + computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT];
     }
     if(!isNil(h)) {
+      this.__height = computedStyle[HEIGHT] = h;
       this.__clientHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
       this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
       this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
@@ -551,6 +553,8 @@ class Xom extends Node {
       w,
       h: data.h,
       lx: data.lx,
+      ly: data.ly,
+      isVertical: data.isVertical, // 从Root开始，父级的书写模式需每层传递
     };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
@@ -724,7 +728,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0 } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isVertical: isParentVertical } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -824,6 +828,8 @@ class Xom extends Node {
       lineBoxManager,
       endSpace,
       selfEndSpace,
+      isParentVertical,
+      isVertical,
     };
   }
 
@@ -1982,10 +1988,10 @@ class Xom extends Node {
         }
         // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         let ff = css.getFontFamily(fontFamily);
-        let baseline = css.getBaseline(computedStyle);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
         let diffL = fontSize * (font.info[ff].lgr || 0);
         let isVertical = writingMode.indexOf('vertical') === 0;
+        let baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;

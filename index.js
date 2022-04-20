@@ -16135,9 +16135,7 @@
     var diff;
 
     if (isVertical) {
-      var n1 = lineBox.verticalLineHeight - lineBox.baseline;
-      var n2 = start.width - start.baseline;
-      diff = n1 - n2;
+      diff = lineBox.verticalBaseline - baseline;
     } else {
       diff = lineBox.baseline - baseline;
     }
@@ -20810,12 +20808,14 @@
         var computedStyle = this.computedStyle; // 可能不传，在虚拟布局时用不到
 
         if (!isNil$6(w)) {
+          this.__width = computedStyle[WIDTH$4] = w;
           this.__clientWidth = w += computedStyle[PADDING_LEFT$3] + computedStyle[PADDING_RIGHT$2];
           this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$3] + computedStyle[BORDER_RIGHT_WIDTH$2];
           this.__outerWidth = w + computedStyle[MARGIN_LEFT$2] + computedStyle[MARGIN_RIGHT$2];
         }
 
         if (!isNil$6(h)) {
+          this.__height = computedStyle[HEIGHT$3] = h;
           this.__clientHeight = h += computedStyle[PADDING_TOP$2] + computedStyle[PADDING_BOTTOM$2];
           this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH$2] + computedStyle[BORDER_BOTTOM_WIDTH$2];
           this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[MARGIN_BOTTOM$1];
@@ -20879,7 +20879,10 @@
           y: data.y,
           w: w,
           h: data.h,
-          lx: data.lx
+          lx: data.lx,
+          ly: data.ly,
+          isVertical: data.isVertical // 从Root开始，父级的书写模式需每层传递
+
         }; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
 
         if (!isAbs && !isColumn && !isRow) {
@@ -21071,7 +21074,8 @@
             ly = data.ly,
             lineBoxManager = data.lineBoxManager,
             _data$endSpace = data.endSpace,
-            endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace;
+            endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace,
+            isParentVertical = data.isVertical;
         this.__x = x;
         this.__y = y;
         var currentStyle = this.currentStyle,
@@ -21167,7 +21171,9 @@
           ly: ly,
           lineBoxManager: lineBoxManager,
           endSpace: endSpace,
-          selfEndSpace: selfEndSpace
+          selfEndSpace: selfEndSpace,
+          isParentVertical: isParentVertical,
+          isVertical: isVertical
         };
       } // 处理margin:xx auto居中对齐或右对齐
 
@@ -22394,11 +22400,11 @@
               } // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
 
 
-              var ff = css.getFontFamily(fontFamily);
-              var baseline = css.getBaseline(computedStyle); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
+              var ff = css.getFontFamily(fontFamily); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
 
               var diffL = fontSize * (o$1.info[ff].lgr || 0);
-              var isVertical = writingMode.indexOf('vertical') === 0; // 注意只有1个的时候特殊情况，圆角只在首尾行出现
+              var isVertical = writingMode.indexOf('vertical') === 0;
+              var baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
               var isFirst = true;
               var lastContentBox = contentBoxList[0],
@@ -25291,7 +25297,8 @@
             x: x,
             y: y,
             w: w,
-            h: h
+            h: h,
+            isVertical: isVertical
           }, isAbs, true, false);
 
           min = max = b = this.height; // column的child，max和b总相等
@@ -25336,9 +25343,7 @@
             whiteSpace = computedStyle[WHITE_SPACE$3],
             lineClamp = computedStyle[LINE_CLAMP$2],
             lineHeight = computedStyle[LINE_HEIGHT$6],
-            overflow = computedStyle[OVERFLOW$2],
-            writingMode = computedStyle[WRITING_MODE$2];
-        var isVertical = writingMode.indexOf('vertical') === 0;
+            overflow = computedStyle[OVERFLOW$2];
 
         var _this$__preLayout = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout.fixedWidth,
@@ -25346,35 +25351,29 @@
             x = _this$__preLayout.x,
             y = _this$__preLayout.y,
             w = _this$__preLayout.w,
-            h = _this$__preLayout.h; // abs虚拟布局需预知width，固定可提前返回
+            h = _this$__preLayout.h,
+            isParentVertical = _this$__preLayout.isParentVertical,
+            isVertical = _this$__preLayout.isVertical; // abs虚拟布局需预知width，固定可提前返回
 
 
         if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
           if (isVertical) {
-            this.__height = h;
-
             this.__ioSize(undefined, h);
           } else {
-            this.__width = w;
-
-            this.__ioSize(w);
+            this.__ioSize(w, undefined);
           }
 
           return;
         }
 
         if (isColumn && fixedHeight) {
-          this.__height = h;
-
           this.__ioSize(undefined, h);
 
           return;
         }
 
         if (isRow && fixedWidth) {
-          this.__width = w;
-
-          this.__ioSize(w);
+          this.__ioSize(w, undefined);
 
           return;
         } // 只有>=1的正整数才有效
@@ -25448,7 +25447,8 @@
                   lineBoxManager: lineBoxManager,
                   // ib内部新生成会内部判断，这里不管统一传入
                   lineClamp: lineClamp,
-                  lineClampCount: lineClampCount
+                  lineClampCount: lineClampCount,
+                  isVertical: isVertical
                 }, isAbs, isColumn, isRow); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样，注意nowrap排除
 
                 if (item.__isIbFull) {
@@ -25510,7 +25510,8 @@
                     ly: ly,
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
-                    lineClampCount: lineClampCount
+                    lineClampCount: lineClampCount,
+                    isVertical: isVertical
                   }, isAbs, isColumn, isRow); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                   (isInlineBlock || !isRealInline) && lineBoxManager.addItem(item, false);
@@ -25566,7 +25567,8 @@
                     ly: ly,
                     lineBoxManager: lineBoxManager,
                     lineClamp: lineClamp,
-                    lineClampCount: lineClampCount
+                    lineClampCount: lineClampCount,
+                    isVertical: isVertical
                   }, isAbs, isColumn, isRow); // 重新开头的ib和上面开头处一样逻辑
 
                   if (item.__isIbFull) {
@@ -25637,7 +25639,8 @@
                 x: x,
                 y: y,
                 w: w,
-                h: h
+                h: h,
+                isVertical: isVertical
               }, isAbs, isColumn, isRow); // 自身无内容
 
 
@@ -25881,8 +25884,24 @@
           }
         }
 
-        var tw = this.__width = fixedWidth || !isAbs && !isVertical ? w : isVertical ? x - data.x : maxSize;
-        var th = this.__height = fixedHeight || !isAbs && isVertical ? h : isVertical ? maxSize : y - data.y;
+        var tw = 0,
+            th = 0; // 根据书写模式、嵌套等条件计算宽高，只有父子同向才会主轴撑满
+
+        if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+          tw = w;
+        } else if (isAbs) {
+          tw = isVertical ? x - data.x : maxSize;
+        } else {
+          tw = x - data.x;
+        }
+
+        if (fixedHeight || !isAbs && isParentVertical && isVertical) {
+          th = h;
+        } else if (isAbs) {
+          th = isVertical ? maxSize : y - data.y;
+        } else {
+          th = y - data.y;
+        }
 
         this.__ioSize(tw, th); // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
 
@@ -25892,8 +25911,7 @@
 
           if (spread) {
             if (isVertical && !fixedWidth) {
-              this.__resizeX(spread); // this.__offsetX(spread);
-
+              this.__resizeX(spread);
             } else if (!isVertical && !fixedHeight) {
               this.__resizeY(spread);
             }
@@ -25980,9 +25998,7 @@
             flexWrap = computedStyle[FLEX_WRAP$2],
             alignContent = computedStyle[ALIGN_CONTENT$1],
             lineHeight = computedStyle[LINE_HEIGHT$6],
-            textAlign = computedStyle[TEXT_ALIGN$3],
-            writingMode = computedStyle[WRITING_MODE$2];
-        var isVertical = writingMode.indexOf('vertical') === 0;
+            textAlign = computedStyle[TEXT_ALIGN$3];
 
         var _this$__preLayout2 = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout2.fixedWidth,
@@ -25990,34 +26006,28 @@
             x = _this$__preLayout2.x,
             y = _this$__preLayout2.y,
             w = _this$__preLayout2.w,
-            h = _this$__preLayout2.h;
+            h = _this$__preLayout2.h,
+            isParentVertical = _this$__preLayout2.isParentVertical,
+            isVertical = _this$__preLayout2.isVertical;
 
         if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
           if (isVertical) {
-            this.__height = h;
-
             this.__ioSize(undefined, h);
           } else {
-            this.__width = w;
-
-            this.__ioSize(w);
+            this.__ioSize(w, undefined);
           }
 
           return;
         }
 
         if (isColumn && fixedHeight) {
-          this.__height = h;
-
           this.__ioSize(undefined, h);
 
           return;
         }
 
         if (isRow && fixedWidth) {
-          this.__width = w;
-
-          this.__ioSize(w);
+          this.__ioSize(w, undefined);
 
           return;
         } // 每次布局情况多行内容
@@ -26211,20 +26221,35 @@
           });
 
           if (isVertical) {
-            var _th = this.__height = max;
-
-            this.__ioSize(undefined, _th);
+            this.__ioSize(undefined, max);
           } else {
-            var _tw2 = this.__width = max;
-
-            this.__ioSize(_tw2);
+            this.__ioSize(max, undefined);
           }
 
           return;
+        } // 同block计算
+
+
+        var tw = 0,
+            th = 0;
+
+        if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+          tw = w;
+        } // else if(isAbs) {
+        //   tw = isVertical ? (x - data.x) : w;
+        // }
+        else {
+          tw = x - data.x;
         }
 
-        var tw = this.__width = isVertical ? x - data.x : w;
-        var th = this.__height = isVertical || fixedHeight ? h : y - data.y;
+        if (fixedHeight || !isAbs && isParentVertical && isVertical) {
+          th = h;
+        } // else if(isAbs) {
+        //   th = isVertical ? maxSize : (y - data.y);
+        // }
+        else {
+          th = y - data.y;
+        }
 
         this.__ioSize(tw, th);
 
@@ -26560,8 +26585,9 @@
                 y: y,
                 w: main,
                 h: h,
-                w3: main // w3假设固定宽度，忽略原始style中的设置
-
+                w3: main,
+                // w3假设固定宽度，忽略原始style中的设置
+                isVertical: isVertical
               }, isAbs, isColumn, isRow);
             } else {
               var _item$currentStyle = item.currentStyle,
@@ -26583,8 +26609,9 @@
                     y: y,
                     w: w,
                     h: main,
-                    h3: main // 同w2
-
+                    h3: main,
+                    // 同w2
+                    isVertical: isVertical
                   }, isAbs, isColumn, isRow);
                 } else {
                   item.__layout({
@@ -26592,8 +26619,9 @@
                     y: y,
                     w: w,
                     h: main,
-                    h3: main // 同w2
-
+                    h3: main,
+                    // 同w2
+                    isVertical: isVertical
                   }, true, isColumn, isRow);
 
                   item.__layout({
@@ -26602,8 +26630,9 @@
                     w: w,
                     w3: item.outerWidth,
                     h: main,
-                    h3: main // 同w2
-
+                    h3: main,
+                    // 同w2
+                    isVertical: isVertical
                   }, isAbs, isColumn, isRow);
                 }
               } else {
@@ -26612,8 +26641,9 @@
                   y: y,
                   w: w,
                   h: main,
-                  h3: main // 同w2
-
+                  h3: main,
+                  // 同w2
+                  isVertical: isVertical
                 }, isAbs, isColumn, isRow);
               }
             }
@@ -26942,9 +26972,7 @@
             paddingTop = computedStyle[PADDING_TOP$4],
             paddingBottom = computedStyle[PADDING_BOTTOM$4],
             paddingLeft = computedStyle[PADDING_LEFT$5],
-            paddingRight = computedStyle[PADDING_RIGHT$4],
-            writingMode = computedStyle[WRITING_MODE$2];
-        var isVertical = writingMode.indexOf('vertical') === 0;
+            paddingRight = computedStyle[PADDING_RIGHT$4];
         var lineClampCount = data.lineClampCount || 0;
 
         var _this$__preLayout3 = this.__preLayout(data, isInline),
@@ -26958,18 +26986,15 @@
             ly = _this$__preLayout3.ly,
             lineBoxManager = _this$__preLayout3.lineBoxManager,
             endSpace = _this$__preLayout3.endSpace,
-            selfEndSpace = _this$__preLayout3.selfEndSpace; // abs虚拟布局需预知width，固定可提前返回
+            selfEndSpace = _this$__preLayout3.selfEndSpace,
+            isVertical = _this$__preLayout3.isVertical; // abs虚拟布局需预知width，固定可提前返回
 
 
         if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
           if (isVertical) {
-            this.__height = h;
-
             this.__ioSize(undefined, h);
           } else {
-            this.__width = w;
-
-            this.__ioSize(w);
+            this.__ioSize(w, undefined);
           }
 
           return lineClampCount;
@@ -26984,17 +27009,13 @@
 
         if (!isInline) {
           if (isColumn && fixedHeight) {
-            this.__height = h;
-
             this.__ioSize(undefined, h);
 
             return lineClampCount;
           }
 
           if (isRow && fixedWidth) {
-            this.__width = w;
-
-            this.__ioSize(w);
+            this.__ioSize(w, undefined);
 
             return lineClampCount;
           }
@@ -27005,7 +27026,7 @@
         if (isInline) {
           this.__config[NODE_IS_INLINE$1] = true;
           this.__lineBoxManager = lineBoxManager;
-          var baseline = getBaseline$1(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+          var baseline = isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
 
           if (isVertical && (marginTop || marginBottom || paddingTop || paddingBottom || borderTopWidth || borderBottomWidth) || !isVertical && (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth)) {
             if (lineBoxManager.isNewLine) {
@@ -27091,7 +27112,8 @@
                 lineBoxManager: lineBoxManager,
                 endSpace: endSpace,
                 lineClamp: lineClamp,
-                lineClampCount: lineClampCount
+                lineClampCount: lineClampCount,
+                isVertical: isVertical
               }, isAbs, isColumn, isRow); // 同block布局
 
               if (item.__isIbFull) {
@@ -27144,7 +27166,8 @@
                   lineBoxManager: lineBoxManager,
                   endSpace: endSpace,
                   lineClamp: lineClamp,
-                  lineClampCount: lineClampCount
+                  lineClampCount: lineClampCount,
+                  isVertical: isVertical
                 }, isAbs, isColumn, isRow); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                 (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item, false);
@@ -27188,7 +27211,8 @@
                   lineBoxManager: lineBoxManager,
                   endSpace: endSpace,
                   lineClamp: lineClamp,
-                  lineClampCount: lineClampCount
+                  lineClampCount: lineClampCount,
+                  isVertical: isVertical
                 }, isAbs, isColumn, isRow); // 重新开头的ib和上面开头处一样逻辑
 
                 if (item.__isIbFull) {
@@ -27373,11 +27397,11 @@
           var max = lineBoxManager.max - (isVertical ? data.y : data.x);
 
           if (isVertical) {
-            tw = this.__width = fixedWidth ? w : x - data.x;
-            th = this.__height = fixedHeight ? h : isIbFull ? Math.max(h, max) : max;
+            tw = fixedWidth ? w : x - data.x;
+            th = fixedHeight ? h : isIbFull ? Math.max(h, max) : max;
           } else {
-            tw = this.__width = fixedWidth ? w : isIbFull ? Math.max(w, max) : max;
-            th = this.__height = fixedHeight ? h : y - data.y;
+            tw = fixedWidth ? w : isIbFull ? Math.max(w, max) : max;
+            th = fixedHeight ? h : y - data.y;
           }
 
           this.__ioSize(tw, th);
@@ -27389,8 +27413,7 @@
 
           if (spread) {
             if (isVertical && !fixedWidth) {
-              this.__resizeX(spread); // this.__offsetX(spread);
-
+              this.__resizeX(spread);
             } else if (!isVertical && !fixedHeight) {
               this.__resizeY(spread);
             }
@@ -27562,15 +27585,13 @@
           }
 
           if (isVertical) {
-            tw = this.__width = computedStyle[WIDTH$5] = lineHeight;
-            this.__height = computedStyle[HEIGHT$5] = 0;
+            tw = lineHeight;
 
             this.__ioSize(tw, 0);
 
             this.__sx -= marginLeft + paddingLeft + borderLeftWidth;
           } else {
-            this.__width = computedStyle[WIDTH$5] = 0;
-            th = this.__height = computedStyle[HEIGHT$5] = lineHeight;
+            th = lineHeight;
 
             this.__ioSize(0, th);
 
@@ -27792,7 +27813,9 @@
               x: x2,
               y: y2,
               w: widthLimit,
-              h: heightLimit
+              h: heightLimit,
+              isVertical: data.isVertical // 父亲的
+
             }, true, false);
 
             widthLimit = item.outerWidth;
@@ -27805,7 +27828,8 @@
             h: heightLimit,
             w2: w2,
             // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
-            h2: h2
+            h2: h2,
+            isVertical: data.isVertical
           }, false, false);
 
           if (onlyRight) {
@@ -29239,26 +29263,23 @@
       }
     }, {
       key: "__layoutBlock",
-      value: function __layoutBlock(data, isVirtual) {
+      value: function __layoutBlock(data, isAbs, isColumn, isRow) {
         var _this$__preLayout = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout.fixedWidth,
             fixedHeight = _this$__preLayout.fixedHeight,
             w = _this$__preLayout.w,
             h = _this$__preLayout.h;
 
-        this.__height = fixedHeight ? h : 0;
+        w = fixedWidth ? w : 0;
+        h = fixedHeight ? h : 0;
 
-        if (isVirtual) {
-          w = this.__width = fixedWidth ? w : 0;
+        this.__ioSize(w, h);
 
-          this.__ioSize(w);
-
+        if (isAbs || isColumn || isRow) {
           return;
         }
 
-        this.__width = w;
-
-        this.__ioSize(w, this.height);
+        this.__ioSize(w, h);
 
         this.__marginAuto(this.currentStyle, data);
 
@@ -29266,13 +29287,13 @@
       }
     }, {
       key: "__layoutFlex",
-      value: function __layoutFlex(data, isVirtual) {
+      value: function __layoutFlex(data, isAbs, isColumn, isRow) {
         // 无children所以等同于block
-        this.__layoutBlock(data, isVirtual);
+        this.__layoutBlock(data, isAbs, isColumn, isRow);
       }
     }, {
       key: "__layoutInline",
-      value: function __layoutInline(data, isVirtual, isInline) {
+      value: function __layoutInline(data, isAbs, isInline) {
         var _this$__preLayout2 = this.__preLayout(data, false),
             fixedWidth = _this$__preLayout2.fixedWidth,
             fixedHeight = _this$__preLayout2.fixedHeight,
@@ -29281,8 +29302,8 @@
             w = _this$__preLayout2.w,
             h = _this$__preLayout2.h;
 
-        var tw = this.__width = fixedWidth ? w : x - data.x;
-        var th = this.__height = fixedHeight ? h : y - data.y;
+        var tw = fixedWidth ? w : x - data.x;
+        var th = fixedHeight ? h : y - data.y;
 
         this.__ioSize(tw, th);
 
@@ -35253,6 +35274,7 @@
       BORDER_LEFT_WIDTH$9 = _enums$STYLE_KEY$k.BORDER_LEFT_WIDTH,
       BORDER_BOTTOM_WIDTH$7 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
       POINTER_EVENTS$2 = _enums$STYLE_KEY$k.POINTER_EVENTS,
+      WRITING_MODE$3 = _enums$STYLE_KEY$k.WRITING_MODE,
       _enums$UPDATE_KEY$5 = enums.UPDATE_KEY,
       UPDATE_NODE$5 = _enums$UPDATE_KEY$5.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$5.UPDATE_STYLE,
@@ -36722,13 +36744,15 @@
         this.__reflowList = []; // 有root提前跳出
 
         if (hasRoot) {
-          reflow.clearUniqueReflowId(reflowHash); // 布局分为两步，普通流和定位流，互相递归
+          reflow.clearUniqueReflowId(reflowHash);
+          var isVertical = this.currentStyle[WRITING_MODE$3].indexOf('vertical') === 0; // 布局分为两步，普通流和定位流，互相递归
 
           this.__layout({
             x: 0,
             y: 0,
             w: width,
-            h: height
+            h: height,
+            isVertical: isVertical
           }, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
 
 
@@ -36736,7 +36760,8 @@
             x: 0,
             y: 0,
             w: width,
-            h: height
+            h: height,
+            isVertical: isVertical
           });
 
           this.__structs = this.__structure(0, 0);
@@ -40308,11 +40333,6 @@
 
       if (!json) {
         return;
-      } // 特殊单例声明无需clone加速解析
-
-
-      if (!options.singleton && !json.singleton) {
-        json = util.clone(json);
       } // 根节点的fonts字段定义字体信息
 
 
@@ -40346,6 +40366,11 @@
       if (!inject.isDom(dom)) {
         options = dom || {};
         dom = null;
+      } // 特殊单例声明无需clone加速解析
+
+
+      if (!options.singleton && !json.singleton) {
+        json = util.clone(json);
       } // 暂存所有动画声明，等root的生成后开始执行
 
 

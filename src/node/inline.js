@@ -63,9 +63,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   // 垂直排版不能简单算baseline差值，因为原点坐标系不一样
   let diff;
   if(isVertical) {
-    let n1 = lineBox.verticalLineHeight - lineBox.baseline;
-    let n2 = start.width - start.baseline;
-    diff = n1 - n2;
+    diff = lineBox.verticalBaseline - baseline;
   }
   else {
     diff = lineBox.baseline - baseline;

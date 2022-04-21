@@ -25,9 +25,9 @@
   "dependencies": {
   },
   "devDependencies": {
-    "@babel/core": "^7.8.7",
+    "@babel/core": "^7.17.9",
     "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/preset-env": "^7.8.7",
+    "@babel/preset-env": "^7.16.11",
     "@rollup/plugin-json": "^4.0.3",
     "chromedriver": "^100.0.0",
     "expect.js": "^0.3.1",

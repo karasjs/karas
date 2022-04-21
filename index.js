@@ -13387,12 +13387,7 @@
 
           if (isVertical) {
             var me = parent.matrixEvent,
-                list;
-
-            if (isVertical) {
-              list = [[ROTATE_Z$3, [90, DEG$3]]];
-            }
-
+                list = [[ROTATE_Z$3, [90, DEG$3]]];
             var tfo = [x, y];
             var m = transform$1.calMatrixWithOrigin(list, tfo, 0, 0);
             m = mx.multiply(me, m);

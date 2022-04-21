@@ -67,15 +67,9 @@ class Ellipsis extends Node{
         ctx.fillStyle = color;
       }
       if(isVertical) {
-        let me = parent.matrixEvent, list;
-        let dev1 = 0, dev2 = 0;
-        if(isVertical) {
-          list = [
-            [ROTATE_Z, [90, DEG]],
-          ];
-          dev1 = bv * 0.6;
-          dev2 = bv * 0.2;
-        }
+        let me = parent.matrixEvent, list = [
+          [ROTATE_Z, [90, DEG]],
+        ];
         let tfo = [x, y];
         let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
         m = mx.multiply(me, m);

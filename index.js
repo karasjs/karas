@@ -14253,10 +14253,10 @@
     if (letterSpacing && [CANVAS$3, WEBGL$3].indexOf(renderMode) > -1) {
       var count = 0;
 
-      for (; i < length; i++) {
+      for (; i < j; i++) {
         var mw = ctx.measureText(content.charAt(i)).width + letterSpacing;
 
-        if (i > start && count + mw > w + 1e-10) {
+        if (count + mw > w + 1e-10) {
           newLine = true;
           break;
         }
@@ -14294,7 +14294,7 @@
 
       if (_mw === w) {
         rw = w;
-        newLine = true;
+        newLine = false;
         break;
       } // 超出，设置右边界，并根据余量推测减少个数，
       // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
@@ -14328,6 +14328,7 @@
         }
       } // 还有空余，设置左边界，并根据余量推测增加的个数
       else {
+        newLine = false;
         rw = _mw;
 
         if (hypotheticalNum === length - start) {

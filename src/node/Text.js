@@ -90,9 +90,9 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
   // 特殊降级，有letterSpacing时，canvas无法完全兼容，只能采取单字测量的方式完成
   if(letterSpacing && [CANVAS, WEBGL].indexOf(renderMode) > -1) {
     let count = 0;
-    for(; i < length; i++) {
+    for(; i < j; i++) {
       let mw = ctx.measureText(content.charAt(i)).width + letterSpacing;
-      if(i > start && count + mw > w + (1e-10)) {
+      if(count + mw > w + (1e-10)) {
         newLine = true;
         break;
       }
@@ -124,7 +124,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     }
     if(mw === w) {
       rw = w;
-      newLine = true;
+      newLine = false;
       break;
     }
     // 超出，设置右边界，并根据余量推测减少个数，
@@ -153,6 +153,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     }
     // 还有空余，设置左边界，并根据余量推测增加的个数
     else {
+      newLine = false;
       rw = mw;
       if(hypotheticalNum === length - start) {
         break;

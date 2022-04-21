@@ -188,12 +188,12 @@ function genOrderChildren(flowChildren) {
 /**
  * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
  */
-function backtrack(bp, lineBoxManager, lineBox, total, endSpace) {
+function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
   let ew, computedStyle = bp.computedStyle, root = bp.root, renderMode = root.renderMode;
   let list = lineBox.list;
   // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
   list.forEach(item => {
-    total -= item.outerWidth;
+    total -= isVertical ? item.outerHeight : item.outerWidth;
   });
   let ctx;
   if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -218,7 +218,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace) {
     if(!i || total + item.outerWidth >= ew + (1e-10)) {
       if(item instanceof TextBox) {
         let text = item.parent;
-        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode);
+        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isVertical);
       }
       else {
         let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
@@ -239,7 +239,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace) {
         item.__layoutNone();
       }
       list.pop();
-      total += item.outerWidth;
+      total += isVertical ? item.outerHeight : item.outerWidth;
     }
   }
 }
@@ -890,7 +890,7 @@ class Dom extends Xom {
                 ignoreNextLine = true;
                 let list = lineBoxManager.list;
                 let lineBox = list[list.length - 1];
-                backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0);
+                backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
                 return;
               }
               lineClampCount = item.__layout({
@@ -1161,7 +1161,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0);
+              backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
               return;
             }
             lineClampCount = item.__layout({
@@ -2390,7 +2390,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w, endSpace);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
               return;
             }
             lineClampCount = item.__layout({
@@ -2509,7 +2509,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w, endSpace);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
               return;
             }
             lineClampCount = item.__layout({

@@ -25,12 +25,19 @@ const {
     WHITE_SPACE,
     TEXT_OVERFLOW,
     WIDTH,
+    HEIGHT,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_WIDTH,
+    MARGIN_TOP,
+    MARGIN_BOTTOM,
     MARGIN_LEFT,
     MARGIN_RIGHT,
+    PADDING_TOP,
+    PADDING_BOTTOM,
     PADDING_LEFT,
     PADDING_RIGHT,
+    BORDER_TOP_WIDTH,
+    BORDER_BOTTOM_WIDTH,
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
     FILTER,
@@ -239,6 +246,7 @@ class Text extends Node {
     // fontSize在中文是正好1个字宽度，英文不一定，等宽为2个，不等宽可能1~2个，特殊字符甚至>2个，取预估均值然后倒数得每个均宽0.8
     let perW = (fontSize * 0.8) + letterSpacing;
     let lineCount = 0;
+    let mainCoords; // 根据书写模式指向不同x/y
     // 不换行特殊对待，同时考虑overflow和textOverflow
     if(whiteSpace === 'nowrap') {
       let isTextOverflow, textWidth = this.textWidth;
@@ -246,22 +254,28 @@ class Text extends Node {
         [POSITION]: position,
         [OVERFLOW]: overflow,
       } = bp.computedStyle;
-      let widthC = bp.currentStyle[WIDTH];
+      let containerSize = bp.currentStyle[isVertical ? HEIGHT: WIDTH];
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
       if(overflow === 'hidden') {
         // abs自适应宽度时不裁剪
-        if(position === 'absolute' && widthC[1] === AUTO) {
+        if(position === 'absolute' && containerSize[1] === AUTO) {
           isTextOverflow = false;
         }
         else {
-          isTextOverflow = textWidth > w + (1e-10) - beginSpace - endSpace;
+          isTextOverflow = textWidth > size + (1e-10) - beginSpace - endSpace;
         }
       }
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
-        [y] = this.__lineBack(ctx, renderMode, i, length, content, w - endSpace - beginSpace, perW, x, y, maxW,
-          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+        [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW,
+          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
         lineCount++;
+        if(isVertical) {
+          x = mainCoords;
+        }
+        else {
+          y = mainCoords;
+        }
       }
       // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
@@ -294,10 +308,16 @@ class Text extends Node {
           fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
+          [mainCoords, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
             lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-            fontFamily, fontSize, fontWeight, letterSpacing);
+            fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
           lineCount++;
+          if(isVertical) {
+            x = mainCoords;
+          }
+          else {
+            y = mainCoords;
+          }
           break;
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
@@ -306,10 +326,16 @@ class Text extends Node {
             fontFamily, fontSize, fontWeight, letterSpacing);
           // 可能加上endSpace后超过了，还得再判断一次
           if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
+            [mainCoords, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
               lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, letterSpacing);
+              fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
             lineCount++;
+            if(isVertical) {
+              x = mainCoords;
+            }
+            else {
+              y = mainCoords;
+            }
             break;
           }
         }
@@ -364,7 +390,7 @@ class Text extends Node {
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
   __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, letterSpacing) {
+              fontFamily, fontSize, fontWeight, letterSpacing, isVertical) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
     if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -399,13 +425,18 @@ class Text extends Node {
               break;
             }
             let item = list.pop();
-            x -= item.outerWidth;
-            limit += item.outerWidth;
+            if(isVertical) {
+              y -= item.outerHeight;
+            }
+            else {
+              x -= item.outerWidth;
+            }
+            limit += isVertical ? item.outerHeight : item.outerWidth;
             item.__layoutNone();
             continue;
           }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
-          let { content, width, parent } = tb;
+          let { content, width, height, parent } = tb;
           if(!j || limit >= width + ew + (1e-10) + endSpace) {
             let length = content.length;
             let {
@@ -423,21 +454,41 @@ class Text extends Node {
             // 可能发生x回退，当tb的内容产生减少时
             if(num !== content.length) {
               tb.__content = content.slice(0, num);
-              x -= width - rw;
-              tb.__width = rw;
+              if(isVertical) {
+                y -= height - rw;
+                tb.__height = rw;
+              }
+              else {
+                x -= width - rw;
+                tb.__width = rw;
+              }
             }
             // 重新设置lineHeight和baseline，因为可能删除了东西
-            lineBox.__resetLb(computedStyle[LINE_HEIGHT], css.getBaseline(computedStyle));
-            let ep = new Ellipsis(x + endSpace, y, ew, bp);
+            lineBox.__resetLb(computedStyle[LINE_HEIGHT],
+              isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
+            let ep = isVertical
+              ? new Ellipsis(x, y + rw + endSpace, ew, bp, isVertical)
+              : new Ellipsis(x + rw + endSpace, y, ew, bp, isVertical);
             lineBoxManager.addItem(ep, true);
-            y += Math.max(lineHeight, lineBoxManager.lineHeight);
+            if(isVertical) {
+              x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
+            }
+            else {
+              y += Math.max(lineHeight, lineBoxManager.lineHeight);
+            }
             maxW = Math.max(maxW, rw + ew);
             return [y, maxW];
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
-          limit += width;
-          x -= width;
+          if(isVertical) {
+            limit += height;
+            y -= height;
+          }
+          else {
+            limit += width;
+            x -= width;
+          }
           let tbs = item.parent.textBoxes;
           let k = tbs.indexOf(item);
           if(k > -1) {
@@ -456,11 +507,20 @@ class Text extends Node {
               contentBoxList.splice(i, 1);
             }
             let computedStyle = dom.computedStyle;
-            let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
-              + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
-              + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-            x -= mbp;
-            limit += mbp;
+            if(isVertical) {
+              let mbp = computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM]
+                + computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM]
+                + computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
+              y -= mbp;
+              limit += mbp;
+            }
+            else {
+              let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+                + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+                + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+              x -= mbp;
+              limit += mbp;
+            }
             dom.__layoutNone();
             dom = dom.domParent;
           }
@@ -473,19 +533,26 @@ class Text extends Node {
       }
     }
     // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
-    let textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num));
+    let textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num), isVertical);
     textBoxes.push(textBox);
     lineBoxManager.addItem(textBox, false);
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
-    let ep = new Ellipsis(x + rw + endSpace, y, ew, bp);
+    let ep = isVertical
+      ? new Ellipsis(x, y + rw + endSpace, ew, bp, isVertical)
+      : new Ellipsis(x + rw + endSpace, y, ew, bp, isVertical);
     lineBoxManager.addItem(ep, true);
-    y += Math.max(lineHeight, lineBoxManager.lineHeight);
+    if(isVertical) {
+      x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
+    }
+    else {
+      y += Math.max(lineHeight, lineBoxManager.lineHeight);
+    }
     maxW = Math.max(maxW, rw + ew);
-    return [y, maxW];
+    return [isVertical ? x : y, maxW];
   }
 
   // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
-  __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode) {
+  __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode, isVertical) {
     let list = lineBox.list;
     for(let j = list.length - 1; j >= 0; j--) {
       let tb = list[j];
@@ -495,12 +562,12 @@ class Text extends Node {
           break;
         }
         let item = list.pop();
-        limit += item.outerWidth;
+        limit += isVertical ? item.outerHeight : item.outerWidth;
         item.__layoutNone();
         continue;
       }
       // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
-      let { content, width, parent } = tb;
+      let { content, width, height, parent } = tb;
       if(!j || limit >= width + ew + (1e-10) + endSpace) {
         let length = content.length;
         let {
@@ -518,17 +585,25 @@ class Text extends Node {
         // 可能发生x回退，当tb的内容产生减少时
         if(num !== content.length) {
           tb.__content = content.slice(0, num);
-          tb.__width = rw;
+          if(isVertical) {
+            tb.__height = rw;
+          }
+          else {
+            tb.__width = rw;
+          }
         }
         // 重新设置lineHeight和baseline，因为可能删除了东西
-        lineBox.__resetLb(computedStyle[LINE_HEIGHT], css.getBaseline(computedStyle));
-        let ep = new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp);
+        lineBox.__resetLb(computedStyle[LINE_HEIGHT],
+          isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
+        let ep = isVertical
+          ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isVertical)
+          : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isVertical);
         lineBoxManager.addItem(ep, true);
         return;
       }
       // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
       let item = list.pop();
-      limit += width;
+      limit += isVertical ? height : width;
       let tbs = item.parent.textBoxes;
       let k = tbs.indexOf(item);
       if(k > -1) {
@@ -547,10 +622,18 @@ class Text extends Node {
           contentBoxList.splice(i, 1);
         }
         let computedStyle = dom.computedStyle;
-        let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
-          + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
-          + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-        limit += mbp;
+        if(isVertical) {
+          let mbp = computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM]
+            + computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM]
+            + computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
+          limit += mbp;
+        }
+        else {
+          let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
+            + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
+            + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+          limit += mbp;
+        }
         dom.__layoutNone();
         dom = dom.domParent;
       }

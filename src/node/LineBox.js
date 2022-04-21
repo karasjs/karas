@@ -54,6 +54,9 @@ class LineBox {
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
       this.list.forEach(item => {
+        if(item.isEllipsis) {
+          return;
+        }
         if(!(item instanceof TextBox)) {
           hasIbOrReplaced = true;
         }

@@ -1,7 +1,10 @@
 import Node from './Node';
 import mode from '../refresh/mode';
 import css from '../style/css';
+import unit from '../style/unit';
 import enums from '../util/enums';
+import transform from "../style/transform";
+import mx from "../math/matrix";
 
 const {
   STYLE_KEY: {
@@ -10,18 +13,20 @@ const {
     FONT_WEIGHT,
     FONT_STYLE,
     COLOR,
+    LINE_HEIGHT,
+    ROTATE_Z,
   },
   NODE_KEY: {
     NODE_VIRTUAL_DOM,
   },
 } = enums;
-
+const { DEG } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
 
 const CHAR = '…';
 
 class Ellipsis extends Node{
-  constructor(x, y, width, parent) {
+  constructor(x, y, width, parent, isVertical) {
     super();
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
@@ -30,11 +35,11 @@ class Ellipsis extends Node{
     parent.__ellipsis = this;
     this.__parentLineBox = null;
     this.__baseline = css.getBaseline(parent.computedStyle);
-    this.isEllipsis = true;
+    this.__isVertical = isVertical;
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
-    let { x, y, parent } = this;
+    let { x, y, parent, isVertical } = this;
     let {
       ox,
       oy,
@@ -43,7 +48,14 @@ class Ellipsis extends Node{
         [COLOR]: color,
       },
     } = parent;
-    y += css.getBaseline(computedStyle);
+    let b = css.getBaseline(computedStyle);
+    let bv = css.getVerticalBaseline(computedStyle);
+    if(isVertical) {
+      x += bv;
+    }
+    else {
+      y += b;
+    }
     x += ox + dx;
     y += oy + dy;
     if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -54,9 +66,28 @@ class Ellipsis extends Node{
       if(ctx.fillStyle !== color) {
         ctx.fillStyle = color;
       }
+      if(isVertical) {
+        let me = parent.matrixEvent, list;
+        let dev1 = 0, dev2 = 0;
+        if(isVertical) {
+          list = [
+            [ROTATE_Z, [90, DEG]],
+          ];
+          dev1 = bv * 0.6;
+          dev2 = bv * 0.2;
+        }
+        let tfo = [x, y];
+        let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
+        m = mx.multiply(me, m);
+        ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
+      }
       ctx.fillText(CHAR, x, y);
     }
     else if(renderMode === SVG) {
+      // 垂直的svg以中线为基线，需偏移baseline和中线的差值
+      if(isVertical) {
+        x += computedStyle[LINE_HEIGHT] * 0.5 - bv;
+      }
       let props = [
         ['x', x],
         ['y', y],
@@ -66,6 +97,9 @@ class Ellipsis extends Node{
         ['font-style', computedStyle[FONT_STYLE]],
         ['font-size', computedStyle[FONT_SIZE] + 'px'],
       ];
+      if(isVertical) {
+        props.push(['writing-mode', 'vertical-lr']);
+      }
       let vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
         type: 'text',
         children: [
@@ -83,6 +117,14 @@ class Ellipsis extends Node{
 
   get parentLineBox() {
     return this.__parentLineBox;
+  }
+
+  get isVertical() {
+    return this.__isVertical;
+  }
+
+  get isEllipsis() {
+    return true;
   }
 }
 

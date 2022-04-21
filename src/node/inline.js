@@ -201,9 +201,10 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
  * 统计inline的所有contentBox排成一行时的总宽度，考虑嵌套的mpb
  * @param xom
  * @param contentBoxList
+ * @param isVertical
  * @returns {number}
  */
-function getInlineWidth(xom, contentBoxList) {
+function getInlineWidth(xom, contentBoxList, isVertical) {
   let sum = 0;
   let length = contentBoxList.length;
   if(contentBoxList[length - 1] instanceof Ellipsis) {
@@ -211,26 +212,51 @@ function getInlineWidth(xom, contentBoxList) {
   }
   for(let i = 0; i < length; i++) {
     let contentBox = contentBoxList[i];
-    sum += contentBox.width;
+    if(isVertical) {
+      sum += contentBox.height;
+    }
+    else {
+      sum += contentBox.width;
+    }
     // 嵌套时，首尾box考虑mpb
     let dom = contentBox instanceof TextBox ? contentBox.parent.domParent : contentBox.domParent;
     while(dom !== xom) {
       let list = dom.contentBoxList;
       if(contentBox === list[0]) {
-        let {
-          [MARGIN_LEFT]: marginLeft,
-          [PADDING_LEFT]: paddingLeft,
-          [BORDER_LEFT_WIDTH]: borderLeftWidth,
-        } = dom.computedStyle;
-        sum += marginLeft + paddingLeft + borderLeftWidth;
+        if(isVertical) {
+          let {
+            [MARGIN_TOP]: marginTop,
+            [PADDING_TOP]: paddingTop,
+            [BORDER_TOP_WIDTH]: borderTopWidth,
+          } = dom.computedStyle;
+          sum += marginTop + paddingTop + borderTopWidth;
+        }
+        else {
+          let {
+            [MARGIN_LEFT]: marginLeft,
+            [PADDING_LEFT]: paddingLeft,
+            [BORDER_LEFT_WIDTH]: borderLeftWidth,
+          } = dom.computedStyle;
+          sum += marginLeft + paddingLeft + borderLeftWidth;
+        }
       }
       if(contentBox === list[list.length - 1]) {
-        let {
-          [MARGIN_RIGHT]: marginRight,
-          [PADDING_RIGHT]: paddingRight,
-          [BORDER_RIGHT_WIDTH]: borderRightWidth,
-        } = dom.computedStyle;
-        sum += marginRight + paddingRight + borderRightWidth;
+        if(isVertical) {
+          let {
+            [MARGIN_BOTTOM]: marginBottom,
+            [PADDING_BOTTOM]: paddingBottom,
+            [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+          } = dom.computedStyle;
+          sum += marginBottom + paddingBottom + borderBottomWidth;
+        }
+        else {
+          let {
+            [MARGIN_RIGHT]: marginRight,
+            [PADDING_RIGHT]: paddingRight,
+            [BORDER_RIGHT_WIDTH]: borderRightWidth,
+          } = dom.computedStyle;
+          sum += marginRight + paddingRight + borderRightWidth;
+        }
       }
       dom = dom.domParent;
     }

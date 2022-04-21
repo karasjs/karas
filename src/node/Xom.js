@@ -1716,6 +1716,7 @@ class Xom extends Node {
       [BACKGROUND_CLIP]: backgroundClip,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
     if(cache && renderMode === CANVAS) {
       opacity = __config[NODE_OPACITY];
@@ -1938,15 +1939,31 @@ class Xom extends Node {
         let offscreen, svgBgSymbol = [];
         // bgi视作inline排满一行绘制，然后按分行拆开给每行
         if(hasBgi) {
-          iw = inline.getInlineWidth(this, contentBoxList);
+          iw = inline.getInlineWidth(this, contentBoxList, isVertical);
           ih = lineHeight;
+          // 垂直模式互换，计算时始终按照宽度为主轴计算的
+          if(isVertical) {
+            [iw, ih] = [ih, iw];
+          }
           if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-            iw += paddingLeft + paddingRight;
-            ih += paddingTop + paddingBottom;
+            if(isVertical) {
+              iw += paddingTop + paddingBottom;
+              ih += paddingLeft + paddingRight;
+            }
+            else {
+              iw += paddingLeft + paddingRight;
+              ih += paddingTop + paddingBottom;
+            }
           }
           else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-            iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
-            ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+            if(isVertical) {
+              iw += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+              ih += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+            }
+            else {
+              iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+              ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+            }
           }
           if(renderMode === CANVAS || renderMode === WEBGL) {
             offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
@@ -1990,13 +2007,12 @@ class Xom extends Node {
         let ff = css.getFontFamily(fontFamily);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
         let leading = fontSize * (font.info[ff].lgr || 0) * 0.5;
-        let isVertical = writingMode.indexOf('vertical') === 0;
         let baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
         // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制，svg还需统计第几行
-        let count = 0, countW = 0;
+        let count = 0;
         for(let i = 0; i < length; i++) {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
@@ -2015,10 +2031,15 @@ class Xom extends Node {
               bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
                 ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
             }
-            let w = ix2 - ix1;
+            let w = ix2 - ix1, h = iy2 - iy1; // 世界参考系的宽高，根据writingMode不同取值使用
             // canvas的bg位图裁剪
             if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
-              ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              if(isVertical) {
+                ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
+              }
+              else {
+                ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              }
             }
             //svg则特殊判断
             else if(renderMode === SVG && svgBgSymbol.length) {
@@ -2031,7 +2052,12 @@ class Xom extends Node {
                       {
                         tagName: 'path',
                         props: [
-                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${ih}L${countW},${ih},L${countW},${0}`],
+                          [
+                            'd',
+                            isVertical
+                              ? `M${0},${count}L${ih},${count}L${ih},${h+count}L${0},${h+count},L${0},${count}`
+                              : `M${count},${0}L${w+count},${0}L${w+count},${ih}L${count},${ih},L${count},${0}`
+                          ],
                         ],
                       }
                     ],
@@ -2043,15 +2069,15 @@ class Xom extends Node {
                     tagName: 'use',
                     props: [
                       ['xlink:href', '#' + symbol],
-                      ['x', ix1 - countW],
-                      ['y', iy1],
+                      ['x', isVertical ? ix1 : (ix1 - count)],
+                      ['y', isVertical ? (iy1 - count) : iy1],
                       ['clip-path', 'url(#' + clip + ')'],
                     ],
                   });
                 }
               });
             }
-            countW += w;
+            count += isVertical ? h : w; // 增加主轴方向的一行/列尺寸
             if(boxShadow) {
               boxShadow.forEach(item => {
                 bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
@@ -2084,7 +2110,6 @@ class Xom extends Node {
             isFirst = false;
             lastContentBox = contentBox;
             lastLineBox = contentBox.parentLineBox;
-            count++;
           }
           // 最后一个特殊判断
           if(i === length - 1) {
@@ -2107,10 +2132,15 @@ class Xom extends Node {
                 ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0],
                 'fill', false, dx, dy);
             }
-            let w = ix2 - ix1;
+            let w = ix2 - ix1, h = iy2 - iy1;
             // canvas的bg位图裁剪
             if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
-              ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              if(isVertical) {
+                ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
+              }
+              else {
+                ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              }
             }
             //svg则特殊判断
             else if(renderMode === SVG && svgBgSymbol.length) {
@@ -2123,7 +2153,12 @@ class Xom extends Node {
                       {
                         tagName: 'path',
                         props: [
-                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${ih}L${countW},${ih},L${countW},${0}`],
+                          [
+                            'd',
+                            isVertical
+                              ? `M${0},${count}L${ih},${count}L${ih},${h+count}L${0},${h+count},L${0},${count}`
+                              : `M${count},${0}L${w+count},${0}L${w+count},${ih}L${count},${ih},L${count},${0}`
+                          ],
                         ],
                       }
                     ],
@@ -2135,8 +2170,8 @@ class Xom extends Node {
                     tagName: 'use',
                     props: [
                       ['xlink:href', '#' + symbol],
-                      ['x', ix1 - countW],
-                      ['y', iy1],
+                      ['x', isVertical ? ix1 : (ix1 - count)],
+                      ['y', isVertical ? (iy1 - count) : iy1],
                       ['clip-path', 'url(#' + clip + ')'],
                     ],
                   });

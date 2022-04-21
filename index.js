@@ -16289,11 +16289,12 @@
    * 统计inline的所有contentBox排成一行时的总宽度，考虑嵌套的mpb
    * @param xom
    * @param contentBoxList
+   * @param isVertical
    * @returns {number}
    */
 
 
-  function getInlineWidth(xom, contentBoxList) {
+  function getInlineWidth(xom, contentBoxList, isVertical) {
     var sum = 0;
     var length = contentBoxList.length;
 
@@ -16303,7 +16304,13 @@
 
     for (var i = 0; i < length; i++) {
       var contentBox = contentBoxList[i];
-      sum += contentBox.width; // 嵌套时，首尾box考虑mpb
+
+      if (isVertical) {
+        sum += contentBox.height;
+      } else {
+        sum += contentBox.width;
+      } // 嵌套时，首尾box考虑mpb
+
 
       var dom = contentBox instanceof TextBox ? contentBox.parent.domParent : contentBox.domParent;
 
@@ -16311,19 +16318,35 @@
         var list = dom.contentBoxList;
 
         if (contentBox === list[0]) {
-          var _dom$computedStyle5 = dom.computedStyle,
-              marginLeft = _dom$computedStyle5[MARGIN_LEFT$1],
-              paddingLeft = _dom$computedStyle5[PADDING_LEFT$2],
-              borderLeftWidth = _dom$computedStyle5[BORDER_LEFT_WIDTH$2];
-          sum += marginLeft + paddingLeft + borderLeftWidth;
+          if (isVertical) {
+            var _dom$computedStyle5 = dom.computedStyle,
+                marginTop = _dom$computedStyle5[MARGIN_TOP],
+                paddingTop = _dom$computedStyle5[PADDING_TOP$1],
+                borderTopWidth = _dom$computedStyle5[BORDER_TOP_WIDTH$1];
+            sum += marginTop + paddingTop + borderTopWidth;
+          } else {
+            var _dom$computedStyle6 = dom.computedStyle,
+                marginLeft = _dom$computedStyle6[MARGIN_LEFT$1],
+                paddingLeft = _dom$computedStyle6[PADDING_LEFT$2],
+                borderLeftWidth = _dom$computedStyle6[BORDER_LEFT_WIDTH$2];
+            sum += marginLeft + paddingLeft + borderLeftWidth;
+          }
         }
 
         if (contentBox === list[list.length - 1]) {
-          var _dom$computedStyle6 = dom.computedStyle,
-              marginRight = _dom$computedStyle6[MARGIN_RIGHT$1],
-              paddingRight = _dom$computedStyle6[PADDING_RIGHT$1],
-              borderRightWidth = _dom$computedStyle6[BORDER_RIGHT_WIDTH$1];
-          sum += marginRight + paddingRight + borderRightWidth;
+          if (isVertical) {
+            var _dom$computedStyle7 = dom.computedStyle,
+                marginBottom = _dom$computedStyle7[MARGIN_BOTTOM],
+                paddingBottom = _dom$computedStyle7[PADDING_BOTTOM$1],
+                borderBottomWidth = _dom$computedStyle7[BORDER_BOTTOM_WIDTH$1];
+            sum += marginBottom + paddingBottom + borderBottomWidth;
+          } else {
+            var _dom$computedStyle8 = dom.computedStyle,
+                marginRight = _dom$computedStyle8[MARGIN_RIGHT$1],
+                paddingRight = _dom$computedStyle8[PADDING_RIGHT$1],
+                borderRightWidth = _dom$computedStyle8[BORDER_RIGHT_WIDTH$1];
+            sum += marginRight + paddingRight + borderRightWidth;
+          }
         }
 
         dom = dom.domParent;
@@ -22107,7 +22130,8 @@
             overflow = computedStyle[OVERFLOW$1],
             mixBlendMode = computedStyle[MIX_BLEND_MODE],
             backgroundClip = computedStyle[BACKGROUND_CLIP$2],
-            writingMode = computedStyle[WRITING_MODE$1]; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
+            writingMode = computedStyle[WRITING_MODE$1];
+        var isVertical = writingMode.indexOf('vertical') === 0; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
 
         if (cache && renderMode === CANVAS$3) {
           opacity = __config[NODE_OPACITY$1];
@@ -22358,15 +22382,31 @@
                   svgBgSymbol = []; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
               if (hasBgi) {
-                iw = inline.getInlineWidth(_this8, contentBoxList);
-                ih = lineHeight;
+                iw = inline.getInlineWidth(_this8, contentBoxList, isVertical);
+                ih = lineHeight; // 垂直模式互换，计算时始终按照宽度为主轴计算的
+
+                if (isVertical) {
+                  var _ref = [ih, iw];
+                  iw = _ref[0];
+                  ih = _ref[1];
+                }
 
                 if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-                  iw += paddingLeft + paddingRight;
-                  ih += paddingTop + paddingBottom;
+                  if (isVertical) {
+                    iw += paddingTop + paddingBottom;
+                    ih += paddingLeft + paddingRight;
+                  } else {
+                    iw += paddingLeft + paddingRight;
+                    ih += paddingTop + paddingBottom;
+                  }
                 } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-                  iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
-                  ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+                  if (isVertical) {
+                    iw += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+                    ih += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+                  } else {
+                    iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+                    ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+                  }
                 }
 
                 if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
@@ -22413,14 +22453,13 @@
               var ff = css.getFontFamily(fontFamily); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
               var leading = fontSize * (o$1.info[ff].lgr || 0) * 0.5;
-              var isVertical = writingMode.indexOf('vertical') === 0;
               var baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
               var isFirst = true;
               var lastContentBox = contentBoxList[0],
                   lastLineBox = lastContentBox.parentLineBox; // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制，svg还需统计第几行
 
-              var countW = 0;
+              var count = 0;
 
               for (var i = 0; i < length; i++) {
                 var contentBox = contentBoxList[i];
@@ -22450,10 +22489,16 @@
                       bg.renderBgc(_this8, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
                     }
 
-                    var w = ix2 - ix1; // canvas的bg位图裁剪
+                    var w = ix2 - ix1,
+                        h = iy2 - iy1; // 世界参考系的宽高，根据writingMode不同取值使用
+                    // canvas的bg位图裁剪
 
                     if ((renderMode === CANVAS$3 || renderMode === WEBGL$3) && offscreen) {
-                      ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+                      if (isVertical) {
+                        ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
+                      } else {
+                        ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+                      }
                     } //svg则特殊判断
                     else if (renderMode === SVG$2 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
@@ -22463,7 +22508,7 @@
                             props: [],
                             children: [{
                               tagName: 'path',
-                              props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
+                              props: [['d', isVertical ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
                           var clip = ctx.add(_v5);
@@ -22473,13 +22518,13 @@
                           virtualDom.bb.push({
                             type: 'item',
                             tagName: 'use',
-                            props: [['xlink:href', '#' + symbol], ['x', ix1 - countW], ['y', iy1], ['clip-path', 'url(#' + clip + ')']]
+                            props: [['xlink:href', '#' + symbol], ['x', isVertical ? ix1 : ix1 - count], ['y', isVertical ? iy1 - count : iy1], ['clip-path', 'url(#' + clip + ')']]
                           });
                         }
                       });
                     }
 
-                    countW += w;
+                    count += isVertical ? h : w; // 增加主轴方向的一行/列尺寸
 
                     if (boxShadow) {
                       boxShadow.forEach(function (item) {
@@ -22551,10 +22596,15 @@
                       bg.renderBgc(_this8, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR$1], null, ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0], 'fill', false, dx, dy);
                     }
 
-                    var w = ix2 - ix1; // canvas的bg位图裁剪
+                    var w = ix2 - ix1,
+                        h = iy2 - iy1; // canvas的bg位图裁剪
 
                     if ((renderMode === CANVAS$3 || renderMode === WEBGL$3) && offscreen) {
-                      ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+                      if (isVertical) {
+                        ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
+                      } else {
+                        ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+                      }
                     } //svg则特殊判断
                     else if (renderMode === SVG$2 && svgBgSymbol.length) {
                       svgBgSymbol.forEach(function (symbol) {
@@ -22564,7 +22614,7 @@
                             props: [],
                             children: [{
                               tagName: 'path',
-                              props: [['d', "M".concat(countW, ",", 0, "L").concat(w + countW, ",", 0, "L").concat(w + countW, ",").concat(ih, "L").concat(countW, ",").concat(ih, ",L").concat(countW, ",", 0)]]
+                              props: [['d', isVertical ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                             }]
                           };
                           var clip = ctx.add(_v6);
@@ -22574,7 +22624,7 @@
                           virtualDom.bb.push({
                             type: 'item',
                             tagName: 'use',
-                            props: [['xlink:href', '#' + symbol], ['x', ix1 - countW], ['y', iy1], ['clip-path', 'url(#' + clip + ')']]
+                            props: [['xlink:href', '#' + symbol], ['x', isVertical ? ix1 : ix1 - count], ['y', isVertical ? iy1 - count : iy1], ['clip-path', 'url(#' + clip + ')']]
                           });
                         }
                       });

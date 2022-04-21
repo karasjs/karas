@@ -301,6 +301,10 @@
 * overflow
   * visible 默认
   * hidden
+* writingMode
+  * inherit 默认
+  * horizontal-tb
+  * vertical-lr
 * mixBlendMode
   * normal 默认
   * multiply

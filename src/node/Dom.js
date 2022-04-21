@@ -188,12 +188,12 @@ function genOrderChildren(flowChildren) {
 /**
  * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
  */
-function backtrack(bp, lineBoxManager, lineBox, total, endSpace) {
+function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
   let ew, computedStyle = bp.computedStyle, root = bp.root, renderMode = root.renderMode;
   let list = lineBox.list;
   // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
   list.forEach(item => {
-    total -= item.outerWidth;
+    total -= isVertical ? item.outerHeight : item.outerWidth;
   });
   let ctx;
   if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -218,7 +218,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace) {
     if(!i || total + item.outerWidth >= ew + (1e-10)) {
       if(item instanceof TextBox) {
         let text = item.parent;
-        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode);
+        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isVertical);
       }
       else {
         let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
@@ -239,7 +239,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace) {
         item.__layoutNone();
       }
       list.pop();
-      total += item.outerWidth;
+      total += isVertical ? item.outerHeight : item.outerWidth;
     }
   }
 }
@@ -890,7 +890,7 @@ class Dom extends Xom {
                 ignoreNextLine = true;
                 let list = lineBoxManager.list;
                 let lineBox = list[list.length - 1];
-                backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0);
+                backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
                 return;
               }
               lineClampCount = item.__layout({
@@ -1161,7 +1161,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0);
+              backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
               return;
             }
             lineClampCount = item.__layout({
@@ -1492,18 +1492,12 @@ class Dom extends Xom {
     if(fixedWidth || !isAbs && !isParentVertical && !isVertical) {
       tw = w;
     }
-    // else if(isAbs) {
-    //   tw = isVertical ? (x - data.x) : w;
-    // }
     else {
       tw = x - data.x;
     }
     if(fixedHeight || !isAbs && isParentVertical && isVertical) {
       th = h;
     }
-    // else if(isAbs) {
-    //   th = isVertical ? maxSize : (y - data.y);
-    // }
     else {
       th = y - data.y;
     }
@@ -1802,6 +1796,7 @@ class Dom extends Xom {
     }
     let maxCross = 0;
     let lbmList = [];
+    let marginAutoCount = 0;
     orderChildren.forEach((item, i) => {
       let main = targetMainList[i];
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -1870,6 +1865,26 @@ class Dom extends Xom {
             }, isAbs, isColumn, isRow);
           }
         }
+        // 记录主轴是否有margin为auto的情况
+        if(!isAbs && !isColumn && !isRow) {
+          let currentStyle = item.currentStyle;
+          if(isDirectionRow) {
+            if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+              marginAutoCount++;
+            }
+            if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+              marginAutoCount++;
+            }
+          }
+          else {
+            if(currentStyle[MARGIN_TOP][1] === AUTO) {
+              marginAutoCount++;
+            }
+            if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+              marginAutoCount++;
+            }
+          }
+        }
       }
       // 文字
       else {
@@ -1898,41 +1913,75 @@ class Dom extends Xom {
     });
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
-    // 主轴对齐方式
+    // 主轴对齐方式，需要考虑margin，如果有auto则优先于justifyContent
     if(!isAbs && !isColumn && !isRow && diff > 0) {
       let len = orderChildren.length;
-      if(justifyContent === 'flexEnd') {
+      if(marginAutoCount) {
+        // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
+        let count = 0, per = diff / marginAutoCount;
         for(let i = 0; i < len; i++) {
           let child = orderChildren[i];
-          isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
+          let currentStyle = child.currentStyle;
+          if(isDirectionRow) {
+            if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+              count += per;
+              child.__offsetX(count, true);
+            }
+            else if(count) {
+              child.__offsetX(count, true);
+            }
+            if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+              count += per;
+            }
+          }
+          else {
+            if(currentStyle[MARGIN_TOP][1] === AUTO) {
+              count += per;
+              child.__offsetY(count, true);
+            }
+            else if(count) {
+              child.__offsetY(count, true);
+            }
+            if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+              count += per;
+            }
+          }
         }
       }
-      else if(justifyContent === 'center') {
-        let center = diff * 0.5;
-        for(let i = 0; i < len; i++) {
-          let child = orderChildren[i];
-          isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
+      else {
+        if(justifyContent === 'flexEnd') {
+          for(let i = 0; i < len; i++) {
+            let child = orderChildren[i];
+            isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
+          }
         }
-      }
-      else if(justifyContent === 'spaceBetween') {
-        let between = diff / (len - 1);
-        for(let i = 1; i < len; i++) {
-          let child = orderChildren[i];
-          isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
+        else if(justifyContent === 'center') {
+          let center = diff * 0.5;
+          for(let i = 0; i < len; i++) {
+            let child = orderChildren[i];
+            isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
+          }
         }
-      }
-      else if(justifyContent === 'spaceAround') {
-        let around = diff * 0.5 / len;
-        for(let i = 0; i < len; i++) {
-          let child = orderChildren[i];
-          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+        else if(justifyContent === 'spaceBetween') {
+          let between = diff / (len - 1);
+          for(let i = 1; i < len; i++) {
+            let child = orderChildren[i];
+            isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
+          }
         }
-      }
-      else if(justifyContent === 'spaceEvenly') {
-        let around = diff / (len + 1);
-        for(let i = 0; i < len; i++) {
-          let child = orderChildren[i];
-          isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
+        else if(justifyContent === 'spaceAround') {
+          let around = diff * 0.5 / len;
+          for(let i = 0; i < len; i++) {
+            let child = orderChildren[i];
+            isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+          }
+        }
+        else if(justifyContent === 'spaceEvenly') {
+          let around = diff / (len + 1);
+          for(let i = 0; i < len; i++) {
+            let child = orderChildren[i];
+            isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
+          }
         }
       }
     }
@@ -2390,7 +2439,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w, endSpace);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
               return;
             }
             lineClampCount = item.__layout({
@@ -2509,7 +2558,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w, endSpace);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
               return;
             }
             lineClampCount = item.__layout({

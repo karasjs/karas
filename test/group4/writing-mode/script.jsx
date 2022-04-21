@@ -9,6 +9,10 @@ karas.render(
       <span style={{fontSize:24,background:'#0F0'}}>a</span>
       <span style={{background:'#0FF'}}>b</span>
     </div>
+    <div style={{margin:10,height:50,background:'#CCC',overflow:'hidden',
+      whiteSpace:'nowrap',textOverflow:'ellipsis',writingMode:'vertical-lr'}}>
+      <span>222222222</span>
+    </div>
   </canvas>,
   '#test'
 );

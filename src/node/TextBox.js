@@ -21,6 +21,7 @@ const { STYLE_KEY: {
   LINE_HEIGHT,
 } } = enums;
 const { DEG } = unit;
+const { CANVAS, SVG, WEBGL } = mode;
 
 function isCjk(c) {
   return reg.han.test(c) && !reg.punctuation.test(c);
@@ -92,17 +93,17 @@ class TextBox {
       [FONT_SIZE]: fontSize,
       [LINE_HEIGHT]: lineHeight,
     } = computedStyle;
-    let me = dom.matrixEvent, list;
-    let dev1 = 0, dev2 = 0;
-    if(isVertical) {
-      list = [
-        [ROTATE_Z, [90, DEG]],
-      ];
-      dev1 = bv * 0.6;
-      dev2 = bv * 0.2;
-    }
     let i = 0, length = content.length;
-    if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
+    if(renderMode === CANVAS || renderMode === WEBGL) {
+      let me = dom.matrixEvent, list;
+      let dev1 = 0, dev2 = 0;
+      if(isVertical) {
+        list = [
+          [ROTATE_Z, [90, DEG]],
+        ];
+        dev1 = bv * 0.6;
+        dev2 = bv * 0.2;
+      }
       let overFill = computedStyle[TEXT_STROKE_OVER] === 'fill';
       if(letterSpacing) {
         for(; i < length; i++) {
@@ -255,7 +256,7 @@ class TextBox {
         }
       }
     }
-    else if(renderMode === mode.SVG) {
+    else if(renderMode === SVG) {
       let color = cacheStyle[COLOR];
       if(color.k) {
         color = dom.__gradient(renderMode, ctx, dom.__bx1, dom.__by1, dom.__bx2, dom.__by2, color, dx, dy).v;

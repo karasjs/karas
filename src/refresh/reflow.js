@@ -131,7 +131,7 @@ function clearUniqueReflowId(hash) {
   }
 }
 
-function getMergeMarginTB(topList, bottomList) {
+function getMergeMargin(topList, bottomList) {
   let total = 0;
   let max = topList[0];
   let min = topList[0];
@@ -162,5 +162,5 @@ function getMergeMarginTB(topList, bottomList) {
 export default {
   offsetAndResizeByNodeOnY,
   clearUniqueReflowId,
-  getMergeMarginTB,
+  getMergeMargin,
 };

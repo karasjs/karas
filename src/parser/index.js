@@ -10,10 +10,6 @@ let o = {
     if(!json) {
       return;
     }
-    // 特殊单例声明无需clone加速解析
-    if(!options.singleton && !json.singleton) {
-      json = util.clone(json);
-    }
     // 根节点的fonts字段定义字体信息
     let fonts = json.fonts;
     if(fonts) {
@@ -38,6 +34,10 @@ let o = {
     if(!inject.isDom(dom)) {
       options = dom || {};
       dom = null;
+    }
+    // 特殊单例声明无需clone加速解析
+    if(!options.singleton && !json.singleton) {
+      json = util.clone(json);
     }
     // 暂存所有动画声明，等root的生成后开始执行
     let animateRecords = [];

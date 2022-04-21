@@ -58,6 +58,7 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_BOTTOM_WIDTH,
     POINTER_EVENTS,
+    WRITING_MODE,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -1305,12 +1306,14 @@ class Root extends Dom {
     // 有root提前跳出
     if(hasRoot) {
       reflow.clearUniqueReflowId(reflowHash);
+      let isVertical = this.currentStyle[WRITING_MODE].indexOf('vertical') === 0;
       // 布局分为两步，普通流和定位流，互相递归
       this.__layout({
         x: 0,
         y: 0,
         w: width,
         h: height,
+        isVertical,
       }, false, false);
       // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
       this.__layoutAbs(this, {
@@ -1318,6 +1321,7 @@ class Root extends Dom {
         y: 0,
         w: width,
         h: height,
+        isVertical,
       });
       this.__structs = this.__structure(0, 0);
       return true;
@@ -1609,7 +1613,7 @@ class Root extends Dom {
           // 每次循环开始前，这次不是block的话，看之前遗留的，可能是以空block结束，需要特殊处理，单独一个空block也包含
           if((!isXom || isInline || isInlineBlock)) {
             if(mergeMarginBottomList.length && mergeMarginTopList.length && isStart) {
-              let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+              let diff = reflow.getMergeMargin(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REPAINT);
@@ -1648,7 +1652,7 @@ class Root extends Dom {
               if(mergeMarginBottomList.length) {
                 mergeMarginTopList.push(marginTop);
                 if(isStart) {
-                  let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+                  let diff = reflow.getMergeMargin(mergeMarginTopList, mergeMarginBottomList);
                   // 需要合并的情况，根据记录数和索引向上向下遍历节点设置偏移，同时设置总偏移量供父级使用
                   if(diff) {
                     for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
@@ -1663,7 +1667,7 @@ class Root extends Dom {
             }
             // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0，最后一个一定有不必判断isStart
             else if(i === length - 1) {
-              let diff = reflow.getMergeMarginTB(mergeMarginTopList, mergeMarginBottomList);
+              let diff = reflow.getMergeMargin(mergeMarginTopList, mergeMarginBottomList);
               if(diff) {
                 for(let j = Math.max(startIndex, i - mergeMarginBottomList.length + 1); j < length; j++) {
                   flowChildren[j].__offsetY(diff, true, REPAINT);

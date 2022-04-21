@@ -1,0 +1,12 @@
+let path = require('path');
+let fs = require('fs');
+
+module.exports = {
+  'init': function(browser) {
+    browser
+      .url('file://' + path.join(__dirname, 'index.html'))
+      .waitForElementVisible('body', 1000)
+      .assert.value('input', '{"bb":[],"children":[{"bb":[{"type":"item","tagName":"path","props":[["d","M10,10L350,10L350,118.2421875L10,118.2421875L10,10"],["fill","rgba(255,0,0,1)"]]}],"children":[{"bb":[{"type":"item","tagName":"path","props":[["d","M10,10L23.3594,10L23.3594,37.205078125L10,37.205078125L10,10"],["fill","rgba(0,255,0,1)"]]}],"children":[{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",10],["y",31.7265625],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","24px"]],"content":"a"}]}],"visibility":"visible","type":"dom"},{"bb":[{"type":"item","tagName":"path","props":[["d","M23.3594,16.2421875L24.3594,16.2421875L24.3594,17.2421875L23.3594,16.2421875M24.3594,16.2421875L124.3594,16.2421875L124.3594,17.2421875L24.3594,17.2421875M124.3594,16.2421875L125.3594,16.2421875L125.3594,16.2421875L124.3594,17.2421875"],["fill","rgba(0,0,0,1)"]]},{"type":"item","tagName":"path","props":[["d","M125.3594,16.2421875L125.3594,16.2421875L125.3594,17.2421875L124.3594,17.2421875M124.3594,17.2421875L125.3594,17.2421875L125.3594,117.2421875L124.3594,117.2421875M124.3594,117.2421875L125.3594,117.2421875L125.3594,118.2421875L125.3594,118.2421875"],["fill","rgba(0,0,0,1)"]]},{"type":"item","tagName":"path","props":[["d","M23.3594,118.2421875L24.3594,117.2421875L24.3594,118.2421875L23.3594,118.2421875M24.3594,117.2421875L124.3594,117.2421875L124.3594,118.2421875L24.3594,118.2421875M124.3594,117.2421875L125.3594,118.2421875L125.3594,118.2421875L124.3594,118.2421875"],["fill","rgba(0,0,0,1)"]]},{"type":"item","tagName":"path","props":[["d","M23.3594,16.2421875L23.3594,16.2421875L24.3594,17.2421875L23.3594,17.2421875M23.3594,17.2421875L24.3594,17.2421875L24.3594,117.2421875L23.3594,117.2421875M23.3594,117.2421875L24.3594,117.2421875L23.3594,118.2421875L23.3594,118.2421875"],["fill","rgba(0,0,0,1)"]]}],"children":[{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",24.3594],["y",31.7265625],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","16px"]],"content":"b"}]}],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom","defs":[]}')
+      .end();
+  }
+};

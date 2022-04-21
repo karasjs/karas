@@ -4,12 +4,18 @@ import css from '../style/css';
 
 const { STYLE_KEY: {
   DISPLAY,
+  MARGIN_TOP,
+  MARGIN_BOTTOM,
   MARGIN_LEFT,
+  MARGIN_RIGHT,
+  BORDER_TOP_WIDTH,
+  BORDER_BOTTOM_WIDTH,
   BORDER_LEFT_WIDTH,
+  BORDER_RIGHT_WIDTH,
+  PADDING_TOP,
+  PADDING_BOTTOM,
   PADDING_LEFT,
   PADDING_RIGHT,
-  BORDER_RIGHT_WIDTH,
-  MARGIN_RIGHT,
   LINE_HEIGHT,
 } } = enums;
 
@@ -25,12 +31,14 @@ const { STYLE_KEY: {
  * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseline，inlineBlock等节点按最后一行baseline
  */
 class LineBox {
-  constructor(x, y, lineHeight, baseline) {
+  constructor(x, y, lineHeight, baseline, isVertical) {
     this.__list = [];
     this.__x = x;
     this.__y = y;
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
     this.__baseline = baseline;
+    this.__isVertical = isVertical;
+    this.__bOffset = 0;
   }
 
   add(item) {
@@ -38,61 +46,73 @@ class LineBox {
     item.__parentLineBox = this;
   }
 
-  verticalAlign() {
-    let baseline = this.baseline;
-    let lineHeight = this.lineHeight;
-    let increasedHeight = lineHeight;
-    let hasReplaced;
+  verticalAlign(isVertical) {
+    let baseline = isVertical ? this.verticalBaseline : this.baseline;
+    let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
+    let increase = lineHeight;
+    let hasIbOrReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
     if(this.list.length) {
       this.list.forEach(item => {
-        if(item.isReplaced) {
-          hasReplaced = true;
+        if(!(item instanceof TextBox)) {
+          hasIbOrReplaced = true;
         }
-        let n = item.baseline;
-        if(n !== baseline) {
-          let d = baseline - n;
-          item.__offsetY(d);
-          // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度
-          // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
-          if(d > 0) {
-            increasedHeight = Math.max(increasedHeight, item.height + d);
+        // 垂直排版计算不太一样，因为原点坐标系不一样
+        if(isVertical) {
+          let n = item.verticalBaseline;
+          if(n !== baseline) {
+            let d = baseline - n;
+            item.__offsetX(d, true);
+            // 同下方
+            increase = Math.max(increase, item.offsetWidth + d);
+          }
+        }
+        else {
+          let n = item.baseline;
+          if(n !== baseline) {
+            let d = baseline - n;
+            item.__offsetY(d, true);
+            // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度调整值
+            // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
+            increase = Math.max(increase, item.offsetHeight + d);
           }
         }
       });
     }
     let diff = 0;
-    // 特殊情况，只有1个img这样的替换元素时，或者只有img没有直接text时，也要进行检查，
-    // 因为此时img要参与这一行和baseline的对齐扩充
-    if(hasReplaced) {
-      diff = this.__lineHeight - this.__baseline;
+    // 特殊情况，只有ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
+    // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
+    if(hasIbOrReplaced) {
+      if(isVertical) {
+        diff = this.__baseline;
+      }
+      else {
+        diff = Math.max(0, this.__lineHeight - this.__baseline);
+      }
     }
     // 增加过的高度比最大还大时需要调整
-    if(increasedHeight > lineHeight) {
-      diff = Math.max(increasedHeight - lineHeight);
+    if(increase > lineHeight) {
+      diff = Math.max(diff, increase - lineHeight);
     }
     return diff;
   }
 
-  __offsetX(diff) {
+  __offsetX(diff, isAlign) {
     this.__x += diff;
+    // vertical-align或水平情况特殊对齐，可能替换元素img和text导致偏移
+    if(isAlign) {
+      this.list.forEach(item => {
+        item.__offsetX(diff, true);
+      });
+    }
   }
 
-  __offsetY(diff, isVerticalAlign) {
+  __offsetY(diff, isAlign) {
     this.__y += diff;
-    // vertical-align情况特殊对齐，可能替换元素img和text导致偏移，需触发整体和text偏移
-    if(isVerticalAlign) {
+    // vertical-align情况或水平特殊对齐，可能替换元素img和textBox导致偏移
+    if(isAlign) {
       this.list.forEach(item => {
-        // 是text的第一个的box的话，text也需要偏移
-        if(item instanceof TextBox) {
-          let text = item.parent;
-          if(text.textBoxes[0] === item) {
-            text.__offsetY(diff);
-          }
-        }
-        else {
-          item.__offsetY(diff);
-        }
+        item.__offsetY(diff, true);
       });
     }
   }
@@ -142,11 +162,18 @@ class LineBox {
     return this.__y;
   }
 
+  get endX() {
+    return this.x + this.width;
+  }
+
   get endY() {
     return this.y + this.height;
   }
 
   get width() {
+    if(this.isVertical) {
+      return this.verticalLineHeight;
+    }
     let list = this.list;
     let length = list.length;
     if(length) {
@@ -196,7 +223,59 @@ class LineBox {
   }
 
   get height() {
-    return this.lineHeight;
+    if(!this.isVertical) {
+      return this.lineHeight;
+    }
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      let first = list[0];
+      let last = list[length - 1];
+      let y1 = first.y;
+      let dom = first instanceof TextBox ? first.parent.domParent : first.domParent;
+      // 因为inline可以嵌套inline，所以一直向上查找到非inline为止，每层inline如果是首个则减去左侧mbp
+      while(true) {
+        let list = dom.contentBoxList;
+        let {
+          [DISPLAY]: display,
+          [MARGIN_TOP]: marginTop,
+          [BORDER_TOP_WIDTH]: borderTopWidth,
+          [PADDING_TOP]: paddingTop,
+        } = dom.computedStyle;
+        if(display !== 'inline') {
+          break;
+        }
+        if(first === list[0]) {
+          y1 -= marginTop + borderTopWidth + paddingTop;
+        }
+        dom = dom.domParent;
+      }
+      let y2 = last.y + last.outerHeight;
+      dom = last instanceof TextBox ? last.parent.domParent : last.domParent;
+      // 同向上查非inline，每层inline如果是最后一个则加上右侧mbp
+      while(true) {
+        let list = dom.contentBoxList;
+        let {
+          [DISPLAY]: display,
+          [MARGIN_BOTTOM]: marginBottom,
+          [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+          [PADDING_BOTTOM]: paddingBottom,
+        } = dom.computedStyle;
+        if(display !== 'inline') {
+          break;
+        }
+        if(first === list[list.length - 1]) {
+          y2 += marginBottom + borderBottomWidth + paddingBottom;
+        }
+        dom = dom.domParent;
+      }
+      return y2 - y1;
+    }
+    return 0;
+  }
+
+  get bOffset() {
+    return this.__bOffset;
   }
 
   get baseline() {
@@ -208,6 +287,15 @@ class LineBox {
     return baseline;
   }
 
+  get verticalBaseline() {
+    let baseline = this.__baseline;
+    // 只有TextBox和InlineBlock或replaced
+    this.list.forEach(item => {
+      baseline = Math.max(baseline, item.verticalBaseline);
+    });
+    return baseline;
+  }
+
   get lineHeight() {
     let lineHeight = this.__lineHeight;
     // 只有TextBox和InlineBlock或replaced
@@ -215,6 +303,19 @@ class LineBox {
       lineHeight = Math.max(lineHeight, item.outerHeight);
     });
     return lineHeight;
+  }
+
+  get verticalLineHeight() {
+    let lineHeight = this.__lineHeight;
+    // 只有TextBox和InlineBlock或replaced
+    this.list.forEach(item => {
+      lineHeight = Math.max(lineHeight, item.outerWidth);
+    });
+    return lineHeight;
+  }
+
+  get isVertical() {
+    return this.__isVertical;
   }
 }
 

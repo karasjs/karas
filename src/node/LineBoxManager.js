@@ -6,10 +6,10 @@ import LineBox from './LineBox';
  * 同时LineBox可能连续也可能不连续，不连续的是中间有block之类的隔离开来
  */
 class LineBoxManager {
-  constructor(x, y, lineHeight, baseline) {
+  constructor(x, y, lineHeight, baseline, isVertical) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
-    this.__maxX = x;
+    this.__max = isVertical ? y : x;
     this.__domList = [];
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
@@ -17,7 +17,8 @@ class LineBoxManager {
     this.__lineHeight = lineHeight;
     this.__baseline = baseline;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
-    this.__spreadYList = []; // verticalAlign时每个区域增加的y高度
+    this.__spreadList = []; // verticalAlign时每个区域增加的y高度
+    this.__isVertical = isVertical;
   }
 
   /**
@@ -25,7 +26,7 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   genLineBox(x, y) {
-    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline);
+    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline, this.isVertical);
     this.list.push(lineBox);
     this.__isEnd = true;
     return lineBox;
@@ -44,7 +45,7 @@ class LineBoxManager {
     let lineHeight = Math.max(this.__lineHeight, l);
     let baseline = Math.max(this.__baseline, b);
     if(this.__isNewLine) {
-      let lineBox = new LineBox(x, y, lineHeight, baseline);
+      let lineBox = new LineBox(x, y, lineHeight, baseline, this.isVertical);
       this.list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
@@ -76,7 +77,8 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   addItem(o, nextNewLine) {
-    let lineBox;
+    let lineBox, isVertical = this.isVertical;
+    // 新行新的lineBox，否则复用最后一个
     if(this.__isNewLine) {
       this.__isNewLine = false;
       lineBox = this.genLineBox(o.x, o.y);
@@ -98,24 +100,32 @@ class LineBoxManager {
       this.__lastY = o.y + o.outerHeight;
     }
     else {
-      this.__lastX = o.x + o.outerWidth;
-      this.__lastY = o.y;
+      if(isVertical) {
+        this.__lastX = o.x;
+        this.__lastY = o.y + o.outerHeight;
+      }
+      else {
+        this.__lastX = o.x + o.outerWidth;
+        this.__lastY = o.y;
+      }
     }
-    this.__maxX = Math.max(this.__maxX, o.x + o.outerWidth);
+    this.__max = Math.max(this.__max, isVertical ? (o.y + o.outerHeight) : (o.x + o.outerWidth));
     return lineBox;
   }
 
-  horizonAlign(w, textAlign) {
+  horizonAlign(size, textAlign, isVertical) {
     this.list.forEach(lineBox => {
-      let diff = w - lineBox.width;
+      let diff = size - (isVertical ? lineBox.height : lineBox.width);
       if(diff > 0) {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
-        lineBox.__offsetX(diff);
-        lineBox.list.forEach(item => {
-          item.__offsetX(diff, true);
-        });
+        if(isVertical) {
+          lineBox.__offsetY(diff, true);
+        }
+        else {
+          lineBox.__offsetX(diff, true);
+        }
       }
     });
   }
@@ -125,22 +135,32 @@ class LineBoxManager {
    * next行也需要y偏移
    * @returns {number}
    */
-  verticalAlign() {
-    let syl = this.__spreadYList;
-    syl.splice(0);
+  verticalAlign(isVertical) {
+    let spreadList = this.__spreadList;
+    spreadList.splice(0);
     let spread = 0;
     this.list.forEach(lineBox => {
       if(spread) {
-        lineBox.__offsetY(spread, true);
+        lineBox.__bOffset = spread; // 对齐造成的误差需记录给baseline修正
+        if(isVertical) {
+          lineBox.__offsetX(spread, true);
+        }
+        else {
+          lineBox.__offsetY(spread, true);
+        }
       }
-      spread += lineBox.verticalAlign();
-      syl.push(spread);
+      spread += lineBox.verticalAlign(isVertical);
+      spreadList.push(spread);
     });
     return spread;
   }
 
   addX(n) {
     this.__lastX += n;
+  }
+
+  addY(n) {
+    this.__lastY += n;
   }
 
   /**
@@ -193,6 +213,15 @@ class LineBoxManager {
     return this.__lastY;
   }
 
+  get endX() {
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      return list[length - 1].endX;
+    }
+    return this.__x;
+  }
+
   get endY() {
     let list = this.list;
     let length = list.length;
@@ -226,7 +255,8 @@ class LineBoxManager {
       for(let i = 0; i < length - 1; i++) {
         n += list[i].height;
       }
-      return n + list[length - 1].baseline;
+      // 需考虑因为verticalAlign造成的lineBox偏移offset值，修正计算正确的baseline
+      return n + list[length - 1].baseline + list[length - 1].bOffset;
     }
     return 0;
   }
@@ -240,10 +270,27 @@ class LineBoxManager {
     return 0;
   }
 
+  get verticalBaseline() {
+    let list = this.list;
+    let length = list.length;
+    if(length) {
+      return list[0].baseline + list[0].bOffset;
+    }
+    return 0;
+  }
+
   get lineHeight() {
     let list = this.list;
     if(list.length) {
       return list[list.length - 1].lineHeight;
+    }
+    return 0;
+  }
+
+  get verticalLineHeight() {
+    let list = this.list;
+    if(list.length) {
+      return list[list.length - 1].verticalLineHeight;
     }
     return 0;
   }
@@ -267,8 +314,16 @@ class LineBoxManager {
     return w;
   }
 
-  get spreadYList() {
-    return this.__spreadYList;
+  get spreadList() {
+    return this.__spreadList;
+  }
+
+  get isVertical() {
+    return this.__isVertical;
+  }
+
+  get max() {
+    return this.__max;
   }
 }
 

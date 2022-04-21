@@ -34,7 +34,6 @@ const {
     BORDER_LEFT_WIDTH,
     BORDER_RIGHT_WIDTH,
     FILTER,
-    WRITING_MODE,
   },
   NODE_KEY: {
     NODE_CACHE,
@@ -121,11 +120,12 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
       newLine = true;
       break;
     }
-    // 超出，设置右边界，并根据余量推测减少个数，精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
+    // 超出，设置右边界，并根据余量推测减少个数，
+    // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
     if(mw > w + (1e-10)) {
       newLine = true;
       // 限制至少1个
-      if(i === start && hypotheticalNum === 1) {
+      if(hypotheticalNum === 1) {
         rw = mw;
         break;
       }
@@ -193,21 +193,20 @@ class Text extends Node {
     if(__cache) {
       __cache.release();
     }
-    let { x, y, w, lx = x, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0 } = data;
+    let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isVertical = false } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, textBoxes, root } = this;
     textBoxes.splice(0);
     let __config = this.__config;
     __config[NODE_LIMIT_CACHE] = false;
-    // 空内容w/h都为0可以提前跳出
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content) {
+    // 空内容w/h都为0可以提前跳出，lineClamp超出一般不会进这，但有特例flex文本垂直预计算时，所以也要跳出
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
       return lineClampCount;
     }
     this.__ox = this.__oy = 0;
     // 顺序尝试分割字符串为TextBox，形成多行，begin为每行起始索引，i是当前字符索引
     let i = 0;
-    let beginSpace = x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
     let length = content.length;
     let maxW = 0;
     let {
@@ -217,8 +216,9 @@ class Text extends Node {
       [FONT_SIZE]: fontSize,
       [FONT_WEIGHT]: fontWeight,
       [FONT_FAMILY]: fontFamily,
-      [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let size = isVertical ? h : w;
+    let beginSpace = isVertical ? (y - ly) : (x - lx); // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
     // 基于最近block父节点的样式
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
@@ -266,10 +266,15 @@ class Text extends Node {
       // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
         let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
-          content);
+          content, isVertical);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false);
-        y += lineHeight;
+        if(isVertical) {
+          x += lineHeight;
+        }
+        else {
+          y += lineHeight;
+        }
         if(isTextOverflow) {
           lineCount++;
         }
@@ -281,35 +286,48 @@ class Text extends Node {
     // 然后第一次换行还有特殊之处，可能同一行前半部行高很大，此时y增加并非自身的lineHeight，而是整体LineBox的
     else {
       while(i < length) {
-        let wl = i ? w : (w - beginSpace);
+        let limit = i ? size : (size - beginSpace);
         if(lineClamp && lineCount + lineClampCount >= lineClamp - 1) {
-          wl -= endSpace;
+          limit -= endSpace;
         }
-        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit, perW,
+          fontFamily, fontSize, fontWeight, letterSpacing);
         // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
-            endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+          [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
+            lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
+            fontFamily, fontSize, fontWeight, letterSpacing);
           lineCount++;
           break;
         }
         // 最后一行考虑endSpace，可能不够需要回退，但不能是1个字符
-        if(i + num === length && endSpace && rw + endSpace > wl + (1e-10) && num > 1) {
-          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, wl - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        if(i + num === length && endSpace && rw + endSpace > limit + (1e-10) && num > 1) {
+          [num, rw, newLine] = measureLineWidth(ctx, renderMode, i, length, content, limit - endSpace, perW,
+            fontFamily, fontSize, fontWeight, letterSpacing);
           // 可能加上endSpace后超过了，还得再判断一次
           if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, wl - endSpace, perW, lineCount ? lx : x, y, maxW,
-              endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing);
+            [y, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
+              lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
+              fontFamily, fontSize, fontWeight, letterSpacing);
             lineCount++;
             break;
           }
         }
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白
-        let textBox = new TextBox(this, textBoxes.length, lineCount ? lx : x, y, rw, lineHeight, content.slice(i, i + num));
+        let textBox = new TextBox(this, textBoxes.length,
+          lineCount && !isVertical ? lx : x,
+          lineCount && isVertical ? ly : y,
+          rw, lineHeight, content.slice(i, i + num), isVertical);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, newLine);
-        y += Math.max(lineHeight, lineBoxManager.lineHeight);
+        // 竖排横排换行不一样
+        if(isVertical) {
+          x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
+        }
+        else {
+          y += Math.max(lineHeight, lineBoxManager.lineHeight);
+        }
         // 至少也要1个字符形成1行，哪怕是首行，因为是否放得下逻辑在dom中做过了
         i += num;
         if(newLine) {
@@ -318,22 +336,34 @@ class Text extends Node {
       }
       // 换行后Text的x重设为lx
       if(lineCount) {
-        this.__x = this.__sx1 = lx;
+        if(isVertical) {
+          this.__y = this.__sy1 = ly;
+        }
+        else {
+          this.__x = this.__sx1 = lx;
+        }
       }
     }
-    this.__width = maxW;
-    this.__height = y - data.y;
-    this.__baseline = css.getBaseline(computedStyle);
+    if(isVertical) {
+      this.__width = x - data.x;
+      this.__height = maxW;
+      this.__verticalBaseline = css.getVerticalBaseline(computedStyle);
+    }
+    else {
+      this.__width = maxW;
+      this.__height = y - data.y;
+      this.__baseline = css.getBaseline(computedStyle);
+    }
     return lineClampCount + lineCount;
   }
 
   __layoutNone() {
-    this.__width = this.__height = this.__baseline = 0;
+    this.__width = this.__height = this.__baseline = this.__verticalBaseline = 0;
     this.__textBoxes.splice(0);
   }
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
-  __lineBack(ctx, renderMode, i, length, content, wl, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
+  __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
               fontFamily, fontSize, fontWeight, letterSpacing) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
@@ -353,9 +383,9 @@ class Text extends Node {
         ctx.font = font;
       }
     }
-    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, wl - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+    let [num, rw] = measureLineWidth(ctx, renderMode, i, length, content, limit - ew - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
     // 还是不够，需要回溯查找前一个inline节点继续回退，同时防止空行首，要至少一个textBox且一个字符
-    if(rw + ew > wl + (1e-10) - endSpace) {
+    if(rw + ew > limit + (1e-10) - endSpace) {
       // 向前回溯已有的tb，需注意可能是新行开头这时还没生成新的lineBox，而旧行则至少1个内容
       // 新行的话进不来，会添加上面num的内容，旧行不添加只修改之前的tb内容也有可能删除一些
       let lineBox = lineBoxManager.lineBox;
@@ -370,13 +400,13 @@ class Text extends Node {
             }
             let item = list.pop();
             x -= item.outerWidth;
-            wl += item.outerWidth;
+            limit += item.outerWidth;
             item.__layoutNone();
             continue;
           }
           // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
           let { content, width, parent } = tb;
-          if(!j || wl >= width + ew + (1e-10) + endSpace) {
+          if(!j || limit >= width + ew + (1e-10) + endSpace) {
             let length = content.length;
             let {
               [LINE_HEIGHT]: lineHeight,
@@ -389,7 +419,7 @@ class Text extends Node {
               ctx.font = css.setFontStyle(parent.computedStyle);
             }
             // 再进行查找，这里也会有至少一个字符不用担心
-            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew + width - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+            let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew + width - endSpace, perW, fontFamily, fontSize, fontWeight, letterSpacing);
             // 可能发生x回退，当tb的内容产生减少时
             if(num !== content.length) {
               tb.__content = content.slice(0, num);
@@ -406,7 +436,7 @@ class Text extends Node {
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
-          wl += width;
+          limit += width;
           x -= width;
           let tbs = item.parent.textBoxes;
           let k = tbs.indexOf(item);
@@ -430,7 +460,7 @@ class Text extends Node {
               + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
               + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
             x -= mbp;
-            wl += mbp;
+            limit += mbp;
             dom.__layoutNone();
             dom = dom.domParent;
           }
@@ -455,7 +485,7 @@ class Text extends Node {
   }
 
   // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
-  __backtrack(bp, lineBoxManager, lineBox, textBox, wl, endSpace, ew, computedStyle, ctx, renderMode) {
+  __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode) {
     let list = lineBox.list;
     for(let j = list.length - 1; j >= 0; j--) {
       let tb = list[j];
@@ -465,13 +495,13 @@ class Text extends Node {
           break;
         }
         let item = list.pop();
-        wl += item.outerWidth;
+        limit += item.outerWidth;
         item.__layoutNone();
         continue;
       }
       // 先判断整个tb都删除是否可以容纳下，同时注意第1个tb不能删除因此必进
       let { content, width, parent } = tb;
-      if(!j || wl >= width + ew + (1e-10) + endSpace) {
+      if(!j || limit >= width + ew + (1e-10) + endSpace) {
         let length = content.length;
         let {
           [LETTER_SPACING]: letterSpacing,
@@ -484,7 +514,7 @@ class Text extends Node {
         }
         let perW = (fontSize * 0.8) + letterSpacing;
         // 再进行查找，这里也会有至少一个字符不用担心
-        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, wl - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing);
+        let [num, rw] = measureLineWidth(ctx, renderMode, 0, length, content, limit - ew - endSpace + width, perW, fontFamily, fontSize, fontWeight, letterSpacing);
         // 可能发生x回退，当tb的内容产生减少时
         if(num !== content.length) {
           tb.__content = content.slice(0, num);
@@ -498,7 +528,7 @@ class Text extends Node {
       }
       // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
       let item = list.pop();
-      wl += width;
+      limit += width;
       let tbs = item.parent.textBoxes;
       let k = tbs.indexOf(item);
       if(k > -1) {
@@ -520,7 +550,7 @@ class Text extends Node {
         let mbp = computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT]
           + computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT]
           + computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-        wl += mbp;
+        limit += mbp;
         dom.__layoutNone();
         dom = dom.domParent;
       }
@@ -552,26 +582,34 @@ class Text extends Node {
     this.__sy1 += diff;
   }
 
-  __tryLayInline(w) {
-    return w - this.firstCharWidth;
+  __tryLayInline(total) {
+    return total - this.firstCharWidth;
   }
 
-  __inlineSize() {
-    let minX, maxX;
+  __inlineSize(isVertical) {
+    let min, max;
     this.textBoxes.forEach((item, i) => {
       if(i) {
-        minX = Math.min(minX, item.x);
-        maxX = Math.max(maxX, item.x + item.width);
+        min = Math.min(min, isVertical ? item.y : item.x);
+        max = Math.max(max, (isVertical ? item.y : item.x) + item.width);
       }
       else {
-        minX = item.x;
-        maxX = item.x + item.width;
+        min = isVertical ? item.y : item.x;
+        max = (isVertical ? item.y : item.x) + item.width;
       }
     });
-    this.__x = minX;
-    this.__sx = this.__sx1 = minX + this.ox;
-    this.__sy = this.__sy1;
-    this.__width = maxX - minX;
+    if(isVertical) {
+      this.__y = min;
+      this.__sy = this.__sy1 = min + this.oy;
+      this.__sx = this.__sx1;
+      this.height = max - min;
+    }
+    else {
+      this.__x = min;
+      this.__sx = this.__sx1 = min + this.ox;
+      this.__sy = this.__sy1;
+      this.__width = max - min;
+    }
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
@@ -813,10 +851,6 @@ class Text extends Node {
       }
     }
     return o.textWidth;
-  }
-
-  get baseline() {
-    return this.__baseline;
   }
 
   get root() {

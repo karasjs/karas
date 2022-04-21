@@ -426,7 +426,7 @@ class Xom extends Node {
     // lineHeight继承很特殊，数字和normal不同于普通单位
     if(lineHeight[1] === INHERIT) {
       if(isRoot) {
-        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle, null);
       }
       else {
         let p = parent;
@@ -440,7 +440,7 @@ class Xom extends Node {
         }
         // 到root还是inherit或normal，或者中途遇到了normal，使用normal
         if([AUTO, INHERIT].indexOf(ph[1]) > -1) {
-          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
+          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle, null);
         }
         // 数字继承
         else if(ph[1] === NUMBER) {
@@ -453,12 +453,12 @@ class Xom extends Node {
       }
     }
     else if(lineHeight[1] === NUMBER) {
-      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
+      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle, null);
     }
     // 防止为0
     else {
       let v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);
-      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle);
+      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle, null);
     }
     let letterSpacing = currentStyle[LETTER_SPACING];
     if(letterSpacing[1] === INHERIT) {
@@ -482,11 +482,13 @@ class Xom extends Node {
     let computedStyle = this.computedStyle;
     // 可能不传，在虚拟布局时用不到
     if(!isNil(w)) {
+      this.__width = computedStyle[WIDTH] = w;
       this.__clientWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
       this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
       this.__outerWidth = w + computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT];
     }
     if(!isNil(h)) {
+      this.__height = computedStyle[HEIGHT] = h;
       this.__clientHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
       this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
       this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
@@ -530,8 +532,8 @@ class Xom extends Node {
     return res;
   }
 
-  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局
-  __layout(data, isAbs, isColumn) {
+  // absolute且无尺寸时，isAbs标明先假布局一次计算尺寸，还有flex列计算时isColumn假布局，flex横计算时writingMode垂直假布局
+  __layout(data, isAbs, isColumn, isRow) {
     this.__computeReflow();
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle, __config, __ellipsis } = this;
@@ -545,18 +547,17 @@ class Xom extends Node {
       [DISPLAY]: display,
       [POSITION]: position,
     } = computedStyle;
-    let {
-      [WIDTH]: width,
-    } = currentStyle;
     this.__layoutData = {
       x: data.x,
       y: data.y,
-      w: data.w,
+      w,
       h: data.h,
       lx: data.lx,
+      ly: data.ly,
+      isVertical: data.isVertical, // 从Root开始，父级的书写模式需每层传递
     };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
-    if(!isAbs && !isColumn) {
+    if(!isAbs && !isColumn && !isRow) {
       this.clearCache();
       __config[NODE_REFRESH_LV] = REFLOW;
       __config[NODE_LIMIT_CACHE] = false;
@@ -594,36 +595,26 @@ class Xom extends Node {
     if(position !== 'absolute') {
       this.__mp(currentStyle, computedStyle, w);
     }
-    // inline的width/height无效，其它有效
-    if(width[1] !== AUTO) {
-      if(this.__isRealInline() && computedStyle[DISPLAY] === 'inline') {
-        width[0] = 0;
-        width[1] = AUTO;
-      }
-      else {
-        w = this.__calSize(width, w, true);
-      }
-    }
     // 只有inline会继承计算行数，其它都是原样返回
     let lineClampCount = data.lineClampCount || 0;
     // 4种布局，默认block，inlineBlock基本可以复用inline逻辑，除了尺寸
     if(display === 'flex') {
       data.lineClampCount = 0;
-      this.__layoutFlex(data, isAbs, isColumn);
+      this.__layoutFlex(data, isAbs, isColumn, isRow);
     }
     else if(display === 'inlineBlock') {
       data.lineClampCount = 0;
-      this.__layoutInline(data, isAbs, isColumn);
+      this.__layoutInline(data, isAbs, isColumn, isRow);
     }
     else if(display === 'inline') {
-      lineClampCount = this.__layoutInline(data, isAbs, isColumn, true);
+      lineClampCount = this.__layoutInline(data, isAbs, isColumn, isRow, true);
     }
     else {
       data.lineClampCount = 0;
-      this.__layoutBlock(data, isAbs, isColumn);
+      this.__layoutBlock(data, isAbs, isColumn, isRow);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-    if(!isAbs && !isColumn) {
+    if(!isAbs && !isColumn && !isRow) {
       if(position === 'relative') {
         let {[TOP]: top, [RIGHT]: right, [BOTTOM]: bottom, [LEFT]: left} = currentStyle;
         let {parent} = this;
@@ -737,7 +728,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, lineBoxManager, endSpace = 0 } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isVertical: isParentVertical } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -758,7 +749,9 @@ class Xom extends Node {
       [PADDING_RIGHT]: paddingRight,
       [PADDING_BOTTOM]: paddingBottom,
       [PADDING_LEFT]: paddingLeft,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
@@ -772,7 +765,7 @@ class Xom extends Node {
       fixedWidth = true;
       w = w3;
     }
-    else if(width[1] !== AUTO) {
+    else if(width[1] !== AUTO && !isInline) {
       fixedWidth = true;
       w = this.__calSize(width, w, true);
     }
@@ -784,22 +777,35 @@ class Xom extends Node {
       fixedHeight = true;
       h = h3;
     }
-    else if(height[1] !== AUTO) {
+    else if(height[1] !== AUTO && !isInline) {
       fixedHeight = true;
       h = this.__calSize(height, h, true);
     }
-    // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响
-    x += borderLeftWidth + marginLeft + paddingLeft;
-    data.x = x;
+    // margin/border/padding影响x和y和尺寸，注意inline的y不受mpb影响（垂直模式则是x）
     if(!isInline) {
+      x += borderLeftWidth + marginLeft + paddingLeft;
       y += borderTopWidth + marginTop + paddingTop;
     }
+    else {
+      if(isVertical) {
+        y += borderTopWidth + marginTop + paddingTop;
+      }
+      else {
+        x += borderLeftWidth + marginLeft + paddingLeft;
+      }
+    }
+    data.x = x;
     data.y = y;
     // inline的w/h很特殊，需不考虑inline自身水平的mpb以便换行，因为mpb只在首尾行生效，所以首尾需特殊处理中间忽略
     // 当嵌套inline时更加复杂，假如inline有尾部mpb，最后一行需考虑，如果此inline是父的最后一个且父有mpb需叠加
     let selfEndSpace = 0;
     if(isInline) {
-      selfEndSpace = paddingRight + borderRightWidth + marginRight;
+      if(isVertical) {
+        selfEndSpace = paddingBottom + borderBottomWidth + marginBottom;
+      }
+      else {
+        selfEndSpace = paddingRight + borderRightWidth + marginRight;
+      }
     }
     // 传入w3/h3时，flex的item已知目标主尺寸，需减去mbp，其一定是block，和inline互斥
     if(!isInline) {
@@ -818,26 +824,43 @@ class Xom extends Node {
       w,
       h,
       lx,
+      ly,
       lineBoxManager,
       endSpace,
       selfEndSpace,
+      isParentVertical,
+      isVertical,
     };
   }
 
   // 处理margin:xx auto居中对齐或右对齐
-  __marginAuto(style, data) {
+  __marginAuto(style, data, isVertical) {
     let {
       [POSITION]: position,
       [DISPLAY]: display,
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_BOTTOM]: marginBottom,
       [MARGIN_LEFT]: marginLeft,
       [MARGIN_RIGHT]: marginRight,
       [WIDTH]: width,
+      [HEIGHT]: height,
     } = style;
-    if(position !== 'absolute' && (display === 'block' || display === 'flex')
-      && (width[1] !== AUTO || this.isReplaced) && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
-      let ow = this.outerWidth;
-      if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5, true);
+    if(position !== 'absolute' && (display === 'block' || display === 'flex')) {
+      if(isVertical) {
+        if((height[1] !== AUTO || this.isReplaced) && marginTop[1] === AUTO && marginBottom[1] === AUTO) {
+          let oh = this.outerHeight;
+          if(oh < data.h) {
+            this.__offsetY((data.h - oh) * 0.5, true);
+          }
+        }
+      }
+      else {
+        if((width[1] !== AUTO || this.isReplaced) && marginLeft[1] === AUTO && marginRight[1] === AUTO) {
+          let ow = this.outerWidth;
+          if(ow < data.w) {
+            this.__offsetX((data.w - ow) * 0.5, true);
+          }
+        }
       }
     }
   }
@@ -903,7 +926,9 @@ class Xom extends Node {
       if(__cacheStyle[TRANSFORM_ORIGIN] === undefined) {
         __cacheStyle[TRANSFORM_ORIGIN] = true;
         matrixCache = null;
-        computedStyle[TRANSFORM_ORIGIN] = tf.calOrigin(currentStyle[TRANSFORM_ORIGIN], offsetWidth, offsetHeight, this.root);
+        computedStyle[TRANSFORM_ORIGIN] = currentStyle[TRANSFORM_ORIGIN].map((item, i) => {
+          return this.__calSize(item, i ? offsetHeight : offsetWidth, true);
+        });
       }
       if(__cacheStyle[TRANSFORM] === undefined
         || __cacheStyle[TRANSLATE_X] === undefined
@@ -1130,9 +1155,9 @@ class Xom extends Node {
         // 防止隐藏不加载背景图
         if(bgi[1] === STRING) {
           let loadBgi = this.__loadBgi[i] = this.__loadBgi[i] || {};
-          let cache = inject.IMG[BACKGROUND_IMAGE];
+          let cache = inject.IMG[bgi[0]];
           if(cache && cache.state === inject.LOADED) {
-            loadBgi.url = BACKGROUND_IMAGE;
+            loadBgi.url = bgi[0];
             loadBgi.source = cache.source;
             loadBgi.width = cache.width;
             loadBgi.height = cache.height;
@@ -1402,7 +1427,9 @@ class Xom extends Node {
     if(isNil(__cacheStyle[PERSPECTIVE_ORIGIN])) {
       __cacheStyle[PERSPECTIVE_ORIGIN] = true;
       rebuild = true;
-      computedStyle[PERSPECTIVE_ORIGIN] = tf.calOrigin(currentStyle[PERSPECTIVE_ORIGIN], this.offsetWidth, this.offsetHeight, this.root);
+      computedStyle[PERSPECTIVE_ORIGIN] = currentStyle[PERSPECTIVE_ORIGIN].map((item, i) => {
+        return this.__calSize(item, i ? this.offsetHeight : this.offsetWidth, true);
+      });
     }
     if(rebuild) {
       if(sx1 === undefined) {
@@ -1687,7 +1714,9 @@ class Xom extends Node {
       [OVERFLOW]: overflow,
       [MIX_BLEND_MODE]: mixBlendMode,
       [BACKGROUND_CLIP]: backgroundClip,
+      [WRITING_MODE]: writingMode,
     } = computedStyle;
+    let isVertical = writingMode.indexOf('vertical') === 0;
     // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
     if(cache && renderMode === CANVAS) {
       opacity = __config[NODE_OPACITY];
@@ -1910,15 +1939,31 @@ class Xom extends Node {
         let offscreen, svgBgSymbol = [];
         // bgi视作inline排满一行绘制，然后按分行拆开给每行
         if(hasBgi) {
-          iw = inline.getInlineWidth(this, contentBoxList);
+          iw = inline.getInlineWidth(this, contentBoxList, isVertical);
           ih = lineHeight;
+          // 垂直模式互换，计算时始终按照宽度为主轴计算的
+          if(isVertical) {
+            [iw, ih] = [ih, iw];
+          }
           if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-            iw += paddingLeft + paddingRight;
-            ih += paddingTop + paddingBottom;
+            if(isVertical) {
+              iw += paddingTop + paddingBottom;
+              ih += paddingLeft + paddingRight;
+            }
+            else {
+              iw += paddingLeft + paddingRight;
+              ih += paddingTop + paddingBottom;
+            }
           }
           else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-            iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
-            ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+            if(isVertical) {
+              iw += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+              ih += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+            }
+            else {
+              iw += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
+              ih += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
+            }
           }
           if(renderMode === CANVAS || renderMode === WEBGL) {
             offscreen = inject.getCacheCanvas(iw, ih, '__$$INLINE_BGI$$__');
@@ -1960,20 +2005,20 @@ class Xom extends Node {
         }
         // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         let ff = css.getFontFamily(fontFamily);
-        let baseline = css.getBaseline(computedStyle);
-        // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - diffL
-        let diffL = fontSize * (font.info[ff].lgr || 0);
+        // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
+        let leading = fontSize * (font.info[ff].lgr || 0) * 0.5;
+        let baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
         // bgi需统计宽度累计值，将当前行所处理想单行的x范围位置计算出来，并进行bgi贴图绘制，svg还需统计第几行
-        let count = 0, countW = 0;
+        let count = 0;
         for(let i = 0; i < length; i++) {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
             // 上一行
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
-              lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, diffL, isFirst, false,
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isVertical, contentBoxList,
+              lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             // 要算上开头空白inline，可能有多个和递归嵌套
@@ -1986,10 +2031,15 @@ class Xom extends Node {
               bg.renderBgc(this, renderMode, ctx, __cacheStyle[BACKGROUND_COLOR], null,
                 ix1, iy1, ix2 - ix1, iy2 - iy1, btlr, [0, 0], [0, 0], bblr, 'fill', false, dx, dy);
             }
-            let w = ix2 - ix1;
+            let w = ix2 - ix1, h = iy2 - iy1; // 世界参考系的宽高，根据writingMode不同取值使用
             // canvas的bg位图裁剪
             if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
-              ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              if(isVertical) {
+                ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
+              }
+              else {
+                ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              }
             }
             //svg则特殊判断
             else if(renderMode === SVG && svgBgSymbol.length) {
@@ -2002,7 +2052,12 @@ class Xom extends Node {
                       {
                         tagName: 'path',
                         props: [
-                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${ih}L${countW},${ih},L${countW},${0}`],
+                          [
+                            'd',
+                            isVertical
+                              ? `M${0},${count}L${ih},${count}L${ih},${h+count}L${0},${h+count},L${0},${count}`
+                              : `M${count},${0}L${w+count},${0}L${w+count},${ih}L${count},${ih},L${count},${0}`
+                          ],
                         ],
                       }
                     ],
@@ -2014,15 +2069,15 @@ class Xom extends Node {
                     tagName: 'use',
                     props: [
                       ['xlink:href', '#' + symbol],
-                      ['x', ix1 - countW],
-                      ['y', iy1],
+                      ['x', isVertical ? ix1 : (ix1 - count)],
+                      ['y', isVertical ? (iy1 - count) : iy1],
                       ['clip-path', 'url(#' + clip + ')'],
                     ],
                   });
                 }
               });
             }
-            countW += w;
+            count += isVertical ? h : w; // 增加主轴方向的一行/列尺寸
             if(boxShadow) {
               boxShadow.forEach(item => {
                 bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
@@ -2055,12 +2110,11 @@ class Xom extends Node {
             isFirst = false;
             lastContentBox = contentBox;
             lastLineBox = contentBox.parentLineBox;
-            count++;
           }
           // 最后一个特殊判断
           if(i === length - 1) {
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, contentBoxList,
-              lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, diffL, isFirst, true,
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isVertical, contentBoxList,
+              lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
             // 要算上开头空白inline，可能有多个和递归嵌套
@@ -2078,10 +2132,15 @@ class Xom extends Node {
                 ix1, iy1, ix2 - ix1, iy2 - iy1, isFirst ? btlr : [0, 0], btrr, bbrr, isFirst ? bblr : [0, 0],
                 'fill', false, dx, dy);
             }
-            let w = ix2 - ix1;
+            let w = ix2 - ix1, h = iy2 - iy1;
             // canvas的bg位图裁剪
             if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
-              ctx.drawImage(offscreen.canvas, countW, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              if(isVertical) {
+                ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
+              }
+              else {
+                ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
+              }
             }
             //svg则特殊判断
             else if(renderMode === SVG && svgBgSymbol.length) {
@@ -2094,7 +2153,12 @@ class Xom extends Node {
                       {
                         tagName: 'path',
                         props: [
-                          ['d', `M${countW},${0}L${w+countW},${0}L${w+countW},${ih}L${countW},${ih},L${countW},${0}`],
+                          [
+                            'd',
+                            isVertical
+                              ? `M${0},${count}L${ih},${count}L${ih},${h+count}L${0},${h+count},L${0},${count}`
+                              : `M${count},${0}L${w+count},${0}L${w+count},${ih}L${count},${ih},L${count},${0}`
+                          ],
                         ],
                       }
                     ],
@@ -2106,8 +2170,8 @@ class Xom extends Node {
                     tagName: 'use',
                     props: [
                       ['xlink:href', '#' + symbol],
-                      ['x', ix1 - countW],
-                      ['y', iy1],
+                      ['x', isVertical ? ix1 : (ix1 - count)],
+                      ['y', isVertical ? (iy1 - count) : iy1],
                       ['clip-path', 'url(#' + clip + ')'],
                     ],
                   });

@@ -26435,19 +26435,13 @@
 
         if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
           tw = w;
-        } // else if(isAbs) {
-        //   tw = isVertical ? (x - data.x) : w;
-        // }
-        else {
+        } else {
           tw = x - data.x;
         }
 
         if (fixedHeight || !isAbs && isParentVertical && isVertical) {
           th = h;
-        } // else if(isAbs) {
-        //   th = isVertical ? maxSize : (y - data.y);
-        // }
-        else {
+        } else {
           th = y - data.y;
         }
 
@@ -26775,6 +26769,7 @@
 
         var maxCross = 0;
         var lbmList = [];
+        var marginAutoCount = 0;
         orderChildren.forEach(function (item, i) {
           var main = targetMainList[i];
 
@@ -26846,6 +26841,29 @@
                   isVertical: isVertical
                 }, isAbs, isColumn, isRow);
               }
+            } // 记录主轴是否有margin为auto的情况
+
+
+            if (!isAbs && !isColumn && !isRow) {
+              var currentStyle = item.currentStyle;
+
+              if (isDirectionRow) {
+                if (currentStyle[MARGIN_LEFT$4][1] === AUTO$5) {
+                  marginAutoCount++;
+                }
+
+                if (currentStyle[MARGIN_RIGHT$4][1] === AUTO$5) {
+                  marginAutoCount++;
+                }
+              } else {
+                if (currentStyle[MARGIN_TOP$4][1] === AUTO$5) {
+                  marginAutoCount++;
+                }
+
+                if (currentStyle[MARGIN_BOTTOM$4][1] === AUTO$5) {
+                  marginAutoCount++;
+                }
+              }
             }
           } // 文字
           else {
@@ -26873,43 +26891,81 @@
           }
         }); // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
 
-        var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式
+        var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式，需要考虑margin，如果有auto则优先于justifyContent
 
         if (!isAbs && !isColumn && !isRow && diff > 0) {
           var len = orderChildren.length;
 
-          if (justifyContent === 'flexEnd') {
+          if (marginAutoCount) {
+            // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
+            var count = 0,
+                per = diff / marginAutoCount;
+            console.log(marginAutoCount, diff, per);
+
             for (var i = 0; i < len; i++) {
               var child = orderChildren[i];
-              isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
-            }
-          } else if (justifyContent === 'center') {
-            var center = diff * 0.5;
+              var currentStyle = child.currentStyle;
 
-            for (var _i3 = 0; _i3 < len; _i3++) {
-              var _child = orderChildren[_i3];
-              isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
-            }
-          } else if (justifyContent === 'spaceBetween') {
-            var between = diff / (len - 1);
+              if (isDirectionRow) {
+                if (currentStyle[MARGIN_LEFT$4][1] === AUTO$5) {
+                  count += per;
 
-            for (var _i4 = 1; _i4 < len; _i4++) {
-              var _child2 = orderChildren[_i4];
-              isDirectionRow ? _child2.__offsetX(between * _i4, true) : _child2.__offsetY(between * _i4, true);
-            }
-          } else if (justifyContent === 'spaceAround') {
-            var around = diff * 0.5 / len;
+                  child.__offsetX(count, true);
+                } else if (count) {
+                  child.__offsetX(count, true);
+                }
 
-            for (var _i5 = 0; _i5 < len; _i5++) {
-              var _child3 = orderChildren[_i5];
-              isDirectionRow ? _child3.__offsetX(around * (_i5 * 2 + 1), true) : _child3.__offsetY(around * (_i5 * 2 + 1), true);
-            }
-          } else if (justifyContent === 'spaceEvenly') {
-            var _around = diff / (len + 1);
+                if (currentStyle[MARGIN_RIGHT$4][1] === AUTO$5) {
+                  count += per;
+                }
+              } else {
+                if (currentStyle[MARGIN_TOP$4][1] === AUTO$5) {
+                  count += per;
 
-            for (var _i6 = 0; _i6 < len; _i6++) {
-              var _child4 = orderChildren[_i6];
-              isDirectionRow ? _child4.__offsetX(_around * (_i6 + 1), true) : _child4.__offsetY(_around * (_i6 + 1), true);
+                  child.__offsetY(count, true);
+                } else if (count) {
+                  child.__offsetY(count, true);
+                }
+
+                if (currentStyle[MARGIN_BOTTOM$4][1] === AUTO$5) {
+                  count += per;
+                }
+              }
+            }
+          } else {
+            if (justifyContent === 'flexEnd') {
+              for (var _i3 = 0; _i3 < len; _i3++) {
+                var _child = orderChildren[_i3];
+                isDirectionRow ? _child.__offsetX(diff, true) : _child.__offsetY(diff, true);
+              }
+            } else if (justifyContent === 'center') {
+              var center = diff * 0.5;
+
+              for (var _i4 = 0; _i4 < len; _i4++) {
+                var _child2 = orderChildren[_i4];
+                isDirectionRow ? _child2.__offsetX(center, true) : _child2.__offsetY(center, true);
+              }
+            } else if (justifyContent === 'spaceBetween') {
+              var between = diff / (len - 1);
+
+              for (var _i5 = 1; _i5 < len; _i5++) {
+                var _child3 = orderChildren[_i5];
+                isDirectionRow ? _child3.__offsetX(between * _i5, true) : _child3.__offsetY(between * _i5, true);
+              }
+            } else if (justifyContent === 'spaceAround') {
+              var around = diff * 0.5 / len;
+
+              for (var _i6 = 0; _i6 < len; _i6++) {
+                var _child4 = orderChildren[_i6];
+                isDirectionRow ? _child4.__offsetX(around * (_i6 * 2 + 1), true) : _child4.__offsetY(around * (_i6 * 2 + 1), true);
+              }
+            } else if (justifyContent === 'spaceEvenly') {
+              var _around = diff / (len + 1);
+
+              for (var _i7 = 0; _i7 < len; _i7++) {
+                var _child5 = orderChildren[_i7];
+                isDirectionRow ? _child5.__offsetX(_around * (_i7 + 1), true) : _child5.__offsetY(_around * (_i7 + 1), true);
+              }
             }
           }
         }

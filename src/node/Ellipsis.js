@@ -2,9 +2,9 @@ import Node from './Node';
 import mode from '../refresh/mode';
 import css from '../style/css';
 import unit from '../style/unit';
+import transform from '../style/transform';
 import enums from '../util/enums';
-import transform from "../style/transform";
-import mx from "../math/matrix";
+import mx from '../math/matrix';
 
 const {
   STYLE_KEY: {

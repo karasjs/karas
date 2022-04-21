@@ -14294,7 +14294,7 @@
 
       if (_mw === w) {
         rw = w;
-        newLine = false;
+        newLine = true;
         break;
       } // 超出，设置右边界，并根据余量推测减少个数，
       // 因为精度问题，固定宽度或者累加的剩余空间，不用相等判断，而是为原本w宽度加一点点冗余1e-10
@@ -14328,7 +14328,6 @@
         }
       } // 还有空余，设置左边界，并根据余量推测增加的个数
       else {
-        newLine = false;
         rw = _mw;
 
         if (hypotheticalNum === length - start) {
@@ -14539,7 +14538,7 @@
                 newLine = _measureLineWidth2[2]; // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
 
 
-            if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
+            if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
               var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
 
               var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);

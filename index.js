@@ -26900,7 +26900,6 @@
             // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
             var count = 0,
                 per = diff / marginAutoCount;
-            console.log(marginAutoCount, diff, per);
 
             for (var i = 0; i < len; i++) {
               var child = orderChildren[i];
@@ -40821,7 +40820,7 @@
     Cache: Cache
   };
 
-  var version = "0.73.0-beta";
+  var version = "0.73.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -1919,7 +1919,6 @@ class Dom extends Xom {
       if(marginAutoCount) {
         // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
         let count = 0, per = diff / marginAutoCount;
-        console.log(marginAutoCount, diff, per);
         for(let i = 0; i < len; i++) {
           let child = orderChildren[i];
           let currentStyle = child.currentStyle;

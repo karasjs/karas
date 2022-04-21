@@ -17,7 +17,15 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
   if(start === -1) {
     return;
   }
-  ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
+  let first = list[start];
+  ctx.moveTo(first[0] + dx, first[1] + dy);
+  // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+  if(first.length === 4) {
+    ctx.moveTo(first[2] + dx, first[3] + dy);
+  }
+  else if(first.length === 6) {
+    ctx.moveTo(first[4] + dx, first[5] + dy);
+  }
   for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];
     if(!Array.isArray(item)) {
@@ -50,7 +58,14 @@ function svgPolygon(list) {
   if(start === -1) {
     return '';
   }
-  let s = 'M' + list[start][0] + ',' + list[start][1];
+  let first = list[start];
+  let s = 'M' + first[0] + ',' + first[1];
+  if(first.length === 4) {
+    s = 'M' + first[2] + ',' + first[3];
+  }
+  else if(first.length === 6) {
+    s = 'M' + first[4] + ',' + first[5];
+  }
   for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];
     if(!Array.isArray(item)) {

@@ -4225,7 +4225,14 @@
       return;
     }
 
-    ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
+    var first = list[start];
+    ctx.moveTo(first[0] + dx, first[1] + dy); // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+
+    if (first.length === 4) {
+      ctx.moveTo(first[2] + dx, first[3] + dy);
+    } else if (first.length === 6) {
+      ctx.moveTo(first[4] + dx, first[5] + dy);
+    }
 
     for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
       var _item = list[_i];
@@ -4264,7 +4271,14 @@
       return '';
     }
 
-    var s = 'M' + list[start][0] + ',' + list[start][1];
+    var first = list[start];
+    var s = 'M' + first[0] + ',' + first[1];
+
+    if (first.length === 4) {
+      s = 'M' + first[2] + ',' + first[3];
+    } else if (first.length === 6) {
+      s = 'M' + first[4] + ',' + first[5];
+    }
 
     for (var _i2 = start + 1, _len2 = list.length; _i2 < _len2; _i2++) {
       var _item2 = list[_i2];

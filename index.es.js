@@ -4219,7 +4219,14 @@ function canvasPolygon(ctx, list) {
     return;
   }
 
-  ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
+  var first = list[start];
+  ctx.moveTo(first[0] + dx, first[1] + dy); // 特殊的情况，布尔运算数学库会打乱原有顺序，致使第一个点可能有冗余的贝塞尔值，move到正确的索引坐标
+
+  if (first.length === 4) {
+    ctx.moveTo(first[2] + dx, first[3] + dy);
+  } else if (first.length === 6) {
+    ctx.moveTo(first[4] + dx, first[5] + dy);
+  }
 
   for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
     var _item = list[_i];
@@ -4258,7 +4265,14 @@ function svgPolygon(list) {
     return '';
   }
 
-  var s = 'M' + list[start][0] + ',' + list[start][1];
+  var first = list[start];
+  var s = 'M' + first[0] + ',' + first[1];
+
+  if (first.length === 4) {
+    s = 'M' + first[2] + ',' + first[3];
+  } else if (first.length === 6) {
+    s = 'M' + first[4] + ',' + first[5];
+  }
 
   for (var _i2 = start + 1, _len2 = list.length; _i2 < _len2; _i2++) {
     var _item2 = list[_i2];
@@ -13381,12 +13395,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
 
         if (isVertical) {
           var me = parent.matrixEvent,
-              list;
-
-          if (isVertical) {
-            list = [[ROTATE_Z$3, [90, DEG$3]]];
-          }
-
+              list = [[ROTATE_Z$3, [90, DEG$3]]];
           var tfo = [x, y];
           var m = transform$1.calMatrixWithOrigin(list, tfo, 0, 0);
           m = mx.multiply(me, m);
@@ -14252,10 +14261,10 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
   if (letterSpacing && [CANVAS$3, WEBGL$3].indexOf(renderMode) > -1) {
     var count = 0;
 
-    for (; i < length; i++) {
+    for (; i < j; i++) {
       var mw = ctx.measureText(content.charAt(i)).width + letterSpacing;
 
-      if (i > start && count + mw > w + 1e-10) {
+      if (count + mw > w + 1e-10) {
         newLine = true;
         break;
       }
@@ -14537,7 +14546,7 @@ var Text = /*#__PURE__*/function (_Node) {
               newLine = _measureLineWidth2[2]; // 多行文本截断，这里肯定需要回退，注意防止恰好是最后一个字符，此时无需截取
 
 
-          if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
+          if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
             var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
 
             var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
@@ -40814,7 +40823,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.0";
+var version = "0.73.1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

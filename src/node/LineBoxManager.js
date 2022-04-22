@@ -6,10 +6,10 @@ import LineBox from './LineBox';
  * 同时LineBox可能连续也可能不连续，不连续的是中间有block之类的隔离开来
  */
 class LineBoxManager {
-  constructor(x, y, lineHeight, baseline, isVertical) {
+  constructor(x, y, lineHeight, baseline, isUpright) {
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
     this.__y = this.__lastY = y;
-    this.__max = isVertical ? y : x;
+    this.__max = isUpright ? y : x;
     this.__domList = [];
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
@@ -18,7 +18,7 @@ class LineBoxManager {
     this.__baseline = baseline;
     this.__isEnd = true; // 在dom中是否一个区域处在结尾，外部控制
     this.__spreadList = []; // verticalAlign时每个区域增加的y高度
-    this.__isVertical = isVertical;
+    this.__isVertical = isUpright;
   }
 
   /**
@@ -26,7 +26,7 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   genLineBox(x, y) {
-    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline, this.isVertical);
+    let lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline, this.isUpright);
     this.list.push(lineBox);
     this.__isEnd = true;
     return lineBox;
@@ -45,7 +45,7 @@ class LineBoxManager {
     let lineHeight = Math.max(this.__lineHeight, l);
     let baseline = Math.max(this.__baseline, b);
     if(this.__isNewLine) {
-      let lineBox = new LineBox(x, y, lineHeight, baseline, this.isVertical);
+      let lineBox = new LineBox(x, y, lineHeight, baseline, this.isUpright);
       this.list.push(lineBox);
       this.__isEnd = true;
       this.__isNewLine = false;
@@ -77,7 +77,7 @@ class LineBoxManager {
    * @returns {LineBox}
    */
   addItem(o, nextNewLine) {
-    let lineBox, isVertical = this.isVertical;
+    let lineBox, isUpright = this.isUpright;
     // 新行新的lineBox，否则复用最后一个
     if(this.__isNewLine) {
       this.__isNewLine = false;
@@ -100,7 +100,7 @@ class LineBoxManager {
       this.__lastY = o.y + o.outerHeight;
     }
     else {
-      if(isVertical) {
+      if(isUpright) {
         this.__lastX = o.x;
         this.__lastY = o.y + o.outerHeight;
       }
@@ -109,18 +109,18 @@ class LineBoxManager {
         this.__lastY = o.y;
       }
     }
-    this.__max = Math.max(this.__max, isVertical ? (o.y + o.outerHeight) : (o.x + o.outerWidth));
+    this.__max = Math.max(this.__max, isUpright ? (o.y + o.outerHeight) : (o.x + o.outerWidth));
     return lineBox;
   }
 
-  horizonAlign(size, textAlign, isVertical) {
+  horizonAlign(size, textAlign, isUpright) {
     this.list.forEach(lineBox => {
-      let diff = size - (isVertical ? lineBox.height : lineBox.width);
+      let diff = size - (isUpright ? lineBox.height : lineBox.width);
       if(diff > 0) {
         if(textAlign === 'center') {
           diff *= 0.5;
         }
-        if(isVertical) {
+        if(isUpright) {
           lineBox.__offsetY(diff, true);
         }
         else {
@@ -135,21 +135,21 @@ class LineBoxManager {
    * next行也需要y偏移
    * @returns {number}
    */
-  verticalAlign(isVertical) {
+  verticalAlign(isUpright) {
     let spreadList = this.__spreadList;
     spreadList.splice(0);
     let spread = 0;
     this.list.forEach(lineBox => {
       if(spread) {
         lineBox.__bOffset = spread; // 对齐造成的误差需记录给baseline修正
-        if(isVertical) {
+        if(isUpright) {
           lineBox.__offsetX(spread, true);
         }
         else {
           lineBox.__offsetY(spread, true);
         }
       }
-      spread += lineBox.verticalAlign(isVertical);
+      spread += lineBox.verticalAlign(isUpright);
       spreadList.push(spread);
     });
     return spread;
@@ -318,7 +318,7 @@ class LineBoxManager {
     return this.__spreadList;
   }
 
-  get isVertical() {
+  get isUpright() {
     return this.__isVertical;
   }
 

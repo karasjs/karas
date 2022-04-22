@@ -554,7 +554,7 @@ class Xom extends Node {
       h: data.h,
       lx: data.lx,
       ly: data.ly,
-      isVertical: data.isVertical, // 从Root开始，父级的书写模式需每层传递
+      isUpright: data.isUpright, // 从Root开始，父级的书写模式需每层传递
     };
     // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
     if(!isAbs && !isColumn && !isRow) {
@@ -728,7 +728,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data, isInline) {
-    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isVertical: isParentVertical } = data;
+    let { x, y, w, h, w2, h2, w3, h3, lx, ly, lineBoxManager, endSpace = 0, isUpright: isParentVertical } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -751,7 +751,7 @@ class Xom extends Node {
       [PADDING_LEFT]: paddingLeft,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
-    let isVertical = writingMode.indexOf('vertical') === 0;
+    let isUpright = writingMode.indexOf('vertical') === 0;
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
@@ -787,7 +787,7 @@ class Xom extends Node {
       y += borderTopWidth + marginTop + paddingTop;
     }
     else {
-      if(isVertical) {
+      if(isUpright) {
         y += borderTopWidth + marginTop + paddingTop;
       }
       else {
@@ -800,7 +800,7 @@ class Xom extends Node {
     // 当嵌套inline时更加复杂，假如inline有尾部mpb，最后一行需考虑，如果此inline是父的最后一个且父有mpb需叠加
     let selfEndSpace = 0;
     if(isInline) {
-      if(isVertical) {
+      if(isUpright) {
         selfEndSpace = paddingBottom + borderBottomWidth + marginBottom;
       }
       else {
@@ -829,12 +829,12 @@ class Xom extends Node {
       endSpace,
       selfEndSpace,
       isParentVertical,
-      isVertical,
+      isUpright,
     };
   }
 
   // 处理margin:xx auto居中对齐或右对齐
-  __marginAuto(style, data, isVertical) {
+  __marginAuto(style, data, isUpright) {
     let {
       [POSITION]: position,
       [DISPLAY]: display,
@@ -846,7 +846,7 @@ class Xom extends Node {
       [HEIGHT]: height,
     } = style;
     if(position !== 'absolute' && (display === 'block' || display === 'flex')) {
-      if(isVertical) {
+      if(isUpright) {
         if((height[1] !== AUTO || this.isReplaced) && marginTop[1] === AUTO && marginBottom[1] === AUTO) {
           let oh = this.outerHeight;
           if(oh < data.h) {
@@ -1716,7 +1716,7 @@ class Xom extends Node {
       [BACKGROUND_CLIP]: backgroundClip,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
-    let isVertical = writingMode.indexOf('vertical') === 0;
+    let isUpright = writingMode.indexOf('vertical') === 0;
     // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
     if(cache && renderMode === CANVAS) {
       opacity = __config[NODE_OPACITY];
@@ -1939,14 +1939,14 @@ class Xom extends Node {
         let offscreen, svgBgSymbol = [];
         // bgi视作inline排满一行绘制，然后按分行拆开给每行
         if(hasBgi) {
-          iw = inline.getInlineWidth(this, contentBoxList, isVertical);
+          iw = inline.getInlineWidth(this, contentBoxList, isUpright);
           ih = lineHeight;
           // 垂直模式互换，计算时始终按照宽度为主轴计算的
-          if(isVertical) {
+          if(isUpright) {
             [iw, ih] = [ih, iw];
           }
           if(backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-            if(isVertical) {
+            if(isUpright) {
               iw += paddingTop + paddingBottom;
               ih += paddingLeft + paddingRight;
             }
@@ -1956,7 +1956,7 @@ class Xom extends Node {
             }
           }
           else if(backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-            if(isVertical) {
+            if(isUpright) {
               iw += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
               ih += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
             }
@@ -2007,7 +2007,7 @@ class Xom extends Node {
         let ff = css.getFontFamily(fontFamily);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
         let leading = fontSize * (font.info[ff].lgr || 0) * 0.5;
-        let baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
+        let baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
         let lastContentBox = contentBoxList[0], lastLineBox = lastContentBox.parentLineBox;
@@ -2017,7 +2017,7 @@ class Xom extends Node {
           let contentBox = contentBoxList[i];
           if(contentBox.parentLineBox !== lastLineBox) {
             // 上一行
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isVertical, contentBoxList,
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isUpright, contentBoxList,
               lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
@@ -2034,7 +2034,7 @@ class Xom extends Node {
             let w = ix2 - ix1, h = iy2 - iy1; // 世界参考系的宽高，根据writingMode不同取值使用
             // canvas的bg位图裁剪
             if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
-              if(isVertical) {
+              if(isUpright) {
                 ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
               }
               else {
@@ -2054,7 +2054,7 @@ class Xom extends Node {
                         props: [
                           [
                             'd',
-                            isVertical
+                            isUpright
                               ? `M${0},${count}L${ih},${count}L${ih},${h+count}L${0},${h+count},L${0},${count}`
                               : `M${count},${0}L${w+count},${0}L${w+count},${ih}L${count},${ih},L${count},${0}`
                           ],
@@ -2069,15 +2069,15 @@ class Xom extends Node {
                     tagName: 'use',
                     props: [
                       ['xlink:href', '#' + symbol],
-                      ['x', isVertical ? ix1 : (ix1 - count)],
-                      ['y', isVertical ? (iy1 - count) : iy1],
+                      ['x', isUpright ? ix1 : (ix1 - count)],
+                      ['y', isUpright ? (iy1 - count) : iy1],
                       ['clip-path', 'url(#' + clip + ')'],
                     ],
                   });
                 }
               });
             }
-            count += isVertical ? h : w; // 增加主轴方向的一行/列尺寸
+            count += isUpright ? h : w; // 增加主轴方向的一行/列尺寸
             if(boxShadow) {
               boxShadow.forEach(item => {
                 bs.renderBoxShadow(this, renderMode, ctx, item, bx1, by1, bx2, by2, bx2 - bx1, by2 - by1, dx, dy);
@@ -2113,7 +2113,7 @@ class Xom extends Node {
           }
           // 最后一个特殊判断
           if(i === length - 1) {
-            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isVertical, contentBoxList,
+            let [ix1, iy1, ix2, iy2, bx1, by1, bx2, by2] = inline.getInlineBox(this, isUpright, contentBoxList,
               lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true,
               backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth);
@@ -2135,7 +2135,7 @@ class Xom extends Node {
             let w = ix2 - ix1, h = iy2 - iy1;
             // canvas的bg位图裁剪
             if((renderMode === CANVAS || renderMode === WEBGL) && offscreen) {
-              if(isVertical) {
+              if(isUpright) {
                 ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
               }
               else {
@@ -2155,7 +2155,7 @@ class Xom extends Node {
                         props: [
                           [
                             'd',
-                            isVertical
+                            isUpright
                               ? `M${0},${count}L${ih},${count}L${ih},${h+count}L${0},${h+count},L${0},${count}`
                               : `M${count},${0}L${w+count},${0}L${w+count},${ih}L${count},${ih},L${count},${0}`
                           ],
@@ -2170,8 +2170,8 @@ class Xom extends Node {
                     tagName: 'use',
                     props: [
                       ['xlink:href', '#' + symbol],
-                      ['x', isVertical ? ix1 : (ix1 - count)],
-                      ['y', isVertical ? (iy1 - count) : iy1],
+                      ['x', isUpright ? ix1 : (ix1 - count)],
+                      ['y', isUpright ? (iy1 - count) : iy1],
                       ['clip-path', 'url(#' + clip + ')'],
                     ],
                   });

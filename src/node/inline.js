@@ -22,7 +22,7 @@ const {
 /**
  * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
  * @param xom
- * @param isVertical
+ * @param isUpright
  * @param contentBoxList
  * @param start
  * @param end
@@ -43,17 +43,17 @@ const {
  * @param borderLeftWidth
  * @returns {(*|number)[]}
  */
-function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, baseline,
+function getInlineBox(xom, isUpright, contentBoxList, start, end, lineBox, baseline,
                       lineHeight, leading, isStart, isEnd, backgroundClip,
                       paddingTop, paddingRight, paddingBottom, paddingLeft,
                       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
   // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
   let bcStart = 0, bcEnd = 0;
-  let pbStart = isVertical ? (paddingLeft + borderLeftWidth) : (paddingTop + borderTopWidth);
-  let pbEnd = isVertical ? (paddingRight + borderRightWidth) : (paddingBottom + borderBottomWidth);
+  let pbStart = isUpright ? (paddingLeft + borderLeftWidth) : (paddingTop + borderTopWidth);
+  let pbEnd = isUpright ? (paddingRight + borderRightWidth) : (paddingBottom + borderBottomWidth);
   if(backgroundClip === 'paddingBox') {
-    bcStart = isVertical ? paddingLeft : paddingTop;
-    bcEnd = isVertical ? paddingRight : paddingBottom;
+    bcStart = isUpright ? paddingLeft : paddingTop;
+    bcEnd = isUpright ? paddingRight : paddingBottom;
   }
   else if(backgroundClip === 'borderBox') {
     bcStart = pbStart;
@@ -62,7 +62,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   // inline的baseline和lineBox的差值，不同lh时造成的偏移，一般为多个textBox时比较小的那个发生
   // 垂直排版不能简单算baseline差值，因为原点坐标系不一样
   let diff;
-  if(isVertical) {
+  if(isUpright) {
     diff = lineBox.verticalBaseline - baseline;
   }
   else {
@@ -71,7 +71,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   let x1, y1, x2, y2, bx1, by1, bx2, by2;
   // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
   // 垂直排版则互换x/y逻辑
-  if(isVertical) {
+  if(isUpright) {
     x1 = lineBox.x + diff - bcStart + leading;
     y1 = start.y;
     bx1 = lineBox.x + diff - pbStart + leading;
@@ -86,7 +86,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   while(dom !== xom) {
     let list = dom.contentBoxList;
     if(start === list[0]) {
-      if(isVertical) {
+      if(isUpright) {
         let {
           [MARGIN_TOP]: marginTop,
           [PADDING_TOP]: paddingTop,
@@ -106,7 +106,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     dom = dom.domParent;
   }
   // 第一个需考虑容器本身的padding/border
-  if(isVertical) {
+  if(isUpright) {
     by1 = y1;
     if(isStart) {
       by1 -= paddingTop + borderTopWidth;
@@ -142,7 +142,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   while(dom !== xom) {
     let list = dom.contentBoxList;
     if(end === list[list.length - 1]) {
-      if(isVertical) {
+      if(isUpright) {
         let {
           [MARGIN_BOTTOM]: marginBottom,
           [PADDING_BOTTOM]: paddingBottom,
@@ -161,7 +161,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     }
     dom = dom.domParent;
   }
-  if(isVertical) {
+  if(isUpright) {
     by2 = y2;
     if(isEnd) {
       by2 += paddingBottom + borderBottomWidth;
@@ -201,10 +201,10 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
  * 统计inline的所有contentBox排成一行时的总宽度，考虑嵌套的mpb
  * @param xom
  * @param contentBoxList
- * @param isVertical
+ * @param isUpright
  * @returns {number}
  */
-function getInlineWidth(xom, contentBoxList, isVertical) {
+function getInlineWidth(xom, contentBoxList, isUpright) {
   let sum = 0;
   let length = contentBoxList.length;
   if(contentBoxList[length - 1] instanceof Ellipsis) {
@@ -212,7 +212,7 @@ function getInlineWidth(xom, contentBoxList, isVertical) {
   }
   for(let i = 0; i < length; i++) {
     let contentBox = contentBoxList[i];
-    if(isVertical) {
+    if(isUpright) {
       sum += contentBox.height;
     }
     else {
@@ -223,7 +223,7 @@ function getInlineWidth(xom, contentBoxList, isVertical) {
     while(dom !== xom) {
       let list = dom.contentBoxList;
       if(contentBox === list[0]) {
-        if(isVertical) {
+        if(isUpright) {
           let {
             [MARGIN_TOP]: marginTop,
             [PADDING_TOP]: paddingTop,
@@ -241,7 +241,7 @@ function getInlineWidth(xom, contentBoxList, isVertical) {
         }
       }
       if(contentBox === list[list.length - 1]) {
-        if(isVertical) {
+        if(isUpright) {
           let {
             [MARGIN_BOTTOM]: marginBottom,
             [PADDING_BOTTOM]: paddingBottom,

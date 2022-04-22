@@ -26,7 +26,7 @@ const { CANVAS, SVG, WEBGL } = mode;
 const CHAR = '…';
 
 class Ellipsis extends Node{
-  constructor(x, y, width, parent, isVertical) {
+  constructor(x, y, width, parent, isUpright) {
     super();
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
@@ -35,11 +35,11 @@ class Ellipsis extends Node{
     parent.__ellipsis = this;
     this.__parentLineBox = null;
     this.__baseline = css.getBaseline(parent.computedStyle);
-    this.__isVertical = isVertical;
+    this.__isVertical = isUpright;
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
-    let { x, y, parent, isVertical } = this;
+    let { x, y, parent, isUpright } = this;
     let {
       ox,
       oy,
@@ -50,7 +50,7 @@ class Ellipsis extends Node{
     } = parent;
     let b = css.getBaseline(computedStyle);
     let bv = css.getVerticalBaseline(computedStyle);
-    if(isVertical) {
+    if(isUpright) {
       x += bv;
     }
     else {
@@ -66,7 +66,7 @@ class Ellipsis extends Node{
       if(ctx.fillStyle !== color) {
         ctx.fillStyle = color;
       }
-      if(isVertical) {
+      if(isUpright) {
         let me = parent.matrixEvent, list = [
           [ROTATE_Z, [90, DEG]],
         ];
@@ -79,7 +79,7 @@ class Ellipsis extends Node{
     }
     else if(renderMode === SVG) {
       // 垂直的svg以中线为基线，需偏移baseline和中线的差值
-      if(isVertical) {
+      if(isUpright) {
         x += computedStyle[LINE_HEIGHT] * 0.5 - bv;
       }
       let props = [
@@ -91,7 +91,7 @@ class Ellipsis extends Node{
         ['font-style', computedStyle[FONT_STYLE]],
         ['font-size', computedStyle[FONT_SIZE] + 'px'],
       ];
-      if(isVertical) {
+      if(isUpright) {
         props.push(['writing-mode', 'vertical-lr']);
       }
       let vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
@@ -113,7 +113,7 @@ class Ellipsis extends Node{
     return this.__parentLineBox;
   }
 
-  get isVertical() {
+  get isUpright() {
     return this.__isVertical;
   }
 

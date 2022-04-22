@@ -80,8 +80,10 @@ const { CANVAS, SVG, WEBGL } = mode;
  * @param fontSize
  * @param fontWeight
  * @param letterSpacing
+ * @param isUpright
  */
-function measureLineWidth(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing) {
+function measureLineWidth(ctx, renderMode, start, length, content, w, perW,
+                          fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
   if(start >= length) {
     // 特殊情况不应该走进这里
     return [0, 0, false];
@@ -117,7 +119,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
       mw = ctx.measureText(str).width;
     }
     else if(renderMode === SVG) {
-      mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
+      mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight, isUpright);
     }
     if(letterSpacing) {
       mw += hypotheticalNum * letterSpacing;
@@ -200,7 +202,7 @@ class Text extends Node {
     if(__cache) {
       __cache.release();
     }
-    let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isVertical = false } = data;
+    let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isUpright = false } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, textBoxes, root } = this;
@@ -224,8 +226,8 @@ class Text extends Node {
       [FONT_WEIGHT]: fontWeight,
       [FONT_FAMILY]: fontFamily,
     } = computedStyle;
-    let size = isVertical ? h : w;
-    let beginSpace = isVertical ? (y - ly) : (x - lx); // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
+    let size = isUpright ? h : w;
+    let beginSpace = isUpright ? (y - ly) : (x - lx); // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
     // 基于最近block父节点的样式
     let bp = this.domParent;
     while(bp.computedStyle[DISPLAY] === 'inline') {
@@ -254,7 +256,7 @@ class Text extends Node {
         [POSITION]: position,
         [OVERFLOW]: overflow,
       } = bp.computedStyle;
-      let containerSize = bp.currentStyle[isVertical ? HEIGHT: WIDTH];
+      let containerSize = bp.currentStyle[isUpright ? HEIGHT: WIDTH];
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
       if(overflow === 'hidden') {
         // abs自适应宽度时不裁剪
@@ -268,9 +270,9 @@ class Text extends Node {
       // ellipsis生效情况，本节点开始向前回退查找，尝试放下一部分字符
       if(isTextOverflow && textOverflow === 'ellipsis') {
         [mainCoords] = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW,
-          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
+          endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
         lineCount++;
-        if(isVertical) {
+        if(isUpright) {
           x = mainCoords;
         }
         else {
@@ -280,10 +282,10 @@ class Text extends Node {
       // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
       else {
         let textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight,
-          content, isVertical);
+          content, isUpright);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, false);
-        if(isVertical) {
+        if(isUpright) {
           x += lineHeight;
         }
         else {
@@ -310,9 +312,9 @@ class Text extends Node {
         if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
           [mainCoords, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
             lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-            fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
+            fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
           lineCount++;
-          if(isVertical) {
+          if(isUpright) {
             x = mainCoords;
           }
           else {
@@ -328,9 +330,9 @@ class Text extends Node {
           if(lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
             [mainCoords, maxW] = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW,
               lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
+              fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
             lineCount++;
-            if(isVertical) {
+            if(isUpright) {
               x = mainCoords;
             }
             else {
@@ -342,13 +344,13 @@ class Text extends Node {
         maxW = Math.max(maxW, rw);
         // 根据是否第一行分开处理行首空白
         let textBox = new TextBox(this, textBoxes.length,
-          lineCount && !isVertical ? lx : x,
-          lineCount && isVertical ? ly : y,
-          rw, lineHeight, content.slice(i, i + num), isVertical);
+          lineCount && !isUpright ? lx : x,
+          lineCount && isUpright ? ly : y,
+          rw, lineHeight, content.slice(i, i + num), isUpright);
         textBoxes.push(textBox);
         lineBoxManager.addItem(textBox, newLine);
         // 竖排横排换行不一样
-        if(isVertical) {
+        if(isUpright) {
           x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
         }
         else {
@@ -362,7 +364,7 @@ class Text extends Node {
       }
       // 换行后Text的x重设为lx
       if(lineCount) {
-        if(isVertical) {
+        if(isUpright) {
           this.__y = this.__sy1 = ly;
         }
         else {
@@ -370,7 +372,7 @@ class Text extends Node {
         }
       }
     }
-    if(isVertical) {
+    if(isUpright) {
       this.__width = x - data.x;
       this.__height = maxW;
       this.__verticalBaseline = css.getVerticalBaseline(computedStyle);
@@ -390,7 +392,7 @@ class Text extends Node {
 
   // 末尾行因ellipsis的缘故向前回退字符生成textBox，可能会因不满足宽度导致无法生成，此时向前继续回退TextBox
   __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager,
-              fontFamily, fontSize, fontWeight, letterSpacing, isVertical) {
+              fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
     let ew, bp = this.__bp, computedStyle = bp.computedStyle;
     // 临时测量ELLIPSIS的尺寸
     if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -425,13 +427,13 @@ class Text extends Node {
               break;
             }
             let item = list.pop();
-            if(isVertical) {
+            if(isUpright) {
               y -= item.outerHeight;
             }
             else {
               x -= item.outerWidth;
             }
-            limit += isVertical ? item.outerHeight : item.outerWidth;
+            limit += isUpright ? item.outerHeight : item.outerWidth;
             item.__layoutNone();
             continue;
           }
@@ -454,7 +456,7 @@ class Text extends Node {
             // 可能发生x回退，当tb的内容产生减少时
             if(num !== content.length) {
               tb.__content = content.slice(0, num);
-              if(isVertical) {
+              if(isUpright) {
                 y -= height - rw;
                 tb.__height = rw;
               }
@@ -465,12 +467,12 @@ class Text extends Node {
             }
             // 重新设置lineHeight和baseline，因为可能删除了东西
             lineBox.__resetLb(computedStyle[LINE_HEIGHT],
-              isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
-            let ep = isVertical
-              ? new Ellipsis(x, y + rw + endSpace, ew, bp, isVertical)
-              : new Ellipsis(x + rw + endSpace, y, ew, bp, isVertical);
+              isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
+            let ep = isUpright
+              ? new Ellipsis(x, y + rw + endSpace, ew, bp, isUpright)
+              : new Ellipsis(x + rw + endSpace, y, ew, bp, isUpright);
             lineBoxManager.addItem(ep, true);
-            if(isVertical) {
+            if(isUpright) {
               x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
             }
             else {
@@ -481,7 +483,7 @@ class Text extends Node {
           }
           // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
           let item = list.pop();
-          if(isVertical) {
+          if(isUpright) {
             limit += height;
             y -= height;
           }
@@ -507,7 +509,7 @@ class Text extends Node {
               contentBoxList.splice(i, 1);
             }
             let computedStyle = dom.computedStyle;
-            if(isVertical) {
+            if(isUpright) {
               let mbp = computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM]
                 + computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM]
                 + computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
@@ -533,26 +535,26 @@ class Text extends Node {
       }
     }
     // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
-    let textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num), isVertical);
+    let textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num), isUpright);
     textBoxes.push(textBox);
     lineBoxManager.addItem(textBox, false);
     // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
-    let ep = isVertical
-      ? new Ellipsis(x, y + rw + endSpace, ew, bp, isVertical)
-      : new Ellipsis(x + rw + endSpace, y, ew, bp, isVertical);
+    let ep = isUpright
+      ? new Ellipsis(x, y + rw + endSpace, ew, bp, isUpright)
+      : new Ellipsis(x + rw + endSpace, y, ew, bp, isUpright);
     lineBoxManager.addItem(ep, true);
-    if(isVertical) {
+    if(isUpright) {
       x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
     }
     else {
       y += Math.max(lineHeight, lineBoxManager.lineHeight);
     }
     maxW = Math.max(maxW, rw + ew);
-    return [isVertical ? x : y, maxW];
+    return [isUpright ? x : y, maxW];
   }
 
   // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
-  __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode, isVertical) {
+  __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode, isUpright) {
     let list = lineBox.list;
     for(let j = list.length - 1; j >= 0; j--) {
       let tb = list[j];
@@ -562,7 +564,7 @@ class Text extends Node {
           break;
         }
         let item = list.pop();
-        limit += isVertical ? item.outerHeight : item.outerWidth;
+        limit += isUpright ? item.outerHeight : item.outerWidth;
         item.__layoutNone();
         continue;
       }
@@ -585,7 +587,7 @@ class Text extends Node {
         // 可能发生x回退，当tb的内容产生减少时
         if(num !== content.length) {
           tb.__content = content.slice(0, num);
-          if(isVertical) {
+          if(isUpright) {
             tb.__height = rw;
           }
           else {
@@ -594,16 +596,16 @@ class Text extends Node {
         }
         // 重新设置lineHeight和baseline，因为可能删除了东西
         lineBox.__resetLb(computedStyle[LINE_HEIGHT],
-          isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
-        let ep = isVertical
-          ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isVertical)
-          : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isVertical);
+          isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
+        let ep = isUpright
+          ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isUpright)
+          : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isUpright);
         lineBoxManager.addItem(ep, true);
         return;
       }
       // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
       let item = list.pop();
-      limit += isVertical ? height : width;
+      limit += isUpright ? height : width;
       let tbs = item.parent.textBoxes;
       let k = tbs.indexOf(item);
       if(k > -1) {
@@ -622,7 +624,7 @@ class Text extends Node {
           contentBoxList.splice(i, 1);
         }
         let computedStyle = dom.computedStyle;
-        if(isVertical) {
+        if(isUpright) {
           let mbp = computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM]
             + computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM]
             + computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
@@ -669,19 +671,19 @@ class Text extends Node {
     return total - this.firstCharWidth;
   }
 
-  __inlineSize(isVertical) {
+  __inlineSize(isUpright) {
     let min, max;
     this.textBoxes.forEach((item, i) => {
       if(i) {
-        min = Math.min(min, isVertical ? item.y : item.x);
-        max = Math.max(max, (isVertical ? item.y : item.x) + item.width);
+        min = Math.min(min, isUpright ? item.y : item.x);
+        max = Math.max(max, (isUpright ? item.y : item.x) + item.width);
       }
       else {
-        min = isVertical ? item.y : item.x;
-        max = (isVertical ? item.y : item.x) + item.width;
+        min = isUpright ? item.y : item.x;
+        max = (isUpright ? item.y : item.x) + item.width;
       }
     });
-    if(isVertical) {
+    if(isUpright) {
       this.__y = min;
       this.__sy = this.__sy1 = min + this.oy;
       this.__sx = this.__sx1;

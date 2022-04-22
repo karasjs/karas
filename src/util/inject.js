@@ -101,15 +101,26 @@ function createDiv() {
 }
 
 let inject = {
-  measureTextSync(str, ff, fs, fw) {
+  measureTextSync(str, ff, fs, fw, isUpright) {
     if(!div) {
       createDiv();
     }
     div.style.fontFamily = ff;
     div.style.fontSize = fs + 'px';
     div.style.fontWeight = fw;
+    if(isUpright) {
+      div.style.writingMode = 'vertical-lr';
+    }
+    else {
+      div.style.writingMode = 'horizontal-tb';
+    }
     div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
-    return parseFloat(window.getComputedStyle(div, null).width);
+    if(isUpright) {
+      return parseFloat(window.getComputedStyle(div, null).height);
+    }
+    else {
+      return parseFloat(window.getComputedStyle(div, null).width);
+    }
   },
   measureTextListMax(str, ff, fs, fw) {
     if(!div) {

@@ -31,13 +31,13 @@ const { STYLE_KEY: {
  * LB内部要进行垂直对齐，Text内容较简单x字符底部为baseline，inlineBlock等节点按最后一行baseline
  */
 class LineBox {
-  constructor(x, y, lineHeight, baseline, isVertical) {
+  constructor(x, y, lineHeight, baseline, isUpright) {
     this.__list = [];
     this.__x = x;
     this.__y = y;
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
     this.__baseline = baseline;
-    this.__isVertical = isVertical;
+    this.__isVertical = isUpright;
     this.__bOffset = 0;
   }
 
@@ -46,9 +46,9 @@ class LineBox {
     item.__parentLineBox = this;
   }
 
-  verticalAlign(isVertical) {
-    let baseline = isVertical ? this.verticalBaseline : this.baseline;
-    let lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
+  verticalAlign(isUpright) {
+    let baseline = isUpright ? this.verticalBaseline : this.baseline;
+    let lineHeight = isUpright ? this.verticalLineHeight : this.lineHeight;
     let increase = lineHeight;
     let hasIbOrReplaced;
     // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
@@ -61,7 +61,7 @@ class LineBox {
           hasIbOrReplaced = true;
         }
         // 垂直排版计算不太一样，因为原点坐标系不一样
-        if(isVertical) {
+        if(isUpright) {
           let n = item.verticalBaseline;
           if(n !== baseline) {
             let d = baseline - n;
@@ -86,7 +86,7 @@ class LineBox {
     // 特殊情况，只有ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
     // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
     if(hasIbOrReplaced) {
-      if(isVertical) {
+      if(isUpright) {
         diff = this.__baseline;
       }
       else {
@@ -174,7 +174,7 @@ class LineBox {
   }
 
   get width() {
-    if(this.isVertical) {
+    if(this.isUpright) {
       return this.verticalLineHeight;
     }
     let list = this.list;
@@ -226,7 +226,7 @@ class LineBox {
   }
 
   get height() {
-    if(!this.isVertical) {
+    if(!this.isUpright) {
       return this.lineHeight;
     }
     let list = this.list;
@@ -317,7 +317,7 @@ class LineBox {
     return lineHeight;
   }
 
-  get isVertical() {
+  get isUpright() {
     return this.__isVertical;
   }
 }

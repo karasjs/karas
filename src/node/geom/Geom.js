@@ -114,12 +114,12 @@ class Geom extends Xom {
   }
 
   __layoutBlock(data, isAbs, isColumn, isRow) {
-    let { fixedWidth, fixedHeight, w, h, isParentVertical, isVertical } = this.__preLayout(data, false);
+    let { fixedWidth, fixedHeight, w, h, isParentVertical, isUpright } = this.__preLayout(data, false);
     let tw = 0, th = 0;
-    if(fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+    if(fixedWidth || !isAbs && !isParentVertical && !isUpright) {
       tw = w;
     }
-    if(fixedHeight || !isAbs && isParentVertical && isVertical) {
+    if(fixedHeight || !isAbs && isParentVertical && isUpright) {
       th = h;
     }
     this.__ioSize(tw, th);

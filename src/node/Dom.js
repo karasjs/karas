@@ -188,12 +188,12 @@ function genOrderChildren(flowChildren) {
 /**
  * lineClamp超出范围时ib作为最后一行最后一个无法挤下时进行回溯
  */
-function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
+function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isUpright) {
   let ew, computedStyle = bp.computedStyle, root = bp.root, renderMode = root.renderMode;
   let list = lineBox.list;
   // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
   list.forEach(item => {
-    total -= isVertical ? item.outerHeight : item.outerWidth;
+    total -= isUpright ? item.outerHeight : item.outerWidth;
   });
   let ctx;
   if(renderMode === CANVAS || renderMode === WEBGL) {
@@ -218,7 +218,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
     if(!i || total + item.outerWidth >= ew + (1e-10)) {
       if(item instanceof TextBox) {
         let text = item.parent;
-        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isVertical);
+        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isUpright);
       }
       else {
         let ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
@@ -239,7 +239,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
         item.__layoutNone();
       }
       list.pop();
-      total += isVertical ? item.outerHeight : item.outerWidth;
+      total += isUpright ? item.outerHeight : item.outerWidth;
     }
   }
 }
@@ -374,11 +374,11 @@ class Dom extends Xom {
    * 返回非负数就是放得下，这样一些尺寸为0的也算
    * @param free 剩余宽度
    * @param total 容器尺寸
-   * @param isVertical 垂直排版
+   * @param isUpright 垂直排版
    * @returns {number|*}
    * @private
    */
-  __tryLayInline(free, total, isVertical) {
+  __tryLayInline(free, total, isUpright) {
     this.__computeReflow();
     let { flowChildren, currentStyle: {
       [DISPLAY]: display,
@@ -406,7 +406,7 @@ class Dom extends Xom {
           first = first.shadowRoot;
         }
         if(first instanceof Xom) {
-          free = first.__tryLayInline(free, total, isVertical);
+          free = first.__tryLayInline(free, total, isUpright);
         }
         else {
           free -= first.firstCharWidth;
@@ -416,7 +416,7 @@ class Dom extends Xom {
     // inlineBlock尝试所有孩子在一行上
     else {
       if(width[1] !== AUTO) {
-        free -= isVertical ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
+        free -= isUpright ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
       }
       else {
         for(let i = 0; i < flowChildren.length; i++) {
@@ -429,7 +429,7 @@ class Dom extends Xom {
             item = item.shadowRoot;
           }
           if(item instanceof Xom) {
-            free = item.__tryLayInline(free, total, isVertical);
+            free = item.__tryLayInline(free, total, isUpright);
           }
           // text强制一行，否则非头就是放不下，需从头开始
           else {
@@ -438,7 +438,7 @@ class Dom extends Xom {
         }
       }
       // ib要减去末尾mpb
-      if(isVertical) {
+      if(isUpright) {
         free -= this.__calSize(marginBottom, total, true);
         free -= this.__calSize(paddingBottom, total, true);
         free -= borderBottomWidth;
@@ -450,7 +450,7 @@ class Dom extends Xom {
       }
     }
     // 还要减去开头的mpb
-    if(isVertical) {
+    if(isUpright) {
       free -= this.__calSize(marginTop, total, true);
       free -= this.__calSize(paddingTop, total, true);
       free -= borderTopWidth;
@@ -537,7 +537,7 @@ class Dom extends Xom {
       [LINE_CLAMP]: lineClamp,
       [WRITING_MODE]: writingMode,
     } = computedStyle;
-    let isVertical = writingMode.indexOf('vertical') === 0;
+    let isUpright = writingMode.indexOf('vertical') === 0;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
     let isAuto = flexBasis[1] === AUTO;
@@ -578,9 +578,9 @@ class Dom extends Xom {
           }
           // text除了flex还需要分辨垂直排版
           else {
-            if(isVertical) {
+            if(isUpright) {
               let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
-                isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+                isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
               item.__layout({
                 x,
                 y,
@@ -588,7 +588,7 @@ class Dom extends Xom {
                 h,
                 lineBoxManager,
                 lineClamp,
-                isVertical,
+                isUpright,
               });
               min += item.width;
               max += item.width;
@@ -606,9 +606,9 @@ class Dom extends Xom {
       }
       // 特殊的flex水平布局但书写垂直，遇到后直接假布局获取宽度，因为水平尺寸视为无限但垂直不是，
       // 这里一定是第一个垂直排版不会递归下去，因为flex的child匿名block，水平的垂直书写inline匿名ib
-      else if(isVertical) {
+      else if(isUpright) {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
-          isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+          isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
         this.__layout({
           x,
           y,
@@ -616,7 +616,7 @@ class Dom extends Xom {
           h,
           lineBoxManager,
           lineClamp,
-          isVertical,
+          isUpright,
         }, isAbs, false, true);
         min = max = b = this.width;
       }
@@ -625,7 +625,7 @@ class Dom extends Xom {
         let lineBoxManager = data.lineBoxManager;
         if(display !== 'inline') {
           lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
-            isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+            isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
         }
         flowChildren.forEach(item => {
           if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
@@ -667,7 +667,7 @@ class Dom extends Xom {
         y,
         w,
         h,
-        isVertical,
+        isUpright,
       }, isAbs, true, false);
       min = max = b = this.height; // column的child，max和b总相等
     }
@@ -705,10 +705,10 @@ class Dom extends Xom {
       [LINE_HEIGHT]: lineHeight,
       [OVERFLOW]: overflow,
     } = computedStyle;
-    let { fixedWidth, fixedHeight, x, y, w, h, isParentVertical, isVertical } = this.__preLayout(data, false);
+    let { fixedWidth, fixedHeight, x, y, w, h, isParentVertical, isUpright } = this.__preLayout(data, false);
     // abs虚拟布局需预知width，固定可提前返回
-    if(isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
-      if(isVertical) {
+    if(isAbs && (fixedWidth && !isUpright || fixedHeight && isUpright)) {
+      if(isUpright) {
         this.__ioSize(undefined, h);
       }
       else {
@@ -730,7 +730,7 @@ class Dom extends Xom {
     // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
     // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
     let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
-      isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+      isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
     let maxSize = 0;
     let countSize = 0;
@@ -755,7 +755,7 @@ class Dom extends Xom {
         if(mergeMarginEndList.length && mergeMarginStartList.length) {
           let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
           if(diff) {
-            if(isVertical) {
+            if(isUpright) {
               x += diff;
             }
             else {
@@ -776,7 +776,7 @@ class Dom extends Xom {
             return;
           }
           // x开头或者nowrap单行的非block，不用考虑是否放得下直接放
-          if((isVertical && y === ly) || (!isVertical && x === lx) || !i || whiteSpace === 'nowrap') {
+          if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
             lineClampCount = item.__layout({
               x,
               y,
@@ -787,7 +787,7 @@ class Dom extends Xom {
               lineBoxManager, // ib内部新生成会内部判断，这里不管统一传入
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             }, isAbs, isColumn, isRow);
             // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样，注意nowrap排除
             if(item.__isIbFull) {
@@ -795,7 +795,7 @@ class Dom extends Xom {
             }
             if(item.__isIbFull && whiteSpace !== 'nowrap') {
               lineBoxManager.addItem(item, true);
-              if(isVertical) {
+              if(isUpright) {
                 x += item.outerWidth;
                 y = ly;
               }
@@ -813,7 +813,7 @@ class Dom extends Xom {
             }
             // 单行时inline在ellipsis会导致行数变化，否则判断坐标尺寸(恰好有点空剩余inline排不下)，注意前提是非abs，其虚拟计算尺寸无视限制
             if(!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap'
-              && ((isVertical && y - ly > h + (1e-10)) || (!isVertical && x - lx > w + (1e-10))
+              && ((isUpright && y - ly > h + (1e-10)) || (!isUpright && x - lx > w + (1e-10))
                 || lineClampCount > lastLineClampCount)) {
               ignoreNextWrap = true;
             }
@@ -823,12 +823,12 @@ class Dom extends Xom {
             // abs统计宽度，注意nowrap时累加
             if(isAbs) {
               if(whiteSpace === 'nowrap') {
-                countSize += isVertical ? item.outerHeight : item.outerWidth;
+                countSize += isUpright ? item.outerHeight : item.outerWidth;
               }
               else {
-                countSize = isVertical ? item.outerHeight : item.outerWidth;
+                countSize = isUpright ? item.outerHeight : item.outerWidth;
                 if(lineClampCount > lastLineClampCount) {
-                  countSize = Math.max(countSize, isVertical ? h : w);
+                  countSize = Math.max(countSize, isUpright ? h : w);
                 }
               }
               maxSize = Math.max(maxSize, countSize);
@@ -836,7 +836,7 @@ class Dom extends Xom {
           }
           else {
             // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
-            let free = item.__tryLayInline(isVertical ? (h + ly - y) : (w + lx - x), isVertical ? h : w, isVertical);
+            let free = item.__tryLayInline(isUpright ? (h + ly - y) : (w + lx - x), isUpright ? h : w, isUpright);
             // 放得下继续，奇怪的精度问题，加上阈值
             if(free >= (-1e-10)) {
               lineClampCount = item.__layout({
@@ -849,7 +849,7 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-                isVertical,
+                isUpright,
               }, isAbs, isColumn, isRow);
               // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
               (isInlineBlock || !isRealInline) && lineBoxManager.addItem(item, false);
@@ -861,13 +861,13 @@ class Dom extends Xom {
               if(isAbs) {
                 // ib和非换行inline累加
                 if(isInlineBlock || lineClampCount === lastLineClampCount) {
-                  countSize += isVertical ? item.outerHeight : item.outerWidth;
+                  countSize += isUpright ? item.outerHeight : item.outerWidth;
                   maxSize = Math.max(maxSize, countSize);
                 }
                 // inline换行时一定超过边界至少撑满w
                 else {
-                  maxSize = Math.max(maxSize, isVertical ? h : w);
-                  countSize = isVertical ? (y - ly) : (x - lx);
+                  maxSize = Math.max(maxSize, isUpright ? h : w);
+                  countSize = isUpright ? (y - ly) : (x - lx);
                   maxSize = Math.max(maxSize, countSize);
                 }
               }
@@ -875,7 +875,7 @@ class Dom extends Xom {
             // 放不下处理之前的lineBox，并考虑重新开头或截断
             else {
               lineClampCount++;
-              if(isVertical) {
+              if(isUpright) {
                 x = lineBoxManager.endX;
                 y = ly;
               }
@@ -890,7 +890,7 @@ class Dom extends Xom {
                 ignoreNextLine = true;
                 let list = lineBoxManager.list;
                 let lineBox = list[list.length - 1];
-                backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
+                backtrack(this, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
                 return;
               }
               lineClampCount = item.__layout({
@@ -903,12 +903,12 @@ class Dom extends Xom {
                 lineBoxManager,
                 lineClamp,
                 lineClampCount,
-                isVertical,
+                isUpright,
               }, isAbs, isColumn, isRow);
               // 重新开头的ib和上面开头处一样逻辑
               if(item.__isIbFull) {
                 lineBoxManager.addItem(item, false);
-                if(isVertical) {
+                if(isUpright) {
                   x += item.outerWidth;
                   y = ly;
                 }
@@ -931,9 +931,9 @@ class Dom extends Xom {
               if(isAbs) {
                 maxSize = Math.max(maxSize, countSize);
                 // 此处发生换行撑满
-                maxSize = Math.max(maxSize, isVertical ? h : w);
+                maxSize = Math.max(maxSize, isUpright ? h : w);
                 // 新行重计
-                countSize = isVertical ? item.outerHeight : item.outerWidth;
+                countSize = isUpright ? item.outerHeight : item.outerWidth;
                 maxSize = Math.max(maxSize, countSize);
               }
             }
@@ -943,20 +943,20 @@ class Dom extends Xom {
         else {
           ignoreNextWrap = false; // block出现的话只隔断单行，不影响多行计数器
           // 非开头，说明之前的text/ib未换行，需要增加行数
-          if((isVertical && y > ly) || (!isVertical && x > lx)) {
+          if((isUpright && y > ly) || (!isUpright && x > lx)) {
             lineClampCount++;
           }
           if(lineClamp && lineClampCount >= lineClamp) {
             ignoreNextLine = true;
           }
-          if(isVertical) {
+          if(isUpright) {
             y = ly;
           }
           else {
             x = lx;
           }
           if(lineBoxManager.isEnd) {
-            if(isVertical) {
+            if(isUpright) {
               x = lineBoxManager.endX;
             }
             else {
@@ -970,7 +970,7 @@ class Dom extends Xom {
             y,
             w,
             h,
-            isVertical,
+            isUpright,
           }, isAbs, isColumn, isRow);
           // 自身无内容
           let isNone = item.currentStyle[DISPLAY] === 'none';
@@ -993,18 +993,18 @@ class Dom extends Xom {
               [BORDER_LEFT_WIDTH]: borderLeftWidth,
             } = item.computedStyle;
             // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
-            if(isVertical && paddingLeft <= 0 && paddingRight <= 0 && width <= 0 && borderLeftWidth <= 0 && borderRightWidth <= 0) {
+            if(isUpright && paddingLeft <= 0 && paddingRight <= 0 && width <= 0 && borderLeftWidth <= 0 && borderRightWidth <= 0) {
               mergeMarginEndList.push(marginRight);
               mergeMarginStartList.push(marginLeft);
               isEmptyBlock = true;
             }
-            else if(!isVertical && paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+            else if(!isUpright && paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
               mergeMarginEndList.push(marginBottom);
               mergeMarginStartList.push(marginTop);
               isEmptyBlock = true;
             }
           }
-          if(isVertical) {
+          if(isUpright) {
             x += item.outerWidth;
             lineBoxManager.__lastX = x;
           }
@@ -1014,7 +1014,7 @@ class Dom extends Xom {
           }
           // absolute/flex前置虚拟计算
           if(isAbs) {
-            maxSize = Math.max(maxSize, isVertical ? item.outerHeight : item.outerWidth);
+            maxSize = Math.max(maxSize, isUpright ? item.outerHeight : item.outerWidth);
             countSize = 0;
           }
           // 空block要留下轮循环看，除非是最后一个，此处非空本轮处理掉看是否要合并
@@ -1028,7 +1028,7 @@ class Dom extends Xom {
             // 有bottom值说明之前有紧邻的block，任意个甚至空block，自己有个top所以无需判断top
             // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
             if(mergeMarginEndList.length) {
-              if(isVertical) {
+              if(isUpright) {
                 mergeMarginStartList.push(marginLeft);
                 let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
                 if(diff) {
@@ -1047,13 +1047,13 @@ class Dom extends Xom {
             }
             // 同时自己保存bottom，为后续block准备
             mergeMarginStartList = [];
-            mergeMarginEndList = [isVertical ? marginRight : marginBottom];
+            mergeMarginEndList = [isUpright ? marginRight : marginBottom];
           }
           // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
           else if(i === length - 1) {
             let diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
             if(diff) {
-              if(isVertical) {
+              if(isUpright) {
                 x += diff;
               }
               else {
@@ -1070,7 +1070,7 @@ class Dom extends Xom {
           return;
         }
         // x开头，不用考虑是否放得下直接放
-        if((isVertical && y === ly) || (!isVertical && x === lx) || !i || whiteSpace === 'nowrap') {
+        if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
           lineClampCount = item.__layout({
             x,
             y,
@@ -1081,13 +1081,13 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-            isVertical,
+            isUpright,
           });
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // 和inline很像，只是没有ib
           if(!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap'
-            && ((isVertical && y - ly > h + (1e-10)) || (!isVertical && x - lx > w + (1e-10))
+            && ((isUpright && y - ly > h + (1e-10)) || (!isUpright && x - lx > w + (1e-10))
               || lineClampCount > lastLineClampCount)) {
             ignoreNextWrap = true;
           }
@@ -1097,12 +1097,12 @@ class Dom extends Xom {
           // abs统计宽度，注意nowrap时累加
           if(isAbs) {
             if(whiteSpace === 'nowrap') {
-              countSize += isVertical ? item.height : item.width;
+              countSize += isUpright ? item.height : item.width;
             }
             else {
-              countSize = isVertical ? item.height : item.width;
+              countSize = isUpright ? item.height : item.width;
               if(lineClampCount > lastLineClampCount) {
-                countSize = Math.max(countSize, isVertical ? h : w);
+                countSize = Math.max(countSize, isUpright ? h : w);
               }
             }
             maxSize = Math.max(maxSize, countSize);
@@ -1110,7 +1110,7 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下
-          let free = item.__tryLayInline(isVertical ? (h + ly - y) : (w + lx - x));
+          let free = item.__tryLayInline(isUpright ? (h + ly - y) : (w + lx - x));
           // 放得下继续
           if(free >= (-1e-10)) {
             lineClampCount = item.__layout({
@@ -1123,7 +1123,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             });
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
@@ -1132,13 +1132,13 @@ class Dom extends Xom {
             }
             if(isAbs) {
               if(lineClampCount === lastLineClampCount) {
-                countSize += isVertical ? item.height : item.width;
+                countSize += isUpright ? item.height : item.width;
                 maxSize = Math.max(maxSize, countSize);
               }
               // inline换行一定超过边界
               else {
-                maxSize = Math.max(maxSize, isVertical ? h : w);
-                countSize = isVertical ? (y - ly) : (x - lx);
+                maxSize = Math.max(maxSize, isUpright ? h : w);
+                countSize = isUpright ? (y - ly) : (x - lx);
                 maxSize = Math.max(maxSize, countSize);
               }
             }
@@ -1146,7 +1146,7 @@ class Dom extends Xom {
           // 放不下处理之前的lineBox，并重新开头
           else {
             lineClampCount++;
-            if(isVertical) {
+            if(isUpright) {
               x = lineBoxManager.endX;
               y = ly;
             }
@@ -1161,7 +1161,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(this, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
+              backtrack(this, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
               return;
             }
             lineClampCount = item.__layout({
@@ -1174,7 +1174,7 @@ class Dom extends Xom {
               lineBoxManager,
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             });
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
@@ -1184,9 +1184,9 @@ class Dom extends Xom {
             if(isAbs) {
               maxSize = Math.max(maxSize, countSize);
               // 此处发生换行撑满
-              maxSize = Math.max(maxSize, isVertical ? h : w);
+              maxSize = Math.max(maxSize, isUpright ? h : w);
               // 新行重计
-              countSize = isVertical ? item.height : item.width;
+              countSize = isUpright ? item.height : item.width;
               maxSize = Math.max(maxSize, countSize);
             }
           }
@@ -1196,7 +1196,7 @@ class Dom extends Xom {
     // 结束后如果是以LineBox结尾，则需要设置y到这里，否则流布局中block会设置
     // 当以block换行时，新行是true，否则是false即结尾
     if(lineBoxManager.isEnd) {
-      if(isVertical) {
+      if(isUpright) {
         x = lineBoxManager.endX;
       }
       else {
@@ -1205,20 +1205,20 @@ class Dom extends Xom {
     }
     let tw = 0, th = 0;
     // 根据书写模式、嵌套等条件计算宽高，只有父子同向才会主轴撑满
-    if(fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+    if(fixedWidth || !isAbs && !isParentVertical && !isUpright) {
       tw = w;
     }
     else if(isAbs) {
-      tw = isVertical ? (x - data.x) : maxSize;
+      tw = isUpright ? (x - data.x) : maxSize;
     }
     else {
       tw = x - data.x;
     }
-    if(fixedHeight || !isAbs && isParentVertical && isVertical) {
+    if(fixedHeight || !isAbs && isParentVertical && isUpright) {
       th = h;
     }
     else if(isAbs) {
-      th = isVertical ? maxSize : (y - data.y);
+      th = isUpright ? maxSize : (y - data.y);
     }
     else {
       th = y - data.y;
@@ -1226,12 +1226,12 @@ class Dom extends Xom {
     this.__ioSize(tw, th);
     // 除了水平abs的虚拟外，都需要垂直对齐，因为img这种占位元素会影响lineBox高度，水平abs虚拟只需宽度
     if(!isAbs) {
-      let spread = lineBoxManager.verticalAlign(isVertical);
+      let spread = lineBoxManager.verticalAlign(isUpright);
       if(spread) {
-        if(isVertical && !fixedWidth) {
+        if(isUpright && !fixedWidth) {
           this.__resizeX(spread);
         }
-        else if(!isVertical && !fixedHeight) {
+        else if(!isUpright && !fixedHeight) {
           this.__resizeY(spread);
         }
         /**
@@ -1251,7 +1251,7 @@ class Dom extends Xom {
               return;
             }
             isLastBlock = true;
-            if(isVertical) {
+            if(isUpright) {
               item.__offsetX(spreadList[count], true);
             }
             else {
@@ -1270,22 +1270,22 @@ class Dom extends Xom {
       // 非abs提前的虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐
       if(!isColumn && !isRow) {
         if(['center', 'right'].indexOf(textAlign) > -1) {
-          lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
+          lineBoxManager.horizonAlign(isUpright ? th : tw, textAlign, isUpright);
           // 直接text需计算size
           flowChildren.forEach(item => {
             if(item instanceof Component) {
               item = item.shadowRoot;
             }
             if(item instanceof Text) {
-              item.__inlineSize(isVertical);
+              item.__inlineSize(isUpright);
             }
           });
         }
         // 所有inline计算size
         lineBoxManager.domList.forEach(item => {
-          item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
+          item.__inlineSize(isUpright ? th : tw, textAlign, isUpright);
         });
-        this.__marginAuto(currentStyle, data, isVertical);
+        this.__marginAuto(currentStyle, data, isUpright);
       }
     }
   }
@@ -1303,9 +1303,9 @@ class Dom extends Xom {
       [LINE_HEIGHT]: lineHeight,
       [TEXT_ALIGN]: textAlign,
     } = computedStyle;
-    let { fixedWidth, fixedHeight, x, y, w, h, isParentVertical, isVertical } = this.__preLayout(data, false);
-    if(isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
-      if(isVertical) {
+    let { fixedWidth, fixedHeight, x, y, w, h, isParentVertical, isUpright } = this.__preLayout(data, false);
+    if(isAbs && (fixedWidth && !isUpright || fixedHeight && isUpright)) {
+      if(isUpright) {
         this.__ioSize(undefined, h);
       }
       else {
@@ -1352,9 +1352,9 @@ class Dom extends Xom {
         growList.push(0);
         shrinkList.push(1);
         // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
-        if(isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
+        if(isDirectionRow && isUpright || !isDirectionRow && !isUpright) {
           let lineBoxManager = new LineBoxManager(x, y, lineHeight,
-            isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+            isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
           item.__layout({
             x,
             y,
@@ -1363,9 +1363,9 @@ class Dom extends Xom {
             lineBoxManager,
             lineClamp,
             lineClampCount,
-            isVertical,
+            isUpright,
           }, isAbs, isColumn, isRow);
-          let n = isVertical ? item.width: item.height;
+          let n = isUpright ? item.width: item.height;
           basisList.push(n);
           maxList.push(n);
           minList.push(n);
@@ -1433,7 +1433,7 @@ class Dom extends Xom {
     __flexLine.forEach(item => {
       let length = item.length;
       let end = offset + length;
-      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isVertical,
+      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright,
         containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount,
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
@@ -1458,14 +1458,14 @@ class Dom extends Xom {
         let count = 0;
         line.forEach(item => {
           if(isDirectionRow) {
-            count += isVertical ? item.outerHeight : item.outerWidth;
+            count += isUpright ? item.outerHeight : item.outerWidth;
           }
           else {
-            count = Math.max(count, isVertical ? item.outerHeight : item.outerWidth);
+            count = Math.max(count, isUpright ? item.outerHeight : item.outerWidth);
           }
           // 文字发生换行无论row/column一定放不下需占满容器尺寸
           if(item instanceof Text) {
-            if(isVertical) {
+            if(isUpright) {
               if(item.textWidth > h) {
                 max = Math.max(max, h);
               }
@@ -1479,7 +1479,7 @@ class Dom extends Xom {
         });
         max = Math.max(max, count);
       });
-      if(isVertical) {
+      if(isUpright) {
         this.__ioSize(undefined, max);
       }
       else {
@@ -1489,13 +1489,13 @@ class Dom extends Xom {
     }
     // 同block计算
     let tw = 0, th = 0;
-    if(fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+    if(fixedWidth || !isAbs && !isParentVertical && !isUpright) {
       tw = w;
     }
     else {
       tw = x - data.x;
     }
-    if(fixedHeight || !isAbs && isParentVertical && isVertical) {
+    if(fixedHeight || !isAbs && isParentVertical && isUpright) {
       th = h;
     }
     else {
@@ -1655,7 +1655,7 @@ class Dom extends Xom {
         }
         this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
       }
-      this.__marginAuto(currentStyle, data, isVertical);
+      this.__marginAuto(currentStyle, data, isUpright);
     }
   }
 
@@ -1667,7 +1667,7 @@ class Dom extends Xom {
    * 规范没提到mpb，item的要计算，孙子的只考虑绝对值
    * 先收集basis和假设主尺寸
    */
-  __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isVertical,
+  __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isUpright,
                    containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    lineHeight, computedStyle, justifyContent, alignItems,
                    orderChildren, flexLine, textAlign,
@@ -1807,7 +1807,7 @@ class Dom extends Xom {
             w: main,
             h,
             w3: main, // w3假设固定宽度，忽略原始style中的设置
-            isVertical,
+            isUpright,
           }, isAbs, isColumn, isRow);
         }
         else {
@@ -1831,7 +1831,7 @@ class Dom extends Xom {
                 w,
                 h: main,
                 h3: main, // 同w2
-                isVertical,
+                isUpright,
               }, isAbs, isColumn, isRow);
             }
             else {
@@ -1841,7 +1841,7 @@ class Dom extends Xom {
                 w,
                 h: main,
                 h3: main, // 同w2
-                isVertical,
+                isUpright,
               }, true, isColumn, isRow);
               item.__layout({
                 x,
@@ -1850,7 +1850,7 @@ class Dom extends Xom {
                 w3: item.outerWidth,
                 h: main,
                 h3: main, // 同w2
-                isVertical,
+                isUpright,
               }, isAbs, isColumn, isRow);
             }
           }
@@ -1861,7 +1861,7 @@ class Dom extends Xom {
               w,
               h: main,
               h3: main, // 同w2
-              isVertical,
+              isUpright,
             }, isAbs, isColumn, isRow);
           }
         }
@@ -1889,7 +1889,7 @@ class Dom extends Xom {
       // 文字
       else {
         let lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
-          isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+          isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
         lbmList.push(lineBoxManager);
         item.__layout({
           x,
@@ -1899,7 +1899,7 @@ class Dom extends Xom {
           lineBoxManager,
           lineClamp,
           lineClampCount,
-          isVertical,
+          isUpright,
         });
       }
       if(isDirectionRow) {
@@ -1994,7 +1994,7 @@ class Dom extends Xom {
     // flex的直接text对齐比较特殊
     if(!isAbs && !isColumn && !isRow && ['center', 'right'].indexOf(textAlign) > -1) {
       lbmList.forEach(item => {
-        item.horizonAlign(isVertical? item.height : item.width, textAlign, isVertical);
+        item.horizonAlign(isUpright? item.height : item.width, textAlign, isUpright);
       })
     }
     return [x, y, maxCross];
@@ -2239,10 +2239,10 @@ class Dom extends Xom {
     } = computedStyle;
     let lineClampCount = data.lineClampCount || 0;
     let { fixedWidth, fixedHeight, x, y, w, h, lx, ly,
-      lineBoxManager, endSpace, selfEndSpace, isVertical } = this.__preLayout(data, isInline);
+      lineBoxManager, endSpace, selfEndSpace, isUpright } = this.__preLayout(data, isInline);
     // abs虚拟布局需预知width，固定可提前返回
-    if(isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
-      if(isVertical) {
+    if(isAbs && (fixedWidth && !isUpright || fixedHeight && isUpright)) {
+      if(isUpright) {
         this.__ioSize(undefined, h);
       }
       else {
@@ -2272,11 +2272,11 @@ class Dom extends Xom {
     if(isInline) {
       this.__config[NODE_IS_INLINE] = true;
       this.__lineBoxManager = lineBoxManager;
-      let baseline = isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle);
+      let baseline = isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle);
       // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
-      if(isVertical
+      if(isUpright
         && (marginTop || marginBottom || paddingTop || paddingBottom || borderTopWidth || borderBottomWidth)
-        || !isVertical
+        || !isUpright
           && (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth)) {
         if(lineBoxManager.isNewLine) {
           lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseline);
@@ -2292,7 +2292,7 @@ class Dom extends Xom {
     }
     else {
       lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight,
-        isVertical ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isVertical);
+        isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle), isUpright);
       lx = x;
       ly = y;
       endSpace = selfEndSpace = lineClampCount = 0;
@@ -2344,7 +2344,7 @@ class Dom extends Xom {
           inject.warn('Inline can not contain block/flex');
         }
         // x开头或者nowrap单行，不用考虑是否放得下直接放，因为有beginSpace所以要多判断i为0
-        if((isVertical && y === ly) || (!isVertical && x === lx) || !i || whiteSpace === 'nowrap') {
+        if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
           lineClampCount = item.__layout({
             x,
             y,
@@ -2356,21 +2356,21 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-            isVertical,
+            isUpright,
           }, isAbs, isColumn, isRow);
           // 同block布局
           if(item.__isIbFull) {
             lineClampCount++;
           }
           if(item.__isIbFull && whiteSpace !== 'nowrap') {
-            if(isVertical && h[1] === AUTO) {
+            if(isUpright && h[1] === AUTO) {
               isIbFull = true;
             }
-            else if(!isVertical && w[1] === AUTO) {
+            else if(!isUpright && w[1] === AUTO) {
               isIbFull = true;
             }
             lineBoxManager.addItem(item, true);
-            if(isVertical) {
+            if(isUpright) {
               x += item.outerWidth;
               y = ly;
             }
@@ -2387,7 +2387,7 @@ class Dom extends Xom {
             y = lineBoxManager.lastY;
           }
           if(!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap'
-            && ((isVertical && y - ly > h + (1e-10)) || (!isVertical && x - lx > w + (1e-10))
+            && ((isUpright && y - ly > h + (1e-10)) || (!isUpright && x - lx > w + (1e-10))
               || lineClampCount > lastLineClampCount)) {
             ignoreNextWrap = true;
           }
@@ -2397,7 +2397,7 @@ class Dom extends Xom {
         }
         else {
           // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-          let free = item.__tryLayInline(isVertical ? (h + ly - y - endSpace) : (w + lx - x - endSpace), isVertical ? h : w, isVertical);
+          let free = item.__tryLayInline(isUpright ? (h + ly - y - endSpace) : (w + lx - x - endSpace), isUpright ? h : w, isUpright);
           // 放得下继续
           if(free >= (-1e-10)) {
             lineClampCount = item.__layout({
@@ -2411,7 +2411,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             }, isAbs, isColumn, isRow);
             // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
             (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item, false);
@@ -2424,7 +2424,7 @@ class Dom extends Xom {
           // 放不下处理之前的lineBox，并重新开头
           else {
             lineClampCount++;
-            if(isVertical) {
+            if(isUpright) {
               x = lineBoxManager.endX;
               y = ly;
             }
@@ -2439,7 +2439,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
               return;
             }
             lineClampCount = item.__layout({
@@ -2453,12 +2453,12 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             }, isAbs, isColumn, isRow);
             // 重新开头的ib和上面开头处一样逻辑
             if(item.__isIbFull) {
               lineBoxManager.addItem(item, true);
-              if(isVertical) {
+              if(isUpright) {
                 x += item.outerWidth;
                 y = ly;
               }
@@ -2486,7 +2486,7 @@ class Dom extends Xom {
       else {
         let n = lineBoxManager.size;
         // i为0时强制不换行
-        if((isVertical && y === ly) || (!isVertical && x === lx) || !i || whiteSpace === 'nowrap') {
+        if((isUpright && y === ly) || (!isUpright && x === lx) || !i || whiteSpace === 'nowrap') {
           lineClampCount = item.__layout({
             x,
             y,
@@ -2498,7 +2498,7 @@ class Dom extends Xom {
             endSpace,
             lineClamp,
             lineClampCount,
-            isVertical,
+            isUpright,
           }, isAbs, isColumn, isRow);
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
@@ -2507,7 +2507,7 @@ class Dom extends Xom {
             isIbFull = true;
           }
           if(!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap'
-            && ((isVertical && y - ly > h + (1e-10)) || (!isVertical && x - lx > w + (1e-10))
+            && ((isUpright && y - ly > h + (1e-10)) || (!isUpright && x - lx > w + (1e-10))
               || lineClampCount > lastLineClampCount)) {
             ignoreNextWrap = true;
           }
@@ -2517,7 +2517,7 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-          let free = item.__tryLayInline(isVertical ? (h + ly - y - endSpace) : (w + lx - x - endSpace));
+          let free = item.__tryLayInline(isUpright ? (h + ly - y - endSpace) : (w + lx - x - endSpace));
           // 放得下继续
           if(free >= (-1e-10)) {
             lineClampCount = item.__layout({
@@ -2531,7 +2531,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             }, isAbs, isColumn, isRow);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
@@ -2543,7 +2543,7 @@ class Dom extends Xom {
           // 放不下处理之前的lineBox，并重新开头
           else {
             lineClampCount++;
-            if(isVertical) {
+            if(isUpright) {
               x = lineBoxManager.endX;
               y = ly;
             }
@@ -2558,7 +2558,7 @@ class Dom extends Xom {
               ignoreNextLine = true;
               let list = lineBoxManager.list;
               let lineBox = list[list.length - 1];
-              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
+              backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
               return;
             }
             lineClampCount = item.__layout({
@@ -2572,7 +2572,7 @@ class Dom extends Xom {
               endSpace,
               lineClamp,
               lineClampCount,
-              isVertical,
+              isUpright,
             }, isAbs, isColumn, isRow);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
@@ -2588,7 +2588,7 @@ class Dom extends Xom {
       }
     });
     // 同block结尾，不过这里一定是lineBox结束，无需判断
-    if(isVertical) {
+    if(isUpright) {
       x = lineBoxManager.endX;
     }
     else {
@@ -2601,7 +2601,7 @@ class Dom extends Xom {
     if(isInline) {
       // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
       if(selfEndSpace) {
-        if(isVertical) {
+        if(isUpright) {
           lineBoxManager.addY(selfEndSpace);
         }
         else {
@@ -2618,7 +2618,7 @@ class Dom extends Xom {
           [BORDER_TOP_WIDTH]: borderTopWidth,
           [BORDER_LEFT_WIDTH]: borderLeftWidth,
         } = computedStyle;
-        if(isVertical) {
+        if(isUpright) {
           lineBoxManager.addY(marginTop + paddingTop + borderTopWidth);
         }
         else {
@@ -2629,13 +2629,13 @@ class Dom extends Xom {
       lineBoxManager.popContentBoxList();
       // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，这里无视textAlign默认left
       if(isAbs) {
-        this.__inlineSize(0, 'left', isVertical);
+        this.__inlineSize(0, 'left', isUpright);
       }
     }
     else {
       // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用max
-      let max = lineBoxManager.max - (isVertical ? data.y : data.x);
-      if(isVertical) {
+      let max = lineBoxManager.max - (isUpright ? data.y : data.x);
+      if(isUpright) {
         tw = fixedWidth ? w : x - data.x;
         th = fixedHeight ? h : (isIbFull ? Math.max(h, max) : max);
       }
@@ -2647,31 +2647,31 @@ class Dom extends Xom {
     }
     // 非abs提前虚拟布局，真实布局情况下最后为所有行内元素进行2个方向上的对齐，inline会被父级调用这里只看ib
     if(!isAbs && !isInline) {
-      let spread = lineBoxManager.verticalAlign(isVertical);
+      let spread = lineBoxManager.verticalAlign(isUpright);
       if(spread) {
-        if(isVertical && !fixedWidth) {
+        if(isUpright && !fixedWidth) {
           this.__resizeX(spread);
         }
-        else if(!isVertical && !fixedHeight) {
+        else if(!isUpright && !fixedHeight) {
           this.__resizeY(spread);
         }
       }
       if(!isColumn && !isRow) {
         if(['center', 'right'].indexOf(textAlign) > -1) {
-          lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical);
+          lineBoxManager.horizonAlign(isUpright ? th : tw, textAlign, isUpright);
           // 直接text需计算size
           flowChildren.forEach(item => {
             if(item instanceof Component) {
               item = item.shadowRoot;
             }
             if(item instanceof Text) {
-              item.__inlineSize(isVertical);
+              item.__inlineSize(isUpright);
             }
           });
         }
         // block的所有inline计算size
         lineBoxManager.domList.forEach(item => {
-          item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
+          item.__inlineSize(isUpright ? th : tw, textAlign, isUpright);
         });
       }
     }
@@ -2689,7 +2689,7 @@ class Dom extends Xom {
    * 另外其client/offset/outer的w/h尺寸计算也很特殊，皆因首尾x方向的mpb导致
    * @private
    */
-  __inlineSize(size, textAlign, isVertical) {
+  __inlineSize(size, textAlign, isUpright) {
     let { contentBoxList, computedStyle, __ox, __oy } = this;
     let {
       [DISPLAY]: display,
@@ -2788,7 +2788,7 @@ class Dom extends Xom {
       if(['center', 'right'].indexOf(textAlign) > -1) {
         this.children.forEach(item => {
           if(item instanceof Text) {
-            item.__inlineSize(isVertical);
+            item.__inlineSize(isUpright);
           }
         });
       }
@@ -2802,7 +2802,7 @@ class Dom extends Xom {
           diff *= 0.5;
         }
         if(diff > 0) {
-          if(isVertical) {
+          if(isUpright) {
             this.__offsetY(diff, true);
           }
           else {
@@ -2810,7 +2810,7 @@ class Dom extends Xom {
           }
         }
       }
-      if(isVertical) {
+      if(isUpright) {
         tw = lineHeight;
         this.__ioSize(tw, 0);
         this.__sx -= marginLeft + paddingLeft + borderLeftWidth;
@@ -3016,7 +3016,7 @@ class Dom extends Xom {
           y: y2,
           w: widthLimit,
           h: heightLimit,
-          isVertical: data.isVertical, // 父亲的
+          isUpright: data.isUpright, // 父亲的
         }, true, false);
         widthLimit = item.outerWidth;
       }
@@ -3027,7 +3027,7 @@ class Dom extends Xom {
         h: heightLimit,
         w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
         h2,
-        isVertical: data.isVertical,
+        isUpright: data.isUpright,
       }, false, false);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);

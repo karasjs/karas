@@ -2387,7 +2387,7 @@ function createDiv() {
 }
 
 var inject = {
-  measureTextSync: function measureTextSync(str, ff, fs, fw) {
+  measureTextSync: function measureTextSync(str, ff, fs, fw, isUpright) {
     if (!div) {
       createDiv();
     }
@@ -2395,8 +2395,20 @@ var inject = {
     div.style.fontFamily = ff;
     div.style.fontSize = fs + 'px';
     div.style.fontWeight = fw;
+
+    if (isUpright) {
+      div.style.writingMode = 'vertical-lr';
+    } else {
+      div.style.writingMode = 'horizontal-tb';
+    }
+
     div.innerHTML = str.replace(/</g, '&lt;').replace(/[ \n]/g, '&nbsp;');
-    return parseFloat(window.getComputedStyle(div, null).width);
+
+    if (isUpright) {
+      return parseFloat(window.getComputedStyle(div, null).height);
+    } else {
+      return parseFloat(window.getComputedStyle(div, null).width);
+    }
   },
   measureTextListMax: function measureTextListMax(str, ff, fs, fw) {
     if (!div) {
@@ -3013,9 +3025,7 @@ var reset = {
 var reg = {
   position: /(([-+]?[\d.]+[pxremvwhina%]*)|(left|top|right|bottom|center)){1,2}/ig,
   gradient: /\b(\w+)-?gradient\((.+)\)/i,
-  img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i,
-  han: /(?:[\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u3005\u3007\u3021-\u3029\u3038-\u303B\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFA6D\uFA70-\uFAD9]|\uD81B[\uDFE2\uDFE3\uDFF0\uDFF1]|[\uD840-\uD868\uD86A-\uD86C\uD86F-\uD872\uD874-\uD879\uD880-\uD883][\uDC00-\uDFFF]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86D[\uDC00-\uDF38\uDF40-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEA1\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A])/,
-  punctuation: /(?:[!-#%-\*,-\/:;\?@\[-\]_\{\}\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061D-\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u09FD\u0A76\u0AF0\u0C77\u0C84\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1B7D\u1B7E\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2308-\u230B\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E4F\u2E52-\u2E5D\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]|\uD800[\uDD00-\uDD02\uDF9F\uDFD0]|\uD801\uDD6F|\uD802[\uDC57\uDD1F\uDD3F\uDE50-\uDE58\uDE7F\uDEF0-\uDEF6\uDF39-\uDF3F\uDF99-\uDF9C]|\uD803[\uDEAD\uDF55-\uDF59\uDF86-\uDF89]|\uD804[\uDC47-\uDC4D\uDCBB\uDCBC\uDCBE-\uDCC1\uDD40-\uDD43\uDD74\uDD75\uDDC5-\uDDC8\uDDCD\uDDDB\uDDDD-\uDDDF\uDE38-\uDE3D\uDEA9]|\uD805[\uDC4B-\uDC4F\uDC5A\uDC5B\uDC5D\uDCC6\uDDC1-\uDDD7\uDE41-\uDE43\uDE60-\uDE6C\uDEB9\uDF3C-\uDF3E]|\uD806[\uDC3B\uDD44-\uDD46\uDDE2\uDE3F-\uDE46\uDE9A-\uDE9C\uDE9E-\uDEA2]|\uD807[\uDC41-\uDC45\uDC70\uDC71\uDEF7\uDEF8\uDFFF]|\uD809[\uDC70-\uDC74]|\uD80B[\uDFF1\uDFF2]|\uD81A[\uDE6E\uDE6F\uDEF5\uDF37-\uDF3B\uDF44]|\uD81B[\uDE97-\uDE9A\uDFE2]|\uD82F\uDC9F|\uD836[\uDE87-\uDE8B]|\uD83A[\uDD5E\uDD5F])/
+  img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
 };
 
 // 向量点乘积
@@ -12888,10 +12898,7 @@ var DEG$2 = o.DEG;
 var CANVAS$1 = mode.CANVAS,
     SVG = mode.SVG,
     WEBGL$1 = mode.WEBGL;
-
-function isCjk(c) {
-  return reg.han.test(c) && !reg.punctuation.test(c);
-}
+var TuOrU = /(?:[\xA7\xA9\xAE\xB1\xBC-\xBE\xD7\xF7\u02EA\u02EB\u1100-\u11FF\u1401-\u167F\u18B0-\u18FF\u2016\u2020\u2021\u2030\u2031\u203B\u203C\u2042\u2047-\u2049\u2051\u2065\u20DD-\u20E0\u20E2-\u20E4\u2100\u2101\u2103-\u2109\u210F\u2113\u2114\u2116\u2117\u211E-\u2123\u2125\u2127\u2129\u212E\u2135-\u213F\u2145-\u214A\u214C\u214D\u214F-\u2189\u218C-\u218F\u221E\u2234\u2235\u2300-\u2307\u230C-\u231F\u2324-\u2328\u232B\u237D-\u239A\u23BE-\u23CD\u23CF\u23D1-\u23DB\u23E2-\u2422\u2424-\u24FF\u25A0-\u2619\u2620-\u2767\u2776-\u2793\u2B12-\u2B2F\u2B50-\u2B59\u2B97\u2BB8-\u2BD1\u2BD3-\u2BEB\u2BF0-\u2BFF\u2E50\u2E51\u2E80-\u3007\u3012\u3013\u3020-\u302F\u3031-\u309F\u30A1-\u30FB\u30FD-\uA4CF\uA960-\uA97F\uAC00-\uD7FF\uE000-\uFAFF\uFE10-\uFE1F\uFE30-\uFE48\uFE50-\uFE57\uFE5F-\uFE62\uFE67-\uFE6F\uFF01-\uFF07\uFF0A-\uFF0C\uFF0E-\uFF19\uFF1F-\uFF3A\uFF3C\uFF3E\uFF40-\uFF5A\uFFE0-\uFFE2\uFFE4-\uFFE7\uFFF0-\uFFF8\uFFFC\uFFFD]|\uD802[\uDD80-\uDD9F]|\uD805[\uDD80-\uDDFF]|\uD806[\uDE00-\uDEBF]|[\uD80C\uD81C-\uD822\uD83C\uD83D\uD840-\uD87E\uD880-\uD8BE][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC3F]|\uD811[\uDC00-\uDE7F]|\uD81B[\uDFE0-\uDFFF]|\uD823[\uDC00-\uDD7F]|\uD82B[\uDFF0-\uDFFF]|\uD82C[\uDC00-\uDEFF]|\uD833[\uDF00-\uDFCF]|\uD834[\uDC00-\uDDFF\uDEE0-\uDF7F]|\uD836[\uDC00-\uDEAF]|\uD83E[\uDD00-\uDEFF]|[\uD87F\uD8BF][\uDC00-\uDFFD])/;
 /**
  * 表示一行文本的类，保存它的位置、内容、从属信息，在布局阶段生成，并在渲染阶段被Text调用render()
  * 关系上直属于Text类，一个Text类可能因为换行原因导致有多个TextBox，一行内容中也可能有不同Text从而不同TextBox
@@ -12899,10 +12906,9 @@ function isCjk(c) {
  * 在textOverflow为ellipsis时，可能会收到后面节点的向前回退（后面不足放下…），使得省略号发生在本节点
  */
 
-
 var TextBox = /*#__PURE__*/function () {
   function TextBox(parent, index, x, y, w, h, content) {
-    var isVertical = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : false;
+    var isUpright = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : false;
 
     _classCallCheck(this, TextBox);
 
@@ -12911,7 +12917,7 @@ var TextBox = /*#__PURE__*/function () {
     this.__x = x;
     this.__y = y;
 
-    if (isVertical) {
+    if (isUpright) {
       this.__width = h;
       this.__height = w;
     } else {
@@ -12922,7 +12928,7 @@ var TextBox = /*#__PURE__*/function () {
     this.__content = content;
     this.__virtualDom = {};
     this.__parentLineBox = null;
-    this.__isVertical = isVertical;
+    this.__isVertical = isUpright;
   }
   /**
    * 渲染阶段被Text类调用，多行Text会有多个TextBox，内容被分拆开
@@ -12944,7 +12950,7 @@ var TextBox = /*#__PURE__*/function () {
           parent = this.parent,
           width = this.width,
           height = this.height,
-          isVertical = this.isVertical;
+          isUpright = this.isUpright;
       var ox = parent.ox,
           oy = parent.oy;
       var dom = parent.parent;
@@ -12952,7 +12958,7 @@ var TextBox = /*#__PURE__*/function () {
       var bv = css.getVerticalBaseline(computedStyle); // 垂直文本x/y互换，渲染时使用rotate模拟，因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
       // 它等同于lineHeight（现在的w）减去b
 
-      if (isVertical) {
+      if (isUpright) {
         x += bv;
       } else {
         y += b;
@@ -12961,7 +12967,7 @@ var TextBox = /*#__PURE__*/function () {
       x += ox + dx;
       y += oy + dy;
 
-      if (isVertical) {
+      if (isUpright) {
         this.__endX = x;
         this.__endY = y + height;
       } else {
@@ -12983,7 +12989,7 @@ var TextBox = /*#__PURE__*/function () {
         var dev1 = 0,
             dev2 = 0;
 
-        if (isVertical) {
+        if (isUpright) {
           list = [[ROTATE_Z$2, [90, DEG$2]]];
           dev1 = bv * 0.6;
           dev2 = bv * 0.2;
@@ -12995,8 +13001,8 @@ var TextBox = /*#__PURE__*/function () {
           for (; i < length; i++) {
             var c = content.charAt(i);
 
-            if (isVertical) {
-              var cjk = isCjk(c);
+            if (isUpright) {
+              var cjk = TuOrU.test(c);
 
               if (cjk) {
                 ctx.setTransform(me[0], me[1], me[4], me[5], me[12], me[13]);
@@ -13049,14 +13055,14 @@ var TextBox = /*#__PURE__*/function () {
             }
           }
         } else {
-          if (isVertical) {
-            var _cjk = isCjk(content.charAt(0)),
+          if (isUpright) {
+            var _cjk = TuOrU.test(content.charAt(0)),
                 last = 0,
                 count = 0,
                 len = content.length;
 
             for (var _i = 1; _i < len; _i++) {
-              var nowCjk = isCjk(content.charAt(_i)); // 不相等时cjk发生变化，输出之前的内容，记录当下的所有
+              var nowCjk = TuOrU.test(content.charAt(_i)); // 不相等时cjk发生变化，输出之前的内容，记录当下的所有
 
               if (nowCjk !== _cjk) {
                 if (_cjk) {
@@ -13187,7 +13193,7 @@ var TextBox = /*#__PURE__*/function () {
         } // 垂直的svg以中线为基线，需偏移baseline和中线的差值
 
 
-        if (isVertical) {
+        if (isUpright) {
           x += lineHeight * 0.5 - bv;
         }
 
@@ -13208,7 +13214,7 @@ var TextBox = /*#__PURE__*/function () {
           props.push(['letter-spacing', letterSpacing]);
         }
 
-        if (isVertical) {
+        if (isUpright) {
           props.push(['writing-mode', 'vertical-lr']);
         }
 
@@ -13311,7 +13317,7 @@ var TextBox = /*#__PURE__*/function () {
       return this.__parentLineBox;
     }
   }, {
-    key: "isVertical",
+    key: "isUpright",
     get: function get() {
       return this.__isVertical;
     }
@@ -13340,7 +13346,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
 
   var _super = _createSuper(Ellipsis);
 
-  function Ellipsis(x, y, width, parent, isVertical) {
+  function Ellipsis(x, y, width, parent, isUpright) {
     var _this;
 
     _classCallCheck(this, Ellipsis);
@@ -13353,7 +13359,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
     parent.__ellipsis = _assertThisInitialized(_this);
     _this.__parentLineBox = null;
     _this.__baseline = css.getBaseline(parent.computedStyle);
-    _this.__isVertical = isVertical;
+    _this.__isVertical = isUpright;
     return _this;
   }
 
@@ -13365,7 +13371,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
       var x = this.x,
           y = this.y,
           parent = this.parent,
-          isVertical = this.isVertical;
+          isUpright = this.isUpright;
       var ox = parent.ox,
           oy = parent.oy,
           computedStyle = parent.computedStyle,
@@ -13373,7 +13379,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
       var b = css.getBaseline(computedStyle);
       var bv = css.getVerticalBaseline(computedStyle);
 
-      if (isVertical) {
+      if (isUpright) {
         x += bv;
       } else {
         y += b;
@@ -13393,7 +13399,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
           ctx.fillStyle = color;
         }
 
-        if (isVertical) {
+        if (isUpright) {
           var me = parent.matrixEvent,
               list = [[ROTATE_Z$3, [90, DEG$3]]];
           var tfo = [x, y];
@@ -13405,13 +13411,13 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
         ctx.fillText(CHAR, x, y);
       } else if (renderMode === SVG$1) {
         // 垂直的svg以中线为基线，需偏移baseline和中线的差值
-        if (isVertical) {
+        if (isUpright) {
           x += computedStyle[LINE_HEIGHT$2] * 0.5 - bv;
         }
 
         var props = [['x', x], ['y', y], ['fill', color], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$2]], ['font-size', computedStyle[FONT_SIZE$5] + 'px']];
 
-        if (isVertical) {
+        if (isUpright) {
           props.push(['writing-mode', 'vertical-lr']);
         }
 
@@ -13433,7 +13439,7 @@ var Ellipsis = /*#__PURE__*/function (_Node) {
       return this.__parentLineBox;
     }
   }, {
-    key: "isVertical",
+    key: "isUpright",
     get: function get() {
       return this.__isVertical;
     }
@@ -14245,9 +14251,10 @@ var CANVAS$3 = mode.CANVAS,
  * @param fontSize
  * @param fontWeight
  * @param letterSpacing
+ * @param isUpright
  */
 
-function measureLineWidth(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing) {
+function measureLineWidth(ctx, renderMode, start, length, content, w, perW, fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
   if (start >= length) {
     // 特殊情况不应该走进这里
     return [0, 0, false];
@@ -14293,7 +14300,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
     if (renderMode === CANVAS$3 || renderMode === WEBGL$3) {
       _mw = ctx.measureText(str).width;
     } else if (renderMode === SVG$2) {
-      _mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight);
+      _mw = inject.measureTextSync(str, fontFamily, fontSize, fontWeight, isUpright);
     }
 
     if (letterSpacing) {
@@ -14422,8 +14429,8 @@ var Text = /*#__PURE__*/function (_Node) {
           lineClamp = _data$lineClamp === void 0 ? 0 : _data$lineClamp,
           _data$lineClampCount = data.lineClampCount,
           lineClampCount = _data$lineClampCount === void 0 ? 0 : _data$lineClampCount,
-          _data$isVertical = data.isVertical,
-          isVertical = _data$isVertical === void 0 ? false : _data$isVertical;
+          _data$isUpright = data.isUpright,
+          isUpright = _data$isUpright === void 0 ? false : _data$isUpright;
       this.__x = this.__sx = this.__sx1 = x;
       this.__y = this.__sy = this.__sy1 = y;
       var isDestroyed = this.isDestroyed,
@@ -14450,8 +14457,8 @@ var Text = /*#__PURE__*/function (_Node) {
           fontSize = computedStyle[FONT_SIZE$6],
           fontWeight = computedStyle[FONT_WEIGHT$3],
           fontFamily = computedStyle[FONT_FAMILY$3];
-      var size = isVertical ? h : w;
-      var beginSpace = isVertical ? y - ly : x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
+      var size = isUpright ? h : w;
+      var beginSpace = isUpright ? y - ly : x - lx; // x>=lx，当第一行非起始处时前面被prev节点占据，这个差值可认为是count宽度
       // 基于最近block父节点的样式
 
       var bp = this.domParent;
@@ -14485,7 +14492,7 @@ var Text = /*#__PURE__*/function (_Node) {
         var _bp$computedStyle = bp.computedStyle,
             position = _bp$computedStyle[POSITION$1],
             overflow = _bp$computedStyle[OVERFLOW];
-        var containerSize = bp.currentStyle[isVertical ? HEIGHT$2 : WIDTH$2]; // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
+        var containerSize = bp.currentStyle[isUpright ? HEIGHT$2 : WIDTH$2]; // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
 
         if (overflow === 'hidden') {
           // abs自适应宽度时不裁剪
@@ -14498,25 +14505,25 @@ var Text = /*#__PURE__*/function (_Node) {
 
 
         if (isTextOverflow && textOverflow === 'ellipsis') {
-          var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
+          var _this$__lineBack = this.__lineBack(ctx, renderMode, i, length, content, size - endSpace - beginSpace, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
 
           var _this$__lineBack2 = _slicedToArray(_this$__lineBack, 1);
 
           mainCoords = _this$__lineBack2[0];
           lineCount++;
 
-          if (isVertical) {
+          if (isUpright) {
             x = mainCoords;
           } else {
             y = mainCoords;
           }
         } // 默认是否clip跟随overflow:hidden，无需感知，裁剪由dom做，这里不裁剪
         else {
-          var textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight, content, isVertical);
+          var textBox = new TextBox(this, textBoxes.length, x, y, textWidth, lineHeight, content, isUpright);
           textBoxes.push(textBox);
           lineBoxManager.addItem(textBox, false);
 
-          if (isVertical) {
+          if (isUpright) {
             x += lineHeight;
           } else {
             y += lineHeight;
@@ -14547,7 +14554,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
 
           if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1 && i + num < length) {
-            var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
+            var _this$__lineBack3 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
 
             var _this$__lineBack4 = _slicedToArray(_this$__lineBack3, 2);
 
@@ -14555,7 +14562,7 @@ var Text = /*#__PURE__*/function (_Node) {
             maxW = _this$__lineBack4[1];
             lineCount++;
 
-            if (isVertical) {
+            if (isUpright) {
               x = mainCoords;
             } else {
               y = mainCoords;
@@ -14576,7 +14583,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
             // 可能加上endSpace后超过了，还得再判断一次
             if (lineClamp && newLine && lineCount + lineClampCount >= lineClamp - 1) {
-              var _this$__lineBack5 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical);
+              var _this$__lineBack5 = this.__lineBack(ctx, renderMode, i, i + num, content, limit - endSpace, perW, lineCount ? lx : x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isUpright);
 
               var _this$__lineBack6 = _slicedToArray(_this$__lineBack5, 2);
 
@@ -14584,7 +14591,7 @@ var Text = /*#__PURE__*/function (_Node) {
               maxW = _this$__lineBack6[1];
               lineCount++;
 
-              if (isVertical) {
+              if (isUpright) {
                 x = mainCoords;
               } else {
                 y = mainCoords;
@@ -14596,12 +14603,12 @@ var Text = /*#__PURE__*/function (_Node) {
 
           maxW = Math.max(maxW, rw); // 根据是否第一行分开处理行首空白
 
-          var _textBox = new TextBox(this, textBoxes.length, lineCount && !isVertical ? lx : x, lineCount && isVertical ? ly : y, rw, lineHeight, content.slice(i, i + num), isVertical);
+          var _textBox = new TextBox(this, textBoxes.length, lineCount && !isUpright ? lx : x, lineCount && isUpright ? ly : y, rw, lineHeight, content.slice(i, i + num), isUpright);
 
           textBoxes.push(_textBox);
           lineBoxManager.addItem(_textBox, newLine); // 竖排横排换行不一样
 
-          if (isVertical) {
+          if (isUpright) {
             x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
           } else {
             y += Math.max(lineHeight, lineBoxManager.lineHeight);
@@ -14617,7 +14624,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
 
         if (lineCount) {
-          if (isVertical) {
+          if (isUpright) {
             this.__y = this.__sy1 = ly;
           } else {
             this.__x = this.__sx1 = lx;
@@ -14625,7 +14632,7 @@ var Text = /*#__PURE__*/function (_Node) {
         }
       }
 
-      if (isVertical) {
+      if (isUpright) {
         this.__width = x - data.x;
         this.__height = maxW;
         this.__verticalBaseline = css.getVerticalBaseline(computedStyle);
@@ -14647,7 +14654,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
   }, {
     key: "__lineBack",
-    value: function __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isVertical) {
+    value: function __lineBack(ctx, renderMode, i, length, content, limit, perW, x, y, maxW, endSpace, lineHeight, textBoxes, lineBoxManager, fontFamily, fontSize, fontWeight, letterSpacing, isUpright) {
       var ew,
           bp = this.__bp,
           computedStyle = bp.computedStyle; // 临时测量ELLIPSIS的尺寸
@@ -14696,13 +14703,13 @@ var Text = /*#__PURE__*/function (_Node) {
 
               var _item = list.pop();
 
-              if (isVertical) {
+              if (isUpright) {
                 y -= _item.outerHeight;
               } else {
                 x -= _item.outerWidth;
               }
 
-              limit += isVertical ? _item.outerHeight : _item.outerWidth;
+              limit += isUpright ? _item.outerHeight : _item.outerWidth;
 
               _item.__layoutNone();
 
@@ -14738,7 +14745,7 @@ var Text = /*#__PURE__*/function (_Node) {
               if (_num !== _content.length) {
                 tb.__content = _content.slice(0, _num);
 
-                if (isVertical) {
+                if (isUpright) {
                   y -= height - _rw;
                   tb.__height = _rw;
                 } else {
@@ -14748,13 +14755,13 @@ var Text = /*#__PURE__*/function (_Node) {
               } // 重新设置lineHeight和baseline，因为可能删除了东西
 
 
-              lineBox.__resetLb(computedStyle[LINE_HEIGHT$3], isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
+              lineBox.__resetLb(computedStyle[LINE_HEIGHT$3], isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
 
-              var _ep = isVertical ? new Ellipsis(x, y + _rw + endSpace, ew, bp, isVertical) : new Ellipsis(x + _rw + endSpace, y, ew, bp, isVertical);
+              var _ep = isUpright ? new Ellipsis(x, y + _rw + endSpace, ew, bp, isUpright) : new Ellipsis(x + _rw + endSpace, y, ew, bp, isUpright);
 
               lineBoxManager.addItem(_ep, true);
 
-              if (isVertical) {
+              if (isUpright) {
                 x += Math.max(_lineHeight, lineBoxManager.verticalLineHeight);
               } else {
                 y += Math.max(_lineHeight, lineBoxManager.lineHeight);
@@ -14767,7 +14774,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
             var item = list.pop();
 
-            if (isVertical) {
+            if (isUpright) {
               limit += height;
               y -= height;
             } else {
@@ -14801,7 +14808,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
               var _computedStyle = dom.computedStyle;
 
-              if (isVertical) {
+              if (isUpright) {
                 var mbp = _computedStyle[MARGIN_TOP] + _computedStyle[MARGIN_BOTTOM] + _computedStyle[PADDING_TOP$1] + _computedStyle[PADDING_BOTTOM$1] + _computedStyle[BORDER_TOP_WIDTH$1] + _computedStyle[BORDER_BOTTOM_WIDTH$1];
                 y -= mbp;
                 limit += mbp;
@@ -14829,26 +14836,26 @@ var Text = /*#__PURE__*/function (_Node) {
       } // 本次回退不用向前追溯删除textBox会进这里，最少一个字符兜底
 
 
-      var textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num), isVertical);
+      var textBox = new TextBox(this, textBoxes.length, x, y, rw, lineHeight, content.slice(i, i + num), isUpright);
       textBoxes.push(textBox);
       lineBoxManager.addItem(textBox, false); // ELLIPSIS也作为内容加入，但特殊的是指向最近block使用其样式渲染
 
-      var ep = isVertical ? new Ellipsis(x, y + rw + endSpace, ew, bp, isVertical) : new Ellipsis(x + rw + endSpace, y, ew, bp, isVertical);
+      var ep = isUpright ? new Ellipsis(x, y + rw + endSpace, ew, bp, isUpright) : new Ellipsis(x + rw + endSpace, y, ew, bp, isUpright);
       lineBoxManager.addItem(ep, true);
 
-      if (isVertical) {
+      if (isUpright) {
         x += Math.max(lineHeight, lineBoxManager.verticalLineHeight);
       } else {
         y += Math.max(lineHeight, lineBoxManager.lineHeight);
       }
 
       maxW = Math.max(maxW, rw + ew);
-      return [isVertical ? x : y, maxW];
+      return [isUpright ? x : y, maxW];
     } // 外部dom换行发现超行，且一定是ellipsis时，会进这里让上一行text回退，lineBox一定有值且最后一个一定是本text的最后的textBox
 
   }, {
     key: "__backtrack",
-    value: function __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode, isVertical) {
+    value: function __backtrack(bp, lineBoxManager, lineBox, textBox, limit, endSpace, ew, computedStyle, ctx, renderMode, isUpright) {
       var list = lineBox.list;
 
       for (var j = list.length - 1; j >= 0; j--) {
@@ -14861,7 +14868,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
           var _item2 = list.pop();
 
-          limit += isVertical ? _item2.outerHeight : _item2.outerWidth;
+          limit += isUpright ? _item2.outerHeight : _item2.outerWidth;
 
           _item2.__layoutNone();
 
@@ -14897,7 +14904,7 @@ var Text = /*#__PURE__*/function (_Node) {
           if (num !== content.length) {
             tb.__content = content.slice(0, num);
 
-            if (isVertical) {
+            if (isUpright) {
               tb.__height = rw;
             } else {
               tb.__width = rw;
@@ -14905,16 +14912,16 @@ var Text = /*#__PURE__*/function (_Node) {
           } // 重新设置lineHeight和baseline，因为可能删除了东西
 
 
-          lineBox.__resetLb(computedStyle[LINE_HEIGHT$3], isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
+          lineBox.__resetLb(computedStyle[LINE_HEIGHT$3], isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle));
 
-          var ep = isVertical ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isVertical) : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isVertical);
+          var ep = isUpright ? new Ellipsis(tb.x, tb.y + rw + endSpace, ew, bp, isUpright) : new Ellipsis(tb.x + rw + endSpace, tb.y, ew, bp, isUpright);
           lineBoxManager.addItem(ep, true);
           return;
         } // 舍弃这个tb，x也要向前回退，w增加，这会发生在ELLIPSIS字体很大，里面内容字体很小时
 
 
         var item = list.pop();
-        limit += isVertical ? height : width;
+        limit += isUpright ? height : width;
         var tbs = item.parent.textBoxes;
         var k = tbs.indexOf(item);
 
@@ -14941,7 +14948,7 @@ var Text = /*#__PURE__*/function (_Node) {
 
           var _computedStyle2 = dom.computedStyle;
 
-          if (isVertical) {
+          if (isUpright) {
             var mbp = _computedStyle2[MARGIN_TOP] + _computedStyle2[MARGIN_BOTTOM] + _computedStyle2[PADDING_TOP$1] + _computedStyle2[PADDING_BOTTOM$1] + _computedStyle2[BORDER_TOP_WIDTH$1] + _computedStyle2[BORDER_BOTTOM_WIDTH$1];
             limit += mbp;
           } else {
@@ -14996,19 +15003,19 @@ var Text = /*#__PURE__*/function (_Node) {
     }
   }, {
     key: "__inlineSize",
-    value: function __inlineSize(isVertical) {
+    value: function __inlineSize(isUpright) {
       var min, max;
       this.textBoxes.forEach(function (item, i) {
         if (i) {
-          min = Math.min(min, isVertical ? item.y : item.x);
-          max = Math.max(max, (isVertical ? item.y : item.x) + item.width);
+          min = Math.min(min, isUpright ? item.y : item.x);
+          max = Math.max(max, (isUpright ? item.y : item.x) + item.width);
         } else {
-          min = isVertical ? item.y : item.x;
-          max = (isVertical ? item.y : item.x) + item.width;
+          min = isUpright ? item.y : item.x;
+          max = (isUpright ? item.y : item.x) + item.width;
         }
       });
 
-      if (isVertical) {
+      if (isUpright) {
         this.__y = min;
         this.__sy = this.__sy1 = min + this.oy;
         this.__sx = this.__sx1;
@@ -16236,7 +16243,7 @@ var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
 /**
  * 获取inline的每一行内容的矩形坐标4个点，同时附带上border的矩形，比前面4个点尺寸大或相等（有无border/padding）
  * @param xom
- * @param isVertical
+ * @param isUpright
  * @param contentBoxList
  * @param start
  * @param end
@@ -16258,16 +16265,16 @@ var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
  * @returns {(*|number)[]}
  */
 
-function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, baseline, lineHeight, leading, isStart, isEnd, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
+function getInlineBox(xom, isUpright, contentBoxList, start, end, lineBox, baseline, lineHeight, leading, isStart, isEnd, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth) {
   // 根据bgClip确定y伸展范围，inline渲染bg扩展到pb的位置不影响布局
   var bcStart = 0,
       bcEnd = 0;
-  var pbStart = isVertical ? paddingLeft + borderLeftWidth : paddingTop + borderTopWidth;
-  var pbEnd = isVertical ? paddingRight + borderRightWidth : paddingBottom + borderBottomWidth;
+  var pbStart = isUpright ? paddingLeft + borderLeftWidth : paddingTop + borderTopWidth;
+  var pbEnd = isUpright ? paddingRight + borderRightWidth : paddingBottom + borderBottomWidth;
 
   if (backgroundClip === 'paddingBox') {
-    bcStart = isVertical ? paddingLeft : paddingTop;
-    bcEnd = isVertical ? paddingRight : paddingBottom;
+    bcStart = isUpright ? paddingLeft : paddingTop;
+    bcEnd = isUpright ? paddingRight : paddingBottom;
   } else if (backgroundClip === 'borderBox') {
     bcStart = pbStart;
     bcEnd = pbEnd;
@@ -16277,7 +16284,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
 
   var diff;
 
-  if (isVertical) {
+  if (isUpright) {
     diff = lineBox.verticalBaseline - baseline;
   } else {
     diff = lineBox.baseline - baseline;
@@ -16286,7 +16293,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   var x1, y1, x2, y2, bx1, by1, bx2, by2; // x坐标取首尾contentBox的左右2侧，clip布局时已算好；y是根据lineHeight和lineBox的高度以及baseline对齐后计算的
   // 垂直排版则互换x/y逻辑
 
-  if (isVertical) {
+  if (isUpright) {
     x1 = lineBox.x + diff - bcStart + leading;
     y1 = start.y;
     bx1 = lineBox.x + diff - pbStart + leading;
@@ -16303,7 +16310,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     var list = dom.contentBoxList;
 
     if (start === list[0]) {
-      if (isVertical) {
+      if (isUpright) {
         var _dom$computedStyle = dom.computedStyle,
             marginTop = _dom$computedStyle[MARGIN_TOP$1],
             _paddingTop = _dom$computedStyle[PADDING_TOP$2],
@@ -16322,7 +16329,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   } // 第一个需考虑容器本身的padding/border
 
 
-  if (isVertical) {
+  if (isUpright) {
     by1 = y1;
 
     if (isStart) {
@@ -16363,7 +16370,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     var _list = dom.contentBoxList;
 
     if (end === _list[_list.length - 1]) {
-      if (isVertical) {
+      if (isUpright) {
         var _dom$computedStyle3 = dom.computedStyle,
             marginBottom = _dom$computedStyle3[MARGIN_BOTTOM$1],
             _paddingBottom = _dom$computedStyle3[PADDING_BOTTOM$2],
@@ -16381,7 +16388,7 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     dom = dom.domParent;
   }
 
-  if (isVertical) {
+  if (isUpright) {
     by2 = y2;
 
     if (isEnd) {
@@ -16422,12 +16429,12 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
  * 统计inline的所有contentBox排成一行时的总宽度，考虑嵌套的mpb
  * @param xom
  * @param contentBoxList
- * @param isVertical
+ * @param isUpright
  * @returns {number}
  */
 
 
-function getInlineWidth(xom, contentBoxList, isVertical) {
+function getInlineWidth(xom, contentBoxList, isUpright) {
   var sum = 0;
   var length = contentBoxList.length;
 
@@ -16438,7 +16445,7 @@ function getInlineWidth(xom, contentBoxList, isVertical) {
   for (var i = 0; i < length; i++) {
     var contentBox = contentBoxList[i];
 
-    if (isVertical) {
+    if (isUpright) {
       sum += contentBox.height;
     } else {
       sum += contentBox.width;
@@ -16451,7 +16458,7 @@ function getInlineWidth(xom, contentBoxList, isVertical) {
       var list = dom.contentBoxList;
 
       if (contentBox === list[0]) {
-        if (isVertical) {
+        if (isUpright) {
           var _dom$computedStyle5 = dom.computedStyle,
               marginTop = _dom$computedStyle5[MARGIN_TOP$1],
               paddingTop = _dom$computedStyle5[PADDING_TOP$2],
@@ -16467,7 +16474,7 @@ function getInlineWidth(xom, contentBoxList, isVertical) {
       }
 
       if (contentBox === list[list.length - 1]) {
-        if (isVertical) {
+        if (isUpright) {
           var _dom$computedStyle7 = dom.computedStyle,
               marginBottom = _dom$computedStyle7[MARGIN_BOTTOM$1],
               paddingBottom = _dom$computedStyle7[PADDING_BOTTOM$2],
@@ -21047,7 +21054,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         h: data.h,
         lx: data.lx,
         ly: data.ly,
-        isVertical: data.isVertical // 从Root开始，父级的书写模式需每层传递
+        isUpright: data.isUpright // 从Root开始，父级的书写模式需每层传递
 
       }; // 防止display:none不统计mask，isVirtual忽略，abs/flex布局后续会真正来走一遍
 
@@ -21241,7 +21248,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           lineBoxManager = data.lineBoxManager,
           _data$endSpace = data.endSpace,
           endSpace = _data$endSpace === void 0 ? 0 : _data$endSpace,
-          isParentVertical = data.isVertical;
+          isParentVertical = data.isUpright;
       this.__x = x;
       this.__y = y;
       var currentStyle = this.currentStyle,
@@ -21261,7 +21268,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           paddingBottom = computedStyle[PADDING_BOTTOM$3],
           paddingLeft = computedStyle[PADDING_LEFT$3],
           writingMode = computedStyle[WRITING_MODE$1];
-      var isVertical = writingMode.indexOf('vertical') === 0; // 除了auto外都是固定宽高度
+      var isUpright = writingMode.indexOf('vertical') === 0; // 除了auto外都是固定宽高度
 
       var fixedWidth;
       var fixedHeight; // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
@@ -21294,7 +21301,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         x += borderLeftWidth + marginLeft + paddingLeft;
         y += borderTopWidth + marginTop + paddingTop;
       } else {
-        if (isVertical) {
+        if (isUpright) {
           y += borderTopWidth + marginTop + paddingTop;
         } else {
           x += borderLeftWidth + marginLeft + paddingLeft;
@@ -21308,7 +21315,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       var selfEndSpace = 0;
 
       if (isInline) {
-        if (isVertical) {
+        if (isUpright) {
           selfEndSpace = paddingBottom + borderBottomWidth + marginBottom;
         } else {
           selfEndSpace = paddingRight + borderRightWidth + marginRight;
@@ -21339,13 +21346,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         endSpace: endSpace,
         selfEndSpace: selfEndSpace,
         isParentVertical: isParentVertical,
-        isVertical: isVertical
+        isUpright: isUpright
       };
     } // 处理margin:xx auto居中对齐或右对齐
 
   }, {
     key: "__marginAuto",
-    value: function __marginAuto(style, data, isVertical) {
+    value: function __marginAuto(style, data, isUpright) {
       var position = style[POSITION$2],
           display = style[DISPLAY$2],
           marginTop = style[MARGIN_TOP$2],
@@ -21356,7 +21363,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           height = style[HEIGHT$4];
 
       if (position !== 'absolute' && (display === 'block' || display === 'flex')) {
-        if (isVertical) {
+        if (isUpright) {
           if ((height[1] !== AUTO$3 || this.isReplaced) && marginTop[1] === AUTO$3 && marginBottom[1] === AUTO$3) {
             var oh = this.outerHeight;
 
@@ -22264,7 +22271,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           mixBlendMode = computedStyle[MIX_BLEND_MODE],
           backgroundClip = computedStyle[BACKGROUND_CLIP$2],
           writingMode = computedStyle[WRITING_MODE$1];
-      var isVertical = writingMode.indexOf('vertical') === 0; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
+      var isUpright = writingMode.indexOf('vertical') === 0; // 先设置透明度，canvas可以向上累积，cache模式外部已计算好
 
       if (cache && renderMode === CANVAS$4) {
         opacity = __config[NODE_OPACITY$1];
@@ -22515,17 +22522,17 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                 svgBgSymbol = []; // bgi视作inline排满一行绘制，然后按分行拆开给每行
 
             if (hasBgi) {
-              iw = inline.getInlineWidth(_this8, contentBoxList, isVertical);
+              iw = inline.getInlineWidth(_this8, contentBoxList, isUpright);
               ih = lineHeight; // 垂直模式互换，计算时始终按照宽度为主轴计算的
 
-              if (isVertical) {
+              if (isUpright) {
                 var _ref = [ih, iw];
                 iw = _ref[0];
                 ih = _ref[1];
               }
 
               if (backgroundClip === 'paddingBox' || backgroundClip === 'padding-box') {
-                if (isVertical) {
+                if (isUpright) {
                   iw += paddingTop + paddingBottom;
                   ih += paddingLeft + paddingRight;
                 } else {
@@ -22533,7 +22540,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                   ih += paddingTop + paddingBottom;
                 }
               } else if (backgroundClip !== 'contentBox' && backgroundClip !== 'content-box') {
-                if (isVertical) {
+                if (isUpright) {
                   iw += paddingTop + paddingBottom + borderTopWidth + borderBottomWidth;
                   ih += paddingLeft + paddingRight + borderLeftWidth + borderRightWidth;
                 } else {
@@ -22586,7 +22593,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
             var ff = css.getFontFamily(fontFamily); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
             var leading = fontSize * (o$1.info[ff].lgr || 0) * 0.5;
-            var baseline = isVertical ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
+            var baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
             var isFirst = true;
             var lastContentBox = contentBoxList[0],
@@ -22600,7 +22607,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
               if (contentBox.parentLineBox !== lastLineBox) {
                 (function () {
                   // 上一行
-                  var _inline$getInlineBox = inline.getInlineBox(_this8, isVertical, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                  var _inline$getInlineBox = inline.getInlineBox(_this8, isUpright, contentBoxList, lastContentBox, contentBoxList[i - 1], lastLineBox, baseline, lineHeight, leading, isFirst, false, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                       _inline$getInlineBox2 = _slicedToArray(_inline$getInlineBox, 8),
                       ix1 = _inline$getInlineBox2[0],
                       iy1 = _inline$getInlineBox2[1],
@@ -22627,7 +22634,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                   // canvas的bg位图裁剪
 
                   if ((renderMode === CANVAS$4 || renderMode === WEBGL$4) && offscreen) {
-                    if (isVertical) {
+                    if (isUpright) {
                       ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
                     } else {
                       ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
@@ -22641,7 +22648,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                           props: [],
                           children: [{
                             tagName: 'path',
-                            props: [['d', isVertical ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
+                            props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                           }]
                         };
                         var clip = ctx.add(_v5);
@@ -22651,13 +22658,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                         virtualDom.bb.push({
                           type: 'item',
                           tagName: 'use',
-                          props: [['xlink:href', '#' + symbol], ['x', isVertical ? ix1 : ix1 - count], ['y', isVertical ? iy1 - count : iy1], ['clip-path', 'url(#' + clip + ')']]
+                          props: [['xlink:href', '#' + symbol], ['x', isUpright ? ix1 : ix1 - count], ['y', isUpright ? iy1 - count : iy1], ['clip-path', 'url(#' + clip + ')']]
                         });
                       }
                     });
                   }
 
-                  count += isVertical ? h : w; // 增加主轴方向的一行/列尺寸
+                  count += isUpright ? h : w; // 增加主轴方向的一行/列尺寸
 
                   if (boxShadow) {
                     boxShadow.forEach(function (item) {
@@ -22701,7 +22708,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
               if (i === length - 1) {
                 (function () {
-                  var _inline$getInlineBox3 = inline.getInlineBox(_this8, isVertical, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
+                  var _inline$getInlineBox3 = inline.getInlineBox(_this8, isUpright, contentBoxList, lastContentBox, contentBoxList[i], lastLineBox, baseline, lineHeight, leading, isFirst, true, backgroundClip, paddingTop, paddingRight, paddingBottom, paddingLeft, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth),
                       _inline$getInlineBox4 = _slicedToArray(_inline$getInlineBox3, 8),
                       ix1 = _inline$getInlineBox4[0],
                       iy1 = _inline$getInlineBox4[1],
@@ -22733,7 +22740,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                       h = iy2 - iy1; // canvas的bg位图裁剪
 
                   if ((renderMode === CANVAS$4 || renderMode === WEBGL$4) && offscreen) {
-                    if (isVertical) {
+                    if (isUpright) {
                       ctx.drawImage(offscreen.canvas, 0, count, iw, h, ix1 + dx, iy1 + dy, iw, h);
                     } else {
                       ctx.drawImage(offscreen.canvas, count, 0, w, ih, ix1 + dx, iy1 + dy, w, ih);
@@ -22747,7 +22754,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                           props: [],
                           children: [{
                             tagName: 'path',
-                            props: [['d', isVertical ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
+                            props: [['d', isUpright ? "M".concat(0, ",", count, "L").concat(ih, ",").concat(count, "L").concat(ih, ",").concat(h + count, "L", 0, ",").concat(h + count, ",L", 0, ",").concat(count) : "M".concat(count, ",", 0, "L").concat(w + count, ",", 0, "L").concat(w + count, ",").concat(ih, "L").concat(count, ",").concat(ih, ",L").concat(count, ",", 0)]]
                           }]
                         };
                         var clip = ctx.add(_v6);
@@ -22757,7 +22764,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                         virtualDom.bb.push({
                           type: 'item',
                           tagName: 'use',
-                          props: [['xlink:href', '#' + symbol], ['x', isVertical ? ix1 : ix1 - count], ['y', isVertical ? iy1 - count : iy1], ['clip-path', 'url(#' + clip + ')']]
+                          props: [['xlink:href', '#' + symbol], ['x', isUpright ? ix1 : ix1 - count], ['y', isUpright ? iy1 - count : iy1], ['clip-path', 'url(#' + clip + ')']]
                         });
                       }
                     });
@@ -23786,7 +23793,7 @@ var _enums$STYLE_KEY$e = enums.STYLE_KEY,
  */
 
 var LineBox = /*#__PURE__*/function () {
-  function LineBox(x, y, lineHeight, baseline, isVertical) {
+  function LineBox(x, y, lineHeight, baseline, isUpright) {
     _classCallCheck(this, LineBox);
 
     this.__list = [];
@@ -23795,7 +23802,7 @@ var LineBox = /*#__PURE__*/function () {
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
     this.__baseline = baseline;
-    this.__isVertical = isVertical;
+    this.__isVertical = isUpright;
     this.__bOffset = 0;
   }
 
@@ -23807,9 +23814,9 @@ var LineBox = /*#__PURE__*/function () {
     }
   }, {
     key: "verticalAlign",
-    value: function verticalAlign(isVertical) {
-      var baseline = isVertical ? this.verticalBaseline : this.baseline;
-      var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
+    value: function verticalAlign(isUpright) {
+      var baseline = isUpright ? this.verticalBaseline : this.baseline;
+      var lineHeight = isUpright ? this.verticalLineHeight : this.lineHeight;
       var increase = lineHeight;
       var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
@@ -23824,7 +23831,7 @@ var LineBox = /*#__PURE__*/function () {
           } // 垂直排版计算不太一样，因为原点坐标系不一样
 
 
-          if (isVertical) {
+          if (isUpright) {
             var n = item.verticalBaseline;
 
             if (n !== baseline) {
@@ -23855,7 +23862,7 @@ var LineBox = /*#__PURE__*/function () {
       // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
 
       if (hasIbOrReplaced) {
-        if (isVertical) {
+        if (isUpright) {
           diff = this.__baseline;
         } else {
           diff = Math.max(0, this.__lineHeight - this.__baseline);
@@ -23959,7 +23966,7 @@ var LineBox = /*#__PURE__*/function () {
   }, {
     key: "width",
     get: function get() {
-      if (this.isVertical) {
+      if (this.isUpright) {
         return this.verticalLineHeight;
       }
 
@@ -24021,7 +24028,7 @@ var LineBox = /*#__PURE__*/function () {
   }, {
     key: "height",
     get: function get() {
-      if (!this.isVertical) {
+      if (!this.isUpright) {
         return this.lineHeight;
       }
 
@@ -24126,7 +24133,7 @@ var LineBox = /*#__PURE__*/function () {
       return lineHeight;
     }
   }, {
-    key: "isVertical",
+    key: "isUpright",
     get: function get() {
       return this.__isVertical;
     }
@@ -24142,13 +24149,13 @@ var LineBox = /*#__PURE__*/function () {
  */
 
 var LineBoxManager = /*#__PURE__*/function () {
-  function LineBoxManager(x, y, lineHeight, baseline, isVertical) {
+  function LineBoxManager(x, y, lineHeight, baseline, isUpright) {
     _classCallCheck(this, LineBoxManager);
 
     this.__x = this.__lastX = x; // last存储目前最后一行LineBox的结尾位置，供后续inline使用
 
     this.__y = this.__lastY = y;
-    this.__max = isVertical ? y : x;
+    this.__max = isUpright ? y : x;
     this.__domList = [];
     this.__domStack = [];
     this.__list = []; // 包含若干LineBox
@@ -24161,7 +24168,7 @@ var LineBoxManager = /*#__PURE__*/function () {
 
     this.__spreadList = []; // verticalAlign时每个区域增加的y高度
 
-    this.__isVertical = isVertical;
+    this.__isVertical = isUpright;
   }
   /**
    * 每次换行时重新生成LineBox存入列表，同时由于flow流当前一定是流（dom）的结尾，设置isEnd
@@ -24172,7 +24179,7 @@ var LineBoxManager = /*#__PURE__*/function () {
   _createClass(LineBoxManager, [{
     key: "genLineBox",
     value: function genLineBox(x, y) {
-      var lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline, this.isVertical);
+      var lineBox = new LineBox(x, y, this.__lineHeight, this.__baseline, this.isUpright);
       this.list.push(lineBox);
       this.__isEnd = true;
       return lineBox;
@@ -24194,7 +24201,7 @@ var LineBoxManager = /*#__PURE__*/function () {
       var baseline = Math.max(this.__baseline, b);
 
       if (this.__isNewLine) {
-        var lineBox = new LineBox(x, y, lineHeight, baseline, this.isVertical);
+        var lineBox = new LineBox(x, y, lineHeight, baseline, this.isUpright);
         this.list.push(lineBox);
         this.__isEnd = true;
         this.__isNewLine = false;
@@ -24233,7 +24240,7 @@ var LineBoxManager = /*#__PURE__*/function () {
     key: "addItem",
     value: function addItem(o, nextNewLine) {
       var lineBox,
-          isVertical = this.isVertical; // 新行新的lineBox，否则复用最后一个
+          isUpright = this.isUpright; // 新行新的lineBox，否则复用最后一个
 
       if (this.__isNewLine) {
         this.__isNewLine = false;
@@ -24256,7 +24263,7 @@ var LineBoxManager = /*#__PURE__*/function () {
         this.__lastX = o.x;
         this.__lastY = o.y + o.outerHeight;
       } else {
-        if (isVertical) {
+        if (isUpright) {
           this.__lastX = o.x;
           this.__lastY = o.y + o.outerHeight;
         } else {
@@ -24265,21 +24272,21 @@ var LineBoxManager = /*#__PURE__*/function () {
         }
       }
 
-      this.__max = Math.max(this.__max, isVertical ? o.y + o.outerHeight : o.x + o.outerWidth);
+      this.__max = Math.max(this.__max, isUpright ? o.y + o.outerHeight : o.x + o.outerWidth);
       return lineBox;
     }
   }, {
     key: "horizonAlign",
-    value: function horizonAlign(size, textAlign, isVertical) {
+    value: function horizonAlign(size, textAlign, isUpright) {
       this.list.forEach(function (lineBox) {
-        var diff = size - (isVertical ? lineBox.height : lineBox.width);
+        var diff = size - (isUpright ? lineBox.height : lineBox.width);
 
         if (diff > 0) {
           if (textAlign === 'center') {
             diff *= 0.5;
           }
 
-          if (isVertical) {
+          if (isUpright) {
             lineBox.__offsetY(diff, true);
           } else {
             lineBox.__offsetX(diff, true);
@@ -24295,7 +24302,7 @@ var LineBoxManager = /*#__PURE__*/function () {
 
   }, {
     key: "verticalAlign",
-    value: function verticalAlign(isVertical) {
+    value: function verticalAlign(isUpright) {
       var spreadList = this.__spreadList;
       spreadList.splice(0);
       var spread = 0;
@@ -24303,14 +24310,14 @@ var LineBoxManager = /*#__PURE__*/function () {
         if (spread) {
           lineBox.__bOffset = spread; // 对齐造成的误差需记录给baseline修正
 
-          if (isVertical) {
+          if (isUpright) {
             lineBox.__offsetX(spread, true);
           } else {
             lineBox.__offsetY(spread, true);
           }
         }
 
-        spread += lineBox.verticalAlign(isVertical);
+        spread += lineBox.verticalAlign(isUpright);
         spreadList.push(spread);
       });
       return spread;
@@ -24525,7 +24532,7 @@ var LineBoxManager = /*#__PURE__*/function () {
       return this.__spreadList;
     }
   }, {
-    key: "isVertical",
+    key: "isUpright",
     get: function get() {
       return this.__isVertical;
     }
@@ -24935,7 +24942,7 @@ function genOrderChildren(flowChildren) {
  */
 
 
-function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
+function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isUpright) {
   var ew,
       computedStyle = bp.computedStyle,
       root = bp.root,
@@ -24943,7 +24950,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
   var list = lineBox.list; // 根据textBox里的内容，确定当前内容，索引，x和剩余宽度
 
   list.forEach(function (item) {
-    total -= isVertical ? item.outerHeight : item.outerWidth;
+    total -= isUpright ? item.outerHeight : item.outerWidth;
   });
   var ctx;
 
@@ -24971,7 +24978,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
       if (item instanceof TextBox) {
         var text = item.parent;
 
-        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isVertical);
+        text.__backtrack(bp, lineBoxManager, lineBox, item, total, endSpace, ew, computedStyle, ctx, renderMode, isUpright);
       } else {
         var ep = new Ellipsis(item.x + item.outerWidth + endSpace, item.y, ew, bp);
         lineBoxManager.addItem(ep, true);
@@ -24993,7 +25000,7 @@ function backtrack(bp, lineBoxManager, lineBox, total, endSpace, isVertical) {
       }
 
       list.pop();
-      total += isVertical ? item.outerHeight : item.outerWidth;
+      total += isUpright ? item.outerHeight : item.outerWidth;
     }
   }
 }
@@ -25164,14 +25171,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
      * 返回非负数就是放得下，这样一些尺寸为0的也算
      * @param free 剩余宽度
      * @param total 容器尺寸
-     * @param isVertical 垂直排版
+     * @param isUpright 垂直排版
      * @returns {number|*}
      * @private
      */
 
   }, {
     key: "__tryLayInline",
-    value: function __tryLayInline(free, total, isVertical) {
+    value: function __tryLayInline(free, total, isUpright) {
       this.__computeReflow();
 
       var flowChildren = this.flowChildren,
@@ -25202,7 +25209,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           }
 
           if (first instanceof Xom$1) {
-            free = first.__tryLayInline(free, total, isVertical);
+            free = first.__tryLayInline(free, total, isUpright);
           } else {
             free -= first.firstCharWidth;
           }
@@ -25210,7 +25217,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       } // inlineBlock尝试所有孩子在一行上
       else {
         if (width[1] !== AUTO$5) {
-          free -= isVertical ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
+          free -= isUpright ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
         } else {
           for (var i = 0; i < flowChildren.length; i++) {
             // 当放不下时直接返回，无需继续多余的尝试计算
@@ -25225,7 +25232,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             }
 
             if (item instanceof Xom$1) {
-              free = item.__tryLayInline(free, total, isVertical);
+              free = item.__tryLayInline(free, total, isUpright);
             } // text强制一行，否则非头就是放不下，需从头开始
             else {
               free -= item.textWidth;
@@ -25234,7 +25241,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         } // ib要减去末尾mpb
 
 
-        if (isVertical) {
+        if (isUpright) {
           free -= this.__calSize(marginBottom, total, true);
           free -= this.__calSize(paddingBottom, total, true);
           free -= borderBottomWidth;
@@ -25246,7 +25253,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       } // 还要减去开头的mpb
 
 
-      if (isVertical) {
+      if (isUpright) {
         free -= this.__calSize(marginTop, total, true);
         free -= this.__calSize(paddingTop, total, true);
         free -= borderTopWidth;
@@ -25348,7 +25355,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           display = computedStyle[DISPLAY$5],
           lineClamp = computedStyle[LINE_CLAMP$2],
           writingMode = computedStyle[WRITING_MODE$2];
-      var isVertical = writingMode.indexOf('vertical') === 0;
+      var isUpright = writingMode.indexOf('vertical') === 0;
       var main = isDirectionRow ? width : height; // basis3种情况：auto、固定、content
 
       var isAuto = flexBasis[1] === AUTO$5;
@@ -25396,8 +25403,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
             } // text除了flex还需要分辨垂直排版
             else {
-              if (isVertical) {
-                var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
+              if (isUpright) {
+                var lineBoxManager = _this2.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright);
 
                 item.__layout({
                   x: x,
@@ -25406,7 +25413,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   h: h,
                   lineBoxManager: lineBoxManager,
                   lineClamp: lineClamp,
-                  isVertical: isVertical
+                  isUpright: isUpright
                 });
 
                 min += item.width;
@@ -25424,8 +25431,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           });
         } // 特殊的flex水平布局但书写垂直，遇到后直接假布局获取宽度，因为水平尺寸视为无限但垂直不是，
         // 这里一定是第一个垂直排版不会递归下去，因为flex的child匿名block，水平的垂直书写inline匿名ib
-        else if (isVertical) {
-          var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
+        else if (isUpright) {
+          var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright);
 
           this.__layout({
             x: x,
@@ -25434,7 +25441,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             h: h,
             lineBoxManager: lineBoxManager,
             lineClamp: lineClamp,
-            isVertical: isVertical
+            isUpright: isUpright
           }, isAbs, false, true);
 
           min = max = b = this.width;
@@ -25443,7 +25450,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           var _lineBoxManager = data.lineBoxManager;
 
           if (display !== 'inline') {
-            _lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
+            _lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright);
           }
 
           flowChildren.forEach(function (item) {
@@ -25495,7 +25502,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           y: y,
           w: w,
           h: h,
-          isVertical: isVertical
+          isUpright: isUpright
         }, isAbs, true, false);
 
         min = max = b = this.height; // column的child，max和b总相等
@@ -25550,11 +25557,11 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           w = _this$__preLayout.w,
           h = _this$__preLayout.h,
           isParentVertical = _this$__preLayout.isParentVertical,
-          isVertical = _this$__preLayout.isVertical; // abs虚拟布局需预知width，固定可提前返回
+          isUpright = _this$__preLayout.isUpright; // abs虚拟布局需预知width，固定可提前返回
 
 
-      if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
-        if (isVertical) {
+      if (isAbs && (fixedWidth && !isUpright || fixedHeight && isUpright)) {
+        if (isUpright) {
           this.__ioSize(undefined, h);
         } else {
           this.__ioSize(w, undefined);
@@ -25580,7 +25587,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var lineClampCount = 0; // 虚线管理一个block内部的LineBox列表，使得inline的元素可以中途衔接处理折行
       // 内部维护inline结束的各种坐标来达到目的，遇到block时中断并处理换行坐标
 
-      var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+      var lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright); // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
       var maxSize = 0;
       var countSize = 0;
@@ -25615,7 +25622,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             var diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
 
             if (diff) {
-              if (isVertical) {
+              if (isUpright) {
                 x += diff;
               } else {
                 y += diff;
@@ -25639,7 +25646,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             } // x开头或者nowrap单行的非block，不用考虑是否放得下直接放
 
 
-            if (isVertical && y === ly || !isVertical && x === lx || !i || whiteSpace === 'nowrap') {
+            if (isUpright && y === ly || !isUpright && x === lx || !i || whiteSpace === 'nowrap') {
               lineClampCount = item.__layout({
                 x: x,
                 y: y,
@@ -25651,7 +25658,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 // ib内部新生成会内部判断，这里不管统一传入
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               }, isAbs, isColumn, isRow); // inlineBlock的特殊之处，一旦w为auto且内部产生折行时，整个变成block独占一块区域，坐标计算和block一样，注意nowrap排除
 
               if (item.__isIbFull) {
@@ -25661,7 +25668,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               if (item.__isIbFull && whiteSpace !== 'nowrap') {
                 lineBoxManager.addItem(item, true);
 
-                if (isVertical) {
+                if (isUpright) {
                   x += item.outerWidth;
                   y = ly;
                 } else {
@@ -25678,7 +25685,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               } // 单行时inline在ellipsis会导致行数变化，否则判断坐标尺寸(恰好有点空剩余inline排不下)，注意前提是非abs，其虚拟计算尺寸无视限制
 
 
-              if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isVertical && y - ly > h + 1e-10 || !isVertical && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
+              if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isUpright && y - ly > h + 1e-10 || !isUpright && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
                 ignoreNextWrap = true;
               } else if (lineClamp && lineClampCount >= lineClamp) {
                 ignoreNextLine = true;
@@ -25687,12 +25694,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
               if (isAbs) {
                 if (whiteSpace === 'nowrap') {
-                  countSize += isVertical ? item.outerHeight : item.outerWidth;
+                  countSize += isUpright ? item.outerHeight : item.outerWidth;
                 } else {
-                  countSize = isVertical ? item.outerHeight : item.outerWidth;
+                  countSize = isUpright ? item.outerHeight : item.outerWidth;
 
                   if (lineClampCount > lastLineClampCount) {
-                    countSize = Math.max(countSize, isVertical ? h : w);
+                    countSize = Math.max(countSize, isUpright ? h : w);
                   }
                 }
 
@@ -25700,7 +25707,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
             } else {
               // 非开头先尝试是否放得下，内部判断了inline/ib，ib要考虑是否有width
-              var free = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x, isVertical ? h : w, isVertical); // 放得下继续，奇怪的精度问题，加上阈值
+              var free = item.__tryLayInline(isUpright ? h + ly - y : w + lx - x, isUpright ? h : w, isUpright); // 放得下继续，奇怪的精度问题，加上阈值
 
 
               if (free >= -1e-10) {
@@ -25714,7 +25721,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   lineBoxManager: lineBoxManager,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount,
-                  isVertical: isVertical
+                  isUpright: isUpright
                 }, isAbs, isColumn, isRow); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
                 (isInlineBlock || !isRealInline) && lineBoxManager.addItem(item, false);
@@ -25728,12 +25735,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 if (isAbs) {
                   // ib和非换行inline累加
                   if (isInlineBlock || lineClampCount === lastLineClampCount) {
-                    countSize += isVertical ? item.outerHeight : item.outerWidth;
+                    countSize += isUpright ? item.outerHeight : item.outerWidth;
                     maxSize = Math.max(maxSize, countSize);
                   } // inline换行时一定超过边界至少撑满w
                   else {
-                    maxSize = Math.max(maxSize, isVertical ? h : w);
-                    countSize = isVertical ? y - ly : x - lx;
+                    maxSize = Math.max(maxSize, isUpright ? h : w);
+                    countSize = isUpright ? y - ly : x - lx;
                     maxSize = Math.max(maxSize, countSize);
                   }
                 }
@@ -25741,7 +25748,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               else {
                 lineClampCount++;
 
-                if (isVertical) {
+                if (isUpright) {
                   x = lineBoxManager.endX;
                   y = ly;
                 } else {
@@ -25757,7 +25764,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   ignoreNextLine = true;
                   var list = lineBoxManager.list;
                   var lineBox = list[list.length - 1];
-                  backtrack(_this3, lineBoxManager, lineBox, isVertical ? h : w, 0, isVertical);
+                  backtrack(_this3, lineBoxManager, lineBox, isUpright ? h : w, 0, isUpright);
                   return;
                 }
 
@@ -25771,13 +25778,13 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   lineBoxManager: lineBoxManager,
                   lineClamp: lineClamp,
                   lineClampCount: lineClampCount,
-                  isVertical: isVertical
+                  isUpright: isUpright
                 }, isAbs, isColumn, isRow); // 重新开头的ib和上面开头处一样逻辑
 
                 if (item.__isIbFull) {
                   lineBoxManager.addItem(item, false);
 
-                  if (isVertical) {
+                  if (isUpright) {
                     x += item.outerWidth;
                     y = ly;
                   } else {
@@ -25801,9 +25808,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 if (isAbs) {
                   maxSize = Math.max(maxSize, countSize); // 此处发生换行撑满
 
-                  maxSize = Math.max(maxSize, isVertical ? h : w); // 新行重计
+                  maxSize = Math.max(maxSize, isUpright ? h : w); // 新行重计
 
-                  countSize = isVertical ? item.outerHeight : item.outerWidth;
+                  countSize = isUpright ? item.outerHeight : item.outerWidth;
                   maxSize = Math.max(maxSize, countSize);
                 }
               }
@@ -25813,7 +25820,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             ignoreNextWrap = false; // block出现的话只隔断单行，不影响多行计数器
             // 非开头，说明之前的text/ib未换行，需要增加行数
 
-            if (isVertical && y > ly || !isVertical && x > lx) {
+            if (isUpright && y > ly || !isUpright && x > lx) {
               lineClampCount++;
             }
 
@@ -25821,14 +25828,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               ignoreNextLine = true;
             }
 
-            if (isVertical) {
+            if (isUpright) {
               y = ly;
             } else {
               x = lx;
             }
 
             if (lineBoxManager.isEnd) {
-              if (isVertical) {
+              if (isUpright) {
                 x = lineBoxManager.endX;
               } else {
                 y = lineBoxManager.endY;
@@ -25843,7 +25850,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               y: y,
               w: w,
               h: h,
-              isVertical: isVertical
+              isUpright: isUpright
             }, isAbs, isColumn, isRow); // 自身无内容
 
 
@@ -25867,18 +25874,18 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   borderBottomWidth = _item$computedStyle[BORDER_BOTTOM_WIDTH$5],
                   borderLeftWidth = _item$computedStyle[BORDER_LEFT_WIDTH$5]; // 无内容高度为0的空block特殊情况，记录2个margin下来等后续循环判断处理
 
-              if (isVertical && paddingLeft <= 0 && paddingRight <= 0 && width <= 0 && borderLeftWidth <= 0 && borderRightWidth <= 0) {
+              if (isUpright && paddingLeft <= 0 && paddingRight <= 0 && width <= 0 && borderLeftWidth <= 0 && borderRightWidth <= 0) {
                 mergeMarginEndList.push(marginRight);
                 mergeMarginStartList.push(marginLeft);
                 isEmptyBlock = true;
-              } else if (!isVertical && paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
+              } else if (!isUpright && paddingTop <= 0 && paddingBottom <= 0 && height <= 0 && borderTopWidth <= 0 && borderBottomWidth <= 0) {
                 mergeMarginEndList.push(marginBottom);
                 mergeMarginStartList.push(marginTop);
                 isEmptyBlock = true;
               }
             }
 
-            if (isVertical) {
+            if (isUpright) {
               x += item.outerWidth;
               lineBoxManager.__lastX = x;
             } else {
@@ -25888,7 +25895,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
             if (isAbs) {
-              maxSize = Math.max(maxSize, isVertical ? item.outerHeight : item.outerWidth);
+              maxSize = Math.max(maxSize, isUpright ? item.outerHeight : item.outerWidth);
               countSize = 0;
             } // 空block要留下轮循环看，除非是最后一个，此处非空本轮处理掉看是否要合并
 
@@ -25902,7 +25909,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               // 如果是只有紧邻的2个非空block，也被包含在情况内，取上下各1合并
 
               if (mergeMarginEndList.length) {
-                if (isVertical) {
+                if (isUpright) {
                   mergeMarginStartList.push(_marginLeft);
 
                   var _diff = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
@@ -25927,13 +25934,13 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
               mergeMarginStartList = [];
-              mergeMarginEndList = [isVertical ? _marginRight : _marginBottom];
+              mergeMarginEndList = [isUpright ? _marginRight : _marginBottom];
             } // 最后一个空block当是正正和负负时要处理，正负在outHeight处理了结果是0
             else if (i === length - 1) {
               var _diff3 = reflow.getMergeMargin(mergeMarginStartList, mergeMarginEndList);
 
               if (_diff3) {
-                if (isVertical) {
+                if (isUpright) {
                   x += _diff3;
                 } else {
                   y += _diff3;
@@ -25950,7 +25957,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           } // x开头，不用考虑是否放得下直接放
 
 
-          if (isVertical && y === ly || !isVertical && x === lx || !i || whiteSpace === 'nowrap') {
+          if (isUpright && y === ly || !isUpright && x === lx || !i || whiteSpace === 'nowrap') {
             lineClampCount = item.__layout({
               x: x,
               y: y,
@@ -25961,12 +25968,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               lineBoxManager: lineBoxManager,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
-              isVertical: isVertical
+              isUpright: isUpright
             });
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY; // 和inline很像，只是没有ib
 
-            if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isVertical && y - ly > h + 1e-10 || !isVertical && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
+            if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isUpright && y - ly > h + 1e-10 || !isUpright && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
               ignoreNextWrap = true;
             } else if (lineClamp && lineClampCount >= lineClamp) {
               ignoreNextLine = true;
@@ -25975,12 +25982,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
             if (isAbs) {
               if (whiteSpace === 'nowrap') {
-                countSize += isVertical ? item.height : item.width;
+                countSize += isUpright ? item.height : item.width;
               } else {
-                countSize = isVertical ? item.height : item.width;
+                countSize = isUpright ? item.height : item.width;
 
                 if (lineClampCount > lastLineClampCount) {
-                  countSize = Math.max(countSize, isVertical ? h : w);
+                  countSize = Math.max(countSize, isUpright ? h : w);
                 }
               }
 
@@ -25988,7 +25995,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             }
           } else {
             // 非开头先尝试是否放得下
-            var _free = item.__tryLayInline(isVertical ? h + ly - y : w + lx - x); // 放得下继续
+            var _free = item.__tryLayInline(isUpright ? h + ly - y : w + lx - x); // 放得下继续
 
 
             if (_free >= -1e-10) {
@@ -26002,7 +26009,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               });
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
@@ -26013,12 +26020,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
               if (isAbs) {
                 if (lineClampCount === lastLineClampCount) {
-                  countSize += isVertical ? item.height : item.width;
+                  countSize += isUpright ? item.height : item.width;
                   maxSize = Math.max(maxSize, countSize);
                 } // inline换行一定超过边界
                 else {
-                  maxSize = Math.max(maxSize, isVertical ? h : w);
-                  countSize = isVertical ? y - ly : x - lx;
+                  maxSize = Math.max(maxSize, isUpright ? h : w);
+                  countSize = isUpright ? y - ly : x - lx;
                   maxSize = Math.max(maxSize, countSize);
                 }
               }
@@ -26026,7 +26033,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             else {
               lineClampCount++;
 
-              if (isVertical) {
+              if (isUpright) {
                 x = lineBoxManager.endX;
                 y = ly;
               } else {
@@ -26042,7 +26049,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 ignoreNextLine = true;
                 var _list = lineBoxManager.list;
                 var _lineBox = _list[_list.length - 1];
-                backtrack(_this3, lineBoxManager, _lineBox, isVertical ? h : w, 0, isVertical);
+                backtrack(_this3, lineBoxManager, _lineBox, isUpright ? h : w, 0, isUpright);
                 return;
               }
 
@@ -26056,7 +26063,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 lineBoxManager: lineBoxManager,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               });
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
@@ -26068,9 +26075,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               if (isAbs) {
                 maxSize = Math.max(maxSize, countSize); // 此处发生换行撑满
 
-                maxSize = Math.max(maxSize, isVertical ? h : w); // 新行重计
+                maxSize = Math.max(maxSize, isUpright ? h : w); // 新行重计
 
-                countSize = isVertical ? item.height : item.width;
+                countSize = isUpright ? item.height : item.width;
                 maxSize = Math.max(maxSize, countSize);
               }
             }
@@ -26080,7 +26087,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       // 当以block换行时，新行是true，否则是false即结尾
 
       if (lineBoxManager.isEnd) {
-        if (isVertical) {
+        if (isUpright) {
           x = lineBoxManager.endX;
         } else {
           y = lineBoxManager.endY;
@@ -26090,18 +26097,18 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var tw = 0,
           th = 0; // 根据书写模式、嵌套等条件计算宽高，只有父子同向才会主轴撑满
 
-      if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+      if (fixedWidth || !isAbs && !isParentVertical && !isUpright) {
         tw = w;
       } else if (isAbs) {
-        tw = isVertical ? x - data.x : maxSize;
+        tw = isUpright ? x - data.x : maxSize;
       } else {
         tw = x - data.x;
       }
 
-      if (fixedHeight || !isAbs && isParentVertical && isVertical) {
+      if (fixedHeight || !isAbs && isParentVertical && isUpright) {
         th = h;
       } else if (isAbs) {
-        th = isVertical ? maxSize : y - data.y;
+        th = isUpright ? maxSize : y - data.y;
       } else {
         th = y - data.y;
       }
@@ -26110,12 +26117,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
       if (!isAbs) {
-        var spread = lineBoxManager.verticalAlign(isVertical);
+        var spread = lineBoxManager.verticalAlign(isUpright);
 
         if (spread) {
-          if (isVertical && !fixedWidth) {
+          if (isUpright && !fixedWidth) {
             this.__resizeX(spread);
-          } else if (!isVertical && !fixedHeight) {
+          } else if (!isUpright && !fixedHeight) {
             this.__resizeY(spread);
           }
           /**
@@ -26142,7 +26149,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
               isLastBlock = true;
 
-              if (isVertical) {
+              if (isUpright) {
                 item.__offsetX(spreadList[count], true);
               } else {
                 item.__offsetY(spreadList[count], true);
@@ -26162,7 +26169,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
         if (!isColumn && !isRow) {
           if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
+            lineBoxManager.horizonAlign(isUpright ? th : tw, textAlign, isUpright); // 直接text需计算size
 
             flowChildren.forEach(function (item) {
               if (item instanceof Component$1) {
@@ -26170,17 +26177,17 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
 
               if (item instanceof Text) {
-                item.__inlineSize(isVertical);
+                item.__inlineSize(isUpright);
               }
             });
           } // 所有inline计算size
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
+            item.__inlineSize(isUpright ? th : tw, textAlign, isUpright);
           });
 
-          this.__marginAuto(currentStyle, data, isVertical);
+          this.__marginAuto(currentStyle, data, isUpright);
         }
       }
     } // 弹性布局时的计算位置
@@ -26211,10 +26218,10 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           w = _this$__preLayout2.w,
           h = _this$__preLayout2.h,
           isParentVertical = _this$__preLayout2.isParentVertical,
-          isVertical = _this$__preLayout2.isVertical;
+          isUpright = _this$__preLayout2.isUpright;
 
-      if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
-        if (isVertical) {
+      if (isAbs && (fixedWidth && !isUpright || fixedHeight && isUpright)) {
+        if (isUpright) {
           this.__ioSize(undefined, h);
         } else {
           this.__ioSize(w, undefined);
@@ -26279,8 +26286,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           growList.push(0);
           shrinkList.push(1); // 水平flex垂直文字和垂直flex水平文字都先假布局一次取结果，其它取文本最大最小宽度即可
 
-          if (isDirectionRow && isVertical || !isDirectionRow && !isVertical) {
-            var lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
+          if (isDirectionRow && isUpright || !isDirectionRow && !isUpright) {
+            var lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright);
 
             item.__layout({
               x: x,
@@ -26290,10 +26297,10 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               lineBoxManager: lineBoxManager,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
-              isVertical: isVertical
+              isUpright: isUpright
             }, isAbs, isColumn, isRow);
 
-            var n = isVertical ? item.width : item.height;
+            var n = isUpright ? item.width : item.height;
             basisList.push(n);
             maxList.push(n);
             minList.push(n);
@@ -26375,7 +26382,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         var length = item.length;
         var end = offset + length;
 
-        var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+        var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
             _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 3),
             x1 = _this4$__layoutFlexLi2[0],
             y1 = _this4$__layoutFlexLi2[1],
@@ -26402,14 +26409,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           var count = 0;
           line.forEach(function (item) {
             if (isDirectionRow) {
-              count += isVertical ? item.outerHeight : item.outerWidth;
+              count += isUpright ? item.outerHeight : item.outerWidth;
             } else {
-              count = Math.max(count, isVertical ? item.outerHeight : item.outerWidth);
+              count = Math.max(count, isUpright ? item.outerHeight : item.outerWidth);
             } // 文字发生换行无论row/column一定放不下需占满容器尺寸
 
 
             if (item instanceof Text) {
-              if (isVertical) {
+              if (isUpright) {
                 if (item.textWidth > h) {
                   max = Math.max(max, h);
                 }
@@ -26423,7 +26430,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           max = Math.max(max, count);
         });
 
-        if (isVertical) {
+        if (isUpright) {
           this.__ioSize(undefined, max);
         } else {
           this.__ioSize(max, undefined);
@@ -26436,13 +26443,13 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       var tw = 0,
           th = 0;
 
-      if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+      if (fixedWidth || !isAbs && !isParentVertical && !isUpright) {
         tw = w;
       } else {
         tw = x - data.x;
       }
 
-      if (fixedHeight || !isAbs && isParentVertical && isVertical) {
+      if (fixedHeight || !isAbs && isParentVertical && isUpright) {
         th = h;
       } else {
         th = y - data.y;
@@ -26613,7 +26620,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
         }
 
-        this.__marginAuto(currentStyle, data, isVertical);
+        this.__marginAuto(currentStyle, data, isUpright);
       }
     }
     /**
@@ -26627,7 +26634,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
   }, {
     key: "__layoutFlexLine",
-    value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isVertical, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+    value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
       var _this5 = this;
 
       var x = data.x,
@@ -26785,7 +26792,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               h: h,
               w3: main,
               // w3假设固定宽度，忽略原始style中的设置
-              isVertical: isVertical
+              isUpright: isUpright
             }, isAbs, isColumn, isRow);
           } else {
             var _item$currentStyle = item.currentStyle,
@@ -26809,7 +26816,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   h: main,
                   h3: main,
                   // 同w2
-                  isVertical: isVertical
+                  isUpright: isUpright
                 }, isAbs, isColumn, isRow);
               } else {
                 item.__layout({
@@ -26819,7 +26826,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   h: main,
                   h3: main,
                   // 同w2
-                  isVertical: isVertical
+                  isUpright: isUpright
                 }, true, isColumn, isRow);
 
                 item.__layout({
@@ -26830,7 +26837,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   h: main,
                   h3: main,
                   // 同w2
-                  isVertical: isVertical
+                  isUpright: isUpright
                 }, isAbs, isColumn, isRow);
               }
             } else {
@@ -26841,7 +26848,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 h: main,
                 h3: main,
                 // 同w2
-                isVertical: isVertical
+                isUpright: isUpright
               }, isAbs, isColumn, isRow);
             }
           } // 记录主轴是否有margin为auto的情况
@@ -26870,7 +26877,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           }
         } // 文字
         else {
-          var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
+          var lineBoxManager = _this5.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright);
           lbmList.push(lineBoxManager);
 
           item.__layout({
@@ -26881,7 +26888,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             lineBoxManager: lineBoxManager,
             lineClamp: lineClamp,
             lineClampCount: lineClampCount,
-            isVertical: isVertical
+            isUpright: isUpright
           });
         }
 
@@ -26981,7 +26988,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
       if (!isAbs && !isColumn && !isRow && ['center', 'right'].indexOf(textAlign) > -1) {
         lbmList.forEach(function (item) {
-          item.horizonAlign(isVertical ? item.height : item.width, textAlign, isVertical);
+          item.horizonAlign(isUpright ? item.height : item.width, textAlign, isUpright);
         });
       }
 
@@ -27245,11 +27252,11 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           lineBoxManager = _this$__preLayout3.lineBoxManager,
           endSpace = _this$__preLayout3.endSpace,
           selfEndSpace = _this$__preLayout3.selfEndSpace,
-          isVertical = _this$__preLayout3.isVertical; // abs虚拟布局需预知width，固定可提前返回
+          isUpright = _this$__preLayout3.isUpright; // abs虚拟布局需预知width，固定可提前返回
 
 
-      if (isAbs && (fixedWidth && !isVertical || fixedHeight && isVertical)) {
-        if (isVertical) {
+      if (isAbs && (fixedWidth && !isUpright || fixedHeight && isUpright)) {
+        if (isUpright) {
           this.__ioSize(undefined, h);
         } else {
           this.__ioSize(w, undefined);
@@ -27284,9 +27291,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       if (isInline) {
         this.__config[NODE_IS_INLINE$1] = true;
         this.__lineBoxManager = lineBoxManager;
-        var baseline = isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
+        var baseline = isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle); // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
 
-        if (isVertical && (marginTop || marginBottom || paddingTop || paddingBottom || borderTopWidth || borderBottomWidth) || !isVertical && (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth)) {
+        if (isUpright && (marginTop || marginBottom || paddingTop || paddingBottom || borderTopWidth || borderBottomWidth) || !isUpright && (marginLeft || marginRight || paddingLeft || paddingRight || borderLeftWidth || borderRightWidth)) {
           if (lineBoxManager.isNewLine) {
             lineBoxManager.genLineBoxByInlineIfNewLine(x, y, lineHeight, baseline);
           } else {
@@ -27298,7 +27305,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
         lineClamp = data.lineClamp || 0;
       } else {
-        lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isVertical ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isVertical);
+        lineBoxManager = this.__lineBoxManager = new LineBoxManager(x, y, lineHeight, isUpright ? getVerticalBaseline$1(computedStyle) : getBaseline$1(computedStyle), isUpright);
         lx = x;
         ly = y;
         endSpace = selfEndSpace = lineClampCount = 0;
@@ -27365,7 +27372,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           } // x开头或者nowrap单行，不用考虑是否放得下直接放，因为有beginSpace所以要多判断i为0
 
 
-          if (isVertical && y === ly || !isVertical && x === lx || !i || whiteSpace === 'nowrap') {
+          if (isUpright && y === ly || !isUpright && x === lx || !i || whiteSpace === 'nowrap') {
             lineClampCount = item.__layout({
               x: x,
               y: y,
@@ -27377,7 +27384,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               endSpace: endSpace,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
-              isVertical: isVertical
+              isUpright: isUpright
             }, isAbs, isColumn, isRow); // 同block布局
 
             if (item.__isIbFull) {
@@ -27385,15 +27392,15 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             }
 
             if (item.__isIbFull && whiteSpace !== 'nowrap') {
-              if (isVertical && h[1] === AUTO$5) {
+              if (isUpright && h[1] === AUTO$5) {
                 isIbFull = true;
-              } else if (!isVertical && w[1] === AUTO$5) {
+              } else if (!isUpright && w[1] === AUTO$5) {
                 isIbFull = true;
               }
 
               lineBoxManager.addItem(item, true);
 
-              if (isVertical) {
+              if (isUpright) {
                 x += item.outerWidth;
                 y = ly;
               } else {
@@ -27409,14 +27416,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               y = lineBoxManager.lastY;
             }
 
-            if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isVertical && y - ly > h + 1e-10 || !isVertical && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
+            if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isUpright && y - ly > h + 1e-10 || !isUpright && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
               ignoreNextWrap = true;
             } else if (lineClamp && lineClampCount >= lineClamp) {
               ignoreNextLine = true;
             }
           } else {
             // 不换行继续排，换行非开头先尝试是否放得下，结尾要考虑mpb因此减去endSpace
-            var free = item.__tryLayInline(isVertical ? h + ly - y - endSpace : w + lx - x - endSpace, isVertical ? h : w, isVertical); // 放得下继续
+            var free = item.__tryLayInline(isUpright ? h + ly - y - endSpace : w + lx - x - endSpace, isUpright ? h : w, isUpright); // 放得下继续
 
 
             if (free >= -1e-10) {
@@ -27431,7 +27438,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               }, isAbs, isColumn, isRow); // ib放得下要么内部没有折行，要么声明了width限制，都需手动存入当前lb
 
               (isInlineBlock2 || !isRealInline) && lineBoxManager.addItem(item, false);
@@ -27445,7 +27452,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             else {
               lineClampCount++;
 
-              if (isVertical) {
+              if (isUpright) {
                 x = lineBoxManager.endX;
                 y = ly;
               } else {
@@ -27461,7 +27468,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 ignoreNextLine = true;
                 var list = lineBoxManager.list;
                 var lineBox = list[list.length - 1];
-                backtrack(bp, lineBoxManager, lineBox, w, endSpace, isVertical);
+                backtrack(bp, lineBoxManager, lineBox, w, endSpace, isUpright);
                 return;
               }
 
@@ -27476,13 +27483,13 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               }, isAbs, isColumn, isRow); // 重新开头的ib和上面开头处一样逻辑
 
               if (item.__isIbFull) {
                 lineBoxManager.addItem(item, true);
 
-                if (isVertical) {
+                if (isUpright) {
                   x += item.outerWidth;
                   y = ly;
                 } else {
@@ -27509,7 +27516,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         else {
           var n = lineBoxManager.size; // i为0时强制不换行
 
-          if (isVertical && y === ly || !isVertical && x === lx || !i || whiteSpace === 'nowrap') {
+          if (isUpright && y === ly || !isUpright && x === lx || !i || whiteSpace === 'nowrap') {
             lineClampCount = item.__layout({
               x: x,
               y: y,
@@ -27521,7 +27528,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               endSpace: endSpace,
               lineClamp: lineClamp,
               lineClampCount: lineClampCount,
-              isVertical: isVertical
+              isUpright: isUpright
             }, isAbs, isColumn, isRow);
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY; // ib情况发生折行，且非定宽
@@ -27530,14 +27537,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               isIbFull = true;
             }
 
-            if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isVertical && y - ly > h + 1e-10 || !isVertical && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
+            if (!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap' && (isUpright && y - ly > h + 1e-10 || !isUpright && x - lx > w + 1e-10 || lineClampCount > lastLineClampCount)) {
               ignoreNextWrap = true;
             } else if (lineClamp && lineClampCount >= lineClamp) {
               ignoreNextLine = true;
             }
           } else {
             // 非开头先尝试是否放得下，如果放得下再看是否end，加end且只有1个字时放不下要换行，否则可以放，换行由text内部做
-            var _free2 = item.__tryLayInline(isVertical ? h + ly - y - endSpace : w + lx - x - endSpace); // 放得下继续
+            var _free2 = item.__tryLayInline(isUpright ? h + ly - y - endSpace : w + lx - x - endSpace); // 放得下继续
 
 
             if (_free2 >= -1e-10) {
@@ -27552,7 +27559,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               }, isAbs, isColumn, isRow);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY;
@@ -27565,7 +27572,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             else {
               lineClampCount++;
 
-              if (isVertical) {
+              if (isUpright) {
                 x = lineBoxManager.endX;
                 y = ly;
               } else {
@@ -27581,7 +27588,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 ignoreNextLine = true;
                 var _list2 = lineBoxManager.list;
                 var _lineBox2 = _list2[_list2.length - 1];
-                backtrack(bp, lineBoxManager, _lineBox2, w, endSpace, isVertical);
+                backtrack(bp, lineBoxManager, _lineBox2, w, endSpace, isUpright);
                 return;
               }
 
@@ -27596,7 +27603,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 endSpace: endSpace,
                 lineClamp: lineClamp,
                 lineClampCount: lineClampCount,
-                isVertical: isVertical
+                isUpright: isUpright
               }, isAbs, isColumn, isRow);
               x = lineBoxManager.lastX;
               y = lineBoxManager.lastY; // ib情况发生折行
@@ -27613,7 +27620,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         }
       }); // 同block结尾，不过这里一定是lineBox结束，无需判断
 
-      if (isVertical) {
+      if (isUpright) {
         x = lineBoxManager.endX;
       } else {
         y = lineBoxManager.endY;
@@ -27627,7 +27634,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
       if (isInline) {
         // inline最后的x要算上右侧mpb，为next行元素提供x坐标基准，同时其尺寸计算比较特殊
         if (selfEndSpace) {
-          if (isVertical) {
+          if (isUpright) {
             lineBoxManager.addY(selfEndSpace);
           } else {
             lineBoxManager.addX(selfEndSpace);
@@ -27643,7 +27650,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               _borderTopWidth2 = computedStyle[BORDER_TOP_WIDTH$5],
               _borderLeftWidth2 = computedStyle[BORDER_LEFT_WIDTH$5];
 
-          if (isVertical) {
+          if (isUpright) {
             lineBoxManager.addY(_marginTop3 + _paddingTop2 + _borderTopWidth2);
           } else {
             lineBoxManager.addX(_marginLeft3 + _paddingLeft2 + _borderLeftWidth2);
@@ -27654,13 +27661,13 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         lineBoxManager.popContentBoxList(); // abs非固定w时预计算，本来是最近非inline父层统一计算，但在abs时不算，这里无视textAlign默认left
 
         if (isAbs) {
-          this.__inlineSize(0, 'left', isVertical);
+          this.__inlineSize(0, 'left', isUpright);
         }
       } else {
         // ib在满时很特殊，取最大值，可能w本身很小不足排下1个字符，此时要用max
-        var max = lineBoxManager.max - (isVertical ? data.y : data.x);
+        var max = lineBoxManager.max - (isUpright ? data.y : data.x);
 
-        if (isVertical) {
+        if (isUpright) {
           tw = fixedWidth ? w : x - data.x;
           th = fixedHeight ? h : isIbFull ? Math.max(h, max) : max;
         } else {
@@ -27673,19 +27680,19 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
 
       if (!isAbs && !isInline) {
-        var spread = lineBoxManager.verticalAlign(isVertical);
+        var spread = lineBoxManager.verticalAlign(isUpright);
 
         if (spread) {
-          if (isVertical && !fixedWidth) {
+          if (isUpright && !fixedWidth) {
             this.__resizeX(spread);
-          } else if (!isVertical && !fixedHeight) {
+          } else if (!isUpright && !fixedHeight) {
             this.__resizeY(spread);
           }
         }
 
         if (!isColumn && !isRow) {
           if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxManager.horizonAlign(isVertical ? th : tw, textAlign, isVertical); // 直接text需计算size
+            lineBoxManager.horizonAlign(isUpright ? th : tw, textAlign, isUpright); // 直接text需计算size
 
             flowChildren.forEach(function (item) {
               if (item instanceof Component$1) {
@@ -27693,14 +27700,14 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               }
 
               if (item instanceof Text) {
-                item.__inlineSize(isVertical);
+                item.__inlineSize(isUpright);
               }
             });
           } // block的所有inline计算size
 
 
           lineBoxManager.domList.forEach(function (item) {
-            item.__inlineSize(isVertical ? th : tw, textAlign, isVertical);
+            item.__inlineSize(isUpright ? th : tw, textAlign, isUpright);
           });
         }
       } // inlineBlock新开上下文，但父级block遇到要处理换行
@@ -27721,7 +27728,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
   }, {
     key: "__inlineSize",
-    value: function __inlineSize(size, textAlign, isVertical) {
+    value: function __inlineSize(size, textAlign, isUpright) {
       var contentBoxList = this.contentBoxList,
           computedStyle = this.computedStyle,
           __ox = this.__ox,
@@ -27823,7 +27830,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         if (['center', 'right'].indexOf(textAlign) > -1) {
           this.children.forEach(function (item) {
             if (item instanceof Text) {
-              item.__inlineSize(isVertical);
+              item.__inlineSize(isUpright);
             }
           });
         }
@@ -27840,7 +27847,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           }
 
           if (diff > 0) {
-            if (isVertical) {
+            if (isUpright) {
               this.__offsetY(diff, true);
             } else {
               this.__offsetX(diff, true);
@@ -27848,7 +27855,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           }
         }
 
-        if (isVertical) {
+        if (isUpright) {
           tw = lineHeight;
 
           this.__ioSize(tw, 0);
@@ -28078,7 +28085,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             y: y2,
             w: widthLimit,
             h: heightLimit,
-            isVertical: data.isVertical // 父亲的
+            isUpright: data.isUpright // 父亲的
 
           }, true, false);
 
@@ -28093,7 +28100,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           w2: w2,
           // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
           h2: h2,
-          isVertical: data.isVertical
+          isUpright: data.isUpright
         }, false, false);
 
         if (onlyRight) {
@@ -29542,16 +29549,16 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
           w = _this$__preLayout.w,
           h = _this$__preLayout.h,
           isParentVertical = _this$__preLayout.isParentVertical,
-          isVertical = _this$__preLayout.isVertical;
+          isUpright = _this$__preLayout.isUpright;
 
       var tw = 0,
           th = 0;
 
-      if (fixedWidth || !isAbs && !isParentVertical && !isVertical) {
+      if (fixedWidth || !isAbs && !isParentVertical && !isUpright) {
         tw = w;
       }
 
-      if (fixedHeight || !isAbs && isParentVertical && isVertical) {
+      if (fixedHeight || !isAbs && isParentVertical && isUpright) {
         th = h;
       }
 
@@ -37025,14 +37032,14 @@ var Root = /*#__PURE__*/function (_Dom) {
 
       if (hasRoot) {
         reflow.clearUniqueReflowId(reflowHash);
-        var isVertical = this.currentStyle[WRITING_MODE$3].indexOf('vertical') === 0; // 布局分为两步，普通流和定位流，互相递归
+        var isUpright = this.currentStyle[WRITING_MODE$3].indexOf('vertical') === 0; // 布局分为两步，普通流和定位流，互相递归
 
         this.__layout({
           x: 0,
           y: 0,
           w: width,
           h: height,
-          isVertical: isVertical
+          isUpright: isUpright
         }, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
 
 
@@ -37041,7 +37048,7 @@ var Root = /*#__PURE__*/function (_Dom) {
           y: 0,
           w: width,
           h: height,
-          isVertical: isVertical
+          isUpright: isUpright
         });
 
         this.__structs = this.__structure(0, 0);
@@ -40823,7 +40830,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.2";
+var version = "0.73.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

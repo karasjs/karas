@@ -16292,8 +16292,8 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
     bx1 = lineBox.x + diff - pbStart + leading;
   } else {
     x1 = start.x;
-    y1 = lineBox.y + diff - bcStart;
-    by1 = lineBox.y + diff - pbStart;
+    y1 = lineBox.y + diff - bcStart + leading;
+    by1 = lineBox.y + diff - pbStart + leading;
   } // 容器内包含的inline节点，需考虑行首水平mbp（垂直排版为垂直头mbp）
 
 
@@ -16335,8 +16335,8 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
       }
     }
 
-    x2 = lineBox.x + diff + lineHeight + bcEnd;
-    bx2 = lineBox.x + diff + lineHeight + pbEnd;
+    x2 = lineBox.x + diff + lineHeight + bcEnd - leading;
+    bx2 = lineBox.x + diff + lineHeight + pbEnd - leading;
     y2 = end.y + end.outerHeight;
   } else {
     bx1 = x1;
@@ -40823,7 +40823,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.1";
+var version = "0.73.2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

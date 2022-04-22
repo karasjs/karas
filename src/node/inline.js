@@ -78,8 +78,8 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
   }
   else {
     x1 = start.x;
-    y1 = lineBox.y + diff - bcStart;
-    by1 = lineBox.y + diff - pbStart;
+    y1 = lineBox.y + diff - bcStart + leading;
+    by1 = lineBox.y + diff - pbStart + leading;
   }
   // 容器内包含的inline节点，需考虑行首水平mbp（垂直排版为垂直头mbp）
   let dom = start instanceof TextBox ? start.parent.domParent : start.domParent;
@@ -117,8 +117,8 @@ function getInlineBox(xom, isVertical, contentBoxList, start, end, lineBox, base
         y1 -= paddingTop + borderTopWidth;
       }
     }
-    x2 = lineBox.x + diff + lineHeight + bcEnd;
-    bx2 = lineBox.x + diff + lineHeight + pbEnd;
+    x2 = lineBox.x + diff + lineHeight + bcEnd - leading;
+    bx2 = lineBox.x + diff + lineHeight + pbEnd - leading;
     y2 = end.y + end.outerHeight;
   }
   else {

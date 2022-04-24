@@ -23802,7 +23802,7 @@ var LineBox = /*#__PURE__*/function () {
     this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
     this.__baseline = baseline;
-    this.__isVertical = isUpright;
+    this.__isUpright = isUpright;
     this.__bOffset = 0;
   }
 
@@ -23817,17 +23817,12 @@ var LineBox = /*#__PURE__*/function () {
     value: function verticalAlign(isUpright) {
       var baseline = isUpright ? this.verticalBaseline : this.baseline;
       var lineHeight = isUpright ? this.verticalLineHeight : this.lineHeight;
-      var increase = lineHeight;
-      var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
+      var increase = lineHeight; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
       if (this.list.length) {
         this.list.forEach(function (item) {
           if (item.isEllipsis) {
             return;
-          }
-
-          if (!(item instanceof TextBox)) {
-            hasIbOrReplaced = true;
           } // 垂直排版计算不太一样，因为原点坐标系不一样
 
 
@@ -23848,33 +23843,21 @@ var LineBox = /*#__PURE__*/function () {
             if (_n !== baseline) {
               var _d = baseline - _n;
 
-              item.__offsetY(_d, true); // text的话对齐下移可能影响整体高度，在同行有img这样的替换元素下，需记录最大偏移导致的高度调整值
+              item.__offsetY(_d, true); // text的话对齐下移可能影响整体高度，在同行有img/ib这样的替换元素下，需记录最大偏移导致的高度调整值
               // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
 
 
               increase = Math.max(increase, item.offsetHeight + _d);
             }
           }
-        });
+        }); // 特殊情况，有img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题
+        // 先计算总体baseline和本身baseline差值得出偏移，然后加到本身lineHeight上得出尺寸，再和其它扩充取最大值
+
+        var diff = baseline - this.__baseline;
+        increase = Math.max(increase, this.__lineHeight + diff);
       }
 
-      var diff = 0; // 特殊情况，只有ib或img这样的替换元素时，要参与这一行和baseline的对齐扩充，
-      // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
-
-      if (hasIbOrReplaced) {
-        if (isUpright) {
-          diff = this.__baseline;
-        } else {
-          diff = Math.max(0, this.__lineHeight - this.__baseline);
-        }
-      } // 增加过的高度比最大还大时需要调整
-
-
-      if (increase > lineHeight) {
-        diff = Math.max(diff, increase - lineHeight);
-      }
-
-      return diff;
+      return Math.max(0, increase - lineHeight);
     }
   }, {
     key: "__offsetX",
@@ -24135,7 +24118,7 @@ var LineBox = /*#__PURE__*/function () {
   }, {
     key: "isUpright",
     get: function get() {
-      return this.__isVertical;
+      return this.__isUpright;
     }
   }]);
 
@@ -40830,7 +40813,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.3";
+var version = "0.73.4";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

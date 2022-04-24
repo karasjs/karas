@@ -23880,7 +23880,7 @@
           diff = Math.max(diff, increase - lineHeight);
         }
 
-        return diff;
+        return Math.max(0, increase - lineHeight);
       }
     }, {
       key: "__offsetX",

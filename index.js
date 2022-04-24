@@ -23799,7 +23799,7 @@
    */
 
   var LineBox = /*#__PURE__*/function () {
-    function LineBox(x, y, lineHeight, baseline, isVertical) {
+    function LineBox(x, y, lineHeight, baseline, isUpright) {
       _classCallCheck(this, LineBox);
 
       this.__list = [];
@@ -23808,7 +23808,7 @@
       this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
       this.__baseline = baseline;
-      this.__isVertical = isVertical;
+      this.__isUpright = isUpright;
       this.__bOffset = 0;
     }
 
@@ -23820,9 +23820,9 @@
       }
     }, {
       key: "verticalAlign",
-      value: function verticalAlign(isVertical) {
-        var baseline = isVertical ? this.verticalBaseline : this.baseline;
-        var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
+      value: function verticalAlign(isUpright) {
+        var baseline = isUpright ? this.verticalBaseline : this.baseline;
+        var lineHeight = isUpright ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
         if (this.list.length) {
@@ -23832,7 +23832,7 @@
             } // 垂直排版计算不太一样，因为原点坐标系不一样
 
 
-            if (isVertical) {
+            if (isUpright) {
               var n = item.verticalBaseline;
 
               if (n !== baseline) {
@@ -23955,7 +23955,7 @@
     }, {
       key: "width",
       get: function get() {
-        if (this.isVertical) {
+        if (this.isUpright) {
           return this.verticalLineHeight;
         }
 
@@ -24017,7 +24017,7 @@
     }, {
       key: "height",
       get: function get() {
-        if (!this.isVertical) {
+        if (!this.isUpright) {
           return this.lineHeight;
         }
 
@@ -24122,9 +24122,9 @@
         return lineHeight;
       }
     }, {
-      key: "isVertical",
+      key: "isUpright",
       get: function get() {
-        return this.__isVertical;
+        return this.__isUpright;
       }
     }]);
 
@@ -40819,7 +40819,7 @@
     Cache: Cache
   };
 
-  var version = "0.73.3";
+  var version = "0.73.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -542,7 +542,7 @@ class Xom extends Node {
       this.__ellipsis = null;
     }
     this.__parentLineBox = null;
-    this.__isIbFull = false;
+    this.__isIbFull = this.__isUprightIbFull = false;
     let {
       [DISPLAY]: display,
       [POSITION]: position,
@@ -2984,6 +2984,10 @@ class Xom extends Node {
 
   get firstBaseline() {
     return this.offsetHeight;
+  }
+
+  get verticalBaseline() {
+    return this.offsetWidth;
   }
 
   get isMask() {

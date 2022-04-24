@@ -793,7 +793,8 @@ class Dom extends Xom {
             if(item.__isIbFull) {
               lineClampCount++;
             }
-            if(item.__isIbFull && whiteSpace !== 'nowrap') {
+            if((isUpright && item.__isUprightIbFull || !isUpright && item.__isIbFull)
+              && whiteSpace !== 'nowrap') {
               lineBoxManager.addItem(item, true);
               if(isUpright) {
                 x += item.outerWidth;
@@ -906,7 +907,7 @@ class Dom extends Xom {
                 isUpright,
               }, isAbs, isColumn, isRow);
               // 重新开头的ib和上面开头处一样逻辑
-              if(item.__isIbFull) {
+              if(item.__isIbFull || item.__isUprightIbFull) {
                 lineBoxManager.addItem(item, false);
                 if(isUpright) {
                   x += item.outerWidth;
@@ -2252,6 +2253,7 @@ class Dom extends Xom {
     }
     let {
       [WIDTH]: width,
+      [HEIGHT]: height,
     } = currentStyle;
     if(isInline && !this.__isRealInline()) {
       isInline = false;
@@ -2310,7 +2312,7 @@ class Dom extends Xom {
     let {
       [OVERFLOW]: overflow,
     } = bp.computedStyle;
-    let isIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
+    let isIbFull = false, isUprightIbFull = false; // ib时不限定w情况下发生折行则撑满行，即便内容没有撑满边界
     let length = flowChildren.length;
     let ignoreNextLine = false; // lineClamp超过后，后面的均忽略并置none，注意ib内部自己统计类似block
     let ignoreNextWrap = false; // whiteSpace单行超过后，后面的均忽略并置none，注意和block不一样不隔断
@@ -2359,12 +2361,12 @@ class Dom extends Xom {
             isUpright,
           }, isAbs, isColumn, isRow);
           // 同block布局
-          if(item.__isIbFull) {
+          if(item.__isIbFull || item.__isUprightIbFull) {
             lineClampCount++;
           }
           if(item.__isIbFull && whiteSpace !== 'nowrap') {
             if(isUpright && h[1] === AUTO) {
-              isIbFull = true;
+              isUprightIbFull = true;
             }
             else if(!isUpright && w[1] === AUTO) {
               isIbFull = true;
@@ -2456,7 +2458,7 @@ class Dom extends Xom {
               isUpright,
             }, isAbs, isColumn, isRow);
             // 重新开头的ib和上面开头处一样逻辑
-            if(item.__isIbFull) {
+            if(item.__isIbFull || item.__isUprightIbFull) {
               lineBoxManager.addItem(item, true);
               if(isUpright) {
                 x += item.outerWidth;
@@ -2503,8 +2505,13 @@ class Dom extends Xom {
           x = lineBoxManager.lastX;
           y = lineBoxManager.lastY;
           // ib情况发生折行，且非定宽
-          if(!isInline && (lineBoxManager.size - n) > 1 && width[1] === AUTO) {
-            isIbFull = true;
+          if(!isInline && (lineBoxManager.size - n) > 1) {
+            if(height[1] === AUTO && isUpright) {
+              isUprightIbFull = true;
+            }
+            if(width[1] === AUTO && !isUpright) {
+              isIbFull = true;
+            }
           }
           if(!isAbs && overflow === 'hidden' && whiteSpace === 'nowrap'
             && ((isUpright && y - ly > h + (1e-10)) || (!isUpright && x - lx > w + (1e-10))
@@ -2577,8 +2584,13 @@ class Dom extends Xom {
             x = lineBoxManager.lastX;
             y = lineBoxManager.lastY;
             // ib情况发生折行
-            if(!isInline && (lineBoxManager.size - n) > 1 && width[1] === AUTO) {
-              isIbFull = true;
+            if(!isInline && (lineBoxManager.size - n) > 1) {
+              if(height[1] === AUTO && isUpright) {
+                isUprightIbFull = true;
+              }
+              if(width[1] === AUTO && !isUpright) {
+                isIbFull = true;
+              }
             }
             if(lineClamp && lineClampCount >= lineClamp) {
               ignoreNextLine = true;
@@ -2596,6 +2608,7 @@ class Dom extends Xom {
     }
     // 标识ib情况同block一样占满行
     this.__isIbFull = isIbFull;
+    this.__isUprightIbFull = isUprightIbFull;
     // 元素的width在固定情况或者ibFull情况已被计算出来，否则为最大延展尺寸，inline没有固定尺寸概念
     let tw, th;
     if(isInline) {

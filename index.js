@@ -23799,7 +23799,7 @@
    */
 
   var LineBox = /*#__PURE__*/function () {
-    function LineBox(x, y, lineHeight, baseline, isUpright) {
+    function LineBox(x, y, lineHeight, baseline, isVertical) {
       _classCallCheck(this, LineBox);
 
       this.__list = [];
@@ -23808,7 +23808,7 @@
       this.__lineHeight = lineHeight; // 可能出现空的inline，因此一个inline进入布局时先设置当前lineBox的最小lineHeight/baseline
 
       this.__baseline = baseline;
-      this.__isVertical = isUpright;
+      this.__isVertical = isVertical;
       this.__bOffset = 0;
     }
 
@@ -23820,9 +23820,9 @@
       }
     }, {
       key: "verticalAlign",
-      value: function verticalAlign(isUpright) {
-        var baseline = isUpright ? this.verticalBaseline : this.baseline;
-        var lineHeight = isUpright ? this.verticalLineHeight : this.lineHeight;
+      value: function verticalAlign(isVertical) {
+        var baseline = isVertical ? this.verticalBaseline : this.baseline;
+        var lineHeight = isVertical ? this.verticalLineHeight : this.lineHeight;
         var increase = lineHeight;
         var hasIbOrReplaced; // 只有1个也需要对齐，因为可能内嵌了空inline使得baseline发生变化
 
@@ -23837,7 +23837,7 @@
             } // 垂直排版计算不太一样，因为原点坐标系不一样
 
 
-            if (isUpright) {
+            if (isVertical) {
               var n = item.verticalBaseline;
 
               if (n !== baseline) {
@@ -23868,7 +23868,7 @@
         // 这里差值不能取lineBox最大值，要用隶属的block的原始值，常见于css的img底部额外4px问题，防止意外取max非负
 
         if (hasIbOrReplaced) {
-          if (isUpright) {
+          if (isVertical) {
             diff = this.__baseline;
           } else {
             diff = Math.max(0, this.__lineHeight - this.__baseline);
@@ -23972,7 +23972,7 @@
     }, {
       key: "width",
       get: function get() {
-        if (this.isUpright) {
+        if (this.isVertical) {
           return this.verticalLineHeight;
         }
 
@@ -24034,7 +24034,7 @@
     }, {
       key: "height",
       get: function get() {
-        if (!this.isUpright) {
+        if (!this.isVertical) {
           return this.lineHeight;
         }
 
@@ -24139,7 +24139,7 @@
         return lineHeight;
       }
     }, {
-      key: "isUpright",
+      key: "isVertical",
       get: function get() {
         return this.__isVertical;
       }

@@ -75,7 +75,6 @@ class LineBox {
             // 比如一个字符和img，字符下调y即字符的baseline和图片底部对齐，导致高度增加lineHeight和baseline的差值
             increase = Math.max(increase, item.offsetHeight + d);
           }
-          if(item.isReplaced) {}
         }
       });
       // 特殊情况，有img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题

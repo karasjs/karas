@@ -23855,8 +23855,6 @@
 
                 increase = Math.max(increase, item.offsetHeight + _d);
               }
-
-              if (item.isReplaced) ;
             }
           }); // 特殊情况，有img这样的替换元素时，要参与这一行和baseline的对齐扩充，常见于css的img底部额外4px问题
           // 先计算总体baseline和本身baseline差值得出偏移，然后加到本身lineHeight上得出尺寸，再和其它扩充取最大值

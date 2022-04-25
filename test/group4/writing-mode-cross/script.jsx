@@ -9,6 +9,10 @@ karas.render(
       <span style={{background:'#f00'}}>aaa</span>
       <strong style={{background:'#0ff',writingMode:'horizontal-tb'}}>bbb</strong>
     </div>
+    <div style={{margin:10,background:'#00f'}}>
+      <span style={{background:'#f00'}}>aaa</span>
+      <strong style={{width:20,writingMode:'horizontal-tb',background:'#0ff'}}>bbb</strong>
+    </div>
   </canvas>,
   '#test'
 );

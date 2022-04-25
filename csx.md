@@ -305,6 +305,8 @@
   * inherit 默认
   * horizontal-tb
   * vertical-lr
+* wordBreak `没有实现但等同于只有break-all`
+  * break-all 
 * mixBlendMode
   * normal 默认
   * multiply

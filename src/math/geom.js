@@ -498,15 +498,27 @@ function bboxBezier2(x0, y0, x1, y1, x2, y2) {
   // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
   if(x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
     let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+    if(tx < 0) {
+      tx = 0;
+    }
+    else if(tx > 1) {
+      tx = 1;
+    }
     let ty = (y0 - y1) / (y0 - 2 * y1 + y2);
+    if(ty < 0) {
+      ty = 0;
+    }
+    else if(ty > 1) {
+      ty = 1;
+    }
     let sx = 1 - tx;
     let sy = 1 - ty;
     let qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
     let qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
     minX = Math.min(minX, qx);
     minY = Math.min(minY, qy);
-    maxX = Math.min(maxX, qx);
-    maxY = Math.min(maxY, qy);
+    maxX = Math.max(maxX, qx);
+    maxY = Math.max(maxY, qy);
   }
   return [minX, minY, maxX, maxY];
 }

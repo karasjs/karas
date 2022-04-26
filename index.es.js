@@ -3639,15 +3639,29 @@ function bboxBezier2(x0, y0, x1, y1, x2, y2) {
 
   if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
     var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+
+    if (tx < 0) {
+      tx = 0;
+    } else if (tx > 1) {
+      tx = 1;
+    }
+
     var ty = (y0 - y1) / (y0 - 2 * y1 + y2);
+
+    if (ty < 0) {
+      ty = 0;
+    } else if (ty > 1) {
+      ty = 1;
+    }
+
     var sx = 1 - tx;
     var sy = 1 - ty;
     var qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
     var qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
     minX = Math.min(minX, qx);
     minY = Math.min(minY, qy);
-    maxX = Math.min(maxX, qx);
-    maxY = Math.min(maxY, qy);
+    maxX = Math.max(maxX, qx);
+    maxY = Math.max(maxY, qy);
   }
 
   return [minX, minY, maxX, maxY];
@@ -40833,7 +40847,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.5";
+var version = "0.73.6";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

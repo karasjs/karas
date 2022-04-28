@@ -6,7 +6,6 @@ import inject from '../../util/inject';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
-  BOX_SHADOW,
 } } = enums;
 const { isNil } = util;
 const { sectorPoints } = geom;
@@ -329,7 +328,6 @@ class Sector extends Geom {
         __sx3: originX, __sy3: originY, width, height,
         computedStyle: {
           [STROKE_WIDTH]: strokeWidth,
-          [BOX_SHADOW]: boxShadow,
         }
       } = this;
       let cx = originX + width * 0.5;

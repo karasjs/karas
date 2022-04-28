@@ -39190,9 +39190,7 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
   return Polygon;
 }(Polyline);
 
-var _enums$STYLE_KEY$l = enums.STYLE_KEY,
-    STROKE_WIDTH$4 = _enums$STYLE_KEY$l.STROKE_WIDTH,
-    BOX_SHADOW$4 = _enums$STYLE_KEY$l.BOX_SHADOW;
+var STROKE_WIDTH$4 = enums.STYLE_KEY.STROKE_WIDTH;
 var isNil$c = util.isNil;
 var sectorPoints$1 = geom.sectorPoints;
 
@@ -39577,9 +39575,7 @@ var Sector = /*#__PURE__*/function (_Geom) {
             originY = this.__sy3,
             width = this.width,
             height = this.height,
-            _this$computedStyle = this.computedStyle,
-            strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
-            boxShadow = _this$computedStyle[BOX_SHADOW$4];
+            strokeWidth = this.computedStyle[STROKE_WIDTH$4];
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);

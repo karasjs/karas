@@ -3624,420 +3624,6 @@
   function r2d(n) {
     return n * 180 / Math.PI;
   }
-  /**
-   * 二阶贝塞尔曲线范围框
-   * @param x0
-   * @param y0
-   * @param x1
-   * @param y1
-   * @param x2
-   * @param y2
-   * @returns {number[]}
-   * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
-   */
-
-
-  function bboxBezier2(x0, y0, x1, y1, x2, y2) {
-    var minX = Math.min(x0, x2);
-    var minY = Math.min(y0, y2);
-    var maxX = Math.max(x0, x2);
-    var maxY = Math.max(y0, y2); // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
-
-    if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
-      var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
-
-      if (tx < 0) {
-        tx = 0;
-      } else if (tx > 1) {
-        tx = 1;
-      }
-
-      var ty = (y0 - y1) / (y0 - 2 * y1 + y2);
-
-      if (ty < 0) {
-        ty = 0;
-      } else if (ty > 1) {
-        ty = 1;
-      }
-
-      var sx = 1 - tx;
-      var sy = 1 - ty;
-      var qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
-      var qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
-      minX = Math.min(minX, qx);
-      minY = Math.min(minY, qy);
-      maxX = Math.max(maxX, qx);
-      maxY = Math.max(maxY, qy);
-    }
-
-    return [minX, minY, maxX, maxY];
-  }
-  /**
-   * 同上三阶的
-   */
-
-
-  function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
-    var minX = Math.min(x0, x3);
-    var minY = Math.min(y0, y3);
-    var maxX = Math.max(x0, x3);
-    var maxY = Math.max(y0, y3);
-
-    if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
-      var cx = -x0 + x1;
-      var cy = -y0 + y1;
-      var bx = x0 - 2 * x1 + x2;
-      var by = y0 - 2 * y1 + y2;
-      var ax = -x0 + 3 * x1 - 3 * x2 + x3;
-      var ay = -y0 + 3 * y1 - 3 * y2 + y3;
-      var hx = bx * bx - ax * cx;
-      var hy = by * by - ay * cy;
-
-      if (hx > 0) {
-        hx = Math.sqrt(hx);
-        var t = (-bx - hx) / ax;
-
-        if (t > 0 && t < 1) {
-          var s = 1 - t;
-          var q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
-          minX = Math.min(minX, q);
-          maxX = Math.max(maxX, q);
-        }
-
-        t = (-bx + hx) / ax;
-
-        if (t > 0 && t < 1) {
-          var _s = 1 - t;
-
-          var _q = _s * _s * _s * x0 + 3 * _s * _s * t * x1 + 3 * _s * t * t * x2 + t * t * t * x3;
-
-          minX = Math.min(minX, _q);
-          maxX = Math.max(maxX, _q);
-        }
-      }
-
-      if (hy > 0) {
-        hy = Math.sqrt(hy);
-
-        var _t = (-by - hy) / ay;
-
-        if (_t > 0 && _t < 1) {
-          var _s2 = 1 - _t;
-
-          var _q2 = _s2 * _s2 * _s2 * y0 + 3 * _s2 * _s2 * _t * y1 + 3 * _s2 * _t * _t * y2 + _t * _t * _t * y3;
-
-          minY = Math.min(minY, _q2);
-          maxY = Math.max(maxY, _q2);
-        }
-
-        _t = (-by + hy) / ay;
-
-        if (_t > 0 && _t < 1) {
-          var _s3 = 1 - _t;
-
-          var _q3 = _s3 * _s3 * _s3 * y0 + 3 * _s3 * _s3 * _t * y1 + 3 * _s3 * _t * _t * y2 + _t * _t * _t * y3;
-
-          minY = Math.min(minY, _q3);
-          maxY = Math.max(maxY, _q3);
-        }
-      }
-    }
-
-    return [minX, minY, maxX, maxY];
-  }
-
-  function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
-    if (arguments.length === 4) {
-      return [x0, y0, x1, y1];
-    }
-
-    if (arguments.length === 6) {
-      return bboxBezier2(x0, y0, x1, y1, x2, y2);
-    }
-
-    if (arguments.length === 8) {
-      return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
-    }
-  }
-  /**
-   * 范数 or 模
-   */
-
-
-  function norm(v) {
-    var order = v.length;
-    var sum = v.reduce(function (a, b) {
-      return Math.pow(a, order) + Math.pow(b, order);
-    });
-    return Math.pow(sum, 1 / order);
-  }
-
-  function simpson38(derivativeFunc, l, r) {
-    var f = derivativeFunc;
-    var middleL = (2 * l + r) / 3;
-    var middleR = (l + 2 * r) / 3;
-    return (f(l) + 3 * f(middleL) + 3 * f(middleR) + f(r)) * (r - l) / 8;
-  }
-  /**
-   * bezier 曲线的长度
-   * @param derivativeFunc 微分函数
-   * @param l 左点
-   * @param r 右点
-   * @param eps 精度
-   * @return {*} number
-   */
-
-
-  function adaptiveSimpson38(derivativeFunc, l, r) {
-    var eps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.001;
-    var f = derivativeFunc;
-    var mid = (l + r) / 2;
-    var st = simpson38(f, l, r);
-    var sl = simpson38(f, l, mid);
-    var sr = simpson38(f, mid, r);
-    var ans = sl + sr - st;
-
-    if (Math.abs(ans) <= 15 * eps) {
-      return sl + sr + ans / 15;
-    }
-
-    return adaptiveSimpson38(f, l, mid, eps / 2) + adaptiveSimpson38(f, mid, r, eps / 2);
-  }
-  /**
-   * bezier 曲线的长度
-   * @param points 曲线的起止点 和 控制点
-   * @param order 阶次， 2 和 3
-   * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
-   * @param endT 计算长度的终点
-   * @return {*} number
-   */
-
-
-  function bezierLength(points, order) {
-    var startT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var endT = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-
-    var derivativeFunc = function derivativeFunc(t) {
-      return norm(at(t, points, order));
-    };
-
-    return adaptiveSimpson38(derivativeFunc, startT, endT);
-  }
-  /**
-   * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
-   */
-
-
-  function at3(t, points) {
-    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
-
-    var _points = _slicedToArray(points, 4),
-        p0 = _points[0],
-        p1 = _points[1],
-        p2 = _points[2],
-        p3 = _points[3];
-
-    var _p13 = _slicedToArray(p0, 2),
-        x0 = _p13[0],
-        y0 = _p13[1];
-
-    var _p14 = _slicedToArray(p1, 2),
-        x1 = _p14[0],
-        y1 = _p14[1];
-
-    var _p15 = _slicedToArray(p2, 2),
-        x2 = _p15[0],
-        y2 = _p15[1];
-
-    var _p16 = _slicedToArray(p3, 2),
-        x3 = _p16[0],
-        y3 = _p16[1];
-
-    var x = 0;
-    var y = 0;
-
-    if (order === 0) {
-      x = Math.pow(1 - t, 3) * x0 + 3 * t * Math.pow(1 - t, 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
-      y = Math.pow(1 - t, 3) * y0 + 3 * t * Math.pow(1 - t, 2) * y1 + 3 * (1 - t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y3;
-    } else if (order === 1) {
-      x = 3 * ((1 - t) * (1 - t) * (x1 - x0) + 2 * (1 - t) * t * (x2 - x1) + t * t * (x3 - x2));
-      y = 3 * ((1 - t) * (1 - t) * (y1 - y0) + 2 * (1 - t) * t * (y2 - y1) + t * t * (y3 - y2));
-    } else if (order === 2) {
-      x = 6 * (x2 - 2 * x1 + x0) * (1 - t) + 6 * (x3 - 2 * x2 + x1) * t;
-      y = 6 * (y2 - 2 * y1 + y0) * (1 - t) + 6 * (y3 - 2 * y2 + y1) * t;
-    } else if (order === 3) {
-      x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
-      y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
-    } else {
-      // 3阶导数就是常数了，大于3阶的都是0
-      x = 0;
-      y = 0;
-    }
-
-    return [x, y];
-  }
-  /**
-   * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
-   */
-
-
-  function at2(t, points) {
-    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
-
-    var _points2 = _slicedToArray(points, 3),
-        p0 = _points2[0],
-        p1 = _points2[1],
-        p2 = _points2[2];
-
-    var _p17 = _slicedToArray(p0, 2),
-        x0 = _p17[0],
-        y0 = _p17[1];
-
-    var _p18 = _slicedToArray(p1, 2),
-        x1 = _p18[0],
-        y1 = _p18[1];
-
-    var _p19 = _slicedToArray(p2, 2),
-        x2 = _p19[0],
-        y2 = _p19[1];
-
-    var x = 0;
-    var y = 0;
-
-    if (order === 0) {
-      x = Math.pow(1 - t, 2) * x0 + 2 * t * (1 - t) * x1 + Math.pow(t, 2) * x2;
-      y = Math.pow(1 - t, 2) * y0 + 2 * t * (1 - t) * y1 + Math.pow(t, 2) * y2;
-    } else if (order === 1) {
-      x = 2 * (1 - t) * (x1 - x0) + 2 * t * (x2 - x1);
-      y = 2 * (1 - t) * (y1 - y0) + 2 * t * (y2 - y1);
-    } else if (order === 2) {
-      x = 2 * (x2 - 2 * x1 + x0);
-      y = 2 * (y2 - 2 * y1 + y0);
-    } else {
-      x = 0;
-      y = 0;
-    }
-
-    return [x, y];
-  }
-
-  function at(t, points, bezierOrder) {
-    var derivativeOrder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-
-    if (bezierOrder === 2) {
-      return at2(t, points, derivativeOrder);
-    } else if (bezierOrder === 3) {
-      return at3(t, points, derivativeOrder);
-    }
-  }
-
-  function pointAtBezier(points, order, percent, maxIteration, eps) {
-    var length = bezierLength(points, order, 0, 1);
-    return pointAtBezierWithLength(points, order, length, percent, maxIteration, eps);
-  }
-
-  function pointAtBezierWithLength(points, order, length) {
-    var percent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-    var maxIteration = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 20;
-    var eps = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0.001;
-
-    var derivativeFunc = function derivativeFunc(t) {
-      return norm(at(t, points, order));
-    };
-
-    var targetLen = length * percent;
-    var approachLen = length;
-    var approachT = percent;
-    var preApproachT = approachT;
-
-    for (var i = 0; i < maxIteration; i++) {
-      approachLen = simpson38(derivativeFunc, 0, approachT);
-      var d = approachLen - targetLen;
-
-      if (Math.abs(d) < eps) {
-        break;
-      } // Newton 法
-
-
-      var derivative1 = norm(at(approachT, points, order, 1)); // 1 阶导数
-
-      var derivative2 = norm(at(approachT, points, order, 2)); // 2 阶导数
-
-      var numerator = d * derivative1;
-      var denominator = d * derivative2 + derivative1 * derivative1;
-      approachT = approachT - numerator / denominator;
-
-      if (Math.abs(approachT - preApproachT) < eps) {
-        break;
-      } else {
-        preApproachT = approachT;
-      }
-    }
-
-    return at(approachT, points, order, 0);
-  }
-
-  function sliceBezier(points, t) {
-    var _points3 = _slicedToArray(points, 4),
-        _points3$ = _slicedToArray(_points3[0], 2),
-        x1 = _points3$[0],
-        y1 = _points3$[1],
-        _points3$2 = _slicedToArray(_points3[1], 2),
-        x2 = _points3$2[0],
-        y2 = _points3$2[1],
-        _points3$3 = _slicedToArray(_points3[2], 2),
-        x3 = _points3$3[0],
-        y3 = _points3$3[1],
-        p4 = _points3[3];
-
-    var x12 = (x2 - x1) * t + x1;
-    var y12 = (y2 - y1) * t + y1;
-    var x23 = (x3 - x2) * t + x2;
-    var y23 = (y3 - y2) * t + y2;
-    var x123 = (x23 - x12) * t + x12;
-    var y123 = (y23 - y12) * t + y12;
-
-    if (points.length === 4) {
-      var _p20 = _slicedToArray(p4, 2),
-          x4 = _p20[0],
-          y4 = _p20[1];
-
-      var x34 = (x4 - x3) * t + x3;
-      var y34 = (y4 - y3) * t + y3;
-      var x234 = (x34 - x23) * t + x23;
-      var y234 = (y34 - y23) * t + y23;
-      var x1234 = (x234 - x123) * t + x123;
-      var y1234 = (y234 - y123) * t + y123;
-      return [[x1, y1], [x12, y12], [x123, y123], [x1234, y1234]];
-    } else if (points.length === 3) {
-      return [[x1, y1], [x12, y12], [x123, y123]];
-    }
-  }
-
-  function sliceBezier2Both(points) {
-    var start = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-    var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
-    start = Math.max(start, 0);
-    end = Math.min(end, 1);
-
-    if (start === 0 && end === 1) {
-      return points;
-    }
-
-    if (end < 1) {
-      points = sliceBezier(points, end);
-    }
-
-    if (start > 0) {
-      if (end < 1) {
-        start = start / end;
-      }
-
-      points = sliceBezier(points.reverse(), 1 - start).reverse();
-    }
-
-    return points;
-  }
 
   function pointOnCircle(x, y, r, deg) {
     if (deg >= 270) {
@@ -4078,12 +3664,6 @@
     isRectsInside: isRectsInside,
     calCoordsInNode: calCoordsInNode,
     calPercentInNode: calPercentInNode,
-    bboxBezier: bboxBezier,
-    bezierLength: bezierLength,
-    pointAtBezier: pointAtBezier,
-    pointAtBezierWithLength: pointAtBezierWithLength,
-    sliceBezier: sliceBezier,
-    sliceBezier2Both: sliceBezier2Both,
     pointOnCircle: pointOnCircle
   };
 
@@ -10245,6 +9825,428 @@
   };
 
   /**
+   * 二阶贝塞尔曲线范围框
+   * @param x0
+   * @param y0
+   * @param x1
+   * @param y1
+   * @param x2
+   * @param y2
+   * @returns {number[]}
+   * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
+   */
+  function bboxBezier2(x0, y0, x1, y1, x2, y2) {
+    var minX = Math.min(x0, x2);
+    var minY = Math.min(y0, y2);
+    var maxX = Math.max(x0, x2);
+    var maxY = Math.max(y0, y2); // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
+
+    if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
+      var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+
+      if (tx < 0) {
+        tx = 0;
+      } else if (tx > 1) {
+        tx = 1;
+      }
+
+      var ty = (y0 - y1) / (y0 - 2 * y1 + y2);
+
+      if (ty < 0) {
+        ty = 0;
+      } else if (ty > 1) {
+        ty = 1;
+      }
+
+      var sx = 1 - tx;
+      var sy = 1 - ty;
+      var qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
+      var qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
+      minX = Math.min(minX, qx);
+      minY = Math.min(minY, qy);
+      maxX = Math.max(maxX, qx);
+      maxY = Math.max(maxY, qy);
+    }
+
+    return [minX, minY, maxX, maxY];
+  }
+  /**
+   * 同上三阶的
+   */
+
+
+  function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
+    var minX = Math.min(x0, x3);
+    var minY = Math.min(y0, y3);
+    var maxX = Math.max(x0, x3);
+    var maxY = Math.max(y0, y3);
+
+    if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
+      var cx = -x0 + x1;
+      var cy = -y0 + y1;
+      var bx = x0 - 2 * x1 + x2;
+      var by = y0 - 2 * y1 + y2;
+      var ax = -x0 + 3 * x1 - 3 * x2 + x3;
+      var ay = -y0 + 3 * y1 - 3 * y2 + y3;
+      var hx = bx * bx - ax * cx;
+      var hy = by * by - ay * cy;
+
+      if (hx > 0) {
+        hx = Math.sqrt(hx);
+        var t = (-bx - hx) / ax;
+
+        if (t > 0 && t < 1) {
+          var s = 1 - t;
+          var q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+          minX = Math.min(minX, q);
+          maxX = Math.max(maxX, q);
+        }
+
+        t = (-bx + hx) / ax;
+
+        if (t > 0 && t < 1) {
+          var _s = 1 - t;
+
+          var _q = _s * _s * _s * x0 + 3 * _s * _s * t * x1 + 3 * _s * t * t * x2 + t * t * t * x3;
+
+          minX = Math.min(minX, _q);
+          maxX = Math.max(maxX, _q);
+        }
+      }
+
+      if (hy > 0) {
+        hy = Math.sqrt(hy);
+
+        var _t = (-by - hy) / ay;
+
+        if (_t > 0 && _t < 1) {
+          var _s2 = 1 - _t;
+
+          var _q2 = _s2 * _s2 * _s2 * y0 + 3 * _s2 * _s2 * _t * y1 + 3 * _s2 * _t * _t * y2 + _t * _t * _t * y3;
+
+          minY = Math.min(minY, _q2);
+          maxY = Math.max(maxY, _q2);
+        }
+
+        _t = (-by + hy) / ay;
+
+        if (_t > 0 && _t < 1) {
+          var _s3 = 1 - _t;
+
+          var _q3 = _s3 * _s3 * _s3 * y0 + 3 * _s3 * _s3 * _t * y1 + 3 * _s3 * _t * _t * y2 + _t * _t * _t * y3;
+
+          minY = Math.min(minY, _q3);
+          maxY = Math.max(maxY, _q3);
+        }
+      }
+    }
+
+    return [minX, minY, maxX, maxY];
+  }
+
+  function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
+    if (arguments.length === 4) {
+      return [x0, y0, x1, y1];
+    }
+
+    if (arguments.length === 6) {
+      return bboxBezier2(x0, y0, x1, y1, x2, y2);
+    }
+
+    if (arguments.length === 8) {
+      return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
+    }
+  }
+  /**
+   * 范数 or 模
+   */
+
+
+  function norm(v) {
+    var order = v.length;
+    var sum = v.reduce(function (a, b) {
+      return Math.pow(a, order) + Math.pow(b, order);
+    });
+    return Math.pow(sum, 1 / order);
+  }
+
+  function simpson38(derivativeFunc, l, r) {
+    var f = derivativeFunc;
+    var middleL = (2 * l + r) / 3;
+    var middleR = (l + 2 * r) / 3;
+    return (f(l) + 3 * f(middleL) + 3 * f(middleR) + f(r)) * (r - l) / 8;
+  }
+  /**
+   * bezier 曲线的长度
+   * @param derivativeFunc 微分函数
+   * @param l 左点
+   * @param r 右点
+   * @param eps 精度
+   * @return {*} number
+   */
+
+
+  function adaptiveSimpson38(derivativeFunc, l, r) {
+    var eps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.001;
+    var f = derivativeFunc;
+    var mid = (l + r) / 2;
+    var st = simpson38(f, l, r);
+    var sl = simpson38(f, l, mid);
+    var sr = simpson38(f, mid, r);
+    var ans = sl + sr - st;
+
+    if (Math.abs(ans) <= 15 * eps) {
+      return sl + sr + ans / 15;
+    }
+
+    return adaptiveSimpson38(f, l, mid, eps / 2) + adaptiveSimpson38(f, mid, r, eps / 2);
+  }
+  /**
+   * bezier 曲线的长度
+   * @param points 曲线的起止点 和 控制点
+   * @param order 阶次， 2 和 3
+   * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
+   * @param endT 计算长度的终点
+   * @return {*} number
+   */
+
+
+  function bezierLength(points, order) {
+    var startT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var endT = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    var derivativeFunc = function derivativeFunc(t) {
+      return norm(at(t, points, order));
+    };
+
+    return adaptiveSimpson38(derivativeFunc, startT, endT);
+  }
+  /**
+   * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+   */
+
+
+  function at3(t, points) {
+    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    var _points = _slicedToArray(points, 4),
+        p0 = _points[0],
+        p1 = _points[1],
+        p2 = _points[2],
+        p3 = _points[3];
+
+    var _p = _slicedToArray(p0, 2),
+        x0 = _p[0],
+        y0 = _p[1];
+
+    var _p2 = _slicedToArray(p1, 2),
+        x1 = _p2[0],
+        y1 = _p2[1];
+
+    var _p3 = _slicedToArray(p2, 2),
+        x2 = _p3[0],
+        y2 = _p3[1];
+
+    var _p4 = _slicedToArray(p3, 2),
+        x3 = _p4[0],
+        y3 = _p4[1];
+
+    var x = 0;
+    var y = 0;
+
+    if (order === 0) {
+      x = Math.pow(1 - t, 3) * x0 + 3 * t * Math.pow(1 - t, 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
+      y = Math.pow(1 - t, 3) * y0 + 3 * t * Math.pow(1 - t, 2) * y1 + 3 * (1 - t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y3;
+    } else if (order === 1) {
+      x = 3 * ((1 - t) * (1 - t) * (x1 - x0) + 2 * (1 - t) * t * (x2 - x1) + t * t * (x3 - x2));
+      y = 3 * ((1 - t) * (1 - t) * (y1 - y0) + 2 * (1 - t) * t * (y2 - y1) + t * t * (y3 - y2));
+    } else if (order === 2) {
+      x = 6 * (x2 - 2 * x1 + x0) * (1 - t) + 6 * (x3 - 2 * x2 + x1) * t;
+      y = 6 * (y2 - 2 * y1 + y0) * (1 - t) + 6 * (y3 - 2 * y2 + y1) * t;
+    } else if (order === 3) {
+      x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
+      y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
+    } else {
+      // 3阶导数就是常数了，大于3阶的都是0
+      x = 0;
+      y = 0;
+    }
+
+    return [x, y];
+  }
+  /**
+   * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+   */
+
+
+  function at2(t, points) {
+    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    var _points2 = _slicedToArray(points, 3),
+        p0 = _points2[0],
+        p1 = _points2[1],
+        p2 = _points2[2];
+
+    var _p5 = _slicedToArray(p0, 2),
+        x0 = _p5[0],
+        y0 = _p5[1];
+
+    var _p6 = _slicedToArray(p1, 2),
+        x1 = _p6[0],
+        y1 = _p6[1];
+
+    var _p7 = _slicedToArray(p2, 2),
+        x2 = _p7[0],
+        y2 = _p7[1];
+
+    var x = 0;
+    var y = 0;
+
+    if (order === 0) {
+      x = Math.pow(1 - t, 2) * x0 + 2 * t * (1 - t) * x1 + Math.pow(t, 2) * x2;
+      y = Math.pow(1 - t, 2) * y0 + 2 * t * (1 - t) * y1 + Math.pow(t, 2) * y2;
+    } else if (order === 1) {
+      x = 2 * (1 - t) * (x1 - x0) + 2 * t * (x2 - x1);
+      y = 2 * (1 - t) * (y1 - y0) + 2 * t * (y2 - y1);
+    } else if (order === 2) {
+      x = 2 * (x2 - 2 * x1 + x0);
+      y = 2 * (y2 - 2 * y1 + y0);
+    } else {
+      x = 0;
+      y = 0;
+    }
+
+    return [x, y];
+  }
+
+  function at(t, points, bezierOrder) {
+    var derivativeOrder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    if (bezierOrder === 2) {
+      return at2(t, points, derivativeOrder);
+    } else if (bezierOrder === 3) {
+      return at3(t, points, derivativeOrder);
+    }
+  }
+
+  function pointAtBezier(points, order, percent, maxIteration, eps) {
+    var length = bezierLength(points, order, 0, 1);
+    return pointAtBezierWithLength(points, order, length, percent, maxIteration, eps);
+  }
+
+  function pointAtBezierWithLength(points, order, length) {
+    var percent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+    var maxIteration = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 20;
+    var eps = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0.001;
+
+    var derivativeFunc = function derivativeFunc(t) {
+      return norm(at(t, points, order));
+    };
+
+    var targetLen = length * percent;
+    var approachLen = length;
+    var approachT = percent;
+    var preApproachT = approachT;
+
+    for (var i = 0; i < maxIteration; i++) {
+      approachLen = simpson38(derivativeFunc, 0, approachT);
+      var d = approachLen - targetLen;
+
+      if (Math.abs(d) < eps) {
+        break;
+      } // Newton 法
+
+
+      var derivative1 = norm(at(approachT, points, order, 1)); // 1 阶导数
+
+      var derivative2 = norm(at(approachT, points, order, 2)); // 2 阶导数
+
+      var numerator = d * derivative1;
+      var denominator = d * derivative2 + derivative1 * derivative1;
+      approachT = approachT - numerator / denominator;
+
+      if (Math.abs(approachT - preApproachT) < eps) {
+        break;
+      } else {
+        preApproachT = approachT;
+      }
+    }
+
+    return at(approachT, points, order, 0);
+  }
+
+  function sliceBezier(points, t) {
+    var _points3 = _slicedToArray(points, 4),
+        _points3$ = _slicedToArray(_points3[0], 2),
+        x1 = _points3$[0],
+        y1 = _points3$[1],
+        _points3$2 = _slicedToArray(_points3[1], 2),
+        x2 = _points3$2[0],
+        y2 = _points3$2[1],
+        _points3$3 = _slicedToArray(_points3[2], 2),
+        x3 = _points3$3[0],
+        y3 = _points3$3[1],
+        p4 = _points3[3];
+
+    var x12 = (x2 - x1) * t + x1;
+    var y12 = (y2 - y1) * t + y1;
+    var x23 = (x3 - x2) * t + x2;
+    var y23 = (y3 - y2) * t + y2;
+    var x123 = (x23 - x12) * t + x12;
+    var y123 = (y23 - y12) * t + y12;
+
+    if (points.length === 4) {
+      var _p8 = _slicedToArray(p4, 2),
+          x4 = _p8[0],
+          y4 = _p8[1];
+
+      var x34 = (x4 - x3) * t + x3;
+      var y34 = (y4 - y3) * t + y3;
+      var x234 = (x34 - x23) * t + x23;
+      var y234 = (y34 - y23) * t + y23;
+      var x1234 = (x234 - x123) * t + x123;
+      var y1234 = (y234 - y123) * t + y123;
+      return [[x1, y1], [x12, y12], [x123, y123], [x1234, y1234]];
+    } else if (points.length === 3) {
+      return [[x1, y1], [x12, y12], [x123, y123]];
+    }
+  }
+
+  function sliceBezier2Both(points) {
+    var start = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+    start = Math.max(start, 0);
+    end = Math.min(end, 1);
+
+    if (start === 0 && end === 1) {
+      return points;
+    }
+
+    if (end < 1) {
+      points = sliceBezier(points, end);
+    }
+
+    if (start > 0) {
+      if (end < 1) {
+        start = start / end;
+      }
+
+      points = sliceBezier(points.reverse(), 1 - start).reverse();
+    }
+
+    return points;
+  }
+
+  var bezier = {
+    bboxBezier: bboxBezier,
+    bezierLength: bezierLength,
+    pointAtBezier: pointAtBezier,
+    pointAtBezierWithLength: pointAtBezierWithLength,
+    sliceBezier: sliceBezier,
+    sliceBezier2Both: sliceBezier2Both
+  };
+
+  /**
    * martinez v0.7.3
    * Martinez polygon clipping algorithm, does boolean operation on polygons (multipolygons, polygons with holes etc): intersection, union, difference, xor
    *
@@ -12605,6 +12607,7 @@
     tar: tar,
     vector: vector,
     geom: geom,
+    bezier: bezier,
     booleanOperations: {
       union: union,
       diff: diff,
@@ -17262,7 +17265,7 @@
     return x;
   }
 
-  function bezier(mX1, mY1, mX2, mY2) {
+  function bezier$1(mX1, mY1, mX2, mY2) {
     if (!(0 <= mX1 && mX1 <= 1 && 0 <= mX2 && mX2 <= 1)) {
       throw new Error('bezier x values must be in [0, 1] range');
     }
@@ -17313,24 +17316,24 @@
   }
 
   var easing = {
-    linear: bezier(1, 1, 0, 0),
-    easeIn: bezier(0.42, 0, 1, 1),
-    easeOut: bezier(0, 0, 0.58, 1),
-    ease: bezier(0.25, 0.1, 0.25, 1),
-    easeInOut: bezier(0.42, 0, 0.58, 1),
-    cubicBezier: bezier,
+    linear: bezier$1(1, 1, 0, 0),
+    easeIn: bezier$1(0.42, 0, 1, 1),
+    easeOut: bezier$1(0, 0, 0.58, 1),
+    ease: bezier$1(0.25, 0.1, 0.25, 1),
+    easeInOut: bezier$1(0.42, 0, 0.58, 1),
+    cubicBezier: bezier$1,
     getEasing: function getEasing(v, v1, v2, v3) {
       if (arguments.length === 4) {
-        return bezier(v, v1, v2, v3);
+        return bezier$1(v, v1, v2, v3);
       } else if (Array.isArray(v) && v.length === 4) {
-        return bezier(v[0], v[1], v[2], v[3]);
+        return bezier$1(v[0], v[1], v[2], v[3]);
       } else if (v) {
         v = v.toString();
         var timingFunction;
 
         if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(v)) {
           v = v.match(/[\d.]+/g);
-          timingFunction = bezier(v[0], v[1], v[2], v[3]);
+          timingFunction = bezier$1(v[0], v[1], v[2], v[3]);
         } else if (v !== 'getEasing') {
           timingFunction = this[v];
         }
@@ -37862,51 +37865,51 @@
     end = Math.min(1, end);
 
     if (num === 3) {
-      var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+      var _bezier$sliceBezier2B = bezier.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
 
-      var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
+      var _bezier$sliceBezier2B2 = _slicedToArray(_bezier$sliceBezier2B, 4);
 
-      var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
+      var _bezier$sliceBezier2B3 = _slicedToArray(_bezier$sliceBezier2B2[0], 2);
 
-      x1 = _geom$sliceBezier2Bot3[0];
-      y1 = _geom$sliceBezier2Bot3[1];
-      controlA = _geom$sliceBezier2Bot2[1];
-      controlB = _geom$sliceBezier2Bot2[2];
+      x1 = _bezier$sliceBezier2B3[0];
+      y1 = _bezier$sliceBezier2B3[1];
+      controlA = _bezier$sliceBezier2B2[1];
+      controlB = _bezier$sliceBezier2B2[2];
 
-      var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
+      var _bezier$sliceBezier2B4 = _slicedToArray(_bezier$sliceBezier2B2[3], 2);
 
-      x2 = _geom$sliceBezier2Bot4[0];
-      y2 = _geom$sliceBezier2Bot4[1];
+      x2 = _bezier$sliceBezier2B4[0];
+      y2 = _bezier$sliceBezier2B4[1];
     } else if (num === 2) {
-      var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+      var _bezier$sliceBezier2B5 = bezier.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
 
-      var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
+      var _bezier$sliceBezier2B6 = _slicedToArray(_bezier$sliceBezier2B5, 3);
 
-      var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
+      var _bezier$sliceBezier2B7 = _slicedToArray(_bezier$sliceBezier2B6[0], 2);
 
-      x1 = _geom$sliceBezier2Bot7[0];
-      y1 = _geom$sliceBezier2Bot7[1];
-      controlB = _geom$sliceBezier2Bot6[1];
+      x1 = _bezier$sliceBezier2B7[0];
+      y1 = _bezier$sliceBezier2B7[1];
+      controlB = _bezier$sliceBezier2B6[1];
 
-      var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
+      var _bezier$sliceBezier2B8 = _slicedToArray(_bezier$sliceBezier2B6[2], 2);
 
-      x2 = _geom$sliceBezier2Bot8[0];
-      y2 = _geom$sliceBezier2Bot8[1];
+      x2 = _bezier$sliceBezier2B8[0];
+      y2 = _bezier$sliceBezier2B8[1];
     } else if (num === 1) {
-      var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+      var _bezier$sliceBezier2B9 = bezier.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
 
-      var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+      var _bezier$sliceBezier2B10 = _slicedToArray(_bezier$sliceBezier2B9, 3);
 
-      var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+      var _bezier$sliceBezier2B11 = _slicedToArray(_bezier$sliceBezier2B10[0], 2);
 
-      x1 = _geom$sliceBezier2Bot11[0];
-      y1 = _geom$sliceBezier2Bot11[1];
-      controlA = _geom$sliceBezier2Bot10[1];
+      x1 = _bezier$sliceBezier2B11[0];
+      y1 = _bezier$sliceBezier2B11[1];
+      controlA = _bezier$sliceBezier2B10[1];
 
-      var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+      var _bezier$sliceBezier2B12 = _slicedToArray(_bezier$sliceBezier2B10[2], 2);
 
-      x2 = _geom$sliceBezier2Bot12[0];
-      y2 = _geom$sliceBezier2Bot12[1];
+      x2 = _bezier$sliceBezier2B12[0];
+      y2 = _bezier$sliceBezier2B12[1];
     } else {
       var a = x2 - x1;
       var b = y2 - y1;
@@ -38386,7 +38389,7 @@
             bbox[3] = Math.max(bbox[3], ya + half);
             bbox[3] = Math.max(bbox[3], yb + half);
           } else if (isNil$a(ca) || ca.length < 2) {
-            var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
+            var bezierBox = bezier.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
             bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
             bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
             bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
@@ -38396,7 +38399,7 @@
             bbox[3] = Math.max(bbox[3], bezierBox[1] + half);
             bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
           } else if (isNil$a(cb) || cb.length < 2) {
-            var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
+            var _bezierBox = bezier.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
             bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
             bbox[0] = Math.min(bbox[0], _bezierBox[2] - half);
@@ -38407,7 +38410,7 @@
             bbox[3] = Math.max(bbox[3], _bezierBox[1] + half);
             bbox[3] = Math.max(bbox[3], _bezierBox[3] + half);
           } else {
-            var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
+            var _bezierBox2 = bezier.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
             bbox[0] = Math.min(bbox[0], _bezierBox2[0] - half);
             bbox[0] = Math.min(bbox[0], _bezierBox2[2] - half);
@@ -38482,14 +38485,14 @@
           increase.push(total);
           prev = _item;
         } else if (_item.length === 4) {
-          var _c = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]], 2);
+          var _c = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]], 2);
 
           res.push(_c);
           total += _c;
           increase.push(total);
           prev = [_item[2], _item[3]];
         } else if (_item.length === 6) {
-          var _c2 = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]], 3);
+          var _c2 = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]], 3);
 
           res.push(_c2);
           total += _c2;
@@ -38595,10 +38598,10 @@
           endPoint = [current[0] - t * a, current[1] - t * b];
         }
       } else if (current.length === 4) {
-        var r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+        var r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
         endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
       } else if (current.length === 6) {
-        var _r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+        var _r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
 
         endPoint = [_r[1][0], _r[1][1], _r[2][0], _r[2][1], _r[3][0], _r[3][1]];
       }
@@ -38643,7 +38646,7 @@
 
         res.push(_current);
       } else if (_current.length === 4) {
-        var _r2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+        var _r2 = bezier.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
 
         res.push(_r2[0]);
         res.push([_r2[1][0], _r2[1][1], _r2[2][0], _r2[2][1]]); // 同一条线段上去除end冲突
@@ -38652,7 +38655,7 @@
           endPoint = null;
         }
       } else if (_current.length === 6) {
-        var _r3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+        var _r3 = bezier.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
 
         res.push(_r3[0]);
         res.push([_r3[1][0], _r3[1][1], _r3[2][0], _r3[2][1], _current[4], _current[5]]);
@@ -39004,13 +39007,13 @@
               var c = controlList[_i4 - 1];
 
               if (c && c.length === 4) {
-                var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+                var bezierBox = bezier.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
                 bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
                 bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
                 bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
                 bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
               } else if (c && c.length === 2) {
-                var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+                var _bezierBox = bezier.bboxBezier(xa, ya, c[0], c[1], xb, yb);
 
                 bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
                 bbox[1] = Math.min(bbox[1], _bezierBox[1] - half);

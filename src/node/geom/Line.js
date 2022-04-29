@@ -3,7 +3,7 @@ import mode from '../../refresh/mode';
 import painter from '../../util/painter';
 import util from '../../util/util';
 import enums from '../../util/enums';
-import geom from '../../math/geom';
+import bezier from '../../math/bezier';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -60,13 +60,13 @@ function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start = 0, end = 1
   start = Math.max(0, start);
   end = Math.min(1, end);
   if(num === 3) {
-    [[x1, y1], controlA, controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+    [[x1, y1], controlA, controlB, [x2, y2]] = bezier.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
   }
   else if(num === 2) {
-    [[x1, y1], controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+    [[x1, y1], controlB, [x2, y2]] = bezier.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
   }
   else if(num === 1) {
-    [[x1, y1], controlA, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+    [[x1, y1], controlA, [x2, y2]] = bezier.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
   }
   else {
     let a = x2 - x1;
@@ -413,7 +413,7 @@ class Line extends Geom {
         bbox[3] = Math.max(bbox[3], yb + half);
       }
       else if(isNil(ca) || ca.length < 2) {
-        let bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
+        let bezierBox = bezier.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
         bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
         bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
         bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
@@ -424,7 +424,7 @@ class Line extends Geom {
         bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
       }
       else if(isNil(cb) || cb.length < 2) {
-        let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
+        let bezierBox = bezier.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
         bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
         bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
         bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
@@ -435,7 +435,7 @@ class Line extends Geom {
         bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
       }
       else {
-        let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
+        let bezierBox = bezier.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
         bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
         bbox[0] = Math.min(bbox[0], bezierBox[2] - half);
         bbox[1] = Math.min(bbox[1], bezierBox[1] - half);

@@ -10004,16 +10004,16 @@
   /**
    * bezier 曲线的长度
    * @param points 曲线的起止点 和 控制点
-   * @param order 阶次， 2 和 3
    * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
    * @param endT 计算长度的终点
    * @return {*} number
    */
 
 
-  function bezierLength(points, order) {
-    var startT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-    var endT = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+  function bezierLength(points) {
+    var startT = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var endT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+    var order = points.length === 4 ? 3 : 2;
 
     var derivativeFunc = function derivativeFunc(t) {
       return norm(at(t, points, order));
@@ -10052,7 +10052,7 @@
         y3 = _p4[1];
 
     var x = 0;
-    var y = 0;
+    var y = 0; // 3阶导数就是常数了，大于3阶的都是0
 
     if (order === 0) {
       x = Math.pow(1 - t, 3) * x0 + 3 * t * Math.pow(1 - t, 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
@@ -10066,10 +10066,6 @@
     } else if (order === 3) {
       x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
       y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
-    } else {
-      // 3阶导数就是常数了，大于3阶的都是0
-      x = 0;
-      y = 0;
     }
 
     return [x, y];
@@ -10111,9 +10107,6 @@
     } else if (order === 2) {
       x = 2 * (x2 - 2 * x1 + x0);
       y = 2 * (y2 - 2 * y1 + y0);
-    } else {
-      x = 0;
-      y = 0;
     }
 
     return [x, y];
@@ -10129,15 +10122,16 @@
     }
   }
 
-  function pointAtBezier(points, order, percent, maxIteration, eps) {
-    var length = bezierLength(points, order, 0, 1);
-    return pointAtBezierWithLength(points, order, length, percent, maxIteration, eps);
+  function pointAtBezier(points, percent, maxIteration, eps) {
+    var length = bezierLength(points, 0, 1);
+    return pointAtBezierWithLength(points, length, percent, maxIteration, eps);
   }
 
-  function pointAtBezierWithLength(points, order, length) {
-    var percent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-    var maxIteration = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 20;
-    var eps = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0.001;
+  function pointAtBezierWithLength(points, length) {
+    var percent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+    var maxIteration = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 20;
+    var eps = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0.001;
+    var order = points.length === 4 ? 3 : 2;
 
     var derivativeFunc = function derivativeFunc(t) {
       return norm(at(t, points, order));
@@ -39275,14 +39269,14 @@
           increase.push(total);
           prev = _item;
         } else if (_item.length === 4) {
-          var _c = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]], 2);
+          var _c = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]]);
 
           res.push(_c);
           total += _c;
           increase.push(total);
           prev = [_item[2], _item[3]];
         } else if (_item.length === 6) {
-          var _c2 = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]], 3);
+          var _c2 = bezier.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]]);
 
           res.push(_c2);
           total += _c2;

@@ -56,14 +56,14 @@ function getLength(list, isMulti) {
         prev = item;
       }
       else if(item.length === 4) {
-        let c = bezier.bezierLength([prev, [item[0], item[1]], [item[2], item[3]]], 2);
+        let c = bezier.bezierLength([prev, [item[0], item[1]], [item[2], item[3]]]);
         res.push(c);
         total += c;
         increase.push(total);
         prev = [item[2], item[3]];
       }
       else if(item.length === 6) {
-        let c = bezier.bezierLength([prev, [item[0], item[1]], [item[2], item[3]], [item[4], item[5]]], 3);
+        let c = bezier.bezierLength([prev, [item[0], item[1]], [item[2], item[3]], [item[4], item[5]]]);
         res.push(c);
         total += c;
         increase.push(total);

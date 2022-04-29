@@ -151,12 +151,12 @@ function adaptiveSimpson38(derivativeFunc, l, r, eps = 0.001) {
 /**
  * bezier 曲线的长度
  * @param points 曲线的起止点 和 控制点
- * @param order 阶次， 2 和 3
  * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
  * @param endT 计算长度的终点
  * @return {*} number
  */
-function bezierLength(points, order, startT = 0, endT = 1) {
+function bezierLength(points, startT = 0, endT = 1) {
+  let order = points.length === 4 ? 3 : 2;
   let derivativeFunc = t => norm(at(t, points, order));
   return adaptiveSimpson38(derivativeFunc, startT, endT);
 }
@@ -172,6 +172,7 @@ function at3(t, points, order = 1) {
   let [x3, y3] = p3;
   let x = 0;
   let y = 0;
+  // 3阶导数就是常数了，大于3阶的都是0
   if(order === 0) {
     x = Math.pow((1 - t), 3) * x0 + 3 * t * Math.pow((1 - t), 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
     y = Math.pow((1 - t), 3) * y0 + 3 * t * Math.pow((1 - t), 2) * y1 + 3 * (1 - t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y3;
@@ -187,11 +188,6 @@ function at3(t, points, order = 1) {
   else if(order === 3) {
     x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
     y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
-  }
-  else {
-    // 3阶导数就是常数了，大于3阶的都是0
-    x = 0;
-    y = 0;
   }
   return [x, y];
 }
@@ -218,10 +214,6 @@ function at2(t, points, order = 1) {
     x = 2 * (x2 - 2 * x1 + x0);
     y = 2 * (y2 - 2 * y1 + y0);
   }
-  else {
-    x = 0;
-    y = 0;
-  }
   return [x, y];
 }
 
@@ -234,12 +226,13 @@ function at(t, points, bezierOrder, derivativeOrder = 1) {
   }
 }
 
-function pointAtBezier(points, order, percent, maxIteration, eps) {
-  let length = bezierLength(points, order, 0, 1);
-  return pointAtBezierWithLength(points, order, length, percent, maxIteration, eps);
+function pointAtBezier(points, percent, maxIteration, eps) {
+  let length = bezierLength(points, 0, 1);
+  return pointAtBezierWithLength(points, length, percent, maxIteration, eps);
 }
 
-function pointAtBezierWithLength(points, order, length, percent = 1, maxIteration = 20, eps = 0.001) {
+function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20, eps = 0.001) {
+  let order = points.length === 4 ? 3 : 2;
   let derivativeFunc = t => norm(at(t, points, order));
   let targetLen = length * percent;
   let approachLen = length;

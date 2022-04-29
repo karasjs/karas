@@ -136,7 +136,7 @@ class Geom extends Xom {
   }
 
   __layoutInline(data, isAbs, isInline) {
-    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data, false);
+    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data, false);
     let tw = fixedWidth ? w : 0;
     let th = fixedHeight ? h : 0;
     this.__ioSize(tw, th);

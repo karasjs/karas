@@ -9824,6 +9824,207 @@
     transform: transform
   };
 
+  var TOLERANCE = 1e-6;
+  /**
+   * 计算线性方程的根
+   * y = ax + b
+   * root = -b / a
+   * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
+   */
+
+  function getLinearRoot(coefs) {
+    var result = [];
+    var a = coefs[1];
+
+    if (a !== 0) {
+      result.push(-coefs[0] / a);
+    }
+
+    return result;
+  }
+  /**
+   * 计算二次方程的根，一元二次方程求根公式
+   * y = ax^2 + bx + c
+   * root = (-b ± sqrt(b^2 - 4ac)) / 2a
+   * @param {Array<Number>} coefs 系数，系数 [c, b, a]
+   */
+
+
+  function getQuadraticRoots(coefs) {
+    var results = [];
+    var a = coefs[2];
+    var b = coefs[1] / a;
+    var c = coefs[0] / a;
+    var d = b * b - 4 * c;
+
+    if (d > 0) {
+      var e = Math.sqrt(d);
+      results.push(0.5 * (-b + e));
+      results.push(0.5 * (-b - e));
+    } else if (d === 0) {
+      // 两个相同的根，只要返回一个
+      results.push(0.5 * -b);
+    }
+
+    return results;
+  }
+  /**
+   * 计算一元三次方程的根
+   * y = ax^3 + bx^2 + cx + d
+   * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+   * @param {Array<Number>} coefs 系数
+   */
+
+
+  function getCubicRoots(coefs) {
+    var results = [];
+    var c3 = coefs[3];
+    var c2 = coefs[2] / c3;
+    var c1 = coefs[1] / c3;
+    var c0 = coefs[0] / c3;
+    var a = (3 * c1 - c2 * c2) / 3;
+    var b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
+    var offset = c2 / 3;
+    var discrim = b * b / 4 + a * a * a / 27;
+    var halfB = b / 2;
+
+    if (Math.abs(discrim) <= 1e-6) {
+      discrim = 0;
+    }
+
+    if (discrim > 0) {
+      var e = Math.sqrt(discrim);
+      var tmp;
+      var root;
+      tmp = -halfB + e;
+      if (tmp >= 0) root = Math.pow(tmp, 1 / 3);else root = -Math.pow(-tmp, 1 / 3);
+      tmp = -halfB - e;
+      if (tmp >= 0) root += Math.pow(tmp, 1 / 3);else root -= Math.pow(-tmp, 1 / 3);
+      results.push(root - offset);
+    } else if (discrim < 0) {
+      var distance = Math.sqrt(-a / 3);
+      var angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
+      var cos = Math.cos(angle);
+      var sin = Math.sin(angle);
+      var sqrt3 = Math.sqrt(3);
+      results.push(2 * distance * cos - offset);
+      results.push(-distance * (cos + sqrt3 * sin) - offset);
+      results.push(-distance * (cos - sqrt3 * sin) - offset);
+    } else {
+      var _tmp;
+
+      if (halfB >= 0) _tmp = -Math.pow(halfB, 1 / 3);else _tmp = Math.pow(-halfB, 1 / 3);
+      results.push(2 * _tmp - offset); // really should return next root twice, but we return only one
+
+      results.push(-_tmp - offset);
+    }
+
+    return results;
+  }
+  /**
+   * 计算一元四次方程的根
+   * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
+   * @param {Array<Number>} coefs 系数
+   */
+
+
+  function getQuarticRoots(coefs) {
+    var results = [];
+    var c4 = coefs[4];
+    var c3 = coefs[3] / c4;
+    var c2 = coefs[2] / c4;
+    var c1 = coefs[1] / c4;
+    var c0 = coefs[0] / c4;
+    var resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
+    var y = resolveRoots[0];
+    var discrim = c3 * c3 / 4 - c2 + y;
+    if (Math.abs(discrim) <= TOLERANCE) discrim = 0;
+
+    if (discrim > 0) {
+      var e = Math.sqrt(discrim);
+      var t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
+      var t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
+      var plus = t1 + t2;
+      var minus = t1 - t2;
+      if (Math.abs(plus) <= TOLERANCE) plus = 0;
+      if (Math.abs(minus) <= TOLERANCE) minus = 0;
+
+      if (plus >= 0) {
+        var f = Math.sqrt(plus);
+        results.push(-c3 / 4 + (e + f) / 2);
+        results.push(-c3 / 4 + (e - f) / 2);
+      }
+
+      if (minus >= 0) {
+        var _f = Math.sqrt(minus);
+
+        results.push(-c3 / 4 + (_f - e) / 2);
+        results.push(-c3 / 4 - (_f + e) / 2);
+      }
+    } else if (discrim < 0) ; else {
+      var _t = y * y - 4 * c0;
+
+      if (_t >= -TOLERANCE) {
+        if (_t < 0) _t = 0;
+        _t = 2 * Math.sqrt(_t);
+
+        var _t2 = 3 * c3 * c3 / 4 - 2 * c2;
+
+        if (_t2 + _t >= TOLERANCE) {
+          var d = Math.sqrt(_t2 + _t);
+          results.push(-c3 / 4 + d / 2);
+          results.push(-c3 / 4 - d / 2);
+        }
+
+        if (_t2 - _t >= TOLERANCE) {
+          var _d = Math.sqrt(_t2 - _t);
+
+          results.push(-c3 / 4 + _d / 2);
+          results.push(-c3 / 4 - _d / 2);
+        }
+      }
+    }
+
+    return results;
+  }
+  /**
+   * 计算方程的根
+   * @param {Array<Number>} coefs 系数
+   */
+
+
+  function getRoots(coefs) {
+    var degree = coefs.length - 1;
+    var result = [];
+
+    switch (degree) {
+      case 0:
+        result = [];
+        break;
+
+      case 1:
+        result = getLinearRoot(coefs);
+        break;
+
+      case 2:
+        result = getQuadraticRoots(coefs);
+        break;
+
+      case 3:
+        result = getCubicRoots(coefs);
+        break;
+
+      case 4:
+        result = getQuarticRoots(coefs);
+    }
+
+    return result;
+  }
+
+  var equation = {
+    getRoots: getRoots
+  };
+
   /**
    * 二阶贝塞尔曲线范围框
    * @param x0
@@ -9968,7 +10169,8 @@
       return Math.pow(a, order) + Math.pow(b, order);
     });
     return Math.pow(sum, 1 / order);
-  }
+  } // https://zhuanlan.zhihu.com/p/130247362
+
 
   function simpson38(derivativeFunc, l, r) {
     var f = derivativeFunc;
@@ -10240,211 +10442,16 @@
     sliceBezier2Both: sliceBezier2Both
   };
 
-  // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
+  var getRoots$1 = equation.getRoots; // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
   // 两个三次方程组无法解析表示，只能数值计算
   // 参考：https://mat.polsl.pl/sjpam/zeszyty/z6/Silesian_J_Pure_Appl_Math_v6_i1_str_155-176.pdf
-  var TOLERANCE = 1e-6;
+
+  var TOLERANCE$1 = 1e-6;
   var ACCURACY = 6;
-  /**
-   * 计算线性方程的根
-   * y = ax + b
-   * root = -b / a
-   * @param {Array<Number>} coefs 系数 [b, a] 本文件代码中的系数数组都是从阶次由低到高排列
-   */
-
-  function getLinearRoot(coefs) {
-    var result = [];
-    var a = coefs[1];
-
-    if (a !== 0) {
-      result.push(-coefs[0] / a);
-    }
-
-    return result;
-  }
-  /**
-   * 计算二次方程的根，一元二次方程求根公式
-   * y = ax^2 + bx + c
-   * root = (-b ± sqrt(b^2 - 4ac)) / 2a
-   * @param {Array<Number>} coefs 系数，系数 [c, b, a]
-   */
-
-
-  function getQuadraticRoots(coefs) {
-    var results = [];
-    var a = coefs[2];
-    var b = coefs[1] / a;
-    var c = coefs[0] / a;
-    var d = b * b - 4 * c;
-
-    if (d > 0) {
-      var e = Math.sqrt(d);
-      results.push(0.5 * (-b + e));
-      results.push(0.5 * (-b - e));
-    } else if (d === 0) {
-      // 两个相同的根，只要返回一个
-      results.push(0.5 * -b);
-    }
-
-    return results;
-  }
-  /**
-   * 计算一元三次方程的根
-   * y = ax^3 + bx^2 + cx + d
-   * 求根公式参见: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
-   * @param {Array<Number>} coefs 系数
-   */
-
-
-  function getCubicRoots(coefs) {
-    var results = [];
-    var c3 = coefs[3];
-    var c2 = coefs[2] / c3;
-    var c1 = coefs[1] / c3;
-    var c0 = coefs[0] / c3;
-    var a = (3 * c1 - c2 * c2) / 3;
-    var b = (2 * c2 * c2 * c2 - 9 * c1 * c2 + 27 * c0) / 27;
-    var offset = c2 / 3;
-    var discrim = b * b / 4 + a * a * a / 27;
-    var halfB = b / 2;
-
-    if (Math.abs(discrim) <= 1e-6) {
-      discrim = 0;
-    }
-
-    if (discrim > 0) {
-      var e = Math.sqrt(discrim);
-      var tmp;
-      var root;
-      tmp = -halfB + e;
-      if (tmp >= 0) root = Math.pow(tmp, 1 / 3);else root = -Math.pow(-tmp, 1 / 3);
-      tmp = -halfB - e;
-      if (tmp >= 0) root += Math.pow(tmp, 1 / 3);else root -= Math.pow(-tmp, 1 / 3);
-      results.push(root - offset);
-    } else if (discrim < 0) {
-      var distance = Math.sqrt(-a / 3);
-      var angle = Math.atan2(Math.sqrt(-discrim), -halfB) / 3;
-      var cos = Math.cos(angle);
-      var sin = Math.sin(angle);
-      var sqrt3 = Math.sqrt(3);
-      results.push(2 * distance * cos - offset);
-      results.push(-distance * (cos + sqrt3 * sin) - offset);
-      results.push(-distance * (cos - sqrt3 * sin) - offset);
-    } else {
-      var _tmp;
-
-      if (halfB >= 0) _tmp = -Math.pow(halfB, 1 / 3);else _tmp = Math.pow(-halfB, 1 / 3);
-      results.push(2 * _tmp - offset); // really should return next root twice, but we return only one
-
-      results.push(-_tmp - offset);
-    }
-
-    return results;
-  }
-  /**
-   * 计算一元四次方程的根
-   * 求根公式: https://baike.baidu.com/item/%E4%B8%80%E5%85%83%E4%B8%89%E6%AC%A1%E6%96%B9%E7%A8%8B%E6%B1%82%E6%A0%B9%E5%85%AC%E5%BC%8F/10721952?fr=aladdin
-   * @param {Array<Number>} coefs 系数
-   */
-
-
-  function getQuarticRoots(coefs) {
-    var results = [];
-    var c4 = coefs[4];
-    var c3 = coefs[3] / c4;
-    var c2 = coefs[2] / c4;
-    var c1 = coefs[1] / c4;
-    var c0 = coefs[0] / c4;
-    var resolveRoots = getCubicRoots([1, -c2, c3 * c1 - 4 * c0, -c3 * c3 * c0 + 4 * c2 * c0 - c1 * c1].reverse());
-    var y = resolveRoots[0];
-    var discrim = c3 * c3 / 4 - c2 + y;
-    if (Math.abs(discrim) <= TOLERANCE) discrim = 0;
-
-    if (discrim > 0) {
-      var e = Math.sqrt(discrim);
-      var t1 = 3 * c3 * c3 / 4 - e * e - 2 * c2;
-      var t2 = (4 * c3 * c2 - 8 * c1 - c3 * c3 * c3) / (4 * e);
-      var plus = t1 + t2;
-      var minus = t1 - t2;
-      if (Math.abs(plus) <= TOLERANCE) plus = 0;
-      if (Math.abs(minus) <= TOLERANCE) minus = 0;
-
-      if (plus >= 0) {
-        var f = Math.sqrt(plus);
-        results.push(-c3 / 4 + (e + f) / 2);
-        results.push(-c3 / 4 + (e - f) / 2);
-      }
-
-      if (minus >= 0) {
-        var _f = Math.sqrt(minus);
-
-        results.push(-c3 / 4 + (_f - e) / 2);
-        results.push(-c3 / 4 - (_f + e) / 2);
-      }
-    } else if (discrim < 0) ; else {
-      var _t = y * y - 4 * c0;
-
-      if (_t >= -TOLERANCE) {
-        if (_t < 0) _t = 0;
-        _t = 2 * Math.sqrt(_t);
-
-        var _t2 = 3 * c3 * c3 / 4 - 2 * c2;
-
-        if (_t2 + _t >= TOLERANCE) {
-          var d = Math.sqrt(_t2 + _t);
-          results.push(-c3 / 4 + d / 2);
-          results.push(-c3 / 4 - d / 2);
-        }
-
-        if (_t2 - _t >= TOLERANCE) {
-          var _d = Math.sqrt(_t2 - _t);
-
-          results.push(-c3 / 4 + _d / 2);
-          results.push(-c3 / 4 - _d / 2);
-        }
-      }
-    }
-
-    return results;
-  }
-  /**
-   * 计算方程的根
-   * @param {Array<Number>} coefs 系数
-   */
-
-
-  function getRoots(coefs) {
-    var degree = coefs.length - 1;
-    var result = [];
-
-    switch (degree) {
-      case 0:
-        result = [];
-        break;
-
-      case 1:
-        result = getLinearRoot(coefs);
-        break;
-
-      case 2:
-        result = getQuadraticRoots(coefs);
-        break;
-
-      case 3:
-        result = getCubicRoots(coefs);
-        break;
-
-      case 4:
-        result = getQuarticRoots(coefs);
-    }
-
-    return result;
-  }
   /**
    * 获取求导之后的系数
    * @param coefs
    */
-
 
   function getDerivativeCoefs(coefs) {
     var derivative = [];
@@ -10478,9 +10485,9 @@
     var maxValue = evaluate(max, coefs);
     var result;
 
-    if (Math.abs(minValue) <= TOLERANCE) {
+    if (Math.abs(minValue) <= TOLERANCE$1) {
       result = min;
-    } else if (Math.abs(maxValue) <= TOLERANCE) {
+    } else if (Math.abs(maxValue) <= TOLERANCE$1) {
       result = max;
     } else if (minValue * maxValue <= 0) {
       var tmp1 = Math.log(max - min);
@@ -10491,7 +10498,7 @@
         result = 0.5 * (min + max);
         var value = evaluate(result, coefs);
 
-        if (Math.abs(value) <= TOLERANCE) {
+        if (Math.abs(value) <= TOLERANCE$1) {
           break;
         }
 
@@ -10615,14 +10622,14 @@
       coefs = [_v * _v, 2 * _v * _v2, (-c22.y * v6 + c12.y * _v2 * _v2 + c12.y * _v * v4 + _v * v5) / c12.y, (-c21.y * v6 + c12.y * _v2 * v4 + _v2 * v5) / c12.y, (_v4 * v6 + v4 * v5) / c12.y].reverse();
     }
 
-    var roots = getRoots(coefs);
+    var roots = getRoots$1(coefs);
 
     for (var i = 0; i < roots.length; i++) {
       var s = roots[i];
 
       if (0 <= s && s <= 1) {
-        var xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
-        var yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
+        var xRoots = getRoots$1([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
+        var yRoots = getRoots$1([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
 
         if (xRoots.length > 0 && yRoots.length > 0) {
           var _TOLERANCE = 1e-4;
@@ -10724,8 +10731,8 @@
 
     for (var i = 0; i < roots.length; i++) {
       var s = roots[i];
-      var xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-      var yRoots = getRoots([c13.y, c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse()); //   console.log('xRoots.length', xRoots.length);
+      var xRoots = getRoots$1([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+      var yRoots = getRoots$1([c13.y, c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse()); //   console.log('xRoots.length', xRoots.length);
 
       if (xRoots.length > 0 && yRoots.length > 0) {
         var _TOLERANCE2 = 1e-4;
@@ -10804,8 +10811,8 @@
 
     for (var i = 0; i < roots.length; i++) {
       var s = roots[i];
-      var xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
-      var yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse()); //
+      var xRoots = getRoots$1([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+      var yRoots = getRoots$1([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse()); //
       // console.log('xRoots', xRoots);
       //
       // console.log('yRoots', yRoots);
@@ -10876,7 +10883,7 @@
 
     var coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse(); // console.log('intersectBezier2Line coefs', coefs);
 
-    var roots = getRoots(coefs); // console.log('intersectBezier2Line roots', roots);
+    var roots = getRoots$1(coefs); // console.log('intersectBezier2Line roots', roots);
 
     for (var i = 0; i < roots.length; i++) {
       var t = roots[i];
@@ -10965,7 +10972,7 @@
     };
     cl = bx1 * by2 - bx2 * by1;
     var coefs = [cl + dot(n, c0), dot(n, c1), dot(n, c2), dot(n, c3)];
-    var roots = getRoots(coefs);
+    var roots = getRoots$1(coefs);
 
     for (var i = 0; i < roots.length; i++) {
       var t = roots[i];
@@ -13391,6 +13398,7 @@
     matrix: mx,
     tar: tar,
     vector: vector,
+    equation: equation,
     geom: geom,
     bezier: bezier,
     isec: isec,

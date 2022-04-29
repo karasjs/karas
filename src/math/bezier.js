@@ -120,6 +120,7 @@ function norm(v) {
   return Math.pow(sum, 1 / order);
 }
 
+// https://zhuanlan.zhihu.com/p/130247362
 function simpson38(derivativeFunc, l, r) {
   let f = derivativeFunc;
   let middleL = (2 * l + r) / 3;

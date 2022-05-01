@@ -283,7 +283,7 @@ class Polyline extends Geom {
   }
 
   __getPoints(originX, originY, width, height, points, isControl) {
-    return points.map((item, i) => {
+    return points.map(item => {
       if(!Array.isArray(item)) {
         return;
       }

@@ -157,8 +157,7 @@ function adaptiveSimpson38(derivativeFunc, l, r, eps = 0.001) {
  * @return {*} number
  */
 function bezierLength(points, startT = 0, endT = 1) {
-  let order = points.length === 4 ? 3 : 2;
-  let derivativeFunc = t => norm(at(t, points, order));
+  let derivativeFunc = t => norm(at(t, points));
   return adaptiveSimpson38(derivativeFunc, startT, endT);
 }
 
@@ -218,12 +217,12 @@ function at2(t, points, order = 1) {
   return [x, y];
 }
 
-function at(t, points, bezierOrder, derivativeOrder = 1) {
-  if(bezierOrder === 2) {
-    return at2(t, points, derivativeOrder);
-  }
-  else if(bezierOrder === 3) {
+function at(t, points, derivativeOrder = 1) {
+  if(points.length === 4) {
     return at3(t, points, derivativeOrder);
+  }
+  else if(points.length === 3) {
+    return at2(t, points, derivativeOrder);
   }
 }
 
@@ -233,8 +232,7 @@ function pointAtBezier(points, percent, maxIteration, eps) {
 }
 
 function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20, eps = 0.001) {
-  let order = points.length === 4 ? 3 : 2;
-  let derivativeFunc = t => norm(at(t, points, order));
+  let derivativeFunc = t => norm(at(t, points));
   let targetLen = length * percent;
   let approachLen = length;
   let approachT = percent;
@@ -246,8 +244,8 @@ function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20,
       break;
     }
     // Newton 法
-    let derivative1 = norm(at(approachT, points, order, 1)); // 1 阶导数
-    let derivative2 = norm(at(approachT, points, order, 2)); // 2 阶导数
+    let derivative1 = norm(at(approachT, points, 1)); // 1 阶导数
+    let derivative2 = norm(at(approachT, points, 2)); // 2 阶导数
     let numerator = d * derivative1;
     let denominator = d * derivative2 + derivative1 * derivative1;
     approachT = approachT - numerator / denominator;
@@ -257,8 +255,8 @@ function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20,
     else {
       preApproachT = approachT;
     }
-  }
-  return at(approachT, points, order, 0);
+  }console.log(approachT)
+  return at(approachT, points, 0);
 }
 
 function sliceBezier(points, t) {
@@ -309,4 +307,5 @@ export default {
   pointAtBezierWithLength,
   sliceBezier,
   sliceBezier2Both,
+  at,
 };

@@ -60,7 +60,7 @@ function getCubicRoots(coefs) {
   let discrim = b * b / 4 + a * a * a / 27;
   let halfB = b / 2;
 
-  if (Math.abs(discrim) <= 1e-6) {
+  if (Math.abs(discrim) <= TOLERANCE) {
     discrim = 0;
   }
 
@@ -182,7 +182,7 @@ function getQuarticRoots(coefs) {
 
 /**
  * 计算方程的根
- * @param {Array<Number>} coefs 系数
+ * @param {Array<Number>} coefs 系数按幂次方倒序
  */
 function getRoots(coefs) {
   const degree = coefs.length - 1;

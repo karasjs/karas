@@ -9888,7 +9888,7 @@
     var discrim = b * b / 4 + a * a * a / 27;
     var halfB = b / 2;
 
-    if (Math.abs(discrim) <= 1e-6) {
+    if (Math.abs(discrim) <= TOLERANCE) {
       discrim = 0;
     }
 
@@ -9989,7 +9989,7 @@
   }
   /**
    * 计算方程的根
-   * @param {Array<Number>} coefs 系数
+   * @param {Array<Number>} coefs 系数按幂次方倒序
    */
 
 
@@ -10215,10 +10215,9 @@
   function bezierLength(points) {
     var startT = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
     var endT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
-    var order = points.length === 4 ? 3 : 2;
 
     var derivativeFunc = function derivativeFunc(t) {
-      return norm(at(t, points, order));
+      return norm(at(t, points));
     };
 
     return adaptiveSimpson38(derivativeFunc, startT, endT);
@@ -10314,13 +10313,13 @@
     return [x, y];
   }
 
-  function at(t, points, bezierOrder) {
-    var derivativeOrder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+  function at(t, points) {
+    var derivativeOrder = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
 
-    if (bezierOrder === 2) {
-      return at2(t, points, derivativeOrder);
-    } else if (bezierOrder === 3) {
+    if (points.length === 4) {
       return at3(t, points, derivativeOrder);
+    } else if (points.length === 3) {
+      return at2(t, points, derivativeOrder);
     }
   }
 
@@ -10333,10 +10332,9 @@
     var percent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
     var maxIteration = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 20;
     var eps = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0.001;
-    var order = points.length === 4 ? 3 : 2;
 
     var derivativeFunc = function derivativeFunc(t) {
-      return norm(at(t, points, order));
+      return norm(at(t, points));
     };
 
     var targetLen = length * percent;
@@ -10353,9 +10351,9 @@
       } // Newton 法
 
 
-      var derivative1 = norm(at(approachT, points, order, 1)); // 1 阶导数
+      var derivative1 = norm(at(approachT, points, 1)); // 1 阶导数
 
-      var derivative2 = norm(at(approachT, points, order, 2)); // 2 阶导数
+      var derivative2 = norm(at(approachT, points, 2)); // 2 阶导数
 
       var numerator = d * derivative1;
       var denominator = d * derivative2 + derivative1 * derivative1;
@@ -10368,7 +10366,8 @@
       }
     }
 
-    return at(approachT, points, order, 0);
+    console.log(approachT);
+    return at(approachT, points, 0);
   }
 
   function sliceBezier(points, t) {
@@ -10439,7 +10438,8 @@
     pointAtBezier: pointAtBezier,
     pointAtBezierWithLength: pointAtBezierWithLength,
     sliceBezier: sliceBezier,
-    sliceBezier2Both: sliceBezier2Both
+    sliceBezier2Both: sliceBezier2Both,
+    at: at
   };
 
   var getRoots$1 = equation.getRoots; // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
@@ -39564,7 +39564,7 @@
     _createClass(Polyline, [{
       key: "__getPoints",
       value: function __getPoints(originX, originY, width, height, points, isControl) {
-        return points.map(function (item, i) {
+        return points.map(function (item) {
           if (!Array.isArray(item)) {
             return;
           }
@@ -39583,11 +39583,11 @@
 
           var res = [];
 
-          for (var _i3 = 0; _i3 < len; _i3++) {
-            if (_i3 % 2 === 0) {
-              res.push(originX + item[_i3] * width);
+          for (var i = 0; i < len; i++) {
+            if (i % 2 === 0) {
+              res.push(originX + item[i] * width);
             } else {
-              res.push(originY + item[_i3] * height);
+              res.push(originY + item[i] * height);
             }
           }
 
@@ -39791,12 +39791,12 @@
                 xa = _pointList$[0],
                 ya = _pointList$[1];
 
-            for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
-              var _pointList$_i = _slicedToArray(pointList[_i4], 2),
+            for (var _i3 = 1, len = pointList.length; _i3 < len; _i3++) {
+              var _pointList$_i = _slicedToArray(pointList[_i3], 2),
                   xb = _pointList$_i[0],
                   yb = _pointList$_i[1];
 
-              var c = controlList[_i4 - 1];
+              var c = controlList[_i3 - 1];
 
               if (c && c.length === 4) {
                 var bezierBox = bezier.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);

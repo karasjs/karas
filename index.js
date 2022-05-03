@@ -10366,7 +10366,6 @@
       }
     }
 
-    console.log(approachT);
     return at(approachT, points, 0);
   }
 
@@ -10432,6 +10431,28 @@
     return points;
   }
 
+  function pointAtByT(points) {
+    var t = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+    if (points.length === 4) {
+      return pointAtByT3(points, t);
+    } else if (points.length === 3) {
+      return pointAtByT2(points, t);
+    }
+  }
+
+  function pointAtByT2(points, t) {
+    var x = points[0][0] * (1 - t) * (1 - t) + 2 * points[1][0] * t * (1 - t) + points[2][0] * t * t;
+    var y = points[0][1] * (1 - t) * (1 - t) + 2 * points[1][1] * t * (1 - t) + points[2][1] * t * t;
+    return [x, y];
+  }
+
+  function pointAtByT3(points, t) {
+    var x = points[0][0] * (1 - t) * (1 - t) * (1 - t) + 3 * points[1][0] * t * (1 - t) * (1 - t) + 3 * points[2][0] * t * t * (1 - t) + points[3][0] * t * t * t;
+    var y = points[0][1] * (1 - t) * (1 - t) * (1 - t) + 3 * points[1][1] * t * (1 - t) * (1 - t) + 3 * points[2][1] * t * t * (1 - t) + points[3][1] * t * t * t;
+    return [x, y];
+  }
+
   var bezier = {
     bboxBezier: bboxBezier,
     bezierLength: bezierLength,
@@ -10439,7 +10460,7 @@
     pointAtBezierWithLength: pointAtBezierWithLength,
     sliceBezier: sliceBezier,
     sliceBezier2Both: sliceBezier2Both,
-    at: at
+    pointAtByT: pointAtByT
   };
 
   var getRoots$1 = equation.getRoots; // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)

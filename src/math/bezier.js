@@ -255,7 +255,7 @@ function pointAtBezierWithLength(points, length, percent = 1, maxIteration = 20,
     else {
       preApproachT = approachT;
     }
-  }console.log(approachT)
+  }
   return at(approachT, points, 0);
 }
 
@@ -300,6 +300,37 @@ function sliceBezier2Both(points, start = 0, end = 1) {
   return points;
 }
 
+function pointAtByT(points, t = 0) {
+  if(points.length === 4) {
+    return pointAtByT3(points, t);
+  }
+  else if(points.length === 3) {
+    return pointAtByT2(points, t);
+  }
+}
+
+function pointAtByT2(points, t) {
+  let x = points[0][0] * (1 - t) * (1 - t)
+    + 2 * points[1][0] * t * (1 - t)
+    + points[2][0] * t * t;
+  let y = points[0][1] * (1 - t) * (1 - t)
+    + 2 * points[1][1] * t * (1 - t)
+    + points[2][1] * t * t;
+  return [x, y];
+}
+
+function pointAtByT3(points, t) {
+  let x = points[0][0] * (1 - t) * (1 - t) * (1 - t)
+    + 3 * points[1][0] * t * (1 - t) * (1 - t)
+    + 3 * points[2][0] * t * t * (1 - t)
+    + points[3][0] * t * t * t;
+  let y = points[0][1] * (1 - t) * (1 - t) * (1 - t)
+    + 3 * points[1][1] * t * (1 - t) * (1 - t)
+    + 3 * points[2][1] * t * t * (1 - t)
+    + points[3][1] * t * t * t;
+  return [x, y];
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -307,5 +338,5 @@ export default {
   pointAtBezierWithLength,
   sliceBezier,
   sliceBezier2Both,
-  at,
+  pointAtByT,
 };

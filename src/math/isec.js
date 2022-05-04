@@ -667,12 +667,12 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
       let p6 = lerp(p4, p5, t);
       // console.log('p4, p5, p6', p4, p5, p6);
 
-      if(ax1 === ax2) {
+      if(bx1 === bx2) {
         if(minby <= p6.y && p6.y <= maxby) {
           result.push(p6);
         }
       }
-      else if(ay1 === ay2) {
+      else if(by1 === by2) {
         if(minbx <= p6.x && p6.x <= maxbx) {
           result.push(p6);
         }

@@ -185,7 +185,15 @@ function getQuarticRoots(coefs) {
  * @param {Array<Number>} coefs 系数按幂次方倒序
  */
 function getRoots(coefs) {
-  const degree = coefs.length - 1;
+  let degree = coefs.length - 1;
+  for(let i = degree; i >= 0; i--) {
+    if(Math.abs(coefs[i]) < 1e-12) {
+      degree--;
+    }
+    else {
+      break;
+    }
+  }
   let result = [];
   switch (degree) {
     case 0:

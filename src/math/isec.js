@@ -14,7 +14,7 @@ const ACCURACY = 6;
  */
 function getDerivativeCoefs(coefs) {
   let derivative = [];
-  for (let i = 1; i < coefs.length; i++) {
+  for(let i = 1; i < coefs.length; i++) {
     derivative.push(i * coefs[i]);
   }
   return derivative;
@@ -28,7 +28,7 @@ function getDerivativeCoefs(coefs) {
  */
 function evaluate(x, coefs) {
   let result = 0;
-  for (let i = coefs.length - 1; i >= 0; i--) {
+  for(let i = coefs.length - 1; i >= 0; i--) {
     result = result * x + coefs[i];
   }
   return result;
@@ -38,26 +38,29 @@ function bisection(min, max, coefs) {
   let minValue = evaluate(min, coefs);
   let maxValue = evaluate(max, coefs);
   let result;
-  if (Math.abs(minValue) <= TOLERANCE) {
+  if(Math.abs(minValue) <= TOLERANCE) {
     result = min;
-  } else if (Math.abs(maxValue) <= TOLERANCE) {
+  }
+  else if(Math.abs(maxValue) <= TOLERANCE) {
     result = max;
-  } else if (minValue * maxValue <= 0) {
+  }
+  else if(minValue * maxValue <= 0) {
     let tmp1 = Math.log(max - min);
     let tmp2 = Math.LN10 * ACCURACY;
     let iters = Math.ceil((tmp1 + tmp2) / Math.LN2);
-    for (let i = 0; i < iters; i++) {
+    for(let i = 0; i < iters; i++) {
       result = 0.5 * (min + max);
       let value = evaluate(result, coefs);
 
-      if (Math.abs(value) <= TOLERANCE) {
+      if(Math.abs(value) <= TOLERANCE) {
         break;
       }
 
-      if (value * minValue < 0) {
+      if(value * minValue < 0) {
         max = result;
         maxValue = value;
-      } else {
+      }
+      else {
         min = result;
         minValue = value;
       }
@@ -72,38 +75,40 @@ function getRootsInInterval(min, max, coefs) {
   let roots = [];
   let root;
   let degree = coefs.length - 1;
-  if (degree === 1) {
+  if(degree === 1) {
     root = bisection(min, max, coefs);
-    if (root != null) {
+    if(root != null) {
       roots.push(root);
     }
-  } else {
+  }
+  else {
     let derivativeCoefs = getDerivativeCoefs(coefs);
     let droots = getRootsInInterval(min, max, derivativeCoefs);
 
-    if (droots.length > 0) {
+    if(droots.length > 0) {
       // find root on [min, droots[0]]
       root = bisection(min, droots[0], coefs);
-      if (root != null) {
+      if(root != null) {
         roots.push(root);
       }
       // find root on [droots[i],droots[i+1]] for 0 <= i <= count-2
-      for (let i = 0; i <= droots.length - 2; i++) {
+      for(let i = 0; i <= droots.length - 2; i++) {
         root = bisection(droots[i], droots[i + 1], coefs);
-        if (root != null) {
+        if(root != null) {
           roots.push(root);
         }
       }
 
       // find root on [droots[count-1],xmax]
       root = bisection(droots[droots.length - 1], max, coefs);
-      if (root != null) {
+      if(root != null) {
         roots.push(root);
       }
-    } else {
+    }
+    else {
       // polynomial is monotone on [min,max], has at most one root
       root = bisection(min, max, coefs);
-      if (root != null) {
+      if(root != null) {
         roots.push(root);
       }
     }
@@ -130,7 +135,7 @@ function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
     x: 2 * ax2 - 2 * ax1,
     y: 2 * ay2 - 2 * ay1,
   };
-  c10 = { x: ax1, y: ay1 };
+  c10 = {x: ax1, y: ay1};
   c22 = {
     x: bx1 - 2 * bx2 + bx3,
     y: by1 - 2 * by2 + by3,
@@ -139,11 +144,11 @@ function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
     x: 2 * bx2 - 2 * bx1,
     y: 2 * by2 - 2 * by1,
   };
-  c20 = { x: bx1, y: by1 };
+  c20 = {x: bx1, y: by1};
 
   let coefs;
 
-  if (c12.y === 0) {
+  if(c12.y === 0) {
     let v0 = c12.x * (c10.y - c20.y);
     let v1 = v0 - c11.x * c11.y;
     let v2 = v0 + v1;
@@ -156,7 +161,8 @@ function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
       -c21.x * v3 - c21.y * v0 - c21.y * v1,
       (c10.x - c20.x) * v3 + (c10.y - c20.y) * v1
     ].reverse();
-  } else {
+  }
+  else {
     let v0 = c12.x * c22.y - c12.y * c22.x;
     let v1 = c12.x * c21.y - c21.x * c12.y;
     let v2 = c11.x * c12.y - c11.y * c12.x;
@@ -175,27 +181,27 @@ function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
 
   let roots = getRoots(coefs);
 
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let s = roots[i];
 
-    if (0 <= s && s <= 1) {
-      let xRoots = getRoots([ c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x ].reverse());
+    if(0 <= s && s <= 1) {
+      let xRoots = getRoots([c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x].reverse());
 
-      let yRoots = getRoots([ c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y ].reverse());
+      let yRoots = getRoots([c12.y, c11.y, c10.y - c20.y - s * c21.y - s * s * c22.y].reverse());
 
-      if (xRoots.length > 0 && yRoots.length > 0) {
+      if(xRoots.length > 0 && yRoots.length > 0) {
         let TOLERANCE = 1e-4;
 
         checkRoots:
-          for (let j = 0; j < xRoots.length; j++) {
+          for(let j = 0; j < xRoots.length; j++) {
             let xRoot = xRoots[j];
 
-            if (0 <= xRoot && xRoot <= 1) {
-              for (let k = 0; k < yRoots.length; k++) {
-                if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+            if(0 <= xRoot && xRoot <= 1) {
+              for(let k = 0; k < yRoots.length; k++) {
+                if(Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
                   let x = c22.x * s * s + c21.x * s + c20.x;
                   let y = c22.y * s * s + c21.y * s + c20.y;
-                  result.push({ x, y });
+                  result.push({x, y});
                   // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
                   break checkRoots;
                 }
@@ -229,7 +235,7 @@ function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by
     y: -3 * ay1 + 3 * ay2,
   };
 
-  c10 = { x: ax1, y: ay1 };
+  c10 = {x: ax1, y: ay1};
 
   c23 = {
     x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
@@ -246,7 +252,7 @@ function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by
     y: -3 * by1 + 3 * by2,
   };
 
-  c20 = { x: bx1, y: by1 };
+  c20 = {x: bx1, y: by1};
 
   let c10x2 = c10.x * c10.x;
   let c10x3 = c10.x * c10.x * c10.x;
@@ -279,7 +285,7 @@ function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by
   let c23y2 = c23.y * c23.y;
   let c23y3 = c23.y * c23.y * c23.y;
 
-  let coefs = [ -c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y +
+  let coefs = [-c13x3 * c23y3 + c13y3 * c23x3 - 3 * c13.x * c13y2 * c23x2 * c23.y +
   3 * c13x2 * c13.y * c23.x * c23y2,
     -6 * c13.x * c22.x * c13y2 * c23.x * c23.y + 6 * c13x2 * c13.y * c22.y * c23.x * c23.y + 3 * c22.x * c13y3 * c23x2 -
     3 * c13x3 * c22.y * c23y2 - 3 * c13.x * c13y2 * c22.y * c23x2 + 3 * c13x2 * c22.x * c13.y * c23y2,
@@ -466,31 +472,27 @@ function intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by
 
   let roots = getRootsInInterval(0, 1, coefs);
 
-  // console.log('roots', roots);
-
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let s = roots[i];
-    let xRoots = getRoots([ c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x ].reverse());
-    let yRoots = getRoots([ c13.y,
+    let xRoots = getRoots([c13.x, c12.x, c11.x, c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+    let yRoots = getRoots([c13.y,
       c12.y,
       c11.y,
-      c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y ].reverse());
+      c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
 
-    //   console.log('xRoots.length', xRoots.length);
-
-    if (xRoots.length > 0 && yRoots.length > 0) {
+    if(xRoots.length > 0 && yRoots.length > 0) {
       let TOLERANCE = 1e-4;
 
       checkRoots:
-        for (let j = 0; j < xRoots.length; j++) {
+        for(let j = 0; j < xRoots.length; j++) {
           let xRoot = xRoots[j];
 
-          if (0 <= xRoot && xRoot <= 1) {
-            for (let k = 0; k < yRoots.length; k++) {
-              if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+          if(0 <= xRoot && xRoot <= 1) {
+            for(let k = 0; k < yRoots.length; k++) {
+              if(Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
                 let x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
                 let y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                result.push({ x, y });
+                result.push({x, y});
                 break checkRoots;
               }
             }
@@ -515,7 +517,7 @@ function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
     x: 2 * ax2 - 2 * ax1,
     y: 2 * ay2 - 2 * ay1,
   };
-  c10 = { x: ax1, y: ay1 };
+  c10 = {x: ax1, y: ay1};
 
   c23 = {
     x: -bx1 + 3 * bx2 - 3 * bx3 + bx4,
@@ -532,7 +534,7 @@ function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
     y: -3 * by1 + 3 * by2,
   };
 
-  c20 = { x: bx1, y: by1 };
+  c20 = {x: bx1, y: by1};
 
   let c10x2 = c10.x * c10.x;
   let c10y2 = c10.y * c10.y;
@@ -574,38 +576,38 @@ function intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
     c11.x * c11.y * c12.x * c20.y - 2 * c20.x * c12.x * c20.y * c12.y - 2 * c10.x * c20.x * c12y2 +
     c10.x * c11y2 * c12.x + c10.y * c11x2 * c12.y - 2 * c10.y * c12x2 * c20.y -
     c20.x * c11y2 * c12.x - c11x2 * c20.y * c12.y + c10x2 * c12y2 + c10y2 * c12x2 +
-    c20x2 * c12y2 + c12x2 * c20y2 ].reverse();
+    c20x2 * c12y2 + c12x2 * c20y2].reverse();
 
   let roots = getRootsInInterval(0, 1, coefs);
   // console.log(roots);
 
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let s = roots[i];
-    let xRoots = getRoots([ c12.x,
+    let xRoots = getRoots([c12.x,
       c11.x,
-      c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x ].reverse());
-    let yRoots = getRoots([ c12.y,
+      c10.x - c20.x - s * c21.x - s * s * c22.x - s * s * s * c23.x].reverse());
+    let yRoots = getRoots([c12.y,
       c11.y,
-      c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y ].reverse());
+      c10.y - c20.y - s * c21.y - s * s * c22.y - s * s * s * c23.y].reverse());
     //
     // console.log('xRoots', xRoots);
     //
     // console.log('yRoots', yRoots);
 
-    if (xRoots.length > 0 && yRoots.length > 0) {
+    if(xRoots.length > 0 && yRoots.length > 0) {
       let TOLERANCE = 1e-4;
 
       checkRoots:
-        for (let j = 0; j < xRoots.length; j++) {
+        for(let j = 0; j < xRoots.length; j++) {
           let xRoot = xRoots[j];
 
-          if (0 <= xRoot && xRoot <= 1) {
-            for (let k = 0; k < yRoots.length; k++) {
-              if (Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
+          if(0 <= xRoot && xRoot <= 1) {
+            for(let k = 0; k < yRoots.length; k++) {
+              if(Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
 
                 let x = c23.x * s * s * s + c22.x * s * s + c21.x * s + c20.x;
                 let y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
-                result.push({ x, y });
+                result.push({x, y});
                 break checkRoots;
               }
             }
@@ -640,14 +642,14 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
     x: -2 * ax1 + 2 * ax2,
     y: -2 * ay1 + 2 * ay2,
   };
-  c0 = { x: ax1, y: ay1 };
+  c0 = {x: ax1, y: ay1};
 
-  n = { x: by1 - by2, y: bx2 - bx1 };
+  n = {x: by1 - by2, y: bx2 - bx1};
   cl = bx1 * by2 - bx2 * by1;
 
   // console.log('intersectBezier2Line', n, c0, c1, c2, cl);
 
-  let coefs = [ dot(n, c2), dot(n, c1), dot(n, c0) + cl ].reverse();
+  let coefs = [dot(n, c2), dot(n, c1), dot(n, c0) + cl].reverse();
 
   // console.log('intersectBezier2Line coefs', coefs);
 
@@ -655,25 +657,27 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
 
   // console.log('intersectBezier2Line roots', roots);
 
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let t = roots[i];
 
-    if (0 <= t && t <= 1) {
-      let p4 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
-      let p5 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
+    if(0 <= t && t <= 1) {
+      let p4 = lerp({x: ax1, y: ay1}, {x: ax2, y: ay2}, t);
+      let p5 = lerp({x: ax2, y: ay2}, {x: ax3, y: ay3}, t);
 
       let p6 = lerp(p4, p5, t);
       // console.log('p4, p5, p6', p4, p5, p6);
 
-      if (ax1 === ax2) {
-        if (minby <= p6.y && p6.y <= maxby) {
+      if(ax1 === ax2) {
+        if(minby <= p6.y && p6.y <= maxby) {
           result.push(p6);
         }
-      } else if (ay1 === ay2) {
-        if (minbx <= p6.x && p6.x <= maxbx) {
+      }
+      else if(ay1 === ay2) {
+        if(minbx <= p6.x && p6.x <= maxbx) {
           result.push(p6);
         }
-      } else if (p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
+      }
+      else if(p6.x >= minbx && p6.y >= minby && p6.x <= maxbx && p6.y <= maxby) {
         result.push(p6);
       }
     }
@@ -717,9 +721,9 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
     x: -3 * ax1 + 3 * ax2,
     y: -3 * ay1 + 3 * ay2,
   };
-  c0 = { x: ax1, y: ay1 };
+  c0 = {x: ax1, y: ay1};
 
-  n = { x: by1 - by2, y: bx2 - bx1 };
+  n = {x: by1 - by2, y: bx2 - bx1};
   cl = bx1 * by2 - bx2 * by1;
 
   let coefs = [
@@ -731,27 +735,28 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
 
   let roots = getRoots(coefs);
 
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let t = roots[i];
 
-    if (0 <= t && t <= 1) {
-      let p5 = lerp({ x: ax1, y: ay1 }, { x: ax2, y: ay2 }, t);
-      let p6 = lerp({ x: ax2, y: ay2 }, { x: ax3, y: ay3 }, t);
-      let p7 = lerp({ x: ax3, y: ay3 }, { x: ax4, y: ay4 }, t);
+    if(0 <= t && t <= 1) {
+      let p5 = lerp({x: ax1, y: ay1}, {x: ax2, y: ay2}, t);
+      let p6 = lerp({x: ax2, y: ay2}, {x: ax3, y: ay3}, t);
+      let p7 = lerp({x: ax3, y: ay3}, {x: ax4, y: ay4}, t);
       let p8 = lerp(p5, p6, t);
       let p9 = lerp(p6, p7, t);
       let p10 = lerp(p8, p9, t);
 
-
-      if (ax1 === ax2) {
-        if (minby <= p10.y && p10.y <= maxby) {
+      if(bx1 === bx2) {
+        if(minby <= p10.y && p10.y <= maxby) {
           result.push(p10);
         }
-      } else if (ay1 === ay2) {
-        if (minbx <= p10.x && p10.x <= maxbx) {
+      }
+      else if(by1 === by2) {
+        if(minbx <= p10.x && p10.x <= maxbx) {
           result.push(p10);
         }
-      } else if (p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
+      }
+      else if(p10.x >= minbx && p10.y >= minby && p10.x <= maxbx && p10.y <= maxby) {
         result.push(p10);
       }
     }
@@ -771,27 +776,27 @@ function intersectBezier2Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, cx, cy, rx, ry) {
     x: -2 * ax1 + 2 * ax2,
     y: -2 * ay1 + 2 * ay2,
   };
-  c0 = { x: ax1, y: ay1 };
+  c0 = {x: ax1, y: ay1};
   let rxrx = rx * rx;
   let ryry = ry * ry;
 
-  let coefs = [ ryry * c2.x * c2.x + rxrx * c2.y * c2.y,
+  let coefs = [ryry * c2.x * c2.x + rxrx * c2.y * c2.y,
     2 * (ryry * c2.x * c1.x + rxrx * c2.y * c1.y),
     ryry * (2 * c2.x * c0.x + c1.x * c1.x) + rxrx * (2 * c2.y * c0.y + c1.y * c1.y) -
     2 * (ryry * cx * c2.x + rxrx * cy * c2.y),
     2 * (ryry * c1.x * (c0.x - cx) + rxrx * c1.y * (c0.y - cy)),
     ryry * (c0.x * c0.x + cx * cx) + rxrx * (c0.y * c0.y + cy * cy) -
-    2 * (ryry * cx * c0.x + rxrx * cy * c0.y) - rxrx * ryry ].reverse();
+    2 * (ryry * cx * c0.x + rxrx * cy * c0.y) - rxrx * ryry].reverse();
 
   let roots = getRoots(coefs);
 
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let t = roots[i];
 
-    if (0 <= t && t <= 1) {
+    if(0 <= t && t <= 1) {
       let x = c2.x * t * t + c1.x * t + c0.x;
       let y = c2.y * t * t + c1.y * t + c0.y;
-      result.push({ x, y });
+      result.push({x, y});
     }
   }
   return result;
@@ -817,11 +822,11 @@ function intersectBezier3Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, cx, cy,
     x: -3 * ax1 + 3 * ax2,
     y: -3 * ay1 + 3 * ay2,
   };
-  c0 = { x: ax1, y: ay1 };
+  c0 = {x: ax1, y: ay1};
   let rxrx = rx * rx;
   let ryry = ry * ry;
 
-  let coefs = [ c3.x * c3.x * ryry + c3.y * c3.y * rxrx,
+  let coefs = [c3.x * c3.x * ryry + c3.y * c3.y * rxrx,
     2 * (c3.x * c2.x * ryry + c3.y * c2.y * rxrx),
     2 * (c3.x * c1.x * ryry + c3.y * c1.y * rxrx) + c2.x * c2.x * ryry + c2.y * c2.y * rxrx,
     2 * c3.x * ryry * (c0.x - cx) + 2 * c3.y * rxrx * (c0.y - cy) +
@@ -835,13 +840,13 @@ function intersectBezier3Ellipse(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, cx, cy,
 
   let roots = getRootsInInterval(0, 1, coefs);
 
-  for (let i = 0; i < roots.length; i++) {
+  for(let i = 0; i < roots.length; i++) {
     let t = roots[i];
 
-    if (0 <= t && t <= 1) {
+    if(0 <= t && t <= 1) {
       let x = c3.x * t * t * t + c2.x * t * t + c1.x * t + c0.x;
       let y = c3.y * t * t * t + c2.y * t * t + c1.y * t + c0.y;
-      result.push({ x, y });
+      result.push({x, y});
     }
   }
   return result;

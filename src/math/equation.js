@@ -196,9 +196,6 @@ function getRoots(coefs) {
   }
   let result = [];
   switch (degree) {
-    case 0:
-      result = [];
-      break;
     case 1:
       result = getLinearRoot(coefs);
       break;

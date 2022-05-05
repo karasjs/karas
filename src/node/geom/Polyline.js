@@ -1,7 +1,7 @@
 import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
-import geom from '../../math/geom';
+import bezier from '../../math/bezier';
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -56,14 +56,14 @@ function getLength(list, isMulti) {
         prev = item;
       }
       else if(item.length === 4) {
-        let c = geom.bezierLength([prev, [item[0], item[1]], [item[2], item[3]]], 2);
+        let c = bezier.bezierLength([prev, [item[0], item[1]], [item[2], item[3]]]);
         res.push(c);
         total += c;
         increase.push(total);
         prev = [item[2], item[3]];
       }
       else if(item.length === 6) {
-        let c = geom.bezierLength([prev, [item[0], item[1]], [item[2], item[3]], [item[4], item[5]]], 3);
+        let c = bezier.bezierLength([prev, [item[0], item[1]], [item[2], item[3]], [item[4], item[5]]]);
         res.push(c);
         total += c;
         increase.push(total);
@@ -153,11 +153,11 @@ function getNewList(list, len, start = 0, end = 1) {
       }
     }
     else if(current.length === 4) {
-      let r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+      let r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
       endPoint = [r[1][0], r[1][1], r[2][0], r[2][1]];
     }
     else if(current.length === 6) {
-      let r = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+      let r = bezier.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
       endPoint = [r[1][0], r[1][1], r[2][0], r[2][1], r[3][0], r[3][1]];
     }
   }
@@ -191,7 +191,7 @@ function getNewList(list, len, start = 0, end = 1) {
       res.push(current);
     }
     else if(current.length === 4) {
-      let r = geom.sliceBezier([[current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
+      let r = bezier.sliceBezier([[current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
       res.push(r[0]);
       res.push([r[1][0], r[1][1], r[2][0], r[2][1]]);
       // 同一条线段上去除end冲突
@@ -200,7 +200,7 @@ function getNewList(list, len, start = 0, end = 1) {
       }
     }
     else if(current.length === 6) {
-      let r = geom.sliceBezier([[current[4], current[5]], [current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
+      let r = bezier.sliceBezier([[current[4], current[5]], [current[2], current[3]], [current[0], current[1]], prev], 1 - t).reverse();
       res.push(r[0])
       res.push([r[1][0], r[1][1], r[2][0], r[2][1], current[4], current[5]]);
       if(i === j && !isStartLt0 && !isEndGt1) {
@@ -283,7 +283,7 @@ class Polyline extends Geom {
   }
 
   __getPoints(originX, originY, width, height, points, isControl) {
-    return points.map((item, i) => {
+    return points.map(item => {
       if(!Array.isArray(item)) {
         return;
       }
@@ -469,14 +469,14 @@ class Polyline extends Geom {
           let [xb, yb] = pointList[i];
           let c = controlList[i - 1];
           if(c && c.length === 4) {
-            let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+            let bezierBox = bezier.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
             bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
             bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
             bbox[2] = Math.max(bbox[2], bezierBox[2] + half);
             bbox[3] = Math.max(bbox[3], bezierBox[3] + half);
           }
           else if(c && c.length === 2) {
-            let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+            let bezierBox = bezier.bboxBezier(xa, ya, c[0], c[1], xb, yb);
             bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
             bbox[1] = Math.min(bbox[1], bezierBox[1] - half);
             bbox[2] = Math.max(bbox[2], bezierBox[2] + half);

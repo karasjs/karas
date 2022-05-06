@@ -28,7 +28,7 @@ function h(deg) {
  * @param vertexes 多边形顶点坐标
  * @returns {boolean}
  */
-function pointInPolygon(x, y, vertexes) {
+function pointInConvexPolygon(x, y, vertexes) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
   let [xmax, ymax] = vertexes[0];
   let [xmin, ymin] = vertexes[0];
@@ -43,12 +43,21 @@ function pointInPolygon(x, y, vertexes) {
   if(x < xmin || y < ymin || x > xmax || y > ymax) {
     return false;
   }
-  // 所有向量积均为非负数说明在多边形内或边上
+  let first;
+  // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
   for(let i = 0, len = vertexes.length; i < len; i++) {
     let [x1, y1] = vertexes[i];
     let [x2, y2] = vertexes[(i + 1) % len];
-    if(crossProduct(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
-      return false;
+    let n = crossProduct(x2 - x1, y2 - y1, x - x1, y - y1);
+    if(n !== 0) {
+      n = n > 0 ? 1 : 0;
+      // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+      if(first === undefined) {
+        first = n;
+      }
+      else if(first ^ n) {
+        return false;
+      }
     }
   }
   return true;
@@ -78,7 +87,7 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
       x4 /= w4;
       y4 /= w4;
     }
-    return pointInPolygon(x, y, [
+    return pointInConvexPolygon(x, y, [
       [x1, y1],
       [x2, y2],
       [x4, y4],
@@ -514,7 +523,7 @@ function pointOnCircle(x, y, r, deg) {
 }
 
 export default {
-  pointInPolygon,
+  pointInConvexPolygon,
   pointInQuadrilateral,
   d2r,
   r2d,

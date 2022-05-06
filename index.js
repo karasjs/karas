@@ -3076,7 +3076,7 @@
    */
 
 
-  function pointInPolygon(x, y, vertexes) {
+  function pointInConvexPolygon(x, y, vertexes) {
     // 先取最大最小值得一个外围矩形，在外边可快速判断false
     var _vertexes$ = _slicedToArray(vertexes[0], 2),
         xmax = _vertexes$[0],
@@ -3101,8 +3101,9 @@
 
     if (x < xmin || y < ymin || x > xmax || y > ymax) {
       return false;
-    } // 所有向量积均为非负数说明在多边形内或边上
+    }
 
+    var first; // 所有向量积均为非负数（逆时针，反过来顺时针是非正）说明在多边形内或边上
 
     for (var _i = 0, _len = vertexes.length; _i < _len; _i++) {
       var _vertexes$_i = _slicedToArray(vertexes[_i], 2),
@@ -3113,8 +3114,16 @@
           x2 = _vertexes[0],
           y2 = _vertexes[1];
 
-      if (crossProduct$1(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
-        return false;
+      var n = crossProduct$1(x2 - x1, y2 - y1, x - x1, y - y1);
+
+      if (n !== 0) {
+        n = n > 0 ? 1 : 0; // 第一个赋值，后面检查是否正负一致性，不一致是反例就跳出
+
+        if (first === undefined) {
+          first = n;
+        } else if (first ^ n) {
+          return false;
+        }
       }
     }
 
@@ -3178,7 +3187,7 @@
         y4 /= w4;
       }
 
-      return pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
+      return pointInConvexPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;
     }
@@ -3645,7 +3654,7 @@
   }
 
   var geom = {
-    pointInPolygon: pointInPolygon,
+    pointInConvexPolygon: pointInConvexPolygon,
     pointInQuadrilateral: pointInQuadrilateral,
     d2r: d2r,
     r2d: r2d,
@@ -10007,10 +10016,6 @@
     var result = [];
 
     switch (degree) {
-      case 0:
-        result = [];
-        break;
-
       case 1:
         result = getLinearRoot(coefs);
         break;

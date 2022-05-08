@@ -201,7 +201,7 @@ function intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by
                 if(Math.abs(xRoot - yRoots[k]) < TOLERANCE) {
                   let x = c22.x * s * s + c21.x * s + c20.x;
                   let y = c22.y * s * s + c21.y * s + c20.y;
-                  result.push({x, y});
+                  result.push({x, y, t: xRoot});
                   // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
                   break checkRoots;
                 }
@@ -632,6 +632,7 @@ function intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) 
   const lerp = (a, b, t) => ({
     x: a.x - (a.x - b.x) * t,
     y: a.y - (a.y - b.y) * t,
+    t,
   });
 
   c2 = {
@@ -707,6 +708,7 @@ function intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, 
   const lerp = (a, b, t) => ({
     x: a.x - (a.x - b.x) * t,
     y: a.y - (a.y - b.y) * t,
+    t,
   });
 
   c3 = {

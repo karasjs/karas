@@ -1,3 +1,4 @@
+import equation from './equation';
 
 /**
  * 二阶贝塞尔曲线范围框
@@ -331,6 +332,77 @@ function pointAtByT3(points, t) {
   return [x, y];
 }
 
+// 已知曲线和上面一点获得t
+function getPointT(points, x, y) {
+  if(points.length === 4) {
+    return getPointT3(points, x, y);
+  }
+  else if(points.length === 3) {
+    return getPointT2(points, x, y);
+  }
+}
+
+function getPointT2(points, x, y) {
+  // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
+  let tx = equation.getRoots([
+    points[0][0] - x,
+    2 * (points[1][0] - points[0][0]),
+    points[2][0] + points[0][0] - 2 * points[1][0]
+  ]).filter(i => i >= 0 && i <= 1);
+  let ty = equation.getRoots([
+    points[0][1] - y,
+    2 * (points[1][1] - points[0][1]),
+    points[2][1] + points[0][1] - 2 * points[1][1]
+  ]).filter(i => i >= 0 && i <= 1);
+  // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
+  let t = [];
+  for(let i = 0, len = tx.length; i < len; i++) {
+    let x = tx[i];
+    for(let j = 0, len = ty.length; j < len; j++) {
+      let y = ty[j];
+      let diff = Math.abs(x - y);
+      // 必须小于一定误差
+      if(diff < 1e-10) {
+        t.push({
+          x,
+          y,
+          diff,
+        });
+      }
+    }
+  }
+  t.sort(function(a, b) {
+    return a.diff - b.diff;
+  });
+  if(t.length > 2) {
+    t.splice(2, 2);
+  }
+  // 取均数
+  t = t.map(item => (item.x + item.y) * 0.5);
+  let res = [];
+  t.forEach(t => {
+    let xt = points[0][0] * Math.pow(1 - t, 2)
+      + 2 * points[1][0] * t * (1 - t)
+      + points[2][0] * t * t;
+    let yt = points[0][1] * Math.pow(1 - t, 2)
+      + 2 * points[1][1] * t * (1 - t)
+      + points[2][1] * t * t;
+    // 计算误差忽略
+    if(Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+      res.push(t);
+    }
+  });
+  return res;
+}
+
+function getPointT3(points, x, y) {
+  let tx = equation.getRoots([
+    points[2][0] - x,
+    2 * (points[1][0] - points[0][0]),
+    points[2][0] + points[0][0] - 2 * points[1][0]
+  ]).filter(i => i >= 0 && i <= 1);
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -339,4 +411,5 @@ export default {
   sliceBezier,
   sliceBezier2Both,
   pointAtByT,
+  getPointT,
 };

@@ -10471,7 +10471,7 @@
 
   function getPointT(points, x, y) {
     if (points.length === 4) {
-      return getPointT3(points, x);
+      return getPointT3(points, x, y);
     } else if (points.length === 3) {
       return getPointT2(points, x, y);
     }
@@ -10510,7 +10510,7 @@
     });
 
     if (t.length > 2) {
-      t.splice(2, 2);
+      t.splice(2);
     } // 取均数
 
 
@@ -10530,9 +10530,54 @@
   }
 
   function getPointT3(points, x, y) {
-    var tx = equation.getRoots([points[2][0] - x, 2 * (points[1][0] - points[0][0]), points[2][0] + points[0][0] - 2 * points[1][0]]).filter(function (i) {
+    var tx = equation.getRoots([points[0][0] - x, 3 * (points[1][0] - points[0][0]), 3 * (points[2][0] + points[0][0] - 2 * points[1][0]), points[3][0] - points[0][0] + 3 * points[1][0] - 3 * points[2][0]]).filter(function (i) {
       return i >= 0 && i <= 1;
     });
+    var ty = equation.getRoots([points[0][1] - y, 3 * (points[1][1] - points[0][1]), 3 * (points[2][1] + points[0][1] - 2 * points[1][1]), points[3][1] - points[0][1] + 3 * points[1][1] - 3 * points[2][1]]).filter(function (i) {
+      return i >= 0 && i <= 1;
+    }); // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
+
+    var t = [];
+
+    for (var i = 0, len = tx.length; i < len; i++) {
+      var _x2 = tx[i];
+
+      for (var j = 0, _len2 = ty.length; j < _len2; j++) {
+        var _y2 = ty[j];
+        var diff = Math.abs(_x2 - _y2); // 必须小于一定误差
+
+        if (diff < 1e-10) {
+          t.push({
+            x: _x2,
+            y: _y2,
+            diff: diff
+          });
+        }
+      }
+    }
+
+    t.sort(function (a, b) {
+      return a.diff - b.diff;
+    });
+
+    if (t.length > 3) {
+      t.splice(3);
+    } // 取均数
+
+
+    t = t.map(function (item) {
+      return (item.x + item.y) * 0.5;
+    });
+    var res = [];
+    t.forEach(function (t) {
+      var xt = points[0][0] * Math.pow(1 - t, 3) + 3 * points[1][0] * t * Math.pow(1 - t, 2) + 3 * points[2][0] * t * t * (1 - t) + points[3][0] * Math.pow(t, 3);
+      var yt = points[0][1] * Math.pow(1 - t, 3) + 3 * points[1][1] * t * Math.pow(1 - t, 2) + 3 * points[2][1] * t * t * (1 - t) + points[3][1] * Math.pow(t, 3); // 计算误差忽略
+
+      if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+        res.push(t);
+      }
+    });
+    return res;
   }
 
   var bezier = {
@@ -10852,7 +10897,8 @@
                 var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
                 result.push({
                   x: x,
-                  y: y
+                  y: y,
+                  t: xRoot
                 });
                 break checkRoots;
               }
@@ -10935,7 +10981,8 @@
                 var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
                 result.push({
                   x: x,
-                  y: y
+                  y: y,
+                  t: xRoot
                 });
                 break checkRoots;
               }
@@ -13619,7 +13666,6 @@
 
       this.vertices = vertices;
       this.first = null;
-      this.number = 0;
       this.lastUnprocessed = null; // 算法过程中存储上一个未处理的交点
 
       this.firstIntersect = null; // 算法过程中存储未处理的第一个交点，加快速度避免每次从头开始查找
@@ -13645,8 +13691,6 @@
           vertex.prev = prev;
           prev.next = vertex;
         }
-
-        this.number++;
       }
       /**
        * 在start和end之间插入新的交点，这里面有顺序，一条边和另外多条边都相交时，start和end之间则有多个点（即交点），
@@ -13657,7 +13701,6 @@
     }, {
       key: "insertVertex",
       value: function insertVertex(vertex, start, end) {
-        // console.log(vertex, start, end);
         var prev,
             curr = start; // 找到正确的位置，一条边上多个交点时不能直接用end
 
@@ -13676,20 +13719,31 @@
             l = coords.length;
 
         if (l === 4) {
-          // console.error(coords, vertex.distance);
-          var points = [start.coords, coords.slice(0, 2), coords.slice(2)]; // 注意t的开始结束需要根据前面后面的点的distance，因为可能多个交点，没有则默认0和1
+          var points = [start.coords.slice(-2), coords.slice(0, 2), coords.slice(2)]; // 注意t的开始结束需要根据前面后面的点的distance，因为可能多个交点，没有则默认0和1
 
           var a = bezier.sliceBezier2Both(points, prev.distance || 0, vertex.distance);
           var b = bezier.sliceBezier2Both(points, vertex.distance, curr.distance || 1);
-          vertex.coords.unshift(a[1][0], a[1][1]); // console.log(a, b);
-          // console.log(curr);
-
+          vertex.coords.unshift(a[1][0], a[1][1]);
           coords = curr.coords;
-          coords[0] = b[1][0];
-          coords[1] = b[1][1];
-        }
+          coords[0] = b[1][0]; // 替换原本的曲线控制点为新的控制点
 
-        this.number++;
+          coords[1] = b[1][1];
+        } else if (l === 6) {
+          // 同上
+          var _points = [start.coords.slice(-2), coords.slice(0, 2), coords.slice(2, 4), coords.slice(4)];
+
+          var _a = bezier.sliceBezier2Both(_points, prev.distance || 0, vertex.distance);
+
+          var _b = bezier.sliceBezier2Both(_points, vertex.distance, curr.distance || 1);
+
+          vertex.coords.unshift(_a[1][0], _a[1][1], _a[2][0], _a[2][1]);
+          coords = curr.coords;
+          coords[0] = _b[1][0]; // 这里是3阶所以是2个
+
+          coords[1] = _b[1][1];
+          coords[2] = _b[2][0];
+          coords[3] = _b[2][1];
+        }
       } // 找到下一个非交点顶点，交点是插入的顶点
 
     }, {
@@ -13779,7 +13833,6 @@
         var sourceVertex = first;
         var clipVertex = first2;
         var sourceInClip, clipInSource;
-        // 阶段1，求得所有交点，两个多边形的顶点逐个循环形成每条边互相测试
 
         do {
           // 不是交点只是多边形顶点的时候，开始肯定会进入因为这时候还没有交点
@@ -13792,7 +13845,7 @@
                       next2 = clipVertex.next;
                   var is = getIntersection(sourceVertex.coords, next.coords, clipVertex.coords, next2.coords); // 是相交的时候才有意义，可能有多个交点
 
-                  if (is.length) {
+                  if (is) {
                     is.forEach(function (item) {
                       console.warn(item.coords, item.toSource, item.toClip);
                       var sourceIntersection = Vertex.createIntersection(item.coords.slice(0), item.toSource);
@@ -13894,7 +13947,6 @@
 
 
   function getIntersection(s1, s2, c1, c2) {
-    var res = [];
     var s1l = s1.length,
         s2l = s2.length,
         c1l = c1.length,
@@ -13915,20 +13967,52 @@
         var d = (c2y - c1y) * (s2x - s1x) - (c2x - c1x) * (s2y - s1y); // 平行不相交
 
         if (d === 0) {
-          // console.log(s1x,s1y,s2x,s2y,';',c1x,c1y,c2x,c2y,';',d);
-          return res;
+          return;
         }
 
         var toSource = ((c2x - c1x) * (s1y - c1y) - (c2y - c1y) * (s1x - c1x)) / d;
-        var toClip = ((s2x - s1x) * (s1y - c1y) - (s2y - s1y) * (s1x - c1x)) / d; // console.log(s1,s2,c1,c2);
-        // console.log(s1x,s1y,s2x,s2y,';',c1x,c1y,c2x,c2y,';;',toSource,toClip);
+        var toClip = ((s2x - s1x) * (s1y - c1y) - (s2y - s1y) * (s1x - c1x)) / d;
 
         if (toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
-          res.push({
+          return [{
             coords: [s1x + toSource * (s2x - s1x), s1y + toSource * (s2y - s1y)],
             toSource: toSource,
             toClip: toClip
+          }];
+        }
+      } // 和2阶曲线
+      else if (c2l === 4) {
+        var bx1 = c2[c2l - 4];
+        var by1 = c2[c2l - 3];
+        var res = getIntersectionBezier2Line(c1x, c1y, bx1, by1, c2x, c2y, s1x, s1y, s2x, s2y);
+
+        if (res) {
+          // 反过来求的交点所以要交换下
+          res.forEach(function (item) {
+            var _ref = [item.toClip, item.toSource];
+            item.toSource = _ref[0];
+            item.toClip = _ref[1];
           });
+          return res;
+        }
+      } // 和3阶曲线
+      else if (c2l === 6) {
+        var _bx = c2[c2l - 6];
+        var _by = c2[c2l - 5];
+        var bx2 = c2[c2l - 4];
+        var by2 = c2[c2l - 3];
+
+        var _res = getIntersectionBezier3Line(c1x, c1y, _bx, _by, bx2, by2, c2x, c2y, s1x, s1y, s2x, s2y);
+
+        if (_res) {
+          // 反过来求的交点所以要交换下
+          _res.forEach(function (item) {
+            var _ref2 = [item.toClip, item.toSource];
+            item.toSource = _ref2[0];
+            item.toClip = _ref2[1];
+          });
+
+          return _res;
         }
       }
     } // 自己是2阶曲线
@@ -13937,54 +14021,204 @@
       var ay1 = s2[s2l - 3]; // 和直线段
 
       if (c2l === 2) {
-        var is = isec.intersectBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y);
+        var _res2 = getIntersectionBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y);
 
-        if (is.length) {
-          is.forEach(function (item) {
-            // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
-            var toClip;
-
-            if (Math.abs(c2x - c1x) >= Math.abs(c2y - c1y)) {
-              toClip = Math.abs((item.x - c1x) / (c2x - c1x));
-            } else {
-              toClip = Math.abs((item.y - c1y) / (c2y - c1y));
-            }
-
-            res.push({
-              coords: [item.x, item.y],
-              toSource: item.t,
-              // source是曲线直接用t
-              toClip: toClip
-            });
-          });
+        if (_res2) {
+          return _res2;
         }
       } // 和2阶曲线
       else if (c2l === 4) {
-        var bx1 = c2[c2l - 4];
-        var by1 = c2[c2l - 3];
+        var _bx2 = c2[c2l - 4];
+        var _by2 = c2[c2l - 3];
 
-        var _is = isec.intersectBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, c2x, c2y);
+        var _res3 = getIntersectionBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, _bx2, _by2, c2x, c2y);
 
-        if (_is.length) {
-          _is.forEach(function (item) {
-            console.log(item); // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        if (_res3) {
+          return _res3;
+        }
+      } // 和3阶曲线
+      else if (c2l === 6) {
+        var _bx3 = c2[c2l - 6];
+        var _by3 = c2[c2l - 5];
+        var _bx4 = c2[c2l - 4];
+        var _by4 = c2[c2l - 3];
 
-            var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [c2x, c2y]], item.x, item.y); // 防止误差无值
+        var _res4 = getIntersectionBezier2Bezier3(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, _bx3, _by3, _bx4, _by4, c2x, c2y);
 
-            if (toClip.length) {
-              res.push({
-                coords: [item.x, item.y],
-                toSource: item.t,
-                // source是曲线直接用t
-                toClip: toClip[0]
-              });
-            }
+        if (_res4) {
+          return _res4;
+        }
+      }
+    } // 自己是3阶曲线
+    else if (s2l === 6) {
+      var _ax = s2[s2l - 6];
+      var _ay = s2[s2l - 5];
+      var ax2 = s2[s2l - 4];
+      var ay2 = s2[s2l - 3]; // 和直线段
+
+      if (c2l === 2) {
+        var _res5 = getIntersectionBezier3Line(s1x, s1y, _ax, _ay, ax2, ay2, s2x, s2y, c1x, c1y, c2x, c2y);
+
+        if (_res5) {
+          return _res5;
+        }
+      } // 和2阶曲线
+      else if (c2l === 4) {
+        var _bx5 = c2[c2l - 4];
+        var _by5 = c2[c2l - 3];
+
+        var _res6 = getIntersectionBezier2Bezier3(c1x, c1y, _bx5, _by5, c2x, c2y, s1x, s1y, _ax, _ay, ax2, ay2, s2x, s2y);
+
+        if (_res6) {
+          // 反过来求的交点所以要交换下
+          _res6.forEach(function (item) {
+            var _ref3 = [item.toClip, item.toSource];
+            item.toSource = _ref3[0];
+            item.toClip = _ref3[1];
           });
+
+          return _res6;
+        }
+      } // 和3阶曲线
+      else if (c2l === 6) {
+        var _bx6 = c2[c2l - 6];
+        var _by6 = c2[c2l - 5];
+        var _bx7 = c2[c2l - 4];
+        var _by7 = c2[c2l - 3];
+
+        var _res7 = getIntersectionBezier3Bezier3(s1x, s1y, _ax, _ay, ax2, ay2, s2x, s2y, c1x, c1y, _bx6, _by6, _bx7, _by7, c2x, c2y);
+
+        if (_res7) {
+          return _res7;
         }
       }
     }
+  }
 
-    return res;
+  function getIntersectionBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y) {
+    var res = isec.intersectBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y);
+
+    if (res.length) {
+      return res.map(function (item) {
+        // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+        var toClip;
+
+        if (Math.abs(c2x - c1x) >= Math.abs(c2y - c1y)) {
+          toClip = Math.abs((item.x - c1x) / (c2x - c1x));
+        } else {
+          toClip = Math.abs((item.y - c1y) / (c2y - c1y));
+        }
+
+        return {
+          coords: [item.x, item.y],
+          toSource: item.t,
+          // source是曲线直接用t
+          toClip: toClip
+        };
+      });
+    }
+  }
+
+  function getIntersectionBezier3Line(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, c2x, c2y) {
+    var res = isec.intersectBezier3Line(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, c2x, c2y);
+
+    if (res.length) {
+      return res.map(function (item) {
+        // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+        var toClip;
+
+        if (Math.abs(c2x - c1x) >= Math.abs(c2y - c1y)) {
+          toClip = Math.abs((item.x - c1x) / (c2x - c1x));
+        } else {
+          toClip = Math.abs((item.y - c1y) / (c2y - c1y));
+        }
+
+        return {
+          coords: [item.x, item.y],
+          toSource: item.t,
+          // source是曲线直接用t
+          toClip: toClip
+        };
+      });
+    }
+  }
+
+  function getIntersectionBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, c2x, c2y) {
+    var res = isec.intersectBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, c2x, c2y);
+
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [c2x, c2y]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          return {
+            coords: [item.x, item.y],
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip[0]
+          };
+        }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
+      }
+    }
+  }
+
+  function getIntersectionBezier2Bezier3(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y) {
+    var res = isec.intersectBezier2Bezier3(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y);
+
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [bx2, by2], [c2x, c2y]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          return {
+            coords: [item.x, item.y],
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip[0]
+          };
+        }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
+      }
+    }
+  }
+
+  function getIntersectionBezier3Bezier3(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y) {
+    var res = isec.intersectBezier3Bezier3(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y);
+
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [bx2, by2], [c2x, c2y]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          return {
+            coords: [item.x, item.y],
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip[0]
+          };
+        }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
+      }
+    }
   }
 
   function bo(polygonA, polygonB, sourceForwards, clipForwards) {

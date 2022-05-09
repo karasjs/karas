@@ -347,12 +347,12 @@ function getPointT2(points, x, y) {
   let tx = equation.getRoots([
     points[0][0] - x,
     2 * (points[1][0] - points[0][0]),
-    points[2][0] + points[0][0] - 2 * points[1][0]
+    points[2][0] + points[0][0] - 2 * points[1][0],
   ]).filter(i => i >= 0 && i <= 1);
   let ty = equation.getRoots([
     points[0][1] - y,
     2 * (points[1][1] - points[0][1]),
-    points[2][1] + points[0][1] - 2 * points[1][1]
+    points[2][1] + points[0][1] - 2 * points[1][1],
   ]).filter(i => i >= 0 && i <= 1);
   // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
   let t = [];
@@ -375,7 +375,7 @@ function getPointT2(points, x, y) {
     return a.diff - b.diff;
   });
   if(t.length > 2) {
-    t.splice(2, 2);
+    t.splice(2);
   }
   // 取均数
   t = t.map(item => (item.x + item.y) * 0.5);
@@ -397,10 +397,58 @@ function getPointT2(points, x, y) {
 
 function getPointT3(points, x, y) {
   let tx = equation.getRoots([
-    points[2][0] - x,
-    2 * (points[1][0] - points[0][0]),
-    points[2][0] + points[0][0] - 2 * points[1][0]
+    points[0][0] - x,
+    3 * (points[1][0] - points[0][0]),
+    3 * (points[2][0] + points[0][0] - 2 * points[1][0]),
+    points[3][0] - points[0][0] + 3 * points[1][0] - 3 * points[2][0],
   ]).filter(i => i >= 0 && i <= 1);
+  let ty = equation.getRoots([
+    points[0][1] - y,
+    3 * (points[1][1] - points[0][1]),
+    3 * (points[2][1] + points[0][1] - 2 * points[1][1]),
+    points[3][1] - points[0][1] + 3 * points[1][1] - 3 * points[2][1],
+  ]).filter(i => i >= 0 && i <= 1);
+  // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
+  let t = [];
+  for(let i = 0, len = tx.length; i < len; i++) {
+    let x = tx[i];
+    for(let j = 0, len = ty.length; j < len; j++) {
+      let y = ty[j];
+      let diff = Math.abs(x - y);
+      // 必须小于一定误差
+      if(diff < 1e-10) {
+        t.push({
+          x,
+          y,
+          diff,
+        });
+      }
+    }
+  }
+  t.sort(function(a, b) {
+    return a.diff - b.diff;
+  });
+  if(t.length > 3) {
+    t.splice(3);
+  }
+  // 取均数
+  t = t.map(item => (item.x + item.y) * 0.5);
+  let res = [];
+  t.forEach(t => {
+    let xt = points[0][0] * Math.pow(1 - t, 3)
+      + 3 * points[1][0] * t * Math.pow(1 - t, 2)
+      + 3 * points[2][0] * t * t * (1 - t)
+      + points[3][0] * Math.pow(t, 3);
+    let yt = points[0][1] * Math.pow(1 - t, 3)
+      + 3 * points[1][1] * t * Math.pow(1 - t, 2)
+      + 3 * points[2][1] * t * t * (1 - t)
+      + points[3][1] * Math.pow(t, 3);
+    // 计算误差忽略
+    if(Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+      res.push(t);
+    }
+  });
+  return res;
 }
 
 export default {

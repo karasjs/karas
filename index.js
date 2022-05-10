@@ -13564,7 +13564,10 @@
 
       this.isEntry = false; // 是否入口，反之出口
 
-      this.isIntersection = false;
+      this.isIntersection = false; // 是否是新增的交点，不是则是原本的顶点
+
+      this.asIntersection = false; // 原本顶点也可能同时作为交点，这发生在点交边或共顶点的情况
+
       this.isVisited = false;
     } // 自己标记访问过，同时成对的也要标记，成对意思是2个多边形的交点在两边各自保存同样的数据成对
 
@@ -13578,7 +13581,7 @@
         if (corresponding && !corresponding.isVisited) {
           corresponding.isVisited = true;
         }
-      } // 交点是否在多边形内，边上或顶点重合不算，射线（水平向左）+奇偶法
+      } // 交点是否在多边形内，边上或顶点重合看情况算不算，射线（水平向左）+奇偶法
       // https://www.cnblogs.com/muyefeiwu/p/11260366.html
 
     }, {
@@ -13608,9 +13611,14 @@
             if (nl === 2) {
               // 先排除水平重合线，且在两个y之间，再必须x在两个x右边
               if ((vy < y && ny >= y || ny < y && vy >= y) && (vx <= x || nx <= x)) {
-                // 两点式求x坐标，看是否在右边，奇偶简化^操作，在线上不算
+                console.log(x, y, vCoords, nCoords); // 两点式求x坐标，看是否在右边，奇偶简化^操作，在线上不算
+
                 var x0 = vx + (y - vy) / (ny - vy) * (nx - vx);
-                oddNodes ^= x0 < x;
+                console.log(x0, x);
+
+                if (x0 < x) {
+                  oddNodes ^= x0 < x;
+                }
               }
             }
           }
@@ -13802,7 +13810,7 @@
         var clipVertex = first2;
         var sourceInClip, clipInSource;
         var isUnion = !sourceForwards && !clipForwards;
-        var isIntersection = sourceForwards && clipForwards; // 阶段1，求得所有交点，两个多边形的顶点逐个循环形成每条边互相测试
+        var isIntersection = sourceForwards && clipForwards; // 阶段1，求得所有交点，两个多边形的顶点逐个循环形成每条边互相测试，注意有重合共点共线时先统计进来，再排除
 
         do {
           // 不是交点只是多边形顶点的时候，开始肯定会进入因为这时候还没有交点
@@ -13819,16 +13827,57 @@
 
                     if (is) {
                       is.forEach(function (item) {
-                        console.log(item);
-                        var sourceIntersection = Vertex.createIntersection(item.coords.slice(0), item.toSource);
-                        var clipIntersection = Vertex.createIntersection(item.coords.slice(0), item.toClip); // 互相指向对方成对
+                        var sourceIntersection;
+                        var clipIntersection; // 共顶点的情况特殊标识，同时防止下次再作为交点
+
+                        if (item.toSource === 0) {
+                          if (sourceVertex.asIntersection) {
+                            return;
+                          }
+
+                          sourceVertex.asIntersection = true;
+                          sourceIntersection = sourceVertex;
+                        } else if (item.toSource === 1) {
+                          if (next.asIntersection) {
+                            return;
+                          }
+
+                          next.asIntersection = true;
+                          sourceIntersection = next;
+                        }
+
+                        if (item.toClip === 0) {
+                          if (clipVertex.asIntersection) {
+                            return;
+                          }
+
+                          clipVertex.asIntersection = true;
+                          clipIntersection = clipVertex;
+                        } else if (item.toClip === 1) {
+                          if (next2.asIntersection) {
+                            return;
+                          }
+
+                          next2.asIntersection = true;
+                          clipIntersection = next2;
+                        }
+
+                        console.warn(item); // 普通非共点线情况，生成交点插入
+
+                        if (!sourceIntersection) {
+                          sourceIntersection = Vertex.createIntersection(item.coords.slice(0), item.toSource);
+
+                          _this.insertVertex(sourceIntersection, sourceVertex, _this.getNext(next));
+                        }
+
+                        if (!clipIntersection) {
+                          clipIntersection = Vertex.createIntersection(item.coords.slice(0), item.toClip);
+                          clip.insertVertex(clipIntersection, clipVertex, clip.getNext(next2));
+                        } // 互相指向对方成对
+
 
                         sourceIntersection.corresponding = clipIntersection;
-                        clipIntersection.corresponding = sourceIntersection; // 插入交点作为新的顶点
-
-                        _this.insertVertex(sourceIntersection, sourceVertex, _this.getNext(next));
-
-                        clip.insertVertex(clipIntersection, clipVertex, clip.getNext(next2));
+                        clipIntersection.corresponding = sourceIntersection;
                       });
                     }
                   })();
@@ -13844,15 +13893,17 @@
 
 
         sourceInClip = sourceVertex.isInside(clip);
-        clipInSource = clipVertex.isInside(this); // 还有和参数传入种类决定最终选取规则
+        clipInSource = clipVertex.isInside(this);
+        console.log(sourceInClip, clipInSource); // 还有和参数传入种类决定最终选取规则
 
         sourceForwards ^= sourceInClip;
         clipForwards ^= clipInSource;
         sourceForwards = !!sourceForwards;
-        clipForwards = !!clipForwards; // 循环多边形a
+        clipForwards = !!clipForwards;
+        console.log(sourceForwards, clipForwards); // 循环多边形a
 
         do {
-          if (sourceVertex.isIntersection) {
+          if (sourceVertex.isIntersection || sourceVertex.asIntersection) {
             sourceVertex.isEntry = sourceForwards;
             sourceForwards = !sourceForwards;
           }
@@ -13862,7 +13913,7 @@
 
 
         do {
-          if (clipVertex.isIntersection) {
+          if (clipVertex.isIntersection || clipVertex.asIntersection) {
             clipVertex.isEntry = clipForwards;
             clipForwards = !clipForwards;
           }
@@ -13875,7 +13926,8 @@
 
         while (this.hasUnprocessed()) {
           var current = this.getFirstIntersect();
-          var clipped = new Polygon([]); // 当前交点未访问则访问且打标
+          var clipped = new Polygon([]);
+          clipped.addVertex(new Vertex(current.coords)); // 当前交点未访问则访问且打标
 
           do {
             current.visit();
@@ -13885,13 +13937,13 @@
               do {
                 current = current.next;
                 clipped.addVertex(new Vertex(current.coords));
-              } while (!current.isIntersection);
+              } while (!current.isIntersection && !current.asIntersection);
             } else {
               // 出口交点类似，但反向向前查找
               do {
                 current = current.prev;
                 clipped.addVertex(new Vertex(current.coords));
-              } while (!current.isIntersection);
+              } while (!current.isIntersection && !current.asIntersection);
             }
 
             current = current.corresponding; // 跳到成对的另一个多边形交点上
@@ -13990,9 +14042,17 @@
         var toSource = ((c2x - c1x) * (s1y - c1y) - (c2y - c1y) * (s1x - c1x)) / d;
         var toClip = ((s2x - s1x) * (s1y - c1y) - (s2y - s1y) * (s1x - c1x)) / d;
 
-        if (toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
+        if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1) {
+          var ox = s1x + toSource * (s2x - s1x);
+          var oy = s1y + toSource * (s2y - s1y); // 防止精度问题
+
+          if (toSource === 1) {
+            ox = s2x;
+            oy = s2y;
+          }
+
           return [{
-            coords: [s1x + toSource * (s2x - s1x), s1y + toSource * (s2y - s1y)],
+            coords: [ox, oy],
             toSource: toSource,
             toClip: toClip
           }];
@@ -14417,7 +14477,7 @@
       return bo(polygonA, polygonB, false, false);
     },
     subtract: function subtract(polygonA, polygonB) {
-      return bo(polygonA, polygonB, true, false);
+      return bo(polygonA, polygonB, false, true);
     },
     difference: function difference(polygonA, polygonB) {
       // 差集（异或）比较特殊，等于(A-B)∪(B-A)

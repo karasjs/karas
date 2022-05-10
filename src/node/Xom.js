@@ -2796,7 +2796,7 @@ class Xom extends Node {
   }
 
   getBoundingClientRect(includeBbox) {
-    let box = [];
+    let box;
     if(includeBbox) {
       box = this.bbox;
     }

@@ -6,7 +6,7 @@ import font from '../style/font';
 import Controller from '../animate/Controller';
 
 let o = {
-  parse(karas, json, dom, options = {}) {
+  parse(karas, json, dom, options) {
     if(!json) {
       return;
     }
@@ -23,17 +23,20 @@ let o = {
         }
       });
     }
+    // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+    if(!inject.isDom(dom)) {
+      options = options || dom || {};
+      dom = null;
+    }
+    else {
+      options = options || {};
+    }
     // json中定义无abbr
     if(json.abbr === false) {
       options.abbr = false;
     }
     if(options.abbr !== false) {
       inject.warn('Abbr in json is deprecated');
-    }
-    // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-    if(!inject.isDom(dom)) {
-      options = dom || {};
-      dom = null;
     }
     // 特殊单例声明无需clone加速解析
     if(!options.singleton && !json.singleton) {

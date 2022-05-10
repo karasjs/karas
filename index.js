@@ -10679,7 +10679,8 @@
                   var y = c22.y * s * s + c21.y * s + c20.y;
                   result.push({
                     x: x,
-                    y: y
+                    y: y,
+                    t: xRoot
                   }); // result.push(c22.multiply(s * s).add(c21.multiply(s).add(c20)));
 
                   break checkRoots;
@@ -10782,7 +10783,8 @@
                 var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
                 result.push({
                   x: x,
-                  y: y
+                  y: y,
+                  t: xRoot
                 });
                 break checkRoots;
               }
@@ -10865,7 +10867,8 @@
                 var y = c23.y * s * s * s + c22.y * s * s + c21.y * s + c20.y;
                 result.push({
                   x: x,
-                  y: y
+                  y: y,
+                  t: xRoot
                 });
                 break checkRoots;
               }
@@ -10894,7 +10897,8 @@
     var lerp = function lerp(a, b, t) {
       return {
         x: a.x - (a.x - b.x) * t,
-        y: a.y - (a.y - b.y) * t
+        y: a.y - (a.y - b.y) * t,
+        t: t
       };
     };
 
@@ -10981,7 +10985,8 @@
     var lerp = function lerp(a, b, t) {
       return {
         x: a.x - (a.x - b.x) * t,
-        y: a.y - (a.y - b.y) * t
+        y: a.y - (a.y - b.y) * t,
+        t: t
       };
     };
 
@@ -15871,7 +15876,7 @@
           this.__y = min;
           this.__sy = this.__sy1 = min + this.oy;
           this.__sx = this.__sx1;
-          this.height = max - min;
+          this.__height = max - min;
         } else {
           this.__x = min;
           this.__sx = this.__sx1 = min + this.ox;
@@ -24355,7 +24360,7 @@
     }, {
       key: "getBoundingClientRect",
       value: function getBoundingClientRect(includeBbox) {
-        var box = [];
+        var box;
 
         if (includeBbox) {
           box = this.bbox;
@@ -41464,9 +41469,7 @@
   }
 
   var o$4 = {
-    parse: function parse$1(karas, json, dom) {
-      var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-
+    parse: function parse$1(karas, json, dom, options) {
       if (!json) {
         return;
       } // 根节点的fonts字段定义字体信息
@@ -41487,6 +41490,14 @@
             o$1.register(fontFamily, data);
           }
         });
+      } // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+
+
+      if (!inject.isDom(dom)) {
+        options = options || dom || {};
+        dom = null;
+      } else {
+        options = options || {};
       } // json中定义无abbr
 
 
@@ -41496,12 +41507,6 @@
 
       if (options.abbr !== false) {
         inject.warn('Abbr in json is deprecated');
-      } // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-
-
-      if (!inject.isDom(dom)) {
-        options = dom || {};
-        dom = null;
       } // 特殊单例声明无需clone加速解析
 
 

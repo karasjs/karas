@@ -6,7 +6,7 @@ import font from '../style/font';
 import Controller from '../animate/Controller';
 
 let o = {
-  parse(karas, json, dom, options = {}) {
+  parse(karas, json, dom, options) {
     if(!json) {
       return;
     }

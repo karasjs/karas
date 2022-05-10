@@ -42523,9 +42523,7 @@
   }
 
   var o$4 = {
-    parse: function parse$1(karas, json, dom) {
-      var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-
+    parse: function parse$1(karas, json, dom, options) {
       if (!json) {
         return;
       } // 根节点的fonts字段定义字体信息

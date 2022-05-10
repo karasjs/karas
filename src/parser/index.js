@@ -28,6 +28,9 @@ let o = {
       options = options || dom || {};
       dom = null;
     }
+    else {
+      options = options || {};
+    }
     // json中定义无abbr
     if(json.abbr === false) {
       options.abbr = false;

@@ -16930,7 +16930,7 @@
           this.__y = min;
           this.__sy = this.__sy1 = min + this.oy;
           this.__sx = this.__sx1;
-          this.height = max - min;
+          this.__height = max - min;
         } else {
           this.__x = min;
           this.__sx = this.__sx1 = min + this.ox;
@@ -42738,7 +42738,7 @@
     Cache: Cache
   };
 
-  var version = "0.73.6";
+  var version = "0.73.7";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

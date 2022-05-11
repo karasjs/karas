@@ -23,7 +23,6 @@
     "url": "git://github.com/karasjs/karas.git"
   },
   "dependencies": {
-    "bezier-intersect": "^0.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",

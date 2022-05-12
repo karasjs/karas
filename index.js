@@ -27437,33 +27437,15 @@
               });
             }
           }
-        } // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
+        } // 每行再进行main/cross对齐，在alignContent为stretch时计算每行的高度
 
 
         if (!isColumn && !isRow) {
-          if (length > 1) {
-            __flexLine.forEach(function (item, i) {
-              var maxCross = maxCrossList[i];
+          var maxCross = isDirectionRow ? th : tw;
 
-              if (per) {
-                maxCross += per;
-              }
-
-              _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
-            });
-          } else if (length) {
-            var maxCross = maxCrossList[0];
-
-            if (isDirectionRow) {
-              if (fixedHeight) {
-                maxCross = h;
-              }
-            } else {
-              maxCross = w;
-            }
-
-            this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
-          }
+          __flexLine.forEach(function (item) {
+            _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+          });
 
           this.__marginAuto(currentStyle, data, isUpright);
         }
@@ -37898,7 +37880,7 @@
             w: width,
             h: height,
             isUpright: isUpright
-          }, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
+          }, false, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
 
 
           this.__layoutAbs(this, {
@@ -38082,7 +38064,7 @@
                   y: y,
                   w: width,
                   h: h
-                }, false, false);
+                }, false, false, false);
 
                 y += node.outerHeight;
 

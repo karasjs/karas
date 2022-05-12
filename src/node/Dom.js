@@ -1633,29 +1633,12 @@ class Dom extends Xom {
         }
       }
     }
-    // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
+    // 每行再进行main/cross对齐，在alignContent为stretch时计算每行的高度
     if(!isColumn && !isRow) {
-      if(length > 1) {
-        __flexLine.forEach((item, i) => {
-          let maxCross = maxCrossList[i];
-          if(per) {
-            maxCross += per;
-          }
-          this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
-        });
-      }
-      else if(length) {
-        let maxCross = maxCrossList[0];
-        if(isDirectionRow) {
-          if(fixedHeight) {
-            maxCross = h;
-          }
-        }
-        else {
-          maxCross = w;
-        }
-        this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
-      }
+      let maxCross = isDirectionRow ? th : tw;
+      __flexLine.forEach(item => {
+        this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+      });
       this.__marginAuto(currentStyle, data, isUpright);
     }
   }

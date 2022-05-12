@@ -1314,7 +1314,7 @@ class Root extends Dom {
         w: width,
         h: height,
         isUpright,
-      }, false, false);
+      }, false, false, false);
       // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
       this.__layoutAbs(this, {
         x: 0,
@@ -1463,7 +1463,7 @@ class Root extends Dom {
               y,
               w: width,
               h,
-            }, false, false);
+            }, false, false, false);
             y += node.outerHeight;
             if(component) {
               container = node;

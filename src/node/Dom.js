@@ -1614,10 +1614,10 @@ class Dom extends Xom {
             });
           });
         }
-        // 默认stretch
+        // 默认stretch，每个flexLine进行扩充
         else {
           per = diff / length;
-          // 除了第1行其它进行偏移
+          // 因为每行都cross扩充了per，所有除了第1行其它进行偏移
           __flexLine.forEach((item, i) => {
             if(i) {
               item.forEach(item => {
@@ -1635,10 +1635,19 @@ class Dom extends Xom {
     }
     // 每行再进行main/cross对齐，在alignContent为stretch时计算每行的高度
     if(!isColumn && !isRow) {
-      let maxCross = isDirectionRow ? th : tw;
-      __flexLine.forEach(item => {
-        this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
-      });
+      if(length > 1) {
+        __flexLine.forEach((item, i) => {
+          let maxCross = maxCrossList[i];
+          if(per) {
+            maxCross += per;
+          }
+          this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+        });
+      }
+      else if(length) {
+        let maxCross = isDirectionRow ? th : tw;
+        this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
+      }
       this.__marginAuto(currentStyle, data, isUpright);
     }
   }

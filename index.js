@@ -27420,9 +27420,9 @@
                   }
                 });
               });
-            } // 默认stretch
+            } // 默认stretch，每个flexLine进行扩充
             else {
-              per = diff / length; // 除了第1行其它进行偏移
+              per = diff / length; // 因为每行都cross扩充了per，所有除了第1行其它进行偏移
 
               __flexLine.forEach(function (item, i) {
                 if (i) {
@@ -27441,11 +27441,21 @@
 
 
         if (!isColumn && !isRow) {
-          var maxCross = isDirectionRow ? th : tw;
+          if (length > 1) {
+            __flexLine.forEach(function (item, i) {
+              var maxCross = maxCrossList[i];
 
-          __flexLine.forEach(function (item) {
-            _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
-          });
+              if (per) {
+                maxCross += per;
+              }
+
+              _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+            });
+          } else if (length) {
+            var maxCross = isDirectionRow ? th : tw;
+
+            this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
+          }
 
           this.__marginAuto(currentStyle, data, isUpright);
         }

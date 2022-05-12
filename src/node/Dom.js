@@ -1430,11 +1430,11 @@ class Dom extends Xom {
       __flexLine.push(line);
     }
     let offset = 0, clone = { x, y, w, h };
-    let maxCrossList = [];
+    let maxCrossList = [], marginAutoCountList = [], freeList = [];
     __flexLine.forEach(item => {
       let length = item.length;
       let end = offset + length;
-      let [x1, y1, maxCross] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright,
+      let [x1, y1, maxCross, marginAutoCount, free] = this.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright,
         containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount,
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
@@ -1450,6 +1450,8 @@ class Dom extends Xom {
       x = Math.max(x, x1);
       y = Math.max(y, y1);
       maxCrossList.push(maxCross);
+      marginAutoCountList.push(marginAutoCount);
+      freeList.push(free);
       offset += length;
     });
     // abs预布局只计算宽度无需对齐
@@ -1641,12 +1643,12 @@ class Dom extends Xom {
           if(per) {
             maxCross += per;
           }
-          this.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+          this.__flexAlign(item, alignItems, justifyContent, isDirectionRow, maxCross, marginAutoCountList[i], freeList[i]);
         });
       }
       else if(length) {
         let maxCross = isDirectionRow ? th : tw;
-        this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
+        this.__flexAlign(__flexLine[0], alignItems, justifyContent, isDirectionRow, maxCross, marginAutoCountList[0], freeList[0]);
       }
       this.__marginAuto(currentStyle, data, isUpright);
     }
@@ -1706,6 +1708,7 @@ class Dom extends Xom {
       total = free;
     }
     free = Math.abs(total - free);
+    let freeCopy = free;
     // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
     let factorSum = 0;
     if(isOverflow) {
@@ -1904,80 +1907,6 @@ class Dom extends Xom {
         maxCross = Math.max(maxCross, item.outerWidth);
       }
     });
-    // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
-    let diff = isDirectionRow ? (w - x + data.x) : (h - y + data.y);
-    // 主轴对齐方式，需要考虑margin，如果有auto则优先于justifyContent
-    if(!isAbs && !isColumn && !isRow && diff > 0) {
-      let len = orderChildren.length;
-      if(marginAutoCount) {
-        // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
-        let count = 0, per = diff / marginAutoCount;
-        for(let i = 0; i < len; i++) {
-          let child = orderChildren[i];
-          let currentStyle = child.currentStyle;
-          if(isDirectionRow) {
-            if(currentStyle[MARGIN_LEFT][1] === AUTO) {
-              count += per;
-              child.__offsetX(count, true);
-            }
-            else if(count) {
-              child.__offsetX(count, true);
-            }
-            if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
-              count += per;
-            }
-          }
-          else {
-            if(currentStyle[MARGIN_TOP][1] === AUTO) {
-              count += per;
-              child.__offsetY(count, true);
-            }
-            else if(count) {
-              child.__offsetY(count, true);
-            }
-            if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
-              count += per;
-            }
-          }
-        }
-      }
-      else {
-        if(justifyContent === 'flexEnd') {
-          for(let i = 0; i < len; i++) {
-            let child = orderChildren[i];
-            isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
-          }
-        }
-        else if(justifyContent === 'center') {
-          let center = diff * 0.5;
-          for(let i = 0; i < len; i++) {
-            let child = orderChildren[i];
-            isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
-          }
-        }
-        else if(justifyContent === 'spaceBetween') {
-          let between = diff / (len - 1);
-          for(let i = 1; i < len; i++) {
-            let child = orderChildren[i];
-            isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
-          }
-        }
-        else if(justifyContent === 'spaceAround') {
-          let around = diff * 0.5 / len;
-          for(let i = 0; i < len; i++) {
-            let child = orderChildren[i];
-            isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
-          }
-        }
-        else if(justifyContent === 'spaceEvenly') {
-          let around = diff / (len + 1);
-          for(let i = 0; i < len; i++) {
-            let child = orderChildren[i];
-            isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
-          }
-        }
-      }
-    }
     if(isDirectionRow) {
       y += maxCross;
     }
@@ -1990,15 +1919,86 @@ class Dom extends Xom {
         item.horizonAlign(isUpright? item.height : item.width, textAlign, isUpright);
       })
     }
-    return [x, y, maxCross];
+    return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : freeCopy];
   }
 
-  // 每个flexLine的侧轴对齐，单行时就是一行对齐
-  __crossAlign(line, alignItems, isDirectionRow, maxCross) {
+  // 每个flexLine的主轴侧轴对齐
+  __flexAlign(line, alignItems, justifyContent, isDirectionRow, maxCross, marginAutoCount, free) {
     let baseline = 0;
     line.forEach(item => {
       baseline = Math.max(baseline, item.firstBaseline);
     });
+    // 先主轴对齐方式，需要考虑margin，如果有auto则优先于justifyContent
+    let len = line.length;
+    if(marginAutoCount) {
+      // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
+      let count = 0, per = free / marginAutoCount;
+      for(let i = 0; i < len; i++) {
+        let child = line[i];
+        let currentStyle = child.currentStyle;
+        if(isDirectionRow) {
+          if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+            count += per;
+            child.__offsetX(count, true);
+          }
+          else if(count) {
+            child.__offsetX(count, true);
+          }
+          if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+            count += per;
+          }
+        }
+        else {
+          if(currentStyle[MARGIN_TOP][1] === AUTO) {
+            count += per;
+            child.__offsetY(count, true);
+          }
+          else if(count) {
+            child.__offsetY(count, true);
+          }
+          if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+            count += per;
+          }
+        }
+      }
+    }
+    else {
+      if(justifyContent === 'flexEnd') {
+        for(let i = 0; i < len; i++) {
+          let child = line[i];
+          isDirectionRow ? child.__offsetX(free, true) : child.__offsetY(free, true);
+        }
+      }
+      else if(justifyContent === 'center') {
+        let center = free * 0.5;
+        for(let i = 0; i < len; i++) {
+          let child = line[i];
+          isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
+        }
+      }
+      else if(justifyContent === 'spaceBetween') {
+        let between = free / (len - 1);
+        for(let i = 1; i < len; i++) {
+          let child = line[i];
+          isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
+        }
+      }
+      else if(justifyContent === 'spaceAround') {
+        let around = free * 0.5 / len;
+        for(let i = 0; i < len; i++) {
+          let child = line[i];
+          isDirectionRow ? child.__offsetX(around * (i * 2 + 1), true) : child.__offsetY(around * (i * 2 + 1), true);
+        }
+      }
+      else if(justifyContent === 'spaceEvenly') {
+        let around = free / (len + 1);
+        for(let i = 0; i < len; i++) {
+          let child = line[i];
+          isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
+        }
+      }
+    }
+    // 再侧轴
     line.forEach(item => {
       let { currentStyle: { [ALIGN_SELF]: alignSelf } } = item;
       if(isDirectionRow) {

@@ -27215,17 +27215,21 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         w: w,
         h: h
       };
-      var maxCrossList = [];
+      var maxCrossList = [],
+          marginAutoCountList = [],
+          freeList = [];
 
       __flexLine.forEach(function (item) {
         var length = item.length;
         var end = offset + length;
 
         var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
-            _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 3),
+            _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 5),
             x1 = _this4$__layoutFlexLi2[0],
             y1 = _this4$__layoutFlexLi2[1],
-            maxCross = _this4$__layoutFlexLi2[2]; // 下一行/列更新坐标
+            maxCross = _this4$__layoutFlexLi2[2],
+            marginAutoCount = _this4$__layoutFlexLi2[3],
+            free = _this4$__layoutFlexLi2[4]; // 下一行/列更新坐标
 
 
         if (isDirectionRow) {
@@ -27237,6 +27241,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         x = Math.max(x, x1);
         y = Math.max(y, y1);
         maxCrossList.push(maxCross);
+        marginAutoCountList.push(marginAutoCount);
+        freeList.push(free);
         offset += length;
       }); // abs预布局只计算宽度无需对齐
 
@@ -27414,9 +27420,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                 }
               });
             });
-          } // 默认stretch
+          } // 默认stretch，每个flexLine进行扩充
           else {
-            per = diff / length; // 除了第1行其它进行偏移
+            per = diff / length; // 因为每行都cross扩充了per，所有除了第1行其它进行偏移
 
             __flexLine.forEach(function (item, i) {
               if (i) {
@@ -27431,7 +27437,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
             });
           }
         }
-      } // 每行再进行cross对齐，在alignContent为stretch时计算每行的高度
+      } // 每行再进行main/cross对齐，在alignContent为stretch时计算每行的高度
 
 
       if (!isColumn && !isRow) {
@@ -27443,20 +27449,12 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
               maxCross += per;
             }
 
-            _this4.__crossAlign(item, alignItems, isDirectionRow, maxCross);
+            _this4.__flexAlign(item, alignItems, justifyContent, isDirectionRow, maxCross, marginAutoCountList[i], freeList[i]);
           });
         } else if (length) {
-          var maxCross = maxCrossList[0];
+          var maxCross = isDirectionRow ? th : tw;
 
-          if (isDirectionRow) {
-            if (fixedHeight) {
-              maxCross = h;
-            }
-          } else {
-            maxCross = w;
-          }
-
-          this.__crossAlign(__flexLine[0], alignItems, isDirectionRow, maxCross);
+          this.__flexAlign(__flexLine[0], alignItems, justifyContent, isDirectionRow, maxCross, marginAutoCountList[0], freeList[0]);
         }
 
         this.__marginAuto(currentStyle, data, isUpright);
@@ -27517,7 +27515,8 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         total = free;
       }
 
-      free = Math.abs(total - free); // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
+      free = Math.abs(total - free);
+      var freeCopy = free; // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
 
       var factorSum = 0;
 
@@ -27738,85 +27737,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           y += item.outerHeight;
           maxCross = Math.max(maxCross, item.outerWidth);
         }
-      }); // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
-
-      var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴对齐方式，需要考虑margin，如果有auto则优先于justifyContent
-
-      if (!isAbs && !isColumn && !isRow && diff > 0) {
-        var len = orderChildren.length;
-
-        if (marginAutoCount) {
-          // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
-          var count = 0,
-              per = diff / marginAutoCount;
-
-          for (var i = 0; i < len; i++) {
-            var child = orderChildren[i];
-            var currentStyle = child.currentStyle;
-
-            if (isDirectionRow) {
-              if (currentStyle[MARGIN_LEFT$4][1] === AUTO$5) {
-                count += per;
-
-                child.__offsetX(count, true);
-              } else if (count) {
-                child.__offsetX(count, true);
-              }
-
-              if (currentStyle[MARGIN_RIGHT$4][1] === AUTO$5) {
-                count += per;
-              }
-            } else {
-              if (currentStyle[MARGIN_TOP$4][1] === AUTO$5) {
-                count += per;
-
-                child.__offsetY(count, true);
-              } else if (count) {
-                child.__offsetY(count, true);
-              }
-
-              if (currentStyle[MARGIN_BOTTOM$4][1] === AUTO$5) {
-                count += per;
-              }
-            }
-          }
-        } else {
-          if (justifyContent === 'flexEnd') {
-            for (var _i3 = 0; _i3 < len; _i3++) {
-              var _child = orderChildren[_i3];
-              isDirectionRow ? _child.__offsetX(diff, true) : _child.__offsetY(diff, true);
-            }
-          } else if (justifyContent === 'center') {
-            var center = diff * 0.5;
-
-            for (var _i4 = 0; _i4 < len; _i4++) {
-              var _child2 = orderChildren[_i4];
-              isDirectionRow ? _child2.__offsetX(center, true) : _child2.__offsetY(center, true);
-            }
-          } else if (justifyContent === 'spaceBetween') {
-            var between = diff / (len - 1);
-
-            for (var _i5 = 1; _i5 < len; _i5++) {
-              var _child3 = orderChildren[_i5];
-              isDirectionRow ? _child3.__offsetX(between * _i5, true) : _child3.__offsetY(between * _i5, true);
-            }
-          } else if (justifyContent === 'spaceAround') {
-            var around = diff * 0.5 / len;
-
-            for (var _i6 = 0; _i6 < len; _i6++) {
-              var _child4 = orderChildren[_i6];
-              isDirectionRow ? _child4.__offsetX(around * (_i6 * 2 + 1), true) : _child4.__offsetY(around * (_i6 * 2 + 1), true);
-            }
-          } else if (justifyContent === 'spaceEvenly') {
-            var _around = diff / (len + 1);
-
-            for (var _i7 = 0; _i7 < len; _i7++) {
-              var _child5 = orderChildren[_i7];
-              isDirectionRow ? _child5.__offsetX(_around * (_i7 + 1), true) : _child5.__offsetY(_around * (_i7 + 1), true);
-            }
-          }
-        }
-      }
+      });
 
       if (isDirectionRow) {
         y += maxCross;
@@ -27831,16 +27752,92 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         });
       }
 
-      return [x, y, maxCross];
-    } // 每个flexLine的侧轴对齐，单行时就是一行对齐
+      return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : freeCopy];
+    } // 每个flexLine的主轴侧轴对齐
 
   }, {
-    key: "__crossAlign",
-    value: function __crossAlign(line, alignItems, isDirectionRow, maxCross) {
+    key: "__flexAlign",
+    value: function __flexAlign(line, alignItems, justifyContent, isDirectionRow, maxCross, marginAutoCount, free) {
       var baseline = 0;
       line.forEach(function (item) {
         baseline = Math.max(baseline, item.firstBaseline);
-      });
+      }); // 先主轴对齐方式，需要考虑margin，如果有auto则优先于justifyContent
+
+      var len = line.length;
+
+      if (marginAutoCount) {
+        // 类似于space-between，空白均分于auto，两边都有就是2份，只有1边是1份
+        var count = 0,
+            per = free / marginAutoCount;
+
+        for (var i = 0; i < len; i++) {
+          var child = line[i];
+          var currentStyle = child.currentStyle;
+
+          if (isDirectionRow) {
+            if (currentStyle[MARGIN_LEFT$4][1] === AUTO$5) {
+              count += per;
+
+              child.__offsetX(count, true);
+            } else if (count) {
+              child.__offsetX(count, true);
+            }
+
+            if (currentStyle[MARGIN_RIGHT$4][1] === AUTO$5) {
+              count += per;
+            }
+          } else {
+            if (currentStyle[MARGIN_TOP$4][1] === AUTO$5) {
+              count += per;
+
+              child.__offsetY(count, true);
+            } else if (count) {
+              child.__offsetY(count, true);
+            }
+
+            if (currentStyle[MARGIN_BOTTOM$4][1] === AUTO$5) {
+              count += per;
+            }
+          }
+        }
+      } else {
+        if (justifyContent === 'flexEnd') {
+          for (var _i3 = 0; _i3 < len; _i3++) {
+            var _child = line[_i3];
+            isDirectionRow ? _child.__offsetX(free, true) : _child.__offsetY(free, true);
+          }
+        } else if (justifyContent === 'center') {
+          var center = free * 0.5;
+
+          for (var _i4 = 0; _i4 < len; _i4++) {
+            var _child2 = line[_i4];
+            isDirectionRow ? _child2.__offsetX(center, true) : _child2.__offsetY(center, true);
+          }
+        } else if (justifyContent === 'spaceBetween') {
+          var between = free / (len - 1);
+
+          for (var _i5 = 1; _i5 < len; _i5++) {
+            var _child3 = line[_i5];
+            isDirectionRow ? _child3.__offsetX(between * _i5, true) : _child3.__offsetY(between * _i5, true);
+          }
+        } else if (justifyContent === 'spaceAround') {
+          var around = free * 0.5 / len;
+
+          for (var _i6 = 0; _i6 < len; _i6++) {
+            var _child4 = line[_i6];
+            isDirectionRow ? _child4.__offsetX(around * (_i6 * 2 + 1), true) : _child4.__offsetY(around * (_i6 * 2 + 1), true);
+          }
+        } else if (justifyContent === 'spaceEvenly') {
+          var _around = free / (len + 1);
+
+          for (var _i7 = 0; _i7 < len; _i7++) {
+            var _child5 = line[_i7];
+            isDirectionRow ? _child5.__offsetX(_around * (_i7 + 1), true) : _child5.__offsetY(_around * (_i7 + 1), true);
+          }
+        }
+      } // 再侧轴
+
+
       line.forEach(function (item) {
         var alignSelf = item.currentStyle[ALIGN_SELF$2];
 
@@ -37892,7 +37889,7 @@ var Root = /*#__PURE__*/function (_Dom) {
           w: width,
           h: height,
           isUpright: isUpright
-        }, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
+        }, false, false, false); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
 
 
         this.__layoutAbs(this, {
@@ -38076,7 +38073,7 @@ var Root = /*#__PURE__*/function (_Dom) {
                 y: y,
                 w: width,
                 h: h
-              }, false, false);
+              }, false, false, false);
 
               y += node.outerHeight;
 
@@ -41678,7 +41675,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.7";
+var version = "0.73.8";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

@@ -1,5 +1,11 @@
 let o = karas.render(
   <svg width="360" height="360">
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#00F'}}>
+      <span style={{background:'#F00',width:100}}>a</span>
+    </div>
+    <div style={{display:'flex',flexDirection:'column',height:100,alignItems:'center',justifyContent:'center',background:'#0FF'}}>
+      <span style={{background:'#F00',width:100}}>a</span>
+    </div>
     {
       karas.parse(
         {

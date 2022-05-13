@@ -11,7 +11,7 @@ class Vertex {
     this.distance = distance; // 如果是交点，占原本多边形上一个点和下一个点之间的路程比(0-1)
     this.isEntry = false; // 是否入口，反之出口
     this.isIntersection = false; // 是否是新增的交点，不是则是原本的顶点
-    this.asIntersection = false; // 原本顶点也可能同时作为交点，这发生在点交边或共顶点的情况
+    this.isOverlap = false; // 原本顶点也可能同时作为交点重合，这发生在点交边或共顶点的情况
     this.isVisited = false;
   }
 
@@ -47,10 +47,8 @@ class Vertex {
           // 先排除水平重合线，且在两个y之间，再必须x在两个x右边
           if((vy < y && ny >= y || ny < y && vy >= y)
             && (vx <= x || nx <= x)) {
-            console.log(x, y, vCoords, nCoords);
             // 两点式求x坐标，看是否在右边，奇偶简化^操作，在线上不算
             let x0 = vx + (y - vy) / (ny - vy) * (nx - vx);
-            console.log(x0, x);
             if(x0 < x) {
               oddNodes ^= x0 < x;
             }
@@ -160,6 +158,13 @@ class Polygon {
     }
   }
 
+  removeVertex(vertex) {
+    let prev = vertex.prev;
+    let next = vertex.next;
+    prev.next = next;
+    next.prev = prev;
+  }
+
   // 找到下一个非交点顶点，交点是插入的顶点
   getNext(v) {
     while(v.isIntersection) {
@@ -230,7 +235,7 @@ class Polygon {
     let isIntersection = sourceForwards && clipForwards;
 
     // 阶段1，求得所有交点，两个多边形的顶点逐个循环形成每条边互相测试，注意有重合共点共线时先统计进来，再排除
-    let hasOverlap;
+    let hasOverlapVertex;
     do {
       // 不是交点只是多边形顶点的时候，开始肯定会进入因为这时候还没有交点
       if(!sourceVertex.isIntersection) {
@@ -252,31 +257,35 @@ class Polygon {
                 let clipIntersection;
                 // 共顶点的情况特殊标识，同时防止下次再作为交点
                 if(item.toSource === 0) {
-                  if(sourceVertex.asIntersection) {
+                  if(sourceVertex.isOverlap) {
                     return;
                   }
-                  sourceVertex.asIntersection = true;
+                  hasOverlapVertex = true;
+                  sourceVertex.isOverlap = true;
                   sourceIntersection = sourceVertex;
                 }
                 else if(item.toSource === 1) {
-                  if(next.asIntersection) {
+                  if(next.isOverlap) {
                     return;
                   }
-                  next.asIntersection = true;
+                  hasOverlapVertex = true;
+                  next.isOverlap = true;
                   sourceIntersection = next;
                 }
                 if(item.toClip === 0) {
-                  if(clipVertex.asIntersection) {
+                  if(clipVertex.isOverlap) {
                     return;
                   }
-                  clipVertex.asIntersection = true;
+                  hasOverlapVertex = true;
+                  clipVertex.isOverlap = true;
                   clipIntersection = clipVertex;
                 }
                 else if(item.toClip === 1) {
-                  if(next2.asIntersection) {
+                  if(next2.isOverlap) {
                     return;
                   }
-                  next2.asIntersection = true;
+                  hasOverlapVertex = true;
+                  next2.isOverlap = true;
                   clipIntersection = next2;
                 }
                 console.warn(item);
@@ -303,6 +312,54 @@ class Polygon {
     }
     while(sourceVertex !== first);
 
+    /**
+     * 阶段1.5，当出现共点共线情况时，需要判断顶点作为交点是否有效，去除掉无效的顶点保证原始算法正常运行
+     * 做法依旧是遍历，当遇到isOverlap标识时，直线查看前后的顶点或交点形成2个向量，
+     * 曲线则用求出切线代表2个向量，和对方成对交点形成的2个向量对比，交叉则说明有效
+     * 有可能会出现连续多个顶点作为交点的情况，这时候依然判断，如果向量垂直相交说明共线，
+     * 忽略掉前面或后面的顶点交点，并继续向前向后找
+     */
+    // if(hasOverlapVertex) {
+    //   do {
+    //     if(sourceVertex.isOverlap) {
+    //       // 无效的顶点作为交点的话，取消交点标，强制在对方多边形外
+    //       if(!isOverlapVertexValid(sourceVertex)) {
+    //         sourceVertex.isOverlap = false;
+    //         sourceVertex.isOut = true;
+    //         // 成对的交点如果也是顶点做同样操作，否则移除
+    //         let corresponding = sourceVertex.corresponding;
+    //         if(!corresponding.isOverlap) {
+    //           clip.removeVertex(corresponding);
+    //         }
+    //         else {
+    //           corresponding.isOut = true;
+    //           corresponding.isOverlap = false;
+    //         }
+    //       }
+    //     }
+    //     sourceVertex = sourceVertex.next;
+    //   }
+    //   while(sourceVertex !== first);
+    //   do {
+    //     if(clipVertex.isOverlap) {
+    //       if(!isOverlapVertexValid(clipVertex)) {
+    //         clipVertex.isOverlap = false;
+    //         clipVertex.isOut = true;
+    //         let corresponding = clipVertex.corresponding;
+    //         if(!corresponding.isOverlap) {
+    //           this.removeVertex(corresponding);
+    //         }
+    //         else {
+    //           corresponding.isOut = true;
+    //           corresponding.isOverlap = false;
+    //         }
+    //       }
+    //     }
+    //     clipVertex = clipVertex.next;
+    //   }
+    //   while(clipVertex !== first2);
+    // }
+
     // 阶段2，标识出入口，2个多边形分别进行判断first，后续交点交替出现循环即可
     sourceInClip = sourceVertex.isInside(clip);
     clipInSource = clipVertex.isInside(this);
@@ -317,7 +374,7 @@ class Polygon {
 
     // 循环多边形a
     do {
-      if(sourceVertex.isIntersection || sourceVertex.asIntersection) {
+      if(sourceVertex.isIntersection || sourceVertex.isOverlap) {
         sourceVertex.isEntry = sourceForwards;
         sourceForwards = !sourceForwards;
       }
@@ -326,7 +383,7 @@ class Polygon {
     while(sourceVertex !== first);
     // 循环多边形b
     do {
-      if(clipVertex.isIntersection || clipVertex.asIntersection) {
+      if(clipVertex.isIntersection || clipVertex.isOverlap) {
         clipVertex.isEntry = clipForwards;
         clipForwards = !clipForwards;
       }
@@ -349,7 +406,7 @@ class Polygon {
             current = current.next;
             clipped.addVertex(new Vertex(current.coords));
           }
-          while(!current.isIntersection && !current.asIntersection);
+          while(!current.isIntersection && !current.isOverlap);
         }
         else {
           // 出口交点类似，但反向向前查找
@@ -357,7 +414,7 @@ class Polygon {
             current = current.prev;
             clipped.addVertex(new Vertex(current.coords));
           }
-          while(!current.isIntersection && !current.asIntersection);
+          while(!current.isIntersection && !current.isOverlap);
         }
         current = current.corresponding; // 跳到成对的另一个多边形交点上
       }

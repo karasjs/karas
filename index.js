@@ -13556,6 +13556,8 @@
 
       this.coords = coords; // 顶点x/y为2长度，贝塞尔曲线跟在前面增加2或4长度即控制点坐标
 
+      this.index = 0; // 位于多边形中的第几个顶点，只记录原始的交点不计入，从1开始区别于默认0无效
+
       this.prev = null; // 顶点双向链表
 
       this.next = null;
@@ -13566,9 +13568,10 @@
 
       this.isIntersection = false; // 是否是新增的交点，不是则是原本的顶点
 
-      this.asIntersection = false; // 原本顶点也可能同时作为交点，这发生在点交边或共顶点的情况
+      this.isOverlap = false; // 原本顶点也可能同时作为交点重合，这发生在点交边或共顶点的情况
 
       this.isVisited = false;
+      this.isOut = false; // 交点重合在边或顶点上时，判断是否有效会提前计算无效即在对方多边形外
     } // 自己标记访问过，同时成对的也要标记，成对意思是2个多边形的交点在两边各自保存同样的数据成对
 
 
@@ -13587,6 +13590,10 @@
     }, {
       key: "isInside",
       value: function isInside(poly) {
+        if (this.isOut) {
+          return 0;
+        }
+
         var oddNodes = 0;
         var first = poly.first;
         var vertex = first;
@@ -13611,10 +13618,8 @@
             if (nl === 2) {
               // 先排除水平重合线，且在两个y之间，再必须x在两个x右边
               if ((vy < y && ny >= y || ny < y && vy >= y) && (vx <= x || nx <= x)) {
-                console.log(x, y, vCoords, nCoords); // 两点式求x坐标，看是否在右边，奇偶简化^操作，在线上不算
-
+                // 两点式求x坐标，看是否在右边，奇偶简化^操作，在线上不算
                 var x0 = vx + (y - vy) / (ny - vy) * (nx - vx);
-                console.log(x0, x);
 
                 if (x0 < x) {
                   oddNodes ^= x0 < x;
@@ -13653,7 +13658,9 @@
       this.firstIntersect = null; // 算法过程中存储未处理的第一个交点，加快速度避免每次从头开始查找
 
       for (var i = 0, len = vertices.length; i < len; i++) {
-        this.addVertex(new Vertex(vertices[i]));
+        var v = new Vertex(vertices[i]);
+        v.index = i + 1;
+        this.addVertex(v);
       }
     } // 顶点添加到末尾，顶点是个循环双向链表
 
@@ -13726,6 +13733,15 @@
           coords[2] = _b[2][0];
           coords[3] = _b[2][1];
         }
+      }
+    }, {
+      key: "removeVertex",
+      value: function removeVertex(vertex) {
+        console.log(vertex);
+        var prev = vertex.prev;
+        var next = vertex.next;
+        prev.next = next;
+        next.prev = prev;
       } // 找到下一个非交点顶点，交点是插入的顶点
 
     }, {
@@ -13831,34 +13847,30 @@
                         var clipIntersection; // 共顶点的情况特殊标识，同时防止下次再作为交点
 
                         if (item.toSource === 0) {
-                          if (sourceVertex.asIntersection) {
+                          if (sourceVertex.isOverlap) {
                             return;
                           }
-
-                          sourceVertex.asIntersection = true;
+                          sourceVertex.isOverlap = true;
                           sourceIntersection = sourceVertex;
                         } else if (item.toSource === 1) {
-                          if (next.asIntersection) {
+                          if (next.isOverlap) {
                             return;
                           }
-
-                          next.asIntersection = true;
+                          next.isOverlap = true;
                           sourceIntersection = next;
                         }
 
                         if (item.toClip === 0) {
-                          if (clipVertex.asIntersection) {
+                          if (clipVertex.isOverlap) {
                             return;
                           }
-
-                          clipVertex.asIntersection = true;
+                          clipVertex.isOverlap = true;
                           clipIntersection = clipVertex;
                         } else if (item.toClip === 1) {
-                          if (next2.asIntersection) {
+                          if (next2.isOverlap) {
                             return;
                           }
-
-                          next2.asIntersection = true;
+                          next2.isOverlap = true;
                           clipIntersection = next2;
                         }
 
@@ -13889,7 +13901,55 @@
           }
 
           sourceVertex = sourceVertex.next;
-        } while (sourceVertex !== first); // 阶段2，标识出入口，2个多边形分别进行判断first，后续交点交替出现循环即可
+        } while (sourceVertex !== first);
+        /**
+         * 阶段1.5，当出现共点共线情况时，需要判断顶点作为交点是否有效，去除掉无效的顶点保证原始算法正常运行
+         * 做法依旧是遍历，当遇到isOverlap标识时，直线查看前后的顶点或交点形成2个向量，
+         * 曲线则用求出切线代表2个向量，和对方成对交点形成的2个向量对比，交叉则说明有效
+         * 有可能会出现连续多个顶点作为交点的情况，这时候依然判断，如果向量垂直相交说明共线，
+         * 忽略掉前面或后面的顶点交点，并继续向前向后找
+         */
+        // if(hasOverlapVertex) {
+        //   do {
+        //     if(sourceVertex.isOverlap) {
+        //       // 无效的顶点作为交点的话，取消交点标，强制在对方多边形外
+        //       if(!isOverlapVertexValid(sourceVertex)) {
+        //         sourceVertex.isOverlap = false;
+        //         sourceVertex.isOut = true;
+        //         // 成对的交点如果也是顶点做同样操作，否则移除
+        //         let corresponding = sourceVertex.corresponding;
+        //         if(!corresponding.isOverlap) {
+        //           clip.removeVertex(corresponding);
+        //         }
+        //         else {
+        //           corresponding.isOut = true;
+        //           corresponding.isOverlap = false;
+        //         }
+        //       }
+        //     }
+        //     sourceVertex = sourceVertex.next;
+        //   }
+        //   while(sourceVertex !== first);
+        //   do {
+        //     if(clipVertex.isOverlap) {
+        //       if(!isOverlapVertexValid(clipVertex)) {
+        //         clipVertex.isOverlap = false;
+        //         clipVertex.isOut = true;
+        //         let corresponding = clipVertex.corresponding;
+        //         if(!corresponding.isOverlap) {
+        //           this.removeVertex(corresponding);
+        //         }
+        //         else {
+        //           corresponding.isOut = true;
+        //           corresponding.isOverlap = false;
+        //         }
+        //       }
+        //     }
+        //     clipVertex = clipVertex.next;
+        //   }
+        //   while(clipVertex !== first2);
+        // }
+        // 阶段2，标识出入口，2个多边形分别进行判断first，后续交点交替出现循环即可
 
 
         sourceInClip = sourceVertex.isInside(clip);
@@ -13903,7 +13963,7 @@
         console.log(sourceForwards, clipForwards); // 循环多边形a
 
         do {
-          if (sourceVertex.isIntersection || sourceVertex.asIntersection) {
+          if (sourceVertex.isIntersection || sourceVertex.isOverlap) {
             sourceVertex.isEntry = sourceForwards;
             sourceForwards = !sourceForwards;
           }
@@ -13913,7 +13973,7 @@
 
 
         do {
-          if (clipVertex.isIntersection || clipVertex.asIntersection) {
+          if (clipVertex.isIntersection || clipVertex.isOverlap) {
             clipVertex.isEntry = clipForwards;
             clipForwards = !clipForwards;
           }
@@ -13937,13 +13997,13 @@
               do {
                 current = current.next;
                 clipped.addVertex(new Vertex(current.coords));
-              } while (!current.isIntersection && !current.asIntersection);
+              } while (!current.isIntersection && !current.isOverlap);
             } else {
               // 出口交点类似，但反向向前查找
               do {
                 current = current.prev;
                 clipped.addVertex(new Vertex(current.coords));
-              } while (!current.isIntersection && !current.asIntersection);
+              } while (!current.isIntersection && !current.isOverlap);
             }
 
             current = current.corresponding; // 跳到成对的另一个多边形交点上

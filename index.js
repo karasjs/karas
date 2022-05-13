@@ -13556,8 +13556,6 @@
 
       this.coords = coords; // 顶点x/y为2长度，贝塞尔曲线跟在前面增加2或4长度即控制点坐标
 
-      this.index = 0; // 位于多边形中的第几个顶点，只记录原始的交点不计入，从1开始区别于默认0无效
-
       this.prev = null; // 顶点双向链表
 
       this.next = null;
@@ -13571,7 +13569,6 @@
       this.isOverlap = false; // 原本顶点也可能同时作为交点重合，这发生在点交边或共顶点的情况
 
       this.isVisited = false;
-      this.isOut = false; // 交点重合在边或顶点上时，判断是否有效会提前计算无效即在对方多边形外
     } // 自己标记访问过，同时成对的也要标记，成对意思是2个多边形的交点在两边各自保存同样的数据成对
 
 
@@ -13590,10 +13587,6 @@
     }, {
       key: "isInside",
       value: function isInside(poly) {
-        if (this.isOut) {
-          return 0;
-        }
-
         var oddNodes = 0;
         var first = poly.first;
         var vertex = first;
@@ -13658,9 +13651,7 @@
       this.firstIntersect = null; // 算法过程中存储未处理的第一个交点，加快速度避免每次从头开始查找
 
       for (var i = 0, len = vertices.length; i < len; i++) {
-        var v = new Vertex(vertices[i]);
-        v.index = i + 1;
-        this.addVertex(v);
+        this.addVertex(new Vertex(vertices[i]));
       }
     } // 顶点添加到末尾，顶点是个循环双向链表
 
@@ -13737,7 +13728,6 @@
     }, {
       key: "removeVertex",
       value: function removeVertex(vertex) {
-        console.log(vertex);
         var prev = vertex.prev;
         var next = vertex.next;
         prev.next = next;
@@ -13820,6 +13810,7 @@
       value: function bo(clip, sourceForwards, clipForwards) {
         var _this = this;
 
+        console.error(sourceForwards, clipForwards);
         var first = this.first,
             first2 = clip.first;
         var sourceVertex = first;
@@ -13952,6 +13943,7 @@
         // 阶段2，标识出入口，2个多边形分别进行判断first，后续交点交替出现循环即可
 
 
+        console.log(sourceVertex.coords, clipVertex.coords);
         sourceInClip = sourceVertex.isInside(clip);
         clipInSource = clipVertex.isInside(this);
         console.log(sourceInClip, clipInSource); // 还有和参数传入种类决定最终选取规则

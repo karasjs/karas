@@ -226,6 +226,7 @@ class Polygon {
    * Subtract:     backwards, forwards
    */
   bo(clip, sourceForwards, clipForwards) {
+    console.error(sourceForwards, clipForwards);
     let first = this.first, first2 = clip.first;
     let sourceVertex = first;
     let clipVertex = first2;
@@ -361,6 +362,7 @@ class Polygon {
     // }
 
     // 阶段2，标识出入口，2个多边形分别进行判断first，后续交点交替出现循环即可
+    console.log(sourceVertex.coords, clipVertex.coords);
     sourceInClip = sourceVertex.isInside(clip);
     clipInSource = clipVertex.isInside(this);
     console.log(sourceInClip, clipInSource);

@@ -100,13 +100,33 @@ function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
 }
 
 function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
-  if(arguments.length === 4) {
-    return [x0, y0, x1, y1];
+  let len = arguments.length;
+  if(Array.isArray(x0)) {
+    let l = x0.length;
+    let arr = x0;
+    [x0, y0] = arr[0];
+    [x1, y1] = arr[1];
+    len = 4;
+    if(l >= 3) {
+      [x2, y2] = arr[2];
+      len = 6;
+    }
+    if(l >= 4) {
+      [x3, y3] = arr[3];
+      len = 8;
+    }
   }
-  if(arguments.length === 6) {
+  if(len === 4) {
+    let a = Math.min(x0, x1);
+    let b = Math.min(y0, y1);
+    let c = Math.max(x0, x1);
+    let d = Math.max(y0, y1);
+    return [a, b, c, d];
+  }
+  if(len === 6) {
     return bboxBezier2(x0, y0, x1, y1, x2, y2);
   }
-  if(arguments.length === 8) {
+  if(len === 8) {
     return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
   }
 }
@@ -451,6 +471,46 @@ function getPointT3(points, x, y) {
   return res;
 }
 
+function bezierSlope(points, t) {
+  if(points.length === 3) {
+    return bezier2Slope(points, t);
+  }
+  else if(points.length === 4) {
+    return bezier3Slope(points, t);
+  }
+}
+
+function bezier2Slope(points, t) {
+  let [
+    [x0, y0],
+    [x1, y1],
+    [x2, y2],
+  ] = points;
+  let x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+  if(x === 0) {
+    return Infinity;
+  }
+  return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+}
+
+function bezier3Slope(points, t) {
+  let [
+    [x0, y0],
+    [x1, y1],
+    [x2, y2],
+    [x3, y3],
+  ] = points;
+  let x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t
+    + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t
+    + 3 * x1 - 3 * x0;
+  if(x === 0) {
+    return Infinity;
+  }
+  return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
+    + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t
+    + 3 * y1 - 3 * y0) / x;
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -460,4 +520,5 @@ export default {
   sliceBezier2Both,
   pointAtByT,
   getPointT,
+  bezierSlope,
 };

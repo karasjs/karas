@@ -1040,7 +1040,7 @@ function normalize(style, resetList = []) {
         if(match) {
           let k = match[1].toLowerCase(), v = match[2];
           if(k === 'drop-shadow' || k === 'dropshadow') {
-            let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*,\s*([-+]?[\d.]+[pxremvwhina%]*)\s*,\s*(?:([-+]?[\d.]+[pxremvwhina%]*)\s*,\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
+            let coords = /([-+]?[\d.]+[pxremvwhina%]*)[\s,]+([-+]?[\d.]+[pxremvwhina%]*)[\s,]+(?:([-+]?[\d.]+[pxremvwhina%]*)[\s,])?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
             if(coords) {
               f = f || [];
               let res = [];

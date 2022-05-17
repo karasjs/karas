@@ -8793,7 +8793,7 @@
                 _v9 = match[2];
 
             if (k === 'drop-shadow' || k === 'dropshadow') {
-              var coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*,\s*([-+]?[\d.]+[pxremvwhina%]*)\s*,\s*(?:([-+]?[\d.]+[pxremvwhina%]*)\s*,\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
+              var coords = /([-+]?[\d.]+[pxremvwhina%]*)[\s,]+([-+]?[\d.]+[pxremvwhina%]*)[\s,]+(?:([-+]?[\d.]+[pxremvwhina%]*)[\s,])?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
 
               if (coords) {
                 f = f || [];

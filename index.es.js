@@ -8787,7 +8787,7 @@ function normalize(style) {
               _v9 = match[2];
 
           if (k === 'drop-shadow' || k === 'dropshadow') {
-            var coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
+            var coords = /([-+]?[\d.]+[pxremvwhina%]*)[\s,]+([-+]?[\d.]+[pxremvwhina%]*)[\s,]+(?:([-+]?[\d.]+[pxremvwhina%]*)[\s,])?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
 
             if (coords) {
               f = f || [];
@@ -23185,16 +23185,14 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         if (renderMode === CANVAS$4 && cache !== LOCAL) {
           var width = root.width,
               height = root.height;
-
-          var _c = inject.getCacheCanvas(width, height, null, 'blend');
-
+          var c = inject.getCacheCanvas(width, height, null, 'blend');
           offscreenBlend = {
             ctx: ctx,
-            target: _c,
+            target: c,
             mixBlendMode: mixBlendMode,
             matrix: matrix
           };
-          ctx = _c.ctx;
+          ctx = c.ctx;
         } else if (renderMode === SVG$3) {
           virtualDom.mixBlendMode = mixBlendMode;
         }
@@ -23210,14 +23208,14 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           var _width = root.width,
               _height = root.height;
 
-          var _c2 = inject.getCacheCanvas(_width, _height, null, 'mask1');
+          var _c = inject.getCacheCanvas(_width, _height, null, 'mask1');
 
           offscreenMask = {
             ctx: ctx,
-            target: _c2,
+            target: _c,
             matrix: matrix
           };
-          ctx = _c2.ctx;
+          ctx = _c.ctx;
         }
       } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
 
@@ -23230,15 +23228,15 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           var _width2 = root.width,
               _height2 = root.height;
 
-          var _c3 = inject.getCacheCanvas(_width2, _height2, null, 'filter');
+          var _c2 = inject.getCacheCanvas(_width2, _height2, null, 'filter');
 
           offscreenFilter = {
             ctx: ctx,
             filter: filter,
-            target: _c3,
+            target: _c2,
             matrix: matrix
           };
-          ctx = _c3.ctx;
+          ctx = _c2.ctx;
         } else if (renderMode === SVG$3) {
           virtualDom.filter = painter.svgFilter(filter);
         }
@@ -23282,14 +23280,14 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           var _width3 = root.width,
               _height3 = root.height;
 
-          var _c4 = inject.getCacheCanvas(_width3, _height3, null, 'overflow');
+          var _c3 = inject.getCacheCanvas(_width3, _height3, null, 'overflow');
 
           offscreenOverflow = {
             ctx: ctx,
-            target: _c4,
+            target: _c3,
             matrix: matrix
           };
-          ctx = _c4.ctx;
+          ctx = _c3.ctx;
           offscreenOverflow.x = x1;
           offscreenOverflow.y = y1;
           offscreenOverflow.offsetWidth = offsetWidth;
@@ -34639,20 +34637,20 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
           if (isE$3(_transform2)) {
             m = mx.identity();
           } else {
-            var _tfo3 = _transformOrigin.slice(0);
+            var _tfo2 = _transformOrigin.slice(0);
 
-            _tfo3[0] += target.bbox[0] + dx;
-            _tfo3[1] += target.bbox[1] + dy;
-            m = transform$1.calMatrixByOrigin(_transform2, _tfo3);
+            _tfo2[0] += target.bbox[0] + dx;
+            _tfo2[1] += target.bbox[1] + dy;
+            m = transform$1.calMatrixByOrigin(_transform2, _tfo2);
           }
 
           m = mx.multiply(inverse, m);
 
-          var _tfo2 = _transformOrigin.slice(0);
+          var tfo = _transformOrigin.slice(0);
 
-          _tfo2[0] += target.bbox[0] + dx;
-          _tfo2[1] += target.bbox[1] + dy;
-          lastMatrix = transform$1.calMatrixByOrigin(_transform2, _tfo2);
+          tfo[0] += target.bbox[0] + dx;
+          tfo[1] += target.bbox[1] + dy;
+          lastMatrix = transform$1.calMatrixByOrigin(_transform2, tfo);
 
           if (!isE$3(parentMatrix)) {
             lastMatrix = multiply$2(parentMatrix, lastMatrix);
@@ -41675,7 +41673,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.8";
+var version = "0.73.9";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

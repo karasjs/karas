@@ -22388,6 +22388,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                 return;
               } // scale为1和其它为0避免计算浪费
 
+              computedStyle[k] = v[0];
+
+              if (k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_Z$4) {
+                temp.push([k, v]);
+                return;
+              } // scale为1和其它为0避免计算浪费
+
 
               var isScale = k === SCALE_X$3 || k === SCALE_Y$3 || k === SCALE_Z$2;
 

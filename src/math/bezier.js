@@ -472,10 +472,18 @@ function getPointT3(points, x, y) {
 }
 
 function bezierSlope(points, t) {
+  if(points.length === 2) {
+    let [x1, y1] = points[0];
+    let [x2, y2] = points[1];
+    if(x1 === x2) {
+      return Infinity;
+    }
+    return (y2 - y1) / (x2 - x1);
+  }
   if(points.length === 3) {
     return bezier2Slope(points, t);
   }
-  else if(points.length === 4) {
+  if(points.length === 4) {
     return bezier3Slope(points, t);
   }
 }

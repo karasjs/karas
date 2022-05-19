@@ -491,7 +491,7 @@ function convertCurve2Line(poly) {
     if(len >= 3) {
       let l = bezier.bezierLength(coords);
       // 每2个px长度分割
-      let n = Math.ceil(l * 0.2);
+      let n = Math.ceil(l * 0.5);
       if(n > 1) {
         let per = 1 / n;
         let [lastX, lastY] = coords[0];

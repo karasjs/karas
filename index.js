@@ -41597,7 +41597,7 @@
       if (len >= 3) {
         var l = bezier.bezierLength(coords); // 每2个px长度分割
 
-        var n = Math.ceil(l * 0.2);
+        var n = Math.ceil(l * 0.5);
 
         if (n > 1) {
           var per = 1 / n;

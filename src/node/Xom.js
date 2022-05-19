@@ -994,6 +994,10 @@ class Xom extends Node {
               return;
             }
             computedStyle[k] = v[0];
+            if(k === ROTATE_X || k === ROTATE_Y || k === ROTATE_Z) {
+              temp.push([k, v]);
+              return;
+            }
             // scale为1和其它为0避免计算浪费
             let isScale = k === SCALE_X || k === SCALE_Y || k === SCALE_Z;
             if(v[0] === 1 && isScale || !isScale && v[0] === 0) {

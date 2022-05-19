@@ -99,13 +99,33 @@ function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
 }
 
 function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
-  if(arguments.length === 4) {
-    return [x0, y0, x1, y1];
+  let len = arguments.length;
+  if(Array.isArray(x0)) {
+    let l = x0.length;
+    let arr = x0;
+    [x0, y0] = arr[0];
+    [x1, y1] = arr[1];
+    len = 4;
+    if(l >= 3) {
+      [x2, y2] = arr[2];
+      len = 6;
+    }
+    if(l >= 4) {
+      [x3, y3] = arr[3];
+      len = 8;
+    }
   }
-  if(arguments.length === 6) {
+  if(len === 4) {
+    let a = Math.min(x0, x1);
+    let b = Math.min(y0, y1);
+    let c = Math.max(x0, x1);
+    let d = Math.max(y0, y1);
+    return [a, b, c, d];
+  }
+  if(len === 6) {
     return bboxBezier2(x0, y0, x1, y1, x2, y2);
   }
-  if(arguments.length === 8) {
+  if(len === 8) {
     return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
   }
 }
@@ -295,7 +315,7 @@ function sliceBezier2Both(points, start = 0, end = 1) {
     if(end < 1) {
       start = start / end;
     }
-    points = sliceBezier(points.reverse(), (1 - start)).reverse();
+    points = sliceBezier(points.slice(0).reverse(), (1 - start)).reverse();
   }
   return points;
 }

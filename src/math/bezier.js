@@ -178,6 +178,25 @@ function adaptiveSimpson38(derivativeFunc, l, r, eps = 0.001) {
  * @return {*} number
  */
 function bezierLength(points, startT = 0, endT = 1) {
+  if(points.length === 6) {
+    points = [
+      [points[0], points[1]],
+      [points[2], points[3]],
+      [points[4], points[5]],
+    ];
+  }
+  else if(points.length === 8) {
+    points = [
+      [points[0], points[1]],
+      [points[2], points[3]],
+      [points[4], points[5]],
+      [points[6], points[7]],
+    ];
+  }
+  if(points.length === 2) {
+    let [x1, y1] = points[0], [x2, y2] = points[1];
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  }
   let derivativeFunc = t => norm(at(t, points));
   return adaptiveSimpson38(derivativeFunc, startT, endT);
 }

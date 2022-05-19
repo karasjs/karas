@@ -446,9 +446,12 @@ function convert2Segment(coords) {
 }
 
 function convert2Poly(list) {
+  if(!list) {
+    return;
+  }
   let len = list.length;
   if(!list.length || len < 3) {
-    return [];
+    return;
   }
   let [x, y] = list[0];
   let res = [];
@@ -655,17 +658,29 @@ class Polygon extends Polyline {
       for(let i = 1; i < len; i++) {
         // res中每个多边形都和当前新的多边形发生布尔运算，所以新的要和res中每个求交点并切割，再存入res
         let polyB = convert2Poly(list[i]);
-        res.forEach(polyA => {
-          slicePolygonsUnIntersected(polyA, polyB);
-          res.push(polyB);
-        });
+        if(polyB) {
+          res.forEach(polyA => {
+            if(polyA) {
+              slicePolygonsUnIntersected(polyA, polyB);
+            }
+            res.push(polyB);
+          });
+        }
+        else {
+          res.push(null);
+        }
       }
       // 现在res中是每个多边形边互不相交的结果，再将每条曲线直线化，方便后续模拟布尔运算
       res.forEach(poly => {
-        convertCurve2Line(poly);
+        if(poly) {
+          convertCurve2Line(poly);
+        }
       });
       // 取每段的开始顶点，如果是曲线，附加前面的控制坐标引用等布尔运算结束后还原
       let nList = res.map(poly => {
+        if(!poly) {
+          return;
+        }
         let temp = poly.map(seg => seg.coords[0]);
         // 添加闭环
         temp.push(poly[0].coords[0]);
@@ -679,37 +694,56 @@ class Polygon extends Polyline {
       for(let i = 1; i < len; i++) {
         let op = (bo[i - 1] || '').toString().toLowerCase();
         let cur = nList[i];
+        if(!cur) {
+          continue;
+        }
         if(['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res2.length) {
           res2.push(cur);
           continue;
         }
         switch(op) {
           case 'intersection':
-            if(cur && cur.length > 1) {
-              intersection(res2, [cur]).forEach(item => {
+            let r1 = intersection(res2, [cur]);
+            if(r1) {
+              r1.forEach(item => {
                 res2 = item;
               });
+            }
+            else {
+              res2 = [];
             }
             break;
           case 'union':
-            if(cur && cur.length > 1) {
-              union(res2, [cur]).forEach(item => {
+            let r2 = union(res2, [cur]);
+            if(r2) {
+              r2.forEach(item => {
                 res2 = item;
               });
+            }
+            else {
+              res2 = [];
             }
             break;
           case 'diff':
-            if(cur && cur.length > 1) {
-              diff(res2, [cur]).forEach(item => {
+            let r3 = diff(res2, [cur]);
+            if(r3) {
+              r3.forEach(item => {
                 res2 = item;
               });
             }
+            else {
+              res2 = [];
+            }
             break;
           case 'xor':
-            if(cur && cur.length > 1) {
-              xor(res2, [cur]).forEach(item => {
+            let r4 = xor(res2, [cur]);
+            if(r4) {
+              r4.forEach(item => {
                 res2 = item;
               });
+            }
+            else {
+              res2 = [];
             }
             break;
         }

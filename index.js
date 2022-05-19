@@ -10269,6 +10269,23 @@
     var startT = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
     var endT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
 
+    if (points.length === 6) {
+      points = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]]];
+    } else if (points.length === 8) {
+      points = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
+    }
+
+    if (points.length === 2) {
+      var _points$ = _slicedToArray(points[0], 2),
+          x1 = _points$[0],
+          y1 = _points$[1],
+          _points$2 = _slicedToArray(points[1], 2),
+          x2 = _points$2[0],
+          y2 = _points$2[1];
+
+      return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
     var derivativeFunc = function derivativeFunc(t) {
       return norm(at(t, points));
     };
@@ -10620,13 +10637,13 @@
 
   function bezierSlope(points, t) {
     if (points.length === 2) {
-      var _points$ = _slicedToArray(points[0], 2),
-          x1 = _points$[0],
-          y1 = _points$[1];
+      var _points$3 = _slicedToArray(points[0], 2),
+          x1 = _points$3[0],
+          y1 = _points$3[1];
 
-      var _points$2 = _slicedToArray(points[1], 2),
-          x2 = _points$2[0],
-          y2 = _points$2[1];
+      var _points$4 = _slicedToArray(points[1], 2),
+          x2 = _points$4[0],
+          y2 = _points$4[1];
 
       if (x1 === x2) {
         return Infinity;
@@ -41551,10 +41568,14 @@
   }
 
   function convert2Poly(list) {
+    if (!list) {
+      return;
+    }
+
     var len = list.length;
 
     if (!list.length || len < 3) {
-      return [];
+      return;
     }
 
     var _list$ = _slicedToArray(list[0], 2),
@@ -41798,10 +41819,18 @@
             var _loop = function _loop(_i) {
               // res中每个多边形都和当前新的多边形发生布尔运算，所以新的要和res中每个求交点并切割，再存入res
               var polyB = convert2Poly(list[_i]);
-              res.forEach(function (polyA) {
-                slicePolygonsUnIntersected(polyA, polyB);
-                res.push(polyB);
-              });
+
+              if (polyB) {
+                res.forEach(function (polyA) {
+                  if (polyA) {
+                    slicePolygonsUnIntersected(polyA, polyB);
+                  }
+
+                  res.push(polyB);
+                });
+              } else {
+                res.push(null);
+              }
             };
 
             for (var _i = 1; _i < len; _i++) {
@@ -41810,10 +41839,16 @@
 
 
             res.forEach(function (poly) {
-              convertCurve2Line(poly);
+              if (poly) {
+                convertCurve2Line(poly);
+              }
             }); // 取每段的开始顶点，如果是曲线，附加前面的控制坐标引用等布尔运算结束后还原
 
             var nList = res.map(function (poly) {
+              if (!poly) {
+                return;
+              }
+
               var temp = poly.map(function (seg) {
                 return seg.coords[0];
               }); // 添加闭环
@@ -41832,6 +41867,10 @@
               var op = (bo[_i2 - 1] || '').toString().toLowerCase();
               var cur = nList[_i2];
 
+              if (!cur) {
+                continue;
+              }
+
               if (['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res2.length) {
                 res2.push(cur);
                 continue;
@@ -41839,37 +41878,53 @@
 
               switch (op) {
                 case 'intersection':
-                  if (cur && cur.length > 1) {
-                    intersection$1(res2, [cur]).forEach(function (item) {
+                  var r1 = intersection$1(res2, [cur]);
+
+                  if (r1) {
+                    r1.forEach(function (item) {
                       res2 = item;
                     });
+                  } else {
+                    res2 = [];
                   }
 
                   break;
 
                 case 'union':
-                  if (cur && cur.length > 1) {
-                    union(res2, [cur]).forEach(function (item) {
+                  var r2 = union(res2, [cur]);
+
+                  if (r2) {
+                    r2.forEach(function (item) {
                       res2 = item;
                     });
+                  } else {
+                    res2 = [];
                   }
 
                   break;
 
                 case 'diff':
-                  if (cur && cur.length > 1) {
-                    diff(res2, [cur]).forEach(function (item) {
+                  var r3 = diff(res2, [cur]);
+
+                  if (r3) {
+                    r3.forEach(function (item) {
                       res2 = item;
                     });
+                  } else {
+                    res2 = [];
                   }
 
                   break;
 
                 case 'xor':
-                  if (cur && cur.length > 1) {
-                    xor(res2, [cur]).forEach(function (item) {
+                  var r4 = xor(res2, [cur]);
+
+                  if (r4) {
+                    r4.forEach(function (item) {
                       res2 = item;
                     });
+                  } else {
+                    res2 = [];
                   }
 
                   break;

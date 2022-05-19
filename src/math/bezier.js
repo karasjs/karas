@@ -316,7 +316,7 @@ function sliceBezier2Both(points, start = 0, end = 1) {
     if(end < 1) {
       start = start / end;
     }
-    points = sliceBezier(points.reverse(), (1 - start)).reverse();
+    points = sliceBezier(points.slice(0).reverse(), (1 - start)).reverse();
   }
   return points;
 }

@@ -10161,15 +10161,53 @@
   }
 
   function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
-    if (arguments.length === 4) {
-      return [x0, y0, x1, y1];
+    var len = arguments.length;
+
+    if (Array.isArray(x0)) {
+      var l = x0.length;
+      var arr = x0;
+
+      var _arr$ = _slicedToArray(arr[0], 2);
+
+      x0 = _arr$[0];
+      y0 = _arr$[1];
+
+      var _arr$2 = _slicedToArray(arr[1], 2);
+
+      x1 = _arr$2[0];
+      y1 = _arr$2[1];
+      len = 4;
+
+      if (l >= 3) {
+        var _arr$3 = _slicedToArray(arr[2], 2);
+
+        x2 = _arr$3[0];
+        y2 = _arr$3[1];
+        len = 6;
+      }
+
+      if (l >= 4) {
+        var _arr$4 = _slicedToArray(arr[3], 2);
+
+        x3 = _arr$4[0];
+        y3 = _arr$4[1];
+        len = 8;
+      }
     }
 
-    if (arguments.length === 6) {
+    if (len === 4) {
+      var a = Math.min(x0, x1);
+      var b = Math.min(y0, y1);
+      var c = Math.max(x0, x1);
+      var d = Math.max(y0, y1);
+      return [a, b, c, d];
+    }
+
+    if (len === 6) {
       return bboxBezier2(x0, y0, x1, y1, x2, y2);
     }
 
-    if (arguments.length === 8) {
+    if (len === 8) {
       return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
     }
   }
@@ -10440,7 +10478,7 @@
         start = start / end;
       }
 
-      points = sliceBezier(points.reverse(), 1 - start).reverse();
+      points = sliceBezier(points.slice(0).reverse(), 1 - start).reverse();
     }
 
     return points;
@@ -23455,7 +23493,13 @@
                   return;
                 }
 
-                computedStyle[k] = v[0]; // scale为1和其它为0避免计算浪费
+                computedStyle[k] = v[0];
+
+                if (k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_Z$4) {
+                  temp.push([k, v]);
+                  return;
+                } // scale为1和其它为0避免计算浪费
+
 
                 var isScale = k === SCALE_X$3 || k === SCALE_Y$3 || k === SCALE_Z$2;
 
@@ -42785,7 +42829,7 @@
     Cache: Cache
   };
 
-  var version = "0.73.9";
+  var version = "0.73.10";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -42666,9 +42666,35 @@
 
     if (!tagName) {
       throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
+    } // 缩写src和font
+
+
+    var src = props.src;
+
+    if (/^#\d+$/.test(src)) {
+      var imgs = opt.imgs,
+          i = parseInt(src.slice(1));
+
+      if (Array.isArray(imgs)) {
+        props.src = imgs[i];
+      }
     }
 
     var style = props.style;
+
+    if (style) {
+      var fontFamily = style.fontFamily;
+
+      if (/^#\d+$/.test(fontFamily)) {
+        var fonts = opt.imgs,
+            _i = parseInt(fontFamily.slice(1));
+
+        if (Array.isArray(fonts)) {
+          style.fontFamily = fonts[_i];
+        }
+      }
+    }
+
     opt.abbr !== false && abbr2full(style, abbrCssProperty$1); // 先替换style的
 
     replaceVars(style, opt.vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换

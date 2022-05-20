@@ -316,7 +316,24 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
   }
+  // 缩写src和font
+  let src = props.src;
+  if(/^#\d+$/.test(src)) {
+    let imgs = opt.imgs, i = parseInt(src.slice(1));
+    if(Array.isArray(imgs)) {
+      props.src = imgs[i];
+    }
+  }
   let style = props.style;
+  if(style) {
+    let fontFamily = style.fontFamily;
+    if(/^#\d+$/.test(fontFamily)) {
+      let fonts = opt.imgs, i = parseInt(fontFamily.slice(1));
+      if(Array.isArray(fonts)) {
+        style.fontFamily = fonts[i];
+      }
+    }
+  }
   (opt.abbr !== false) && abbr2full(style, abbrCssProperty);
   // 先替换style的
   replaceVars(style, opt.vars);

@@ -15,7 +15,7 @@ let o = karas.render(
           },
           {
             libraryId: 1,
-            startTime: 100,
+            offsetTime: 100,
             init: {
               style: {
                 left: 20,
@@ -25,7 +25,7 @@ let o = karas.render(
           },
           {
             libraryId: 2,
-            startTime: 200,
+            offsetTime: 200,
             init: {
               style: {
                 left: 40,
@@ -92,7 +92,7 @@ let o = karas.render(
             children: [
               {
                 libraryId: 1,
-                startTime: 300,
+                offsetTime: 300,
                 init: {
                   style: {
                     left: 0,

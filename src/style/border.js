@@ -1137,7 +1137,9 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
         limit(controls1[i], xa, ya, 0);
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
       if(needInner) {
         for(let i = 0, len = controls2.length; i < len; i++) {
           limit(controls2[i], xb, yb, 0);
@@ -1194,7 +1196,9 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
         limit(controls1[i], xa, ya, 1);
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
       if(needInner) {
         for(let i = 0, len = controls2.length; i < len; i++) {
           limit(controls2[i], xb, yb, 1);
@@ -1808,15 +1812,16 @@ function calBezierRightBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
 }
 
 function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+  // console.log(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius);
   let [brx, bry] = beginRadius;
-  let [erx, ery] = endRadius;
+  let [erx, ery] = endRadius;console.log(beginRadius, endRadius)
   // 一条边的两侧圆角均为0时无效
   if((!brx || !bry) && (!erx || !ery)) {
     return pointsList;
   }
   // 分界坐标圆心，左圆角、右圆角、中间矩形，3个区域2个坐标；当左右圆角相接时中间矩形为0即中间2个坐标相等
   let oxl = x2 + brx - (x2 - x1);
-  let oxr = x3 - erx + (x4 - x3);
+  let oxr = x3 - erx + (x4 - x3);console.log(oxl, oxr);
   // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
   // 也有可能左右圆角相接，跨越的只分为左右2份
   // 最终左圆角内的存入begin，右圆角内的存入end，中间center
@@ -1944,7 +1949,7 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
       centerList.push(points);
     }
   }
-  let beginLength = beginList.length;
+  let beginLength = beginList.length;console.log(beginList, endList);
   if(beginLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
     let needInner = brx > (x2 - x1) && borderWidth < bry;
@@ -2002,7 +2007,9 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
         points[3] = points[0];
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
     });
   }
   let endLength = endList.length;
@@ -2063,7 +2070,9 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
         points[3] = points[0];
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
     });
   }
   return beginList.concat(centerList).concat(endList);

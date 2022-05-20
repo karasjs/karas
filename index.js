@@ -32053,6 +32053,7 @@
             props.push(['fill', fill.v || fill]);
 
             if (fillRule && fillRule !== 'nonzero') {
+              // evenodd
               props.push(['fill-rule', fillRule]);
             }
           } else {
@@ -33452,29 +33453,33 @@
           // 清除防止重复调用，并且新的json还会进入整体逻辑
           records.splice(0).forEach(function (item) {
             var target = item.target,
-                animate = item.animate;
+                animate = item.animate,
+                offsetTime = item.offsetTime;
 
-            if (target.isDestroyed) {
+            if (target.isDestroyed || !animate) {
               return;
             }
 
-            if (Array.isArray(animate)) {
-              animate.forEach(function (animate) {
-                var value = animate.value,
-                    options = animate.options;
-                options.autoPlay = false;
-                var o = target.animate(value, options);
+            if (!Array.isArray(animate)) {
+              animate = [animate];
+            }
 
-                _this.add(o, list);
-              });
-            } else {
+            animate.forEach(function (animate) {
               var value = animate.value,
                   options = animate.options;
               options.autoPlay = false;
+
+              if (offsetTime) {
+                options = Object.assign({}, options); // clone防止多个使用相同的干扰
+
+                options.delay = options.delay || 0;
+                options.delay += offsetTime;
+              }
+
               var o = target.animate(value, options);
 
               _this.add(o, list);
-            }
+            });
           });
         } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
 
@@ -42614,20 +42619,33 @@
       child.init = null;
     }
   }
+  /**
+   * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
+   * hash为library库的hash格式，将原本数组转为id和value访问，每递归遇到library形成一个新的scope重新初始化
+   * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
+   * @param karas
+   * @param json
+   * @param animateRecords
+   * @param opt
+   * @param hash
+   * @param offsetTime
+   * @returns {Node|Component|*}
+   */
 
-  function parse(karas, json, animateRecords, opt) {
-    var hash = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
 
+  function parse(karas, json, animateRecords, opt, hash, offsetTime) {
     if (isPrimitive(json) || json instanceof Node || json instanceof Component$1) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse(karas, item, animateRecords, opt, hash);
+        return parse(karas, item, animateRecords, opt, hash, offsetTime);
       });
-    } // 先判断是否是个链接到库的节点，是则进行链接操作
+    }
 
+    var oft = offsetTime; // 暂存，后续生成动画用这个值
+    // 先判断是否是个链接到库的节点，是则进行链接操作
 
     var libraryId = json.libraryId;
 
@@ -42636,6 +42654,7 @@
 
       if (libraryItem) {
         linkChild(json, libraryItem);
+        offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
       } else {
         throw new Error('Link library miss id: ' + libraryId);
       }
@@ -42718,7 +42737,7 @@
           return item;
         }
 
-        return parse(karas, item, animateRecords, opt, hash);
+        return parse(karas, item, animateRecords, opt, hash, offsetTime);
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
@@ -42726,7 +42745,7 @@
           return item;
         }
 
-        return parse(karas, item, animateRecords, opt, hash);
+        return parse(karas, item, animateRecords, opt, hash, offsetTime);
       }));
     }
 
@@ -42759,7 +42778,8 @@
       if (has) {
         animateRecords.push({
           animate: animate,
-          target: vd
+          target: vd,
+          offsetTime: oft
         });
       }
     }
@@ -42816,7 +42836,7 @@
 
       var animateRecords = [];
 
-      var vd = parse(karas, json, animateRecords, options); // 有dom时parse作为根方法渲染
+      var vd = parse(karas, json, animateRecords, options, {}, 0); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

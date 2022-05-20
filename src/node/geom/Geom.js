@@ -492,7 +492,7 @@ class Geom extends Xom {
       }
       if(isFill && fill && fill !== 'none') {
         props.push(['fill', fill.v || fill]);
-        if(fillRule && fillRule !== 'nonzero') {
+        if(fillRule && fillRule !== 'nonzero') { // evenodd
           props.push(['fill-rule', fillRule]);
         }
       }

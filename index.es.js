@@ -10044,6 +10044,7 @@ var equation = {
  * @returns {number[]}
  * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
  */
+
 function bboxBezier2(x0, y0, x1, y1, x2, y2) {
   var minX = Math.min(x0, x2);
   var minY = Math.min(y0, y2);
@@ -10261,6 +10262,23 @@ function adaptiveSimpson38(derivativeFunc, l, r) {
 function bezierLength(points) {
   var startT = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
   var endT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+  if (points.length === 6) {
+    points = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]]];
+  } else if (points.length === 8) {
+    points = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
+  }
+
+  if (points.length === 2) {
+    var _points$ = _slicedToArray(points[0], 2),
+        x1 = _points$[0],
+        y1 = _points$[1],
+        _points$2 = _slicedToArray(points[1], 2),
+        x2 = _points$2[0],
+        y2 = _points$2[1];
+
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  }
 
   var derivativeFunc = function derivativeFunc(t) {
     return norm(at(t, points));
@@ -10497,6 +10515,189 @@ function pointAtByT3(points, t) {
   var x = points[0][0] * (1 - t) * (1 - t) * (1 - t) + 3 * points[1][0] * t * (1 - t) * (1 - t) + 3 * points[2][0] * t * t * (1 - t) + points[3][0] * t * t * t;
   var y = points[0][1] * (1 - t) * (1 - t) * (1 - t) + 3 * points[1][1] * t * (1 - t) * (1 - t) + 3 * points[2][1] * t * t * (1 - t) + points[3][1] * t * t * t;
   return [x, y];
+} // 已知曲线和上面一点获得t
+
+
+function getPointT(points, x, y) {
+  if (points.length === 4) {
+    return getPointT3(points, x, y);
+  } else if (points.length === 3) {
+    return getPointT2(points, x, y);
+  }
+}
+
+function getPointT2(points, x, y) {
+  // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
+  var tx = equation.getRoots([points[0][0] - x, 2 * (points[1][0] - points[0][0]), points[2][0] + points[0][0] - 2 * points[1][0]]).filter(function (i) {
+    return i >= 0 && i <= 1;
+  });
+  var ty = equation.getRoots([points[0][1] - y, 2 * (points[1][1] - points[0][1]), points[2][1] + points[0][1] - 2 * points[1][1]]).filter(function (i) {
+    return i >= 0 && i <= 1;
+  }); // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
+
+  var t = [];
+
+  for (var i = 0, len = tx.length; i < len; i++) {
+    var _x = tx[i];
+
+    for (var j = 0, _len = ty.length; j < _len; j++) {
+      var _y = ty[j];
+      var diff = Math.abs(_x - _y); // 必须小于一定误差
+
+      if (diff < 1e-10) {
+        t.push({
+          x: _x,
+          y: _y,
+          diff: diff
+        });
+      }
+    }
+  }
+
+  t.sort(function (a, b) {
+    return a.diff - b.diff;
+  });
+
+  if (t.length > 2) {
+    t.splice(2);
+  } // 取均数
+
+
+  t = t.map(function (item) {
+    return (item.x + item.y) * 0.5;
+  });
+  var res = [];
+  t.forEach(function (t) {
+    var xt = points[0][0] * Math.pow(1 - t, 2) + 2 * points[1][0] * t * (1 - t) + points[2][0] * t * t;
+    var yt = points[0][1] * Math.pow(1 - t, 2) + 2 * points[1][1] * t * (1 - t) + points[2][1] * t * t; // 计算误差忽略
+
+    if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+      res.push(t);
+    }
+  });
+  return res;
+}
+
+function getPointT3(points, x, y) {
+  var tx = equation.getRoots([points[0][0] - x, 3 * (points[1][0] - points[0][0]), 3 * (points[2][0] + points[0][0] - 2 * points[1][0]), points[3][0] - points[0][0] + 3 * points[1][0] - 3 * points[2][0]]).filter(function (i) {
+    return i >= 0 && i <= 1;
+  });
+  var ty = equation.getRoots([points[0][1] - y, 3 * (points[1][1] - points[0][1]), 3 * (points[2][1] + points[0][1] - 2 * points[1][1]), points[3][1] - points[0][1] + 3 * points[1][1] - 3 * points[2][1]]).filter(function (i) {
+    return i >= 0 && i <= 1;
+  }); // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
+
+  var t = [];
+
+  for (var i = 0, len = tx.length; i < len; i++) {
+    var _x2 = tx[i];
+
+    for (var j = 0, _len2 = ty.length; j < _len2; j++) {
+      var _y2 = ty[j];
+      var diff = Math.abs(_x2 - _y2); // 必须小于一定误差
+
+      if (diff < 1e-10) {
+        t.push({
+          x: _x2,
+          y: _y2,
+          diff: diff
+        });
+      }
+    }
+  }
+
+  t.sort(function (a, b) {
+    return a.diff - b.diff;
+  });
+
+  if (t.length > 3) {
+    t.splice(3);
+  } // 取均数
+
+
+  t = t.map(function (item) {
+    return (item.x + item.y) * 0.5;
+  });
+  var res = [];
+  t.forEach(function (t) {
+    var xt = points[0][0] * Math.pow(1 - t, 3) + 3 * points[1][0] * t * Math.pow(1 - t, 2) + 3 * points[2][0] * t * t * (1 - t) + points[3][0] * Math.pow(t, 3);
+    var yt = points[0][1] * Math.pow(1 - t, 3) + 3 * points[1][1] * t * Math.pow(1 - t, 2) + 3 * points[2][1] * t * t * (1 - t) + points[3][1] * Math.pow(t, 3); // 计算误差忽略
+
+    if (Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+      res.push(t);
+    }
+  });
+  return res;
+}
+
+function bezierSlope(points, t) {
+  if (points.length === 2) {
+    var _points$3 = _slicedToArray(points[0], 2),
+        x1 = _points$3[0],
+        y1 = _points$3[1];
+
+    var _points$4 = _slicedToArray(points[1], 2),
+        x2 = _points$4[0],
+        y2 = _points$4[1];
+
+    if (x1 === x2) {
+      return Infinity;
+    }
+
+    return (y2 - y1) / (x2 - x1);
+  }
+
+  if (points.length === 3) {
+    return bezier2Slope(points, t);
+  }
+
+  if (points.length === 4) {
+    return bezier3Slope(points, t);
+  }
+}
+
+function bezier2Slope(points, t) {
+  var _points4 = _slicedToArray(points, 3),
+      _points4$ = _slicedToArray(_points4[0], 2),
+      x0 = _points4$[0],
+      y0 = _points4$[1],
+      _points4$2 = _slicedToArray(_points4[1], 2),
+      x1 = _points4$2[0],
+      y1 = _points4$2[1],
+      _points4$3 = _slicedToArray(_points4[2], 2),
+      x2 = _points4$3[0],
+      y2 = _points4$3[1];
+
+  var x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+
+  if (x === 0) {
+    return Infinity;
+  }
+
+  return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+}
+
+function bezier3Slope(points, t) {
+  var _points5 = _slicedToArray(points, 4),
+      _points5$ = _slicedToArray(_points5[0], 2),
+      x0 = _points5$[0],
+      y0 = _points5$[1],
+      _points5$2 = _slicedToArray(_points5[1], 2),
+      x1 = _points5$2[0],
+      y1 = _points5$2[1],
+      _points5$3 = _slicedToArray(_points5[2], 2),
+      x2 = _points5$3[0],
+      y2 = _points5$3[1],
+      _points5$4 = _slicedToArray(_points5[3], 2),
+      x3 = _points5$4[0],
+      y3 = _points5$4[1];
+
+  var x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t + 3 * x1 - 3 * x0;
+
+  if (x === 0) {
+    return Infinity;
+  }
+
+  return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t + 3 * y1 - 3 * y0) / x;
 }
 
 var bezier = {
@@ -10506,7 +10707,9 @@ var bezier = {
   pointAtBezierWithLength: pointAtBezierWithLength,
   sliceBezier: sliceBezier,
   sliceBezier2Both: sliceBezier2Both,
-  pointAtByT: pointAtByT
+  pointAtByT: pointAtByT,
+  getPointT: getPointT,
+  bezierSlope: bezierSlope
 };
 
 var getRoots$1 = equation.getRoots; // 两个三次方程组的数值解.9阶的多项式方程,可以最多有9个实根(两个S形曲线的情况)
@@ -13466,6 +13669,997 @@ function intersection$1(subject, clipping) {
   return _boolean(subject, clipping, INTERSECTION);
 }
 
+var Vertex = /*#__PURE__*/function () {
+  function Vertex(coords) {
+    var distance = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+    _classCallCheck(this, Vertex);
+
+    this.coords = coords; // 顶点x/y为2长度，贝塞尔曲线跟在前面增加2或4长度即控制点坐标
+
+    this.prev = null; // 顶点双向链表
+
+    this.next = null;
+    this.corresponding = null;
+    this.distance = distance; // 如果是交点，占原本多边形上一个点和下一个点之间的路程比(0-1)
+
+    this.isEntry = false; // 是否入口，反之出口
+
+    this.isIntersection = false; // 是否是新增的交点，不是则是原本的顶点
+
+    this.isOverlap = false; // 原本顶点也可能同时作为交点重合，这发生在点交边或共顶点的情况
+
+    this.isVisited = false;
+  } // 自己标记访问过，同时成对的也要标记，成对意思是2个多边形的交点在两边各自保存同样的数据成对
+
+
+  _createClass(Vertex, [{
+    key: "visit",
+    value: function visit() {
+      this.isVisited = true;
+      var corresponding = this.corresponding;
+
+      if (corresponding && !corresponding.isVisited) {
+        corresponding.isVisited = true;
+      }
+    } // 交点是否在多边形内，边上或顶点重合看情况算不算，射线（水平向左）+奇偶法
+    // https://www.cnblogs.com/muyefeiwu/p/11260366.html
+
+  }, {
+    key: "isInside",
+    value: function isInside(poly) {
+      var oddNodes = 0;
+      var first = poly.first;
+      var vertex = first;
+      var next = vertex.next; // 交点的坐标在最后，因为可能是贝塞尔曲线，前面存控制点坐标
+
+      var coords = this.coords,
+          l = coords.length;
+      var x = coords[l - 2];
+      var y = coords[l - 1]; // 循环一遍所有顶点之间的线段
+
+      do {
+        var vCoords = vertex.coords,
+            vl = vCoords.length,
+            nCoords = next.coords,
+            nl = nCoords.length;
+        var vx = vCoords[vl - 2],
+            vy = vCoords[vl - 1],
+            nx = nCoords[nl - 2],
+            ny = nCoords[nl - 1]; // 依旧是判断线段还是曲线
+
+        if (vl === 2) {
+          if (nl === 2) {
+            // 先排除水平重合线，且在两个y之间，再必须x在两个x右边
+            if ((vy < y && ny >= y || ny < y && vy >= y) && (vx <= x || nx <= x)) {
+              // 两点式求x坐标，看是否在右边，奇偶简化^操作，在线上不算
+              var x0 = vx + (y - vy) / (ny - vy) * (nx - vx);
+
+              if (x0 < x) {
+                oddNodes ^= x0 < x;
+              }
+            }
+          }
+        }
+
+        vertex = vertex.next;
+        next = vertex.next || first;
+      } while (vertex !== first); // 返回奇偶数，0和1正好true/false
+
+
+      return oddNodes;
+    }
+  }], [{
+    key: "createIntersection",
+    value: function createIntersection(coords, distance) {
+      var v = new Vertex(coords, distance);
+      v.isIntersection = true;
+      return v;
+    }
+  }]);
+
+  return Vertex;
+}();
+
+var Polygon = /*#__PURE__*/function () {
+  function Polygon(vertices) {
+    _classCallCheck(this, Polygon);
+
+    this.vertices = vertices;
+    this.first = null;
+    this.lastUnprocessed = null; // 算法过程中存储上一个未处理的交点
+
+    this.firstIntersect = null; // 算法过程中存储未处理的第一个交点，加快速度避免每次从头开始查找
+
+    for (var i = 0, len = vertices.length; i < len; i++) {
+      this.addVertex(new Vertex(vertices[i]));
+    }
+  } // 顶点添加到末尾，顶点是个循环双向链表
+
+
+  _createClass(Polygon, [{
+    key: "addVertex",
+    value: function addVertex(vertex) {
+      if (!this.first) {
+        this.first = vertex;
+        vertex.next = vertex;
+        vertex.prev = vertex;
+      } else {
+        var next = this.first;
+        var prev = next.prev;
+        next.prev = vertex;
+        vertex.next = next;
+        vertex.prev = prev;
+        prev.next = vertex;
+      }
+    }
+    /**
+     * 在start和end之间插入新的交点，这里面有顺序，一条边和另外多条边都相交时，start和end之间则有多个点（即交点），
+     * 需要插入到正确的顺序位置上，通过对比距离start的distance占比来确定，占比按从小到大顺序，其实就是位置
+     * 当插入贝塞尔曲线上时，distance就是t，需要切割曲线
+     */
+
+  }, {
+    key: "insertVertex",
+    value: function insertVertex(vertex, start, end) {
+      var prev,
+          curr = start; // 找到正确的位置，一条边上多个交点时不能直接用end
+
+      while (curr !== end && curr.distance < vertex.distance) {
+        curr = curr.next;
+      } // 处理新的点的引用
+
+
+      prev = curr.prev;
+      prev.next = vertex;
+      vertex.next = curr;
+      vertex.prev = prev;
+      curr.prev = vertex; // 如果是曲线点要裁剪，注意t是相对于非交点，所以始终用start和end计算，最后替换顶点防止误差
+
+      var coords = end.coords,
+          l = coords.length;
+
+      if (l === 4) {
+        var points = [start.coords.slice(-2), coords.slice(0, 2), coords.slice(2)]; // 注意t的开始结束需要根据前面后面的点的distance，因为可能多个交点，没有则默认0和1
+
+        var a = bezier.sliceBezier2Both(points, prev.distance || 0, vertex.distance);
+        var b = bezier.sliceBezier2Both(points, vertex.distance, curr.distance || 1);
+        vertex.coords.unshift(a[1][0], a[1][1]);
+        coords = curr.coords;
+        coords[0] = b[1][0]; // 替换原本的曲线控制点为新的控制点
+
+        coords[1] = b[1][1];
+      } else if (l === 6) {
+        // 同上
+        var _points = [start.coords.slice(-2), coords.slice(0, 2), coords.slice(2, 4), coords.slice(4)];
+
+        var _a = bezier.sliceBezier2Both(_points, prev.distance || 0, vertex.distance);
+
+        var _b = bezier.sliceBezier2Both(_points, vertex.distance, curr.distance || 1);
+
+        vertex.coords.unshift(_a[1][0], _a[1][1], _a[2][0], _a[2][1]);
+        coords = curr.coords;
+        coords[0] = _b[1][0]; // 这里是3阶所以是2个
+
+        coords[1] = _b[1][1];
+        coords[2] = _b[2][0];
+        coords[3] = _b[2][1];
+      }
+    }
+  }, {
+    key: "removeVertex",
+    value: function removeVertex(vertex) {
+      var prev = vertex.prev;
+      var next = vertex.next;
+      prev.next = next;
+      next.prev = prev;
+    } // 找到下一个非交点顶点，交点是插入的顶点
+
+  }, {
+    key: "getNext",
+    value: function getNext(v) {
+      while (v.isIntersection) {
+        v = v.next;
+      }
+
+      return v;
+    } // 获取第一个未处理的交点
+
+  }, {
+    key: "getFirstIntersect",
+    value: function getFirstIntersect() {
+      var first = this.first; // 一开始从头查找，中间有交点处理过后临时保存下来，下次不用从头查找
+
+      var v = this.firstIntersect || first;
+
+      do {
+        if (v.isIntersection && !v.isVisited) {
+          break;
+        }
+
+        v = v.next;
+      } while (v !== first);
+
+      this.firstIntersect = v; // 临时保存
+
+      return v;
+    } // 是否还有未处理的交点，预示算法结束
+
+  }, {
+    key: "hasUnprocessed",
+    value: function hasUnprocessed() {
+      var first = this.first; // 和上面很像，避免从头查找
+
+      var v = this.lastUnprocessed || first;
+
+      do {
+        if (v.isIntersection && !v.isVisited) {
+          this.lastUnprocessed = v;
+          return true;
+        }
+
+        v = v.next;
+      } while (v !== first);
+
+      this.lastUnprocessed = null;
+      return false;
+    } // 获取最终结果顶点列表
+
+  }, {
+    key: "getPoints",
+    value: function getPoints() {
+      var res = [];
+      var first = this.first;
+      var v = first;
+
+      do {
+        res.push(v.coords);
+        v = v.next;
+      } while (v !== first);
+
+      return res;
+    }
+    /**
+     * 和clip对象多边形的布尔运算，根据两个方向参数决定种类
+     * Intersection: forwards,  forwards
+     * Union:        backwards, backwards
+     * Subtract:     backwards, forwards
+     */
+
+  }, {
+    key: "bo",
+    value: function bo(clip, sourceForwards, clipForwards) {
+      var _this = this;
+
+      console.error(sourceForwards, clipForwards);
+      var first = this.first,
+          first2 = clip.first;
+      var sourceVertex = first;
+      var clipVertex = first2;
+      var sourceInClip, clipInSource;
+      var isUnion = !sourceForwards && !clipForwards;
+      var isIntersection = sourceForwards && clipForwards; // 阶段1，求得所有交点，两个多边形的顶点逐个循环形成每条边互相测试，注意有重合共点共线时先统计进来，再排除
+
+      do {
+        // 不是交点只是多边形顶点的时候，开始肯定会进入因为这时候还没有交点
+        if (!sourceVertex.isIntersection) {
+          (function () {
+            var next = _this.getNext(sourceVertex.next);
+
+            do {
+              if (!clipVertex.isIntersection) {
+                (function () {
+                  // 当前a多边形的边和b的边进行交点测试
+                  var next2 = clip.getNext(clipVertex.next);
+                  var is = getIntersection(sourceVertex.coords, next.coords, clipVertex.coords, next2.coords); // 是相交的时候才有意义，可能有多个交点
+
+                  if (is) {
+                    is.forEach(function (item) {
+                      var sourceIntersection;
+                      var clipIntersection; // 共顶点的情况特殊标识，同时防止下次再作为交点
+
+                      if (item.toSource === 0) {
+                        if (sourceVertex.isOverlap) {
+                          return;
+                        }
+                        sourceVertex.isOverlap = true;
+                        sourceIntersection = sourceVertex;
+                      } else if (item.toSource === 1) {
+                        if (next.isOverlap) {
+                          return;
+                        }
+                        next.isOverlap = true;
+                        sourceIntersection = next;
+                      }
+
+                      if (item.toClip === 0) {
+                        if (clipVertex.isOverlap) {
+                          return;
+                        }
+                        clipVertex.isOverlap = true;
+                        clipIntersection = clipVertex;
+                      } else if (item.toClip === 1) {
+                        if (next2.isOverlap) {
+                          return;
+                        }
+                        next2.isOverlap = true;
+                        clipIntersection = next2;
+                      }
+
+                      console.warn(item); // 普通非共点线情况，生成交点插入
+
+                      if (!sourceIntersection) {
+                        sourceIntersection = Vertex.createIntersection(item.coords.slice(0), item.toSource);
+
+                        _this.insertVertex(sourceIntersection, sourceVertex, _this.getNext(next));
+                      }
+
+                      if (!clipIntersection) {
+                        clipIntersection = Vertex.createIntersection(item.coords.slice(0), item.toClip);
+                        clip.insertVertex(clipIntersection, clipVertex, clip.getNext(next2));
+                      } // 互相指向对方成对
+
+
+                      sourceIntersection.corresponding = clipIntersection;
+                      clipIntersection.corresponding = sourceIntersection;
+                    });
+                  }
+                })();
+              }
+
+              clipVertex = clipVertex.next;
+            } while (clipVertex !== first2);
+          })();
+        }
+
+        sourceVertex = sourceVertex.next;
+      } while (sourceVertex !== first);
+      /**
+       * 阶段1.5，当出现共点共线情况时，需要判断顶点作为交点是否有效，去除掉无效的顶点保证原始算法正常运行
+       * 做法依旧是遍历，当遇到isOverlap标识时，直线查看前后的顶点或交点形成2个向量，
+       * 曲线则用求出切线代表2个向量，和对方成对交点形成的2个向量对比，交叉则说明有效
+       * 有可能会出现连续多个顶点作为交点的情况，这时候依然判断，如果向量垂直相交说明共线，
+       * 忽略掉前面或后面的顶点交点，并继续向前向后找
+       */
+      // if(hasOverlapVertex) {
+      //   do {
+      //     if(sourceVertex.isOverlap) {
+      //       // 无效的顶点作为交点的话，取消交点标，强制在对方多边形外
+      //       if(!isOverlapVertexValid(sourceVertex)) {
+      //         sourceVertex.isOverlap = false;
+      //         sourceVertex.isOut = true;
+      //         // 成对的交点如果也是顶点做同样操作，否则移除
+      //         let corresponding = sourceVertex.corresponding;
+      //         if(!corresponding.isOverlap) {
+      //           clip.removeVertex(corresponding);
+      //         }
+      //         else {
+      //           corresponding.isOut = true;
+      //           corresponding.isOverlap = false;
+      //         }
+      //       }
+      //     }
+      //     sourceVertex = sourceVertex.next;
+      //   }
+      //   while(sourceVertex !== first);
+      //   do {
+      //     if(clipVertex.isOverlap) {
+      //       if(!isOverlapVertexValid(clipVertex)) {
+      //         clipVertex.isOverlap = false;
+      //         clipVertex.isOut = true;
+      //         let corresponding = clipVertex.corresponding;
+      //         if(!corresponding.isOverlap) {
+      //           this.removeVertex(corresponding);
+      //         }
+      //         else {
+      //           corresponding.isOut = true;
+      //           corresponding.isOverlap = false;
+      //         }
+      //       }
+      //     }
+      //     clipVertex = clipVertex.next;
+      //   }
+      //   while(clipVertex !== first2);
+      // }
+      // 阶段2，标识出入口，2个多边形分别进行判断first，后续交点交替出现循环即可
+
+
+      console.log(sourceVertex.coords, clipVertex.coords);
+      sourceInClip = sourceVertex.isInside(clip);
+      clipInSource = clipVertex.isInside(this);
+      console.log(sourceInClip, clipInSource); // 还有和参数传入种类决定最终选取规则
+
+      sourceForwards ^= sourceInClip;
+      clipForwards ^= clipInSource;
+      sourceForwards = !!sourceForwards;
+      clipForwards = !!clipForwards;
+      console.log(sourceForwards, clipForwards); // 循环多边形a
+
+      do {
+        if (sourceVertex.isIntersection || sourceVertex.isOverlap) {
+          sourceVertex.isEntry = sourceForwards;
+          sourceForwards = !sourceForwards;
+        }
+
+        sourceVertex = sourceVertex.next;
+      } while (sourceVertex !== first); // 循环多边形b
+
+
+      do {
+        if (clipVertex.isIntersection || clipVertex.isOverlap) {
+          clipVertex.isEntry = clipForwards;
+          clipForwards = !clipForwards;
+        }
+
+        clipVertex = clipVertex.next;
+      } while (clipVertex !== first2); // 阶段3，遍历交点并选择方向结合顶点，获取最终结果，可能会形成不止1个区域，否则外层循环只执行一次就遍历完了没有未处理的
+
+
+      var list = [];
+
+      while (this.hasUnprocessed()) {
+        var current = this.getFirstIntersect();
+        var clipped = new Polygon([]);
+        clipped.addVertex(new Vertex(current.coords)); // 当前交点未访问则访问且打标
+
+        do {
+          current.visit();
+
+          if (current.isEntry) {
+            // 入口交点一直继续向后查找，顶点全部加入，直到交点（不包含）结束
+            do {
+              current = current.next;
+              clipped.addVertex(new Vertex(current.coords));
+            } while (!current.isIntersection && !current.isOverlap);
+          } else {
+            // 出口交点类似，但反向向前查找
+            do {
+              current = current.prev;
+              clipped.addVertex(new Vertex(current.coords));
+            } while (!current.isIntersection && !current.isOverlap);
+          }
+
+          current = current.corresponding; // 跳到成对的另一个多边形交点上
+        } while (!current.isVisited); // 这轮循环结束形成一个多边形存入结果
+
+
+        list.push(clipped.getPoints());
+      }
+
+      if (!list.length) {
+        if (isUnion) {
+          // 如果一个在另外一个内部，取外面大的，否则2个独立的多边形一起作为合集结果
+          if (sourceInClip) {
+            list.push(clip.getPoints());
+          } else if (clipInSource) {
+            list.push(this.getPoints());
+          } else {
+            list.push(this.getPoints(), clip.getPoints());
+          }
+        } else if (isIntersection) {
+          // 交集和上面相反，但独立的结果是空
+          if (sourceInClip) {
+            list.push(this.getPoints());
+          } else if (clipInSource) {
+            list.push(clip.getPoints());
+          }
+        } else {
+          // 差集特殊处理，没有交点的情况下可能2个是独立的，也有可能a在b内部或反之，这里只需要处理b在a内部，反过来的情况差集直接为空
+          // b在a内部的话需要b的所有顶点和a的所有边奇偶法均为奇数，b是clip对象
+          var _first = clip.first;
+          var _clipVertex = _first;
+          var isIn = false;
+
+          do {
+            // 只要有1个在里面就说明在内部，因为其它点可能落在边上或共点
+            if (_clipVertex.isInside(this)) {
+              isIn = true;
+              break;
+            }
+
+            _clipVertex = _clipVertex.next;
+          } while (_clipVertex !== _first);
+
+          if (isIn) {
+            list.push(this.getPoints()); // 查看2个多边形的顺时针或逆时针，调整到不一致即可，源多边形顺序不动，选y最小的凸点和前后点组成线段判断向量叉乘
+
+            var n1 = isClockwise(this),
+                n2 = isClockwise(clip);
+
+            if (n1 === n2) {
+              list.push(clip.getPoints().reverse());
+            } else {
+              list.push(clip.getPoints());
+            }
+          }
+        }
+      }
+
+      return list;
+    }
+  }]);
+
+  return Polygon;
+}();
+/**
+ * https://segmentfault.com/a/1190000004457595
+ * 注意分几种情况：线段和线段，线段和曲线，曲线和曲线，可能有多个交点全部返回
+ * 没有相交则返回空数组
+ */
+
+
+function getIntersection(s1, s2, c1, c2) {
+  var s1l = s1.length,
+      s2l = s2.length,
+      c1l = c1.length,
+      c2l = c2.length;
+  var s1x = s1[s1l - 2]; // 第1个点可以直接取最后2位顶点坐标，前面控制点没用
+
+  var s1y = s1[s1l - 1];
+  var c1x = c1[c1l - 2];
+  var c1y = c1[c1l - 1];
+  var s2x = s2[s2l - 2];
+  var s2y = s2[s2l - 1];
+  var c2x = c2[c2l - 2];
+  var c2y = c2[c2l - 1]; // 自己是线段
+
+  if (s2l === 2) {
+    // 2条线段之间判断用向量叉乘
+    if (c2l === 2) {
+      var d = (c2y - c1y) * (s2x - s1x) - (c2x - c1x) * (s2y - s1y); // 平行不相交
+
+      if (d === 0) {
+        return;
+      }
+
+      var toSource = ((c2x - c1x) * (s1y - c1y) - (c2y - c1y) * (s1x - c1x)) / d;
+      var toClip = ((s2x - s1x) * (s1y - c1y) - (s2y - s1y) * (s1x - c1x)) / d;
+
+      if (toSource >= 0 && toSource <= 1 && toClip >= 0 && toClip <= 1) {
+        var ox = s1x + toSource * (s2x - s1x);
+        var oy = s1y + toSource * (s2y - s1y); // 防止精度问题
+
+        if (toSource === 1) {
+          ox = s2x;
+          oy = s2y;
+        }
+
+        return [{
+          coords: [ox, oy],
+          toSource: toSource,
+          toClip: toClip
+        }];
+      }
+    } // 和2阶曲线
+    else if (c2l === 4) {
+      var bx1 = c2[c2l - 4];
+      var by1 = c2[c2l - 3];
+      var res = getIntersectionBezier2Line(c1x, c1y, bx1, by1, c2x, c2y, s1x, s1y, s2x, s2y);
+
+      if (res) {
+        // 反过来求的交点所以要交换下
+        res.forEach(function (item) {
+          var _ref = [item.toClip, item.toSource];
+          item.toSource = _ref[0];
+          item.toClip = _ref[1];
+        });
+        return res;
+      }
+    } // 和3阶曲线
+    else if (c2l === 6) {
+      var _bx = c2[c2l - 6];
+      var _by = c2[c2l - 5];
+      var bx2 = c2[c2l - 4];
+      var by2 = c2[c2l - 3];
+
+      var _res = getIntersectionBezier3Line(c1x, c1y, _bx, _by, bx2, by2, c2x, c2y, s1x, s1y, s2x, s2y);
+
+      if (_res) {
+        // 反过来求的交点所以要交换下
+        _res.forEach(function (item) {
+          var _ref2 = [item.toClip, item.toSource];
+          item.toSource = _ref2[0];
+          item.toClip = _ref2[1];
+        });
+
+        return _res;
+      }
+    }
+  } // 自己是2阶曲线
+  else if (s2l === 4) {
+    var ax1 = s2[s2l - 4];
+    var ay1 = s2[s2l - 3]; // 和直线段
+
+    if (c2l === 2) {
+      var _res2 = getIntersectionBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y);
+
+      if (_res2) {
+        return _res2;
+      }
+    } // 和2阶曲线
+    else if (c2l === 4) {
+      var _bx2 = c2[c2l - 4];
+      var _by2 = c2[c2l - 3];
+
+      var _res3 = getIntersectionBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, _bx2, _by2, c2x, c2y);
+
+      if (_res3) {
+        return _res3;
+      }
+    } // 和3阶曲线
+    else if (c2l === 6) {
+      var _bx3 = c2[c2l - 6];
+      var _by3 = c2[c2l - 5];
+      var _bx4 = c2[c2l - 4];
+      var _by4 = c2[c2l - 3];
+
+      var _res4 = getIntersectionBezier2Bezier3(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, _bx3, _by3, _bx4, _by4, c2x, c2y);
+
+      if (_res4) {
+        return _res4;
+      }
+    }
+  } // 自己是3阶曲线
+  else if (s2l === 6) {
+    var _ax = s2[s2l - 6];
+    var _ay = s2[s2l - 5];
+    var ax2 = s2[s2l - 4];
+    var ay2 = s2[s2l - 3]; // 和直线段
+
+    if (c2l === 2) {
+      var _res5 = getIntersectionBezier3Line(s1x, s1y, _ax, _ay, ax2, ay2, s2x, s2y, c1x, c1y, c2x, c2y);
+
+      if (_res5) {
+        return _res5;
+      }
+    } // 和2阶曲线
+    else if (c2l === 4) {
+      var _bx5 = c2[c2l - 4];
+      var _by5 = c2[c2l - 3];
+
+      var _res6 = getIntersectionBezier2Bezier3(c1x, c1y, _bx5, _by5, c2x, c2y, s1x, s1y, _ax, _ay, ax2, ay2, s2x, s2y);
+
+      if (_res6) {
+        // 反过来求的交点所以要交换下
+        _res6.forEach(function (item) {
+          var _ref3 = [item.toClip, item.toSource];
+          item.toSource = _ref3[0];
+          item.toClip = _ref3[1];
+        });
+
+        return _res6;
+      }
+    } // 和3阶曲线
+    else if (c2l === 6) {
+      var _bx6 = c2[c2l - 6];
+      var _by6 = c2[c2l - 5];
+      var _bx7 = c2[c2l - 4];
+      var _by7 = c2[c2l - 3];
+
+      var _res7 = getIntersectionBezier3Bezier3(s1x, s1y, _ax, _ay, ax2, ay2, s2x, s2y, c1x, c1y, _bx6, _by6, _bx7, _by7, c2x, c2y);
+
+      if (_res7) {
+        return _res7;
+      }
+    }
+  }
+}
+
+function getIntersectionBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y) {
+  var res = isec.intersectBezier2Line(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, c2x, c2y);
+
+  if (res.length) {
+    res = res.map(function (item) {
+      // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+      var toClip;
+
+      if (Math.abs(c2x - c1x) >= Math.abs(c2y - c1y)) {
+        toClip = Math.abs((item.x - c1x) / (c2x - c1x));
+      } else {
+        toClip = Math.abs((item.y - c1y) / (c2y - c1y));
+      }
+
+      if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+        // 还要判断斜率，相等也忽略（小于一定误差）
+        var k1 = getBezierSlope([[s1x, s1y], [ax1, ay1], [s2x, s2y]], item.t);
+        var k2 = getLineSlope(c1x, c1y, c2x, c2y); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+        if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+          return;
+        }
+
+        return {
+          coords: [item.x, item.y],
+          toSource: item.t,
+          // source是曲线直接用t
+          toClip: toClip
+        };
+      }
+    }).filter(function (i) {
+      return i;
+    });
+
+    if (res.length) {
+      return res;
+    }
+  }
+}
+
+function getIntersectionBezier3Line(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, c2x, c2y) {
+  var res = isec.intersectBezier3Line(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, c2x, c2y);
+
+  if (res.length) {
+    res = res.map(function (item) {
+      // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+      var toClip;
+
+      if (Math.abs(c2x - c1x) >= Math.abs(c2y - c1y)) {
+        toClip = Math.abs((item.x - c1x) / (c2x - c1x));
+      } else {
+        toClip = Math.abs((item.y - c1y) / (c2y - c1y));
+      }
+
+      if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+        // 还要判断斜率，相等也忽略（小于一定误差）
+        var k1 = getBezierSlope([[s1x, s1y], [ax1, ay1], [ax2, ay2], [s2x, s2y]], item.t);
+        var k2 = getLineSlope(c1x, c1y, c2x, c2y); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+        if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+          return;
+        }
+
+        return {
+          coords: [item.x, item.y],
+          toSource: item.t,
+          // source是曲线直接用t
+          toClip: toClip
+        };
+      }
+    }).filter(function (i) {
+      return i;
+    });
+
+    if (res.length) {
+      return res;
+    }
+  }
+}
+
+function getIntersectionBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, c2x, c2y) {
+  var res = isec.intersectBezier2Bezier2(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, c2x, c2y);
+
+  if (res.length) {
+    res = res.map(function (item) {
+      // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+      var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [c2x, c2y]], item.x, item.y); // 防止误差无值
+
+      if (toClip.length) {
+        toClip = toClip[0];
+
+        if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          // 还要判断斜率，相等也忽略（小于一定误差）
+          var k1 = getBezierSlope([[s1x, s1y], [ax1, ay1], [s2x, s2y]], item.t);
+          var k2 = getBezierSlope([[c1x, c1y], [bx1, by1], [c2x, c2y]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+            return;
+          }
+
+          return {
+            coords: [item.x, item.y],
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip
+          };
+        }
+      }
+    }).filter(function (i) {
+      return i;
+    });
+
+    if (res.length) {
+      return res;
+    }
+  }
+}
+
+function getIntersectionBezier2Bezier3(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y) {
+  var res = isec.intersectBezier2Bezier3(s1x, s1y, ax1, ay1, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y);
+
+  if (res.length) {
+    res = res.map(function (item) {
+      // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+      var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [bx2, by2], [c2x, c2y]], item.x, item.y); // 防止误差无值
+
+      if (toClip.length) {
+        toClip = toClip[0];
+
+        if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          // 还要判断斜率，相等也忽略（小于一定误差）
+          var k1 = getBezierSlope([[s1x, s1y], [ax1, ay1], [s2x, s2y]], item.t);
+          var k2 = getBezierSlope([[c1x, c1y], [bx1, by1], [bx2, by2], [c2x, c2y]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+            return;
+          }
+
+          return {
+            coords: [item.x, item.y],
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip
+          };
+        }
+      }
+    }).filter(function (i) {
+      return i;
+    });
+
+    if (res.length) {
+      return res;
+    }
+  }
+}
+
+function getIntersectionBezier3Bezier3(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y) {
+  var res = isec.intersectBezier3Bezier3(s1x, s1y, ax1, ay1, ax2, ay2, s2x, s2y, c1x, c1y, bx1, by1, bx2, by2, c2x, c2y);
+
+  if (res.length) {
+    res = res.map(function (item) {
+      // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+      var toClip = bezier.getPointT([[c1x, c1y], [bx1, by1], [bx2, by2], [c2x, c2y]], item.x, item.y); // 防止误差无值
+
+      if (toClip.length) {
+        toClip = toClip[0];
+
+        if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          // 还要判断斜率，相等也忽略（小于一定误差）
+          var k1 = getBezierSlope([[s1x, s1y], [ax1, ay1], [ax2, ay2], [s2x, s2y]], item.t);
+          var k2 = getBezierSlope([[c1x, c1y], [bx1, by1], [bx2, by2], [c2x, c2y]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+            return;
+          }
+
+          return {
+            coords: [item.x, item.y],
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip
+          };
+        }
+      }
+    }).filter(function (i) {
+      return i;
+    });
+
+    if (res.length) {
+      return res;
+    }
+  }
+}
+
+function bo(polygonA, polygonB, sourceForwards, clipForwards) {
+  var source = new Polygon(polygonA);
+  var clip = new Polygon(polygonB);
+  return source.bo(clip, sourceForwards, clipForwards);
+}
+
+function isClockwise(poly) {
+  var first = poly.first;
+  var coords = first.coords,
+      l = coords.length;
+  var lastY = coords[l - 1];
+  var min = first;
+  var current = first;
+
+  do {
+    coords = current.coords;
+    l = coords.length;
+    var y = coords[l - 1];
+
+    if (y < lastY) {
+      min = current;
+    }
+  } while (current !== first);
+
+  var prev = min.prev,
+      next = min.next;
+  coords = prev.coords;
+  l = coords.length;
+  var x1 = coords[l - 2],
+      y1 = coords[l - 1];
+  coords = min.coords;
+  l = coords.length;
+  var x2 = coords[l - 2],
+      y2 = coords[l - 1];
+  coords = next.coords;
+  l = coords.length;
+  var x3 = coords[l - 2],
+      y3 = coords[l - 1];
+  return vector.crossProduct(x2 - x1, y2 - y1, x3 - x2, y3 - y2) > 0;
+}
+
+function getLineSlope(x1, y1, x2, y2) {
+  if (x1 === x2) {
+    return Infinity;
+  }
+
+  return (y2 - y1) / (x2 - x1);
+}
+
+function getBezierSlope(points, t) {
+  if (points.length === 3) {
+    return getBezier2Slope(points, t);
+  } else if (points.length === 4) {
+    return getBezier3Slope(points, t);
+  }
+}
+
+function getBezier2Slope(points, t) {
+  var _points2 = _slicedToArray(points, 3),
+      _points2$ = _slicedToArray(_points2[0], 2),
+      x0 = _points2$[0],
+      y0 = _points2$[1],
+      _points2$2 = _slicedToArray(_points2[1], 2),
+      x1 = _points2$2[0],
+      y1 = _points2$2[1],
+      _points2$3 = _slicedToArray(_points2[2], 2),
+      x2 = _points2$3[0],
+      y2 = _points2$3[1];
+
+  var x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+
+  if (x === 0) {
+    return Infinity;
+  }
+
+  return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+}
+
+function getBezier3Slope(points, t) {
+  var _points3 = _slicedToArray(points, 4),
+      _points3$ = _slicedToArray(_points3[0], 2),
+      x0 = _points3$[0],
+      y0 = _points3$[1],
+      _points3$2 = _slicedToArray(_points3[1], 2),
+      x1 = _points3$2[0],
+      y1 = _points3$2[1],
+      _points3$3 = _slicedToArray(_points3[2], 2),
+      x2 = _points3$3[0],
+      y2 = _points3$3[1],
+      _points3$4 = _slicedToArray(_points3[3], 2),
+      x3 = _points3$4[0],
+      y3 = _points3$4[1];
+
+  var x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t + 3 * x1 - 3 * x0;
+
+  if (x === 0) {
+    return Infinity;
+  }
+
+  return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t + 3 * y1 - 3 * y0) / x;
+}
+
+var greinerHormann = {
+  // 所有的操作均为A是源对象或被裁剪对象，B是裁剪对象或裁剪窗口
+  intersect: function intersect(polygonA, polygonB) {
+    return bo(polygonA, polygonB, true, true);
+  },
+  union: function union(polygonA, polygonB) {
+    return bo(polygonA, polygonB, false, false);
+  },
+  subtract: function subtract(polygonA, polygonB) {
+    return bo(polygonA, polygonB, false, true);
+  },
+  difference: function difference(polygonA, polygonB) {
+    // 差集（异或）比较特殊，等于(A-B)∪(B-A)
+    var r1 = this.subtract(polygonA, polygonB);
+    var r2 = this.subtract(polygonB, polygonA);
+    return r1.concat(r2);
+  }
+};
+
 var math = {
   matrix: mx,
   tar: tar,
@@ -13479,7 +14673,8 @@ var math = {
     diff: diff,
     intersection: intersection$1,
     xor: xor
-  }
+  },
+  greinerHormann: greinerHormann
 };
 
 var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
@@ -22380,13 +23575,6 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                 temp.push([k, v]);
                 return;
               }
-
-              computedStyle[k] = v[0];
-
-              if (k === ROTATE_X$2 || k === ROTATE_Y$2 || k === ROTATE_Z$4) {
-                temp.push([k, v]);
-                return;
-              } // scale为1和其它为0避免计算浪费
 
               computedStyle[k] = v[0];
 
@@ -39912,7 +41100,50 @@ var Polyline = /*#__PURE__*/function (_Geom) {
   return Polyline;
 }(Geom$1);
 
-var Polygon = /*#__PURE__*/function (_Polyline) {
+function convertCurve2Line(poly) {
+  for (var len = poly.length, i = len - 1; i >= 0; i--) {
+    var cur = poly[i],
+        len2 = cur.length;
+
+    if (len2 === 4 || len2 === 6) {
+      var last = poly[(i || len) - 1];
+      var len3 = last.length;
+      var lastX = last[len3 - 2],
+          lastY = last[len3 - 1];
+      var coords = [[lastX, lastY], [cur[0], cur[1]], [cur[2], cur[3]]];
+
+      if (cur.length === 6) {
+        coords.push([cur[4], cur[5]]);
+      }
+
+      var l = bezier.bezierLength(coords); // 每2个px长度分割
+
+      var n = Math.ceil(l * 0.5); // <2px直接返回直线段
+
+      if (n === 1) {
+        cur.splice(0, len2 - 2);
+      } else {
+        // n段每段t为per
+        var per = 1 / n;
+
+        for (var j = 0; j < n - 1; j++) {
+          var c = bezier.sliceBezier2Both(coords, per * j, per * (j + 1));
+
+          if (len2 === 4) {
+            poly.splice(i + j, 0, [c[2][0], c[2][1]]);
+          } else {
+            poly.splice(i + j, 0, [c[3][0], c[3][1]]);
+          }
+        } // 原本的曲线直接改数据为最后一段截取的
+
+
+        cur.splice(0, len2 - 2);
+      }
+    }
+  }
+}
+
+var Polygon$1 = /*#__PURE__*/function (_Polyline) {
   _inherits(Polygon, _Polyline);
 
   var _super = _createSuper(Polygon);
@@ -39946,7 +41177,7 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
   }, {
     key: "__reprocessing",
     value: function __reprocessing(list, isMulti) {
-      if (!isMulti) {
+      if (!isMulti || list.length < 2) {
         return list;
       }
 
@@ -39963,91 +41194,87 @@ var Polygon = /*#__PURE__*/function (_Polyline) {
       }
 
       if (Array.isArray(bo) && bo.length) {
-        var _ret = function () {
-          var res = [];
-          var last;
+        list.forEach(function (poly) {
+          if (poly && poly.length > 1) {
+            convertCurve2Line(poly);
+          }
+        }); // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
 
-          for (var _i = 0; _i < len - 1; _i++) {
-            var a = list[_i],
-                b = list[_i + 1];
+        var res = [];
 
-            switch (bo[_i]) {
-              case 'intersection':
-                if (!a || !a.length || !b || !b.length) {
-                  res.push(null);
-                } else {
-                  intersection$1([a], [b]).forEach(function (item) {
-                    res.push(item[0]);
-                  });
-                }
+        if (list[0] && list[0].length > 1) {
+          res.push(list[0]);
+        }
 
-                last = true;
-                break;
+        for (var _i = 1; _i < len; _i++) {
+          var op = (bo[_i - 1] || '').toString().toLowerCase();
+          var cur = list[_i];
 
-              case 'union':
-                if ((!a || !a.length) && (!b || !b.length)) {
-                  res.push(null);
-                } else if (!a || !a.length) {
-                  res.push(b);
-                } else if (!b || !b.length) {
-                  res.push(a);
-                } else {
-                  union([a], [b]).forEach(function (item) {
-                    res.push(item[0]);
-                  });
-                }
-
-                last = true;
-                break;
-
-              case 'diff':
-                if (!a || !a.length) {
-                  res.push(null);
-                } else if (!b || !b.length) {
-                  res.push(a);
-                } else {
-                  diff([a], [b]).forEach(function (item) {
-                    res.push(item[0]);
-                  });
-                }
-
-                last = true;
-                break;
-
-              case 'xor':
-                if ((!a || !a.length) && (!b || !b.length)) {
-                  res.push(null);
-                } else if (!a || !a.length) {
-                  res.push(b);
-                } else if (!b || !b.length) {
-                  res.push(a);
-                } else {
-                  xor([a], [b]).forEach(function (item) {
-                    res.push(item[0]);
-                  });
-                }
-
-                last = true;
-                break;
-
-              default:
-                res.push(list[_i]);
-                last = false;
-                break;
-            }
-          } // 最后一个没参与布尔运算，原封不动装载
-
-
-          if (!last) {
-            res.push(list[len - 1]);
+          if (!cur || cur.length < 2) {
+            continue;
           }
 
-          return {
-            v: res
-          };
-        }();
+          if (['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
+            res.push(cur);
+            continue;
+          }
 
-        if (_typeof(_ret) === "object") return _ret.v;
+          switch (op) {
+            case 'intersection':
+              var r1 = intersection$1(res, [cur]);
+
+              if (r1) {
+                r1.forEach(function (item) {
+                  res = item;
+                });
+              } else {
+                res = [];
+              }
+
+              break;
+
+            case 'union':
+              var r2 = union(res, [cur]);
+
+              if (r2) {
+                r2.forEach(function (item) {
+                  res = item;
+                });
+              } else {
+                res = [];
+              }
+
+              break;
+
+            case 'diff':
+              var r3 = diff(res, [cur]);
+
+              if (r3) {
+                r3.forEach(function (item) {
+                  res = item;
+                });
+              } else {
+                res = [];
+              }
+
+              break;
+
+            case 'xor':
+              var r4 = xor(res, [cur]);
+
+              if (r4) {
+                r4.forEach(function (item) {
+                  res = item;
+                });
+              } else {
+                res = [];
+              }
+
+              break;
+          }
+        }
+
+        return res;
       }
 
       return list;
@@ -41724,11 +42951,11 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.73.10";
+var version = "0.74.0-beta1";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);
-Geom$1.register('$polygon', Polygon);
+Geom$1.register('$polygon', Polygon$1);
 Geom$1.register('$sector', Sector);
 Geom$1.register('$rect', Rect);
 Geom$1.register('$circle', Circle);

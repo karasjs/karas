@@ -79,9 +79,6 @@ class Polygon extends Polyline {
         if(poly && poly.length > 1) {
           convertCurve2Line(poly);
         }
-        else {
-          poly.splice(0);
-        }
       });
       // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
       let res = [];
@@ -91,7 +88,7 @@ class Polygon extends Polyline {
       for(let i = 1; i < len; i++) {
         let op = (bo[i - 1] || '').toString().toLowerCase();
         let cur = list[i];
-        if(!cur) {
+        if(!cur || cur.length < 2) {
           continue;
         }
         if(['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {

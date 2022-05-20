@@ -41203,8 +41203,6 @@
           list.forEach(function (poly) {
             if (poly && poly.length > 1) {
               convertCurve2Line(poly);
-            } else {
-              poly.splice(0);
             }
           }); // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
 
@@ -41218,7 +41216,7 @@
             var op = (bo[_i - 1] || '').toString().toLowerCase();
             var cur = list[_i];
 
-            if (!cur) {
+            if (!cur || cur.length < 2) {
               continue;
             }
 
@@ -42959,7 +42957,7 @@
     Cache: Cache
   };
 
-  var version = "0.74.0-alpha";
+  var version = "0.74.0-beta1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

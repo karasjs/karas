@@ -21,7 +21,7 @@ function convertCurve2Line(poly) {
       }
       let l = bezier.bezierLength(coords);
       // 每2个px长度分割
-      let n = Math.ceil(l * 0.5);
+      let n = Math.ceil(l * 0.2);
       // <2px直接返回直线段
       if(n === 1) {
         cur.splice(0, len2 - 2);
@@ -31,7 +31,7 @@ function convertCurve2Line(poly) {
         let per = 1 / n;
         for(let j = 1; j < n; j++) {
           let p = bezier.pointAtByT(coords, per * j);
-          poly.splice(i + j, 0, p);
+          poly.splice(i + j - 1, 0, p);
         }
         // 原本的曲线直接改数据为最后一段截取的
         cur.splice(0, len2 - 2);

@@ -5296,16 +5296,14 @@ function calBezierRightBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
 }
 
 function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
-  // console.log(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius);
   var _beginRadius3 = _slicedToArray(beginRadius, 2),
       brx = _beginRadius3[0],
       bry = _beginRadius3[1];
 
   var _endRadius3 = _slicedToArray(endRadius, 2),
       erx = _endRadius3[0],
-      ery = _endRadius3[1];
+      ery = _endRadius3[1]; // 一条边的两侧圆角均为0时无效
 
-  console.log(beginRadius, endRadius); // 一条边的两侧圆角均为0时无效
 
   if ((!brx || !bry) && (!erx || !ery)) {
     return pointsList;
@@ -5313,8 +5311,7 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
 
 
   var oxl = x2 + brx - (x2 - x1);
-  var oxr = x3 - erx + (x4 - x3);
-  console.log(oxl, oxr); // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
+  var oxr = x3 - erx + (x4 - x3); // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
   // 也有可能左右圆角相接，跨越的只分为左右2份
   // 最终左圆角内的存入begin，右圆角内的存入end，中间center
 
@@ -5370,7 +5367,6 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
   }
 
   var beginLength = beginList.length;
-  console.log(beginList, endList);
 
   if (beginLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
@@ -41139,7 +41135,7 @@ function convertCurve2Line(poly) {
 
       var l = bezier.bezierLength(coords); // 每2个px长度分割
 
-      var n = Math.ceil(l * 0.5); // <2px直接返回直线段
+      var n = Math.ceil(l * 0.2); // <2px直接返回直线段
 
       if (n === 1) {
         cur.splice(0, len2 - 2);
@@ -41149,7 +41145,7 @@ function convertCurve2Line(poly) {
 
         for (var j = 1; j < n; j++) {
           var p = bezier.pointAtByT(coords, per * j);
-          poly.splice(i + j, 0, p);
+          poly.splice(i + j - 1, 0, p);
         } // 原本的曲线直接改数据为最后一段截取的
 
 
@@ -43008,7 +43004,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.74.0-beta2";
+var version = "0.74.0";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

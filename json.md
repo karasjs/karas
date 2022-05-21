@@ -261,6 +261,88 @@ karas.parse(json, {
   },
 });
 ```
+## 时间偏移
+由于复用的需求，一个容器（比如div）包含有动画的节点（比如p），作为库元素library中的一员存在，被多次放入舞台中。希望它们里面的元素（img）以不同时间开始动画，可以在引用libraryId的同层声明offsetTime，会递归增加影响库元素里children的动画delay。
+```tsx
+karas.render(
+  <svg>
+    {
+      karas.parse({
+        tagName: 'div',
+        children: [
+          {
+            libraryId: 1,
+            init: {
+              style: {
+                left: 0,
+                top: 0,
+              }
+            }
+          },
+          {
+            libraryId: 1,
+            offsetTime: 100, // 延迟100ms开始，对引用的库元素的children动画生效
+            init: {
+              style: {
+                left: 20,
+                top: 20,
+              }
+            }
+          }
+        ],
+        library: [
+          {
+            id: 0,
+            tagName: 'p',
+            props: {
+              style: {
+                position: 'absolute',
+                width: 20,
+                height: 20,
+                background: '#F00'
+              }
+            }
+          },
+          {
+            id: 1,
+            tagName: 'div',
+            props: {
+              style: {
+                position: 'absolute',
+              }
+            },
+            children: [
+              {
+                libraryId: 0,
+                init: {
+                  style: {
+                    left: 0,
+                    top: 0,
+                  }
+                },
+                animate: [
+                  {
+                    value: [
+                      {},
+                      {
+                        translateX: 100,
+                      }
+                    ],
+                    options: {
+                      duration: 1000,
+                      fill: 'both',
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      })
+    }
+  </svg>
+);
+```
 ## parse详情
 对于`parse`的json内容，可以为包含根节点（canvas之类）也可以不包含由外部提供，`render`可以包含`parse`的json。json还可以包含`fonts`信息，指明自定义字体名字和信息，但是没有加载逻辑，它要求字体必须是预先加载好且添加到页面中的（document.fonts.add）。
 ```tsx

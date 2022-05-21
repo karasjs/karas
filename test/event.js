@@ -190,3 +190,76 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
 });
+
+describe('Boolean Operations', function() {
+  it('intersect normal', function() {
+    let res = karas.math.greinerHormann.intersect([
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100],
+    ], [
+      [50, 50],
+      [150, 50],
+      [150, 150],
+      [50, 150],
+    ]);
+    expect(res).to.eql([[[100,50],[100,100],[50,100],[50,50],[100,50]]]);
+  });
+  it('union normal', function() {
+    let res = karas.math.greinerHormann.union([
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100],
+    ], [
+      [50, 50],
+      [150, 50],
+      [150, 150],
+      [50, 150],
+    ]);
+    expect(res).to.eql([[[100,50],[100,0],[0,0],[0,100],[50,100],[50,150],[150,150],[150,50],[100,50]]]);
+  });
+  it('subtract normal', function() {
+    let res = karas.math.greinerHormann.subtract([
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100],
+    ], [
+      [50, 50],
+      [150, 50],
+      [150, 150],
+      [50, 150],
+    ]);
+    expect(res).to.eql([[[100,50],[100,0],[0,0],[0,100],[50,100],[50,50],[100,50]]]);
+  });
+  it('difference normal', function() {
+    let res = karas.math.greinerHormann.difference([
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100],
+    ], [
+      [50, 50],
+      [150, 50],
+      [150, 150],
+      [50, 150],
+    ]);
+    expect(res).to.eql([[[100,50],[100,0],[0,0],[0,100],[50,100],[50,50],[100,50]],[[100,50],[150,50],[150,150],[50,150],[50,100],[100,100],[100,50]]]);
+  });
+  it('intersect vertex on edge', function() {
+    let res = karas.math.greinerHormann.intersect([
+      [1, 1],
+      [200, 1],
+      [200, 200],
+      [1, 200],
+    ], [
+      [200, 50],
+      [300, 50],
+      [300, 150],
+      [150, 150],
+    ]);
+    expect(res).to.eql([[[200,50],[200,150],[150,150],[200,50]]]);
+  });
+});

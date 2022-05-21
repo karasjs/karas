@@ -1137,7 +1137,9 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
         limit(controls1[i], xa, ya, 0);
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
       if(needInner) {
         for(let i = 0, len = controls2.length; i < len; i++) {
           limit(controls2[i], xb, yb, 0);
@@ -1194,7 +1196,9 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
         limit(controls1[i], xa, ya, 1);
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
       if(needInner) {
         for(let i = 0, len = controls2.length; i < len; i++) {
           limit(controls2[i], xb, yb, 1);
@@ -2002,7 +2006,9 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
         points[3] = points[0];
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
     });
   }
   let endLength = endList.length;
@@ -2063,7 +2069,9 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
         points[3] = points[0];
       }
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      if(controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
     });
   }
   return beginList.concat(centerList).concat(endList);

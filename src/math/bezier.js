@@ -1,3 +1,4 @@
+import equation from './equation';
 
 /**
  * 二阶贝塞尔曲线范围框
@@ -177,6 +178,25 @@ function adaptiveSimpson38(derivativeFunc, l, r, eps = 0.001) {
  * @return {*} number
  */
 function bezierLength(points, startT = 0, endT = 1) {
+  if(points.length === 6) {
+    points = [
+      [points[0], points[1]],
+      [points[2], points[3]],
+      [points[4], points[5]],
+    ];
+  }
+  else if(points.length === 8) {
+    points = [
+      [points[0], points[1]],
+      [points[2], points[3]],
+      [points[4], points[5]],
+      [points[6], points[7]],
+    ];
+  }
+  if(points.length === 2) {
+    let [x1, y1] = points[0], [x2, y2] = points[1];
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  }
   let derivativeFunc = t => norm(at(t, points));
   return adaptiveSimpson38(derivativeFunc, startT, endT);
 }
@@ -351,6 +371,173 @@ function pointAtByT3(points, t) {
   return [x, y];
 }
 
+// 已知曲线和上面一点获得t
+function getPointT(points, x, y) {
+  if(points.length === 4) {
+    return getPointT3(points, x, y);
+  }
+  else if(points.length === 3) {
+    return getPointT2(points, x, y);
+  }
+}
+
+function getPointT2(points, x, y) {
+  // x/y都需要求，以免其中一个无解，过滤掉[0, 1]之外的
+  let tx = equation.getRoots([
+    points[0][0] - x,
+    2 * (points[1][0] - points[0][0]),
+    points[2][0] + points[0][0] - 2 * points[1][0],
+  ]).filter(i => i >= 0 && i <= 1);
+  let ty = equation.getRoots([
+    points[0][1] - y,
+    2 * (points[1][1] - points[0][1]),
+    points[2][1] + points[0][1] - 2 * points[1][1],
+  ]).filter(i => i >= 0 && i <= 1);
+  // 可能有多个解，x和y要匹配上，这里最多x和y各2个总共4个解
+  let t = [];
+  for(let i = 0, len = tx.length; i < len; i++) {
+    let x = tx[i];
+    for(let j = 0, len = ty.length; j < len; j++) {
+      let y = ty[j];
+      let diff = Math.abs(x - y);
+      // 必须小于一定误差
+      if(diff < 1e-10) {
+        t.push({
+          x,
+          y,
+          diff,
+        });
+      }
+    }
+  }
+  t.sort(function(a, b) {
+    return a.diff - b.diff;
+  });
+  if(t.length > 2) {
+    t.splice(2);
+  }
+  // 取均数
+  t = t.map(item => (item.x + item.y) * 0.5);
+  let res = [];
+  t.forEach(t => {
+    let xt = points[0][0] * Math.pow(1 - t, 2)
+      + 2 * points[1][0] * t * (1 - t)
+      + points[2][0] * t * t;
+    let yt = points[0][1] * Math.pow(1 - t, 2)
+      + 2 * points[1][1] * t * (1 - t)
+      + points[2][1] * t * t;
+    // 计算误差忽略
+    if(Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+      res.push(t);
+    }
+  });
+  return res;
+}
+
+function getPointT3(points, x, y) {
+  let tx = equation.getRoots([
+    points[0][0] - x,
+    3 * (points[1][0] - points[0][0]),
+    3 * (points[2][0] + points[0][0] - 2 * points[1][0]),
+    points[3][0] - points[0][0] + 3 * points[1][0] - 3 * points[2][0],
+  ]).filter(i => i >= 0 && i <= 1);
+  let ty = equation.getRoots([
+    points[0][1] - y,
+    3 * (points[1][1] - points[0][1]),
+    3 * (points[2][1] + points[0][1] - 2 * points[1][1]),
+    points[3][1] - points[0][1] + 3 * points[1][1] - 3 * points[2][1],
+  ]).filter(i => i >= 0 && i <= 1);
+  // 可能有多个解，x和y要匹配上，这里最多x和y各3个总共9个解
+  let t = [];
+  for(let i = 0, len = tx.length; i < len; i++) {
+    let x = tx[i];
+    for(let j = 0, len = ty.length; j < len; j++) {
+      let y = ty[j];
+      let diff = Math.abs(x - y);
+      // 必须小于一定误差
+      if(diff < 1e-10) {
+        t.push({
+          x,
+          y,
+          diff,
+        });
+      }
+    }
+  }
+  t.sort(function(a, b) {
+    return a.diff - b.diff;
+  });
+  if(t.length > 3) {
+    t.splice(3);
+  }
+  // 取均数
+  t = t.map(item => (item.x + item.y) * 0.5);
+  let res = [];
+  t.forEach(t => {
+    let xt = points[0][0] * Math.pow(1 - t, 3)
+      + 3 * points[1][0] * t * Math.pow(1 - t, 2)
+      + 3 * points[2][0] * t * t * (1 - t)
+      + points[3][0] * Math.pow(t, 3);
+    let yt = points[0][1] * Math.pow(1 - t, 3)
+      + 3 * points[1][1] * t * Math.pow(1 - t, 2)
+      + 3 * points[2][1] * t * t * (1 - t)
+      + points[3][1] * Math.pow(t, 3);
+    // 计算误差忽略
+    if(Math.abs(xt - x) < 1e-10 && Math.abs(yt - y) < 1e-10) {
+      res.push(t);
+    }
+  });
+  return res;
+}
+
+function bezierSlope(points, t) {
+  if(points.length === 2) {
+    let [x1, y1] = points[0];
+    let [x2, y2] = points[1];
+    if(x1 === x2) {
+      return Infinity;
+    }
+    return (y2 - y1) / (x2 - x1);
+  }
+  if(points.length === 3) {
+    return bezier2Slope(points, t);
+  }
+  if(points.length === 4) {
+    return bezier3Slope(points, t);
+  }
+}
+
+function bezier2Slope(points, t) {
+  let [
+    [x0, y0],
+    [x1, y1],
+    [x2, y2],
+  ] = points;
+  let x = 2 * (x0 - 2 * x1 + x2) * t + 2 * x1 - 2 * x0;
+  if(x === 0) {
+    return Infinity;
+  }
+  return (2 * (y0 - 2 * y1 + y2) * t + 2 * y1 - 2 * y0) / x;
+}
+
+function bezier3Slope(points, t) {
+  let [
+    [x0, y0],
+    [x1, y1],
+    [x2, y2],
+    [x3, y3],
+  ] = points;
+  let x = 3 * (-x0 + 3 * x1 - 3 * x2 + x3) * t * t
+    + 2 * (3 * x0 - 6 * x1 + 3 * x2) * t
+    + 3 * x1 - 3 * x0;
+  if(x === 0) {
+    return Infinity;
+  }
+  return (3 * (-y0 + 3 * y1 - 3 * y2 + y3) * t * t
+    + 2 * (3 * y0 - 6 * y1 + 3 * y2) * t
+    + 3 * y1 - 3 * y0) / x;
+}
+
 export default {
   bboxBezier,
   bezierLength,
@@ -359,4 +546,6 @@ export default {
   sliceBezier,
   sliceBezier2Both,
   pointAtByT,
+  getPointT,
+  bezierSlope,
 };

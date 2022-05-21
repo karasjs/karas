@@ -44,7 +44,7 @@ let o = {
     }
     // 暂存所有动画声明，等root的生成后开始执行
     let animateRecords = [];
-    let vd = parse(karas, json, animateRecords, options);
+    let vd = parse(karas, json, animateRecords, options, {}, 0);
     // 有dom时parse作为根方法渲染
     if(dom) {
       let { tagName } = json;

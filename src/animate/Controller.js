@@ -43,24 +43,24 @@ class Controller {
     if(records.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
       records.splice(0).forEach(item => {
-        let { target, animate } = item;
-        if(target.isDestroyed) {
+        let { target, animate, offsetTime } = item;
+        if(target.isDestroyed || !animate) {
           return;
         }
-        if(Array.isArray(animate)) {
-          animate.forEach(animate => {
-            let { value, options } = animate;
-            options.autoPlay = false;
-            let o = target.animate(value, options);
-            this.add(o, list);
-          });
+        if(!Array.isArray(animate)) {
+          animate = [animate];
         }
-        else {
+        animate.forEach(animate => {
           let { value, options } = animate;
           options.autoPlay = false;
+          if(offsetTime) {
+            options = Object.assign({}, options); // clone防止多个使用相同的干扰
+            options.delay = options.delay || 0;
+            options.delay += offsetTime;
+          }
           let o = target.animate(value, options);
           this.add(o, list);
-        }
+        });
       });
     }
     // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次

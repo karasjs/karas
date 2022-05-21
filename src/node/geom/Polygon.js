@@ -1,6 +1,44 @@
 import Polyline from './Polyline';
 import util from '../../util/util';
+import bezier from '../../math/bezier';
 import { union, diff, intersection, xor } from '../../math/martinez';
+
+// 根据曲线长度将其分割为细小的曲线段，每个曲线段可近似认为是直线段，从而参与布尔运算
+function convertCurve2Line(poly) {
+  for(let len = poly.length, i = len - 1; i >= 0; i--) {
+    let cur = poly[i], len2 = cur.length;
+    if(len2 === 4 || len2 === 6) {
+      let last = poly[(i || len) - 1];
+      let len3 = last.length;
+      let lastX = last[len3 - 2], lastY = last[len3 - 1];
+      let coords = [
+        [lastX, lastY],
+        [cur[0], cur[1]],
+        [cur[2], cur[3]],
+      ];
+      if(cur.length === 6) {
+        coords.push([cur[4], cur[5]]);
+      }
+      let l = bezier.bezierLength(coords);
+      // 每2个px长度分割
+      let n = Math.ceil(l * 0.2);
+      // <2px直接返回直线段
+      if(n === 1) {
+        cur.splice(0, len2 - 2);
+      }
+      else {
+        // n段每段t为per
+        let per = 1 / n;
+        for(let j = 1; j < n; j++) {
+          let p = bezier.pointAtByT(coords, per * j);
+          poly.splice(i + j - 1, 0, p);
+        }
+        // 原本的曲线直接改数据为最后一段截取的
+        cur.splice(0, len2 - 2);
+      }
+    }
+  }
+}
 
 class Polygon extends Polyline {
   constructor(tagName, props) {
@@ -20,7 +58,7 @@ class Polygon extends Polyline {
 
   // 布尔运算覆盖，仅multi才发生，因为需要多个多边形数据
   __reprocessing(list, isMulti) {
-    if(!isMulti) {
+    if(!isMulti || list.length < 2) {
       return list;
     }
     let bo = this.booleanOperations, len = list.length;
@@ -32,79 +70,72 @@ class Polygon extends Polyline {
       }
     }
     if(Array.isArray(bo) && bo.length) {
+      list.forEach(poly => {
+        if(poly && poly.length > 1) {
+          convertCurve2Line(poly);
+        }
+      });
+      // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
       let res = [];
-      let last;
-      for(let i = 0; i < len - 1; i++) {
-        let a = list[i], b = list[i + 1];
-        switch(bo[i]) {
+      if(list[0] && list[0].length > 1) {
+        res.push(list[0]);
+      }
+      for(let i = 1; i < len; i++) {
+        let op = (bo[i - 1] || '').toString().toLowerCase();
+        let cur = list[i];
+        if(!cur || cur.length < 2) {
+          continue;
+        }
+        if(['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
+          res.push(cur);
+          continue;
+        }
+        switch(op) {
           case 'intersection':
-            if(!a || !a.length || !b || !b.length) {
-              res.push(null);
-            }
-            else {
-              intersection([a], [b]).forEach(item => {
-                res.push(item[0]);
+            let r1 = intersection(res, [cur]);
+            if(r1) {
+              r1.forEach(item => {
+                res = item;
               });
             }
-            last = true;
+            else {
+              res = [];
+            }
             break;
           case 'union':
-            if((!a || !a.length) && (!b || !b.length)) {
-              res.push(null);
-            }
-            else if(!a || !a.length) {
-              res.push(b);
-            }
-            else if(!b || !b.length) {
-              res.push(a);
-            }
-            else {
-              union([a], [b]).forEach(item => {
-                res.push(item[0]);
+            let r2 = union(res, [cur]);
+            if(r2) {
+              r2.forEach(item => {
+                res = item;
               });
             }
-            last = true;
+            else {
+              res = [];
+            }
             break;
           case 'diff':
-            if(!a || !a.length) {
-              res.push(null);
-            }
-            else if(!b || !b.length) {
-              res.push(a);
-            }
-            else {
-              diff([a], [b]).forEach(item => {
-                res.push(item[0]);
+            let r3 = diff(res, [cur]);
+            if(r3) {
+              r3.forEach(item => {
+                res = item;
               });
             }
-            last = true;
+            else {
+              res = [];
+            }
             break;
           case 'xor':
-            if((!a || !a.length) && (!b || !b.length)) {
-              res.push(null);
-            }
-            else if(!a || !a.length) {
-              res.push(b);
-            }
-            else if(!b || !b.length) {
-              res.push(a);
-            }
-            else {
-              xor([a], [b]).forEach(item => {
-                res.push(item[0]);
+            let r4 = xor(res, [cur]);
+            if(r4) {
+              r4.forEach(item => {
+                res = item;
               });
             }
-            last = true;
-            break;
-          default:
-            res.push(list[i]);
-            last = false;
+            else {
+              res = [];
+            }
             break;
         }
-      }
-      // 最后一个没参与布尔运算，原封不动装载
-      if(!last) {
-        res.push(list[len - 1]);
       }
       return res;
     }

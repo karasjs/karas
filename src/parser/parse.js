@@ -279,15 +279,28 @@ function linkChild(child, libraryItem) {
   }
 }
 
-function parse(karas, json, animateRecords, opt, hash = {}) {
+/**
+ * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
+ * hash为library库的hash格式，将原本数组转为id和value访问，每递归遇到library形成一个新的scope重新初始化
+ * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
+ * @param karas
+ * @param json
+ * @param animateRecords
+ * @param opt
+ * @param hash
+ * @param offsetTime
+ * @returns {Node|Component|*}
+ */
+function parse(karas, json, animateRecords, opt, hash, offsetTime) {
   if(isPrimitive(json) || json instanceof Node || json instanceof Component) {
     return json;
   }
   if(Array.isArray(json)) {
     return json.map(item => {
-      return parse(karas, item, animateRecords, opt, hash);
+      return parse(karas, item, animateRecords, opt, hash, offsetTime);
     });
   }
+  let oft = offsetTime; // 暂存，后续生成动画用这个值
   // 先判断是否是个链接到库的节点，是则进行链接操作
   let libraryId = json.libraryId;
   if(!isNil(libraryId)) {
@@ -295,6 +308,7 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
     // 规定图层child只有init和动画，tagName和属性和子图层来自库
     if(libraryItem) {
       linkChild(json, libraryItem);
+      offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
     }
     else {
       throw new Error('Link library miss id: ' + libraryId);
@@ -316,7 +330,24 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
   }
+  // 缩写src和font
+  let src = props.src;
+  if(/^#\d+$/.test(src)) {
+    let imgs = opt.imgs, i = parseInt(src.slice(1));
+    if(Array.isArray(imgs)) {
+      props.src = imgs[i];
+    }
+  }
   let style = props.style;
+  if(style) {
+    let fontFamily = style.fontFamily;
+    if(/^#\d+$/.test(fontFamily)) {
+      let fonts = opt.imgs, i = parseInt(fontFamily.slice(1));
+      if(Array.isArray(fonts)) {
+        style.fontFamily = fonts[i];
+      }
+    }
+  }
   (opt.abbr !== false) && abbr2full(style, abbrCssProperty);
   // 先替换style的
   replaceVars(style, opt.vars);
@@ -337,7 +368,7 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
       if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
         return item;
       }
-      return parse(karas, item, animateRecords, opt, hash);
+      return parse(karas, item, animateRecords, opt, hash, offsetTime);
     }));
   }
   else {
@@ -345,7 +376,7 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
       if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
         return item;
       }
-      return parse(karas, item, animateRecords, opt, hash);
+      return parse(karas, item, animateRecords, opt, hash, offsetTime);
     }));
   }
   if(animate) {
@@ -375,6 +406,7 @@ function parse(karas, json, animateRecords, opt, hash = {}) {
       animateRecords.push({
         animate,
         target: vd,
+        offsetTime: oft,
       });
     }
   }

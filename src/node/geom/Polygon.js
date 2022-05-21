@@ -29,14 +29,9 @@ function convertCurve2Line(poly) {
       else {
         // n段每段t为per
         let per = 1 / n;
-        for(let j = 0; j < n - 1; j++) {
-          let c = bezier.sliceBezier2Both(coords, per * j, per * (j + 1));
-          if(len2 === 4) {
-            poly.splice(i + j, 0, [c[2][0], c[2][1]]);
-          }
-          else {
-            poly.splice(i + j, 0, [c[3][0], c[3][1]]);
-          }
+        for(let j = 1; j < n; j++) {
+          let p = bezier.pointAtByT(coords, per * j);
+          poly.splice(i + j, 0, p);
         }
         // 原本的曲线直接改数据为最后一段截取的
         cur.splice(0, len2 - 2);

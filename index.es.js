@@ -4612,7 +4612,10 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
       }
 
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+      if (controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
 
       if (needInner) {
         for (var _i2 = 0, _len2 = controls2.length; _i2 < _len2; _i2++) {
@@ -4696,7 +4699,10 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
       }
 
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+      if (controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
 
       if (_needInner) {
         for (var _i4 = 0, _len4 = controls2.length; _i4 < _len4; _i4++) {
@@ -5290,14 +5296,16 @@ function calBezierRightBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
 }
 
 function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+  // console.log(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius);
   var _beginRadius3 = _slicedToArray(beginRadius, 2),
       brx = _beginRadius3[0],
       bry = _beginRadius3[1];
 
   var _endRadius3 = _slicedToArray(endRadius, 2),
       erx = _endRadius3[0],
-      ery = _endRadius3[1]; // 一条边的两侧圆角均为0时无效
+      ery = _endRadius3[1];
 
+  console.log(beginRadius, endRadius); // 一条边的两侧圆角均为0时无效
 
   if ((!brx || !bry) && (!erx || !ery)) {
     return pointsList;
@@ -5305,7 +5313,8 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
 
 
   var oxl = x2 + brx - (x2 - x1);
-  var oxr = x3 - erx + (x4 - x3); // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
+  var oxr = x3 - erx + (x4 - x3);
+  console.log(oxl, oxr); // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
   // 也有可能左右圆角相接，跨越的只分为左右2份
   // 最终左圆角内的存入begin，右圆角内的存入end，中间center
 
@@ -5361,6 +5370,7 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
   }
 
   var beginLength = beginList.length;
+  console.log(beginList, endList);
 
   if (beginLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
@@ -5434,7 +5444,10 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
       }
 
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+      if (controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
     });
   }
 
@@ -5521,7 +5534,10 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
       }
 
       points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+      if (controls1[1]) {
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+      }
     });
   }
 
@@ -32047,6 +32063,7 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
           props.push(['fill', fill.v || fill]);
 
           if (fillRule && fillRule !== 'nonzero') {
+            // evenodd
             props.push(['fill-rule', fillRule]);
           }
         } else {
@@ -33446,29 +33463,33 @@ var Controller = /*#__PURE__*/function () {
         // 清除防止重复调用，并且新的json还会进入整体逻辑
         records.splice(0).forEach(function (item) {
           var target = item.target,
-              animate = item.animate;
+              animate = item.animate,
+              offsetTime = item.offsetTime;
 
-          if (target.isDestroyed) {
+          if (target.isDestroyed || !animate) {
             return;
           }
 
-          if (Array.isArray(animate)) {
-            animate.forEach(function (animate) {
-              var value = animate.value,
-                  options = animate.options;
-              options.autoPlay = false;
-              var o = target.animate(value, options);
+          if (!Array.isArray(animate)) {
+            animate = [animate];
+          }
 
-              _this.add(o, list);
-            });
-          } else {
+          animate.forEach(function (animate) {
             var value = animate.value,
                 options = animate.options;
             options.autoPlay = false;
+
+            if (offsetTime) {
+              options = Object.assign({}, options); // clone防止多个使用相同的干扰
+
+              options.delay = options.delay || 0;
+              options.delay += offsetTime;
+            }
+
             var o = target.animate(value, options);
 
             _this.add(o, list);
-          }
+          });
         });
       } // 非自动播放后初始化需检测事件，给非自动播放添加上，并清空本次
 
@@ -41126,14 +41147,9 @@ function convertCurve2Line(poly) {
         // n段每段t为per
         var per = 1 / n;
 
-        for (var j = 0; j < n - 1; j++) {
-          var c = bezier.sliceBezier2Both(coords, per * j, per * (j + 1));
-
-          if (len2 === 4) {
-            poly.splice(i + j, 0, [c[2][0], c[2][1]]);
-          } else {
-            poly.splice(i + j, 0, [c[3][0], c[3][1]]);
-          }
+        for (var j = 1; j < n; j++) {
+          var p = bezier.pointAtByT(coords, per * j);
+          poly.splice(i + j, 0, p);
         } // 原本的曲线直接改数据为最后一段截取的
 
 
@@ -42608,20 +42624,33 @@ function linkChild(child, libraryItem) {
     child.init = null;
   }
 }
+/**
+ * 入口方法，animateRecords记录所有的动画结果等初始化后分配开始动画
+ * hash为library库的hash格式，将原本数组转为id和value访问，每递归遇到library形成一个新的scope重新初始化
+ * offsetTime默认0，递归传下去为右libraryId引用的元素增加偏移时间，为了库元素动画复用而开始时间不同
+ * @param karas
+ * @param json
+ * @param animateRecords
+ * @param opt
+ * @param hash
+ * @param offsetTime
+ * @returns {Node|Component|*}
+ */
 
-function parse(karas, json, animateRecords, opt) {
-  var hash = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
 
+function parse(karas, json, animateRecords, opt, hash, offsetTime) {
   if (isPrimitive(json) || json instanceof Node || json instanceof Component$1) {
     return json;
   }
 
   if (Array.isArray(json)) {
     return json.map(function (item) {
-      return parse(karas, item, animateRecords, opt, hash);
+      return parse(karas, item, animateRecords, opt, hash, offsetTime);
     });
-  } // 先判断是否是个链接到库的节点，是则进行链接操作
+  }
 
+  var oft = offsetTime; // 暂存，后续生成动画用这个值
+  // 先判断是否是个链接到库的节点，是则进行链接操作
 
   var libraryId = json.libraryId;
 
@@ -42630,6 +42659,7 @@ function parse(karas, json, animateRecords, opt) {
 
     if (libraryItem) {
       linkChild(json, libraryItem);
+      offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
     } else {
       throw new Error('Link library miss id: ' + libraryId);
     }
@@ -42660,9 +42690,35 @@ function parse(karas, json, animateRecords, opt) {
 
   if (!tagName) {
     throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
+  } // 缩写src和font
+
+
+  var src = props.src;
+
+  if (/^#\d+$/.test(src)) {
+    var imgs = opt.imgs,
+        i = parseInt(src.slice(1));
+
+    if (Array.isArray(imgs)) {
+      props.src = imgs[i];
+    }
   }
 
   var style = props.style;
+
+  if (style) {
+    var fontFamily = style.fontFamily;
+
+    if (/^#\d+$/.test(fontFamily)) {
+      var fonts = opt.imgs,
+          _i = parseInt(fontFamily.slice(1));
+
+      if (Array.isArray(fonts)) {
+        style.fontFamily = fonts[_i];
+      }
+    }
+  }
+
   opt.abbr !== false && abbr2full(style, abbrCssProperty$1); // 先替换style的
 
   replaceVars(style, opt.vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
@@ -42686,7 +42742,7 @@ function parse(karas, json, animateRecords, opt) {
         return item;
       }
 
-      return parse(karas, item, animateRecords, opt, hash);
+      return parse(karas, item, animateRecords, opt, hash, offsetTime);
     }));
   } else {
     vd = karas.createVd(tagName, props, children.map(function (item) {
@@ -42694,7 +42750,7 @@ function parse(karas, json, animateRecords, opt) {
         return item;
       }
 
-      return parse(karas, item, animateRecords, opt, hash);
+      return parse(karas, item, animateRecords, opt, hash, offsetTime);
     }));
   }
 
@@ -42727,7 +42783,8 @@ function parse(karas, json, animateRecords, opt) {
     if (has) {
       animateRecords.push({
         animate: animate,
-        target: vd
+        target: vd,
+        offsetTime: oft
       });
     }
   }
@@ -42784,7 +42841,7 @@ var o$4 = {
 
     var animateRecords = [];
 
-    var vd = parse(karas, json, animateRecords, options); // 有dom时parse作为根方法渲染
+    var vd = parse(karas, json, animateRecords, options, {}, 0); // 有dom时parse作为根方法渲染
 
 
     if (dom) {
@@ -42951,7 +43008,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.74.0-beta1";
+var version = "0.74.0-beta2";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

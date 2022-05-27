@@ -5,9 +5,10 @@ class Point {
     }
     this.x = x;
     this.y = y;
-    this.selfCount = 0; // 作为自交点的次数
-    this.selfI = false; // 作为自交点
-    this.selfV = false; // 作为自交顶点即相交的点是顶点
+    this.selfI = 0; // 作为自交点
+    this.selfV = 0; // 作为自交顶点，即相交的点是顶点
+    this.targetI = 0; // 它交点
+    this.targetV = 0; // 它交顶点
   }
 
   toString() {

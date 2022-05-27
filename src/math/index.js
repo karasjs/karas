@@ -6,7 +6,7 @@ import geom from './geom';
 import bezier from './bezier';
 import isec from './isec';
 import { union, diff, intersection, xor } from './martinez';
-import greinerHormann from './greinerHormann';
+import bo from './bo/index';
 
 export default {
   matrix,
@@ -22,5 +22,5 @@ export default {
     intersection,
     xor,
   },
-  greinerHormann,
+  bo,
 };

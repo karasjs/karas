@@ -13716,6 +13716,11 @@
       value: function toString() {
         return this.x + ',' + this.y;
       }
+    }, {
+      key: "toString2",
+      value: function toString2() {
+        return this.x + ',' + this.y + ' ' + this.selfI + '' + this.selfV + '' + this.targetI + '' + this.targetV;
+      }
     }]);
 
     return Point;
@@ -13954,7 +13959,7 @@
       value: function ioSelf() {
         var first = this.first,
             curr = first;
-        curr.isLeftInSelf = isInner(first, curr);
+        curr.isLeftInSelf = isInner(first, curr, true);
 
         if (curr.isOverlapSelf) ; else {
           curr.isRightInSelf = !curr.isLeftInSelf;
@@ -13976,6 +13981,38 @@
           } else {
             curr.isLeftInSelf = curr.prev.isLeftInSelf;
             curr.isRightInSelf = curr.prev.isRightInSelf;
+          }
+
+          curr = curr.next;
+        }
+      }
+    }, {
+      key: "ioTarget",
+      value: function ioTarget(target) {
+        var first = this.first,
+            curr = first;
+        curr.isLeftInTarget = isInner(target.first, curr, true);
+
+        if (curr.isOverlapTarget) ; else {
+          curr.isRightInTarget = isInner(target.first, curr, false);
+        }
+
+        curr = curr.next;
+
+        while (curr !== first) {
+          if (curr.isOverlapTarget) ; else if (curr.isIntersectTarget) {
+            var start = curr.coords[0]; // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
+
+            if (start.targetI % 2 === 1) {
+              curr.isLeftInTarget = !curr.prev.isLeftInTarget;
+              curr.isRightInTarget = !curr.prev.isRightInTarget;
+            } else {
+              curr.isLeftInTarget = curr.prev.isLeftInTarget;
+              curr.isRightInTarget = curr.prev.isRightInTarget;
+            }
+          } else {
+            curr.isLeftInTarget = curr.prev.isLeftInTarget;
+            curr.isRightInTarget = curr.prev.isRightInTarget;
           }
 
           curr = curr.next;
@@ -14157,7 +14194,7 @@
         if (isSelf) {
           prev.isIntersectSelf = true;
         } else {
-          prev.isIntersecTarget = true;
+          prev.isIntersectTarget = true;
         }
       }
 
@@ -14174,7 +14211,7 @@
       if (isSelf) {
         ns.isIntersectSelf = true;
       } else {
-        ns.isIntersecTarget = true;
+        ns.isIntersectTarget = true;
       }
 
       res.push(ns);
@@ -14275,7 +14312,7 @@
           y2 = _coords.y;
       return [x1 + (x2 - x1) * 0.5, y1 + (y2 - y1) * 0.5];
     }
-  } // 奇偶性判断点在非自相交的多边形内，first为第一条边
+  } // 奇偶性判断点在非自相交的多边形内，first为第一条边，seg为判断的对象边
 
 
   function isInner(first, seg, isLeft) {
@@ -14302,11 +14339,28 @@
 
         if (lenB === 2) {
           // 水平左射线，取一个最小值ax和当前x/y组成水平线段即可，右反之
-          var ax = Math.min(bx1, bx2) - 1,
-              bboxA = [ax, y, x, y];
+          var ax = void 0,
+              bboxA = void 0;
+
+          if (isLeft) {
+            ax = Math.min(bx1, bx2) - 1;
+            bboxA = [ax, y, x, y];
+          } else {
+            ax = Math.max(bx1, bx2) + 1;
+            bboxA = [x, y, ax, y];
+          }
 
           if (geom.isRectsOverlap(bboxA, bboxB)) {
-            console.log(seg.toString()); // 一定不平行了，因为bbox不重合
+            // console.log(curr.toString(), seg.toString());
+            // console.log(bboxA, bboxB);
+            // 一定不平行了，因为bbox不重合
+            var d = (by2 - by1) * (ax - x);
+            var toSource = ((bx2 - bx1) * (y - by1) - (by2 - by1) * (x - bx1)) / d;
+            var toClip = (ax - x) * (y - by1) / d;
+
+            if (toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
+              count++;
+            }
           }
         }
       }
@@ -14326,6 +14380,10 @@
 
     Polygon.intersect2(source, clip);
     console.log(source.toString());
+    console.log(clip.toString());
+    source.ioTarget(clip);
+    console.log(source.toString());
+    clip.ioTarget(source);
     console.log(clip.toString());
   }
 

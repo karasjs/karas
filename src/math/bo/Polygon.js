@@ -172,6 +172,36 @@ class Polygon {
     }
   }
 
+  ioTarget(target) {
+    let first = this.first, curr = first;
+    curr.isLeftInTarget = isInner(target.first, curr, true);
+    if(curr.isOverlapTarget) {}
+    else {
+      curr.isRightInTarget = isInner(target.first, curr, false);
+    }
+    curr = curr.next;
+    while(curr !== first) {
+      if(curr.isOverlapTarget) {}
+      else if(curr.isIntersectTarget) {
+        let start = curr.coords[0];
+        // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
+        if(start.targetI % 2 === 1) {
+          curr.isLeftInTarget = !curr.prev.isLeftInTarget;
+          curr.isRightInTarget = !curr.prev.isRightInTarget;
+        }
+        else {
+          curr.isLeftInTarget = curr.prev.isLeftInTarget;
+          curr.isRightInTarget = curr.prev.isRightInTarget;
+        }
+      }
+      else {
+        curr.isLeftInTarget = curr.prev.isLeftInTarget;
+        curr.isRightInTarget = curr.prev.isRightInTarget;
+      }
+      curr = curr.next;
+    }
+  }
+
   toString() {
     let first = this.first, curr = first;
     let list = [];
@@ -319,7 +349,7 @@ function sliceSegment(seg, ps, isSelf) {
         prev.isIntersectSelf = true;
       }
       else {
-        prev.isIntersecTarget = true;
+        prev.isIntersectTarget = true;
       }
     }
     res.push(prev);
@@ -338,7 +368,7 @@ function sliceSegment(seg, ps, isSelf) {
       ns.isIntersectSelf = true;
     }
     else {
-      ns.isIntersecTarget = true;
+      ns.isIntersectTarget = true;
     }
     res.push(ns);
   }
@@ -426,7 +456,7 @@ function getCenterPoint(seg) {
   else if(len === 4) {}
 }
 
-// 奇偶性判断点在非自相交的多边形内，first为第一条边
+// 奇偶性判断点在非自相交的多边形内，first为第一条边，seg为判断的对象边
 function isInner(first, seg, isLeft) {
   let curr = first, count = 0;
   let [x, y] = getCenterPoint(seg);
@@ -438,9 +468,18 @@ function isInner(first, seg, isLeft) {
       let {x: bx2, y: by2} = coordsB[1];
       if(lenB === 2) {
         // 水平左射线，取一个最小值ax和当前x/y组成水平线段即可，右反之
-        let ax = Math.min(bx1, bx2) - 1, bboxA = [ax, y, x, y];
+        let ax, bboxA;
+        if(isLeft) {
+          ax = Math.min(bx1, bx2) - 1;
+          bboxA = [ax, y, x, y];
+        }
+        else {
+          ax = Math.max(bx1, bx2) + 1;
+          bboxA = [x, y, ax, y];
+        }
         if(geom.isRectsOverlap(bboxA, bboxB)) {
-          console.log(seg.toString())
+          // console.log(curr.toString(), seg.toString());
+          // console.log(bboxA, bboxB);
           // 一定不平行了，因为bbox不重合
           let d = (by2 - by1) * (ax - x);
           let toSource = (
@@ -449,6 +488,9 @@ function isInner(first, seg, isLeft) {
           let toClip = (
             (ax - x) * (y - by1)
           ) / d;
+          if(toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
+            count++;
+          }
         }
       }
       else if(lenB === 3) {

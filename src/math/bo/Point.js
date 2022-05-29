@@ -14,6 +14,14 @@ class Point {
   toString() {
     return this.x + ',' + this.y;
   }
+
+  toString2() {
+    return this.x + ',' + this.y
+      + ' ' + this.selfI
+      + '' + this.selfV
+      + '' + this.targetI
+      + '' + this.targetV;
+  }
 }
 
 export default Point;

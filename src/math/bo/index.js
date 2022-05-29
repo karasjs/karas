@@ -10,6 +10,10 @@ function pre(polygonA, polygonB) {
   Polygon.intersect2(source, clip);
   console.log(source.toString());
   console.log(clip.toString());
+  source.ioTarget(clip);
+  console.log(source.toString());
+  clip.ioTarget(source);
+  console.log(clip.toString());
 }
 
 export default {

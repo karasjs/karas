@@ -322,7 +322,7 @@ function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
   }
 }
 
-// 给定交点列表分割线段，ps需排好顺序从头到尾
+// 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
 function sliceSegment(seg, ps, isSelf) {
   let res = [];
   let belong = seg.belong, coords = seg.coords, len = coords.length;
@@ -342,7 +342,12 @@ function sliceSegment(seg, ps, isSelf) {
     else if(len === 3) {}
     else if(len === 4) {}
     startPoint = point;
-    prev.belong = belong;
+    prev.belong = belong
+    // 被对方切割，原有的自内外性保持
+    if(!isSelf) {
+      prev.isLeftInSelf = seg.isLeftInSelf;
+      prev.isRightInSelf = seg.isRightInSelf;
+    }
     // 除了第一条线，后续都是相交线，因为第一条开始点不是交点，有顺序需求
     if(i) {
       if(isSelf) {
@@ -369,6 +374,8 @@ function sliceSegment(seg, ps, isSelf) {
     }
     else {
       ns.isIntersectTarget = true;
+      ns.isLeftInSelf = seg.isLeftInSelf;
+      ns.isRightInSelf = seg.isRightInSelf;
     }
     res.push(ns);
   }

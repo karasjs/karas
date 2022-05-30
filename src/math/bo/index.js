@@ -6,10 +6,12 @@ function pre(polygonA, polygonB) {
   console.log(source.toString());
   let clip = new Polygon(polygonB, 1);
   console.log(clip.toString());
+  console.log('----');
   // 两个多边形再次互相判断相交，注释对方的内外性
   Polygon.intersect2(source, clip);
   console.log(source.toString());
   console.log(clip.toString());
+  console.log('----');
   source.ioTarget(clip);
   console.log(source.toString());
   clip.ioTarget(source);

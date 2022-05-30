@@ -14167,7 +14167,7 @@
       var oy = ay1 + toSource * (ay2 - ay1);
       return [ox, oy];
     }
-  } // 给定交点列表分割线段，ps需排好顺序从头到尾
+  } // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
 
 
   function sliceSegment(seg, ps, isSelf) {
@@ -14188,7 +14188,13 @@
       }
 
       startPoint = point;
-      prev.belong = belong; // 除了第一条线，后续都是相交线，因为第一条开始点不是交点，有顺序需求
+      prev.belong = belong; // 被对方切割，原有的自内外性保持
+
+      if (!isSelf) {
+        prev.isLeftInSelf = seg.isLeftInSelf;
+        prev.isRightInSelf = seg.isRightInSelf;
+      } // 除了第一条线，后续都是相交线，因为第一条开始点不是交点，有顺序需求
+
 
       if (i) {
         if (isSelf) {
@@ -14212,6 +14218,8 @@
         ns.isIntersectSelf = true;
       } else {
         ns.isIntersectTarget = true;
+        ns.isLeftInSelf = seg.isLeftInSelf;
+        ns.isRightInSelf = seg.isRightInSelf;
       }
 
       res.push(ns);
@@ -14376,11 +14384,13 @@
     var source = new Polygon(polygonA, 0);
     console.log(source.toString());
     var clip = new Polygon(polygonB, 1);
-    console.log(clip.toString()); // 两个多边形再次互相判断相交，注释对方的内外性
+    console.log(clip.toString());
+    console.log('----'); // 两个多边形再次互相判断相交，注释对方的内外性
 
     Polygon.intersect2(source, clip);
     console.log(source.toString());
     console.log(clip.toString());
+    console.log('----');
     source.ioTarget(clip);
     console.log(source.toString());
     clip.ioTarget(source);

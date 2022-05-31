@@ -13709,6 +13709,7 @@
       this.targetI = 0; // 它交点
 
       this.targetV = 0; // 它交顶点
+      // this.cross = [];
     }
 
     _createClass(Point, [{
@@ -13736,6 +13737,10 @@
       this.calBbox();
       this.prev = null;
       this.next = null;
+      this.leftIO = [false, false]; // 左侧内外性，长度固定2，下标为belong属于的source/clip，值0为外部1为内部
+
+      this.rightIO = [false, false]; // 右侧内外性，同上
+
       this.isLeftInSelf = false; // 左侧是自己内部
 
       this.isRightInSelf = false; // 右侧是自己内部
@@ -13745,6 +13750,8 @@
       this.isIntersectSelf = false; // 自相交后切割的线段标识，开始点为交点
 
       this.isIntersectTarget = false; // 和其它的相交标识
+
+      this.target = []; // 相交线列表，一般只有1个
 
       this.isOverlapSelf = false; // 自重合
 
@@ -13771,7 +13778,15 @@
     }, {
       key: "toString",
       value: function toString() {
-        return this.coords.join(' ') + ' ' + this.belong + ' ' + (this.isLeftInSelf ? 1 : 0) + '' + (this.isRightInSelf ? 1 : 0) + '' + (this.isLeftInTarget ? 1 : 0) + '' + (this.isRightInTarget ? 1 : 0);
+        return this.coords.join(' ') + ' ' + this.belong // + ' ' + (this.isLeftInSelf ? 1 : 0)
+        // + '' + (this.isRightInSelf ? 1 : 0)
+        // + '' + (this.isLeftInTarget ? 1 : 0)
+        // + '' + (this.isRightInTarget ? 1 : 0);
+        + ' ' + this.leftIO.map(function (i) {
+          return i ? 1 : 0;
+        }).join('') + ',' + this.rightIO.map(function (i) {
+          return i ? 1 : 0;
+        }).join('');
       }
     }]);
 
@@ -13835,14 +13850,14 @@
       this.first.prev = last;
       last.next = this.first; // 自相交切割后注释左右内外性
 
-      this.selfIntersect(hashY);
-      this.ioSelf();
+      this.selfIntersect(hashY, index);
+      this.ioSelf(index);
     } // 根据y坐标排序，生成有序线段列表，再扫描求交
 
 
     _createClass(Polygon, [{
       key: "selfIntersect",
-      value: function selfIntersect(hashY) {
+      value: function selfIntersect(hashY, index) {
         var list = [];
         Object.keys(hashY).forEach(function (y) {
           return list.push({
@@ -13857,12 +13872,11 @@
         while (list.length) {
           // 先检查上次要删除的
           if (delList.length) {
-            delList.forEach(function (seg) {
+            delList.splice(0).forEach(function (seg) {
               var i = asl.indexOf(seg);
               asl.splice(i, 1);
               seg.isVisited = false; // 还原以备后面逻辑重复利用
             });
-            delList.splice(0);
           }
 
           var _list$ = list[0],
@@ -13926,10 +13940,11 @@
                         if (res) {
                           var point = new Point(res);
                           point.selfI++;
-                          var ra = sliceSegment(seg, [point], true);
-                          dealNewSeg(list, asl, delList, y, ra);
-                          var rb = sliceSegment(item, [point], true);
-                          dealNewSeg(list, asl, delList, y, rb);
+                          var ra = sliceSegment(seg, [point], index, true);
+                          activeNewSeg(list, asl, delList, y, ra);
+                          var rb = sliceSegment(item, [point], index, true);
+                          activeNewSeg(list, asl, delList, y, rb);
+                          linkOther(ra, rb);
                         }
                       }
                     }
@@ -13956,13 +13971,15 @@
 
     }, {
       key: "ioSelf",
-      value: function ioSelf() {
+      value: function ioSelf(index) {
         var first = this.first,
             curr = first;
         curr.isLeftInSelf = isInner(first, curr, true);
+        curr.leftIO[index] = isInner(first, curr, true);
 
         if (curr.isOverlapSelf) ; else {
           curr.isRightInSelf = !curr.isLeftInSelf;
+          curr.rightIO[index] = !curr.leftIO[index];
         }
 
         curr = curr.next;
@@ -13974,13 +13991,19 @@
             if (start.selfI % 2 === 1) {
               curr.isLeftInSelf = !curr.prev.isLeftInSelf;
               curr.isRightInSelf = !curr.prev.isRightInSelf;
+              curr.leftIO[index] = !curr.prev.leftIO[index];
+              curr.rightIO[index] = !curr.prev.rightIO[index];
             } else {
               curr.isLeftInSelf = curr.prev.isLeftInSelf;
               curr.isRightInSelf = curr.prev.isRightInSelf;
+              curr.leftIO[index] = curr.prev.leftIO[index];
+              curr.rightIO[index] = curr.prev.rightIO[index];
             }
           } else {
             curr.isLeftInSelf = curr.prev.isLeftInSelf;
             curr.isRightInSelf = curr.prev.isRightInSelf;
+            curr.leftIO[index] = curr.prev.leftIO[index];
+            curr.rightIO[index] = curr.prev.rightIO[index];
           }
 
           curr = curr.next;
@@ -13988,13 +14011,15 @@
       }
     }, {
       key: "ioTarget",
-      value: function ioTarget(target) {
+      value: function ioTarget(target, index) {
         var first = this.first,
             curr = first;
         curr.isLeftInTarget = isInner(target.first, curr, true);
+        curr.leftIO[index] = isInner(target.first, curr, true);
 
         if (curr.isOverlapTarget) ; else {
           curr.isRightInTarget = isInner(target.first, curr, false);
+          curr.rightIO[index] = isInner(target.first, curr, false);
         }
 
         curr = curr.next;
@@ -14006,13 +14031,19 @@
             if (start.targetI % 2 === 1) {
               curr.isLeftInTarget = !curr.prev.isLeftInTarget;
               curr.isRightInTarget = !curr.prev.isRightInTarget;
+              curr.leftIO[index] = !curr.prev.leftIO[index];
+              curr.rightIO[index] = !curr.prev.rightIO[index];
             } else {
               curr.isLeftInTarget = curr.prev.isLeftInTarget;
               curr.isRightInTarget = curr.prev.isRightInTarget;
+              curr.leftIO[index] = curr.prev.leftIO[index];
+              curr.rightIO[index] = curr.prev.rightIO[index];
             }
           } else {
             curr.isLeftInTarget = curr.prev.isLeftInTarget;
             curr.isRightInTarget = curr.prev.isRightInTarget;
+            curr.leftIO[index] = curr.prev.leftIO[index];
+            curr.rightIO[index] = curr.prev.rightIO[index];
           }
 
           curr = curr.next;
@@ -14055,12 +14086,11 @@
         while (list.length) {
           // 先检查上次要删除的
           if (delList.length) {
-            delList.forEach(function (seg) {
+            delList.splice(0).forEach(function (seg) {
               var i = asl.indexOf(seg);
               asl.splice(i, 1);
               seg.isVisited = false; // 还原以备后面逻辑重复利用
             });
-            delList.splice(0);
           }
 
           var _list$2 = list[0],
@@ -14097,12 +14127,12 @@
                     ay2 = _coordsA$4.y;
 
                 for (var _i2 = 0; _i2 < asl.length; _i2++) {
-                  var item = asl[_i2]; // 互交所属belong不同
-                  // 被切割的老线段无效
+                  var item = asl[_i2]; // 被切割的老线段无效
 
                   if (item.isDeleted) {
                     continue;
-                  }
+                  } // 互交所属belong不同
+
 
                   if (item.belong !== belong) {
                     var bboxB = item.bbox;
@@ -14125,10 +14155,10 @@
                           if (res) {
                             var point = new Point(res);
                             point.targetI++;
-                            var ra = sliceSegment(seg, [point], false);
-                            dealNewSeg(list, asl, delList, y, ra);
-                            var rb = sliceSegment(item, [point], false);
-                            dealNewSeg(list, asl, delList, y, rb);
+                            var ra = sliceSegment(seg, [point], belong, false);
+                            activeNewSeg(list, asl, delList, y, ra);
+                            var rb = sliceSegment(item, [point], item.belong, false);
+                            activeNewSeg(list, asl, delList, y, rb);
                           }
                         }
                       }
@@ -14145,7 +14175,12 @@
           }
 
           list.shift();
-        }
+        } // 最下面的线未被删除，也未被还原visited
+
+
+        delList.forEach(function (item) {
+          return item.isVisited = false;
+        });
       }
     }]);
 
@@ -14170,7 +14205,7 @@
   } // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
 
 
-  function sliceSegment(seg, ps, isSelf) {
+  function sliceSegment(seg, ps, index, isSelf) {
     var res = [];
     var belong = seg.belong,
         coords = seg.coords,
@@ -14180,58 +14215,65 @@
         next = seg.next; // 多个点可能截取多条，最后一条保留只修改数据，其它新生成
 
     ps.forEach(function (point, i) {
-      if (len === 2) {
-        var ns = new Segment([startPoint, point], belong);
-        prev.next = ns;
-        ns.prev = prev;
-        prev = ns;
-      }
+      var ns;
 
-      startPoint = point;
-      prev.belong = belong; // 被对方切割，原有的自内外性保持
+      if (len === 2) {
+        ns = new Segment([startPoint, point], belong);
+      } // 被对方切割，原有的自内外性保持，自己切割时还没求内外性忽略
+
 
       if (!isSelf) {
-        prev.isLeftInSelf = seg.isLeftInSelf;
-        prev.isRightInSelf = seg.isRightInSelf;
+        ns.isLeftInSelf = seg.isLeftInSelf;
+        ns.isRightInSelf = seg.isRightInSelf;
+        ns.leftIO[index] = seg.leftIO[index];
+        ns.rightIO[index] = seg.rightIO[index]; // point.cross.push(ns);
       } // 除了第一条线，后续都是相交线，因为第一条开始点不是交点，有顺序需求
 
 
       if (i) {
         if (isSelf) {
-          prev.isIntersectSelf = true;
+          ns.isIntersectSelf = true;
         } else {
-          prev.isIntersectTarget = true;
+          ns.isIntersectTarget = true; // startPoint.cross.push(ns);
         }
       }
 
+      startPoint = point;
+      prev.next = ns;
+      ns.prev = prev;
+      prev = ns;
       res.push(prev);
     }); // 最后一条
 
+    var ns;
+
     if (len === 2) {
-      var ns = new Segment([startPoint, coords[1]], belong);
-      prev.next = ns;
-      ns.prev = prev;
-      ns.next = next;
-      next.prev = ns;
+      ns = new Segment([startPoint, coords[1]], belong);
+    }
 
-      if (isSelf) {
-        ns.isIntersectSelf = true;
-      } else {
-        ns.isIntersectTarget = true;
-        ns.isLeftInSelf = seg.isLeftInSelf;
-        ns.isRightInSelf = seg.isRightInSelf;
-      }
+    if (isSelf) {
+      ns.isIntersectSelf = true;
+    } else {
+      ns.isIntersectTarget = true;
+      ns.isLeftInSelf = seg.isLeftInSelf;
+      ns.isRightInSelf = seg.isRightInSelf;
+      ns.leftIO[index] = seg.leftIO[index];
+      ns.rightIO[index] = seg.rightIO[index];
+    }
 
-      res.push(ns);
-    } // 老的打标失效删除
-
+    res.push(ns);
+    prev.next = ns;
+    ns.prev = prev;
+    ns.next = next;
+    next.prev = ns; // startPoint.cross.push(ns);
+    // 老的打标失效删除
 
     seg.isDeleted = true;
     return res;
   } // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
 
 
-  function dealNewSeg(list, asl, delList, y, ns) {
+  function activeNewSeg(list, asl, delList, y, ns) {
     ns.forEach(function (seg) {
       var bbox = seg.bbox,
           y1 = bbox[1],
@@ -14379,6 +14421,145 @@
     return count % 2 === 1;
   }
 
+  function linkOther(ra, rb) {
+    var len = Math.min(ra.length, rb.length);
+
+    for (var i = 1; i < len; i++) {
+      ra[i];
+    }
+  }
+
+  // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
+  function join(res, chains, arr, index, pt, isHead) {
+    for (var i = 0, len = chains.length; i < len; i++) {
+      var item = chains[i];
+
+      if (item !== arr) {
+        var l = item.length;
+        var head = item[0],
+            tail = item[l - 1];
+        var ptHead = head.coords[0];
+        var coords = tail.coords,
+            l2 = coords.length;
+        var ptTail = coords[l2 - 1];
+
+        if (pt === ptHead) {
+          if (isHead) {
+            item = reverse(arr).concat(item);
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          } else {
+            item = arr.concat(item);
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          }
+        } else if (pt === ptTail) {
+          if (isHead) {
+            item = item.concat(arr);
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          } else {
+            item = item.concat(reverse(arr));
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          }
+        }
+      }
+    } // 无法和别的链接，也要检查自身闭合
+
+
+    close(res, chains, arr, index);
+  }
+
+  function close(res, chains, arr, index) {
+    var l = arr.length;
+    var head = arr[0],
+        tail = arr[l - 1];
+    var ptHead = head.coords[0];
+    var coords2 = tail.coords,
+        l2 = coords2.length;
+    var ptTail = coords2[l2 - 1];
+
+    if (ptHead === ptTail) {
+      chains.splice(index, 1);
+      res.push(arr);
+    }
+  }
+
+  function reverse(chain) {
+    chain.forEach(function (item) {
+      return item.coords.reverse();
+    });
+    return chain.reverse();
+  }
+
+  function chain (list) {
+    var chains = [],
+        res = [];
+
+    outer: while (list.length) {
+      var seg = list.shift(),
+          coords = seg.coords,
+          len = coords.length;
+      var start = coords[0],
+          end = coords[len - 1]; // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
+
+      for (var i = 0, _len = chains.length; i < _len; i++) {
+        var arr = chains[i],
+            l = arr.length;
+        var head = arr[0],
+            tail = arr[l - 1];
+        var ptHead = head.coords[0];
+        var coords2 = tail.coords,
+            l2 = coords2.length;
+        var ptTail = coords2[l2 - 1];
+
+        if (start === ptTail) {
+          arr.push(seg);
+          join(res, chains, arr, i, end, false);
+          continue outer;
+        } else if (start === ptHead) {
+          coords.reverse();
+          arr.unshift(seg);
+          join(res, chains, arr, i, end, true);
+          continue outer;
+        } else if (end === ptTail) {
+          coords.reverse();
+          arr.push(seg);
+          join(res, chains, arr, i, start, false);
+          continue outer;
+        } else if (end === ptHead) {
+          arr.unshift(seg);
+          join(res, chains, arr, i, start, true);
+          continue outer;
+        }
+      } // 找不到则生成新链
+
+
+      chains.push([seg]);
+    }
+
+    return res.map(function (item) {
+      var list = item.map(function (seg) {
+        var coords = seg.coords,
+            len = coords.length;
+
+        if (len === 2) {
+          return [coords[1].x, coords[1].y];
+        }
+      }); // 首个顶点重合
+
+      var first = item[0],
+          coords = first.coords;
+      list.unshift([coords[0].x, coords[0].y]);
+      return list;
+    });
+  }
+
   function pre(polygonA, polygonB) {
     // 生成多边形对象，包含不自相交的线段，线段是个双向链表，同时注释自己的内外性
     var source = new Polygon(polygonA, 0);
@@ -14391,15 +14572,45 @@
     console.log(source.toString());
     console.log(clip.toString());
     console.log('----');
-    source.ioTarget(clip);
+    source.ioTarget(clip, 1);
     console.log(source.toString());
-    clip.ioTarget(source);
+    clip.ioTarget(source, 0);
     console.log(clip.toString());
+    return [source, clip];
+  }
+
+  var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0];
+
+  function filter(first, matrix) {
+    var res = [];
+    var curr = first;
+
+    do {
+      var _curr = curr,
+          leftIO = _curr.leftIO,
+          rightIO = _curr.rightIO;
+      var i = (leftIO[0] ? 8 : 0) + (leftIO[1] ? 4 : 0) + (rightIO[0] ? 2 : 0) + (rightIO[1] ? 1 : 0);
+
+      if (matrix[i]) {
+        res.push(curr);
+      }
+
+      curr = curr.next;
+    } while (curr !== first);
+
+    return res;
   }
 
   var bo = {
     intersect: function intersect(polygonA, polygonB) {
-      pre(polygonA, polygonB);
+      var _pre = pre(polygonA, polygonB),
+          _pre2 = _slicedToArray(_pre, 2),
+          source = _pre2[0],
+          clip = _pre2[1];
+
+      var list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT));
+      console.warn(list.join('\n'));
+      return chain(list);
     },
     union: function union() {},
     subtract: function subtract() {},

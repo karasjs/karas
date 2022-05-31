@@ -14,11 +14,12 @@ class Polygon {
     }
     this.first = null;
     let last;
-    let startPoint = new Point(vertices[0]);
+    let startPoint = new Point(vertices[0]), firstPoint = startPoint;
     let hashY = {};
     for(let i = 1, len = vertices.length; i < len; i++) {
       let curr = vertices[i], l = curr.length;
-      let endPoint = new Point(curr[l - 2], curr[l - 1]);
+      // 闭合区域，首尾顶点重复统一
+      let endPoint = (i === len - 1) ? firstPoint : new Point(curr[l - 2], curr[l - 1]);
       let seg;
       if(l === 2) {
         seg = new Segment([
@@ -143,12 +144,10 @@ class Polygon {
   // 自身有向边线段的左右内外性，连续不相交和连续重合的保持之前一致性，非连续和第一条需奇偶判断
   ioSelf(index) {
     let first = this.first, curr = first;
-    curr.isLeftInSelf = isInner(first, curr, true);
     curr.leftIO[index] = isInner(first, curr, true);
     if(curr.isOverlapSelf) {
     }
     else {
-      curr.isRightInSelf = !curr.isLeftInSelf;
       curr.rightIO[index] = !curr.leftIO[index];
     }
     curr = curr.next;
@@ -158,21 +157,15 @@ class Polygon {
         let start = curr.coords[0];
         // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
         if(start.selfI % 2 === 1) {
-          curr.isLeftInSelf = !curr.prev.isLeftInSelf;
-          curr.isRightInSelf = !curr.prev.isRightInSelf;
           curr.leftIO[index] = !curr.prev.leftIO[index];
           curr.rightIO[index] = !curr.prev.rightIO[index];
         }
         else {
-          curr.isLeftInSelf = curr.prev.isLeftInSelf;
-          curr.isRightInSelf = curr.prev.isRightInSelf;
           curr.leftIO[index] = curr.prev.leftIO[index];
           curr.rightIO[index] = curr.prev.rightIO[index];
         }
       }
       else {
-        curr.isLeftInSelf = curr.prev.isLeftInSelf;
-        curr.isRightInSelf = curr.prev.isRightInSelf;
         curr.leftIO[index] = curr.prev.leftIO[index];
         curr.rightIO[index] = curr.prev.rightIO[index];
       }
@@ -358,11 +351,8 @@ function sliceSegment(seg, ps, index, isSelf) {
     else if(len === 4) {}
     // 被对方切割，原有的自内外性保持，自己切割时还没求内外性忽略
     if(!isSelf) {
-      ns.isLeftInSelf = seg.isLeftInSelf;
-      ns.isRightInSelf = seg.isRightInSelf;
       ns.leftIO[index] = seg.leftIO[index];
       ns.rightIO[index] = seg.rightIO[index];
-      // point.cross.push(ns);
     }
     // 除了第一条线，后续都是相交线，因为第一条开始点不是交点，有顺序需求
     if(i) {
@@ -371,7 +361,6 @@ function sliceSegment(seg, ps, index, isSelf) {
       }
       else {
         ns.isIntersectTarget = true;
-        // startPoint.cross.push(ns);
       }
     }
     startPoint = point;
@@ -395,8 +384,6 @@ function sliceSegment(seg, ps, index, isSelf) {
   }
   else {
     ns.isIntersectTarget = true;
-    ns.isLeftInSelf = seg.isLeftInSelf;
-    ns.isRightInSelf = seg.isRightInSelf;
     ns.leftIO[index] = seg.leftIO[index];
     ns.rightIO[index] = seg.rightIO[index];
   }
@@ -405,7 +392,6 @@ function sliceSegment(seg, ps, index, isSelf) {
   ns.prev = prev;
   ns.next = next;
   next.prev = ns;
-  // startPoint.cross.push(ns);
   // 老的打标失效删除
   seg.isDeleted = true;
   return res;

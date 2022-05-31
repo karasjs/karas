@@ -25,6 +25,11 @@ const INTERSECT = [
   0, 0, 0, 1,
   0, 0, 0, 1,
   1, 1, 1, 0,
+], UNION = [
+  0, 1, 1, 1,
+  1, 0, 0, 0,
+  1, 0, 0, 0,
+  1, 0, 0, 0,
 ];
 
 function filter(first, matrix) {
@@ -52,7 +57,12 @@ export default {
     console.warn(list.join('\n'));
     return chain(list);
   },
-  union() {},
+  union(polygonA, polygonB) {
+    let [source, clip] = pre(polygonA, polygonB);
+    let list = filter(source.first, UNION).concat(filter(clip.first, UNION));
+    console.warn(list.join('\n'));
+    return chain(list);
+  },
   subtract() {},
   difference() {},
 };

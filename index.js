@@ -13709,7 +13709,6 @@
       this.targetI = 0; // 它交点
 
       this.targetV = 0; // 它交顶点
-      // this.cross = [];
     }
 
     _createClass(Point, [{
@@ -13741,12 +13740,6 @@
 
       this.rightIO = [false, false]; // 右侧内外性，同上
 
-      this.isLeftInSelf = false; // 左侧是自己内部
-
-      this.isRightInSelf = false; // 右侧是自己内部
-
-      this.isLeftInTarget = false;
-      this.isRightInTarget = false;
       this.isIntersectSelf = false; // 自相交后切割的线段标识，开始点为交点
 
       this.isIntersectTarget = false; // 和其它的相交标识
@@ -13778,11 +13771,7 @@
     }, {
       key: "toString",
       value: function toString() {
-        return this.coords.join(' ') + ' ' + this.belong // + ' ' + (this.isLeftInSelf ? 1 : 0)
-        // + '' + (this.isRightInSelf ? 1 : 0)
-        // + '' + (this.isLeftInTarget ? 1 : 0)
-        // + '' + (this.isRightInTarget ? 1 : 0);
-        + ' ' + this.leftIO.map(function (i) {
+        return this.coords.join(' ') + ' ' + this.belong + ' ' + this.leftIO.map(function (i) {
           return i ? 1 : 0;
         }).join('') + ',' + this.rightIO.map(function (i) {
           return i ? 1 : 0;
@@ -13810,13 +13799,15 @@
 
       this.first = null;
       var last;
-      var startPoint = new Point(vertices[0]);
+      var startPoint = new Point(vertices[0]),
+          firstPoint = startPoint;
       var hashY = {};
 
       for (var i = 1, len = vertices.length; i < len; i++) {
         var curr = vertices[i],
-            l = curr.length;
-        var endPoint = new Point(curr[l - 2], curr[l - 1]);
+            l = curr.length; // 闭合区域，首尾顶点重复统一
+
+        var endPoint = i === len - 1 ? firstPoint : new Point(curr[l - 2], curr[l - 1]);
         var seg = void 0;
 
         if (l === 2) {
@@ -13974,11 +13965,9 @@
       value: function ioSelf(index) {
         var first = this.first,
             curr = first;
-        curr.isLeftInSelf = isInner(first, curr, true);
         curr.leftIO[index] = isInner(first, curr, true);
 
         if (curr.isOverlapSelf) ; else {
-          curr.isRightInSelf = !curr.isLeftInSelf;
           curr.rightIO[index] = !curr.leftIO[index];
         }
 
@@ -13989,19 +13978,13 @@
             var start = curr.coords[0]; // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
 
             if (start.selfI % 2 === 1) {
-              curr.isLeftInSelf = !curr.prev.isLeftInSelf;
-              curr.isRightInSelf = !curr.prev.isRightInSelf;
               curr.leftIO[index] = !curr.prev.leftIO[index];
               curr.rightIO[index] = !curr.prev.rightIO[index];
             } else {
-              curr.isLeftInSelf = curr.prev.isLeftInSelf;
-              curr.isRightInSelf = curr.prev.isRightInSelf;
               curr.leftIO[index] = curr.prev.leftIO[index];
               curr.rightIO[index] = curr.prev.rightIO[index];
             }
           } else {
-            curr.isLeftInSelf = curr.prev.isLeftInSelf;
-            curr.isRightInSelf = curr.prev.isRightInSelf;
             curr.leftIO[index] = curr.prev.leftIO[index];
             curr.rightIO[index] = curr.prev.rightIO[index];
           }
@@ -14223,10 +14206,8 @@
 
 
       if (!isSelf) {
-        ns.isLeftInSelf = seg.isLeftInSelf;
-        ns.isRightInSelf = seg.isRightInSelf;
         ns.leftIO[index] = seg.leftIO[index];
-        ns.rightIO[index] = seg.rightIO[index]; // point.cross.push(ns);
+        ns.rightIO[index] = seg.rightIO[index];
       } // 除了第一条线，后续都是相交线，因为第一条开始点不是交点，有顺序需求
 
 
@@ -14234,7 +14215,7 @@
         if (isSelf) {
           ns.isIntersectSelf = true;
         } else {
-          ns.isIntersectTarget = true; // startPoint.cross.push(ns);
+          ns.isIntersectTarget = true;
         }
       }
 
@@ -14255,8 +14236,6 @@
       ns.isIntersectSelf = true;
     } else {
       ns.isIntersectTarget = true;
-      ns.isLeftInSelf = seg.isLeftInSelf;
-      ns.isRightInSelf = seg.isRightInSelf;
       ns.leftIO[index] = seg.leftIO[index];
       ns.rightIO[index] = seg.rightIO[index];
     }
@@ -14265,8 +14244,7 @@
     prev.next = ns;
     ns.prev = prev;
     ns.next = next;
-    next.prev = ns; // startPoint.cross.push(ns);
-    // 老的打标失效删除
+    next.prev = ns; // 老的打标失效删除
 
     seg.isDeleted = true;
     return res;
@@ -14579,7 +14557,8 @@
     return [source, clip];
   }
 
-  var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0];
+  var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0],
+      UNION$1 = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
 
   function filter(first, matrix) {
     var res = [];
@@ -14612,7 +14591,16 @@
       console.warn(list.join('\n'));
       return chain(list);
     },
-    union: function union() {},
+    union: function union(polygonA, polygonB) {
+      var _pre3 = pre(polygonA, polygonB),
+          _pre4 = _slicedToArray(_pre3, 2),
+          source = _pre4[0],
+          clip = _pre4[1];
+
+      var list = filter(source.first, UNION$1).concat(filter(clip.first, UNION$1));
+      console.warn(list.join('\n'));
+      return chain(list);
+    },
     subtract: function subtract() {},
     difference: function difference() {}
   };

@@ -40,13 +40,12 @@ const INTERSECT = [
   1, 0, 1, 1,
   0, 1, 0, 0,
   0, 1, 0, 0,
+], DIFFERENCE = [
+  0, 1, 1, 0,
+  1, 0, 0, 1,
+  1, 0, 0, 1,
+  0, 1, 1, 0,
 ];
-// const DIFFERENCE = [
-//   0, 1, 1, 0,
-//   1, 0, 1, 0,
-//   1, 1, 0, 0,
-//   0, 0, 0, 0,
-// ];
 
 function filter(first, matrix) {
   let res = [];
@@ -86,11 +85,16 @@ export default {
     // console.warn(list.join('\n'));
     return chain(list);
   },
+  subtract2(polygonA, polygonB) {
+    let [source, clip] = pre(polygonA, polygonB);
+    let list = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2));
+    // console.warn(list.join('\n'));
+    return chain(list);
+  },
   difference(polygonA, polygonB) {
     let [source, clip] = pre(polygonA, polygonB);
-    let list1 = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
-    let list2 = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2));
-    // console.warn(list1.join('\n'), list2.join('\n'));
-    return chain(list1).concat(chain(list2));
+    let list = filter(source.first, DIFFERENCE).concat(filter(clip.first, DIFFERENCE));
+    // console.warn(list.join('\n'));
+    return chain(list);
   },
 };

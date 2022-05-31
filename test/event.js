@@ -191,7 +191,7 @@ describe('Event', function() {
   });
 });
 
-describe('Boolean Operations', function() {
+describe.skip('Boolean Operations', function() {
   it('intersect normal', function() {
     let res = karas.math.greinerHormann.intersect([
       [0, 0],

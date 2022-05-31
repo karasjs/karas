@@ -14560,7 +14560,12 @@
   var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0],
       UNION$1 = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
       SUBTRACT = [0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0],
-      DIFFERENCE$1 = [0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0];
+      SUBTRACT2 = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0]; // const DIFFERENCE = [
+  //   0, 1, 1, 0,
+  //   1, 0, 1, 0,
+  //   1, 1, 0, 0,
+  //   0, 0, 0, 0,
+  // ];
 
   function filter(first, matrix) {
     var res = [];
@@ -14570,8 +14575,7 @@
       var _curr = curr,
           leftIO = _curr.leftIO,
           rightIO = _curr.rightIO;
-      var i = (leftIO[0] ? 8 : 0) + (leftIO[1] ? 4 : 0) + (rightIO[0] ? 2 : 0) + (rightIO[1] ? 1 : 0);
-      console.log(curr.toString(), i);
+      var i = (leftIO[0] ? 8 : 0) + (leftIO[1] ? 4 : 0) + (rightIO[0] ? 2 : 0) + (rightIO[1] ? 1 : 0); // console.log(curr.toString(), i, matrix[i]);
 
       if (matrix[i]) {
         res.push(curr);
@@ -14590,8 +14594,8 @@
           source = _pre2[0],
           clip = _pre2[1];
 
-      var list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT));
-      console.warn(list.join('\n'));
+      var list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT)); // console.warn(list.join('\n'));
+
       return chain(list);
     },
     union: function union(polygonA, polygonB) {
@@ -14600,8 +14604,8 @@
           source = _pre4[0],
           clip = _pre4[1];
 
-      var list = filter(source.first, UNION$1).concat(filter(clip.first, UNION$1));
-      console.warn(list.join('\n'));
+      var list = filter(source.first, UNION$1).concat(filter(clip.first, UNION$1)); // console.warn(list.join('\n'));
+
       return chain(list);
     },
     subtract: function subtract(polygonA, polygonB) {
@@ -14610,8 +14614,8 @@
           source = _pre6[0],
           clip = _pre6[1];
 
-      var list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
-      console.warn(list.join('\n'));
+      var list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT)); // console.warn(list.join('\n'));
+
       return chain(list);
     },
     difference: function difference(polygonA, polygonB) {
@@ -14620,9 +14624,10 @@
           source = _pre8[0],
           clip = _pre8[1];
 
-      var list = filter(source.first, DIFFERENCE$1).concat(filter(clip.first, DIFFERENCE$1));
-      console.warn(list.join('\n'));
-      return chain(list);
+      var list1 = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
+      var list2 = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2)); // console.warn(list1.join('\n'), list2.join('\n'));
+
+      return chain(list1).concat(chain(list2));
     }
   };
 

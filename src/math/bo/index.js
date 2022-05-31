@@ -35,12 +35,18 @@ const INTERSECT = [
   0, 0, 1, 0,
   1, 1, 0, 1,
   0, 0, 1, 0,
-], DIFFERENCE = [
-  0, 1, 1, 0,
-  1, 0, 1, 0,
-  1, 1, 0, 0,
-  0, 0, 0, 0,
+], SUBTRACT2 = [
+  0, 1, 0, 0,
+  1, 0, 1, 1,
+  0, 1, 0, 0,
+  0, 1, 0, 0,
 ];
+// const DIFFERENCE = [
+//   0, 1, 1, 0,
+//   1, 0, 1, 0,
+//   1, 1, 0, 0,
+//   0, 0, 0, 0,
+// ];
 
 function filter(first, matrix) {
   let res = [];
@@ -51,7 +57,7 @@ function filter(first, matrix) {
       + (leftIO[1] ? 4 : 0)
       + (rightIO[0] ? 2 : 0)
       + (rightIO[1] ? 1 : 0);
-    console.log(curr.toString(), i);
+    // console.log(curr.toString(), i, matrix[i]);
     if(matrix[i]) {
       res.push(curr);
     }
@@ -65,25 +71,26 @@ export default {
   intersect(polygonA, polygonB) {
     let [source, clip] = pre(polygonA, polygonB);
     let list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT));
-    console.warn(list.join('\n'));
+    // console.warn(list.join('\n'));
     return chain(list);
   },
   union(polygonA, polygonB) {
     let [source, clip] = pre(polygonA, polygonB);
     let list = filter(source.first, UNION).concat(filter(clip.first, UNION));
-    console.warn(list.join('\n'));
+    // console.warn(list.join('\n'));
     return chain(list);
   },
   subtract(polygonA, polygonB) {
     let [source, clip] = pre(polygonA, polygonB);
     let list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
-    console.warn(list.join('\n'));
+    // console.warn(list.join('\n'));
     return chain(list);
   },
   difference(polygonA, polygonB) {
     let [source, clip] = pre(polygonA, polygonB);
-    let list = filter(source.first, DIFFERENCE).concat(filter(clip.first, DIFFERENCE));
-    console.warn(list.join('\n'));
-    return chain(list);
+    let list1 = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
+    let list2 = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2));
+    // console.warn(list1.join('\n'), list2.join('\n'));
+    return chain(list1).concat(chain(list2));
   },
 };

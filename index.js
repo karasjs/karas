@@ -13773,7 +13773,7 @@
       value: function toString() {
         return this.coords.join(' ') + ' ' + this.belong + ' ' + this.leftIO.map(function (i) {
           return i ? 1 : 0;
-        }).join('') + ',' + this.rightIO.map(function (i) {
+        }).join('') + '' + this.rightIO.map(function (i) {
           return i ? 1 : 0;
         }).join('');
       }
@@ -14540,25 +14540,27 @@
 
   function pre(polygonA, polygonB) {
     // 生成多边形对象，包含不自相交的线段，线段是个双向链表，同时注释自己的内外性
-    var source = new Polygon(polygonA, 0);
-    console.log(source.toString());
-    var clip = new Polygon(polygonB, 1);
-    console.log(clip.toString());
-    console.log('----'); // 两个多边形再次互相判断相交，注释对方的内外性
+    var source = new Polygon(polygonA, 0); // console.log(source.toString());
 
-    Polygon.intersect2(source, clip);
-    console.log(source.toString());
-    console.log(clip.toString());
-    console.log('----');
-    source.ioTarget(clip, 1);
-    console.log(source.toString());
-    clip.ioTarget(source, 0);
-    console.log(clip.toString());
+    var clip = new Polygon(polygonB, 1); // console.log(clip.toString());
+    // console.log('----');
+    // 两个多边形再次互相判断相交，注释对方的内外性
+
+    Polygon.intersect2(source, clip); // console.log(source.toString());
+    // console.log(clip.toString());
+    // console.log('----');
+
+    source.ioTarget(clip, 1); // console.log(source.toString());
+
+    clip.ioTarget(source, 0); // console.log(clip.toString());
+
     return [source, clip];
   }
 
   var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0],
-      UNION$1 = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
+      UNION$1 = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      SUBTRACT = [0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0],
+      DIFFERENCE$1 = [0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0];
 
   function filter(first, matrix) {
     var res = [];
@@ -14569,6 +14571,7 @@
           leftIO = _curr.leftIO,
           rightIO = _curr.rightIO;
       var i = (leftIO[0] ? 8 : 0) + (leftIO[1] ? 4 : 0) + (rightIO[0] ? 2 : 0) + (rightIO[1] ? 1 : 0);
+      console.log(curr.toString(), i);
 
       if (matrix[i]) {
         res.push(curr);
@@ -14601,8 +14604,26 @@
       console.warn(list.join('\n'));
       return chain(list);
     },
-    subtract: function subtract() {},
-    difference: function difference() {}
+    subtract: function subtract(polygonA, polygonB) {
+      var _pre5 = pre(polygonA, polygonB),
+          _pre6 = _slicedToArray(_pre5, 2),
+          source = _pre6[0],
+          clip = _pre6[1];
+
+      var list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
+      console.warn(list.join('\n'));
+      return chain(list);
+    },
+    difference: function difference(polygonA, polygonB) {
+      var _pre7 = pre(polygonA, polygonB),
+          _pre8 = _slicedToArray(_pre7, 2),
+          source = _pre8[0],
+          clip = _pre8[1];
+
+      var list = filter(source.first, DIFFERENCE$1).concat(filter(clip.first, DIFFERENCE$1));
+      console.warn(list.join('\n'));
+      return chain(list);
+    }
   };
 
   var math = {

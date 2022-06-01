@@ -27,6 +27,12 @@ class Segment {
     }
   }
 
+  // 线段边逆序，除了坐标，左右内外性也会颠倒
+  reverse() {
+    this.coords.reverse();
+    [this.leftIO, this.rightIO] = [this.rightIO, this.leftIO];
+  }
+
   toString() {
     return this.coords.join(' ')
       + ' ' + this.belong

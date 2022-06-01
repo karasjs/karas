@@ -13767,6 +13767,15 @@
           var y2 = Math.max(a.y, b.y);
           this.bbox = [x1, y1, x2, y2];
         }
+      } // 线段边逆序，除了坐标，左右内外性也会颠倒
+
+    }, {
+      key: "reverse",
+      value: function reverse() {
+        this.coords.reverse();
+        var _ref = [this.rightIO, this.leftIO];
+        this.leftIO = _ref[0];
+        this.rightIO = _ref[1];
       }
     }, {
       key: "toString",
@@ -14466,11 +14475,12 @@
       chains.splice(index, 1);
       res.push(arr);
     }
-  }
+  } // 整条链颠倒，包含每个线段自身颠倒
+
 
   function reverse(chain) {
     chain.forEach(function (item) {
-      return item.coords.reverse();
+      return item.reverse();
     });
     return chain.reverse();
   }
@@ -14501,12 +14511,12 @@
           join(res, chains, arr, i, end, false);
           continue outer;
         } else if (start === ptHead) {
-          coords.reverse();
+          seg.reverse();
           arr.unshift(seg);
           join(res, chains, arr, i, end, true);
           continue outer;
         } else if (end === ptTail) {
-          coords.reverse();
+          seg.reverse();
           arr.push(seg);
           join(res, chains, arr, i, start, false);
           continue outer;

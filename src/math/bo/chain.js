@@ -54,8 +54,9 @@ function close(res, chains, arr, index) {
   }
 }
 
+// 整条链颠倒，包含每个线段自身颠倒
 function reverse(chain) {
-  chain.forEach(item => item.coords.reverse());
+  chain.forEach(item => item.reverse());
   return chain.reverse();
 }
 
@@ -78,13 +79,13 @@ export default function(list) {
         continue outer;
       }
       else if(start === ptHead) {
-        coords.reverse();
+        seg.reverse();
         arr.unshift(seg);
         join(res, chains, arr, i, end, true);
         continue outer;
       }
       else if(end === ptTail) {
-        coords.reverse();
+        seg.reverse();
         arr.push(seg);
         join(res, chains, arr, i, start, false);
         continue outer;

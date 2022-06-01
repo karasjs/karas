@@ -30,7 +30,12 @@ class Segment {
   // 线段边逆序，除了坐标，左右内外性也会颠倒
   reverse() {
     this.coords.reverse();
-    [this.leftIO, this.rightIO] = [this.rightIO, this.leftIO];
+    let { leftIO, rightIO } = this;
+    let [t0, t1] = leftIO;
+    leftIO[0] = rightIO[0];
+    leftIO[1] = rightIO[1];
+    rightIO[0] = t0;
+    rightIO[1] = t1;
   }
 
   toString() {

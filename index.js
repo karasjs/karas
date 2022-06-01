@@ -13773,9 +13773,17 @@
       key: "reverse",
       value: function reverse() {
         this.coords.reverse();
-        var _ref = [this.rightIO, this.leftIO];
-        this.leftIO = _ref[0];
-        this.rightIO = _ref[1];
+        var leftIO = this.leftIO,
+            rightIO = this.rightIO;
+
+        var _leftIO = _slicedToArray(leftIO, 2),
+            t0 = _leftIO[0],
+            t1 = _leftIO[1];
+
+        leftIO[0] = rightIO[0];
+        leftIO[1] = rightIO[1];
+        rightIO[0] = t0;
+        rightIO[1] = t1;
       }
     }, {
       key: "toString",

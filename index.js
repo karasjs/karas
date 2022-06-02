@@ -3466,7 +3466,7 @@
         bx4 = _b2[2],
         by4 = _b2[3];
 
-    if (ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+    if (ax1 > bx4 || ay1 > by4 || bx1 > ax4 || by1 > ay4) {
       return false;
     }
 
@@ -13952,7 +13952,6 @@
                           activeNewSeg(list, asl, delList, y, ra);
                           var rb = sliceSegment(item, [point], index, true);
                           activeNewSeg(list, asl, delList, y, rb);
-                          linkOther(ra, rb);
                         }
                       }
                     }
@@ -14150,15 +14149,21 @@
                       if (lenA === 2) {
                         // b是直线
                         if (lenB === 2) {
-                          var res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
+                          var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
 
-                          if (res) {
-                            var point = new Point(res);
-                            point.targetI++;
-                            var ra = sliceSegment(seg, [point], belong, false);
-                            activeNewSeg(list, asl, delList, y, ra);
-                            var rb = sliceSegment(item, [point], item.belong, false);
-                            activeNewSeg(list, asl, delList, y, rb);
+                          if (d === 0) {
+                            console.log(ax1, ay1, ax2, ay2, ',', bx1, by1, bx2, by2);
+                          } else {
+                            var res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+
+                            if (res) {
+                              var point = new Point(res);
+                              point.targetI++;
+                              var ra = sliceSegment(seg, [point], belong, false);
+                              activeNewSeg(list, asl, delList, y, ra);
+                              var rb = sliceSegment(item, [point], item.belong, false);
+                              activeNewSeg(list, asl, delList, y, rb);
+                            }
                           }
                         }
                       }
@@ -14187,13 +14192,7 @@
     return Polygon;
   }();
 
-  function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
-    var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行看是否重合 TODO
-
-    if (d === 0) {
-      return;
-    }
-
+  function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
     var toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
     var toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d; // 非顶点相交才是真相交
 
@@ -14414,14 +14413,6 @@
     } while (curr !== first);
 
     return count % 2 === 1;
-  }
-
-  function linkOther(ra, rb) {
-    var len = Math.min(ra.length, rb.length);
-
-    for (var i = 1; i < len; i++) {
-      ra[i];
-    }
   }
 
   // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况

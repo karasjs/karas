@@ -342,7 +342,7 @@ function getRectsIntersection(a, b) {
 function isRectsOverlap(a, b) {
   let [ax1, ay1, ax4, ay4] = a;
   let [bx1, by1, bx4, by4] = b;
-  if(ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+  if(ax1 > bx4 || ay1 > by4 || bx1 > ax4 || by1 > ay4) {
     return false;
   }
   return true;

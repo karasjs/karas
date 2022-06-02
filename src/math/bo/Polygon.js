@@ -121,7 +121,6 @@ class Polygon {
                       activeNewSeg(list, asl, delList, y, ra);
                       let rb = sliceSegment(item, [point], index, true);
                       activeNewSeg(list, asl, delList, y, rb);
-                      linkOther(ra, rb);
                     }
                   }
                 }
@@ -284,14 +283,24 @@ class Polygon {
                   if(lenA === 2) {
                     // b是直线
                     if(lenB === 2) {
-                      let res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2);
-                      if(res) {
-                        let point = new Point(res);
-                        point.targetI++;
-                        let ra = sliceSegment(seg, [point], belong, false);
-                        activeNewSeg(list, asl, delList, y, ra);
-                        let rb = sliceSegment(item, [point], item.belong, false);
-                        activeNewSeg(list, asl, delList, y, rb);
+                      let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+                      // 平行检查是否重合，否则求交
+                      if(d === 0) {
+                        console.log(ax1, ay1, ax2, ay2, ',', bx1, by1, bx2, by2);
+                        if(ax1 === bx1 && ay1 === by1 && ax2 === bx2 && ay2 === by2
+                          || ax1 === bx2 && ay1 === by2 && ax2 === bx1 && ay2 === by1) {
+                        }
+                      }
+                      else {
+                        let res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                        if(res) {
+                          let point = new Point(res);
+                          point.targetI++;
+                          let ra = sliceSegment(seg, [point], belong, false);
+                          activeNewSeg(list, asl, delList, y, ra);
+                          let rb = sliceSegment(item, [point], item.belong, false);
+                          activeNewSeg(list, asl, delList, y, rb);
+                        }
                       }
                     }
                   }
@@ -312,12 +321,7 @@ class Polygon {
   }
 }
 
-function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
-  let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
-  // 平行看是否重合 TODO
-  if(d === 0) {
-    return;
-  }
+function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
   let toSource = (
     (bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)
   ) / d;
@@ -520,13 +524,6 @@ function isInner(first, seg, isLeft) {
   }
   while(curr !== first);
   return count % 2 === 1;
-}
-
-function linkOther(ra, rb) {
-  let len = Math.min(ra.length, rb.length);
-  for(let i = 1; i < len; i++) {
-    ra[i]
-  }
 }
 
 export default Polygon;

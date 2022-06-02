@@ -25548,17 +25548,25 @@
       value: function getComputedStyle(key) {
         var computedStyle = this.computedStyle;
         var res = {};
-        var keys;
+        var keys = [];
 
         if (key) {
+          var temp;
+
           if (Array.isArray(key)) {
-            keys = key;
+            temp = key;
           } else {
-            keys = [key];
+            temp = [key];
           }
 
-          keys = keys.map(function (s) {
-            return STYLE_KEY$5[style2Upper$2(s)];
+          temp.forEach(function (k) {
+            if (abbr.hasOwnProperty(k)) {
+              abbr[k].forEach(function (k) {
+                keys.push(STYLE_KEY$5[style2Upper$2(k)]);
+              });
+            } else {
+              keys.push(STYLE_KEY$5[style2Upper$2(k)]);
+            }
           });
         } else {
           keys = Object.keys(computedStyle);
@@ -42977,7 +42985,7 @@
     Cache: Cache
   };
 
-  var version = "0.74.0";
+  var version = "0.74.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -8,6 +8,7 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import bg from '../style/bg';
+import abbr from '../style/abbr';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -2773,16 +2774,24 @@ class Xom extends Node {
   getComputedStyle(key) {
     let computedStyle = this.computedStyle;
     let res = {};
-    let keys;
+    let keys = [];
     if(key) {
+      let temp;
       if(Array.isArray(key)) {
-        keys = key;
+        temp = key;
       }
       else {
-        keys = [key];
+        temp = [key];
       }
-      keys = keys.map(s => {
-        return STYLE_KEY[style2Upper(s)];
+      temp.forEach(k => {
+        if(abbr.hasOwnProperty(k)) {
+          abbr[k].forEach(k => {
+            keys.push(STYLE_KEY[style2Upper(k)]);
+          });
+        }
+        else {
+          keys.push(STYLE_KEY[style2Upper(k)]);
+        }
       });
     }
     else {

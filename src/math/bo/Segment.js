@@ -41,8 +41,8 @@ class Segment {
   toString() {
     return this.coords.join(' ')
       + ' ' + this.belong
-      + ' ' + this.leftIO.map(i => i ? 1 : 0).join('')
-      + '' + this.rightIO.map(i => i ? 1 : 0).join('');
+      // + ' ' + this.leftIO.map(i => i ? 1 : 0).join('')
+      // + '' + this.rightIO.map(i => i ? 1 : 0).join('');
   }
 }
 

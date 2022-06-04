@@ -1,21 +1,32 @@
 import Polygon from './Polygon';
 import chain from './chain';
+import util from '../../util/util';
 
-function pre(polygonA, polygonB) {
-  // 生成多边形对象，包含不自相交的线段，线段是个双向链表，同时注释自己的内外性
-  let source = new Polygon(polygonA, 0);
-  // console.log(source.toString());
-  let clip = new Polygon(polygonB, 1);
-  // console.log(clip.toString());
-  // console.log('----');
-  // 两个多边形再次互相判断相交，注释对方的内外性
+// 多边形都是多个区域，重载支持外部传入1个区域则数组化
+function prefix(polygon) {
+  if(polygon[0] && util.isNumber(polygon[0][0])) {
+    return [polygon];
+  }
+  return polygon;
+}
+
+function trivial(polygonA, polygonB) {
+  // 生成多边形对象，相交线段拆分开来，重合线段标记
+  let source = new Polygon(prefix(polygonA), 0);
+  console.log(source.toString());
+  let clip = new Polygon(prefix(polygonB), 1);
+  console.log(clip.toString());
+  console.log('----');
+  // 两个多边形之间再次互相判断相交
   Polygon.intersect2(source, clip);
+  console.log(source.toString());
+  console.log(clip.toString());
+  console.log('----');
+  source.io(0);
+  clip.io(1);
+  // source.ioTarget(clip, 1);
   // console.log(source.toString());
-  // console.log(clip.toString());
-  // console.log('----');
-  source.ioTarget(clip, 1);
-  // console.log(source.toString());
-  clip.ioTarget(source, 0);
+  // clip.ioTarget(source, 0);
   // console.log(clip.toString());
   return [source, clip];
 }
@@ -68,31 +79,31 @@ function filter(first, matrix) {
 
 export default {
   intersect(polygonA, polygonB) {
-    let [source, clip] = pre(polygonA, polygonB);
+    let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT));
     // console.warn(list.join('\n'));
     return chain(list);
   },
   union(polygonA, polygonB) {
-    let [source, clip] = pre(polygonA, polygonB);
+    let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.first, UNION).concat(filter(clip.first, UNION));
     // console.warn(list.join('\n'));
     return chain(list);
   },
   subtract(polygonA, polygonB) {
-    let [source, clip] = pre(polygonA, polygonB);
+    let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
     // console.warn(list.join('\n'));
     return chain(list);
   },
   subtract2(polygonA, polygonB) {
-    let [source, clip] = pre(polygonA, polygonB);
+    let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2));
     // console.warn(list.join('\n'));
     return chain(list);
   },
   difference(polygonA, polygonB) {
-    let [source, clip] = pre(polygonA, polygonB);
+    let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.first, DIFFERENCE).concat(filter(clip.first, DIFFERENCE));
     // console.warn(list.join('\n'));
     return chain(list);

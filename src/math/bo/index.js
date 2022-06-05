@@ -22,11 +22,8 @@ function trivial(polygonA, polygonB) {
   console.log(source.toString());
   console.log(clip.toString());
   console.log('----');
-  source.io(0);
-  clip.io(1);
-  // source.ioTarget(clip, 1);
+  Polygon.io2(source, clip);
   // console.log(source.toString());
-  // clip.ioTarget(source, 0);
   // console.log(clip.toString());
   return [source, clip];
 }

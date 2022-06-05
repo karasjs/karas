@@ -150,87 +150,6 @@ class Polygon {
     this.segments = segments.filter(item => !item.isDeleted);
   }
 
-  io(index) {
-    let hashXY = {};
-    this.segments.forEach(seg => {
-      let coords = seg.coords, l = coords.length;
-      let start = coords[0], end = coords[l - 1];
-      putHashXY(hashXY, start.x, start.y, seg, true);
-      putHashXY(hashXY, end.x, end.y, seg, false);
-    });
-    console.log(hashXY);
-  }
-
-  // 自身有向边线段的左右内外性，连续不相交和连续重合的保持之前一致性，非连续和第一条需奇偶判断
-  ioSelf(index) {
-    let first = this.first, curr = first;
-    curr.leftIO[index] = isInner(first, curr, true);
-    if(curr.isOverlapSelf) {
-    }
-    else {
-      curr.rightIO[index] = !curr.leftIO[index];
-    }
-    curr = curr.next;
-    while(curr !== first) {
-      if(curr.isOverlapSelf) {}
-      else if(curr.isIntersectSelf) {
-        let start = curr.coords[0];
-        // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
-        if(start.selfI % 2 === 1) {
-          curr.leftIO[index] = !curr.prev.leftIO[index];
-          curr.rightIO[index] = !curr.prev.rightIO[index];
-        }
-        else {
-          curr.leftIO[index] = curr.prev.leftIO[index];
-          curr.rightIO[index] = curr.prev.rightIO[index];
-        }
-      }
-      else {
-        curr.leftIO[index] = curr.prev.leftIO[index];
-        curr.rightIO[index] = curr.prev.rightIO[index];
-      }
-      curr = curr.next;
-    }
-  }
-
-  ioTarget(target, index) {
-    let first = this.first, curr = first;
-    curr.isLeftInTarget = isInner(target.first, curr, true);
-    curr.leftIO[index] = isInner(target.first, curr, true);
-    if(curr.isOverlapTarget) {}
-    else {
-      curr.isRightInTarget = isInner(target.first, curr, false);
-      curr.rightIO[index] = isInner(target.first, curr, false);
-    }
-    curr = curr.next;
-    while(curr !== first) {
-      if(curr.isOverlapTarget) {}
-      else if(curr.isIntersectTarget) {
-        let start = curr.coords[0];
-        // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
-        if(start.targetI % 2 === 1) {
-          curr.isLeftInTarget = !curr.prev.isLeftInTarget;
-          curr.isRightInTarget = !curr.prev.isRightInTarget;
-          curr.leftIO[index] = !curr.prev.leftIO[index];
-          curr.rightIO[index] = !curr.prev.rightIO[index];
-        }
-        else {
-          curr.isLeftInTarget = curr.prev.isLeftInTarget;
-          curr.isRightInTarget = curr.prev.isRightInTarget;
-          curr.leftIO[index] = curr.prev.leftIO[index];
-          curr.rightIO[index] = curr.prev.rightIO[index];
-        }
-      }
-      else {
-        curr.isLeftInTarget = curr.prev.isLeftInTarget;
-        curr.isRightInTarget = curr.prev.isRightInTarget;
-        curr.leftIO[index] = curr.prev.leftIO[index];
-        curr.rightIO[index] = curr.prev.rightIO[index];
-      }
-      curr = curr.next;
-    }
-  }
-
   toString() {
     return this.segments.map(item => item.toString());
   }
@@ -242,8 +161,11 @@ class Polygon {
     }
 
     let hashX = {};
-    addHashX(hashX, polyA.segments);
-    addHashX(hashX, polyB.segments);
+    polyA.segments.concat(polyB.segments).forEach(seg => {
+      let bbox = seg.bbox, min = bbox[0], max = bbox[2];
+      putHashX(hashX, min, seg);
+      putHashX(hashX, max, seg);
+    });
     let list = hashX2List(hashX), segments = [];
 
     // 和selfIntersect类似
@@ -347,6 +269,24 @@ class Polygon {
     });
     polyA.segments = segments.filter(item => item.belong === 0 && !item.isDeleted);
     polyB.segments = segments.filter(item => item.belong === 1 && !item.isDeleted);
+  }
+
+  /**
+   * 以Bentley-Ottmann算法为原理，为每个顶点设计事件，按x升序、y升序遍历所有顶点的事件
+   * 每条线段边有2个顶点即2个事件，左下为start，右上为end
+   * 同顶点优先end，start相同则对比线段谁的y更小（看end点或者看中点排序）
+   * 最下面的边可直接得知两侧填充性，其余的边根据自己下方即可确定填充性
+   */
+  static io2(polyA, polyB) {
+    let hashXY = {};
+    polyA.segments.concat(polyB.segments).forEach(seg => {
+      let coords = seg.coords, l = coords.length;
+      let start = coords[0], end = coords[l - 1];
+      putHashXY(hashXY, start.x, start.y, seg, true);
+      putHashXY(hashXY, end.x, end.y, seg, false);
+    });
+    console.log(hashXY);
+    let list = hashXY2List(hashXY);
   }
 }
 
@@ -453,14 +393,6 @@ function activeNewSeg(segments, list, asl, delList, x, ns) {
   });
 }
 
-function addHashX(hashX, segments) {
-  segments.forEach(seg => {
-    let bbox = seg.bbox, min = bbox[0], max = bbox[2];
-    putHashX(hashX, min, seg);
-    putHashX(hashX, max, seg);
-  });
-}
-
 function putHashX(hashX, x, seg) {
   let list = hashX[x] = hashX[x] || [];
   list.push(seg);
@@ -487,6 +419,25 @@ function putHashXY(hashXY, x, y, seg, isStart) {
   });
 }
 
+function hashXY2List(hashXY) {
+  let list = [];
+  Object.keys(hashXY).forEach(x => {
+    let hashY = hashXY[x];
+    Object.keys(hashY).forEach(y => {
+      let arr = hashY[y].sort(function(a, b) {
+        if(a.isStart !== b.isStart) {
+          return a.isStart ? 1 : -1;
+        }
+        let sa = a.seg, sb = b.seg;
+        let ma = getCenterPoint(sa), mb = getCenterPoint(sb);
+        return ma[1] > mb[1] ? 1 : -1;
+      });
+      console.log(x, y, arr.map(item => item.seg.toString()));
+    });
+  });
+  return list;
+}
+
 function getCenterPoint(seg) {
   let coords = seg.coords, len = coords.length;
   if(len === 2) {
@@ -496,54 +447,6 @@ function getCenterPoint(seg) {
   }
   else if(len === 3) {}
   else if(len === 4) {}
-}
-
-// 奇偶性判断点在非自相交的多边形内，first为第一条边，seg为判断的对象边
-function isInner(first, seg, isLeft) {
-  let curr = first, count = 0;
-  let [x, y] = getCenterPoint(seg);
-  // console.warn(curr.toString());
-  do {
-    if(curr !== seg) {
-      let coordsB = curr.coords, lenB = coordsB.length, bboxB = curr.bbox;
-      let {x: bx1, y: by1} = coordsB[0];
-      let {x: bx2, y: by2} = coordsB[1];
-      if(lenB === 2) {
-        // 水平左射线，取一个最小值ax和当前x/y组成水平线段即可，右反之
-        let ax, bboxA;
-        if(isLeft) {
-          ax = Math.min(bx1, bx2) - 1;
-          bboxA = [ax, y, x, y];
-        }
-        else {
-          ax = Math.max(bx1, bx2) + 1;
-          bboxA = [x, y, ax, y];
-        }
-        if(geom.isRectsOverlap(bboxA, bboxB)) {
-          // console.log(curr.toString(), seg.toString());
-          // console.log(bboxA, bboxB);
-          // 一定不平行了，因为bbox不重合
-          let d = (by2 - by1) * (ax - x);
-          let toSource = (
-            (bx2 - bx1) * (y - by1) - (by2 - by1) * (x - bx1)
-          ) / d;
-          let toClip = (
-            (ax - x) * (y - by1)
-          ) / d;
-          if(toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
-            count++;
-          }
-        }
-      }
-      else if(lenB === 3) {
-      }
-      else if(lenB === 4) {
-      }
-    }
-    curr = curr.next;
-  }
-  while(curr !== first);
-  return count % 2 === 1;
 }
 
 export default Polygon;

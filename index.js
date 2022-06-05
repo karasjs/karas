@@ -13986,93 +13986,6 @@
         });
       }
     }, {
-      key: "io",
-      value: function io(index) {
-        var hashXY = {};
-        this.segments.forEach(function (seg) {
-          var coords = seg.coords,
-              l = coords.length;
-          var start = coords[0],
-              end = coords[l - 1];
-          putHashXY(hashXY, start.x, start.y, seg, true);
-          putHashXY(hashXY, end.x, end.y, seg, false);
-        });
-        console.log(hashXY);
-      } // 自身有向边线段的左右内外性，连续不相交和连续重合的保持之前一致性，非连续和第一条需奇偶判断
-
-    }, {
-      key: "ioSelf",
-      value: function ioSelf(index) {
-        var first = this.first,
-            curr = first;
-        curr.leftIO[index] = isInner(first, curr, true);
-
-        if (curr.isOverlapSelf) ; else {
-          curr.rightIO[index] = !curr.leftIO[index];
-        }
-
-        curr = curr.next;
-
-        while (curr !== first) {
-          if (curr.isOverlapSelf) ; else if (curr.isIntersectSelf) {
-            var start = curr.coords[0]; // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
-
-            if (start.selfI % 2 === 1) {
-              curr.leftIO[index] = !curr.prev.leftIO[index];
-              curr.rightIO[index] = !curr.prev.rightIO[index];
-            } else {
-              curr.leftIO[index] = curr.prev.leftIO[index];
-              curr.rightIO[index] = curr.prev.rightIO[index];
-            }
-          } else {
-            curr.leftIO[index] = curr.prev.leftIO[index];
-            curr.rightIO[index] = curr.prev.rightIO[index];
-          }
-
-          curr = curr.next;
-        }
-      }
-    }, {
-      key: "ioTarget",
-      value: function ioTarget(target, index) {
-        var first = this.first,
-            curr = first;
-        curr.isLeftInTarget = isInner(target.first, curr, true);
-        curr.leftIO[index] = isInner(target.first, curr, true);
-
-        if (curr.isOverlapTarget) ; else {
-          curr.isRightInTarget = isInner(target.first, curr, false);
-          curr.rightIO[index] = isInner(target.first, curr, false);
-        }
-
-        curr = curr.next;
-
-        while (curr !== first) {
-          if (curr.isOverlapTarget) ; else if (curr.isIntersectTarget) {
-            var start = curr.coords[0]; // 2条边相交为1次奇数交点，3条边是2次偶数交点，奇变偶不变
-
-            if (start.targetI % 2 === 1) {
-              curr.isLeftInTarget = !curr.prev.isLeftInTarget;
-              curr.isRightInTarget = !curr.prev.isRightInTarget;
-              curr.leftIO[index] = !curr.prev.leftIO[index];
-              curr.rightIO[index] = !curr.prev.rightIO[index];
-            } else {
-              curr.isLeftInTarget = curr.prev.isLeftInTarget;
-              curr.isRightInTarget = curr.prev.isRightInTarget;
-              curr.leftIO[index] = curr.prev.leftIO[index];
-              curr.rightIO[index] = curr.prev.rightIO[index];
-            }
-          } else {
-            curr.isLeftInTarget = curr.prev.isLeftInTarget;
-            curr.isRightInTarget = curr.prev.isRightInTarget;
-            curr.leftIO[index] = curr.prev.leftIO[index];
-            curr.rightIO[index] = curr.prev.rightIO[index];
-          }
-
-          curr = curr.next;
-        }
-      }
-    }, {
       key: "toString",
       value: function toString() {
         return this.segments.map(function (item) {
@@ -14088,8 +14001,13 @@
         }
 
         var hashX = {};
-        addHashX(hashX, polyA.segments);
-        addHashX(hashX, polyB.segments);
+        polyA.segments.concat(polyB.segments).forEach(function (seg) {
+          var bbox = seg.bbox,
+              min = bbox[0],
+              max = bbox[2];
+          putHashX(hashX, min, seg);
+          putHashX(hashX, max, seg);
+        });
         var list = hashX2List(hashX),
             segments = []; // 和selfIntersect类似
 
@@ -14218,6 +14136,28 @@
           return item.belong === 1 && !item.isDeleted;
         });
       }
+      /**
+       * 以Bentley-Ottmann算法为原理，为每个顶点设计事件，按x升序、y升序遍历所有顶点的事件
+       * 每条线段边有2个顶点即2个事件，左下为start，右上为end
+       * 同顶点优先end，start相同则对比线段谁的y更小（看end点或者看中点排序）
+       * 最下面的边可直接得知两侧填充性，其余的边根据自己下方即可确定填充性
+       */
+
+    }, {
+      key: "io2",
+      value: function io2(polyA, polyB) {
+        var hashXY = {};
+        polyA.segments.concat(polyB.segments).forEach(function (seg) {
+          var coords = seg.coords,
+              l = coords.length;
+          var start = coords[0],
+              end = coords[l - 1];
+          putHashXY(hashXY, start.x, start.y, seg, true);
+          putHashXY(hashXY, end.x, end.y, seg, false);
+        });
+        console.log(hashXY);
+        var list = hashXY2List(hashXY);
+      }
     }]);
 
     return Polygon;
@@ -14327,16 +14267,6 @@
     });
   }
 
-  function addHashX(hashX, segments) {
-    segments.forEach(function (seg) {
-      var bbox = seg.bbox,
-          min = bbox[0],
-          max = bbox[2];
-      putHashX(hashX, min, seg);
-      putHashX(hashX, max, seg);
-    });
-  }
-
   function putHashX(hashX, x, seg) {
     var list = hashX[x] = hashX[x] || [];
     list.push(seg);
@@ -14365,6 +14295,30 @@
     });
   }
 
+  function hashXY2List(hashXY) {
+    var list = [];
+    Object.keys(hashXY).forEach(function (x) {
+      var hashY = hashXY[x];
+      Object.keys(hashY).forEach(function (y) {
+        var arr = hashY[y].sort(function (a, b) {
+          if (a.isStart !== b.isStart) {
+            return a.isStart ? 1 : -1;
+          }
+
+          var sa = a.seg,
+              sb = b.seg;
+          var ma = getCenterPoint(sa),
+              mb = getCenterPoint(sb);
+          return ma[1] > mb[1] ? 1 : -1;
+        });
+        console.log(x, y, arr.map(function (item) {
+          return item.seg.toString();
+        }));
+      });
+    });
+    return list;
+  }
+
   function getCenterPoint(seg) {
     var coords = seg.coords,
         len = coords.length;
@@ -14378,63 +14332,6 @@
           y2 = _coords.y;
       return [x1 + (x2 - x1) * 0.5, y1 + (y2 - y1) * 0.5];
     }
-  } // 奇偶性判断点在非自相交的多边形内，first为第一条边，seg为判断的对象边
-
-
-  function isInner(first, seg, isLeft) {
-    var curr = first,
-        count = 0;
-
-    var _getCenterPoint = getCenterPoint(seg),
-        _getCenterPoint2 = _slicedToArray(_getCenterPoint, 2),
-        x = _getCenterPoint2[0],
-        y = _getCenterPoint2[1]; // console.warn(curr.toString());
-
-
-    do {
-      if (curr !== seg) {
-        var coordsB = curr.coords,
-            lenB = coordsB.length,
-            bboxB = curr.bbox;
-        var _coordsB$5 = coordsB[0],
-            bx1 = _coordsB$5.x,
-            by1 = _coordsB$5.y;
-        var _coordsB$6 = coordsB[1],
-            bx2 = _coordsB$6.x,
-            by2 = _coordsB$6.y;
-
-        if (lenB === 2) {
-          // 水平左射线，取一个最小值ax和当前x/y组成水平线段即可，右反之
-          var ax = void 0,
-              bboxA = void 0;
-
-          if (isLeft) {
-            ax = Math.min(bx1, bx2) - 1;
-            bboxA = [ax, y, x, y];
-          } else {
-            ax = Math.max(bx1, bx2) + 1;
-            bboxA = [x, y, ax, y];
-          }
-
-          if (geom.isRectsOverlap(bboxA, bboxB)) {
-            // console.log(curr.toString(), seg.toString());
-            // console.log(bboxA, bboxB);
-            // 一定不平行了，因为bbox不重合
-            var d = (by2 - by1) * (ax - x);
-            var toSource = ((bx2 - bx1) * (y - by1) - (by2 - by1) * (x - bx1)) / d;
-            var toClip = (ax - x) * (y - by1) / d;
-
-            if (toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
-              count++;
-            }
-          }
-        }
-      }
-
-      curr = curr.next;
-    } while (curr !== first);
-
-    return count % 2 === 1;
   }
 
   // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
@@ -14589,10 +14486,7 @@
     console.log(source.toString());
     console.log(clip.toString());
     console.log('----');
-    source.io(0);
-    clip.io(1); // source.ioTarget(clip, 1);
-    // console.log(source.toString());
-    // clip.ioTarget(source, 0);
+    Polygon.io2(source, clip); // console.log(source.toString());
     // console.log(clip.toString());
 
     return [source, clip];

@@ -94,8 +94,9 @@ class Polygon extends Polyline {
           case 'intersection':
             let r1 = intersection(res, [cur]);
             if(r1) {
+              res = [];
               r1.forEach(item => {
-                res = item;
+                res.push(item[0]);
               });
             }
             else {
@@ -105,8 +106,9 @@ class Polygon extends Polyline {
           case 'union':
             let r2 = union(res, [cur]);
             if(r2) {
+              res = [];
               r2.forEach(item => {
-                res = item;
+                res.push(item[0]);
               });
             }
             else {
@@ -116,8 +118,9 @@ class Polygon extends Polyline {
           case 'diff':
             let r3 = diff(res, [cur]);
             if(r3) {
+              res = [];
               r3.forEach(item => {
-                res = item;
+                res.push(item[0]);
               });
             }
             else {
@@ -127,8 +130,9 @@ class Polygon extends Polyline {
           case 'xor':
             let r4 = xor(res, [cur]);
             if(r4) {
+              res = [];
               r4.forEach(item => {
-                res = item;
+                res.push(item[0]);
               });
             }
             else {

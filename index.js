@@ -41113,87 +41113,97 @@
         }
 
         if (Array.isArray(bo) && bo.length) {
-          list.forEach(function (poly) {
-            if (poly && poly.length > 1) {
-              convertCurve2Line(poly);
-            }
-          }); // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
+          var _ret = function () {
+            list.forEach(function (poly) {
+              if (poly && poly.length > 1) {
+                convertCurve2Line(poly);
+              }
+            }); // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
 
-          var res = [];
+            var res = [];
 
-          if (list[0] && list[0].length > 1) {
-            res.push(list[0]);
-          }
-
-          for (var _i = 1; _i < len; _i++) {
-            var op = (bo[_i - 1] || '').toString().toLowerCase();
-            var cur = list[_i];
-
-            if (!cur || cur.length < 2) {
-              continue;
+            if (list[0] && list[0].length > 1) {
+              res.push(list[0]);
             }
 
-            if (['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
-              res.push(cur);
-              continue;
+            for (var _i = 1; _i < len; _i++) {
+              var op = (bo[_i - 1] || '').toString().toLowerCase();
+              var cur = list[_i];
+
+              if (!cur || cur.length < 2) {
+                continue;
+              }
+
+              if (['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
+                res.push(cur);
+                continue;
+              }
+
+              switch (op) {
+                case 'intersection':
+                  var r1 = intersection$1(res, [cur]);
+
+                  if (r1) {
+                    res = [];
+                    r1.forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  } else {
+                    res = [];
+                  }
+
+                  break;
+
+                case 'union':
+                  var r2 = union(res, [cur]);
+
+                  if (r2) {
+                    res = [];
+                    r2.forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  } else {
+                    res = [];
+                  }
+
+                  break;
+
+                case 'diff':
+                  var r3 = diff(res, [cur]);
+
+                  if (r3) {
+                    res = [];
+                    r3.forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  } else {
+                    res = [];
+                  }
+
+                  break;
+
+                case 'xor':
+                  var r4 = xor(res, [cur]);
+
+                  if (r4) {
+                    res = [];
+                    r4.forEach(function (item) {
+                      res.push(item[0]);
+                    });
+                  } else {
+                    res = [];
+                  }
+
+                  break;
+              }
             }
 
-            switch (op) {
-              case 'intersection':
-                var r1 = intersection$1(res, [cur]);
+            return {
+              v: res
+            };
+          }();
 
-                if (r1) {
-                  r1.forEach(function (item) {
-                    res = item;
-                  });
-                } else {
-                  res = [];
-                }
-
-                break;
-
-              case 'union':
-                var r2 = union(res, [cur]);
-
-                if (r2) {
-                  r2.forEach(function (item) {
-                    res = item;
-                  });
-                } else {
-                  res = [];
-                }
-
-                break;
-
-              case 'diff':
-                var r3 = diff(res, [cur]);
-
-                if (r3) {
-                  r3.forEach(function (item) {
-                    res = item;
-                  });
-                } else {
-                  res = [];
-                }
-
-                break;
-
-              case 'xor':
-                var r4 = xor(res, [cur]);
-
-                if (r4) {
-                  r4.forEach(function (item) {
-                    res = item;
-                  });
-                } else {
-                  res = [];
-                }
-
-                break;
-            }
-          }
-
-          return res;
+          if (_typeof(_ret) === "object") return _ret.v;
         }
 
         return list;
@@ -42911,7 +42921,7 @@
     Cache: Cache
   };
 
-  var version = "0.74.1";
+  var version = "0.74.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

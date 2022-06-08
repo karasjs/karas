@@ -1,4 +1,5 @@
 import geom from '../geom';
+import vector from '../vector';
 import Point from './Point';
 import Segment from './Segment';
 
@@ -40,114 +41,17 @@ class Polygon {
             ], index);
           }
         }
+        this.segments.push(seg);
         // 终点是下条边的起点
         startPoint = endPoint;
-        // 存入hashX上方便后续排序，为扫描线算法做准备
-        let bbox = seg.bbox, min = bbox[0], max = bbox[2];
-        putHashX(hashX, min, seg);
-        putHashX(hashX, max, seg);
       }
     });
-    this.selfIntersect(hashX);
   }
 
   // 根据y坐标排序，生成有序线段列表，再扫描求交
-  selfIntersect(hashX) {
-    let list = hashX2List(hashX), segments = [];
-
-    // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
-    let asl = [], delList = [];
-    while(list.length) {
-      if(delList.length) {
-        delList.splice(0).forEach(seg => {
-          let i = asl.indexOf(seg);
-          asl.splice(i, 1);
-          if(!seg.isDeleted) {
-            segments.push(seg);
-          }
-        });
-      }
-
-      let { x, arr } = list[0];
-      while(arr.length) {
-        let seg = arr.shift();
-        // 被切割的老线段无效
-        if(seg.isDeleted) {
-          continue;
-        }
-        let bboxA = seg.bbox;
-        // 第2次访问边是离开活动，考虑删除
-        if(seg.isVisited) {
-          // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
-          if(bboxA[0] !== bboxA[2]) {
-            let i = asl.indexOf(seg);
-            asl.splice(i, 1);
-            if(!seg.isDeleted) {
-              segments.push(seg);
-            }
-          }
-          else {
-            delList.push(seg);
-          }
-          seg.isVisited = false; // 还原以备后面逻辑重复利用
-        }
-        // 第1次访问边一定是进入活动，求交
-        else {
-          // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
-          if(asl.length) {
-            let coordsA = seg.coords, lenA = coordsA.length;
-            let { x: ax1, y: ay1 } = coordsA[0];
-            let { x: ax2, y: ay2 } = coordsA[1];
-            for(let i = 0; i < asl.length; i++) {
-              let item = asl[i];
-              // 被切割的老线段无效，注意seg切割过程中可能变成删除
-              if(item.isDeleted || seg.isDeleted) {
-                continue;
-              }
-              let bboxB = item.bbox;
-              if(geom.isRectsOverlap(bboxA, bboxB)) {
-                let coordsB = item.coords, lenB = coordsB.length;
-                let { x: bx1, y: by1 } = coordsB[0];
-                let { x: bx2, y: by2 } = coordsB[1];
-                // a是直线
-                if(lenA === 2) {
-                  // b是直线
-                  if(lenB === 2) {
-                    let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
-                    // 平行检查是否重合，否则求交
-                    if(d === 0) {}
-                    else {
-                      let res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
-                      if(res) {
-                        let point = new Point(res);
-                        let ra = sliceSegment(seg, [point]);
-                        activeNewSeg(segments, list, asl, delList, x, ra);
-                        let rb = sliceSegment(item, [point]);
-                        activeNewSeg(segments, list, asl, delList, x, rb);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-          // 不相交切割才进入asl
-          if(!seg.isDeleted) {
-            asl.push(seg);
-            seg.isVisited = true;
-          }
-        }
-      }
-      list.shift();
-    }
-    // 最后面的线
-    delList.forEach(seg => {
-      if(!seg.isDeleted) {
-        segments.push(seg);
-      }
-    });
-    // 最后再过滤一遍，因为新生成的切割线可能会被再次切割变成删除的无效线段
-    this.segments = segments.filter(item => !item.isDeleted);
+  selfIntersect() {
+    let list = genHashXList(this.segments);
+    this.segments = findIntersection(list, false);
   }
 
   toString() {
@@ -160,115 +64,10 @@ class Polygon {
       return;
     }
 
-    let hashX = {};
-    polyA.segments.concat(polyB.segments).forEach(seg => {
-      let bbox = seg.bbox, min = bbox[0], max = bbox[2];
-      putHashX(hashX, min, seg);
-      putHashX(hashX, max, seg);
-    });
-    let list = hashX2List(hashX), segments = [];
-
-    // 和selfIntersect类似
-    let asl = [], delList = [];
-    while(list.length) {
-      // 先检查上次要删除的
-      if(delList.length) {
-        delList.splice(0).forEach(seg => {
-          let i = asl.indexOf(seg);
-          asl.splice(i, 1);
-          if(!seg.isDeleted) {
-            segments.push(seg);
-          }
-        });
-      }
-
-      let { x, arr } = list[0];
-      while(arr.length) {
-        let seg = arr.shift();
-        // 被切割的老线段无效
-        if(seg.isDeleted) {
-          continue;
-        }
-        let belong = seg.belong, bboxA = seg.bbox;
-        // 第2次访问边是离开活动，考虑删除
-        if(seg.isVisited) {
-          // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
-          if(bboxA[0] !== bboxA[2]) {
-            let i = asl.indexOf(seg);
-            asl.splice(i, 1);
-            if(!seg.isDeleted) {
-              segments.push(seg);
-            }
-          }
-          else {
-            delList.push(seg);
-          }
-          seg.isVisited = false; // 还原以备后面逻辑重复利用
-        }
-        // 第1次访问边一定是进入活动，求交
-        else {
-          // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
-          if(asl.length) {
-            let coordsA = seg.coords, lenA = coordsA.length;
-            let { x: ax1, y: ay1 } = coordsA[0];
-            let { x: ax2, y: ay2 } = coordsA[1];
-            for(let i = 0; i < asl.length; i++) {
-              let item = asl[i];
-              // 被切割的老线段无效，注意seg切割过程中可能变成删除
-              if(item.isDeleted || seg.isDeleted) {
-                continue;
-              }
-              // 互交所属belong不同
-              if(item.belong !== belong) {
-                let bboxB = item.bbox;
-                if(geom.isRectsOverlap(bboxA, bboxB)) {
-                  let coordsB = item.coords, lenB = coordsB.length;
-                  let { x: bx1, y: by1 } = coordsB[0];
-                  let { x: bx2, y: by2 } = coordsB[1];
-                  // a是直线
-                  if(lenA === 2) {
-                    // b是直线
-                    if(lenB === 2) {
-                      let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
-                      // 平行检查是否重合，否则求交
-                      if(d === 0) {
-                        if(ax1 === bx1 && ay1 === by1 && ax2 === bx2 && ay2 === by2
-                          || ax1 === bx2 && ay1 === by2 && ax2 === bx1 && ay2 === by1) {
-                        }
-                      }
-                      else {
-                        let res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
-                        if(res) {
-                          let point = new Point(res);
-                          let ra = sliceSegment(seg, [point]);
-                          activeNewSeg(segments, list, asl, delList, x, ra);
-                          let rb = sliceSegment(item, [point]);
-                          activeNewSeg(segments, list, asl, delList, x, rb);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-          // 不相交切割才进入asl
-          if(!seg.isDeleted) {
-            asl.push(seg);
-            seg.isVisited = true;
-          }
-        }
-      }
-      list.shift();
-    }
-    // 最后面的线
-    delList.forEach(seg => {
-      if(!seg.isDeleted) {
-        segments.push(seg);
-      }
-    });
-    polyA.segments = segments.filter(item => item.belong === 0 && !item.isDeleted);
-    polyB.segments = segments.filter(item => item.belong === 1 && !item.isDeleted);
+    let list = genHashXList(polyA.segments.concat(polyB.segments));
+    let segments = findIntersection(list, true);
+    polyA.segments = segments.filter(item => item.belong === 0);
+    polyB.segments = segments.filter(item => item.belong === 1);
   }
 
   /**
@@ -278,16 +77,134 @@ class Polygon {
    * 最下面的边可直接得知两侧填充性，其余的边根据自己下方即可确定填充性
    */
   static io2(polyA, polyB) {
-    let hashXY = {};
-    polyA.segments.concat(polyB.segments).forEach(seg => {
-      let coords = seg.coords, l = coords.length;
-      let start = coords[0], end = coords[l - 1];
-      putHashXY(hashXY, start.x, start.y, seg, true);
-      putHashXY(hashXY, end.x, end.y, seg, false);
+    let list = genHashXYList(polyA.segments.concat(polyB.segments));
+    let ael = [];
+    // 3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+    list.forEach(item => {
+      let { isStart, seg } = item;
+      if(seg.belong === 0) {
+        console.log(isStart, seg.toString());
+        if(isStart) {
+          // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
+          if(!ael.length) {
+            seg.above[0] = true;
+            ael.push(seg);
+          }
+          else {
+            let ca = seg.coords;
+            for(let i = ael.length - 1; i >= 0; i--) {
+              let curr = ael[i];
+            }
+          }
+        }
+        else {
+          let i = ael.indexOf(seg);
+          ael.splice(i, 1);
+        }
+      }
     });
-    console.log(hashXY);
-    let list = hashXY2List(hashXY);
   }
+}
+
+function findIntersection(list, compareBelong) {
+  // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
+  let ael = [], delList = [], segments = [];
+  while(list.length) {
+    if(delList.length) {
+      delList.splice(0).forEach(seg => {
+        let i = ael.indexOf(seg);
+        ael.splice(i, 1);
+        if(!seg.isDeleted) {
+          segments.push(seg);
+        }
+      });
+    }
+
+    let { x, arr } = list[0];
+    while(arr.length) {
+      let seg = arr.shift();
+      // 被切割的老线段无效
+      if(seg.isDeleted) {
+        continue;
+      }
+      let belong = seg.belong, bboxA = seg.bbox;
+      // 第2次访问边是离开活动，考虑删除
+      if(seg.isVisited) {
+        // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
+        if(bboxA[0] !== bboxA[2]) {
+          let i = ael.indexOf(seg);
+          ael.splice(i, 1);
+          if(!seg.isDeleted) {
+            segments.push(seg);
+          }
+        }
+        else {
+          delList.push(seg);
+        }
+        seg.isVisited = false; // 还原以备后面逻辑重复利用
+      }
+      // 第1次访问边一定是进入活动，求交
+      else {
+        // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
+        if(ael.length) {
+          let coordsA = seg.coords, lenA = coordsA.length;
+          let { x: ax1, y: ay1 } = coordsA[0];
+          let { x: ax2, y: ay2 } = coordsA[1];
+          for(let i = 0; i < ael.length; i++) {
+            let item = ael[i];
+            // 被切割的老线段无效，注意seg切割过程中可能变成删除
+            if(item.isDeleted || seg.isDeleted) {
+              continue;
+            }
+            // 互交所属belong不同才进行检测，自交则不检查belong因为一定一样
+            if(compareBelong && item.belong === belong) {
+              continue;
+            }
+            // bbox相交才考虑真正计算，加速
+            let bboxB = item.bbox;
+            if(geom.isRectsOverlap(bboxA, bboxB)) {
+              let coordsB = item.coords, lenB = coordsB.length;
+              let { x: bx1, y: by1 } = coordsB[0];
+              let { x: bx2, y: by2 } = coordsB[1];
+              // a是直线
+              if(lenA === 2) {
+                // b是直线
+                if(lenB === 2) {
+                  let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+                  // 平行检查是否重合，否则求交
+                  if(d === 0) {}
+                  else {
+                    let res = getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                    if(res) {
+                      let point = new Point(res);
+                      let ra = sliceSegment(seg, [point]);
+                      activeNewSeg(segments, list, ael, delList, x, ra);
+                      let rb = sliceSegment(item, [point]);
+                      activeNewSeg(segments, list, ael, delList, x, rb);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        // 不相交切割才进入asl
+        if(!seg.isDeleted) {
+          ael.push(seg);
+          seg.isVisited = true;
+        }
+      }
+    }
+    list.shift();
+  }
+  // 最后面的线
+  delList.forEach(seg => {
+    if(!seg.isDeleted) {
+      segments.push(seg);
+    }
+  });
+  // 最后再过滤一遍，因为新生成的切割线可能会被再次切割变成删除的无效线段
+  return segments.filter(item => !item.isDeleted);
 }
 
 function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
@@ -341,7 +258,7 @@ function sliceSegment(seg, ps) {
 }
 
 // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
-function activeNewSeg(segments, list, asl, delList, x, ns) {
+function activeNewSeg(segments, list, ael, delList, x, ns) {
   ns.forEach(seg => {
     let bbox = seg.bbox, x1 = bbox[0], x2 = bbox[2];
     // 活跃x之前无相交判断意义
@@ -393,13 +310,14 @@ function activeNewSeg(segments, list, asl, delList, x, ns) {
   });
 }
 
-function putHashX(hashX, x, seg) {
-  let list = hashX[x] = hashX[x] || [];
-  list.push(seg);
-}
-
-// 按x升序将所有线段组成一个垂直扫描线列表
-function hashX2List(hashX) {
+// 按x升序将所有线段组成一个垂直扫描线列表，求交用，y方向不用管
+function genHashXList(segments) {
+  let hashX = {};
+  segments.forEach(seg => {
+    let bbox = seg.bbox, min = bbox[0], max = bbox[2];
+    putHashX(hashX, min, seg);
+    putHashX(hashX, max, seg);
+  });
   let list = [];
   Object.keys(hashX).forEach(x => list.push({
     x: parseFloat(x),
@@ -410,6 +328,62 @@ function hashX2List(hashX) {
   });
 }
 
+function putHashX(hashX, x, seg) {
+  let list = hashX[x] = hashX[x] || [];
+  list.push(seg);
+}
+
+// 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
+function genHashXYList(segments) {
+  let hashXY = {};
+  segments.forEach(seg => {
+    let coords = seg.coords, l = coords.length;
+    let start = coords[0], end = coords[l - 1];
+    putHashXY(hashXY, start.x, start.y, seg, true);
+    putHashXY(hashXY, end.x, end.y, seg, false);
+  });
+  let listX = [];
+  Object.keys(hashXY).forEach(x => {
+    let hashY = hashXY[x];
+    let listY = [];
+    Object.keys(hashY).forEach(y => {
+      let arr = hashY[y].sort(function(a, b) {
+        // end优先于start先触发
+        if(a.isStart !== b.isStart) {
+          return a.isStart ? 1 : -1;
+        }
+        let sa = a.seg, sb = b.seg;
+        let ca = sa.coords, cb = sb.coords;
+        // start点相同看谁在上方
+        if(a.isStart) {
+          let pa1 = ca[0], pb1 = cb[0];
+          let pa2 = ca[ca.length - 1], pb2 = cb[cb.length - 1];
+          return vector.crossProduct(pa2.x - pa1.x, pa2.y - pa1.y, pb2.x - pb1.x, pb2.y - pb1.y) < 0 ? 1 : -1;
+        }
+        // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
+      });
+      // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
+      listY.push({
+        y: parseFloat(y),
+        arr,
+      })
+    });
+    listX.push({
+      x: parseFloat(x),
+      arr: listY.sort(function(a, b) {
+        return a.y - b.y;
+      }),
+    });
+  });
+  let list = [];
+  listX.forEach(item => {
+    item.arr.forEach(item => {
+      list = list.concat(item.arr);
+    });
+  });
+  return list;
+}
+
 function putHashXY(hashXY, x, y, seg, isStart) {
   let hash = hashXY[x] = hashXY[x] || {};
   let list = hash[y] = hash[y] || [];
@@ -417,36 +391,6 @@ function putHashXY(hashXY, x, y, seg, isStart) {
     isStart,
     seg,
   });
-}
-
-function hashXY2List(hashXY) {
-  let list = [];
-  Object.keys(hashXY).forEach(x => {
-    let hashY = hashXY[x];
-    Object.keys(hashY).forEach(y => {
-      let arr = hashY[y].sort(function(a, b) {
-        if(a.isStart !== b.isStart) {
-          return a.isStart ? 1 : -1;
-        }
-        let sa = a.seg, sb = b.seg;
-        let ma = getCenterPoint(sa), mb = getCenterPoint(sb);
-        return ma[1] > mb[1] ? 1 : -1;
-      });
-      console.log(x, y, arr.map(item => item.seg.toString()));
-    });
-  });
-  return list;
-}
-
-function getCenterPoint(seg) {
-  let coords = seg.coords, len = coords.length;
-  if(len === 2) {
-    let { x: x1, y: y1 } = coords[0];
-    let { x: x2, y: y2 } = coords[len - 1];
-    return [x1 + (x2 - x1) * 0.5, y1 + (y2 - y1) * 0.5];
-  }
-  else if(len === 3) {}
-  else if(len === 4) {}
 }
 
 export default Polygon;

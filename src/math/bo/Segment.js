@@ -5,6 +5,8 @@ class Segment {
     this.calBbox();
     this.prev = null;
     this.next = null;
+    this.above = [false, false];
+    this.below = [false, false];
     this.leftIO = [false, false]; // 左侧内外性，长度固定2，下标为belong属于的source/clip，值0为外部1为内部
     this.rightIO = [false, false]; // 右侧内外性，同上
     this.isIntersectSelf = false; // 自相交后切割的线段标识，开始点为交点
@@ -41,8 +43,8 @@ class Segment {
   toString() {
     return this.coords.join(' ')
       + ' ' + this.belong
-      // + ' ' + this.leftIO.map(i => i ? 1 : 0).join('')
-      // + '' + this.rightIO.map(i => i ? 1 : 0).join('');
+      + ' ' + this.above.map(i => i ? 1 : 0).join('')
+      + '' + this.below.map(i => i ? 1 : 0).join('');
   }
 }
 

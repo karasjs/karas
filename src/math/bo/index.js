@@ -11,8 +11,9 @@ function prefix(polygon) {
 }
 
 function trivial(polygonA, polygonB) {
-  // 生成多边形对象，相交线段拆分开来，重合线段标记
+  // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
   let source = new Polygon(prefix(polygonA), 0);
+  source.selfIntersect();
   console.log(source.toString());
   let clip = new Polygon(prefix(polygonB), 1);
   console.log(clip.toString());
@@ -23,8 +24,8 @@ function trivial(polygonA, polygonB) {
   console.log(clip.toString());
   console.log('----');
   Polygon.io2(source, clip);
-  // console.log(source.toString());
-  // console.log(clip.toString());
+  console.log(source.toString());
+  console.log(clip.toString());
   return [source, clip];
 }
 

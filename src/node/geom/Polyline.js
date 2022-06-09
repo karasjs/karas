@@ -466,6 +466,10 @@ class Polyline extends Geom {
         let controlList = controls[i] || [];
         let [xa, ya] = pointList[0];
         for(let i = 1, len = pointList.length; i < len; i++) {
+          let item = pointList[i];
+          if(!item || item.length < 2) {
+            continue;
+          }
           let [xb, yb] = pointList[i];
           let c = controlList[i - 1];
           if(c && c.length === 4) {

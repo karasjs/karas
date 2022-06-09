@@ -22,8 +22,8 @@ function trivial(polygonA, polygonB) {
   Polygon.intersect2(source, clip);
   console.log(source.toString());
   console.log(clip.toString());
-  console.log('----');
-  Polygon.io2(source, clip);
+  console.log('====');
+  Polygon.annotate2(source, clip);
   console.log(source.toString());
   console.log(clip.toString());
   return [source, clip];

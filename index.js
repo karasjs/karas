@@ -13829,17 +13829,13 @@
           } // 曲线需确保x单调性，如果非单调，则切割为单调的多条
           else if (l === 4) {
             var cPoint = new Point(curr[0], curr[1]);
-            var t = getBezierXMonotonicity([startPoint, cPoint, endPoint]);
+            var t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
 
             if (t) {
-              // console.log(t);
-              var p = bezier.pointAtByT([[startPoint.x, startPoint.y], [curr[0], curr[1]], [endPoint.x, endPoint.y]], t[0]); // console.log(p);
-              // console.log(startPoint.toString(), endPoint.toString())
-
               var points = [[startPoint.x, startPoint.y], [curr[0], curr[1]], [endPoint.x, endPoint.y]];
               var curve1 = bezier.sliceBezier(points, t[0]);
-              var curve2 = bezier.sliceBezier2Both(points, t[0], 1);
-              console.log(curve1, curve2);
+              var curve2 = bezier.sliceBezier2Both(points, t[0], 1); // console.log(curve1, curve2);
+
               var p1 = new Point(curve1[1]),
                   p2 = new Point(curve1[2]),
                   p3 = new Point(curve2[1]);
@@ -13906,8 +13902,8 @@
        */
 
     }, {
-      key: "io2",
-      value: function io2(polyA, polyB) {
+      key: "annotate2",
+      value: function annotate2(polyA, polyB) {
         var list = genHashXYList(polyA.segments.concat(polyB.segments));
         var aelA = [],
             aelB = []; // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
@@ -13920,6 +13916,7 @@
           var ael = belong === 0 ? aelA : aelB;
 
           if (isStart) {
+            // console.error(seg.toString())
             // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
             if (!ael.length) {
               seg.above[belong] = true;
@@ -13955,7 +13952,8 @@
                   }
                 }
               }
-            }
+            } // console.warn(seg.toString())
+
           } else {
             var _i = ael.indexOf(seg);
 
@@ -14309,16 +14307,11 @@
           // end优先于start先触发
           if (a.isStart !== b.isStart) {
             return a.isStart ? 1 : -1;
-          }
+          } // start点相同看谁在上谁在下，下方在前，比y极大值，因为start相同又不相交，所以上方的y极值更大
 
-          var sa = a.seg,
-              sb = b.seg;
-          var ca = sa.coords,
-              cb = sb.coords; // start点相同看谁在上谁在下，下方在前
 
           if (a.isStart) {
-            var above = pointAboveOrOnLine(ca[ca.length - 1], ca[0], cb[cb.length - 1]);
-            return above ? 1 : -1;
+            return segAboveCompare(a.seg, b.seg) ? 1 : -1;
           } // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
 
         }); // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
@@ -14334,6 +14327,9 @@
           return a.y - b.y;
         })
       });
+    });
+    listX.sort(function (a, b) {
+      return a.x - b.x;
     });
     var list = [];
     listX.forEach(function (item) {
@@ -14362,7 +14358,7 @@
     var x2 = right.x,
         y2 = right.y;
     return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
-  } // a是否在b的上边，直线简单，曲线取x相同部分看y大小
+  } // a是否在b的上边，取x相同部分看y大小
 
 
   function segAboveCompare(segA, segB) {
@@ -14371,7 +14367,19 @@
     var la = ca.length,
         lb = cb.length;
     var a1 = ca[0],
-        b1 = cb[0];
+        b1 = cb[0]; // 起点相同用极值判断，因为一定不会相交
+    // if(a1 === b1) {
+    //   let maxA = getMaximumMinimumY(ca, true), maxB = getMaximumMinimumY(cb, true);
+    //   if(maxA === maxB) {
+    //     let minA = getMaximumMinimumY(ca, false), minB = getMaximumMinimumY(cb, false);
+    //     if(minA === minB) {
+    //       // 极值都相等只可能是end点
+    //       console.log(maxA, maxB, segA.toString(), segB.toString());
+    //     }
+    //     return minA < minB;
+    //   }
+    //   return maxA > maxB;
+    // }
 
     if (la === 2) {
       var a2 = ca[1];
@@ -14384,13 +14392,24 @@
         } else {
           return pointAboveOrOnLine(a1, b1, b2);
         }
+      } else {
+        if (a1.x >= b1.x) {
+          var tx = equation.getRoots([b1.x - a1.x, 2 * (cb[1].x - b1.x), cb[2].x + b1.x - 2 * cb[1].x]).filter(function (i) {
+            return i >= 0 && i <= 1;
+          });
+          var pts = cb.map(function (item) {
+            return [item.x, item.y];
+          });
+          var y = bezier.pointAtByT(pts, tx[0])[1];
+          return a1.y >= y;
+        }
       }
     }
   }
 
-  function getBezierXMonotonicity(coords) {
+  function getBezierMonotonicity(coords, isX) {
     if (coords.length === 3) {
-      var t = (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x);
+      var t = isX ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x) : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
 
       if (t > 0 && t < 1) {
         return [t];
@@ -14520,6 +14539,10 @@
 
         if (len === 2) {
           return [coords[1].x, coords[1].y];
+        } else if (len === 3) {
+          return [coords[1].x, coords[1].y, coords[2].x, coords[2].y];
+        } else if (len === 4) {
+          return [coords[1].x, coords[1].y, coords[2].x, coords[2].y, coords[3].x, coords[3].y];
         }
       }); // 首个顶点重合
 
@@ -14550,8 +14573,8 @@
     Polygon.intersect2(source, clip);
     console.log(source.toString());
     console.log(clip.toString());
-    console.log('----');
-    Polygon.io2(source, clip);
+    console.log('====');
+    Polygon.annotate2(source, clip);
     console.log(source.toString());
     console.log(clip.toString());
     return [source, clip];
@@ -23521,7 +23544,7 @@
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               var temp = [];
-              [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$4, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
+              [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, SCALE_X$3, SCALE_Y$3, SCALE_Z$2, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$4, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2].forEach(function (k) {
                 // 删除之前遗留的
                 delete computedStyle[k];
                 var v = currentStyle[k];
@@ -41038,6 +41061,12 @@
                 ya = _pointList$[1];
 
             for (var _i3 = 1, len = pointList.length; _i3 < len; _i3++) {
+              var item = pointList[_i3];
+
+              if (!item || item.length < 2) {
+                continue;
+              }
+
               var _pointList$_i = _slicedToArray(pointList[_i3], 2),
                   xb = _pointList$_i[0],
                   yb = _pointList$_i[1];

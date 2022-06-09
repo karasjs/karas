@@ -105,8 +105,12 @@ export default function(list) {
       if(len === 2) {
         return [coords[1].x, coords[1].y];
       }
-      else if(len === 3) {}
-      else if(len === 4) {}
+      else if(len === 3) {
+        return [coords[1].x, coords[1].y, coords[2].x, coords[2].y];
+      }
+      else if(len === 4) {
+        return [coords[1].x, coords[1].y, coords[2].x, coords[2].y, coords[3].x, coords[3].y];
+      }
     });
     // 首个顶点重合
     let first = item[0], coords = first.coords;

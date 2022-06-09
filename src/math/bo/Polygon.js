@@ -1,6 +1,7 @@
 import geom from '../geom';
 import vector from '../vector';
 import bezier from '../bezier';
+import equation from '../equation';
 import Point from './Point';
 import Segment from './Segment';
 
@@ -40,16 +41,8 @@ class Polygon {
         // 曲线需确保x单调性，如果非单调，则切割为单调的多条
         else if(l === 4) {
           let cPoint = new Point(curr[0], curr[1]);
-          let t = getBezierXMonotonicity([startPoint, cPoint, endPoint]);
+          let t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
           if(t) {
-            // console.log(t);
-            let p = bezier.pointAtByT([
-              [startPoint.x, startPoint.y],
-              [curr[0], curr[1]],
-              [endPoint.x, endPoint.y],
-            ], t[0]);
-            // console.log(p);
-            // console.log(startPoint.toString(), endPoint.toString())
             let points = [
               [startPoint.x, startPoint.y],
               [curr[0], curr[1]],
@@ -57,7 +50,7 @@ class Polygon {
             ];
             let curve1 = bezier.sliceBezier(points, t[0]);
             let curve2 = bezier.sliceBezier2Both(points, t[0], 1);
-            console.log(curve1, curve2);
+            // console.log(curve1, curve2);
             let p1 = new Point(curve1[1]), p2 = new Point(curve1[2]), p3 = new Point(curve2[1]);
             let coords = Point.compare(startPoint, p2) ? [
               p2,
@@ -132,7 +125,7 @@ class Polygon {
    * 最下面的边（含第一条）可直接得知下方填充性（下面没有了一定是多边形外部），再推测出上方
    * 其余的边根据自己下方相邻即可确定填充性
    */
-  static io2(polyA, polyB) {
+  static annotate2(polyA, polyB) {
     let list = genHashXYList(polyA.segments.concat(polyB.segments));
     let aelA = [], aelB = [];
     // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
@@ -142,6 +135,7 @@ class Polygon {
       let belong = seg.belong;
       let ael = belong === 0 ? aelA : aelB;
       if(isStart) {
+        // console.error(seg.toString())
         // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
         if(!ael.length) {
           seg.above[belong] = true;
@@ -180,6 +174,7 @@ class Polygon {
             }
           }
         }
+        // console.warn(seg.toString())
       }
       else {
         let i = ael.indexOf(seg);
@@ -492,12 +487,9 @@ function genHashXYList(segments) {
         if(a.isStart !== b.isStart) {
           return a.isStart ? 1 : -1;
         }
-        let sa = a.seg, sb = b.seg;
-        let ca = sa.coords, cb = sb.coords;
-        // start点相同看谁在上谁在下，下方在前
+        // start点相同看谁在上谁在下，下方在前，比y极大值，因为start相同又不相交，所以上方的y极值更大
         if(a.isStart) {
-          let above = pointAboveOrOnLine(ca[ca.length - 1], ca[0], cb[cb.length - 1]);
-          return above ? 1 : -1;
+          return segAboveCompare(a.seg, b.seg) ? 1 : -1;
         }
         // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
       });
@@ -513,6 +505,9 @@ function genHashXYList(segments) {
         return a.y - b.y;
       }),
     });
+  });
+  listX.sort(function(a, b) {
+    return a.x - b.x;
   });
   let list = [];
   listX.forEach(item => {
@@ -540,11 +535,24 @@ function pointAboveOrOnLine(pt, left, right) {
   return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
 }
 
-// a是否在b的上边，直线简单，曲线取x相同部分看y大小
+// a是否在b的上边，取x相同部分看y大小
 function segAboveCompare(segA, segB) {
   let ca = segA.coords, cb = segB.coords;
   let la = ca.length, lb = cb.length;
   let a1 = ca[0], b1 = cb[0];
+  // 起点相同用极值判断，因为一定不会相交
+  // if(a1 === b1) {
+  //   let maxA = getMaximumMinimumY(ca, true), maxB = getMaximumMinimumY(cb, true);
+  //   if(maxA === maxB) {
+  //     let minA = getMaximumMinimumY(ca, false), minB = getMaximumMinimumY(cb, false);
+  //     if(minA === minB) {
+  //       // 极值都相等只可能是end点
+  //       console.log(maxA, maxB, segA.toString(), segB.toString());
+  //     }
+  //     return minA < minB;
+  //   }
+  //   return maxA > maxB;
+  // }
   if(la === 2) {
     let a2 = ca[1];
     if(lb === 2) {
@@ -556,22 +564,58 @@ function segAboveCompare(segA, segB) {
         return pointAboveOrOnLine(a1, b1, b2);
       }
     }
-    else {}
+    else {
+      if(a1.x >= b1.x) {
+        let tx = equation.getRoots([
+          b1.x - a1.x,
+          2 * (cb[1].x - b1.x),
+          cb[2].x + b1.x - 2 * cb[1].x,
+        ]).filter(i => i >= 0 && i <= 1);
+        let pts = cb.map(item => [item.x, item.y]);
+        let y = bezier.pointAtByT(pts, tx[0])[1];
+        return a1.y >= y;
+      }
+    }
   }
   else {
     if(lb === 2) {}
-    else {}
+    else {
+    }
   }
 }
 
-function getBezierXMonotonicity(coords) {
+function getBezierMonotonicity(coords, isX) {
   if(coords.length === 3) {
-    let t = (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x);
+    let t = isX
+      ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x)
+      : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
     if(t > 0 && t < 1) {
       return [t];
     }
   }
   else if(coords.length === 4) {}
+}
+
+function getMaximumMinimumY(coords, isMax) {
+  if(coords.length === 2) {
+    return isMax ? Math.max(coords[0].y, coords[1].y) : Math.min(coords[0].y, coords[1].y);
+  }
+  else {
+    let len = coords.length;
+    let t = getBezierMonotonicity(coords, false);
+    if(t) {
+      let m = isMax ? Math.max(coords[0].y, coords[len - 1].y) : Math.min(coords[0].y, coords[len - 1].y);
+      let pts = coords.map(item => [item.x, item.y]);
+      t.forEach(t => {
+        let p = bezier.pointAtByT(pts, t);
+        m = isMax ? Math.max(m, p[1]) : Math.min(m, p[1]);
+      });
+      return m;
+    }
+    else {
+      return isMax ? Math.max(coords[0].y, coords[len - 1].y) : Math.min(coords[0].y, coords[len - 1].y);
+    }
+  }
 }
 
 export default Polygon;

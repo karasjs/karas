@@ -96,7 +96,7 @@ class Polygon extends Polyline {
             if(r1) {
               res = [];
               r1.forEach(item => {
-                res.push(item[0]);
+                res = res.concat(item);
               });
             }
             else {
@@ -108,7 +108,7 @@ class Polygon extends Polyline {
             if(r2) {
               res = [];
               r2.forEach(item => {
-                res.push(item[0]);
+                res = res.concat(item);
               });
             }
             else {
@@ -120,7 +120,7 @@ class Polygon extends Polyline {
             if(r3) {
               res = [];
               r3.forEach(item => {
-                res.push(item[0]);
+                res = res.concat(item);
               });
             }
             else {
@@ -132,7 +132,7 @@ class Polygon extends Polyline {
             if(r4) {
               res = [];
               r4.forEach(item => {
-                res.push(item[0]);
+                res = res.concat(item);
               });
             }
             else {

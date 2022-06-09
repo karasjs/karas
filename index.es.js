@@ -15433,7 +15433,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW, font
         break;
       }
 
-      j = hypotheticalNum - 1;
+      j = hypotheticalNum + start - 1;
       var reduce = Math.round((_mw - w) / perW);
 
       if (reduce <= 0) {
@@ -42030,7 +42030,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.74.3";
+var version = "0.74.4";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

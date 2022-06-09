@@ -143,7 +143,7 @@ function measureLineWidth(ctx, renderMode, start, length, content, w, perW,
         hypotheticalNum = i - start;
         break;
       }
-      j = hypotheticalNum - 1;
+      j = hypotheticalNum + start - 1;
       let reduce = Math.round((mw - w) / perW);
       if(reduce <= 0) {
         reduce = 1;

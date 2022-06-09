@@ -15439,7 +15439,7 @@
           break;
         }
 
-        j = hypotheticalNum - 1;
+        j = hypotheticalNum + start - 1;
         var reduce = Math.round((_mw - w) / perW);
 
         if (reduce <= 0) {

@@ -41200,7 +41200,7 @@
                   if (r1) {
                     res = [];
                     r1.forEach(function (item) {
-                      res.push(item[0]);
+                      res = res.concat(item);
                     });
                   } else {
                     res = [];
@@ -41214,7 +41214,7 @@
                   if (r2) {
                     res = [];
                     r2.forEach(function (item) {
-                      res.push(item[0]);
+                      res = res.concat(item);
                     });
                   } else {
                     res = [];
@@ -41228,7 +41228,7 @@
                   if (r3) {
                     res = [];
                     r3.forEach(function (item) {
-                      res.push(item[0]);
+                      res = res.concat(item);
                     });
                   } else {
                     res = [];
@@ -41242,7 +41242,7 @@
                   if (r4) {
                     res = [];
                     r4.forEach(function (item) {
-                      res.push(item[0]);
+                      res = res.concat(item);
                     });
                   } else {
                     res = [];
@@ -42975,7 +42975,7 @@
     Cache: Cache
   };
 
-  var version = "0.74.2";
+  var version = "0.74.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

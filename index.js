@@ -13704,24 +13704,12 @@
 
       this.x = x;
       this.y = y;
-      this.selfI = 0; // 作为自交点
-
-      this.selfV = 0; // 作为自交顶点，即相交的点是顶点
-
-      this.targetI = 0; // 它交点
-
-      this.targetV = 0; // 它交顶点
     }
 
     _createClass(Point, [{
       key: "toString",
       value: function toString() {
         return this.x + ',' + this.y;
-      }
-    }, {
-      key: "toString2",
-      value: function toString2() {
-        return this.x + ',' + this.y + ' ' + this.selfI + '' + this.selfV + '' + this.targetI + '' + this.targetV;
       } // 排序，要求a在b左，x相等a在b下，返回false，不符合则true
 
     }], [{
@@ -13746,33 +13734,18 @@
       this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
 
       this.calBbox();
-      this.prev = null;
-      this.next = null;
       this.above = [false, false];
       this.below = [false, false];
-      this.leftIO = [false, false]; // 左侧内外性，长度固定2，下标为belong属于的source/clip，值0为外部1为内部
-
-      this.rightIO = [false, false]; // 右侧内外性，同上
-
-      this.isIntersectSelf = false; // 自相交后切割的线段标识，开始点为交点
-
-      this.isIntersectTarget = false; // 和其它的相交标识
-
-      this.target = []; // 相交线列表，一般只有1个
-
-      this.isOverlapSelf = false; // 自重合
-
-      this.isOverlapTarget = false; // 和其它的重合
-
       this.isVisited = false; // 扫描求交时用到
     }
 
     _createClass(Segment, [{
       key: "calBbox",
       value: function calBbox() {
-        var coords = this.coords;
+        var coords = this.coords,
+            l = coords.length;
 
-        if (coords.length === 2) {
+        if (l === 2) {
           var a = coords[0],
               b = coords[1];
           var x1 = Math.min(a.x, b.x);
@@ -13780,24 +13753,29 @@
           var x2 = Math.max(a.x, b.x);
           var y2 = Math.max(a.y, b.y);
           this.bbox = [x1, y1, x2, y2];
+        } else {
+          var arr = coords.map(function (item) {
+            return [item.x, item.y];
+          });
+          this.bbox = bezier.bboxBezier(arr);
         }
-      } // 线段边逆序，除了坐标，左右内外性也会颠倒
+      } // 线段边逆序，除了坐标，上下内外性也会颠倒
 
     }, {
       key: "reverse",
       value: function reverse() {
         this.coords.reverse();
-        var leftIO = this.leftIO,
-            rightIO = this.rightIO;
+        var above = this.above,
+            below = this.below;
 
-        var _leftIO = _slicedToArray(leftIO, 2),
-            t0 = _leftIO[0],
-            t1 = _leftIO[1];
+        var _above = _slicedToArray(above, 2),
+            t0 = _above[0],
+            t1 = _above[1];
 
-        leftIO[0] = rightIO[0];
-        leftIO[1] = rightIO[1];
-        rightIO[0] = t0;
-        rightIO[1] = t1;
+        above[0] = below[0];
+        above[1] = below[1];
+        below[0] = t0;
+        below[1] = t1;
       }
     }, {
       key: "toString",
@@ -13815,17 +13793,16 @@
 
   var Polygon = /*#__PURE__*/function () {
     function Polygon(regions, index) {
-      var _this = this;
-
       _classCallCheck(this, Polygon);
 
       this.index = index; // 属于source多边形还是clip多边形，0和1区别
 
-      this.segments = []; // 多边形有>=1个区域，一般是1个
+      var segments = []; // 多边形有>=1个区域，一般是1个
 
       if (!Array.isArray(regions)) {
         return;
       }
+
       regions.forEach(function (vertices) {
         // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
         if (!Array.isArray(vertices) || vertices.length < 2) {
@@ -13847,19 +13824,44 @@
           var seg = void 0;
 
           if (l === 2) {
-            if (Point.compare(startPoint, endPoint)) {
-              seg = new Segment([endPoint, startPoint], index);
+            var coords = Point.compare(startPoint, endPoint) ? [endPoint, startPoint] : [startPoint, endPoint];
+            seg = new Segment(coords, index);
+          } // 曲线需确保x单调性，如果非单调，则切割为单调的多条
+          else if (l === 4) {
+            var cPoint = new Point(curr[0], curr[1]);
+            var t = getBezierXMonotonicity([startPoint, cPoint, endPoint]);
+
+            if (t) {
+              // console.log(t);
+              var p = bezier.pointAtByT([[startPoint.x, startPoint.y], [curr[0], curr[1]], [endPoint.x, endPoint.y]], t[0]); // console.log(p);
+              // console.log(startPoint.toString(), endPoint.toString())
+
+              var points = [[startPoint.x, startPoint.y], [curr[0], curr[1]], [endPoint.x, endPoint.y]];
+              var curve1 = bezier.sliceBezier(points, t[0]);
+              var curve2 = bezier.sliceBezier2Both(points, t[0], 1);
+              console.log(curve1, curve2);
+              var p1 = new Point(curve1[1]),
+                  p2 = new Point(curve1[2]),
+                  p3 = new Point(curve2[1]);
+
+              var _coords = Point.compare(startPoint, p2) ? [p2, p1, startPoint] : [startPoint, p1, p2];
+
+              segments.push(new Segment(_coords, index));
+              _coords = Point.compare(p2, endPoint) ? [endPoint, p3, p2] : [p2, p3, endPoint];
+              seg = new Segment(_coords, index);
             } else {
-              seg = new Segment([startPoint, endPoint], index);
+              var _coords2 = Point.compare(startPoint, endPoint) ? [endPoint, cPoint, startPoint] : [startPoint, cPoint, endPoint];
+
+              seg = new Segment(_coords2, index);
             }
           }
 
-          _this.segments.push(seg); // 终点是下条边的起点
-
+          segments.push(seg); // 终点是下条边的起点
 
           startPoint = endPoint;
         }
       });
+      this.segments = segments;
     } // 根据y坐标排序，生成有序线段列表，再扫描求交
 
 
@@ -13896,36 +13898,129 @@
       /**
        * 以Bentley-Ottmann算法为原理，为每个顶点设计事件，按x升序、y升序遍历所有顶点的事件
        * 每条线段边有2个顶点即2个事件，左下为start，右上为end
-       * 同顶点优先end，start相同则对比线段谁的y更小（看end点或者看中点排序）
-       * 最下面的边可直接得知两侧填充性，其余的边根据自己下方即可确定填充性
+       * 同顶点优先end，start相同则对比线段谁后面的y更小（向量法），其实就是对比非共点部分的y大小
+       * 维护一个活跃边列表ael，同样保证x升序、y升序，start事件线段进入ael，end离开
+       * ael中相邻的线段说明上下相互接壤，接壤一侧则内外填充性一致
+       * 最下面的边（含第一条）可直接得知下方填充性（下面没有了一定是多边形外部），再推测出上方
+       * 其余的边根据自己下方相邻即可确定填充性
        */
 
     }, {
       key: "io2",
       value: function io2(polyA, polyB) {
         var list = genHashXYList(polyA.segments.concat(polyB.segments));
-        var ael = []; // 3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+        var aelA = [],
+            aelB = []; // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+        // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
 
         list.forEach(function (item) {
           var isStart = item.isStart,
               seg = item.seg;
+          var belong = seg.belong;
+          var ael = belong === 0 ? aelA : aelB;
 
-          if (seg.belong === 0) {
-            console.log(isStart, seg.toString());
-
-            if (isStart) {
-              // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
-              if (!ael.length) {
-                seg.above[0] = true;
-                ael.push(seg);
-              } else {
-                var ca = seg.coords;
-              }
+          if (isStart) {
+            // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
+            if (!ael.length) {
+              seg.above[belong] = true;
+              ael.push(seg);
             } else {
-              var _i = ael.indexOf(seg);
+              // 插入到ael正确的位置，按照x升序、y升序
+              var len = ael.length,
+                  top = ael[len - 1];
+              var isAboveLast = segAboveCompare(seg, top); // 比ael栈顶还高在最上方
 
-              ael.splice(_i, 1);
+              if (isAboveLast) {
+                seg.below[belong] = top.above[belong];
+                seg.above[belong] = !seg.below[belong];
+                ael.push(seg);
+              } // 不高且只有1个则在最下方
+              else if (len === 1) {
+                seg.above[belong] = true;
+                ael.unshift(seg);
+              } else {
+                // 遍历，尝试对比是否在ael栈中相邻2条线段之间
+                for (var i = len - 2; i >= 0; i--) {
+                  var curr = ael[i];
+                  var isAbove = segAboveCompare(seg, curr);
+
+                  if (isAbove) {
+                    seg.below[belong] = curr.above[belong];
+                    seg.above[belong] = !seg.below[belong];
+                    ael.splice(i + 1, 0, seg);
+                    break;
+                  } else if (i === 0) {
+                    seg.above[belong] = true;
+                    ael.unshift(seg);
+                  }
+                }
+              }
             }
+          } else {
+            var _i = ael.indexOf(seg);
+
+            ael.splice(_i, 1);
+          }
+        }); // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
+        // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
+
+        var ael = [];
+        list.forEach(function (item) {
+          var isStart = item.isStart,
+              seg = item.seg;
+          var belong = seg.belong,
+              belong2 = belong === 0 ? 1 : 0;
+
+          if (isStart) {
+            var inside = false;
+
+            if (!ael.length) {
+              inside = false;
+              ael.push(seg);
+            } else {
+              var len = ael.length,
+                  top = ael[len - 1];
+              var isAboveLast = segAboveCompare(seg, top);
+
+              if (isAboveLast) {
+                if (top.belong === belong) {
+                  inside = top.above[belong2];
+                } else {
+                  inside = top.above[top.belong];
+                }
+
+                ael.push(seg);
+              } else if (len === 1) {
+                // inside = false;
+                ael.unshift(seg);
+              } else {
+                for (var i = len - 2; i >= 0; i--) {
+                  var curr = ael[i];
+                  var isAbove = segAboveCompare(seg, curr);
+
+                  if (isAbove) {
+                    if (curr.belong === belong) {
+                      inside = curr.above[belong2];
+                    } else {
+                      inside = curr.above[curr.belong];
+                    }
+
+                    ael.splice(i + 1, 0, seg);
+                    break;
+                  } else if (i === 0) {
+                    // inside = false;
+                    ael.unshift(seg);
+                  }
+                }
+              }
+            }
+
+            seg.above[belong2] = inside;
+            seg.below[belong2] = inside;
+          } else {
+            var _i2 = ael.indexOf(seg);
+
+            ael.splice(_i2, 1);
           }
         });
       }
@@ -13993,8 +14088,8 @@
                 ax2 = _coordsA$2.x,
                 ay2 = _coordsA$2.y;
 
-            for (var _i2 = 0; _i2 < ael.length; _i2++) {
-              var item = ael[_i2]; // 被切割的老线段无效，注意seg切割过程中可能变成删除
+            for (var _i3 = 0; _i3 < ael.length; _i3++) {
+              var item = ael[_i3]; // 被切割的老线段无效，注意seg切割过程中可能变成删除
 
               if (item.isDeleted || seg.isDeleted) {
                 continue;
@@ -14219,14 +14314,11 @@
           var sa = a.seg,
               sb = b.seg;
           var ca = sa.coords,
-              cb = sb.coords; // start点相同看谁在上方
+              cb = sb.coords; // start点相同看谁在上谁在下，下方在前
 
           if (a.isStart) {
-            var pa1 = ca[0],
-                pb1 = cb[0];
-            var pa2 = ca[ca.length - 1],
-                pb2 = cb[cb.length - 1];
-            return vector.crossProduct(pa2.x - pa1.x, pa2.y - pa1.y, pb2.x - pb1.x, pb2.y - pb1.y) < 0 ? 1 : -1;
+            var above = pointAboveOrOnLine(ca[ca.length - 1], ca[0], cb[cb.length - 1]);
+            return above ? 1 : -1;
           } // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
 
         }); // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
@@ -14259,6 +14351,51 @@
       isStart: isStart,
       seg: seg
     });
+  } // pt在线段left -> right的上方或线上
+
+
+  function pointAboveOrOnLine(pt, left, right) {
+    var x = pt.x,
+        y = pt.y;
+    var x1 = left.x,
+        y1 = left.y;
+    var x2 = right.x,
+        y2 = right.y;
+    return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
+  } // a是否在b的上边，直线简单，曲线取x相同部分看y大小
+
+
+  function segAboveCompare(segA, segB) {
+    var ca = segA.coords,
+        cb = segB.coords;
+    var la = ca.length,
+        lb = cb.length;
+    var a1 = ca[0],
+        b1 = cb[0];
+
+    if (la === 2) {
+      var a2 = ca[1];
+
+      if (lb === 2) {
+        var b2 = cb[1];
+
+        if (a1 === b1) {
+          return pointAboveOrOnLine(a2, b1, b2);
+        } else {
+          return pointAboveOrOnLine(a1, b1, b2);
+        }
+      }
+    }
+  }
+
+  function getBezierXMonotonicity(coords) {
+    if (coords.length === 3) {
+      var t = (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x);
+
+      if (t > 0 && t < 1) {
+        return [t];
+      }
+    } else if (coords.length === 4) ;
   }
 
   // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
@@ -14426,23 +14563,17 @@
       SUBTRACT2 = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
       DIFFERENCE$1 = [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0];
 
-  function filter(first, matrix) {
+  function filter(segments, matrix) {
     var res = [];
-    var curr = first;
-
-    do {
-      var _curr = curr,
-          leftIO = _curr.leftIO,
-          rightIO = _curr.rightIO;
-      var i = (leftIO[0] ? 8 : 0) + (leftIO[1] ? 4 : 0) + (rightIO[0] ? 2 : 0) + (rightIO[1] ? 1 : 0); // console.log(curr.toString(), i, matrix[i]);
+    segments.forEach(function (seg) {
+      var above = seg.above,
+          below = seg.below;
+      var i = (above[0] ? 8 : 0) + (above[1] ? 4 : 0) + (below[0] ? 2 : 0) + (below[1] ? 1 : 0);
 
       if (matrix[i]) {
-        res.push(curr);
+        res.push(seg);
       }
-
-      curr = curr.next;
-    } while (curr !== first);
-
+    });
     return res;
   }
 
@@ -14453,8 +14584,7 @@
           source = _trivial2[0],
           clip = _trivial2[1];
 
-      var list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT)); // console.warn(list.join('\n'));
-
+      var list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
       return chain(list);
     },
     union: function union(polygonA, polygonB) {
@@ -14463,8 +14593,7 @@
           source = _trivial4[0],
           clip = _trivial4[1];
 
-      var list = filter(source.first, UNION$1).concat(filter(clip.first, UNION$1)); // console.warn(list.join('\n'));
-
+      var list = filter(source.segments, UNION$1).concat(filter(clip.segments, UNION$1));
       return chain(list);
     },
     subtract: function subtract(polygonA, polygonB) {
@@ -14473,8 +14602,7 @@
           source = _trivial6[0],
           clip = _trivial6[1];
 
-      var list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT)); // console.warn(list.join('\n'));
-
+      var list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
       return chain(list);
     },
     subtract2: function subtract2(polygonA, polygonB) {
@@ -14483,8 +14611,7 @@
           source = _trivial8[0],
           clip = _trivial8[1];
 
-      var list = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2)); // console.warn(list.join('\n'));
-
+      var list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
       return chain(list);
     },
     difference: function difference(polygonA, polygonB) {
@@ -14493,8 +14620,7 @@
           source = _trivial10[0],
           clip = _trivial10[1];
 
-      var list = filter(source.first, DIFFERENCE$1).concat(filter(clip.first, DIFFERENCE$1)); // console.warn(list.join('\n'));
-
+      var list = filter(source.segments, DIFFERENCE$1).concat(filter(clip.segments, DIFFERENCE$1));
       return chain(list);
     }
   };

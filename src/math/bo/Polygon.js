@@ -1,17 +1,17 @@
 import geom from '../geom';
 import vector from '../vector';
+import bezier from '../bezier';
 import Point from './Point';
 import Segment from './Segment';
 
 class Polygon {
   constructor(regions, index) {
     this.index = index; // 属于source多边形还是clip多边形，0和1区别
-    this.segments = [];
+    let segments = [];
     // 多边形有>=1个区域，一般是1个
     if(!Array.isArray(regions)) {
       return;
     }
-    let hashX = {};
     regions.forEach(vertices => {
       // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
       if(!Array.isArray(vertices) || vertices.length < 2) {
@@ -28,24 +28,77 @@ class Polygon {
         let endPoint = (i === len - 1) ? firstPoint : new Point(curr[l - 2], curr[l - 1]);
         let seg;
         if(l === 2) {
-          if(Point.compare(startPoint, endPoint)) {
-            seg = new Segment([
-              endPoint,
+          let coords = Point.compare(startPoint, endPoint) ? [
+            endPoint,
+            startPoint,
+          ] : [
+            startPoint,
+            endPoint,
+          ];
+          seg = new Segment(coords, index);
+        }
+        // 曲线需确保x单调性，如果非单调，则切割为单调的多条
+        else if(l === 4) {
+          let cPoint = new Point(curr[0], curr[1]);
+          let t = getBezierXMonotonicity([startPoint, cPoint, endPoint]);
+          if(t) {
+            // console.log(t);
+            let p = bezier.pointAtByT([
+              [startPoint.x, startPoint.y],
+              [curr[0], curr[1]],
+              [endPoint.x, endPoint.y],
+            ], t[0]);
+            // console.log(p);
+            // console.log(startPoint.toString(), endPoint.toString())
+            let points = [
+              [startPoint.x, startPoint.y],
+              [curr[0], curr[1]],
+              [endPoint.x, endPoint.y],
+            ];
+            let curve1 = bezier.sliceBezier(points, t[0]);
+            let curve2 = bezier.sliceBezier2Both(points, t[0], 1);
+            console.log(curve1, curve2);
+            let p1 = new Point(curve1[1]), p2 = new Point(curve1[2]), p3 = new Point(curve2[1]);
+            let coords = Point.compare(startPoint, p2) ? [
+              p2,
+              p1,
               startPoint,
-            ], index);
+            ] : [
+              startPoint,
+              p1,
+              p2,
+            ];
+            segments.push(new Segment(coords, index));
+            coords = Point.compare(p2, endPoint) ? [
+              endPoint,
+              p3,
+              p2,
+            ] : [
+              p2,
+              p3,
+              endPoint,
+            ];
+            seg = new Segment(coords, index);
           }
           else {
-            seg = new Segment([
-              startPoint,
+            let coords = Point.compare(startPoint, endPoint) ? [
               endPoint,
-            ], index);
+              cPoint,
+              startPoint,
+            ] : [
+              startPoint,
+              cPoint,
+              endPoint,
+            ];
+            seg = new Segment(coords, index);
           }
         }
-        this.segments.push(seg);
+        segments.push(seg);
         // 终点是下条边的起点
         startPoint = endPoint;
       }
     });
+    this.segments = segments;
   }
 
   // 根据y坐标排序，生成有序线段列表，再扫描求交
@@ -73,34 +126,121 @@ class Polygon {
   /**
    * 以Bentley-Ottmann算法为原理，为每个顶点设计事件，按x升序、y升序遍历所有顶点的事件
    * 每条线段边有2个顶点即2个事件，左下为start，右上为end
-   * 同顶点优先end，start相同则对比线段谁的y更小（看end点或者看中点排序）
-   * 最下面的边可直接得知两侧填充性，其余的边根据自己下方即可确定填充性
+   * 同顶点优先end，start相同则对比线段谁后面的y更小（向量法），其实就是对比非共点部分的y大小
+   * 维护一个活跃边列表ael，同样保证x升序、y升序，start事件线段进入ael，end离开
+   * ael中相邻的线段说明上下相互接壤，接壤一侧则内外填充性一致
+   * 最下面的边（含第一条）可直接得知下方填充性（下面没有了一定是多边形外部），再推测出上方
+   * 其余的边根据自己下方相邻即可确定填充性
    */
   static io2(polyA, polyB) {
     let list = genHashXYList(polyA.segments.concat(polyB.segments));
-    let ael = [];
-    // 3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+    let aelA = [], aelB = [];
+    // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+    // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
     list.forEach(item => {
       let { isStart, seg } = item;
-      if(seg.belong === 0) {
-        console.log(isStart, seg.toString());
-        if(isStart) {
-          // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
-          if(!ael.length) {
-            seg.above[0] = true;
+      let belong = seg.belong;
+      let ael = belong === 0 ? aelA : aelB;
+      if(isStart) {
+        // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
+        if(!ael.length) {
+          seg.above[belong] = true;
+          ael.push(seg);
+        }
+        else {
+          // 插入到ael正确的位置，按照x升序、y升序
+          let len = ael.length, top = ael[len - 1];
+          let isAboveLast = segAboveCompare(seg, top);
+          // 比ael栈顶还高在最上方
+          if(isAboveLast) {
+            seg.below[belong] = top.above[belong];
+            seg.above[belong] = !seg.below[belong];
             ael.push(seg);
           }
+          // 不高且只有1个则在最下方
+          else if(len === 1) {
+            seg.above[belong] = true;
+            ael.unshift(seg);
+          }
           else {
-            let ca = seg.coords;
-            for(let i = ael.length - 1; i >= 0; i--) {
+            // 遍历，尝试对比是否在ael栈中相邻2条线段之间
+            for(let i = len - 2; i >= 0; i--) {
               let curr = ael[i];
+              let isAbove = segAboveCompare(seg, curr);
+              if(isAbove) {
+                seg.below[belong] = curr.above[belong];
+                seg.above[belong] = !seg.below[belong];
+                ael.splice(i + 1, 0, seg);
+                break;
+              }
+              else if(i === 0) {
+                seg.above[belong] = true;
+                ael.unshift(seg);
+              }
             }
           }
         }
-        else {
-          let i = ael.indexOf(seg);
-          ael.splice(i, 1);
+      }
+      else {
+        let i = ael.indexOf(seg);
+        ael.splice(i, 1);
+      }
+    });
+    // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
+    // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
+    let ael = [];
+    list.forEach(item => {
+      let { isStart, seg } = item;
+      let belong = seg.belong, belong2 = belong === 0 ? 1 : 0;
+      if(isStart) {
+        let inside = false;
+        if(!ael.length) {
+          inside = false;
+          ael.push(seg);
         }
+        else {
+          let len = ael.length, top = ael[len - 1];
+          let isAboveLast = segAboveCompare(seg, top);
+          if(isAboveLast) {
+            if(top.belong === belong) {
+              inside = top.above[belong2];
+            }
+            else {
+              inside = top.above[top.belong];
+            }
+            ael.push(seg);
+          }
+          else if(len === 1) {
+            // inside = false;
+            ael.unshift(seg);
+          }
+          else {
+            for(let i = len - 2; i >= 0; i--) {
+              let curr = ael[i];
+              let isAbove = segAboveCompare(seg, curr);
+              if(isAbove) {
+                if(curr.belong === belong) {
+                  inside = curr.above[belong2];
+                }
+                else {
+                  inside = curr.above[curr.belong];
+                }
+                ael.splice(i + 1, 0, seg);
+                break;
+              }
+              else if(i === 0) {
+                // inside = false;
+                ael.unshift(seg);
+              }
+            }
+          }
+        }
+        seg.above[belong2] = inside;
+        seg.below[belong2] = inside;
+      }
+      else {
+        let i = ael.indexOf(seg);
+        ael.splice(i, 1);
       }
     });
   }
@@ -354,11 +494,10 @@ function genHashXYList(segments) {
         }
         let sa = a.seg, sb = b.seg;
         let ca = sa.coords, cb = sb.coords;
-        // start点相同看谁在上方
+        // start点相同看谁在上谁在下，下方在前
         if(a.isStart) {
-          let pa1 = ca[0], pb1 = cb[0];
-          let pa2 = ca[ca.length - 1], pb2 = cb[cb.length - 1];
-          return vector.crossProduct(pa2.x - pa1.x, pa2.y - pa1.y, pb2.x - pb1.x, pb2.y - pb1.y) < 0 ? 1 : -1;
+          let above = pointAboveOrOnLine(ca[ca.length - 1], ca[0], cb[cb.length - 1]);
+          return above ? 1 : -1;
         }
         // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
       });
@@ -391,6 +530,48 @@ function putHashXY(hashXY, x, y, seg, isStart) {
     isStart,
     seg,
   });
+}
+
+// pt在线段left -> right的上方或线上
+function pointAboveOrOnLine(pt, left, right) {
+  let { x, y } = pt;
+  let { x: x1, y: y1 } = left;
+  let { x: x2, y: y2 } = right;
+  return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
+}
+
+// a是否在b的上边，直线简单，曲线取x相同部分看y大小
+function segAboveCompare(segA, segB) {
+  let ca = segA.coords, cb = segB.coords;
+  let la = ca.length, lb = cb.length;
+  let a1 = ca[0], b1 = cb[0];
+  if(la === 2) {
+    let a2 = ca[1];
+    if(lb === 2) {
+      let b2 = cb[1];
+      if(a1 === b1) {
+        return pointAboveOrOnLine(a2, b1, b2);
+      }
+      else {
+        return pointAboveOrOnLine(a1, b1, b2);
+      }
+    }
+    else {}
+  }
+  else {
+    if(lb === 2) {}
+    else {}
+  }
+}
+
+function getBezierXMonotonicity(coords) {
+  if(coords.length === 3) {
+    let t = (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x);
+    if(t > 0 && t < 1) {
+      return [t];
+    }
+  }
+  else if(coords.length === 4) {}
 }
 
 export default Polygon;

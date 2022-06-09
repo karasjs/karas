@@ -56,54 +56,45 @@ const INTERSECT = [
   0, 1, 1, 0,
 ];
 
-function filter(first, matrix) {
+function filter(segments, matrix) {
   let res = [];
-  let curr = first;
-  do {
-    let { leftIO, rightIO } = curr;
-    let i = (leftIO[0] ? 8 : 0)
-      + (leftIO[1] ? 4 : 0)
-      + (rightIO[0] ? 2 : 0)
-      + (rightIO[1] ? 1 : 0);
-    // console.log(curr.toString(), i, matrix[i]);
+  segments.forEach(seg => {
+    let { above, below } = seg;
+    let i = (above[0] ? 8 : 0)
+      + (above[1] ? 4 : 0)
+      + (below[0] ? 2 : 0)
+      + (below[1] ? 1 : 0);
     if(matrix[i]) {
-      res.push(curr);
+      res.push(seg);
     }
-    curr = curr.next;
-  }
-  while(curr !== first);
+  });
   return res;
 }
 
 export default {
   intersect(polygonA, polygonB) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.first, INTERSECT).concat(filter(clip.first, INTERSECT));
-    // console.warn(list.join('\n'));
+    let list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
     return chain(list);
   },
   union(polygonA, polygonB) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.first, UNION).concat(filter(clip.first, UNION));
-    // console.warn(list.join('\n'));
+    let list = filter(source.segments, UNION).concat(filter(clip.segments, UNION));
     return chain(list);
   },
   subtract(polygonA, polygonB) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.first, SUBTRACT).concat(filter(clip.first, SUBTRACT));
-    // console.warn(list.join('\n'));
+    let list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
     return chain(list);
   },
   subtract2(polygonA, polygonB) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.first, SUBTRACT2).concat(filter(clip.first, SUBTRACT2));
-    // console.warn(list.join('\n'));
+    let list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
     return chain(list);
   },
   difference(polygonA, polygonB) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.first, DIFFERENCE).concat(filter(clip.first, DIFFERENCE));
-    // console.warn(list.join('\n'));
+    let list = filter(source.segments, DIFFERENCE).concat(filter(clip.segments, DIFFERENCE));
     return chain(list);
   },
 };

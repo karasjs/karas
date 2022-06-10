@@ -970,15 +970,15 @@ class Xom extends Node {
             TRANSLATE_X,
             TRANSLATE_Y,
             TRANSLATE_Z,
+            SCALE_X,
+            SCALE_Y,
+            SCALE_Z,
             ROTATE_X,
             ROTATE_Y,
             ROTATE_Z,
             ROTATE_3D,
             SKEW_X,
             SKEW_Y,
-            SCALE_X,
-            SCALE_Y,
-            SCALE_Z,
           ].forEach(k => {
             // 删除之前遗留的
             delete computedStyle[k];

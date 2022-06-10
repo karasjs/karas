@@ -535,52 +535,43 @@ function pointAboveOrOnLine(pt, left, right) {
   return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
 }
 
-// a是否在b的上边，取x相同部分看y大小
+// a是否在b的上边，取x相同部分看y大小，只有start点事件时才判断
 function segAboveCompare(segA, segB) {
   let ca = segA.coords, cb = segB.coords;
   let la = ca.length, lb = cb.length;
   let a1 = ca[0], b1 = cb[0];
-  // 起点相同用极值判断，因为一定不会相交
-  // if(a1 === b1) {
-  //   let maxA = getMaximumMinimumY(ca, true), maxB = getMaximumMinimumY(cb, true);
-  //   if(maxA === maxB) {
-  //     let minA = getMaximumMinimumY(ca, false), minB = getMaximumMinimumY(cb, false);
-  //     if(minA === minB) {
-  //       // 极值都相等只可能是end点
-  //       console.log(maxA, maxB, segA.toString(), segB.toString());
-  //     }
-  //     return minA < minB;
-  //   }
-  //   return maxA > maxB;
-  // }
-  if(la === 2) {
-    let a2 = ca[1];
-    if(lb === 2) {
-      let b2 = cb[1];
-      if(a1 === b1) {
-        return pointAboveOrOnLine(a2, b1, b2);
-      }
-      else {
-        return pointAboveOrOnLine(a1, b1, b2);
-      }
+  // 两条直线用向量积判断，注意开始点是否相同即可
+  if(la === 2 && lb === 2) {
+    let a2 = ca[1], b2 = cb[1];
+    if(a1 === b1) {
+      return pointAboveOrOnLine(a2, b1, b2);
     }
     else {
-      if(a1.x >= b1.x) {
-        let tx = equation.getRoots([
-          b1.x - a1.x,
-          2 * (cb[1].x - b1.x),
-          cb[2].x + b1.x - 2 * cb[1].x,
-        ]).filter(i => i >= 0 && i <= 1);
-        let pts = cb.map(item => [item.x, item.y]);
-        let y = bezier.pointAtByT(pts, tx[0])[1];
-        return a1.y >= y;
-      }
+      return pointAboveOrOnLine(a1, b1, b2);
     }
   }
-  else {
-    if(lb === 2) {}
-    else {
+  // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
+  // 而只有start会进入这里，因此直接a在上
+  if(la === 2 && a1.x === ca[1].x) {
+    return true;
+  }
+  // 如果有曲线，去二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
+  let x1 = Math.max(a1.x, b1.x), x3 = Math.min(ca[la - 1].x, cb[lb - 1].x), x2 = x1 + (x3 - x1) * 0.5;
+  if(a1 !== b1) {
+    let y1 = getYByX(ca, x1), y2 = getYByX(cb, x1);
+    if(y1 !== y2) {
+      return y1 > y2;
     }
+  }
+  if(ca[la - 1] !== cb[lb - 1]) {
+    let y1 = getYByX(ca, x3), y2 = getYByX(cb, x3);
+    if(y1 !== y2) {
+      return y1 > y2;
+    }
+  }
+  let y1 = getYByX(ca, x2), y2 = getYByX(cb, x2);
+  if(y1 !== y2) {
+    return y1 > y2;
   }
 }
 
@@ -596,26 +587,31 @@ function getBezierMonotonicity(coords, isX) {
   else if(coords.length === 4) {}
 }
 
-function getMaximumMinimumY(coords, isMax) {
-  if(coords.length === 2) {
-    return isMax ? Math.max(coords[0].y, coords[1].y) : Math.min(coords[0].y, coords[1].y);
+function getYByX(coords, x) {
+  let len = coords.length;
+  if(x === coords[0].x) {
+    return coords[0].y;
   }
-  else {
-    let len = coords.length;
-    let t = getBezierMonotonicity(coords, false);
-    if(t) {
-      let m = isMax ? Math.max(coords[0].y, coords[len - 1].y) : Math.min(coords[0].y, coords[len - 1].y);
-      let pts = coords.map(item => [item.x, item.y]);
-      t.forEach(t => {
-        let p = bezier.pointAtByT(pts, t);
-        m = isMax ? Math.max(m, p[1]) : Math.min(m, p[1]);
-      });
-      return m;
-    }
-    else {
-      return isMax ? Math.max(coords[0].y, coords[len - 1].y) : Math.min(coords[0].y, coords[len - 1].y);
-    }
+  if(x === coords[len - 1].x) {
+    return coords[len - 1].y;
   }
+  if(len === 2) {
+    if(coords[0].y === coords[1].y) {
+      return coords[0].y;
+    }
+    let p = (x - coords[0].x) / (coords[1].x - coords[0].x);
+    return coords[0].y + p * (coords[1].y - coords[0].y);
+  }
+  else if(len === 3) {
+    let t = equation.getRoots([
+      coords[0].x - x,
+      2 * (coords[1].x - coords[0].x),
+      coords[2].x + coords[0].x - 2 * coords[1].x,
+    ]).filter(i => i >= 0 && i <= 1);
+    let pts = coords.map(item => [item.x, item.y]);
+    return bezier.pointAtByT(pts, t[0])[1];
+  }
+  else if(len === 4) {}
 }
 
 export default Polygon;

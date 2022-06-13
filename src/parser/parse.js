@@ -11,7 +11,7 @@ let { isNil, isFunction, isPrimitive, clone, extend } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
 
 /**
- * 还原缩写到全称，涉及样式和动画属性
+ * 还原缩写到全称，涉及样式和动画属性，仅css
  * @param target 还原的对象
  * @param hash 缩写映射
  */
@@ -25,7 +25,7 @@ function abbr2full(target, hash) {
         if(hash.hasOwnProperty(k2)) {
           let fk = hash[k2];
           target['var-' + fk] = target[k];
-          // delete target[k];
+          delete target[k];
         }
       }
       // 普通样式缩写还原
@@ -164,11 +164,11 @@ function replaceLibraryVars(json, hash, vars) {
                   // 最后一个member表达式替换
                   if(i === len - 1) {
                     let v = vars[id];
+                    let old = target[k];
                     // 支持函数模式和值模式
                     if(isFunction(v)) {
-                      v = v(target(k));
+                      v = v(old);
                     }
-                    let old = target[k];
                     // 直接替换library的子对象，需补充id和tagName
                     if(i === 1) {
                       target[k] = Object.assign({ id: old.id, tagName: old.tagName }, v);
@@ -262,7 +262,7 @@ function linkChild(child, libraryItem) {
     }
   });
   // 删除以免二次解析
-  child.libraryId = null;
+  delete child.libraryId;
   // 规定图层实例化的属性和样式在init上，优先使用init，然后才取原型链的props
   let { init } = child;
   if(init) {
@@ -275,7 +275,7 @@ function linkChild(child, libraryItem) {
       props.style = style;
     }
     // 删除以免二次解析
-    child.init = null;
+    delete child.init;
   }
 }
 
@@ -313,7 +313,7 @@ function parse(karas, json, animateRecords, opt, hash, offsetTime) {
     else {
       throw new Error('Link library miss id: ' + libraryId);
     }
-    json.libraryId = null;
+    delete json.libraryId;
   }
   // 再判断是否有library形成一个新的作用域，会出现library下的library使得一个链接节点链接后出现library的情况
   let library = json.library;
@@ -324,7 +324,7 @@ function parse(karas, json, animateRecords, opt, hash, offsetTime) {
     });
     // 替换library插槽
     replaceLibraryVars(json, hash, opt.vars);
-    json.library = null;
+    delete json.library;
   }
   let { tagName, props = {}, children = [], animate = [] } = json;
   if(!tagName) {
@@ -342,7 +342,7 @@ function parse(karas, json, animateRecords, opt, hash, offsetTime) {
   if(style) {
     let fontFamily = style.fontFamily;
     if(/^#\d+$/.test(fontFamily)) {
-      let fonts = opt.imgs, i = parseInt(fontFamily.slice(1));
+      let fonts = opt.fonts, i = parseInt(fontFamily.slice(1));
       if(Array.isArray(fonts)) {
         style.fontFamily = fonts[i];
       }

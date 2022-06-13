@@ -41358,7 +41358,7 @@
       abbrAnimateOption$1 = abbr$1.abbrAnimateOption,
       abbrAnimate$1 = abbr$1.abbrAnimate;
   /**
-   * 还原缩写到全称，涉及样式和动画属性
+   * 还原缩写到全称，涉及样式和动画属性，仅css
    * @param target 还原的对象
    * @param hash 缩写映射
    */
@@ -41373,7 +41373,8 @@
 
           if (hash.hasOwnProperty(k2)) {
             var fk = hash[k2];
-            target['var-' + fk] = target[k]; // delete target[k];
+            target['var-' + fk] = target[k];
+            delete target[k];
           }
         } // 普通样式缩写还原
         else if (hash.hasOwnProperty(k)) {
@@ -41527,13 +41528,13 @@
                   if (target.hasOwnProperty(k) || i === len - 1) {
                     // 最后一个member表达式替换
                     if (i === len - 1) {
-                      var v = vars[id]; // 支持函数模式和值模式
+                      var v = vars[id];
+                      var old = target[k]; // 支持函数模式和值模式
 
                       if (isFunction$a(v)) {
-                        v = v(target(k));
-                      }
+                        v = v(old);
+                      } // 直接替换library的子对象，需补充id和tagName
 
-                      var old = target[k]; // 直接替换library的子对象，需补充id和tagName
 
                       if (i === 1) {
                         target[k] = Object.assign({
@@ -41634,7 +41635,7 @@
       }
     }); // 删除以免二次解析
 
-    child.libraryId = null; // 规定图层实例化的属性和样式在init上，优先使用init，然后才取原型链的props
+    delete child.libraryId; // 规定图层实例化的属性和样式在init上，优先使用init，然后才取原型链的props
 
     var init = child.init;
 
@@ -41649,7 +41650,7 @@
       } // 删除以免二次解析
 
 
-      child.init = null;
+      delete child.init;
     }
   }
   /**
@@ -41692,7 +41693,7 @@
         throw new Error('Link library miss id: ' + libraryId);
       }
 
-      json.libraryId = null;
+      delete json.libraryId;
     } // 再判断是否有library形成一个新的作用域，会出现library下的library使得一个链接节点链接后出现library的情况
 
 
@@ -41705,7 +41706,7 @@
       }); // 替换library插槽
 
       replaceLibraryVars(json, hash, opt.vars);
-      json.library = null;
+      delete json.library;
     }
 
     var tagName = json.tagName,
@@ -41738,7 +41739,7 @@
       var fontFamily = style.fontFamily;
 
       if (/^#\d+$/.test(fontFamily)) {
-        var fonts = opt.imgs,
+        var fonts = opt.fonts,
             _i = parseInt(fontFamily.slice(1));
 
         if (Array.isArray(fonts)) {

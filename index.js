@@ -27786,7 +27786,8 @@
           total = free;
         }
 
-        free = Math.max(0, total - free);
+        free = Math.abs(total - free); // 压缩也使用正值
+
         var lessOne = 0; // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
 
         var factorSum = 0;

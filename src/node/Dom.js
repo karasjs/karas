@@ -1708,6 +1708,7 @@ class Dom extends Xom {
       total = free;
     }
     free = Math.max(0, total - free);
+    let lessOne = 0;
     // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
     let factorSum = 0;
     if(isOverflow) {
@@ -1723,7 +1724,12 @@ class Dom extends Xom {
         }
       });
       while(true) {
+        // 都冻结了
+        if(factorSum === 0) {
+          break;
+        }
         if(factorSum < 1) {
+          lessOne += free * (1 - factorSum);
           free *= factorSum;
         }
         let needReset, factorSum2 = 0, count1 = 0, count2 = 0;
@@ -1739,12 +1745,12 @@ class Dom extends Xom {
               needReset = true;
               count1 += minList[i];
             }
-            else if(n > maxList[i]) {
-              targetMainList[i] = maxList[i];
-              factorList[i] = 0;
-              needReset = true;
-              count1 += maxList[i];
-            }
+            // else if(n > maxList[i]) {
+            //   targetMainList[i] = maxList[i];
+            //   factorList[i] = 0;
+            //   needReset = true;
+            //   count1 += maxList[i];
+            // }
             // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
             else {
               targetMainList[i] = n;
@@ -1758,10 +1764,6 @@ class Dom extends Xom {
           break;
         }
         free -= count1;
-        // 都冻结了
-        if(!factorSum2) {
-          break;
-        }
         factorSum = factorSum2;
       }
     }
@@ -1773,7 +1775,11 @@ class Dom extends Xom {
         }
       });
       while(true) {
+        if(factorSum === 0) {
+          break;
+        }
         if(factorSum < 1) {
+          lessOne += free * (1 - factorSum);
           free *= factorSum;
         }
         let needReset, factorSum2 = 0, count1 = 0, count2 = 0;
@@ -1789,12 +1795,12 @@ class Dom extends Xom {
               needReset = true;
               count1 += minList[i];
             }
-            else if(n > maxList[i]) {
-              targetMainList[i] = maxList[i];
-              factorList[i] = 0;
-              needReset = true;
-              count1 += maxList[i];
-            }
+            // else if(n > maxList[i]) {
+            //   targetMainList[i] = maxList[i];
+            //   factorList[i] = 0;
+            //   needReset = true;
+            //   count1 += maxList[i];
+            // }
             // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
             else {
               targetMainList[i] = n;
@@ -1808,9 +1814,6 @@ class Dom extends Xom {
           break;
         }
         free -= count1;
-        if(!factorSum2) {
-          break;
-        }
         factorSum = factorSum2;
       }
     }
@@ -1943,7 +1946,7 @@ class Dom extends Xom {
         item.horizonAlign(isUpright? item.height : item.width, textAlign, isUpright);
       })
     }
-    return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : free];
+    return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : Math.max(0, free + lessOne)];
   }
 
   // 每个flexLine的主轴侧轴对齐

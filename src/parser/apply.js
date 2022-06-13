@@ -356,7 +356,7 @@ function apply(json, opt, hash) {
   return json;
 }
 
-// 将library、vars、offsetTime应用于json，转换json为一个普通的原始json数据
+// 将library、vars应用于json，转换json为一个普通的原始json数据
 export default function(json, options = {}) {
   // json中定义无abbr
   if(json.abbr === false) {

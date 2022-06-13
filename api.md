@@ -2609,6 +2609,53 @@ karas.style.abbr.toFull({border:'1px solid #F00'}, 'border');
 * **说明**  
 实现karas.parse()的逻辑。此举是面向框架开发维护人员的，普通开发者无需关注。
 
+### apply
+* **类型** `Function`
+* **参数**
+  * json `JSON`
+    对比的样式名，注意是格式化的枚举值。
+  * options `Object`
+    其中一个样式，注意是格式化的。
+* **说明**  
+  karas.parse()的前置处理逻辑，将一个含library、vars的综合型json转换为普通的原始json数据
+* **示例**
+```jsx
+karas.parser.apply({
+  library: [{
+    id: 'a',
+    tagName: 'span',
+    props: {
+      style: {
+        color: '#F00',
+      },
+    },
+    children: [123],
+  }],
+  tagName: 'div',
+  props: {},
+  children: [{
+    libraryId: 'a',
+  }],
+});
+// library消失
+console.log({
+  tagName: 'div',
+  props: {},
+  children: [{
+    tagName: 'span',
+    props: {
+      style: {
+        color: '#F00',
+      },
+    },
+    children: [123],
+  }],
+});
+```
+
+### loadAndParse
+详见[loadAndParse](#loadAndParse)。
+
 ### abbr
 定义简写枚举、转换方法。此举是面向框架开发维护人员的，普通开发者无需关注。
 

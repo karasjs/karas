@@ -41857,7 +41857,7 @@
     }
 
     return json;
-  } // 将library、vars、offsetTime应用于json，转换json为一个普通的原始json数据
+  } // 将library、vars应用于json，转换json为一个普通的原始json数据
 
 
   function apply$1 (json) {
@@ -42084,7 +42084,7 @@
     Cache: Cache
   };
 
-  var version = "0.74.4";
+  var version = "0.75.0-alpha";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

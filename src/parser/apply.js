@@ -53,6 +53,12 @@ function linkLibrary(child, libraryItem) {
   if(libraryItem.library) {
     child.library = libraryItem.library;
   }
+  // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
+  Object.keys(libraryItem).forEach(k => {
+    if(k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
+      child[k] = libraryItem[k];
+    }
+  });
   // 删除以免二次解析
   delete child.libraryId;
   let init = child.init;
@@ -333,6 +339,7 @@ function apply(json, opt, hash, offsetTime) {
     if(!Array.isArray(animate)) {
       animate = [animate];
     }
+    // json.animate = animate = clone(animate);
     animate.forEach(item => {
       (opt.abbr !== false) && abbr2full(item, abbrAnimate);
       let { value, options } = item;
@@ -347,10 +354,10 @@ function apply(json, opt, hash, offsetTime) {
         (opt.abbr !== false) && abbr2full(options, abbrAnimateOption);
         replaceVars(options, opt.vars);
         replaceAnimateOptions(options, opt);
-        if(oft) {
-          options.delay = options.delay || 0;
-          options.delay += oft;
-        }
+        // if(oft) {
+        //   options.delay = options.delay || 0;
+        //   options.delay += oft;
+        // }
       }
     });
   }

@@ -41295,19 +41295,22 @@
    * @param json
    * @param animateRecords
    * @param opt
+   * @param offsetTime
    * @returns {Node|Component|*}
    */
 
-  function parse(karas, json, animateRecords, opt) {
+  function parse(karas, json, animateRecords, opt, offsetTime) {
     if (isPrimitive(json) || json instanceof Node || json instanceof Component$1) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse(karas, item, animateRecords);
+        return parse(karas, item, animateRecords, opt, offsetTime);
       });
-    } // let oft = offsetTime; // 暂存，后续生成动画用这个值
+    }
+
+    var oft = offsetTime; // 暂存，后续生成动画用这个值
     // // 先判断是否是个链接到库的节点，是则进行链接操作
     // let libraryId = json.libraryId;
     // if(!isNil(libraryId)) {
@@ -41315,7 +41318,8 @@
     //   // 规定图层child只有init和动画，tagName和属性和子图层来自库
     //   if(libraryItem) {
     //     linkChild(json, libraryItem);
-    //     offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
+
+    offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
     //   }
     //   else {
     //     throw new Error('Link library miss id: ' + libraryId);
@@ -41333,7 +41337,6 @@
     //   replaceLibraryVars(json, hash, opt.vars);
     //   delete json.library;
     // }
-
 
     var tagName = json.tagName,
         _json$props = json.props,
@@ -41387,7 +41390,7 @@
           return item;
         }
 
-        return parse(karas, item, animateRecords);
+        return parse(karas, item, animateRecords, opt, offsetTime);
       }));
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
@@ -41395,7 +41398,7 @@
           return item;
         }
 
-        return parse(karas, item, animateRecords);
+        return parse(karas, item, animateRecords, opt, offsetTime);
       }));
     }
 
@@ -41426,8 +41429,8 @@
       if (has) {
         animateRecords.push({
           animate: animate,
-          target: vd // offsetTime: oft,
-
+          target: vd,
+          offsetTime: oft
         });
       }
     }
@@ -41552,8 +41555,14 @@
 
     if (libraryItem.library) {
       child.library = libraryItem.library;
-    } // 删除以免二次解析
+    } // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
+
+    Object.keys(libraryItem).forEach(function (k) {
+      if (k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
+        child[k] = libraryItem[k];
+      }
+    }); // 删除以免二次解析
 
     delete child.libraryId;
     var init = child.init;
@@ -41805,8 +41814,6 @@
         return apply(item, opt, hash, offsetTime);
       });
     }
-
-    var oft = offsetTime; // 暂存，后续生成动画用这个值
     // 先判断是否是个链接到库的节点，是则进行链接操作
 
     var libraryId = json.libraryId;
@@ -41887,7 +41894,8 @@
     if (animate) {
       if (!Array.isArray(animate)) {
         animate = [animate];
-      }
+      } // json.animate = animate = clone(animate);
+
 
       animate.forEach(function (item) {
         opt.abbr !== false && abbr2full(item, abbrAnimate$1);
@@ -41904,12 +41912,10 @@
         if (options) {
           opt.abbr !== false && abbr2full(options, abbrAnimateOption$1);
           replaceVars(options, opt.vars);
-          replaceAnimateOptions(options, opt);
-
-          if (oft) {
-            options.delay = options.delay || 0;
-            options.delay += oft;
-          }
+          replaceAnimateOptions(options, opt); // if(oft) {
+          //   options.delay = options.delay || 0;
+          //   options.delay += oft;
+          // }
         }
       });
     }
@@ -41971,7 +41977,8 @@
         options = options || {};
       }
 
-      json = apply$1(json, options); // json中定义无abbr
+      json = apply$1(json, options);
+      console.log(json); // json中定义无abbr
       // if(json.abbr === false) {
       //   options.abbr = false;
       // }
@@ -41986,7 +41993,7 @@
 
       var animateRecords = [];
 
-      var vd = parse(karas, json, animateRecords); // 有dom时parse作为根方法渲染
+      var vd = parse(karas, json, animateRecords, options, 0); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

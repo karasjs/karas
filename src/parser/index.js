@@ -33,20 +33,21 @@ let o = {
     else {
       options = options || {};
     }
+    json = apply(json, options);
     // json中定义无abbr
-    if(json.abbr === false) {
-      options.abbr = false;
-    }
-    if(options.abbr !== false) {
-      inject.warn('Abbr in json is deprecated');
-    }
-    // 特殊单例声明无需clone加速解析
-    if(!options.singleton && !json.singleton) {
-      json = util.clone(json);
-    }
+    // if(json.abbr === false) {
+    //   options.abbr = false;
+    // }
+    // if(options.abbr !== false) {
+    //   inject.warn('Abbr in json is deprecated');
+    // }
+    // // 特殊单例声明无需clone加速解析
+    // if(!options.singleton && !json.singleton) {
+    //   json = util.clone(json);
+    // }
     // 暂存所有动画声明，等root的生成后开始执行
     let animateRecords = [];
-    let vd = parse(karas, json, animateRecords, options, {}, 0);
+    let vd = parse(karas, json, animateRecords, options);
     // 有dom时parse作为根方法渲染
     if(dom) {
       let { tagName } = json;

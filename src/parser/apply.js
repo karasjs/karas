@@ -1,7 +1,6 @@
 import abbr from './abbr';
 import inject from '../util/inject';
 import util from '../util/util';
-import font from '../style/font';
 import Node from '../node/Node';
 import Component from '../node/Component';
 
@@ -275,14 +274,13 @@ function replaceAnimateOptions(options, opt) {
   });
 }
 
-function apply(json, opt, hash, offsetTime) {
+function apply(json, opt, hash) {
   if(isPrimitive(json) || json instanceof Node || json instanceof Component) {
     return json;
   }
   if(Array.isArray(json)) {
-    return json.map(item => apply(item, opt, hash, offsetTime));
+    return json.map(item => apply(item, opt, hash));
   }
-  let oft = offsetTime; // 暂存，后续生成动画用这个值
   // 先判断是否是个链接到库的节点，是则进行链接操作
   let libraryId = json.libraryId;
   if(!isNil(libraryId)) {
@@ -290,7 +288,6 @@ function apply(json, opt, hash, offsetTime) {
     // 规定图层child只有init和动画，tagName和属性和子图层来自库
     if(libraryItem) {
       linkLibrary(json, libraryItem);
-      offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
     }
     else {
       throw new Error('Link library miss id: ' + libraryId);
@@ -334,12 +331,11 @@ function apply(json, opt, hash, offsetTime) {
   replaceVars(props, opt.vars);
   // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
   replaceVars(json, opt.vars);
-  json.children = apply(children, opt, hash, offsetTime);
+  json.children = apply(children, opt, hash);
   if(animate) {
     if(!Array.isArray(animate)) {
       animate = [animate];
     }
-    // json.animate = animate = clone(animate);
     animate.forEach(item => {
       (opt.abbr !== false) && abbr2full(item, abbrAnimate);
       let { value, options } = item;
@@ -354,10 +350,6 @@ function apply(json, opt, hash, offsetTime) {
         (opt.abbr !== false) && abbr2full(options, abbrAnimateOption);
         replaceVars(options, opt.vars);
         replaceAnimateOptions(options, opt);
-        // if(oft) {
-        //   options.delay = options.delay || 0;
-        //   options.delay += oft;
-        // }
       }
     });
   }
@@ -377,5 +369,5 @@ export default function(json, options = {}) {
   if(!options.singleton && !json.singleton) {
     json = util.clone(json);
   }
-  return apply(json, options, {}, 0);
+  return apply(json, options, {});
 }

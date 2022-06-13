@@ -41311,32 +41311,8 @@
     }
 
     var oft = offsetTime; // 暂存，后续生成动画用这个值
-    // // 先判断是否是个链接到库的节点，是则进行链接操作
-    // let libraryId = json.libraryId;
-    // if(!isNil(libraryId)) {
-    //   let libraryItem = hash[libraryId];
-    //   // 规定图层child只有init和动画，tagName和属性和子图层来自库
-    //   if(libraryItem) {
-    //     linkChild(json, libraryItem);
 
     offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
-    //   }
-    //   else {
-    //     throw new Error('Link library miss id: ' + libraryId);
-    //   }
-    //   delete json.libraryId;
-    // }
-    // // 再判断是否有library形成一个新的作用域，会出现library下的library使得一个链接节点链接后出现library的情况
-    // let library = json.library;
-    // if(Array.isArray(library)) {
-    //   hash = {};
-    //   library.forEach(item => {
-    //     linkLibrary(item, hash);
-    //   });
-    //   // 替换library插槽
-    //   replaceLibraryVars(json, hash, opt.vars);
-    //   delete json.library;
-    // }
 
     var tagName = json.tagName,
         _json$props = json.props,
@@ -41348,32 +41324,7 @@
 
     if (!tagName) {
       throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
-    } // // 缩写src和font
-    // let src = props.src;
-    // if(/^#\d+$/.test(src)) {
-    //   let imgs = opt.imgs, i = parseInt(src.slice(1));
-    //   if(Array.isArray(imgs)) {
-    //     props.src = imgs[i];
-    //   }
-    // }
-    // let style = props.style;
-    // if(style) {
-    //   let fontFamily = style.fontFamily;
-    //   if(/^#\d+$/.test(fontFamily)) {
-    //     let fonts = opt.fonts, i = parseInt(fontFamily.slice(1));
-    //     if(Array.isArray(fonts)) {
-    //       style.fontFamily = fonts[i];
-    //     }
-    //   }
-    // }
-    // (opt.abbr !== false) && abbr2full(style, abbrCssProperty);
-    // // 先替换style的
-    // replaceVars(style, opt.vars);
-    // // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
-    // replaceVars(props, opt.vars);
-    // // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
-    // replaceVars(json, opt.vars);
-
+    }
 
     if (!Array.isArray(children)) {
       throw new Error('children must be an array');
@@ -41409,21 +41360,11 @@
 
       var has;
       animate.forEach(function (item) {
-        // (opt.abbr !== false) && abbr2full(item, abbrAnimate);
-        var value = item.value,
-            options = item.options; // 忽略空动画
+        var value = item.value; // 忽略空动画
 
         if (Array.isArray(value) && value.length) {
-          has = true; // value.forEach(item => {
-          //   (opt.abbr !== false) && abbr2full(item, abbrCssProperty);
-          //   replaceVars(item, opt.vars);
-          // });
-        } // if(options) {
-        //   (opt.abbr !== false) && abbr2full(options, abbrAnimateOption);
-        //   replaceVars(options, opt.vars);
-        //   replaceAnimateOptions(options, opt);
-        // }
-
+          has = true;
+        }
       }); // 产生实际动画运行才存入列表供root调用执行
 
       if (has) {
@@ -41804,17 +41745,17 @@
     });
   }
 
-  function apply(json, opt, hash, offsetTime) {
+  function apply(json, opt, hash) {
     if (isPrimitive$1(json) || json instanceof Node || json instanceof Component$1) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return apply(item, opt, hash, offsetTime);
+        return apply(item, opt, hash);
       });
-    }
-    // 先判断是否是个链接到库的节点，是则进行链接操作
+    } // 先判断是否是个链接到库的节点，是则进行链接操作
+
 
     var libraryId = json.libraryId;
 
@@ -41823,7 +41764,6 @@
 
       if (libraryItem) {
         linkLibrary(json, libraryItem);
-        offsetTime += json.offsetTime || 0; // 可能有时间偏移加上为递归准备
       } else {
         throw new Error('Link library miss id: ' + libraryId);
       }
@@ -41889,13 +41829,12 @@
     replaceVars(props, opt.vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
 
     replaceVars(json, opt.vars);
-    json.children = apply(children, opt, hash, offsetTime);
+    json.children = apply(children, opt, hash);
 
     if (animate) {
       if (!Array.isArray(animate)) {
         animate = [animate];
-      } // json.animate = animate = clone(animate);
-
+      }
 
       animate.forEach(function (item) {
         opt.abbr !== false && abbr2full(item, abbrAnimate$1);
@@ -41912,10 +41851,7 @@
         if (options) {
           opt.abbr !== false && abbr2full(options, abbrAnimateOption$1);
           replaceVars(options, opt.vars);
-          replaceAnimateOptions(options, opt); // if(oft) {
-          //   options.delay = options.delay || 0;
-          //   options.delay += oft;
-          // }
+          replaceAnimateOptions(options, opt);
         }
       });
     }
@@ -41941,7 +41877,7 @@
       json = util.clone(json);
     }
 
-    return apply(json, options, {}, 0);
+    return apply(json, options, {});
   }
 
   var o$4 = {
@@ -41977,19 +41913,7 @@
         options = options || {};
       }
 
-      json = apply$1(json, options);
-      console.log(json); // json中定义无abbr
-      // if(json.abbr === false) {
-      //   options.abbr = false;
-      // }
-      // if(options.abbr !== false) {
-      //   inject.warn('Abbr in json is deprecated');
-      // }
-      // // 特殊单例声明无需clone加速解析
-      // if(!options.singleton && !json.singleton) {
-      //   json = util.clone(json);
-      // }
-      // 暂存所有动画声明，等root的生成后开始执行
+      json = apply$1(json, options); // 暂存所有动画声明，等root的生成后开始执行
 
       var animateRecords = [];
 

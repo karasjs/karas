@@ -27801,9 +27801,8 @@
             var factorList = shrinkList.map(function (item, i) {
               if (targetMainList[i] === undefined) {
                 // 冻结项的目标主尺寸有值，因子无值或为0
-                var n = item * basisList[i];
-                factorSum += n;
-                return n;
+                factorSum += item;
+                return item;
               }
             });
 
@@ -27834,7 +27833,7 @@
                     targetMainList[i] = minList[i];
                     factorList[i] = 0;
                     needReset = true;
-                    count1 += minList[i];
+                    count1 += basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸，最终从free里减去
                   } // else if(n > maxList[i]) {
                   //   targetMainList[i] = maxList[i];
                   //   factorList[i] = 0;
@@ -27894,7 +27893,7 @@
                     targetMainList[i] = minList[i];
                     factorList[i] = 0;
                     needReset = true;
-                    count1 += minList[i];
+                    count1 += basisList[i] - minList[i];
                   } // else if(n > maxList[i]) {
                   //   targetMainList[i] = maxList[i];
                   //   factorList[i] = 0;

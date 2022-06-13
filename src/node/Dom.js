@@ -1718,9 +1718,8 @@ class Dom extends Xom {
       // 剩下的重新分配因子占比继续从头循环重来一遍
       let factorList = shrinkList.map((item, i) => {
         if(targetMainList[i] === undefined) { // 冻结项的目标主尺寸有值，因子无值或为0
-          let n = item * basisList[i];
-          factorSum += n;
-          return n;
+          factorSum += item;
+          return item;
         }
       });
       while(true) {
@@ -1743,7 +1742,7 @@ class Dom extends Xom {
               targetMainList[i] = minList[i];
               factorList[i] = 0;
               needReset = true;
-              count1 += minList[i];
+              count1 += basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸，最终从free里减去
             }
             // else if(n > maxList[i]) {
             //   targetMainList[i] = maxList[i];
@@ -1793,7 +1792,7 @@ class Dom extends Xom {
               targetMainList[i] = minList[i];
               factorList[i] = 0;
               needReset = true;
-              count1 += minList[i];
+              count1 += basisList[i] - minList[i];
             }
             // else if(n > maxList[i]) {
             //   targetMainList[i] = maxList[i];

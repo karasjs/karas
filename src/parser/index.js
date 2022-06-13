@@ -4,8 +4,10 @@ import inject from '../util/inject';
 import util from '../util/util';
 import font from '../style/font';
 import Controller from '../animate/Controller';
+import apply from './apply';
 
 let o = {
+  apply,
   parse(karas, json, dom, options) {
     if(!json) {
       return;

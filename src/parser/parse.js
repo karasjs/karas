@@ -11,7 +11,7 @@ let { isNil, isFunction, isPrimitive, clone, extend } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
 
 /**
- * 还原缩写到全称，涉及样式和动画属性，仅css
+ * 还原缩写到全称，涉及样式和动画属性
  * @param target 还原的对象
  * @param hash 缩写映射
  */
@@ -69,7 +69,7 @@ function replaceVars(json, vars) {
                   }
                   // 支持函数模式和值模式
                   if(isFunction(v)) {
-                    v = v(target(k));
+                    v = v(target[k]);
                   }
                   target[k] = v;
                 }

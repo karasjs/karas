@@ -2613,9 +2613,9 @@ karas.style.abbr.toFull({border:'1px solid #F00'}, 'border');
 * **类型** `Function`
 * **参数**
   * json `JSON`
-    对比的样式名，注意是格式化的枚举值。
+    JSON数据。
   * options `Object`
-    其中一个样式，注意是格式化的。
+    可选参数。
 * **说明**  
   karas.parse()的前置处理逻辑，将一个含library、vars的综合型json转换为普通的原始json数据
 * **示例**

@@ -27494,7 +27494,7 @@
           var length = item.length;
           var end = offset + length;
 
-          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+          var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end), maxList.slice(offset, end)),
               _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 5),
               x1 = _this4$__layoutFlexLi2[0],
               y1 = _this4$__layoutFlexLi2[1],
@@ -27742,7 +27742,7 @@
 
     }, {
       key: "__layoutFlexLine",
-      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+      value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList, maxList) {
         var _this5 = this;
 
         var x = data.x,
@@ -27786,8 +27786,7 @@
           total = free;
         }
 
-        free = Math.abs(total - free);
-        var freeCopy = free; // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
+        free = Math.max(0, total - free); // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
 
         var factorSum = 0;
 
@@ -27799,6 +27798,7 @@
             // 剩下的重新分配因子占比继续从头循环重来一遍
             var factorList = shrinkList.map(function (item, i) {
               if (targetMainList[i] === undefined) {
+                // 冻结项的目标主尺寸有值，因子无值或为0
                 var n = item * basisList[i];
                 factorSum += n;
                 return n;
@@ -27811,29 +27811,44 @@
               }
 
               var needReset = void 0,
-                  factorSum2 = 0;
+                  factorSum2 = 0,
+                  count1 = 0,
+                  count2 = 0;
               factorList.forEach(function (item, i) {
                 if (item) {
                   var r = item / factorSum;
                   var s = r * free; // 需要收缩的尺寸
 
                   var n = basisList[i] - s; // 实际尺寸
-                  // 比min还小设置为min，同时设0剔除
+                  // 比min还小设置为min，同时设0冻结剔除
 
                   if (n < minList[i]) {
                     targetMainList[i] = minList[i];
                     factorList[i] = 0;
                     needReset = true;
-                    free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
+                    count1 += minList[i];
+                  } else if (n > maxList[i]) {
+                    targetMainList[i] = maxList[i];
+                    factorList[i] = 0;
+                    needReset = true;
+                    count1 += maxList[i];
                   } // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
                   else {
                     targetMainList[i] = n;
                     factorSum2 += item;
+                    count2 += n;
                   }
                 }
               });
 
               if (!needReset) {
+                free -= count2;
+                break;
+              }
+
+              free -= count1; // 都冻结了
+
+              if (!factorSum2) {
                 break;
               }
 
@@ -27855,7 +27870,9 @@
               }
 
               var needReset = void 0,
-                  factorSum2 = 0;
+                  factorSum2 = 0,
+                  count1 = 0,
+                  count2 = 0;
               factorList.forEach(function (item, i) {
                 if (item) {
                   var r = item / factorSum;
@@ -27868,16 +27885,29 @@
                     targetMainList[i] = minList[i];
                     factorList[i] = 0;
                     needReset = true;
-                    free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
+                    count1 += minList[i];
+                  } else if (n > maxList[i]) {
+                    targetMainList[i] = maxList[i];
+                    factorList[i] = 0;
+                    needReset = true;
+                    count1 += maxList[i];
                   } // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
                   else {
                     targetMainList[i] = n;
                     factorSum2 += item;
+                    count2 += n;
                   }
                 }
               });
 
               if (!needReset) {
+                free -= count2;
+                break;
+              }
+
+              free -= count1;
+
+              if (!factorSum2) {
                 break;
               }
 
@@ -28023,7 +28053,7 @@
           });
         }
 
-        return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : freeCopy];
+        return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : free];
       } // 每个flexLine的主轴侧轴对齐
 
     }, {

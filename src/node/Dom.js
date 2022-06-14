@@ -1439,7 +1439,7 @@ class Dom extends Xom {
         lineHeight, computedStyle, justifyContent, alignItems,
         orderChildren.slice(offset, end), item, textAlign,
         growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end),
-        hypotheticalList.slice(offset, end), minList.slice(offset, end));
+        hypotheticalList.slice(offset, end), minList.slice(offset, end), maxList.slice(offset, end));
       // 下一行/列更新坐标
       if(isDirectionRow) {
         clone.y = y1;
@@ -1666,7 +1666,7 @@ class Dom extends Xom {
                    containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount,
                    lineHeight, computedStyle, justifyContent, alignItems,
                    orderChildren, flexLine, textAlign,
-                   growList, shrinkList, basisList, hypotheticalList, minList) {
+                   growList, shrinkList, basisList, hypotheticalList, minList, maxList) {
     let { x, y, w, h } = data;
     let hypotheticalSum = 0;
     hypotheticalList.forEach(item => {
@@ -1707,8 +1707,8 @@ class Dom extends Xom {
     else {
       total = free;
     }
-    free = Math.abs(total - free);
-    let freeCopy = free;
+    free = Math.abs(total - free); // 压缩也使用正值
+    let lessOne = 0;
     // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
     let factorSum = 0;
     if(isOverflow) {
@@ -1717,39 +1717,52 @@ class Dom extends Xom {
       // 于是写成一个循环，每轮先处理一遍，如果产生收缩超限的情况，将超限的设为最小值并剔除
       // 剩下的重新分配因子占比继续从头循环重来一遍
       let factorList = shrinkList.map((item, i) => {
-        if(targetMainList[i] === undefined) {
-          let n = item * basisList[i];
-          factorSum += n;
-          return n;
+        if(targetMainList[i] === undefined) { // 冻结项的目标主尺寸有值，因子无值或为0
+          factorSum += item;
+          return item;
         }
       });
       while(true) {
+        // 都冻结了
+        if(factorSum === 0) {
+          break;
+        }
         if(factorSum < 1) {
+          lessOne += free * (1 - factorSum);
           free *= factorSum;
         }
-        let needReset, factorSum2 = 0;
+        let needReset, factorSum2 = 0, count1 = 0, count2 = 0;
         factorList.forEach((item, i) => {
           if(item) {
             let r = item / factorSum;
             let s = r * free; // 需要收缩的尺寸
             let n = basisList[i] - s; // 实际尺寸
-            // 比min还小设置为min，同时设0剔除
+            // 比min还小设置为min，同时设0冻结剔除
             if(n < minList[i]) {
               targetMainList[i] = minList[i];
               factorList[i] = 0;
               needReset = true;
-              free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
+              count1 += basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸，最终从free里减去
             }
+            // else if(n > maxList[i]) {
+            //   targetMainList[i] = maxList[i];
+            //   factorList[i] = 0;
+            //   needReset = true;
+            //   count1 += maxList[i];
+            // }
             // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
             else {
               targetMainList[i] = n;
               factorSum2 += item;
+              count2 += n;
             }
           }
         });
         if(!needReset) {
+          free -= count2;
           break;
         }
+        free -= count1;
         factorSum = factorSum2;
       }
     }
@@ -1761,10 +1774,14 @@ class Dom extends Xom {
         }
       });
       while(true) {
+        if(factorSum === 0) {
+          break;
+        }
         if(factorSum < 1) {
+          lessOne += free * (1 - factorSum);
           free *= factorSum;
         }
-        let needReset, factorSum2 = 0;
+        let needReset, factorSum2 = 0, count1 = 0, count2 = 0;
         factorList.forEach((item, i) => {
           if(item) {
             let r = item / factorSum;
@@ -1775,18 +1792,27 @@ class Dom extends Xom {
               targetMainList[i] = minList[i];
               factorList[i] = 0;
               needReset = true;
-              free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
+              count1 += basisList[i] - minList[i];
             }
+            // else if(n > maxList[i]) {
+            //   targetMainList[i] = maxList[i];
+            //   factorList[i] = 0;
+            //   needReset = true;
+            //   count1 += maxList[i];
+            // }
             // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
             else {
               targetMainList[i] = n;
               factorSum2 += item;
+              count2 += n;
             }
           }
         });
         if(!needReset) {
+          free -= count2;
           break;
         }
+        free -= count1;
         factorSum = factorSum2;
       }
     }
@@ -1919,7 +1945,7 @@ class Dom extends Xom {
         item.horizonAlign(isUpright? item.height : item.width, textAlign, isUpright);
       })
     }
-    return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : freeCopy];
+    return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : Math.max(0, free + lessOne)];
   }
 
   // 每个flexLine的主轴侧轴对齐

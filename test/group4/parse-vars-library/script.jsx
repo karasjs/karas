@@ -47,9 +47,6 @@ let o = karas.parse({
       "var-library.a": {
         id: 'bbb'
       },
-      "var-library.xyz.props.src": {
-        id: 'ccc'
-      }
     }
   ],
 }, '#test', {
@@ -59,7 +56,6 @@ let o = karas.parse({
       children: ["200"]
     },
     bbb: { tagName: 'span', children: ["abc"] },
-    ccc: "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs="
   },
 });
 let t = o.children[0];

@@ -27488,7 +27488,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         var length = item.length;
         var end = offset + length;
 
-        var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end)),
+        var _this4$__layoutFlexLi = _this4.__layoutFlexLine(clone, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren.slice(offset, end), item, textAlign, growList.slice(offset, end), shrinkList.slice(offset, end), basisList.slice(offset, end), hypotheticalList.slice(offset, end), minList.slice(offset, end), maxList.slice(offset, end)),
             _this4$__layoutFlexLi2 = _slicedToArray(_this4$__layoutFlexLi, 5),
             x1 = _this4$__layoutFlexLi2[0],
             y1 = _this4$__layoutFlexLi2[1],
@@ -27736,7 +27736,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
 
   }, {
     key: "__layoutFlexLine",
-    value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList) {
+    value: function __layoutFlexLine(data, isDirectionRow, isAbs, isColumn, isRow, isUpright, containerSize, fixedWidth, fixedHeight, lineClamp, lineClampCount, lineHeight, computedStyle, justifyContent, alignItems, orderChildren, flexLine, textAlign, growList, shrinkList, basisList, hypotheticalList, minList, maxList) {
       var _this5 = this;
 
       var x = data.x,
@@ -27780,8 +27780,9 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         total = free;
       }
 
-      free = Math.abs(total - free);
-      var freeCopy = free; // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
+      free = Math.abs(total - free); // 压缩也使用正值
+
+      var lessOne = 0; // 循环，文档算法不够简练，其合并了grow和shrink，实际拆开写更简单
 
       var factorSum = 0;
 
@@ -27793,44 +27794,61 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           // 剩下的重新分配因子占比继续从头循环重来一遍
           var factorList = shrinkList.map(function (item, i) {
             if (targetMainList[i] === undefined) {
-              var n = item * basisList[i];
-              factorSum += n;
-              return n;
+              // 冻结项的目标主尺寸有值，因子无值或为0
+              factorSum += item;
+              return item;
             }
           });
 
           while (true) {
+            // 都冻结了
+            if (factorSum === 0) {
+              break;
+            }
+
             if (factorSum < 1) {
+              lessOne += free * (1 - factorSum);
               free *= factorSum;
             }
 
             var needReset = void 0,
-                factorSum2 = 0;
+                factorSum2 = 0,
+                count1 = 0,
+                count2 = 0;
             factorList.forEach(function (item, i) {
               if (item) {
                 var r = item / factorSum;
                 var s = r * free; // 需要收缩的尺寸
 
                 var n = basisList[i] - s; // 实际尺寸
-                // 比min还小设置为min，同时设0剔除
+                // 比min还小设置为min，同时设0冻结剔除
 
                 if (n < minList[i]) {
                   targetMainList[i] = minList[i];
                   factorList[i] = 0;
                   needReset = true;
-                  free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
-                } // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
+                  count1 += basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸，最终从free里减去
+                } // else if(n > maxList[i]) {
+                //   targetMainList[i] = maxList[i];
+                //   factorList[i] = 0;
+                //   needReset = true;
+                //   count1 += maxList[i];
+                // }
+                // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
                 else {
                   targetMainList[i] = n;
                   factorSum2 += item;
+                  count2 += n;
                 }
               }
             });
 
             if (!needReset) {
+              free -= count2;
               break;
             }
 
+            free -= count1;
             factorSum = factorSum2;
           }
         })();
@@ -27844,12 +27862,19 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
           });
 
           while (true) {
+            if (factorSum === 0) {
+              break;
+            }
+
             if (factorSum < 1) {
+              lessOne += free * (1 - factorSum);
               free *= factorSum;
             }
 
             var needReset = void 0,
-                factorSum2 = 0;
+                factorSum2 = 0,
+                count1 = 0,
+                count2 = 0;
             factorList.forEach(function (item, i) {
               if (item) {
                 var r = item / factorSum;
@@ -27862,19 +27887,28 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
                   targetMainList[i] = minList[i];
                   factorList[i] = 0;
                   needReset = true;
-                  free -= basisList[i] - minList[i]; // 超出的尺寸也要减去实际收缩的尺寸
-                } // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
+                  count1 += basisList[i] - minList[i];
+                } // else if(n > maxList[i]) {
+                //   targetMainList[i] = maxList[i];
+                //   factorList[i] = 0;
+                //   needReset = true;
+                //   count1 += maxList[i];
+                // }
+                // 先按照没有超限的设置，正常情况直接跳出，如果有超限，记录sum2给下轮赋值重新计算
                 else {
                   targetMainList[i] = n;
                   factorSum2 += item;
+                  count2 += n;
                 }
               }
             });
 
             if (!needReset) {
+              free -= count2;
               break;
             }
 
+            free -= count1;
             factorSum = factorSum2;
           }
         })();
@@ -28017,7 +28051,7 @@ var Dom$1 = /*#__PURE__*/function (_Xom) {
         });
       }
 
-      return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : freeCopy];
+      return [x, y, maxCross, marginAutoCount, isOverflow ? 0 : Math.max(0, free + lessOne)];
     } // 每个flexLine的主轴侧轴对齐
 
   }, {
@@ -42078,7 +42112,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.75.0-alpha";
+var version = "0.75.0";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

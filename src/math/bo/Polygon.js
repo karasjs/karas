@@ -2,6 +2,7 @@ import geom from '../geom';
 import vector from '../vector';
 import bezier from '../bezier';
 import equation from '../equation';
+import isec from '../isec';
 import Point from './Point';
 import Segment from './Segment';
 
@@ -22,7 +23,7 @@ class Polygon {
         return;
       }
       let startPoint = new Point(vertices[0]), firstPoint = startPoint;
-      // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点
+      // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
       for(let i = 1, len = vertices.length; i < len; i++) {
         let curr = vertices[i], l = curr.length;
         // 闭合区域，首尾顶点重复统一
@@ -319,6 +320,43 @@ function findIntersection(list, compareBelong) {
                     }
                   }
                 }
+                else {
+                  // b是2阶曲线
+                  if(lenB === 3) {}
+                  // b是3阶曲线
+                  else {}
+                }
+              }
+              else {
+                let { x: ax3, y: ay3 } = coordsA[2];
+                // a是2阶曲线
+                if(lenA === 3) {
+                  // b是直线
+                  if(lenB === 2) {}
+                  else {
+                    let { x: bx3, y: by3 } = coordsB[2];
+                    // b是2阶曲线
+                    if(lenB === 3) {
+                      let res = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
+                        bx1, by1, bx2, by2, bx3, by3);
+                      // console.log(res);
+                      if(res) {
+                        let pa = res.sort(function(a, b) {
+                          return a.toSource - b.toSource;
+                        }).map(item => item.point);
+                        let ra = sliceSegment(seg, pa);
+                        console.log(ra);
+                        // let pb = res.sort(function(a, b) {
+                        //   return a.toClip - b.toClip;
+                        // }).map(item => item.point);
+                        // console.log(pb);
+                      }
+                    }
+                    // b是3阶曲线
+                    else {}
+                  }
+                }
+                else {}
               }
             }
           }
@@ -354,6 +392,52 @@ function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
     let ox = ax1 + toSource * (ax2 - ax1);
     let oy = ay1 + toSource * (ay2 - ay1);
     return [ox, oy];
+  }
+}
+
+function getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
+                                       bx1, by1, bx2, by2, bx3, by3) {
+  let res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
+    bx1, by1, bx2, by2, bx3, by3);
+  if(res.length) {
+    res = res.map(item => {
+      // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+      let toClip = bezier.getPointT([
+        [bx1, by1],
+        [bx2, by2],
+        [bx3, by3],
+      ], item.x, item.y);
+      // 防止误差无值
+      if(toClip.length) {
+        toClip = toClip[0];
+        if(item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          // 还要判断斜率，相等也忽略（小于一定误差）
+          let k1 = bezier.bezierSlope([
+            [ax1, ay1],
+            [ax2, ay2],
+            [ax3, ay3],
+          ], item.t);
+          let k2 = bezier.bezierSlope([
+            [bx1, by1],
+            [bx2, by2],
+            [bx3, by3],
+          ], toClip);
+          // 忽略方向，180°也是平行，Infinity相减为NaN
+          if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < 1e-6) {
+            return;
+          }
+          return {
+            // coords: [item.x, item.y],
+            point: new Point(item.x, item.y),
+            toSource: item.t, // source是曲线直接用t
+            toClip,
+          };
+        }
+      }
+    }).filter(i => i);
+    if(res.length) {
+      return res;
+    }
   }
 }
 

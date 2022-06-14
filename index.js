@@ -13727,7 +13727,8 @@
   }();
 
   var Segment = /*#__PURE__*/function () {
-    function Segment(coords, belong) {
+    function Segment(coords, belong // , isReversed
+    ) {
       _classCallCheck(this, Segment);
 
       this.coords = coords;
@@ -13735,7 +13736,8 @@
 
       this.calBbox();
       this.above = [false, false];
-      this.below = [false, false];
+      this.below = [false, false]; // this.isReversed = isReversed; // 是否首尾翻转过，因为要保持左下点开始，某些线段会反过来，记录之
+
       this.isVisited = false; // 扫描求交时用到
     }
 
@@ -13764,7 +13766,8 @@
     }, {
       key: "reverse",
       value: function reverse() {
-        this.coords.reverse();
+        this.coords.reverse(); // this.isReversed = !this.isReversed;
+
         var above = this.above,
             below = this.below;
 
@@ -13780,7 +13783,8 @@
     }, {
       key: "toString",
       value: function toString() {
-        return this.coords.join(' ') + ' ' + this.belong + ' ' + this.above.map(function (i) {
+        return this.coords.join(' ') + ' ' + this.belong // + ',' + (this.isReversed ? 1 : 0)
+        + ' ' + this.above.map(function (i) {
           return i ? 1 : 0;
         }).join('') + '' + this.below.map(function (i) {
           return i ? 1 : 0;
@@ -13814,7 +13818,7 @@
         }
 
         var startPoint = new Point(vertices[0]),
-            firstPoint = startPoint; // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点
+            firstPoint = startPoint; // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
 
         for (var i = 1, len = vertices.length; i < len; i++) {
           var curr = vertices[i],
@@ -14128,6 +14132,39 @@
                       }
                     }
                   }
+                } else {
+                  var _coordsA$3 = coordsA[2],
+                      ax3 = _coordsA$3.x,
+                      ay3 = _coordsA$3.y; // a是2阶曲线
+
+                  if (lenA === 3) {
+                    // b是直线
+                    if (lenB === 2) ; else {
+                      var _coordsB$3 = coordsB[2],
+                          bx3 = _coordsB$3.x,
+                          by3 = _coordsB$3.y; // b是2阶曲线
+
+                      if (lenB === 3) {
+                        var _res = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3); // console.log(res);
+
+
+                        if (_res) {
+                          var pa = _res.sort(function (a, b) {
+                            return a.toSource - b.toSource;
+                          }).map(function (item) {
+                            return item.point;
+                          });
+
+                          var _ra = sliceSegment(seg, pa);
+
+                          console.log(_ra); // let pb = res.sort(function(a, b) {
+                          //   return a.toClip - b.toClip;
+                          // }).map(item => item.point);
+                          // console.log(pb);
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -14164,6 +14201,45 @@
       var ox = ax1 + toSource * (ax2 - ax1);
       var oy = ay1 + toSource * (ay2 - ay1);
       return [ox, oy];
+    }
+  }
+
+  function getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
+    var res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
+
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[bx1, by1], [bx2, by2], [bx3, by3]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          toClip = toClip[0];
+
+          if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+            // 还要判断斜率，相等也忽略（小于一定误差）
+            var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
+            var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+              return;
+            }
+
+            return {
+              // coords: [item.x, item.y],
+              point: new Point(item.x, item.y),
+              toSource: item.t,
+              // source是曲线直接用t
+              toClip: toClip
+            };
+          }
+        }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
+      }
     }
   } // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
 
@@ -14457,11 +14533,11 @@
   }
 
   // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
-  function join(res, chains, arr, index, pt, isHead) {
+  function join(res, chains, chain, index, pt, isHead) {
     for (var i = 0, len = chains.length; i < len; i++) {
       var item = chains[i];
 
-      if (item !== arr) {
+      if (item !== chain) {
         var l = item.length;
         var head = item[0],
             tail = item[l - 1];
@@ -14472,24 +14548,24 @@
 
         if (pt === ptHead) {
           if (isHead) {
-            item = reverse(arr).concat(item);
+            item = reverse(chain).concat(item);
             chains[i] = item;
             chains.splice(index, 1);
             return close(res, chains, item, i);
           } else {
-            item = arr.concat(item);
+            item = chain.concat(item);
             chains[i] = item;
             chains.splice(index, 1);
             return close(res, chains, item, i);
           }
         } else if (pt === ptTail) {
           if (isHead) {
-            item = item.concat(arr);
+            item = item.concat(chain);
             chains[i] = item;
             chains.splice(index, 1);
             return close(res, chains, item, i);
           } else {
-            item = item.concat(reverse(arr));
+            item = item.concat(reverse(chain));
             chains[i] = item;
             chains.splice(index, 1);
             return close(res, chains, item, i);
@@ -14499,21 +14575,27 @@
     } // 无法和别的链接，也要检查自身闭合
 
 
-    close(res, chains, arr, index);
+    close(res, chains, chain, index);
   }
 
-  function close(res, chains, arr, index) {
-    var l = arr.length;
-    var head = arr[0],
-        tail = arr[l - 1];
+  function close(res, chains, chain, index) {
+    var l = chain.length;
+    var head = chain[0],
+        tail = chain[l - 1];
     var ptHead = head.coords[0];
     var coords2 = tail.coords,
         l2 = coords2.length;
     var ptTail = coords2[l2 - 1];
 
     if (ptHead === ptTail) {
-      chains.splice(index, 1);
-      res.push(arr);
+      chains.splice(index, 1); // 结果要保证原先多边形的线段起始顺序，根据第一个判断即可，
+      // 全部都是a多边形或全都是b多边形的话，正确的回路一定是全部线段一致的，都正或都反
+      // 2个都有情况则无论正反绘制都可以
+      // if(chain[0].isReversed) {
+      //   reverse(chain);
+      // }
+
+      res.push(chain);
     }
   } // 整条链颠倒，包含每个线段自身颠倒
 
@@ -14537,32 +14619,32 @@
           end = coords[len - 1]; // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
 
       for (var i = 0, _len = chains.length; i < _len; i++) {
-        var arr = chains[i],
-            l = arr.length;
-        var head = arr[0],
-            tail = arr[l - 1];
+        var chain = chains[i],
+            l = chain.length;
+        var head = chain[0],
+            tail = chain[l - 1];
         var ptHead = head.coords[0];
         var coords2 = tail.coords,
             l2 = coords2.length;
         var ptTail = coords2[l2 - 1];
 
         if (start === ptTail) {
-          arr.push(seg);
-          join(res, chains, arr, i, end, false);
+          chain.push(seg);
+          join(res, chains, chain, i, end, false);
           continue outer;
         } else if (start === ptHead) {
           seg.reverse();
-          arr.unshift(seg);
-          join(res, chains, arr, i, end, true);
+          chain.unshift(seg);
+          join(res, chains, chain, i, end, true);
           continue outer;
         } else if (end === ptTail) {
           seg.reverse();
-          arr.push(seg);
-          join(res, chains, arr, i, start, false);
+          chain.push(seg);
+          join(res, chains, chain, i, start, false);
           continue outer;
         } else if (end === ptHead) {
-          arr.unshift(seg);
-          join(res, chains, arr, i, start, true);
+          chain.unshift(seg);
+          join(res, chains, chain, i, start, true);
           continue outer;
         }
       } // 找不到则生成新链
@@ -23583,7 +23665,7 @@
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
               var temp = [];
-              [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, SCALE_X$3, SCALE_Y$3, SCALE_Z$2, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$4, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2].forEach(function (k) {
+              [TRANSLATE_X$4, TRANSLATE_Y$4, TRANSLATE_Z$4, ROTATE_X$2, ROTATE_Y$2, ROTATE_Z$4, ROTATE_3D$3, SKEW_X$2, SKEW_Y$2, SCALE_X$3, SCALE_Y$3, SCALE_Z$2].forEach(function (k) {
                 // 删除之前遗留的
                 delete computedStyle[k];
                 var v = currentStyle[k];

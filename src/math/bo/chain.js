@@ -1,8 +1,8 @@
 // 新线段添加到某个链上后，要先检查是否能合其它链连起来，再检查闭合情况
-function join(res, chains, arr, index, pt, isHead) {
+function join(res, chains, chain, index, pt, isHead) {
   for(let i = 0, len = chains.length; i < len; i++) {
     let item = chains[i];
-    if(item !== arr) {
+    if(item !== chain) {
       let l = item.length;
       let head = item[0], tail = item[l - 1];
       let ptHead = head.coords[0];
@@ -10,13 +10,13 @@ function join(res, chains, arr, index, pt, isHead) {
       let ptTail = coords[l2 - 1];
       if(pt === ptHead) {
         if(isHead) {
-          item = reverse(arr).concat(item);
+          item = reverse(chain).concat(item);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
         }
         else {
-          item = arr.concat(item);
+          item = chain.concat(item);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
@@ -24,13 +24,13 @@ function join(res, chains, arr, index, pt, isHead) {
       }
       else if(pt === ptTail) {
         if(isHead) {
-          item = item.concat(arr);
+          item = item.concat(chain);
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
         }
         else {
-          item = item.concat(reverse(arr));
+          item = item.concat(reverse(chain));
           chains[i] = item;
           chains.splice(index, 1);
           return close(res, chains, item, i);
@@ -39,18 +39,24 @@ function join(res, chains, arr, index, pt, isHead) {
     }
   }
   // 无法和别的链接，也要检查自身闭合
-  close(res, chains, arr, index);
+  close(res, chains, chain, index);
 }
 
-function close(res, chains, arr, index) {
-  let l = arr.length;
-  let head = arr[0], tail = arr[l - 1];
+function close(res, chains, chain, index) {
+  let l = chain.length;
+  let head = chain[0], tail = chain[l - 1];
   let ptHead = head.coords[0];
   let coords2 = tail.coords, l2 = coords2.length;
   let ptTail = coords2[l2 - 1];
   if(ptHead === ptTail) {
     chains.splice(index, 1);
-    res.push(arr);
+    // 结果要保证原先多边形的线段起始顺序，根据第一个判断即可，
+    // 全部都是a多边形或全都是b多边形的话，正确的回路一定是全部线段一致的，都正或都反
+    // 2个都有情况则无论正反绘制都可以
+    // if(chain[0].isReversed) {
+    //   reverse(chain);
+    // }
+    res.push(chain);
   }
 }
 
@@ -68,31 +74,31 @@ export default function(list) {
     let start = coords[0], end = coords[len - 1];
     // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
     for(let i = 0, len = chains.length; i < len; i++) {
-      let arr = chains[i], l = arr.length;
-      let head = arr[0], tail = arr[l - 1];
+      let chain = chains[i], l = chain.length;
+      let head = chain[0], tail = chain[l - 1];
       let ptHead = head.coords[0];
       let coords2 = tail.coords, l2 = coords2.length;
       let ptTail = coords2[l2 - 1];
       if(start === ptTail) {
-        arr.push(seg);
-        join(res, chains, arr, i, end, false);
+        chain.push(seg);
+        join(res, chains, chain, i, end, false);
         continue outer;
       }
       else if(start === ptHead) {
         seg.reverse();
-        arr.unshift(seg);
-        join(res, chains, arr, i, end, true);
+        chain.unshift(seg);
+        join(res, chains, chain, i, end, true);
         continue outer;
       }
       else if(end === ptTail) {
         seg.reverse();
-        arr.push(seg);
-        join(res, chains, arr, i, start, false);
+        chain.push(seg);
+        join(res, chains, chain, i, start, false);
         continue outer;
       }
       else if(end === ptHead) {
-        arr.unshift(seg);
-        join(res, chains, arr, i, start, true);
+        chain.unshift(seg);
+        join(res, chains, chain, i, start, true);
         continue outer;
       }
     }

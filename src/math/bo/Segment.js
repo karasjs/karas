@@ -11,6 +11,7 @@ class Segment {
     this.below = [false, false];
     // this.isReversed = isReversed; // 是否首尾翻转过，因为要保持左下点开始，某些线段会反过来，记录之
     this.isVisited = false; // 扫描求交时用到
+    this.isDeleted = false;
   }
 
   calBbox() {
@@ -44,6 +45,7 @@ class Segment {
   toString() {
     return this.coords.join(' ')
       + ' ' + this.belong
+      // + (this.isDeleted ? 1 : 0)
       // + ',' + (this.isReversed ? 1 : 0)
       + ' ' + this.above.map(i => i ? 1 : 0).join('')
       + '' + this.below.map(i => i ? 1 : 0).join('');

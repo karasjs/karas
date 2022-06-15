@@ -1,17 +1,16 @@
 import bezier from '../bezier';
 
 class Segment {
-  constructor(coords, belong
-              // , isReversed
-  ) {
+  constructor(coords, belong) {
     this.coords = coords;
     this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
     this.calBbox();
     this.above = [false, false];
     this.below = [false, false];
-    // this.isReversed = isReversed; // 是否首尾翻转过，因为要保持左下点开始，某些线段会反过来，记录之
+    this.myFill = [false, false]; // 自己的上下内外性
+    this.otherFill = [false, false]; // 对方的上下内外性
     this.isVisited = false; // 扫描求交时用到
-    this.isDeleted = false;
+    this.isDeleted = false; // 相交裁剪老的线段会被删除
   }
 
   calBbox() {
@@ -30,25 +29,16 @@ class Segment {
     }
   }
 
-  // 线段边逆序，除了坐标，上下内外性也会颠倒
+  // 线段边逆序
   reverse() {
     this.coords.reverse();
-    // this.isReversed = !this.isReversed;
-    let { above, below } = this;
-    let [t0, t1] = above;
-    above[0] = below[0];
-    above[1] = below[1];
-    below[0] = t0;
-    below[1] = t1;
   }
 
   toString() {
     return this.coords.join(' ')
       + ' ' + this.belong
-      // + (this.isDeleted ? 1 : 0)
-      // + ',' + (this.isReversed ? 1 : 0)
-      + ' ' + this.above.map(i => i ? 1 : 0).join('')
-      + '' + this.below.map(i => i ? 1 : 0).join('');
+      + ' ' + this.myFill.map(i => i ? 1 : 0).join('')
+      + this.otherFill.map(i => i ? 1 : 0).join('');
   }
 }
 

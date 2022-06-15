@@ -208,7 +208,7 @@ class Polygon {
         // console.error(seg.toString(), ael.length)
         // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
         if(!ael.length) {
-          seg.above[belong] = true;
+          seg.myFill[0] = true;
           ael.push(seg);
         }
         else {
@@ -217,13 +217,13 @@ class Polygon {
           let isAboveLast = segAboveCompare(seg, top);
           // 比ael栈顶还高在最上方
           if(isAboveLast) {
-            seg.below[belong] = top.above[belong];
-            seg.above[belong] = !seg.below[belong];
+            seg.myFill[1] = top.myFill[0];
+            seg.myFill[0] = !seg.myFill[1];
             ael.push(seg);
           }
           // 不高且只有1个则在最下方
           else if(len === 1) {
-            seg.above[belong] = true;
+            seg.myFill[0] = true;
             ael.unshift(seg);
           }
           else {
@@ -232,13 +232,13 @@ class Polygon {
               let curr = ael[i];
               let isAbove = segAboveCompare(seg, curr);
               if(isAbove) {
-                seg.below[belong] = curr.above[belong];
-                seg.above[belong] = !seg.below[belong];
+                seg.myFill[1] = curr.myFill[0];
+                seg.myFill[0] = !seg.myFill[1];
                 ael.splice(i + 1, 0, seg);
                 break;
               }
               else if(i === 0) {
-                seg.above[belong] = true;
+                seg.myFill[0] = true;
                 ael.unshift(seg);
               }
             }
@@ -269,10 +269,10 @@ class Polygon {
           let isAboveLast = segAboveCompare(seg, top);
           if(isAboveLast) {
             if(top.belong === belong) {
-              inside = top.above[belong2];
+              inside = top.otherFill[0];
             }
             else {
-              inside = top.above[top.belong];
+              inside = top.myFill[0];
             }
             ael.push(seg);
           }
@@ -287,11 +287,11 @@ class Polygon {
               if(isAbove) {
                 // 如果在自己的下方线和自己同色，则取下方线的另外色上填充
                 if(curr.belong === belong) {
-                  inside = curr.above[belong2];
+                  inside = curr.otherFill[0];
                 }
                 // 否则取下方线的下方色上填充
                 else {
-                  inside = curr.above[curr.belong];
+                  inside = curr.myFill[0];
                 }
                 ael.splice(i + 1, 0, seg);
                 break;
@@ -303,8 +303,8 @@ class Polygon {
             }
           }
         }
-        seg.above[belong2] = inside;
-        seg.below[belong2] = inside;
+        seg.otherFill[0] = inside;
+        seg.otherFill[1] = inside;
         // console.warn(seg.toString(), inside)
       }
       else {

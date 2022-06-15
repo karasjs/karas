@@ -13727,8 +13727,7 @@
   }();
 
   var Segment = /*#__PURE__*/function () {
-    function Segment(coords, belong // , isReversed
-    ) {
+    function Segment(coords, belong) {
       _classCallCheck(this, Segment);
 
       this.coords = coords;
@@ -13736,11 +13735,14 @@
 
       this.calBbox();
       this.above = [false, false];
-      this.below = [false, false]; // this.isReversed = isReversed; // 是否首尾翻转过，因为要保持左下点开始，某些线段会反过来，记录之
+      this.below = [false, false];
+      this.myFill = [false, false]; // 自己的上下内外性
+
+      this.otherFill = [false, false]; // 对方的上下内外性
 
       this.isVisited = false; // 扫描求交时用到
 
-      this.isDeleted = false;
+      this.isDeleted = false; // 相交裁剪老的线段会被删除
     }
 
     _createClass(Segment, [{
@@ -13763,33 +13765,19 @@
           });
           this.bbox = bezier.bboxBezier(arr);
         }
-      } // 线段边逆序，除了坐标，上下内外性也会颠倒
+      } // 线段边逆序
 
     }, {
       key: "reverse",
       value: function reverse() {
-        this.coords.reverse(); // this.isReversed = !this.isReversed;
-
-        var above = this.above,
-            below = this.below;
-
-        var _above = _slicedToArray(above, 2),
-            t0 = _above[0],
-            t1 = _above[1];
-
-        above[0] = below[0];
-        above[1] = below[1];
-        below[0] = t0;
-        below[1] = t1;
+        this.coords.reverse();
       }
     }, {
       key: "toString",
       value: function toString() {
-        return this.coords.join(' ') + ' ' + this.belong // + (this.isDeleted ? 1 : 0)
-        // + ',' + (this.isReversed ? 1 : 0)
-        + ' ' + this.above.map(function (i) {
+        return this.coords.join(' ') + ' ' + this.belong + ' ' + this.myFill.map(function (i) {
           return i ? 1 : 0;
-        }).join('') + '' + this.below.map(function (i) {
+        }).join('') + this.otherFill.map(function (i) {
           return i ? 1 : 0;
         }).join('');
       }
@@ -14202,7 +14190,7 @@
             // console.error(seg.toString(), ael.length)
             // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
             if (!ael.length) {
-              seg.above[belong] = true;
+              seg.myFill[0] = true;
               ael.push(seg);
             } else {
               // 插入到ael正确的位置，按照x升序、y升序
@@ -14211,12 +14199,12 @@
               var isAboveLast = segAboveCompare(seg, top); // 比ael栈顶还高在最上方
 
               if (isAboveLast) {
-                seg.below[belong] = top.above[belong];
-                seg.above[belong] = !seg.below[belong];
+                seg.myFill[1] = top.myFill[0];
+                seg.myFill[0] = !seg.myFill[1];
                 ael.push(seg);
               } // 不高且只有1个则在最下方
               else if (len === 1) {
-                seg.above[belong] = true;
+                seg.myFill[0] = true;
                 ael.unshift(seg);
               } else {
                 // 遍历，尝试对比是否在ael栈中相邻2条线段之间
@@ -14225,12 +14213,12 @@
                   var isAbove = segAboveCompare(seg, curr);
 
                   if (isAbove) {
-                    seg.below[belong] = curr.above[belong];
-                    seg.above[belong] = !seg.below[belong];
+                    seg.myFill[1] = curr.myFill[0];
+                    seg.myFill[0] = !seg.myFill[1];
                     ael.splice(i + 1, 0, seg);
                     break;
                   } else if (i === 0) {
-                    seg.above[belong] = true;
+                    seg.myFill[0] = true;
                     ael.unshift(seg);
                   }
                 }
@@ -14249,8 +14237,7 @@
         list.forEach(function (item) {
           var isStart = item.isStart,
               seg = item.seg;
-          var belong = seg.belong,
-              belong2 = belong === 0 ? 1 : 0;
+          var belong = seg.belong;
 
           if (isStart) {
             // console.error(seg.toString(), ael.length)
@@ -14266,9 +14253,9 @@
 
               if (isAboveLast) {
                 if (top.belong === belong) {
-                  inside = top.above[belong2];
+                  inside = top.otherFill[0];
                 } else {
-                  inside = top.above[top.belong];
+                  inside = top.myFill[0];
                 }
 
                 ael.push(seg);
@@ -14283,10 +14270,10 @@
                   if (isAbove) {
                     // 如果在自己的下方线和自己同色，则取下方线的另外色上填充
                     if (curr.belong === belong) {
-                      inside = curr.above[belong2];
+                      inside = curr.otherFill[0];
                     } // 否则取下方线的下方色上填充
                     else {
-                      inside = curr.above[curr.belong];
+                      inside = curr.myFill[0];
                     }
 
                     ael.splice(i + 1, 0, seg);
@@ -14299,8 +14286,8 @@
               }
             }
 
-            seg.above[belong2] = inside;
-            seg.below[belong2] = inside; // console.warn(seg.toString(), inside)
+            seg.otherFill[0] = inside;
+            seg.otherFill[1] = inside; // console.warn(seg.toString(), inside)
           } else {
             var _i2 = ael.indexOf(seg);
 
@@ -14952,7 +14939,7 @@
     return chain.reverse();
   }
 
-  function chain (list) {
+  function _chain (list) {
     var chains = [],
         res = [];
 
@@ -15020,6 +15007,11 @@
   }
 
   function prefix(polygon) {
+    // 连续操作时中间结果保留，可直接返回对象
+    if (polygon instanceof Polygon) {
+      return polygon;
+    }
+
     if (polygon[0] && util.isNumber(polygon[0][0])) {
       return [polygon];
     }
@@ -15055,9 +15047,16 @@
   function filter(segments, matrix) {
     var res = [];
     segments.forEach(function (seg) {
-      var above = seg.above,
-          below = seg.below;
-      var i = (above[0] ? 8 : 0) + (above[1] ? 4 : 0) + (below[0] ? 2 : 0) + (below[1] ? 1 : 0);
+      var belong = seg.belong,
+          myFill = seg.myFill,
+          otherFill = seg.otherFill;
+      var i;
+
+      if (belong) {
+        i = (otherFill[0] ? 8 : 0) + (myFill[0] ? 4 : 0) + (otherFill[1] ? 2 : 0) + (myFill[1] ? 1 : 0);
+      } else {
+        i = (myFill[0] ? 8 : 0) + (otherFill[0] ? 4 : 0) + (myFill[1] ? 2 : 0) + (otherFill[1] ? 1 : 0);
+      }
 
       if (matrix[i]) {
         res.push(seg);
@@ -15067,50 +15066,54 @@
   }
 
   var bo = {
-    intersect: function intersect(polygonA, polygonB) {
+    intersect: function intersect(polygonA, polygonB, keep) {
       var _trivial = trivial(polygonA, polygonB),
           _trivial2 = _slicedToArray(_trivial, 2),
           source = _trivial2[0],
           clip = _trivial2[1];
 
       var list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
-      return chain(list);
+
+      return _chain(list);
     },
-    union: function union(polygonA, polygonB) {
+    union: function union(polygonA, polygonB, keep) {
       var _trivial3 = trivial(polygonA, polygonB),
           _trivial4 = _slicedToArray(_trivial3, 2),
           source = _trivial4[0],
           clip = _trivial4[1];
 
       var list = filter(source.segments, UNION$1).concat(filter(clip.segments, UNION$1));
-      return chain(list);
+      return _chain(list);
     },
-    subtract: function subtract(polygonA, polygonB) {
+    subtract: function subtract(polygonA, polygonB, keep) {
       var _trivial5 = trivial(polygonA, polygonB),
           _trivial6 = _slicedToArray(_trivial5, 2),
           source = _trivial6[0],
           clip = _trivial6[1];
 
       var list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
-      return chain(list);
+      return _chain(list);
     },
-    subtract2: function subtract2(polygonA, polygonB) {
+    subtract2: function subtract2(polygonA, polygonB, keep) {
       var _trivial7 = trivial(polygonA, polygonB),
           _trivial8 = _slicedToArray(_trivial7, 2),
           source = _trivial8[0],
           clip = _trivial8[1];
 
       var list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
-      return chain(list);
+      return _chain(list);
     },
-    difference: function difference(polygonA, polygonB) {
+    difference: function difference(polygonA, polygonB, keep) {
       var _trivial9 = trivial(polygonA, polygonB),
           _trivial10 = _slicedToArray(_trivial9, 2),
           source = _trivial10[0],
           clip = _trivial10[1];
 
       var list = filter(source.segments, DIFFERENCE$1).concat(filter(clip.segments, DIFFERENCE$1));
-      return chain(list);
+      return _chain(list);
+    },
+    chain: function chain(polygon) {
+      return _chain(polygon.segments);
     }
   };
 

@@ -4,6 +4,10 @@ import util from '../../util/util';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
 function prefix(polygon) {
+  // 连续操作时中间结果保留，可直接返回对象
+  if(polygon instanceof Polygon) {
+    return polygon;
+  }
   if(polygon[0] && util.isNumber(polygon[0][0])) {
     return [polygon];
   }
@@ -59,11 +63,20 @@ const INTERSECT = [
 function filter(segments, matrix) {
   let res = [];
   segments.forEach(seg => {
-    let { above, below } = seg;
-    let i = (above[0] ? 8 : 0)
-      + (above[1] ? 4 : 0)
-      + (below[0] ? 2 : 0)
-      + (below[1] ? 1 : 0);
+    let { belong, myFill, otherFill } = seg;
+    let i;
+    if(belong) {
+      i = (otherFill[0] ? 8 : 0)
+        + (myFill[0] ? 4 : 0)
+        + (otherFill[1] ? 2 : 0)
+        + (myFill[1] ? 1 : 0);
+    }
+    else {
+      i = (myFill[0] ? 8 : 0)
+        + (otherFill[0] ? 4 : 0)
+        + (myFill[1] ? 2 : 0)
+        + (otherFill[1] ? 1 : 0);
+    }
     if(matrix[i]) {
       res.push(seg);
     }
@@ -72,29 +85,33 @@ function filter(segments, matrix) {
 }
 
 export default {
-  intersect(polygonA, polygonB) {
+  intersect(polygonA, polygonB, keep) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
+    if(keep) {}
     return chain(list);
   },
-  union(polygonA, polygonB) {
+  union(polygonA, polygonB, keep) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, UNION).concat(filter(clip.segments, UNION));
     return chain(list);
   },
-  subtract(polygonA, polygonB) {
+  subtract(polygonA, polygonB, keep) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
     return chain(list);
   },
-  subtract2(polygonA, polygonB) {
+  subtract2(polygonA, polygonB, keep) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
     return chain(list);
   },
-  difference(polygonA, polygonB) {
+  difference(polygonA, polygonB, keep) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, DIFFERENCE).concat(filter(clip.segments, DIFFERENCE));
     return chain(list);
+  },
+  chain(polygon) {
+    return chain(polygon.segments);
   },
 };

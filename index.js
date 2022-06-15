@@ -13945,7 +13945,7 @@
         if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
-          var k2 = bezier.bezierSlope(bx1, by1, bx2, by2); // 忽略方向，180°也是平行，Infinity相减为NaN
+          var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
           if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
             return;
@@ -14035,6 +14035,9 @@
   var getIntersectionLineLine$1 = intersect.getIntersectionLineLine,
       getIntersectionBezier2Line$1 = intersect.getIntersectionBezier2Line,
       getIntersectionBezier2Bezier2$1 = intersect.getIntersectionBezier2Bezier2,
+      getIntersectionBezier2Bezier3$1 = intersect.getIntersectionBezier2Bezier3,
+      getIntersectionBezier3Line$1 = intersect.getIntersectionBezier3Line,
+      getIntersectionBezier3Bezier3$1 = intersect.getIntersectionBezier3Bezier3,
       sortIntersection$1 = intersect.sortIntersection;
 
   var Polygon = /*#__PURE__*/function () {
@@ -14126,7 +14129,7 @@
                 seg = new Segment(coords, index);
               })();
             } else {
-              var _coords3 = Point.compare(startPoint, endPoint) ? [endPoint, cPoint1, cPoint2, startPoint] : [startPoint, cPoint2, cPoint1, endPoint];
+              var _coords3 = Point.compare(startPoint, endPoint) ? [endPoint, cPoint2, cPoint1, startPoint] : [startPoint, cPoint1, cPoint2, endPoint];
 
               seg = new Segment(_coords3, index);
             }
@@ -14343,10 +14346,10 @@
             bboxA = seg.bbox; // 第2次访问边是离开活动，考虑删除
 
         if (seg.isVisited) {
-          // console.warn(seg.toString());
+          // console.warn(x, seg.toString());
           // console.log(ael.map(item => item.toString()));
           // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
-          if (bboxA[0] !== bboxA[2] && seg.coords.length === 2) {
+          if (bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
             var i = ael.indexOf(seg);
             ael.splice(i, 1);
 
@@ -14361,7 +14364,7 @@
           // console.log(ael.map(item => item.toString()));
         } // 第1次访问边一定是进入活动，求交
         else {
-          // console.error(seg.toString(), ael.length);
+          // console.error(x, seg.toString(), ael.length);
           // console.log(ael.map(item => item.toString()));
           // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
           if (ael.length) {
@@ -14411,7 +14414,8 @@
                     if (d === 0) ; else {
                       res = getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
                     }
-                  } else {
+                  } // b是曲线
+                  else {
                     var _coordsB$3 = coordsB[2],
                         bx3 = _coordsB$3.x,
                         by3 = _coordsB$3.y; // b是2阶曲线
@@ -14419,22 +14423,64 @@
                     if (lenB === 3) {
                       res = getIntersectionBezier2Line$1(bx1, by1, bx2, by2, bx3, by3, ax1, ay1, ax2, ay2);
                       isSourceReverted = true;
+                    } // b是3阶曲线
+                    else {
+                      var _coordsB$4 = coordsB[3],
+                          bx4 = _coordsB$4.x,
+                          by4 = _coordsB$4.y;
+                      res = getIntersectionBezier3Line$1(bx1, by1, bx2, by2, bx3, by3, bx4, by4, ax1, ay1, ax2, ay2);
+                      isSourceReverted = true;
                     }
                   }
-                } else {
+                } // a是曲线
+                else {
                   var _coordsA$3 = coordsA[2],
                       ax3 = _coordsA$3.x,
                       ay3 = _coordsA$3.y; // a是2阶曲线
 
                   if (lenA === 3) {
                     // b是直线
-                    if (lenB === 2) ; else {
-                      var _coordsB$4 = coordsB[2],
-                          _bx = _coordsB$4.x,
-                          _by = _coordsB$4.y; // b是2阶曲线
+                    if (lenB === 2) {
+                      res = getIntersectionBezier2Line$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
+                    } // b是曲线
+                    else {
+                      var _coordsB$5 = coordsB[2],
+                          _bx = _coordsB$5.x,
+                          _by = _coordsB$5.y; // b是2阶曲线
 
                       if (lenB === 3) {
                         res = getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, _bx, _by);
+                      } // b是3阶曲线
+                      else {
+                        var _coordsB$6 = coordsB[3],
+                            _bx2 = _coordsB$6.x,
+                            _by2 = _coordsB$6.y;
+                        res = getIntersectionBezier2Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, _bx, _by, _bx2, _by2);
+                      }
+                    }
+                  } // a是3阶曲线
+                  else {
+                    var _coordsA$4 = coordsA[3],
+                        ax4 = _coordsA$4.x,
+                        ay4 = _coordsA$4.y; // b是直线
+
+                    if (lenB === 2) {
+                      res = getIntersectionBezier3Line$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
+                    } // b是曲线
+                    else {
+                      var _coordsB$7 = coordsB[2],
+                          _bx3 = _coordsB$7.x,
+                          _by3 = _coordsB$7.y; // b是2阶曲线
+
+                      if (lenB === 3) {
+                        res = getIntersectionBezier2Bezier3$1(bx1, by1, bx2, by2, _bx3, _by3, ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4);
+                        isSourceReverted = true;
+                      } // b是3阶曲线
+                      else {
+                        var _coordsB$8 = coordsB[3],
+                            _bx4 = _coordsB$8.x,
+                            _by4 = _coordsB$8.y;
+                        res = getIntersectionBezier3Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, _bx3, _by3, _bx4, _by4);
                       }
                     }
                   }
@@ -14442,11 +14488,14 @@
 
 
                 if (res) {
+                  // console.log('res', res);
                   var pa = sortIntersection$1(res, !isSourceReverted);
-                  var ra = sliceSegment(seg, pa);
+                  var ra = sliceSegment(seg, pa); // console.log(ra.map(item => item.toString()));
+
                   activeNewSeg(segments, list, ael, delList, x, ra);
                   var pb = sortIntersection$1(res, isSourceReverted);
-                  var rb = sliceSegment(item, pb);
+                  var rb = sliceSegment(item, pb); // console.log(rb.map(item => item.toString()));
+
                   activeNewSeg(segments, list, ael, delList, x, rb);
                   ael.splice(_i3, 1); // 老的线段被删除无效了，踢出ael
 
@@ -14501,6 +14550,12 @@
           return [item.x, item.y];
         }), lastT, t);
         ns = new Segment([startPoint, new Point(c[1][0], c[1][1]), point], belong);
+      } else if (len === 4) {
+        var _c = bezier.sliceBezier2Both(coords.map(function (item) {
+          return [item.x, item.y];
+        }), lastT, t);
+
+        ns = new Segment([startPoint, new Point(_c[1][0], _c[1][1]), new Point(_c[2][0], _c[2][1]), point], belong);
       }
 
       startPoint = point;
@@ -14517,6 +14572,12 @@
         return [item.x, item.y];
       }), lastT, 1);
       ns = new Segment([startPoint, new Point(c[1][0], c[1][1]), coords[2]], belong);
+    } else if (len === 4) {
+      var _c2 = bezier.sliceBezier2Both(coords.map(function (item) {
+        return [item.x, item.y];
+      }), lastT, 1);
+
+      ns = new Segment([startPoint, new Point(_c2[1][0], _c2[1][1]), new Point(_c2[2][0], _c2[2][1]), coords[3]], belong);
     }
 
     res.push(ns); // 老的打标失效删除
@@ -14527,12 +14588,14 @@
 
 
   function activeNewSeg(segments, list, ael, delList, x, ns) {
+    // console.log('activeNewSeg');
     ns.forEach(function (seg) {
       var bbox = seg.bbox,
           x1 = bbox[0],
-          x2 = bbox[2]; // 活跃x之前无相交判断意义，除了竖线
+          x2 = bbox[2]; // console.log(1, seg.toString(), x1, x2, x);
+      // 活跃x之前无相交判断意义，除了竖线
 
-      if (x2 <= x && x1 !== x2) {
+      if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
         segments.push(seg);
         return;
       } // 按顺序放在list的正确位置，可能x1已经过去不需要加入了，但要考虑ael
@@ -14571,7 +14634,8 @@
         var _lx = _item.x;
 
         if (x2 === _lx) {
-          _item.arr.push(seg);
+          // 访问过的尽可能排在前面早出栈，减少对比次数
+          _item.arr.unshift(seg);
 
           break;
         }
@@ -14608,11 +14672,19 @@
     return list.sort(function (a, b) {
       return a.x - b.x;
     });
-  }
+  } // 每个线段会放2次，开始点和结束点，哪怕x相同，第1次是开始用push，第2次结束unshift，这样离开时排在前面
+
 
   function putHashX(hashX, x, seg) {
     var list = hashX[x] = hashX[x] || [];
-    list.push(seg);
+
+    if (seg.isVisited) {
+      list.unshift(seg);
+      seg.isVisited = false;
+    } else {
+      list.push(seg);
+      seg.isVisited = true;
+    }
   } // 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
 
 

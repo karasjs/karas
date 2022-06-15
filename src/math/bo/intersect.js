@@ -175,7 +175,10 @@ function getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
           [ax3, ay3],
           [ax4, ay4],
         ], item.t);
-        let k2 = bezier.bezierSlope(bx1, by1, bx2, by2);
+        let k2 = bezier.bezierSlope([
+          [bx1, by1],
+          [bx2, by2],
+        ]);
         // 忽略方向，180°也是平行，Infinity相减为NaN
         if(Math.abs((Math.abs(k1) - Math.abs(k2)) || 0) < 1e-6) {
           return;

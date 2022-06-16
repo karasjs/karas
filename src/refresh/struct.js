@@ -598,7 +598,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
               node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
           }
           let res = node.render(renderMode, refreshLevel, ctxTotal, i === index ? LOCAL : CHILD, dx, dy);
-          __config[NODE_REFRESH_LV] = REPAINT;
           let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
           // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
           if(offscreenBlend) {
@@ -892,7 +891,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
                   node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
               }
               let res = node.render(renderMode, refreshLevel, ctx, CHILD, dx, dy);
-              __config[NODE_REFRESH_LV] = REPAINT;
               let { offscreenBlend, offscreenMask, offscreenFilter, offscreenOverflow } = res || {};
               // 这里离屏顺序和xom里返回的一致，和下面应用离屏时的list相反
               if(offscreenBlend) {

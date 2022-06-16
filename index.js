@@ -41525,9 +41525,8 @@
   function linkLibrary(child, libraryItem) {
     // 规定图层child只有init和动画，属性和子图层来自库
     child.tagName = libraryItem.tagName;
-    child.props = clone$4(libraryItem.props) || {}; // 特殊需求，children实例隔离，确保相同引用可以改单个child内容不影响，但不能保证深入下去改child的属性不影响
-
-    child.children = (libraryItem.children || []).slice(0);
+    child.props = clone$4(libraryItem.props) || {};
+    child.children = libraryItem.children || [];
 
     if (libraryItem.library) {
       child.library = libraryItem.library;

@@ -136,7 +136,7 @@ const INHERIT = {
   visibility: 'visible',
   pointerEvents: 'auto',
   textStrokeColor: '#000',
-  textStrokeWidth: 1,
+  textStrokeWidth: 0,
   textStrokeOver: 'none',
   writingMode: 'horizontalTb',
 };

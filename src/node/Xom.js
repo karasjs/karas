@@ -340,6 +340,7 @@ class Xom extends Node {
     let { currentStyle, computedStyle, domParent: parent } = this;
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.computedStyle;
+    // 继承的特殊处理，根节点用默认值
     [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
@@ -1332,7 +1333,7 @@ class Xom extends Node {
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
     let color = currentStyle[COLOR];
     if(color[1] === INHERIT) {
-      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
+      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : rgba2int(reset.INHERIT.color);
       if(v.k) {
         __cacheStyle[COLOR] = v;
       }
@@ -1350,7 +1351,7 @@ class Xom extends Node {
     }
     let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
     if(textStrokeColor[1] === INHERIT) {
-      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : rgba2int(reset.INHERIT.textStrokeColor);
       if(v.k) {
         __cacheStyle[TEXT_STROKE_COLOR] = v;
       }
@@ -1367,7 +1368,7 @@ class Xom extends Node {
       }
     }
     if(currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
-      computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : 0;
+      computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : reset.INHERIT.textStrokeWidth;
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_WIDTH])) {
@@ -1394,7 +1395,7 @@ class Xom extends Node {
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
     if(currentStyle[TEXT_STROKE_OVER][1] === INHERIT) {
-      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : 'none';
+      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : reset.INHERIT.textStrokeOver;
     }
     else {
       __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = currentStyle[TEXT_STROKE_OVER][0];

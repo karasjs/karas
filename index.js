@@ -760,97 +760,6 @@
     }
   };
 
-  var o$1 = {
-    info: {
-      arial: {
-        lhr: 1.14990234375,
-        // 默认line-height ratio，(67+1854+434)/2048
-        // car: 1.1171875, // content-area ratio，(1854+434)/2048
-        blr: 0.9052734375,
-        // base-line ratio，1854/2048
-        // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-        lgr: 0.03271484375 // line-gap ratio，67/2048，默认0
-
-      },
-      helvetica: {
-        lhr: 1.14990234375,
-        // (8+1900+447)/2048
-        blr: 0.927734375,
-        // 1900/2048
-        lgr: 0.00390625 // 8/2048
-
-      },
-      verdana: {
-        lhr: 1.21533203125,
-        // (0+2059+430)/2048
-        blr: 1.00537109375 // 2059/2048
-
-      },
-      tahoma: {
-        lhr: 1.20703125,
-        // (0+2049+423)/2048
-        blr: 1.00048828125 // 2049/2048
-
-      },
-      georgia: {
-        lhr: 1.13623046875,
-        // (0+1878+449)/2048
-        blr: 0.9169921875 // 1878/2048
-
-      },
-      'courier new': {
-        lhr: 1.1328125,
-        // (0+1705+615)/2048
-        blr: 0.83251953125 // 1705/2048
-
-      },
-      'pingfang sc': {
-        lhr: 1.4,
-        // (0+1060+340)/1000
-        blr: 1.06 // 1060/1000
-
-      },
-      simsun: {
-        lhr: 1.4,
-        // (0+1060+340)/1000
-        blr: 1.06
-      }
-    },
-    support: function support(fontFamily) {
-      return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
-    },
-    register: function register(name, info) {
-      var _ref = info || {},
-          _ref$emSquare = _ref.emSquare,
-          emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
-          _ref$ascent = _ref.ascent,
-          ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
-          _ref$descent = _ref.descent,
-          descent = _ref$descent === void 0 ? 434 : _ref$descent,
-          _ref$lineGap = _ref.lineGap,
-          lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
-
-      this.info[name.toLowerCase()] = {
-        lhr: (ascent + descent + lineGap) / emSquare,
-        blr: ascent / emSquare
-      };
-    },
-    hasRegister: function hasRegister(fontFamily) {
-      return this.info.hasOwnProperty(fontFamily);
-    },
-    hasChecked: function hasChecked(fontFamily) {
-      return this.hasRegister(fontFamily) && this.info[fontFamily].hasOwnProperty('checked');
-    },
-    setChecked: function setChecked(fontFamily, res) {
-      return this.info[fontFamily].checked = res;
-    },
-    addPadding: function addPadding(name, padding) {
-      Object.assign(this.info[name.toLowerCase()].padding, padding);
-    }
-  };
-  o$1.info['宋体'] = o$1.info.simsun;
-  o$1.info['pingfang'] = o$1.info['pingfang sc'];
-
   // 类型为引用防止json仿造
   var TYPE_VD = Symbol('Dom');
   var TYPE_GM = Symbol('Geom');
@@ -1680,6 +1589,99 @@
     prefixHex: prefixHex,
     replaceRgba2Hex: replaceRgba2Hex
   };
+
+  var isString$1 = util.isString;
+  var o$1 = {
+    info: {
+      arial: {
+        lhr: 1.14990234375,
+        // 默认line-height ratio，(67+1854+434)/2048
+        // car: 1.1171875, // content-area ratio，(1854+434)/2048
+        blr: 0.9052734375,
+        // base-line ratio，1854/2048
+        // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
+        lgr: 0.03271484375 // line-gap ratio，67/2048，默认0
+
+      },
+      helvetica: {
+        lhr: 1.14990234375,
+        // (8+1900+447)/2048
+        blr: 0.927734375,
+        // 1900/2048
+        lgr: 0.00390625 // 8/2048
+
+      },
+      verdana: {
+        lhr: 1.21533203125,
+        // (0+2059+430)/2048
+        blr: 1.00537109375 // 2059/2048
+
+      },
+      tahoma: {
+        lhr: 1.20703125,
+        // (0+2049+423)/2048
+        blr: 1.00048828125 // 2049/2048
+
+      },
+      georgia: {
+        lhr: 1.13623046875,
+        // (0+1878+449)/2048
+        blr: 0.9169921875 // 1878/2048
+
+      },
+      'courier new': {
+        lhr: 1.1328125,
+        // (0+1705+615)/2048
+        blr: 0.83251953125 // 1705/2048
+
+      },
+      'pingfang sc': {
+        lhr: 1.4,
+        // (0+1060+340)/1000
+        blr: 1.06 // 1060/1000
+
+      },
+      simsun: {
+        lhr: 1.4,
+        // (0+1060+340)/1000
+        blr: 1.06
+      }
+    },
+    support: function support(fontFamily) {
+      return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
+    },
+    register: function register(name, url, info) {
+      if (!isString$1(url)) {
+        info = url;
+      }
+
+      var _ref = info || {},
+          _ref$emSquare = _ref.emSquare,
+          emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
+          _ref$ascent = _ref.ascent,
+          ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
+          _ref$descent = _ref.descent,
+          descent = _ref$descent === void 0 ? 434 : _ref$descent,
+          _ref$lineGap = _ref.lineGap,
+          lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
+
+      this.info[name.toLowerCase()] = {
+        lhr: (ascent + descent + lineGap) / emSquare,
+        blr: ascent / emSquare
+      };
+    },
+    hasRegister: function hasRegister(fontFamily) {
+      return this.info.hasOwnProperty(fontFamily);
+    },
+    hasChecked: function hasChecked(fontFamily) {
+      return this.hasRegister(fontFamily) && this.info[fontFamily].hasOwnProperty('checked');
+    },
+    setChecked: function setChecked(fontFamily, res) {
+      return this.info[fontFamily].checked = res;
+    }
+  };
+  o$1.info['宋体'] = o$1.info.simsun;
+  o$1.info['pingfang'] = o$1.info['pingfang sc'];
 
   var debug = {
     flag: false
@@ -2986,7 +2988,7 @@
     visibility: 'visible',
     pointerEvents: 'auto',
     textStrokeColor: '#000',
-    textStrokeWidth: 1,
+    textStrokeWidth: 0,
     textStrokeOver: 'none',
     writingMode: 'horizontalTb'
   };
@@ -15578,9 +15580,7 @@
         }
 
         this.__bp = bp;
-        var textOverflow = bp.computedStyle[TEXT_OVERFLOW$1];
-        css.getFontFamily(fontFamily); // 有检测过程必须执行
-        // 布局测量前置，根据renderMode不同提供不同的测量方法
+        var textOverflow = bp.computedStyle[TEXT_OVERFLOW$1]; // 布局测量前置，根据renderMode不同提供不同的测量方法
 
         var renderMode = root.renderMode;
         var ctx;
@@ -21971,7 +21971,8 @@
             computedStyle = this.computedStyle,
             parent = this.domParent;
         var isRoot = !parent;
-        var parentComputedStyle = parent && parent.computedStyle;
+        var parentComputedStyle = parent && parent.computedStyle; // 继承的特殊处理，根节点用默认值
+
         [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5, WRITING_MODE$1].forEach(function (k) {
           var v = currentStyle[k]; // ff特殊处理
 
@@ -22937,7 +22938,7 @@
         var color = currentStyle[COLOR$5];
 
         if (color[1] === INHERIT$3) {
-          var v = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
+          var v = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : rgba2int$3(reset.INHERIT.color);
 
           if (v.k) {
             __cacheStyle[COLOR$5] = v;
@@ -22955,7 +22956,7 @@
         var textStrokeColor = currentStyle[TEXT_STROKE_COLOR$4];
 
         if (textStrokeColor[1] === INHERIT$3) {
-          var _v3 = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
+          var _v3 = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : rgba2int$3(reset.INHERIT.textStrokeColor);
 
           if (_v3.k) {
             __cacheStyle[TEXT_STROKE_COLOR$4] = _v3;
@@ -22971,7 +22972,7 @@
         }
 
         if (currentStyle[TEXT_STROKE_WIDTH$3][1] === INHERIT$3) {
-          computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : 0;
+          computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : reset.INHERIT.textStrokeWidth;
           __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
         } else if (isNil$6(__cacheStyle[TEXT_STROKE_WIDTH$3])) {
           var _v4 = currentStyle[TEXT_STROKE_WIDTH$3];
@@ -22995,7 +22996,7 @@
         }
 
         if (currentStyle[TEXT_STROKE_OVER$3][1] === INHERIT$3) {
-          __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = parent ? parentComputedStyle[TEXT_STROKE_OVER$3] : 'none';
+          __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = parent ? parentComputedStyle[TEXT_STROKE_OVER$3] : reset.INHERIT.textStrokeOver;
         } else {
           __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = currentStyle[TEXT_STROKE_OVER$3][0];
         }
@@ -33751,8 +33752,6 @@
 
             var res = _node2.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL$1 : CHILD, dx, dy);
 
-            _config[NODE_REFRESH_LV$1] = REPAINT$2;
-
             var _ref = res || {},
                 offscreenBlend = _ref.offscreenBlend,
                 _offscreenMask = _ref.offscreenMask,
@@ -34097,8 +34096,6 @@
                 }
 
                 var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
-
-                _config2[NODE_REFRESH_LV$1] = REPAINT$2;
 
                 var _ref2 = _res || {},
                     _offscreenBlend = _ref2.offscreenBlend,
@@ -36721,6 +36718,9 @@
       BORDER_BOTTOM_WIDTH$8 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
       POINTER_EVENTS$2 = _enums$STYLE_KEY$k.POINTER_EVENTS,
       WRITING_MODE$3 = _enums$STYLE_KEY$k.WRITING_MODE,
+      TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$k.TEXT_STROKE_COLOR,
+      TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$k.TEXT_STROKE_WIDTH,
+      TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$k.TEXT_STROKE_OVER,
       _enums$UPDATE_KEY$5 = enums.UPDATE_KEY,
       UPDATE_NODE$5 = _enums$UPDATE_KEY$5.UPDATE_NODE,
       UPDATE_STYLE$2 = _enums$UPDATE_KEY$5.UPDATE_STYLE,
@@ -37099,7 +37099,7 @@
         domParent = __config[NODE_DOM_PARENT$6],
         isMask = __config[NODE_IS_MASK$3];
     var lv = focus || NONE$3;
-    var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
+    var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
     if (!component && style && keys) {
       for (var i = 0, len = keys.length; i < len; i++) {
@@ -37140,14 +37140,16 @@
 
               if (k === Z_INDEX$4 && node !== root) {
                 hasZ = true;
-              }
-
-              if (k === VISIBILITY$6) {
+              } else if (k === VISIBILITY$6) {
                 hasVisibility = true;
-              }
-
-              if (k === COLOR$6) {
+              } else if (k === COLOR$6) {
                 hasColor = true;
+              } else if (k === TEXT_STROKE_COLOR$5) {
+                hasTsColor = true;
+              } else if (k === TEXT_STROKE_WIDTH$4) {
+                hasTsWidth = true;
+              } else if (k === TEXT_STROKE_OVER$4) {
+                hasTsOver = true;
               }
             }
           }
@@ -37170,34 +37172,40 @@
 
     if (hasZ && domParent) {
       delete domParent.__zIndexChildren;
-    } // visibility/color变化，影响子继承
+    } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
 
-    if (hasVisibility || hasColor) {
+    if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
       for (var __structs = root.__structs, __struct = node.__config[NODE_STRUCT$5], _i = __struct[STRUCT_INDEX$3] + 1, _len = _i + __struct[STRUCT_TOTAL$2]; _i < _len; _i++) {
         var _structs$_i = __structs[_i],
             _node = _structs$_i[STRUCT_NODE$2],
-            total = _structs$_i[STRUCT_TOTAL$2];
+            total = _structs$_i[STRUCT_TOTAL$2]; // text的style指向parent，不用管
+
+        if (_node instanceof Text) {
+          continue;
+        }
+
         var _config = _node.__config;
         var _currentStyle = _config[NODE_CURRENT_STYLE$6];
 
-        var _need = void 0; // text的style指向parent，因此text一定变更
+        var _need = void 0;
 
-
-        if (hasVisibility && (_node instanceof Text || _currentStyle[VISIBILITY$6][1] === INHERIT$4)) {
+        if (hasVisibility && _currentStyle[VISIBILITY$6][1] === INHERIT$4) {
           _need = true;
-        }
-
-        if (hasColor && (_node instanceof Text || _currentStyle[COLOR$6][1] === INHERIT$4)) {
+        } else if (hasColor && _currentStyle[COLOR$6][1] === INHERIT$4) {
+          _need = true;
+        } else if (hasTsColor && _currentStyle[TEXT_STROKE_COLOR$5][1] === INHERIT$4) {
+          _need = true;
+        } else if (hasTsWidth && _currentStyle[TEXT_STROKE_WIDTH$4][1] === INHERIT$4) {
+          _need = true;
+        } else if (hasTsOver && _currentStyle[TEXT_STROKE_OVER$4][1] === INHERIT$4) {
           _need = true;
         }
 
         if (_need) {
           _config[NODE_REFRESH_LV$2] |= REPAINT$3;
 
-          if (_node instanceof Xom$1) {
-            _node.clearCache();
-          }
+          _node.clearCache();
         } else {
           _i += total || 0;
         }

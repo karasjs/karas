@@ -59,6 +59,9 @@ const {
     BORDER_BOTTOM_WIDTH,
     POINTER_EVENTS,
     WRITING_MODE,
+    TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER,
   },
   UPDATE_KEY: {
     UPDATE_NODE,
@@ -397,7 +400,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     [NODE_IS_MASK]: isMask,
   } = __config;
   let lv = focus || NONE;
-  let hasZ, hasVisibility, hasColor, hasDisplay;
+  let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
   if(!component && style && keys) {
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -439,11 +442,20 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
             if(k === Z_INDEX && node !== root) {
               hasZ = true;
             }
-            if(k === VISIBILITY) {
+            else if(k === VISIBILITY) {
               hasVisibility = true;
             }
-            if(k === COLOR) {
+            else if(k === COLOR) {
               hasColor = true;
+            }
+            else if(k === TEXT_STROKE_COLOR) {
+              hasTsColor = true;
+            }
+            else if(k === TEXT_STROKE_WIDTH) {
+              hasTsWidth = true;
+            }
+            else if(k === TEXT_STROKE_OVER) {
+              hasTsOver = true;
             }
           }
         }
@@ -464,28 +476,38 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
   if(hasZ && domParent) {
     delete domParent.__zIndexChildren;
   }
-  // visibility/color变化，影响子继承
-  if(hasVisibility || hasColor) {
+  // 影响子继承REPAINT的变化，如果被cache住需要清除
+  if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
     for(let __structs = root.__structs, __struct = node.__config[NODE_STRUCT], i = __struct[STRUCT_INDEX] + 1, len = i + __struct[STRUCT_TOTAL]; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
         [STRUCT_TOTAL]: total,
       } = __structs[i];
+      // text的style指向parent，不用管
+      if(node instanceof Text) {
+        continue;
+      }
       let __config = node.__config;
       let currentStyle = __config[NODE_CURRENT_STYLE];
       let need;
-      // text的style指向parent，因此text一定变更
-      if(hasVisibility && (node instanceof Text || currentStyle[VISIBILITY][1] === INHERIT)) {
+      if(hasVisibility && currentStyle[VISIBILITY][1] === INHERIT) {
         need = true;
       }
-      if(hasColor && (node instanceof Text || currentStyle[COLOR][1] === INHERIT)) {
+      else if(hasColor && currentStyle[COLOR][1] === INHERIT) {
+        need = true;
+      }
+      else if(hasTsColor && currentStyle[TEXT_STROKE_COLOR][1] === INHERIT) {
+        need = true;
+      }
+      else if(hasTsWidth && currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
+        need = true;
+      }
+      else if(hasTsOver && currentStyle[TEXT_STROKE_OVER][1] === INHERIT) {
         need = true;
       }
       if(need) {
         __config[NODE_REFRESH_LV] |= REPAINT;
-        if(node instanceof Xom) {
-          node.clearCache();
-        }
+        node.clearCache();
       }
       else {
         i += total || 0;

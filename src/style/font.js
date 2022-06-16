@@ -1,4 +1,6 @@
-'use strict';
+import util from '../util/util';
+
+const { isString } = util;
 
 let o = {
   info: {
@@ -42,7 +44,10 @@ let o = {
   support(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
   },
-  register(name, info) {
+  register(name, url, info) {
+    if(!isString(url)) {
+      info = url;
+    }
     let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0 } = info || {};
     this.info[name.toLowerCase()] = {
       lhr: (ascent + descent + lineGap) / emSquare,
@@ -57,9 +62,6 @@ let o = {
   },
   setChecked(fontFamily, res) {
     return this.info[fontFamily].checked = res;
-  },
-  addPadding(name, padding) {
-    Object.assign(this.info[name.toLowerCase()].padding, padding);
   },
 };
 

@@ -4,10 +4,6 @@ import util from '../../util/util';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
 function prefix(polygon) {
-  // 连续操作时中间结果保留，可直接返回对象
-  if(polygon instanceof Polygon) {
-    return polygon;
-  }
   if(polygon[0] && util.isNumber(polygon[0][0])) {
     return [polygon];
   }
@@ -15,21 +11,36 @@ function prefix(polygon) {
 }
 
 function trivial(polygonA, polygonB) {
+  let isIntermediateA = polygonA instanceof Polygon;
+  let isIntermediateB = polygonB instanceof Polygon;
   // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
-  let source = new Polygon(prefix(polygonA), 0);
-  source.selfIntersect();
-  console.log(source.toString());
-  let clip = new Polygon(prefix(polygonB), 1);
-  console.log(clip.toString());
-  console.log('----');
+  let source;
+  if(isIntermediateA) {
+    source = polygonA.reset(0);
+  }
+  else {
+    source = new Polygon(prefix(polygonA), 0);
+    source.selfIntersect();
+  }
+  // console.log(source.toString());
+  let clip;
+  if(isIntermediateB) {
+    clip = polygonB.reset(1);
+  }
+  else {
+    clip = new Polygon(prefix(polygonB), 1);
+    clip.selfIntersect();
+  }
+  // console.log(clip.toString());
+  // console.log('----');
   // 两个多边形之间再次互相判断相交
-  Polygon.intersect2(source, clip);
-  console.log(source.toString());
-  console.log(clip.toString());
-  console.log('====');
-  Polygon.annotate2(source, clip);
-  console.log(source.toString());
-  console.log(clip.toString());
+  Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
+  // console.log(source.toString());
+  // console.log(clip.toString());
+  // console.log('====');
+  Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
+  // console.log(source.toString());
+  // console.log(clip.toString());
   return [source, clip];
 }
 
@@ -53,7 +64,7 @@ const INTERSECT = [
   1, 0, 1, 1,
   0, 1, 0, 0,
   0, 1, 0, 0,
-], DIFFERENCE = [
+], XOR = [
   0, 1, 1, 0,
   1, 0, 0, 1,
   1, 0, 0, 1,
@@ -85,33 +96,55 @@ function filter(segments, matrix) {
 }
 
 export default {
-  intersect(polygonA, polygonB, keep) {
+  intersect(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
-    if(keep) {}
+    if(intermediate) {
+      source.segments = list;
+      return source;
+    }
     return chain(list);
   },
-  union(polygonA, polygonB, keep) {
+  union(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, UNION).concat(filter(clip.segments, UNION));
+    if(intermediate) {
+      source.segments = list;
+      return source;
+    }
     return chain(list);
   },
-  subtract(polygonA, polygonB, keep) {
+  subtract(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
+    if(intermediate) {
+      source.segments = list;
+      return source;
+    }
     return chain(list);
   },
-  subtract2(polygonA, polygonB, keep) {
+  subtract2(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
     let list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
+    if(intermediate) {
+      source.segments = list;
+      return source;
+    }
     return chain(list);
   },
-  difference(polygonA, polygonB, keep) {
+  xor(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, DIFFERENCE).concat(filter(clip.segments, DIFFERENCE));
+    let list = filter(source.segments, XOR).concat(filter(clip.segments, XOR));
+    if(intermediate) {
+      source.segments = list;
+      return source;
+    }
     return chain(list);
   },
   chain(polygon) {
-    return chain(polygon.segments);
+    if(polygon instanceof Polygon) {
+      return chain(polygon.segments);
+    }
+    return polygon || [];
   },
 };

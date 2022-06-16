@@ -14136,7 +14136,7 @@
       key: "selfIntersect",
       value: function selfIntersect() {
         var list = genHashXList(this.segments);
-        this.segments = findIntersection(list, false);
+        this.segments = findIntersection(list, false, false, false);
       }
     }, {
       key: "toString",
@@ -14144,17 +14144,26 @@
         return this.segments.map(function (item) {
           return item.toString();
         });
+      }
+    }, {
+      key: "reset",
+      value: function reset(index) {
+        this.index = index;
+        this.segments.forEach(function (seg) {
+          seg.belong = index;
+          seg.otherFill[0] = seg.otherFill[1] = false;
+        });
       } // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交
 
     }], [{
       key: "intersect2",
-      value: function intersect2(polyA, polyB) {
+      value: function intersect2(polyA, polyB, isIntermediateA, isIntermediateB) {
         if (!polyA.segments.length || !polyB.segments.length) {
           return;
         }
 
         var list = genHashXList(polyA.segments.concat(polyB.segments));
-        var segments = findIntersection(list, true);
+        var segments = findIntersection(list, true, isIntermediateA, isIntermediateB);
         polyA.segments = segments.filter(function (item) {
           return item.belong === 0;
         });
@@ -14174,7 +14183,7 @@
 
     }, {
       key: "annotate2",
-      value: function annotate2(polyA, polyB) {
+      value: function annotate2(polyA, polyB, isIntermediateA, isIntermediateB) {
         var list = genHashXYList(polyA.segments.concat(polyB.segments));
         var aelA = [],
             aelB = []; // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
@@ -14183,7 +14192,12 @@
         list.forEach(function (item) {
           var isStart = item.isStart,
               seg = item.seg;
-          var belong = seg.belong;
+          var belong = seg.belong; // 连续操作时，已有的中间结果可以跳过
+
+          if (belong === 0 && isIntermediateA || belong === 1 && isIntermediateB) {
+            return;
+          }
+
           var ael = belong === 0 ? aelA : aelB;
 
           if (isStart) {
@@ -14300,7 +14314,7 @@
     return Polygon;
   }();
 
-  function findIntersection(list, compareBelong) {
+  function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB) {
     // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
     var ael = [],
         delList = [],
@@ -14477,11 +14491,11 @@
                 if (res) {
                   // console.log('res', res);
                   var pa = sortIntersection$1(res, !isSourceReverted);
-                  var ra = sliceSegment(seg, pa); // console.log(ra.map(item => item.toString()));
+                  var ra = sliceSegment(seg, pa, isIntermediateA && belong === 0); // console.log(ra.map(item => item.toString()));
 
                   activeNewSeg(segments, list, ael, delList, x, ra);
                   var pb = sortIntersection$1(res, isSourceReverted);
-                  var rb = sliceSegment(item, pb); // console.log(rb.map(item => item.toString()));
+                  var rb = sliceSegment(item, pb, isIntermediateB && belong === 1); // console.log(rb.map(item => item.toString()));
 
                   activeNewSeg(segments, list, ael, delList, x, rb);
                   ael.splice(_i3, 1); // 老的线段被删除无效了，踢出ael
@@ -14517,7 +14531,7 @@
   } // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
 
 
-  function sliceSegment(seg, ps) {
+  function sliceSegment(seg, ps, isIntermediate) {
     var res = [];
     var belong = seg.belong,
         coords = seg.coords,
@@ -14543,6 +14557,12 @@
         }), lastT, t);
 
         ns = new Segment([startPoint, new Point(_c[1][0], _c[1][1]), new Point(_c[2][0], _c[2][1]), point], belong);
+      } // 连续操作的中间结果已有自己内外性，截取时需继承
+
+
+      if (isIntermediate) {
+        ns.myFill[0] = seg.myFill[0];
+        ns.myFill[1] = seg.myFill[1];
       }
 
       startPoint = point;
@@ -14567,6 +14587,11 @@
       ns = new Segment([startPoint, new Point(_c2[1][0], _c2[1][1]), new Point(_c2[2][0], _c2[2][1]), coords[3]], belong);
     }
 
+    if (isIntermediate) {
+      ns.myFill[0] = seg.myFill[0];
+      ns.myFill[1] = seg.myFill[1];
+    }
+
     res.push(ns); // 老的打标失效删除
 
     seg.isDeleted = true;
@@ -14575,11 +14600,10 @@
 
 
   function activeNewSeg(segments, list, ael, delList, x, ns) {
-    // console.log('activeNewSeg');
     ns.forEach(function (seg) {
       var bbox = seg.bbox,
           x1 = bbox[0],
-          x2 = bbox[2]; // console.log(1, seg.toString(), x1, x2, x);
+          x2 = bbox[2]; // console.log(seg.toString(), x1, x2, x);
       // 活跃x之前无相交判断意义，除了竖线
 
       if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
@@ -15007,11 +15031,6 @@
   }
 
   function prefix(polygon) {
-    // 连续操作时中间结果保留，可直接返回对象
-    if (polygon instanceof Polygon) {
-      return polygon;
-    }
-
     if (polygon[0] && util.isNumber(polygon[0][0])) {
       return [polygon];
     }
@@ -15020,21 +15039,38 @@
   }
 
   function trivial(polygonA, polygonB) {
-    // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
-    var source = new Polygon(prefix(polygonA), 0);
-    source.selfIntersect();
-    console.log(source.toString());
-    var clip = new Polygon(prefix(polygonB), 1);
-    console.log(clip.toString());
-    console.log('----'); // 两个多边形之间再次互相判断相交
+    var isIntermediateA = polygonA instanceof Polygon;
+    var isIntermediateB = polygonB instanceof Polygon; // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
 
-    Polygon.intersect2(source, clip);
-    console.log(source.toString());
-    console.log(clip.toString());
-    console.log('====');
-    Polygon.annotate2(source, clip);
-    console.log(source.toString());
-    console.log(clip.toString());
+    var source;
+
+    if (isIntermediateA) {
+      source = polygonA.reset(0);
+    } else {
+      source = new Polygon(prefix(polygonA), 0);
+      source.selfIntersect();
+    } // console.log(source.toString());
+
+
+    var clip;
+
+    if (isIntermediateB) {
+      clip = polygonB.reset(1);
+    } else {
+      clip = new Polygon(prefix(polygonB), 1);
+      clip.selfIntersect();
+    } // console.log(clip.toString());
+    // console.log('----');
+    // 两个多边形之间再次互相判断相交
+
+
+    Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB); // console.log(source.toString());
+    // console.log(clip.toString());
+    // console.log('====');
+
+    Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB); // console.log(source.toString());
+    // console.log(clip.toString());
+
     return [source, clip];
   }
 
@@ -15042,7 +15078,7 @@
       UNION$1 = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
       SUBTRACT = [0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0],
       SUBTRACT2 = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
-      DIFFERENCE$1 = [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0];
+      XOR$1 = [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0];
 
   function filter(segments, matrix) {
     var res = [];
@@ -15066,7 +15102,7 @@
   }
 
   var bo = {
-    intersect: function intersect(polygonA, polygonB, keep) {
+    intersect: function intersect(polygonA, polygonB, intermediate) {
       var _trivial = trivial(polygonA, polygonB),
           _trivial2 = _slicedToArray(_trivial, 2),
           source = _trivial2[0],
@@ -15074,46 +15110,79 @@
 
       var list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
 
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
       return _chain(list);
     },
-    union: function union(polygonA, polygonB, keep) {
+    union: function union(polygonA, polygonB, intermediate) {
       var _trivial3 = trivial(polygonA, polygonB),
           _trivial4 = _slicedToArray(_trivial3, 2),
           source = _trivial4[0],
           clip = _trivial4[1];
 
       var list = filter(source.segments, UNION$1).concat(filter(clip.segments, UNION$1));
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
       return _chain(list);
     },
-    subtract: function subtract(polygonA, polygonB, keep) {
+    subtract: function subtract(polygonA, polygonB, intermediate) {
       var _trivial5 = trivial(polygonA, polygonB),
           _trivial6 = _slicedToArray(_trivial5, 2),
           source = _trivial6[0],
           clip = _trivial6[1];
 
       var list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
       return _chain(list);
     },
-    subtract2: function subtract2(polygonA, polygonB, keep) {
+    subtract2: function subtract2(polygonA, polygonB, intermediate) {
       var _trivial7 = trivial(polygonA, polygonB),
           _trivial8 = _slicedToArray(_trivial7, 2),
           source = _trivial8[0],
           clip = _trivial8[1];
 
       var list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
       return _chain(list);
     },
-    difference: function difference(polygonA, polygonB, keep) {
+    xor: function xor(polygonA, polygonB, intermediate) {
       var _trivial9 = trivial(polygonA, polygonB),
           _trivial10 = _slicedToArray(_trivial9, 2),
           source = _trivial10[0],
           clip = _trivial10[1];
 
-      var list = filter(source.segments, DIFFERENCE$1).concat(filter(clip.segments, DIFFERENCE$1));
+      var list = filter(source.segments, XOR$1).concat(filter(clip.segments, XOR$1));
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
       return _chain(list);
     },
     chain: function chain(polygon) {
-      return _chain(polygon.segments);
+      if (polygon instanceof Polygon) {
+        return _chain(polygon.segments);
+      }
+
+      return polygon || [];
     }
   };
 
@@ -41610,43 +41679,12 @@
     return Polyline;
   }(Geom$1);
 
-  function convertCurve2Line(poly) {
-    for (var len = poly.length, i = len - 1; i >= 0; i--) {
-      var cur = poly[i],
-          len2 = cur.length;
-
-      if (len2 === 4 || len2 === 6) {
-        var last = poly[(i || len) - 1];
-        var len3 = last.length;
-        var lastX = last[len3 - 2],
-            lastY = last[len3 - 1];
-        var coords = [[lastX, lastY], [cur[0], cur[1]], [cur[2], cur[3]]];
-
-        if (cur.length === 6) {
-          coords.push([cur[4], cur[5]]);
-        }
-
-        var l = bezier.bezierLength(coords); // 每2个px长度分割
-
-        var n = Math.ceil(l * 0.2); // <2px直接返回直线段
-
-        if (n === 1) {
-          cur.splice(0, len2 - 2);
-        } else {
-          // n段每段t为per
-          var per = 1 / n;
-
-          for (var j = 1; j < n; j++) {
-            var p = bezier.pointAtByT(coords, per * j);
-            poly.splice(i + j - 1, 0, p);
-          } // 原本的曲线直接改数据为最后一段截取的
-
-
-          cur.splice(0, len2 - 2);
-        }
-      }
-    }
-  }
+  var intersect$1 = bo.intersect,
+      union$1 = bo.union,
+      subtract = bo.subtract,
+      subtract2 = bo.subtract2,
+      xor$1 = bo.xor,
+      chain = bo.chain; // 根据曲线长度将其分割为细小的曲线段，每个曲线段可近似认为是直线段，从而参与布尔运算
 
   var Polygon$1 = /*#__PURE__*/function (_Polyline) {
     _inherits(Polygon, _Polyline);
@@ -41699,97 +41737,102 @@
         }
 
         if (Array.isArray(bo) && bo.length) {
-          var _ret = function () {
-            list.forEach(function (poly) {
-              if (poly && poly.length > 1) {
-                convertCurve2Line(poly);
+          // list.forEach(poly => {
+          //   if(poly && poly.length > 1) {
+          //     convertCurve2Line(poly);
+          //   }
+          // });
+          // 输出结果，以及连续多个中可能出现无布尔运算的多边形，此时中断运算存储结果，后续从头开始
+          var res = [],
+              temp = list[0];
+
+          for (var _i = 1; _i < len; _i++) {
+            var op = (bo[_i - 1] || '').toString().toLowerCase();
+            var cur = list[_i];
+
+            if (!cur || cur.length < 2) {
+              if (temp) {
+                res = res.concat(chain(temp));
               }
-            }); // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
 
-            var res = [];
-
-            if (list[0] && list[0].length > 1) {
-              res.push(list[0]);
+              temp = [];
+              continue;
             }
 
-            for (var _i = 1; _i < len; _i++) {
-              var op = (bo[_i - 1] || '').toString().toLowerCase();
-              var cur = list[_i];
+            if (['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+              res = res.concat(chain(temp));
+              temp = cur; // 以备后面可能的布尔运算
 
-              if (!cur || cur.length < 2) {
-                continue;
-              }
-
-              if (['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
-                res.push(cur);
-                continue;
-              }
-
-              switch (op) {
-                case 'intersection':
-                  var r1 = intersection$1(res, [cur]);
-
-                  if (r1) {
-                    res = [];
-                    r1.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-
-                case 'union':
-                  var r2 = union(res, [cur]);
-
-                  if (r2) {
-                    res = [];
-                    r2.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-
-                case 'diff':
-                  var r3 = diff(res, [cur]);
-
-                  if (r3) {
-                    res = [];
-                    r3.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-
-                case 'xor':
-                  var r4 = xor(res, [cur]);
-
-                  if (r4) {
-                    res = [];
-                    r4.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-              }
+              continue;
             }
 
-            return {
-              v: res
-            };
-          }();
+            switch (op) {
+              case 'intersect':
+              case 'intersection':
+                temp = intersect$1(temp, cur, true); // let r1 = intersection(res, [cur]);
+                // if(r1) {
+                //   res = [];
+                //   r1.forEach(item => {
+                //     res = res.concat(item);
+                //   });
+                // }
+                // else {
+                //   res = [];
+                // }
 
-          if (_typeof(_ret) === "object") return _ret.v;
+                break;
+
+              case 'union':
+                temp = union$1(temp, cur, true); // let r2 = union(res, [cur]);
+                // if(r2) {
+                //   res = [];
+                //   r2.forEach(item => {
+                //     res = res.concat(item);
+                //   });
+                // }
+                // else {
+                //   res = [];
+                // }
+
+                break;
+
+              case 'subtract':
+              case 'diff':
+              case 'difference':
+                temp = subtract(temp, cur, true); // let r3 = diff(res, [cur]);
+                // if(r3) {
+                //   res = [];
+                //   r3.forEach(item => {
+                //     res = res.concat(item);
+                //   });
+                // }
+                // else {
+                //   res = [];
+                // }
+
+                break;
+
+              case 'subtract2':
+                temp = subtract2(temp, cur, true);
+                break;
+
+              case 'xor':
+                temp = xor$1(temp, cur, true); // let r4 = xor(res, [cur]);
+                // if(r4) {
+                //   res = [];
+                //   r4.forEach(item => {
+                //     res = res.concat(item);
+                //   });
+                // }
+                // else {
+                //   res = [];
+                // }
+
+                break;
+            }
+          }
+
+          return res.concat(chain(temp));
         }
 
         return list;

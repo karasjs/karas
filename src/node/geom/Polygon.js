@@ -1,7 +1,10 @@
 import Polyline from './Polyline';
 import util from '../../util/util';
 import bezier from '../../math/bezier';
-import { union, diff, intersection, xor } from '../../math/martinez';
+// import { union, diff, intersection, xor } from '../../math/martinez';
+import bo from '../../math/bo/index';
+
+let { intersect, union, subtract, subtract2, xor, chain } = bo;
 
 // 根据曲线长度将其分割为细小的曲线段，每个曲线段可近似认为是直线段，从而参与布尔运算
 function convertCurve2Line(poly) {
@@ -70,78 +73,90 @@ class Polygon extends Polyline {
       }
     }
     if(Array.isArray(bo) && bo.length) {
-      list.forEach(poly => {
-        if(poly && poly.length > 1) {
-          convertCurve2Line(poly);
-        }
-      });
-      // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
-      let res = [];
-      if(list[0] && list[0].length > 1) {
-        res.push(list[0]);
-      }
+      // list.forEach(poly => {
+      //   if(poly && poly.length > 1) {
+      //     convertCurve2Line(poly);
+      //   }
+      // });
+      // 输出结果，以及连续多个中可能出现无布尔运算的多边形，此时中断运算存储结果，后续从头开始
+      let res = [], temp = list[0];
       for(let i = 1; i < len; i++) {
         let op = (bo[i - 1] || '').toString().toLowerCase();
         let cur = list[i];
         if(!cur || cur.length < 2) {
+          if(temp) {
+            res = res.concat(chain(temp));
+          }
+          temp = [];
           continue;
         }
-        if(['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
-          res.push(cur);
+        if(['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+          res = res.concat(chain(temp));
+          temp = cur; // 以备后面可能的布尔运算
           continue;
         }
         switch(op) {
+          case 'intersect':
           case 'intersection':
-            let r1 = intersection(res, [cur]);
-            if(r1) {
-              res = [];
-              r1.forEach(item => {
-                res = res.concat(item);
-              });
-            }
-            else {
-              res = [];
-            }
+            temp = intersect(temp, cur, true);
+            // let r1 = intersection(res, [cur]);
+            // if(r1) {
+            //   res = [];
+            //   r1.forEach(item => {
+            //     res = res.concat(item);
+            //   });
+            // }
+            // else {
+            //   res = [];
+            // }
             break;
           case 'union':
-            let r2 = union(res, [cur]);
-            if(r2) {
-              res = [];
-              r2.forEach(item => {
-                res = res.concat(item);
-              });
-            }
-            else {
-              res = [];
-            }
+            temp = union(temp, cur, true);
+            // let r2 = union(res, [cur]);
+            // if(r2) {
+            //   res = [];
+            //   r2.forEach(item => {
+            //     res = res.concat(item);
+            //   });
+            // }
+            // else {
+            //   res = [];
+            // }
             break;
+          case 'subtract':
           case 'diff':
-            let r3 = diff(res, [cur]);
-            if(r3) {
-              res = [];
-              r3.forEach(item => {
-                res = res.concat(item);
-              });
-            }
-            else {
-              res = [];
-            }
+          case 'difference':
+            temp = subtract(temp, cur, true);
+            // let r3 = diff(res, [cur]);
+            // if(r3) {
+            //   res = [];
+            //   r3.forEach(item => {
+            //     res = res.concat(item);
+            //   });
+            // }
+            // else {
+            //   res = [];
+            // }
+            break;
+          case 'subtract2':
+            temp = subtract2(temp, cur, true);
             break;
           case 'xor':
-            let r4 = xor(res, [cur]);
-            if(r4) {
-              res = [];
-              r4.forEach(item => {
-                res = res.concat(item);
-              });
-            }
-            else {
-              res = [];
-            }
+            temp = xor(temp, cur, true);
+            // let r4 = xor(res, [cur]);
+            // if(r4) {
+            //   res = [];
+            //   r4.forEach(item => {
+            //     res = res.concat(item);
+            //   });
+            // }
+            // else {
+            //   res = [];
+            // }
             break;
         }
       }
-      return res;
+      return res.concat(chain(temp));
     }
     return list;
   }

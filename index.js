@@ -41613,6 +41613,10 @@
     child.props = clone$4(libraryItem.props) || {};
     child.children = libraryItem.children || [];
 
+    if (libraryItem.vars && !child.vars) {
+      child.vars = libraryItem.vars;
+    }
+
     if (libraryItem.library) {
       child.library = libraryItem.library;
     } // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况

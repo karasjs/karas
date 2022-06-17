@@ -106,7 +106,7 @@ let root = karas.parse(
 * **参数**  
 同[parse()](#parse)方法，`options`多了一个`callback`。因为是异步无法直接返回`Root`，所以用回调的方式获得。
 * **说明**  
-同[parse()](#parse)方法，只是json中多了`imgs`、`fonts`和`components`字段可以加载字体和自定义组件。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。
+同[parse()](#parse)方法，只是json中的`imgs`、`fonts`和`components`字段可以加载字体和自定义组件，等它们全部加载成功后再解析渲染。自定义组件的`tagName`做了默认约定，需要自己执行同名注册，或暴露同名变量给全局访问自动注册。
 * **示例**
 ```jsx
 karas.parse(
@@ -2555,13 +2555,20 @@ Geom矢量几何图形的样式键值对列表。
 * **参数**
   * fontFamily `String`
     注册的字体名。
+  * url `String/ArrayBuffer`
+    注册的字体路径或数据。
   * data `Object`
     字体信息，需包含`emSquare`、`ascent`、`descent`、`lineGap`（默认0）。
 * **说明**  
-  注册使用的新字体。
+  注册使用的新字体。此举可能会引发之前使用注册字体的自动刷新。
 * **示例**
 ```jsx
-karas.style.font.register('newFont', {
+karas.render(
+  <canvas>
+    <div style={{fontFamily:'newFont'}}>这里先使用默认字体显示，等下方注册加载成功后自动刷新。</div>
+  </canvas>
+);
+karas.style.font.register('newFont', 'https://xxx', {
   emSquare: 2048,
   ascent: 1854,
   descent: 434,

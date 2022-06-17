@@ -5,6 +5,7 @@ let o = karas.render(
   </canvas>,
   '#test'
 );
+karas.style.font.register('alipay', 'AlipayNumber-Regular.ttf', {});
 
 o.on(karas.Event.REFRESH, function() {
   let canvas = document.querySelector('canvas');

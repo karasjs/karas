@@ -1,6 +1,9 @@
 import util from '../util/util';
+import inject from '../util/inject';
 
 const { isString } = util;
+
+const CALLBACK = {};
 
 let o = {
   info: {
@@ -44,24 +47,46 @@ let o = {
   support(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
   },
-  register(name, url, info) {
-    if(!isString(url)) {
-      info = url;
+  register(name, url, data) {
+    name = name.toLowerCase();
+    if(!isString(url) && !(url instanceof ArrayBuffer)) {
+      data = url;
+      url = null;
     }
-    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0 } = info || {};
-    this.info[name.toLowerCase()] = {
+    let info = this.info;
+    info[name] = info[name] || {};
+    if(url && !info[name].url) {
+      info[name].url = url;
+      inject.loadFont(name, url, function(res) {
+        info[name].success = res.success;
+        if(res.success) {
+          let list = CALLBACK[name] || [];
+          while(list.length) {
+            let node = list.pop();
+            node.__loadFontCallback(name);
+          }
+        }
+      });
+    }
+    // 防止先没url只注册，再调用只url的情况
+    if(!data || info[name].lhr) {
+      return;
+    }
+    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0 } = data || {};
+    Object.assign(info[name], {
       lhr: (ascent + descent + lineGap) / emSquare,
       blr: ascent / emSquare,
-    };
+    });
   },
   hasRegister(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily);
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
   },
-  hasChecked(fontFamily) {
-    return this.hasRegister(fontFamily) && this.info[fontFamily].hasOwnProperty('checked');
+  hasLoaded(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
   },
-  setChecked(fontFamily, res) {
-    return this.info[fontFamily].checked = res;
+  waitForRegister(fontFamily, node) {
+    let list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+    list.push(node);
   },
 };
 

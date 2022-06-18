@@ -49,6 +49,9 @@ function linkLibrary(child, libraryItem) {
   child.tagName = libraryItem.tagName;
   child.props = clone(libraryItem.props) || {};
   child.children = libraryItem.children || [];
+  if(libraryItem.vars && !child.vars) {
+    child.vars = libraryItem.vars;
+  }
   if(libraryItem.library) {
     child.library = libraryItem.library;
   }

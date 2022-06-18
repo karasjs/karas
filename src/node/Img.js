@@ -517,7 +517,7 @@ class Img extends Dom {
           // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
           let res = {};
           res[UPDATE_NODE] = self;
-          res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
+          res[UPDATE_FOCUS] = level.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
           res[UPDATE_CONFIG] = self.__config;
           root.__addUpdate(self, self.__config, root, root.__config, res);
         },

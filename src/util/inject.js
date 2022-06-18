@@ -1,6 +1,6 @@
 import util from './util';
 import debug from './debug';
-import font from '../style/font';
+// import font from '../style/font';
 import ca from '../gl/ca';
 import webgl from '../gl/webgl';
 
@@ -11,8 +11,6 @@ const WEBGL = {};
 const CANVAS_LIST = [];
 const WEBGL_LIST = [];
 const SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
-
-let defaultFontFamilyData;
 
 function cache(key, width, height, hash, message) {
   let o;
@@ -89,6 +87,9 @@ const LOADED = 2;
 const FONT = {};
 const COMPONENT = {};
 let div;
+
+const SUPPORT_FONT = {};
+let defaultFontFamilyData;
 
 function createDiv() {
   div = document.createElement('div');
@@ -326,12 +327,15 @@ let inject = {
     if(ff === this.defaultFontFamily || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
       return true;
     }
-    if(!font.info.hasOwnProperty(ff)) {
-      return false;
+    if(SUPPORT_FONT.hasOwnProperty(ff)) {
+      return SUPPORT_FONT[ff];
     }
-    if(font.info[ff].hasOwnProperty('checked')) {
-      return font.info[ff].checked;
-    }
+    // if(!font.info.hasOwnProperty(ff)) {
+    //   return false;
+    // }
+    // if(font.info[ff].hasOwnProperty('checked')) {
+    //   return font.info[ff].checked;
+    // }
     let canvas = inject.getFontCanvas();
     let context = canvas.ctx;
     context.textAlign = 'center';
@@ -351,10 +355,12 @@ let inject = {
     let data = context.getImageData(0, 0, 16, 16).data;
     for(let i = 0, len = data.length; i < len; i++) {
       if(defaultFontFamilyData[i] !== data[i]) {
-        return font.info[ff].checked = true;
+        return SUPPORT_FONT[ff] = false;
+        // return font.info[ff].checked = true;
       }
     }
-    return font.info[ff].checked = false;
+    return SUPPORT_FONT[ff] = true;
+    // return font.info[ff].checked = false;
   },
   loadFont(fontFamily, url, cb) {
     if(util.isFunction(url)) {
@@ -403,7 +409,7 @@ let inject = {
     else {
       cache.state = LOADING;
       cb && cache.task.push(cb);
-      if(!/url\(/.test(url)) {
+      if(!(url instanceof ArrayBuffer) && !/url\(/.test(url)) {
         url = `url(${url})`;
       }
       let f = new FontFace(fontFamily, url);

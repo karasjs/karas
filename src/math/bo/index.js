@@ -59,7 +59,7 @@ const INTERSECT = [
   0, 0, 1, 0,
   1, 1, 0, 1,
   0, 0, 1, 0,
-], SUBTRACT2 = [
+], SUBTRACT_REV = [
   0, 1, 0, 0,
   1, 0, 1, 1,
   0, 1, 0, 0,
@@ -123,9 +123,9 @@ export default {
     }
     return chain(list);
   },
-  subtract2(polygonA, polygonB, intermediate) {
+  subtractRev(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
+    let list = filter(source.segments, SUBTRACT_REV).concat(filter(clip.segments, SUBTRACT_REV));
     if(intermediate) {
       source.segments = list;
       return source;

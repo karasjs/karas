@@ -15091,7 +15091,7 @@
   var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0],
       UNION$1 = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
       SUBTRACT = [0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0],
-      SUBTRACT2 = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
+      SUBTRACT_REV = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
       XOR$1 = [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0];
 
   function filter(segments, matrix) {
@@ -15161,13 +15161,13 @@
 
       return _chain(list);
     },
-    subtract2: function subtract2(polygonA, polygonB, intermediate) {
+    subtractRev: function subtractRev(polygonA, polygonB, intermediate) {
       var _trivial7 = trivial(polygonA, polygonB),
           _trivial8 = _slicedToArray(_trivial7, 2),
           source = _trivial8[0],
           clip = _trivial8[1];
 
-      var list = filter(source.segments, SUBTRACT2).concat(filter(clip.segments, SUBTRACT2));
+      var list = filter(source.segments, SUBTRACT_REV).concat(filter(clip.segments, SUBTRACT_REV));
 
       if (intermediate) {
         source.segments = list;

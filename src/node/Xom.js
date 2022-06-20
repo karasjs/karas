@@ -280,6 +280,7 @@ class Xom extends Node {
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
+    this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
   }
 
   __structure(i, lv, j) {
@@ -361,7 +362,8 @@ class Xom extends Node {
               }
             }
             // 不可用的都特殊记住等待注册回调__loadFontCallback
-            font.waitForRegister(item, this);
+            this.__fontRegister[item] = true;
+            font.onRegister(item, this);
           }
           computedStyle[k] = f;
         }
@@ -493,11 +495,12 @@ class Xom extends Node {
     }
   }
 
-  __loadFontCallback(fontFamily) {
-    let node = this;
+  __emitFontRegister(fontFamily) {
+    let node = this, fontRegister = node.__fontRegister;
     if(node.isDestroyed) {
       return;
     }
+    delete fontRegister[fontFamily];
     let { root, currentStyle, computedStyle, __config } = node;
     // 等待注册回调过程中可能会发生变更，相等或者继承都忽略
     if(!root || computedStyle[FONT_FAMILY] === fontFamily) {
@@ -513,9 +516,8 @@ class Xom extends Node {
       if(item === fontFamily) {
         // 加载成功回调可能没注册信息，需要多判断一下
         if(font.hasRegister(item)) {
-          root.addRefreshTask(node.__task = {
+          root.addRefreshTask({
             __before() {
-              node.__task = null;
               if(__config[NODE_IS_DESTROYED]) {
                 return;
               }
@@ -2363,6 +2365,12 @@ class Xom extends Node {
     this.__task = null;
     this.__root = null;
     this.clearCache();
+    let fontRegister = this.__fontRegister;
+    for(let i in fontRegister) {
+      if(fontRegister.hasOwnProperty(i)) {
+        font.offRegister(i, this);
+      }
+    }
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能

@@ -2827,6 +2827,7 @@
       return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
     },
     register: function register(name, url, data) {
+      // url和data同时需要，也可以先data后url，不能先url后data
       name = name.toLowerCase();
 
       if (!isString$1(url) && !(url instanceof ArrayBuffer)) {
@@ -2838,6 +2839,7 @@
       info[name] = info[name] || {};
 
       if (url && !info[name].url) {
+        // 不能覆盖
         info[name].url = url;
         inject.loadFont(name, url, function (res) {
           info[name].success = res.success;
@@ -2848,11 +2850,11 @@
             while (list.length) {
               var node = list.pop();
 
-              node.__loadFontCallback(name);
+              node.__emitFontRegister(name);
             }
           }
         });
-      } // 防止先没url只注册，再调用只url的情况
+      } // 防止先没url只注册，再调用只传url的情况
 
 
       if (!data || info[name].lhr) {
@@ -2880,9 +2882,17 @@
     hasLoaded: function hasLoaded(fontFamily) {
       return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
     },
-    waitForRegister: function waitForRegister(fontFamily, node) {
+    onRegister: function onRegister(fontFamily, node) {
       var list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
       list.push(node);
+    },
+    offRegister: function offRegister(fontFamily, node) {
+      var list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+      var i = list.indexOf(node);
+
+      if (i > -1) {
+        node.splice(i, 1);
+      }
     }
   };
   o$1.info['宋体'] = o$1.info.simsun;
@@ -21909,6 +21919,8 @@
 
       _this.__parentLineBox = null; // inline时指向
 
+      _this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
+
       return _this;
     }
 
@@ -21996,7 +22008,8 @@
                 } // 不可用的都特殊记住等待注册回调__loadFontCallback
 
 
-                o$1.waitForRegister(item, _this3);
+                _this3.__fontRegister[item] = true;
+                o$1.onRegister(item, _this3);
               }
 
               computedStyle[k] = f;
@@ -22105,14 +22118,16 @@
         }
       }
     }, {
-      key: "__loadFontCallback",
-      value: function __loadFontCallback(fontFamily) {
-        var node = this;
+      key: "__emitFontRegister",
+      value: function __emitFontRegister(fontFamily) {
+        var node = this,
+            fontRegister = node.__fontRegister;
 
         if (node.isDestroyed) {
           return;
         }
 
+        delete fontRegister[fontFamily];
         var root = node.root,
             currentStyle = node.currentStyle,
             computedStyle = node.computedStyle,
@@ -22136,10 +22151,8 @@
           if (item === fontFamily) {
             // 加载成功回调可能没注册信息，需要多判断一下
             if (o$1.hasRegister(item)) {
-              root.addRefreshTask(node.__task = {
+              root.addRefreshTask({
                 __before: function __before() {
-                  node.__task = null;
-
                   if (__config[NODE_IS_DESTROYED$1]) {
                     return;
                   }
@@ -24103,6 +24116,13 @@
         this.__task = null;
         this.__root = null;
         this.clearCache();
+        var fontRegister = this.__fontRegister;
+
+        for (var i in fontRegister) {
+          if (fontRegister.hasOwnProperty(i)) {
+            o$1.offRegister(i, this);
+          }
+        }
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {

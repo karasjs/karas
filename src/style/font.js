@@ -47,7 +47,7 @@ let o = {
   support(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
   },
-  register(name, url, data) {
+  register(name, url, data) { // url和data同时需要，也可以先data后url，不能先url后data
     name = name.toLowerCase();
     if(!isString(url) && !(url instanceof ArrayBuffer)) {
       data = url;
@@ -55,7 +55,7 @@ let o = {
     }
     let info = this.info;
     info[name] = info[name] || {};
-    if(url && !info[name].url) {
+    if(url && !info[name].url) { // 不能覆盖
       info[name].url = url;
       inject.loadFont(name, url, function(res) {
         info[name].success = res.success;
@@ -63,12 +63,12 @@ let o = {
           let list = CALLBACK[name] || [];
           while(list.length) {
             let node = list.pop();
-            node.__loadFontCallback(name);
+            node.__emitFontRegister(name);
           }
         }
       });
     }
-    // 防止先没url只注册，再调用只url的情况
+    // 防止先没url只注册，再调用只传url的情况
     if(!data || info[name].lhr) {
       return;
     }
@@ -84,10 +84,17 @@ let o = {
   hasLoaded(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
   },
-  waitForRegister(fontFamily, node) {
+  onRegister(fontFamily, node) {
     let list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
     list.push(node);
   },
+  offRegister(fontFamily, node) {
+    let list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+    let i = list.indexOf(node);
+    if(i > -1) {
+      node.splice(i, 1);
+    }
+  }
 };
 
 o.info['宋体'] = o.info.simsun;

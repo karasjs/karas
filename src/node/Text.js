@@ -235,7 +235,6 @@ class Text extends Node {
     }
     this.__bp = bp;
     let textOverflow = bp.computedStyle[TEXT_OVERFLOW];
-    css.getFontFamily(fontFamily); // 有检测过程必须执行
     // 布局测量前置，根据renderMode不同提供不同的测量方法
     let renderMode = root.renderMode;
     let ctx;

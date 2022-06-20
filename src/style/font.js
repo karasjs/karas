@@ -1,4 +1,9 @@
-'use strict';
+import util from '../util/util';
+import inject from '../util/inject';
+
+const { isString } = util;
+
+const CALLBACK = {};
 
 let o = {
   info: {
@@ -42,25 +47,54 @@ let o = {
   support(fontFamily) {
     return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
   },
-  register(name, info) {
-    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0 } = info || {};
-    this.info[name.toLowerCase()] = {
+  register(name, url, data) { // url和data同时需要，也可以先data后url，不能先url后data
+    name = name.toLowerCase();
+    if(!isString(url) && !(url instanceof ArrayBuffer)) {
+      data = url;
+      url = null;
+    }
+    let info = this.info;
+    info[name] = info[name] || {};
+    if(url && !info[name].url) { // 不能覆盖
+      info[name].url = url;
+      inject.loadFont(name, url, function(res) {
+        info[name].success = res.success;
+        if(res.success) {
+          let list = CALLBACK[name] || [];
+          while(list.length) {
+            let node = list.pop();
+            node.__emitFontRegister(name);
+          }
+        }
+      });
+    }
+    // 防止先没url只注册，再调用只传url的情况
+    if(!data || info[name].lhr) {
+      return;
+    }
+    let { emSquare = 2048, ascent = 1854, descent = 434, lineGap = 0 } = data || {};
+    Object.assign(info[name], {
       lhr: (ascent + descent + lineGap) / emSquare,
       blr: ascent / emSquare,
-    };
+    });
   },
   hasRegister(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily);
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
   },
-  hasChecked(fontFamily) {
-    return this.hasRegister(fontFamily) && this.info[fontFamily].hasOwnProperty('checked');
+  hasLoaded(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
   },
-  setChecked(fontFamily, res) {
-    return this.info[fontFamily].checked = res;
+  onRegister(fontFamily, node) {
+    let list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+    list.push(node);
   },
-  addPadding(name, padding) {
-    Object.assign(this.info[name.toLowerCase()].padding, padding);
-  },
+  offRegister(fontFamily, node) {
+    let list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+    let i = list.indexOf(node);
+    if(i > -1) {
+      node.splice(i, 1);
+    }
+  }
 };
 
 o.info['宋体'] = o.info.simsun;

@@ -22,7 +22,7 @@ let o = karas.parse({
           }
         ],
         options: {
-          duration: 200,
+          duration: 100,
           fill: 'both',
         },
       },
@@ -30,15 +30,28 @@ let o = karas.parse({
       "var-children.0": {
         id: 'aaa'
       }
+    },
+    {
+      libraryId: 0
     }
   ],
+  library: [{
+    id: 0,
+    tagName: 'span',
+    children: [1],
+    vars: [{
+      id: 'bbb',
+      member: ['children', 0]
+    }]
+  }]
 }, '#test', {
   vars: {
-    aaa: 200,
+    aaa: 'a',
+    bbb: 'b',
   },
 });
 let t = o.children[0];
 t.animationList[0].on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
-  input.value = document.querySelector('svg').outerHTML;
+  input.value = document.querySelector('svg').innerHTML;
 });

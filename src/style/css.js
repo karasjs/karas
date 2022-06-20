@@ -1255,39 +1255,16 @@ function setFontStyle(style) {
     + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
 }
 
-function getFontFamily(str) {
-  let ff = str.split(/\s*,\s*/);
-  let f = inject.defaultFontFamily;
-  for(let i = 0, len = ff.length; i < len; i++) {
-    let fontFamily = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
-    if(!font.hasRegister(fontFamily)) {
-      continue;
-    }
-    if(!font.hasChecked(fontFamily)) {
-      let res = inject.checkSupportFontFamily(fontFamily);
-      if(font.setChecked(fontFamily, res)) {
-        f = fontFamily;
-        break;
-      }
-    }
-    if(font.support(fontFamily)) {
-      f = fontFamily;
-      break;
-    }
-  }
-  return f;
-}
-
 /**
  * https://zhuanlan.zhihu.com/p/25808995
  * 根据字形信息计算baseline的正确值，差值上下均分
- * @param style
+ * @param style computedStyle
  * @returns {number}
  */
 function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
-  let ff = getFontFamily(style[FONT_FAMILY]);
-  let normal = calNormalLineHeight(style, ff);
+  let ff = style[FONT_FAMILY];
+  let normal = calNormalLineHeight(style);
   return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
@@ -1296,9 +1273,8 @@ function getVerticalBaseline(style) {
   return style[LINE_HEIGHT] - getBaseline(style);
 }
 
-function calNormalLineHeight(style, ff) {
-  ff = ff || getFontFamily(style[FONT_FAMILY]);
-  return style[FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+function calNormalLineHeight(style) {
+  return style[FONT_SIZE] * (font.info[style[FONT_FAMILY]] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {
@@ -1723,7 +1699,6 @@ function spreadFilter(bbox, filter) {
 export default {
   normalize,
   setFontStyle,
-  getFontFamily,
   getBaseline,
   getVerticalBaseline,
   calRelative,

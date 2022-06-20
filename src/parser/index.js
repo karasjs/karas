@@ -19,9 +19,9 @@ let o = {
         fonts = [fonts];
       }
       fonts.forEach(item => {
-        let { fontFamily, data } = item;
-        if(fontFamily && data) {
-          font.register(fontFamily, data);
+        let { fontFamily, url, data } = item;
+        if(fontFamily && (url || data)) {
+          font.register(fontFamily, url, data);
         }
       });
     }

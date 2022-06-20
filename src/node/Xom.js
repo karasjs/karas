@@ -170,7 +170,7 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
-const { calRelative, getFontFamily, calNormalLineHeight, spreadBoxShadow, spreadFilter } = css;
+const { calRelative, calNormalLineHeight, spreadBoxShadow, spreadFilter } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
 const { point2d } = mx;
@@ -280,6 +280,7 @@ class Xom extends Node {
     this.__layoutData = null; // 缓存上次布局x/y/w/h数据
     this.__hasComputeReflow = false; // 每次布局计算缓存标，使得每次开始只computeReflow一次
     this.__parentLineBox = null; // inline时指向
+    this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
   }
 
   __structure(i, lv, j) {
@@ -340,15 +341,31 @@ class Xom extends Node {
     let { currentStyle, computedStyle, domParent: parent } = this;
     let isRoot = !parent;
     let parentComputedStyle = parent && parent.computedStyle;
+    // 继承的特殊处理，根节点用默认值
     [FONT_SIZE, FONT_FAMILY, FONT_WEIGHT, WRITING_MODE].forEach(k => {
       let v = currentStyle[k];
       // ff特殊处理
       if(k === FONT_FAMILY) {
         if(v[1] === INHERIT) {
-          computedStyle[k] = getFontFamily(isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k]);
+          computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
         }
         else {
-          computedStyle[k] = getFontFamily(v[0]);
+          let ff = v[0].split(/\s*,\s*/), f = inject.defaultFontFamily;
+          // 从左到右即申明的字体优先级
+          for(let i = 0, len = ff.length; i < len; i++) {
+            let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+            if(font.hasRegister(item)) {
+              // 如果已经注册加载了，或者注册且本地支持的，说明可用
+              if(font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+                f = item;
+                break;
+              }
+            }
+            // 不可用的都特殊记住等待注册回调__loadFontCallback
+            this.__fontRegister[item] = true;
+            font.onRegister(item, this);
+          }
+          computedStyle[k] = f;
         }
       }
       else if(v[1] === INHERIT) {
@@ -427,7 +444,7 @@ class Xom extends Node {
     // lineHeight继承很特殊，数字和normal不同于普通单位
     if(lineHeight[1] === INHERIT) {
       if(isRoot) {
-        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle, null);
+        computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
       }
       else {
         let p = parent;
@@ -441,7 +458,7 @@ class Xom extends Node {
         }
         // 到root还是inherit或normal，或者中途遇到了normal，使用normal
         if([AUTO, INHERIT].indexOf(ph[1]) > -1) {
-          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle, null);
+          computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
         }
         // 数字继承
         else if(ph[1] === NUMBER) {
@@ -454,12 +471,12 @@ class Xom extends Node {
       }
     }
     else if(lineHeight[1] === NUMBER) {
-      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle, null);
+      computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight(computedStyle);
     }
     // 防止为0
     else {
       let v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);
-      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle, null);
+      computedStyle[LINE_HEIGHT] = v || calNormalLineHeight(computedStyle);
     }
     let letterSpacing = currentStyle[LETTER_SPACING];
     if(letterSpacing[1] === INHERIT) {
@@ -475,6 +492,51 @@ class Xom extends Node {
     }
     else {
       computedStyle[WHITE_SPACE] = whiteSpace[0];
+    }
+  }
+
+  __emitFontRegister(fontFamily) {
+    let node = this, fontRegister = node.__fontRegister;
+    if(node.isDestroyed) {
+      return;
+    }
+    delete fontRegister[fontFamily];
+    let { root, currentStyle, computedStyle, __config } = node;
+    // 等待注册回调过程中可能会发生变更，相等或者继承都忽略
+    if(!root || computedStyle[FONT_FAMILY] === fontFamily) {
+      return;
+    }
+    let v = currentStyle[FONT_FAMILY];
+    if(v[1] === INHERIT) {
+      return;
+    }
+    let ff = v[0].split(/\s*,\s*/);
+    for(let i = 0, len = ff.length; i < len; i++) {
+      let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+      if(item === fontFamily) {
+        // 加载成功回调可能没注册信息，需要多判断一下
+        if(font.hasRegister(item)) {
+          root.addRefreshTask({
+            __before() {
+              if(__config[NODE_IS_DESTROYED]) {
+                return;
+              }
+              let res = {};
+              res[UPDATE_NODE] = node;
+              res[UPDATE_FOCUS] = level.REFLOW; // 强制执行
+              res[UPDATE_CONFIG] = __config;
+              root.__addUpdate(node, __config, root, root.__config, res);
+            },
+          });
+        }
+        // 后面低优先级的无需再看
+        return;
+      }
+      // 有更高优先级的已经支持了，回调刷新无效
+      else if(font.hasRegister(item)
+        && (font.hasLoaded(item) || inject.checkSupportFontFamily(item))) {
+        return;
+      }
     }
   }
 
@@ -1332,7 +1394,7 @@ class Xom extends Node {
     __cacheStyle[FONT_STYLE] = computedStyle[FONT_STYLE];
     let color = currentStyle[COLOR];
     if(color[1] === INHERIT) {
-      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : [0, 0, 0, 1];
+      let v = computedStyle[COLOR] = parent ? parentComputedStyle[COLOR] : rgba2int(reset.INHERIT.color);
       if(v.k) {
         __cacheStyle[COLOR] = v;
       }
@@ -1350,7 +1412,7 @@ class Xom extends Node {
     }
     let textStrokeColor = currentStyle[TEXT_STROKE_COLOR];
     if(textStrokeColor[1] === INHERIT) {
-      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : [0, 0, 0, 1];
+      let v = computedStyle[TEXT_STROKE_COLOR] = parent ? parentComputedStyle[TEXT_STROKE_COLOR] : rgba2int(reset.INHERIT.textStrokeColor);
       if(v.k) {
         __cacheStyle[TEXT_STROKE_COLOR] = v;
       }
@@ -1367,7 +1429,7 @@ class Xom extends Node {
       }
     }
     if(currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
-      computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : 0;
+      computedStyle[TEXT_STROKE_WIDTH] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH] : reset.INHERIT.textStrokeWidth;
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
     else if(isNil(__cacheStyle[TEXT_STROKE_WIDTH])) {
@@ -1394,7 +1456,7 @@ class Xom extends Node {
       __cacheStyle[TEXT_STROKE_WIDTH] = true;
     }
     if(currentStyle[TEXT_STROKE_OVER][1] === INHERIT) {
-      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : 'none';
+      __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = parent ? parentComputedStyle[TEXT_STROKE_OVER] : reset.INHERIT.textStrokeOver;
     }
     else {
       __cacheStyle[TEXT_STROKE_OVER] = computedStyle[TEXT_STROKE_OVER] = currentStyle[TEXT_STROKE_OVER][0];
@@ -2009,9 +2071,8 @@ class Xom extends Node {
           });
         }
         // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
-        let ff = css.getFontFamily(fontFamily);
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
-        let leading = fontSize * (font.info[ff].lgr || 0) * 0.5;
+        let leading = fontSize * (font.info[fontFamily].lgr || 0) * 0.5;
         let baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
@@ -2304,6 +2365,12 @@ class Xom extends Node {
     this.__task = null;
     this.__root = null;
     this.clearCache();
+    let fontRegister = this.__fontRegister;
+    for(let i in fontRegister) {
+      if(fontRegister.hasOwnProperty(i)) {
+        font.offRegister(i, this);
+      }
+    }
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能

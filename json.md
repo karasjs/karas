@@ -359,6 +359,7 @@ karas.parse({
   children: [],
   fonts: [{
     fontFamily: 'xxx',
+    "url": "xxx", // 加载的url
     data: {
       "emSquare": 2000,
       "ascent": 1200,

@@ -754,97 +754,6 @@ var o = {
   }
 };
 
-var o$1 = {
-  info: {
-    arial: {
-      lhr: 1.14990234375,
-      // 默认line-height ratio，(67+1854+434)/2048
-      // car: 1.1171875, // content-area ratio，(1854+434)/2048
-      blr: 0.9052734375,
-      // base-line ratio，1854/2048
-      // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
-      lgr: 0.03271484375 // line-gap ratio，67/2048，默认0
-
-    },
-    helvetica: {
-      lhr: 1.14990234375,
-      // (8+1900+447)/2048
-      blr: 0.927734375,
-      // 1900/2048
-      lgr: 0.00390625 // 8/2048
-
-    },
-    verdana: {
-      lhr: 1.21533203125,
-      // (0+2059+430)/2048
-      blr: 1.00537109375 // 2059/2048
-
-    },
-    tahoma: {
-      lhr: 1.20703125,
-      // (0+2049+423)/2048
-      blr: 1.00048828125 // 2049/2048
-
-    },
-    georgia: {
-      lhr: 1.13623046875,
-      // (0+1878+449)/2048
-      blr: 0.9169921875 // 1878/2048
-
-    },
-    'courier new': {
-      lhr: 1.1328125,
-      // (0+1705+615)/2048
-      blr: 0.83251953125 // 1705/2048
-
-    },
-    'pingfang sc': {
-      lhr: 1.4,
-      // (0+1060+340)/1000
-      blr: 1.06 // 1060/1000
-
-    },
-    simsun: {
-      lhr: 1.4,
-      // (0+1060+340)/1000
-      blr: 1.06
-    }
-  },
-  support: function support(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
-  },
-  register: function register(name, info) {
-    var _ref = info || {},
-        _ref$emSquare = _ref.emSquare,
-        emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
-        _ref$ascent = _ref.ascent,
-        ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
-        _ref$descent = _ref.descent,
-        descent = _ref$descent === void 0 ? 434 : _ref$descent,
-        _ref$lineGap = _ref.lineGap,
-        lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
-
-    this.info[name.toLowerCase()] = {
-      lhr: (ascent + descent + lineGap) / emSquare,
-      blr: ascent / emSquare
-    };
-  },
-  hasRegister: function hasRegister(fontFamily) {
-    return this.info.hasOwnProperty(fontFamily);
-  },
-  hasChecked: function hasChecked(fontFamily) {
-    return this.hasRegister(fontFamily) && this.info[fontFamily].hasOwnProperty('checked');
-  },
-  setChecked: function setChecked(fontFamily, res) {
-    return this.info[fontFamily].checked = res;
-  },
-  addPadding: function addPadding(name, padding) {
-    Object.assign(this.info[name.toLowerCase()].padding, padding);
-  }
-};
-o$1.info['宋体'] = o$1.info.simsun;
-o$1.info['pingfang'] = o$1.info['pingfang sc'];
-
 // 类型为引用防止json仿造
 var TYPE_VD = Symbol('Dom');
 var TYPE_GM = Symbol('Geom');
@@ -2293,7 +2202,6 @@ var WEBGL = {};
 var CANVAS_LIST = [];
 var WEBGL_LIST = [];
 var SUPPORT_OFFSCREEN_CANVAS = typeof OffscreenCanvas === 'function' && util.isFunction(OffscreenCanvas.prototype.getContext);
-var defaultFontFamilyData;
 
 function cache(key, width, height, hash, message) {
   var o;
@@ -2375,6 +2283,8 @@ var LOADED = 2;
 var FONT = {};
 var COMPONENT = {};
 var div;
+var SUPPORT_FONT = {};
+var defaultFontFamilyData;
 
 function createDiv() {
   div = document.createElement('div');
@@ -2663,13 +2573,15 @@ var inject = {
       return true;
     }
 
-    if (!o$1.info.hasOwnProperty(ff)) {
-      return false;
-    }
+    if (SUPPORT_FONT.hasOwnProperty(ff)) {
+      return SUPPORT_FONT[ff];
+    } // if(!font.info.hasOwnProperty(ff)) {
+    //   return false;
+    // }
+    // if(font.info[ff].hasOwnProperty('checked')) {
+    //   return font.info[ff].checked;
+    // }
 
-    if (o$1.info[ff].hasOwnProperty('checked')) {
-      return o$1.info[ff].checked;
-    }
 
     var canvas = inject.getFontCanvas();
     var context = canvas.ctx;
@@ -2693,11 +2605,11 @@ var inject = {
 
     for (var i = 0, len = data.length; i < len; i++) {
       if (defaultFontFamilyData[i] !== data[i]) {
-        return o$1.info[ff].checked = true;
+        return SUPPORT_FONT[ff] = false; // return font.info[ff].checked = true;
       }
     }
 
-    return o$1.info[ff].checked = false;
+    return SUPPORT_FONT[ff] = true; // return font.info[ff].checked = false;
   },
   loadFont: function loadFont(fontFamily, url, cb) {
     if (util.isFunction(url)) {
@@ -2750,7 +2662,7 @@ var inject = {
       cache.state = LOADING;
       cb && cache.task.push(cb);
 
-      if (!/url\(/.test(url)) {
+      if (!(url instanceof ArrayBuffer) && !/url\(/.test(url)) {
         url = "url(".concat(url, ")");
       }
 
@@ -2846,6 +2758,139 @@ var inject = {
     }
   }
 };
+
+var isString$1 = util.isString;
+var CALLBACK = {};
+var o$1 = {
+  info: {
+    arial: {
+      lhr: 1.14990234375,
+      // 默认line-height ratio，(67+1854+434)/2048
+      // car: 1.1171875, // content-area ratio，(1854+434)/2048
+      blr: 0.9052734375,
+      // base-line ratio，1854/2048
+      // mdr: 0.64599609375, // middle ratio，(1854-1062/2)/2048
+      lgr: 0.03271484375 // line-gap ratio，67/2048，默认0
+
+    },
+    helvetica: {
+      lhr: 1.14990234375,
+      // (8+1900+447)/2048
+      blr: 0.927734375,
+      // 1900/2048
+      lgr: 0.00390625 // 8/2048
+
+    },
+    verdana: {
+      lhr: 1.21533203125,
+      // (0+2059+430)/2048
+      blr: 1.00537109375 // 2059/2048
+
+    },
+    tahoma: {
+      lhr: 1.20703125,
+      // (0+2049+423)/2048
+      blr: 1.00048828125 // 2049/2048
+
+    },
+    georgia: {
+      lhr: 1.13623046875,
+      // (0+1878+449)/2048
+      blr: 0.9169921875 // 1878/2048
+
+    },
+    'courier new': {
+      lhr: 1.1328125,
+      // (0+1705+615)/2048
+      blr: 0.83251953125 // 1705/2048
+
+    },
+    'pingfang sc': {
+      lhr: 1.4,
+      // (0+1060+340)/1000
+      blr: 1.06 // 1060/1000
+
+    },
+    simsun: {
+      lhr: 1.4,
+      // (0+1060+340)/1000
+      blr: 1.06
+    }
+  },
+  support: function support(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].checked;
+  },
+  register: function register(name, url, data) {
+    // url和data同时需要，也可以先data后url，不能先url后data
+    name = name.toLowerCase();
+
+    if (!isString$1(url) && !(url instanceof ArrayBuffer)) {
+      data = url;
+      url = null;
+    }
+
+    var info = this.info;
+    info[name] = info[name] || {};
+
+    if (url && !info[name].url) {
+      // 不能覆盖
+      info[name].url = url;
+      inject.loadFont(name, url, function (res) {
+        info[name].success = res.success;
+
+        if (res.success) {
+          var list = CALLBACK[name] || [];
+
+          while (list.length) {
+            var node = list.pop();
+
+            node.__emitFontRegister(name);
+          }
+        }
+      });
+    } // 防止先没url只注册，再调用只传url的情况
+
+
+    if (!data || info[name].lhr) {
+      return;
+    }
+
+    var _ref = data || {},
+        _ref$emSquare = _ref.emSquare,
+        emSquare = _ref$emSquare === void 0 ? 2048 : _ref$emSquare,
+        _ref$ascent = _ref.ascent,
+        ascent = _ref$ascent === void 0 ? 1854 : _ref$ascent,
+        _ref$descent = _ref.descent,
+        descent = _ref$descent === void 0 ? 434 : _ref$descent,
+        _ref$lineGap = _ref.lineGap,
+        lineGap = _ref$lineGap === void 0 ? 0 : _ref$lineGap;
+
+    Object.assign(info[name], {
+      lhr: (ascent + descent + lineGap) / emSquare,
+      blr: ascent / emSquare
+    });
+  },
+  hasRegister: function hasRegister(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].hasOwnProperty('lhr');
+  },
+  hasLoaded: function hasLoaded(fontFamily) {
+    return this.info.hasOwnProperty(fontFamily) && this.info[fontFamily].success;
+  },
+  onRegister: function onRegister(fontFamily, node) {
+    var list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+    list.push(node);
+  },
+  offRegister: function offRegister(fontFamily, node) {
+    var list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
+    var i = list.indexOf(node);
+
+    if (i > -1) {
+      node.splice(i, 1);
+    }
+  }
+};
+o$1.info['宋体'] = o$1.info.simsun;
+o$1.info['pingfang'] = o$1.info['pingfang sc'];
 
 var DOM = {
   position: 'static',
@@ -2980,7 +3025,7 @@ var INHERIT = {
   visibility: 'visible',
   pointerEvents: 'auto',
   textStrokeColor: '#000',
-  textStrokeWidth: 1,
+  textStrokeWidth: 0,
   textStrokeOver: 'none',
   writingMode: 'horizontalTb'
 };
@@ -9022,47 +9067,18 @@ function setFontStyle(style) {
 
   return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + fontFamily;
 }
-
-function getFontFamily(str) {
-  var ff = str.split(/\s*,\s*/);
-  var f = inject.defaultFontFamily;
-
-  for (var i = 0, len = ff.length; i < len; i++) {
-    var fontFamily = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
-
-    if (!o$1.hasRegister(fontFamily)) {
-      continue;
-    }
-
-    if (!o$1.hasChecked(fontFamily)) {
-      var res = inject.checkSupportFontFamily(fontFamily);
-
-      if (o$1.setChecked(fontFamily, res)) {
-        f = fontFamily;
-        break;
-      }
-    }
-
-    if (o$1.support(fontFamily)) {
-      f = fontFamily;
-      break;
-    }
-  }
-
-  return f;
-}
 /**
  * https://zhuanlan.zhihu.com/p/25808995
  * 根据字形信息计算baseline的正确值，差值上下均分
- * @param style
+ * @param style computedStyle
  * @returns {number}
  */
 
 
 function getBaseline(style) {
   var fontSize = style[FONT_SIZE$2];
-  var ff = getFontFamily(style[FONT_FAMILY]);
-  var normal = calNormalLineHeight(style, ff);
+  var ff = style[FONT_FAMILY];
+  var normal = calNormalLineHeight(style);
   return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).blr;
 } // 垂直排版的baseline和水平类似，只是原点坐标系不同，删除加本身高度变为加gap高度
 
@@ -9071,9 +9087,8 @@ function getVerticalBaseline(style) {
   return style[LINE_HEIGHT] - getBaseline(style);
 }
 
-function calNormalLineHeight(style, ff) {
-  ff = ff || getFontFamily(style[FONT_FAMILY]);
-  return style[FONT_SIZE$2] * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).lhr;
+function calNormalLineHeight(style) {
+  return style[FONT_SIZE$2] * (o$1.info[style[FONT_FAMILY]] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).lhr;
 }
 
 function calRelativePercent(n, parent, k) {
@@ -9501,7 +9516,6 @@ function spreadFilter(bbox, filter) {
 var css = {
   normalize: normalize,
   setFontStyle: setFontStyle,
-  getFontFamily: getFontFamily,
   getBaseline: getBaseline,
   getVerticalBaseline: getVerticalBaseline,
   calRelative: calRelative,
@@ -15572,9 +15586,7 @@ var Text = /*#__PURE__*/function (_Node) {
       }
 
       this.__bp = bp;
-      var textOverflow = bp.computedStyle[TEXT_OVERFLOW$1];
-      css.getFontFamily(fontFamily); // 有检测过程必须执行
-      // 布局测量前置，根据renderMode不同提供不同的测量方法
+      var textOverflow = bp.computedStyle[TEXT_OVERFLOW$1]; // 布局测量前置，根据renderMode不同提供不同的测量方法
 
       var renderMode = root.renderMode;
       var ctx;
@@ -21770,7 +21782,6 @@ var int2rgba$3 = util.int2rgba,
     isNil$6 = util.isNil,
     isFunction$5 = util.isFunction;
 var calRelative$1 = css.calRelative,
-    getFontFamily$1 = css.getFontFamily,
     calNormalLineHeight$1 = css.calNormalLineHeight,
     spreadBoxShadow$1 = css.spreadBoxShadow,
     spreadFilter$2 = css.spreadFilter;
@@ -21902,6 +21913,8 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
     _this.__parentLineBox = null; // inline时指向
 
+    _this.__fontRegister = {}; // 优先级字体尚未加载时记录回调hash，销毁时删除回调
+
     return _this;
   }
 
@@ -21965,15 +21978,35 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           computedStyle = this.computedStyle,
           parent = this.domParent;
       var isRoot = !parent;
-      var parentComputedStyle = parent && parent.computedStyle;
+      var parentComputedStyle = parent && parent.computedStyle; // 继承的特殊处理，根节点用默认值
+
       [FONT_SIZE$9, FONT_FAMILY$5, FONT_WEIGHT$5, WRITING_MODE$1].forEach(function (k) {
         var v = currentStyle[k]; // ff特殊处理
 
         if (k === FONT_FAMILY$5) {
           if (v[1] === INHERIT$3) {
-            computedStyle[k] = getFontFamily$1(isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k]);
+            computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
           } else {
-            computedStyle[k] = getFontFamily$1(v[0]);
+            var ff = v[0].split(/\s*,\s*/),
+                f = inject.defaultFontFamily; // 从左到右即申明的字体优先级
+
+            for (var i = 0, len = ff.length; i < len; i++) {
+              var item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+
+              if (o$1.hasRegister(item)) {
+                // 如果已经注册加载了，或者注册且本地支持的，说明可用
+                if (o$1.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+                  f = item;
+                  break;
+                }
+              } // 不可用的都特殊记住等待注册回调__loadFontCallback
+
+
+              _this3.__fontRegister[item] = true;
+              o$1.onRegister(item, _this3);
+            }
+
+            computedStyle[k] = f;
           }
         } else if (v[1] === INHERIT$3) {
           computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
@@ -22027,7 +22060,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
       if (lineHeight[1] === INHERIT$3) {
         if (isRoot) {
-          computedStyle[LINE_HEIGHT$5] = calNormalLineHeight$1(computedStyle, null);
+          computedStyle[LINE_HEIGHT$5] = calNormalLineHeight$1(computedStyle);
         } else {
           var p = parent;
           var ph;
@@ -22044,7 +22077,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
 
 
           if ([AUTO$3, INHERIT$3].indexOf(ph[1]) > -1) {
-            computedStyle[LINE_HEIGHT$5] = calNormalLineHeight$1(computedStyle, null);
+            computedStyle[LINE_HEIGHT$5] = calNormalLineHeight$1(computedStyle);
           } // 数字继承
           else if (ph[1] === NUMBER$5) {
             computedStyle[LINE_HEIGHT$5] = Math.max(ph[0], 0) * fontSize;
@@ -22054,11 +22087,11 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
           }
         }
       } else if (lineHeight[1] === NUMBER$5) {
-        computedStyle[LINE_HEIGHT$5] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight$1(computedStyle, null);
+        computedStyle[LINE_HEIGHT$5] = Math.max(lineHeight[0], 0) * fontSize || calNormalLineHeight$1(computedStyle);
       } // 防止为0
       else {
         var v = Math.max(this.__calSize(lineHeight, fontSize, true), 0);
-        computedStyle[LINE_HEIGHT$5] = v || calNormalLineHeight$1(computedStyle, null);
+        computedStyle[LINE_HEIGHT$5] = v || calNormalLineHeight$1(computedStyle);
       }
 
       var letterSpacing = currentStyle[LETTER_SPACING$3];
@@ -22076,6 +22109,65 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
         computedStyle[WHITE_SPACE$2] = isRoot ? 'normal' : parentComputedStyle[WHITE_SPACE$2];
       } else {
         computedStyle[WHITE_SPACE$2] = whiteSpace[0];
+      }
+    }
+  }, {
+    key: "__emitFontRegister",
+    value: function __emitFontRegister(fontFamily) {
+      var node = this,
+          fontRegister = node.__fontRegister;
+
+      if (node.isDestroyed) {
+        return;
+      }
+
+      delete fontRegister[fontFamily];
+      var root = node.root,
+          currentStyle = node.currentStyle,
+          computedStyle = node.computedStyle,
+          __config = node.__config; // 等待注册回调过程中可能会发生变更，相等或者继承都忽略
+
+      if (!root || computedStyle[FONT_FAMILY$5] === fontFamily) {
+        return;
+      }
+
+      var v = currentStyle[FONT_FAMILY$5];
+
+      if (v[1] === INHERIT$3) {
+        return;
+      }
+
+      var ff = v[0].split(/\s*,\s*/);
+
+      for (var i = 0, len = ff.length; i < len; i++) {
+        var item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+
+        if (item === fontFamily) {
+          // 加载成功回调可能没注册信息，需要多判断一下
+          if (o$1.hasRegister(item)) {
+            root.addRefreshTask({
+              __before: function __before() {
+                if (__config[NODE_IS_DESTROYED$1]) {
+                  return;
+                }
+
+                var res = {};
+                res[UPDATE_NODE$2] = node;
+                res[UPDATE_FOCUS$1] = o$3.REFLOW; // 强制执行
+
+                res[UPDATE_CONFIG$2] = __config;
+
+                root.__addUpdate(node, __config, root, root.__config, res);
+              }
+            });
+          } // 后面低优先级的无需再看
+
+
+          return;
+        } // 有更高优先级的已经支持了，回调刷新无效
+        else if (o$1.hasRegister(item) && (o$1.hasLoaded(item) || inject.checkSupportFontFamily(item))) {
+          return;
+        }
       }
     } // dom常用的几种尺寸赋值
 
@@ -22931,7 +23023,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       var color = currentStyle[COLOR$5];
 
       if (color[1] === INHERIT$3) {
-        var v = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : [0, 0, 0, 1];
+        var v = computedStyle[COLOR$5] = parent ? parentComputedStyle[COLOR$5] : rgba2int$3(reset.INHERIT.color);
 
         if (v.k) {
           __cacheStyle[COLOR$5] = v;
@@ -22949,7 +23041,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       var textStrokeColor = currentStyle[TEXT_STROKE_COLOR$4];
 
       if (textStrokeColor[1] === INHERIT$3) {
-        var _v3 = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : [0, 0, 0, 1];
+        var _v3 = computedStyle[TEXT_STROKE_COLOR$4] = parent ? parentComputedStyle[TEXT_STROKE_COLOR$4] : rgba2int$3(reset.INHERIT.textStrokeColor);
 
         if (_v3.k) {
           __cacheStyle[TEXT_STROKE_COLOR$4] = _v3;
@@ -22965,7 +23057,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       }
 
       if (currentStyle[TEXT_STROKE_WIDTH$3][1] === INHERIT$3) {
-        computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : 0;
+        computedStyle[TEXT_STROKE_WIDTH$3] = parent ? parentComputedStyle[TEXT_STROKE_WIDTH$3] : reset.INHERIT.textStrokeWidth;
         __cacheStyle[TEXT_STROKE_WIDTH$3] = true;
       } else if (isNil$6(__cacheStyle[TEXT_STROKE_WIDTH$3])) {
         var _v4 = currentStyle[TEXT_STROKE_WIDTH$3];
@@ -22989,7 +23081,7 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       }
 
       if (currentStyle[TEXT_STROKE_OVER$3][1] === INHERIT$3) {
-        __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = parent ? parentComputedStyle[TEXT_STROKE_OVER$3] : 'none';
+        __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = parent ? parentComputedStyle[TEXT_STROKE_OVER$3] : reset.INHERIT.textStrokeOver;
       } else {
         __cacheStyle[TEXT_STROKE_OVER$3] = computedStyle[TEXT_STROKE_OVER$3] = currentStyle[TEXT_STROKE_OVER$3][0];
       }
@@ -23696,11 +23788,10 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
                 }
               });
             } // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
+            // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
 
-            var ff = css.getFontFamily(fontFamily); // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
-
-            var leading = fontSize * (o$1.info[ff].lgr || 0) * 0.5;
+            var leading = fontSize * (o$1.info[fontFamily].lgr || 0) * 0.5;
             var baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
             var isFirst = true;
@@ -24019,6 +24110,13 @@ var Xom$1 = /*#__PURE__*/function (_Node) {
       this.__task = null;
       this.__root = null;
       this.clearCache();
+      var fontRegister = this.__fontRegister;
+
+      for (var i in fontRegister) {
+        if (fontRegister.hasOwnProperty(i)) {
+          o$1.offRegister(i, this);
+        }
+      }
     } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
   }, {
@@ -33745,8 +33843,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
 
           var res = _node2.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL$1 : CHILD, dx, dy);
 
-          _config[NODE_REFRESH_LV$1] = REPAINT$2;
-
           var _ref = res || {},
               offscreenBlend = _ref.offscreenBlend,
               _offscreenMask = _ref.offscreenMask,
@@ -34091,8 +34187,6 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
               }
 
               var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
-
-              _config2[NODE_REFRESH_LV$1] = REPAINT$2;
 
               var _ref2 = _res || {},
                   _offscreenBlend = _ref2.offscreenBlend,
@@ -36715,6 +36809,9 @@ var _enums$STYLE_KEY$k = enums.STYLE_KEY,
     BORDER_BOTTOM_WIDTH$8 = _enums$STYLE_KEY$k.BORDER_BOTTOM_WIDTH,
     POINTER_EVENTS$2 = _enums$STYLE_KEY$k.POINTER_EVENTS,
     WRITING_MODE$3 = _enums$STYLE_KEY$k.WRITING_MODE,
+    TEXT_STROKE_COLOR$5 = _enums$STYLE_KEY$k.TEXT_STROKE_COLOR,
+    TEXT_STROKE_WIDTH$4 = _enums$STYLE_KEY$k.TEXT_STROKE_WIDTH,
+    TEXT_STROKE_OVER$4 = _enums$STYLE_KEY$k.TEXT_STROKE_OVER,
     _enums$UPDATE_KEY$5 = enums.UPDATE_KEY,
     UPDATE_NODE$5 = _enums$UPDATE_KEY$5.UPDATE_NODE,
     UPDATE_STYLE$2 = _enums$UPDATE_KEY$5.UPDATE_STYLE,
@@ -37093,7 +37190,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
       domParent = __config[NODE_DOM_PARENT$6],
       isMask = __config[NODE_IS_MASK$3];
   var lv = focus || NONE$3;
-  var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
+  var hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
   if (!component && style && keys) {
     for (var i = 0, len = keys.length; i < len; i++) {
@@ -37134,14 +37231,16 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
 
             if (k === Z_INDEX$4 && node !== root) {
               hasZ = true;
-            }
-
-            if (k === VISIBILITY$6) {
+            } else if (k === VISIBILITY$6) {
               hasVisibility = true;
-            }
-
-            if (k === COLOR$6) {
+            } else if (k === COLOR$6) {
               hasColor = true;
+            } else if (k === TEXT_STROKE_COLOR$5) {
+              hasTsColor = true;
+            } else if (k === TEXT_STROKE_WIDTH$4) {
+              hasTsWidth = true;
+            } else if (k === TEXT_STROKE_OVER$4) {
+              hasTsOver = true;
             }
           }
         }
@@ -37164,34 +37263,40 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
 
   if (hasZ && domParent) {
     delete domParent.__zIndexChildren;
-  } // visibility/color变化，影响子继承
+  } // 影响子继承REPAINT的变化，如果被cache住需要清除
 
 
-  if (hasVisibility || hasColor) {
+  if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
     for (var __structs = root.__structs, __struct = node.__config[NODE_STRUCT$5], _i = __struct[STRUCT_INDEX$3] + 1, _len = _i + __struct[STRUCT_TOTAL$2]; _i < _len; _i++) {
       var _structs$_i = __structs[_i],
           _node = _structs$_i[STRUCT_NODE$2],
-          total = _structs$_i[STRUCT_TOTAL$2];
+          total = _structs$_i[STRUCT_TOTAL$2]; // text的style指向parent，不用管
+
+      if (_node instanceof Text) {
+        continue;
+      }
+
       var _config = _node.__config;
       var _currentStyle = _config[NODE_CURRENT_STYLE$6];
 
-      var _need = void 0; // text的style指向parent，因此text一定变更
+      var _need = void 0;
 
-
-      if (hasVisibility && (_node instanceof Text || _currentStyle[VISIBILITY$6][1] === INHERIT$4)) {
+      if (hasVisibility && _currentStyle[VISIBILITY$6][1] === INHERIT$4) {
         _need = true;
-      }
-
-      if (hasColor && (_node instanceof Text || _currentStyle[COLOR$6][1] === INHERIT$4)) {
+      } else if (hasColor && _currentStyle[COLOR$6][1] === INHERIT$4) {
+        _need = true;
+      } else if (hasTsColor && _currentStyle[TEXT_STROKE_COLOR$5][1] === INHERIT$4) {
+        _need = true;
+      } else if (hasTsWidth && _currentStyle[TEXT_STROKE_WIDTH$4][1] === INHERIT$4) {
+        _need = true;
+      } else if (hasTsOver && _currentStyle[TEXT_STROKE_OVER$4][1] === INHERIT$4) {
         _need = true;
       }
 
       if (_need) {
         _config[NODE_REFRESH_LV$2] |= REPAINT$3;
 
-        if (_node instanceof Xom$1) {
-          _node.clearCache();
-        }
+        _node.clearCache();
       } else {
         _i += total || 0;
       }
@@ -41522,6 +41627,10 @@ function linkLibrary(child, libraryItem) {
   child.props = clone$4(libraryItem.props) || {};
   child.children = libraryItem.children || [];
 
+  if (libraryItem.vars && !child.vars) {
+    child.vars = libraryItem.vars;
+  }
+
   if (libraryItem.library) {
     child.library = libraryItem.library;
   } // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
@@ -41925,10 +42034,11 @@ var o$4 = {
 
       fonts.forEach(function (item) {
         var fontFamily = item.fontFamily,
+            url = item.url,
             data = item.data;
 
-        if (fontFamily && data) {
-          o$1.register(fontFamily, data);
+        if (fontFamily && (url || data)) {
+          o$1.register(fontFamily, url, data);
         }
       });
     } // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
@@ -42112,7 +42222,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.75.0";
+var version = "0.76.0";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

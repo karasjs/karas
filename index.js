@@ -13724,7 +13724,12 @@
       key: "toString",
       value: function toString() {
         return this.x + ',' + this.y;
-      } // 排序，要求a在b左，x相等a在b下，返回false，不符合则true
+      }
+    }, {
+      key: "equal",
+      value: function equal(o) {
+        return this === o || this.x === o.x && this.y === o.y;
+      } // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
 
     }], [{
       key: "compare",
@@ -13753,6 +13758,10 @@
       this.myFill = [false, false]; // 自己的上下内外性
 
       this.otherFill = [false, false]; // 对方的上下内外性
+
+      this.myCoincide = 0; // 自己重合次数
+
+      this.otherCoincide = 0; // 对方重合次数
 
       this.isVisited = false; // 扫描求交时用到
 
@@ -13787,9 +13796,34 @@
         this.coords.reverse();
       }
     }, {
+      key: "equal",
+      value: function equal(o) {
+        var ca = this.coords,
+            cb = o.coords;
+
+        if (ca.length !== cb.length) {
+          return false;
+        }
+
+        for (var i = 0, len = ca.length; i < len; i++) {
+          if (ca[i] !== cb[i]) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+    }, {
+      key: "toHash",
+      value: function toHash() {
+        return this.coords.map(function (item) {
+          return item.toString();
+        }).join(' ');
+      }
+    }, {
       key: "toString",
       value: function toString() {
-        return this.coords.join(' ') + ' ' + this.belong + ' ' + this.myFill.map(function (i) {
+        return this.toHash() + ' ' + this.belong + '' + this.myCoincide + '' + this.otherCoincide + ' ' + this.myFill.map(function (i) {
           return i ? 1 : 0;
         }).join('') + this.otherFill.map(function (i) {
           return i ? 1 : 0;
@@ -14021,6 +14055,8 @@
         point: item.point,
         t: isSource ? item.toSource : item.toClip
       };
+    }).filter(function (item) {
+      return item.t > 0 && item.t < 1;
     });
   }
 
@@ -14165,6 +14201,7 @@
         this.index = index;
         this.segments.forEach(function (seg) {
           seg.belong = index;
+          seg.otherCoincide = 0;
           seg.otherFill[0] = seg.otherFill[1] = false;
         });
       } // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交
@@ -14312,10 +14349,14 @@
                   }
                 }
               }
-            }
+            } // 重合线的otherFill直接引用指向对方myFill，不能普通计算
 
-            seg.otherFill[0] = inside;
-            seg.otherFill[1] = inside; // console.warn(seg.toString(), inside)
+
+            if (!seg.otherCoincide) {
+              seg.otherFill[0] = inside;
+              seg.otherFill[1] = inside;
+            } // console.warn(seg.toString(), inside)
+
           } else {
             var _i2 = ael.indexOf(seg);
 
@@ -14419,15 +14460,95 @@
                 var _coordsB$2 = coordsB[1],
                     bx2 = _coordsB$2.x,
                     by2 = _coordsB$2.y;
-                var res = void 0; // a是直线
+                var res = []; // a是直线
 
                 if (lenA === 2) {
                   // b是直线
                   if (lenB === 2) {
-                    var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
+                    // 完全重合的2条线
+                    if (ax1 === bx1 && ax2 === bx2 && ay1 === by1 && ay2 === by2) {
+                      // console.log(compareBelong);
+                      coordsB[0] = coordsA[0];
+                      coordsB[1] = coordsA[1];
 
-                    if (d === 0) ; else {
-                      res = getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                      if (compareBelong) {
+                        seg.otherCoincide++;
+                        item.otherCoincide++;
+                        seg.otherFill = item.myFill;
+                        item.otherFill = seg.myFill;
+                      }
+                    } else {
+                      var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
+
+                      if (d === 0) {
+                        // 垂线特殊，y=kx+b没法求
+                        if (ax1 === ax2) {
+                          if (ax1 === bx1 && ax2 === bx2) {
+                            if (by1 > ay1) {
+                              res.push({
+                                point: coordsB[0],
+                                toSource: (by1 - ay1) / (ay2 - ay1),
+                                toClip: 0
+                              });
+                            } else if (by1 < ay1) {
+                              res.push({
+                                point: coordsA[0],
+                                toSource: 0,
+                                toClip: (ay1 - by1) / (by2 - by1)
+                              });
+                            }
+
+                            if (by2 > ay2) {
+                              res.push({
+                                point: coordsA[1],
+                                toSource: 1,
+                                toClip: (ay2 - by1) / (by2 - by1)
+                              });
+                            } else if (by2 < ay2) {
+                              res.push({
+                                point: coordsB[1],
+                                toSource: (by2 - ay1) / (ay2 - ay1),
+                                toClip: 1
+                              });
+                            }
+                          }
+                        } else {
+                          var b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                          var b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+
+                          if (b1 === b2) {
+                            if (bx1 > ax1) {
+                              res.push({
+                                point: coordsB[0],
+                                toSource: (bx1 - ax1) / (ax2 - ax1),
+                                toClip: 0
+                              });
+                            } else if (bx1 < ax1) {
+                              res.push({
+                                point: coordsA[0],
+                                toSource: 0,
+                                toClip: (ax1 - bx1) / (bx2 - bx1)
+                              });
+                            }
+
+                            if (bx2 > ax2) {
+                              res.push({
+                                point: coordsA[1],
+                                toSource: 1,
+                                toClip: (ax2 - bx1) / (bx2 - bx1)
+                              });
+                            } else if (bx2 < ax2) {
+                              res.push({
+                                point: coordsB[1],
+                                toSource: (bx2 - ax1) / (ax2 - ax1),
+                                toClip: 1
+                              });
+                            }
+                          }
+                        }
+                      } else {
+                        res = getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                      }
                     }
                   } // b是曲线
                   else {
@@ -14502,17 +14623,40 @@
                 } // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
 
 
-                if (res) {
+                if (res && res.length) {
                   // console.log('res', res);
-                  var pa = sortIntersection$1(res, !isSourceReverted);
+                  var pa = sortIntersection$1(res, !isSourceReverted); // console.log(pa);
+
                   var ra = sliceSegment(seg, pa, isIntermediateA && belong === 0); // console.log(ra.map(item => item.toString()));
 
-                  activeNewSeg(segments, list, ael, delList, x, ra);
-                  var pb = sortIntersection$1(res, isSourceReverted);
-                  var rb = sliceSegment(item, pb, isIntermediateB && belong === 1); // console.log(rb.map(item => item.toString()));
+                  var pb = sortIntersection$1(res, isSourceReverted); // console.log(pb);
 
-                  activeNewSeg(segments, list, ael, delList, x, rb);
-                  ael.splice(_i3, 1); // 老的线段被删除无效了，踢出ael
+                  var rb = sliceSegment(item, pb, isIntermediateB && belong === 1); // console.log(rb.map(item => item.toString()));
+                  // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
+
+                  activeNewSeg(segments, list, ael, x, ra);
+                  activeNewSeg(segments, list, ael, x, rb); // 老的线段被删除无效了，踢出ael，防止seg没被分割
+
+                  if (rb.length) {
+                    ael.splice(_i3, 1);
+                  } // 检查切割的a/b之中是否有重合的线段，合并，互相把otherFill引用给对方
+                  // 可能会出现start或end共点，这时pa或pb有一个为空，重合变成其中一个子切割和另外一个完全重合
+
+
+                  for (var _i4 = ra.length - 1; _i4 >= 0; _i4--) {
+                    var a = ra[_i4];
+
+                    for (var j = rb.length - 1; j >= 0; j--) {
+                      var b = rb[j];
+
+                      if (a.equal(b)) {
+                        a.otherCoincide++;
+                        b.otherCoincide++;
+                        a.otherFill = b.myFill;
+                        b.otherFill = a.myFill;
+                      }
+                    }
+                  }
 
                   break;
                 }
@@ -14547,6 +14691,11 @@
 
   function sliceSegment(seg, ps, isIntermediate) {
     var res = [];
+
+    if (!ps.length) {
+      return res;
+    }
+
     var belong = seg.belong,
         coords = seg.coords,
         len = coords.length;
@@ -14613,12 +14762,12 @@
   } // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
 
 
-  function activeNewSeg(segments, list, ael, delList, x, ns) {
+  function activeNewSeg(segments, list, ael, x, ns) {
     ns.forEach(function (seg) {
       var bbox = seg.bbox,
           x1 = bbox[0],
           x2 = bbox[2]; // console.log(seg.toString(), x1, x2, x);
-      // 活跃x之前无相交判断意义，除了竖线
+      // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
 
       if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
         segments.push(seg);
@@ -14916,7 +15065,7 @@
             l2 = coords.length;
         var ptTail = coords[l2 - 1];
 
-        if (pt === ptHead) {
+        if (pt.equal(ptHead)) {
           if (isHead) {
             item = reverse(chain).concat(item);
             chains[i] = item;
@@ -14928,7 +15077,7 @@
             chains.splice(index, 1);
             return close(res, chains, item, i);
           }
-        } else if (pt === ptTail) {
+        } else if (pt.equal(ptTail)) {
           if (isHead) {
             item = item.concat(chain);
             chains[i] = item;
@@ -14957,7 +15106,7 @@
         l2 = coords2.length;
     var ptTail = coords2[l2 - 1];
 
-    if (ptHead === ptTail) {
+    if (ptHead.equal(ptTail)) {
       chains.splice(index, 1); // 结果要保证原先多边形的线段起始顺序，根据第一个判断即可，
       // 全部都是a多边形或全都是b多边形的话，正确的回路一定是全部线段一致的，都正或都反
       // 2个都有情况则无论正反绘制都可以
@@ -14998,21 +15147,21 @@
             l2 = coords2.length;
         var ptTail = coords2[l2 - 1];
 
-        if (start === ptTail) {
+        if (start.equal(ptTail)) {
           chain.push(seg);
           join(res, chains, chain, i, end, false);
           continue outer;
-        } else if (start === ptHead) {
+        } else if (start.equal(ptHead)) {
           seg.reverse();
           chain.unshift(seg);
           join(res, chains, chain, i, end, true);
           continue outer;
-        } else if (end === ptTail) {
+        } else if (end.equal(ptTail)) {
           seg.reverse();
           chain.push(seg);
           join(res, chains, chain, i, start, false);
           continue outer;
-        } else if (end === ptHead) {
+        } else if (end.equal(ptHead)) {
           chain.unshift(seg);
           join(res, chains, chain, i, start, true);
           continue outer;
@@ -15074,17 +15223,17 @@
       clip = new Polygon(prefix(polygonB), 1);
       clip.selfIntersect();
     } // console.log(clip.toString());
-    // console.log('----');
-    // 两个多边形之间再次互相判断相交
 
 
-    Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB); // console.log(source.toString());
-    // console.log(clip.toString());
-    // console.log('====');
+    console.log('----'); // 两个多边形之间再次互相判断相交
 
-    Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB); // console.log(source.toString());
-    // console.log(clip.toString());
-
+    Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
+    console.log(source.toString());
+    console.log(clip.toString());
+    console.log('====');
+    Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
+    console.log(source.toString());
+    console.log(clip.toString());
     return [source, clip];
   }
 
@@ -15095,11 +15244,25 @@
       XOR$1 = [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0];
 
   function filter(segments, matrix) {
-    var res = [];
+    var res = [],
+        hash = {};
     segments.forEach(function (seg) {
       var belong = seg.belong,
           myFill = seg.myFill,
-          otherFill = seg.otherFill;
+          otherFill = seg.otherFill,
+          otherCoincide = seg.otherCoincide;
+
+      if (otherCoincide) {
+        // 对方重合线只出现一次
+        var hc = seg.toHash();
+
+        if (hash.hasOwnProperty(hc)) {
+          return;
+        }
+
+        hash[hc] = true;
+      }
+
       var i;
 
       if (belong) {
@@ -15122,7 +15285,7 @@
           source = _trivial2[0],
           clip = _trivial2[1];
 
-      var list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
+      var list = filter(source.segments.concat(clip.segments), INTERSECT);
 
       if (intermediate) {
         source.segments = list;
@@ -15137,7 +15300,7 @@
           source = _trivial4[0],
           clip = _trivial4[1];
 
-      var list = filter(source.segments, UNION$1).concat(filter(clip.segments, UNION$1));
+      var list = filter(source.segments.concat(clip.segments), UNION$1);
 
       if (intermediate) {
         source.segments = list;
@@ -15152,7 +15315,7 @@
           source = _trivial6[0],
           clip = _trivial6[1];
 
-      var list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
+      var list = filter(source.segments.concat(clip.segments), SUBTRACT);
 
       if (intermediate) {
         source.segments = list;
@@ -15167,7 +15330,7 @@
           source = _trivial8[0],
           clip = _trivial8[1];
 
-      var list = filter(source.segments, SUBTRACT_REV).concat(filter(clip.segments, SUBTRACT_REV));
+      var list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
 
       if (intermediate) {
         source.segments = list;

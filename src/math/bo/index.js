@@ -32,15 +32,15 @@ function trivial(polygonA, polygonB) {
     clip.selfIntersect();
   }
   // console.log(clip.toString());
-  // console.log('----');
+  console.log('----');
   // 两个多边形之间再次互相判断相交
   Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
-  // console.log(source.toString());
-  // console.log(clip.toString());
-  // console.log('====');
+  console.log(source.toString());
+  console.log(clip.toString());
+  console.log('====');
   Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
-  // console.log(source.toString());
-  // console.log(clip.toString());
+  console.log(source.toString());
+  console.log(clip.toString());
   return [source, clip];
 }
 
@@ -72,9 +72,17 @@ const INTERSECT = [
 ];
 
 function filter(segments, matrix) {
-  let res = [];
+  let res = [], hash = {};
   segments.forEach(seg => {
-    let { belong, myFill, otherFill } = seg;
+    let { belong, myFill, otherFill, otherCoincide } = seg;
+    if(otherCoincide) {
+      // 对方重合线只出现一次
+      let hc = seg.toHash();
+      if(hash.hasOwnProperty(hc)) {
+        return;
+      }
+      hash[hc] = true;
+    }
     let i;
     if(belong) {
       i = (otherFill[0] ? 8 : 0)
@@ -98,7 +106,7 @@ function filter(segments, matrix) {
 export default {
   intersect(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, INTERSECT).concat(filter(clip.segments, INTERSECT));
+    let list = filter(source.segments.concat(clip.segments), INTERSECT);
     if(intermediate) {
       source.segments = list;
       return source;
@@ -107,7 +115,7 @@ export default {
   },
   union(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, UNION).concat(filter(clip.segments, UNION));
+    let list = filter(source.segments.concat(clip.segments), UNION);
     if(intermediate) {
       source.segments = list;
       return source;
@@ -116,7 +124,7 @@ export default {
   },
   subtract(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, SUBTRACT).concat(filter(clip.segments, SUBTRACT));
+    let list = filter(source.segments.concat(clip.segments), SUBTRACT);
     if(intermediate) {
       source.segments = list;
       return source;
@@ -125,7 +133,7 @@ export default {
   },
   subtractRev(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, SUBTRACT_REV).concat(filter(clip.segments, SUBTRACT_REV));
+    let list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
     if(intermediate) {
       source.segments = list;
       return source;

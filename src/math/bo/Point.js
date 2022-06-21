@@ -11,7 +11,11 @@ class Point {
     return this.x + ',' + this.y;
   }
 
-  // 排序，要求a在b左，x相等a在b下，返回false，不符合则true
+  equal(o) {
+    return this === o || this.x === o.x && this.y === o.y;
+  }
+
+  // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
   static compare(a, b) {
     if(a.x > b.x) {
       return true;

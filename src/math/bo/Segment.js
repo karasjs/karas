@@ -9,6 +9,8 @@ class Segment {
     this.below = [false, false];
     this.myFill = [false, false]; // 自己的上下内外性
     this.otherFill = [false, false]; // 对方的上下内外性
+    this.myCoincide = 0; // 自己重合次数
+    this.otherCoincide = 0; // 对方重合次数
     this.isVisited = false; // 扫描求交时用到
     this.isDeleted = false; // 相交裁剪老的线段会被删除
   }
@@ -34,9 +36,28 @@ class Segment {
     this.coords.reverse();
   }
 
+  equal(o) {
+    let ca = this.coords, cb = o.coords;
+    if(ca.length !== cb.length) {
+      return false;
+    }
+    for(let i = 0, len = ca.length; i < len; i++) {
+      if(ca[i] !== cb[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  toHash() {
+    return this.coords.map(item => item.toString()).join(' ');
+  }
+
   toString() {
-    return this.coords.join(' ')
+    return this.toHash()
       + ' ' + this.belong
+      + '' + this.myCoincide
+      + '' + this.otherCoincide
       + ' ' + this.myFill.map(i => i ? 1 : 0).join('')
       + this.otherFill.map(i => i ? 1 : 0).join('');
   }

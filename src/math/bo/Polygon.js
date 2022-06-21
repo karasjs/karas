@@ -178,6 +178,7 @@ class Polygon {
     this.index = index;
     this.segments.forEach(seg => {
       seg.belong = index;
+      seg.otherCoincide = 0;
       seg.otherFill[0] = seg.otherFill[1] = false;
     });
   }
@@ -268,7 +269,7 @@ class Polygon {
     let ael = [];
     list.forEach(item => {
       let { isStart, seg } = item;
-      let belong = seg.belong, belong2 = belong === 0 ? 1 : 0;
+      let belong = seg.belong;
       if(isStart) {
         // console.error(seg.toString(), ael.length)
         let inside = false;
@@ -315,8 +316,11 @@ class Polygon {
             }
           }
         }
-        seg.otherFill[0] = inside;
-        seg.otherFill[1] = inside;
+        // 重合线的otherFill直接引用指向对方myFill，不能普通计算
+        if(!seg.otherCoincide) {
+          seg.otherFill[0] = inside;
+          seg.otherFill[1] = inside;
+        }
         // console.warn(seg.toString(), inside)
       }
       else {
@@ -393,17 +397,99 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
             if(geom.isRectsOverlap(bboxA, bboxB, includeIntersect)) {
               let { x: bx1, y: by1 } = coordsB[0];
               let { x: bx2, y: by2 } = coordsB[1];
-              let res;
+              let res = [];
               // a是直线
               if(lenA === 2) {
                 // b是直线
                 if(lenB === 2) {
-                  let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
-                  // 平行检查是否重合，否则求交
-                  if(d === 0) {}
+                  // 完全重合的2条线
+                  if(ax1 === bx1 && ax2 === bx2 && ay1 === by1 && ay2 === by2) {
+                    // console.log(compareBelong);
+                    coordsB[0] = coordsA[0];
+                    coordsB[1] = coordsA[1];
+                    if(compareBelong) {
+                      seg.otherCoincide++;
+                      item.otherCoincide++;
+                      seg.otherFill = item.myFill;
+                      item.otherFill = seg.myFill;
+                    }
+                  }
                   else {
-                    res = getIntersectionLineLine(ax1, ay1, ax2, ay2,
-                      bx1, by1, bx2, by2, d);
+                    let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+                    // 平行检查是否重合，否则求交
+                    if(d === 0) {
+                      // 垂线特殊，y=kx+b没法求
+                      if(ax1 === ax2) {
+                        if(ax1 === bx1 && ax2 === bx2) {
+                          if(by1 > ay1) {
+                            res.push({
+                              point: coordsB[0],
+                              toSource: (by1 - ay1) / (ay2 - ay1),
+                              toClip: 0,
+                            });
+                          }
+                          else if(by1 < ay1) {
+                            res.push({
+                              point: coordsA[0],
+                              toSource: 0,
+                              toClip: (ay1 - by1) / (by2 - by1),
+                            });
+                          }
+                          if(by2 > ay2) {
+                            res.push({
+                              point: coordsA[1],
+                              toSource: 1,
+                              toClip: (ay2 - by1) / (by2 - by1),
+                            });
+                          }
+                          else if(by2 < ay2) {
+                            res.push({
+                              point: coordsB[1],
+                              toSource: (by2 - ay1) / (ay2 - ay1),
+                              toClip: 1,
+                            });
+                          }
+                        }
+                      }
+                      else {
+                        let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                        let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                        if(b1 === b2) {
+                          if(bx1 > ax1) {
+                            res.push({
+                              point: coordsB[0],
+                              toSource: (bx1 - ax1) / (ax2 - ax1),
+                              toClip: 0,
+                            });
+                          }
+                          else if(bx1 < ax1) {
+                            res.push({
+                              point: coordsA[0],
+                              toSource: 0,
+                              toClip: (ax1 - bx1) / (bx2 - bx1),
+                            });
+                          }
+                          if(bx2 > ax2) {
+                            res.push({
+                              point: coordsA[1],
+                              toSource: 1,
+                              toClip: (ax2 - bx1) / (bx2 - bx1),
+                            });
+                          }
+                          else if(bx2 < ax2) {
+                            res.push({
+                              point: coordsB[1],
+                              toSource: (bx2 - ax1) / (ax2 - ax1),
+                              toClip: 1,
+                            });
+                          }
+                        }
+                      }
+                    }
+                    else {
+                      res = getIntersectionLineLine(ax1, ay1, ax2, ay2,
+                        bx1, by1, bx2, by2, d);
+                    }
                   }
                 }
                 // b是曲线
@@ -477,17 +563,37 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                 }
               }
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
-              if(res) {
+              if(res && res.length) {
                 // console.log('res', res);
                 let pa = sortIntersection(res, !isSourceReverted);
+                // console.log(pa);
                 let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                 // console.log(ra.map(item => item.toString()));
-                activeNewSeg(segments, list, ael, delList, x, ra);
                 let pb = sortIntersection(res, isSourceReverted);
+                // console.log(pb);
                 let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));
-                activeNewSeg(segments, list, ael, delList, x, rb);
-                ael.splice(i, 1); // 老的线段被删除无效了，踢出ael
+                // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
+                activeNewSeg(segments, list, ael, x, ra);
+                activeNewSeg(segments, list, ael, x, rb);
+                // 老的线段被删除无效了，踢出ael，防止seg没被分割
+                if(rb.length) {
+                  ael.splice(i, 1);
+                }
+                // 检查切割的a/b之中是否有重合的线段，合并，互相把otherFill引用给对方
+                // 可能会出现start或end共点，这时pa或pb有一个为空，重合变成其中一个子切割和另外一个完全重合
+                for(let i = ra.length - 1; i >= 0; i--) {
+                  let a = ra[i];
+                  for(let j = rb.length - 1; j >= 0; j--) {
+                    let b = rb[j];
+                    if(a.equal(b)) {
+                      a.otherCoincide++;
+                      b.otherCoincide++;
+                      a.otherFill = b.myFill;
+                      b.otherFill = a.myFill;
+                    }
+                  }
+                }
                 break;
               }
             }
@@ -516,6 +622,9 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
 // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
 function sliceSegment(seg, ps, isIntermediate) {
   let res = [];
+  if(!ps.length) {
+    return res;
+  }
   let belong = seg.belong, coords = seg.coords, len = coords.length;
   let startPoint = coords[0];
   let lastT = 0;
@@ -591,11 +700,11 @@ function sliceSegment(seg, ps, isIntermediate) {
 }
 
 // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
-function activeNewSeg(segments, list, ael, delList, x, ns) {
+function activeNewSeg(segments, list, ael, x, ns) {
   ns.forEach(seg => {
     let bbox = seg.bbox, x1 = bbox[0], x2 = bbox[2];
     // console.log(seg.toString(), x1, x2, x);
-    // 活跃x之前无相交判断意义，除了竖线
+    // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
     if(x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
       segments.push(seg);
       return;

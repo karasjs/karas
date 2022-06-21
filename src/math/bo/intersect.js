@@ -256,7 +256,7 @@ function sortIntersection(res, isSource) {
       point: item.point,
       t: isSource ? item.toSource : item.toClip,
     };
-  });
+  }).filter(item => item.t > 0 && item.t < 1);
 }
 
 export default {

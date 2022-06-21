@@ -8,7 +8,7 @@ function join(res, chains, chain, index, pt, isHead) {
       let ptHead = head.coords[0];
       let coords = tail.coords, l2 = coords.length;
       let ptTail = coords[l2 - 1];
-      if(pt === ptHead) {
+      if(pt.equal(ptHead)) {
         if(isHead) {
           item = reverse(chain).concat(item);
           chains[i] = item;
@@ -22,7 +22,7 @@ function join(res, chains, chain, index, pt, isHead) {
           return close(res, chains, item, i);
         }
       }
-      else if(pt === ptTail) {
+      else if(pt.equal(ptTail)) {
         if(isHead) {
           item = item.concat(chain);
           chains[i] = item;
@@ -48,7 +48,7 @@ function close(res, chains, chain, index) {
   let ptHead = head.coords[0];
   let coords2 = tail.coords, l2 = coords2.length;
   let ptTail = coords2[l2 - 1];
-  if(ptHead === ptTail) {
+  if(ptHead.equal(ptTail)) {
     chains.splice(index, 1);
     // 结果要保证原先多边形的线段起始顺序，根据第一个判断即可，
     // 全部都是a多边形或全都是b多边形的话，正确的回路一定是全部线段一致的，都正或都反
@@ -79,24 +79,24 @@ export default function(list) {
       let ptHead = head.coords[0];
       let coords2 = tail.coords, l2 = coords2.length;
       let ptTail = coords2[l2 - 1];
-      if(start === ptTail) {
+      if(start.equal(ptTail)) {
         chain.push(seg);
         join(res, chains, chain, i, end, false);
         continue outer;
       }
-      else if(start === ptHead) {
+      else if(start.equal(ptHead)) {
         seg.reverse();
         chain.unshift(seg);
         join(res, chains, chain, i, end, true);
         continue outer;
       }
-      else if(end === ptTail) {
+      else if(end.equal(ptTail)) {
         seg.reverse();
         chain.push(seg);
         join(res, chains, chain, i, start, false);
         continue outer;
       }
-      else if(end === ptHead) {
+      else if(end.equal(ptHead)) {
         chain.unshift(seg);
         join(res, chains, chain, i, start, true);
         continue outer;

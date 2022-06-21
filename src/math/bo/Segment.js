@@ -5,8 +5,6 @@ class Segment {
     this.coords = coords;
     this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
     this.calBbox();
-    this.above = [false, false];
-    this.below = [false, false];
     this.myFill = [false, false]; // 自己的上下内外性
     this.otherFill = [false, false]; // 对方的上下内外性
     this.myCoincide = 0; // 自己重合次数
@@ -56,7 +54,7 @@ class Segment {
   toString() {
     return this.toHash()
       + ' ' + this.belong
-      + '' + this.myCoincide
+      + ' ' + this.myCoincide
       + '' + this.otherCoincide
       + ' ' + this.myFill.map(i => i ? 1 : 0).join('')
       + this.otherFill.map(i => i ? 1 : 0).join('');

@@ -13753,8 +13753,6 @@
       this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
 
       this.calBbox();
-      this.above = [false, false];
-      this.below = [false, false];
       this.myFill = [false, false]; // 自己的上下内外性
 
       this.otherFill = [false, false]; // 对方的上下内外性
@@ -13823,7 +13821,7 @@
     }, {
       key: "toString",
       value: function toString() {
-        return this.toHash() + ' ' + this.belong + '' + this.myCoincide + '' + this.otherCoincide + ' ' + this.myFill.map(function (i) {
+        return this.toHash() + ' ' + this.belong + ' ' + this.myCoincide + '' + this.otherCoincide + ' ' + this.myFill.map(function (i) {
           return i ? 1 : 0;
         }).join('') + this.otherFill.map(function (i) {
           return i ? 1 : 0;
@@ -14947,7 +14945,7 @@
       var a2 = ca[1],
           b2 = cb[1];
 
-      if (a1 === b1) {
+      if (a1.equal(b1)) {
         return pointAboveOrOnLine(a2, b1, b2);
       } else {
         return pointAboveOrOnLine(a1, b1, b2);
@@ -15274,7 +15272,8 @@
       if (matrix[i]) {
         res.push(seg);
       }
-    });
+    }); // console.log(res.map(item => item.toString()));
+
     return res;
   }
 

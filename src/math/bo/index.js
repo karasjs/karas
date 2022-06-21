@@ -100,6 +100,7 @@ function filter(segments, matrix) {
       res.push(seg);
     }
   });
+  // console.log(res.map(item => item.toString()));
   return res;
 }
 

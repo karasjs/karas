@@ -861,7 +861,7 @@ function segAboveCompare(segA, segB) {
   // 两条直线用向量积判断，注意开始点是否相同即可
   if(la === 2 && lb === 2) {
     let a2 = ca[1], b2 = cb[1];
-    if(a1 === b1) {
+    if(a1.equal(b1)) {
       return pointAboveOrOnLine(a2, b1, b2);
     }
     else {

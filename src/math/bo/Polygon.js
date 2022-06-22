@@ -206,7 +206,7 @@ class Polygon {
    */
   static annotate2(polyA, polyB, isIntermediateA, isIntermediateB) {
     let list = genHashXYList(polyA.segments.concat(polyB.segments));
-    let aelA = [], aelB = [];
+    let aelA = [], aelB = [], hashA = {}, hashB = {};
     // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
     // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
     list.forEach(item => {
@@ -216,12 +216,25 @@ class Polygon {
       if(belong === 0 && isIntermediateA || belong === 1 && isIntermediateB) {
         return;
       }
-      let ael = belong === 0 ? aelA : aelB;
+      let ael = belong === 0 ? aelA : aelB, hash = belong === 0 ? hashA : hashB;
       if(isStart) {
+        // 自己重合的线段只考虑第一条，其它剔除
+        if(seg.myCoincide) {
+          let hc = seg.toHash();
+          if(hash.hasOwnProperty(hc)) {
+            return;
+          }
+          hash[hc] = true;
+        }
         // console.error(seg.toString(), ael.length)
-        // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
+        // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
         if(!ael.length) {
-          seg.myFill[0] = true;
+          if(seg.myCoincide) {
+            seg.myFill[0] = seg.myCoincide % 2 === 0;
+          }
+          else {
+            seg.myFill[0] = true;
+          }
           ael.push(seg);
         }
         else {
@@ -231,12 +244,22 @@ class Polygon {
           // 比ael栈顶还高在最上方
           if(isAboveLast) {
             seg.myFill[1] = top.myFill[0];
-            seg.myFill[0] = !seg.myFill[1];
+            if(seg.myCoincide) {
+              seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+            }
+            else {
+              seg.myFill[0] = !seg.myFill[1];
+            }
             ael.push(seg);
           }
           // 不高且只有1个则在最下方
           else if(len === 1) {
-            seg.myFill[0] = true;
+            if(seg.myCoincide) {
+              seg.myFill[0] = seg.myCoincide % 2 === 0;
+            }
+            else {
+              seg.myFill[0] = true;
+            }
             ael.unshift(seg);
           }
           else {
@@ -246,12 +269,22 @@ class Polygon {
               let isAbove = segAboveCompare(seg, curr);
               if(isAbove) {
                 seg.myFill[1] = curr.myFill[0];
-                seg.myFill[0] = !seg.myFill[1];
+                if(seg.myCoincide) {
+                  seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                }
+                else {
+                  seg.myFill[0] = !seg.myFill[1];
+                }
                 ael.splice(i + 1, 0, seg);
                 break;
               }
               else if(i === 0) {
-                seg.myFill[0] = true;
+                if(seg.myCoincide) {
+                  seg.myFill[0] = seg.myCoincide % 2 === 0;
+                }
+                else {
+                  seg.myFill[0] = true;
+                }
                 ael.unshift(seg);
               }
             }
@@ -261,16 +294,27 @@ class Polygon {
       }
       else {
         let i = ael.indexOf(seg);
-        ael.splice(i, 1);
+        // 一般肯定有，重合线段会剔除不进ael
+        if(i > -1) {
+          ael.splice(i, 1);
+        }
       }
     });
     // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
     // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
-    let ael = [];
+    let ael = [], hash = {};
     list.forEach(item => {
       let { isStart, seg } = item;
       let belong = seg.belong;
       if(isStart) {
+        // 自重合或者它重合统一只保留第一条线
+        if(seg.myCoincide || seg.otherCoincide) {
+          let hc = seg.toHash();
+          if(hash.hasOwnProperty(hc)) {
+            return;
+          }
+          hash[hc] = true;
+        }
         // console.error(seg.toString(), ael.length)
         let inside = false;
         if(!ael.length) {
@@ -325,7 +369,9 @@ class Polygon {
       }
       else {
         let i = ael.indexOf(seg);
-        ael.splice(i, 1);
+        if(i > -1) {
+          ael.splice(i, 1);
+        }
       }
     });
   }
@@ -386,7 +432,7 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
             if(item.isDeleted || seg.isDeleted) {
               continue;
             }
-            // 互交所属belong不同才进行检测，自交则不检查belong因为一定一样
+            // 互交所属belong不同才进行检测，自交则不检查belong
             if(compareBelong && item.belong === belong) {
               continue;
             }
@@ -412,6 +458,11 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                       item.otherCoincide++;
                       seg.otherFill = item.myFill;
                       item.otherFill = seg.myFill;
+                    }
+                    else {
+                      seg.myCoincide++;
+                      item.myCoincide++;
+                      seg.myFill = item.myFill;
                     }
                   }
                   else {

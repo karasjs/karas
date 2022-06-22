@@ -14235,7 +14235,9 @@
       value: function annotate2(polyA, polyB, isIntermediateA, isIntermediateB) {
         var list = genHashXYList(polyA.segments.concat(polyB.segments));
         var aelA = [],
-            aelB = []; // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+            aelB = [],
+            hashA = {},
+            hashB = {}; // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
         // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
 
         list.forEach(function (item) {
@@ -14247,13 +14249,30 @@
             return;
           }
 
-          var ael = belong === 0 ? aelA : aelB;
+          var ael = belong === 0 ? aelA : aelB,
+              hash = belong === 0 ? hashA : hashB;
 
           if (isStart) {
-            // console.error(seg.toString(), ael.length)
-            // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段）
+            // 自己重合的线段只考虑第一条，其它剔除
+            if (seg.myCoincide) {
+              var hc = seg.toHash();
+
+              if (hash.hasOwnProperty(hc)) {
+                return;
+              }
+
+              hash[hc] = true;
+            } // console.error(seg.toString(), ael.length)
+            // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
+
+
             if (!ael.length) {
-              seg.myFill[0] = true;
+              if (seg.myCoincide) {
+                seg.myFill[0] = seg.myCoincide % 2 === 0;
+              } else {
+                seg.myFill[0] = true;
+              }
+
               ael.push(seg);
             } else {
               // 插入到ael正确的位置，按照x升序、y升序
@@ -14263,11 +14282,22 @@
 
               if (isAboveLast) {
                 seg.myFill[1] = top.myFill[0];
-                seg.myFill[0] = !seg.myFill[1];
+
+                if (seg.myCoincide) {
+                  seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                } else {
+                  seg.myFill[0] = !seg.myFill[1];
+                }
+
                 ael.push(seg);
               } // 不高且只有1个则在最下方
               else if (len === 1) {
-                seg.myFill[0] = true;
+                if (seg.myCoincide) {
+                  seg.myFill[0] = seg.myCoincide % 2 === 0;
+                } else {
+                  seg.myFill[0] = true;
+                }
+
                 ael.unshift(seg);
               } else {
                 // 遍历，尝试对比是否在ael栈中相邻2条线段之间
@@ -14277,11 +14307,22 @@
 
                   if (isAbove) {
                     seg.myFill[1] = curr.myFill[0];
-                    seg.myFill[0] = !seg.myFill[1];
+
+                    if (seg.myCoincide) {
+                      seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                    } else {
+                      seg.myFill[0] = !seg.myFill[1];
+                    }
+
                     ael.splice(i + 1, 0, seg);
                     break;
                   } else if (i === 0) {
-                    seg.myFill[0] = true;
+                    if (seg.myCoincide) {
+                      seg.myFill[0] = seg.myCoincide % 2 === 0;
+                    } else {
+                      seg.myFill[0] = true;
+                    }
+
                     ael.unshift(seg);
                   }
                 }
@@ -14289,21 +14330,36 @@
             } // console.warn(seg.toString())
 
           } else {
-            var _i = ael.indexOf(seg);
+            var _i = ael.indexOf(seg); // 一般肯定有，重合线段会剔除不进ael
 
-            ael.splice(_i, 1);
+
+            if (_i > -1) {
+              ael.splice(_i, 1);
+            }
           }
         }); // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
         // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
 
-        var ael = [];
+        var ael = [],
+            hash = {};
         list.forEach(function (item) {
           var isStart = item.isStart,
               seg = item.seg;
           var belong = seg.belong;
 
           if (isStart) {
-            // console.error(seg.toString(), ael.length)
+            // 自重合或者它重合统一只保留第一条线
+            if (seg.myCoincide || seg.otherCoincide) {
+              var hc = seg.toHash();
+
+              if (hash.hasOwnProperty(hc)) {
+                return;
+              }
+
+              hash[hc] = true;
+            } // console.error(seg.toString(), ael.length)
+
+
             var inside = false;
 
             if (!ael.length) {
@@ -14358,7 +14414,9 @@
           } else {
             var _i2 = ael.indexOf(seg);
 
-            ael.splice(_i2, 1);
+            if (_i2 > -1) {
+              ael.splice(_i2, 1);
+            }
           }
         });
       }
@@ -14436,7 +14494,7 @@
 
               if (item.isDeleted || seg.isDeleted) {
                 continue;
-              } // 互交所属belong不同才进行检测，自交则不检查belong因为一定一样
+              } // 互交所属belong不同才进行检测，自交则不检查belong
 
 
               if (compareBelong && item.belong === belong) {
@@ -14474,6 +14532,10 @@
                         item.otherCoincide++;
                         seg.otherFill = item.myFill;
                         item.otherFill = seg.myFill;
+                      } else {
+                        seg.myCoincide++;
+                        item.myCoincide++;
+                        seg.myFill = item.myFill;
                       }
                     } else {
                       var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
@@ -15344,7 +15406,7 @@
           source = _trivial10[0],
           clip = _trivial10[1];
 
-      var list = filter(source.segments, XOR$1).concat(filter(clip.segments, XOR$1));
+      var list = filter(source.segments.concat(clip.segments), XOR$1);
 
       if (intermediate) {
         source.segments = list;

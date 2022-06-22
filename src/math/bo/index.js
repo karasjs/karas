@@ -143,7 +143,7 @@ export default {
   },
   xor(polygonA, polygonB, intermediate) {
     let [source, clip] = trivial(polygonA, polygonB);
-    let list = filter(source.segments, XOR).concat(filter(clip.segments, XOR));
+    let list = filter(source.segments.concat(clip.segments), XOR);
     if(intermediate) {
       source.segments = list;
       return source;

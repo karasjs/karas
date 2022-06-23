@@ -441,6 +441,21 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
             let includeIntersect = lenA === 2 && lenB === 2; // 边缘重合仅考虑都是直线时
             let isSourceReverted = false; // 求交可能a、b线主从互换
             if(geom.isRectsOverlap(bboxA, bboxB, includeIntersect)) {
+              // 完全重合简化，同矩形的线myFill共享，对方矩形互换otherFill
+              if(lenA === lenB && seg.equal(item)) {
+                if(compareBelong) {
+                  seg.otherCoincide++;
+                  item.otherCoincide++;
+                  seg.otherFill = item.myFill;
+                  item.otherFill = seg.myFill;
+                }
+                else {
+                  seg.myCoincide++;
+                  item.myCoincide++;
+                  seg.myFill = item.myFill;
+                }
+                continue;
+              }
               let { x: bx1, y: by1 } = coordsB[0];
               let { x: bx2, y: by2 } = coordsB[1];
               let res = [];
@@ -448,99 +463,80 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
               if(lenA === 2) {
                 // b是直线
                 if(lenB === 2) {
-                  // 完全重合的2条线
-                  if(ax1 === bx1 && ax2 === bx2 && ay1 === by1 && ay2 === by2) {
-                    // console.log(compareBelong);
-                    coordsB[0] = coordsA[0];
-                    coordsB[1] = coordsA[1];
-                    if(compareBelong) {
-                      seg.otherCoincide++;
-                      item.otherCoincide++;
-                      seg.otherFill = item.myFill;
-                      item.otherFill = seg.myFill;
+                  let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
+                  // 平行检查是否重合，否则求交
+                  if(d === 0) {
+                    // 垂线特殊，y=kx+b没法求
+                    if(ax1 === ax2) {
+                      if(ax1 === bx1 && ax2 === bx2) {
+                        if(by1 > ay1) {
+                          res.push({
+                            point: coordsB[0],
+                            toSource: (by1 - ay1) / (ay2 - ay1),
+                            toClip: 0,
+                          });
+                        }
+                        else if(by1 < ay1) {
+                          res.push({
+                            point: coordsA[0],
+                            toSource: 0,
+                            toClip: (ay1 - by1) / (by2 - by1),
+                          });
+                        }
+                        if(by2 > ay2) {
+                          res.push({
+                            point: coordsA[1],
+                            toSource: 1,
+                            toClip: (ay2 - by1) / (by2 - by1),
+                          });
+                        }
+                        else if(by2 < ay2) {
+                          res.push({
+                            point: coordsB[1],
+                            toSource: (by2 - ay1) / (ay2 - ay1),
+                            toClip: 1,
+                          });
+                        }
+                      }
                     }
                     else {
-                      seg.myCoincide++;
-                      item.myCoincide++;
-                      seg.myFill = item.myFill;
+                      let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                      let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+                      if(b1 === b2) {
+                        if(bx1 > ax1) {
+                          res.push({
+                            point: coordsB[0],
+                            toSource: (bx1 - ax1) / (ax2 - ax1),
+                            toClip: 0,
+                          });
+                        }
+                        else if(bx1 < ax1) {
+                          res.push({
+                            point: coordsA[0],
+                            toSource: 0,
+                            toClip: (ax1 - bx1) / (bx2 - bx1),
+                          });
+                        }
+                        if(bx2 > ax2) {
+                          res.push({
+                            point: coordsA[1],
+                            toSource: 1,
+                            toClip: (ax2 - bx1) / (bx2 - bx1),
+                          });
+                        }
+                        else if(bx2 < ax2) {
+                          res.push({
+                            point: coordsB[1],
+                            toSource: (bx2 - ax1) / (ax2 - ax1),
+                            toClip: 1,
+                          });
+                        }
+                      }
                     }
                   }
                   else {
-                    let d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1);
-                    // 平行检查是否重合，否则求交
-                    if(d === 0) {
-                      // 垂线特殊，y=kx+b没法求
-                      if(ax1 === ax2) {
-                        if(ax1 === bx1 && ax2 === bx2) {
-                          if(by1 > ay1) {
-                            res.push({
-                              point: coordsB[0],
-                              toSource: (by1 - ay1) / (ay2 - ay1),
-                              toClip: 0,
-                            });
-                          }
-                          else if(by1 < ay1) {
-                            res.push({
-                              point: coordsA[0],
-                              toSource: 0,
-                              toClip: (ay1 - by1) / (by2 - by1),
-                            });
-                          }
-                          if(by2 > ay2) {
-                            res.push({
-                              point: coordsA[1],
-                              toSource: 1,
-                              toClip: (ay2 - by1) / (by2 - by1),
-                            });
-                          }
-                          else if(by2 < ay2) {
-                            res.push({
-                              point: coordsB[1],
-                              toSource: (by2 - ay1) / (ay2 - ay1),
-                              toClip: 1,
-                            });
-                          }
-                        }
-                      }
-                      else {
-                        let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
-                        let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
-                        if(b1 === b2) {
-                          if(bx1 > ax1) {
-                            res.push({
-                              point: coordsB[0],
-                              toSource: (bx1 - ax1) / (ax2 - ax1),
-                              toClip: 0,
-                            });
-                          }
-                          else if(bx1 < ax1) {
-                            res.push({
-                              point: coordsA[0],
-                              toSource: 0,
-                              toClip: (ax1 - bx1) / (bx2 - bx1),
-                            });
-                          }
-                          if(bx2 > ax2) {
-                            res.push({
-                              point: coordsA[1],
-                              toSource: 1,
-                              toClip: (ax2 - bx1) / (bx2 - bx1),
-                            });
-                          }
-                          else if(bx2 < ax2) {
-                            res.push({
-                              point: coordsB[1],
-                              toSource: (bx2 - ax1) / (ax2 - ax1),
-                              toClip: 1,
-                            });
-                          }
-                        }
-                      }
-                    }
-                    else {
-                      res = getIntersectionLineLine(ax1, ay1, ax2, ay2,
-                        bx1, by1, bx2, by2, d);
-                    }
+                    res = getIntersectionLineLine(ax1, ay1, ax2, ay2,
+                      bx1, by1, bx2, by2, d);
                   }
                 }
                 // b是曲线
@@ -650,7 +646,7 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
             }
           }
         }
-        // 不相交切割才进入asl
+        // 不相交切割才进入ael
         if(!seg.isDeleted) {
           ael.push(seg);
           seg.isVisited = true;

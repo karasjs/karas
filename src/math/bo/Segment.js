@@ -40,7 +40,7 @@ class Segment {
       return false;
     }
     for(let i = 0, len = ca.length; i < len; i++) {
-      if(ca[i] !== cb[i]) {
+      if(!ca[i].equal(cb[i])) {
         return false;
       }
     }

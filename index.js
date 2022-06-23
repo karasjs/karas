@@ -13804,7 +13804,7 @@
         }
 
         for (var i = 0, len = ca.length; i < len; i++) {
-          if (ca[i] !== cb[i]) {
+          if (!ca[i].equal(cb[i])) {
             return false;
           }
         }
@@ -13832,11 +13832,14 @@
     return Segment;
   }();
 
+  var EPS = 1e-6;
+  var EPS2 = 1 - 1e-6;
+
   function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
     var toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
     var toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d; // 非顶点相交才是真相交
 
-    if (toSource > 0 && toSource < 1 && toClip > 0 && toClip < 1) {
+    if (toSource > EPS && toSource < EPS2 && toClip > EPS && toClip < EPS2) {
       var ox = ax1 + toSource * (ax2 - ax1);
       var oy = ay1 + toSource * (ay2 - ay1);
       return [{
@@ -13860,12 +13863,12 @@
           toClip = Math.abs((item.y - by1) / (by2 - by1));
         }
 
-        if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
             return;
           }
 
@@ -13897,12 +13900,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
               return;
             }
 
@@ -13935,12 +13938,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
               return;
             }
 
@@ -13976,12 +13979,12 @@
           toClip = Math.abs((item.y - by1) / (by2 - by1));
         }
 
-        if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
           // 还要判断斜率，相等也忽略（小于一定误差）
           var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
           var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
             return;
           }
 
@@ -14013,12 +14016,12 @@
         if (toClip.length) {
           toClip = toClip[0];
 
-          if (item.t > 0 && item.t < 1 && toClip > 0 && toClip < 1) {
+          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
             // 还要判断斜率，相等也忽略（小于一定误差）
             var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
             var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < 1e-6) {
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
               return;
             }
 
@@ -14054,7 +14057,7 @@
         t: isSource ? item.toSource : item.toClip
       };
     }).filter(function (item) {
-      return item.t > 0 && item.t < 1;
+      return item.t > EPS && item.t < EPS2;
     });
   }
 
@@ -14510,6 +14513,22 @@
               var isSourceReverted = false; // 求交可能a、b线主从互换
 
               if (geom.isRectsOverlap(bboxA, bboxB, includeIntersect)) {
+                // 完全重合简化，同矩形的线myFill共享，对方矩形互换otherFill
+                if (lenA === lenB && seg.equal(item)) {
+                  if (compareBelong) {
+                    seg.otherCoincide++;
+                    item.otherCoincide++;
+                    seg.otherFill = item.myFill;
+                    item.otherFill = seg.myFill;
+                  } else {
+                    seg.myCoincide++;
+                    item.myCoincide++;
+                    seg.myFill = item.myFill;
+                  }
+
+                  continue;
+                }
+
                 var _coordsB$ = coordsB[0],
                     bx1 = _coordsB$.x,
                     by1 = _coordsB$.y;
@@ -14521,94 +14540,76 @@
                 if (lenA === 2) {
                   // b是直线
                   if (lenB === 2) {
-                    // 完全重合的2条线
-                    if (ax1 === bx1 && ax2 === bx2 && ay1 === by1 && ay2 === by2) {
-                      // console.log(compareBelong);
-                      coordsB[0] = coordsA[0];
-                      coordsB[1] = coordsA[1];
+                    var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
 
-                      if (compareBelong) {
-                        seg.otherCoincide++;
-                        item.otherCoincide++;
-                        seg.otherFill = item.myFill;
-                        item.otherFill = seg.myFill;
-                      } else {
-                        seg.myCoincide++;
-                        item.myCoincide++;
-                        seg.myFill = item.myFill;
-                      }
-                    } else {
-                      var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
-
-                      if (d === 0) {
-                        // 垂线特殊，y=kx+b没法求
-                        if (ax1 === ax2) {
-                          if (ax1 === bx1 && ax2 === bx2) {
-                            if (by1 > ay1) {
-                              res.push({
-                                point: coordsB[0],
-                                toSource: (by1 - ay1) / (ay2 - ay1),
-                                toClip: 0
-                              });
-                            } else if (by1 < ay1) {
-                              res.push({
-                                point: coordsA[0],
-                                toSource: 0,
-                                toClip: (ay1 - by1) / (by2 - by1)
-                              });
-                            }
-
-                            if (by2 > ay2) {
-                              res.push({
-                                point: coordsA[1],
-                                toSource: 1,
-                                toClip: (ay2 - by1) / (by2 - by1)
-                              });
-                            } else if (by2 < ay2) {
-                              res.push({
-                                point: coordsB[1],
-                                toSource: (by2 - ay1) / (ay2 - ay1),
-                                toClip: 1
-                              });
-                            }
+                    if (d === 0) {
+                      // 垂线特殊，y=kx+b没法求
+                      if (ax1 === ax2) {
+                        if (ax1 === bx1 && ax2 === bx2) {
+                          if (by1 > ay1) {
+                            res.push({
+                              point: coordsB[0],
+                              toSource: (by1 - ay1) / (ay2 - ay1),
+                              toClip: 0
+                            });
+                          } else if (by1 < ay1) {
+                            res.push({
+                              point: coordsA[0],
+                              toSource: 0,
+                              toClip: (ay1 - by1) / (by2 - by1)
+                            });
                           }
-                        } else {
-                          var b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
-                          var b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
 
-                          if (b1 === b2) {
-                            if (bx1 > ax1) {
-                              res.push({
-                                point: coordsB[0],
-                                toSource: (bx1 - ax1) / (ax2 - ax1),
-                                toClip: 0
-                              });
-                            } else if (bx1 < ax1) {
-                              res.push({
-                                point: coordsA[0],
-                                toSource: 0,
-                                toClip: (ax1 - bx1) / (bx2 - bx1)
-                              });
-                            }
-
-                            if (bx2 > ax2) {
-                              res.push({
-                                point: coordsA[1],
-                                toSource: 1,
-                                toClip: (ax2 - bx1) / (bx2 - bx1)
-                              });
-                            } else if (bx2 < ax2) {
-                              res.push({
-                                point: coordsB[1],
-                                toSource: (bx2 - ax1) / (ax2 - ax1),
-                                toClip: 1
-                              });
-                            }
+                          if (by2 > ay2) {
+                            res.push({
+                              point: coordsA[1],
+                              toSource: 1,
+                              toClip: (ay2 - by1) / (by2 - by1)
+                            });
+                          } else if (by2 < ay2) {
+                            res.push({
+                              point: coordsB[1],
+                              toSource: (by2 - ay1) / (ay2 - ay1),
+                              toClip: 1
+                            });
                           }
                         }
                       } else {
-                        res = getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                        var b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                        var b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+
+                        if (b1 === b2) {
+                          if (bx1 > ax1) {
+                            res.push({
+                              point: coordsB[0],
+                              toSource: (bx1 - ax1) / (ax2 - ax1),
+                              toClip: 0
+                            });
+                          } else if (bx1 < ax1) {
+                            res.push({
+                              point: coordsA[0],
+                              toSource: 0,
+                              toClip: (ax1 - bx1) / (bx2 - bx1)
+                            });
+                          }
+
+                          if (bx2 > ax2) {
+                            res.push({
+                              point: coordsA[1],
+                              toSource: 1,
+                              toClip: (ax2 - bx1) / (bx2 - bx1)
+                            });
+                          } else if (bx2 < ax2) {
+                            res.push({
+                              point: coordsB[1],
+                              toSource: (bx2 - ax1) / (ax2 - ax1),
+                              toClip: 1
+                            });
+                          }
+                        }
                       }
+                    } else {
+                      res = getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
                     }
                   } // b是曲线
                   else {
@@ -14722,7 +14723,7 @@
                 }
               }
             }
-          } // 不相交切割才进入asl
+          } // 不相交切割才进入ael
 
 
           if (!seg.isDeleted) {
@@ -15272,9 +15273,9 @@
     } else {
       source = new Polygon(prefix(polygonA), 0);
       source.selfIntersect();
-    } // console.log(source.toString());
+    }
 
-
+    console.log(source.toString());
     var clip;
 
     if (isIntermediateB) {
@@ -15282,9 +15283,9 @@
     } else {
       clip = new Polygon(prefix(polygonB), 1);
       clip.selfIntersect();
-    } // console.log(clip.toString());
+    }
 
-
+    console.log(clip.toString());
     console.log('----'); // 两个多边形之间再次互相判断相交
 
     Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);

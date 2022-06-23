@@ -92,7 +92,7 @@ let o = {
     let list = CALLBACK[fontFamily] = CALLBACK[fontFamily] || [];
     let i = list.indexOf(node);
     if(i > -1) {
-      node.splice(i, 1);
+      list.splice(i, 1);
     }
   }
 };

@@ -2891,7 +2891,7 @@
       var i = list.indexOf(node);
 
       if (i > -1) {
-        node.splice(i, 1);
+        list.splice(i, 1);
       }
     }
   };
@@ -42228,7 +42228,7 @@
     Cache: Cache
   };
 
-  var version = "0.76.0";
+  var version = "0.76.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -438,12 +438,12 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
             }
             // bbox相交才考虑真正计算，加速
             let bboxB = item.bbox, coordsB = item.coords, lenB = coordsB.length;
-            let includeIntersect = lenA === 2 && lenB === 2; // 边缘重合仅考虑都是直线时
             let isSourceReverted = false; // 求交可能a、b线主从互换
-            if(geom.isRectsOverlap(bboxA, bboxB, includeIntersect)) {
+            if(isRectsOverlap(bboxA, bboxB, lenA, lenB)) {
               // 完全重合简化，同矩形的线myFill共享，对方矩形互换otherFill
               if(lenA === lenB && seg.equal(item)) {
                 if(compareBelong) {
+                  // 因为一定不自交，所以重合线不会被分割
                   seg.otherCoincide++;
                   item.otherCoincide++;
                   seg.otherFill = item.myFill;
@@ -458,7 +458,7 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
               }
               let { x: bx1, y: by1 } = coordsB[0];
               let { x: bx2, y: by2 } = coordsB[1];
-              let res = [];
+              let inters, overs;
               // a是直线
               if(lenA === 2) {
                 // b是直线
@@ -469,73 +469,21 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                     // 垂线特殊，y=kx+b没法求
                     if(ax1 === ax2) {
                       if(ax1 === bx1 && ax2 === bx2) {
-                        if(by1 > ay1) {
-                          res.push({
-                            point: coordsB[0],
-                            toSource: (by1 - ay1) / (ay2 - ay1),
-                            toClip: 0,
-                          });
-                        }
-                        else if(by1 < ay1) {
-                          res.push({
-                            point: coordsA[0],
-                            toSource: 0,
-                            toClip: (ay1 - by1) / (by2 - by1),
-                          });
-                        }
-                        if(by2 > ay2) {
-                          res.push({
-                            point: coordsA[1],
-                            toSource: 1,
-                            toClip: (ay2 - by1) / (by2 - by1),
-                          });
-                        }
-                        else if(by2 < ay2) {
-                          res.push({
-                            point: coordsB[1],
-                            toSource: (by2 - ay1) / (ay2 - ay1),
-                            toClip: 1,
-                          });
-                        }
+                        overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg,
+                          bx1, by1, bx2, by2, item, true);
                       }
                     }
                     else {
                       let b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
                       let b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
                       if(b1 === b2) {
-                        if(bx1 > ax1) {
-                          res.push({
-                            point: coordsB[0],
-                            toSource: (bx1 - ax1) / (ax2 - ax1),
-                            toClip: 0,
-                          });
-                        }
-                        else if(bx1 < ax1) {
-                          res.push({
-                            point: coordsA[0],
-                            toSource: 0,
-                            toClip: (ax1 - bx1) / (bx2 - bx1),
-                          });
-                        }
-                        if(bx2 > ax2) {
-                          res.push({
-                            point: coordsA[1],
-                            toSource: 1,
-                            toClip: (ax2 - bx1) / (bx2 - bx1),
-                          });
-                        }
-                        else if(bx2 < ax2) {
-                          res.push({
-                            point: coordsB[1],
-                            toSource: (bx2 - ax1) / (ax2 - ax1),
-                            toClip: 1,
-                          });
-                        }
+                        overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg,
+                          bx1, by1, bx2, by2, item, false);
                       }
                     }
                   }
                   else {
-                    res = getIntersectionLineLine(ax1, ay1, ax2, ay2,
+                    inters = getIntersectionLineLine(ax1, ay1, ax2, ay2,
                       bx1, by1, bx2, by2, d);
                   }
                 }
@@ -544,14 +492,14 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                   let { x: bx3, y: by3 } = coordsB[2];
                   // b是2阶曲线
                   if(lenB === 3) {
-                    res = getIntersectionBezier2Line(bx1, by1, bx2, by2, bx3, by3,
+                    inters = getIntersectionBezier2Line(bx1, by1, bx2, by2, bx3, by3,
                       ax1, ay1, ax2, ay2);
                     isSourceReverted = true;
                   }
                   // b是3阶曲线
                   else {
                     let { x: bx4, y: by4 } = coordsB[3];
-                    res = getIntersectionBezier3Line(bx1, by1, bx2, by2, bx3, by3, bx4, by4,
+                    inters = getIntersectionBezier3Line(bx1, by1, bx2, by2, bx3, by3, bx4, by4,
                       ax1, ay1, ax2, ay2);
                     isSourceReverted = true;
                   }
@@ -564,7 +512,7 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                 if(lenA === 3) {
                   // b是直线
                   if(lenB === 2) {
-                    res = getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
+                    inters = getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3,
                       bx1, by1, bx2, by2);
                   }
                   // b是曲线
@@ -572,13 +520,17 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                     let { x: bx3, y: by3 } = coordsB[2];
                     // b是2阶曲线
                     if(lenB === 3) {
-                      res = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
+                      inters = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
                         bx1, by1, bx2, by2, bx3, by3);
+                      if(!inters) {
+                        overs = checkOverlapBezier2(ax1, ay1, ax2, ay2, ax3, ay3, seg,
+                          bx1, by1, bx2, by2, bx3, by3, item);
+                      }
                     }
                     // b是3阶曲线
                     else {
                       let { x: bx4, y: by4 } = coordsB[3];
-                      res = getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
+                      inters = getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3,
                         bx1, by1, bx2, by2, bx3, by3, bx4, by4);
                     }
                   }
@@ -588,7 +540,7 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                   let { x: ax4, y: ay4 } = coordsA[3];
                   // b是直线
                   if(lenB === 2) {
-                    res = getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
+                    inters = getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
                       bx1, by1, bx2, by2);
                   }
                   // b是曲线
@@ -596,27 +548,35 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                     let { x: bx3, y: by3 } = coordsB[2];
                     // b是2阶曲线
                     if(lenB === 3) {
-                      res = getIntersectionBezier2Bezier3(bx1, by1, bx2, by2, bx3, by3,
+                      inters = getIntersectionBezier2Bezier3(bx1, by1, bx2, by2, bx3, by3,
                         ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4);
                       isSourceReverted = true;
                     }
                     // b是3阶曲线
                     else {
                       let { x: bx4, y: by4 } = coordsB[3];
-                      res = getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
+                      inters = getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
                         bx1, by1, bx2, by2, bx3, by3, bx4, by4);
                     }
                   }
                 }
               }
+              // 有重合的，重合线段已经求好，直接使用
+              if(overs) {
+                activeNewSeg(segments, list, ael, x, overs.ra);
+                activeNewSeg(segments, list, ael, x, overs.rb);
+                seg.isDeleted = item.isDeleted = true;
+                ael.splice(i, 1);
+                break;
+              }
               // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
-              if(res && res.length) {
-                // console.log('res', res);
-                let pa = sortIntersection(res, !isSourceReverted);
+              else if(inters && inters.length) {
+                // console.log('inters', i, inters);
+                let pa = sortIntersection(inters, !isSourceReverted);
                 // console.log(pa);
                 let ra = sliceSegment(seg, pa, isIntermediateA && belong === 0);
                 // console.log(ra.map(item => item.toString()));
-                let pb = sortIntersection(res, isSourceReverted);
+                let pb = sortIntersection(inters, isSourceReverted);
                 // console.log(pb);
                 let rb = sliceSegment(item, pb, isIntermediateB && belong === 1);
                 // console.log(rb.map(item => item.toString()));
@@ -1004,6 +964,264 @@ function getYByX(coords, x) {
     let pts = coords.map(item => [item.x, item.y]);
     return bezier.pointAtByT(pts, t[0])[1];
   }
+}
+
+function isRectsOverlap(bboxA, bboxB, lenA, lenB) {
+  if(lenA === 2 && lenB === 2) {
+    // 2条垂线特殊考虑，此时x范围都是0，只能比较y
+    if(bboxA[0] === bboxA[2] && bboxB[0] === bboxB[2] && bboxA[0] === bboxA[2]) {
+      if(bboxA[1] >= bboxB[3] || bboxB[1] >= bboxA[3]) {
+        return false;
+      }
+      return true;
+    }
+    // 2条水平线也是
+    if(bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+      if(bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
+        return false;
+      }
+      return true;
+    }
+  }
+  return geom.isRectsOverlap(bboxA, bboxB);
+}
+
+function checkOverlapLine(ax1, ay1, ax2, ay2, segA,
+                          bx1, by1, bx2, by2, segB, isY) {
+  let ra = [], rb = [];
+  let coordsA = segA.coords, coordsB = segB.coords;
+  if(ax1 < bx1 && !isY || ay1 < by1 && isY) {
+    ra.push(new Segment([
+      coordsA[0],
+      coordsB[0],
+    ], segA.belong));
+    if(ax2 < bx2 && !isY || ay2 < by2 && isY) {
+      ra.push(new Segment([
+        coordsB[0],
+        coordsA[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsB[0],
+        coordsA[1],
+      ], segB.belong));
+      rb.push(new Segment([
+        coordsA[1],
+        coordsB[1],
+      ], segB.belong));
+    }
+    else if(ax2 === bx2 && !isY || ay2 === by2 && isY) {
+      ra.push(new Segment([
+        coordsB[0],
+        coordsB[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsB[0],
+        coordsB[1],
+      ], segB.belong));
+    }
+    else {
+      ra.push(new Segment([
+        coordsB[0],
+        coordsB[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsB[0],
+        coordsB[1],
+      ], segB.belong));
+      ra.push(new Segment([
+        coordsB[1],
+        coordsA[1],
+      ], segA.belong));
+    }
+  }
+  // 不会出现完全重合即ax2 == bx2
+  else if(ax1 === bx1 && !isY || ay1 === by1 && isY) {
+    if(ax2 < bx2 && !isY || ay2 < by2 && isY) {
+      ra.push(new Segment([
+        coordsA[0],
+        coordsA[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsA[0],
+        coordsA[1],
+      ], segB.belong));
+      rb.push(new Segment([
+        coordsA[1],
+        coordsB[1],
+      ], segB.belong));
+    }
+    else {
+      ra.push(new Segment([
+        coordsB[0],
+        coordsB[1],
+      ], segA.belong));
+      ra.push(new Segment([
+        coordsB[1],
+        coordsA[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsB[0],
+        coordsB[1],
+      ], segB.belong));
+    }
+  }
+  // ax1 > bx1
+  else {
+    rb.push(new Segment([
+      coordsB[0],
+      coordsA[0],
+    ], segB.belong));
+    if(ax2 < bx2 && !isY || ay2 < by2 && isY) {
+      ra.push(new Segment([
+        coordsA[0],
+        coordsA[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsA[0],
+        coordsA[1],
+      ], segB.belong));
+      rb.push(new Segment([
+        coordsA[1],
+        coordsB[1],
+      ], segB.belong));
+    }
+    else if(ax2 === bx2 && !isY || ay2 === by2 && isY) {
+      ra.push(new Segment([
+        coordsA[0],
+        coordsA[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsA[0],
+        coordsA[1],
+      ], segB.belong));
+    }
+    else {
+      ra.push(new Segment([
+        coordsA[0],
+        coordsB[1],
+      ], segA.belong));
+      rb.push(new Segment([
+        coordsA[0],
+        coordsB[1],
+      ], segB.belong));
+      ra.push(new Segment([
+        coordsB[1],
+        coordsA[1],
+      ], segA.belong));
+    }
+  }
+  return {
+    ra,
+    rb,
+  };
+}
+
+function checkOverlapBezier2(ax1, ay1, ax2, ay2, ax3, ay3, segA,
+                             bx1, by1, bx2, by2, bx3, by3, segB) {
+  let t1 = bezier.getPointT([
+    [ax1, ay1],
+    [ax2, ay2],
+    [ax3, ay3],
+  ], bx1, by1);
+  let t2 = bezier.getPointT([
+    [ax1, ay1],
+    [ax2, ay2],
+    [ax3, ay3],
+  ], bx3, by3);
+  let t3 = bezier.getPointT([
+    [bx1, by1],
+    [bx2, by2],
+    [bx3, by3],
+  ], ax1, ay1);
+  let t4 = bezier.getPointT([
+    [bx1, by1],
+    [bx2, by2],
+    [bx3, by3],
+  ], ax3, ay3);
+  let l1 = t1.length, l2 = t2.length, l3 = t3.length, l4 = t4.length;
+  // 部分重合一定只有2个点
+  if(l1 + l2 + l3 + l4 === 2) {
+    // 其中一个包含另一个
+    if(l1 === 1 && l2 === 1) {}
+    else if(l3 === 1 && l4 === 1) {}
+    // 互相有一截重合
+    else {
+      // console.warn(segA.toString());console.warn(segB.toString());
+      // console.log(t1, t2, t3, t4);
+      let startA = l1 ? t1[0] : 0;
+      let endA = l1 ? 1 : t2[0];
+      let ca = bezier.sliceBezier2Both([
+        [ax1, ay1],
+        [ax2, ay2],
+        [ax3, ay3],
+      ], startA, endA);
+      let startB = l3 ? t3[0] : 0;
+      let endB = l3 ? 1 : t4[0];
+      let cb = bezier.sliceBezier2Both([
+        [bx1, by1],
+        [bx2, by2],
+        [bx3, by3],
+      ], startB, endB);
+      if(equalBezier(ca, cb)) {
+        let pt = new Point(ca[1]);
+        let ra = [];
+        if(startA === 0) {
+          ra.push(new Segment([
+            segA.coords[0],
+            pt,
+            segB.coords[2],
+          ], segA.belong));
+          let s = bezier.sliceBezier2Both([
+            [ax1, ay1],
+            [ax2, ay2],
+            [ax3, ay3],
+          ], endA, 1);
+          ra.push(new Segment([
+            segB.coords[2],
+            new Point(s[1]),
+            segA.coords[2],
+          ], segA.belong));
+        }
+        else {
+        }
+        let rb = [];
+        if(startB === 0) {}
+        else {
+          let s = bezier.sliceBezier2Both([
+            [bx1, by1],
+            [bx2, by2],
+            [bx3, by3],
+          ], 0, startB);
+          rb.push(new Segment([
+            segB.coords[0],
+            new Point(s[1]),
+            segA.coords[0],
+          ], segB.belong));
+          rb.push(new Segment([
+            segA.coords[0],
+            pt,
+            segB.coords[2],
+          ], segB.belong));
+        }
+        // console.warn(ra.map(item => item.toString()))
+        // console.warn(rb.map(item => item.toString()))
+        return {
+          ra,
+          rb,
+        };
+      }
+    }
+  }
+}
+
+function equalBezier(a, b) {
+  for(let i = 0, len = a.length; i < len; i++) {
+    let ai = a[i], bi = b[i];
+    if(Math.abs(ai[0] - bi[0]) > 1e-9 || Math.abs(ai[1] - bi[1]) > 1e-9) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export default Polygon;

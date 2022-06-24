@@ -2,8 +2,8 @@ import Point from './Point';
 import isec from '../isec';
 import bezier from '../bezier';
 
-const EPS = 1e-6;
-const EPS2 = 1 - 1e-6;
+const EPS = 1e-9;
+const EPS2 = 1 - (1e-9);
 
 function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
   let toSource = (

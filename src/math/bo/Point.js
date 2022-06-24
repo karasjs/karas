@@ -8,6 +8,7 @@ class Point {
   }
 
   toString() {
+    // return this.x.toFixed(1).replace('.0', '') + ',' + this.y.toFixed(1).replace('.0', '');
     return this.x + ',' + this.y;
   }
 

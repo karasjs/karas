@@ -14598,7 +14598,7 @@
                         inters = getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, _bx, _by);
 
                         if (!inters) {
-                          overs = checkOverlapBezier2(ax1, ay1, ax2, ay2, ax3, ay3, seg, bx1, by1, bx2, by2, _bx, _by, item);
+                          overs = checkOverlapBezier2(seg, item);
                         }
                       } // b是3阶曲线
                       else {
@@ -15152,55 +15152,87 @@
     };
   }
 
-  function checkOverlapBezier2(ax1, ay1, ax2, ay2, ax3, ay3, segA, bx1, by1, bx2, by2, bx3, by3, segB) {
-    var t1 = bezier.getPointT([[ax1, ay1], [ax2, ay2], [ax3, ay3]], bx1, by1);
-    var t2 = bezier.getPointT([[ax1, ay1], [ax2, ay2], [ax3, ay3]], bx3, by3);
-    var t3 = bezier.getPointT([[bx1, by1], [bx2, by2], [bx3, by3]], ax1, ay1);
-    var t4 = bezier.getPointT([[bx1, by1], [bx2, by2], [bx3, by3]], ax3, ay3);
+  function checkOverlapBezier2(segA, segB) {
+    var ca = segA.coords.map(function (item) {
+      return [item.x, item.y];
+    }),
+        la = ca.length;
+    var cb = segB.coords.map(function (item) {
+      return [item.x, item.y];
+    }),
+        lb = cb.length;
+    var firstA = ca[0],
+        firstB = cb[0],
+        lastA = ca[la - 1],
+        lastB = cb[lb - 1];
+    var t1 = bezier.getPointT(ca, firstB[0], firstB[1]);
+    var t2 = bezier.getPointT(ca, lastB[0], lastB[1]);
+    var t3 = bezier.getPointT(cb, firstA[0], firstA[1]);
+    var t4 = bezier.getPointT(cb, lastA[0], lastA[1]); // console.warn(segA.toString());console.warn(segB.toString());
+    // console.log(t1, t2, t3, t4);
+
     var l1 = t1.length,
         l2 = t2.length,
         l3 = t3.length,
-        l4 = t4.length; // 部分重合一定只有2个点
+        l4 = t4.length;
+    /**
+     * 重合有3种情况，对应4个t（每方各2个）的情况不同：
+     * a. 一个包含另外一个，这样其中一方t为空，另一方t为2个即两个端点各1
+     * b. 一对端点重合另外一侧包含，比上面的t多1个即空的那方t多1
+     * c. 普通部分重合，每方各有1个t
+     */
 
-    if (l1 + l2 + l3 + l4 === 2) {
-      // 其中一个包含另一个
-      if (l1 === 1 && l2 === 1) ; else if (l3 === 1 && l4 === 1) ; // 互相有一截重合
-      else {
-        // console.warn(segA.toString());console.warn(segB.toString());
-        // console.log(t1, t2, t3, t4);
-        var startA = l1 ? t1[0] : 0;
-        var endA = l1 ? 1 : t2[0];
-        var ca = bezier.sliceBezier2Both([[ax1, ay1], [ax2, ay2], [ax3, ay3]], startA, endA);
-        var startB = l3 ? t3[0] : 0;
-        var endB = l3 ? 1 : t4[0];
-        var cb = bezier.sliceBezier2Both([[bx1, by1], [bx2, by2], [bx3, by3]], startB, endB);
+    var conditionA = l1 === 1 && l2 === 1 && l3 === 0 && l4 === 0 || l1 === 0 && l2 === 0 && l3 === 1 && l4 === 1;
+    var conditionB = l1 === 1 && l2 === 1 && l3 + l4 === 1 || l1 + l2 === 1 && l3 === 1 && l4 === 1;
+    var conditionC = l1 + l2 === 1 && l3 + l4 === 1;
 
-        if (equalBezier(ca, cb)) {
-          var pt = new Point(ca[1]);
-          var ra = [];
+    if (conditionA || conditionB || conditionC) {
+      var startA = l1 ? t1[0] : 0;
+      var endA = l2 ? t2[0] : 1;
+      var a = bezier.sliceBezier2Both(ca, startA, endA);
+      var startB = l3 ? t3[0] : 0;
+      var endB = l4 ? t4[0] : 1;
+      var b = bezier.sliceBezier2Both(cb, startB, endB); // console.log(startA, endA, startB, endB);
+      // 确定重合之后就是截取，重合一定出现在左右的中间部分，这样只要分别判断左右两端是否需要各自裁剪即可
 
-          if (startA === 0) {
-            ra.push(new Segment([segA.coords[0], pt, segB.coords[2]], segA.belong));
-            var s = bezier.sliceBezier2Both([[ax1, ay1], [ax2, ay2], [ax3, ay3]], endA, 1);
-            ra.push(new Segment([segB.coords[2], new Point(s[1]), segA.coords[2]], segA.belong));
-          }
+      if (equalBezier(a, b)) {
+        var over = a.map(function (item) {
+          return new Point(item);
+        });
+        var ra = [],
+            rb = [];
 
-          var rb = [];
-
-          if (startB === 0) ; else {
-            var _s = bezier.sliceBezier2Both([[bx1, by1], [bx2, by2], [bx3, by3]], 0, startB);
-
-            rb.push(new Segment([segB.coords[0], new Point(_s[1]), segA.coords[0]], segB.belong));
-            rb.push(new Segment([segA.coords[0], pt, segB.coords[2]], segB.belong));
-          } // console.warn(ra.map(item => item.toString()))
-          // console.warn(rb.map(item => item.toString()))
-
-
-          return {
-            ra: ra,
-            rb: rb
-          };
+        if (startA > 0) {
+          var s = bezier.sliceBezier2Both(ca, 0, startA);
+          ra.push(new Segment([segA.coords[0], new Point(s[1]), segB.coords[0]], segA.belong));
         }
+
+        ra.push(new Segment(over, segA.belong)); // 重合的部分
+
+        if (endA < 1) {
+          var _s = bezier.sliceBezier2Both(ca, endA, 1);
+
+          ra.push(new Segment([segA.coords[2], new Point(_s[1]), segB.coords[2]], segA.belong));
+        }
+
+        if (startB > 0) {
+          var _s2 = bezier.sliceBezier2Both(cb, 0, startB);
+
+          rb.push(new Segment([segB.coords[0], new Point(_s2[1]), segA.coords[0]], segB.belong));
+        }
+
+        rb.push(new Segment(over, segB.belong)); // 重合的部分
+
+        if (endB < 1) {
+          var _s3 = bezier.sliceBezier2Both(cb, endB, 1);
+
+          ra.push(new Segment([segB.coords[2], new Point(_s3[1]), segA.coords[2]], segB.belong));
+        }
+
+        return {
+          ra: ra,
+          rb: rb
+        };
       }
     }
   }

@@ -586,20 +586,6 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                 if(rb.length) {
                   ael.splice(i, 1);
                 }
-                // 检查切割的a/b之中是否有重合的线段，合并，互相把otherFill引用给对方
-                // 可能会出现start或end共点，这时pa或pb有一个为空，重合变成其中一个子切割和另外一个完全重合
-                for(let i = ra.length - 1; i >= 0; i--) {
-                  let a = ra[i];
-                  for(let j = rb.length - 1; j >= 0; j--) {
-                    let b = rb[j];
-                    if(a.equal(b)) {
-                      a.otherCoincide++;
-                      b.otherCoincide++;
-                      a.otherFill = b.myFill;
-                      b.otherFill = a.myFill;
-                    }
-                  }
-                }
                 break;
               }
             }
@@ -1146,6 +1132,7 @@ function checkOverlapBezier2(segA, segB) {
     // 确定重合之后就是截取，重合一定出现在左右的中间部分，这样只要分别判断左右两端是否需要各自裁剪即可
     if(equalBezier(a, b)) {
       let over = a.map(item => new Point(item));
+      // console.log(over);
       let ra = [], rb = [];
       if(startA > 0) {
         let s = bezier.sliceBezier2Both(ca, 0, startA);
@@ -1159,9 +1146,9 @@ function checkOverlapBezier2(segA, segB) {
       if(endA < 1) {
         let s = bezier.sliceBezier2Both(ca, endA, 1);
         ra.push(new Segment([
-          segA.coords[2],
-          new Point(s[1]),
           segB.coords[2],
+          new Point(s[1]),
+          segA.coords[2],
         ], segA.belong));
       }
       if(startB > 0) {
@@ -1175,12 +1162,14 @@ function checkOverlapBezier2(segA, segB) {
       rb.push(new Segment(over, segB.belong)); // 重合的部分
       if(endB < 1) {
         let s = bezier.sliceBezier2Both(cb, endB, 1);
-        ra.push(new Segment([
-          segB.coords[2],
-          new Point(s[1]),
+        rb.push(new Segment([
           segA.coords[2],
+          new Point(s[1]),
+          segB.coords[2],
         ], segB.belong));
       }
+      // console.log(ra.map(item => item.toString()));
+      // console.log(rb.map(item => item.toString()));
       return {
         ra,
         rb,

@@ -14660,23 +14660,6 @@
 
                   if (rb.length) {
                     ael.splice(_i3, 1);
-                  } // 检查切割的a/b之中是否有重合的线段，合并，互相把otherFill引用给对方
-                  // 可能会出现start或end共点，这时pa或pb有一个为空，重合变成其中一个子切割和另外一个完全重合
-
-
-                  for (var _i4 = ra.length - 1; _i4 >= 0; _i4--) {
-                    var a = ra[_i4];
-
-                    for (var j = rb.length - 1; j >= 0; j--) {
-                      var b = rb[j];
-
-                      if (a.equal(b)) {
-                        a.otherCoincide++;
-                        b.otherCoincide++;
-                        a.otherFill = b.myFill;
-                        b.otherFill = a.myFill;
-                      }
-                    }
                   }
 
                   break;
@@ -15198,7 +15181,8 @@
       if (equalBezier(a, b)) {
         var over = a.map(function (item) {
           return new Point(item);
-        });
+        }); // console.log(over);
+
         var ra = [],
             rb = [];
 
@@ -15212,7 +15196,7 @@
         if (endA < 1) {
           var _s = bezier.sliceBezier2Both(ca, endA, 1);
 
-          ra.push(new Segment([segA.coords[2], new Point(_s[1]), segB.coords[2]], segA.belong));
+          ra.push(new Segment([segB.coords[2], new Point(_s[1]), segA.coords[2]], segA.belong));
         }
 
         if (startB > 0) {
@@ -15226,8 +15210,10 @@
         if (endB < 1) {
           var _s3 = bezier.sliceBezier2Both(cb, endB, 1);
 
-          ra.push(new Segment([segB.coords[2], new Point(_s3[1]), segA.coords[2]], segB.belong));
-        }
+          rb.push(new Segment([segA.coords[2], new Point(_s3[1]), segB.coords[2]], segB.belong));
+        } // console.log(ra.map(item => item.toString()));
+        // console.log(rb.map(item => item.toString()));
+
 
         return {
           ra: ra,

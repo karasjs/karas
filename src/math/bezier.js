@@ -64,13 +64,14 @@ function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
     if(hx > 0) {
       hx = Math.sqrt(hx);
       let t = (-bx - hx) / ax;
-      if(t > 0 && t < 1) {
+      // 2次项系数为0注意降级为一元一次方程
+      if(ax && t > 0 && t < 1) {
         let s = 1 - t;
         let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
         minX = Math.min(minX, q);
         maxX = Math.max(maxX, q);
       }
-      t = (-bx + hx) / ax;
+      t = ax ? ((-bx + hx) / ax) : (-cx * 0.5 / bx);
       if(t > 0 && t < 1) {
         let s = 1 - t;
         let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
@@ -81,13 +82,13 @@ function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
     if(hy > 0) {
       hy = Math.sqrt(hy);
       let t = (-by - hy) / ay;
-      if(t > 0 && t < 1) {
+      if(ay && t > 0 && t < 1) {
         let s = 1 - t;
         let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
         minY = Math.min(minY, q);
         maxY = Math.max(maxY, q);
       }
-      t = (-by + hy) / ay;
+      t = ay ? ((-by + hy) / ay) : (-cy * 0.5 / by);
       if(t > 0 && t < 1) {
         let s = 1 - t;
         let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;

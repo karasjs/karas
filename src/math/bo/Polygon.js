@@ -523,7 +523,7 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                       inters = getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3,
                         bx1, by1, bx2, by2, bx3, by3);
                       if(!inters) {
-                        overs = checkOverlapBezier2(seg, item);
+                        overs = checkOverlapBezier(seg, item);
                       }
                     }
                     // b是3阶曲线
@@ -556,6 +556,9 @@ function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB)
                       let { x: bx4, y: by4 } = coordsB[3];
                       inters = getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4,
                         bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+                      if(!inters) {
+                        overs = checkOverlapBezier(seg, item);
+                      }
                     }
                   }
                 }
@@ -1101,7 +1104,7 @@ function checkOverlapLine(ax1, ay1, ax2, ay2, segA,
   };
 }
 
-function checkOverlapBezier2(segA, segB) {
+function checkOverlapBezier(segA, segB) {
   let ca = segA.coords.map(item => [item.x, item.y]), la = ca.length;
   let cb = segB.coords.map(item => [item.x, item.y]), lb = cb.length;
   let firstA = ca[0], firstB = cb[0], lastA = ca[la - 1], lastB = cb[lb - 1];
@@ -1136,37 +1139,53 @@ function checkOverlapBezier2(segA, segB) {
       let ra = [], rb = [];
       if(startA > 0) {
         let s = bezier.sliceBezier2Both(ca, 0, startA);
-        ra.push(new Segment([
+        let arr = [
           segA.coords[0],
           new Point(s[1]),
           segB.coords[0],
-        ], segA.belong));
+        ];
+        if(la === 4) {
+          arr.splice(2, 0, new Point(s[2]));
+        }
+        ra.push(new Segment(arr, segA.belong));
       }
       ra.push(new Segment(over, segA.belong)); // 重合的部分
       if(endA < 1) {
         let s = bezier.sliceBezier2Both(ca, endA, 1);
-        ra.push(new Segment([
-          segB.coords[2],
+        let arr = [
+          segB.coords[lb - 1],
           new Point(s[1]),
-          segA.coords[2],
-        ], segA.belong));
+          segA.coords[la - 1],
+        ];
+        if(la === 4) {
+          arr.splice(2, 0, new Point(s[2]));
+        }
+        ra.push(new Segment(arr, segA.belong));
       }
       if(startB > 0) {
         let s = bezier.sliceBezier2Both(cb, 0, startB);
-        rb.push(new Segment([
+        let arr = [
           segB.coords[0],
           new Point(s[1]),
           segA.coords[0],
-        ], segB.belong));
+        ];
+        if(lb === 4) {
+          arr.splice(2, 0, new Point(s[2]));
+        }
+        rb.push(new Segment(arr, segB.belong));
       }
       rb.push(new Segment(over, segB.belong)); // 重合的部分
       if(endB < 1) {
         let s = bezier.sliceBezier2Both(cb, endB, 1);
-        rb.push(new Segment([
-          segA.coords[2],
+        let arr = [
+          segA.coords[la - 1],
           new Point(s[1]),
-          segB.coords[2],
-        ], segB.belong));
+          segB.coords[lb - 1],
+        ];
+        if(lb === 4) {
+          arr.splice(2, 0, new Point(s[2]));
+        }
+        rb.push(new Segment(arr, segB.belong));
       }
       // console.log(ra.map(item => item.toString()));
       // console.log(rb.map(item => item.toString()));

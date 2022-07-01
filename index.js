@@ -14598,7 +14598,7 @@
                         inters = getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, _bx, _by);
 
                         if (!inters) {
-                          overs = checkOverlapBezier2(seg, item);
+                          overs = checkOverlapBezier(seg, item);
                         }
                       } // b是3阶曲线
                       else {
@@ -14631,6 +14631,10 @@
                             _bx4 = _coordsB$8.x,
                             _by4 = _coordsB$8.y;
                         inters = getIntersectionBezier3Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, _bx3, _by3, _bx4, _by4);
+
+                        if (!inters) {
+                          overs = checkOverlapBezier(seg, item);
+                        }
                       }
                     }
                   }
@@ -15135,7 +15139,7 @@
     };
   }
 
-  function checkOverlapBezier2(segA, segB) {
+  function checkOverlapBezier(segA, segB) {
     var ca = segA.coords.map(function (item) {
       return [item.x, item.y];
     }),
@@ -15188,7 +15192,13 @@
 
         if (startA > 0) {
           var s = bezier.sliceBezier2Both(ca, 0, startA);
-          ra.push(new Segment([segA.coords[0], new Point(s[1]), segB.coords[0]], segA.belong));
+          var arr = [segA.coords[0], new Point(s[1]), segB.coords[0]];
+
+          if (la === 4) {
+            arr.splice(2, 0, new Point(s[2]));
+          }
+
+          ra.push(new Segment(arr, segA.belong));
         }
 
         ra.push(new Segment(over, segA.belong)); // 重合的部分
@@ -15196,13 +15206,25 @@
         if (endA < 1) {
           var _s = bezier.sliceBezier2Both(ca, endA, 1);
 
-          ra.push(new Segment([segB.coords[2], new Point(_s[1]), segA.coords[2]], segA.belong));
+          var _arr = [segB.coords[lb - 1], new Point(_s[1]), segA.coords[la - 1]];
+
+          if (la === 4) {
+            _arr.splice(2, 0, new Point(_s[2]));
+          }
+
+          ra.push(new Segment(_arr, segA.belong));
         }
 
         if (startB > 0) {
           var _s2 = bezier.sliceBezier2Both(cb, 0, startB);
 
-          rb.push(new Segment([segB.coords[0], new Point(_s2[1]), segA.coords[0]], segB.belong));
+          var _arr2 = [segB.coords[0], new Point(_s2[1]), segA.coords[0]];
+
+          if (lb === 4) {
+            _arr2.splice(2, 0, new Point(_s2[2]));
+          }
+
+          rb.push(new Segment(_arr2, segB.belong));
         }
 
         rb.push(new Segment(over, segB.belong)); // 重合的部分
@@ -15210,7 +15232,13 @@
         if (endB < 1) {
           var _s3 = bezier.sliceBezier2Both(cb, endB, 1);
 
-          rb.push(new Segment([segA.coords[2], new Point(_s3[1]), segB.coords[2]], segB.belong));
+          var _arr3 = [segA.coords[la - 1], new Point(_s3[1]), segB.coords[lb - 1]];
+
+          if (lb === 4) {
+            _arr3.splice(2, 0, new Point(_s3[2]));
+          }
+
+          rb.push(new Segment(_arr3, segB.belong));
         } // console.log(ra.map(item => item.toString()));
         // console.log(rb.map(item => item.toString()));
 

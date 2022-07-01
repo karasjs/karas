@@ -14113,10 +14113,20 @@
           var seg = void 0;
 
           if (l === 2) {
+            // 长度为0的直线忽略
+            if (startPoint.equal(endPoint)) {
+              continue;
+            }
+
             var coords = Point.compare(startPoint, endPoint) ? [endPoint, startPoint] : [startPoint, endPoint];
             seg = new Segment(coords, index);
           } // 曲线需确保x单调性，如果非单调，则切割为单调的多条
           else if (l === 4) {
+            // 长度为0的曲线忽略
+            if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1]) {
+              continue;
+            }
+
             var cPoint = new Point(curr[0], curr[1]);
             var t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
 
@@ -14140,6 +14150,11 @@
             }
           } // 3阶可能有2个单调改变t点
           else if (l === 6) {
+            // 长度为0的曲线忽略
+            if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1] && startPoint.x === curr[2] && startPoint.y === curr[3]) {
+              continue;
+            }
+
             var cPoint1 = new Point(curr[0], curr[1]),
                 cPoint2 = new Point(curr[2], curr[3]);
 

@@ -40,6 +40,10 @@ class Polygon {
         let endPoint = (i === len - 1) ? firstPoint : new Point(curr[l - 2], curr[l - 1]);
         let seg;
         if(l === 2) {
+          // 长度为0的直线忽略
+          if(startPoint.equal(endPoint)) {
+            continue;
+          }
           let coords = Point.compare(startPoint, endPoint) ? [
             endPoint,
             startPoint,
@@ -51,6 +55,10 @@ class Polygon {
         }
         // 曲线需确保x单调性，如果非单调，则切割为单调的多条
         else if(l === 4) {
+          // 长度为0的曲线忽略
+          if(startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1]) {
+            continue;
+          }
           let cPoint = new Point(curr[0], curr[1]);
           let t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
           if(t) {
@@ -98,6 +106,12 @@ class Polygon {
         }
         // 3阶可能有2个单调改变t点
         else if(l === 6) {
+          // 长度为0的曲线忽略
+          if(startPoint.equal(endPoint)
+            && startPoint.x === curr[0] && startPoint.y === curr[1]
+            && startPoint.x === curr[2] && startPoint.y === curr[3]) {
+            continue;
+          }
           let cPoint1 = new Point(curr[0], curr[1]), cPoint2 = new Point(curr[2], curr[3]);
           let t = getBezierMonotonicity([startPoint, cPoint1, cPoint2, endPoint], true);
           if(t) {

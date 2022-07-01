@@ -10137,16 +10137,16 @@
 
       if (hx > 0) {
         hx = Math.sqrt(hx);
-        var t = (-bx - hx) / ax;
+        var t = (-bx - hx) / ax; // 2次项系数为0注意降级为一元一次方程
 
-        if (t > 0 && t < 1) {
+        if (ax && t > 0 && t < 1) {
           var s = 1 - t;
           var q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
           minX = Math.min(minX, q);
           maxX = Math.max(maxX, q);
         }
 
-        t = (-bx + hx) / ax;
+        t = ax ? (-bx + hx) / ax : -cx * 0.5 / bx;
 
         if (t > 0 && t < 1) {
           var _s = 1 - t;
@@ -10163,7 +10163,7 @@
 
         var _t = (-by - hy) / ay;
 
-        if (_t > 0 && _t < 1) {
+        if (ay && _t > 0 && _t < 1) {
           var _s2 = 1 - _t;
 
           var _q2 = _s2 * _s2 * _s2 * y0 + 3 * _s2 * _s2 * _t * y1 + 3 * _s2 * _t * _t * y2 + _t * _t * _t * y3;
@@ -10172,7 +10172,7 @@
           maxY = Math.max(maxY, _q2);
         }
 
-        _t = (-by + hy) / ay;
+        _t = ay ? (-by + hy) / ay : -cy * 0.5 / by;
 
         if (_t > 0 && _t < 1) {
           var _s3 = 1 - _t;

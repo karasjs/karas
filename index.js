@@ -14150,7 +14150,14 @@
             }
           } // 3阶可能有2个单调改变t点
           else if (l === 6) {
-            // 长度为0的曲线忽略
+            // 降级为2阶曲线
+            if (curr[0] === curr[2] && curr[1] === curr[3]) {
+              curr.splice(2, 2);
+              i--;
+              continue;
+            } // 长度为0的曲线忽略
+
+
             if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1] && startPoint.x === curr[2] && startPoint.y === curr[3]) {
               continue;
             }

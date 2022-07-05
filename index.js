@@ -22141,10 +22141,9 @@
         delete fontRegister[fontFamily];
         var root = node.root,
             currentStyle = node.currentStyle,
-            computedStyle = node.computedStyle,
-            __config = node.__config; // 等待注册回调过程中可能会发生变更，相等或者继承都忽略
+            __config = node.__config;
 
-        if (!root || computedStyle[FONT_FAMILY$5] === fontFamily) {
+        if (!root) {
           return;
         }
 

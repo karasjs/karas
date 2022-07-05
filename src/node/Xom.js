@@ -500,9 +500,8 @@ class Xom extends Node {
       return;
     }
     delete fontRegister[fontFamily];
-    let { root, currentStyle, computedStyle, __config } = node;
-    // 等待注册回调过程中可能会发生变更，相等或者继承都忽略
-    if(!root || computedStyle[FONT_FAMILY] === fontFamily) {
+    let { root, currentStyle, __config } = node;
+    if(!root) {
       return;
     }
     let v = currentStyle[FONT_FAMILY];

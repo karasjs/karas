@@ -17339,7 +17339,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__computeReflow', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'frameAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', 'clearCache', '__structure', '__modifyStruct', '__updateStruct', 'flowChildren', 'absChildren', '__isRealInline', '__calBasis', '__calMinMax', '__computeMeasure', 'appendChild', 'prependChild', 'insertBefore', 'insertAfter', 'removeChild', 'remove'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 

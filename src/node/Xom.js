@@ -170,7 +170,7 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, NUMBER, RGBA, STRING, REM, VW, VH, VMAX, VMIN, DEG, GRADIENT } = unit;
 const { int2rgba, rgba2int, joinArr, isNil, isFunction } = util;
-const { calRelative, calNormalLineHeight, spreadBoxShadow, spreadFilter } = css;
+const { calRelative, calNormalLineHeight, calFontFamily, spreadBoxShadow, spreadFilter } = css;
 const { GEOM } = change;
 const { mbmName, isValidMbm } = mbm;
 const { point2d } = mx;
@@ -350,14 +350,14 @@ class Xom extends Node {
           computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY[k]] : parentComputedStyle[k];
         }
         else {
-          let ff = v[0].split(/\s*,\s*/), f = inject.defaultFontFamily;
-          // 从左到右即申明的字体优先级
+          computedStyle[k] = v[0];
+          let ff = v[0].split(/\s*,\s*/);
+          // 从左到右即声明的字体优先级
           for(let i = 0, len = ff.length; i < len; i++) {
             let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
             if(font.hasRegister(item)) {
               // 如果已经注册加载了，或者注册且本地支持的，说明可用
               if(font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
-                f = item;
                 break;
               }
             }
@@ -365,7 +365,6 @@ class Xom extends Node {
             this.__fontRegister[item] = true;
             font.onRegister(item, this);
           }
-          computedStyle[k] = f;
         }
       }
       else if(v[1] === INHERIT) {
@@ -2072,7 +2071,7 @@ class Xom extends Node {
         }
         // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
-        let leading = fontSize * (font.info[fontFamily].lgr || 0) * 0.5;
+        let leading = fontSize * (font.info[calFontFamily(fontFamily)].lgr || 0) * 0.5;
         let baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;

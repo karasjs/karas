@@ -1263,8 +1263,8 @@ function setFontStyle(style) {
  */
 function getBaseline(style) {
   let fontSize = style[FONT_SIZE];
-  let ff = style[FONT_FAMILY];
-  let normal = calNormalLineHeight(style);
+  let ff = calFontFamily(style[FONT_FAMILY]);
+  let normal = calNormalLineHeight(style, ff);
   return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).blr;
 }
 
@@ -1273,8 +1273,22 @@ function getVerticalBaseline(style) {
   return style[LINE_HEIGHT] - getBaseline(style);
 }
 
-function calNormalLineHeight(style) {
-  return style[FONT_SIZE] * (font.info[style[FONT_FAMILY]] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+function calNormalLineHeight(style, ff) {
+  if(!ff) {
+    ff = calFontFamily(style[FONT_FAMILY]);
+  }
+  return style[FONT_SIZE] * (font.info[ff] || font.info[inject.defaultFontFamily] || font.info.arial).lhr;
+}
+
+function calFontFamily(fontFamily) {
+  let ff = fontFamily.split(/\s*,\s*/);
+  for(let i = 0, len = ff.length; i < len; i++) {
+    let item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+    if(font.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+      return item;
+    }
+  }
+  return inject.defaultFontFamily;
 }
 
 function calRelativePercent(n, parent, k) {
@@ -1706,6 +1720,7 @@ export default {
   isRelativeOrAbsolute,
   cloneStyle,
   calNormalLineHeight,
+  calFontFamily,
   spreadBoxShadow,
   spreadFilter,
 };

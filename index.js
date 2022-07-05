@@ -2575,19 +2575,13 @@
     checkSupportFontFamily: function checkSupportFontFamily(ff) {
       ff = ff.toLowerCase(); // 强制arial兜底
 
-      if (ff === this.defaultFontFamily || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
+      if (ff === this.defaultFontFamily) {
         return true;
       }
 
       if (SUPPORT_FONT.hasOwnProperty(ff)) {
         return SUPPORT_FONT[ff];
-      } // if(!font.info.hasOwnProperty(ff)) {
-      //   return false;
-      // }
-      // if(font.info[ff].hasOwnProperty('checked')) {
-      //   return font.info[ff].checked;
-      // }
-
+      }
 
       var canvas = inject.getFontCanvas();
       var context = canvas.ctx;
@@ -2604,18 +2598,18 @@
       }
 
       context.clearRect(0, 0, 16, 16);
-      context.font = '16px ' + ff;
+      context.font = '16px ' + ff + ',' + this.defaultFontFamily;
       context.fillText('a', 8, 8);
       canvas.draw();
       var data = context.getImageData(0, 0, 16, 16).data;
 
       for (var i = 0, len = data.length; i < len; i++) {
         if (defaultFontFamilyData[i] !== data[i]) {
-          return SUPPORT_FONT[ff] = false; // return font.info[ff].checked = true;
+          return SUPPORT_FONT[ff] = true;
         }
       }
 
-      return SUPPORT_FONT[ff] = true; // return font.info[ff].checked = false;
+      return SUPPORT_FONT[ff] = false;
     },
     loadFont: function loadFont(fontFamily, url, cb) {
       if (util.isFunction(url)) {
@@ -9083,8 +9077,8 @@
 
   function getBaseline(style) {
     var fontSize = style[FONT_SIZE$2];
-    var ff = style[FONT_FAMILY];
-    var normal = calNormalLineHeight(style);
+    var ff = calFontFamily(style[FONT_FAMILY]);
+    var normal = calNormalLineHeight(style, ff);
     return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).blr;
   } // 垂直排版的baseline和水平类似，只是原点坐标系不同，删除加本身高度变为加gap高度
 
@@ -9093,8 +9087,26 @@
     return style[LINE_HEIGHT] - getBaseline(style);
   }
 
-  function calNormalLineHeight(style) {
-    return style[FONT_SIZE$2] * (o$1.info[style[FONT_FAMILY]] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).lhr;
+  function calNormalLineHeight(style, ff) {
+    if (!ff) {
+      ff = calFontFamily(style[FONT_FAMILY]);
+    }
+
+    return style[FONT_SIZE$2] * (o$1.info[ff] || o$1.info[inject.defaultFontFamily] || o$1.info.arial).lhr;
+  }
+
+  function calFontFamily(fontFamily) {
+    var ff = fontFamily.split(/\s*,\s*/);
+
+    for (var i = 0, len = ff.length; i < len; i++) {
+      var item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
+
+      if (o$1.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
+        return item;
+      }
+    }
+
+    return inject.defaultFontFamily;
   }
 
   function calRelativePercent(n, parent, k) {
@@ -9529,6 +9541,7 @@
     isRelativeOrAbsolute: isRelativeOrAbsolute,
     cloneStyle: cloneStyle,
     calNormalLineHeight: calNormalLineHeight,
+    calFontFamily: calFontFamily,
     spreadBoxShadow: spreadBoxShadow,
     spreadFilter: spreadFilter
   };
@@ -21789,6 +21802,7 @@
       isFunction$5 = util.isFunction;
   var calRelative$1 = css.calRelative,
       calNormalLineHeight$1 = css.calNormalLineHeight,
+      calFontFamily$1 = css.calFontFamily,
       spreadBoxShadow$1 = css.spreadBoxShadow,
       spreadFilter$2 = css.spreadFilter;
   var GEOM$4 = o$2.GEOM;
@@ -21993,8 +22007,8 @@
             if (v[1] === INHERIT$3) {
               computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
             } else {
-              var ff = v[0].split(/\s*,\s*/),
-                  f = inject.defaultFontFamily; // 从左到右即申明的字体优先级
+              computedStyle[k] = v[0];
+              var ff = v[0].split(/\s*,\s*/); // 从左到右即声明的字体优先级
 
               for (var i = 0, len = ff.length; i < len; i++) {
                 var item = ff[i].replace(/^['"]/, '').replace(/['"]$/, '');
@@ -22002,7 +22016,6 @@
                 if (o$1.hasRegister(item)) {
                   // 如果已经注册加载了，或者注册且本地支持的，说明可用
                   if (o$1.hasLoaded(item) || inject.checkSupportFontFamily(item)) {
-                    f = item;
                     break;
                   }
                 } // 不可用的都特殊记住等待注册回调__loadFontCallback
@@ -22011,8 +22024,6 @@
                 _this3.__fontRegister[item] = true;
                 o$1.onRegister(item, _this3);
               }
-
-              computedStyle[k] = f;
             }
           } else if (v[1] === INHERIT$3) {
             computedStyle[k] = isRoot ? reset.INHERIT[STYLE_RV_KEY$1[k]] : parentComputedStyle[k];
@@ -23797,7 +23808,7 @@
               // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
 
-              var leading = fontSize * (o$1.info[fontFamily].lgr || 0) * 0.5;
+              var leading = fontSize * (o$1.info[calFontFamily$1(fontFamily)].lgr || 0) * 0.5;
               var baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
               var isFirst = true;

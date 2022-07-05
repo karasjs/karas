@@ -1,6 +1,5 @@
 import util from './util';
 import debug from './debug';
-// import font from '../style/font';
 import ca from '../gl/ca';
 import webgl from '../gl/webgl';
 
@@ -324,18 +323,12 @@ let inject = {
   checkSupportFontFamily(ff) {
     ff = ff.toLowerCase();
     // 强制arial兜底
-    if(ff === this.defaultFontFamily || ff === 'serif' || ff === 'sans-serif' || ff === 'sansserif') {
+    if(ff === this.defaultFontFamily) {
       return true;
     }
     if(SUPPORT_FONT.hasOwnProperty(ff)) {
       return SUPPORT_FONT[ff];
     }
-    // if(!font.info.hasOwnProperty(ff)) {
-    //   return false;
-    // }
-    // if(font.info[ff].hasOwnProperty('checked')) {
-    //   return font.info[ff].checked;
-    // }
     let canvas = inject.getFontCanvas();
     let context = canvas.ctx;
     context.textAlign = 'center';
@@ -349,18 +342,16 @@ let inject = {
       defaultFontFamilyData = context.getImageData(0, 0, 16, 16).data;
     }
     context.clearRect(0, 0, 16, 16);
-    context.font = '16px ' + ff;
+    context.font = '16px ' + ff + ',' + this.defaultFontFamily;
     context.fillText('a', 8, 8);
     canvas.draw();
     let data = context.getImageData(0, 0, 16, 16).data;
     for(let i = 0, len = data.length; i < len; i++) {
       if(defaultFontFamilyData[i] !== data[i]) {
-        return SUPPORT_FONT[ff] = false;
-        // return font.info[ff].checked = true;
+        return SUPPORT_FONT[ff] = true;
       }
     }
-    return SUPPORT_FONT[ff] = true;
-    // return font.info[ff].checked = false;
+    return SUPPORT_FONT[ff] = false;
   },
   loadFont(fontFamily, url, cb) {
     if(util.isFunction(url)) {

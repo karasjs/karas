@@ -2598,6 +2598,11 @@
       }
 
       context.clearRect(0, 0, 16, 16);
+
+      if (/\s/.test(ff)) {
+        ff = '"' + ff.replace(/"/g, '\\"') + '"';
+      }
+
       context.font = '16px ' + ff + ',' + this.defaultFontFamily;
       context.fillText('a', 8, 8);
       canvas.draw();
@@ -42238,7 +42243,7 @@
     Cache: Cache
   };
 
-  var version = "0.76.2";
+  var version = "0.77.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

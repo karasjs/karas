@@ -4,7 +4,6 @@ import transform from '../style/transform';
 import enums from '../util/enums';
 import util from '../util/util';
 import unit from '../style/unit';
-import reg from '../style/reg';
 import mx from '../math/matrix';
 
 const { STYLE_KEY: {

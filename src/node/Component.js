@@ -368,6 +368,7 @@ Object.keys(change.GEOM).concat([
   'animate',
   'removeAnimate',
   'clearAnimate',
+  'frameAnimate',
   'updateStyle',
   'getBoundingClientRect',
   'getComputedStyle',

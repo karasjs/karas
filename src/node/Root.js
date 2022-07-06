@@ -1249,7 +1249,8 @@ class Root extends Dom {
     cacheList.forEach(__config => {
       delete __config[NODE_UNIQUE_UPDATE_ID];
     });
-    // zIndex改变的汇总修改，防止重复操作
+    // zIndex改变的汇总修改，防止重复操作，有个注意点，有新增的child时，
+    // 会在后面的reflow重新build父节点的struct，这里提前更新会报错，里面进行判断
     zList.forEach(item => {
       if(item.hasOwnProperty('__uniqueZId')) {
         delete item.__uniqueZId;

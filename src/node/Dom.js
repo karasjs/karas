@@ -330,20 +330,27 @@ class Dom extends Xom {
       return;
     }
     zIndexChildren.forEach((child, i) => {
-      child.__config[NODE_STRUCT][STRUCT_CHILD_INDEX] = i;
+      let ns = child.__config[NODE_STRUCT];
+      // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
+      if(ns) {
+        ns[STRUCT_CHILD_INDEX] = i;
+      }
     });
     // 按直接子节点划分为相同数量的若干段进行排序
     let arr = [];
     let source = [];
     for(let i = index + 1; i <= index + total; i++) {
       let child = structs[i];
-      let o = {
-        child,
-        list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + child[STRUCT_TOTAL] + 1),
-      };
-      arr.push(o);
-      source.push(o);
-      i += child[STRUCT_TOTAL] || 0;
+      // 同上防止
+      if(child) {
+        let o = {
+          child,
+          list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + (child[STRUCT_TOTAL] || 0) + 1),
+        };
+        arr.push(o);
+        source.push(o);
+        i += child[STRUCT_TOTAL] || 0;
+      }
     }
     arr.sort(function(a, b) {
       return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
@@ -363,7 +370,7 @@ class Dom extends Xom {
       });
       list.forEach((struct, i) => {
         struct[STRUCT_INDEX] = index + i + 1;
-      })
+      });
       structs.splice(index + 1, total, ...list);
     }
   }

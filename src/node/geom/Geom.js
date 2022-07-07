@@ -511,7 +511,7 @@ class Geom extends Xom {
     }
   }
 
-  __inversePtList(list, isMulti, t) {
+  __inversePtList(list, isMulti, t, dx = 0, dy = 0) {
     if(isMulti) {
       return list.map(item => {
         if(!item || !item.length) {
@@ -523,7 +523,7 @@ class Geom extends Xom {
           }
           let arr = [];
           for(let i = 0, len = item.length; i < len; i += 2) {
-            let p = mx.calPoint([item[i], item[i + 1]], t);
+            let p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
             arr.push(p[0]);
             arr.push(p[1]);
           }
@@ -538,7 +538,7 @@ class Geom extends Xom {
         }
         let arr = [];
         for(let i = 0, len = item.length; i < len; i += 2) {
-          let p = mx.calPoint([item[i], item[i + 1]], t);
+          let p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
           arr.push(p[0]);
           arr.push(p[1]);
         }
@@ -562,13 +562,16 @@ class Geom extends Xom {
     let tfo = [cx, cy];
     matrix = transform.calMatrixByOrigin(matrix, tfo);
     let t = mx.inverse(matrix);
-    list = this.__inversePtList(list, isMulti, t);
+    list = this.__inversePtList(list, isMulti, t, dx, dy);
     // 用正向matrix渲染
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(matrix) {
         ctx.save();
-        let me = this.matrixEvent;
-        matrix = mx.multiply(me, matrix);
+        // 临时解决方案，webgl的渲染忽略世界matrix
+        if(renderMode === mode.CANVAS) {
+          let me = this.matrixEvent;
+          matrix = mx.multiply(me, matrix);
+        }
         ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
       }
       ctx.beginPath();
@@ -576,10 +579,10 @@ class Geom extends Xom {
         ctx[method + 'Style'] = color;
       }
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
+        list.forEach(item => painter.canvasPolygon(ctx, item));
       }
       else {
-        canvasPolygon(ctx, list, dx, dy);
+        canvasPolygon(ctx, list);
       }
       ctx[method]();
       ctx.closePath();

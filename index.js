@@ -24803,16 +24803,22 @@
 
             var pJson = domParent.__json;
             var i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-            var zChildren = domParent.zIndexChildren;
-            var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
 
-            if (i === -1 || j === -1) {
+            if (i === -1) {
               throw new Error('Remove index Exception.');
             }
 
             pJson.children.splice(i, 1);
             domParent.children.splice(i, 1);
-            zChildren.splice(j, 1);
+            var zChildren = domParent.zIndexChildren; // 可能appendChild会清空没有
+
+            if (zChildren) {
+              var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
+
+              if (j > -1) {
+                zChildren.splice(j, 1);
+              }
+            }
 
             if (self.__prev) {
               self.__prev.__next = self.__next;
@@ -26347,21 +26353,28 @@
         }
 
         zIndexChildren.forEach(function (child, i) {
-          child.__config[NODE_STRUCT$2][STRUCT_CHILD_INDEX$1] = i;
+          var ns = child.__config[NODE_STRUCT$2]; // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
+
+          if (ns) {
+            ns[STRUCT_CHILD_INDEX$1] = i; // 仅后面排序用
+          }
         }); // 按直接子节点划分为相同数量的若干段进行排序
 
         var arr = [];
         var source = [];
 
         for (var i = index + 1; i <= index + total; i++) {
-          var child = structs[i];
-          var o = {
-            child: child,
-            list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + child[STRUCT_TOTAL] + 1)
-          };
-          arr.push(o);
-          source.push(o);
-          i += child[STRUCT_TOTAL] || 0;
+          var child = structs[i]; // 同上防止
+
+          if (child) {
+            var o = {
+              child: child,
+              list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + (child[STRUCT_TOTAL] || 0) + 1)
+            };
+            arr.push(o);
+            source.push(o);
+            i += child[STRUCT_TOTAL] || 0;
+          }
         }
 
         arr.sort(function (a, b) {
@@ -38215,7 +38228,8 @@
         root.__updateHash = root.__config[NODE_UPDATE_HASH] = {};
         cacheList.forEach(function (__config) {
           delete __config[NODE_UNIQUE_UPDATE_ID];
-        }); // zIndex改变的汇总修改，防止重复操作
+        }); // zIndex改变的汇总修改，防止重复操作，有个注意点，有新增的child时，
+        // 会在后面的reflow重新build父节点的struct，这里提前更新会报错，里面进行判断
 
         zList.forEach(function (item) {
           if (item.hasOwnProperty('__uniqueZId')) {
@@ -42243,7 +42257,7 @@
     Cache: Cache
   };
 
-  var version = "0.77.0";
+  var version = "0.77.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

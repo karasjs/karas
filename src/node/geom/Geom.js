@@ -567,7 +567,7 @@ class Geom extends Xom {
     if(renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
       if(matrix) {
         ctx.save();
-        // 临时解决方案，webgl的渲染忽略世界matrix
+        // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
         if(renderMode === mode.CANVAS) {
           let me = this.matrixEvent;
           matrix = mx.multiply(me, matrix);

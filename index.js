@@ -31331,7 +31331,7 @@
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (matrix) {
-            ctx.save(); // 临时解决方案，webgl的渲染忽略世界matrix
+            ctx.save(); // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
 
             if (renderMode === mode.CANVAS) {
               var me = this.matrixEvent;

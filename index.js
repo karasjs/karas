@@ -24803,16 +24803,22 @@
 
             var pJson = domParent.__json;
             var i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-            var zChildren = domParent.zIndexChildren;
-            var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
 
-            if (i === -1 || j === -1) {
+            if (i === -1) {
               throw new Error('Remove index Exception.');
             }
 
             pJson.children.splice(i, 1);
             domParent.children.splice(i, 1);
-            zChildren.splice(j, 1);
+            var zChildren = domParent.zIndexChildren; // 可能appendChild会清空没有
+
+            if (zChildren) {
+              var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
+
+              if (j > -1) {
+                zChildren.splice(j, 1);
+              }
+            }
 
             if (self.__prev) {
               self.__prev.__next = self.__next;
@@ -26350,7 +26356,7 @@
           var ns = child.__config[NODE_STRUCT$2]; // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
 
           if (ns) {
-            ns[STRUCT_CHILD_INDEX$1] = i;
+            ns[STRUCT_CHILD_INDEX$1] = i; // 仅后面排序用
           }
         }); // 按直接子节点划分为相同数量的若干段进行排序
 
@@ -42251,7 +42257,7 @@
     Cache: Cache
   };
 
-  var version = "0.77.0";
+  var version = "0.77.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

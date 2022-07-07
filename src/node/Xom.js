@@ -2925,14 +2925,19 @@ class Xom extends Node {
         self.__task = null; // 清除在before，防止after的回调增加新的task误删
         let pJson = domParent.__json;
         let i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-        let zChildren = domParent.zIndexChildren;
-        let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
-        if(i === -1 || j === -1) {
+        if(i === -1) {
           throw new Error('Remove index Exception.')
         }
         pJson.children.splice(i, 1);
         domParent.children.splice(i, 1);
-        zChildren.splice(j, 1);
+        let zChildren = domParent.zIndexChildren;
+        // 可能appendChild会清空没有
+        if(zChildren) {
+          let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
+          if(j > -1) {
+            zChildren.splice(j, 1);
+          }
+        }
         if(self.__prev) {
           self.__prev.__next = self.__next;
         }

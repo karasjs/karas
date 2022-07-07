@@ -333,7 +333,7 @@ class Dom extends Xom {
       let ns = child.__config[NODE_STRUCT];
       // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
       if(ns) {
-        ns[STRUCT_CHILD_INDEX] = i;
+        ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
       }
     });
     // 按直接子节点划分为相同数量的若干段进行排序

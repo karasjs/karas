@@ -23812,7 +23812,7 @@
               // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
 
-              var leading = fontSize * (o$1.info[calFontFamily$1(fontFamily)].lgr || 0) * 0.5;
+              var leading = fontSize * ((o$1.info[calFontFamily$1(fontFamily)] || {}).lgr || 0) * 0.5;
               var baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
               var isFirst = true;
@@ -42257,7 +42257,7 @@
     Cache: Cache
   };
 
-  var version = "0.77.1";
+  var version = "0.77.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

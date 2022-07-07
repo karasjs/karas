@@ -2070,7 +2070,7 @@ class Xom extends Node {
         }
         // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
-        let leading = fontSize * (font.info[calFontFamily(fontFamily)].lgr || 0) * 0.5;
+        let leading = fontSize * ((font.info[calFontFamily(fontFamily)] || {}).lgr || 0) * 0.5;
         let baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;

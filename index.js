@@ -484,8 +484,7 @@
     I_END_TIME: 40,
     I_NODE_CONFIG: 41,
     I_ROOT_CONFIG: 42,
-    I_OUT_BEGIN_DELAY: 43,
-    I_TIME_STAMP: 44
+    I_OUT_BEGIN_DELAY: 43
   };
   var enums = {
     STYLE_KEY: STYLE_KEY,
@@ -20449,8 +20448,7 @@
       I_END_TIME = _enums$ANIMATE_KEY.I_END_TIME,
       I_NODE_CONFIG = _enums$ANIMATE_KEY.I_NODE_CONFIG,
       I_ROOT_CONFIG = _enums$ANIMATE_KEY.I_ROOT_CONFIG,
-      I_OUT_BEGIN_DELAY = _enums$ANIMATE_KEY.I_OUT_BEGIN_DELAY,
-      I_TIME_STAMP = _enums$ANIMATE_KEY.I_TIME_STAMP;
+      I_OUT_BEGIN_DELAY = _enums$ANIMATE_KEY.I_OUT_BEGIN_DELAY;
   var AUTO$2 = o.AUTO,
       PX$3 = o.PX,
       PERCENT$4 = o.PERCENT,
@@ -21962,9 +21960,7 @@
       config[I_CURRENT_FRAMES] = {
         reverse: true,
         'alternate-reverse': true
-      }.hasOwnProperty(op.direction) ? framesR : frames; // 时间戳
-
-      config[I_TIME_STAMP] = frame.__now; // 性能优化访问
+      }.hasOwnProperty(op.direction) ? framesR : frames; // 性能优化访问
 
       _this[0] = _this.__before;
       _this[1] = _this.__after;
@@ -22249,7 +22245,6 @@
       key: "__before",
       value: function __before(diff) {
         var __config = this.__config;
-        __config[I_TIME_STAMP] = frame.__now;
         var target = __config[I_TARGET];
         var fps = __config[I_FPS];
         var playCount = 0;
@@ -23062,11 +23057,6 @@
         }
 
         return v;
-      }
-    }, {
-      key: "timestamp",
-      get: function get() {
-        return this.__config[I_TIME_STAMP];
       }
     }, {
       key: "pending",

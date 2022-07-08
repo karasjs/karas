@@ -41,6 +41,8 @@ const TRANSFORMS = {
   [STYLE_KEY.ROTATE_X]: true,
   [STYLE_KEY.ROTATE_Y]: true,
   [STYLE_KEY.ROTATE_Z]: true,
+  [STYLE_KEY.SKEW_X]: true,
+  [STYLE_KEY.SKEW_Y]: true,
   [STYLE_KEY.ROTATE_3D]: true,
   [STYLE_KEY.TRANSFORM]: true,
   [STYLE_KEY.TRANSFORM_ORIGIN]: true,

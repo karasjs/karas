@@ -2070,7 +2070,7 @@ class Xom extends Node {
         }
         // 获取当前dom的baseline，再减去lineBox的baseline得出差值，这样渲染范围y就是lineBox的y+差值为起始，lineHeight为高
         // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
-        let leading = fontSize * (font.info[calFontFamily(fontFamily)].lgr || 0) * 0.5;
+        let leading = fontSize * ((font.info[calFontFamily(fontFamily)] || {}).lgr || 0) * 0.5;
         let baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle);
         // 注意只有1个的时候特殊情况，圆角只在首尾行出现
         let isFirst = true;
@@ -2925,14 +2925,19 @@ class Xom extends Node {
         self.__task = null; // 清除在before，防止after的回调增加新的task误删
         let pJson = domParent.__json;
         let i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-        let zChildren = domParent.zIndexChildren;
-        let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
-        if(i === -1 || j === -1) {
+        if(i === -1) {
           throw new Error('Remove index Exception.')
         }
         pJson.children.splice(i, 1);
         domParent.children.splice(i, 1);
-        zChildren.splice(j, 1);
+        let zChildren = domParent.zIndexChildren;
+        // 可能appendChild会清空没有
+        if(zChildren) {
+          let j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
+          if(j > -1) {
+            zChildren.splice(j, 1);
+          }
+        }
         if(self.__prev) {
           self.__prev.__next = self.__next;
         }

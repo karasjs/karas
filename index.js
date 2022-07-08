@@ -17179,7 +17179,7 @@
     REBUILD: 1024 //                          10000000000
 
   };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
   var o$3 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
@@ -25711,7 +25711,7 @@
               // lineGap，一般为0，某些字体如arial有，渲染高度需减去它，最终是lineHeight - leading，上下均分
 
 
-              var leading = fontSize * (o$1.info[calFontFamily$1(fontFamily)].lgr || 0) * 0.5;
+              var leading = fontSize * ((o$1.info[calFontFamily$1(fontFamily)] || {}).lgr || 0) * 0.5;
               var baseline = isUpright ? css.getVerticalBaseline(computedStyle) : css.getBaseline(computedStyle); // 注意只有1个的时候特殊情况，圆角只在首尾行出现
 
               var isFirst = true;
@@ -26702,16 +26702,22 @@
 
             var pJson = domParent.__json;
             var i = pJson.children.indexOf(self.isShadowRoot ? self.hostRoot.__json : self.__json);
-            var zChildren = domParent.zIndexChildren;
-            var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
 
-            if (i === -1 || j === -1) {
+            if (i === -1) {
               throw new Error('Remove index Exception.');
             }
 
             pJson.children.splice(i, 1);
             domParent.children.splice(i, 1);
-            zChildren.splice(j, 1);
+            var zChildren = domParent.zIndexChildren; // 可能appendChild会清空没有
+
+            if (zChildren) {
+              var j = zChildren.indexOf(self.isShadowRoot ? self.hostRoot : self);
+
+              if (j > -1) {
+                zChildren.splice(j, 1);
+              }
+            }
 
             if (self.__prev) {
               self.__prev.__next = self.__next;
@@ -28246,21 +28252,28 @@
         }
 
         zIndexChildren.forEach(function (child, i) {
-          child.__config[NODE_STRUCT$2][STRUCT_CHILD_INDEX$1] = i;
+          var ns = child.__config[NODE_STRUCT$2]; // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
+
+          if (ns) {
+            ns[STRUCT_CHILD_INDEX$1] = i; // 仅后面排序用
+          }
         }); // 按直接子节点划分为相同数量的若干段进行排序
 
         var arr = [];
         var source = [];
 
         for (var i = index + 1; i <= index + total; i++) {
-          var child = structs[i];
-          var o = {
-            child: child,
-            list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + child[STRUCT_TOTAL] + 1)
-          };
-          arr.push(o);
-          source.push(o);
-          i += child[STRUCT_TOTAL] || 0;
+          var child = structs[i]; // 同上防止
+
+          if (child) {
+            var o = {
+              child: child,
+              list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + (child[STRUCT_TOTAL] || 0) + 1)
+            };
+            arr.push(o);
+            source.push(o);
+            i += child[STRUCT_TOTAL] || 0;
+          }
         }
 
         arr.sort(function (a, b) {
@@ -33149,6 +33162,9 @@
     }, {
       key: "__inversePtList",
       value: function __inversePtList(list, isMulti, t) {
+        var dx = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+        var dy = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+
         if (isMulti) {
           return list.map(function (item) {
             if (!item || !item.length) {
@@ -33163,7 +33179,7 @@
               var arr = [];
 
               for (var i = 0, len = item.length; i < len; i += 2) {
-                var p = mx.calPoint([item[i], item[i + 1]], t);
+                var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
                 arr.push(p[0]);
                 arr.push(p[1]);
               }
@@ -33180,7 +33196,7 @@
             var arr = [];
 
             for (var i = 0, len = item.length; i < len; i += 2) {
-              var p = mx.calPoint([item[i], item[i + 1]], t);
+              var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
               arr.push(p[0]);
               arr.push(p[1]);
             }
@@ -33210,13 +33226,17 @@
         var tfo = [cx, cy];
         matrix = transform$1.calMatrixByOrigin(matrix, tfo);
         var t = mx.inverse(matrix);
-        list = this.__inversePtList(list, isMulti, t); // 用正向matrix渲染
+        list = this.__inversePtList(list, isMulti, t, dx, dy); // 用正向matrix渲染
 
         if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
           if (matrix) {
-            ctx.save();
-            var me = this.matrixEvent;
-            matrix = mx.multiply(me, matrix);
+            ctx.save(); // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
+
+            if (renderMode === mode.CANVAS) {
+              var me = this.matrixEvent;
+              matrix = mx.multiply(me, matrix);
+            }
+
             ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
           }
 
@@ -33228,10 +33248,10 @@
 
           if (isMulti) {
             list.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item, dx, dy);
+              return painter.canvasPolygon(ctx, item);
             });
           } else {
-            canvasPolygon$6(ctx, list, dx, dy);
+            canvasPolygon$6(ctx, list);
           }
 
           ctx[method]();
@@ -40114,7 +40134,8 @@
         root.__updateHash = root.__config[NODE_UPDATE_HASH] = {};
         cacheList.forEach(function (__config) {
           delete __config[NODE_UNIQUE_UPDATE_ID];
-        }); // zIndex改变的汇总修改，防止重复操作
+        }); // zIndex改变的汇总修改，防止重复操作，有个注意点，有新增的child时，
+        // 会在后面的reflow重新build父节点的struct，这里提前更新会报错，里面进行判断
 
         zList.forEach(function (item) {
           if (item.hasOwnProperty('__uniqueZId')) {
@@ -44122,7 +44143,7 @@
     Cache: Cache
   };
 
-  var version = "0.77.0";
+  var version = "0.77.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

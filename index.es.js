@@ -15274,7 +15274,7 @@ var ENUM = {
   REBUILD: 1024 //                          10000000000
 
 };
-var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$4.TRANSFORM_ORIGIN, true), _TRANSFORMS);
 var o$3 = Object.assign({
   contain: function contain(lv, value) {
     return (lv & value) > 0;
@@ -31257,6 +31257,9 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
   }, {
     key: "__inversePtList",
     value: function __inversePtList(list, isMulti, t) {
+      var dx = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+      var dy = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+
       if (isMulti) {
         return list.map(function (item) {
           if (!item || !item.length) {
@@ -31271,7 +31274,7 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
             var arr = [];
 
             for (var i = 0, len = item.length; i < len; i += 2) {
-              var p = mx.calPoint([item[i], item[i + 1]], t);
+              var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
               arr.push(p[0]);
               arr.push(p[1]);
             }
@@ -31288,7 +31291,7 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
           var arr = [];
 
           for (var i = 0, len = item.length; i < len; i += 2) {
-            var p = mx.calPoint([item[i], item[i + 1]], t);
+            var p = mx.calPoint([item[i] + dx, item[i + 1] + dy], t);
             arr.push(p[0]);
             arr.push(p[1]);
           }
@@ -31318,13 +31321,17 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
       var tfo = [cx, cy];
       matrix = transform$1.calMatrixByOrigin(matrix, tfo);
       var t = mx.inverse(matrix);
-      list = this.__inversePtList(list, isMulti, t); // 用正向matrix渲染
+      list = this.__inversePtList(list, isMulti, t, dx, dy); // 用正向matrix渲染
 
       if (renderMode === mode.CANVAS || renderMode === mode.WEBGL) {
         if (matrix) {
-          ctx.save();
-          var me = this.matrixEvent;
-          matrix = mx.multiply(me, matrix);
+          ctx.save(); // 临时解决方案，webgl和cacheCanvas的渲染忽略世界matrix
+
+          if (renderMode === mode.CANVAS) {
+            var me = this.matrixEvent;
+            matrix = mx.multiply(me, matrix);
+          }
+
           ctx.setTransform(matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]);
         }
 
@@ -31336,10 +31343,10 @@ var Geom$1 = /*#__PURE__*/function (_Xom) {
 
         if (isMulti) {
           list.forEach(function (item) {
-            return painter.canvasPolygon(ctx, item, dx, dy);
+            return painter.canvasPolygon(ctx, item);
           });
         } else {
-          canvasPolygon$6(ctx, list, dx, dy);
+          canvasPolygon$6(ctx, list);
         }
 
         ctx[method]();
@@ -42251,7 +42258,7 @@ var refresh = {
   Cache: Cache
 };
 
-var version = "0.77.2";
+var version = "0.77.3";
 
 Geom$1.register('$line', Line);
 Geom$1.register('$polyline', Polyline);

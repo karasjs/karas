@@ -246,6 +246,7 @@ const ANIMATE_KEY = {
   I_NODE_CONFIG: 41,
   I_ROOT_CONFIG: 42,
   I_OUT_BEGIN_DELAY: 43,
+  I_TIME_STAMP: 44,
 };
 
 export default {

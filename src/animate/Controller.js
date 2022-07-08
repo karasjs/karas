@@ -205,7 +205,7 @@ class Controller {
   __on(id, handle) {
     this.list.forEach(item => {
       let cb = () => {
-        let time = item.timestamp;
+        let time = item.currentTime;
         if(time !== this.__lastTime[id]) {
           this.__lastTime[id] = time;
           handle();

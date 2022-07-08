@@ -34748,7 +34748,7 @@
 
         this.list.forEach(function (item) {
           var cb = function cb() {
-            var time = item.timestamp;
+            var time = item.currentTime;
 
             if (time !== _this2.__lastTime[id]) {
               _this2.__lastTime[id] = time;

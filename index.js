@@ -13217,7 +13217,6 @@
         return;
       }
 
-      item.checked = true;
       var bbox = item.bbox;
       var list = [item];
 
@@ -13227,25 +13226,64 @@
         if (item2 !== item) {
           // 互相包含则存入列表
           if (geom.isRectsInside(bbox, item2.bbox) || geom.isRectsInside(item2.bbox, bbox)) {
-            item2.checked = true;
             list.push(item2);
           }
         }
-      } // 按面积排序，最小的即最里面的在前面，然后依次时钟序互相颠倒
+      } // 按面积排序，最小的即最里面的在前面
 
 
       if (list.length > 1) {
         list.sort(function (a, b) {
           return a.area - b.area;
-        });
-        var clockwise = list[0].clockwise;
+        }); // 可能存在已经排过序的，例如外围a包含了内部的b和c，b和c互不相交，a和b已经调整过排序了，a和c再调整则a已经checked
 
         for (var _i2 = 1, _len3 = list.length; _i2 < _len3; _i2++) {
           var _item = list[_i2];
 
-          if (_item.clockwise === clockwise) {
-            reverse(_item.list);
-            _item.clockwise = !clockwise;
+          if (_item.checked) {
+            var _clockwise = _item.clockwise;
+
+            for (var j = _i2 - 1; j >= 0; j--) {
+              var _item2 = list[j];
+              _item2.checked = true;
+
+              if (_item2.clockwise === _clockwise) {
+                reverse(_item2.list);
+                _item2.clockwise = !_clockwise;
+              }
+
+              _clockwise = !_clockwise;
+            }
+
+            _clockwise = _item.clockwise;
+
+            for (var _j = _i2 + 1; _j < _len3; _j++) {
+              var _item3 = list[_j];
+              _item3.checked = true;
+
+              if (_item3.clockwise === _clockwise) {
+                reverse(_item3.list);
+                _item3.clockwise = !_clockwise;
+              }
+
+              _clockwise = !_clockwise;
+            }
+
+            return;
+          }
+        } // 新的依次时钟序互相颠倒
+
+
+        var clockwise = list[0].clockwise;
+        list[0].checked = true;
+
+        for (var _i3 = 1, _len4 = list.length; _i3 < _len4; _i3++) {
+          var _item4 = list[_i3];
+          _item4.checked = true;
+
+          if (_item4.clockwise === clockwise) {
+            reverse(_item4.list);
+            _item4.clockwise = !clockwise;
           }
 
           clockwise = !clockwise;

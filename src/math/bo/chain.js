@@ -230,7 +230,6 @@ export default function(list) {
     if(item.checked) {
       return;
     }
-    item.checked = true;
     let bbox = item.bbox;
     let list = [item];
     for(let i = 0, len = v.length; i < len; i++) {
@@ -238,19 +237,48 @@ export default function(list) {
       if(item2 !== item) {
         // 互相包含则存入列表
         if(geom.isRectsInside(bbox, item2.bbox) || geom.isRectsInside(item2.bbox, bbox)) {
-          item2.checked = true;
           list.push(item2);
         }
       }
     }
-    // 按面积排序，最小的即最里面的在前面，然后依次时钟序互相颠倒
+    // 按面积排序，最小的即最里面的在前面
     if(list.length > 1) {
       list.sort(function(a, b) {
         return a.area - b.area;
       });
-      let clockwise = list[0].clockwise;
+      // 可能存在已经排过序的，例如外围a包含了内部的b和c，b和c互不相交，a和b已经调整过排序了，a和c再调整则a已经checked
       for(let i = 1, len = list.length;i < len; i++) {
         let item = list[i];
+        if(item.checked) {
+          let clockwise = item.clockwise;
+          for(let j = i - 1; j >= 0; j--) {
+            let item2 = list[j];
+            item2.checked = true;
+            if(item2.clockwise === clockwise) {
+              reverse(item2.list);
+              item2.clockwise = !clockwise;
+            }
+            clockwise = !clockwise;
+          }
+          clockwise = item.clockwise;
+          for(let j = i + 1; j < len; j++) {
+            let item2 = list[j];
+            item2.checked = true;
+            if(item2.clockwise === clockwise) {
+              reverse(item2.list);
+              item2.clockwise = !clockwise;
+            }
+            clockwise = !clockwise;
+          }
+          return;
+        }
+      }
+      // 新的依次时钟序互相颠倒
+      let clockwise = list[0].clockwise;
+      list[0].checked = true;
+      for(let i = 1, len = list.length;i < len; i++) {
+        let item = list[i];
+        item.checked = true;
         if(item.clockwise === clockwise) {
           reverse(item.list);
           item.clockwise = !clockwise;

@@ -13225,7 +13225,7 @@
 
         if (item2 !== item) {
           // 互相包含则存入列表
-          if (geom.isRectsInside(bbox, item2.bbox) || geom.isRectsInside(item2.bbox, bbox)) {
+          if (geom.isRectsInside(bbox, item2.bbox, true) || geom.isRectsInside(item2.bbox, bbox, true)) {
             list.push(item2);
           }
         }

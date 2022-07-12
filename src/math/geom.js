@@ -353,13 +353,16 @@ function isRectsOverlap(a, b, includeIntersect) {
 
 /**
  * 2个矩形是否包含，a包含b
- * @param a
- * @param b
  */
-function isRectsInside(a, b) {
+function isRectsInside(a, b, includeIntersect) {
   let [ax1, ay1, ax4, ay4] = a;
   let [bx1, by1, bx4, by4] = b;
-  if(ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+  if(includeIntersect) {
+    if(ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+      return true;
+    }
+  }
+  else if(ax1 < bx1 && ay1 < by1 && ax4 > bx4 && ay4 > by4) {
     return true;
   }
   return false;

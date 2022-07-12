@@ -22,7 +22,7 @@ function trivial(polygonA, polygonB) {
     source = new Polygon(prefix(polygonA), 0);
     source.selfIntersect();
   }
-  console.log(source.toString());
+  // console.log(source.toString());
   let clip;
   if(isIntermediateB) {
     clip = polygonB.reset(1);
@@ -31,16 +31,16 @@ function trivial(polygonA, polygonB) {
     clip = new Polygon(prefix(polygonB), 1);
     clip.selfIntersect();
   }
-  console.log(clip.toString());
-  console.log('----');
+  // console.log(clip.toString());
+  // console.log('----');
   // 两个多边形之间再次互相判断相交
   Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB);
-  console.log(source.toString());
-  console.log(clip.toString());
-  console.log('====');
+  // console.log(source.toString());
+  // console.log(clip.toString());
+  // console.log('====');
   Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB);
-  console.log(source.toString());
-  console.log(clip.toString());
+  // console.log(source.toString());
+  // console.log(clip.toString());
   return [source, clip];
 }
 

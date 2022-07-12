@@ -37,7 +37,7 @@ class Polygon {
       for(let i = 1, len = vertices.length; i < len; i++) {
         let curr = vertices[i], l = curr.length;
         // 闭合区域，首尾顶点重复统一
-        let endPoint = (i === len - 1) ? firstPoint : new Point(curr[l - 2], curr[l - 1]);
+        let endPoint = new Point(curr[l - 2], curr[l - 1]);
         let seg;
         if(l === 2) {
           // 长度为0的直线忽略
@@ -180,6 +180,17 @@ class Polygon {
         // 终点是下条边的起点
         startPoint = endPoint;
       }
+      // 强制要求闭合，非闭合自动连直线到开始点闭合
+      if(!startPoint.equal(firstPoint)) {
+        let coords = Point.compare(startPoint, firstPoint) ? [
+          firstPoint,
+          startPoint,
+        ] : [
+          startPoint,
+          firstPoint,
+        ];
+        segments.push(new Segment(coords, index));
+      }
     });
     this.segments = segments;
   }
@@ -201,6 +212,7 @@ class Polygon {
       seg.otherCoincide = 0;
       seg.otherFill[0] = seg.otherFill[1] = false;
     });
+    return this;
   }
 
   // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交

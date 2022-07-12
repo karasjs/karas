@@ -5,7 +5,7 @@ import equation from './equation';
 import geom from './geom';
 import bezier from './bezier';
 import isec from './isec';
-import { union, diff, intersection, xor } from './martinez';
+// import { union, diff, intersection, xor } from './martinez';
 import bo from './bo/index';
 
 export default {
@@ -16,11 +16,5 @@ export default {
   geom,
   bezier,
   isec,
-  booleanOperations: {
-    union,
-    diff,
-    intersection,
-    xor,
-  },
-  bo,
+  booleanOperations: bo,
 };

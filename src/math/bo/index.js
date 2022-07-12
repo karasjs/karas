@@ -1,13 +1,15 @@
 import Polygon from './Polygon';
 import chain from './chain';
-import util from '../../util/util';
 
 // 多边形都是多个区域，重载支持外部传入1个区域则数组化
 function prefix(polygon) {
-  if(polygon[0] && util.isNumber(polygon[0][0])) {
-    return [polygon];
+  if(!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
+    return [];
   }
-  return polygon;
+  if(Array.isArray(polygon[0][0])) {
+    return polygon;
+  }
+  return [polygon];
 }
 
 function trivial(polygonA, polygonB) {
@@ -154,6 +156,6 @@ export default {
     if(polygon instanceof Polygon) {
       return chain(polygon.segments);
     }
-    return polygon || [];
+    return prefix(polygon);
   },
 };

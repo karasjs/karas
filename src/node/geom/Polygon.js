@@ -3,9 +3,6 @@ import Polyline from './Polyline';
 class Polygon extends Polyline {
   constructor(tagName, props) {
     super(tagName, props);
-    if(props.booleanOperations) {
-      this.__booleanOperations = props.booleanOperations;
-    }
   }
 
   __getPoints(originX, originY, width, height, points, isControl) {

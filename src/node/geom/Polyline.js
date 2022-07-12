@@ -340,7 +340,7 @@ class Polyline extends Geom {
         let cur = list[i];
         if(['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
           res = res.concat(chain(temp));
-          temp = cur;
+          temp = cur || [];
           continue;
         }
         switch(op) {

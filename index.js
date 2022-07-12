@@ -13274,11 +13274,15 @@
   }
 
   function prefix(polygon) {
-    if (polygon[0] && util.isNumber(polygon[0][0])) {
-      return [polygon];
+    if (!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
+      return [];
     }
 
-    return polygon;
+    if (Array.isArray(polygon[0][0])) {
+      return polygon;
+    }
+
+    return [polygon];
   }
 
   function trivial(polygonA, polygonB) {
@@ -13440,7 +13444,7 @@
         return _chain(polygon.segments);
       }
 
-      return polygon || [];
+      return prefix(polygon);
     }
   };
 
@@ -39840,7 +39844,7 @@
 
             if (['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
               res = res.concat(chain(temp));
-              temp = cur;
+              temp = cur || [];
               continue;
             }
 
@@ -40129,17 +40133,9 @@
     var _super = _createSuper(Polygon);
 
     function Polygon(tagName, props) {
-      var _this;
-
       _classCallCheck(this, Polygon);
 
-      _this = _super.call(this, tagName, props);
-
-      if (props.booleanOperations) {
-        _this.__booleanOperations = props.booleanOperations;
-      }
-
-      return _this;
+      return _super.call(this, tagName, props);
     }
 
     _createClass(Polygon, [{

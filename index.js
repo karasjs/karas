@@ -18389,7 +18389,13 @@
           if (GEOM$3.hasOwnProperty(k)) {
             style[k] = target.getProps(k);
           } else {
-            style[k] = target.currentStyle[k];
+            if (k === TRANSLATE_X$3 && style.hasOwnProperty(TRANSLATE_PATH$1)) {
+              style[k] = style[TRANSLATE_PATH$1][0];
+            } else if (k === TRANSLATE_Y$3 && style.hasOwnProperty(TRANSLATE_PATH$1)) {
+              style[k] = style[TRANSLATE_PATH$1][1];
+            } else {
+              style[k] = target.currentStyle[k];
+            }
           }
         }
       });
@@ -18477,7 +18483,13 @@
 
     if (Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
       style[TRANSLATE_PATH$1] = translatePath.map(function (item) {
-        return calUnit$2(item);
+        var v = calUnit$2(item);
+
+        if (v[1] === NUMBER$4) {
+          v[1] = PX$3;
+        }
+
+        return v;
       });
     }
 
@@ -41939,7 +41951,7 @@
     Cache: Cache
   };
 
-  var version = "0.77.3";
+  var version = "0.77.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

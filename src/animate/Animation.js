@@ -165,7 +165,15 @@ function unify(frames, target) {
           style[k] = target.getProps(k);
         }
         else {
-          style[k] = target.currentStyle[k];
+          if(k === TRANSLATE_X && style.hasOwnProperty(TRANSLATE_PATH)) {
+            style[k] = style[TRANSLATE_PATH][0];
+          }
+          else if(k === TRANSLATE_Y && style.hasOwnProperty(TRANSLATE_PATH)) {
+            style[k] = style[TRANSLATE_PATH][1];
+          }
+          else {
+            style[k] = target.currentStyle[k];
+          }
         }
       }
     });
@@ -248,7 +256,13 @@ function framing(style, duration, es) {
   let translatePath = style.translatePath;
   style = css.normalize(style);
   if(Array.isArray(translatePath) && [6, 8].indexOf(translatePath.length) > -1) {
-    style[TRANSLATE_PATH] = translatePath.map(item => calUnit(item));
+    style[TRANSLATE_PATH] = translatePath.map(item => {
+      let v = calUnit(item);
+      if(v[1] === NUMBER) {
+        v[1] = PX;
+      }
+      return v;
+    });
   }
   let res = [];
   res[FRAME_STYLE] = style;

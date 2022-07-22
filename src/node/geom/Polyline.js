@@ -2,6 +2,9 @@ import Geom from './Geom';
 import util from '../../util/util';
 import enums from '../../util/enums';
 import bezier from '../../math/bezier';
+import bo from '../../math/bo/index';
+
+let { intersect, union, subtract, subtract2, xor, chain } = bo;
 
 const { STYLE_KEY: {
   STROKE_WIDTH,
@@ -280,6 +283,9 @@ class Polyline extends Geom {
     if(Array.isArray(props.points)) {
       this.__points = props.points;
     }
+    if(props.booleanOperations) {
+      this.__booleanOperations = props.booleanOperations;
+    }
   }
 
   __getPoints(originX, originY, width, height, points, isControl) {
@@ -312,12 +318,64 @@ class Polyline extends Geom {
   }
 
   // 供polygon覆盖，后处理booleanOperations
-  __reprocessing(list) {
+  __reprocessing(list, isMulti) {
+    if(!isMulti || list.length < 2) {
+      return list;
+    }
+    let bo = this.booleanOperations, len = list.length;
+    if(!bo) {
+      return list;
+    }
+    if(!Array.isArray(bo)) {
+      let old = bo;
+      bo = [bo];
+      for(let i = 1; i < len - 1; i++) {
+        bo.push(old);
+      }
+    }
+    if(Array.isArray(bo) && bo.length) {
+      let res = [], temp = list[0];
+      for(let i = 1; i < len; i++) {
+        let op = (bo[i - 1] || '').toString().toLowerCase();
+        let cur = list[i];
+        if(['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+          res = res.concat(chain(temp));
+          temp = cur || [];
+          continue;
+        }
+        switch(op) {
+          case 'intersect':
+          case 'intersection':
+            temp = intersect(temp, cur, true);
+            break;
+          case 'union':
+            temp = union(temp, cur, true);
+            break;
+          case 'subtract':
+          case 'diff':
+          case 'difference':
+            temp = subtract(temp, cur, true);
+            break;
+          case 'subtract2':
+            temp = subtract2(temp, cur, true);
+            break;
+          case 'xor':
+            temp = xor(temp, cur, true);
+            break;
+        }
+      }
+      return res.concat(chain(temp));
+    }
     return list;
   }
 
   // 同polygon覆盖，booleanOperations改变时需刷新缓冲顶点坐标
-  __needRebuildSE() {}
+  __needRebuildSE(__cacheProps) {
+    if(util.isNil(__cacheProps.booleanOperations)) {
+      __cacheProps.booleanOperations = true;
+      return true;
+    }
+  }
 
   buildCache(originX, originY) {
     let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
@@ -466,6 +524,10 @@ class Polyline extends Geom {
         let controlList = controls[i] || [];
         let [xa, ya] = pointList[0];
         for(let i = 1, len = pointList.length; i < len; i++) {
+          let item = pointList[i];
+          if(!item || item.length < 2) {
+            continue;
+          }
           let [xb, yb] = pointList[i];
           let c = controlList[i - 1];
           if(c && c.length === 4) {
@@ -495,6 +557,10 @@ class Polyline extends Geom {
       this.__bbox = bbox;
     }
     return this.__bbox;
+  }
+
+  get booleanOperations() {
+    return this.getProps('booleanOperations');
   }
 }
 

@@ -336,13 +336,16 @@ function getRectsIntersection(a, b) {
 
 /**
  * 2个矩形是否重叠
- * @param a
- * @param b
  */
-function isRectsOverlap(a, b) {
+function isRectsOverlap(a, b, includeIntersect) {
   let [ax1, ay1, ax4, ay4] = a;
   let [bx1, by1, bx4, by4] = b;
-  if(ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+  if(includeIntersect) {
+    if(ax1 > bx4 || ay1 > by4 || bx1 > ax4 || by1 > ay4) {
+      return false;
+    }
+  }
+  else if(ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
     return false;
   }
   return true;
@@ -350,13 +353,16 @@ function isRectsOverlap(a, b) {
 
 /**
  * 2个矩形是否包含，a包含b
- * @param a
- * @param b
  */
-function isRectsInside(a, b) {
+function isRectsInside(a, b, includeIntersect) {
   let [ax1, ay1, ax4, ay4] = a;
   let [bx1, by1, bx4, by4] = b;
-  if(ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+  if(includeIntersect) {
+    if(ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+      return true;
+    }
+  }
+  else if(ax1 < bx1 && ay1 < by1 && ax4 > bx4 && ay4 > by4) {
     return true;
   }
   return false;

@@ -3357,29 +3357,48 @@ x/y点是否在由一堆顶点vertexes组成的多边形中。
 * **说明**
 合集。
 
-#### diff
+#### subtract
 * **类型** `Function`
 * **参数**
-  * a `Array<Number>`
-  * b `Array<Number>`
+  * a `Array<Number>` 多边形a
+  * b `Array<Number>` 多边形b
+  * intermediate `Boolean` 是否保留运算结果为中间数据格式，以便后续连续运算，默认false
 * **说明**
 减集。
 
-#### intersection
+#### subtractRev
 * **类型** `Function`
 * **参数**
-  * a `Array<Number>`
-  * b `Array<Number>`
+  * a `Array<Number>` 多边形a
+  * b `Array<Number>` 多边形b
+  * intermediate `Boolean` 是否保留运算结果为中间数据格式，以便后续连续运算，默认false
+* **说明**
+反减集。
+
+#### intersect
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>` 多边形a
+  * b `Array<Number>` 多边形b
+  * intermediate `Boolean` 是否保留运算结果为中间数据格式，以便后续连续运算，默认false
 * **说明**
 交集。
 
 #### xor
 * **类型** `Function`
 * **参数**
-  * a `Array<Number>`
-  * b `Array<Number>`
+  * a `Array<Number>` 多边形a
+  * b `Array<Number>` 多边形b
+  * intermediate `Boolean` 是否保留运算结果为中间数据格式，以便后续连续运算，默认false
 * **说明**
-差集。
+异或集。
+
+#### chain
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>` 多边形数据
+* **说明**
+格式化中间数据格式为最终顶点列表。
 
 <a name="refresh包"></a>
 ## refresh包

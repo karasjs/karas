@@ -3492,12 +3492,10 @@
   }
   /**
    * 2个矩形是否重叠
-   * @param a
-   * @param b
    */
 
 
-  function isRectsOverlap(a, b) {
+  function isRectsOverlap(a, b, includeIntersect) {
     var _a2 = _slicedToArray(a, 4),
         ax1 = _a2[0],
         ay1 = _a2[1],
@@ -3510,7 +3508,11 @@
         bx4 = _b2[2],
         by4 = _b2[3];
 
-    if (ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+    if (includeIntersect) {
+      if (ax1 > bx4 || ay1 > by4 || bx1 > ax4 || by1 > ay4) {
+        return false;
+      }
+    } else if (ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
       return false;
     }
 
@@ -3518,12 +3520,10 @@
   }
   /**
    * 2个矩形是否包含，a包含b
-   * @param a
-   * @param b
    */
 
 
-  function isRectsInside(a, b) {
+  function isRectsInside(a, b, includeIntersect) {
     var _a3 = _slicedToArray(a, 4),
         ax1 = _a3[0],
         ay1 = _a3[1],
@@ -3536,7 +3536,11 @@
         bx4 = _b3[2],
         by4 = _b3[3];
 
-    if (ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+    if (includeIntersect) {
+      if (ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+        return true;
+      }
+    } else if (ax1 < bx1 && ay1 < by1 && ax4 > bx4 && ay4 > by4) {
       return true;
     }
 
@@ -11363,2361 +11367,2124 @@
 
   };
 
-  /**
-   * martinez v0.7.3
-   * Martinez polygon clipping algorithm, does boolean operation on polygons (multipolygons, polygons with holes etc): intersection, union, difference, xor
-   *
-   * @author Alex Milevski <info@w8r.name>
-   * @license MIT
-   * @preserve
-   */
-  function DEFAULT_COMPARE(a, b) {
-    return a > b ? 1 : a < b ? -1 : 0;
-  }
+  var Point = /*#__PURE__*/function () {
+    function Point(x, y) {
+      _classCallCheck(this, Point);
 
-  var SplayTree = function SplayTree(compare, noDuplicates) {
-    if (compare === void 0) compare = DEFAULT_COMPARE;
-    if (noDuplicates === void 0) noDuplicates = false;
-    this._compare = compare;
-    this._root = null;
-    this._size = 0;
-    this._noDuplicates = !!noDuplicates;
-  };
+      if (Array.isArray(x)) {
+        var _x = x;
 
-  var prototypeAccessors = {
-    size: {
-      configurable: true
-    }
-  };
+        var _x2 = _slicedToArray(_x, 2);
 
-  SplayTree.prototype.rotateLeft = function rotateLeft(x) {
-    var y = x.right;
-
-    if (y) {
-      x.right = y.left;
-
-      if (y.left) {
-        y.left.parent = x;
+        x = _x2[0];
+        y = _x2[1];
       }
 
-      y.parent = x.parent;
+      this.x = x;
+      this.y = y;
     }
 
-    if (!x.parent) {
-      this._root = y;
-    } else if (x === x.parent.left) {
-      x.parent.left = y;
-    } else {
-      x.parent.right = y;
-    }
-
-    if (y) {
-      y.left = x;
-    }
-
-    x.parent = y;
-  };
-
-  SplayTree.prototype.rotateRight = function rotateRight(x) {
-    var y = x.left;
-
-    if (y) {
-      x.left = y.right;
-
-      if (y.right) {
-        y.right.parent = x;
+    _createClass(Point, [{
+      key: "toString",
+      value: function toString() {
+        // return this.x.toFixed(1).replace('.0', '') + ',' + this.y.toFixed(1).replace('.0', '');
+        return this.x + ',' + this.y;
       }
+    }, {
+      key: "equal",
+      value: function equal(o) {
+        return this === o || this.x === o.x && this.y === o.y;
+      } // 排序，要求a在b左即x更小，x相等a在b下，符合返回false，不符合则true
 
-      y.parent = x.parent;
-    }
-
-    if (!x.parent) {
-      this._root = y;
-    } else if (x === x.parent.left) {
-      x.parent.left = y;
-    } else {
-      x.parent.right = y;
-    }
-
-    if (y) {
-      y.right = x;
-    }
-
-    x.parent = y;
-  };
-
-  SplayTree.prototype._splay = function _splay(x) {
-    while (x.parent) {
-      var p = x.parent;
-
-      if (!p.parent) {
-        if (p.left === x) {
-          this.rotateRight(p);
-        } else {
-          this.rotateLeft(p);
-        }
-      } else if (p.left === x && p.parent.left === p) {
-        this.rotateRight(p.parent);
-        this.rotateRight(p);
-      } else if (p.right === x && p.parent.right === p) {
-        this.rotateLeft(p.parent);
-        this.rotateLeft(p);
-      } else if (p.left === x && p.parent.right === p) {
-        this.rotateRight(p);
-        this.rotateLeft(p);
-      } else {
-        this.rotateLeft(p);
-        this.rotateRight(p);
-      }
-    }
-  };
-
-  SplayTree.prototype.splay = function splay(x) {
-    var p, gp, ggp, l, r;
-
-    while (x.parent) {
-      p = x.parent;
-      gp = p.parent;
-
-      if (gp && gp.parent) {
-        ggp = gp.parent;
-
-        if (ggp.left === gp) {
-          ggp.left = x;
-        } else {
-          ggp.right = x;
+    }], [{
+      key: "compare",
+      value: function compare(a, b) {
+        if (a.x > b.x) {
+          return true;
         }
 
-        x.parent = ggp;
-      } else {
-        x.parent = null;
-        this._root = x;
+        return a.x === b.x && a.y > b.y;
       }
+    }]);
 
-      l = x.left;
-      r = x.right;
+    return Point;
+  }();
 
-      if (x === p.left) {
-        // left
-        if (gp) {
-          if (gp.left === p) {
-            /* zig-zig */
-            if (p.right) {
-              gp.left = p.right;
-              gp.left.parent = gp;
-            } else {
-              gp.left = null;
-            }
+  var Segment = /*#__PURE__*/function () {
+    function Segment(coords, belong) {
+      _classCallCheck(this, Segment);
 
-            p.right = gp;
-            gp.parent = p;
-          } else {
-            /* zig-zag */
-            if (l) {
-              gp.right = l;
-              l.parent = gp;
-            } else {
-              gp.right = null;
-            }
+      this.coords = coords;
+      this.belong = belong; // 属于source多边形还是clip多边形，0和1区别
 
-            x.left = gp;
-            gp.parent = x;
+      this.calBbox();
+      this.myFill = [false, false]; // 自己的上下内外性
+
+      this.otherFill = [false, false]; // 对方的上下内外性
+
+      this.myCoincide = 0; // 自己重合次数
+
+      this.otherCoincide = 0; // 对方重合次数
+
+      this.isVisited = false; // 扫描求交时用到
+
+      this.isDeleted = false; // 相交裁剪老的线段会被删除
+    }
+
+    _createClass(Segment, [{
+      key: "calBbox",
+      value: function calBbox() {
+        var coords = this.coords,
+            l = coords.length;
+
+        if (l === 2) {
+          var a = coords[0],
+              b = coords[1];
+          var x1 = Math.min(a.x, b.x);
+          var y1 = Math.min(a.y, b.y);
+          var x2 = Math.max(a.x, b.x);
+          var y2 = Math.max(a.y, b.y);
+          this.bbox = [x1, y1, x2, y2];
+        } else {
+          var arr = coords.map(function (item) {
+            return [item.x, item.y];
+          });
+          this.bbox = bezier.bboxBezier(arr);
+        }
+      } // 线段边逆序
+
+    }, {
+      key: "reverse",
+      value: function reverse() {
+        this.coords.reverse();
+      }
+    }, {
+      key: "equal",
+      value: function equal(o) {
+        var ca = this.coords,
+            cb = o.coords;
+
+        if (ca.length !== cb.length) {
+          return false;
+        }
+
+        for (var i = 0, len = ca.length; i < len; i++) {
+          if (!ca[i].equal(cb[i])) {
+            return false;
           }
         }
 
-        if (r) {
-          p.left = r;
-          r.parent = p;
-        } else {
-          p.left = null;
-        }
-
-        x.right = p;
-        p.parent = x;
-      } else {
-        // right
-        if (gp) {
-          if (gp.right === p) {
-            /* zig-zig */
-            if (p.left) {
-              gp.right = p.left;
-              gp.right.parent = gp;
-            } else {
-              gp.right = null;
-            }
-
-            p.left = gp;
-            gp.parent = p;
-          } else {
-            /* zig-zag */
-            if (r) {
-              gp.left = r;
-              r.parent = gp;
-            } else {
-              gp.left = null;
-            }
-
-            x.right = gp;
-            gp.parent = x;
-          }
-        }
-
-        if (l) {
-          p.right = l;
-          l.parent = p;
-        } else {
-          p.right = null;
-        }
-
-        x.left = p;
-        p.parent = x;
-      }
-    }
-  };
-
-  SplayTree.prototype.replace = function replace(u, v) {
-    if (!u.parent) {
-      this._root = v;
-    } else if (u === u.parent.left) {
-      u.parent.left = v;
-    } else {
-      u.parent.right = v;
-    }
-
-    if (v) {
-      v.parent = u.parent;
-    }
-  };
-
-  SplayTree.prototype.minNode = function minNode(u) {
-    if (u === void 0) u = this._root;
-
-    if (u) {
-      while (u.left) {
-        u = u.left;
-      }
-    }
-
-    return u;
-  };
-
-  SplayTree.prototype.maxNode = function maxNode(u) {
-    if (u === void 0) u = this._root;
-
-    if (u) {
-      while (u.right) {
-        u = u.right;
-      }
-    }
-
-    return u;
-  };
-
-  SplayTree.prototype.insert = function insert(key, data) {
-    var z = this._root;
-    var p = null;
-    var comp = this._compare;
-    var cmp;
-
-    if (this._noDuplicates) {
-      while (z) {
-        p = z;
-        cmp = comp(z.key, key);
-
-        if (cmp === 0) {
-          return;
-        } else if (comp(z.key, key) < 0) {
-          z = z.right;
-        } else {
-          z = z.left;
-        }
-      }
-    } else {
-      while (z) {
-        p = z;
-
-        if (comp(z.key, key) < 0) {
-          z = z.right;
-        } else {
-          z = z.left;
-        }
-      }
-    }
-
-    z = {
-      key: key,
-      data: data,
-      left: null,
-      right: null,
-      parent: p
-    };
-
-    if (!p) {
-      this._root = z;
-    } else if (comp(p.key, z.key) < 0) {
-      p.right = z;
-    } else {
-      p.left = z;
-    }
-
-    this.splay(z);
-    this._size++;
-    return z;
-  };
-
-  SplayTree.prototype.find = function find(key) {
-    var z = this._root;
-    var comp = this._compare;
-
-    while (z) {
-      var cmp = comp(z.key, key);
-
-      if (cmp < 0) {
-        z = z.right;
-      } else if (cmp > 0) {
-        z = z.left;
-      } else {
-        return z;
-      }
-    }
-
-    return null;
-  };
-  /**
-   * Whether the tree contains a node with the given key
-   * @param{Key} key
-   * @return {boolean} true/false
-   */
-
-
-  SplayTree.prototype.contains = function contains(key) {
-    var node = this._root;
-    var comparator = this._compare;
-
-    while (node) {
-      var cmp = comparator(key, node.key);
-
-      if (cmp === 0) {
         return true;
-      } else if (cmp < 0) {
-        node = node.left;
-      } else {
-        node = node.right;
       }
-    }
-
-    return false;
-  };
-
-  SplayTree.prototype.remove = function remove(key) {
-    var z = this.find(key);
-
-    if (!z) {
-      return false;
-    }
-
-    this.splay(z);
-
-    if (!z.left) {
-      this.replace(z, z.right);
-    } else if (!z.right) {
-      this.replace(z, z.left);
-    } else {
-      var y = this.minNode(z.right);
-
-      if (y.parent !== z) {
-        this.replace(y, y.right);
-        y.right = z.right;
-        y.right.parent = y;
+    }, {
+      key: "toHash",
+      value: function toHash() {
+        return this.coords.map(function (item) {
+          return item.toString();
+        }).join(' ');
       }
-
-      this.replace(z, y);
-      y.left = z.left;
-      y.left.parent = y;
-    }
-
-    this._size--;
-    return true;
-  };
-
-  SplayTree.prototype.removeNode = function removeNode(z) {
-    if (!z) {
-      return false;
-    }
-
-    this.splay(z);
-
-    if (!z.left) {
-      this.replace(z, z.right);
-    } else if (!z.right) {
-      this.replace(z, z.left);
-    } else {
-      var y = this.minNode(z.right);
-
-      if (y.parent !== z) {
-        this.replace(y, y.right);
-        y.right = z.right;
-        y.right.parent = y;
+    }, {
+      key: "toString",
+      value: function toString() {
+        return this.toHash() + ' ' + this.belong + ' ' + this.myCoincide + '' + this.otherCoincide + ' ' + this.myFill.map(function (i) {
+          return i ? 1 : 0;
+        }).join('') + this.otherFill.map(function (i) {
+          return i ? 1 : 0;
+        }).join('');
       }
+    }]);
 
-      this.replace(z, y);
-      y.left = z.left;
-      y.left.parent = y;
+    return Segment;
+  }();
+
+  var EPS = 1e-9;
+  var EPS2 = 1 - 1e-9;
+
+  function getIntersectionLineLine(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d) {
+    var toSource = ((bx2 - bx1) * (ay1 - by1) - (by2 - by1) * (ax1 - bx1)) / d;
+    var toClip = ((ax2 - ax1) * (ay1 - by1) - (ay2 - ay1) * (ax1 - bx1)) / d; // 非顶点相交才是真相交
+
+    if (toSource > EPS && toSource < EPS2 && toClip > EPS && toClip < EPS2) {
+      var ox = ax1 + toSource * (ax2 - ax1);
+      var oy = ay1 + toSource * (ay2 - ay1);
+      return [{
+        point: new Point(ox, oy),
+        toSource: toSource,
+        toClip: toClip
+      }];
     }
+  }
 
-    this._size--;
-    return true;
-  };
+  function getIntersectionBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2) {
+    var res = isec.intersectBezier2Line(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
 
-  SplayTree.prototype.erase = function erase(key) {
-    var z = this.find(key);
+    if (res.length) {
+      res = res.map(function (item) {
+        var toClip; // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
 
-    if (!z) {
-      return;
-    }
-
-    this.splay(z);
-    var s = z.left;
-    var t = z.right;
-    var sMax = null;
-
-    if (s) {
-      s.parent = null;
-      sMax = this.maxNode(s);
-      this.splay(sMax);
-      this._root = sMax;
-    }
-
-    if (t) {
-      if (s) {
-        sMax.right = t;
-      } else {
-        this._root = t;
-      }
-
-      t.parent = sMax;
-    }
-
-    this._size--;
-  };
-  /**
-   * Removes and returns the node with smallest key
-   * @return {?Node}
-   */
-
-
-  SplayTree.prototype.pop = function pop() {
-    var node = this._root,
-        returnValue = null;
-
-    if (node) {
-      while (node.left) {
-        node = node.left;
-      }
-
-      returnValue = {
-        key: node.key,
-        data: node.data
-      };
-      this.remove(node.key);
-    }
-
-    return returnValue;
-  };
-  /* eslint-disable class-methods-use-this */
-
-  /**
-   * Successor node
-   * @param{Node} node
-   * @return {?Node}
-   */
-
-
-  SplayTree.prototype.next = function next(node) {
-    var successor = node;
-
-    if (successor) {
-      if (successor.right) {
-        successor = successor.right;
-
-        while (successor && successor.left) {
-          successor = successor.left;
-        }
-      } else {
-        successor = node.parent;
-
-        while (successor && successor.right === node) {
-          node = successor;
-          successor = successor.parent;
-        }
-      }
-    }
-
-    return successor;
-  };
-  /**
-   * Predecessor node
-   * @param{Node} node
-   * @return {?Node}
-   */
-
-
-  SplayTree.prototype.prev = function prev(node) {
-    var predecessor = node;
-
-    if (predecessor) {
-      if (predecessor.left) {
-        predecessor = predecessor.left;
-
-        while (predecessor && predecessor.right) {
-          predecessor = predecessor.right;
-        }
-      } else {
-        predecessor = node.parent;
-
-        while (predecessor && predecessor.left === node) {
-          node = predecessor;
-          predecessor = predecessor.parent;
-        }
-      }
-    }
-
-    return predecessor;
-  };
-  /* eslint-enable class-methods-use-this */
-
-  /**
-   * @param{forEachCallback} callback
-   * @return {SplayTree}
-   */
-
-
-  SplayTree.prototype.forEach = function forEach(callback) {
-    var current = this._root;
-    var s = [],
-        done = false,
-        i = 0;
-
-    while (!done) {
-      // Reach the left most Node of the current Node
-      if (current) {
-        // Place pointer to a tree node on the stack
-        // before traversing the node's left subtree
-        s.push(current);
-        current = current.left;
-      } else {
-        // BackTrack from the empty subtree and visit the Node
-        // at the top of the stack; however, if the stack is
-        // empty you are done
-        if (s.length > 0) {
-          current = s.pop();
-          callback(current, i++); // We have visited the node and its left
-          // subtree. Now, it's right subtree's turn
-
-          current = current.right;
+        if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
+          toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
         } else {
-          done = true;
-        }
-      }
-    }
-
-    return this;
-  };
-  /**
-   * Walk key range from `low` to `high`. Stops if `fn` returns a value.
-   * @param{Key}    low
-   * @param{Key}    high
-   * @param{Function} fn
-   * @param{*?}     ctx
-   * @return {SplayTree}
-   */
-
-
-  SplayTree.prototype.range = function range(low, high, fn, ctx) {
-    var Q = [];
-    var compare = this._compare;
-    var node = this._root,
-        cmp;
-
-    while (Q.length !== 0 || node) {
-      if (node) {
-        Q.push(node);
-        node = node.left;
-      } else {
-        node = Q.pop();
-        cmp = compare(node.key, high);
-
-        if (cmp > 0) {
-          break;
-        } else if (compare(node.key, low) >= 0) {
-          if (fn.call(ctx, node)) {
-            return this;
-          } // stop if smth is returned
-
+          toClip = Math.abs((item.y - by1) / (by2 - by1));
         }
 
-        node = node.right;
-      }
-    }
+        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+          // 还要判断斜率，相等也忽略（小于一定误差）
+          var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
+          var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
 
-    return this;
-  };
-  /**
-   * Returns all keys in order
-   * @return {Array<Key>}
-   */
-
-
-  SplayTree.prototype.keys = function keys() {
-    var current = this._root;
-    var s = [],
-        r = [],
-        done = false;
-
-    while (!done) {
-      if (current) {
-        s.push(current);
-        current = current.left;
-      } else {
-        if (s.length > 0) {
-          current = s.pop();
-          r.push(current.key);
-          current = current.right;
-        } else {
-          done = true;
-        }
-      }
-    }
-
-    return r;
-  };
-  /**
-   * Returns `data` fields of all nodes in order.
-   * @return {Array<Value>}
-   */
-
-
-  SplayTree.prototype.values = function values() {
-    var current = this._root;
-    var s = [],
-        r = [],
-        done = false;
-
-    while (!done) {
-      if (current) {
-        s.push(current);
-        current = current.left;
-      } else {
-        if (s.length > 0) {
-          current = s.pop();
-          r.push(current.data);
-          current = current.right;
-        } else {
-          done = true;
-        }
-      }
-    }
-
-    return r;
-  };
-  /**
-   * Returns node at given index
-   * @param{number} index
-   * @return {?Node}
-   */
-
-
-  SplayTree.prototype.at = function at(index) {
-    // removed after a consideration, more misleading than useful
-    // index = index % this.size;
-    // if (index < 0) index = this.size - index;
-    var current = this._root;
-    var s = [],
-        done = false,
-        i = 0;
-
-    while (!done) {
-      if (current) {
-        s.push(current);
-        current = current.left;
-      } else {
-        if (s.length > 0) {
-          current = s.pop();
-
-          if (i === index) {
-            return current;
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+            return;
           }
 
-          i++;
-          current = current.right;
-        } else {
-          done = true;
+          return {
+            point: new Point(item.x, item.y),
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip
+          };
         }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
       }
     }
-
-    return null;
-  };
-  /**
-   * Bulk-load items. Both array have to be same size
-   * @param{Array<Key>}  keys
-   * @param{Array<Value>}[values]
-   * @param{Boolean}     [presort=false] Pre-sort keys and values, using
-   *                                       tree's comparator. Sorting is done
-   *                                       in-place
-   * @return {AVLTree}
-   */
-
-
-  SplayTree.prototype.load = function load(keys, values, presort) {
-    if (keys === void 0) keys = [];
-    if (values === void 0) values = [];
-    if (presort === void 0) presort = false;
-
-    if (this._size !== 0) {
-      throw new Error('bulk-load: tree is not empty');
-    }
-
-    var size = keys.length;
-
-    if (presort) {
-      sort(keys, values, 0, size - 1, this._compare);
-    }
-
-    this._root = loadRecursive(null, keys, values, 0, size);
-    this._size = size;
-    return this;
-  };
-
-  SplayTree.prototype.min = function min() {
-    var node = this.minNode(this._root);
-
-    if (node) {
-      return node.key;
-    } else {
-      return null;
-    }
-  };
-
-  SplayTree.prototype.max = function max() {
-    var node = this.maxNode(this._root);
-
-    if (node) {
-      return node.key;
-    } else {
-      return null;
-    }
-  };
-
-  SplayTree.prototype.isEmpty = function isEmpty() {
-    return this._root === null;
-  };
-
-  prototypeAccessors.size.get = function () {
-    return this._size;
-  };
-  /**
-   * Create a tree and load it with items
-   * @param{Array<Key>}        keys
-   * @param{Array<Value>?}      [values]
-
-   * @param{Function?}          [comparator]
-   * @param{Boolean?}           [presort=false] Pre-sort keys and values, using
-   *                                             tree's comparator. Sorting is done
-   *                                             in-place
-   * @param{Boolean?}           [noDuplicates=false] Allow duplicates
-   * @return {SplayTree}
-   */
-
-
-  SplayTree.createTree = function createTree(keys, values, comparator, presort, noDuplicates) {
-    return new SplayTree(comparator, noDuplicates).load(keys, values, presort);
-  };
-
-  Object.defineProperties(SplayTree.prototype, prototypeAccessors);
-
-  function loadRecursive(parent, keys, values, start, end) {
-    var size = end - start;
-
-    if (size > 0) {
-      var middle = start + Math.floor(size / 2);
-      var key = keys[middle];
-      var data = values[middle];
-      var node = {
-        key: key,
-        data: data,
-        parent: parent
-      };
-      node.left = loadRecursive(node, keys, values, start, middle);
-      node.right = loadRecursive(node, keys, values, middle + 1, end);
-      return node;
-    }
-
-    return null;
   }
 
-  function sort(keys, values, left, right, compare) {
-    if (left >= right) {
-      return;
-    }
-
-    var pivot = keys[left + right >> 1];
-    var i = left - 1;
-    var j = right + 1;
-
-    while (true) {
-      do {
-        i++;
-      } while (compare(keys[i], pivot) < 0);
-
-      do {
-        j--;
-      } while (compare(keys[j], pivot) > 0);
-
-      if (i >= j) {
-        break;
-      }
-
-      var tmp = keys[i];
-      keys[i] = keys[j];
-      keys[j] = tmp;
-      tmp = values[i];
-      values[i] = values[j];
-      values[j] = tmp;
-    }
-
-    sort(keys, values, left, j, compare);
-    sort(keys, values, j + 1, right, compare);
-  }
-
-  var NORMAL = 0;
-  var NON_CONTRIBUTING = 1;
-  var SAME_TRANSITION = 2;
-  var DIFFERENT_TRANSITION = 3;
-  var INTERSECTION = 0;
-  var UNION = 1;
-  var DIFFERENCE = 2;
-  var XOR = 3;
-  /**
-   * @param  {SweepEvent} event
-   * @param  {SweepEvent} prev
-   * @param  {Operation} operation
-   */
-
-  function computeFields(event, prev, operation) {
-    // compute inOut and otherInOut fields
-    if (prev === null) {
-      event.inOut = false;
-      event.otherInOut = true; // previous line segment in sweepline belongs to the same polygon
-    } else {
-      if (event.isSubject === prev.isSubject) {
-        event.inOut = !prev.inOut;
-        event.otherInOut = prev.otherInOut; // previous line segment in sweepline belongs to the clipping polygon
-      } else {
-        event.inOut = !prev.otherInOut;
-        event.otherInOut = prev.isVertical() ? !prev.inOut : prev.inOut;
-      } // compute prevInResult field
-
-
-      if (prev) {
-        event.prevInResult = !inResult(prev, operation) || prev.isVertical() ? prev.prevInResult : prev;
-      }
-    } // check if the line segment belongs to the Boolean operation
-
-
-    var isInResult = inResult(event, operation);
-
-    if (isInResult) {
-      event.resultTransition = determineResultTransition(event, operation);
-    } else {
-      event.resultTransition = 0;
-    }
-  }
-  /* eslint-disable indent */
-
-
-  function inResult(event, operation) {
-    switch (event.type) {
-      case NORMAL:
-        switch (operation) {
-          case INTERSECTION:
-            return !event.otherInOut;
-
-          case UNION:
-            return event.otherInOut;
-
-          case DIFFERENCE:
-            // return (event.isSubject && !event.otherInOut) ||
-            //         (!event.isSubject && event.otherInOut);
-            return event.isSubject && event.otherInOut || !event.isSubject && !event.otherInOut;
-
-          case XOR:
-            return true;
-        }
-
-        break;
-
-      case SAME_TRANSITION:
-        return operation === INTERSECTION || operation === UNION;
-
-      case DIFFERENT_TRANSITION:
-        return operation === DIFFERENCE;
-
-      case NON_CONTRIBUTING:
-        return false;
-    }
-
-    return false;
-  }
-  /* eslint-enable indent */
-
-
-  function determineResultTransition(event, operation) {
-    var thisIn = !event.inOut;
-    var thatIn = !event.otherInOut;
-    var isIn;
-
-    switch (operation) {
-      case INTERSECTION:
-        isIn = thisIn && thatIn;
-        break;
-
-      case UNION:
-        isIn = thisIn || thatIn;
-        break;
-
-      case XOR:
-        isIn = thisIn ^ thatIn;
-        break;
-
-      case DIFFERENCE:
-        if (event.isSubject) {
-          isIn = thisIn && !thatIn;
-        } else {
-          isIn = thatIn && !thisIn;
-        }
-
-        break;
-    }
-
-    return isIn ? +1 : -1;
-  }
-
-  var SweepEvent = function SweepEvent(point, left, otherEvent, isSubject, edgeType) {
-    /**
-     * Is left endpoint?
-     * @type {Boolean}
-     */
-    this.left = left;
-    /**
-     * @type {Array.<Number>}
-     */
-
-    this.point = point;
-    /**
-     * Other edge reference
-     * @type {SweepEvent}
-     */
-
-    this.otherEvent = otherEvent;
-    /**
-     * Belongs to source or clipping polygon
-     * @type {Boolean}
-     */
-
-    this.isSubject = isSubject;
-    /**
-     * Edge contribution type
-     * @type {Number}
-     */
-
-    this.type = edgeType || NORMAL;
-    /**
-     * In-out transition for the sweepline crossing polygon
-     * @type {Boolean}
-     */
-
-    this.inOut = false;
-    /**
-     * @type {Boolean}
-     */
-
-    this.otherInOut = false;
-    /**
-     * Previous event in result?
-     * @type {SweepEvent}
-     */
-
-    this.prevInResult = null;
-    /**
-     * Type of result transition (0 = not in result, +1 = out-in, -1, in-out)
-     * @type {Number}
-     */
-
-    this.resultTransition = 0; // connection step
-
-    /**
-     * @type {Number}
-     */
-
-    this.otherPos = -1;
-    /**
-     * @type {Number}
-     */
-
-    this.outputContourId = -1;
-    this.isExteriorRing = true; // TODO: Looks unused, remove?
-  };
-
-  var prototypeAccessors$1 = {
-    inResult: {
-      configurable: true
-    }
-  };
-  /**
-   * @param{Array.<Number>}p
-   * @return {Boolean}
-   */
-
-  SweepEvent.prototype.isBelow = function isBelow(p) {
-    var p0 = this.point,
-        p1 = this.otherEvent.point;
-    return this.left ? (p0[0] - p[0]) * (p1[1] - p[1]) - (p1[0] - p[0]) * (p0[1] - p[1]) > 0 // signedArea(this.point, this.otherEvent.point, p) > 0 :
-    : (p1[0] - p[0]) * (p0[1] - p[1]) - (p0[0] - p[0]) * (p1[1] - p[1]) > 0; //signedArea(this.otherEvent.point, this.point, p) > 0;
-  };
-  /**
-   * @param{Array.<Number>}p
-   * @return {Boolean}
-   */
-
-
-  SweepEvent.prototype.isAbove = function isAbove(p) {
-    return !this.isBelow(p);
-  };
-  /**
-   * @return {Boolean}
-   */
-
-
-  SweepEvent.prototype.isVertical = function isVertical() {
-    return this.point[0] === this.otherEvent.point[0];
-  };
-  /**
-   * Does event belong to result?
-   * @return {Boolean}
-   */
-
-
-  prototypeAccessors$1.inResult.get = function () {
-    return this.resultTransition !== 0;
-  };
-
-  SweepEvent.prototype.clone = function clone() {
-    var copy = new SweepEvent(this.point, this.left, this.otherEvent, this.isSubject, this.type);
-    copy.contourId = this.contourId;
-    copy.resultTransition = this.resultTransition;
-    copy.prevInResult = this.prevInResult;
-    copy.isExteriorRing = this.isExteriorRing;
-    copy.inOut = this.inOut;
-    copy.otherInOut = this.otherInOut;
-    return copy;
-  };
-
-  Object.defineProperties(SweepEvent.prototype, prototypeAccessors$1);
-
-  function equals(p1, p2) {
-    if (p1[0] === p2[0]) {
-      if (p1[1] === p2[1]) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    return false;
-  } // const EPSILON = 1e-9;
-  // const abs = Math.abs;
-  // TODO https://github.com/w8r/martinez/issues/6#issuecomment-262847164
-  // Precision problem.
-  //
-  // module.exports = function equals(p1, p2) {
-  //   return abs(p1[0] - p2[0]) <= EPSILON && abs(p1[1] - p2[1]) <= EPSILON;
-  // };
-
-
-  var epsilon = 1.1102230246251565e-16;
-  var splitter = 134217729;
-  var resulterrbound = (3 + 8 * epsilon) * epsilon; // fast_expansion_sum_zeroelim routine from oritinal code
-
-  function sum(elen, e, flen, f, h) {
-    var Q, Qnew, hh, bvirt;
-    var enow = e[0];
-    var fnow = f[0];
-    var eindex = 0;
-    var findex = 0;
-
-    if (fnow > enow === fnow > -enow) {
-      Q = enow;
-      enow = e[++eindex];
-    } else {
-      Q = fnow;
-      fnow = f[++findex];
-    }
-
-    var hindex = 0;
-
-    if (eindex < elen && findex < flen) {
-      if (fnow > enow === fnow > -enow) {
-        Qnew = enow + Q;
-        hh = Q - (Qnew - enow);
-        enow = e[++eindex];
-      } else {
-        Qnew = fnow + Q;
-        hh = Q - (Qnew - fnow);
-        fnow = f[++findex];
-      }
-
-      Q = Qnew;
-
-      if (hh !== 0) {
-        h[hindex++] = hh;
-      }
-
-      while (eindex < elen && findex < flen) {
-        if (fnow > enow === fnow > -enow) {
-          Qnew = Q + enow;
-          bvirt = Qnew - Q;
-          hh = Q - (Qnew - bvirt) + (enow - bvirt);
-          enow = e[++eindex];
-        } else {
-          Qnew = Q + fnow;
-          bvirt = Qnew - Q;
-          hh = Q - (Qnew - bvirt) + (fnow - bvirt);
-          fnow = f[++findex];
-        }
-
-        Q = Qnew;
-
-        if (hh !== 0) {
-          h[hindex++] = hh;
-        }
-      }
-    }
-
-    while (eindex < elen) {
-      Qnew = Q + enow;
-      bvirt = Qnew - Q;
-      hh = Q - (Qnew - bvirt) + (enow - bvirt);
-      enow = e[++eindex];
-      Q = Qnew;
-
-      if (hh !== 0) {
-        h[hindex++] = hh;
-      }
-    }
-
-    while (findex < flen) {
-      Qnew = Q + fnow;
-      bvirt = Qnew - Q;
-      hh = Q - (Qnew - bvirt) + (fnow - bvirt);
-      fnow = f[++findex];
-      Q = Qnew;
-
-      if (hh !== 0) {
-        h[hindex++] = hh;
-      }
-    }
-
-    if (Q !== 0 || hindex === 0) {
-      h[hindex++] = Q;
-    }
-
-    return hindex;
-  }
-
-  function estimate(elen, e) {
-    var Q = e[0];
-
-    for (var i = 1; i < elen; i++) {
-      Q += e[i];
-    }
-
-    return Q;
-  }
-
-  function vec(n) {
-    return new Float64Array(n);
-  }
-
-  var ccwerrboundA = (3 + 16 * epsilon) * epsilon;
-  var ccwerrboundB = (2 + 12 * epsilon) * epsilon;
-  var ccwerrboundC = (9 + 64 * epsilon) * epsilon * epsilon;
-  var B = vec(4);
-  var C1 = vec(8);
-  var C2 = vec(12);
-  var D = vec(16);
-  var u = vec(4);
-
-  function orient2dadapt(ax, ay, bx, by, cx, cy, detsum) {
-    var acxtail, acytail, bcxtail, bcytail;
-
-    var bvirt, c, ahi, alo, bhi, blo, _i, _j, _0, s1, s0, t1, t0, u3;
-
-    var acx = ax - cx;
-    var bcx = bx - cx;
-    var acy = ay - cy;
-    var bcy = by - cy;
-    s1 = acx * bcy;
-    c = splitter * acx;
-    ahi = c - (c - acx);
-    alo = acx - ahi;
-    c = splitter * bcy;
-    bhi = c - (c - bcy);
-    blo = bcy - bhi;
-    s0 = alo * blo - (s1 - ahi * bhi - alo * bhi - ahi * blo);
-    t1 = acy * bcx;
-    c = splitter * acy;
-    ahi = c - (c - acy);
-    alo = acy - ahi;
-    c = splitter * bcx;
-    bhi = c - (c - bcx);
-    blo = bcx - bhi;
-    t0 = alo * blo - (t1 - ahi * bhi - alo * bhi - ahi * blo);
-    _i = s0 - t0;
-    bvirt = s0 - _i;
-    B[0] = s0 - (_i + bvirt) + (bvirt - t0);
-    _j = s1 + _i;
-    bvirt = _j - s1;
-    _0 = s1 - (_j - bvirt) + (_i - bvirt);
-    _i = _0 - t1;
-    bvirt = _0 - _i;
-    B[1] = _0 - (_i + bvirt) + (bvirt - t1);
-    u3 = _j + _i;
-    bvirt = u3 - _j;
-    B[2] = _j - (u3 - bvirt) + (_i - bvirt);
-    B[3] = u3;
-    var det = estimate(4, B);
-    var errbound = ccwerrboundB * detsum;
-
-    if (det >= errbound || -det >= errbound) {
-      return det;
-    }
-
-    bvirt = ax - acx;
-    acxtail = ax - (acx + bvirt) + (bvirt - cx);
-    bvirt = bx - bcx;
-    bcxtail = bx - (bcx + bvirt) + (bvirt - cx);
-    bvirt = ay - acy;
-    acytail = ay - (acy + bvirt) + (bvirt - cy);
-    bvirt = by - bcy;
-    bcytail = by - (bcy + bvirt) + (bvirt - cy);
-
-    if (acxtail === 0 && acytail === 0 && bcxtail === 0 && bcytail === 0) {
-      return det;
-    }
-
-    errbound = ccwerrboundC * detsum + resulterrbound * Math.abs(det);
-    det += acx * bcytail + bcy * acxtail - (acy * bcxtail + bcx * acytail);
-
-    if (det >= errbound || -det >= errbound) {
-      return det;
-    }
-
-    s1 = acxtail * bcy;
-    c = splitter * acxtail;
-    ahi = c - (c - acxtail);
-    alo = acxtail - ahi;
-    c = splitter * bcy;
-    bhi = c - (c - bcy);
-    blo = bcy - bhi;
-    s0 = alo * blo - (s1 - ahi * bhi - alo * bhi - ahi * blo);
-    t1 = acytail * bcx;
-    c = splitter * acytail;
-    ahi = c - (c - acytail);
-    alo = acytail - ahi;
-    c = splitter * bcx;
-    bhi = c - (c - bcx);
-    blo = bcx - bhi;
-    t0 = alo * blo - (t1 - ahi * bhi - alo * bhi - ahi * blo);
-    _i = s0 - t0;
-    bvirt = s0 - _i;
-    u[0] = s0 - (_i + bvirt) + (bvirt - t0);
-    _j = s1 + _i;
-    bvirt = _j - s1;
-    _0 = s1 - (_j - bvirt) + (_i - bvirt);
-    _i = _0 - t1;
-    bvirt = _0 - _i;
-    u[1] = _0 - (_i + bvirt) + (bvirt - t1);
-    u3 = _j + _i;
-    bvirt = u3 - _j;
-    u[2] = _j - (u3 - bvirt) + (_i - bvirt);
-    u[3] = u3;
-    var C1len = sum(4, B, 4, u, C1);
-    s1 = acx * bcytail;
-    c = splitter * acx;
-    ahi = c - (c - acx);
-    alo = acx - ahi;
-    c = splitter * bcytail;
-    bhi = c - (c - bcytail);
-    blo = bcytail - bhi;
-    s0 = alo * blo - (s1 - ahi * bhi - alo * bhi - ahi * blo);
-    t1 = acy * bcxtail;
-    c = splitter * acy;
-    ahi = c - (c - acy);
-    alo = acy - ahi;
-    c = splitter * bcxtail;
-    bhi = c - (c - bcxtail);
-    blo = bcxtail - bhi;
-    t0 = alo * blo - (t1 - ahi * bhi - alo * bhi - ahi * blo);
-    _i = s0 - t0;
-    bvirt = s0 - _i;
-    u[0] = s0 - (_i + bvirt) + (bvirt - t0);
-    _j = s1 + _i;
-    bvirt = _j - s1;
-    _0 = s1 - (_j - bvirt) + (_i - bvirt);
-    _i = _0 - t1;
-    bvirt = _0 - _i;
-    u[1] = _0 - (_i + bvirt) + (bvirt - t1);
-    u3 = _j + _i;
-    bvirt = u3 - _j;
-    u[2] = _j - (u3 - bvirt) + (_i - bvirt);
-    u[3] = u3;
-    var C2len = sum(C1len, C1, 4, u, C2);
-    s1 = acxtail * bcytail;
-    c = splitter * acxtail;
-    ahi = c - (c - acxtail);
-    alo = acxtail - ahi;
-    c = splitter * bcytail;
-    bhi = c - (c - bcytail);
-    blo = bcytail - bhi;
-    s0 = alo * blo - (s1 - ahi * bhi - alo * bhi - ahi * blo);
-    t1 = acytail * bcxtail;
-    c = splitter * acytail;
-    ahi = c - (c - acytail);
-    alo = acytail - ahi;
-    c = splitter * bcxtail;
-    bhi = c - (c - bcxtail);
-    blo = bcxtail - bhi;
-    t0 = alo * blo - (t1 - ahi * bhi - alo * bhi - ahi * blo);
-    _i = s0 - t0;
-    bvirt = s0 - _i;
-    u[0] = s0 - (_i + bvirt) + (bvirt - t0);
-    _j = s1 + _i;
-    bvirt = _j - s1;
-    _0 = s1 - (_j - bvirt) + (_i - bvirt);
-    _i = _0 - t1;
-    bvirt = _0 - _i;
-    u[1] = _0 - (_i + bvirt) + (bvirt - t1);
-    u3 = _j + _i;
-    bvirt = u3 - _j;
-    u[2] = _j - (u3 - bvirt) + (_i - bvirt);
-    u[3] = u3;
-    var Dlen = sum(C2len, C2, 4, u, D);
-    return D[Dlen - 1];
-  }
-
-  function orient2d(ax, ay, bx, by, cx, cy) {
-    var detleft = (ay - cy) * (bx - cx);
-    var detright = (ax - cx) * (by - cy);
-    var det = detleft - detright;
-
-    if (detleft === 0 || detright === 0 || detleft > 0 !== detright > 0) {
-      return det;
-    }
-
-    var detsum = Math.abs(detleft + detright);
-
-    if (Math.abs(det) >= ccwerrboundA * detsum) {
-      return det;
-    }
-
-    return -orient2dadapt(ax, ay, bx, by, cx, cy, detsum);
-  }
-  /**
-   * Signed area of the triangle (p0, p1, p2)
-   * @param  {Array.<Number>} p0
-   * @param  {Array.<Number>} p1
-   * @param  {Array.<Number>} p2
-   * @return {Number}
-   */
-
-
-  function signedArea(p0, p1, p2) {
-    var res = orient2d(p0[0], p0[1], p1[0], p1[1], p2[0], p2[1]);
-
-    if (res > 0) {
-      return -1;
-    }
-
-    if (res < 0) {
-      return 1;
-    }
-
-    return 0;
-  }
-  /**
-   * @param  {SweepEvent} e1
-   * @param  {SweepEvent} e2
-   * @return {Number}
-   */
-
-
-  function compareEvents(e1, e2) {
-    var p1 = e1.point;
-    var p2 = e2.point; // Different x-coordinate
-
-    if (p1[0] > p2[0]) {
-      return 1;
-    }
-
-    if (p1[0] < p2[0]) {
-      return -1;
-    } // Different points, but same x-coordinate
-    // Event with lower y-coordinate is processed first
-
-
-    if (p1[1] !== p2[1]) {
-      return p1[1] > p2[1] ? 1 : -1;
-    }
-
-    return specialCases(e1, e2, p1);
-  }
-  /* eslint-disable no-unused-vars */
-
-
-  function specialCases(e1, e2, p1, p2) {
-    // Same coordinates, but one is a left endpoint and the other is
-    // a right endpoint. The right endpoint is processed first
-    if (e1.left !== e2.left) {
-      return e1.left ? 1 : -1;
-    } // const p2 = e1.otherEvent.point, p3 = e2.otherEvent.point;
-    // const sa = (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
-    // Same coordinates, both events
-    // are left endpoints or right endpoints.
-    // not collinear
-
-
-    if (signedArea(p1, e1.otherEvent.point, e2.otherEvent.point) !== 0) {
-      // the event associate to the bottom segment is processed first
-      return !e1.isBelow(e2.otherEvent.point) ? 1 : -1;
-    }
-
-    return !e1.isSubject && e2.isSubject ? 1 : -1;
-  }
-  /* eslint-enable no-unused-vars */
-
-  /**
-   * @param  {SweepEvent} se
-   * @param  {Array.<Number>} p
-   * @param  {Queue} queue
-   * @return {Queue}
-   */
-
-
-  function divideSegment(se, p, queue) {
-    var r = new SweepEvent(p, false, se, se.isSubject);
-    var l = new SweepEvent(p, true, se.otherEvent, se.isSubject);
-    /* eslint-disable no-console */
-
-    if (equals(se.point, se.otherEvent.point)) {
-      console.warn('what is that, a collapsed segment?', se);
-    }
-    /* eslint-enable no-console */
-
-
-    r.contourId = l.contourId = se.contourId; // avoid a rounding error. The left event would be processed after the right event
-
-    if (compareEvents(l, se.otherEvent) > 0) {
-      se.otherEvent.left = true;
-      l.left = false;
-    } // avoid a rounding error. The left event would be processed after the right event
-    // if (compareEvents(se, r) > 0) {}
-
-
-    se.otherEvent.otherEvent = l;
-    se.otherEvent = r;
-    queue.push(l);
-    queue.push(r);
-    return queue;
-  } //const EPS = 1e-9;
-
-  /**
-   * Finds the magnitude of the cross product of two vectors (if we pretend
-   * they're in three dimensions)
-   *
-   * @param {Object} a First vector
-   * @param {Object} b Second vector
-   * @private
-   * @returns {Number} The magnitude of the cross product
-   */
-
-
-  function crossProduct$2(a, b) {
-    return a[0] * b[1] - a[1] * b[0];
-  }
-  /**
-   * Finds the dot product of two vectors.
-   *
-   * @param {Object} a First vector
-   * @param {Object} b Second vector
-   * @private
-   * @returns {Number} The dot product
-   */
-
-
-  function dotProduct$1(a, b) {
-    return a[0] * b[0] + a[1] * b[1];
-  }
-  /**
-   * Finds the intersection (if any) between two line segments a and b, given the
-   * line segments' end points a1, a2 and b1, b2.
-   *
-   * This algorithm is based on Schneider and Eberly.
-   * http://www.cimec.org.ar/~ncalvo/Schneider_Eberly.pdf
-   * Page 244.
-   *
-   * @param {Array.<Number>} a1 point of first line
-   * @param {Array.<Number>} a2 point of first line
-   * @param {Array.<Number>} b1 point of second line
-   * @param {Array.<Number>} b2 point of second line
-   * @param {Boolean=}       noEndpointTouch whether to skip single touchpoints
-   *                                         (meaning connected segments) as
-   *                                         intersections
-   * @returns {Array.<Array.<Number>>|Null} If the lines intersect, the point of
-   * intersection. If they overlap, the two end points of the overlapping segment.
-   * Otherwise, null.
-   */
-
-
-  function intersection(a1, a2, b1, b2, noEndpointTouch) {
-    // The algorithm expects our lines in the form P + sd, where P is a point,
-    // s is on the interval [0, 1], and d is a vector.
-    // We are passed two points. P can be the first point of each pair. The
-    // vector, then, could be thought of as the distance (in x and y components)
-    // from the first point to the second point.
-    // So first, let's make our vectors:
-    var va = [a2[0] - a1[0], a2[1] - a1[1]];
-    var vb = [b2[0] - b1[0], b2[1] - b1[1]]; // We also define a function to convert back to regular point form:
-
-    /* eslint-disable arrow-body-style */
-
-    function toPoint(p, s, d) {
-      return [p[0] + s * d[0], p[1] + s * d[1]];
-    }
-    /* eslint-enable arrow-body-style */
-    // The rest is pretty much a straight port of the algorithm.
-
-
-    var e = [b1[0] - a1[0], b1[1] - a1[1]];
-    var kross = crossProduct$2(va, vb);
-    var sqrKross = kross * kross;
-    var sqrLenA = dotProduct$1(va, va); //const sqrLenB  = dotProduct(vb, vb);
-    // Check for line intersection. This works because of the properties of the
-    // cross product -- specifically, two vectors are parallel if and only if the
-    // cross product is the 0 vector. The full calculation involves relative error
-    // to account for possible very small line segments. See Schneider & Eberly
-    // for details.
-
-    if (sqrKross > 0
-    /* EPS * sqrLenB * sqLenA */
-    ) {
-      // If they're not parallel, then (because these are line segments) they
-      // still might not actually intersect. This code checks that the
-      // intersection point of the lines is actually on both line segments.
-      var s = crossProduct$2(e, vb) / kross;
-
-      if (s < 0 || s > 1) {
-        // not on line segment a
-        return null;
-      }
-
-      var t = crossProduct$2(e, va) / kross;
-
-      if (t < 0 || t > 1) {
-        // not on line segment b
-        return null;
-      }
-
-      if (s === 0 || s === 1) {
-        // on an endpoint of line segment a
-        return noEndpointTouch ? null : [toPoint(a1, s, va)];
-      }
-
-      if (t === 0 || t === 1) {
-        // on an endpoint of line segment b
-        return noEndpointTouch ? null : [toPoint(b1, t, vb)];
-      }
-
-      return [toPoint(a1, s, va)];
-    } // If we've reached this point, then the lines are either parallel or the
-    // same, but the segments could overlap partially or fully, or not at all.
-    // So we need to find the overlap, if any. To do that, we can use e, which is
-    // the (vector) difference between the two initial points. If this is parallel
-    // with the line itself, then the two lines are the same line, and there will
-    // be overlap.
-    //const sqrLenE = dotProduct(e, e);
-
-
-    kross = crossProduct$2(e, va);
-    sqrKross = kross * kross;
-
-    if (sqrKross > 0
-    /* EPS * sqLenB * sqLenE */
-    ) {
-      // Lines are just parallel, not the same. No overlap.
-      return null;
-    }
-
-    var sa = dotProduct$1(va, e) / sqrLenA;
-    var sb = sa + dotProduct$1(va, vb) / sqrLenA;
-    var smin = Math.min(sa, sb);
-    var smax = Math.max(sa, sb); // this is, essentially, the FindIntersection acting on floats from
-    // Schneider & Eberly, just inlined into this function.
-
-    if (smin <= 1 && smax >= 0) {
-      // overlap on an end point
-      if (smin === 1) {
-        return noEndpointTouch ? null : [toPoint(a1, smin > 0 ? smin : 0, va)];
-      }
-
-      if (smax === 0) {
-        return noEndpointTouch ? null : [toPoint(a1, smax < 1 ? smax : 1, va)];
-      }
-
-      if (noEndpointTouch && smin === 0 && smax === 1) {
-        return null;
-      } // There's overlap on a segment -- two points of intersection. Return both.
-
-
-      return [toPoint(a1, smin > 0 ? smin : 0, va), toPoint(a1, smax < 1 ? smax : 1, va)];
-    }
-
-    return null;
-  }
-  /**
-   * @param  {SweepEvent} se1
-   * @param  {SweepEvent} se2
-   * @param  {Queue}      queue
-   * @return {Number}
-   */
-
-
-  function possibleIntersection(se1, se2, queue) {
-    // that disallows self-intersecting polygons,
-    // did cost us half a day, so I'll leave it
-    // out of respect
-    // if (se1.isSubject === se2.isSubject) return;
-    var inter = intersection(se1.point, se1.otherEvent.point, se2.point, se2.otherEvent.point);
-    var nintersections = inter ? inter.length : 0;
-
-    if (nintersections === 0) {
-      return 0;
-    } // no intersection
-    // the line segments intersect at an endpoint of both line segments
-
-
-    if (nintersections === 1 && (equals(se1.point, se2.point) || equals(se1.otherEvent.point, se2.otherEvent.point))) {
-      return 0;
-    }
-
-    if (nintersections === 2 && se1.isSubject === se2.isSubject) {
-      // if(se1.contourId === se2.contourId){
-      // console.warn('Edges of the same polygon overlap',
-      //   se1.point, se1.otherEvent.point, se2.point, se2.otherEvent.point);
-      // }
-      //throw new Error('Edges of the same polygon overlap');
-      return 0;
-    } // The line segments associated to se1 and se2 intersect
-
-
-    if (nintersections === 1) {
-      // if the intersection point is not an endpoint of se1
-      if (!equals(se1.point, inter[0]) && !equals(se1.otherEvent.point, inter[0])) {
-        divideSegment(se1, inter[0], queue);
-      } // if the intersection point is not an endpoint of se2
-
-
-      if (!equals(se2.point, inter[0]) && !equals(se2.otherEvent.point, inter[0])) {
-        divideSegment(se2, inter[0], queue);
-      }
-
-      return 1;
-    } // The line segments associated to se1 and se2 overlap
-
-
-    var events = [];
-    var leftCoincide = false;
-    var rightCoincide = false;
-
-    if (equals(se1.point, se2.point)) {
-      leftCoincide = true; // linked
-    } else if (compareEvents(se1, se2) === 1) {
-      events.push(se2, se1);
-    } else {
-      events.push(se1, se2);
-    }
-
-    if (equals(se1.otherEvent.point, se2.otherEvent.point)) {
-      rightCoincide = true;
-    } else if (compareEvents(se1.otherEvent, se2.otherEvent) === 1) {
-      events.push(se2.otherEvent, se1.otherEvent);
-    } else {
-      events.push(se1.otherEvent, se2.otherEvent);
-    }
-
-    if (leftCoincide && rightCoincide || leftCoincide) {
-      // both line segments are equal or share the left endpoint
-      se2.type = NON_CONTRIBUTING;
-      se1.type = se2.inOut === se1.inOut ? SAME_TRANSITION : DIFFERENT_TRANSITION;
-
-      if (leftCoincide && !rightCoincide) {
-        // honestly no idea, but changing events selection from [2, 1]
-        // to [0, 1] fixes the overlapping self-intersecting polygons issue
-        divideSegment(events[1].otherEvent, events[0].point, queue);
-      }
-
-      return 2;
-    } // the line segments share the right endpoint
-
-
-    if (rightCoincide) {
-      divideSegment(events[0], events[1].point, queue);
-      return 3;
-    } // no line segment includes totally the other one
-
-
-    if (events[0] !== events[3].otherEvent) {
-      divideSegment(events[0], events[1].point, queue);
-      divideSegment(events[1], events[2].point, queue);
-      return 3;
-    } // one line segment includes the other one
-
-
-    divideSegment(events[0], events[1].point, queue);
-    divideSegment(events[3].otherEvent, events[2].point, queue);
-    return 3;
-  }
-  /**
-   * @param  {SweepEvent} le1
-   * @param  {SweepEvent} le2
-   * @return {Number}
-   */
-
-
-  function compareSegments(le1, le2) {
-    if (le1 === le2) {
-      return 0;
-    } // Segments are not collinear
-
-
-    if (signedArea(le1.point, le1.otherEvent.point, le2.point) !== 0 || signedArea(le1.point, le1.otherEvent.point, le2.otherEvent.point) !== 0) {
-      // If they share their left endpoint use the right endpoint to sort
-      if (equals(le1.point, le2.point)) {
-        return le1.isBelow(le2.otherEvent.point) ? -1 : 1;
-      } // Different left endpoint: use the left endpoint to sort
-
-
-      if (le1.point[0] === le2.point[0]) {
-        return le1.point[1] < le2.point[1] ? -1 : 1;
-      } // has the line segment associated to e1 been inserted
-      // into S after the line segment associated to e2 ?
-
-
-      if (compareEvents(le1, le2) === 1) {
-        return le2.isAbove(le1.point) ? -1 : 1;
-      } // The line segment associated to e2 has been inserted
-      // into S after the line segment associated to e1
-
-
-      return le1.isBelow(le2.point) ? -1 : 1;
-    }
-
-    if (le1.isSubject === le2.isSubject) {
-      // same polygon
-      var p1 = le1.point,
-          p2 = le2.point;
-
-      if (p1[0] === p2[0] && p1[1] === p2[1]
-      /*equals(le1.point, le2.point)*/
-      ) {
-        p1 = le1.otherEvent.point;
-        p2 = le2.otherEvent.point;
-
-        if (p1[0] === p2[0] && p1[1] === p2[1]) {
-          return 0;
-        } else {
-          return le1.contourId > le2.contourId ? 1 : -1;
-        }
-      }
-    } else {
-      // Segments are collinear, but belong to separate polygons
-      return le1.isSubject ? -1 : 1;
-    }
-
-    return compareEvents(le1, le2) === 1 ? 1 : -1;
-  }
-
-  function subdivide(eventQueue, subject, clipping, sbbox, cbbox, operation) {
-    var sweepLine = new SplayTree(compareSegments);
-    var sortedEvents = [];
-    var rightbound = Math.min(sbbox[2], cbbox[2]);
-    var prev, next, begin;
-
-    while (eventQueue.length !== 0) {
-      var event = eventQueue.pop();
-      sortedEvents.push(event); // optimization by bboxes for intersection and difference goes here
-
-      if (operation === INTERSECTION && event.point[0] > rightbound || operation === DIFFERENCE && event.point[0] > sbbox[2]) {
-        break;
-      }
-
-      if (event.left) {
-        next = prev = sweepLine.insert(event);
-        begin = sweepLine.minNode();
-
-        if (prev !== begin) {
-          prev = sweepLine.prev(prev);
-        } else {
-          prev = null;
-        }
-
-        next = sweepLine.next(next);
-        var prevEvent = prev ? prev.key : null;
-        var prevprevEvent = void 0;
-        computeFields(event, prevEvent, operation);
-
-        if (next) {
-          if (possibleIntersection(event, next.key, eventQueue) === 2) {
-            computeFields(event, prevEvent, operation);
-            computeFields(next.key, event, operation);
-          }
-        }
-
-        if (prev) {
-          if (possibleIntersection(prev.key, event, eventQueue) === 2) {
-            var prevprev = prev;
-
-            if (prevprev !== begin) {
-              prevprev = sweepLine.prev(prevprev);
-            } else {
-              prevprev = null;
+  function getIntersectionBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3) {
+    var res = isec.intersectBezier2Bezier2(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3);
+
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[bx1, by1], [bx2, by2], [bx3, by3]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          toClip = toClip[0];
+
+          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+            // 还要判断斜率，相等也忽略（小于一定误差）
+            var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
+            var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+              return;
             }
 
-            prevprevEvent = prevprev ? prevprev.key : null;
-            computeFields(prevEvent, prevprevEvent, operation);
-            computeFields(event, prevEvent, operation);
+            return {
+              point: new Point(item.x, item.y),
+              toSource: item.t,
+              // source是曲线直接用t
+              toClip: toClip
+            };
           }
         }
-      } else {
-        event = event.otherEvent;
-        next = prev = sweepLine.find(event);
+      }).filter(function (i) {
+        return i;
+      });
 
-        if (prev && next) {
-          if (prev !== begin) {
-            prev = sweepLine.prev(prev);
-          } else {
-            prev = null;
-          }
+      if (res.length) {
+        return res;
+      }
+    }
+  }
 
-          next = sweepLine.next(next);
-          sweepLine.remove(event);
+  function getIntersectionBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+    var res = isec.intersectBezier2Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
 
-          if (next && prev) {
-            possibleIntersection(prev.key, next.key, eventQueue);
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          toClip = toClip[0];
+
+          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+            // 还要判断斜率，相等也忽略（小于一定误差）
+            var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3]], item.t);
+            var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+              return;
+            }
+
+            return {
+              point: new Point(item.x, item.y),
+              toSource: item.t,
+              // source是曲线直接用t
+              toClip: toClip
+            };
           }
         }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
       }
     }
-
-    return sortedEvents;
   }
 
-  var Contour = function Contour() {
-    this.points = [];
-    this.holeIds = [];
-    this.holeOf = null;
-    this.depth = null;
-  };
+  function getIntersectionBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2) {
+    var res = isec.intersectBezier3Line(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
 
-  Contour.prototype.isExterior = function isExterior() {
-    return this.holeOf == null;
-  };
-  /**
-   * @param  {Array.<SweepEvent>} sortedEvents
-   * @return {Array.<SweepEvent>}
-   */
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是直线上的距离，可以简化为只看x或y，选择差值比较大的防止精度问题
+        var toClip;
 
-
-  function orderEvents(sortedEvents) {
-    var event, i, len, tmp;
-    var resultEvents = [];
-
-    for (i = 0, len = sortedEvents.length; i < len; i++) {
-      event = sortedEvents[i];
-
-      if (event.left && event.inResult || !event.left && event.otherEvent.inResult) {
-        resultEvents.push(event);
-      }
-    } // Due to overlapping edges the resultEvents array can be not wholly sorted
-
-
-    var sorted = false;
-
-    while (!sorted) {
-      sorted = true;
-
-      for (i = 0, len = resultEvents.length; i < len; i++) {
-        if (i + 1 < len && compareEvents(resultEvents[i], resultEvents[i + 1]) === 1) {
-          tmp = resultEvents[i];
-          resultEvents[i] = resultEvents[i + 1];
-          resultEvents[i + 1] = tmp;
-          sorted = false;
-        }
-      }
-    }
-
-    for (i = 0, len = resultEvents.length; i < len; i++) {
-      event = resultEvents[i];
-      event.otherPos = i;
-    } // imagine, the right event is found in the beginning of the queue,
-    // when his left counterpart is not marked yet
-
-
-    for (i = 0, len = resultEvents.length; i < len; i++) {
-      event = resultEvents[i];
-
-      if (!event.left) {
-        tmp = event.otherPos;
-        event.otherPos = event.otherEvent.otherPos;
-        event.otherEvent.otherPos = tmp;
-      }
-    }
-
-    return resultEvents;
-  }
-  /**
-   * @param  {Number} pos
-   * @param  {Array.<SweepEvent>} resultEvents
-   * @param  {Object>}    processed
-   * @return {Number}
-   */
-
-
-  function nextPos(pos, resultEvents, processed, origPos) {
-    var newPos = pos + 1,
-        p = resultEvents[pos].point,
-        p1;
-    var length = resultEvents.length;
-
-    if (newPos < length) {
-      p1 = resultEvents[newPos].point;
-    }
-
-    while (newPos < length && p1[0] === p[0] && p1[1] === p[1]) {
-      if (!processed[newPos]) {
-        return newPos;
-      } else {
-        newPos++;
-      }
-
-      if (newPos < length) {
-        p1 = resultEvents[newPos].point;
-      }
-    }
-
-    newPos = pos - 1;
-
-    while (processed[newPos] && newPos > origPos) {
-      newPos--;
-    }
-
-    return newPos;
-  }
-
-  function initializeContourFromContext(event, contours, contourId) {
-    var contour = new Contour();
-
-    if (event.prevInResult != null) {
-      var prevInResult = event.prevInResult; // Note that it is valid to query the "previous in result" for its output contour id,
-      // because we must have already processed it (i.e., assigned an output contour id)
-      // in an earlier iteration, otherwise it wouldn't be possible that it is "previous in
-      // result".
-
-      var lowerContourId = prevInResult.outputContourId;
-      var lowerResultTransition = prevInResult.resultTransition;
-
-      if (lowerResultTransition > 0) {
-        // We are inside. Now we have to check if the thing below us is another hole or
-        // an exterior contour.
-        var lowerContour = contours[lowerContourId];
-
-        if (lowerContour.holeOf != null) {
-          // The lower contour is a hole => Connect the new contour as a hole to its parent,
-          // and use same depth.
-          var parentContourId = lowerContour.holeOf;
-          contours[parentContourId].holeIds.push(contourId);
-          contour.holeOf = parentContourId;
-          contour.depth = contours[lowerContourId].depth;
+        if (Math.abs(bx2 - bx1) >= Math.abs(by2 - by1)) {
+          toClip = Math.abs((item.x - bx1) / (bx2 - bx1));
         } else {
-          // The lower contour is an exterior contour => Connect the new contour as a hole,
-          // and increment depth.
-          contours[lowerContourId].holeIds.push(contourId);
-          contour.holeOf = lowerContourId;
-          contour.depth = contours[lowerContourId].depth + 1;
+          toClip = Math.abs((item.y - by1) / (by2 - by1));
         }
-      } else {
-        // We are outside => this contour is an exterior contour of same depth.
-        contour.holeOf = null;
-        contour.depth = contours[lowerContourId].depth;
+
+        if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+          // 还要判断斜率，相等也忽略（小于一定误差）
+          var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
+          var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2]]); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+          if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+            return;
+          }
+
+          return {
+            point: new Point(item.x, item.y),
+            toSource: item.t,
+            // source是曲线直接用t
+            toClip: toClip
+          };
+        }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
       }
-    } else {
-      // There is no lower/previous contour => this contour is an exterior contour of depth 0.
-      contour.holeOf = null;
-      contour.depth = 0;
     }
-
-    return contour;
   }
-  /**
-   * @param  {Array.<SweepEvent>} sortedEvents
-   * @return {Array.<*>} polygons
-   */
+
+  function getIntersectionBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4) {
+    var res = isec.intersectBezier3Bezier3(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, bx3, by3, bx4, by4);
+
+    if (res.length) {
+      res = res.map(function (item) {
+        // toClip是另一条曲线的距离，需根据交点和曲线方程求t
+        var toClip = bezier.getPointT([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], item.x, item.y); // 防止误差无值
+
+        if (toClip.length) {
+          toClip = toClip[0];
+
+          if (item.t > EPS && item.t < EPS2 && toClip > EPS && toClip < EPS2) {
+            // 还要判断斜率，相等也忽略（小于一定误差）
+            var k1 = bezier.bezierSlope([[ax1, ay1], [ax2, ay2], [ax3, ay3], [ax4, ay4]], item.t);
+            var k2 = bezier.bezierSlope([[bx1, by1], [bx2, by2], [bx3, by3], [bx4, by4]], toClip); // 忽略方向，180°也是平行，Infinity相减为NaN
+
+            if (Math.abs(Math.abs(k1) - Math.abs(k2) || 0) < EPS) {
+              return;
+            }
+
+            return {
+              point: new Point(item.x, item.y),
+              toSource: item.t,
+              // source是曲线直接用t
+              toClip: toClip
+            };
+          }
+        }
+      }).filter(function (i) {
+        return i;
+      });
+
+      if (res.length) {
+        return res;
+      }
+    }
+  } // 两条线可能多个交点，将交点按原本线段的方向顺序排序
 
 
-  function connectEdges(sortedEvents) {
-    var i, len;
-    var resultEvents = orderEvents(sortedEvents); // "false"-filled array
+  function sortIntersection(res, isSource) {
+    return res.sort(function (a, b) {
+      if (isSource) {
+        return a.toSource - b.toSource;
+      }
 
-    var processed = {};
-    var contours = [];
+      return a.toClip - b.toClip;
+    }).map(function (item) {
+      return {
+        point: item.point,
+        t: isSource ? item.toSource : item.toClip
+      };
+    }).filter(function (item) {
+      return item.t > EPS && item.t < EPS2;
+    });
+  }
 
-    var loop = function loop() {
-      if (processed[i]) {
+  var intersect = {
+    getIntersectionLineLine: getIntersectionLineLine,
+    getIntersectionBezier2Line: getIntersectionBezier2Line,
+    getIntersectionBezier2Bezier2: getIntersectionBezier2Bezier2,
+    getIntersectionBezier2Bezier3: getIntersectionBezier2Bezier3,
+    getIntersectionBezier3Line: getIntersectionBezier3Line,
+    getIntersectionBezier3Bezier3: getIntersectionBezier3Bezier3,
+    sortIntersection: sortIntersection
+  };
+
+  var getIntersectionLineLine$1 = intersect.getIntersectionLineLine,
+      getIntersectionBezier2Line$1 = intersect.getIntersectionBezier2Line,
+      getIntersectionBezier2Bezier2$1 = intersect.getIntersectionBezier2Bezier2,
+      getIntersectionBezier2Bezier3$1 = intersect.getIntersectionBezier2Bezier3,
+      getIntersectionBezier3Line$1 = intersect.getIntersectionBezier3Line,
+      getIntersectionBezier3Bezier3$1 = intersect.getIntersectionBezier3Bezier3,
+      sortIntersection$1 = intersect.sortIntersection;
+
+  var Polygon = /*#__PURE__*/function () {
+    function Polygon(regions, index) {
+      _classCallCheck(this, Polygon);
+
+      this.index = index; // 属于source多边形还是clip多边形，0和1区别
+
+      var segments = []; // 多边形有>=1个区域，一般是1个
+
+      if (!Array.isArray(regions)) {
         return;
       }
 
-      var contourId = contours.length;
-      var contour = initializeContourFromContext(resultEvents[i], contours, contourId); // Helper function that combines marking an event as processed with assigning its output contour ID
-
-      var markAsProcessed = function markAsProcessed(pos) {
-        processed[pos] = true;
-
-        if (pos < resultEvents.length && resultEvents[pos]) {
-          resultEvents[pos].outputContourId = contourId;
+      regions.forEach(function (vertices) {
+        // 每个区域有>=2条线段，组成封闭区域，1条肯定不行，2条必须是曲线
+        if (!Array.isArray(vertices) || vertices.length < 2) {
+          return;
         }
-      };
 
-      var pos = i;
-      var origPos = i;
-      var initial = resultEvents[i].point;
-      contour.points.push(initial);
-      /* eslint no-constant-condition: "off" */
+        if (vertices.length === 2 && vertices[1].length <= 2) {
+          return;
+        }
 
-      while (true) {
-        markAsProcessed(pos);
-        pos = resultEvents[pos].otherPos;
-        markAsProcessed(pos);
-        contour.points.push(resultEvents[pos].point);
-        pos = nextPos(pos, resultEvents, processed, origPos);
+        var startPoint = new Point(vertices[0]),
+            firstPoint = startPoint; // 根据多边形有向边，生成线段，不保持原有向，统一左下作为线段起点，如果翻转则记录个值标明
 
-        if (pos == origPos || pos >= resultEvents.length || !resultEvents[pos]) {
-          break;
+        for (var i = 1, len = vertices.length; i < len; i++) {
+          var curr = vertices[i],
+              l = curr.length; // 闭合区域，首尾顶点重复统一
+
+          var endPoint = new Point(curr[l - 2], curr[l - 1]);
+          var seg = void 0;
+
+          if (l === 2) {
+            // 长度为0的直线忽略
+            if (startPoint.equal(endPoint)) {
+              continue;
+            }
+
+            var coords = Point.compare(startPoint, endPoint) ? [endPoint, startPoint] : [startPoint, endPoint];
+            seg = new Segment(coords, index);
+          } // 曲线需确保x单调性，如果非单调，则切割为单调的多条
+          else if (l === 4) {
+            // 长度为0的曲线忽略
+            if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1]) {
+              continue;
+            }
+
+            var cPoint = new Point(curr[0], curr[1]);
+            var t = getBezierMonotonicity([startPoint, cPoint, endPoint], true);
+
+            if (t) {
+              var points = [[startPoint.x, startPoint.y], [curr[0], curr[1]], [endPoint.x, endPoint.y]];
+              var curve1 = bezier.sliceBezier(points, t[0]);
+              var curve2 = bezier.sliceBezier2Both(points, t[0], 1);
+              var p1 = new Point(curve1[1]),
+                  p2 = new Point(curve1[2]),
+                  p3 = new Point(curve2[1]);
+
+              var _coords = Point.compare(startPoint, p2) ? [p2, p1, startPoint] : [startPoint, p1, p2];
+
+              segments.push(new Segment(_coords, index));
+              _coords = Point.compare(p2, endPoint) ? [endPoint, p3, p2] : [p2, p3, endPoint];
+              seg = new Segment(_coords, index);
+            } else {
+              var _coords2 = Point.compare(startPoint, endPoint) ? [endPoint, cPoint, startPoint] : [startPoint, cPoint, endPoint];
+
+              seg = new Segment(_coords2, index);
+            }
+          } // 3阶可能有2个单调改变t点
+          else if (l === 6) {
+            // 降级为2阶曲线
+            if (curr[0] === curr[2] && curr[1] === curr[3]) {
+              curr.splice(2, 2);
+              i--;
+              continue;
+            } // 长度为0的曲线忽略
+
+
+            if (startPoint.equal(endPoint) && startPoint.x === curr[0] && startPoint.y === curr[1] && startPoint.x === curr[2] && startPoint.y === curr[3]) {
+              continue;
+            }
+
+            var cPoint1 = new Point(curr[0], curr[1]),
+                cPoint2 = new Point(curr[2], curr[3]);
+
+            var _t = getBezierMonotonicity([startPoint, cPoint1, cPoint2, endPoint], true);
+
+            if (_t) {
+              (function () {
+                var points = [[startPoint.x, startPoint.y], [curr[0], curr[1]], [curr[2], curr[3]], [endPoint.x, endPoint.y]];
+                var lastPoint = startPoint,
+                    lastT = 0;
+
+                _t.forEach(function (t) {
+                  var curve = bezier.sliceBezier2Both(points, lastT, t);
+                  var p1 = new Point(curve[1]),
+                      p2 = new Point(curve[2]),
+                      p3 = new Point(curve[3]);
+                  var coords = Point.compare(lastPoint, p3) ? [p3, p2, p1, lastPoint] : [lastPoint, p1, p2, p3];
+                  segments.push(new Segment(coords, index));
+                  lastT = t;
+                  lastPoint = p3;
+                });
+
+                var curve = bezier.sliceBezier2Both(points, lastT, 1);
+                var p1 = new Point(curve[1]),
+                    p2 = new Point(curve[2]);
+                var coords = Point.compare(lastPoint, endPoint) ? [endPoint, p2, p1, lastPoint] : [lastPoint, p1, p2, endPoint];
+                seg = new Segment(coords, index);
+              })();
+            } else {
+              var _coords3 = Point.compare(startPoint, endPoint) ? [endPoint, cPoint2, cPoint1, startPoint] : [startPoint, cPoint1, cPoint2, endPoint];
+
+              seg = new Segment(_coords3, index);
+            }
+          }
+
+          segments.push(seg); // 终点是下条边的起点
+
+          startPoint = endPoint;
+        } // 强制要求闭合，非闭合自动连直线到开始点闭合
+
+
+        if (!startPoint.equal(firstPoint)) {
+          var _coords4 = Point.compare(startPoint, firstPoint) ? [firstPoint, startPoint] : [startPoint, firstPoint];
+
+          segments.push(new Segment(_coords4, index));
+        }
+      });
+      this.segments = segments;
+    } // 根据y坐标排序，生成有序线段列表，再扫描求交
+
+
+    _createClass(Polygon, [{
+      key: "selfIntersect",
+      value: function selfIntersect() {
+        var list = genHashXList(this.segments);
+        this.segments = findIntersection(list, false, false, false);
+      }
+    }, {
+      key: "toString",
+      value: function toString() {
+        return this.segments.map(function (item) {
+          return item.toString();
+        });
+      }
+    }, {
+      key: "reset",
+      value: function reset(index) {
+        this.index = index;
+        this.segments.forEach(function (seg) {
+          seg.belong = index;
+          seg.otherCoincide = 0;
+          seg.otherFill[0] = seg.otherFill[1] = false;
+        });
+        return this;
+      } // 2个非自交的多边形互相判断相交，依旧是扫描线算法，2个多边形统一y排序，但要分别出属于哪个多边形，因为只和对方测试相交
+
+    }], [{
+      key: "intersect2",
+      value: function intersect2(polyA, polyB, isIntermediateA, isIntermediateB) {
+        if (!polyA.segments.length || !polyB.segments.length) {
+          return;
+        }
+
+        var list = genHashXList(polyA.segments.concat(polyB.segments));
+        var segments = findIntersection(list, true, isIntermediateA, isIntermediateB);
+        polyA.segments = segments.filter(function (item) {
+          return item.belong === 0;
+        });
+        polyB.segments = segments.filter(function (item) {
+          return item.belong === 1;
+        });
+      }
+      /**
+       * 以Bentley-Ottmann算法为原理，为每个顶点设计事件，按x升序、y升序遍历所有顶点的事件
+       * 每条线段边有2个顶点即2个事件，左下为start，右上为end
+       * 同顶点优先end，start相同则对比线段谁后面的y更小（向量法），其实就是对比非共点部分的y大小
+       * 维护一个活跃边列表ael，同样保证x升序、y升序，start事件线段进入ael，end离开
+       * ael中相邻的线段说明上下相互接壤，接壤一侧则内外填充性一致
+       * 最下面的边（含第一条）可直接得知下方填充性（下面没有了一定是多边形外部），再推测出上方
+       * 其余的边根据自己下方相邻即可确定填充性
+       */
+
+    }, {
+      key: "annotate2",
+      value: function annotate2(polyA, polyB, isIntermediateA, isIntermediateB) {
+        var list = genHashXYList(polyA.segments.concat(polyB.segments));
+        var aelA = [],
+            aelB = [],
+            hashA = {},
+            hashB = {}; // 算法3遍循环，先注释a多边形的边自己内外性，再b的边自己内外性，最后一起注释对方的内外性
+        // 因数据结构合在一起，所以2遍循环可以完成，先注释a和b的自己，再一遍对方
+
+        list.forEach(function (item) {
+          var isStart = item.isStart,
+              seg = item.seg;
+          var belong = seg.belong; // 连续操作时，已有的中间结果可以跳过
+
+          if (belong === 0 && isIntermediateA || belong === 1 && isIntermediateB) {
+            return;
+          }
+
+          var ael = belong === 0 ? aelA : aelB,
+              hash = belong === 0 ? hashA : hashB;
+
+          if (isStart) {
+            // 自己重合的线段只考虑第一条，其它剔除
+            if (seg.myCoincide) {
+              var hc = seg.toHash();
+
+              if (hash.hasOwnProperty(hc)) {
+                return;
+              }
+
+              hash[hc] = true;
+            } // console.error(seg.toString(), ael.length)
+            // 下面没有线段了，底部边，上方填充下方空白（除非是偶次重复段，上下都空白，奇次和单线相同）
+
+
+            if (!ael.length) {
+              if (seg.myCoincide) {
+                seg.myFill[0] = seg.myCoincide % 2 === 0;
+              } else {
+                seg.myFill[0] = true;
+              }
+
+              ael.push(seg);
+            } else {
+              // 插入到ael正确的位置，按照x升序、y升序
+              var len = ael.length,
+                  top = ael[len - 1];
+              var isAboveLast = segAboveCompare(seg, top); // 比ael栈顶还高在最上方
+
+              if (isAboveLast) {
+                seg.myFill[1] = top.myFill[0];
+
+                if (seg.myCoincide) {
+                  seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                } else {
+                  seg.myFill[0] = !seg.myFill[1];
+                }
+
+                ael.push(seg);
+              } // 不高且只有1个则在最下方
+              else if (len === 1) {
+                if (seg.myCoincide) {
+                  seg.myFill[0] = seg.myCoincide % 2 === 0;
+                } else {
+                  seg.myFill[0] = true;
+                }
+
+                ael.unshift(seg);
+              } else {
+                // 遍历，尝试对比是否在ael栈中相邻2条线段之间
+                for (var i = len - 2; i >= 0; i--) {
+                  var curr = ael[i];
+                  var isAbove = segAboveCompare(seg, curr);
+
+                  if (isAbove) {
+                    seg.myFill[1] = curr.myFill[0];
+
+                    if (seg.myCoincide) {
+                      seg.myFill[0] = seg.myCoincide % 2 === 0 ? !seg.myFill[1] : seg.myFill[1];
+                    } else {
+                      seg.myFill[0] = !seg.myFill[1];
+                    }
+
+                    ael.splice(i + 1, 0, seg);
+                    break;
+                  } else if (i === 0) {
+                    if (seg.myCoincide) {
+                      seg.myFill[0] = seg.myCoincide % 2 === 0;
+                    } else {
+                      seg.myFill[0] = true;
+                    }
+
+                    ael.unshift(seg);
+                  }
+                }
+              }
+            } // console.warn(seg.toString())
+
+          } else {
+            var _i = ael.indexOf(seg); // 一般肯定有，重合线段会剔除不进ael
+
+
+            if (_i > -1) {
+              ael.splice(_i, 1);
+            }
+          }
+        }); // 注释对方，除了重合线直接使用双方各自的注释拼接，普通线两边的对方内外性相同，根据是否在里面inside确定结果
+        // inside依旧看自己下方的线段上方情况，不同的是要看下方的线和自己belong是否相同，再确定取下方above的值
+
+        var ael = [],
+            hash = {};
+        list.forEach(function (item) {
+          var isStart = item.isStart,
+              seg = item.seg;
+          var belong = seg.belong;
+
+          if (isStart) {
+            // 自重合或者它重合统一只保留第一条线
+            if (seg.myCoincide || seg.otherCoincide) {
+              var hc = seg.toHash();
+
+              if (hash.hasOwnProperty(hc)) {
+                return;
+              }
+
+              hash[hc] = true;
+            } // console.error(seg.toString(), ael.length)
+
+
+            var inside = false;
+
+            if (!ael.length) {
+              inside = false;
+              ael.push(seg);
+            } else {
+              var len = ael.length,
+                  top = ael[len - 1];
+              var isAboveLast = segAboveCompare(seg, top);
+
+              if (isAboveLast) {
+                if (top.belong === belong) {
+                  inside = top.otherFill[0];
+                } else {
+                  inside = top.myFill[0];
+                }
+
+                ael.push(seg);
+              } else if (len === 1) {
+                // inside = false;
+                ael.unshift(seg);
+              } else {
+                for (var i = len - 2; i >= 0; i--) {
+                  var curr = ael[i];
+                  var isAbove = segAboveCompare(seg, curr);
+
+                  if (isAbove) {
+                    // 如果在自己的下方线和自己同色，则取下方线的另外色上填充
+                    if (curr.belong === belong) {
+                      inside = curr.otherFill[0];
+                    } // 否则取下方线的下方色上填充
+                    else {
+                      inside = curr.myFill[0];
+                    }
+
+                    ael.splice(i + 1, 0, seg);
+                    break;
+                  } else if (i === 0) {
+                    // inside = false;
+                    ael.unshift(seg);
+                  }
+                }
+              }
+            } // 重合线的otherFill直接引用指向对方myFill，不能普通计算
+
+
+            if (!seg.otherCoincide) {
+              seg.otherFill[0] = inside;
+              seg.otherFill[1] = inside;
+            } // console.warn(seg.toString(), inside)
+
+          } else {
+            var _i2 = ael.indexOf(seg);
+
+            if (_i2 > -1) {
+              ael.splice(_i2, 1);
+            }
+          }
+        });
+      }
+    }]);
+
+    return Polygon;
+  }();
+
+  function findIntersection(list, compareBelong, isIntermediateA, isIntermediateB) {
+    // 从左到右扫描，按x坐标排序，相等按y，边会进入和离开扫描线各1次，在扫描线中的边为活跃边，维护1个活跃边列表，新添加的和老的求交
+    var ael = [],
+        delList = [],
+        segments = [];
+
+    while (list.length) {
+      if (delList.length) {
+        delList.splice(0).forEach(function (seg) {
+          var i = ael.indexOf(seg);
+          ael.splice(i, 1);
+
+          if (!seg.isDeleted) {
+            segments.push(seg);
+          }
+        });
+      }
+
+      var _list$ = list[0],
+          x = _list$.x,
+          arr = _list$.arr;
+
+      while (arr.length) {
+        var seg = arr.shift(); // 被切割的老线段无效
+
+        if (seg.isDeleted) {
+          continue;
+        }
+
+        var belong = seg.belong,
+            bboxA = seg.bbox; // 第2次访问边是离开活动，考虑删除
+
+        if (seg.isVisited) {
+          // console.warn(x, seg.toString());
+          // console.log(ael.map(item => item.toString()));
+          // 可能是垂线不能立刻删除，所以等到下次活动x再删除，因为会出现极端情况刚进来就出去，和后面同y的重合
+          if (bboxA[0] !== bboxA[2] || seg.coords.length !== 2) {
+            var i = ael.indexOf(seg);
+            ael.splice(i, 1);
+
+            if (!seg.isDeleted) {
+              segments.push(seg);
+            }
+          } else {
+            delList.push(seg);
+          }
+
+          seg.isVisited = false; // 还原以备后面逻辑重复利用
+          // console.log(ael.map(item => item.toString()));
+        } // 第1次访问边一定是进入活动，求交
+        else {
+          // console.error(x, seg.toString(), ael.length);
+          // console.log(ael.map(item => item.toString()));
+          // 和asl里的边求交，如果被分割，新生成的存入asl和hash，老的线段无需再进入asl
+          if (ael.length) {
+            var coordsA = seg.coords,
+                lenA = coordsA.length;
+            var _coordsA$ = coordsA[0],
+                ax1 = _coordsA$.x,
+                ay1 = _coordsA$.y;
+            var _coordsA$2 = coordsA[1],
+                ax2 = _coordsA$2.x,
+                ay2 = _coordsA$2.y;
+
+            for (var _i3 = 0; _i3 < ael.length; _i3++) {
+              var item = ael[_i3]; // 被切割的老线段无效，注意seg切割过程中可能变成删除
+
+              if (item.isDeleted || seg.isDeleted) {
+                continue;
+              } // 互交所属belong不同才进行检测，自交则不检查belong
+
+
+              if (compareBelong && item.belong === belong) {
+                continue;
+              } // bbox相交才考虑真正计算，加速
+
+
+              var bboxB = item.bbox,
+                  coordsB = item.coords,
+                  lenB = coordsB.length;
+              var isSourceReverted = false; // 求交可能a、b线主从互换
+
+              if (isRectsOverlap$1(bboxA, bboxB, lenA, lenB)) {
+                // 完全重合简化，同矩形的线myFill共享，对方矩形互换otherFill
+                if (lenA === lenB && seg.equal(item)) {
+                  if (compareBelong) {
+                    // 因为一定不自交，所以重合线不会被分割
+                    seg.otherCoincide++;
+                    item.otherCoincide++;
+                    seg.otherFill = item.myFill;
+                    item.otherFill = seg.myFill;
+                  } else {
+                    seg.myCoincide++;
+                    item.myCoincide++;
+                    seg.myFill = item.myFill;
+                  }
+
+                  continue;
+                }
+
+                var _coordsB$ = coordsB[0],
+                    bx1 = _coordsB$.x,
+                    by1 = _coordsB$.y;
+                var _coordsB$2 = coordsB[1],
+                    bx2 = _coordsB$2.x,
+                    by2 = _coordsB$2.y;
+                var inters = void 0,
+                    overs = void 0; // a是直线
+
+                if (lenA === 2) {
+                  // b是直线
+                  if (lenB === 2) {
+                    var d = (by2 - by1) * (ax2 - ax1) - (bx2 - bx1) * (ay2 - ay1); // 平行检查是否重合，否则求交
+
+                    if (d === 0) {
+                      // 垂线特殊，y=kx+b没法求
+                      if (ax1 === ax2) {
+                        if (ax1 === bx1 && ax2 === bx2) {
+                          overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg, bx1, by1, bx2, by2, item, true);
+                        }
+                      } else {
+                        var b1 = (ay2 - ay1) * ax1 / (ax2 - ax1) + ay1;
+                        var b2 = (by2 - by1) * bx1 / (bx2 - bx1) + by1;
+
+                        if (b1 === b2) {
+                          overs = checkOverlapLine(ax1, ay1, ax2, ay2, seg, bx1, by1, bx2, by2, item, false);
+                        }
+                      }
+                    } else {
+                      inters = getIntersectionLineLine$1(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, d);
+                    }
+                  } // b是曲线
+                  else {
+                    var _coordsB$3 = coordsB[2],
+                        bx3 = _coordsB$3.x,
+                        by3 = _coordsB$3.y; // b是2阶曲线
+
+                    if (lenB === 3) {
+                      inters = getIntersectionBezier2Line$1(bx1, by1, bx2, by2, bx3, by3, ax1, ay1, ax2, ay2);
+                      isSourceReverted = true;
+                    } // b是3阶曲线
+                    else {
+                      var _coordsB$4 = coordsB[3],
+                          bx4 = _coordsB$4.x,
+                          by4 = _coordsB$4.y;
+                      inters = getIntersectionBezier3Line$1(bx1, by1, bx2, by2, bx3, by3, bx4, by4, ax1, ay1, ax2, ay2);
+                      isSourceReverted = true;
+                    }
+                  }
+                } // a是曲线
+                else {
+                  var _coordsA$3 = coordsA[2],
+                      ax3 = _coordsA$3.x,
+                      ay3 = _coordsA$3.y; // a是2阶曲线
+
+                  if (lenA === 3) {
+                    // b是直线
+                    if (lenB === 2) {
+                      inters = getIntersectionBezier2Line$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2);
+                    } // b是曲线
+                    else {
+                      var _coordsB$5 = coordsB[2],
+                          _bx = _coordsB$5.x,
+                          _by = _coordsB$5.y; // b是2阶曲线
+
+                      if (lenB === 3) {
+                        inters = getIntersectionBezier2Bezier2$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, _bx, _by);
+
+                        if (!inters) {
+                          overs = checkOverlapBezier(seg, item);
+                        }
+                      } // b是3阶曲线
+                      else {
+                        var _coordsB$6 = coordsB[3],
+                            _bx2 = _coordsB$6.x,
+                            _by2 = _coordsB$6.y;
+                        inters = getIntersectionBezier2Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, bx1, by1, bx2, by2, _bx, _by, _bx2, _by2);
+                      }
+                    }
+                  } // a是3阶曲线
+                  else {
+                    var _coordsA$4 = coordsA[3],
+                        ax4 = _coordsA$4.x,
+                        ay4 = _coordsA$4.y; // b是直线
+
+                    if (lenB === 2) {
+                      inters = getIntersectionBezier3Line$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2);
+                    } // b是曲线
+                    else {
+                      var _coordsB$7 = coordsB[2],
+                          _bx3 = _coordsB$7.x,
+                          _by3 = _coordsB$7.y; // b是2阶曲线
+
+                      if (lenB === 3) {
+                        inters = getIntersectionBezier2Bezier3$1(bx1, by1, bx2, by2, _bx3, _by3, ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4);
+                        isSourceReverted = true;
+                      } // b是3阶曲线
+                      else {
+                        var _coordsB$8 = coordsB[3],
+                            _bx4 = _coordsB$8.x,
+                            _by4 = _coordsB$8.y;
+                        inters = getIntersectionBezier3Bezier3$1(ax1, ay1, ax2, ay2, ax3, ay3, ax4, ay4, bx1, by1, bx2, by2, _bx3, _by3, _bx4, _by4);
+
+                        if (!inters) {
+                          overs = checkOverlapBezier(seg, item);
+                        }
+                      }
+                    }
+                  }
+                } // 有重合的，重合线段已经求好，直接使用
+
+
+                if (overs) {
+                  activeNewSeg(segments, list, ael, x, overs.ra);
+                  activeNewSeg(segments, list, ael, x, overs.rb);
+                  seg.isDeleted = item.isDeleted = true;
+                  ael.splice(_i3, 1);
+                  break;
+                } // 有交点，确保原先线段方向顺序（x升序、y升序），各自依次切割，x右侧新线段也要存入list
+                else if (inters && inters.length) {
+                  // console.log('inters', i, inters);
+                  var pa = sortIntersection$1(inters, !isSourceReverted); // console.log(pa);
+
+                  var ra = sliceSegment(seg, pa, isIntermediateA && belong === 0); // console.log(ra.map(item => item.toString()));
+
+                  var pb = sortIntersection$1(inters, isSourceReverted); // console.log(pb);
+
+                  var rb = sliceSegment(item, pb, isIntermediateB && belong === 1); // console.log(rb.map(item => item.toString()));
+                  // 新切割的线段继续按照坐标存入列表以及ael，为后续求交
+
+                  activeNewSeg(segments, list, ael, x, ra);
+                  activeNewSeg(segments, list, ael, x, rb); // 老的线段被删除无效了，踢出ael，防止seg没被分割
+
+                  if (rb.length) {
+                    ael.splice(_i3, 1);
+                  }
+
+                  break;
+                }
+              }
+            }
+          } // 不相交切割才进入ael
+
+
+          if (!seg.isDeleted) {
+            ael.push(seg);
+            seg.isVisited = true;
+          } // console.log(ael.map(item => item.toString()));
+
         }
       }
 
-      contours.push(contour);
+      list.shift();
+    } // 最后面的线
+
+
+    delList.forEach(function (seg) {
+      if (!seg.isDeleted) {
+        segments.push(seg);
+      }
+    }); // 最后再过滤一遍，因为新生成的切割线可能会被再次切割变成删除的无效线段
+
+    return segments.filter(function (item) {
+      return !item.isDeleted;
+    });
+  } // 给定交点列表分割线段，ps需排好顺序从头到尾，isSelf标明是否自相交阶段，false是和对方交点切割
+
+
+  function sliceSegment(seg, ps, isIntermediate) {
+    var res = [];
+
+    if (!ps.length) {
+      return res;
+    }
+
+    var belong = seg.belong,
+        coords = seg.coords,
+        len = coords.length;
+    var startPoint = coords[0];
+    var lastT = 0; // 多个点可能截取多条，最后一条保留只修改数据，其它新生成
+
+    ps.forEach(function (item) {
+      var point = item.point,
+          t = item.t;
+      var ns;
+
+      if (len === 2) {
+        ns = new Segment([startPoint, point], belong);
+      } else if (len === 3) {
+        var c = bezier.sliceBezier2Both(coords.map(function (item) {
+          return [item.x, item.y];
+        }), lastT, t);
+        ns = new Segment([startPoint, new Point(c[1][0], c[1][1]), point], belong);
+      } else if (len === 4) {
+        var _c = bezier.sliceBezier2Both(coords.map(function (item) {
+          return [item.x, item.y];
+        }), lastT, t);
+
+        ns = new Segment([startPoint, new Point(_c[1][0], _c[1][1]), new Point(_c[2][0], _c[2][1]), point], belong);
+      } // 连续操作的中间结果已有自己内外性，截取时需继承
+
+
+      if (isIntermediate) {
+        ns.myFill[0] = seg.myFill[0];
+        ns.myFill[1] = seg.myFill[1];
+      }
+
+      startPoint = point;
+      res.push(ns);
+      lastT = t;
+    }); // 最后一条
+
+    var ns;
+
+    if (len === 2) {
+      ns = new Segment([startPoint, coords[1]], belong);
+    } else if (len === 3) {
+      var c = bezier.sliceBezier2Both(coords.map(function (item) {
+        return [item.x, item.y];
+      }), lastT, 1);
+      ns = new Segment([startPoint, new Point(c[1][0], c[1][1]), coords[2]], belong);
+    } else if (len === 4) {
+      var _c2 = bezier.sliceBezier2Both(coords.map(function (item) {
+        return [item.x, item.y];
+      }), lastT, 1);
+
+      ns = new Segment([startPoint, new Point(_c2[1][0], _c2[1][1]), new Point(_c2[2][0], _c2[2][1]), coords[3]], belong);
+    }
+
+    if (isIntermediate) {
+      ns.myFill[0] = seg.myFill[0];
+      ns.myFill[1] = seg.myFill[1];
+    }
+
+    res.push(ns); // 老的打标失效删除
+
+    seg.isDeleted = true;
+    return res;
+  } // 相交的线段slice成多条后，老的删除，新的考虑添加进扫描列表和活动边列表，根据新的是否在范围内
+
+
+  function activeNewSeg(segments, list, ael, x, ns) {
+    ns.forEach(function (seg) {
+      var bbox = seg.bbox,
+          x1 = bbox[0],
+          x2 = bbox[2]; // console.log(seg.toString(), x1, x2, x);
+      // 活跃x之前无相交判断意义，除了竖线，出现活跃前只可能一方为竖线截断另一方的左边部分
+
+      if (x2 <= x && x1 !== x2 && seg.coords.length !== 2) {
+        segments.push(seg);
+        return;
+      } // 按顺序放在list的正确位置，可能x1已经过去不需要加入了，但要考虑ael
+
+
+      var i = 0;
+
+      if (x1 < x) {
+        seg.isVisited = true;
+        ael.push(seg);
+      } else {
+        for (var len = list.length; i < len; i++) {
+          var item = list[i];
+          var lx = item.x;
+
+          if (x1 === lx) {
+            item.arr.push(seg);
+            break;
+          } // 新的插入
+
+
+          if (x1 < lx) {
+            var temp = {
+              x: x1,
+              arr: [seg]
+            };
+            list.splice(i, 0, temp);
+            break;
+          }
+        }
+      } // x2一定会加入
+
+
+      for (var _len = list.length; i < _len; i++) {
+        var _item = list[i];
+        var _lx = _item.x;
+
+        if (x2 === _lx) {
+          // 访问过的尽可能排在前面早出栈，减少对比次数
+          _item.arr.unshift(seg);
+
+          break;
+        }
+
+        if (x2 < _lx) {
+          var _temp = {
+            x: x2,
+            arr: [seg]
+          };
+          list.splice(i, 0, _temp);
+          break;
+        }
+      }
+    });
+  } // 按x升序将所有线段组成一个垂直扫描线列表，求交用，y方向不用管
+
+
+  function genHashXList(segments) {
+    var hashX = {};
+    segments.forEach(function (seg) {
+      var bbox = seg.bbox,
+          min = bbox[0],
+          max = bbox[2];
+      putHashX(hashX, min, seg);
+      putHashX(hashX, max, seg);
+    });
+    var list = [];
+    Object.keys(hashX).forEach(function (x) {
+      return list.push({
+        x: parseFloat(x),
+        arr: hashX[x]
+      });
+    });
+    return list.sort(function (a, b) {
+      return a.x - b.x;
+    });
+  } // 每个线段会放2次，开始点和结束点，哪怕x相同，第1次是开始用push，第2次结束unshift，这样离开时排在前面
+
+
+  function putHashX(hashX, x, seg) {
+    var list = hashX[x] = hashX[x] || [];
+
+    if (seg.isVisited) {
+      list.unshift(seg);
+      seg.isVisited = false;
+    } else {
+      list.push(seg);
+      seg.isVisited = true;
+    }
+  } // 按x升序将所有线段组成一个垂直扫描线列表，y方向也需要判断
+
+
+  function genHashXYList(segments) {
+    var hashXY = {};
+    segments.forEach(function (seg) {
+      var coords = seg.coords,
+          l = coords.length;
+      var start = coords[0],
+          end = coords[l - 1];
+      putHashXY(hashXY, start.x, start.y, seg, true);
+      putHashXY(hashXY, end.x, end.y, seg, false);
+    });
+    var listX = [];
+    Object.keys(hashXY).forEach(function (x) {
+      var hashY = hashXY[x];
+      var listY = [];
+      Object.keys(hashY).forEach(function (y) {
+        var arr = hashY[y].sort(function (a, b) {
+          // end优先于start先触发
+          if (a.isStart !== b.isStart) {
+            return a.isStart ? 1 : -1;
+          } // start点相同看谁在上谁在下，下方在前，比y极大值，因为start相同又不相交，所以上方的y极值更大
+
+
+          if (a.isStart) {
+            return segAboveCompare(a.seg, b.seg) ? 1 : -1;
+          } // end点相同无所谓，其不参与运算，因为每次end线段先出栈ael
+
+        }); // console.log(x, y, arr.map(item => item.isStart + ', ' + item.seg.toString()));
+
+        listY.push({
+          y: parseFloat(y),
+          arr: arr
+        });
+      });
+      listX.push({
+        x: parseFloat(x),
+        arr: listY.sort(function (a, b) {
+          return a.y - b.y;
+        })
+      });
+    });
+    listX.sort(function (a, b) {
+      return a.x - b.x;
+    });
+    var list = [];
+    listX.forEach(function (item) {
+      item.arr.forEach(function (item) {
+        list = list.concat(item.arr);
+      });
+    });
+    return list;
+  }
+
+  function putHashXY(hashXY, x, y, seg, isStart) {
+    var hash = hashXY[x] = hashXY[x] || {};
+    var list = hash[y] = hash[y] || [];
+    list.push({
+      isStart: isStart,
+      seg: seg
+    });
+  } // pt在线段left -> right的上方或线上
+
+
+  function pointAboveOrOnLine(pt, left, right) {
+    var x = pt.x,
+        y = pt.y;
+    var x1 = left.x,
+        y1 = left.y;
+    var x2 = right.x,
+        y2 = right.y;
+    return vector.crossProduct(x1 - x, y1 - y, x2 - x, y2 - y) >= 0;
+  } // a是否在b的上边，取x相同部分看y大小，只有start点事件时才判断
+
+
+  function segAboveCompare(segA, segB) {
+    var ca = segA.coords,
+        cb = segB.coords;
+    var la = ca.length,
+        lb = cb.length;
+    var a1 = ca[0],
+        b1 = cb[0]; // 两条直线用向量积判断，注意开始点是否相同即可
+
+    if (la === 2 && lb === 2) {
+      var a2 = ca[1],
+          b2 = cb[1];
+
+      if (a1.equal(b1)) {
+        return pointAboveOrOnLine(a2, b1, b2);
+      } else {
+        return pointAboveOrOnLine(a1, b1, b2);
+      }
+    } // a是竖线的话看另一条在左还是右，左的话a在下，否则在上，因为此时只可能是左和a尾相连或右和a首相连
+
+
+    if (la === 2 && a1.x === ca[1].x) {
+      return b1.x >= a1.x;
+    } // 如果有曲线，取二者x共同的区域部分[x1, x3]，以及区域中点x2，这3个点不可能都重合，一定会有某点的y比较大小
+
+
+    var x1 = Math.max(a1.x, b1.x),
+        x3 = Math.min(ca[la - 1].x, cb[lb - 1].x),
+        x2 = x1 + (x3 - x1) * 0.5;
+
+    if (a1 !== b1) {
+      var _y = getYByX(ca, x1),
+          _y2 = getYByX(cb, x1);
+
+      if (_y !== _y2) {
+        return _y > _y2;
+      }
+    }
+
+    if (ca[la - 1] !== cb[lb - 1]) {
+      var _y3 = getYByX(ca, x3),
+          _y4 = getYByX(cb, x3);
+
+      if (_y3 !== _y4) {
+        return _y3 > _y4;
+      }
+    }
+
+    var y1 = getYByX(ca, x2),
+        y2 = getYByX(cb, x2);
+
+    if (y1 !== y2) {
+      return y1 > y2;
+    }
+  } // 获取曲线单调性t值，有结果才返回
+
+
+  function getBezierMonotonicity(coords, isX) {
+    if (coords.length === 3) {
+      var t = isX ? (coords[0].x - coords[1].x) / (coords[0].x - 2 * coords[1].x + coords[2].x) : (coords[0].y - coords[1].y) / (coords[0].y - 2 * coords[1].y + coords[2].y);
+
+      if (t > 0 && t < 1) {
+        return [t];
+      }
+    } else if (coords.length === 4) {
+      var _t2 = equation.getRoots([isX ? 3 * (coords[1].x - coords[0].x) : 3 * (coords[1].y - coords[0].y), isX ? 6 * (coords[2].x + coords[0].x - 2 * coords[1].x) : 6 * (coords[2].y + coords[0].y - 2 * coords[1].y), isX ? 3 * (coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x) : 3 * (coords[3].y + 3 * coords[1].y - coords[0].y - 3 * coords[2].y)]).filter(function (i) {
+        return i > 0 && i < 1;
+      });
+
+      if (_t2.length) {
+        return _t2.sort(function (a, b) {
+          return a - b;
+        });
+      }
+    }
+  } // 根据x的值解得t后获取y，由于线段已经x单调，所以解只会有1个而非多个
+
+
+  function getYByX(coords, x) {
+    var len = coords.length;
+
+    if (x === coords[0].x) {
+      return coords[0].y;
+    }
+
+    if (x === coords[len - 1].x) {
+      return coords[len - 1].y;
+    }
+
+    if (len === 2) {
+      if (coords[0].y === coords[1].y) {
+        return coords[0].y;
+      }
+
+      var p = (x - coords[0].x) / (coords[1].x - coords[0].x);
+      return coords[0].y + p * (coords[1].y - coords[0].y);
+    } else if (len === 3) {
+      var t = equation.getRoots([coords[0].x - x, 2 * (coords[1].x - coords[0].x), coords[2].x + coords[0].x - 2 * coords[1].x]).filter(function (i) {
+        return i >= 0 && i <= 1;
+      });
+      var pts = coords.map(function (item) {
+        return [item.x, item.y];
+      });
+      return bezier.pointAtByT(pts, t[0])[1];
+    } else if (len === 4) {
+      var _t3 = equation.getRoots([coords[0].x - x, 3 * (coords[1].x - coords[0].x), 3 * (coords[2].x + coords[0].x - 2 * coords[1].x), coords[3].x + 3 * coords[1].x - coords[0].x - 3 * coords[2].x]).filter(function (i) {
+        return i >= 0 && i <= 1;
+      });
+
+      var _pts = coords.map(function (item) {
+        return [item.x, item.y];
+      });
+
+      return bezier.pointAtByT(_pts, _t3[0])[1];
+    }
+  }
+
+  function isRectsOverlap$1(bboxA, bboxB, lenA, lenB) {
+    if (lenA === 2 && lenB === 2) {
+      // 2条垂线特殊考虑，此时x范围都是0，只能比较y
+      if (bboxA[0] === bboxA[2] && bboxB[0] === bboxB[2] && bboxA[0] === bboxA[2]) {
+        if (bboxA[1] >= bboxB[3] || bboxB[1] >= bboxA[3]) {
+          return false;
+        }
+
+        return true;
+      } // 2条水平线也是
+
+
+      if (bboxA[1] === bboxA[3] && bboxB[1] === bboxB[3] && bboxA[1] === bboxA[1]) {
+        if (bboxA[0] >= bboxB[2] || bboxB[0] >= bboxA[2]) {
+          return false;
+        }
+
+        return true;
+      }
+    }
+
+    return geom.isRectsOverlap(bboxA, bboxB);
+  }
+
+  function checkOverlapLine(ax1, ay1, ax2, ay2, segA, bx1, by1, bx2, by2, segB, isY) {
+    var ra = [],
+        rb = [];
+    var coordsA = segA.coords,
+        coordsB = segB.coords;
+
+    if (ax1 < bx1 && !isY || ay1 < by1 && isY) {
+      ra.push(new Segment([coordsA[0], coordsB[0]], segA.belong));
+
+      if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
+        ra.push(new Segment([coordsB[0], coordsA[1]], segA.belong));
+        rb.push(new Segment([coordsB[0], coordsA[1]], segB.belong));
+        rb.push(new Segment([coordsA[1], coordsB[1]], segB.belong));
+      } else if (ax2 === bx2 && !isY || ay2 === by2 && isY) {
+        ra.push(new Segment([coordsB[0], coordsB[1]], segA.belong));
+        rb.push(new Segment([coordsB[0], coordsB[1]], segB.belong));
+      } else {
+        ra.push(new Segment([coordsB[0], coordsB[1]], segA.belong));
+        rb.push(new Segment([coordsB[0], coordsB[1]], segB.belong));
+        ra.push(new Segment([coordsB[1], coordsA[1]], segA.belong));
+      }
+    } // 不会出现完全重合即ax2 == bx2
+    else if (ax1 === bx1 && !isY || ay1 === by1 && isY) {
+      if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
+        ra.push(new Segment([coordsA[0], coordsA[1]], segA.belong));
+        rb.push(new Segment([coordsA[0], coordsA[1]], segB.belong));
+        rb.push(new Segment([coordsA[1], coordsB[1]], segB.belong));
+      } else {
+        ra.push(new Segment([coordsB[0], coordsB[1]], segA.belong));
+        ra.push(new Segment([coordsB[1], coordsA[1]], segA.belong));
+        rb.push(new Segment([coordsB[0], coordsB[1]], segB.belong));
+      }
+    } // ax1 > bx1
+    else {
+      rb.push(new Segment([coordsB[0], coordsA[0]], segB.belong));
+
+      if (ax2 < bx2 && !isY || ay2 < by2 && isY) {
+        ra.push(new Segment([coordsA[0], coordsA[1]], segA.belong));
+        rb.push(new Segment([coordsA[0], coordsA[1]], segB.belong));
+        rb.push(new Segment([coordsA[1], coordsB[1]], segB.belong));
+      } else if (ax2 === bx2 && !isY || ay2 === by2 && isY) {
+        ra.push(new Segment([coordsA[0], coordsA[1]], segA.belong));
+        rb.push(new Segment([coordsA[0], coordsA[1]], segB.belong));
+      } else {
+        ra.push(new Segment([coordsA[0], coordsB[1]], segA.belong));
+        rb.push(new Segment([coordsA[0], coordsB[1]], segB.belong));
+        ra.push(new Segment([coordsB[1], coordsA[1]], segA.belong));
+      }
+    }
+
+    return {
+      ra: ra,
+      rb: rb
     };
-
-    for (i = 0, len = resultEvents.length; i < len; i++) {
-      loop();
-    }
-
-    return contours;
   }
 
-  var _tinyqueue_1_2_3_tinyqueue = TinyQueue;
-  var default_1 = TinyQueue;
+  function checkOverlapBezier(segA, segB) {
+    var ca = segA.coords.map(function (item) {
+      return [item.x, item.y];
+    }),
+        la = ca.length;
+    var cb = segB.coords.map(function (item) {
+      return [item.x, item.y];
+    }),
+        lb = cb.length;
+    var firstA = ca[0],
+        firstB = cb[0],
+        lastA = ca[la - 1],
+        lastB = cb[lb - 1];
+    var t1 = bezier.getPointT(ca, firstB[0], firstB[1]);
+    var t2 = bezier.getPointT(ca, lastB[0], lastB[1]);
+    var t3 = bezier.getPointT(cb, firstA[0], firstA[1]);
+    var t4 = bezier.getPointT(cb, lastA[0], lastA[1]); // console.warn(segA.toString());console.warn(segB.toString());
+    // console.log(t1, t2, t3, t4);
 
-  function TinyQueue(data, compare) {
-    if (!(this instanceof TinyQueue)) {
-      return new TinyQueue(data, compare);
-    }
+    var l1 = t1.length,
+        l2 = t2.length,
+        l3 = t3.length,
+        l4 = t4.length;
+    /**
+     * 重合有3种情况，对应4个t（每方各2个）的情况不同：
+     * a. 一个包含另外一个，这样其中一方t为空，另一方t为2个即两个端点各1
+     * b. 一对端点重合另外一侧包含，比上面的t多1个即空的那方t多1
+     * c. 普通部分重合，每方各有1个t
+     */
 
-    this.data = data || [];
-    this.length = this.data.length;
-    this.compare = compare || defaultCompare;
+    var conditionA = l1 === 1 && l2 === 1 && l3 === 0 && l4 === 0 || l1 === 0 && l2 === 0 && l3 === 1 && l4 === 1;
+    var conditionB = l1 === 1 && l2 === 1 && l3 + l4 === 1 || l1 + l2 === 1 && l3 === 1 && l4 === 1;
+    var conditionC = l1 + l2 === 1 && l3 + l4 === 1;
 
-    if (this.length > 0) {
-      for (var i = (this.length >> 1) - 1; i >= 0; i--) {
-        this._down(i);
+    if (conditionA || conditionB || conditionC) {
+      var startA = l1 ? t1[0] : 0;
+      var endA = l2 ? t2[0] : 1;
+      var a = bezier.sliceBezier2Both(ca, startA, endA);
+      var startB = l3 ? t3[0] : 0;
+      var endB = l4 ? t4[0] : 1;
+      var b = bezier.sliceBezier2Both(cb, startB, endB); // console.log(startA, endA, startB, endB);
+      // 确定重合之后就是截取，重合一定出现在左右的中间部分，这样只要分别判断左右两端是否需要各自裁剪即可
+
+      if (equalBezier(a, b)) {
+        var over = a.map(function (item) {
+          return new Point(item);
+        }); // console.log(over);
+
+        var ra = [],
+            rb = [];
+
+        if (startA > 0) {
+          var s = bezier.sliceBezier2Both(ca, 0, startA);
+          var arr = [segA.coords[0], new Point(s[1]), segB.coords[0]];
+
+          if (la === 4) {
+            arr.splice(2, 0, new Point(s[2]));
+          }
+
+          ra.push(new Segment(arr, segA.belong));
+        }
+
+        ra.push(new Segment(over, segA.belong)); // 重合的部分
+
+        if (endA < 1) {
+          var _s = bezier.sliceBezier2Both(ca, endA, 1);
+
+          var _arr = [segB.coords[lb - 1], new Point(_s[1]), segA.coords[la - 1]];
+
+          if (la === 4) {
+            _arr.splice(2, 0, new Point(_s[2]));
+          }
+
+          ra.push(new Segment(_arr, segA.belong));
+        }
+
+        if (startB > 0) {
+          var _s2 = bezier.sliceBezier2Both(cb, 0, startB);
+
+          var _arr2 = [segB.coords[0], new Point(_s2[1]), segA.coords[0]];
+
+          if (lb === 4) {
+            _arr2.splice(2, 0, new Point(_s2[2]));
+          }
+
+          rb.push(new Segment(_arr2, segB.belong));
+        }
+
+        rb.push(new Segment(over, segB.belong)); // 重合的部分
+
+        if (endB < 1) {
+          var _s3 = bezier.sliceBezier2Both(cb, endB, 1);
+
+          var _arr3 = [segA.coords[la - 1], new Point(_s3[1]), segB.coords[lb - 1]];
+
+          if (lb === 4) {
+            _arr3.splice(2, 0, new Point(_s3[2]));
+          }
+
+          rb.push(new Segment(_arr3, segB.belong));
+        } // console.log(ra.map(item => item.toString()));
+        // console.log(rb.map(item => item.toString()));
+
+
+        return {
+          ra: ra,
+          rb: rb
+        };
       }
     }
   }
 
-  function defaultCompare(a, b) {
-    return a < b ? -1 : a > b ? 1 : 0;
+  function equalBezier(a, b) {
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i],
+          bi = b[i];
+
+      if (Math.abs(ai[0] - bi[0]) > 1e-9 || Math.abs(ai[1] - bi[1]) > 1e-9) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  TinyQueue.prototype = {
-    push: function push(item) {
-      this.data.push(item);
-      this.length++;
+  function join(res, chains, chain, index, pt, isHead) {
+    for (var i = 0, len = chains.length; i < len; i++) {
+      var item = chains[i];
 
-      this._up(this.length - 1);
-    },
-    pop: function pop() {
-      if (this.length === 0) {
-        return undefined;
+      if (item !== chain) {
+        var l = item.length;
+        var head = item[0],
+            tail = item[l - 1];
+        var ptHead = head.coords[0];
+        var coords = tail.coords,
+            l2 = coords.length;
+        var ptTail = coords[l2 - 1];
+
+        if (pt.equal(ptHead)) {
+          if (isHead) {
+            item = reverse(chain).concat(item);
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          } else {
+            item = chain.concat(item);
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          }
+        } else if (pt.equal(ptTail)) {
+          if (isHead) {
+            item = item.concat(chain);
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          } else {
+            item = item.concat(reverse(chain));
+            chains[i] = item;
+            chains.splice(index, 1);
+            return close(res, chains, item, i);
+          }
+        }
+      }
+    } // 无法和别的链接，也要检查自身闭合
+
+
+    close(res, chains, chain, index);
+  }
+
+  function close(res, chains, chain, index) {
+    var l = chain.length;
+    var head = chain[0],
+        tail = chain[l - 1];
+    var ptHead = head.coords[0];
+    var coords2 = tail.coords,
+        l2 = coords2.length;
+    var ptTail = coords2[l2 - 1];
+
+    if (ptHead.equal(ptTail)) {
+      chains.splice(index, 1);
+      res.push(chain);
+    }
+  } // 整条链颠倒，包含每个线段自身颠倒
+
+
+  function reverse(chain) {
+    chain.forEach(function (item) {
+      return item.reverse();
+    });
+    return chain.reverse();
+  }
+
+  function _chain (list) {
+    var chains = [],
+        res = []; // 在对方内部的排在前面，这样会优先形成包含情况而不是交叉
+
+    list.sort(function (a, b) {
+      if (b.otherFill[0] && b.otherFill[1]) {
+        return 1;
       }
 
-      var top = this.data[0];
-      this.length--;
+      return -1;
+    });
 
-      if (this.length > 0) {
-        this.data[0] = this.data[this.length];
+    outer: while (list.length) {
+      var seg = list.shift(),
+          coords = seg.coords,
+          len = coords.length;
+      var start = coords[0],
+          end = coords[len - 1];
+      var temp = void 0; // 尝试追加到某条链中，互相头尾链接可能有4种情况，其中2种会reverse线段首尾
 
-        this._down(0);
+      for (var i = 0, _len = chains.length; i < _len; i++) {
+        var chain = chains[i],
+            l = chain.length;
+        var head = chain[0],
+            tail = chain[l - 1];
+        var ptHead = head.coords[0];
+        var coords2 = tail.coords,
+            l2 = coords2.length;
+        var ptTail = coords2[l2 - 1];
+
+        if (start.equal(ptTail)) {
+          if (seg.belong !== tail.belong) {
+            chain.push(seg);
+            join(res, chains, chain, i, end, false);
+            continue outer;
+          } else if (!temp) {
+            temp = {
+              i: i,
+              t: 0
+            };
+          }
+        } else if (start.equal(ptHead)) {
+          if (seg.belong !== tail.belong) {
+            seg.reverse();
+            chain.unshift(seg);
+            join(res, chains, chain, i, end, true);
+            continue outer;
+          } else if (!temp) {
+            temp = {
+              i: i,
+              t: 1
+            };
+          }
+        } else if (end.equal(ptTail)) {
+          if (seg.belong !== tail.belong) {
+            seg.reverse();
+            chain.push(seg);
+            join(res, chains, chain, i, start, false);
+            continue outer;
+          } else if (!temp) {
+            temp = {
+              i: i,
+              t: 2
+            };
+          }
+        } else if (end.equal(ptHead)) {
+          if (seg.belong !== tail.belong) {
+            chain.unshift(seg);
+            join(res, chains, chain, i, start, true);
+            continue outer;
+          } else if (!temp) {
+            temp = {
+              i: i,
+              t: 3
+            };
+          }
+        }
+      } // 如果没有优先添加对方的线段形成包含，则到这里检查是否有己方的进行链接
+
+
+      if (temp) {
+        if (temp.t === 0) {
+          chains[temp.i].push(seg);
+          join(res, chains, chains[temp.i], temp.i, end, false);
+        } else if (temp.t === 1) {
+          seg.reverse();
+          chains[temp.i].unshift(seg);
+          join(res, chains, chains[temp.i], temp.i, end, true);
+        } else if (temp.t === 2) {
+          seg.reverse();
+          chains[temp.i].push(seg);
+          join(res, chains, chains[temp.i], temp.i, start, false);
+        } else if (temp.t === 3) {
+          chains[temp.i].unshift(seg);
+          join(res, chains, chains[temp.i], temp.i, start, true);
+        }
+      } // 找不到则生成新链
+      else {
+        chains.push([seg]);
       }
+    } // 鞋带公式求得每个多边形的时钟序  https://zhuanlan.zhihu.com/p/401010594
 
-      this.data.pop();
-      return top;
-    },
-    peek: function peek() {
-      return this.data[0];
-    },
-    _up: function _up(pos) {
-      var data = this.data;
-      var compare = this.compare;
-      var item = data[pos];
 
-      while (pos > 0) {
-        var parent = pos - 1 >> 1;
-        var current = data[parent];
+    var v = res.map(function (item) {
+      // let isInner = true, isOuter = true;
+      var clockwise = true;
+      var s = 0,
+          lastX,
+          lastY,
+          minX,
+          minY,
+          maxX,
+          maxY;
+      item.forEach(function (seg, i) {
+        // 内部是指边的两侧都是对方填充说明在内部
+        // if(!seg.otherFill[0] || !seg.otherFill[1]) {
+        //   isInner = false;
+        // }
+        // // 外部是指边的一侧为空
+        // if(!seg.myFill[0] && !seg.otherFill[0] || !seg.myFill[1] && !seg.otherFill[1]) {}
+        // else {
+        //   isOuter = false;
+        // }
+        var coords = seg.coords,
+            len = coords.length,
+            bbox = seg.bbox;
 
-        if (compare(item, current) >= 0) {
-          break;
+        if (i) {
+          minX = Math.min(minX, bbox[0]);
+          minY = Math.min(minY, bbox[1]);
+          maxX = Math.max(maxX, bbox[2]);
+          maxY = Math.max(maxY, bbox[3]);
+        } else {
+          minX = bbox[0];
+          minY = bbox[1];
+          maxX = bbox[2];
+          maxY = bbox[3];
         }
 
-        data[pos] = current;
-        pos = parent;
+        if (len === 2) {
+          if (i) {
+            s += lastX * coords[1].y - lastY * coords[1].x;
+          } else {
+            s += coords[0].x * coords[1].y - coords[0].y * coords[1].x;
+          }
+
+          lastX = coords[1].x;
+          lastY = coords[1].y;
+        } else if (len === 3) {
+          if (i) {
+            s += lastX * coords[2].y - lastY * coords[2].x;
+          } else {
+            s += coords[0].x * coords[1].y - coords[0].y * coords[2].x;
+          }
+
+          lastX = coords[2].x;
+          lastY = coords[2].y;
+        } else if (len === 4) {
+          if (i) {
+            s += lastX * coords[3].y - lastY * coords[3].x;
+          } else {
+            s += coords[0].x * coords[3].y - coords[0].y * coords[3].x;
+          }
+
+          lastX = coords[3].x;
+          lastY = coords[3].y;
+        }
+      }); // 首个顶点重合
+
+      var first = item[0],
+          coords = first.coords;
+      s += lastX * coords[0].y - lastY * coords[0].x;
+
+      if (s < 0) {
+        clockwise = false;
       }
 
-      data[pos] = item;
+      return {
+        // isInner,
+        // isOuter,
+        list: item,
+        clockwise: clockwise,
+        bbox: [minX, minY, maxX, maxY],
+        area: (maxX - minX) * (maxY - minY)
+      };
+    });
+    v.forEach(function (item) {
+      if (item.checked) {
+        return;
+      }
+
+      var bbox = item.bbox;
+      var list = [item];
+
+      for (var _i = 0, _len2 = v.length; _i < _len2; _i++) {
+        var item2 = v[_i];
+
+        if (item2 !== item) {
+          // 互相包含则存入列表
+          if (geom.isRectsInside(bbox, item2.bbox, true) || geom.isRectsInside(item2.bbox, bbox, true)) {
+            list.push(item2);
+          }
+        }
+      } // 按面积排序，最小的即最里面的在前面
+
+
+      if (list.length > 1) {
+        list.sort(function (a, b) {
+          return a.area - b.area;
+        }); // 可能存在已经排过序的，例如外围a包含了内部的b和c，b和c互不相交，a和b已经调整过排序了，a和c再调整则a已经checked
+
+        for (var _i2 = 1, _len3 = list.length; _i2 < _len3; _i2++) {
+          var _item = list[_i2];
+
+          if (_item.checked) {
+            var _clockwise = _item.clockwise;
+
+            for (var j = _i2 - 1; j >= 0; j--) {
+              var _item2 = list[j];
+              _item2.checked = true;
+
+              if (_item2.clockwise === _clockwise) {
+                reverse(_item2.list);
+                _item2.clockwise = !_clockwise;
+              }
+
+              _clockwise = !_clockwise;
+            }
+
+            _clockwise = _item.clockwise;
+
+            for (var _j = _i2 + 1; _j < _len3; _j++) {
+              var _item3 = list[_j];
+              _item3.checked = true;
+
+              if (_item3.clockwise === _clockwise) {
+                reverse(_item3.list);
+                _item3.clockwise = !_clockwise;
+              }
+
+              _clockwise = !_clockwise;
+            }
+
+            return;
+          }
+        } // 新的依次时钟序互相颠倒
+
+
+        var clockwise = list[0].clockwise;
+        list[0].checked = true;
+
+        for (var _i3 = 1, _len4 = list.length; _i3 < _len4; _i3++) {
+          var _item4 = list[_i3];
+          _item4.checked = true;
+
+          if (_item4.clockwise === clockwise) {
+            reverse(_item4.list);
+            _item4.clockwise = !clockwise;
+          }
+
+          clockwise = !clockwise;
+        }
+      }
+    });
+    return v.map(function (item) {
+      var list = item.list.map(function (seg) {
+        var coords = seg.coords,
+            len = coords.length;
+
+        if (len === 2) {
+          return [coords[1].x, coords[1].y];
+        } else if (len === 3) {
+          return [coords[1].x, coords[1].y, coords[2].x, coords[2].y];
+        } else if (len === 4) {
+          return [coords[1].x, coords[1].y, coords[2].x, coords[2].y, coords[3].x, coords[3].y];
+        }
+      }); // 首个顶点重合
+
+      var first = item.list[0],
+          coords = first.coords;
+      list.unshift([coords[0].x, coords[0].y]);
+      return list;
+    });
+  }
+
+  function prefix(polygon) {
+    if (!polygon || !Array.isArray(polygon) || !Array.isArray(polygon[0])) {
+      return [];
+    }
+
+    if (Array.isArray(polygon[0][0])) {
+      return polygon;
+    }
+
+    return [polygon];
+  }
+
+  function trivial(polygonA, polygonB) {
+    var isIntermediateA = polygonA instanceof Polygon;
+    var isIntermediateB = polygonB instanceof Polygon; // 生成多边形对象，相交线段拆分开来，曲线x单调性裁剪，重合线段标记
+
+    var source;
+
+    if (isIntermediateA) {
+      source = polygonA.reset(0);
+    } else {
+      source = new Polygon(prefix(polygonA), 0);
+      source.selfIntersect();
+    } // console.log(source.toString());
+
+
+    var clip;
+
+    if (isIntermediateB) {
+      clip = polygonB.reset(1);
+    } else {
+      clip = new Polygon(prefix(polygonB), 1);
+      clip.selfIntersect();
+    } // console.log(clip.toString());
+    // console.log('----');
+    // 两个多边形之间再次互相判断相交
+
+
+    Polygon.intersect2(source, clip, isIntermediateA, isIntermediateB); // console.log(source.toString());
+    // console.log(clip.toString());
+    // console.log('====');
+
+    Polygon.annotate2(source, clip, isIntermediateA, isIntermediateB); // console.log(source.toString());
+    // console.log(clip.toString());
+
+    return [source, clip];
+  }
+
+  var INTERSECT = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0],
+      UNION = [0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      SUBTRACT = [0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0],
+      SUBTRACT_REV = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0],
+      XOR = [0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0];
+
+  function filter(segments, matrix) {
+    var res = [],
+        hash = {};
+    segments.forEach(function (seg) {
+      var belong = seg.belong,
+          myFill = seg.myFill,
+          otherFill = seg.otherFill,
+          otherCoincide = seg.otherCoincide;
+
+      if (otherCoincide) {
+        // 对方重合线只出现一次
+        var hc = seg.toHash();
+
+        if (hash.hasOwnProperty(hc)) {
+          return;
+        }
+
+        hash[hc] = true;
+      }
+
+      var i;
+
+      if (belong) {
+        i = (otherFill[0] ? 8 : 0) + (myFill[0] ? 4 : 0) + (otherFill[1] ? 2 : 0) + (myFill[1] ? 1 : 0);
+      } else {
+        i = (myFill[0] ? 8 : 0) + (otherFill[0] ? 4 : 0) + (myFill[1] ? 2 : 0) + (otherFill[1] ? 1 : 0);
+      }
+
+      if (matrix[i]) {
+        res.push(seg);
+      }
+    }); // console.log(res.map(item => item.toString()));
+
+    return res;
+  }
+
+  var bo = {
+    intersect: function intersect(polygonA, polygonB, intermediate) {
+      var _trivial = trivial(polygonA, polygonB),
+          _trivial2 = _slicedToArray(_trivial, 2),
+          source = _trivial2[0],
+          clip = _trivial2[1];
+
+      var list = filter(source.segments.concat(clip.segments), INTERSECT);
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
+      return _chain(list);
     },
-    _down: function _down(pos) {
-      var data = this.data;
-      var compare = this.compare;
-      var halfLength = this.length >> 1;
-      var item = data[pos];
+    union: function union(polygonA, polygonB, intermediate) {
+      var _trivial3 = trivial(polygonA, polygonB),
+          _trivial4 = _slicedToArray(_trivial3, 2),
+          source = _trivial4[0],
+          clip = _trivial4[1];
 
-      while (pos < halfLength) {
-        var left = (pos << 1) + 1;
-        var right = left + 1;
-        var best = data[left];
+      var list = filter(source.segments.concat(clip.segments), UNION);
 
-        if (right < this.length && compare(data[right], best) < 0) {
-          left = right;
-          best = data[right];
-        }
-
-        if (compare(best, item) >= 0) {
-          break;
-        }
-
-        data[pos] = best;
-        pos = left;
+      if (intermediate) {
+        source.segments = list;
+        return source;
       }
 
-      data[pos] = item;
+      return _chain(list);
+    },
+    subtract: function subtract(polygonA, polygonB, intermediate) {
+      var _trivial5 = trivial(polygonA, polygonB),
+          _trivial6 = _slicedToArray(_trivial5, 2),
+          source = _trivial6[0],
+          clip = _trivial6[1];
+
+      var list = filter(source.segments.concat(clip.segments), SUBTRACT);
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
+      return _chain(list);
+    },
+    subtractRev: function subtractRev(polygonA, polygonB, intermediate) {
+      var _trivial7 = trivial(polygonA, polygonB),
+          _trivial8 = _slicedToArray(_trivial7, 2),
+          source = _trivial8[0],
+          clip = _trivial8[1];
+
+      var list = filter(source.segments.concat(clip.segments), SUBTRACT_REV);
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
+      return _chain(list);
+    },
+    xor: function xor(polygonA, polygonB, intermediate) {
+      var _trivial9 = trivial(polygonA, polygonB),
+          _trivial10 = _slicedToArray(_trivial9, 2),
+          source = _trivial10[0],
+          clip = _trivial10[1];
+
+      var list = filter(source.segments.concat(clip.segments), XOR);
+
+      if (intermediate) {
+        source.segments = list;
+        return source;
+      }
+
+      return _chain(list);
+    },
+    chain: function chain(polygon) {
+      if (polygon instanceof Polygon) {
+        return _chain(polygon.segments);
+      }
+
+      return prefix(polygon);
     }
   };
-  _tinyqueue_1_2_3_tinyqueue["default"] = default_1;
-  var max = Math.max;
-  var min = Math.min;
-  var contourId = 0;
-
-  function processPolygon(contourOrHole, isSubject, depth, Q, bbox, isExteriorRing) {
-    var i, len, s1, s2, e1, e2;
-
-    for (i = 0, len = contourOrHole.length - 1; i < len; i++) {
-      s1 = contourOrHole[i];
-      s2 = contourOrHole[i + 1];
-      e1 = new SweepEvent(s1, false, undefined, isSubject);
-      e2 = new SweepEvent(s2, false, e1, isSubject);
-      e1.otherEvent = e2;
-
-      if (s1[0] === s2[0] && s1[1] === s2[1]) {
-        continue; // skip collapsed edges, or it breaks
-      }
-
-      e1.contourId = e2.contourId = depth;
-
-      if (!isExteriorRing) {
-        e1.isExteriorRing = false;
-        e2.isExteriorRing = false;
-      }
-
-      if (compareEvents(e1, e2) > 0) {
-        e2.left = true;
-      } else {
-        e1.left = true;
-      }
-
-      var x = s1[0],
-          y = s1[1];
-      bbox[0] = min(bbox[0], x);
-      bbox[1] = min(bbox[1], y);
-      bbox[2] = max(bbox[2], x);
-      bbox[3] = max(bbox[3], y); // Pushing it so the queue is sorted from left to right,
-      // with object on the left having the highest priority.
-
-      Q.push(e1);
-      Q.push(e2);
-    }
-  }
-
-  function fillQueue(subject, clipping, sbbox, cbbox, operation) {
-    var eventQueue = new _tinyqueue_1_2_3_tinyqueue(null, compareEvents);
-    var polygonSet, isExteriorRing, i, ii, j, jj; //, k, kk;
-
-    for (i = 0, ii = subject.length; i < ii; i++) {
-      polygonSet = subject[i];
-
-      for (j = 0, jj = polygonSet.length; j < jj; j++) {
-        isExteriorRing = j === 0;
-
-        if (isExteriorRing) {
-          contourId++;
-        }
-
-        processPolygon(polygonSet[j], true, contourId, eventQueue, sbbox, isExteriorRing);
-      }
-    }
-
-    for (i = 0, ii = clipping.length; i < ii; i++) {
-      polygonSet = clipping[i];
-
-      for (j = 0, jj = polygonSet.length; j < jj; j++) {
-        isExteriorRing = j === 0;
-
-        if (operation === DIFFERENCE) {
-          isExteriorRing = false;
-        }
-
-        if (isExteriorRing) {
-          contourId++;
-        }
-
-        processPolygon(polygonSet[j], false, contourId, eventQueue, cbbox, isExteriorRing);
-      }
-    }
-
-    return eventQueue;
-  }
-
-  var EMPTY = [];
-
-  function trivialOperation(subject, clipping, operation) {
-    var result = null;
-
-    if (subject.length * clipping.length === 0) {
-      if (operation === INTERSECTION) {
-        result = EMPTY;
-      } else if (operation === DIFFERENCE) {
-        result = subject;
-      } else if (operation === UNION || operation === XOR) {
-        result = subject.length === 0 ? clipping : subject;
-      }
-    }
-
-    return result;
-  }
-
-  function compareBBoxes(subject, clipping, sbbox, cbbox, operation) {
-    var result = null;
-
-    if (sbbox[0] > cbbox[2] || cbbox[0] > sbbox[2] || sbbox[1] > cbbox[3] || cbbox[1] > sbbox[3]) {
-      if (operation === INTERSECTION) {
-        result = EMPTY;
-      } else if (operation === DIFFERENCE) {
-        result = subject;
-      } else if (operation === UNION || operation === XOR) {
-        result = subject.concat(clipping);
-      }
-    }
-
-    return result;
-  }
-
-  function _boolean(subject, clipping, operation) {
-    if (typeof subject[0][0][0] === 'number') {
-      subject = [subject];
-    }
-
-    if (typeof clipping[0][0][0] === 'number') {
-      clipping = [clipping];
-    }
-
-    var trivial = trivialOperation(subject, clipping, operation);
-
-    if (trivial) {
-      return trivial === EMPTY ? null : trivial;
-    }
-
-    var sbbox = [Infinity, Infinity, -Infinity, -Infinity];
-    var cbbox = [Infinity, Infinity, -Infinity, -Infinity]; // console.time('fill queue');
-
-    var eventQueue = fillQueue(subject, clipping, sbbox, cbbox, operation); //console.timeEnd('fill queue');
-
-    trivial = compareBBoxes(subject, clipping, sbbox, cbbox, operation);
-
-    if (trivial) {
-      return trivial === EMPTY ? null : trivial;
-    } // console.time('subdivide edges');
-
-
-    var sortedEvents = subdivide(eventQueue, subject, clipping, sbbox, cbbox, operation); //console.timeEnd('subdivide edges');
-    // console.time('connect vertices');
-
-    var contours = connectEdges(sortedEvents); //console.timeEnd('connect vertices');
-    // Convert contours to polygons
-
-    var polygons = [];
-
-    for (var i = 0; i < contours.length; i++) {
-      var contour = contours[i];
-
-      if (contour.isExterior()) {
-        // The exterior ring goes first
-        var rings = [contour.points]; // Followed by holes if any
-
-        for (var j = 0; j < contour.holeIds.length; j++) {
-          var holeId = contour.holeIds[j];
-          rings.push(contours[holeId].points);
-        }
-
-        polygons.push(rings);
-      }
-    }
-
-    return polygons;
-  }
-
-  function union(subject, clipping) {
-    return _boolean(subject, clipping, UNION);
-  }
-
-  function diff(subject, clipping) {
-    return _boolean(subject, clipping, DIFFERENCE);
-  }
-
-  function xor(subject, clipping) {
-    return _boolean(subject, clipping, XOR);
-  }
-
-  function intersection$1(subject, clipping) {
-    return _boolean(subject, clipping, INTERSECTION);
-  }
 
   var math = {
     matrix: mx,
@@ -13727,12 +13494,7 @@
     geom: geom,
     bezier: bezier,
     isec: isec,
-    booleanOperations: {
-      union: union,
-      diff: diff,
-      intersection: intersection$1,
-      xor: xor
-    }
+    booleanOperations: bo
   };
 
   var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
@@ -18326,7 +18088,7 @@
     return 1.0 - 3.0 * aA2 + 3.0 * aA1;
   }
 
-  function B$1(aA1, aA2) {
+  function B(aA1, aA2) {
     return 3.0 * aA2 - 6.0 * aA1;
   }
 
@@ -18336,12 +18098,12 @@
 
 
   function calcBezier(aT, aA1, aA2) {
-    return ((A(aA1, aA2) * aT + B$1(aA1, aA2)) * aT + C(aA1)) * aT;
+    return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
   } // Returns dx/dt given t, x1, and x2, or dy/dt given t, y1, and y2.
 
 
   function getSlope(aT, aA1, aA2) {
-    return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B$1(aA1, aA2) * aT + C(aA1);
+    return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
   }
 
   function binarySubdivide(aX, aA, aB, mX1, mX2) {
@@ -22633,6 +22395,9 @@
 
             if (isNil$6(v)) {
               v = 0;
+            } // 不访问this.offsetWidth性能提升，暂时性
+            else if (v[1] === PX$4) {
+              v = v[0];
             } else {
               v = this.__calSize(v, this.offsetWidth, true);
             }
@@ -22648,6 +22413,8 @@
 
             if (isNil$6(_v)) {
               _v = 0;
+            } else if (_v[1] === PX$4) {
+              _v = _v[0];
             } else {
               _v = this.__calSize(_v, this.offsetHeight, true);
             }
@@ -32089,7 +31856,7 @@
       FILTER$5 = o$3.FILTER,
       MIX_BLEND_MODE$2 = o$3.MIX_BLEND_MODE;
 
-  function diff$1(elem, ovd, nvd) {
+  function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs); // <REPAINT不会有lv属性，无需对比
 
@@ -37808,7 +37575,7 @@
           if (this.dom.__vd) {
             // console.log(this.dom.__vd);
             // console.log(nvd);
-            diff$1(this.dom, this.dom.__vd, nvd);
+            diff(this.dom, this.dom.__vd, nvd);
           } else {
             this.dom.innerHTML = util.joinVirtualDom(nvd);
           }
@@ -39715,6 +39482,12 @@
     return Line;
   }(Geom$1);
 
+  var intersect$1 = bo.intersect,
+      union = bo.union,
+      subtract = bo.subtract,
+      subtract2 = bo.subtract2,
+      xor = bo.xor,
+      chain = bo.chain;
   var STROKE_WIDTH$3 = enums.STYLE_KEY.STROKE_WIDTH;
   var isNil$b = util.isNil;
 
@@ -40052,6 +39825,10 @@
         _this.__points = props.points;
       }
 
+      if (props.booleanOperations) {
+        _this.__booleanOperations = props.booleanOperations;
+      }
+
       return _this;
     }
 
@@ -40091,13 +39868,81 @@
 
     }, {
       key: "__reprocessing",
-      value: function __reprocessing(list) {
+      value: function __reprocessing(list, isMulti) {
+        if (!isMulti || list.length < 2) {
+          return list;
+        }
+
+        var bo = this.booleanOperations,
+            len = list.length;
+
+        if (!bo) {
+          return list;
+        }
+
+        if (!Array.isArray(bo)) {
+          var old = bo;
+          bo = [bo];
+
+          for (var i = 1; i < len - 1; i++) {
+            bo.push(old);
+          }
+        }
+
+        if (Array.isArray(bo) && bo.length) {
+          var res = [],
+              temp = list[0];
+
+          for (var _i3 = 1; _i3 < len; _i3++) {
+            var op = (bo[_i3 - 1] || '').toString().toLowerCase();
+            var cur = list[_i3];
+
+            if (['intersect', 'intersection', 'union', 'subtract', 'subtract2', 'diff', 'difference', 'xor'].indexOf(op) === -1) {
+              res = res.concat(chain(temp));
+              temp = cur || [];
+              continue;
+            }
+
+            switch (op) {
+              case 'intersect':
+              case 'intersection':
+                temp = intersect$1(temp, cur, true);
+                break;
+
+              case 'union':
+                temp = union(temp, cur, true);
+                break;
+
+              case 'subtract':
+              case 'diff':
+              case 'difference':
+                temp = subtract(temp, cur, true);
+                break;
+
+              case 'subtract2':
+                temp = subtract2(temp, cur, true);
+                break;
+
+              case 'xor':
+                temp = xor(temp, cur, true);
+                break;
+            }
+          }
+
+          return res.concat(chain(temp));
+        }
+
         return list;
       } // 同polygon覆盖，booleanOperations改变时需刷新缓冲顶点坐标
 
     }, {
       key: "__needRebuildSE",
-      value: function __needRebuildSE() {}
+      value: function __needRebuildSE(__cacheProps) {
+        if (util.isNil(__cacheProps.booleanOperations)) {
+          __cacheProps.booleanOperations = true;
+          return true;
+        }
+      }
     }, {
       key: "buildCache",
       value: function buildCache(originX, originY) {
@@ -40285,12 +40130,18 @@
                 xa = _pointList$[0],
                 ya = _pointList$[1];
 
-            for (var _i3 = 1, len = pointList.length; _i3 < len; _i3++) {
-              var _pointList$_i = _slicedToArray(pointList[_i3], 2),
+            for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
+              var item = pointList[_i4];
+
+              if (!item || item.length < 2) {
+                continue;
+              }
+
+              var _pointList$_i = _slicedToArray(pointList[_i4], 2),
                   xb = _pointList$_i[0],
                   yb = _pointList$_i[1];
 
-              var c = controlList[_i3 - 1];
+              var c = controlList[_i4 - 1];
 
               if (c && c.length === 4) {
                 var bezierBox = bezier.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
@@ -40321,66 +40172,25 @@
 
         return this.__bbox;
       }
+    }, {
+      key: "booleanOperations",
+      get: function get() {
+        return this.getProps('booleanOperations');
+      }
     }]);
 
     return Polyline;
   }(Geom$1);
 
-  function convertCurve2Line(poly) {
-    for (var len = poly.length, i = len - 1; i >= 0; i--) {
-      var cur = poly[i],
-          len2 = cur.length;
-
-      if (len2 === 4 || len2 === 6) {
-        var last = poly[(i || len) - 1];
-        var len3 = last.length;
-        var lastX = last[len3 - 2],
-            lastY = last[len3 - 1];
-        var coords = [[lastX, lastY], [cur[0], cur[1]], [cur[2], cur[3]]];
-
-        if (cur.length === 6) {
-          coords.push([cur[4], cur[5]]);
-        }
-
-        var l = bezier.bezierLength(coords); // 每2个px长度分割
-
-        var n = Math.ceil(l * 0.2); // <2px直接返回直线段
-
-        if (n === 1) {
-          cur.splice(0, len2 - 2);
-        } else {
-          // n段每段t为per
-          var per = 1 / n;
-
-          for (var j = 1; j < n; j++) {
-            var p = bezier.pointAtByT(coords, per * j);
-            poly.splice(i + j - 1, 0, p);
-          } // 原本的曲线直接改数据为最后一段截取的
-
-
-          cur.splice(0, len2 - 2);
-        }
-      }
-    }
-  }
-
-  var Polygon = /*#__PURE__*/function (_Polyline) {
+  var Polygon$1 = /*#__PURE__*/function (_Polyline) {
     _inherits(Polygon, _Polyline);
 
     var _super = _createSuper(Polygon);
 
     function Polygon(tagName, props) {
-      var _this;
-
       _classCallCheck(this, Polygon);
 
-      _this = _super.call(this, tagName, props);
-
-      if (props.booleanOperations) {
-        _this.__booleanOperations = props.booleanOperations;
-      }
-
-      return _this;
+      return _super.call(this, tagName, props);
     }
 
     _createClass(Polygon, [{
@@ -40393,136 +40203,6 @@
         }
 
         return res;
-      } // 布尔运算覆盖，仅multi才发生，因为需要多个多边形数据
-
-    }, {
-      key: "__reprocessing",
-      value: function __reprocessing(list, isMulti) {
-        if (!isMulti || list.length < 2) {
-          return list;
-        }
-
-        var bo = this.booleanOperations,
-            len = list.length;
-
-        if (!Array.isArray(bo) && bo) {
-          var old = bo;
-          bo = [bo];
-
-          for (var i = 1; i < len - 1; i++) {
-            bo.push(old);
-          }
-        }
-
-        if (Array.isArray(bo) && bo.length) {
-          var _ret = function () {
-            list.forEach(function (poly) {
-              if (poly && poly.length > 1) {
-                convertCurve2Line(poly);
-              }
-            }); // 输出结果，依旧是前面的每个多边形都和新的进行布尔运算
-
-            var res = [];
-
-            if (list[0] && list[0].length > 1) {
-              res.push(list[0]);
-            }
-
-            for (var _i = 1; _i < len; _i++) {
-              var op = (bo[_i - 1] || '').toString().toLowerCase();
-              var cur = list[_i];
-
-              if (!cur || cur.length < 2) {
-                continue;
-              }
-
-              if (['intersection', 'union', 'diff', 'xor'].indexOf(op) === -1 || !res.length) {
-                res.push(cur);
-                continue;
-              }
-
-              switch (op) {
-                case 'intersection':
-                  var r1 = intersection$1(res, [cur]);
-
-                  if (r1) {
-                    res = [];
-                    r1.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-
-                case 'union':
-                  var r2 = union(res, [cur]);
-
-                  if (r2) {
-                    res = [];
-                    r2.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-
-                case 'diff':
-                  var r3 = diff(res, [cur]);
-
-                  if (r3) {
-                    res = [];
-                    r3.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-
-                case 'xor':
-                  var r4 = xor(res, [cur]);
-
-                  if (r4) {
-                    res = [];
-                    r4.forEach(function (item) {
-                      res = res.concat(item);
-                    });
-                  } else {
-                    res = [];
-                  }
-
-                  break;
-              }
-            }
-
-            return {
-              v: res
-            };
-          }();
-
-          if (_typeof(_ret) === "object") return _ret.v;
-        }
-
-        return list;
-      } // 覆盖，当booleanOperations动画改变时刷新顶点缓存
-
-    }, {
-      key: "__needRebuildSE",
-      value: function __needRebuildSE(__cacheProps) {
-        if (util.isNil(__cacheProps.booleanOperations)) {
-          __cacheProps.booleanOperations = true;
-          return true;
-        }
-      }
-    }, {
-      key: "booleanOperations",
-      get: function get() {
-        return this.getProps('booleanOperations');
       }
     }]);
 
@@ -42276,11 +41956,11 @@
     Cache: Cache
   };
 
-  var version = "0.77.4";
+  var version = "0.78.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);
-  Geom$1.register('$polygon', Polygon);
+  Geom$1.register('$polygon', Polygon$1);
   Geom$1.register('$sector', Sector);
   Geom$1.register('$rect', Rect);
   Geom$1.register('$circle', Circle);

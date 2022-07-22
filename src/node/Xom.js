@@ -940,6 +940,10 @@ class Xom extends Node {
         if(isNil(v)) {
           v = 0;
         }
+        // 不访问this.offsetWidth性能提升，暂时性
+        else if(v[1] === PX) {
+          v = v[0];
+        }
         else {
           v = this.__calSize(v, this.offsetWidth, true);
         }
@@ -952,6 +956,9 @@ class Xom extends Node {
         let v = currentStyle[TRANSLATE_Y];
         if(isNil(v)) {
           v = 0;
+        }
+        else if(v[1] === PX) {
+          v = v[0];
         }
         else {
           v = this.__calSize(v, this.offsetHeight, true);

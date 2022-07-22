@@ -22395,6 +22395,9 @@
 
             if (isNil$6(v)) {
               v = 0;
+            } // 不访问this.offsetWidth性能提升，暂时性
+            else if (v[1] === PX$4) {
+              v = v[0];
             } else {
               v = this.__calSize(v, this.offsetWidth, true);
             }
@@ -22410,6 +22413,8 @@
 
             if (isNil$6(_v)) {
               _v = 0;
+            } else if (_v[1] === PX$4) {
+              _v = _v[0];
             } else {
               _v = this.__calSize(_v, this.offsetHeight, true);
             }
@@ -41951,7 +41956,7 @@
     Cache: Cache
   };
 
-  var version = "0.77.4";
+  var version = "0.78.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -1,5 +1,5 @@
 import babel from '@rollup/plugin-babel';
-import { uglify } from 'rollup-plugin-uglify';
+import { terser } from 'rollup-plugin-terser';
 import glslify from 'rollup-plugin-glslify';
 import json from '@rollup/plugin-json';
 
@@ -48,8 +48,7 @@ export default [{
       exclude: 'node_modules/**', // 只编译我们的源代码
       babelHelpers: 'bundled',
     }),
-    uglify({
-      sourcemap: true,
+    terser({
     }),
     json(),
     glslify(),

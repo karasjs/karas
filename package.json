@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.78.0",
+  "version": "0.78.1",
   "description": "A flexible JavaScript framework for RIA on Canvas/Svg/Webgl.",
   "maintainers": [
     {
@@ -22,14 +22,12 @@
     "type": "git",
     "url": "git://github.com/karasjs/karas.git"
   },
-  "dependencies": {
-    "@babel/core": "^7.17.12",
-    "@babel/preset-env": "^7.17.12"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@babel/core": "^7.17.12",
-    "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/preset-env": "^7.17.12",
+    "@babel/core": "^7.18.9",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/preset-env": "^7.18.9",
+    "@rollup/plugin-babel": "^5.3.1",
     "@rollup/plugin-json": "^4.0.3",
     "chromedriver": "^103.0.0",
     "expect.js": "^0.3.1",
@@ -38,12 +36,11 @@
     "gulp-util": "^3.0.8",
     "mocha": "^6.2.2",
     "nightwatch": "^1.3.4",
-    "rollup": "^1.32.1",
-    "rollup-plugin-babel": "^4.4.0",
+    "rollup": "^2.77.0",
     "rollup-plugin-glslify": "^1.2.0",
     "rollup-plugin-sourcemaps": "^0.5.0",
     "rollup-plugin-string": "^3.0.0",
-    "rollup-plugin-uglify": "^6.0.4",
+    "rollup-plugin-terser": "^7.0.2",
     "selenium-server": "^3.141.59",
     "through2": "^3.0.0",
     "webstorm-disable-index": "^1.2.0",

@@ -2255,14 +2255,22 @@ class Animation extends Event {
   }
 
   addControl() {
-    let ac = this.root.animateController;
+    let root = this.root;
+    if(!root) {
+      return;
+    }
+    let ac = root.animateController;
     if(ac) {
       ac.add(this);
     }
   }
 
   removeControl() {
-    let ac = this.root.animateController;
+    let root = this.root;
+    if(!root) {
+      return;
+    }
+    let ac = root.animateController;
     if(ac) {
       ac.remove(this);
     }

@@ -3436,7 +3436,7 @@ class Dom extends Xom {
       target.remove(cb);
     }
     else {
-      throw new Error('Invalid parameter in removeChild.');
+      inject.error('Invalid parameter in removeChild.');
     }
   }
 

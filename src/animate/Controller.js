@@ -70,8 +70,16 @@ class Controller {
       if(list2.length && onList.length) {
         list2.forEach(item => {
           onList.forEach(arr => {
+            let cb = () => {
+              let time = item.timestamp;
+              if(time !== this.__lastTime[arr[0]]) {
+                this.__lastTime[arr[0]] = time;
+                arr[1] && arr[1]();
+              }
+            };
+            cb.__karasEventCb = arr[1];
             item.off(arr[0], arr[1]);
-            item.on(arr[0], arr[1]);
+            item.on(arr[0], cb);
           });
         });
       }
@@ -208,7 +216,7 @@ class Controller {
         let time = item.timestamp;
         if(time !== this.__lastTime[id]) {
           this.__lastTime[id] = time;
-          handle();
+          handle && handle();
         }
       };
       cb.__karasEventCb = handle;

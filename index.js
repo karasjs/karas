@@ -32420,8 +32420,18 @@
           if (list2.length && onList.length) {
             list2.forEach(function (item) {
               onList.forEach(function (arr) {
+                var cb = function cb() {
+                  var time = item.timestamp;
+
+                  if (time !== _this.__lastTime[arr[0]]) {
+                    _this.__lastTime[arr[0]] = time;
+                    arr[1] && arr[1]();
+                  }
+                };
+
+                cb.__karasEventCb = arr[1];
                 item.off(arr[0], arr[1]);
-                item.on(arr[0], arr[1]);
+                item.on(arr[0], cb);
               });
             });
           }
@@ -32597,7 +32607,7 @@
 
             if (time !== _this2.__lastTime[id]) {
               _this2.__lastTime[id] = time;
-              handle();
+              handle && handle();
             }
           };
 

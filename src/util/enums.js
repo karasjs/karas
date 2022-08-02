@@ -108,20 +108,24 @@ const STYLE_KEY = {
 
 const STYLE2LOWER_MAP = {};
 function style2Lower(s) {
-  STYLE2LOWER_MAP[s] = STYLE2LOWER_MAP[s] || s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
-    return $1.toUpperCase();
-  });
-
-  return STYLE2LOWER_MAP[s];
+  let res = STYLE2LOWER_MAP[s];
+  if(!res) {
+    res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function($0, $1) {
+      return $1.toUpperCase();
+    });
+  }
+  return res;
 }
 
 const STYLE2UPPER_MAP = {};
 function style2Upper(s) {
-  STYLE2UPPER_MAP[s] = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
-    return $1 + '_' + $2;
-  }).toUpperCase();
-
-  return STYLE2UPPER_MAP[s];
+  let res = STYLE2UPPER_MAP[s];
+  if(!res) {
+    res = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
+      return $1 + '_' + $2;
+    }).toUpperCase();
+  }
+  return res;
 }
 
 const STYLE_R_KEY = {};

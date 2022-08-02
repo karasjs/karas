@@ -212,14 +212,24 @@ function rgba2int(color) {
 
 function int2rgba(color) {
   if(Array.isArray(color)) {
-    if(color.length === 4) {
-      color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
-      return 'rgba(' + joinArr(color, ',') + ')';
+    if(color.length === 3 || color.length === 4) {
+      color[0] = Math.floor(Math.max(color[0], 0));
+      color[1] = Math.floor(Math.max(color[1], 0));
+      color[2] = Math.floor(Math.max(color[2], 0));
+      if(color.length === 4) {
+        color[3] = Math.max(color[3], 0);
+        return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + color[3] + ')';
+      }
+      return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
     }
-    else if(color.length === 3) {
-      color = color.map(c => Math.floor(c));
-      return 'rgba(' + joinArr(color, ',') + ',1)';
-    }
+    // if(color.length === 4) {
+    //   color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
+    //   return 'rgba(' + joinArr(color, ',') + ')';
+    // }
+    // else if(color.length === 3) {
+    //   color = color.map(c => Math.floor(c));
+    //   return 'rgba(' + joinArr(color, ',') + ',1)';
+    // }
   }
   return color || 'rgba(0,0,0,0)';
 }

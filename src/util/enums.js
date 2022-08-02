@@ -121,7 +121,7 @@ const STYLE2UPPER_MAP = {};
 function style2Upper(s) {
   let res = STYLE2UPPER_MAP[s];
   if(!res) {
-    res = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
+    res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function($0, $1, $2) {
       return $1 + '_' + $2;
     }).toUpperCase();
   }

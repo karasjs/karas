@@ -327,7 +327,7 @@
     var res = STYLE2UPPER_MAP[s];
 
     if (!res) {
-      res = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+      res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
         return $1 + '_' + $2;
       }).toUpperCase();
     }
@@ -1157,17 +1157,26 @@
 
   function int2rgba$4(color) {
     if (Array.isArray(color)) {
-      if (color.length === 4) {
-        color = color.map(function (c, i) {
-          return i === 3 ? c : Math.floor(Math.max(0, c));
-        });
-        return 'rgba(' + joinArr$3(color, ',') + ')';
-      } else if (color.length === 3) {
-        color = color.map(function (c) {
-          return Math.floor(c);
-        });
-        return 'rgba(' + joinArr$3(color, ',') + ',1)';
-      }
+      if (color.length === 3 || color.length === 4) {
+        color[0] = Math.floor(Math.max(color[0], 0));
+        color[1] = Math.floor(Math.max(color[1], 0));
+        color[2] = Math.floor(Math.max(color[2], 0));
+
+        if (color.length === 4) {
+          color[3] = Math.max(color[3], 0);
+          return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + color[3] + ')';
+        }
+
+        return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
+      } // if(color.length === 4) {
+      //   color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
+      //   return 'rgba(' + joinArr(color, ',') + ')';
+      // }
+      // else if(color.length === 3) {
+      //   color = color.map(c => Math.floor(c));
+      //   return 'rgba(' + joinArr(color, ',') + ',1)';
+      // }
+
     }
 
     return color || 'rgba(0,0,0,0)';
@@ -41915,7 +41924,7 @@
     Cache: Cache
   };
 
-  var version = "0.78.1";
+  var version = "0.78.2";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

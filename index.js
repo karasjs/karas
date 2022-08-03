@@ -310,19 +310,29 @@
   var STYLE2LOWER_MAP = {};
 
   function style2Lower(s) {
-    STYLE2LOWER_MAP[s] = STYLE2LOWER_MAP[s] || s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
-      return $1.toUpperCase();
-    });
-    return STYLE2LOWER_MAP[s];
+    var res = STYLE2LOWER_MAP[s];
+
+    if (!res) {
+      res = STYLE2LOWER_MAP[s] = s.toLowerCase().replace(/_([a-z])/g, function ($0, $1) {
+        return $1.toUpperCase();
+      });
+    }
+
+    return res;
   }
 
   var STYLE2UPPER_MAP = {};
 
   function style2Upper$2(s) {
-    STYLE2UPPER_MAP[s] = STYLE2UPPER_MAP[s] || s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
-      return $1 + '_' + $2;
-    }).toUpperCase();
-    return STYLE2UPPER_MAP[s];
+    var res = STYLE2UPPER_MAP[s];
+
+    if (!res) {
+      res = STYLE2UPPER_MAP[s] = s.replace(/([a-z\d_])([A-Z])/g, function ($0, $1, $2) {
+        return $1 + '_' + $2;
+      }).toUpperCase();
+    }
+
+    return res;
   }
 
   var STYLE_R_KEY = {};
@@ -1147,17 +1157,26 @@
 
   function int2rgba$4(color) {
     if (Array.isArray(color)) {
-      if (color.length === 4) {
-        color = color.map(function (c, i) {
-          return i === 3 ? c : Math.floor(Math.max(0, c));
-        });
-        return 'rgba(' + joinArr$3(color, ',') + ')';
-      } else if (color.length === 3) {
-        color = color.map(function (c) {
-          return Math.floor(c);
-        });
-        return 'rgba(' + joinArr$3(color, ',') + ',1)';
-      }
+      if (color.length === 3 || color.length === 4) {
+        color[0] = Math.floor(Math.max(color[0], 0));
+        color[1] = Math.floor(Math.max(color[1], 0));
+        color[2] = Math.floor(Math.max(color[2], 0));
+
+        if (color.length === 4) {
+          color[3] = Math.max(color[3], 0);
+          return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + color[3] + ')';
+        }
+
+        return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',1)';
+      } // if(color.length === 4) {
+      //   color = color.map((c, i) => i === 3 ? c : Math.floor(Math.max(0, c)));
+      //   return 'rgba(' + joinArr(color, ',') + ')';
+      // }
+      // else if(color.length === 3) {
+      //   color = color.map(c => Math.floor(c));
+      //   return 'rgba(' + joinArr(color, ',') + ',1)';
+      // }
+
     }
 
     return color || 'rgba(0,0,0,0)';
@@ -14998,7 +15017,7 @@
     REBUILD: 1024 //                          10000000000
 
   };
-  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM_ORIGIN, true), _TRANSFORMS);
+  var TRANSFORMS = (_TRANSFORMS = {}, _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SCALE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_Z, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_X, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.SKEW_Y, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.ROTATE_3D, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSFORM_ORIGIN, true), _defineProperty(_TRANSFORMS, STYLE_KEY$1.TRANSLATE_PATH, true), _TRANSFORMS);
   var o$1 = Object.assign({
     contain: function contain(lv, value) {
       return (lv & value) > 0;
@@ -32420,8 +32439,18 @@
           if (list2.length && onList.length) {
             list2.forEach(function (item) {
               onList.forEach(function (arr) {
+                var cb = function cb() {
+                  var time = item.timestamp;
+
+                  if (time !== _this.__lastTime[arr[0]]) {
+                    _this.__lastTime[arr[0]] = time;
+                    arr[1] && arr[1]();
+                  }
+                };
+
+                cb.__karasEventCb = arr[1];
                 item.off(arr[0], arr[1]);
-                item.on(arr[0], arr[1]);
+                item.on(arr[0], cb);
               });
             });
           }
@@ -32597,7 +32626,7 @@
 
             if (time !== _this2.__lastTime[id]) {
               _this2.__lastTime[id] = time;
-              handle();
+              handle && handle();
             }
           };
 
@@ -41895,7 +41924,7 @@
     Cache: Cache
   };
 
-  var version = "0.78.1";
+  var version = "0.78.2";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

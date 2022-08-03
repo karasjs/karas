@@ -46,6 +46,7 @@ const TRANSFORMS = {
   [STYLE_KEY.ROTATE_3D]: true,
   [STYLE_KEY.TRANSFORM]: true,
   [STYLE_KEY.TRANSFORM_ORIGIN]: true,
+  [STYLE_KEY.TRANSLATE_PATH]: true,
 };
 
 let o = Object.assign({

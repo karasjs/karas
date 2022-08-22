@@ -259,7 +259,7 @@ class Text extends Node {
       // 只要是overflow隐藏，不管textOverflow如何（默认是clip等同于overflow:hidden的功能）都截取
       if(overflow === 'hidden') {
         // abs自适应宽度时不裁剪
-        if(position === 'absolute' && containerSize[1] === AUTO) {
+        if(position === 'absolute' && containerSize.u === AUTO) {
           isTextOverflow = false;
         }
         else {

@@ -102,11 +102,11 @@ class Geom extends Xom {
     } = currentStyle;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content，只区分固定和其它
-    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
     if(isFixed) {
       b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
-    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
+    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1)) {
       b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // 直接item的mpb影响basis

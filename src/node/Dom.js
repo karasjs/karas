@@ -422,7 +422,7 @@ class Dom extends Xom {
     }
     // inlineBlock尝试所有孩子在一行上
     else {
-      if(width[1] !== AUTO) {
+      if(width.u !== AUTO) {
         free -= isUpright ? this.__calSize(height, total, true) : this.__calSize(width, total, true);
       }
       else {
@@ -547,8 +547,8 @@ class Dom extends Xom {
     let isUpright = writingMode.indexOf('vertical') === 0;
     let main = isDirectionRow ? width : height;
     // basis3种情况：auto、固定、content
-    let isAuto = flexBasis[1] === AUTO;
-    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
+    let isAuto = flexBasis.u === AUTO;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
     let isContent = !isAuto && !isFixed;
     let fixedSize;
     // flex的item固定basis计算
@@ -556,7 +556,7 @@ class Dom extends Xom {
       b = fixedSize = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
     // 已声明主轴尺寸的，当basis是auto时为main值
-    else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
+    else if(isAuto && ([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1)) {
       b = fixedSize = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // 非固定尺寸的basis为auto时降级为content
@@ -1847,7 +1847,7 @@ class Dom extends Xom {
           // column的child真布局时，如果是stretch宽度，则可以直接生成animateRecord，否则自适应调整后才进行
           if(!isAbs && !isColumn && !isRow) {
             let needGenAr;
-            if(width[1] !== AUTO || alignSelf === 'stretch') {
+            if(width.u !== AUTO || alignSelf === 'stretch') {
               needGenAr = true;
             }
             else if(alignSelf === 'auto' && alignItems === 'stretch') {
@@ -1898,18 +1898,18 @@ class Dom extends Xom {
         if(!isAbs && !isColumn && !isRow) {
           let currentStyle = item.currentStyle;
           if(isDirectionRow) {
-            if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+            if(currentStyle[MARGIN_LEFT].u === AUTO) {
               marginAutoCount++;
             }
-            if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+            if(currentStyle[MARGIN_RIGHT].u === AUTO) {
               marginAutoCount++;
             }
           }
           else {
-            if(currentStyle[MARGIN_TOP][1] === AUTO) {
+            if(currentStyle[MARGIN_TOP].u === AUTO) {
               marginAutoCount++;
             }
-            if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+            if(currentStyle[MARGIN_BOTTOM].u === AUTO) {
               marginAutoCount++;
             }
           }
@@ -1970,26 +1970,26 @@ class Dom extends Xom {
         let child = line[i];
         let currentStyle = child.currentStyle;
         if(isDirectionRow) {
-          if(currentStyle[MARGIN_LEFT][1] === AUTO) {
+          if(currentStyle[MARGIN_LEFT].u === AUTO) {
             count += per;
             child.__offsetX(count, true);
           }
           else if(count) {
             child.__offsetX(count, true);
           }
-          if(currentStyle[MARGIN_RIGHT][1] === AUTO) {
+          if(currentStyle[MARGIN_RIGHT].u === AUTO) {
             count += per;
           }
         }
         else {
-          if(currentStyle[MARGIN_TOP][1] === AUTO) {
+          if(currentStyle[MARGIN_TOP].u === AUTO) {
             count += per;
             child.__offsetY(count, true);
           }
           else if(count) {
             child.__offsetY(count, true);
           }
-          if(currentStyle[MARGIN_BOTTOM][1] === AUTO) {
+          if(currentStyle[MARGIN_BOTTOM].u === AUTO) {
             count += per;
           }
         }
@@ -2058,7 +2058,7 @@ class Dom extends Xom {
             [PADDING_TOP]: paddingTop,
             [PADDING_BOTTOM]: paddingBottom,
           } = computedStyle;
-          if(height[1] === AUTO) {
+          if(height.u === AUTO) {
             let old = item.height;
             let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
             let d = v - old;
@@ -2106,7 +2106,7 @@ class Dom extends Xom {
               [HEIGHT]: height,
             } } = item;
             // row的孩子还是flex且column且不定高时，如果高度<侧轴拉伸高度则重新布局
-            if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height[1] === AUTO && item.outerHeight < maxCross) {
+            if(isDirectionRow && display === 'flex' && flexDirection === 'column' && height.u === AUTO && item.outerHeight < maxCross) {
               item.__layout(Object.assign(item.__layoutData, { h3: maxCross }));
             }
             let {
@@ -2117,7 +2117,7 @@ class Dom extends Xom {
               [PADDING_TOP]: paddingTop,
               [PADDING_BOTTOM]: paddingBottom,
             } = computedStyle;
-            if(height[1] === AUTO) {
+            if(height.u === AUTO) {
               let old = item.height;
               let v = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
@@ -2157,7 +2157,7 @@ class Dom extends Xom {
             [PADDING_RIGHT]: paddingRight,
             [PADDING_LEFT]: paddingLeft,
           } = computedStyle;
-          if(width[1] === AUTO) {
+          if(width.u === AUTO) {
             let old = item.width;
             let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
             let d = v - old;
@@ -2210,7 +2210,7 @@ class Dom extends Xom {
               [PADDING_RIGHT]: paddingRight,
               [PADDING_LEFT]: paddingLeft,
             } = computedStyle;
-            if(width[1] === AUTO) {
+            if(width.u === AUTO) {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
@@ -2390,10 +2390,10 @@ class Dom extends Xom {
             lineClampCount++;
           }
           if(item.__isIbFull && whiteSpace !== 'nowrap') {
-            if(isUpright && h[1] === AUTO) {
+            if(isUpright && h.u === AUTO) {
               isUprightIbFull = true;
             }
-            else if(!isUpright && w[1] === AUTO) {
+            else if(!isUpright && w.u === AUTO) {
               isIbFull = true;
             }
             lineBoxManager.addItem(item, true);
@@ -2531,10 +2531,10 @@ class Dom extends Xom {
           y = lineBoxManager.lastY;
           // ib情况发生折行，且非定宽
           if(!isInline && (lineBoxManager.size - n) > 1) {
-            if(height[1] === AUTO && isUpright) {
+            if(height.u === AUTO && isUpright) {
               isUprightIbFull = true;
             }
-            if(width[1] === AUTO && !isUpright) {
+            if(width.u === AUTO && !isUpright) {
               isIbFull = true;
             }
           }
@@ -2610,10 +2610,10 @@ class Dom extends Xom {
             y = lineBoxManager.lastY;
             // ib情况发生折行
             if(!isInline && (lineBoxManager.size - n) > 1) {
-              if(height[1] === AUTO && isUpright) {
+              if(height.u === AUTO && isUpright) {
                 isUprightIbFull = true;
               }
-              if(width[1] === AUTO && !isUpright) {
+              if(width.u === AUTO && !isUpright) {
                 isIbFull = true;
               }
             }
@@ -2939,28 +2939,28 @@ class Dom extends Xom {
       let fixedBottom;
       let fixedLeft;
       // 判断何种方式的定位，比如左+宽度，左+右之类
-      if(left[1] !== AUTO) {
+      if(left.u !== AUTO) {
         fixedLeft = true;
         computedStyle[LEFT] = this.__calSize(left, clientWidth, true);
       }
       else {
         computedStyle[LEFT] = 'auto';
       }
-      if(right[1] !== AUTO) {
+      if(right.u !== AUTO) {
         fixedRight = true;
         computedStyle[RIGHT] = this.__calSize(right, clientWidth, true);
       }
       else {
         computedStyle[RIGHT] = 'auto';
       }
-      if(top[1] !== AUTO) {
+      if(top.u !== AUTO) {
         fixedTop = true;
         computedStyle[TOP] = this.__calSize(top, clientHeight, true);
       }
       else {
         computedStyle[TOP] = 'auto';
       }
-      if(bottom[1] !== AUTO) {
+      if(bottom.u !== AUTO) {
         fixedBottom = true;
         computedStyle[BOTTOM] = this.__calSize(bottom, clientHeight, true);
       }
@@ -2974,12 +2974,12 @@ class Dom extends Xom {
       }
       else if(fixedLeft) {
         x2 = x + computedStyle[LEFT];
-        if(width[1] !== AUTO) {
+        if(width.u !== AUTO) {
           w2 = this.__calSize(width, clientWidth, true);
         }
       }
       else if(fixedRight) {
-        if(width[1] !== AUTO) {
+        if(width.u !== AUTO) {
           w2 = this.__calSize(width, clientWidth, true);
         }
         else {
@@ -2996,7 +2996,7 @@ class Dom extends Xom {
       }
       else {
         x2 = x + paddingLeft;
-        if(width[1] !== AUTO) {
+        if(width.u !== AUTO) {
           w2 = this.__calSize(width, clientWidth, true);
         }
       }
@@ -3007,12 +3007,12 @@ class Dom extends Xom {
       }
       else if(fixedTop) {
         y2 = y + computedStyle[TOP];
-        if(height[1] !== AUTO) {
+        if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
         }
       }
       else if(fixedBottom) {
-        if(height[1] !== AUTO) {
+        if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
         }
         else {
@@ -3039,7 +3039,7 @@ class Dom extends Xom {
           }
           prev = prev.prev;
         }
-        if(height[1] !== AUTO) {
+        if(height.u !== AUTO) {
           h2 = this.__calSize(height, clientHeight, true);
         }
       }

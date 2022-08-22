@@ -182,7 +182,7 @@ function removeEvent(dom, list) {
 // 提取出对比节点尺寸是否固定非AUTO
 function isFixedWidthOrHeight(node, k) {
   let c = node.currentStyle[k];
-  return c[1] !== AUTO;
+  return c.u !== AUTO;
 }
 // 除了固定尺寸，父级也不能是flex或变化flex
 function isFixedSize(node, includeParentFlex) {
@@ -490,19 +490,19 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
       let __config = node.__config;
       let currentStyle = __config[NODE_CURRENT_STYLE];
       let need;
-      if(hasVisibility && currentStyle[VISIBILITY][1] === INHERIT) {
+      if(hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
         need = true;
       }
-      else if(hasColor && currentStyle[COLOR][1] === INHERIT) {
+      else if(hasColor && currentStyle[COLOR].u === INHERIT) {
         need = true;
       }
-      else if(hasTsColor && currentStyle[TEXT_STROKE_COLOR][1] === INHERIT) {
+      else if(hasTsColor && currentStyle[TEXT_STROKE_COLOR].u === INHERIT) {
         need = true;
       }
-      else if(hasTsWidth && currentStyle[TEXT_STROKE_WIDTH][1] === INHERIT) {
+      else if(hasTsWidth && currentStyle[TEXT_STROKE_WIDTH].u === INHERIT) {
         need = true;
       }
-      else if(hasTsOver && currentStyle[TEXT_STROKE_OVER][1] === INHERIT) {
+      else if(hasTsOver && currentStyle[TEXT_STROKE_OVER].u === INHERIT) {
         need = true;
       }
       if(need) {
@@ -1138,8 +1138,8 @@ class Root extends Dom {
       computedStyle[POSITION] = currentStyle[POSITION] = 'static';
     }
     // 根节点满宽高
-    currentStyle[WIDTH] = [width, PX];
-    currentStyle[HEIGHT] = [height, PX];
+    currentStyle[WIDTH] = { v: width, u: PX };
+    currentStyle[HEIGHT] = { v: height, u: PX };
     computedStyle[WIDTH] = width;
     computedStyle[HEIGHT] = height;
     // 可能调用resize()导致变更，要重设，canvas无论离屏与否都可使用直接赋值，svg则按dom属性api
@@ -1329,7 +1329,8 @@ class Root extends Dom {
     // 有root提前跳出
     if(hasRoot) {
       reflow.clearUniqueReflowId(reflowHash);
-      let isUpright = this.currentStyle[WRITING_MODE].indexOf('vertical') === 0;
+      let wm = this.currentStyle[WRITING_MODE];
+      let isUpright = wm.v && wm.v.indexOf('vertical') === 0;
       // 布局分为两步，普通流和定位流，互相递归
       this.__layout({
         x: 0,
@@ -1703,7 +1704,7 @@ class Root extends Dom {
         let cs = parent.currentStyle;
         let height = cs[HEIGHT];
         let isContainer = parent === root || parent.isShadowRoot || cs[POSITION] === 'absolute' || cs[POSITION] === 'relative';
-        if(height[1] === AUTO && lastChild) {
+        if(height.u === AUTO && lastChild) {
           let oldH = parent.height + parent.computedStyle[PADDING_TOP];
           let nowH = lastChild.y + lastChild.outerHeight - parent.y;
           let diff = nowH - oldH;
@@ -1715,8 +1716,8 @@ class Root extends Dom {
               let item = absChildren[i];
               let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = item.currentStyle;
               // 是容器，所有的都调整，不是容器，其偏移是上级parent的某一个，根据情况具体不同
-              if(top[1] === AUTO) {
-                if(bottom[1] === AUTO) {
+              if(top.u === AUTO) {
+                if(bottom.u === AUTO) {
                   let prev = item.prev;
                   while(prev) {
                     let target = prev;
@@ -1737,17 +1738,17 @@ class Root extends Dom {
                     prev = prev.prev;
                   }
                 }
-                else if(bottom[1] === PX) {
+                else if(bottom.u === PX) {
                   item.__offsetY(diff, true, REPAINT);
                 }
-                else if(bottom[1] === PERCENT) {
-                  let v = (1 - bottom[0] * 0.01) * diff;
+                else if(bottom.u === PERCENT) {
+                  let v = (1 - bottom.v * 0.01) * diff;
                   item.__offsetY(v, true, REPAINT);
                 }
               }
-              else if(top[1] === PERCENT) {
+              else if(top.u === PERCENT) {
                 if(isContainer) {
-                  let v = top[0] * 0.01 * diff;
+                  let v = top.v * 0.01 * diff;
                   item.__offsetY(v, true, REPAINT);
                 }
                 // 非容器的特殊处理
@@ -1765,14 +1766,14 @@ class Root extends Dom {
                       container = container.domParent;
                     }
                   }
-                  if(container.currentStyle[HEIGHT][1] !== PX) {
-                    let v = top[0] * 0.01 * diff;
+                  if(container.currentStyle[HEIGHT].u !== PX) {
+                    let v = top.v * 0.01 * diff;
                     item.__offsetY(v, true, REPAINT);
                   }
                 }
               }
               // 高度百分比需发生变化的重新布局，需要在容器内
-              if(height[1] === PERCENT) {
+              if(height.u === PERCENT) {
                 if(isContainer) {
                   parent.__layoutAbs(parent, parent.__layoutData, item);
                 }
@@ -1803,7 +1804,7 @@ class Root extends Dom {
         for(let i = 0, len = absChildren.length; i < len; i++) {
           let item = absChildren[i];
           let { [TOP]: top, [BOTTOM]: bottom } = item.currentStyle;
-          if(top[1] === AUTO && bottom[1] === AUTO) {
+          if(top.u === AUTO && bottom.u === AUTO) {
             let prev = item.prev;
             while(prev) {
               let target = prev;

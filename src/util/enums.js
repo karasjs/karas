@@ -153,14 +153,6 @@ const UPDATE_KEY = {
   UPDATE_REMOVE_DOM: 9,
 };
 
-// animation计算每帧使用
-const KEY_FRAME_KEY = {
-  FRAME_STYLE: 0,
-  FRAME_TIME: 1,
-  FRAME_EASING: 2,
-  FRAME_TRANSITION: 3,
-};
-
 // 节点使用
 const NODE_KEY = {
   NODE_DOM_PARENT: 0,
@@ -205,54 +197,6 @@ const STRUCT_KEY = {
   STRUCT_HAS_MASK: 6,
 };
 
-const ANIMATE_KEY = {
-  I_ASSIGNING: 0,
-  I_IN_FPS: 1,
-  I_IS_DELAY: 2,
-  I_BEGIN: 3,
-  I_END: 4,
-  I_FINISHED: 5,
-  I_NEXT_END: 6,
-  I_FIRST_PLAY: 7,
-  I_PLAY_CB: 8,
-  I_TARGET: 9,
-  I_ROOT: 10,
-  I_FRAMES: 11,
-  I_FRAMES_R: 12,
-  I_CURRENT_TIME: 13,
-  I_NEXT_TIME: 14,
-  I_STYLE: 15,
-  I_DURATION: 16,
-  I_ITERATIONS: 17,
-  I_FILL: 18,
-  I_PLAYBACK_RATE: 19,
-  I_PLAY_COUNT: 20,
-  I_PLAY_STATE: 21,
-  I_DESTROYED: 22,
-  I_START_TIME: 23,
-  I_FPS_TIME: 24,
-  I_EASING: 25,
-  I_ENTER_FRAME: 26,
-  I_DELAY: 27,
-  I_END_DELAY: 28,
-  I_KEYS: 29,
-  I_ORIGIN_STYLE: 30,
-  I_CURRENT_FRAMES: 31,
-  I_CURRENT_FRAME: 32,
-  I_SPF_LIMIT: 33,
-  I_FPS: 34,
-  I_DIRECTION: 35,
-  I_FIRST_ENTER: 36,
-  I_STAY_BEGIN: 37,
-  I_STAY_END: 38,
-  I_IS2: 39,
-  I_END_TIME: 40,
-  I_NODE_CONFIG: 41,
-  I_ROOT_CONFIG: 42,
-  I_OUT_BEGIN_DELAY: 43,
-  I_TIME_STAMP: 44,
-};
-
 export default {
   STYLE_KEY, // 大写常量为k，数字为值
   STYLE_R_KEY, // 数字为k，大写常量为值
@@ -261,9 +205,7 @@ export default {
   style2Lower,
   style2Upper,
   UPDATE_KEY,
-  KEY_FRAME_KEY,
   NODE_KEY,
   STRUCT_KEY,
-  ANIMATE_KEY,
   ELLIPSIS: '…',
 };

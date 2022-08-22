@@ -17842,22 +17842,12 @@
     if (after) {
       for (var i = 0; i < length; i++) {
         var item = list[i];
-
-        if (item[1]) {
-          item[1](diff);
-        } else {
-          item.__after && item.__after(diff);
-        }
+        item.__after && item.__after(diff);
       }
     } else {
       for (var _i = 0; _i < length; _i++) {
         var _item = list[_i];
-
-        if (_item[0]) {
-          _item[0](diff);
-        } else {
-          _item.__before && _item.__before(diff);
-        }
+        _item.__before && _item.__before(diff);
       }
     }
   }
@@ -18624,7 +18614,7 @@
         return;
       }
 
-      res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
+      res[1] = [n[0] - p[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
     } else if (k === FILTER$4) {
       // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
       var len = Math.max(p ? p.length : 0, n ? n.length : 0);
@@ -18658,7 +18648,7 @@
               if (a[1] === b[1]) {
                 _v.push(b[0] - a[0]);
               } else {
-                _v.push(calByUnit(a, b, _i === 1 ? taraget.clientHeight : target.clientWidth, target.root));
+                _v.push(calByUnit(a, b, _i === 1 ? target.clientHeight : target.clientWidth, target.root));
               }
             }
 
@@ -19809,10 +19799,7 @@
         'alternate-reverse': true
       }.hasOwnProperty(op.direction) ? framesR : frames; // 时间戳
 
-      config[I_TIME_STAMP] = frame.__now; // 性能优化访问
-
-      _this[0] = _this.__before;
-      _this[1] = _this.__after;
+      config[I_TIME_STAMP] = frame.__now;
       return _this;
     }
 
@@ -41924,7 +41911,7 @@
     Cache: Cache
   };
 
-  var version = "0.78.2";
+  var version = "0.78.3";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

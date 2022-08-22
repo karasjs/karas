@@ -7,23 +7,13 @@ function traversal(list, length, diff, after) {
   if(after) {
     for(let i = 0; i < length; i++) {
       let item = list[i];
-      if(item[1]) {
-        item[1](diff);
-      }
-      else {
-        item.__after && item.__after(diff);
-      }
+      item.__after && item.__after(diff);
     }
   }
   else {
     for(let i = 0; i < length; i++) {
       let item = list[i];
-      if(item[0]) {
-        item[0](diff);
-      }
-      else {
-        item.__before && item.__before(diff);
-      }
+      item.__before && item.__before(diff);
     }
   }
 }

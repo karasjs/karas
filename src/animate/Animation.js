@@ -476,7 +476,7 @@ function calDiff(prev, next, k, target, tagName) {
     if(equalArr(p, n)) {
       return;
     }
-    res[1] = [n[0] - n[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
+    res[1] = [n[0] - p[0], n[1] - p[1], n[2] - p[2], [n[3][0] - p[3][0], n[3][1]]];
   }
   else if(k === FILTER) {
     // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
@@ -511,7 +511,7 @@ function calDiff(prev, next, k, target, tagName) {
               v2.push(b[0] - a[0]);
             }
             else {
-              v2.push(calByUnit(a, b, i === 1 ? taraget.clientHeight: target.clientWidth, target.root));
+              v2.push(calByUnit(a, b, i === 1 ? target.clientHeight: target.clientWidth, target.root));
             }
           }
           v2.push([
@@ -1615,9 +1615,6 @@ class Animation extends Event {
     }.hasOwnProperty(op.direction) ? framesR : frames;
     // 时间戳
     config[I_TIME_STAMP] = frame.__now;
-    // 性能优化访问
-    this[0] = this.__before;
-    this[1] = this.__after;
   }
 
   __init(list, iterations, duration, easing, target) {

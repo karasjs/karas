@@ -1942,7 +1942,7 @@ class Animation extends Event {
       root.addRefreshTask({
         __before() {
           self.__assigning = true;
-          genBeforeRefresh(this, current, this.__keys, root, this.__target);
+          genBeforeRefresh(self, current, self.__keys, root, self.__target);
           self.__clean(true);
         },
         __after(diff) {
@@ -1950,7 +1950,7 @@ class Animation extends Event {
             self.__hasFin = true;
             self.__assigning = false;
             frameCb(self, diff, false);
-            self.__begin = self.__end = self.__isDelay = this.__finished
+            self.__begin = self.__end = self.__isDelay = self.__finished
               = self.__inFps = self.__enterFrame = false;
             self.emit(Event.FINISH);
           }
@@ -1979,7 +1979,7 @@ class Animation extends Event {
       root.addRefreshTask({
         __before() {
           self.__assigning = true;
-          genBeforeRefresh(this, originStyle, this.__keys, root, this.__target);
+          genBeforeRefresh(self, originStyle, self.__keys, root, self.__target);
           self.__clean();
         },
         __after(diff) {

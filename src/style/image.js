@@ -10,8 +10,8 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
     return;
   }
   let list = [
-    [SCALE_X, [targetWidth / imgWidth, NUMBER]],
-    [SCALE_Y, [targetHeight / imgHeight, NUMBER]],
+    { k: SCALE_X, v: { v: targetWidth / imgWidth, u: NUMBER } },
+    { k: SCALE_Y, v: { v: targetHeight / imgHeight, u: NUMBER } },
   ];
   let tfo = [x, y];
   return transform.calMatrixWithOrigin(list, tfo, w, h);

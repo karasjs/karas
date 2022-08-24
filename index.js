@@ -17727,7 +17727,19 @@
       return;
     }
 
-    var list = [[SCALE_X$1, [targetWidth / imgWidth, NUMBER$2]], [SCALE_Y$1, [targetHeight / imgHeight, NUMBER$2]]];
+    var list = [{
+      k: SCALE_X$1,
+      v: {
+        v: targetWidth / imgWidth,
+        u: NUMBER$2
+      }
+    }, {
+      k: SCALE_Y$1,
+      v: {
+        v: targetHeight / imgHeight,
+        u: NUMBER$2
+      }
+    }];
     var tfo = [x, y];
     return transform.calMatrixWithOrigin(list, tfo, w, h);
   }
@@ -17738,9 +17750,8 @@
 
   var _enums$STYLE_KEY$9 = enums.STYLE_KEY,
       BACKGROUND_POSITION_X$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y;
-      _enums$STYLE_KEY$9.FONT_SIZE;
-      var NODE_DEFS_CACHE$5 = enums.NODE_KEY.NODE_DEFS_CACHE;
+      BACKGROUND_POSITION_Y$2 = _enums$STYLE_KEY$9.BACKGROUND_POSITION_Y,
+      NODE_DEFS_CACHE$5 = enums.NODE_KEY.NODE_DEFS_CACHE;
   var clone$2 = util.clone,
       joinArr$2 = util.joinArr;
   var canvasPolygon$4 = painter.canvasPolygon,
@@ -20618,7 +20629,7 @@
           root.addRefreshTask({
             __before: function __before() {
               self.__assigning = true;
-              genBeforeRefresh(this, current, this.__keys, root, this.__target);
+              genBeforeRefresh(self, current, self.__keys, root, self.__target);
 
               self.__clean(true);
             },
@@ -20627,7 +20638,7 @@
                 self.__hasFin = true;
                 self.__assigning = false;
                 frameCb(self, diff, false);
-                self.__begin = self.__end = self.__isDelay = this.__finished = self.__inFps = self.__enterFrame = false;
+                self.__begin = self.__end = self.__isDelay = self.__finished = self.__inFps = self.__enterFrame = false;
                 self.emit(Event.FINISH);
               }
 
@@ -20662,7 +20673,7 @@
           root.addRefreshTask({
             __before: function __before() {
               self.__assigning = true;
-              genBeforeRefresh(this, originStyle, this.__keys, root, this.__target);
+              genBeforeRefresh(self, originStyle, self.__keys, root, self.__target);
 
               self.__clean();
             },

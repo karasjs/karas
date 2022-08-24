@@ -6322,11 +6322,11 @@
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
-        if (item[1] === PX$9) {
-          v = Math.max(0, item[0]);
+        if (item.u === PX$9) {
+          v = Math.max(0, item.v);
           v = Math.min(i ? h : w, v);
         } else {
-          v = Math.max(0, item[0] * (i ? h : w) * 0.01);
+          v = Math.max(0, item.v * (i ? h : w) * 0.01);
           v = Math.min(i ? h : w, v);
         }
 
@@ -6340,11 +6340,11 @@
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         var v;
 
-        if (item[1] === PX$9) {
-          v = Math.max(0, item[0]);
+        if (item.u === PX$9) {
+          v = Math.max(0, item.v);
           v = Math.min(i ? h : w, v);
         } else {
-          v = Math.max(0, item[0] * (i ? h : w) * 0.01);
+          v = Math.max(0, item.v * (i ? h : w) * 0.01);
           v = Math.min(i ? h : w, v);
         }
 

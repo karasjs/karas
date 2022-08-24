@@ -2849,12 +2849,12 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
   [BORDER_TOP_LEFT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS].forEach(k => {
     computedStyle[k] = currentStyle[k].map((item, i) => {
       let v;
-      if(item[1] === PX) {
-        v = Math.max(0, item[0]);
+      if(item.u === PX) {
+        v = Math.max(0, item.v);
         v = Math.min(i ? h : w, v);
       }
       else {
-        v = Math.max(0, item[0] * (i ? h : w) * 0.01);
+        v = Math.max(0, item.v * (i ? h : w) * 0.01);
         v = Math.min(i ? h : w, v);
       }
       return v;
@@ -2866,12 +2866,12 @@ function calBorderRadiusInline(contentBoxList, currentStyle, computedStyle) {
   [BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS].forEach(k => {
     computedStyle[k] = currentStyle[k].map((item, i) => {
       let v;
-      if(item[1] === PX) {
-        v = Math.max(0, item[0]);
+      if(item.u === PX) {
+        v = Math.max(0, item.v);
         v = Math.min(i ? h : w, v);
       }
       else {
-        v = Math.max(0, item[0] * (i ? h : w) * 0.01);
+        v = Math.max(0, item.v * (i ? h : w) * 0.01);
         v = Math.min(i ? h : w, v);
       }
       return v;

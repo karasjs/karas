@@ -94,13 +94,7 @@ const {
     NODE_CACHE_FILTER,
     NODE_CACHE_OVERFLOW,
     NODE_CACHE_MASK,
-    NODE_STRUCT,
   },
-  STRUCT_KEY: {
-    STRUCT_INDEX,
-    STRUCT_TOTAL,
-    STRUCT_NODE,
-  }
 } = enums;
 const DIRECTION_HASH = {
   [TOP]: true,
@@ -478,10 +472,10 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
   }
   // 影响子继承REPAINT的变化，如果被cache住需要清除
   if(hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
-    for(let __structs = root.__structs, __struct = node.__config[NODE_STRUCT], i = __struct[STRUCT_INDEX] + 1, len = i + __struct[STRUCT_TOTAL]; i < len; i++) {
+    for(let __structs = root.__structs, __struct = node.__struct, i = __struct.index + 1, len = i + (__struct.total || 0); i < len; i++) {
       let {
-        [STRUCT_NODE]: node,
-        [STRUCT_TOTAL]: total,
+        node,
+        total,
       } = __structs[i];
       // text的style指向parent，不用管
       if(node instanceof Text) {
@@ -1049,7 +1043,7 @@ class Root extends Dom {
                 res[UPDATE_FOCUS] = REFLOW;
                 res[UPDATE_COMPONENT] = cp;
                 res[UPDATE_CONFIG] = sr.__config;
-                this.__addUpdate(sr, sr.__config, root, root.__config, res);
+                this.__addUpdate(sr, root, res);
               });
             }
           }
@@ -1161,8 +1155,9 @@ class Root extends Dom {
    * 添加更新入口，按节点汇总更新信息
    * @private
    */
-  __addUpdate(node, nodeConfig, root, rootConfig, o) {
-    let updateHash = rootConfig[NODE_UPDATE_HASH];
+  __addUpdate(node, root, o) {
+    let updateHash = root.__config[NODE_UPDATE_HASH];
+    let nodeConfig = node.__config;
     // root特殊处理，检查变更时优先看继承信息
     if(node === root) {
       updateHash = root.__updateRoot;
@@ -1841,14 +1836,14 @@ class Root extends Dom {
         // 第1个变化区域无需更改前面一段
         if(isFirst) {
           isFirst = false;
-          lastIndex = ns[STRUCT_INDEX] + (ns[STRUCT_TOTAL] || 0) + 1;
+          lastIndex = ns.index + (ns.total || 0) + 1;
           diff += d;
         }
         // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
         else {
-          let j = ns[STRUCT_INDEX] + (ns[STRUCT_TOTAL] || 0) + 1 + diff;
+          let j = ns.index + (ns.total || 0) + 1 + diff;
           for(let i = lastIndex; i < j; i++) {
-            structs[i][STRUCT_INDEX] += diff;
+            structs[i].index += diff;
           }
           lastIndex = j;
           diff += d;
@@ -1857,7 +1852,7 @@ class Root extends Dom {
       // 后面的要根据偏移量校正索引
       if(diff) {
         for(let i = lastIndex, len = structs.length; i < len; i++) {
-          structs[i][STRUCT_INDEX] += diff;
+          structs[i].index += diff;
         }
       }
       // 清除id

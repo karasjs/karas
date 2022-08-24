@@ -170,7 +170,7 @@ function genBeforeRefresh(animation, style, keys, root, node) {
     5: keys,
     7: animation.__nodeConfig,
   };
-  root.__addUpdate(node, animation.__nodeConfig, root, root.__config, res);
+  root.__addUpdate(node, root, res);
   animation.__style = style;
   animation.__assigning = true;
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
@@ -1794,12 +1794,8 @@ class Animation extends Event {
       let direction = this.__direction;
       let frames = this.__frames;
       let framesR = this.__framesR;
-      let isAlternate = {
-        alternate: true,
-        'alternate-reverse': true,
-      }.hasOwnProperty(direction);
       // 有正反向播放需要重设帧序列
-      if(isAlternate) {
+      if(direction === 'alternate' || direction === 'alternate-reverse') {
         let isEven = playCount % 2 === 0;
         if(direction === 'alternate') {
           currentFrames = this.__currentFrames = isEven ? frames : framesR;

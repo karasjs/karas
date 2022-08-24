@@ -15,7 +15,6 @@ const {
     NODE_DOM_PARENT,
     NODE_MATRIX,
     NODE_MATRIX_EVENT,
-    NODE_STRUCT,
   },
 } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
@@ -146,7 +145,7 @@ function updateCp(cp, props, state) {
     sr[k] = oldSr[k];
   });
   sr.__config[NODE_DOM_PARENT] = oldSr.domParent;
-  sr.__config[NODE_STRUCT] = oldSr.__config[NODE_STRUCT];
+  sr.__struct = oldSr.__struct;
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.__placeholder) {

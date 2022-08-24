@@ -88,14 +88,6 @@ const {
     NODE_PERSPECTIVE_MATRIX,
     NODE_VIRTUAL_DOM,
     NODE_CACHE_AS_BITMAP,
-    NODE_STRUCT,
-  },
-  STRUCT_KEY: {
-    STRUCT_NODE,
-    STRUCT_INDEX,
-    STRUCT_TOTAL,
-    STRUCT_HAS_MASK,
-    STRUCT_LV,
   },
 } = enums;
 const {
@@ -165,11 +157,11 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
     let arr = list.splice(0);
     for(let i = 0, len = arr.length; i < len; i++) {
       let parentIndex = arr[i];
-      let total = __structs[parentIndex][STRUCT_TOTAL] || 0;
+      let total = __structs[parentIndex].total || 0;
       for(let i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
         let {
-          [STRUCT_NODE]: node2,
-          [STRUCT_TOTAL]: total,
+          node: node2,
+          total,
         } = __structs[i];
         // mask也不占bbox位置
         if(node2.isMask) {
@@ -325,10 +317,10 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
     // 先遍历每个节点，以局部根节点左上角为原点，求得所占的总的bbox，即合并所有bbox
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
-        [STRUCT_NODE]: node,
-        [STRUCT_LV]: lv,
-        [STRUCT_TOTAL]: total,
-        [STRUCT_HAS_MASK]: hasMask,
+        node,
+        lv,
+        total,
+        hasMask,
       } = __structs[i];
       // 排除Text
       if(node instanceof Text) {
@@ -480,10 +472,10 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
     let offscreenHash = {};
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
-        [STRUCT_NODE]: node,
-        [STRUCT_LV]: lv,
-        [STRUCT_TOTAL]: total,
-        [STRUCT_HAS_MASK]: hasMask,
+        node,
+        lv,
+        total,
+        hasMask,
       } = __structs[i];
       // 排除Text
       if(node instanceof Text) {
@@ -510,7 +502,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
           // 定位到最后一个mask元素上的末尾
           let j = i + (total || 0) + 1;
           while(--n) {
-            let { [STRUCT_TOTAL]: total } = __structs[j];
+            let { total } = __structs[j];
             j += (total || 0) + 1;
           }
           j--;
@@ -697,10 +689,10 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
         let offscreenHash = {};
         let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
         let {
-          [STRUCT_INDEX]:index,
-          [STRUCT_TOTAL]: total,
-          [STRUCT_LV]: lv,
-        } = item.__config[NODE_STRUCT];
+          index,
+          total,
+          lv,
+        } = item.__struct;
         let matrixList = [];
         let parentMatrix;
         let lastMatrix;
@@ -710,10 +702,10 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
         let lastLv = lv;
         for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
           let {
-            [STRUCT_NODE]: node,
-            [STRUCT_LV]: lv,
-            [STRUCT_TOTAL]: total,
-            [STRUCT_HAS_MASK]: hasMask,
+            node,
+            lv,
+            total,
+            hasMask,
           } = __structs[i];
           // 排除Text
           if(node instanceof Text) {
@@ -740,7 +732,7 @@ function genTotal(renderMode, node, config, index, lv, total, __structs, hasMask
               // 定位到最后一个mask元素上的末尾
               let j = i + (total || 0) + 1;
               while(--n) {
-                let { [STRUCT_TOTAL]: total } = __structs[j];
+                let { total } = __structs[j];
                 j += (total || 0) + 1;
               }
               j--;
@@ -944,10 +936,10 @@ function resetMatrixCacheTotal(__structs, index, total, lv, matrixEvent) {
   let lastLv = lv;
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_LV]: lv,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      node,
+      lv,
+      total,
+      hasMask,
     } = __structs[i];
     // 排除Text
     if(node instanceof Text) {
@@ -1018,7 +1010,7 @@ function countMaskNum(__structs, start, hasMask) {
   let count = 0;
   while(hasMask--) {
     let {
-      [STRUCT_TOTAL]: total,
+      total,
     } = __structs[start];
     count += total || 0;
     start += total || 0;
@@ -1111,9 +1103,9 @@ function genTotalWebgl(gl, texCache, node, __config, index, total, __structs, ca
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      node,
+      total,
+      hasMask,
     } = __structs[i];
     let __config = node.__config;
     let parentIndex = parentIndexHash[i];
@@ -1523,16 +1515,16 @@ function genMaskWebgl(gl, texCache, node, __config, cache, W, H, lv, __structs) 
     let lastOpacity;
     let lastLv = lv;
     let {
-      [STRUCT_INDEX]: index,
-      [STRUCT_TOTAL]: total,
-    } = item.__config[NODE_STRUCT];
+      index,
+      total,
+    } = item.__struct;
     // 可以忽略mbm，因为只有透明遮罩
     for(let i = index, len = index + (total || 0) + 1; i < len; i++) {
       let {
-        [STRUCT_NODE]: node,
-        [STRUCT_LV]: lv,
-        [STRUCT_TOTAL]: total,
-        [STRUCT_HAS_MASK]: hasMask,
+        node,
+        lv,
+        total,
+        hasMask,
       } = __structs[i];
       let __config = node.__config;
       let {
@@ -1822,9 +1814,9 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
     for(let i = 0, len = __structs.length; i < len; i++) {
       let {
-        [STRUCT_NODE]: node,
-        [STRUCT_TOTAL]: total,
-        [STRUCT_HAS_MASK]: hasMask,
+        node,
+        total,
+        hasMask,
       } = __structs[i];
       let {
         [NODE_REFRESH_LV]: refreshLevel,
@@ -1868,10 +1860,10 @@ function renderSvg(renderMode, ctx, root, isFirst) {
   let lastConfig;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
-      [STRUCT_LV]: lv,
+      node,
+      total,
+      hasMask,
+      lv,
     } = __structs[i];
     let __config = node.__config;
     let {
@@ -1890,7 +1882,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         index: i,
         start,
         end,
-        isClip: __structs[start][STRUCT_NODE].isClip, // 第一个节点是clip为准
+        isClip: __structs[start].node.isClip, // 第一个节点是clip为准
       };
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
@@ -2011,7 +2003,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
     if(maskHash.hasOwnProperty(i) && (maskEffectHash.hasOwnProperty(i) || refreshLevel >= REPAINT || contain(refreshLevel, TRANSFORM_ALL | OP))) {
       let { index, start, end, isClip } = maskHash[i];
       let target = __structs[index];
-      let dom = target[STRUCT_NODE];
+      let dom = target.node;
       let mChildren = [];
       // clip模式时，先添加兜底整个白色使得全部都可见，mask本身变反色（黑色）
       if(isClip) {
@@ -2026,7 +2018,7 @@ function renderSvg(renderMode, ctx, root, isFirst) {
         });
       }
       for(let j = start; j < end; j++) {
-        let node = __structs[j][STRUCT_NODE];
+        let node = __structs[j].node;
         let { computedStyle: { [DISPLAY]: display, [VISIBILITY]: visibility, [FILL]: fill },
           virtualDom: { children, opacity } } = node;
         if(display !== 'none' && visibility !== 'hidden') {
@@ -2132,10 +2124,10 @@ function renderWebgl(renderMode, gl, root) {
    */
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_LV]: lv,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      node,
+      lv,
+      total,
+      hasMask,
     } = __structs[i];
     // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
     if(node instanceof Text) {
@@ -2308,7 +2300,7 @@ function renderWebgl(renderMode, gl, root) {
         let parent = __config[NODE_DOM_PARENT];
         while(parent) {
           let config = parent.__config;
-          let idx = config[NODE_STRUCT][STRUCT_INDEX];
+          let idx = parent.__struct.index;
           if(pptHash[idx]) {
             break;
           }
@@ -2396,9 +2388,9 @@ function renderWebgl(renderMode, gl, root) {
   }
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      node,
+      total,
+      hasMask,
     } = __structs[i];
     let __config = node.__config;
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
@@ -2581,10 +2573,10 @@ function renderCanvas(renderMode, ctx, root) {
    */
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_LV]: lv,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      node,
+      lv,
+      total,
+      hasMask,
     } = __structs[i];
     // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
     if(node instanceof Text) {
@@ -2647,10 +2639,10 @@ function renderCanvas(renderMode, ctx, root) {
   let offscreenHash = {};
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
-      [STRUCT_NODE]: node,
-      [STRUCT_LV]: lv,
-      [STRUCT_TOTAL]: total,
-      [STRUCT_HAS_MASK]: hasMask,
+      node,
+      lv,
+      total,
+      hasMask,
     } = __structs[i];
     // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
     if(node instanceof Text) {
@@ -2684,7 +2676,7 @@ function renderCanvas(renderMode, ctx, root) {
         // 定位到最后一个mask元素上的末尾
         let j = i + (total || 0) + 1;
         while(--n) {
-          let { [STRUCT_TOTAL]: total } = __structs[j];
+          let { total } = __structs[j];
           j += (total || 0) + 1;
         }
         j--;

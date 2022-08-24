@@ -14,7 +14,7 @@
 <script type="text/jsx">
   karas.debug = true;
   let list = [];
-  for(let i = 0; i < 1; i++) {
+  for(let i = 0; i < 1000; i++) {
     list.push(i);
   }
   let root = karas.render(
@@ -39,19 +39,17 @@
     let node = root.ref[i];
     node.animate([
       {
-        // translateX: 0,
-        // translateY: 0,
-        transform: 'translateX(0)',
+        translateX: 0,
+        translateY: 0,
       },
       {
-        // translateX: -180 + Math.random() * 360,
-        // translateY: -180 + Math.random() * 360,
-        transform: 'translateX(100)',
+        translateX: -180 + Math.random() * 360,
+        translateY: -180 + Math.random() * 360,
       }
     ], {
       duration: 500 + Math.random() * 500,
       direction: 'alternate',
-      iterations: 1,
+      iterations: Infinity,
     });
   });
   let fps = document.querySelector('#fps');

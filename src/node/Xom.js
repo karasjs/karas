@@ -137,16 +137,12 @@ const {
     UPDATE_CONFIG,
     UPDATE_REMOVE_DOM,
   },
-  STRUCT_KEY: {
-    STRUCT_HAS_MASK,
-  },
   NODE_KEY: {
     NODE_TAG_NAME,
     NODE_CACHE_STYLE,
     NODE_CURRENT_STYLE,
     NODE_COMPUTED_STYLE,
     NODE_STYLE,
-    NODE_STRUCT,
     NODE_OPACITY,
     NODE_MATRIX_EVENT,
     NODE_MATRIX,
@@ -286,9 +282,10 @@ class Xom extends Node {
   __structure(i, lv, j) {
     let res = super.__structure(i, lv, j);
     if(this.__hasMask) {
-      res[STRUCT_HAS_MASK] = this.__hasMask;
+      // res[STRUCT_HAS_MASK] = this.__hasMask;
+      res.hasMask = this.__hasMask;
     }
-    this.__config[NODE_STRUCT] = res;
+    // this.__config[NODE_STRUCT] = res;
     return res;
   }
 
@@ -523,7 +520,7 @@ class Xom extends Node {
               res[UPDATE_NODE] = node;
               res[UPDATE_FOCUS] = level.REFLOW; // 强制执行
               res[UPDATE_CONFIG] = __config;
-              root.__addUpdate(node, __config, root, root.__config, res);
+              root.__addUpdate(node, root, res);
             },
           });
         }
@@ -2624,7 +2621,7 @@ class Xom extends Node {
             return i;
           });
           res[UPDATE_CONFIG] = __config;
-          root.__addUpdate(node, __config, root, root.__config, res);
+          root.__addUpdate(node, root, res);
         },
         __after(diff) {
           if(isFunction(cb)) {
@@ -2664,7 +2661,7 @@ class Xom extends Node {
             return i;
           });
           res[UPDATE_CONFIG] = __config;
-          root.__addUpdate(node, __config, root, root.__config, res);
+          root.__addUpdate(node, root, res);
         },
         __after(diff) {
           if(isFunction(cb)) {
@@ -2956,7 +2953,7 @@ class Xom extends Node {
         res[UPDATE_FOCUS] = REFLOW;
         res[UPDATE_REMOVE_DOM] = true;
         res[UPDATE_CONFIG] = self.__config;
-        root.__addUpdate(self, self.__config, root, root.__config, res);
+        root.__addUpdate(self, root, res);
       },
       __after(diff) {
         self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();

@@ -63,8 +63,6 @@ const {
   NODE_KEY: {
     NODE_CURRENT_STYLE,
     NODE_STYLE,
-    NODE_STRUCT,
-    NODE_DOM_PARENT,
     NODE_IS_INLINE,
   },
   UPDATE_KEY: {
@@ -72,13 +70,6 @@ const {
     UPDATE_FOCUS,
     UPDATE_ADD_DOM,
     UPDATE_CONFIG,
-  },
-  STRUCT_KEY: {
-    STRUCT_NUM,
-    STRUCT_LV,
-    STRUCT_TOTAL,
-    STRUCT_CHILD_INDEX,
-    STRUCT_INDEX,
   },
   ELLIPSIS,
 } = enums;
@@ -293,25 +284,36 @@ class Dom extends Xom {
       }
     });
     let total = arr.length - 1;
-    res[STRUCT_NUM] = zIndexChildren.length;
-    res[STRUCT_TOTAL] = total;
+    // res[STRUCT_NUM] = zIndexChildren.length;
+    // res[STRUCT_TOTAL] = total;
+    res.num = zIndexChildren.length;
+    res.total = total;
     return arr;
   }
 
   __modifyStruct(root, offset = 0) {
     let __config = this.__config;
-    let struct = __config[NODE_STRUCT];
-    let total = struct[STRUCT_TOTAL] || 0;
+    // let struct = __config[NODE_STRUCT];
+    let struct = this.__struct;
+    // let total = struct[STRUCT_TOTAL] || 0;
+    let total = struct.total || 0;
     // 新生成了struct，引用也变了
-    let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
-    root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
+    // let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
+    let nss = this.__structure(struct.index, struct.lv, struct.childIndex);
+    // root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
+    root.__struct.splice(struct.index + offset, total + 1, ...nss);
     let d = 0;
     if(this !== root) {
-      struct = __config[NODE_STRUCT];
-      d = (struct[STRUCT_TOTAL] || 0) - total;
-      let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
-      ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
-      ps[STRUCT_TOTAL] += d;
+      // struct = __config[NODE_STRUCT];
+      // d = (struct[STRUCT_TOTAL] || 0) - total;
+      struct = this.__struct;
+      d = (struct.total || 0) - total;
+      // let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
+      // ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
+      // ps[STRUCT_TOTAL] += d;
+      let ps = this.__domParent.__struct;
+      ps.total = ps.total || 0;
+      ps.total += d;
     }
     return [struct, d];
   }
@@ -323,17 +325,20 @@ class Dom extends Xom {
    * @private
    */
   __updateStruct(structs) {
-    let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__config[NODE_STRUCT];
+    // let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__config[NODE_STRUCT];
+    let { index, total } = this.__struct;
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     let length = zIndexChildren.length;
     if(length === 1) {
       return;
     }
     zIndexChildren.forEach((child, i) => {
-      let ns = child.__config[NODE_STRUCT];
+      // let ns = child.__config[NODE_STRUCT];
+      let ns = child.__struct;
       // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
       if(ns) {
-        ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
+        // ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
+        ns.childIndex = i;
       }
     });
     // 按直接子节点划分为相同数量的若干段进行排序
@@ -345,15 +350,18 @@ class Dom extends Xom {
       if(child) {
         let o = {
           child,
-          list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + (child[STRUCT_TOTAL] || 0) + 1),
+          // list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + (child[STRUCT_TOTAL] || 0) + 1),
+          list: structs.slice(child.index, child.index + (child.total || 0) + 1),
         };
         arr.push(o);
         source.push(o);
-        i += child[STRUCT_TOTAL] || 0;
+        // i += child[STRUCT_TOTAL] || 0;
+        i += child.total || 0;
       }
     }
     arr.sort(function(a, b) {
-      return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
+      // return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
+      return a.child.childIndex - b.child.childIndex;
     });
     // 是否有变更，有才进行重新计算
     let needSort;
@@ -369,7 +377,8 @@ class Dom extends Xom {
         list = list.concat(item.list);
       });
       list.forEach((struct, i) => {
-        struct[STRUCT_INDEX] = index + i + 1;
+        // struct[STRUCT_INDEX] = index + i + 1;
+        struct.index = index + i + 1;
       });
       structs.splice(index + 1, total, ...list);
     }
@@ -3220,7 +3229,7 @@ class Dom extends Xom {
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
             res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+            root.__addUpdate(vd, root, res);
           },
           __after(diff) {
             if(isFunction(cb)) {
@@ -3269,7 +3278,7 @@ class Dom extends Xom {
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
             res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+            root.__addUpdate(vd, root, res);
           },
           __after(diff) {
             if(isFunction(cb)) {
@@ -3339,7 +3348,7 @@ class Dom extends Xom {
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
             res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+            root.__addUpdate(vd, root, res);
           },
           __after(diff) {
             if(isFunction(cb)) {
@@ -3409,7 +3418,7 @@ class Dom extends Xom {
             res[UPDATE_FOCUS] = level.REFLOW;
             res[UPDATE_ADD_DOM] = true;
             res[UPDATE_CONFIG] = vd.__config;
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+            root.__addUpdate(vd, root, res);
           },
           __after(diff) {
             if(isFunction(cb)) {

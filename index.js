@@ -417,14 +417,7 @@
     ELLIPSIS: '…'
   };
 
-  var _enums$STRUCT_KEY$3 = enums.STRUCT_KEY,
-      STRUCT_NODE$2 = _enums$STRUCT_KEY$3.STRUCT_NODE,
-      STRUCT_INDEX$3 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
-      STRUCT_CHILD_INDEX$1 = _enums$STRUCT_KEY$3.STRUCT_CHILD_INDEX,
-      STRUCT_LV$2 = _enums$STRUCT_KEY$3.STRUCT_LV,
-      _enums$NODE_KEY$9 = enums.NODE_KEY,
-      NODE_IS_DESTROYED$2 = _enums$NODE_KEY$9.NODE_IS_DESTROYED,
-      NODE_STRUCT$5 = _enums$NODE_KEY$9.NODE_STRUCT;
+  var NODE_IS_DESTROYED$2 = enums.NODE_KEY.NODE_IS_DESTROYED;
 
   var Node = /*#__PURE__*/function () {
     function Node() {
@@ -456,14 +449,23 @@
     _createClass(Node, [{
       key: "__structure",
       value: function __structure(i, lv, j) {
-        var _this$__config$NODE_S;
-
-        return this.__config[NODE_STRUCT$5] = (_this$__config$NODE_S = {}, _defineProperty(_this$__config$NODE_S, STRUCT_NODE$2, this), _defineProperty(_this$__config$NODE_S, STRUCT_INDEX$3, i), _defineProperty(_this$__config$NODE_S, STRUCT_CHILD_INDEX$1, j), _defineProperty(_this$__config$NODE_S, STRUCT_LV$2, lv), _this$__config$NODE_S);
+        return this.__struct = {
+          node: this,
+          index: i,
+          childIndex: j,
+          lv: lv
+        }; // return this.__config[NODE_STRUCT] = {
+        //   [STRUCT_NODE]: this,
+        //   [STRUCT_INDEX]: i,
+        //   [STRUCT_CHILD_INDEX]: j,
+        //   [STRUCT_LV]: lv,
+        // };
       }
     }, {
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
-        var struct = this.__config[NODE_STRUCT$5];
+        // let struct = this.__config[NODE_STRUCT];
+        var struct = this.__struct;
         return [struct, 0];
       }
     }, {
@@ -15453,7 +15455,7 @@
       _enums$NODE_KEY$8 = enums.NODE_KEY,
       NODE_CACHE$4 = _enums$NODE_KEY$8.NODE_CACHE,
       NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$8.NODE_LIMIT_CACHE,
-      NODE_DOM_PARENT$6 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
+      NODE_DOM_PARENT$5 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_MATRIX_EVENT$4 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
       NODE_OPACITY$2 = _enums$NODE_KEY$8.NODE_OPACITY,
       NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$8.NODE_VIRTUAL_DOM,
@@ -16315,7 +16317,7 @@
               var _root = this.root;
               var c = inject.getCacheCanvas(_root.width, _root.height, '__$$OVERSIZE$$__');
               ctx = c.ctx;
-              var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT$6].__config,
+              var _config$NODE_DOM_PAR = __config[NODE_DOM_PARENT$5].__config,
                   m = _config$NODE_DOM_PAR[NODE_MATRIX_EVENT$4],
                   opacity = _config$NODE_DOM_PAR[NODE_OPACITY$2];
               ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
@@ -16681,7 +16683,7 @@
   }
 
   var _enums$NODE_KEY$7 = enums.NODE_KEY,
-      NODE_DOM_PARENT$5 = _enums$NODE_KEY$7.NODE_DOM_PARENT,
+      NODE_DOM_PARENT$4 = _enums$NODE_KEY$7.NODE_DOM_PARENT,
       NODE_STYLE$5 = _enums$NODE_KEY$7.NODE_STYLE,
       NODE_CURRENT_STYLE$6 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
       NODE_COMPUTED_STYLE$4 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
@@ -16870,7 +16872,7 @@
       }
 
       if (children.__config) {
-        children.__config[NODE_DOM_PARENT$5] = parent;
+        children.__config[NODE_DOM_PARENT$4] = parent;
       }
 
       if (options.prev) {
@@ -16893,7 +16895,7 @@
         sr.__domParent = parent;
 
         if (sr.__config) {
-          sr.__config[NODE_DOM_PARENT$5] = parent;
+          sr.__config[NODE_DOM_PARENT$4] = parent;
         }
       }
     }
@@ -18738,7 +18740,7 @@
       7: animation.__nodeConfig
     };
 
-    root.__addUpdate(node, animation.__nodeConfig, root, root.__config, res);
+    root.__addUpdate(node, root, res);
 
     animation.__style = style;
     animation.__assigning = true; // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
@@ -20471,13 +20473,9 @@
           this.__playCount = playCount;
           var direction = this.__direction;
           var frames = this.__frames;
-          var framesR = this.__framesR;
-          var isAlternate = {
-            alternate: true,
-            'alternate-reverse': true
-          }.hasOwnProperty(direction); // 有正反向播放需要重设帧序列
+          var framesR = this.__framesR; // 有正反向播放需要重设帧序列
 
-          if (isAlternate) {
+          if (direction === 'alternate' || direction === 'alternate-reverse') {
             var isEven = playCount % 2 === 0;
 
             if (direction === 'alternate') {
@@ -21773,14 +21771,12 @@
       UPDATE_KEYS$1 = _enums$UPDATE_KEY$3.UPDATE_KEYS,
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
       UPDATE_REMOVE_DOM$1 = _enums$UPDATE_KEY$3.UPDATE_REMOVE_DOM,
-      STRUCT_HAS_MASK$1 = enums.STRUCT_KEY.STRUCT_HAS_MASK,
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$6.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$6.NODE_CACHE_STYLE,
       NODE_CURRENT_STYLE$5 = _enums$NODE_KEY$6.NODE_CURRENT_STYLE,
       NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$6.NODE_COMPUTED_STYLE,
       NODE_STYLE$4 = _enums$NODE_KEY$6.NODE_STYLE,
-      NODE_STRUCT$4 = _enums$NODE_KEY$6.NODE_STRUCT,
       NODE_OPACITY$1 = _enums$NODE_KEY$6.NODE_OPACITY,
       NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$6.NODE_MATRIX_EVENT,
       NODE_MATRIX$2 = _enums$NODE_KEY$6.NODE_MATRIX,
@@ -21794,7 +21790,7 @@
       NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$6.NODE_CACHE_OVERFLOW,
       NODE_IS_DESTROYED$1 = _enums$NODE_KEY$6.NODE_IS_DESTROYED,
       NODE_DEFS_CACHE$3 = _enums$NODE_KEY$6.NODE_DEFS_CACHE,
-      NODE_DOM_PARENT$4 = _enums$NODE_KEY$6.NODE_DOM_PARENT,
+      NODE_DOM_PARENT$3 = _enums$NODE_KEY$6.NODE_DOM_PARENT,
       NODE_IS_INLINE$1 = _enums$NODE_KEY$6.NODE_IS_INLINE,
       NODE_PERSPECTIVE_MATRIX$1 = _enums$NODE_KEY$6.NODE_PERSPECTIVE_MATRIX,
       NODE_IS_MASK$2 = _enums$NODE_KEY$6.NODE_IS_MASK,
@@ -21961,10 +21957,11 @@
         var res = _get(_getPrototypeOf(Xom.prototype), "__structure", this).call(this, i, lv, j);
 
         if (this.__hasMask) {
-          res[STRUCT_HAS_MASK$1] = this.__hasMask;
-        }
+          // res[STRUCT_HAS_MASK] = this.__hasMask;
+          res.hasMask = this.__hasMask;
+        } // this.__config[NODE_STRUCT] = res;
 
-        this.__config[NODE_STRUCT$4] = res;
+
         return res;
       } // 设置margin/padding的实际值，layout时执行，inline的垂直方向仍然计算值，但在布局时被忽略
 
@@ -22190,7 +22187,7 @@
 
                   res[UPDATE_CONFIG$3] = __config;
 
-                  root.__addUpdate(node, __config, root, root.__config, res);
+                  root.__addUpdate(node, root, res);
                 }
               });
             } // 后面低优先级的无需再看
@@ -23420,7 +23417,7 @@
           dy: dy
         }; // 防止cp直接返回cp嵌套，拿到真实dom的parent
 
-        var p = __config[NODE_DOM_PARENT$4];
+        var p = __config[NODE_DOM_PARENT$3];
 
         if (renderMode === WEBGL$1) {
           this.__calPerspective(__cacheStyle, currentStyle, computedStyle, __config);
@@ -24458,7 +24455,7 @@
               });
               res[UPDATE_CONFIG$3] = __config;
 
-              root.__addUpdate(node, __config, root, root.__config, res);
+              root.__addUpdate(node, root, res);
             },
             __after: function __after(diff) {
               if (isFunction$5(cb)) {
@@ -24505,7 +24502,7 @@
               });
               res[UPDATE_CONFIG$3] = __config;
 
-              root.__addUpdate(node, __config, root, root.__config, res);
+              root.__addUpdate(node, root, res);
             },
             __after: function __after(diff) {
               if (isFunction$5(cb)) {
@@ -24859,7 +24856,7 @@
             res[UPDATE_REMOVE_DOM$1] = true;
             res[UPDATE_CONFIG$3] = self.__config;
 
-            root.__addUpdate(self, self.__config, root, root.__config, res);
+            root.__addUpdate(self, root, res);
           },
           __after: function __after(diff) {
             self.isShadowRoot ? self.hostRoot.__destroy() : self.__destroy();
@@ -26056,20 +26053,12 @@
       _enums$NODE_KEY$5 = enums.NODE_KEY,
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$5.NODE_CURRENT_STYLE,
       NODE_STYLE$3 = _enums$NODE_KEY$5.NODE_STYLE,
-      NODE_STRUCT$3 = _enums$NODE_KEY$5.NODE_STRUCT,
-      NODE_DOM_PARENT$3 = _enums$NODE_KEY$5.NODE_DOM_PARENT,
       NODE_IS_INLINE = _enums$NODE_KEY$5.NODE_IS_INLINE,
       _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
       UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
       UPDATE_FOCUS$2 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
       UPDATE_ADD_DOM$1 = _enums$UPDATE_KEY$2.UPDATE_ADD_DOM,
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
-      _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
-      STRUCT_NUM = _enums$STRUCT_KEY$2.STRUCT_NUM,
-      STRUCT_LV$1 = _enums$STRUCT_KEY$2.STRUCT_LV,
-      STRUCT_TOTAL$2 = _enums$STRUCT_KEY$2.STRUCT_TOTAL,
-      STRUCT_CHILD_INDEX = _enums$STRUCT_KEY$2.STRUCT_CHILD_INDEX,
-      STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
       ELLIPSIS = enums.ELLIPSIS;
   var AUTO$3 = o$4.AUTO,
       PX$3 = o$4.PX,
@@ -26326,33 +26315,44 @@
             arr.push(temp);
           }
         });
-        var total = arr.length - 1;
-        res[STRUCT_NUM] = zIndexChildren.length;
-        res[STRUCT_TOTAL$2] = total;
+        var total = arr.length - 1; // res[STRUCT_NUM] = zIndexChildren.length;
+        // res[STRUCT_TOTAL] = total;
+
+        res.num = zIndexChildren.length;
+        res.total = total;
         return arr;
       }
     }, {
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
-        var _root$__structs;
+        var _root$__struct;
 
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-        var __config = this.__config;
-        var struct = __config[NODE_STRUCT$3];
-        var total = struct[STRUCT_TOTAL$2] || 0; // 新生成了struct，引用也变了
+        this.__config; // let struct = __config[NODE_STRUCT];
 
-        var nss = this.__structure(struct[STRUCT_INDEX$2], struct[STRUCT_LV$1], struct[STRUCT_CHILD_INDEX]);
+        var struct = this.__struct; // let total = struct[STRUCT_TOTAL] || 0;
 
-        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct[STRUCT_INDEX$2] + offset, total + 1].concat(_toConsumableArray(nss)));
+        var total = struct.total || 0; // 新生成了struct，引用也变了
+        // let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
+
+        var nss = this.__structure(struct.index, struct.lv, struct.childIndex); // root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
+
+
+        (_root$__struct = root.__struct).splice.apply(_root$__struct, [struct.index + offset, total + 1].concat(_toConsumableArray(nss)));
 
         var d = 0;
 
         if (this !== root) {
-          struct = __config[NODE_STRUCT$3];
-          d = (struct[STRUCT_TOTAL$2] || 0) - total;
-          var ps = __config[NODE_DOM_PARENT$3].__config[NODE_STRUCT$3];
-          ps[STRUCT_TOTAL$2] = ps[STRUCT_TOTAL$2] || 0;
-          ps[STRUCT_TOTAL$2] += d;
+          // struct = __config[NODE_STRUCT];
+          // d = (struct[STRUCT_TOTAL] || 0) - total;
+          struct = this.__struct;
+          d = (struct.total || 0) - total; // let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
+          // ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
+          // ps[STRUCT_TOTAL] += d;
+
+          var ps = this.__domParent.__struct;
+          ps.total = ps.total || 0;
+          ps.total += d;
         }
 
         return [struct, d];
@@ -26367,10 +26367,10 @@
     }, {
       key: "__updateStruct",
       value: function __updateStruct(structs) {
-        var _this$__config$NODE_S = this.__config[NODE_STRUCT$3],
-            index = _this$__config$NODE_S[STRUCT_INDEX$2],
-            _this$__config$NODE_S2 = _this$__config$NODE_S[STRUCT_TOTAL$2],
-            total = _this$__config$NODE_S2 === void 0 ? 0 : _this$__config$NODE_S2;
+        // let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__config[NODE_STRUCT];
+        var _this$__struct = this.__struct,
+            index = _this$__struct.index,
+            total = _this$__struct.total;
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         var length = zIndexChildren.length;
 
@@ -26379,10 +26379,12 @@
         }
 
         zIndexChildren.forEach(function (child, i) {
-          var ns = child.__config[NODE_STRUCT$3]; // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
+          // let ns = child.__config[NODE_STRUCT];
+          var ns = child.__struct; // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
 
           if (ns) {
-            ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
+            // ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
+            ns.childIndex = i;
           }
         }); // 按直接子节点划分为相同数量的若干段进行排序
 
@@ -26395,16 +26397,19 @@
           if (child) {
             var o = {
               child: child,
-              list: structs.slice(child[STRUCT_INDEX$2], child[STRUCT_INDEX$2] + (child[STRUCT_TOTAL$2] || 0) + 1)
+              // list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + (child[STRUCT_TOTAL] || 0) + 1),
+              list: structs.slice(child.index, child.index + (child.total || 0) + 1)
             };
             arr.push(o);
-            source.push(o);
-            i += child[STRUCT_TOTAL$2] || 0;
+            source.push(o); // i += child[STRUCT_TOTAL] || 0;
+
+            i += child.total || 0;
           }
         }
 
         arr.sort(function (a, b) {
-          return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
+          // return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
+          return a.child.childIndex - b.child.childIndex;
         }); // 是否有变更，有才进行重新计算
 
         var needSort;
@@ -26422,7 +26427,8 @@
             list = list.concat(item.list);
           });
           list.forEach(function (struct, i) {
-            struct[STRUCT_INDEX$2] = index + i + 1;
+            // struct[STRUCT_INDEX] = index + i + 1;
+            struct.index = index + i + 1;
           });
           structs.splice.apply(structs, [index + 1, total].concat(_toConsumableArray(list)));
         }
@@ -29603,7 +29609,7 @@
                 res[UPDATE_ADD_DOM$1] = true;
                 res[UPDATE_CONFIG$2] = vd.__config;
 
-                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+                root.__addUpdate(vd, root, res);
               },
               __after: function __after(diff) {
                 if (isFunction$4(cb)) {
@@ -29662,7 +29668,7 @@
                 res[UPDATE_ADD_DOM$1] = true;
                 res[UPDATE_CONFIG$2] = vd.__config;
 
-                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+                root.__addUpdate(vd, root, res);
               },
               __after: function __after(diff) {
                 if (isFunction$4(cb)) {
@@ -29746,7 +29752,7 @@
                 res[UPDATE_ADD_DOM$1] = true;
                 res[UPDATE_CONFIG$2] = vd.__config;
 
-                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+                root.__addUpdate(vd, root, res);
               },
               __after: function __after(diff) {
                 if (isFunction$4(cb)) {
@@ -29830,7 +29836,7 @@
                 res[UPDATE_ADD_DOM$1] = true;
                 res[UPDATE_CONFIG$2] = vd.__config;
 
-                root.__addUpdate(vd, vd.__config, root, root.__config, res);
+                root.__addUpdate(vd, root, res);
               },
               __after: function __after(diff) {
                 if (isFunction$4(cb)) {
@@ -30475,7 +30481,7 @@
 
               res[UPDATE_CONFIG$1] = self.__config;
 
-              root.__addUpdate(self, self.__config, root, root.__config, res);
+              root.__addUpdate(self, root, res);
             }
           });
           loadImg.source = null;
@@ -30507,7 +30513,7 @@
                     res[UPDATE_FOCUS$1] = o$1.REPAINT;
                     res[UPDATE_CONFIG$1] = self.__config;
 
-                    root.__addUpdate(self, self.__config, root, root.__config, res);
+                    root.__addUpdate(self, root, res);
                   },
                   __after: function __after() {
                     if (isFunction$3(cb)) {
@@ -30531,7 +30537,7 @@
 
                     res[UPDATE_CONFIG$1] = self.__config;
 
-                    root.__addUpdate(self, self.__config, root, root.__config, res);
+                    root.__addUpdate(self, root, res);
                   },
                   __after: function __after() {
                     if (isFunction$3(cb)) {
@@ -30614,7 +30620,7 @@
               res[UPDATE_FOCUS$1] = o$1.REFLOW;
               res[UPDATE_CONFIG$1] = self.__config;
 
-              root.__addUpdate(self, self.__config, root, self.__config, res);
+              root.__addUpdate(self, root, res);
             },
             __after: function __after(diff) {
               if (isFunction$3(cb)) {
@@ -31641,8 +31647,7 @@
       NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$2.NODE_COMPUTED_STYLE,
       NODE_DOM_PARENT$2 = _enums$NODE_KEY$2.NODE_DOM_PARENT,
       NODE_MATRIX$1 = _enums$NODE_KEY$2.NODE_MATRIX,
-      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$2.NODE_MATRIX_EVENT,
-      NODE_STRUCT$2 = _enums$NODE_KEY$2.NODE_STRUCT;
+      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$2.NODE_MATRIX_EVENT;
   var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
       TYPE_CP$1 = $$type.TYPE_CP;
@@ -31744,7 +31749,7 @@
       sr[k] = oldSr[k];
     });
     sr.__config[NODE_DOM_PARENT$2] = oldSr.domParent;
-    sr.__config[NODE_STRUCT$2] = oldSr.__config[NODE_STRUCT$2];
+    sr.__struct = oldSr.__struct;
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.__placeholder) {
@@ -33356,14 +33361,7 @@
       NODE_DOM_PARENT$1 = _enums$NODE_KEY$1.NODE_DOM_PARENT,
       NODE_PERSPECTIVE_MATRIX = _enums$NODE_KEY$1.NODE_PERSPECTIVE_MATRIX,
       NODE_VIRTUAL_DOM = _enums$NODE_KEY$1.NODE_VIRTUAL_DOM,
-      NODE_CACHE_AS_BITMAP = _enums$NODE_KEY$1.NODE_CACHE_AS_BITMAP,
-      NODE_STRUCT$1 = _enums$NODE_KEY$1.NODE_STRUCT,
-      _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
-      STRUCT_NODE$1 = _enums$STRUCT_KEY$1.STRUCT_NODE,
-      STRUCT_INDEX$1 = _enums$STRUCT_KEY$1.STRUCT_INDEX,
-      STRUCT_TOTAL$1 = _enums$STRUCT_KEY$1.STRUCT_TOTAL,
-      STRUCT_HAS_MASK = _enums$STRUCT_KEY$1.STRUCT_HAS_MASK,
-      STRUCT_LV = _enums$STRUCT_KEY$1.STRUCT_LV;
+      NODE_CACHE_AS_BITMAP = _enums$NODE_KEY$1.NODE_CACHE_AS_BITMAP;
   var NONE$1 = o$1.NONE,
       TRANSFORM_ALL = o$1.TRANSFORM_ALL,
       OP = o$1.OPACITY,
@@ -33441,12 +33439,12 @@
       for (var i = 0, len = arr.length; i < len; i++) {
         var parentIndex = arr[i];
 
-        var _total = __structs[parentIndex][STRUCT_TOTAL$1] || 0;
+        var _total = __structs[parentIndex].total || 0;
 
         for (var _i = parentIndex + 1, _len = parentIndex + _total + 1; _i < _len; _i++) {
           var _structs$_i = __structs[_i],
-              node2 = _structs$_i[STRUCT_NODE$1],
-              _total2 = _structs$_i[STRUCT_TOTAL$1]; // mask也不占bbox位置
+              node2 = _structs$_i.node,
+              _total2 = _structs$_i.total; // mask也不占bbox位置
 
           if (node2.isMask) {
             continue;
@@ -33609,10 +33607,10 @@
 
       for (var i = index, len = index + (total || 0) + 1; i < len; i++) {
         var _structs$i = __structs[i],
-            _node = _structs$i[STRUCT_NODE$1],
-            _lv = _structs$i[STRUCT_LV],
-            _total3 = _structs$i[STRUCT_TOTAL$1],
-            _hasMask = _structs$i[STRUCT_HAS_MASK]; // 排除Text
+            _node = _structs$i.node,
+            _lv = _structs$i.lv,
+            _total3 = _structs$i.total,
+            _hasMask = _structs$i.hasMask; // 排除Text
 
         if (_node instanceof Text) {
           var _bbox = _node.bbox; // 文字节点不能算filter
@@ -33786,10 +33784,10 @@
 
       for (var _i2 = index, _len2 = index + (total || 0) + 1; _i2 < _len2; _i2++) {
         var _structs$_i2 = __structs[_i2],
-            _node2 = _structs$_i2[STRUCT_NODE$1],
-            _lv2 = _structs$_i2[STRUCT_LV],
-            _total4 = _structs$_i2[STRUCT_TOTAL$1],
-            _hasMask2 = _structs$_i2[STRUCT_HAS_MASK]; // 排除Text
+            _node2 = _structs$_i2.node,
+            _lv2 = _structs$_i2.lv,
+            _total4 = _structs$_i2.total,
+            _hasMask2 = _structs$_i2.hasMask; // 排除Text
 
         if (_node2 instanceof Text) {
           _node2.render(renderMode, REPAINT$1, ctxTotal, CHILD, dx, dy);
@@ -33821,7 +33819,7 @@
             var j = _i2 + (_total4 || 0) + 1;
 
             while (--n) {
-              var _total5 = __structs[j][STRUCT_TOTAL$1];
+              var _total5 = __structs[j].total;
               j += (_total5 || 0) + 1;
             }
 
@@ -34041,10 +34039,10 @@
               tx = cacheMask.x,
               ty = cacheMask.y,
               ctx = cacheMask.ctx;
-          var _item$__config$NODE_S = item.__config[NODE_STRUCT$1],
-              index = _item$__config$NODE_S[STRUCT_INDEX$1],
-              total = _item$__config$NODE_S[STRUCT_TOTAL$1],
-              lv = _item$__config$NODE_S[STRUCT_LV];
+          var _item$__struct = item.__struct,
+              index = _item$__struct.index,
+              total = _item$__struct.total,
+              lv = _item$__struct.lv;
           var matrixList = [];
           var parentMatrix;
           var lastMatrix;
@@ -34055,10 +34053,10 @@
 
           for (var _i3 = index, _len3 = index + (total || 0) + 1; _i3 < _len3; _i3++) {
             var _structs$_i3 = __structs[_i3],
-                _node3 = _structs$_i3[STRUCT_NODE$1],
-                _lv3 = _structs$_i3[STRUCT_LV],
-                _total6 = _structs$_i3[STRUCT_TOTAL$1],
-                _hasMask3 = _structs$_i3[STRUCT_HAS_MASK]; // 排除Text
+                _node3 = _structs$_i3.node,
+                _lv3 = _structs$_i3.lv,
+                _total6 = _structs$_i3.total,
+                _hasMask3 = _structs$_i3.hasMask; // 排除Text
 
             if (_node3 instanceof Text) {
               _node3.render(renderMode, REPAINT$1, ctx, CHILD, dx, dy);
@@ -34090,7 +34088,7 @@
                 var _j5 = _i3 + (_total6 || 0) + 1;
 
                 while (--_n) {
-                  var _total7 = __structs[_j5][STRUCT_TOTAL$1];
+                  var _total7 = __structs[_j5].total;
                   _j5 += (_total7 || 0) + 1;
                 }
 
@@ -34329,10 +34327,10 @@
 
     for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i2 = __structs[i],
-          node = _structs$i2[STRUCT_NODE$1],
-          _lv4 = _structs$i2[STRUCT_LV],
-          _total8 = _structs$i2[STRUCT_TOTAL$1],
-          hasMask = _structs$i2[STRUCT_HAS_MASK]; // 排除Text
+          node = _structs$i2.node,
+          _lv4 = _structs$i2.lv,
+          _total8 = _structs$i2.total,
+          hasMask = _structs$i2.hasMask; // 排除Text
 
       if (node instanceof Text) {
         continue;
@@ -34412,7 +34410,7 @@
     var count = 0;
 
     while (hasMask--) {
-      var total = __structs[start][STRUCT_TOTAL$1];
+      var total = __structs[start].total;
       count += total || 0;
       start += total || 0; // total不算自身，所以还得+1
 
@@ -34530,9 +34528,9 @@
 
     for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i3 = __structs[i],
-          _node4 = _structs$i3[STRUCT_NODE$1],
-          _total9 = _structs$i3[STRUCT_TOTAL$1],
-          hasMask = _structs$i3[STRUCT_HAS_MASK];
+          _node4 = _structs$i3.node,
+          _total9 = _structs$i3.total,
+          hasMask = _structs$i3.hasMask;
       var _config3 = _node4.__config;
       var parentIndex = parentIndexHash[i];
       var matrix = matrixHash[parentIndex]; // 父节点的在每个节点计算后保存，第一个为top的默认为E（空）
@@ -35037,16 +35035,16 @@
       var parentOpacity = 1;
       var lastOpacity = void 0;
       var lastLv = lv;
-      var _item$__config$NODE_S2 = item.__config[NODE_STRUCT$1],
-          index = _item$__config$NODE_S2[STRUCT_INDEX$1],
-          total = _item$__config$NODE_S2[STRUCT_TOTAL$1]; // 可以忽略mbm，因为只有透明遮罩
+      var _item$__struct2 = item.__struct,
+          index = _item$__struct2.index,
+          total = _item$__struct2.total; // 可以忽略mbm，因为只有透明遮罩
 
       for (var _i7 = index, _len4 = index + (total || 0) + 1; _i7 < _len4; _i7++) {
         var _structs$_i4 = __structs[_i7],
-            _node5 = _structs$_i4[STRUCT_NODE$1],
-            _lv5 = _structs$_i4[STRUCT_LV],
-            _total10 = _structs$_i4[STRUCT_TOTAL$1],
-            hasMask = _structs$_i4[STRUCT_HAS_MASK];
+            _node5 = _structs$_i4.node,
+            _lv5 = _structs$_i4.lv,
+            _total10 = _structs$_i4.total,
+            hasMask = _structs$_i4.hasMask;
         var _config4 = _node5.__config;
         var __cache = _config4[NODE_CACHE$1],
             computedStyle = _config4[NODE_COMPUTED_STYLE$1],
@@ -35371,9 +35369,9 @@
       // 先遍历一遍收集完全不变的defs，缓存起来id，随后再执行遍历渲染生成新的，避免掉重复的id
       for (var i = 0, len = __structs.length; i < len; i++) {
         var _structs$i4 = __structs[i],
-            node = _structs$i4[STRUCT_NODE$1],
-            total = _structs$i4[STRUCT_TOTAL$1],
-            hasMask = _structs$i4[STRUCT_HAS_MASK];
+            node = _structs$i4.node,
+            total = _structs$i4.total,
+            hasMask = _structs$i4.hasMask;
         var _node$__config = node.__config,
             refreshLevel = _node$__config[NODE_REFRESH_LV$1],
             defsCache = _node$__config[NODE_DEFS_CACHE]; // 只要涉及到matrix和opacity就影响mask
@@ -35419,10 +35417,10 @@
 
     for (var _i8 = 0, _len5 = __structs.length; _i8 < _len5; _i8++) {
       var _structs$_i5 = __structs[_i8],
-          _node6 = _structs$_i5[STRUCT_NODE$1],
-          _total11 = _structs$_i5[STRUCT_TOTAL$1],
-          _hasMask4 = _structs$_i5[STRUCT_HAS_MASK],
-          lv = _structs$_i5[STRUCT_LV];
+          _node6 = _structs$_i5.node,
+          _total11 = _structs$_i5.total,
+          _hasMask4 = _structs$_i5.hasMask,
+          lv = _structs$_i5.lv;
       var __config = _node6.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$1],
           _refreshLevel4 = __config[NODE_REFRESH_LV$1],
@@ -35440,7 +35438,7 @@
           index: _i8,
           start: _start,
           end: _end,
-          isClip: __structs[_start][STRUCT_NODE$1].isClip // 第一个节点是clip为准
+          isClip: __structs[_start].node.isClip // 第一个节点是clip为准
 
         };
       } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
@@ -35580,7 +35578,7 @@
             _end2 = _maskHash$_i.end,
             isClip = _maskHash$_i.isClip;
         var target = __structs[index];
-        var dom = target[STRUCT_NODE$1];
+        var dom = target.node;
         var mChildren = []; // clip模式时，先添加兜底整个白色使得全部都可见，mask本身变反色（黑色）
 
         if (isClip) {
@@ -35592,7 +35590,7 @@
         }
 
         for (var j = _start2; j < _end2; j++) {
-          var _node7 = __structs[j][STRUCT_NODE$1];
+          var _node7 = __structs[j].node;
           var _node7$computedStyle = _node7.computedStyle,
               _display2 = _node7$computedStyle[DISPLAY$1],
               visibility = _node7$computedStyle[VISIBILITY$1],
@@ -35729,10 +35727,10 @@
 
     for (var i = 0, len = __structs.length; i < len; i++) {
       var _structs$i5 = __structs[i],
-          node = _structs$i5[STRUCT_NODE$1],
-          lv = _structs$i5[STRUCT_LV],
-          total = _structs$i5[STRUCT_TOTAL$1],
-          hasMask = _structs$i5[STRUCT_HAS_MASK]; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
+          node = _structs$i5.node,
+          lv = _structs$i5.lv,
+          total = _structs$i5.total,
+          hasMask = _structs$i5.hasMask; // Text特殊处理，webgl中先渲染为bitmap，再作为贴图绘制，缓存交由text内部判断，直接调用渲染纹理方法
 
       if (node instanceof Text) {
         if (lastRefreshLevel >= REPAINT$1) {
@@ -35933,7 +35931,7 @@
 
           while (parent) {
             var config = parent.__config;
-            var idx = config[NODE_STRUCT$1][STRUCT_INDEX$1];
+            var idx = parent.__struct.index;
 
             if (pptHash[idx]) {
               break;
@@ -36046,9 +36044,9 @@
 
     for (var _i10 = 0, _len9 = __structs.length; _i10 < _len9; _i10++) {
       var _structs$_i6 = __structs[_i10],
-          _node8 = _structs$_i6[STRUCT_NODE$1],
-          _total12 = _structs$_i6[STRUCT_TOTAL$1],
-          _hasMask5 = _structs$_i6[STRUCT_HAS_MASK];
+          _node8 = _structs$_i6.node,
+          _total12 = _structs$_i6.total,
+          _hasMask5 = _structs$_i6.hasMask;
       var _config5 = _node8.__config; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (_node8 instanceof Text) {
@@ -36251,10 +36249,10 @@
 
     for (var i = 0, len = __structs.length; i < len; i++) {
       var _structs$i6 = __structs[i],
-          node = _structs$i6[STRUCT_NODE$1],
-          lv = _structs$i6[STRUCT_LV],
-          total = _structs$i6[STRUCT_TOTAL$1],
-          hasMask = _structs$i6[STRUCT_HAS_MASK]; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
+          node = _structs$i6.node,
+          lv = _structs$i6.lv,
+          total = _structs$i6.total,
+          hasMask = _structs$i6.hasMask; // 排除Text，要么根节点直接绘制，要么被局部根节点汇总，自身并不缓存（fillText比位图更快）
 
       if (node instanceof Text) {
         continue;
@@ -36323,10 +36321,10 @@
 
     for (var _i11 = 0, _len10 = __structs.length; _i11 < _len10; _i11++) {
       var _structs$_i7 = __structs[_i11],
-          _node9 = _structs$_i7[STRUCT_NODE$1],
-          _lv6 = _structs$_i7[STRUCT_LV],
-          _total13 = _structs$_i7[STRUCT_TOTAL$1],
-          _hasMask6 = _structs$_i7[STRUCT_HAS_MASK]; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
+          _node9 = _structs$_i7.node,
+          _lv6 = _structs$_i7.lv,
+          _total13 = _structs$_i7.total,
+          _hasMask6 = _structs$_i7.hasMask; // text如果display不可见，parent会直接跳过，不会走到这里，这里一定是直接绘制到root的，visibility在其内部判断
 
       if (_node9 instanceof Text) {
         _node9.render(renderMode, REPAINT$1, ctx, NA, 0, 0);
@@ -36363,7 +36361,7 @@
           var j = _i11 + (_total13 || 0) + 1;
 
           while (--n) {
-            var _total14 = __structs[j][STRUCT_TOTAL$1];
+            var _total14 = __structs[j].total;
             j += (_total14 || 0) + 1;
           }
 
@@ -36908,12 +36906,7 @@
       NODE_CACHE_TOTAL = _enums$NODE_KEY.NODE_CACHE_TOTAL,
       NODE_CACHE_FILTER = _enums$NODE_KEY.NODE_CACHE_FILTER,
       NODE_CACHE_OVERFLOW = _enums$NODE_KEY.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK = _enums$NODE_KEY.NODE_CACHE_MASK,
-      NODE_STRUCT = _enums$NODE_KEY.NODE_STRUCT,
-      _enums$STRUCT_KEY = enums.STRUCT_KEY,
-      STRUCT_INDEX = _enums$STRUCT_KEY.STRUCT_INDEX,
-      STRUCT_TOTAL = _enums$STRUCT_KEY.STRUCT_TOTAL,
-      STRUCT_NODE = _enums$STRUCT_KEY.STRUCT_NODE;
+      NODE_CACHE_MASK = _enums$NODE_KEY.NODE_CACHE_MASK;
   var DIRECTION_HASH = (_DIRECTION_HASH = {}, _defineProperty(_DIRECTION_HASH, TOP, true), _defineProperty(_DIRECTION_HASH, RIGHT, true), _defineProperty(_DIRECTION_HASH, BOTTOM, true), _defineProperty(_DIRECTION_HASH, LEFT, true), _DIRECTION_HASH);
   var isNil$7 = util.isNil,
       isObject = util.isObject,
@@ -37334,10 +37327,10 @@
 
 
     if (hasVisibility || hasColor || hasTsColor || hasTsWidth || hasTsOver) {
-      for (var __structs = root.__structs, __struct = node.__config[NODE_STRUCT], _i = __struct[STRUCT_INDEX] + 1, _len = _i + __struct[STRUCT_TOTAL]; _i < _len; _i++) {
+      for (var __structs = root.__structs, __struct = node.__struct, _i = __struct.index + 1, _len = _i + (__struct.total || 0); _i < _len; _i++) {
         var _structs$_i = __structs[_i],
-            _node = _structs$_i[STRUCT_NODE],
-            total = _structs$_i[STRUCT_TOTAL]; // text的style指向parent，不用管
+            _node = _structs$_i.node,
+            total = _structs$_i.total; // text的style指向parent，不用管
 
         if (_node instanceof Text) {
           continue;
@@ -38037,7 +38030,7 @@
                     res[UPDATE_COMPONENT] = cp;
                     res[UPDATE_CONFIG] = sr.__config;
 
-                    _this4.__addUpdate(sr, sr.__config, root, root.__config, res);
+                    _this4.__addUpdate(sr, root, res);
                   });
                 }
               }
@@ -38178,8 +38171,9 @@
 
     }, {
       key: "__addUpdate",
-      value: function __addUpdate(node, nodeConfig, root, rootConfig, o) {
-        var updateHash = rootConfig[NODE_UPDATE_HASH]; // root特殊处理，检查变更时优先看继承信息
+      value: function __addUpdate(node, root, o) {
+        var updateHash = root.__config[NODE_UPDATE_HASH];
+        var nodeConfig = node.__config; // root特殊处理，检查变更时优先看继承信息
 
         if (node === root) {
           updateHash = root.__updateRoot;
@@ -38995,14 +38989,14 @@
 
             if (isFirst) {
               isFirst = false;
-              lastIndex = ns[STRUCT_INDEX] + (ns[STRUCT_TOTAL] || 0) + 1;
+              lastIndex = ns.index + (ns.total || 0) + 1;
               diff += d;
             } // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
             else {
-              var j = ns[STRUCT_INDEX] + (ns[STRUCT_TOTAL] || 0) + 1 + diff;
+              var j = ns.index + (ns.total || 0) + 1 + diff;
 
               for (var _i7 = lastIndex; _i7 < j; _i7++) {
-                structs[_i7][STRUCT_INDEX] += diff;
+                structs[_i7].index += diff;
               }
 
               lastIndex = j;
@@ -39012,7 +39006,7 @@
 
           if (diff) {
             for (var _i8 = lastIndex, _len5 = structs.length; _i8 < _len5; _i8++) {
-              structs[_i8][STRUCT_INDEX] += diff;
+              structs[_i8].index += diff;
             }
           } // 清除id
 

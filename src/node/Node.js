@@ -1,15 +1,8 @@
 import enums from '../util/enums';
 
 const {
-  STRUCT_KEY: {
-    STRUCT_NODE,
-    STRUCT_INDEX,
-    STRUCT_CHILD_INDEX,
-    STRUCT_LV,
-  },
   NODE_KEY: {
     NODE_IS_DESTROYED,
-    NODE_STRUCT,
   },
 } = enums;
 
@@ -38,16 +31,23 @@ class Node {
   }
 
   __structure(i, lv, j) {
-    return this.__config[NODE_STRUCT] = {
-      [STRUCT_NODE]: this,
-      [STRUCT_INDEX]: i,
-      [STRUCT_CHILD_INDEX]: j,
-      [STRUCT_LV]: lv,
+    return this.__struct = {
+      node: this,
+      index: i,
+      childIndex: j,
+      lv,
     };
+    // return this.__config[NODE_STRUCT] = {
+    //   [STRUCT_NODE]: this,
+    //   [STRUCT_INDEX]: i,
+    //   [STRUCT_CHILD_INDEX]: j,
+    //   [STRUCT_LV]: lv,
+    // };
   }
 
   __modifyStruct(root, offset = 0) {
-    let struct = this.__config[NODE_STRUCT];
+    // let struct = this.__config[NODE_STRUCT];
+    let struct = this.__struct;
     return [struct, 0];
   }
 

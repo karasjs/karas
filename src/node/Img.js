@@ -518,7 +518,7 @@ class Img extends Dom {
           res[UPDATE_NODE] = self;
           res[UPDATE_FOCUS] = level.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
           res[UPDATE_CONFIG] = self.__config;
-          root.__addUpdate(self, self.__config, root, root.__config, res);
+          root.__addUpdate(self, root, res);
         },
       });
       loadImg.source = null;
@@ -545,7 +545,7 @@ class Img extends Dom {
                 res[UPDATE_NODE] = self;
                 res[UPDATE_FOCUS] = level.REPAINT;
                 res[UPDATE_CONFIG] = self.__config;
-                root.__addUpdate(self, self.__config, root, root.__config, res);
+                root.__addUpdate(self, root, res);
               },
               __after() {
                 if(isFunction(cb)) {
@@ -566,7 +566,7 @@ class Img extends Dom {
                 res[UPDATE_NODE] = self;
                 res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
                 res[UPDATE_CONFIG] = self.__config;
-                root.__addUpdate(self, self.__config, root, root.__config, res);
+                root.__addUpdate(self, root, res);
               },
               __after() {
                 if(isFunction(cb)) {
@@ -643,7 +643,7 @@ class Img extends Dom {
           res[UPDATE_NODE] = self;
           res[UPDATE_FOCUS] = level.REFLOW;
           res[UPDATE_CONFIG] = self.__config;
-          root.__addUpdate(self, self.__config, root, self.__config, res);
+          root.__addUpdate(self, root, res);
         },
         __after(diff) {
           if(isFunction(cb)) {

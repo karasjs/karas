@@ -512,8 +512,8 @@ function calDiff(prev, next, k, target) {
     for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
       let a = p[i];
       let b = n[i];
-      // outset/inset必须相等
-      if(a[5] !== b[5]) {
+      // 不能为空，outset/inset必须相等
+      if(!a || !b || a[5] !== b[5]) {
         res.v.push(null);
         continue;
       }
@@ -1132,7 +1132,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
       }
     }
-    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
       if(v[0] !== 0) {
         st[0].v += v[0] * percent;
       }
@@ -1289,11 +1289,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
       st[1] += v[1] * percent;
       st[2] += v[2] * percent;
       st[3] += v[3] * percent;
-    }
-    else if(RADIUS_HASH.hasOwnProperty(k)) {
-      for(let i = 0; i < 2; i++) {
-        st[i].v += v[i] * percent;
-      }
     }
     else if(GEOM.hasOwnProperty(k)) {
       let st = style[k];

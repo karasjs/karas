@@ -2773,32 +2773,32 @@ function calBorderRadius(w, h, currentStyle, computedStyle, root) {
   let noRadius = true;
   BR_KS.forEach(k => {
     computedStyle[k] = currentStyle[k].map((item, i) => {
-      if(item[0] > 0) {
+      if(item.v > 0) {
         noRadius = false;
       }
       else {
         return 0;
       }
-      if(item[1] === PX) {
-        return Math.max(0, item[0]);
+      if(item.u === PX) {
+        return Math.max(0, item.v);
       }
-      else if(item[1] === PERCENT) {
-        return Math.max(0, item[0] * (i ? h : w) * 0.01);
+      else if(item.u === PERCENT) {
+        return Math.max(0, item.v * (i ? h : w) * 0.01);
       }
-      else if(item[1] === REM) {
-        return Math.max(0, item[0] * root.computedStyle[FONT_SIZE]);
+      else if(item.u === REM) {
+        return Math.max(0, item.v * root.computedStyle[FONT_SIZE]);
       }
-      else if(item[1] === VW) {
-        return Math.max(0, item[0] * root.width * 0.01);
+      else if(item.u === VW) {
+        return Math.max(0, item.v * root.width * 0.01);
       }
-      else if(item[1] === VH) {
-        return Math.max(0, item[0] * root.height * 0.01);
+      else if(item.u === VH) {
+        return Math.max(0, item.v * root.height * 0.01);
       }
-      else if(item[1] === VMAX) {
-        return Math.max(0, item[0] * Math.max(root.width, root.height) * 0.01);
+      else if(item.u === VMAX) {
+        return Math.max(0, item.v * Math.max(root.width, root.height) * 0.01);
       }
-      else if(item[1] === VMIN) {
-        return Math.max(0, item[0] * Math.min(root.width, root.height) * 0.01);
+      else if(item.u === VMIN) {
+        return Math.max(0, item.v * Math.min(root.width, root.height) * 0.01);
       }
       return 0;
     });

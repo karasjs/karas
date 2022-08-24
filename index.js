@@ -6249,26 +6249,26 @@
     var noRadius = true;
     BR_KS.forEach(function (k) {
       computedStyle[k] = currentStyle[k].map(function (item, i) {
-        if (item[0] > 0) {
+        if (item.v > 0) {
           noRadius = false;
         } else {
           return 0;
         }
 
-        if (item[1] === PX$9) {
-          return Math.max(0, item[0]);
-        } else if (item[1] === PERCENT$a) {
-          return Math.max(0, item[0] * (i ? h : w) * 0.01);
-        } else if (item[1] === REM$8) {
-          return Math.max(0, item[0] * root.computedStyle[FONT_SIZE$a]);
-        } else if (item[1] === VW$8) {
-          return Math.max(0, item[0] * root.width * 0.01);
-        } else if (item[1] === VH$8) {
-          return Math.max(0, item[0] * root.height * 0.01);
-        } else if (item[1] === VMAX$8) {
-          return Math.max(0, item[0] * Math.max(root.width, root.height) * 0.01);
-        } else if (item[1] === VMIN$8) {
-          return Math.max(0, item[0] * Math.min(root.width, root.height) * 0.01);
+        if (item.u === PX$9) {
+          return Math.max(0, item.v);
+        } else if (item.u === PERCENT$a) {
+          return Math.max(0, item.v * (i ? h : w) * 0.01);
+        } else if (item.u === REM$8) {
+          return Math.max(0, item.v * root.computedStyle[FONT_SIZE$a]);
+        } else if (item.u === VW$8) {
+          return Math.max(0, item.v * root.width * 0.01);
+        } else if (item.u === VH$8) {
+          return Math.max(0, item.v * root.height * 0.01);
+        } else if (item.u === VMAX$8) {
+          return Math.max(0, item.v * Math.max(root.width, root.height) * 0.01);
+        } else if (item.u === VMIN$8) {
+          return Math.max(0, item.v * Math.min(root.width, root.height) * 0.01);
         }
 
         return 0;
@@ -9386,7 +9386,7 @@
       return a[0].v === b[0].v && a[0].u === b[0].u && a[1].v === b[1].v && a[1].u === b[1].u;
     }
 
-    if (k === BACKGROUND_SIZE$2 || k === BACKGROUND_POSITION_X$3 || k === BACKGROUND_POSITION_Y$3) {
+    if (k === BACKGROUND_POSITION_X$3 || k === BACKGROUND_POSITION_Y$3) {
       if (a.length !== b.length) {
         return false;
       }
@@ -9395,7 +9395,7 @@
         var aa = a[_i2],
             bb = b[_i2];
 
-        if (aa[0].v !== bb[0].v || aa[0].u !== bb[0].u || aa[1].v !== bb[1].v || aa[1].u !== bb[1].u) {
+        if (aa.v !== bb.v || aa.u !== bb.u || aa.v !== bb.v || aa.u !== bb.u) {
           return false;
         }
       }
@@ -9404,20 +9404,54 @@
     }
 
     if (k === BOX_SHADOW$3) {
-      for (var _i3 = 0; _i3 < 4; _i3++) {
-        if (a[_i3].v !== b[_i3].v || a[_i3].u !== b[_i3].u) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i3 = 0, _len3 = a.length; _i3 < _len3; _i3++) {
+        var _aa = a[_i3],
+            _bb = b[_i3];
+
+        if ((!_aa || !_bb) && _aa !== _bb) {
+          return false;
+        }
+
+        for (var j = 0; j < 4; j++) {
+          if (_aa[j].v !== _bb[j].v || _aa[j].u !== _bb[j].u) {
+            return false;
+          }
+        }
+
+        for (var _j = 0; _j < 4; _j++) {
+          if (_aa[4][_j] !== _bb[4][_j]) {
+            return false;
+          }
+        }
+
+        if (_aa[5] !== _bb[5]) {
           return false;
         }
       }
 
-      for (var _i4 = 0; _i4 < 4; _i4++) {
-        if (a[4][_i4] !== b[4][_i4]) {
+      return true;
+    }
+
+    if (k === BACKGROUND_SIZE$2 || k === BACKGROUND_POSITION_X$3 || k === BACKGROUND_POSITION_Y$3) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i4 = 0, _len4 = a.length; _i4 < _len4; _i4++) {
+        var _aa2 = a[_i4],
+            _bb2 = b[_i4];
+
+        if (_aa2[0].v !== _bb2[0].v || _aa2[0].u !== _bb2[0].u || _aa2[1].v !== _bb2[1].v || _aa2[1].u !== _bb2[1].u) {
           return false;
         }
       }
 
-      return a[5] === b[5];
-    } // else if(k === OPACITY || k === Z_INDEX) {} 原始数字
+      return true;
+    } // if(k === OPACITY || k === Z_INDEX) {} 原始数字无需判断
 
 
     if (LENGTH_HASH$1.hasOwnProperty(k) || EXPAND_HASH$1.hasOwnProperty(k)) {
@@ -9429,7 +9463,7 @@
         return false;
       }
 
-      for (var _i5 = 0, _len3 = a.length; _i5 < _len3; _i5++) {
+      for (var _i5 = 0, _len5 = a.length; _i5 < _len5; _i5++) {
         var ai = a[_i5],
             bi = b[_i5];
 
@@ -9475,9 +9509,9 @@
             }
           }
 
-          for (var j = 0; j < 2; j++) {
-            var aj = av.v[j],
-                bj = bv.v[j];
+          for (var _j2 = 0; _j2 < 2; _j2++) {
+            var aj = av.v[_j2],
+                bj = bv.v[_j2];
             var ac = aj[0],
                 bc = bj[0];
 
@@ -9542,10 +9576,10 @@
 
       if (k === TRANSFORM$4) {
         if (v) {
-          var _len4 = v.length;
-          var n = new Array(_len4);
+          var _len6 = v.length;
+          var n = new Array(_len6);
 
-          for (var _i6 = 0; _i6 < _len4; _i6++) {
+          for (var _i6 = 0; _i6 < _len6; _i6++) {
             var o = v[_i6];
 
             if (o.k === MATRIX$4) {
@@ -9573,11 +9607,11 @@
         }];
       } else if (k === FILTER$7) {
         if (v) {
-          var _len5 = v.length;
+          var _len7 = v.length;
 
-          var _n = new Array(_len5);
+          var _n = new Array(_len7);
 
-          for (var _i7 = 0; _i7 < _len5; _i7++) {
+          for (var _i7 = 0; _i7 < _len7; _i7++) {
             var _o = v[_i7];
             var _k4 = _o.k,
                 vv = _o.v;
@@ -18982,9 +19016,9 @@
 
       for (var _i4 = 0, _len = Math.min(p.length, n.length); _i4 < _len; _i4++) {
         var _a = p[_i4];
-        var _b = n[_i4]; // outset/inset必须相等
+        var _b = n[_i4]; // 不能为空，outset/inset必须相等
 
-        if (_a[5] !== _b[5]) {
+        if (!_a || !_b || _a[5] !== _b[5]) {
           res.v.push(null);
           continue;
         }
@@ -19670,7 +19704,7 @@
             }
           }
         }
-      } else if (k === TRANSFORM_ORIGIN$2 || k === PERSPECTIVE_ORIGIN$2) {
+      } else if (k === TRANSFORM_ORIGIN$2 || k === PERSPECTIVE_ORIGIN$2 || RADIUS_HASH.hasOwnProperty(k)) {
         if (v[0] !== 0) {
           st[0].v += v[0] * percent;
         }
@@ -19819,10 +19853,6 @@
         st[1] += v[1] * percent;
         st[2] += v[2] * percent;
         st[3] += v[3] * percent;
-      } else if (RADIUS_HASH.hasOwnProperty(k)) {
-        for (var _i19 = 0; _i19 < 2; _i19++) {
-          st[_i19].v += v[_i19] * percent;
-        }
       } else if (GEOM$1.hasOwnProperty(k)) {
         var _st = style[k];
         var tagName = target.tagName;
@@ -19839,9 +19869,9 @@
           }
         } else if (target.isMulti) {
           if (k === 'points' || k === 'controls') {
-            for (var _i20 = 0, _len11 = Math.min(_st.length, v.length); _i20 < _len11; _i20++) {
-              var o = _st[_i20];
-              var n = v[_i20];
+            for (var _i19 = 0, _len11 = Math.min(_st.length, v.length); _i19 < _len11; _i19++) {
+              var o = _st[_i19];
+              var n = v[_i19];
 
               if (!isNil$b(o) && !isNil$b(n)) {
                 for (var _j6 = 0, len2 = Math.min(o.length, n.length); _j6 < len2; _j6++) {
@@ -19863,12 +19893,12 @@
               var st2 = _st[i];
 
               if (!isNil$b(item) && !isNil$b(st2)) {
-                for (var _i21 = 0, _len12 = Math.min(st2.length, item.length); _i21 < _len12; _i21++) {
-                  var _o = st2[_i21];
-                  var _n = item[_i21];
+                for (var _i20 = 0, _len12 = Math.min(st2.length, item.length); _i20 < _len12; _i20++) {
+                  var _o = st2[_i20];
+                  var _n = item[_i20];
 
                   if (!isNil$b(_o) && !isNil$b(_n)) {
-                    st2[_i21] += _n * percent;
+                    st2[_i20] += _n * percent;
                   }
                 }
               }
@@ -19882,9 +19912,9 @@
           }
         } else {
           if (k === 'points' || k === 'controls') {
-            for (var _i22 = 0, _len13 = Math.min(_st.length, v.length); _i22 < _len13; _i22++) {
-              var _o2 = _st[_i22];
-              var _n2 = v[_i22];
+            for (var _i21 = 0, _len13 = Math.min(_st.length, v.length); _i21 < _len13; _i21++) {
+              var _o2 = _st[_i21];
+              var _n2 = v[_i21];
 
               if (!isNil$b(_o2) && !isNil$b(_n2)) {
                 for (var _j7 = 0, _len14 = Math.min(_o2.length, _n2.length); _j7 < _len14; _j7++) {
@@ -20052,8 +20082,8 @@
 
         var offset = -1;
 
-        var _loop2 = function _loop2(_i23, _len15) {
-          var current = list[_i23];
+        var _loop2 = function _loop2(_i22, _len15) {
+          var current = list[_i22];
 
           if (current.hasOwnProperty('offset')) {
             current.offset = parseFloat(current.offset) || 0;
@@ -20061,18 +20091,18 @@
             current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-              list.splice(_i23, 1);
-              _i23--;
+              list.splice(_i22, 1);
+              _i22--;
               _len15--;
-              i = _i23;
+              i = _i22;
               len = _len15;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
-              list.splice(_i23, 1);
-              _i23--;
+              list.splice(_i22, 1);
+              _i22--;
               _len15--;
-              i = _i23;
+              i = _i22;
               len = _len15;
               return "continue";
             }
@@ -20090,7 +20120,7 @@
               delete current[k];
             }
           });
-          i = _i23;
+          i = _i22;
           len = _len15;
         };
 
@@ -20144,12 +20174,12 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i24 = 1, _len16 = list.length; _i24 < _len16; _i24++) {
-          var start = list[_i24]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i23 = 1, _len16 = list.length; _i23 < _len16; _i23++) {
+          var start = list[_i23]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i24 + 1;
+            var j = _i23 + 1;
 
             for (; j < _len16; j++) {
               end = list[j];
@@ -20159,16 +20189,16 @@
               }
             }
 
-            var num = j - _i24 + 1;
-            start = list[_i24 - 1];
+            var num = j - _i23 + 1;
+            start = list[_i23 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i24; k < j; k++) {
+            for (var k = _i23; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i24);
+              item.offset = start.offset + per * (k + 1 - _i23);
             }
 
-            _i24 = j;
+            _i23 = j;
           }
         }
 
@@ -20196,8 +20226,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i25 = 1; _i25 < length; _i25++) {
-          var next = frames[_i25];
+        for (var _i24 = 1; _i24 < length; _i24++) {
+          var next = frames[_i24];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -20208,8 +20238,8 @@
         });
         prev = framesR[0];
 
-        for (var _i26 = 1; _i26 < length; _i26++) {
-          var _next = framesR[_i26];
+        for (var _i25 = 1; _i25 < length; _i25++) {
+          var _next = framesR[_i25];
           prev = calFrame(prev, _next, keys, target);
         }
 

@@ -1367,6 +1367,43 @@ function equalStyle(k, a, b, target) {
     return a[0].v === b[0].v && a[0].u === b[0].u
       && a[1].v === b[1].v && a[1].u === b[1].u;
   }
+  if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let aa = a[i], bb = b[i];
+      if(aa.v !== bb.v || aa.u !== bb.u || aa.v !== bb.v || aa.u !== bb.u) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if(k === BOX_SHADOW) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let aa = a[i], bb = b[i];
+      if((!aa || !bb) && aa !== bb) {
+        return false;
+      }
+      for(let j = 0; j < 4; j++) {
+        if(aa[j].v !== bb[j].v || aa[j].u !== bb[j].u) {
+          return false;
+        }
+      }
+      for(let j = 0; j < 4; j++) {
+        if(aa[4][j] !== bb[4][j]) {
+          return false;
+        }
+      }
+      if(aa[5] !== bb[5]) {
+        return false;
+      }
+    }
+    return true;
+  }
   if(k === BACKGROUND_SIZE || k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
     if(a.length !== b.length) {
       return false;
@@ -1379,20 +1416,7 @@ function equalStyle(k, a, b, target) {
     }
     return true;
   }
-  if(k === BOX_SHADOW) {
-    for(let i = 0; i < 4; i++) {
-      if(a[i].v !== b[i].v || a[i].u !== b[i].u) {
-        return false;
-      }
-    }
-    for(let i = 0; i < 4; i++) {
-      if(a[4][i] !== b[4][i]) {
-        return false;
-      }
-    }
-    return a[5] === b[5];
-  }
-  // else if(k === OPACITY || k === Z_INDEX) {} 原始数字
+  // if(k === OPACITY || k === Z_INDEX) {} 原始数字无需判断
   if(LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     return a.v === b.v && a.u === b.u;
   }

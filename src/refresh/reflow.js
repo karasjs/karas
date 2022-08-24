@@ -36,24 +36,24 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
         if(next.computedStyle[DISPLAY] !== 'none') {
           if(next.currentStyle[POSITION] === 'absolute') {
             let { [TOP]: top, [BOTTOM]: bottom, [HEIGHT]: height } = next.currentStyle;
-            if(top[1] === AUTO) {
-              if(bottom[1] === AUTO || bottom[1] === PX) {
+            if(top.u === AUTO) {
+              if(bottom.u === AUTO || bottom.u === PX) {
                 next.__offsetY(dy, true, REFLOW);
                 next.clearCache();
               }
-              else if(bottom[1] === PERCENT) {
-                let v = (1 - bottom[0] * 0.01) * dy;
+              else if(bottom.u === PERCENT) {
+                let v = (1 - bottom.v * 0.01) * dy;
                 next.__offsetY(v, true, REFLOW);
                 next.clearCache();
               }
             }
-            else if(top[1] === PERCENT) {
-              let v = top[0] * 0.01 * dy;
+            else if(top.u === PERCENT) {
+              let v = top.v * 0.01 * dy;
               next.__offsetY(v, true, REFLOW);
               next.clearCache();
             }
             // 高度百分比需发生变化的重新布局，需要在容器内
-            if(height[1] === PERCENT) {
+            if(height.u === PERCENT) {
               if(isContainer) {
                 parent.__layoutAbs(parent, parent.__layoutData, next);
               }
@@ -92,13 +92,13 @@ function offsetAndResizeByNodeOnY(node, root, reflowHash, dy, inDirectAbsList) {
       let isAbs = currentStyle[POSITION] === 'absolute';
       let need;
       if(isAbs) {
-        if(currentStyle[HEIGHT][1] === AUTO
-          && (currentStyle[TOP][1] === AUTO || currentStyle[BOTTOM][1] === AUTO)) {
+        if(currentStyle[HEIGHT].u === AUTO
+          && (currentStyle[TOP].u === AUTO || currentStyle[BOTTOM].u === AUTO)) {
           need = true;
         }
       }
       // height不定则需要
-      else if(currentStyle[HEIGHT][1] === AUTO) {
+      else if(currentStyle[HEIGHT].u === AUTO) {
         need = true;
       }
       if(need) {

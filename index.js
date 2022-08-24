@@ -14214,7 +14214,13 @@
               dev2 = 0;
 
           if (isUpright) {
-            list = [[ROTATE_Z$2, [90, DEG$2]]];
+            list = [{
+              k: ROTATE_Z$2,
+              v: {
+                v: 90,
+                u: DEG$2
+              }
+            }];
             dev1 = bv * 0.6;
             dev2 = bv * 0.2;
           }
@@ -22704,7 +22710,7 @@
                 }
 
                 if (k === ROTATE_3D) {
-                  computedStyle[k] = [v[0], v[1], v[2], v[3][0]];
+                  computedStyle[k] = [v[0], v[1], v[2], v[3].v];
 
                   if (v[3].v === 0) {
                     return;
@@ -25858,20 +25864,20 @@
                   bottom = _next$currentStyle[BOTTOM$2],
                   height = _next$currentStyle[HEIGHT$4];
 
-              if (top[1] === AUTO$4) {
-                if (bottom[1] === AUTO$4 || bottom[1] === PX$4) {
+              if (top.u === AUTO$4) {
+                if (bottom.u === AUTO$4 || bottom.u === PX$4) {
                   next.__offsetY(dy, true, REFLOW$1);
 
                   next.clearCache();
-                } else if (bottom[1] === PERCENT$4) {
-                  var v = (1 - bottom[0] * 0.01) * dy;
+                } else if (bottom.u === PERCENT$4) {
+                  var v = (1 - bottom.v * 0.01) * dy;
 
                   next.__offsetY(v, true, REFLOW$1);
 
                   next.clearCache();
                 }
-              } else if (top[1] === PERCENT$4) {
-                var _v = top[0] * 0.01 * dy;
+              } else if (top.u === PERCENT$4) {
+                var _v = top.v * 0.01 * dy;
 
                 next.__offsetY(_v, true, REFLOW$1);
 
@@ -25879,7 +25885,7 @@
               } // 高度百分比需发生变化的重新布局，需要在容器内
 
 
-              if (height[1] === PERCENT$4) {
+              if (height.u === PERCENT$4) {
                 if (isContainer) {
                   parent.__layoutAbs(parent, parent.__layoutData, next);
                 } else {
@@ -25927,11 +25933,11 @@
         var need = void 0;
 
         if (isAbs) {
-          if (currentStyle[HEIGHT$4][1] === AUTO$4 && (currentStyle[TOP$2][1] === AUTO$4 || currentStyle[BOTTOM$2][1] === AUTO$4)) {
+          if (currentStyle[HEIGHT$4].u === AUTO$4 && (currentStyle[TOP$2].u === AUTO$4 || currentStyle[BOTTOM$2].u === AUTO$4)) {
             need = true;
           }
         } // height不定则需要
-        else if (currentStyle[HEIGHT$4][1] === AUTO$4) {
+        else if (currentStyle[HEIGHT$4].u === AUTO$4) {
           need = true;
         }
 

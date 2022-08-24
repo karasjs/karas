@@ -96,7 +96,7 @@ class TextBox {
       let dev1 = 0, dev2 = 0;
       if(isUpright) {
         list = [
-          [ROTATE_Z, [90, DEG]],
+          { k: ROTATE_Z, v: { v: 90, u: DEG } },
         ];
         dev1 = bv * 0.6;
         dev2 = bv * 0.2;

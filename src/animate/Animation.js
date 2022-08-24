@@ -204,6 +204,7 @@ function framing(style, duration, es) {
   return {
     style,
     time: offset * duration,
+    easing: easing || es,
     timingFunction: getEasing(easing || es),
     transition: [],
   };
@@ -1112,7 +1113,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
       for(let i = 0, len = v.length; i < len; i++) {
         let item = v[i];
         if(item) {
-          let k2 = st[i][0], v2 = st[i][1];
+          let k2 = st[i].k, v2 = st[i].v;
           // 只有dropShadow是多个数组，存放x/y/blur/spread/color
           if(k2 === 'dropShadow') {
             v2[0].v += item[0] * percent;

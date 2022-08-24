@@ -1519,7 +1519,7 @@ class Xom extends Node {
 
   __calFilter(currentStyle, computedStyle) {
     return computedStyle[FILTER] = (currentStyle[FILTER] || []).map(item => {
-      let [k, v] = item;
+      let { k, v } = item;
       if(k === 'dropShadow') {
         let v2 = v.map((item2, i) => {
           if(i > 3) {

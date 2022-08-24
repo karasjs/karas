@@ -21,9 +21,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on('begin', () => {
   if(n++ === 0) {
-    input.value = t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X][0];
+    input.value = t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X].v;
   }
   else {
-    input.value += '/' + (t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X][0] < 100);
+    input.value += '/' + (t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X].v < 100);
   }
 });

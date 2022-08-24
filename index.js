@@ -18768,6 +18768,7 @@
     return {
       style: style,
       time: offset * duration,
+      easing: easing || es,
       timingFunction: getEasing(easing || es),
       transition: []
     };
@@ -19584,7 +19585,8 @@
 
   function calFrame(prev, next, keys, target) {
     keys.forEach(function (k) {
-      var ts = calDiff(prev.style, next.style, k, target); // 可以形成过渡的才会产生结果返回
+      var ts = calDiff(prev.style, next.style, k, target);
+      console.log(ts); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
         prev.transition.push(ts);
@@ -19695,8 +19697,8 @@
           var item = v[_i16];
 
           if (item) {
-            var k2 = st[_i16][0],
-                v2 = st[_i16][1]; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
+            var k2 = st[_i16].k,
+                v2 = st[_i16].v; // 只有dropShadow是多个数组，存放x/y/blur/spread/color
 
             if (k2 === 'dropShadow') {
               v2[0].v += item[0] * percent;
@@ -23170,9 +23172,8 @@
         var _this7 = this;
 
         return computedStyle[FILTER$3] = (currentStyle[FILTER$3] || []).map(function (item) {
-          var _item = _slicedToArray(item, 2),
-              k = _item[0],
-              v = _item[1];
+          var k = item.k,
+              v = item.v;
 
           if (k === 'dropShadow') {
             var v2 = v.map(function (item2, i) {

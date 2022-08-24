@@ -183,14 +183,14 @@ class Geom extends Xom {
         let res = __cacheStyle[k] = [];
         if(Array.isArray(v)) {
           v.forEach(item => {
-            if(item && item[1] === GRADIENT) {
+            if(item && item.u === GRADIENT) {
               // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
-              cs.push(item[0]);
+              cs.push(item.v);
               res.push(true);
             }
-            else if(item && item[1] === RGBA && item[0][3] > 0) {
-              cs.push(item[0]);
-              res.push(int2rgba(item[0]));
+            else if(item && item.u === RGBA && item.v[3] > 0) {
+              cs.push(item.v);
+              res.push(int2rgba(item.v));
             }
             else {
               cs.push('none');

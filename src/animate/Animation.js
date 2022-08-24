@@ -1441,6 +1441,7 @@ class Animation extends Event {
     let op = this.__options = options || {
       duration: 0,
     };
+    this.__begin = true;
     this.__playState = 'idle';
     this.__target = target;
     this.__root = target.root;

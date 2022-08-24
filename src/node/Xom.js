@@ -1027,7 +1027,7 @@ class Xom extends Node {
         matrixCache = null;
         let matrix;
         // transform相对于自身
-        if(currentStyle[TRANSFORM]) {
+        if(currentStyle[TRANSFORM] && currentStyle[TRANSFORM].length) {
           matrix = tf.calMatrix(currentStyle[TRANSFORM], offsetWidth, offsetHeight, this.root);
         }
         // 没有transform则看是否有扩展的css独立变换属性

@@ -20035,6 +20035,7 @@
       var op = _this.__options = options || {
         duration: 0
       };
+      _this.__begin = true;
       _this.__playState = 'idle';
       _this.__target = target;
       _this.__root = target.root;
@@ -22670,7 +22671,7 @@
             matrixCache = null;
             var matrix; // transform相对于自身
 
-            if (currentStyle[TRANSFORM$1]) {
+            if (currentStyle[TRANSFORM$1] && currentStyle[TRANSFORM$1].length) {
               matrix = transform.calMatrix(currentStyle[TRANSFORM$1], offsetWidth, offsetHeight, this.root);
             } // 没有transform则看是否有扩展的css独立变换属性
             else {
@@ -30906,15 +30907,15 @@
 
             if (Array.isArray(v)) {
               v.forEach(function (item) {
-                if (item && item[1] === GRADIENT) {
+                if (item && item.u === GRADIENT) {
                   // let t = this.__gradient(renderMode, ctx, x3, y3, x4, y4, item[0], 0, 0);
-                  cs.push(item[0]);
+                  cs.push(item.v);
 
                   _res.push(true);
-                } else if (item && item[1] === RGBA && item[0][3] > 0) {
-                  cs.push(item[0]);
+                } else if (item && item.u === RGBA && item.v[3] > 0) {
+                  cs.push(item.v);
 
-                  _res.push(int2rgba(item[0]));
+                  _res.push(int2rgba(item.v));
                 } else {
                   cs.push('none');
 

@@ -261,7 +261,7 @@ function normalize(style, resetList = []) {
   temp = style.backgroundImage;
   if(temp !== undefined) {
     if(!temp) {
-      res[BACKGROUND_IMAGE] = [null];
+      res[BACKGROUND_IMAGE] = [];
     }
     else if(Array.isArray(temp)) {
       res[BACKGROUND_IMAGE] = temp.map(item => {
@@ -291,7 +291,7 @@ function normalize(style, resetList = []) {
       res[BACKGROUND_IMAGE] = [{ v: reg.img.exec(temp)[2], u: STRING }];
     }
     else {
-      res[BACKGROUND_IMAGE] = [null];
+      res[BACKGROUND_IMAGE] = [];
     }
   }
   temp = style.backgroundColor;
@@ -426,10 +426,7 @@ function normalize(style, resetList = []) {
     }
   });
   temp = style.transform;
-  if(temp === null) {
-    res[TRANSFORM] = null;
-  }
-  else if(temp !== undefined) {
+  if(temp !== undefined) {
     let transform = res[TRANSFORM] = [];
     let match = (temp || '').toString().match(/\w+\(.+?\)/g);
     if(match) {
@@ -934,66 +931,26 @@ function normalize(style, resetList = []) {
     res[LINE_CLAMP] = Math.max(0, temp);
   }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
-  temp = style.fill;
-  if(temp !== undefined) {
-    if(!temp) {
-      res[FILL] = [{ v: 'none', u: STRING }];
-    }
-    else if(Array.isArray(temp)) {
-      if(temp.length) {
-        res[FILL] = temp.map(item => {
-          if(!item) {
-            return { v: 'none', u: STRING };
-          }
-          else if(reg.gradient.test(item)) {
-            return { v: gradient.parseGradient(item), u: GRADIENT };
-          }
-          else {
-            return { v: rgba2int(item), u: RGBA };
-          }
-        });
+  ['fill', 'stroke'].forEach((k, i) => {
+    temp = style[k];
+    if(temp !== undefined) {
+      k = i ? STROKE : FILL;
+      if(!Array.isArray(temp)) {
+        temp = [temp];
       }
-      else {
-        res[FILL] = [{ v: 'none', u: STRING }];
-      }
+      res[k] = temp.map(item => {
+        if(!item) {
+          return { v: 'none', u: STRING };
+        }
+        else if(reg.gradient.test(item)) {
+          return { v: gradient.parseGradient(item), u: GRADIENT };
+        }
+        else {
+          return { v: rgba2int(item), u: RGBA };
+        }
+      });
     }
-    else if(reg.gradient.test(temp)) {
-      res[FILL] = [{ v: gradient.parseGradient(temp), u: GRADIENT }];
-    }
-    else {
-      res[FILL] = [{ v: rgba2int(temp), u: RGBA }];
-    }
-  }
-  temp = style.stroke;
-  if(temp !== undefined) {
-    if(!temp) {
-      res[STROKE] = [{ v: 'none', u: STRING }];
-    }
-    else if(Array.isArray(temp)) {
-      if(temp.length) {
-        res[STROKE] = temp.map(item => {
-          if(!item) {
-            return { v: 'none', u: STRING };
-          }
-          else if(reg.gradient.test(item)) {
-            return { v: gradient.parseGradient(item), u: GRADIENT };
-          }
-          else {
-            return { v: rgba2int(item), u: RGBA };
-          }
-        });
-      }
-      else {
-        res[STROKE] = [{ v: 'none', u: STRING }];
-      }
-    }
-    else if(reg.gradient.test(temp)) {
-      res[STROKE] = [{ v: gradient.parseGradient(temp), u: GRADIENT }];
-    }
-    else {
-      res[STROKE] = [{ v: rgba2int(temp), u: RGBA }];
-    }
-  }
+  });
   temp = style.strokeWidth;
   if(temp !== undefined) {
     if(!Array.isArray(temp)) {
@@ -1039,7 +996,7 @@ function normalize(style, resetList = []) {
   }
   temp = style.filter;
   if(temp !== undefined) {
-    let f = null;
+    let f = [];
     // 先替换掉rgba为#RGBA格式，然后分割
     let arr = (replaceRgba2Hex(temp) || '').match(/[\w-]+\s*\(.+?\)/ig);
     if(arr) {
@@ -1050,7 +1007,6 @@ function normalize(style, resetList = []) {
           if(k === 'drop-shadow' || k === 'dropshadow') {
             let coords = /([-+]?[\d.]+[pxremvwhina%]*)[\s,]+([-+]?[\d.]+[pxremvwhina%]*)[\s,]+(?:([-+]?[\d.]+[pxremvwhina%]*)[\s,])?([-+]?[\d.]+[pxremvwhina%]*\s*)?/ig.exec(item);
             if(coords) {
-              f = f || [];
               let res = [];
               // v,h,blur,spread，其中v和h是必须，其余没有为0
               for(let i = 1; i <= 4; i++) {
@@ -1077,13 +1033,12 @@ function normalize(style, resetList = []) {
               else {
                 res.push([0, 0, 0, 1]);
               }
-              f.push(['dropShadow', res]);
+              f.push({ k: 'dropShadow', v: res });
             }
           }
           else {
             let m2 = /([-+]?[\d.]+\s*[pxremvwhdg%]*)/i.exec(v);
             if(m2) {
-              f = f || [];
               let v = calUnit(m2[0]);
               if(k === 'blur') {
                 if([DEG, PERCENT].indexOf(v.u) > -1) {
@@ -1093,14 +1048,14 @@ function normalize(style, resetList = []) {
                   v.u = PX;
                 }
                 v.v = Math.max(v.v, 0);
-                f.push([k, v]);
+                f.push({ k, v });
               }
               else if(k === 'hue-rotate' || k === 'huerotate') {
                 if([NUMBER, DEG].indexOf(v.u) === -1) {
                   return;
                 }
                 v.u = DEG;
-                f.push(['hueRotate', v]);
+                f.push({ k:'hueRotate', v });
               }
               else if(k === 'saturate' || k === 'brightness' || k === 'grayscale' || k === 'contrast' || k === 'sepia' || k === 'invert') {
                 if([NUMBER, PERCENT].indexOf(v.u) === -1) {
@@ -1108,7 +1063,7 @@ function normalize(style, resetList = []) {
                 }
                 v.v = Math.max(v.v, 0);
                 v.u = PERCENT;
-                f.push([k, v]);
+                f.push({ k, v });
               }
             }
           }
@@ -1145,14 +1100,13 @@ function normalize(style, resetList = []) {
   }
   temp = style.boxShadow;
   if(temp !== undefined) {
-    let bs = null;
+    let bs = [];
     // 先替换掉rgba为#RGBA格式，然后按逗号分割
     let arr = (replaceRgba2Hex(temp) || '').split(',');
     if(arr) {
       arr.forEach(item => {
         let coords = /([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*)\s*([-+]?[\d.]+[pxremvwhina%]*\s*)?([-+]?[\d.]+[pxremvwhina%]*\s*)?/i.exec(item);
         if(coords) {
-          bs = bs || [];
           let res = [];
           // v,h,blur,spread，其中v和h是必须，其余没有为0
           for(let i = 1; i <= 4; i++) {
@@ -1370,12 +1324,14 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
   return v;
 }
 
+function isRelativeOrAbsolute(node) {
+  let position = node.currentStyle[POSITION];
+  return position === 'relative' || position === 'absolute';
+}
+
 function equalStyle(k, a, b, target) {
   if(!a || !b) {
     return a === b;
-  }
-  if(k === TRANSLATE_X || k === TRANSLATE_Y) {
-    return a.v === b.v && a.u === b.u;
   }
   if(k === TRANSFORM) {
     if(a.length !== b.length) {
@@ -1394,6 +1350,9 @@ function equalStyle(k, a, b, target) {
     }
     return true;
   }
+  if(k === ROTATE_3D) {
+    return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3].v === b[3].v && a[3].u === b[3].u;
+  }
   if(k === FILTER) {
     if(a.length !== b.length) {
       return false;
@@ -1404,67 +1363,113 @@ function equalStyle(k, a, b, target) {
       }
     }
   }
-  if(k === BACKGROUND_SIZE) {
+  if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+    return a[0].v === b[0].v && a[0].u === b[0].u
+      && a[1].v === b[1].v && a[1].u === b[1].u;
+  }
+  if(k === BACKGROUND_SIZE || k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
     if(a.length !== b.length) {
       return false;
     }
     for(let i = 0, len = a.length; i < len; i++) {
       let aa = a[i], bb = b[i];
-      if(aa[0][0] !== bb[0][0] || aa[0][1] !== bb[0][1] || aa[1][0] !== bb[1][0] || aa[1][1] !== bb[1][1]) {
+      if(aa[0].v !== bb[0].v || aa[0].u !== bb[0].u || aa[1].v !== bb[1].v || aa[1].u !== bb[1].u) {
         return false;
       }
     }
     return true;
-  }
-  if(k === TRANSFORM_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
-    return a[0][0] === b[0][0] && a[0][1] === b[0][1]
-      && a[1][0] === b[1][0] && a[1][1] === b[1][1];
-  }
-  if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y
-    || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-    return a.v === b.v && a.u === b.u;
   }
   if(k === BOX_SHADOW) {
-    return equalArr(a, b);
-  }
-  // color等是rgba颜色时
-  if(k === COLOR || k === TEXT_STROKE_COLOR) {
-    if(a[1] !== b[1]) {
-      return false;
-    }
-    if(a[1] === RGBA) {
-      return equalArr(a[0], b[0]);
-    }
-    else {}
-  }
-  if(COLOR_HASH.hasOwnProperty(k)) {
-    return a[1] === b[1] && equalArr(a[0], b[0]);
-  }
-  // color/fill等是gradient时
-  if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
-    let av = a.v;
-    let bv = b.v;
-    if(a.d !== b.d || av.length !== bv.length) {
-      return false;
-    }
-    for(let i = 0, len = av.length; i < len; i++) {
-      let ai = av[i];
-      let bi = bv[i];
-      if(ai.length !== bi.length) {
+    for(let i = 0; i < 4; i++) {
+      if(a[i].v !== b[i].v || a[i].u !== b[i].u) {
         return false;
       }
-      for(let j = 0; j < 4; j++) {
-        if(ai[0][j] !== bi[0][j]) {
+    }
+    for(let i = 0; i < 4; i++) {
+      if(a[4][i] !== b[4][i]) {
+        return false;
+      }
+    }
+    return a[5] === b[5];
+  }
+  // else if(k === OPACITY || k === Z_INDEX) {} 原始数字
+  if(LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
+    return a.v === b.v && a.u === b.u;
+  }
+  if(GRADIENT_HASH.hasOwnProperty(k)) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let ai = a[i], bi = b[i];
+      if(ai.u !== bi.u) {
+        return false;
+      }
+      let av = ai.v, bv = bi.v;
+      if(ai.u === GRADIENT) {
+        if(av.k !== bv.k || av.d !== bv.d || av.s !== bv.s || av.z !== bv.z) {
+          return false;
+        }
+        if(av.k === 'linear') {
+          let ad = av.d, bd = bv.d;
+          let isArrayD1 = Array.isArray(ad);
+          let isArrayD2 = Array.isArray(bd);
+          if(isArrayD1 !== isArrayD2) {
+            return false;
+          }
+          if(isArrayD1) {
+            if(ad[0] !== bd[0] || ad[1] !== bd[1] || ad[2] !== bd[2] || ad[3] !== bd[3]) {
+              return false;
+            }
+          }
+          else if(ad !== bd) {
+            return false;
+          }
+        }
+        else if(av.k === 'conic' && av.d !== bv.d) {
+          return false;
+        }
+        if(av.k === 'radial' || av.k === 'conic') {
+          let ap = av.p, bp = bv.p;
+          if(ap[0].u !== bp[0].u || ap[0].v !== bp[0].v || ap[1].u !== bp[1].u || ap[1].v !== bp[1].v) {
+            return false;
+          }
+        }
+        for(let j = 0; j < 2; j++) {
+          let aj = av.v[j], bj = bv.v[j];
+          let ac = aj[0], bc = bj[0];
+          if(ac[0] !== bc[0] || ac[1] !== bc[1] || ac[2] !== bc[2] || ac[3] !== bc[3]) {
+            return false;
+          }
+          if(aj[1] && bj[1]) {
+            if(aj[1].u !== bj[1].u || aj[1].v !== bj[1].v) {
+              return false;
+            }
+          }
+          else if(aj[1] || bj[1]) {
+            return false;
+          }
+        }
+      }
+      else if(ai.u === RGBA) {
+        if(!equalArr(av, bv)) {
           return false;
         }
       }
-      if(ai.length > 1) {
-        if(ai[1][0] !== bi[1][0] || ai[1][1] !== bi[1][1]) {
-          return false;
-        }
+      else if(av !== bv) {
+        return false;
       }
     }
     return true;
+  }
+  if(COLOR_HASH.hasOwnProperty(k)) {
+    if(a.u !== b.u) {
+      return false;
+    }
+    if(a.u === GRADIENT) {}
+    else if(a.u === RGBA) {
+      return equalArr(a.v, b.v);
+    }
   }
   // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
   if(isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
@@ -1473,51 +1478,6 @@ function equalStyle(k, a, b, target) {
   return a === b;
 }
 
-function isRelativeOrAbsolute(node) {
-  let position = node.currentStyle[POSITION];
-  return position === 'relative' || position === 'absolute';
-}
-
-const VALUE = {
-  [POSITION]: true,
-  [DISPLAY]: true,
-  [STYLE_KEY.BACKGROUND_REPEAT]: true,
-  [FLEX_DIRECTION]: true,
-  [FLEX_GROW]: true,
-  [FLEX_SHRINK]: true,
-  [FLEX_WRAP]: true,
-  [JUSTIFY_CONTENT]: true,
-  [ALIGN_ITEMS]: true,
-  [ALIGN_SELF]: true,
-  [STYLE_KEY.OVERFLOW]: true,
-  [STYLE_KEY.MIX_BLEND_MODE]: true,
-  [STYLE_KEY.STROKE_LINECAP]: true,
-  [STYLE_KEY.STROKE_LINEJOIN]: true,
-  [STYLE_KEY.STROKE_MITERLIMIT]: true,
-  [STYLE_KEY.FILL_RULE]: true,
-  [OPACITY]: true,
-  [Z_INDEX]: true,
-  [BACKGROUND_CLIP]: true,
-  [TEXT_OVERFLOW]: true,
-  [LINE_CLAMP]: true,
-};
-// 仅1维数组
-const ARRAY_0 = {
-  [BACKGROUND_COLOR]: true,
-  [STYLE_KEY.BORDER_TOP_COLOR]: true,
-  [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
-  [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
-  [STYLE_KEY.BORDER_LEFT_COLOR]: true,
-};
-// 仅2维数组且只有2个值
-const ARRAY_0_1 = {
-  [STYLE_KEY.BORDER_TOP_LEFT_RADIUS]: true,
-  [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
-  [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
-  [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
-  [TRANSFORM_ORIGIN]: true,
-  [PERSPECTIVE_ORIGIN]: true,
-};
 function cloneStyle(style, keys) {
   if(!keys) {
     keys = Object.keys(style).map(i => {
@@ -1531,141 +1491,148 @@ function cloneStyle(style, keys) {
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
     let v = style[k];
-    // 渐变特殊处理
-    if(k === BACKGROUND_IMAGE) {
-      res[k] = v.map(item => {
-        if(item && item.u === GRADIENT) {
-          return { v: util.clone(item[0]), u: GRADIENT };
-        }
-        else if(item && item.u === STRING) {
-          return { v: item.v, u: STRING };
-        }
-        else {
-          return item;
-        }
-      });
-    }
-    else if(k === FILL || k === STROKE) {
-      res[k] = v.map(item => {
-        // 渐变可能非法为空
-        if(item && item.u === GRADIENT) {
-          return { v: util.clone(item[0]), u: GRADIENT };
-        }
-        // 颜色
-        else if(item && item.u === RGBA) {
-          return { v: item.v.slice(0), u: RGBA };
-        }
-        // none
-        else {
-          return item;
-        }
-      });
-    }
-    else if(k === TRANSFORM) {
+    if(k === TRANSFORM) {
       if(v) {
         let len = v.length;
         let n = new Array(len);
         for(let i = 0; i < len; i++) {
           let o = v[i];
-          n[i] = {
-            k: o.k,
-            v: o.v.slice(0),
-          };
-        }
-        res[k] = n;
-      }
-    }
-    else if(k === FILTER) {
-      if(v) {
-        let n = v.slice(0);
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-          let k = n[i][0];
-          n[i][1] = n[i][1].slice(0);
-          if(k === 'dropShadow') {
-            let temp = n[i][1];
-            temp.forEach((item, j) => {
-              temp[j] = temp[j].slice(0);
-            });
+          if(o.k === MATRIX) {
+            n[i] = {
+              k: o.k,
+              v: o.v.slice(0),
+            };
+          }
+          else {
+            n[i] = {
+              k: o.k,
+              v: {
+                v: o.v.v,
+                u: o.v.u,
+              },
+            };
           }
         }
         res[k] = n;
       }
     }
+    else if(k === ROTATE_3D) {
+      res[k] = [v[0], v[1], v[2], { v: v[3].v, u: v[3].u }];
+    }
+    else if(k === FILTER) {
+      if(v) {
+        let len = v.length;
+        let n = new Array(len);
+        for(let i = 0; i < len; i++) {
+          let o = v[i];
+          let k = o.k, vv = o.v;
+          if(k === 'dropShadow') {
+            let arr = new Array(5);
+            n[i] = { k, v: arr };
+            for(let j = 0; j < 4; j++) {
+              let temp = vv[j];
+              arr[j] = { v: temp.v, u: temp.u };
+            }
+            arr[4] = vv[4].slice(0);
+          }
+          else {
+            n[i] = {k, v: { v: vv.v, u: vv.u }};
+          }
+        }
+        res[k] = n;
+      }
+    }
+    else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+      if(v) {
+        let n = new Array(2);
+        for(let i = 0; i < 2; i++) {
+          let o = v[i];
+          n[i] = { v: o.v, u: o.u };
+        }
+        res[k] = n;
+      }
+    }
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+      res[k] = v.map(item => ({ v: item.v, u: item.u }));
+    }
     else if(k === BOX_SHADOW) {
       if(v) {
         v = v.map(item => {
-          let n = item.slice(0);
-          n[4] = n[4].slice(0);
+          let n = new Array(6);
+          for(let i = 0; i < 4; i++) {
+            let o = item[i];
+            n[i] = { v: o.v, u: o.u }; // x/y/blur/spread
+          }
+          n[4] = item[4].slice(0); //rgba
+          n[5] = item[5]; // outset/inset
           return n;
         });
         res[k] = v;
       }
     }
+    else if(k === BACKGROUND_SIZE) {
+      if(v) {
+        res[k] = v.map(item => {
+          return [
+            { v: item[0].v, u: item[0].u },
+            { v: item[1].v, u: item[1].u },
+          ];
+        });
+      }
+    }
+    else if(k === OPACITY || k === Z_INDEX) {
+      res[k] = v;
+    }
     else if(k === TRANSLATE_PATH) {
       if(v) {
-        res[k] = v.map(item => item.slice(0));
+        res[k] = v.map(item => ({
+          v: item.v,
+          u: item.u,
+        }));
       }
     }
-    else if(k === COLOR || k === TEXT_STROKE_COLOR) {
-      if(v) {
-        if(v[1] === GRADIENT) {
-          res[k] = [util.clone(v[0]), v[1]];
+    else if(EXPAND_HASH.hasOwnProperty(k) || LENGTH_HASH.hasOwnProperty(k)) {
+      res[k] = { v: v.v, u: v.u };
+    }
+    // 渐变特殊处理
+    else if(GRADIENT_HASH.hasOwnProperty(k)) {
+      res[k] = v.map(item => {
+        if(!item) {
+          return null;
         }
-        else if(v[1] === RGBA) {
-          res[k] = [v[0].slice(0), v[1]];
+        if(item.u === GRADIENT) {
+          return { v: util.clone(item.v), u: GRADIENT };
         }
-        // inherit
+        // 颜色
+        else if(item.u === RGBA) {
+          return { v: item.v.slice(0), u: RGBA };
+        }
+        // string和none
         else {
-          res[k] = v.slice(0);
+          return { v: item.v, u: item.u };
         }
+      });
+    }
+    else if(COLOR_HASH.hasOwnProperty(k)) {
+      // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
+      if(v.u === GRADIENT) {
+        res[k] = { v: util.clone(v.v), u: GRADIENT };
       }
-    }
-    else if(k === TRANSLATE_X || k === TRANSLATE_Y || k === TRANSLATE_Z) {
-      res[k] = {
-        v: v.v,
-        u: v.u,
-      };
-    }
-    // position等直接值类型赋值
-    else if(VALUE.hasOwnProperty(k)) {
-      res[k] = v;
+      else if(v.u === RGBA) {
+        res[k] = { v: v.v.slice(0), u: RGBA };
+      }
+      // inherit
+      else {
+        res[k] = { u: INHERIT };
+      }
     }
     // geom自定义属性
     else if(GEOM.hasOwnProperty(k)) {
       res[k] = util.clone(v);
     }
-    // 其余皆是数组或空，默认是一维数组只需slice即可
-    else if(v) {
-      let n = res[k] = v.slice(0);
-      // 特殊引用里数组某项再次clone
-      if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-        }
-      }
-      else if(k === BACKGROUND_SIZE) {
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-          n[i][0] = n[i][0].slice(0);
-          n[i][1] = n[i][1].slice(0);
-        }
-      }
-      else if(ARRAY_0.hasOwnProperty(k)) {
-        n[0] = n[0].slice(0);
-      }
-      else if(ARRAY_0_1.hasOwnProperty(k)) {
-        n[0] = n[0].slice(0);
-        n[1] = n[1].slice(0);
-      }
-      else if(k === TRANSFORM) {
-        for(let i = 0, len = n.length; i < len; i++) {
-          n[i] = n[i].slice(0);
-        }
-      }
-      else if(k === ROTATE_3D) {
-        n[3] = n[3].slice(0);
-      }
+    // position等直接值类型赋值
+    else {
+      res[k] = v;
     }
   }
   return res;

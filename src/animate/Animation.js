@@ -47,12 +47,6 @@ const {
     TEXT_STROKE_COLOR,
     TEXT_STROKE_OVER,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_STYLE,
-    UPDATE_KEYS,
-    UPDATE_CONFIG,
-  },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
@@ -68,11 +62,6 @@ const {
   EXPAND_HASH,
   GRADIENT_TYPE,
 } = key;
-
-const NUM_CAL_HASH = {
-};
-Object.assign(NUM_CAL_HASH, LENGTH_HASH);
-Object.assign(NUM_CAL_HASH, EXPAND_HASH);
 
 function unify(frames, target) {
   let hash = {};
@@ -372,26 +361,25 @@ function calByUnit(p, n, container, root) {
  * @param next 下一帧样式
  * @param k 比较的样式名
  * @param target dom对象
- * @param tagName dom名
  * @returns {{k: *, v: *}}
  */
-function calDiff(prev, next, k, target, tagName) {
+function calDiff(prev, next, k, target) {
   let res = {k};
   let p = prev[k];
   let n = next[k];
   if(k === TRANSFORM) {
-    // transform因默认值null很特殊，不存在时需给默认矩阵
-    if(!p && !n) {
+    // transform不存在时需给默认矩阵，他只有1个matrix3d的值做动画
+    if(!p && !n || !p.length && !n.length) {
       return;
     }
     let pm, nm;
-    if(p) {
+    if(p && p[0]) {
       pm = p[0].v;
     }
     else {
       pm = mx.identity();
     }
-    if(n) {
+    if(n && n[0]) {
       nm = n[0].v;
     }
     else {
@@ -419,14 +407,13 @@ function calDiff(prev, next, k, target, tagName) {
       nm[14] - pm[14],
       nm[15] - pm[15],
     ];
-    return res;
   }
   else if(k === ROTATE_3D) {
     if(p[0] === n[0] && p[1] === n[1] && p[2] === n[2]
       && p[3].v === n[3].v && p[3].u === n[3].u) {
       return;
     }
-    res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], { v: n[3].v - p[3].v, u: n[3].u }];
+    res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3].v - p[3].v];
   }
   else if(k === FILTER) {
     // filter很特殊，里面有多个滤镜，按顺序计算，为空视为默认值，如blur默认0，brightness默认1
@@ -435,40 +422,40 @@ function calDiff(prev, next, k, target, tagName) {
     for(let i = 0; i < len; i++) {
       let pv = p ? p[i] : null, nv = n ? n[i] : null;
       // 空或key不等都无变化
-      if(isNil(pv) || isNil(nv) || pv[0] !== nv[0]) {
+      if(isNil(pv) || isNil(nv) || pv.k !== nv.k) {
         v.push(null);
       }
       else {
-        let k = pv[0];
+        let k = pv.k, pvv = pv.v, nvv = nv.v;
         if(k === 'blur') {
-          if(pv[1].u === nv[1].u) {
-            v.push(nv[1].v - pv[1].v);
+          if(pvv.u === nvv.u) {
+            v.push(nvv.v - pvv.v);
           }
           else {
-            let v2 = calByUnit(pv[1], nv[1], 0, target.root);
+            let v2 = calByUnit(pvv, nvv, 0, target.root);
             v.push(v2);
           }
         }
         else if(k === 'hueRotate' || k === 'saturate' || k === 'brightness' || k === 'contrast'
           || k === 'sepia' || k === 'invert' || k === 'grayscale') {
-          v.push(nv[1].v - pv[1].v);
+          v.push(nvv.v - pvv.v);
         }
         else if(k === 'dropShadow') {
           let v2 = [];
           for(let i = 0; i < 4; i++) {
-            let a = pv[1][i], b = nv[1][i];
-            if(a[1] === b[1]) {
-              v2.push(b[0] - a[0]);
+            let a = pvv[i], b = nvv[i];
+            if(a.u === b.u) {
+              v2.push(b.v - a.v);
             }
             else {
               v2.push(calByUnit(a, b, i === 1 ? target.clientHeight: target.clientWidth, target.root));
             }
           }
           v2.push([
-            nv[1][4][0] - pv[1][4][0],
-            nv[1][4][1] - pv[1][4][1],
-            nv[1][4][2] - pv[1][4][2],
-            nv[1][4][3] - pv[1][4][3],
+            nvv[4][0] - pvv[4][0],
+            nvv[4][1] - pvv[4][1],
+            nvv[4][2] - pvv[4][2],
+            nvv[4][3] - pvv[4][3],
           ])
           v.push(v2);
         }
@@ -476,7 +463,12 @@ function calDiff(prev, next, k, target, tagName) {
     }
     res.v = v;
   }
-  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
+  else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN || RADIUS_HASH.hasOwnProperty(k)) {
+    // x/y都相等无需
+    if(n[0].v === p[0].v && n[0].u === p[0].u
+      && n[1].v === p[1].v && n[1].u === p[1].u) {
+      return;
+    }
     res.v = [];
     for(let i = 0; i < 2; i++) {
       let pi = p[i];
@@ -489,53 +481,52 @@ function calDiff(prev, next, k, target, tagName) {
         res.v.push(v);
       }
     }
-    if(equalArr(res.v, [0, 0])) {
-      return;
-    }
   }
   else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
     res.v = [];
     let length = Math.min(p.length, n.length);
     for(let i = 0; i < length; i++) {
       let pi = p[i], ni = n[i];
-      if(!pi || !ni) {
-        res.v.push(null);
-        continue;
-      }
       if(pi.u === ni.u) {
         let v = ni.v - pi.v;
-        if(!v) {
-          res.v.push(null);
-          continue;
-        }
         res.v.push(v);
       }
       else {
-        let k2 = k === BACKGROUND_POSITION_X ? 'offsetWidth' : 'offsetHeight';
+        let k2;
         if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
           k2 = k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight';
         }
         else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
           k2 = k === BACKGROUND_POSITION_X ? 'width' : 'height';
         }
-        let v = calByUnit(pi, ni, target[k2], target.root);
-        if(!v) {
-          res.v.push(null);
-          continue;
+        else {
+          k2 = k === BACKGROUND_POSITION_X ? 'offsetWidth' : 'offsetHeight';
         }
+        let v = calByUnit(pi, ni, target[k2], target.root);
         res.v.push(v);
       }
     }
   }
   else if(k === BOX_SHADOW) {
-    res.v = [];console.log(p, n);
+    res.v = [];
     for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
       let a = p[i];
       let b = n[i];
+      // outset/inset必须相等
+      if(a[5] !== b[5]) {
+        res.v.push(null);
+        continue;
+      }
       let v = [];
       // x/y/blur/spread
       for(let j = 0; j < 4; j++) {
-        v.push(b[j].v - a[j].v);
+        if(a[j].u === b[j].u) {
+          v.push(b[j].v - a[j].v);
+        }
+        else {
+          let v2 = calByUnit(a[j], b[j], i === 1 ? target.offsetHeight : target.offsetWidth, target.root);
+          v.push(v2);
+        }
       }
       // rgba
       let c = [];
@@ -544,22 +535,6 @@ function calDiff(prev, next, k, target, tagName) {
       }
       v.push(c);
       res.v.push(v);
-    }
-  }
-  else if(EXPAND_HASH.hasOwnProperty(k)) {
-    if(p.u === n.u) {
-      let v = n.v - p.v;
-      if(v === 0) {
-        return;
-      }
-      res.v = v;
-    }
-    else {
-      let v = calByUnit(p, n, target[k === TRANSLATE_X || k === TRANSLATE_Z ? 'outerWidth' : 'outerHeight'], target.root);
-      if(!v) {
-        return;
-      }
-      res.v = v;
     }
   }
   else if(k === BACKGROUND_SIZE) {
@@ -579,12 +554,15 @@ function calDiff(prev, next, k, target, tagName) {
           temp.push(nn.v - pp.v);
         }
         else {
-          let k2 = i ? 'offsetWidth' : 'offsetHeight';
+          let k2;
           if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
             k2 = i ? 'clientWidth' : 'clientHeight';
           }
           else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
             k2 = i ? 'width' : 'height';
+          }
+          else {
+            k2 = i ? 'offsetWidth' : 'offsetHeight';
           }
           let v = calByUnit(pp, nn, target[k2], target.root);
           temp.push(v);
@@ -602,87 +580,67 @@ function calDiff(prev, next, k, target, tagName) {
       return;
     }
   }
-  else if(GRADIENT_HASH.hasOwnProperty(k)) {
-    // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
-    res.v = [];
-    let length = Math.min(p.length, n.length);
-    for(let i = 0; i < length; i++) {
-      let pi = p[i], ni = n[i];
-      if(!pi || !ni || pi.u !== ni.u) {
-        res.v.push(null);
-        continue;
-      }
-      let isGradient = pi.u === GRADIENT;
-      pi = pi[0];
-      ni = ni[0];
-      let temp = [];
-      // 渐变
-      if(isGradient) {
-        let r = calDiffGradient(pi, ni, target);
-        if(!r) {
-          res.v.push(null);
-          continue;
-        }
-        temp = r;
-      }
-      // 纯色
-      else {
-        if(equalArr(ni, pi)) {
-          res.v.push(null);
-        }
-        temp[0] = [
-          ni[0] - pi[0],
-          ni[1] - pi[1],
-          ni[2] - pi[2],
-          ni[3] - pi[3]
-        ];
-      }
-      res.v.push(temp);
-    }
-  }
-  else if(COLOR_HASH.hasOwnProperty(k)) {
-    if(n.u !== p.u) {
+  else if(k === OPACITY || k === Z_INDEX) {
+    if(n === p) {
       return;
     }
-    // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
-    let isGradient = n.u === GRADIENT;
-    n = n.v;
-    p = p.v;
-    if(isGradient) {
-      let r = calDiffGradient(p, n, target);
-      if(!r) {
+    res.v = n - p;
+  }
+  // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
+  else if(k === TRANSLATE_PATH && p) {
+    let k1 = 'offsetWidth', k2 = 'offsetHeight';
+    if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'clientWidth';
+      k2 = 'clientHeight';
+    }
+    else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
+      k1 = 'width';
+      k2 = 'height';
+    }
+    res.v = p.map((item, i) => {
+      let { v, u } = item;
+      if(u === PERCENT) {
+        if(i % 2 === 0) {
+          return { v: (parseFloat(v) || 0) * 0.01 * target[k1], u: PX };
+        }
+        else {
+          return { v: (parseFloat(v) || 0) * 0.01 * target[k2], u: PX };
+        }
+      }
+      else if(u === REM) {
+        return { v: (parseFloat(v) || 0) * target.root.computedStyle[FONT_SIZE] * 100, u: PX };
+      }
+      else if(u === VW) {
+        return { v: (parseFloat(v) || 0) * 0.01 * target.root.width, u: PX };
+      }
+      else if(u === VH) {
+        return { v: (parseFloat(v) || 0) * 0.01 * target.root.height, u: PX };
+      }
+      else if(u === VMAX) {
+        return { v: (parseFloat(v) || 0) * 0.01 * Math.max(target.root.width, target.root.height), u: PX };
+      }
+      else if(u === VMIN) {
+        return { v: (parseFloat(v) || 0) * 0.01 * Math.min(target.root.width, target.root.height), u: PX };
+      }
+      else {
+        return { v: parseFloat(v) || 0, u: PX };
+      }
+    });
+  }
+  else if(EXPAND_HASH.hasOwnProperty(k)) {
+    if(p.u === n.u) {
+      let v = n.v - p.v;
+      if(v === 0) {
         return;
       }
-      res.v = r;
+      res.v = v;
     }
     else {
-      // 透明变化无视
-      if(equalArr(n, p) || n[3] === 0 && p[3] === 0) {
+      let v = calByUnit(p, n, target[k === TRANSLATE_X || k === TRANSLATE_Z ? 'outerWidth' : 'outerHeight'], target.root);
+      if(!v) {
         return;
       }
-      res.v = [
-        n[0] - p[0],
-        n[1] - p[1],
-        n[2] - p[2],
-        n[3] - p[3]
-      ];
-    }
-  }
-  else if(RADIUS_HASH.hasOwnProperty(k)) {
-    // x/y都相等无需
-    if(n[0].v === p[0].v && n[0].u === p[0].u
-      && n[1].v === p[1].v && n[1].u === p[1].u) {
-      return;
-    }
-    res.v = [];
-    for(let i = 0; i < 2; i++) {
-      if(n[i].u === p[i].u) {
-        res.v.push(n[i].v - p[i].v);
-      }
-      else {
-        let v = calByUnit(p[i], n[i], target[i ? 'outerHeight' : 'outerWidth'], target.root);
-        res.v.push(v);
-      }
+      res.v = v;
     }
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
@@ -724,7 +682,73 @@ function calDiff(prev, next, k, target, tagName) {
     }
     res.v = diff;
   }
+  else if(GRADIENT_HASH.hasOwnProperty(k)) {
+    // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
+    res.v = [];
+    let length = Math.min(p.length, n.length);
+    for(let i = 0; i < length; i++) {
+      let pi = p[i], ni = n[i];
+      if(!pi || !ni || pi.u !== ni.u || pi.u === STRING) {
+        res.v.push(null);
+        continue;
+      }
+      let u = pi.u;
+      pi = pi.v;
+      ni = ni.v;
+      let temp;
+      // 渐变
+      if(u === GRADIENT) {
+        let r = calDiffGradient(pi, ni, target);
+        if(!r) {
+          res.v.push(null);
+          continue;
+        }
+        temp = r;
+      }
+      // 纯色
+      else {
+        if(equalArr(ni, pi)) {
+          res.v.push(null);
+          continue;
+        }
+        temp = [
+          ni[0] - pi[0],
+          ni[1] - pi[1],
+          ni[2] - pi[2],
+          ni[3] - pi[3]
+        ];
+      }
+      res.v.push(temp);
+    }
+  }
+  else if(COLOR_HASH.hasOwnProperty(k)) {
+    if(n.u !== p.u) {
+      return;
+    }
+    // 特殊增加支持有gradient的先判断，仅color和textStrokeColor支持
+    n = n.v;
+    p = p.v;
+    if(n.u === GRADIENT) {
+      let r = calDiffGradient(p, n, target);
+      if(!r) {
+        return;
+      }
+      res.v = r;
+    }
+    else {
+      if(equalArr(n, p)) {
+        return;
+      }
+      res.v = [
+        n[0] - p[0],
+        n[1] - p[1],
+        n[2] - p[2],
+        n[3] - p[3]
+      ];
+    }
+  }
   else if(GEOM.hasOwnProperty(k)) {
+    let tagName = target.tagName;
     if(isNil(p)) {
       return;
     }
@@ -865,53 +889,6 @@ function calDiff(prev, next, k, target, tagName) {
       }
     }
   }
-  else if(k === OPACITY || k === Z_INDEX) {
-    if(n === p) {
-      return;
-    }
-    res.v = n - p;
-  }
-  // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
-  else if(k === TRANSLATE_PATH && p) {
-    let k1 = 'offsetWidth', k2 = 'offsetHeight';
-    if(['padding-box', 'paddingBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
-      k1 = 'clientWidth';
-      k2 = 'clientHeight';
-    }
-    else if(['content-box', 'contentBox'].indexOf(target.computedStyle[BACKGROUND_CLIP]) > -1) {
-      k1 = 'width';
-      k2 = 'height';
-    }
-    res.v = p.map((item, i) => {
-      let { v, u } = item;
-      if(u === PERCENT) {
-        if(i % 2 === 0) {
-          return { v: (parseFloat(v) || 0) * 0.01 * target[k1], u: PX };
-        }
-        else {
-          return { v: (parseFloat(v) || 0) * 0.01 * target[k2], u: PX };
-        }
-      }
-      else if(u === REM) {
-        return { v: (parseFloat(v) || 0) * target.root.computedStyle[FONT_SIZE] * 100, u: PX };
-      }
-      else if(u === VW) {
-        return { v: (parseFloat(v) || 0) * 0.01 * target.root.width, u: PX };
-      }
-      else if(u === VH) {
-        return { v: (parseFloat(v) || 0) * 0.01 * target.root.height, u: PX };
-      }
-      else if(u === VMAX) {
-        return { v: (parseFloat(v) || 0) * 0.01 * Math.max(target.root.width, target.root.height), u: PX };
-      }
-      else if(u === VMIN) {
-        return { v: (parseFloat(v) || 0) * 0.01 * Math.min(target.root.width, target.root.height), u: PX };
-      }
-      else {
-        return { v: parseFloat(v) || 0, u: PX };
-      }
-    });
-  }
   // display等不能有增量过程的
   else {
     return;
@@ -940,8 +917,8 @@ function calDiffGradient(p, n, target) {
       b[0][3] - a[0][3],
     ]);
     if(a[1] && b[1]) {
-      if(a[1][1] === b[1][1]) {
-        t.push(b[1][0] - a[1][0]);
+      if(a[1].u === b[1].u) {
+        t.push(b[1].v - a[1].v);
       }
       else {
         let v = calByUnit(a[1], b[1], target.clientWidth, target.root);
@@ -1005,8 +982,8 @@ function calDiffGradient(p, n, target) {
       for(let i = 0; i < 2; i++) {
         let pp = p.p[i];
         let np = n.p[i];
-        if(pp[1] === np[1]) {
-          temp[2].push(np[0] - pp[0]);
+        if(pp.u === np.u) {
+          temp[2].push(np.v - pp.v);
         }
         else {
           let v = calByUnit(pp, np, target[i ? 'clientWidth' : 'clientHeight'], target.root);
@@ -1037,9 +1014,9 @@ function calDiffGradient(p, n, target) {
 }
 
 // 计算两帧之间不相同的变化，存入transition，相同的忽略
-function calFrame(prev, next, keys, target, tagName) {
+function calFrame(prev, next, keys, target) {
   keys.forEach(k => {
-    let ts = calDiff(prev.style, next.style, k, target, tagName);
+    let ts = calDiff(prev.style, next.style, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
       prev.transition.push(ts);
@@ -1121,50 +1098,11 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[0].v[i] += v[i] * percent;
       }
     }
-    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
-    else if(k === TRANSLATE_PATH) {
-      let t = 1 - percent;
-      if(v.length === 8) {
-        style[TRANSLATE_X] = {
-          v: v[0][0] * t * t * t
-            + 3 * v[2][0] * percent * t * t
-            + 3 * v[4][0] * percent * percent * t
-            + v[6][0] * percent * percent * percent,
-          u: PX,
-        };
-        style[TRANSLATE_Y] = {
-          v: v[1][0] * t * t * t
-            + 3 * v[3][0] * percent * t * t
-            + 3 * v[5][0] * percent * percent * t
-            + v[7][0] * percent * percent * percent,
-          u: PX,
-        };
-      }
-      else if(v.length === 6) {
-        style[TRANSLATE_X] = {
-          v: v[0][0] * t * t
-            + 2 * v[2][0] * percent * t
-            + v[4][0] * percent * percent,
-          u: PX,
-        };
-        style[TRANSLATE_Y] = {
-          v: v[1][0] * t * t
-            + 3 * v[3][0] * percent * t
-            + v[5][0] * percent * percent,
-          u: PX,
-        };
-      }
-    }
     else if(k === ROTATE_3D) {
       st[0] += v[0] * percent;
       st[1] += v[1] * percent;
       st[2] += v[2] * percent;
-      st[3].v += v[3].v * percent;
-    }
-    else if(NUM_CAL_HASH.hasOwnProperty(k)) {
-      if(v) {
-        st.v += v * percent;
-      }
+      st[3].v += v[3] * percent;
     }
     else if(k === FILTER) {
       // 只有1个样式声明了filter另外一个为空，会造成无样式，需初始化数组并在下面计算出样式存入
@@ -1194,11 +1132,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
       }
     }
-    else if(RADIUS_HASH.hasOwnProperty(k)) {
-      for(let i = 0; i < 2; i++) {
-        st[i].v += v[i] * percent;
-      }
-    }
     else if(k === TRANSFORM_ORIGIN || k === PERSPECTIVE_ORIGIN) {
       if(v[0] !== 0) {
         st[0].v += v[0] * percent;
@@ -1207,8 +1140,18 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[1].v += v[1] * percent;
       }
     }
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+      st.forEach((item, i) => {
+        if(v[i]) {
+          item.v += v[i] * percent;
+        }
+      });
+    }
     else if(k === BOX_SHADOW) {
       for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+        if(!v[i]) {
+          continue;
+        }
         // x/y/blur/spread
         for(let j = 0; j < 4; j++) {
           st[i][j].v += v[i][j] * percent;
@@ -1221,18 +1164,63 @@ function calIntermediateStyle(frame, keys, percent, target) {
     }
     else if(k === BACKGROUND_SIZE) {
       st.forEach((item, i) => {
-        if(v[i]) {
-          item[0].v += v[i][0] * percent;
-          item[1].v += v[i][1] * percent;
+        let o = v[i];
+        if(o) {
+          item[0].v += o[0] * percent;
+          item[1].v += o[1] * percent;
         }
       });
     }
-    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
-      st.forEach((item, i) => {
-        if(v[i]) {
-          item.v += v[i] * percent;
+    else if(k === OPACITY || k === Z_INDEX) {
+      style[k] += v * percent;
+      // 精度问题可能会超过[0,1]区间
+      if(k === OPACITY) {
+        if(style[k] < 0) {
+          style[k] = 0;
         }
-      });
+        else if(style[k] > 1) {
+          style[k] = 1;
+        }
+      }
+    }
+    // 特殊的曲线运动计算，转换为translateXY，出现在最后一定会覆盖原本的translate防重
+    else if(k === TRANSLATE_PATH) {
+      let t = 1 - percent;
+      if(v.length === 8) {
+        style[TRANSLATE_X] = {
+          v: v[0].v * t * t * t
+            + 3 * v[2].v * percent * t * t
+            + 3 * v[4].v * percent * percent * t
+            + v[6].v * percent * percent * percent,
+          u: PX,
+        };
+        style[TRANSLATE_Y] = {
+          v: v[1].v * t * t * t
+            + 3 * v[3].v * percent * t * t
+            + 3 * v[5].v * percent * percent * t
+            + v[7].v * percent * percent * percent,
+          u: PX,
+        };
+      }
+      else if(v.length === 6) {
+        style[TRANSLATE_X] = {
+          v: v[0].v * t * t
+            + 2 * v[2].v * percent * t
+            + v[4].v * percent * percent,
+          u: PX,
+        };
+        style[TRANSLATE_Y] = {
+          v: v[1].v * t * t
+            + 3 * v[3].v * percent * t
+            + v[5].v * percent * percent,
+          u: PX,
+        };
+      }
+    }
+    else if(LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
+      if(v) {
+        st.v += v * percent;
+      }
     }
     else if(GRADIENT_HASH.hasOwnProperty(k)) {
       st.forEach((st2, i) => {
@@ -1240,8 +1228,8 @@ function calIntermediateStyle(frame, keys, percent, target) {
         if(!v2) {
           return;
         }
-        if(st2[1] === GRADIENT && GRADIENT_TYPE.hasOwnProperty(st2[0].k)) {
-          st2 = st2[0];
+        if(st2.u === GRADIENT && GRADIENT_TYPE.hasOwnProperty(st2.v.k)) {
+          st2 = st2.v;
           let [c, d, p, z] = v2;
           for(let i = 0, len = Math.min(st2.v.length, c.length); i < len; i++) {
             let a = st2.v[i];
@@ -1251,7 +1239,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
             a[0][2] += b[0][2] * percent;
             a[0][3] += b[0][3] * percent;
             if(a[1] && b[1]) {
-              a[1][0] += b[1] * percent;
+              a[1].v += b[1] * percent;
             }
           }
           if(st2.k === 'linear' && st2.d !== undefined && d !== undefined) {
@@ -1274,8 +1262,8 @@ function calIntermediateStyle(frame, keys, percent, target) {
               st2.z[4] += z[4] * percent;
             }
             else if(st2.p !== undefined && p !== undefined) {
-              st2.p[0][0] += p[0] * percent;
-              st2.p[1][0] += p[1] * percent;
+              st2.p[0].v += p[0] * percent;
+              st2.p[1].v += p[1] * percent;
             }
           }
           else if(st2.k === 'conic' && st2.d !== undefined && d !== undefined) {
@@ -1286,22 +1274,26 @@ function calIntermediateStyle(frame, keys, percent, target) {
         }
         // fill纯色
         else {
-          st2 = st2[0];
-          let c = v2[0];
-          st2[0] += c[0] * percent;
-          st2[1] += c[1] * percent;
-          st2[2] += c[2] * percent;
-          st2[3] += c[3] * percent;
+          st2 = st2.v;
+          st2[0] += v2[0] * percent;
+          st2[1] += v2[1] * percent;
+          st2[2] += v2[2] * percent;
+          st2[3] += v2[3] * percent;
         }
       });
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {
-      st = st[0];
+      st = st.v;
       st[0] += v[0] * percent;
       st[1] += v[1] * percent;
       st[2] += v[2] * percent;
       st[3] += v[3] * percent;
+    }
+    else if(RADIUS_HASH.hasOwnProperty(k)) {
+      for(let i = 0; i < 2; i++) {
+        st[i].v += v[i] * percent;
+      }
     }
     else if(GEOM.hasOwnProperty(k)) {
       let st = style[k];
@@ -1385,18 +1377,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
           if(!isNil(st) && !isNil(v)) {
             style[k] += v * percent;
           }
-        }
-      }
-    }
-    else if(k === OPACITY || k === Z_INDEX) {
-      style[k] += v * percent;
-      // 精度问题可能会超过[0,1]区间
-      if(k === OPACITY) {
-        if(style[k] < 0) {
-          style[k] = 0;
-        }
-        else if(style[k] > 1) {
-          style[k] = 1;
         }
       }
     }
@@ -1510,7 +1490,6 @@ class Animation extends Event {
     }
     // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
-    let tagName = target.tagName;
     for(let i = 0, len = list.length; i < len; i++) {
       let current = list[i];
       if(current.hasOwnProperty('offset')) {
@@ -1540,7 +1519,7 @@ class Animation extends Event {
       });
       // 检查key合法性
       Object.keys(current).forEach(k => {
-        if(k !== 'easing' && k !== 'offset' && !change.isValid(tagName, k)) {
+        if(k !== 'easing' && k !== 'offset' && !change.isValid(target.tagName, k)) {
           delete current[k];
         }
       });
@@ -1622,7 +1601,7 @@ class Animation extends Event {
     let { style, props } = target;
     let originStyle = {};
     keys.forEach(k => {
-      if(isGeom(tagName, k)) {
+      if(isGeom(target.tagName, k)) {
         originStyle[k] = props[k];
       }
       originStyle[k] = style[k];
@@ -1632,7 +1611,7 @@ class Animation extends Event {
     let prev = frames[0];
     for(let i = 1; i < length; i++) {
       let next = frames[i];
-      prev = calFrame(prev, next, keys, target, tagName);
+      prev = calFrame(prev, next, keys, target);
     }
     // 反向存储帧的倒排结果
     framesR.forEach(item => {
@@ -1642,7 +1621,7 @@ class Animation extends Event {
     prev = framesR[0];
     for(let i = 1; i < length; i++) {
       let next = framesR[i];
-      prev = calFrame(prev, next, keys, target, tagName);
+      prev = calFrame(prev, next, keys, target);
     }
     return [frames, framesR, keys, originStyle];
   }

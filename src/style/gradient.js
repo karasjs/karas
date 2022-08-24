@@ -59,22 +59,22 @@ function getLinearDeg(v) {
 function getRadialPosition(data) {
   if(/^[-+]?[\d.]/.test(data)) {
     let v = calUnit(data);
-    if([NUMBER, DEG].indexOf(v[1]) > -1) {
-      v[1] = PX;
+    if([NUMBER, DEG].indexOf(v.u) > -1) {
+      v.v = PX;
     }
     return v;
   }
   else {
-    return [
-      {
+    return {
+      v: {
         top: 0,
         left: 0,
         center: 50,
         right: 100,
         bottom: 100,
       }[data] || 50,
-      PERCENT,
-    ];
+      u: PERCENT,
+    };
   }
 }
 
@@ -88,26 +88,26 @@ function getColorStop(v, length, root) {
     // 考虑是否声明了位置
     if(item.length > 1) {
       let p = item[1];
-      if(p[1] === PERCENT) {
-        list.push([item[0], p[0] * 0.01]);
+      if(p.u === PERCENT) {
+        list.push([item[0], p.v * 0.01]);
       }
-      else if(p[1] === REM) {
-        list.push([item[0], p[0] * root.computedStyle[FONT_SIZE] / length]);
+      else if(p.u === REM) {
+        list.push([item[0], p.v * root.computedStyle[FONT_SIZE] / length]);
       }
-      else if(p[1] === VW) {
-        list.push([item[0], p[0] * root.width / length]);
+      else if(p.u === VW) {
+        list.push([item[0], p.v * root.width / length]);
       }
-      else if(p[1] === VH) {
-        list.push([item[0], p[0] * root.height / length]);
+      else if(p.u === VH) {
+        list.push([item[0], p.v * root.height / length]);
       }
-      else if(p[1] === VMAX) {
-        list.push([item[0], p[0] * Math.max(root.width, root.height) / length]);
+      else if(p.u === VMAX) {
+        list.push([item[0], p.v * Math.max(root.width, root.height) / length]);
       }
-      else if(p[1] === VMIN) {
-        list.push([item[0], p[0] * Math.min(root.width, root.height) / length]);
+      else if(p.u === VMIN) {
+        list.push([item[0], p.v * Math.min(root.width, root.height) / length]);
       }
       else {
-        list.push([item[0], p[0] / length]);
+        list.push([item[0], p.v / length]);
       }
     }
     else {
@@ -267,47 +267,47 @@ function calLinearCoords(deg, length, cx, cy) {
 function calCircleCentre(position, x1, y1, iw, ih, root) {
   let cx, cy;
   let positionX = position[0], positionY = position[1];
-  if(positionX[1] === PERCENT) {
-    cx = x1 + positionX[0] * iw * 0.01;
+  if(positionX.u === PERCENT) {
+    cx = x1 + positionX.v * iw * 0.01;
   }
-  else if(positionX[1] === REM) {
-    cx = x1 + positionX[0] * root.computedStyle[FONT_SIZE];
+  else if(positionX.u === REM) {
+    cx = x1 + positionX.v * root.computedStyle[FONT_SIZE];
   }
-  else if(positionX[1] === VW) {
-    cx = x1 + positionX[0] * root.width * 0.01;
+  else if(positionX.u === VW) {
+    cx = x1 + positionX.v * root.width * 0.01;
   }
-  else if(positionX[1] === VH) {
-    cx = x1 + positionX[0] * root.height * 0.01;
+  else if(positionX.u === VH) {
+    cx = x1 + positionX.v * root.height * 0.01;
   }
-  else if(positionX[1] === VMAX) {
-    cx = x1 + positionX[0] * Math.max(root.width, root.height) * 0.01;
+  else if(positionX.u === VMAX) {
+    cx = x1 + positionX.v * Math.max(root.width, root.height) * 0.01;
   }
-  else if(positionX[1] === VMIN) {
-    cx = x1 + positionX[0] * Math.min(root.width, root.height) * 0.01;
-  }
-  else {
-    cx = x1 + positionX[0];
-  }
-  if(positionY[1] === PERCENT) {
-    cy = y1 + positionY[0] * ih * 0.01;
-  }
-  else if(positionY[1] === REM) {
-    cy = y1 + positionY[0] * root.computedStyle[FONT_SIZE];
-  }
-  else if(positionY[1] === VW) {
-    cy = y1 + positionY[0] * root.width * 0.01;
-  }
-  else if(positionY[1] === VH) {
-    cy = y1 + positionY[0] * root.height * 0.01;
-  }
-  else if(positionY[1] === VH) {
-    cy = y1 + positionY[0] * Math.max(root.width, root.height) * 0.01;
-  }
-  else if(positionY[1] === VH) {
-    cy = y1 + positionY[0] * Math.min(root.width, root.height) * 0.01;
+  else if(positionX.u === VMIN) {
+    cx = x1 + positionX.v * Math.min(root.width, root.height) * 0.01;
   }
   else {
-    cy = y1 + positionY[0];
+    cx = x1 + positionX.v;
+  }
+  if(positionY.u === PERCENT) {
+    cy = y1 + positionY.v * ih * 0.01;
+  }
+  else if(positionY.u === REM) {
+    cy = y1 + positionY.v * root.computedStyle[FONT_SIZE];
+  }
+  else if(positionY.u === VW) {
+    cy = y1 + positionY.v * root.width * 0.01;
+  }
+  else if(positionY.u === VH) {
+    cy = y1 + positionY.v * root.height * 0.01;
+  }
+  else if(positionY.u === VH) {
+    cy = y1 + positionY.v * Math.max(root.width, root.height) * 0.01;
+  }
+  else if(positionY.u === VH) {
+    cy = y1 + positionY.v * Math.min(root.width, root.height) * 0.01;
+  }
+  else {
+    cy = y1 + positionY.v;
   }
   return [cx, cy];
 }
@@ -511,7 +511,7 @@ function parseGradient(s) {
         o.p = [x, y];
       }
       else {
-        o.p = [[50, PERCENT], [50, PERCENT]];
+        o.p = [{ v: 50, u: PERCENT }, { v: 50, u: PERCENT }];
       }
     }
     else if(o.k === 'conic') {
@@ -529,7 +529,7 @@ function parseGradient(s) {
         o.p = [x, y];
       }
       else {
-        o.p = [[50, PERCENT], [50, PERCENT]];
+        o.p = [{ v: 50, u: PERCENT }, { v: 50, u: PERCENT }];
       }
     }
     let v = gradient[2].match(/(([-+]?[\d.]+[pxremvwhina%]+)?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*([-+]?[\d.]+[pxremvwhina%]+)?)|(transparent)/ig) || [];
@@ -539,8 +539,8 @@ function parseGradient(s) {
       let percent = /[-+]?[\d.]+[pxremvwhina%]+/.exec(item);
       if(percent) {
         let v = calUnit(percent[0]);
-        if([NUMBER, DEG].indexOf(v[1]) > -1) {
-          v[1] = PX;
+        if([NUMBER, DEG].indexOf(v.u) > -1) {
+          v.v = PX;
         }
         arr[1] = v;
       }

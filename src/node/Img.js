@@ -44,7 +44,7 @@ const {
   NODE_KEY: {
     NODE_CACHE,
     NODE_DEFS_CACHE,
-    NODE_IS_MASK,
+    // NODE_IS_MASK,
   },
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA } = unit;
@@ -70,18 +70,18 @@ class Img extends Dom {
         loadImg.height = ca.height;
       }
     }
-    let config = this.__config;
-    if(config[NODE_IS_MASK]) {
-      let { style, currentStyle } = this;
-      style[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE] = [null];
-      style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = { v: [0, 0, 0, 0], u: RGBA };
-      style[BORDER_TOP_WIDTH] = currentStyle[BORDER_TOP_WIDTH] = { v: 0, u: PX };
-      style[BORDER_RIGHT_WIDTH] = currentStyle[BORDER_RIGHT_WIDTH] = { v: 0, u: PX };
-      style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = { v: 0, u: PX };
-      style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = { v: 0, u: PX };
-      style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = [];
-      style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
-    }
+    // let config = this.__config;
+    // if(config[NODE_IS_MASK]) {
+    //   let { style, currentStyle } = this;
+    //   style[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE] = [null];
+    //   style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = { v: [0, 0, 0, 0], u: RGBA };
+    //   style[BORDER_TOP_WIDTH] = currentStyle[BORDER_TOP_WIDTH] = { v: 0, u: PX };
+    //   style[BORDER_RIGHT_WIDTH] = currentStyle[BORDER_RIGHT_WIDTH] = { v: 0, u: PX };
+    //   style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = { v: 0, u: PX };
+    //   style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = { v: 0, u: PX };
+    //   style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = [];
+    //   style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
+    // }
   }
 
   /**
@@ -420,7 +420,7 @@ class Img extends Dom {
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
     } } = this;
-    if(width[1] !== AUTO) {
+    if(width.u !== AUTO) {
       w -= this.__calSize(width, total, true);
     }
     else {
@@ -479,17 +479,17 @@ class Img extends Dom {
     let main = isDirectionRow ? width : height;
     let cross = isDirectionRow ? height : width;
     // basis3种情况：auto、固定、content，只区分固定和其它
-    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis[1]) > -1;
+    let isFixed = [PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(flexBasis.u) > -1;
     if(isFixed) {
       b = max = min = this.__calSize(flexBasis, isDirectionRow ? w : h, true);
     }
-    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main[1]) > -1)) {
+    else if(([PX, PERCENT, REM, VW, VH, VMAX, VMIN].indexOf(main.u) > -1)) {
       b = max = min = this.__calSize(main, isDirectionRow ? w : h, true);
     }
     // auto和content固定尺寸比例计算
     else if(__loadImg.source || __loadImg.error) {
       let res = this.__preLayout(data);
-      if(cross[1] !== AUTO) {
+      if(cross.u !== AUTO) {
         cross = this.__calSize(cross, isDirectionRow ? h : w, true);
         let ratio = res.w / res.h;
         b = max = min = isDirectionRow ? cross * ratio : cross / ratio;

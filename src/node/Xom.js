@@ -1413,7 +1413,7 @@ class Xom extends Node {
       if(color.u === GRADIENT) {
         __cacheStyle[COLOR] = computedStyle[COLOR] = color.v;
       }
-      else if(color.u === RGBA) {
+      else {
         __cacheStyle[COLOR] = int2rgba(computedStyle[COLOR] = rgba2int(color.v));
       }
     }

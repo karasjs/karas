@@ -14629,7 +14629,13 @@
 
           if (isUpright) {
             var me = parent.matrixEvent,
-                list = [[ROTATE_Z$1, [90, DEG$1]]];
+                list = [{
+              k: ROTATE_Z$1,
+              v: {
+                v: 90,
+                u: DEG$1
+              }
+            }];
             var tfo = [x, y];
             var m = transform.calMatrixWithOrigin(list, tfo, 0, 0);
             m = mx.multiply(me, m);
@@ -23077,7 +23083,7 @@
         } else if (isNil$a(__cacheStyle[COLOR$1])) {
           if (color.u === GRADIENT$1) {
             __cacheStyle[COLOR$1] = computedStyle[COLOR$1] = color.v;
-          } else if (color.u === RGBA$1) {
+          } else {
             __cacheStyle[COLOR$1] = int2rgba$1(computedStyle[COLOR$1] = rgba2int(color.v));
           }
         }

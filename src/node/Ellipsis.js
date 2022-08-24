@@ -68,7 +68,7 @@ class Ellipsis extends Node{
       }
       if(isUpright) {
         let me = parent.matrixEvent, list = [
-          [ROTATE_Z, [90, DEG]],
+          { k: ROTATE_Z, v: { v: 90, u: DEG } },
         ];
         let tfo = [x, y];
         let m = transform.calMatrixWithOrigin(list, tfo, 0, 0);

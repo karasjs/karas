@@ -1367,7 +1367,7 @@ function equalStyle(k, a, b, target) {
     return a[0].v === b[0].v && a[0].u === b[0].u
       && a[1].v === b[1].v && a[1].u === b[1].u;
   }
-  if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+  if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
     if(a.length !== b.length) {
       return false;
     }
@@ -1576,7 +1576,7 @@ function cloneStyle(style, keys) {
         res[k] = n;
       }
     }
-    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
       res[k] = v.map(item => ({ v: item.v, u: item.u }));
     }
     else if(k === BOX_SHADOW) {

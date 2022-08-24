@@ -46,6 +46,7 @@ const {
     TRANSLATE_PATH,
     TEXT_STROKE_COLOR,
     TEXT_STROKE_OVER,
+    STROKE_WIDTH,
   },
 } = enums;
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER, REM, VW, VH, VMAX, VMIN, GRADIENT, calUnit } = unit;
@@ -196,7 +197,7 @@ function framing(style, duration, es) {
     style[TRANSLATE_PATH] = translatePath.map(item => {
       let v = calUnit(item);
       if(v.u === NUMBER) {
-        v.v = PX;
+        v.u = PX;
       }
       return v;
     });
@@ -586,6 +587,19 @@ function calDiff(prev, next, k, target) {
       return;
     }
     res.v = n - p;
+  }
+  else if(k === STROKE_WIDTH) {
+    res.v = [];
+    let length = Math.min(p.length, n.length);
+    for(let i = 0; i < length; i++) {
+      let pi = p[i], ni = n[i];
+      if(pi.u === ni.u) {
+        let v = ni.v - pi.v;
+        res.v.push(v);
+      }
+      let v = calByUnit(pi, ni, target.offsetWidth, target.root);
+      res.v.push(v);
+    }
   }
   // 特殊的path，不存在style中但在动画某帧中，不会统一化所以可能反向计算frameR时后一帧没有
   else if(k === TRANSLATE_PATH && p) {
@@ -1141,7 +1155,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[1].v += v[1] * percent;
       }
     }
-    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y) {
+    else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y || k === STROKE_WIDTH) {
       st.forEach((item, i) => {
         if(v[i]) {
           item.v += v[i] * percent;
@@ -2132,19 +2146,19 @@ class Animation extends Event {
     }
   }
 
-  __stayBegin() {
-    return {
-      backwards: true,
-      both: true,
-    }.hasOwnProperty(this.fill);
-  }
-
-  __stayEnd() {
-    return {
-      forwards: true,
-      both: true,
-    }.hasOwnProperty(this.fill);
-  }
+  // __stayBegin() {
+  //   return {
+  //     backwards: true,
+  //     both: true,
+  //   }.hasOwnProperty(this.fill);
+  // }
+  //
+  // __stayEnd() {
+  //   return {
+  //     forwards: true,
+  //     both: true,
+  //   }.hasOwnProperty(this.fill);
+  // }
 
   __setTarget(target) {
     this.__target = target;

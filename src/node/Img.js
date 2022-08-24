@@ -10,7 +10,6 @@ import border from '../style/border';
 import level from '../refresh/level';
 import mx from '../math/matrix';
 import geom from '../math/geom';
-import css from '../style/css';
 
 const {
   STYLE_KEY: {
@@ -75,12 +74,12 @@ class Img extends Dom {
     if(config[NODE_IS_MASK]) {
       let { style, currentStyle } = this;
       style[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE] = [null];
-      style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = [[0, 0, 0, 0], RGBA];
-      style[BORDER_TOP_WIDTH] = currentStyle[BORDER_TOP_WIDTH] = [0, PX];
-      style[BORDER_RIGHT_WIDTH] = currentStyle[BORDER_RIGHT_WIDTH] = [0, PX];
-      style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = [0, PX];
-      style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = [0, PX];
-      style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = null;
+      style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = { v: [0, 0, 0, 0], u: RGBA };
+      style[BORDER_TOP_WIDTH] = currentStyle[BORDER_TOP_WIDTH] = { v: 0, u: PX };
+      style[BORDER_RIGHT_WIDTH] = currentStyle[BORDER_RIGHT_WIDTH] = { v: 0, u: PX };
+      style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = { v: 0, u: PX };
+      style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = { v: 0, u: PX };
+      style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = [];
       style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
     }
   }
@@ -428,26 +427,26 @@ class Img extends Dom {
       let loadImg = this.__loadImg;
       // 加载成功计算缩放后的宽度
       if(loadImg.source) {
-        if(height[1] === PX) {
-          w -= loadImg.width * height[0] / loadImg.height;
+        if(height.u === PX) {
+          w -= loadImg.width * height.v / loadImg.height;
         }
-        else if(height[1] === PERCENT) {
-          w -= loadImg.width * height[0] * total * 0.01 / loadImg.height;
+        else if(height.u === PERCENT) {
+          w -= loadImg.width * height.v * total * 0.01 / loadImg.height;
         }
-        else if(height[1] === REM) {
-          w -= loadImg.width * height[0] * this.root.computedStyle[FONT_SIZE] / loadImg.height;
+        else if(height.u === REM) {
+          w -= loadImg.width * height.v * this.root.computedStyle[FONT_SIZE] / loadImg.height;
         }
-        else if(height[1] === VW) {
-          w -= loadImg.width * height[0] * this.root.width * 0.01 / loadImg.height;
+        else if(height.u === VW) {
+          w -= loadImg.width * height.v * this.root.width * 0.01 / loadImg.height;
         }
-        else if(height[1] === VH) {
-          w -= loadImg.width * height[0] * this.root.height * 0.01 / loadImg.height;
+        else if(height.u === VH) {
+          w -= loadImg.width * height.v * this.root.height * 0.01 / loadImg.height;
         }
-        else if(height[1] === VMAX) {
-          w -= height[0] * Math.max(this.root.width, this.root.height) * 0.01 / loadImg.height;
+        else if(height.u === VMAX) {
+          w -= height.v * Math.max(this.root.width, this.root.height) * 0.01 / loadImg.height;
         }
-        else if(height[1] === VMIN) {
-          w -= height[0] * Math.min(this.root.width, this.root.height) * 0.01 / loadImg.height;
+        else if(height.u === VMIN) {
+          w -= height.v * Math.min(this.root.width, this.root.height) * 0.01 / loadImg.height;
         }
         else {
           w -= loadImg.width;
@@ -534,7 +533,7 @@ class Img extends Dom {
         function reload() {
           let { currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
           root.delRefreshTask(self.__task);
-          if(width[1] !== AUTO && height[1] !== AUTO) {
+          if(width.u !== AUTO && height.u !== AUTO) {
             root.addRefreshTask(self.__task = {
               __before() {
                 self.__task = null;

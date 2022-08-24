@@ -827,7 +827,7 @@ class Text extends Node {
         res[UPDATE_FOCUS] = level.REFLOW;
         res[UPDATE_CONFIG] = vd.__config;
         let root = vd.root;
-        root.__addUpdate(vd, vd.__config, root, root.__config, res);
+        root.__addUpdate(vd, root, res);
       },
       __after(diff) {
         if(util.isFunction(cb)) {

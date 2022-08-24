@@ -1253,7 +1253,7 @@ class Xom extends Node {
                     res[UPDATE_NODE] = node;
                     res[UPDATE_FOCUS] = REPAINT;
                     res[UPDATE_CONFIG] = node.__config;
-                    root.__addUpdate(node, node.__config, root, root.__config, res);
+                    root.__addUpdate(node, root, res);
                   },
                 });
               }

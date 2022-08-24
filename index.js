@@ -16420,7 +16420,7 @@
             res[UPDATE_CONFIG$4] = vd.__config;
             var root = vd.root;
 
-            root.__addUpdate(vd, vd.__config, root, root.__config, res);
+            root.__addUpdate(vd, root, res);
           },
           __after: function __after(diff) {
             if (util.isFunction(cb)) {
@@ -22936,7 +22936,7 @@
                         res[UPDATE_FOCUS$3] = REPAINT$2;
                         res[UPDATE_CONFIG$3] = node.__config;
 
-                        root.__addUpdate(node, node.__config, root, root.__config, res);
+                        root.__addUpdate(node, root, res);
                       }
                     });
                   }

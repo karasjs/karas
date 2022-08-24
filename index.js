@@ -26325,7 +26325,7 @@
     }, {
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
-        var _root$__struct;
+        var _root$__structs;
 
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         this.__config; // let struct = __config[NODE_STRUCT];
@@ -26338,7 +26338,7 @@
         var nss = this.__structure(struct.index, struct.lv, struct.childIndex); // root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
 
 
-        (_root$__struct = root.__struct).splice.apply(_root$__struct, [struct.index + offset, total + 1].concat(_toConsumableArray(nss)));
+        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct.index + offset, total + 1].concat(_toConsumableArray(nss)));
 
         var d = 0;
 

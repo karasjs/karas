@@ -301,7 +301,7 @@ class Dom extends Xom {
     // let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
     let nss = this.__structure(struct.index, struct.lv, struct.childIndex);
     // root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
-    root.__struct.splice(struct.index + offset, total + 1, ...nss);
+    root.__structs.splice(struct.index + offset, total + 1, ...nss);
     let d = 0;
     if(this !== root) {
       // struct = __config[NODE_STRUCT];

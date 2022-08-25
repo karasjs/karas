@@ -1823,6 +1823,10 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       __refreshLevel: __refreshLevel,
       __cacheDefs,
     } = node;
+    if(node instanceof Text) {
+      computedStyle = node.computedStyle;
+      __refreshLevel = node.__domParent.__refreshLevel;
+    }
     let display = computedStyle[DISPLAY];
     // 将随后的若干个mask节点范围存下来
     if(hasMask && display !== 'none') {

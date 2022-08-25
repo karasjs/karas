@@ -35174,6 +35174,12 @@
           __cacheTotal = _node6.__cacheTotal,
           _refreshLevel4 = _node6.__refreshLevel,
           _cacheDefs = _node6.__cacheDefs;
+
+      if (_node6 instanceof Text) {
+        computedStyle = _node6.computedStyle;
+        _refreshLevel4 = _node6.__domParent.__refreshLevel;
+      }
+
       var display = computedStyle[DISPLAY$1]; // 将随后的若干个mask节点范围存下来
 
       if (_hasMask4 && display !== 'none') {

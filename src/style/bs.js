@@ -3,13 +3,7 @@ import geom from '../math/geom';
 import blur from '../math/blur';
 import util from '../util/util';
 import painter from '../util/painter';
-import enums from '../util/enums';
 
-const {
-  NODE_KEY: {
-    NODE_DEFS_CACHE,
-  }
-} = enums;
 const { int2rgba } = util;
 const { canvasPolygon, svgPolygon } = painter;
 
@@ -256,7 +250,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
               },
             ],
           }
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           let filter = ctx.add(v);
           let v2 = {
             tagName: 'clipPath',
@@ -269,7 +263,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             }],
           };
           let clip = ctx.add(v2);
-          xom.__config[NODE_DEFS_CACHE].push(v2);
+          xom.__cacheDefs.push(v2);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -290,7 +284,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             }],
           };
           clip = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -336,7 +330,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             ],
           }
           let filter = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           v = {
             tagName: 'clipPath',
             children: [{
@@ -348,7 +342,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             }],
           };
           let clip = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -409,7 +403,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             ],
           };
           let filter = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           v = {
             tagName: 'clipPath',
             children: [{
@@ -421,7 +415,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             }],
           };
           let clip = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -449,7 +443,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             }],
           };
           clip = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',
@@ -483,7 +477,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             ],
           };
           let filter = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           v = {
             tagName: 'clipPath',
             children: [{
@@ -495,7 +489,7 @@ function renderBoxShadow(xom, renderMode, ctx, data, x1, y1, x2, y2, w, h, dx = 
             }],
           };
           let clip = ctx.add(v);
-          xom.__config[NODE_DEFS_CACHE].push(v);
+          xom.__cacheDefs.push(v);
           xom.virtualDom.bb.push({
             type: 'item',
             tagName: 'path',

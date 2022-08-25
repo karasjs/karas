@@ -337,7 +337,6 @@ Object.keys(change.GEOM).concat([
   'displayAnimating',
   'visibilityAnimating',
   'bbox',
-  '__config',
   'contentBoxList',
   'listener',
   'matrix',

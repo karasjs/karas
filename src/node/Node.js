@@ -1,11 +1,3 @@
-import enums from '../util/enums';
-
-const {
-  NODE_KEY: {
-    NODE_IS_DESTROYED,
-  },
-} = enums;
-
 class Node {
   constructor() {
     this.__x = 0;
@@ -18,13 +10,13 @@ class Node {
     this.__height = 0;
     this.__baseline = 0;
     this.__verticalBaseline = 0;
-    this.__config = {};
     this.__prev = null;
     this.__next = null;
     this.__parent = null;
     this.__domParent = null;
     this.__root = null;
     this.__host = null;
+    this.__hostRoot = null;
     this.__virtualDom = null;
     this.__bbox = null;
     this.__filterBbox = null;
@@ -37,16 +29,9 @@ class Node {
       childIndex: j,
       lv,
     };
-    // return this.__config[NODE_STRUCT] = {
-    //   [STRUCT_NODE]: this,
-    //   [STRUCT_INDEX]: i,
-    //   [STRUCT_CHILD_INDEX]: j,
-    //   [STRUCT_LV]: lv,
-    // };
   }
 
   __modifyStruct(root, offset = 0) {
-    // let struct = this.__config[NODE_STRUCT];
     let struct = this.__struct;
     return [struct, 0];
   }
@@ -72,7 +57,7 @@ class Node {
   }
 
   __destroy() {
-    this.__config[NODE_IS_DESTROYED] = true;
+    this.__isDestroyed = true;
   }
 
   get x() {
@@ -159,7 +144,7 @@ class Node {
   }
 
   get isDestroyed() {
-    return this.__config[NODE_IS_DESTROYED];
+    return this.__isDestroyed;
   }
 
   get isReplaced() {

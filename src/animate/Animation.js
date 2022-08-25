@@ -1462,7 +1462,6 @@ class Animation extends Event {
     this.__style = {};
     this.__firstPlay = true;
     this.__firstEnter = true;
-    this.__nodeConfig = target.__config;
     let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
     let [frames, framesR, keys, originStyle] = this.__init(list, iterations, duration, op.easing, target);
@@ -1637,7 +1636,6 @@ class Animation extends Event {
   }
 
   __clean(isFinish) {
-    let __config = this.__config;
     this.__cancelTask();
     this.__nextTime = 0;
     let restore;
@@ -2157,7 +2155,6 @@ class Animation extends Event {
 
   __setTarget(target) {
     this.__target = target;
-    this.__nodeConfig = target.__config;
   }
 
   __cancelTask() {
@@ -2167,7 +2164,6 @@ class Animation extends Event {
 
   __destroy(sync) {
     let self = this;
-    let __config = self.__config;
     if(this.__isDestroyed) {
       return;
     }
@@ -2303,7 +2299,6 @@ class Animation extends Event {
 
   set fill(v) {
     v = v || 'none';
-    let __config = this.__config;
     if(this.__fill !== v) {
       this.__fill = v;
       this.__checkModify();

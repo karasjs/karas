@@ -16,9 +16,6 @@ const {
     LINE_HEIGHT,
     ROTATE_Z,
   },
-  NODE_KEY: {
-    NODE_VIRTUAL_DOM,
-  },
 } = enums;
 const { DEG } = unit;
 const { CANVAS, SVG, WEBGL } = mode;
@@ -94,7 +91,7 @@ class Ellipsis extends Node{
       if(isUpright) {
         props.push(['writing-mode', 'vertical-lr']);
       }
-      let vd = this.__config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+      let vd = this.__virtualDom = {
         type: 'text',
         children: [
           {

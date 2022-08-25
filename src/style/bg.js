@@ -12,9 +12,6 @@ const {
     BACKGROUND_POSITION_X,
     BACKGROUND_POSITION_Y,
   },
-  NODE_KEY: {
-    NODE_DEFS_CACHE,
-  },
 } = enums;
 const { clone, joinArr } = util;
 const { canvasPolygon, svgPolygon } = painter;
@@ -93,7 +90,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
           },
         ],
       };
-      xom.__config[NODE_DEFS_CACHE].push(v);
+      xom.__cacheDefs.push(v);
       return ctx.add(v);
     }
     else {
@@ -116,7 +113,7 @@ function renderBgc(xom, renderMode, ctx, color, list, x, y, w, h, btlr, btrr, bb
 
 function renderImage(xom, renderMode, ctx, loadBgi,
                      bx1, by1, bx2, by2, btlr, btrr, bbrr, bblr,
-                     computedStyle, i, backgroundSize, backgroundRepeat, __config, isInline,
+                     computedStyle, i, backgroundSize, backgroundRepeat, isInline,
                      dx = 0, dy = 0) {
   let source = loadBgi.source;
   // 无source不绘制，可能错误或加载中
@@ -359,7 +356,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
           }],
         };
         let id = ctx.add(v);
-        __config[NODE_DEFS_CACHE].push(v);
+        xom.__cacheDefs.push(v);
         props.push(['clip-path', 'url(#' + id + ')']);
       }
       if(isInline) {
@@ -374,7 +371,7 @@ function renderImage(xom, renderMode, ctx, loadBgi,
             }
           ],
         };
-        xom.__config[NODE_DEFS_CACHE].push(v);
+        xom.__cacheDefs.push(v);
         repeat.forEach(item => {
           let copy = clone(props);
           if(needResize) {

@@ -42,14 +42,6 @@ const {
     BORDER_RIGHT_WIDTH,
     FILTER,
   },
-  NODE_KEY: {
-    NODE_CACHE,
-    NODE_LIMIT_CACHE,
-    NODE_DOM_PARENT,
-    NODE_MATRIX_EVENT,
-    NODE_OPACITY,
-    NODE_VIRTUAL_DOM,
-  },
   ELLIPSIS,
 } = enums;
 
@@ -193,19 +185,18 @@ class Text extends Node {
    * @private
    */
   __layout(data) {
-    let __cache = this.__config[NODE_CACHE];
+    let __cache = this.__cache;
     if(__cache) {
       __cache.release();
     }
     let { x, y, w, h, lx = x, ly = y, lineBoxManager, endSpace = 0, lineClamp = 0, lineClampCount = 0, isUpright = false } = data;
     this.__x = this.__sx = this.__sx1 = x;
     this.__y = this.__sy = this.__sy1 = y;
-    let { isDestroyed, content, computedStyle, textBoxes, root } = this;
+    let { __isDestroyed, content, computedStyle, textBoxes, root } = this;
     textBoxes.splice(0);
-    let __config = this.__config;
-    __config[NODE_LIMIT_CACHE] = false;
+    this.__limitCache = false;
     // 空内容w/h都为0可以提前跳出，lineClamp超出一般不会进这，但有特例flex文本垂直预计算时，所以也要跳出
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || !content || lineClamp && lineClampCount >= lineClamp) {
       return lineClampCount;
     }
     this.__ox = this.__oy = 0;
@@ -692,9 +683,9 @@ class Text extends Node {
   }
 
   render(renderMode, lv, ctx, cache, dx = 0, dy = 0) {
-    let { isDestroyed, computedStyle, textBoxes, cacheStyle, __config } = this;
+    let { __isDestroyed, computedStyle, textBoxes, cacheStyle } = this;
     if(renderMode === SVG) {
-      __config[NODE_VIRTUAL_DOM] = this.__virtualDom = {
+      this.__virtualDom = {
         type: 'text',
         children: [],
       };
@@ -704,7 +695,7 @@ class Text extends Node {
       this.__bbox = null;
       this.__filterBbox = null;
     }
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden'
       || !textBoxes.length) {
       return;
     }
@@ -712,8 +703,7 @@ class Text extends Node {
       // webgl借用离屏canvas绘制文本，cache标识为true是普通绘制，否则是超限降级情况
       if(renderMode === WEBGL) {
         if(cache) {
-          let { sx, sy, bbox } = this;
-          let __cache = __config[NODE_CACHE];
+          let { sx, sy, bbox, __cache } = this;
           if(__cache) {
             __cache.reset(bbox, sx, sy);
           }
@@ -721,15 +711,14 @@ class Text extends Node {
             __cache = Cache.getInstance(bbox, sx, sy);
           }
           if(__cache && __cache.enabled) {
-            __config[NODE_CACHE] = __cache;
             __cache.__available = true;
             ctx = __cache.ctx;
             dx += __cache.dx;
             dy += __cache.dy;
-            __config[NODE_LIMIT_CACHE] = false;
+            this.__limitCache = false;
           }
           else {
-            __config[NODE_LIMIT_CACHE] = true;
+            this.__limitCache = true;
             return;
           }
         }
@@ -738,13 +727,9 @@ class Text extends Node {
           let c = inject.getCacheCanvas(root.width, root.height, '__$$OVERSIZE$$__');
           ctx = c.ctx;
           let {
-            [NODE_DOM_PARENT]: {
-              __config: {
-                [NODE_MATRIX_EVENT]: m,
-                [NODE_OPACITY]: opacity,
-              },
-            },
-          } = __config;
+            __matrixEvent: m,
+            __opacity: opacity
+          } = this.__domParent;
           ctx.setTransform(m[0], m[1], m[4], m[5], m[12], m[13]);
           ctx.globalAlpha = opacity;
         }
@@ -790,11 +775,11 @@ class Text extends Node {
   }
 
   __destroy() {
-    if(this.isDestroyed) {
+    if(this.__isDestroyed) {
       return;
     }
     super.__destroy();
-    let __cache = this.__config[NODE_CACHE];
+    let __cache = this.__cache;
     if(__cache) {
       __cache.release();
     }
@@ -933,23 +918,23 @@ class Text extends Node {
   }
 
   get root() {
-    return this.domParent.root;
+    return this.__domParent.__root;
   }
 
   get currentStyle() {
-    return this.domParent.currentStyle;
+    return this.__domParent.__currentStyle;
   }
 
   get style() {
-    return this.__style;
+    return this.__domParent.__style;
   }
 
   get computedStyle() {
-    return this.domParent.computedStyle;
+    return this.__domParent.__computedStyle;
   }
 
   get cacheStyle() {
-    return this.domParent.__cacheStyle;
+    return this.__domParent.__cacheStyle;
   }
 
   get bbox() {
@@ -973,15 +958,19 @@ class Text extends Node {
   }
 
   get isShadowRoot() {
-    return !this.parent && this.host && this.host !== this.root;
+    return !this.__parent && this.__host && this.__host !== this.root;
   }
 
   get matrix() {
-    return this.domParent.matrix;
+    return this.__domParent.__matrix;
   }
 
   get matrixEvent() {
-    return this.domParent.matrixEvent;
+    return this.__domParent.__matrixEvent;
+  }
+
+  get perspectiveMatrix() {
+    return this.__domParent.__perspectiveMatrix;
   }
 }
 

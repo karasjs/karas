@@ -230,8 +230,8 @@ class Cache {
     let list = [];
     let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: tfo } = node.computedStyle;
     let next = node.next;
-    let isClip = next.isClip;
-    while(next && next.isMask) {
+    let isClip = next.__isClip;
+    while(next && next.__isMask) {
       list.push(next);
       next = next.next;
     }

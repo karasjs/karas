@@ -60,11 +60,6 @@ const {
     FONT_WEIGHT,
     WRITING_MODE,
   },
-  NODE_KEY: {
-    NODE_CURRENT_STYLE,
-    NODE_STYLE,
-    NODE_IS_INLINE,
-  },
   ELLIPSIS,
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
@@ -85,7 +80,7 @@ function genZIndexChildren(dom) {
       item = item.shadowRoot;
     }
     // 遮罩单独保存后特殊排序
-    if(item instanceof Xom && item.isMask) {
+    if(item instanceof Xom && item.__isMask) {
       // 开头的mc忽略，后续的连续mc以第一次出现为准
       if(lastMaskIndex !== undefined) {
         mcHash[lastMaskIndex].push(item);
@@ -257,9 +252,6 @@ class Dom extends Xom {
     this.__children = children || [];
     this.__flexLine = []; // flex布局多行模式时存储行
     this.__ellipsis = null; // 虚拟节点，有的话渲染
-    let config = this.__config;
-    config[NODE_CURRENT_STYLE] = this.__currentStyle;
-    config[NODE_STYLE] = this.__style;
   }
 
   __structure(i, lv, j) {
@@ -278,33 +270,21 @@ class Dom extends Xom {
       }
     });
     let total = arr.length - 1;
-    // res[STRUCT_NUM] = zIndexChildren.length;
-    // res[STRUCT_TOTAL] = total;
     res.num = zIndexChildren.length;
     res.total = total;
     return arr;
   }
 
   __modifyStruct(root, offset = 0) {
-    // let __config = this.__config;
-    // let struct = __config[NODE_STRUCT];
     let struct = this.__struct;
-    // let total = struct[STRUCT_TOTAL] || 0;
     let total = struct.total || 0;
     // 新生成了struct，引用也变了
-    // let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
     let nss = this.__structure(struct.index, struct.lv, struct.childIndex);
-    // root.__structs.splice(struct[STRUCT_INDEX] + offset, total + 1, ...nss);
     root.__structs.splice(struct.index + offset, total + 1, ...nss);
     let d = 0;
     if(this !== root) {
-      // struct = __config[NODE_STRUCT];
-      // d = (struct[STRUCT_TOTAL] || 0) - total;
       struct = this.__struct;
       d = (struct.total || 0) - total;
-      // let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
-      // ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
-      // ps[STRUCT_TOTAL] += d;
       let ps = this.__domParent.__struct;
       ps.total = ps.total || 0;
       ps.total += d;
@@ -319,7 +299,6 @@ class Dom extends Xom {
    * @private
    */
   __updateStruct(structs) {
-    // let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__config[NODE_STRUCT];
     let { index, total } = this.__struct;
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     let length = zIndexChildren.length;
@@ -330,12 +309,10 @@ class Dom extends Xom {
       if(child instanceof Component) {
         child = child.shadowRoot;
       }
-      // let ns = child.__config[NODE_STRUCT];
       let ns = child.__struct;
       // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
       if(ns) {
-        // ns[STRUCT_CHILD_INDEX] = i; // 仅后面排序用
-        ns.childIndex = i;
+        ns.childIndex = i; // 仅后面排序用
       }
     });
     // 按直接子节点划分为相同数量的若干段进行排序
@@ -347,17 +324,14 @@ class Dom extends Xom {
       if(child) {
         let o = {
           child,
-          // list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + (child[STRUCT_TOTAL] || 0) + 1),
           list: structs.slice(child.index, child.index + (child.total || 0) + 1),
         };
         arr.push(o);
         source.push(o);
-        // i += child[STRUCT_TOTAL] || 0;
         i += child.total || 0;
       }
     }
     arr.sort(function(a, b) {
-      // return a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
       return a.child.childIndex - b.child.childIndex;
     });
     // 是否有变更，有才进行重新计算
@@ -484,7 +458,7 @@ class Dom extends Xom {
       ep.__offsetX(diff, isLayout);
     }
     // 记得偏移LineBox
-    if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
+    if(isLayout && !this.__isInline && this.lineBoxManager) {
       this.lineBoxManager.__offsetX(diff);
     }
     this.flowChildren.forEach(item => {
@@ -500,7 +474,7 @@ class Dom extends Xom {
     if(ep) {
       ep.__offsetY(diff, isLayout);
     }
-    if(isLayout && !this.__config[NODE_IS_INLINE] && this.lineBoxManager) {
+    if(isLayout && !this.__isInline && this.lineBoxManager) {
       this.lineBoxManager.__offsetY(diff);
     }
     this.flowChildren.forEach(item => {
@@ -2303,7 +2277,7 @@ class Dom extends Xom {
     // 只有inline的孩子需要考虑换行后从行首开始，而ib不需要，因此重置行首标识lx为x，末尾空白为0
     // 而inline的LineBoxManager复用最近非inline父dom的，ib需要重新生成，末尾空白叠加
     if(isInline) {
-      this.__config[NODE_IS_INLINE] = true;
+      this.__isInline = true;
       this.__lineBoxManager = lineBoxManager;
       let baseline = isUpright ? getVerticalBaseline(computedStyle) : getBaseline(computedStyle);
       // 特殊inline调用，有内容的话（如左右mbp），默认生成一个lineBox，即便是空，也要形成占位，只有开头时需要
@@ -3139,8 +3113,8 @@ class Dom extends Xom {
     if(force) {
       return super.__emitEvent(e, force);
     }
-    let { isDestroyed, computedStyle, isMask } = this;
-    if(isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || isMask) {
+    let { __isDestroyed, __computedStyle: computedStyle, __isMask } = this;
+    if(__isDestroyed || computedStyle[DISPLAY] === 'none' || e.__stopPropagation || __isMask) {
       return;
     }
     // 检查perspective嵌套状态，自身有perspective则设置10位，自身有transform的p矩阵则设置01位

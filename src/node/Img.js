@@ -30,12 +30,8 @@ const {
     FONT_SIZE,
     FLEX_BASIS,
   },
-  NODE_KEY: {
-    NODE_CACHE,
-    NODE_DEFS_CACHE,
-  },
 } = enums;
-const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA } = unit;
+const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 const { isFunction } = util;
 
@@ -58,18 +54,6 @@ class Img extends Dom {
         loadImg.height = ca.height;
       }
     }
-    // let config = this.__config;
-    // if(config[NODE_IS_MASK]) {
-    //   let { style, currentStyle } = this;
-    //   style[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE] = [null];
-    //   style[BACKGROUND_COLOR] = currentStyle[BACKGROUND_COLOR] = { v: [0, 0, 0, 0], u: RGBA };
-    //   style[BORDER_TOP_WIDTH] = currentStyle[BORDER_TOP_WIDTH] = { v: 0, u: PX };
-    //   style[BORDER_RIGHT_WIDTH] = currentStyle[BORDER_RIGHT_WIDTH] = { v: 0, u: PX };
-    //   style[BORDER_LEFT_WIDTH] = currentStyle[BORDER_LEFT_WIDTH] = { v: 0, u: PX };
-    //   style[BORDER_BOTTOM_WIDTH] = currentStyle[BORDER_BOTTOM_WIDTH] = { v: 0, u: PX };
-    //   style[BOX_SHADOW] = currentStyle[BOX_SHADOW] = [];
-    //   style[MIX_BLEND_MODE] = currentStyle[MIX_BLEND_MODE] = 'normal';
-    // }
   }
 
   /**
@@ -185,7 +169,6 @@ class Img extends Dom {
         [VISIBILITY]: visibility,
       },
       virtualDom,
-      __config,
       __loadImg: loadImg,
       root,
     } = this;
@@ -208,7 +191,7 @@ class Img extends Dom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return res;
     }
-    let __cache = __config[NODE_CACHE];
+    let __cache = this.__cache;
     if(cache && __cache && __cache.enabled) {
       ctx = __cache.ctx;
     }
@@ -331,7 +314,7 @@ class Img extends Dom {
               ],
             };
             let id = ctx.add(v);
-            __config[NODE_DEFS_CACHE].push(v);
+            this.__cacheDefs.push(v);
             virtualDom.conClip = 'url(#' + id + ')';
           }
           return;
@@ -365,7 +348,7 @@ class Img extends Dom {
             ],
           };
           let id = ctx.add(v);
-          __config[NODE_DEFS_CACHE].push(v);
+          this.__cacheDefs.push(v);
           virtualDom.conClip = 'url(#' + id + ')';
           delete virtualDom.cache;
         }

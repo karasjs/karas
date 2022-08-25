@@ -63,26 +63,6 @@ const {
     TEXT_STROKE_WIDTH,
     TEXT_STROKE_OVER,
   },
-  NODE_KEY: {
-    NODE_TAG_NAME,
-    NODE_CACHE_STYLE,
-    NODE_CACHE_PROPS,
-    NODE_CURRENT_STYLE,
-    NODE_COMPUTED_STYLE,
-    NODE_CURRENT_PROPS,
-    NODE_DOM_PARENT,
-    NODE_IS_MASK,
-    NODE_REFRESH_LV,
-    NODE_IS_DESTROYED,
-    NODE_STYLE,
-    NODE_UPDATE_HASH,
-    NODE_UNIQUE_UPDATE_ID,
-    NODE_CACHE,
-    NODE_CACHE_TOTAL,
-    NODE_CACHE_FILTER,
-    NODE_CACHE_OVERFLOW,
-    NODE_CACHE_MASK,
-  },
 } = enums;
 const DIRECTION_HASH = {
   [TOP]: true,
@@ -334,13 +314,12 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     addDom,
     removeDom,
   } = target;
-  let __config = node.__config;
-  if(__config[NODE_IS_DESTROYED]) {
+  if(node.__isDestroyed) {
     return;
   }
   // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
   if(overwrite) {
-    Object.assign(__config[NODE_STYLE], overwrite);
+    Object.assign(node.__style, overwrite);
   }
   // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
   if(list && !component) {
@@ -358,7 +337,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
         }
       });
       if(overwrite) {
-        Object.assign(__config[NODE_STYLE], overwrite);
+        Object.assign(node.__style, overwrite);
       }
       if(style2) {
         if(style) {
@@ -371,16 +350,17 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     });
   }
   // 按节点合并完style后判断改变等级
+
   let {
-    [NODE_TAG_NAME]: tagName,
-    [NODE_CACHE_STYLE]: __cacheStyle,
-    [NODE_CACHE_PROPS]: __cacheProps,
-    [NODE_CURRENT_STYLE]: currentStyle,
-    [NODE_COMPUTED_STYLE]: computedStyle,
-    [NODE_CURRENT_PROPS]: currentProps,
-    [NODE_DOM_PARENT]: domParent,
-    [NODE_IS_MASK]: isMask,
-  } = __config;
+    tagName,
+    __currentStyle: currentStyle,
+    __computedStyle: computedStyle,
+    __currentProps: currentProps,
+    __domParent: domParent,
+    __isMask,
+    __cacheStyle,
+    __cacheProps,
+  } = node;
   let lv = focus || NONE;
   let hasZ, hasVisibility, hasColor, hasDisplay, hasTsColor, hasTsWidth, hasTsOver;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
@@ -447,7 +427,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   // 但是perspective需考虑进来，虽然不影响自己但影响别人，要返回true表明有变更
   if(lv === NONE && !component) {
-    delete __config[NODE_UNIQUE_UPDATE_ID];
+    delete node.__uniqueUpdateId;
     return;
   }
   // 由于父节点中有display:none，或本身节点也为none，执行普通动画是无效的，此时没有display变化
@@ -469,8 +449,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
       if(node instanceof Text) {
         continue;
       }
-      let __config = node.__config;
-      let currentStyle = __config[NODE_CURRENT_STYLE];
+      let currentStyle = node.__currentStyle;
       let need;
       if(hasVisibility && currentStyle[VISIBILITY].u === INHERIT) {
         need = true;
@@ -488,7 +467,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
         need = true;
       }
       if(need) {
-        __config[NODE_REFRESH_LV] |= REPAINT;
+        node.__refreshLevel |= REPAINT;
         node.clearCache();
       }
       else {
@@ -497,13 +476,13 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     }
   }
   // mask需清除遮罩对象的缓存
-  if(isMask) {
+  if(__isMask) {
     let prev = node.prev;
-    while(prev && (prev.isMask)) {
+    while(prev && (prev.__isMask)) {
       prev = prev.prev;
     }
-    if(prev && prev.__config[NODE_CACHE_MASK]) {
-      prev.__config[NODE_CACHE_MASK].release();
+    if(prev && prev.__cacheMask) {
+      prev.__cacheMask.release();
     }
   }
   // 特殊情况，父节点display:none，子节点进行任意变更，应视为无效
@@ -511,8 +490,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
   // 如果父节点由block变none，同上，所以只要current/computed里有none就return false
   let parent = domParent;
   if(hasDisplay && parent) {
-    let __config = parent.__config;
-    if(__config[NODE_CURRENT_STYLE][DISPLAY] === 'none' || __config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
+    if(parent.__currentStyle[DISPLAY] === 'none' || parent.__computedStyle[DISPLAY] === 'none') {
       computedStyle[DISPLAY] = 'none';
       return;
     }
@@ -545,7 +523,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     });
   }
   // 这里也需|运算，每次刷新会置0，但是如果父元素进行继承变更，会在此元素分析前更改，比如visibility，此时不能直接赋值
-  __config[NODE_REFRESH_LV] |= lv;
+  node.__refreshLevel |= lv;
   if(component || addDom || removeDom) {
     root.__rlv = REBUILD;
   }
@@ -555,32 +533,34 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
   // dom在>=REPAINT时total失效，svg的Geom比较特殊
   let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {
-    if(__config[NODE_CACHE]) {
-      __config[NODE_CACHE].release();
+    if(node.__cache) {
+      node.__cache.release();
     }
   }
   // perspective也特殊只清空total的cache，和>=REPAINT清空total共用
   if(need || contain(lv, PERSPECTIVE)) {
-    if(__config[NODE_CACHE_TOTAL]) {
-      __config[NODE_CACHE_TOTAL].release();
+    if(node.__cacheTotal) {
+      node.__cacheTotal.release();
     }
-    if(__config[NODE_CACHE_MASK]) {
-      __config[NODE_CACHE_MASK].release();
+    if(node.__cacheFilter) {
+      node.__cacheFilter.release();
     }
-    if(__config[NODE_CACHE_OVERFLOW]) {
-      __config[NODE_CACHE_OVERFLOW].release();
+    if(node.__cacheMask) {
+      node.__cacheMask.release();
+    }
+    if(node.__cacheOverflow) {
+      node.__cacheOverflow.release();
     }
   }
   // 特殊的filter清除cache
-  if((need || contain(lv, FILTER)) && __config[NODE_CACHE_FILTER]) {
-    __config[NODE_CACHE_FILTER].release();
+  if((need || contain(lv, FILTER)) && node.__cacheFilter) {
+    node.__cacheFilter.release();
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
   while(parent) {
-    let __config = parent.__config;
     // 向上查找，出现重复跳出
-    if(__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-      let id = __config[NODE_UNIQUE_UPDATE_ID];
+    if(parent.hasOwnProperty('__uniqueUpdateId')) {
+      let id = parent.__uniqueUpdateId;
       if(cacheHash.hasOwnProperty(id)) {
         break;
       }
@@ -589,39 +569,38 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
     // 没有的需要设置一个标识
     else {
       cacheHash[uniqueUpdateId] = true;
-      __config[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId++;
-      cacheList.push(__config);
+      parent.__uniqueUpdateId = uniqueUpdateId++;
+      cacheList.push(parent);
     }
-    let lv = __config[NODE_REFRESH_LV];
+    let lv = parent.__refreshLevel;
     let need = lv >= REPAINT;
-    if(need && __config[NODE_CACHE]) {
-      __config[NODE_CACHE].release();
+    if(need && parent.__cache) {
+      parent.__cache.release();
     }
     // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
-    if(__config[NODE_CACHE_TOTAL]) {
-      __config[NODE_CACHE_TOTAL].release();
+    if(parent.__cacheTotal) {
+      parent.__cacheTotal.release();
     }
-    if(__config[NODE_CACHE_FILTER]) {
-      __config[NODE_CACHE_FILTER].release();
+    if(parent.__cacheFilter) {
+      parent.__cacheFilter.release();
     }
-    if(__config[NODE_CACHE_MASK]) {
-      __config[NODE_CACHE_MASK].release();
+    if(parent.__cacheMask) {
+      parent.__cacheMask.release();
     }
-    if(__config[NODE_CACHE_OVERFLOW]) {
-      __config[NODE_CACHE_OVERFLOW].release();
+    if(parent.__cacheOverflow) {
+      parent.__cacheOverflow.release();
     }
-    parent = __config[NODE_DOM_PARENT];
+    parent = parent.__domParent;
   }
   return true;
 }
 
 function cleanSvgCache(node, child) {
-  let __config = node.__config;
   if(child) {
-    __config[NODE_REFRESH_LV] |= REPAINT;
+    node.__refreshLevel |= REPAINT;
   }
   else {
-    __config[NODE_CACHE_TOTAL].release();
+    node.__cacheTotal.release();
   }
   if(Array.isArray(node.children)) {
     node.children.forEach(child => {
@@ -652,7 +631,7 @@ class Root extends Dom {
     this.__reflowList = [{ node: this }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
     this.__animateController = new Controller();
     Event.mix(this);
-    this.__config[NODE_UPDATE_HASH] = this.__updateHash = {};
+    this.__updateHash = {};
     this.__uuid = uuid++;
     this.__rlv = REBUILD; // 每次刷新最大lv
   }
@@ -1143,8 +1122,7 @@ class Root extends Dom {
    * @private
    */
   __addUpdate(node, root, o) {
-    let updateHash = root.__config[NODE_UPDATE_HASH];
-    let nodeConfig = node.__config;
+    let updateHash = root.__updateHash;
     // root特殊处理，检查变更时优先看继承信息
     if(node === root) {
       updateHash = root.__updateRoot;
@@ -1166,13 +1144,13 @@ class Root extends Dom {
         root.__updateRoot = o;
       }
     }
-    else if(!nodeConfig.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-      nodeConfig[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId;
+    else if(!node.hasOwnProperty('__uniqueUpdateId')) {
+      node.__uniqueUpdateId = uniqueUpdateId;
       // 大多数情况节点都只有一次更新，所以优化首次直接存在style上，后续存在list
       updateHash[uniqueUpdateId++] = o;
     }
-    else if(updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
-      let target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
+    else if(updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
+      let target = updateHash[node.__uniqueUpdateId];
       if(o.focus) {
         target.focus |= o.focus;
       }
@@ -1227,9 +1205,9 @@ class Root extends Dom {
     // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
     root.__reflowList = reflowList;
     uniqueUpdateId = 0;
-    root.__updateHash = root.__config[NODE_UPDATE_HASH] = {};
-    cacheList.forEach(__config => {
-      delete __config[NODE_UNIQUE_UPDATE_ID];
+    root.__updateHash = {};
+    cacheList.forEach(node => {
+      delete node.__uniqueUpdateId;
     });
     // zIndex改变的汇总修改，防止重复操作，有个注意点，有新增的child时，
     // 会在后面的reflow重新build父节点的struct，这里提前更新会报错，里面进行判断
@@ -1241,7 +1219,7 @@ class Root extends Dom {
     });
     // 做完清空留待下次刷新重来
     for(let i = 0, len = keys.length; i < len; i++) {
-      delete updateHash[keys[i]].node.__config[NODE_UNIQUE_UPDATE_ID];
+      delete updateHash[keys[i]].node.__uniqueUpdateId;
     }
     return hasUpdate;
   }

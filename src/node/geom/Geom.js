@@ -33,13 +33,6 @@ const {
     VISIBILITY,
     FLEX_BASIS,
   },
-  NODE_KEY: {
-    NODE_CACHE_PROPS,
-    NODE_CURRENT_PROPS,
-    NODE_CURRENT_STYLE,
-    NODE_STYLE,
-    NODE_DEFS_CACHE,
-  }
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA, GRADIENT } = unit;
 const { int2rgba, isNil, joinArr } = util;
@@ -54,11 +47,7 @@ class Geom extends Xom {
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
-    let config = this.__config;
-    config[NODE_CACHE_PROPS] = this.__cacheProps = {};
-    config[NODE_CURRENT_PROPS] = this.__currentProps;
-    config[NODE_CURRENT_STYLE] = this.__currentStyle;
-    config[NODE_STYLE] = this.__style;
+    this.__cacheProps = {};
   }
 
   __tryLayInline(w, total) {
@@ -127,7 +116,7 @@ class Geom extends Xom {
       return;
     }
     this.__marginAuto(this.currentStyle, data);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   __layoutFlex(data, isAbs, isColumn, isRow) {
@@ -140,7 +129,7 @@ class Geom extends Xom {
     let tw = fixedWidth ? w : 0;
     let th = fixedHeight ? h : 0;
     this.__ioSize(tw, th);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   __calCache(renderMode, ctx, parent, __cacheStyle, currentStyle, computedStyle,
@@ -666,7 +655,7 @@ class Geom extends Xom {
             }],
           };
           let clip = ctx.add(v);
-          this.__config[NODE_DEFS_CACHE].push(v);
+          this.__cacheDefs.push(v);
           color.forEach(item => {
             this.virtualDom.bb.push({
               type: 'item',
@@ -691,7 +680,7 @@ class Geom extends Xom {
           }],
         };
         let clip = ctx.add(v);
-        this.__config[NODE_DEFS_CACHE].push(v);
+        this.__cacheDefs.push(v);
         color.forEach(item => {
           this.virtualDom.bb.push({
             type: 'item',
@@ -730,22 +719,22 @@ class Geom extends Xom {
   // offset/resize时要多一步清空props上记录的缓存
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   __resizeX(diff, lv) {
     super.__resizeX(diff, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   __resizeY(diff, lv) {
     super.__resizeY(diff, lv);
-    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    this.__cacheProps = {};
   }
 
   addGeom(tagName, props) {

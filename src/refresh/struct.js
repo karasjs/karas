@@ -2274,7 +2274,7 @@ function renderWebgl(renderMode, gl, root) {
       let needGen;
       // 可能没变化，比如被遮罩节点、filter变更等
       if(!__cacheTotal || !__cacheTotal.available) {
-        let [limit, res] = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, limitCache, hasMbm, width, height);
+        let [limit, res] = genTotalWebgl(gl, texCache, node, i, total || 0, __structs, __cache, __limitCache, hasMbm, width, height);
         __cacheTotal = res;
         needGen = true;
         __limitCache = limit;

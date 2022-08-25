@@ -271,7 +271,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
   let __cacheTotal = node.__cacheTotal;
   let __cacheFilter = node.__cacheFilter;
   let __cacheMask = node.__cacheMask;
-  let __cacheOverflow = node.__cacheOverflow
+  let __cacheOverflow = node.__cacheOverflow;
   let needGen;
   // 先绘制形成基础的total，有可能已经存在无变化，就可省略
   if(!__cacheTotal || !__cacheTotal.available) {
@@ -547,8 +547,8 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
           if(__refreshLevel >= REPAINT) {
             // 手动计算cacheStyle和根据border-box的坐标再渲染
             node.__calCache(renderMode, ctxTotal, node.__domParent,
-              node.__cacheStyle, currentStyle, computedStyle,
-              node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
+              node.__cacheStyle, node.__currentStyle, node.__computedStyle,
+              node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
               computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
               computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
               computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
@@ -835,8 +835,8 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
               if(__refreshLevel >= REPAINT) {
                 // 手动计算cacheStyle和根据border-box的坐标再渲染
                 node.__calCache(renderMode, ctx, node.__domParent,
-                  node.__cacheStyle, currentStyle, computedStyle,
-                  node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
+                  node.__cacheStyle, node.__currentStyle, node.__computedStyle,
+                  node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
                   computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
                   computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
                   computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],
@@ -1398,16 +1398,16 @@ function genColorMatrixWebgl(gl, texCache, cache, m, width, height, sx1, sy1, bb
 
 function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   let bbox = cache.bbox;
-  let { __sx1, __sy1, clientWidth, clientHeight } = node;
-  let xe = __sx1 + clientWidth;
-  let ye = __sy1 + clientHeight;
+  let { __sx1, __sy1, __clientWidth, __clientHeight } = node;
+  let xe = __sx1 + __clientWidth;
+  let ye = __sy1 + __clientHeight;
   // 没超过无需生成
   if(bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= xe && ye) {
     return;
   }
   let bboxNew = [__sx1, __sy1, xe, ye];
   // 生成最终纹理，尺寸为被遮罩节点大小
-  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, clientWidth, clientHeight);
+  let [i, frameBuffer, texture] = genFrameBufferWithTexture(gl, texCache, __clientWidth, __clientHeight);
   // 将本身total的page纹理放入一个单元，一般刚生成已经在了，少部分情况变更引发的可能不在
   let j = texCache.findExistTexChannel(cache.page);
   if(j === -1) {
@@ -1420,7 +1420,7 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   }
   // 绘制，根据坐标裁剪使用原本纹理的一部分
   gl.useProgram(gl.programOverflow);
-  webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], clientWidth, clientHeight, cache.width, cache.height);
+  webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], __clientWidth, __clientHeight, cache.width, cache.height);
   texCache.releaseLockChannel(j);
   // 切回
   gl.useProgram(gl.program);
@@ -1428,7 +1428,7 @@ function genOverflowWebgl(gl, texCache, node, cache, W, H) {
   gl.viewport(0, 0, W, H);
   gl.deleteFramebuffer(frameBuffer);
   // 同total一样生成一个mockCache
-  let overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, clientWidth, clientHeight, bboxNew);
+  let overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, __clientWidth, __clientHeight, bboxNew);
   texCache.releaseLockChannel(i, overflowCache.page);
   return overflowCache;
 }
@@ -2196,7 +2196,7 @@ function renderWebgl(renderMode, gl, root) {
       let res = node.render(renderMode, __refreshLevel, gl, SELF, 0, 0);
       // geom可返回texture纹理，替代原有xom的__cache纹理
       if(res && inject.isWebGLTexture(res.texture)) {
-        let { __sx1: sx1, __sy1: sy1, offsetWidth: w, offsetHeight: h, bbox } = node;
+        let { __sx1: sx1, __sy1: sy1, __offsetWidth: w, __offsetHeight: h, bbox } = node;
        node.__cache = new MockCache(gl, res.texture, sx1, sy1, w, h, bbox);
         gl.viewport(0, 0, width, height);
         gl.useProgram(gl.program);
@@ -2532,7 +2532,7 @@ function renderCanvas(renderMode, ctx, root) {
     if(__refreshLevel >= REPAINT) {
       node.__calCache(renderMode, ctx, node.__domParent,
         node.__cacheStyle, node.__currentStyle, computedStyle,
-        node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight,
+        node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight,
         computedStyle[BORDER_TOP_WIDTH], computedStyle[BORDER_RIGHT_WIDTH],
         computedStyle[BORDER_BOTTOM_WIDTH], computedStyle[BORDER_LEFT_WIDTH],
         computedStyle[PADDING_TOP], computedStyle[PADDING_RIGHT],

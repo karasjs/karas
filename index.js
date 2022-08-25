@@ -33658,7 +33658,7 @@
           } else {
             if (_refreshLevel >= REPAINT$1) {
               // 手动计算cacheStyle和根据border-box的坐标再渲染
-              _node2.__calCache(renderMode, ctxTotal, _node2.__domParent, _node2.__cacheStyle, currentStyle, _computedStyle2, _node2.clientWidth, _node2.clientHeight, _node2.offsetWidth, _node2.offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$1], _computedStyle2[BORDER_RIGHT_WIDTH], _computedStyle2[BORDER_BOTTOM_WIDTH$1], _computedStyle2[BORDER_LEFT_WIDTH$1], _computedStyle2[PADDING_TOP$1], _computedStyle2[PADDING_RIGHT], _computedStyle2[PADDING_BOTTOM$1], _computedStyle2[PADDING_LEFT$1], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
+              _node2.__calCache(renderMode, ctxTotal, _node2.__domParent, _node2.__cacheStyle, _node2.__currentStyle, _node2.__computedStyle, _node2.__clientWidth, _node2.__clientHeight, _node2.__offsetWidth, _node2.__offsetHeight, _computedStyle2[BORDER_TOP_WIDTH$1], _computedStyle2[BORDER_RIGHT_WIDTH], _computedStyle2[BORDER_BOTTOM_WIDTH$1], _computedStyle2[BORDER_LEFT_WIDTH$1], _computedStyle2[PADDING_TOP$1], _computedStyle2[PADDING_RIGHT], _computedStyle2[PADDING_BOTTOM$1], _computedStyle2[PADDING_LEFT$1], _node2.__sx1, _node2.__sx2, _node2.__sx3, _node2.__sx4, _node2.__sx5, _node2.__sx6, _node2.__sy1, _node2.__sy2, _node2.__sy3, _node2.__sy4, _node2.__sy5, _node2.__sy6);
             }
 
             var res = _node2.render(renderMode, _refreshLevel, ctxTotal, _i2 === index ? LOCAL : CHILD, dx, dy);
@@ -34002,7 +34002,7 @@
 
                 if (_refreshLevel3 >= REPAINT$1) {
                   // 手动计算cacheStyle和根据border-box的坐标再渲染
-                  _node3.__calCache(renderMode, ctx, _node3.__domParent, _node3.__cacheStyle, _currentStyle2, _computedStyle3, _node3.clientWidth, _node3.clientHeight, _node3.offsetWidth, _node3.offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$1], _computedStyle3[BORDER_RIGHT_WIDTH], _computedStyle3[BORDER_BOTTOM_WIDTH$1], _computedStyle3[BORDER_LEFT_WIDTH$1], _computedStyle3[PADDING_TOP$1], _computedStyle3[PADDING_RIGHT], _computedStyle3[PADDING_BOTTOM$1], _computedStyle3[PADDING_LEFT$1], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
+                  _node3.__calCache(renderMode, ctx, _node3.__domParent, _node3.__cacheStyle, _node3.__currentStyle, _node3.__computedStyle, _node3.__clientWidth, _node3.__clientHeight, _node3.__offsetWidth, _node3.__offsetHeight, _computedStyle3[BORDER_TOP_WIDTH$1], _computedStyle3[BORDER_RIGHT_WIDTH], _computedStyle3[BORDER_BOTTOM_WIDTH$1], _computedStyle3[BORDER_LEFT_WIDTH$1], _computedStyle3[PADDING_TOP$1], _computedStyle3[PADDING_RIGHT], _computedStyle3[PADDING_BOTTOM$1], _computedStyle3[PADDING_LEFT$1], _node3.__sx1, _node3.__sx2, _node3.__sx3, _node3.__sx4, _node3.__sx5, _node3.__sx6, _node3.__sy1, _node3.__sy2, _node3.__sy3, _node3.__sy4, _node3.__sy5, _node3.__sy6);
                 }
 
                 var _res = _node3.render(renderMode, _refreshLevel3, ctx, CHILD, dx, dy);
@@ -34691,10 +34691,10 @@
     var bbox = cache.bbox;
     var __sx1 = node.__sx1,
         __sy1 = node.__sy1,
-        clientWidth = node.clientWidth,
-        clientHeight = node.clientHeight;
-    var xe = __sx1 + clientWidth;
-    var ye = __sy1 + clientHeight; // 没超过无需生成
+        __clientWidth = node.__clientWidth,
+        __clientHeight = node.__clientHeight;
+    var xe = __sx1 + __clientWidth;
+    var ye = __sy1 + __clientHeight; // 没超过无需生成
 
     if (bbox[0] >= __sx1 && bbox[1] >= __sy1 && bbox[2] <= xe && ye) {
       return;
@@ -34702,7 +34702,7 @@
 
     var bboxNew = [__sx1, __sy1, xe, ye]; // 生成最终纹理，尺寸为被遮罩节点大小
 
-    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, clientWidth, clientHeight),
+    var _genFrameBufferWithTe9 = genFrameBufferWithTexture(gl, texCache, __clientWidth, __clientHeight),
         _genFrameBufferWithTe10 = _slicedToArray(_genFrameBufferWithTe9, 3),
         i = _genFrameBufferWithTe10[0],
         frameBuffer = _genFrameBufferWithTe10[1],
@@ -34721,7 +34721,7 @@
 
 
     gl.useProgram(gl.programOverflow);
-    webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], clientWidth, clientHeight, cache.width, cache.height);
+    webgl.drawOverflow(gl, j, bboxNew[0] - bbox[0], bboxNew[1] - bbox[1], __clientWidth, __clientHeight, cache.width, cache.height);
     texCache.releaseLockChannel(j); // 切回
 
     gl.useProgram(gl.program);
@@ -34729,7 +34729,7 @@
     gl.viewport(0, 0, W, H);
     gl.deleteFramebuffer(frameBuffer); // 同total一样生成一个mockCache
 
-    var overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, clientWidth, clientHeight, bboxNew);
+    var overflowCache = new MockCache(gl, texture, cache.sx1, cache.sy1, __clientWidth, __clientHeight, bboxNew);
     texCache.releaseLockChannel(i, overflowCache.page);
     return overflowCache;
   }
@@ -35615,8 +35615,8 @@
         if (res && inject.isWebGLTexture(res.texture)) {
           var _sx2 = node.__sx1,
               _sy2 = node.__sy1,
-              w = node.offsetWidth,
-              h = node.offsetHeight,
+              w = node.__offsetWidth,
+              h = node.__offsetHeight,
               bbox = node.bbox;
           node.__cache = new MockCache(gl, res.texture, _sx2, _sy2, w, h, bbox);
           gl.viewport(0, 0, width, height);
@@ -36013,7 +36013,7 @@
       var __cacheAsBitmap = node.__cacheAsBitmap;
 
       if (__refreshLevel >= REPAINT$1) {
-        node.__calCache(renderMode, ctx, node.__domParent, node.__cacheStyle, node.__currentStyle, computedStyle, node.clientWidth, node.clientHeight, node.offsetWidth, node.offsetHeight, computedStyle[BORDER_TOP_WIDTH$1], computedStyle[BORDER_RIGHT_WIDTH], computedStyle[BORDER_BOTTOM_WIDTH$1], computedStyle[BORDER_LEFT_WIDTH$1], computedStyle[PADDING_TOP$1], computedStyle[PADDING_RIGHT], computedStyle[PADDING_BOTTOM$1], computedStyle[PADDING_LEFT$1], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
+        node.__calCache(renderMode, ctx, node.__domParent, node.__cacheStyle, node.__currentStyle, computedStyle, node.__clientWidth, node.__clientHeight, node.__offsetWidth, node.__offsetHeight, computedStyle[BORDER_TOP_WIDTH$1], computedStyle[BORDER_RIGHT_WIDTH], computedStyle[BORDER_BOTTOM_WIDTH$1], computedStyle[BORDER_LEFT_WIDTH$1], computedStyle[PADDING_TOP$1], computedStyle[PADDING_RIGHT], computedStyle[PADDING_BOTTOM$1], computedStyle[PADDING_LEFT$1], node.__sx1, node.__sx2, node.__sx3, node.__sx4, node.__sx5, node.__sx6, node.__sy1, node.__sy2, node.__sy3, node.__sy4, node.__sy5, node.__sy6);
       }
 
       if (__cacheAsBitmap) {

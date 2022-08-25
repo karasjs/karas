@@ -33212,7 +33212,7 @@
           var __sx1 = node2.__sx1,
               __sy1 = node2.__sy1,
               _cache = node2.__cache,
-              _cacheTotal = node2.__cacheTotal,
+              __cacheTotal = node2.__cacheTotal,
               __cacheFilter = node2.__cacheFilter,
               __cacheMask = node2.__cacheMask,
               __cacheOverflow = node2.__cacheOverflow,
@@ -33248,7 +33248,7 @@
           if (node2 instanceof Text) {
             bbox = node2.bbox;
           } else {
-            var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal]);
+            var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
 
             if (target) {
               bbox = target.bbox;
@@ -33380,7 +33380,7 @@
           continue;
         }
 
-        var _cacheTotal2 = _node.__cacheTotal,
+        var _cacheTotal = _node.__cacheTotal,
             _cacheFilter = _node.__cacheFilter,
             _cacheMask = _node.__cacheMask,
             _cacheOverflow = _node.__cacheOverflow,
@@ -33488,7 +33488,7 @@
         _node.__opacity = parentOpacity * opacity;
         var bbox = void 0; // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
 
-        var target = i > index && getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]); // 局部根节点的total不需要考虑filter，子节点要
+        var target = i > index && getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal]); // 局部根节点的total不需要考虑filter，子节点要
 
         if (target) {
           i += (_total3 || 0) + countMaskNum(__structs, i + (_total3 || 0) + 1, _hasMask || 0);
@@ -33552,7 +33552,7 @@
           }
         } else {
           var _computedStyle2 = _node2.__computedStyle,
-              _cacheTotal3 = _node2.__cacheTotal,
+              _cacheTotal2 = _node2.__cacheTotal,
               _cacheFilter2 = _node2.__cacheFilter,
               _cacheMask2 = _node2.__cacheMask,
               _cacheOverflow2 = _node2.__cacheOverflow,
@@ -33634,7 +33634,7 @@
           lastLv = _lv2;
           lastMatrix = m; // 子元素有cacheTotal优先使用，也一定是子元素，局部根节点不会进
 
-          var _target = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal3]);
+          var _target = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal2]);
 
           if (_i2 !== index && _target) {
             _i2 += (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0); // 跳过display:none元素和它的所有子节点
@@ -33820,7 +33820,7 @@
               }
             } else {
               var _computedStyle3 = _node3.__computedStyle,
-                  _cacheTotal4 = _node3.__cacheTotal,
+                  _cacheTotal3 = _node3.__cacheTotal,
                   _cacheFilter3 = _node3.__cacheFilter,
                   _cacheMask3 = _node3.__cacheMask,
                   _cacheOverflow3 = _node3.__cacheOverflow,
@@ -33888,7 +33888,7 @@
                   _transform = _computedStyle3[TRANSFORM],
                   _tfo = _computedStyle3[TRANSFORM_ORIGIN]; // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
-              var _target4 = getCache([_cacheMask3, _cacheFilter3, _cacheOverflow3, _cacheTotal4]);
+              var _target4 = getCache([_cacheMask3, _cacheFilter3, _cacheOverflow3, _cacheTotal3]);
 
               if (_target4) {
                 _i3 += (_total6 || 0) + countMaskNum(__structs, _i3 + (_total6 || 0) + 1, _hasMask3 || 0); // 跳过display:none元素和它的所有子节点
@@ -34092,7 +34092,7 @@
       var cacheStyle = node.__cacheStyle,
           currentStyle = node.__currentStyle,
           computedStyle = node.__computedStyle,
-          _cacheTotal5 = node.__cacheTotal,
+          __cacheTotal = node.__cacheTotal,
           old = node.__matrixEvent; // 跳过display:none元素和它的所有子节点和mask
 
       if (computedStyle[DISPLAY$1] === 'none') {
@@ -34133,8 +34133,8 @@
       assignMatrix(node.__matrix, matrix);
       lastMatrix = matrix; // 深度遍历递归进行
 
-      if (_cacheTotal5 && _cacheTotal5.available) {
-        var needReset = _cacheTotal5.isNew;
+      if (__cacheTotal && __cacheTotal.available) {
+        var needReset = __cacheTotal.isNew;
 
         if (!needReset && !util.equalArr(old, matrix)) {
           needReset = true;
@@ -34144,7 +34144,7 @@
           resetMatrixCacheTotal(__structs, i, _total8 || 0, _lv4, matrix);
         }
 
-        _cacheTotal5.__isNew = false;
+        __cacheTotal.__isNew = false;
         i += (_total8 || 0) + countMaskNum(__structs, i + (_total8 || 0) + 1, hasMask || 0);
       }
     }
@@ -34297,7 +34297,7 @@
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
       else {
         var __cache = _node4.__cache,
-            _cacheTotal6 = _node4.__cacheTotal,
+            __cacheTotal = _node4.__cacheTotal,
             __cacheFilter = _node4.__cacheFilter,
             __cacheMask = _node4.__cacheMask,
             __cacheOverflow = _node4.__cacheOverflow,
@@ -34353,7 +34353,7 @@
           matrix = multiply(parentPm, matrix);
         }
 
-        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal6, __cache]);
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, __cache]);
 
         if (target) {
           // 局部的mbm和主画布一样，先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -34816,7 +34816,7 @@
               __cacheMask = _node5.__cacheMask,
               __cacheFilter = _node5.__cacheFilter,
               __cacheOverflow = _node5.__cacheOverflow,
-              _cacheTotal7 = _node5.__cacheTotal;
+              __cacheTotal = _node5.__cacheTotal;
           var _node5$__computedStyl = _node5.__computedStyle,
               opacity = _node5$__computedStyl[OPACITY],
               _transform2 = _node5$__computedStyl[TRANSFORM],
@@ -34843,7 +34843,7 @@
 
 
           lastLv = _lv5;
-          var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal7, _cache2]); // total和自身cache的尝试，visibility不可见时没有cache
+          var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal, _cache2]); // total和自身cache的尝试，visibility不可见时没有cache
 
           if (target) {
             var m = void 0;
@@ -35172,7 +35172,8 @@
 
       var computedStyle = void 0,
           _refreshLevel4 = void 0,
-          _cacheDefs = void 0;
+          _cacheDefs = void 0,
+          __cacheTotal = void 0;
 
       if (_node6 instanceof Text) {
         computedStyle = _node6.computedStyle;
@@ -35181,6 +35182,7 @@
         computedStyle = _node6.__computedStyle;
         _cacheDefs = _node6.__cacheDefs;
         _refreshLevel4 = _node6.__refreshLevel;
+        __cacheTotal = _node6.__cacheTotal;
       }
 
       var display = computedStyle[DISPLAY$1]; // 将随后的若干个mask节点范围存下来
@@ -35534,7 +35536,7 @@
       lastNode = node;
       lastLv = lv;
       var computedStyle = node.__computedStyle,
-          _cacheTotal8 = node.__cacheTotal; // 跳过display:none元素和它的所有子节点
+          __cacheTotal = node.__cacheTotal; // 跳过display:none元素和它的所有子节点
 
       if (computedStyle[DISPLAY$1] === 'none') {
         i += total || 0; // 只跳过自身不能跳过后面的mask，mask要渲染自身并进行缓存cache，以备对象切换display用
@@ -35604,7 +35606,7 @@
         } // total可以跳过所有孩子节点省略循环，filter/mask等的强制前提是有total
 
 
-        if (_cacheTotal8 && _cacheTotal8.available) {
+        if (__cacheTotal && __cacheTotal.available) {
           i += total || 0;
         }
       }
@@ -35836,7 +35838,7 @@
         var _opacity4 = _node8.__opacity,
             _matrixEvent2 = _node8.__matrixEvent,
             _cache3 = _node8.__cache,
-            _cacheTotal9 = _node8.__cacheTotal,
+            _cacheTotal4 = _node8.__cacheTotal,
             __cacheFilter = _node8.__cacheFilter,
             __cacheMask = _node8.__cacheMask,
             __cacheOverflow = _node8.__cacheOverflow,
@@ -35855,7 +35857,7 @@
         // 已取消，因为perspective需要进行独立上下文渲染
 
 
-        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal9, _cache3]); // total和自身cache的尝试，visibility不可见时没有cache
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal4, _cache3]); // total和自身cache的尝试，visibility不可见时没有cache
 
         if (target) {
           // 有mbm先刷新当前fbo，然后把后面这个mbm节点绘入一个新的等画布尺寸的fbo中，再进行2者mbm合成
@@ -36084,7 +36086,7 @@
           ctx = applyOffscreen(ctx, offscreenHash[_i11], width, height);
         }
       } else {
-        var _cacheTotal10 = _node9.__cacheTotal,
+        var __cacheTotal = _node9.__cacheTotal,
             __cacheFilter = _node9.__cacheFilter,
             __cacheMask = _node9.__cacheMask,
             __cacheOverflow = _node9.__cacheOverflow,
@@ -36127,7 +36129,7 @@
         } // 有cache声明从而有total的可以直接绘制并跳过子节点索，total生成可能会因超限而失败
 
 
-        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, _cacheTotal10]);
+        var target = getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
 
         if (target) {
           var _j12 = _i11;
@@ -36165,7 +36167,7 @@
           // 如果isNew为false，则计算下局部根节点再对比下看是否有变化，无变化可省略
 
 
-          var needReset = _cacheTotal10.isNew;
+          var needReset = __cacheTotal.isNew;
 
           if (!needReset && !util.equalArr(old, matrixEvent)) {
             needReset = true;
@@ -36175,7 +36177,7 @@
             resetMatrixCacheTotal(__structs, _j12, _total13 || 0, _lv6, matrixEvent);
           }
 
-          _cacheTotal10.__isNew = false;
+          __cacheTotal.__isNew = false;
         } // 没有cacheTotal是普通节点绘制
         else {
           var res = _node9.render(renderMode, _refreshLevel6, ctx, NA, 0, 0);

@@ -62,7 +62,7 @@ class TextBox {
   render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
     let { content, x, y, parent, width, height, isUpright } = this;
     let { ox, oy } = parent;
-    let dom = parent.parent;
+    let dom = parent.__domParent;
     let b = css.getBaseline(computedStyle);
     let bv = css.getVerticalBaseline(computedStyle);
     // 垂直文本x/y互换，渲染时使用rotate模拟，因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，

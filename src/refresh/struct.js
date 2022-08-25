@@ -648,11 +648,11 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
        * 当mask节点有cache时内部直接调用绘制了cache位图
        * 当mask没有缓存可用时进这里的普通渲染逻辑
        */
-      node.__cacheMask = Cache.genMask(target, node, function(item, __cacheMask, inverse) {
+      node.__cacheMask = Cache.genMask(target, node, function(item, cacheMask, inverse) {
         // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
         let maskStartHash = {};
         let offscreenHash = {};
-        let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = __cacheMask;
+        let { dx, dy, dbx, dby, x: tx, y: ty, ctx } = cacheMask;
         let {
           index,
           total,
@@ -751,7 +751,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
                 ctx.globalCompositeOperation = 'source-over';
               }
               ctx.globalAlpha = node.__opacity;
-              Cache.drawCache(target, __cacheMask, transform, mx.identity(), tfo.slice(0), parentMatrix, inverse);
+              Cache.drawCache(target, cacheMask, transform, mx.identity(), tfo.slice(0), parentMatrix, inverse);
               ctx.globalCompositeOperation = 'source-over';
             }
             // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容

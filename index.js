@@ -14113,7 +14113,7 @@
             isUpright = this.isUpright;
         var ox = parent.ox,
             oy = parent.oy;
-        var dom = parent.parent;
+        var dom = parent.__domParent;
         var b = css.getBaseline(computedStyle);
         var bv = css.getVerticalBaseline(computedStyle); // 垂直文本x/y互换，渲染时使用rotate模拟，因为是基于baseline绘制，顺时针90deg时tfo是文字左下角，
         // 它等同于lineHeight（现在的w）减去b
@@ -16219,7 +16219,7 @@
               if (__cache) {
                 __cache.reset(bbox, sx, sy);
               } else {
-                __cache = Cache.getInstance(bbox, sx, sy);
+                this.__cache = __cache = Cache.getInstance(bbox, sx, sy);
               }
 
               if (__cache && __cache.enabled) {
@@ -33783,17 +33783,17 @@
          * 当mask节点有cache时内部直接调用绘制了cache位图
          * 当mask没有缓存可用时进这里的普通渲染逻辑
          */
-        node.__cacheMask = Cache.genMask(_target3, node, function (item, __cacheMask, inverse) {
+        node.__cacheMask = Cache.genMask(_target3, node, function (item, cacheMask, inverse) {
           // 和外面没cache的类似，mask生成hash记录，这里mask节点一定是个普通无cache的独立节点
           var maskStartHash = {};
           var offscreenHash = {};
-          var dx = __cacheMask.dx,
-              dy = __cacheMask.dy,
-              dbx = __cacheMask.dbx,
-              dby = __cacheMask.dby,
-              tx = __cacheMask.x,
-              ty = __cacheMask.y,
-              ctx = __cacheMask.ctx;
+          var dx = cacheMask.dx,
+              dy = cacheMask.dy,
+              dbx = cacheMask.dbx,
+              dby = cacheMask.dby,
+              tx = cacheMask.x,
+              ty = cacheMask.y,
+              ctx = cacheMask.ctx;
           var _item$__struct = item.__struct,
               index = _item$__struct.index,
               total = _item$__struct.total,
@@ -33907,7 +33907,7 @@
                 }
 
                 ctx.globalAlpha = _node3.__opacity;
-                Cache.drawCache(_target4, _cacheMask3, _transform, mx.identity(), _tfo.slice(0), parentMatrix, inverse);
+                Cache.drawCache(_target4, cacheMask, _transform, mx.identity(), _tfo.slice(0), parentMatrix, inverse);
                 ctx.globalCompositeOperation = 'source-over';
               } // 等于将外面bbox计算和渲染合一的过程，但不需要bbox本身的内容
               else {

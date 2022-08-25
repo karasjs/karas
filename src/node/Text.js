@@ -708,7 +708,7 @@ class Text extends Node {
             __cache.reset(bbox, sx, sy);
           }
           else {
-            __cache = Cache.getInstance(bbox, sx, sy);
+            this.__cache = __cache = Cache.getInstance(bbox, sx, sy);
           }
           if(__cache && __cache.enabled) {
             __cache.__available = true;

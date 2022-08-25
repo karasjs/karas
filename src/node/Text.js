@@ -50,11 +50,6 @@ const {
     NODE_OPACITY,
     NODE_VIRTUAL_DOM,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_CONFIG,
-  },
   ELLIPSIS,
 } = enums;
 
@@ -821,11 +816,11 @@ class Text extends Node {
     root.addRefreshTask(self.__task = {
       __before() {
         self.__content = s;
-        let res = {};
         let vd = self.domParent;
-        res[UPDATE_NODE] = vd;
-        res[UPDATE_FOCUS] = level.REFLOW;
-        res[UPDATE_CONFIG] = vd.__config;
+        let res = {
+          node: vd,
+          focus: level.REFLOW,
+        };
         let root = vd.root;
         root.__addUpdate(vd, root, res);
       },

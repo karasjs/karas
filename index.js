@@ -344,20 +344,7 @@
     var l = style2Lower(k);
     STYLE_RV_KEY$1[k2] = l;
     STYLE_V_KEY[l] = k2;
-  }); // Root的update过程使用
-
-  var UPDATE_KEY = {
-    UPDATE_NODE: 0,
-    UPDATE_STYLE: 1,
-    UPDATE_FOCUS: 2,
-    UPDATE_COMPONENT: 3,
-    UPDATE_OVERWRITE: 4,
-    UPDATE_KEYS: 5,
-    UPDATE_LIST: 6,
-    UPDATE_CONFIG: 7,
-    UPDATE_ADD_DOM: 8,
-    UPDATE_REMOVE_DOM: 9
-  }; // 节点使用
+  }); // 节点使用
 
   var NODE_KEY = {
     NODE_DOM_PARENT: 0,
@@ -389,16 +376,6 @@
     NODE_PERSPECTIVE_MATRIX: 26,
     NODE_VIRTUAL_DOM: 27,
     NODE_CACHE_AS_BITMAP: 28
-  }; // struct用
-
-  var STRUCT_KEY = {
-    STRUCT_NODE: 0,
-    STRUCT_INDEX: 1,
-    STRUCT_CHILD_INDEX: 2,
-    STRUCT_LV: 3,
-    STRUCT_NUM: 4,
-    STRUCT_TOTAL: 5,
-    STRUCT_HAS_MASK: 6
   };
   var enums = {
     STYLE_KEY: STYLE_KEY$5,
@@ -413,7 +390,6 @@
     style2Upper: style2Upper$2,
     UPDATE_KEY: UPDATE_KEY,
     NODE_KEY: NODE_KEY,
-    STRUCT_KEY: STRUCT_KEY,
     ELLIPSIS: '…'
   };
 
@@ -15459,10 +15435,6 @@
       NODE_MATRIX_EVENT$4 = _enums$NODE_KEY$8.NODE_MATRIX_EVENT,
       NODE_OPACITY$2 = _enums$NODE_KEY$8.NODE_OPACITY,
       NODE_VIRTUAL_DOM$2 = _enums$NODE_KEY$8.NODE_VIRTUAL_DOM,
-      _enums$UPDATE_KEY$4 = enums.UPDATE_KEY,
-      UPDATE_NODE$4 = _enums$UPDATE_KEY$4.UPDATE_NODE,
-      UPDATE_FOCUS$4 = _enums$UPDATE_KEY$4.UPDATE_FOCUS,
-      UPDATE_CONFIG$4 = _enums$UPDATE_KEY$4.UPDATE_CONFIG,
       ELLIPSIS$1 = enums.ELLIPSIS;
   var AUTO$7 = o$4.AUTO;
   var CANVAS$2 = mode.CANVAS,
@@ -16413,11 +16385,11 @@
         root.addRefreshTask(self.__task = {
           __before: function __before() {
             self.__content = s;
-            var res = {};
             var vd = self.domParent;
-            res[UPDATE_NODE$4] = vd;
-            res[UPDATE_FOCUS$4] = o$1.REFLOW;
-            res[UPDATE_CONFIG$4] = vd.__config;
+            var res = {
+              node: vd,
+              focus: o$1.REFLOW
+            };
             var root = vd.root;
 
             root.__addUpdate(vd, root, res);
@@ -18734,10 +18706,9 @@
 
   function genBeforeRefresh(animation, style, keys, root, node) {
     var res = {
-      0: node,
-      1: style,
-      5: keys,
-      7: animation.__nodeConfig
+      node: node,
+      style: style,
+      keys: keys
     };
 
     root.__addUpdate(node, root, res);
@@ -21763,14 +21734,6 @@
       LETTER_SPACING = _enums$STYLE_KEY$7.LETTER_SPACING,
       WHITE_SPACE$1 = _enums$STYLE_KEY$7.WHITE_SPACE,
       WRITING_MODE$2 = _enums$STYLE_KEY$7.WRITING_MODE,
-      _enums$UPDATE_KEY$3 = enums.UPDATE_KEY,
-      UPDATE_NODE$3 = _enums$UPDATE_KEY$3.UPDATE_NODE,
-      UPDATE_FOCUS$3 = _enums$UPDATE_KEY$3.UPDATE_FOCUS,
-      UPDATE_STYLE$1 = _enums$UPDATE_KEY$3.UPDATE_STYLE,
-      UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$3.UPDATE_OVERWRITE,
-      UPDATE_KEYS$1 = _enums$UPDATE_KEY$3.UPDATE_KEYS,
-      UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
-      UPDATE_REMOVE_DOM$1 = _enums$UPDATE_KEY$3.UPDATE_REMOVE_DOM,
       _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$6.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$6.NODE_CACHE_STYLE,
@@ -22181,11 +22144,10 @@
                     return;
                   }
 
-                  var res = {};
-                  res[UPDATE_NODE$3] = node;
-                  res[UPDATE_FOCUS$3] = o$1.REFLOW; // 强制执行
-
-                  res[UPDATE_CONFIG$3] = __config;
+                  var res = {
+                    node: node,
+                    focus: o$1.REFLOW
+                  };
 
                   root.__addUpdate(node, root, res);
                 }
@@ -22931,10 +22893,10 @@
                     root.addRefreshTask(loadBgi.cb = {
                       __before: function __before() {
                         __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                        var res = {};
-                        res[UPDATE_NODE$3] = node;
-                        res[UPDATE_FOCUS$3] = REPAINT$2;
-                        res[UPDATE_CONFIG$3] = node.__config;
+                        var res = {
+                          node: node,
+                          focus: REPAINT$2
+                        };
 
                         root.__addUpdate(node, root, res);
                       }
@@ -24441,19 +24403,19 @@
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-              var res = {};
-              res[UPDATE_NODE$3] = node;
-              res[UPDATE_STYLE$1] = formatStyle;
-              res[UPDATE_OVERWRITE$1] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+              var res = {
+                node: node,
+                style: formatStyle,
+                overwrite: style,
+                // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+                keys: Object.keys(formatStyle).map(function (i) {
+                  if (!GEOM.hasOwnProperty(i)) {
+                    i = parseInt(i);
+                  }
 
-              res[UPDATE_KEYS$1] = Object.keys(formatStyle).map(function (i) {
-                if (!GEOM.hasOwnProperty(i)) {
-                  i = parseInt(i);
-                }
-
-                return i;
-              });
-              res[UPDATE_CONFIG$3] = __config;
+                  return i;
+                })
+              };
 
               root.__addUpdate(node, root, res);
             },
@@ -24490,17 +24452,17 @@
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-              var res = {};
-              res[UPDATE_NODE$3] = node;
-              res[UPDATE_STYLE$1] = style;
-              res[UPDATE_KEYS$1] = Object.keys(style).map(function (i) {
-                if (!GEOM.hasOwnProperty(i)) {
-                  i = parseInt(i);
-                }
+              var res = {
+                node: node,
+                style: style,
+                keys: Object.keys(style).map(function (i) {
+                  if (!GEOM.hasOwnProperty(i)) {
+                    i = parseInt(i);
+                  }
 
-                return i;
-              });
-              res[UPDATE_CONFIG$3] = __config;
+                  return i;
+                })
+              };
 
               root.__addUpdate(node, root, res);
             },
@@ -24850,11 +24812,11 @@
             } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-            var res = {};
-            res[UPDATE_NODE$3] = self;
-            res[UPDATE_FOCUS$3] = REFLOW$2;
-            res[UPDATE_REMOVE_DOM$1] = true;
-            res[UPDATE_CONFIG$3] = self.__config;
+            var res = {
+              node: self,
+              focus: REFLOW$2,
+              removeDom: true
+            };
 
             root.__addUpdate(self, root, res);
           },
@@ -26054,11 +26016,6 @@
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$5.NODE_CURRENT_STYLE,
       NODE_STYLE$3 = _enums$NODE_KEY$5.NODE_STYLE,
       NODE_IS_INLINE = _enums$NODE_KEY$5.NODE_IS_INLINE,
-      _enums$UPDATE_KEY$2 = enums.UPDATE_KEY,
-      UPDATE_NODE$2 = _enums$UPDATE_KEY$2.UPDATE_NODE,
-      UPDATE_FOCUS$2 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
-      UPDATE_ADD_DOM$1 = _enums$UPDATE_KEY$2.UPDATE_ADD_DOM,
-      UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
       ELLIPSIS = enums.ELLIPSIS;
   var AUTO$3 = o$4.AUTO,
       PX$3 = o$4.PX,
@@ -29607,11 +29564,11 @@
                 self.children.push(vd);
                 self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
-                var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$2] = o$1.REFLOW;
-                res[UPDATE_ADD_DOM$1] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                var res = {
+                  node: vd,
+                  focus: o$1.REFLOW,
+                  addDom: true
+                };
 
                 root.__addUpdate(vd, root, res);
               },
@@ -29666,11 +29623,11 @@
                 self.children.unshift(vd);
                 self.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
-                var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$2] = o$1.REFLOW;
-                res[UPDATE_ADD_DOM$1] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                var res = {
+                  node: vd,
+                  focus: o$1.REFLOW,
+                  addDom: true
+                };
 
                 root.__addUpdate(vd, root, res);
               },
@@ -29750,11 +29707,11 @@
 
                 domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
-                var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$2] = o$1.REFLOW;
-                res[UPDATE_ADD_DOM$1] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                var res = {
+                  node: vd,
+                  focus: o$1.REFLOW,
+                  addDom: true
+                };
 
                 root.__addUpdate(vd, root, res);
               },
@@ -29834,11 +29791,11 @@
 
                 domParent.__zIndexChildren = null; // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
-                var res = {};
-                res[UPDATE_NODE$2] = vd;
-                res[UPDATE_FOCUS$2] = o$1.REFLOW;
-                res[UPDATE_ADD_DOM$1] = true;
-                res[UPDATE_CONFIG$2] = vd.__config;
+                var res = {
+                  node: vd,
+                  focus: o$1.REFLOW,
+                  addDom: true
+                };
 
                 root.__addUpdate(vd, root, res);
               },
@@ -29964,30 +29921,20 @@
   var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
       WIDTH$2 = _enums$STYLE_KEY$3.WIDTH,
       HEIGHT$2 = _enums$STYLE_KEY$3.HEIGHT,
-      DISPLAY$2 = _enums$STYLE_KEY$3.DISPLAY;
-      _enums$STYLE_KEY$3.BORDER_TOP_WIDTH;
-      var BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$3.BORDER_RIGHT_WIDTH,
-      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$3.BORDER_LEFT_WIDTH;
-      _enums$STYLE_KEY$3.BORDER_BOTTOM_WIDTH;
-      var BORDER_TOP_LEFT_RADIUS = _enums$STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS,
+      DISPLAY$2 = _enums$STYLE_KEY$3.DISPLAY,
+      BORDER_RIGHT_WIDTH$2 = _enums$STYLE_KEY$3.BORDER_RIGHT_WIDTH,
+      BORDER_LEFT_WIDTH$3 = _enums$STYLE_KEY$3.BORDER_LEFT_WIDTH,
+      BORDER_TOP_LEFT_RADIUS = _enums$STYLE_KEY$3.BORDER_TOP_LEFT_RADIUS,
       BORDER_TOP_RIGHT_RADIUS = _enums$STYLE_KEY$3.BORDER_TOP_RIGHT_RADIUS,
       BORDER_BOTTOM_RIGHT_RADIUS = _enums$STYLE_KEY$3.BORDER_BOTTOM_RIGHT_RADIUS,
       BORDER_BOTTOM_LEFT_RADIUS = _enums$STYLE_KEY$3.BORDER_BOTTOM_LEFT_RADIUS,
-      VISIBILITY$3 = _enums$STYLE_KEY$3.VISIBILITY;
-      _enums$STYLE_KEY$3.BACKGROUND_IMAGE;
-      _enums$STYLE_KEY$3.BACKGROUND_COLOR;
-      _enums$STYLE_KEY$3.BOX_SHADOW;
-      _enums$STYLE_KEY$3.MIX_BLEND_MODE;
-      var MARGIN_RIGHT$1 = _enums$STYLE_KEY$3.MARGIN_RIGHT,
+      VISIBILITY$3 = _enums$STYLE_KEY$3.VISIBILITY,
+      MARGIN_RIGHT$1 = _enums$STYLE_KEY$3.MARGIN_RIGHT,
       MARGIN_LEFT$2 = _enums$STYLE_KEY$3.MARGIN_LEFT,
       PADDING_RIGHT$2 = _enums$STYLE_KEY$3.PADDING_RIGHT,
       PADDING_LEFT$3 = _enums$STYLE_KEY$3.PADDING_LEFT,
       FONT_SIZE = _enums$STYLE_KEY$3.FONT_SIZE,
       FLEX_BASIS$1 = _enums$STYLE_KEY$3.FLEX_BASIS,
-      _enums$UPDATE_KEY$1 = enums.UPDATE_KEY,
-      UPDATE_NODE$1 = _enums$UPDATE_KEY$1.UPDATE_NODE,
-      UPDATE_FOCUS$1 = _enums$UPDATE_KEY$1.UPDATE_FOCUS,
-      UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
       _enums$NODE_KEY$4 = enums.NODE_KEY,
       NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
       NODE_DEFS_CACHE$2 = _enums$NODE_KEY$4.NODE_DEFS_CACHE;
@@ -30479,11 +30426,11 @@
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-              var res = {};
-              res[UPDATE_NODE$1] = self;
-              res[UPDATE_FOCUS$1] = o$1.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+              var res = {
+                node: self,
+                focus: o$1.REFLOW // 没有样式变化但内容尺寸发生了变化强制执行
 
-              res[UPDATE_CONFIG$1] = self.__config;
+              };
 
               root.__addUpdate(self, root, res);
             }
@@ -30512,10 +30459,10 @@
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-                    var res = {};
-                    res[UPDATE_NODE$1] = self;
-                    res[UPDATE_FOCUS$1] = o$1.REPAINT;
-                    res[UPDATE_CONFIG$1] = self.__config;
+                    var res = {
+                      node: self,
+                      focus: o$1.REPAINT
+                    };
 
                     root.__addUpdate(self, root, res);
                   },
@@ -30535,11 +30482,11 @@
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-                    var res = {};
-                    res[UPDATE_NODE$1] = self;
-                    res[UPDATE_FOCUS$1] = o$1.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+                    var res = {
+                      node: self,
+                      focus: o$1.REFLOW // 没有样式变化但内容尺寸发生了变化强制执行
 
-                    res[UPDATE_CONFIG$1] = self.__config;
+                    };
 
                     root.__addUpdate(self, root, res);
                   },
@@ -30619,10 +30566,10 @@
                 return;
               }
 
-              var res = {};
-              res[UPDATE_NODE$1] = self;
-              res[UPDATE_FOCUS$1] = o$1.REFLOW;
-              res[UPDATE_CONFIG$1] = self.__config;
+              var res = {
+                node: self,
+                focus: o$1.REFLOW
+              };
 
               root.__addUpdate(self, root, res);
             },
@@ -36881,17 +36828,6 @@
       TEXT_STROKE_COLOR = _enums$STYLE_KEY.TEXT_STROKE_COLOR,
       TEXT_STROKE_WIDTH = _enums$STYLE_KEY.TEXT_STROKE_WIDTH,
       TEXT_STROKE_OVER = _enums$STYLE_KEY.TEXT_STROKE_OVER,
-      _enums$UPDATE_KEY = enums.UPDATE_KEY,
-      UPDATE_NODE = _enums$UPDATE_KEY.UPDATE_NODE,
-      UPDATE_STYLE = _enums$UPDATE_KEY.UPDATE_STYLE,
-      UPDATE_KEYS = _enums$UPDATE_KEY.UPDATE_KEYS,
-      UPDATE_COMPONENT = _enums$UPDATE_KEY.UPDATE_COMPONENT,
-      UPDATE_FOCUS = _enums$UPDATE_KEY.UPDATE_FOCUS,
-      UPDATE_OVERWRITE = _enums$UPDATE_KEY.UPDATE_OVERWRITE,
-      UPDATE_LIST = _enums$UPDATE_KEY.UPDATE_LIST,
-      UPDATE_CONFIG = _enums$UPDATE_KEY.UPDATE_CONFIG,
-      UPDATE_ADD_DOM = _enums$UPDATE_KEY.UPDATE_ADD_DOM,
-      UPDATE_REMOVE_DOM = _enums$UPDATE_KEY.UPDATE_REMOVE_DOM,
       _enums$NODE_KEY = enums.NODE_KEY,
       NODE_TAG_NAME = _enums$NODE_KEY.NODE_TAG_NAME,
       NODE_CACHE_STYLE = _enums$NODE_KEY.NODE_CACHE_STYLE,
@@ -37191,16 +37127,16 @@
   var uniqueUpdateId = 0;
 
   function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList, zHash, zList) {
-    var node = target[UPDATE_NODE],
-        style = target[UPDATE_STYLE],
-        overwrite = target[UPDATE_OVERWRITE],
-        focus = target[UPDATE_FOCUS],
-        component = target[UPDATE_COMPONENT],
-        list = target[UPDATE_LIST],
-        keys = target[UPDATE_KEYS],
-        __config = target[UPDATE_CONFIG],
-        addDom = target[UPDATE_ADD_DOM],
-        removeDom = target[UPDATE_REMOVE_DOM];
+    var node = target.node,
+        style = target.style,
+        overwrite = target.overwrite,
+        focus = target.focus,
+        component = target.component,
+        list = target.list,
+        keys = target.keys,
+        addDom = target.addDom,
+        removeDom = target.removeDom;
+    var __config = node.__config;
 
     if (__config[NODE_IS_DESTROYED]) {
       return;
@@ -37220,9 +37156,9 @@
         hash[k] = true;
       });
       list.forEach(function (item) {
-        var style2 = item[UPDATE_STYLE],
-            overwrite = item[UPDATE_OVERWRITE],
-            keys2 = item[UPDATE_KEYS];
+        var style2 = item.style,
+            overwrite = item.overwrite,
+            keys2 = item.keys;
         (keys2 || []).forEach(function (k2) {
           if (!hash.hasOwnProperty(k2)) {
             hash[k2] = true;
@@ -38028,11 +37964,10 @@
                     }
 
                     var res = {};
-                    res[UPDATE_NODE] = sr;
-                    res[UPDATE_STYLE] = sr.currentStyle;
-                    res[UPDATE_FOCUS] = REFLOW;
-                    res[UPDATE_COMPONENT] = cp;
-                    res[UPDATE_CONFIG] = sr.__config;
+                    res.node = sr;
+                    res.style = sr.currentStyle;
+                    res.focus = REFLOW;
+                    res.component = cp;
 
                     _this4.__addUpdate(sr, root, res);
                   });
@@ -38183,16 +38118,18 @@
           updateHash = root.__updateRoot;
 
           if (updateHash) {
-            if (o[UPDATE_FOCUS]) {
-              updateHash[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
+            if (o.focus) {
+              updateHash.focus |= o.focus;
             } // 后续存在新建list上，需增加遍历逻辑
 
 
-            if (o[UPDATE_STYLE]) {
-              var _list$push;
-
-              var list = updateHash[UPDATE_LIST] = updateHash[UPDATE_LIST] || [];
-              list.push((_list$push = {}, _defineProperty(_list$push, UPDATE_STYLE, o[UPDATE_STYLE]), _defineProperty(_list$push, UPDATE_OVERWRITE, o[UPDATE_OVERWRITE]), _defineProperty(_list$push, UPDATE_KEYS, o[UPDATE_KEYS]), _list$push));
+            if (o.style) {
+              var list = updateHash.list = updateHash.list || [];
+              list.push({
+                style: o.style,
+                overwrite: o.overwrite,
+                keys: o.keys
+              });
             }
           } else {
             root.__updateRoot = o;
@@ -38204,17 +38141,19 @@
         } else if (updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
           var target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
 
-          if (o[UPDATE_FOCUS]) {
-            target[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
+          if (o.focus) {
+            target.focus |= o.focus;
           } // 后续存在新建list上，需增加遍历逻辑
 
 
-          if (o[UPDATE_STYLE]) {
-            var _list$push2;
+          if (o.style) {
+            var _list = target.list = target.list || [];
 
-            var _list = target[UPDATE_LIST] = target[UPDATE_LIST] || [];
-
-            _list.push((_list$push2 = {}, _defineProperty(_list$push2, UPDATE_STYLE, o[UPDATE_STYLE]), _defineProperty(_list$push2, UPDATE_OVERWRITE, o[UPDATE_OVERWRITE]), _defineProperty(_list$push2, UPDATE_KEYS, o[UPDATE_KEYS]), _list$push2));
+            _list.push({
+              style: o.style,
+              overwrite: o.overwrite,
+              keys: keys
+            });
           }
         } else {
           inject.error('Update process miss uniqueUpdateId');
@@ -38275,7 +38214,7 @@
         }); // 做完清空留待下次刷新重来
 
         for (var _i3 = 0, _len2 = keys.length; _i3 < _len2; _i3++) {
-          delete updateHash[keys[_i3]][UPDATE_CONFIG][NODE_UNIQUE_UPDATE_ID];
+          delete updateHash[keys[_i3]].node.__config[NODE_UNIQUE_UPDATE_ID];
         }
 
         return hasUpdate;

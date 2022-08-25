@@ -139,20 +139,6 @@ Object.keys(STYLE_KEY).forEach(k => {
   STYLE_V_KEY[l] = k2;
 });
 
-// Root的update过程使用
-const UPDATE_KEY = {
-  UPDATE_NODE: 0,
-  UPDATE_STYLE: 1,
-  UPDATE_FOCUS: 2,
-  UPDATE_COMPONENT: 3,
-  UPDATE_OVERWRITE: 4,
-  UPDATE_KEYS: 5,
-  UPDATE_LIST: 6,
-  UPDATE_CONFIG: 7,
-  UPDATE_ADD_DOM: 8,
-  UPDATE_REMOVE_DOM: 9,
-};
-
 // 节点使用
 const NODE_KEY = {
   NODE_DOM_PARENT: 0,
@@ -186,17 +172,6 @@ const NODE_KEY = {
   NODE_CACHE_AS_BITMAP: 28,
 };
 
-// struct用
-const STRUCT_KEY = {
-  STRUCT_NODE: 0,
-  STRUCT_INDEX: 1,
-  STRUCT_CHILD_INDEX: 2,
-  STRUCT_LV: 3,
-  STRUCT_NUM: 4,
-  STRUCT_TOTAL: 5,
-  STRUCT_HAS_MASK: 6,
-};
-
 export default {
   STYLE_KEY, // 大写常量为k，数字为值
   STYLE_R_KEY, // 数字为k，大写常量为值
@@ -206,6 +181,5 @@ export default {
   style2Upper,
   UPDATE_KEY,
   NODE_KEY,
-  STRUCT_KEY,
   ELLIPSIS: '…',
 };

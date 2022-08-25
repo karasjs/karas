@@ -165,10 +165,9 @@ function inherit(frames, keys, target) {
  */
 function genBeforeRefresh(animation, style, keys, root, node) {
   let res = {
-    0: node,
-    1: style,
-    5: keys,
-    7: animation.__nodeConfig,
+    node,
+    style,
+    keys,
   };
   root.__addUpdate(node, root, res);
   animation.__style = style;

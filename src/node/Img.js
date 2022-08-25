@@ -16,19 +16,13 @@ const {
     WIDTH,
     HEIGHT,
     DISPLAY,
-    BORDER_TOP_WIDTH,
     BORDER_RIGHT_WIDTH,
     BORDER_LEFT_WIDTH,
-    BORDER_BOTTOM_WIDTH,
     BORDER_TOP_LEFT_RADIUS,
     BORDER_TOP_RIGHT_RADIUS,
     BORDER_BOTTOM_RIGHT_RADIUS,
     BORDER_BOTTOM_LEFT_RADIUS,
     VISIBILITY,
-    BACKGROUND_IMAGE,
-    BACKGROUND_COLOR,
-    BOX_SHADOW,
-    MIX_BLEND_MODE,
     MARGIN_RIGHT,
     MARGIN_LEFT,
     PADDING_RIGHT,
@@ -36,15 +30,9 @@ const {
     FONT_SIZE,
     FLEX_BASIS,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_CONFIG,
-  },
   NODE_KEY: {
     NODE_CACHE,
     NODE_DEFS_CACHE,
-    // NODE_IS_MASK,
   },
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN, RGBA } = unit;
@@ -514,10 +502,10 @@ class Img extends Dom {
             return;
           }
           // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {};
-          res[UPDATE_NODE] = self;
-          res[UPDATE_FOCUS] = level.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
-          res[UPDATE_CONFIG] = self.__config;
+          let res = {
+            node: self,
+            focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
+          };
           root.__addUpdate(self, root, res);
         },
       });
@@ -541,10 +529,10 @@ class Img extends Dom {
                   return;
                 }
                 // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                let res = {};
-                res[UPDATE_NODE] = self;
-                res[UPDATE_FOCUS] = level.REPAINT;
-                res[UPDATE_CONFIG] = self.__config;
+                let res = {
+                  node: self,
+                  focus: level.REPAINT,
+                };
                 root.__addUpdate(self, root, res);
               },
               __after() {
@@ -562,10 +550,10 @@ class Img extends Dom {
                   return;
                 }
                 // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                let res = {};
-                res[UPDATE_NODE] = self;
-                res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
-                res[UPDATE_CONFIG] = self.__config;
+                let res = {
+                  node: self,
+                  focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
+                };
                 root.__addUpdate(self, root, res);
               },
               __after() {
@@ -639,10 +627,10 @@ class Img extends Dom {
           if(self.isDestroyed) {
             return;
           }
-          let res = {};
-          res[UPDATE_NODE] = self;
-          res[UPDATE_FOCUS] = level.REFLOW;
-          res[UPDATE_CONFIG] = self.__config;
+          let res = {
+            node: self,
+            focus: level.REFLOW,
+          };
           root.__addUpdate(self, root, res);
         },
         __after(diff) {

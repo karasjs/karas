@@ -65,12 +65,6 @@ const {
     NODE_STYLE,
     NODE_IS_INLINE,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_ADD_DOM,
-    UPDATE_CONFIG,
-  },
   ELLIPSIS,
 } = enums;
 const { AUTO, PX, PERCENT, REM, VW, VH, VMAX, VMIN } = unit;
@@ -3227,11 +3221,11 @@ class Dom extends Xom {
             self.children.push(vd);
             self.__zIndexChildren = null;
             // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
+            let res = {
+              node: vd,
+              focus: level.REFLOW,
+              addDom: true,
+            };
             root.__addUpdate(vd, root, res);
           },
           __after(diff) {
@@ -3276,11 +3270,11 @@ class Dom extends Xom {
             self.children.unshift(vd);
             self.__zIndexChildren = null;
             // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
+            let res = {
+              node: vd,
+              focus: level.REFLOW,
+              addDom: true,
+            };
             root.__addUpdate(vd, root, res);
           },
           __after(diff) {
@@ -3346,11 +3340,11 @@ class Dom extends Xom {
             }
             domParent.__zIndexChildren = null;
             // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
+            let res = {
+              node: vd,
+              focus: level.REFLOW,
+              addDom: true,
+            };
             root.__addUpdate(vd, root, res);
           },
           __after(diff) {
@@ -3416,11 +3410,11 @@ class Dom extends Xom {
             }
             domParent.__zIndexChildren = null;
             // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-            let res = {};
-            res[UPDATE_NODE] = vd;
-            res[UPDATE_FOCUS] = level.REFLOW;
-            res[UPDATE_ADD_DOM] = true;
-            res[UPDATE_CONFIG] = vd.__config;
+            let res = {
+              node: vd,
+              focus: level.REFLOW,
+              addDom: true,
+            };
             root.__addUpdate(vd, root, res);
           },
           __after(diff) {

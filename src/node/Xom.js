@@ -128,15 +128,6 @@ const {
     WHITE_SPACE,
     WRITING_MODE,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_FOCUS,
-    UPDATE_STYLE,
-    UPDATE_OVERWRITE,
-    UPDATE_KEYS,
-    UPDATE_CONFIG,
-    UPDATE_REMOVE_DOM,
-  },
   NODE_KEY: {
     NODE_TAG_NAME,
     NODE_CACHE_STYLE,
@@ -516,10 +507,10 @@ class Xom extends Node {
               if(__config[NODE_IS_DESTROYED]) {
                 return;
               }
-              let res = {};
-              res[UPDATE_NODE] = node;
-              res[UPDATE_FOCUS] = level.REFLOW; // 强制执行
-              res[UPDATE_CONFIG] = __config;
+              let res = {
+                node,
+                focus: level.REFLOW,
+              };
               root.__addUpdate(node, root, res);
             },
           });
@@ -1249,10 +1240,10 @@ class Xom extends Node {
                 root.addRefreshTask(loadBgi.cb = {
                   __before() {
                     __cacheStyle[BACKGROUND_IMAGE] = undefined;
-                    let res = {};
-                    res[UPDATE_NODE] = node;
-                    res[UPDATE_FOCUS] = REPAINT;
-                    res[UPDATE_CONFIG] = node.__config;
+                    let res = {
+                      node,
+                      focus: REPAINT,
+                    };
                     root.__addUpdate(node, root, res);
                   },
                 });
@@ -2610,17 +2601,17 @@ class Xom extends Node {
             return;
           }
           // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {};
-          res[UPDATE_NODE] = node;
-          res[UPDATE_STYLE] = formatStyle;
-          res[UPDATE_OVERWRITE] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-          res[UPDATE_KEYS] = Object.keys(formatStyle).map(i => {
-            if(!GEOM.hasOwnProperty(i)) {
-              i = parseInt(i);
-            }
-            return i;
-          });
-          res[UPDATE_CONFIG] = __config;
+          let res = {
+            node,
+            style: formatStyle,
+            overwrite: style, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+            keys: Object.keys(formatStyle).map(i => {
+              if(!GEOM.hasOwnProperty(i)) {
+                i = parseInt(i);
+              }
+              return i;
+            }),
+          };
           root.__addUpdate(node, root, res);
         },
         __after(diff) {
@@ -2651,16 +2642,16 @@ class Xom extends Node {
             return;
           }
           // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-          let res = {};
-          res[UPDATE_NODE] = node;
-          res[UPDATE_STYLE] = style;
-          res[UPDATE_KEYS] = Object.keys(style).map(i => {
-            if(!GEOM.hasOwnProperty(i)) {
-              i = parseInt(i);
-            }
-            return i;
-          });
-          res[UPDATE_CONFIG] = __config;
+          let res = {
+            node,
+            style,
+            keys: Object.keys(style).map(i => {
+              if(!GEOM.hasOwnProperty(i)) {
+                i = parseInt(i);
+              }
+              return i;
+            }),
+          };
           root.__addUpdate(node, root, res);
         },
         __after(diff) {
@@ -2948,11 +2939,11 @@ class Xom extends Node {
           self.__prev.__next = self.__next;
         }
         // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-        let res = {};
-        res[UPDATE_NODE] = self;
-        res[UPDATE_FOCUS] = REFLOW;
-        res[UPDATE_REMOVE_DOM] = true;
-        res[UPDATE_CONFIG] = self.__config;
+        let res = {
+          node: self,
+          focus: REFLOW,
+          removeDom: true,
+        };
         root.__addUpdate(self, root, res);
       },
       __after(diff) {

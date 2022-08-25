@@ -63,18 +63,6 @@ const {
     TEXT_STROKE_WIDTH,
     TEXT_STROKE_OVER,
   },
-  UPDATE_KEY: {
-    UPDATE_NODE,
-    UPDATE_STYLE,
-    UPDATE_KEYS,
-    UPDATE_COMPONENT,
-    UPDATE_FOCUS,
-    UPDATE_OVERWRITE,
-    UPDATE_LIST,
-    UPDATE_CONFIG,
-    UPDATE_ADD_DOM,
-    UPDATE_REMOVE_DOM,
-  },
   NODE_KEY: {
     NODE_TAG_NAME,
     NODE_CACHE_STYLE,
@@ -336,17 +324,17 @@ function checkInfluence(root, reflowHash, node, component, addDom) {
 let uniqueUpdateId = 0;
 function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList, zHash, zList) {
   let {
-    [UPDATE_NODE]: node,
-    [UPDATE_STYLE]: style,
-    [UPDATE_OVERWRITE]: overwrite,
-    [UPDATE_FOCUS]: focus,
-    [UPDATE_COMPONENT]: component,
-    [UPDATE_LIST]: list,
-    [UPDATE_KEYS]: keys,
-    [UPDATE_CONFIG]: __config,
-    [UPDATE_ADD_DOM]: addDom,
-    [UPDATE_REMOVE_DOM]: removeDom,
+    node,
+    style,
+    overwrite,
+    focus,
+    component,
+    list,
+    keys,
+    addDom,
+    removeDom,
   } = target;
+  let __config = node.__config;
   if(__config[NODE_IS_DESTROYED]) {
     return;
   }
@@ -362,7 +350,7 @@ function parseUpdate(renderMode, root, target, reflowList, cacheHash, cacheList,
       hash[k] = true;
     });
     list.forEach(item => {
-      let { [UPDATE_STYLE]: style2, [UPDATE_OVERWRITE]: overwrite, [UPDATE_KEYS]: keys2 } = item;
+      let { style: style2, overwrite, keys: keys2 } = item;
       (keys2 || []).forEach(k2 => {
         if(!hash.hasOwnProperty(k2)) {
           hash[k2] = true;
@@ -1038,11 +1026,10 @@ class Root extends Dom {
                   sr = sr.domParent;
                 }
                 let res = {};
-                res[UPDATE_NODE] = sr;
-                res[UPDATE_STYLE] = sr.currentStyle;
-                res[UPDATE_FOCUS] = REFLOW;
-                res[UPDATE_COMPONENT] = cp;
-                res[UPDATE_CONFIG] = sr.__config;
+                res.node = sr;
+                res.style = sr.currentStyle;
+                res.focus = REFLOW;
+                res.component = cp;
                 this.__addUpdate(sr, root, res);
               });
             }
@@ -1162,16 +1149,16 @@ class Root extends Dom {
     if(node === root) {
       updateHash = root.__updateRoot;
       if(updateHash) {
-        if(o[UPDATE_FOCUS]) {
-          updateHash[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
+        if(o.focus) {
+          updateHash.focus |= o.focus;
         }
         // 后续存在新建list上，需增加遍历逻辑
-        if(o[UPDATE_STYLE]) {
-          let list = updateHash[UPDATE_LIST] = updateHash[UPDATE_LIST] || [];
+        if(o.style) {
+          let list = updateHash.list = updateHash.list || [];
           list.push({
-            [UPDATE_STYLE]: o[UPDATE_STYLE],
-            [UPDATE_OVERWRITE]: o[UPDATE_OVERWRITE],
-            [UPDATE_KEYS]: o[UPDATE_KEYS],
+            style: o.style,
+            overwrite: o.overwrite,
+            keys: o.keys,
           });
         }
       }
@@ -1186,16 +1173,16 @@ class Root extends Dom {
     }
     else if(updateHash.hasOwnProperty(nodeConfig[NODE_UNIQUE_UPDATE_ID])) {
       let target = updateHash[nodeConfig[NODE_UNIQUE_UPDATE_ID]];
-      if(o[UPDATE_FOCUS]) {
-        target[UPDATE_FOCUS] |= o[UPDATE_FOCUS];
+      if(o.focus) {
+        target.focus |= o.focus;
       }
       // 后续存在新建list上，需增加遍历逻辑
-      if(o[UPDATE_STYLE]) {
-        let list = target[UPDATE_LIST] = target[UPDATE_LIST] || [];
+      if(o.style) {
+        let list = target.list = target.list || [];
         list.push({
-          [UPDATE_STYLE]: o[UPDATE_STYLE],
-          [UPDATE_OVERWRITE]: o[UPDATE_OVERWRITE],
-          [UPDATE_KEYS]: o[UPDATE_KEYS],
+          style: o.style,
+          overwrite: o.overwrite,
+          keys: keys,
         });
       }
     }
@@ -1254,7 +1241,7 @@ class Root extends Dom {
     });
     // 做完清空留待下次刷新重来
     for(let i = 0, len = keys.length; i < len; i++) {
-      delete updateHash[keys[i]][UPDATE_CONFIG][NODE_UNIQUE_UPDATE_ID];
+      delete updateHash[keys[i]].node.__config[NODE_UNIQUE_UPDATE_ID];
     }
     return hasUpdate;
   }

@@ -33380,10 +33380,10 @@
           continue;
         }
 
-        var _cacheTotal = _node.__cacheTotal,
-            _cacheFilter = _node.__cacheFilter,
-            _cacheMask = _node.__cacheMask,
-            _cacheOverflow = _node.__cacheOverflow,
+        var __cacheTotal2 = _node.__cacheTotal,
+            __cacheFilter2 = _node.__cacheFilter,
+            __cacheMask2 = _node.__cacheMask,
+            __cacheOverflow2 = _node.__cacheOverflow,
             __isMask = _node.__isMask,
             __refreshLevel = _node.__refreshLevel;
         var _computedStyle = _node.__computedStyle; // 跳过display:none元素和它的所有子节点和mask
@@ -33488,7 +33488,7 @@
         _node.__opacity = parentOpacity * opacity;
         var bbox = void 0; // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
 
-        var target = i > index && getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal]); // 局部根节点的total不需要考虑filter，子节点要
+        var target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]); // 局部根节点的total不需要考虑filter，子节点要
 
         if (target) {
           i += (_total3 || 0) + countMaskNum(__structs, i + (_total3 || 0) + 1, _hasMask || 0);
@@ -33508,20 +33508,21 @@
       } // 生成cacheTotal，获取偏移dx/dy
 
 
-      var cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, _sx, _sy);
+      __cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, _sx, _sy);
 
-      if (!cacheTotal || !cacheTotal.enabled) {
+      if (!__cacheTotal || !__cacheTotal.enabled) {
         return;
       }
 
-      cacheTotal.__available = true;
-      var dx = cacheTotal.dx,
-          dy = cacheTotal.dy,
-          dbx = cacheTotal.dbx,
-          dby = cacheTotal.dby,
-          tx = cacheTotal.x,
-          ty = cacheTotal.y;
-      var ctxTotal = cacheTotal.ctx;
+      __cacheTotal.__available = true;
+      var _cacheTotal = __cacheTotal,
+          dx = _cacheTotal.dx,
+          dy = _cacheTotal.dy,
+          dbx = _cacheTotal.dbx,
+          dby = _cacheTotal.dby,
+          tx = _cacheTotal.x,
+          ty = _cacheTotal.y;
+      var ctxTotal = __cacheTotal.ctx;
       /**
        * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
        * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -33553,9 +33554,9 @@
         } else {
           var _computedStyle2 = _node2.__computedStyle,
               _cacheTotal2 = _node2.__cacheTotal,
-              _cacheFilter2 = _node2.__cacheFilter,
-              _cacheMask2 = _node2.__cacheMask,
-              _cacheOverflow2 = _node2.__cacheOverflow,
+              _cacheFilter = _node2.__cacheFilter,
+              _cacheMask = _node2.__cacheMask,
+              _cacheOverflow = _node2.__cacheOverflow,
               _refreshLevel = _node2.__refreshLevel;
 
           if (maskStartHash.hasOwnProperty(_i2)) {
@@ -33634,7 +33635,7 @@
           lastLv = _lv2;
           lastMatrix = m; // 子元素有cacheTotal优先使用，也一定是子元素，局部根节点不会进
 
-          var _target = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal2]);
+          var _target = getCache([_cacheMask, _cacheFilter, _cacheOverflow, _cacheTotal2]);
 
           if (_i2 !== index && _target) {
             _i2 += (_total4 || 0) + countMaskNum(__structs, _i2 + (_total4 || 0) + 1, _hasMask2 || 0); // 跳过display:none元素和它的所有子节点
@@ -33821,9 +33822,9 @@
             } else {
               var _computedStyle3 = _node3.__computedStyle,
                   _cacheTotal3 = _node3.__cacheTotal,
-                  _cacheFilter3 = _node3.__cacheFilter,
-                  _cacheMask3 = _node3.__cacheMask,
-                  _cacheOverflow3 = _node3.__cacheOverflow,
+                  _cacheFilter2 = _node3.__cacheFilter,
+                  _cacheMask2 = _node3.__cacheMask,
+                  _cacheOverflow2 = _node3.__cacheOverflow,
                   _refreshLevel3 = _node3.__refreshLevel;
 
               if (maskStartHash.hasOwnProperty(_i3)) {
@@ -33888,7 +33889,7 @@
                   _transform = _computedStyle3[TRANSFORM],
                   _tfo = _computedStyle3[TRANSFORM_ORIGIN]; // 特殊渲染的matrix，局部根节点为原点考虑，本节点需inverse反向
 
-              var _target4 = getCache([_cacheMask3, _cacheFilter3, _cacheOverflow3, _cacheTotal3]);
+              var _target4 = getCache([_cacheMask2, _cacheFilter2, _cacheOverflow2, _cacheTotal3]);
 
               if (_target4) {
                 _i3 += (_total6 || 0) + countMaskNum(__structs, _i3 + (_total6 || 0) + 1, _hasMask3 || 0); // 跳过display:none元素和它的所有子节点

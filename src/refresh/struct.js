@@ -303,10 +303,10 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
         continue;
       }
       let {
-        __cacheTotal,
-        __cacheFilter,
-        __cacheMask,
-        __cacheOverflow,
+        __cacheTotal: __cacheTotal2,
+        __cacheFilter: __cacheFilter2,
+        __cacheMask: __cacheMask2,
+        __cacheOverflow: __cacheOverflow2,
         __isMask,
         __refreshLevel: __refreshLevel,
       } = node;
@@ -399,7 +399,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
       node.__opacity = parentOpacity * opacity;
       let bbox;
       // 子元素有cacheTotal优先使用，一定是子元素，局部根节点available为false不会进
-      let target = i > index && getCache([__cacheMask, __cacheFilter, __cacheOverflow, __cacheTotal]);
+      let target = i > index && getCache([__cacheMask2, __cacheFilter2, __cacheOverflow2, __cacheTotal2]);
       // 局部根节点的total不需要考虑filter，子节点要
       if(target) {
         i += (total || 0) + countMaskNum(__structs, i + (total || 0) + 1, hasMask || 0);
@@ -418,13 +418,13 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
       }
     }
     // 生成cacheTotal，获取偏移dx/dy
-    let cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
-    if(!cacheTotal || !cacheTotal.enabled) {
+    __cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
+    if(!__cacheTotal || !__cacheTotal.enabled) {
       return;
     }
-    cacheTotal.__available = true;
-    let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
-    let ctxTotal = cacheTotal.ctx;
+    __cacheTotal.__available = true;
+    let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
+    let ctxTotal = __cacheTotal.ctx;
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取

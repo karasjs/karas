@@ -26328,8 +26328,8 @@
         var _root$__structs;
 
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-        this.__config; // let struct = __config[NODE_STRUCT];
-
+        // let __config = this.__config;
+        // let struct = __config[NODE_STRUCT];
         var struct = this.__struct; // let total = struct[STRUCT_TOTAL] || 0;
 
         var total = struct.total || 0; // 新生成了struct，引用也变了
@@ -26379,7 +26379,11 @@
         }
 
         zIndexChildren.forEach(function (child, i) {
-          // let ns = child.__config[NODE_STRUCT];
+          if (child instanceof Component) {
+            child = child.shadowRoot;
+          } // let ns = child.__config[NODE_STRUCT];
+
+
           var ns = child.__struct; // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决
 
           if (ns) {

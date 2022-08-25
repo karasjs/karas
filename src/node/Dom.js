@@ -292,7 +292,7 @@ class Dom extends Xom {
   }
 
   __modifyStruct(root, offset = 0) {
-    let __config = this.__config;
+    // let __config = this.__config;
     // let struct = __config[NODE_STRUCT];
     let struct = this.__struct;
     // let total = struct[STRUCT_TOTAL] || 0;
@@ -333,6 +333,9 @@ class Dom extends Xom {
       return;
     }
     zIndexChildren.forEach((child, i) => {
+      if(child instanceof Component) {
+        child = child.shadowRoot;
+      }
       // let ns = child.__config[NODE_STRUCT];
       let ns = child.__struct;
       // 一般肯定有的，但是在zIndex更新和addChild同时发生时，新添加的尚无，zIndex更新会报错，临时解决

@@ -388,7 +388,6 @@
     // 小写为k，数字为值
     style2Lower: style2Lower,
     style2Upper: style2Upper$2,
-    UPDATE_KEY: UPDATE_KEY,
     NODE_KEY: NODE_KEY,
     ELLIPSIS: '…'
   };

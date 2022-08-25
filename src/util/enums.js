@@ -179,7 +179,6 @@ export default {
   STYLE_V_KEY, // 小写为k，数字为值
   style2Lower,
   style2Upper,
-  UPDATE_KEY,
   NODE_KEY,
   ELLIPSIS: '…',
 };

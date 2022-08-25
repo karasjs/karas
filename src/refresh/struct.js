@@ -152,7 +152,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           __cacheMask,
           __cacheOverflow,
           __limitCache,
-          __computedStyle: {
+          computedStyle: {
             [DISPLAY]: display,
             [VISIBILITY]: visibility,
             [TRANSFORM]: transform,
@@ -418,13 +418,13 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
       }
     }
     // 生成cacheTotal，获取偏移dx/dy
-    node.__cacheTotal = __cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
-    if(!__cacheTotal || !__cacheTotal.enabled) {
+    let cacheTotal = node.__cacheTotal = Cache.getInstance(bboxTotal, sx1, sy1);
+    if(!cacheTotal || !cacheTotal.enabled) {
       return;
     }
-    __cacheTotal.__available = true;
-    let { dx, dy, dbx, dby, x: tx, y: ty } = __cacheTotal;
-    let ctxTotal = __cacheTotal.ctx;
+    cacheTotal.__available = true;
+    let { dx, dy, dbx, dby, x: tx, y: ty } = cacheTotal;
+    let ctxTotal = cacheTotal.ctx;
     /**
      * 再次遍历每个节点，以局部根节点左上角为基准原点，将所有节点绘制上去
      * 每个子节点的opacity有父继承计算在上面循环已经做好了，直接获取
@@ -540,7 +540,7 @@ function genTotal(renderMode, node, index, lv, total, __structs, hasMask, width,
             ctxTotal.globalCompositeOperation = 'source-over';
           }
           ctxTotal.globalAlpha = node.__opacity;
-          Cache.drawCache(target, __cacheTotal);
+          Cache.drawCache(target, cacheTotal);
           ctxTotal.globalCompositeOperation = 'source-over';
         }
         else {
@@ -1817,15 +1817,15 @@ function renderSvg(renderMode, ctx, root, isFirst) {
       hasMask,
       lv,
     } = __structs[i];
-    let {
-      __computedStyle: computedStyle,
-      __cacheTotal,
-      __refreshLevel: __refreshLevel,
-      __cacheDefs,
-    } = node;
+    let computedStyle, __refreshLevel, __cacheDefs;
     if(node instanceof Text) {
       computedStyle = node.computedStyle;
       __refreshLevel = node.__domParent.__refreshLevel;
+    }
+    else {
+      computedStyle = node.__computedStyle;
+      __cacheDefs = node.__cacheDefs;
+      __refreshLevel = node.__refreshLevel;
     }
     let display = computedStyle[DISPLAY];
     // 将随后的若干个mask节点范围存下来

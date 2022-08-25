@@ -38151,7 +38151,7 @@
             _list.push({
               style: o.style,
               overwrite: o.overwrite,
-              keys: keys
+              keys: o.keys
             });
           }
         } else {

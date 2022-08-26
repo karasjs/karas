@@ -19525,26 +19525,22 @@
   }
 
   function binarySearch(i, j, time, frames) {
-    if (i === j) {
-      var _frame = frames[i];
+    while (i < j) {
+      var middle = i + (j - i >> 1);
+      var _frame = frames[middle];
+
+      if (_frame.time === time) {
+        return middle;
+      }
 
       if (_frame.time > time) {
-        return i - 1;
-      }
-
-      return i;
-    } else {
-      var middle = i + (j - i >> 1);
-      var _frame2 = frames[middle];
-
-      if (_frame2.time === time) {
-        return middle;
-      } else if (_frame2.time > time) {
-        return binarySearch(i, Math.max(middle - 1, i), time, frames);
+        j = Math.max(middle - 1, i);
       } else {
-        return binarySearch(Math.min(middle + 1, j), j, time, frames);
+        i = Math.min(middle + 1, j);
       }
     }
+
+    return i;
   }
 
   function getEasing(ea) {
@@ -21543,6 +21539,10 @@
   }
 
   function isValidMbm$2(v) {
+    if (v === 'normal') {
+      return false;
+    }
+
     return v === 'multiply' || v === 'screen' || v === 'overlay' || v === 'darken' || v === 'lighten' || v === 'colorDodge' || v === 'color-dodge' || v === 'colorBurn' || v === 'color-burn' || v === 'hardLight' || v === 'hard-light' || v === 'softLight' || v === 'soft-light' || v === 'difference' || v === 'exclusion' || v === 'hue' || v === 'saturation' || v === 'color' || v === 'luminosity';
   }
 

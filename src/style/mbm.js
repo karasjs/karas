@@ -12,6 +12,9 @@ function mbmName(v) {
 }
 
 function isValidMbm(v) {
+  if(v === 'normal') {
+    return false;
+  }
   return v === 'multiply'
     || v === 'screen'
     || v === 'overlay'

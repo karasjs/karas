@@ -1040,26 +1040,20 @@ function calFrame(prev, next, keys, target) {
 }
 
 function binarySearch(i, j, time, frames) {
-  if(i === j) {
-    let frame = frames[i];
-    if(frame.time > time) {
-      return i - 1;
-    }
-    return i;
-  }
-  else {
+  while(i < j) {
     let middle = i + ((j - i) >> 1);
     let frame = frames[middle];
     if(frame.time === time) {
       return middle;
     }
-    else if(frame.time > time) {
-      return binarySearch(i, Math.max(middle - 1, i), time, frames);
+    if(frame.time > time) {
+      j = Math.max(middle - 1, i);
     }
     else {
-      return binarySearch(Math.min(middle + 1, j), j, time, frames);
+      i = Math.min(middle + 1, j);
     }
   }
+  return i;
 }
 
 function getEasing(ea) {
